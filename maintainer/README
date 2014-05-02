@@ -1,0 +1,18 @@
+ Open Freelance Accounting - NEWS
+
+ Summary
+ =======
+ 
+   maintainer/
+
+-----------------------------------------------------------------------
+ maintainer/
+ ===========
+
+ This directory contains some development tools which are expected to
+ be used only by the maintainer.
+ These tools are not distributed in the tarball, and are only present
+ in the source repository.
+
+-----------------------------------------------------------------------
+ P. Wieser - Last updated on 2014, may 2nd
