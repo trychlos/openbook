@@ -19,3 +19,5 @@
 #
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
+#
+# $Id$

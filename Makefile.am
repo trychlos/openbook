@@ -19,6 +19,8 @@
 #
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
+#
+# $Id$
 
 ACLOCAL_AMFLAGS = -I m4
 
