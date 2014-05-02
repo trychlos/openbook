@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include "ui/ofa-application.h"
+
 /*
  * The 'configure' script may define a OFA_MAINTAINER_MODE variable when
  * the application is compiled for/in a development environment. When

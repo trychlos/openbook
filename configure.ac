@@ -74,6 +74,12 @@ if test "${PKG_CONFIG}" = "no"; then
 	AC_MSG_ERROR([You need to install pkgconfig])
 fi
 
+# Oldest supported distribution as of Apr. 2013: Ubuntu 10 LTS (Gnome 2.30)
+glib_required=2.28
+gtk_required=3.4
+OFA_CHECK_FOR_GTK
+OFA_CHECK_MODULE([GLIB], [glib-2.0 >= ${glib_required}])
+
 AC_SUBST([OPENBOOK_CFLAGS])
 AC_SUBST([OPENBOOK_LIBS])
 
