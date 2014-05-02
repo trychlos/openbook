@@ -27,6 +27,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = \
 	m4									\
 	maintainer							\
+	po									\
 	src									\
 	$(NULL)
 
