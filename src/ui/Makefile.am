@@ -42,6 +42,10 @@ BUILT_SOURCES = \
 
 openbook_SOURCES = \
 	main.c												\
+	ofa-application.c									\
+	ofa-application.h									\
+	ofa-main-window.c									\
+	ofa-main-window.h									\
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
