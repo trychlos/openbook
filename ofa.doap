@@ -8,7 +8,7 @@
 
   <category rdf:resource="http://api.gnome.org/doap-extensions#desktop" />
 
-  <shortdesc xml:lang="en">An double-entry accounting application first dedicated to freelances</shortdesc>
+  <shortdesc xml:lang="en">A double-entry accounting application first dedicated to freelances</shortdesc>
 
   <description xml:lang="en">
     Open Freelance Accounting is a double-entry accounting application
