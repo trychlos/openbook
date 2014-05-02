@@ -31,7 +31,7 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
-#include "ui/ofa-application.h"
+#include "ui/ofa-main-window.h"
 
 /* private class data
  */
@@ -74,7 +74,7 @@ enum {
 static       GtkApplicationClass *st_parent_class = NULL;
 
 static const gchar               *st_application_id    = "org.trychlos.openbook.ui";
-static const GApplicationFlags    st_application_flags = G_APPLICATION_NON_UNIQUE | G_APPLICATION_HANDLES_COMMAND_LINE;
+static const GApplicationFlags    st_application_flags = G_APPLICATION_NON_UNIQUE;
 
 static const gchar               *st_application_name  = N_( "Open Freelance Accounting" );
 static const gchar               *st_description       = N_( "A double-entry accounting application first dedicated to freelances" );
@@ -95,14 +95,18 @@ static void     instance_get_property( GObject *object, guint property_id, GValu
 static void     instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
 static void     instance_dispose( GObject *application );
 static void     instance_finalize( GObject *application );
+
+static void     application_startup( GApplication *application );
 static void     application_activate( GApplication *application );
 static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 
 static void     init_i18n( ofaApplication *application );
 static gboolean init_gtk_args( ofaApplication *application );
 static gboolean manage_options( ofaApplication *application );
+#if 0
 static gboolean init_application( ofaApplication *application );
 static gboolean create_main_window( ofaApplication *application );
+#endif
 
 GType
 ofa_application_get_type( void )
@@ -159,6 +163,7 @@ class_init( ofaApplicationClass *klass )
 	object_class->finalize = instance_finalize;
 
 	application_class = G_APPLICATION_CLASS( klass );
+	application_class->startup = application_startup;
 	application_class->activate = application_activate;
 	application_class->open = application_open;
 
@@ -458,7 +463,45 @@ ofa_application_run_with_args( ofaApplication *application, int argc, GStrv argv
 }
 
 /*
+ * https://wiki.gnome.org/HowDoI/GtkApplication
+ *
+ * Invoked on the primary instance immediately after registration.
+ *
+ * When your application starts, the startup signal will be fired. This
+ * gives you a chance to perform initialisation tasks that are not
+ * directly related to showing a new window. After this, depending on
+ * how the application is started, either activate or open will be called
+ * next.
+ *
+ * GtkApplication defaults to applications being single-instance. If the
+ * user attempts to start a second instance of a single-instance
+ * application then GtkApplication will signal the first instance and
+ * you will receive additional activate or open signals. In this case,
+ * the second instance will exit immediately, without calling startup
+ * or shutdown.
+ *
+ * For this reason, you should do essentially no work at all from main().
+ * All startup initialisation should be done in startup. This avoids
+ * wasting work in the second-instance case where the program just exits
+ * immediately.
+ */
+static void
+application_startup( GApplication *application )
+{
+	static const gchar *thisfn = "ofa_application_startup";
+	ofaApplication *appli;
+	ofaMainWindow *window;
+
+	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+
+	g_return_if_fail( OFA_IS_APPLICATION( application ));
+	appli = OFA_APPLICATION( application );
+
+}
+
+/*
  * https://wiki.gnome.org/Projects/GLib/GApplication/Introduction
+ * https://wiki.gnome.org/HowDoI/GtkApplication
  *
  * activate is executed by GApplication when the application is "activated".
  * This corresponds to the program being run from the command line, or when
@@ -522,7 +565,7 @@ application_open( GApplication *application, GFile **files, gint n_files, const 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
-	ofaApplication *appli = OFA_APPLICATION( application );
+	appli = OFA_APPLICATION( application );
 
 	windows = gtk_application_get_windows( GTK_APPLICATION( appli ));
 	if( windows ){
@@ -628,6 +671,7 @@ manage_options( ofaApplication *application )
 	return( ret );
 }
 
+#if 0
 static gboolean
 init_application( ofaApplication *application )
 {
@@ -666,3 +710,4 @@ create_main_window( ofaApplication *application )
 
 	return( ret );
 }
+#endif

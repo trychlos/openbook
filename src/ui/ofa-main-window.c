@@ -53,10 +53,12 @@ static void  instance_init( GTypeInstance *instance, gpointer klass );
 static void  instance_dispose( GObject *window );
 static void  instance_finalize( GObject *window );
 
+#if 0
 /* application termination */
 static gboolean   on_base_quit_requested( ofaApplication *application, ofaMainWindow *window );
 static gboolean   on_delete_event( GtkWidget *toplevel, GdkEvent *event, ofaMainWindow *window );
 static gboolean   warn_modified( ofaMainWindow *window );
+#endif
 
 GType
 ofa_main_window_get_type( void )
@@ -144,8 +146,6 @@ instance_dispose( GObject *window )
 		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
 
 		self->private->dispose_has_run = TRUE;
-
-		gtk_main_quit();
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
