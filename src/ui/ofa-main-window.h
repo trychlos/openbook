@@ -65,9 +65,11 @@ typedef struct {
 }
 	ofaMainWindowClass;
 
-GType          ofa_main_window_get_type( void );
+GType          ofa_main_window_get_type          ( void );
 
-ofaMainWindow *ofa_main_window_new     ( const ofaApplication *application );
+ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
+
+gboolean       ofa_main_window_is_willing_to_quit( ofaMainWindow *window );
 
 G_END_DECLS
 

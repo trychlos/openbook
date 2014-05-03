@@ -54,7 +54,6 @@ static void     instance_dispose( GObject *window );
 static void     instance_finalize( GObject *window );
 
 static gboolean on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static gboolean is_willing_to_quit( ofaMainWindow *window );
 
 #if 0
 /* application termination */
@@ -219,11 +218,11 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 			( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ),
 			( void * ) event, ( void * ) user_data );
 
-	return( !is_willing_to_quit( OFA_MAIN_WINDOW( toplevel )));
+	return( !ofa_main_window_is_willing_to_quit( OFA_MAIN_WINDOW( toplevel )));
 }
 
-static gboolean
-is_willing_to_quit( ofaMainWindow *window )
+gboolean
+ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
 {
 	GtkWidget *dialog;
 	gint response;

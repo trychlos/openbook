@@ -737,11 +737,17 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 #endif
 }
 
+/*
+ * quitting means quitting the current instance of the application
+ * i.e. the most recent ofaMainWindows
+ */
 static void
 on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_application_on_quit";
 	ofaApplication *application;
+	GList *windows;
+	ofaMainWindow *window;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -749,7 +755,15 @@ on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
 	application = OFA_APPLICATION( user_data );
 
-	g_application_quit( G_APPLICATION( application ));
+	windows = gtk_application_get_windows( GTK_APPLICATION( application ));
+	if( windows ){
+		window = OFA_MAIN_WINDOW( windows->data );
+		if( ofa_main_window_is_willing_to_quit( window )){
+			gtk_widget_destroy( GTK_WIDGET( window ));
+		}
+	} else {
+		g_application_quit( G_APPLICATION( application ));
+	}
 }
 
 static void
