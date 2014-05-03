@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 #include <string.h>
+#include <glib/gprintf.h>
 
 #include "ui/ofa-main-window.h"
 
@@ -77,14 +78,14 @@ static const gchar               *st_application_id    = "org.trychlos.openbook.
 static const GApplicationFlags    st_application_flags = G_APPLICATION_NON_UNIQUE;
 
 static const gchar               *st_application_name  = N_( "Open Freelance Accounting" );
-static const gchar               *st_description       = N_( "A double-entry accounting application first dedicated to freelances" );
+static const gchar               *st_description       = N_( "La comptabilité pour les professionnels libéraux" );
 static const gchar               *st_icon_name         = N_( "openbook" );
 
 static       gboolean             st_version_opt       = FALSE;
 
 static       GOptionEntry         st_option_entries[]  = {
 	{ "version"   , 'v', 0, G_OPTION_ARG_NONE, &st_version_opt,
-			N_( "Output the version number, and exit gracefully [no]" ), NULL },
+			N_( "Affiche la version de l'application, et termine [non]" ), NULL },
 	{ NULL }
 };
 
@@ -103,10 +104,23 @@ static void     application_open( GApplication *application, GFile **files, gint
 static void     init_i18n( ofaApplication *application );
 static gboolean init_gtk_args( ofaApplication *application );
 static gboolean manage_options( ofaApplication *application );
-#if 0
-static gboolean init_application( ofaApplication *application );
-static gboolean create_main_window( ofaApplication *application );
-#endif
+
+static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_version( ofaApplication *application );
+
+static const GActionEntry st_app_entries[] = {
+		{ "new",   on_new,   NULL, NULL, NULL },
+		{ "open",  on_open,  NULL, NULL, NULL },
+		{ "quit",  on_quit,  NULL, NULL, NULL },
+		{ "about", on_about, NULL, NULL, NULL },
+};
+
+static const gchar  *st_appmenu_xml = PKGUIDIR "/ofa-app-menubar.ui";
+static const gchar  *st_appmenu_id = "app-menu";
+
 
 GType
 ofa_application_get_type( void )
@@ -170,55 +184,55 @@ class_init( ofaApplicationClass *klass )
 	g_object_class_install_property( object_class, OFA_PROP_ARGC_ID,
 			g_param_spec_int(
 					OFA_PROP_ARGC,
-					_( "Arguments count" ),
-					_( "The count of command-line arguments" ),
+					"Arguments count",
+					"The count of command-line arguments",
 					0, 65535, 0,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property( object_class, OFA_PROP_ARGV_ID,
 			g_param_spec_boxed(
 					OFA_PROP_ARGV,
-					_( "Arguments" ),
-					_( "The array of command-line arguments" ),
+					"Arguments",
+					"The array of command-line arguments",
 					G_TYPE_STRV,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property( object_class, OFA_PROP_OPTIONS_ID,
 			g_param_spec_pointer(
 					OFA_PROP_OPTIONS,
-					_( "Option entries" ),
-					_( "The array of command-line option definitions" ),
+					"Option entries",
+					"The array of command-line option definitions",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property( object_class, OFA_PROP_APPLICATION_NAME_ID,
 			g_param_spec_string(
 					OFA_PROP_APPLICATION_NAME,
-					_( "Application name" ),
-					_( "The name of the application" ),
+					"Application name",
+					"The name of the application",
 					"",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property( object_class, OFA_PROP_DESCRIPTION_ID,
 			g_param_spec_string(
 					OFA_PROP_DESCRIPTION,
-					_( "Description" ),
-					_( "A short description to be displayed in the first line of --help output" ),
+					"Description",
+					"A short description to be displayed in the first line of --help output",
 					"",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property( object_class, OFA_PROP_ICON_NAME_ID,
 			g_param_spec_string(
 					OFA_PROP_ICON_NAME,
-					_( "Icon name" ),
-					_( "The name of the icon of the application" ),
+					"Icon name",
+					"The name of the icon of the application",
 					"",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property( object_class, OFA_PROP_CODE_ID,
 			g_param_spec_int(
 					OFA_PROP_CODE,
-					_( "Return code" ),
-					_( "The return code of the application" ),
+					"Return code",
+					"The return code of the application",
 					-127, 127, 0,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
@@ -446,13 +460,7 @@ ofa_application_run_with_args( ofaApplication *application, int argc, GStrv argv
 		gtk_window_set_default_icon_name( priv->icon_name );
 
 		if( init_gtk_args( application ) &&
-			manage_options( application )
-#if 0
-			&&
-			init_application( application ) &&
-			create_main_window( application )
-#endif
-			){
+			manage_options( application )){
 
 			g_debug( "%s: entering g_application_run", thisfn );
 			priv->code = g_application_run( G_APPLICATION( application ), 0, NULL );
@@ -490,13 +498,40 @@ application_startup( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_startup";
 	ofaApplication *appli;
-	ofaMainWindow *window;
+	GtkBuilder *builder;
+	GMenuModel *menu;
+	GError *error = NULL;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
 	appli = OFA_APPLICATION( application );
 
+	/* chain up to the parent class */
+	if( G_APPLICATION_CLASS( st_parent_class )->startup ){
+		G_APPLICATION_CLASS( st_parent_class )->startup( application );
+	}
+
+	/* define the application actions */
+	g_action_map_add_action_entries(
+			G_ACTION_MAP( appli ),
+	        st_app_entries, G_N_ELEMENTS( st_app_entries ),
+	        ( gpointer ) appli );
+
+	/* define a traditional menubar */
+	builder = gtk_builder_new();
+	if( gtk_builder_add_from_file( builder, st_appmenu_xml, &error )){
+		menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_appmenu_id ));
+		if( menu ){
+			gtk_application_set_menubar( GTK_APPLICATION( application ), menu );
+		} else {
+			g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_appmenu_id, st_appmenu_xml );
+		}
+	} else {
+		g_warning( "%s: %s", thisfn, error->message );
+		g_error_free( error );
+	}
+	g_object_unref( builder );
 }
 
 /*
@@ -537,6 +572,7 @@ application_activate( GApplication *application )
 	appli = OFA_APPLICATION( application );
 
 	window = ofa_main_window_new( appli );
+	g_debug( "%s: main window instanciated at %p", thisfn, window );
 	gtk_window_present( GTK_WINDOW( window ));
 }
 
@@ -664,50 +700,79 @@ manage_options( ofaApplication *application )
 	 * if yes, then stops here
 	 */
 	if( st_version_opt ){
-		/*na_core_utils_print_version();*/
+		on_version( application );
 		ret = FALSE;
 	}
 
 	return( ret );
 }
 
+static void
+on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
 #if 0
-static gboolean
-init_application( ofaApplication *application )
-{
-	static const gchar *thisfn = "ofa_application_init_application";
-	gboolean ret;
+	static const gchar *thisfn = "ofa_application_on_new";
+	ofaApplication *application;
 
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
 
-	ret = TRUE;
-
-	return( ret );
-}
-
-static gboolean
-create_main_window( ofaApplication *application )
-{
-	static const gchar *thisfn = "ofa_application_v_create_windows";
-	ofaMainWindow *window;
-	gboolean ret;
-
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
-
-	ret = FALSE;
-
-	/* creating the main window
-	 */
-	window = ofa_main_window_new( application );
-
-	if( window ){
-		g_return_val_if_fail( OFA_IS_MAIN_WINDOW( window ), ret );
-		ret = TRUE;
-
-	} else {
-		g_object_set( G_OBJECT( application ), OFA_PROP_CODE, OFA_EXIT_CODE_WINDOW, NULL );
-	}
-
-	return( ret );
-}
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+	application = OFA_APPLICATION( user_data );
 #endif
+}
+
+static void
+on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+#if 0
+	static const gchar *thisfn = "ofa_application_on_new";
+	ofaApplication *application;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+	application = OFA_APPLICATION( user_data );
+#endif
+}
+
+static void
+on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_application_on_quit";
+	ofaApplication *application;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+	application = OFA_APPLICATION( user_data );
+
+	g_application_quit( G_APPLICATION( application ));
+}
+
+static void
+on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+#if 0
+	static const gchar *thisfn = "ofa_application_on_about";
+	ofaApplication *application;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+	application = OFA_APPLICATION( user_data );
+#endif
+}
+
+static void
+on_version( ofaApplication *application )
+{
+#if 0
+	static const gchar *thisfn = "ofa_application_on_version";
+
+	g_debug( "%s: application=%p", application );
+#endif
+}

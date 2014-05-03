@@ -143,6 +143,7 @@ instance_dispose( GObject *window )
 	self = OFA_MAIN_WINDOW( window );
 
 	if( !self->private->dispose_has_run ){
+
 		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
 
 		self->private->dispose_has_run = TRUE;
@@ -180,9 +181,12 @@ instance_finalize( GObject *window )
 ofaMainWindow *
 ofa_main_window_new( const ofaApplication *application )
 {
+	static const gchar *thisfn = "ofa_main_window_new";
 	ofaMainWindow *window;
 
 	g_return_val_if_fail( OFA_IS_APPLICATION( application ), NULL );
+
+	g_debug( "%s: application=%p", thisfn, application );
 
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW,
 			"application", application,

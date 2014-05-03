@@ -32,7 +32,7 @@ AM_CPPFLAGS += \
 	-I $(top_srcdir)									\
 	-I $(top_srcdir)/src								\
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
-	-DG_LOG_DOMAIN=\"Openbook\"							\
+	-DG_LOG_DOMAIN=\"OFA\"								\
 	-DPKGUIDIR=\"$(ui_datadir)\"						\
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
@@ -54,6 +54,7 @@ openbook_LDADD = \
 	$(NULL)
 
 actions_files = \
+	ofa-app-menubar.ui									\
 	$(NULL)
 
 ui_files = \

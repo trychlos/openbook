@@ -109,4 +109,5 @@ $as_echo "
 
 	Installation prefix             ${prefix}
 	Build system type               ${ac_cv_build}
-	Maintainer mode                 ${msg_maintainer_mode}"
+	Maintainer mode                 ${msg_maintainer_mode}
+"
