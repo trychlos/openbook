@@ -40,6 +40,9 @@
  * juste create several instances of the application, each one believing
  * it is the primary instance of a new application. Each ofaApplication
  * is considered as a primary instance, thus creating its own ofaMainWindow.
+ *
+ * To display debug messages, run the command:
+ *   $ G_MESSAGES_DEBUG=OFA _install/bin/openbook
  */
 
 #include <gtk/gtk.h>
