@@ -1,0 +1,52 @@
+ Open Freelance Accounting - TODO
+ $Id$
+
+ Summary
+ =======
+
+   TODO
+   DONE
+
+-----------------------------------------------------------------------
+ TODO
+ ====
+
+   1 2014- 5- 2 define a dns domain for the application
+                (e.g. open-freelance-accounting.org)
+
+   2 2014- 5- 2 ofa.doap & configure.ac: have a web site
+
+   3 2014- 5- 2 ofa.doap: have a download page
+
+   4 2014- 5- 2 ofa.doap: have a bug system
+
+   5 2014- 5- 2 ofa.doap: have a mailing list
+
+   6 2014- 5- 2 ofa_application_on_version: to be written
+
+   7 2014- 5- 2 have a preference to set the application menu on the
+                top bar (gnome-shell) or on the main windows
+
+   8 2014- 5- 2 ofa_application_on_about: to be written
+
+   9 2014- 5- 3 ofa_application_on_new: to be written
+
+  10 2014- 5- 3 ofa_application_on_open: to be written
+
+  13
+
+-----------------------------------------------------------------------
+ DONE
+ ====
+
+  11 2014- 5- 3 Alt+F4: application gracefully exits and main window and
+                application are correctly finalized - should intercept
+                the keystroke to ask the user (quit requested)
+     2014- 5- 3 done (svn commit #3355)
+
+  12 2014- 5- 3 Control-Q: exit the application without finalizing the
+                objects
+     2014- 5- 3 done (svn commit # 3356)
+
+-----------------------------------------------------------------------
+ P. Wieser - Last updated on 2014, may 2nd
