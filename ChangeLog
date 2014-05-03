@@ -1,0 +1,35 @@
+2014-05-02 Pierre Wieser <pwieser@trychlos.org>
+
+	Project creation.
+
+	* AUTHORS:
+	* Changelog:
+	* configure.ac:
+	* COPYING:
+	* COPYING-DOCS:
+	* m4/Makefile.am:
+	* m4/ofa-check-for-gtk.m4:
+	* m4/ofa-check-module.m4:
+	* m4/ofa-compiler.m4:
+	* m4/ofa-maintainer.m4:
+	* maintainer/Makefile.am:
+	* maintainer/README:
+	* maintainer/run-autogen.sh:
+	* MAINTAINERS:
+	* Makefile.am:
+	* NEWS:
+	* ofa.doap:
+	* po/POTFILES.in:
+	* po/POTFILES.skip:
+	* README:
+	* src/Makefile.am:
+	* src/ui/main.c:
+	* src/ui/ofa-app-menubar.ui:
+	* src/ui/ofa-application.c:
+	* src/ui/ofa-application.h:
+	* src/ui/ofa-main-window.c:
+	* src/ui/ofa-main-window.h:
+	* TODO: New files.
+
+-----------------------------------------------------------------------
+ $Id$
