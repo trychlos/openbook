@@ -47,17 +47,18 @@ struct _ofaMainWindowPrivate {
 
 static GtkApplicationWindowClass *st_parent_class = NULL;
 
-static GType register_type( void );
-static void  class_init( ofaMainWindowClass *klass );
-static void  instance_init( GTypeInstance *instance, gpointer klass );
-static void  instance_dispose( GObject *window );
-static void  instance_finalize( GObject *window );
+static GType    register_type( void );
+static void     class_init( ofaMainWindowClass *klass );
+static void     instance_init( GTypeInstance *instance, gpointer klass );
+static void     instance_dispose( GObject *window );
+static void     instance_finalize( GObject *window );
+
+static gboolean on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
+static gboolean is_willing_to_quit( ofaMainWindow *window );
 
 #if 0
 /* application termination */
-static gboolean   on_base_quit_requested( ofaApplication *application, ofaMainWindow *window );
-static gboolean   on_delete_event( GtkWidget *toplevel, GdkEvent *event, ofaMainWindow *window );
-static gboolean   warn_modified( ofaMainWindow *window );
+static gboolean   warn_modified( ofaMainWindo w *window );
 #endif
 
 GType
@@ -192,5 +193,56 @@ ofa_main_window_new( const ofaApplication *application )
 			"application", application,
 			NULL );
 
+	g_signal_connect( window, "delete-event", G_CALLBACK( on_delete_event ), NULL );
+
 	return( window );
+}
+
+/*
+ * triggered when the user clicks on the top right [X] button
+ * returns %TRUE to stop the signal to be propagated (which would cause
+ * the window to be destroyed); instead we gracefully quit the application.
+ * Or, in other terms:
+ * If you return FALSE in the "delete_event" signal handler, GTK will
+ * emit the "destroy" signal. Returning TRUE means you don't want the
+ * window to be destroyed.
+ */
+static gboolean
+on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_delete_event";
+
+	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( toplevel ), FALSE );
+
+	g_debug( "%s: toplevel=%p (%s), event=%p, user_data=%p",
+			thisfn,
+			( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ),
+			( void * ) event, ( void * ) user_data );
+
+	return( !is_willing_to_quit( OFA_MAIN_WINDOW( toplevel )));
+}
+
+static gboolean
+is_willing_to_quit( ofaMainWindow *window )
+{
+	GtkWidget *dialog;
+	gint response;
+
+	dialog = gtk_message_dialog_new(
+			GTK_WINDOW( window ),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE,
+			_( "Etes-vous sûr de vouloir quitter l'application ?" ));
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_QUIT, GTK_RESPONSE_OK,
+			NULL );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
 }
