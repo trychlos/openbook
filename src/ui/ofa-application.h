@@ -34,6 +34,12 @@
  * @include: ui/ofa-application.h
  *
  * #ofaApplication is the main class for the main openbook application.
+ *
+ * As of v 0.1 (svn commit #3356), the application is not supposed to be
+ * unique. Running several instances of the program from the command-line
+ * juste create several instances of the application, each one believing
+ * it is the primary instance of a new application. Each ofaApplication
+ * is considered as a primary instance, thus creating its own ofaMainWindow.
  */
 
 #include <gtk/gtk.h>
