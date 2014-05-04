@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Id$ -->
 <interface>
   <!-- interface-requires gtk+ 3.6 -->
   <object class="GtkAssistant" id="DossierNewAssistant">
@@ -27,6 +26,8 @@ This definition will mainly consist in defining a new data source, possibly with
           <object class="GtkGrid" id="p1-grid1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="row_spacing">3</property>
+            <property name="column_spacing">3</property>
             <child>
               <object class="GtkLabel" id="p1-label1">
                 <property name="visible">True</property>
@@ -74,18 +75,7 @@ This definition will mainly consist in defining a new data source, possibly with
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="p1-provider">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="has_tooltip">True</property>
-                <property name="tooltip_text" translatable="yes">The data source provider is the type of the SGBD which will hosts the data of the new dossier.</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
+              <placeholder />
             </child>
             <child>
               <object class="GtkLabel" id="p1-label3">
@@ -127,7 +117,7 @@ This definition will mainly consist in defining a new data source, possibly with
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Selecting the data source provider</property>
+        <property name="title" translatable="yes">Select the data source provider</property>
       </packing>
     </child>
     <child>
@@ -139,7 +129,7 @@ This definition will mainly consist in defining a new data source, possibly with
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Defining needed data source properties</property>
+        <property name="title" translatable="yes">Define needed properties</property>
       </packing>
     </child>
     <child>
@@ -151,7 +141,7 @@ This definition will mainly consist in defining a new data source, possibly with
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Defining administration account</property>
+        <property name="title" translatable="yes">Define administration account</property>
       </packing>
     </child>
     <child>
@@ -164,7 +154,7 @@ This definition will mainly consist in defining a new data source, possibly with
       </object>
       <packing>
         <property name="page_type">confirm</property>
-        <property name="title" translatable="yes">Summary</property>
+        <property name="title" translatable="yes">Check before create</property>
       </packing>
     </child>
     <child>

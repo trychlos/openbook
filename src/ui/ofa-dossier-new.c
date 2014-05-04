@@ -85,7 +85,7 @@ enum {
 
 #define PROP_TOPLEVEL                   "dossier-new-prop-toplevel"
 
-static const gchar       *st_ui_xml   = PKGUIDIR "/ofa-assistant-dossier-new.ui";
+static const gchar       *st_ui_xml   = PKGUIDIR "/ofa-dossier-new.ui";
 static const gchar       *st_ui_id    = "DossierNewAssistant";
 
 static GObjectClass *st_parent_class  = NULL;
@@ -441,8 +441,6 @@ do_init_p0_intro( ofaDossierNew *self, GtkWidget *page )
 			thisfn, ( void * ) self, ( void * ) page );
 
 	gtk_assistant_set_page_complete( self->private->assistant, page, TRUE );
-
-	gtk_widget_show_all( page );
 }
 
 static void
@@ -476,11 +474,11 @@ do_init_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page )
 	if( grid ){
 		widget = gdaui_provider_selector_new();
 		gtk_grid_attach( grid, widget, 1,1,1,1 );
+		gtk_widget_show( widget );
+
 	} else {
 		g_warning( "%s: unable to find 'p1-grid1' widget", thisfn );
 	}
-
-	gtk_widget_show_all( page );
 }
 
 static GtkWidget *
