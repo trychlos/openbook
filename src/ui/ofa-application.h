@@ -80,21 +80,15 @@ typedef struct {
 /**
  * Properties defined by the ofaApplication class.
  *
- * @OFA_PROP_ARGC:             count of arguments in command-line.
- * @OFA_PROP_ARGV:             array of command-line arguments.
  * @OFA_PROP_OPTIONS:          array of command-line options descriptions.
  * @OFA_PROP_APPLICATION_NAME: application name.
  * @OFA_PROP_DESCRIPTION:      short description.
  * @OFA_PROP_ICON_NAME:        icon name.
- * @OFA_PROP_CODE:             return code of the application
  */
-#define OFA_PROP_ARGC				"ofa-application-prop-argc"
-#define OFA_PROP_ARGV				"ofa-application-prop-argv"
 #define OFA_PROP_OPTIONS			"ofa-application-prop-options"
 #define OFA_PROP_APPLICATION_NAME	"ofa-application-prop-name"
 #define OFA_PROP_DESCRIPTION		"ofa-application-prop-description"
 #define OFA_PROP_ICON_NAME			"ofa-application-prop-icon-name"
-#define OFA_PROP_CODE				"ofa-application-prop-code"
 
 /**
  * ofaExitCode:

@@ -33,6 +33,7 @@
 #include <glib/gprintf.h>
 
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-dossier-new.h"
 
 /* private class data
  */
@@ -43,17 +44,21 @@ struct _ofaApplicationClassPrivate {
 /* private instance data
  */
 struct _ofaApplicationPrivate {
-	gboolean      dispose_has_run;
+	gboolean       dispose_has_run;
 
 	/* properties
 	 */
-	int           argc;
-	GStrv         argv;
-	GOptionEntry *options;
-	gchar        *application_name;
-	gchar        *description;
-	gchar        *icon_name;
-	int           code;
+	GOptionEntry  *options;
+	gchar         *application_name;
+	gchar         *description;
+	gchar         *icon_name;
+
+	/* internals
+	 */
+	int            argc;
+	GStrv          argv;
+	int            code;
+	ofaMainWindow *main_window;
 };
 
 /* class properties
@@ -61,13 +66,10 @@ struct _ofaApplicationPrivate {
 enum {
 	OFA_PROP_0,
 
-	OFA_PROP_ARGC_ID,
-	OFA_PROP_ARGV_ID,
 	OFA_PROP_OPTIONS_ID,
 	OFA_PROP_APPLICATION_NAME_ID,
 	OFA_PROP_DESCRIPTION_ID,
 	OFA_PROP_ICON_NAME_ID,
-	OFA_PROP_CODE_ID,
 
 	OFA_PROP_N_PROPERTIES
 };
@@ -119,7 +121,7 @@ static const GActionEntry st_app_entries[] = {
 };
 
 static const gchar  *st_appmenu_xml = PKGUIDIR "/ofa-app-menubar.ui";
-static const gchar  *st_appmenu_id = "app-menu";
+static const gchar  *st_appmenu_id  = "app-menu";
 
 
 GType
@@ -181,22 +183,6 @@ class_init( ofaApplicationClass *klass )
 	application_class->activate = application_activate;
 	application_class->open = application_open;
 
-	g_object_class_install_property( object_class, OFA_PROP_ARGC_ID,
-			g_param_spec_int(
-					OFA_PROP_ARGC,
-					"Arguments count",
-					"The count of command-line arguments",
-					0, 65535, 0,
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	g_object_class_install_property( object_class, OFA_PROP_ARGV_ID,
-			g_param_spec_boxed(
-					OFA_PROP_ARGV,
-					"Arguments",
-					"The array of command-line arguments",
-					G_TYPE_STRV,
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
 	g_object_class_install_property( object_class, OFA_PROP_OPTIONS_ID,
 			g_param_spec_pointer(
 					OFA_PROP_OPTIONS,
@@ -226,14 +212,6 @@ class_init( ofaApplicationClass *klass )
 					"Icon name",
 					"The name of the icon of the application",
 					"",
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	g_object_class_install_property( object_class, OFA_PROP_CODE_ID,
-			g_param_spec_int(
-					OFA_PROP_CODE,
-					"Return code",
-					"The return code of the application",
-					-127, 127, 0,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	klass->private = g_new0( ofaApplicationClassPrivate, 1 );
@@ -268,14 +246,6 @@ instance_get_property( GObject *object, guint property_id, GValue *value, GParam
 	if( !self->private->dispose_has_run ){
 
 		switch( property_id ){
-			case OFA_PROP_ARGC_ID:
-				g_value_set_int( value, self->private->argc );
-				break;
-
-			case OFA_PROP_ARGV_ID:
-				g_value_set_boxed( value, self->private->argv );
-				break;
-
 			case OFA_PROP_OPTIONS_ID:
 				g_value_set_pointer( value, self->private->options );
 				break;
@@ -290,10 +260,6 @@ instance_get_property( GObject *object, guint property_id, GValue *value, GParam
 
 			case OFA_PROP_ICON_NAME_ID:
 				g_value_set_string( value, self->private->icon_name );
-				break;
-
-			case OFA_PROP_CODE_ID:
-				g_value_set_int( value, self->private->code );
 				break;
 
 			default:
@@ -314,17 +280,6 @@ instance_set_property( GObject *object, guint property_id, const GValue *value, 
 	if( !self->private->dispose_has_run ){
 
 		switch( property_id ){
-			case OFA_PROP_ARGC_ID:
-				self->private->argc = g_value_get_int( value );
-				break;
-
-			case OFA_PROP_ARGV_ID:
-				if( self->private->argv ){
-					g_boxed_free( G_TYPE_STRV, self->private->argv );
-				}
-				self->private->argv = g_value_dup_boxed( value );
-				break;
-
 			case OFA_PROP_OPTIONS_ID:
 				self->private->options = g_value_get_pointer( value );
 				break;
@@ -342,10 +297,6 @@ instance_set_property( GObject *object, guint property_id, const GValue *value, 
 			case OFA_PROP_ICON_NAME_ID:
 				g_free( self->private->icon_name );
 				self->private->icon_name = g_value_dup_string( value );
-				break;
-
-			case OFA_PROP_CODE_ID:
-				self->private->code = g_value_get_int( value );
 				break;
 
 			default:
@@ -411,11 +362,12 @@ ofa_application_new( void )
 	ofaApplication *application;
 
 	application = g_object_new( OFA_TYPE_APPLICATION,
-			"application-id", st_application_id,
-			"flags",          st_application_flags,
-			NULL );
 
-	g_object_set( G_OBJECT( application ),
+			/* GApplication properties */
+			"application-id",          st_application_id,
+			"flags",                   st_application_flags,
+
+			/* ofaApplication properties */
 			OFA_PROP_OPTIONS,          st_option_entries,
 			OFA_PROP_APPLICATION_NAME, gettext( st_application_name ),
 			OFA_PROP_DESCRIPTION,      gettext( st_description ),
@@ -500,7 +452,7 @@ application_startup( GApplication *application )
 	ofaApplication *appli;
 	GtkBuilder *builder;
 	GMenuModel *menu;
-	GError *error = NULL;
+	GError *error;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
@@ -518,7 +470,11 @@ application_startup( GApplication *application )
 	        st_app_entries, G_N_ELEMENTS( st_app_entries ),
 	        ( gpointer ) appli );
 
-	/* define a traditional menubar */
+	/* define a traditional menubar
+	 * the program will abort if GtkBuilder is not able to be parsed
+	 * from the given file
+	 */
+	error = NULL;
 	builder = gtk_builder_new();
 	if( gtk_builder_add_from_file( builder, st_appmenu_xml, &error )){
 		menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_appmenu_id ));
@@ -564,16 +520,16 @@ application_activate( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_activate";
 	ofaApplication *appli;
-	ofaMainWindow *window;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
 	appli = OFA_APPLICATION( application );
 
-	window = ofa_main_window_new( appli );
-	g_debug( "%s: main window instanciated at %p", thisfn, window );
-	gtk_window_present( GTK_WINDOW( window ));
+	appli->private->main_window = ofa_main_window_new( appli );
+	g_debug( "%s: main window instanciated at %p", thisfn, appli->private->main_window );
+
+	gtk_window_present( GTK_WINDOW( appli->private->main_window ));
 }
 
 /*
@@ -595,25 +551,20 @@ application_open( GApplication *application, GFile **files, gint n_files, const 
 {
 	static const gchar *thisfn = "ofa_application_open";
 	ofaApplication *appli;
-	GList *windows;
-	ofaMainWindow *window;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
 	appli = OFA_APPLICATION( application );
 
-	windows = gtk_application_get_windows( GTK_APPLICATION( appli ));
-	if( windows ){
-		window = OFA_MAIN_WINDOW( windows->data );
-	} else {
-		window = ofa_main_window_new( appli );
+	if( !appli->private->main_window ){
+		appli->private->main_window = ofa_main_window_new( appli );
 	}
 
 	/*for (i = 0; i < n_files; i++)
 	    example_app_window_open (win, files[i]);*/
 
-	gtk_window_present( GTK_WINDOW( window ));
+	gtk_window_present( GTK_WINDOW( appli->private->main_window ));
 }
 
 /*
@@ -710,16 +661,17 @@ manage_options( ofaApplication *application )
 static void
 on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-#if 0
 	static const gchar *thisfn = "ofa_application_on_new";
-	ofaApplication *application;
+	ofaApplicationPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	application = OFA_APPLICATION( user_data );
-#endif
+	priv = OFA_APPLICATION( user_data )->private;
+
+	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+	ofa_dossier_new_run( priv->main_window );
 }
 
 static void

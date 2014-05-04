@@ -44,6 +44,8 @@ openbook_SOURCES = \
 	main.c												\
 	ofa-application.c									\
 	ofa-application.h									\
+	ofa-dossier-new.c									\
+	ofa-dossier-new.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	$(BUILT_SOURCES)									\
@@ -58,6 +60,7 @@ actions_files = \
 	$(NULL)
 
 ui_files = \
+	ofa-dossier-new.ui									\
 	$(NULL)
 
 images_files = \

@@ -33,7 +33,23 @@
 
   10 2014- 5- 3 ofa_application_on_open: to be written
 
-  13
+  13 2014- 5- 4 cancel on escape in dossier_new assistant
+
+  14 2014- 5- 4 have a preference: assistant cancel on escape
+
+  15 2014- 5- 4 take into account cancel on escape preference in
+                dossier_new assistant
+
+  16 2014- 5- 4 preference: ask confirmation when clicking cancel in
+                an assistant
+
+  17 2014- 5- 4 preference: ask confirmation when hitting escape in
+                an assistant
+
+  18 2014- 5- 4 preference: ask confirmation when quitting the
+                 application
+
+  19
 
 -----------------------------------------------------------------------
  DONE

@@ -1,6 +1,14 @@
+2014-05-04 Pierre Wieser <pwieser@trychlos.org>
+
+	Version 0.2
+
+	* src/ui/ofa-dossier-new.c:
+	* src/ui/ofa-dossier-new.h:
+	* src/ui/ofa-dossier-new.ui: New files.
+
 2014-05-02 Pierre Wieser <pwieser@trychlos.org>
 
-	Project creation.
+	Project creation v 0.1
 
 	* AUTHORS:
 	* Changelog:

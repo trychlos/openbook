@@ -43,6 +43,12 @@ struct _ofaMainWindowClassPrivate {
  */
 struct _ofaMainWindowPrivate {
 	gboolean dispose_has_run;
+
+	/* properties
+	 */
+
+	/* internals
+	 */
 };
 
 static GtkApplicationWindowClass *st_parent_class = NULL;
