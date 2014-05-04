@@ -49,7 +49,11 @@
   18 2014- 5- 4 preference: ask confirmation when quitting the
                  application
 
-  19
+  19 2014- 5- 4 Dossier/New - page p1: provider selection: fix the order
+                of the focus of the fields (provider selector is the first
+                but should be the second)
+
+  20
 
 -----------------------------------------------------------------------
  DONE

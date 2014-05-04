@@ -29,6 +29,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <glib/gprintf.h>
 #include <libgda/libgda.h>
 #include <libgda-ui/libgda-ui.h>
 
@@ -71,10 +72,12 @@ struct _ofaDossierNewPrivate {
 	/* internals
 	 */
 	GtkAssistant      *assistant;
+	gboolean           p1_page_initialized;
 	gchar             *p1_ds_name;
 	GdaServerProvider *p1_provider_obj;
-	gchar             *p1_provider_label;
+	gchar             *p1_provider_name;
 	gchar             *p1_ds_label;
+	gchar             *p2_prev_provider_name;
 };
 
 /* class properties
@@ -105,13 +108,14 @@ static void       instance_finalize( GObject *instance );
 static void       do_initialize_assistant( ofaDossierNew *self );
 static void       on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self );
 static void       do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page );
-static void       do_init_p0_intro( ofaDossierNew *self, GtkWidget *page );
 static void       do_prepare_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page );
 static void       do_init_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page );
 static void       on_p1_ds_name_changed( GtkEntry *widget, ofaDossierNew *self );
 static void       on_p1_provider_changed( GtkComboBox *widget, ofaDossierNew *self );
 static void       on_p1_ds_label_changed( GtkEntry *widget, ofaDossierNew *self );
 static void       check_for_p1_complete( ofaDossierNew *self );
+static void       do_prepare_p2_provider_infos( ofaDossierNew *self, GtkWidget *page );
+static void       do_init_p2_provider_infos( ofaDossierNew *self, GtkWidget *page );
 static void       on_apply( GtkAssistant *assistant, ofaDossierNew *self );
 static void       on_cancel( GtkAssistant *assistant, ofaDossierNew *self );
 static gboolean   is_willing_to_quit( ofaDossierNew *self );
@@ -119,6 +123,7 @@ static void       on_close( GtkAssistant *assistant, ofaDossierNew *self );
 static void       do_close( ofaDossierNew *self );
 static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
 static GtkWidget *container_get_child_by_name( GtkContainer *container, const gchar *name );
+static GtkWidget *container_get_child_by_type( GtkContainer *container, GType type );
 
 GType
 ofa_dossier_new_get_type( void )
@@ -305,7 +310,8 @@ instance_dispose( GObject *window )
 
 		g_free( self->private->p1_ds_name );
 		g_free( self->private->p1_ds_label );
-		g_free( self->private->p1_provider_label );
+		g_free( self->private->p1_provider_name );
+		g_free( self->private->p2_prev_provider_name );
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
@@ -402,6 +408,10 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self )
 			case ASSIST_PAGE_DSN_DEFINITION:
 				do_prepare_p1_dsn_definition( self, page );
 				break;
+
+			case ASSIST_PAGE_PROVIDER_INFOS:
+				do_prepare_p2_provider_infos( self, page );
+				break;
 		}
 	}
 }
@@ -410,26 +420,11 @@ static void
 do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p0_intro";
-	static gboolean page_initialized = FALSE;
 
 	g_debug( "%s: self=%p, page=%p (%s)",
 			thisfn,
 			( void * ) self,
 			( void * ) page, G_OBJECT_TYPE_NAME( page ));
-
-	if( !page_initialized ){
-		do_init_p0_intro( self, page );
-		page_initialized = TRUE;
-	}
-}
-
-static void
-do_init_p0_intro( ofaDossierNew *self, GtkWidget *page )
-{
-	static const gchar *thisfn = "ofa_dossier_new_do_init_p0_intro";
-
-	g_debug( "%s: self=%p, page=%p",
-			thisfn, ( void * ) self, ( void * ) page );
 
 	gtk_assistant_set_page_complete( self->private->assistant, page, TRUE );
 }
@@ -438,16 +433,15 @@ static void
 do_prepare_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p1_dsn_definition";
-	static gboolean page_initialized = FALSE;
 
 	g_debug( "%s: self=%p, page=%p (%s)",
 			thisfn,
 			( void * ) self,
 			( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	if( !page_initialized ){
+	if( !self->private->p1_page_initialized ){
 		do_init_p1_dsn_definition( self, page );
-		page_initialized = TRUE;
+		self->private->p1_page_initialized = TRUE;
 	}
 }
 
@@ -502,8 +496,8 @@ on_p1_provider_changed( GtkComboBox *widget, ofaDossierNew *self )
 	const gchar *label;
 
 	label = gdaui_provider_selector_get_provider( GDAUI_PROVIDER_SELECTOR( widget ));
-	g_free( self->private->p1_provider_label );
-	self->private->p1_provider_label = g_strdup( label );
+	g_free( self->private->p1_provider_name );
+	self->private->p1_provider_name = g_strdup( label );
 	self->private->p1_provider_obj =
 			gdaui_provider_selector_get_provider_obj( GDAUI_PROVIDER_SELECTOR( widget ));;
 
@@ -530,6 +524,163 @@ check_for_p1_complete( ofaDossierNew *self )
 	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_DSN_DEFINITION );
 	gtk_assistant_set_page_complete( priv->assistant, page,
 			priv->p1_ds_name && g_utf8_strlen( priv->p1_ds_name, -1 ) && priv->p1_provider_obj );
+}
+
+/*
+ * the provider infos page must be rebuilt each time the user changes
+ * its provider selection
+ */
+static void
+do_prepare_p2_provider_infos( ofaDossierNew *self, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p2_provider_infos";
+
+	g_debug( "%s: self=%p, page=%p (%s)",
+			thisfn,
+			( void * ) self,
+			( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	g_return_if_fail( self->private->p1_provider_name );
+	g_return_if_fail( GDA_IS_SERVER_PROVIDER( self->private->p1_provider_obj ));
+
+	if( !self->private->p2_prev_provider_name ||
+			g_utf8_collate( self->private->p2_prev_provider_name, self->private->p1_provider_name )){
+
+		do_init_p2_provider_infos( self, page );
+		g_free( self->private->p2_prev_provider_name );
+		self->private->p2_prev_provider_name = g_strdup( self->private->p1_provider_name );
+	}
+}
+
+static void
+do_init_p2_provider_infos( ofaDossierNew *self, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_dossier_new_do_init_p2_provider_infos";
+	GtkGrid *grid;
+	GdaProviderInfo *infos;
+	GtkLabel *label;
+	gchar *content;
+	gint row, i;
+	GdaHolder *holder;
+	GType type;
+	gboolean mandatory;
+	const GValue *default_value;
+	/*GtkEntry *entry;
+	GtkSwitch *swit;*/
+
+	g_debug( "%s: self=%p, page=%p",
+			thisfn, ( void * ) self, ( void * ) page );
+
+	g_return_if_fail( GTK_IS_BOX( page ));
+
+	infos = gda_config_get_provider_info( self->private->p1_provider_name );
+	if( !infos ){
+		g_warning( "%s: unable to get '%s' provider informations",
+				thisfn, self->private->p1_provider_name );
+		return;
+	}
+
+	grid = GTK_GRID( container_get_child_by_type( GTK_CONTAINER( page ), GTK_TYPE_GRID ));
+	if( grid ){
+		gtk_widget_destroy( GTK_WIDGET( grid ));
+	}
+	grid = GTK_GRID( gtk_grid_new());
+	gtk_grid_set_column_spacing( grid, 3 );
+	gtk_grid_set_row_spacing( grid, 5 );
+	gtk_box_pack_start( GTK_BOX( page ), GTK_WIDGET( grid ), TRUE, TRUE, 0 );
+
+	row = 0;
+	label = GTK_LABEL( gtk_label_new( _( "Provider identifier :" )));
+	gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_END );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 0, row, 1, 1 );
+
+	label = GTK_LABEL( gtk_label_new( infos->id ));
+	gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_START );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 1, row, 1, 1 );
+
+	row += 1;
+	label = GTK_LABEL( gtk_label_new( _( "Location :" )));
+	gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_END );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 0, row, 1, 1 );
+
+	label = GTK_LABEL( gtk_label_new( infos->location ));
+	gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_START );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 1, row, 1, 1 );
+
+	row += 1;
+	label = GTK_LABEL( gtk_label_new( _( "Description :" )));
+	gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_END );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 0, row, 1, 1 );
+
+	label = GTK_LABEL( gtk_label_new( infos->description ));
+	gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_START );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 1, row, 1, 1 );
+
+	row += 1;
+	label = GTK_LABEL( gtk_label_new( NULL ));
+	content = g_strdup_printf( "<b>%s</b>", _( "DSN Parameters" ));
+	gtk_label_set_markup( label, content );
+	g_free( content );
+	gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_START );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 0, row, 2, 1 );
+
+	/* between MySQL and SQLite, we have three different value types:
+	 * - gchararray
+	 * - gboolean
+	 * - gint.
+	 * None of them have any default value
+	 */
+	for( i = 0 ; ; ++i ){
+		holder = gda_set_get_nth_holder( infos->dsn_params, i );
+		if( !holder ){
+			break;
+		}
+		type = gda_holder_get_g_type( holder );
+		mandatory = gda_holder_get_not_null( holder );
+		default_value = gda_holder_get_default_value( holder );
+#if 0
+		g_debug( "%s: i=%d, holder_id=%s, type=%s, nullable=%s, value=%p, default=%s",
+				thisfn, i,
+				gda_holder_get_id( holder ),
+				g_type_name( type ),
+				( mandatory ? "No":"Yes" ),
+				default_value, g_value_get_string( default_value ));
+#endif
+		row += 1;
+		label = GTK_LABEL( gtk_label_new( gda_holder_get_id( holder )));
+		gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_END );
+		gtk_grid_attach( grid, GTK_WIDGET( label ), 0, row, 1, 1 );
+	}
+
+	row += 1;
+	label = GTK_LABEL( gtk_label_new( NULL ));
+	content = g_strdup_printf( "<b>%s</b>", _( "Authentification Parameters" ));
+	gtk_label_set_markup( label, content );
+	g_free( content );
+	gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_START );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 0, row, 2, 1 );
+
+	for( i = 0 ; ; ++i ){
+		holder = gda_set_get_nth_holder( infos->auth_params, i );
+		if( !holder ){
+			break;
+		}
+		type = gda_holder_get_g_type( holder );
+		mandatory = gda_holder_get_not_null( holder );
+		default_value = gda_holder_get_default_value( holder );
+		g_debug( "%s: i=%d, holder_id=%s, type=%s, nullable=%s, value=%p, default=%s",
+				thisfn, i,
+				gda_holder_get_id( holder ),
+				g_type_name( type ),
+				( mandatory ? "No":"Yes" ),
+				default_value, g_value_get_string( default_value ));
+		row += 1;
+		label = GTK_LABEL( gtk_label_new( gda_holder_get_id( holder )));
+		gtk_widget_set_halign( GTK_WIDGET( label ), GTK_ALIGN_END );
+		gtk_grid_attach( grid, GTK_WIDGET( label ), 0, row, 1, 1 );
+	}
+
+	gtk_widget_show_all( page );
 }
 
 static void
@@ -655,6 +806,32 @@ container_get_child_by_name( GtkContainer *container, const gchar *name )
 			}
 			if( GTK_IS_CONTAINER( child )){
 				found = container_get_child_by_name( GTK_CONTAINER( child ), name );
+			}
+		}
+	}
+
+	g_list_free( children );
+	return( found );
+}
+
+static GtkWidget *
+container_get_child_by_type( GtkContainer *container, GType type )
+{
+	GList *children = gtk_container_get_children( container );
+	GList *ic;
+	GtkWidget *found = NULL;
+	GtkWidget *child;
+
+	for( ic = children ; ic && !found ; ic = ic->next ){
+
+		if( GTK_IS_WIDGET( ic->data )){
+			child = GTK_WIDGET( ic->data );
+			if( G_OBJECT_TYPE( ic->data ) == type ){
+				found = GTK_WIDGET( ic->data );
+				break;
+			}
+			if( GTK_IS_CONTAINER( child )){
+				found = container_get_child_by_type( GTK_CONTAINER( child ), type );
 			}
 		}
 	}

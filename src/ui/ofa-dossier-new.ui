@@ -27,7 +27,7 @@ This definition will mainly consist in defining a new data source, possibly with
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="row_spacing">3</property>
-            <property name="column_spacing">3</property>
+            <property name="column_spacing">5</property>
             <child>
               <object class="GtkLabel" id="p1-label1">
                 <property name="visible">True</property>
@@ -75,9 +75,6 @@ This definition will mainly consist in defining a new data source, possibly with
               </packing>
             </child>
             <child>
-              <placeholder />
-            </child>
-            <child>
               <object class="GtkLabel" id="p1-label3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -107,6 +104,9 @@ This definition will mainly consist in defining a new data source, possibly with
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
+            </child>
+            <child>
+              <placeholder/>
             </child>
           </object>
           <packing>
