@@ -29,6 +29,8 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <libgda/libgda.h>
+#include <libgda-ui/libgda-ui.h>
 
 #include "ui/ofa-dossier-new.h"
 
@@ -88,20 +90,27 @@ static const gchar       *st_ui_id    = "DossierNewAssistant";
 
 static GObjectClass *st_parent_class  = NULL;
 
-static GType    register_type( void );
-static void     class_init( ofaDossierNewClass *klass );
-static void     instance_init( GTypeInstance *instance, gpointer klass );
-static void     instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec );
-static void     instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
-static void     instance_constructed( GObject *instance );
-static void     instance_dispose( GObject *instance );
-static void     instance_finalize( GObject *instance );
-static void     on_apply( GtkAssistant *assistant, ofaDossierNew *self );
-static void     on_cancel( GtkAssistant *assistant, ofaDossierNew *self );
-static gboolean is_willing_to_quit( ofaDossierNew *self );
-static void     on_close( GtkAssistant *assistant, ofaDossierNew *self );
-static void     do_close( ofaDossierNew *self );
-static void     on_prepare( GtkAssistant *assistant, ofaDossierNew *self );
+static GType      register_type( void );
+static void       class_init( ofaDossierNewClass *klass );
+static void       instance_init( GTypeInstance *instance, gpointer klass );
+static void       instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec );
+static void       instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
+static void       instance_constructed( GObject *instance );
+static void       instance_dispose( GObject *instance );
+static void       instance_finalize( GObject *instance );
+static void       do_initialize_assistant( ofaDossierNew *self );
+static void       on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self );
+static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
+static void       do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page );
+static void       do_init_p0_intro( ofaDossierNew *self, GtkWidget *page );
+static void       do_prepare_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page );
+static void       do_init_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page );
+static GtkWidget *container_get_child_by_name( GtkContainer *container, const gchar *name );
+static void       on_apply( GtkAssistant *assistant, ofaDossierNew *self );
+static void       on_cancel( GtkAssistant *assistant, ofaDossierNew *self );
+static gboolean   is_willing_to_quit( ofaDossierNew *self );
+static void       on_close( GtkAssistant *assistant, ofaDossierNew *self );
+static void       do_close( ofaDossierNew *self );
 
 GType
 ofa_dossier_new_get_type( void )
@@ -256,10 +265,7 @@ instance_constructed( GObject *window )
 		if( gtk_builder_add_from_file( builder, st_ui_xml, &error )){
 			priv->assistant = GTK_ASSISTANT( gtk_builder_get_object( builder, st_ui_id ));
 			if( priv->assistant ){
-				g_signal_connect( priv->assistant, "apply",   G_CALLBACK( on_apply ),   window );
-				g_signal_connect( priv->assistant, "cancel",  G_CALLBACK( on_cancel ),  window );
-				g_signal_connect( priv->assistant, "close",   G_CALLBACK( on_close ),   window );
-				g_signal_connect( priv->assistant, "prepare", G_CALLBACK( on_prepare ), window );
+				do_initialize_assistant( OFA_DOSSIER_NEW( window ));
 			} else {
 				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_ui_id, st_ui_xml );
 			}
@@ -325,18 +331,184 @@ void
 ofa_dossier_new_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run";
-	ofaDossierNew *self;
 
 	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p", thisfn, main_window );
 
-	self = g_object_new( OFA_TYPE_DOSSIER_NEW,
+	g_object_new( OFA_TYPE_DOSSIER_NEW,
 			PROP_TOPLEVEL, main_window,
 			NULL );
 
-	gtk_widget_show_all( GTK_WIDGET( self->private->assistant ));
 	gtk_main();
+}
+
+static void
+do_initialize_assistant( ofaDossierNew *self )
+{
+	static const gchar *thisfn = "ofa_dossier_new_do_initialize_assistant";
+	GtkAssistant *assistant;
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn,
+			( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	assistant = self->private->assistant;
+
+	g_signal_connect( assistant, "prepare", G_CALLBACK( on_prepare ), self );
+	g_signal_connect( assistant, "apply",   G_CALLBACK( on_apply ),   self );
+	g_signal_connect( assistant, "cancel",  G_CALLBACK( on_cancel ),  self );
+	g_signal_connect( assistant, "close",   G_CALLBACK( on_close ),   self );
+
+	gtk_widget_show_all( GTK_WIDGET( assistant ));
+}
+
+/*
+ * the provided 'page' is the toplevel widget of the asistant's page
+ */
+static void
+on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self )
+{
+	static const gchar *thisfn = "ofa_dossier_new_on_prepare";
+	gint page_num;
+
+	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
+	g_return_if_fail( GTK_IS_WIDGET( page ));
+	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));
+
+	if( !self->private->dispose_has_run ){
+
+		g_debug( "%s: assistant=%p, page=%p, self=%p",
+				thisfn, ( void * ) assistant, ( void * ) page, ( void * ) self );
+
+		page_num = assistant_get_page_num( assistant, page );
+		switch( page_num ){
+			case ASSIST_PAGE_INTRO:
+				do_prepare_p0_intro( self, page );
+				break;
+
+			case ASSIST_PAGE_DSN_DEFINITION:
+				do_prepare_p1_dsn_definition( self, page );
+				break;
+		}
+	}
+}
+
+/*
+ * Returns: the index of the given page, or -1 if not found
+ */
+static gint
+assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page )
+{
+	gint count, i;
+	GtkWidget *page_n;
+
+	count = gtk_assistant_get_n_pages( assistant );
+	page_n = NULL;
+	for( i=0 ; i<count ; ++i ){
+		page_n = gtk_assistant_get_nth_page( assistant, i );
+		if( page_n == page ){
+			return( i );
+		}
+	}
+
+	return( -1 );
+}
+
+static void
+do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p0_intro";
+	static gboolean page_initialized = FALSE;
+
+	g_debug( "%s: self=%p, page=%p (%s)",
+			thisfn,
+			( void * ) self,
+			( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	if( !page_initialized ){
+		do_init_p0_intro( self, page );
+		page_initialized = TRUE;
+	}
+}
+
+static void
+do_init_p0_intro( ofaDossierNew *self, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_dossier_new_do_init_p0_intro";
+
+	g_debug( "%s: self=%p, page=%p",
+			thisfn, ( void * ) self, ( void * ) page );
+
+	gtk_assistant_set_page_complete( self->private->assistant, page, TRUE );
+
+	gtk_widget_show_all( page );
+}
+
+static void
+do_prepare_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p1_dsn_definition";
+	static gboolean page_initialized = FALSE;
+
+	g_debug( "%s: self=%p, page=%p (%s)",
+			thisfn,
+			( void * ) self,
+			( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	if( !page_initialized ){
+		do_init_p1_dsn_definition( self, page );
+		page_initialized = TRUE;
+	}
+}
+
+static void
+do_init_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_dossier_new_do_init_p1_dsn_definition";
+	GtkGrid *grid;
+	GtkWidget *widget;
+
+	g_debug( "%s: self=%p, page=%p",
+			thisfn, ( void * ) self, ( void * ) page );
+
+	grid = GTK_GRID( container_get_child_by_name( GTK_CONTAINER( page ), "p1-grid1" ));
+	if( grid ){
+		widget = gdaui_provider_selector_new();
+		gtk_grid_attach( grid, widget, 1,1,1,1 );
+	} else {
+		g_warning( "%s: unable to find 'p1-grid1' widget", thisfn );
+	}
+
+	gtk_widget_show_all( page );
+}
+
+static GtkWidget *
+container_get_child_by_name( GtkContainer *container, const gchar *name )
+{
+	GList *children = gtk_container_get_children( container );
+	GList *ic;
+	GtkWidget *found = NULL;
+	GtkWidget *child;
+	const gchar *child_name;
+
+	for( ic = children ; ic && !found ; ic = ic->next ){
+
+		if( GTK_IS_WIDGET( ic->data )){
+			child = GTK_WIDGET( ic->data );
+			child_name = gtk_buildable_get_name( GTK_BUILDABLE( child ));
+			if( child_name && strlen( child_name ) && !g_ascii_strcasecmp( name, child_name )){
+				found = child;
+				break;
+			}
+			if( GTK_IS_CONTAINER( child )){
+				found = container_get_child_by_name( GTK_CONTAINER( child ), name );
+			}
+		}
+	}
+
+	g_list_free( children );
+	return( found );
 }
 
 static void
@@ -419,19 +591,4 @@ static void
 do_close( ofaDossierNew *self )
 {
 	g_object_unref( self );
-}
-
-static void
-on_prepare( GtkAssistant *assistant, ofaDossierNew *self )
-{
-	static const gchar *thisfn = "ofa_dossier_new_on_prepare";
-
-	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));
-
-	if( !self->private->dispose_has_run ){
-
-		g_debug( "%s: assistant=%p, self=%p",
-				thisfn, ( void * ) assistant, ( void * ) self );
-	}
 }

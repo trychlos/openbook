@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id$ -->
 <interface>
   <!-- interface-requires gtk+ 3.6 -->
   <object class="GtkAssistant" id="DossierNewAssistant">
@@ -73,7 +74,7 @@ This definition will mainly consist in defining a new data source, possibly with
               </packing>
             </child>
             <child>
-              <object class="GtkComboBox" id="p1-provider">
+              <object class="GtkBox" id="p1-provider">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="has_tooltip">True</property>

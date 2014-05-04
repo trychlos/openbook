@@ -29,8 +29,8 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <libgda/libgda.h>
 #include <string.h>
-#include <glib/gprintf.h>
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-new.h"
@@ -410,6 +410,7 @@ ofa_application_run_with_args( ofaApplication *application, int argc, GStrv argv
 		init_i18n( application );
 		g_set_application_name( priv->application_name );
 		gtk_window_set_default_icon_name( priv->icon_name );
+		gda_init();
 
 		if( init_gtk_args( application ) &&
 			manage_options( application )){

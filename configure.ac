@@ -79,6 +79,8 @@ glib_required=2.28
 gtk_required=3.4
 OFA_CHECK_FOR_GTK
 OFA_CHECK_MODULE([GLIB], [glib-2.0 >= ${glib_required}])
+OFA_CHECK_MODULE([GDA],  [libgda-5.0 >= 5.0])
+OFA_CHECK_MODULE([GDAUI],[libgda-ui-5.0 >= 5.0])
 
 AC_SUBST([OPENBOOK_CFLAGS])
 AC_SUBST([OPENBOOK_LIBS])
