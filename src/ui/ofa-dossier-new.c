@@ -62,15 +62,19 @@ struct _ofaDossierNewClassPrivate {
 /* private instance data
  */
 struct _ofaDossierNewPrivate {
-	gboolean       dispose_has_run;
+	gboolean           dispose_has_run;
 
 	/* properties
 	 */
-	ofaMainWindow *main_window;
+	ofaMainWindow     *main_window;
 
 	/* internals
 	 */
-	GtkAssistant  *assistant;
+	GtkAssistant      *assistant;
+	gchar             *p1_ds_name;
+	GdaServerProvider *p1_provider_obj;
+	gchar             *p1_provider_label;
+	gchar             *p1_ds_label;
 };
 
 /* class properties
@@ -100,17 +104,21 @@ static void       instance_dispose( GObject *instance );
 static void       instance_finalize( GObject *instance );
 static void       do_initialize_assistant( ofaDossierNew *self );
 static void       on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self );
-static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
 static void       do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page );
 static void       do_init_p0_intro( ofaDossierNew *self, GtkWidget *page );
 static void       do_prepare_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page );
 static void       do_init_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page );
-static GtkWidget *container_get_child_by_name( GtkContainer *container, const gchar *name );
+static void       on_p1_ds_name_changed( GtkEntry *widget, ofaDossierNew *self );
+static void       on_p1_provider_changed( GtkComboBox *widget, ofaDossierNew *self );
+static void       on_p1_ds_label_changed( GtkEntry *widget, ofaDossierNew *self );
+static void       check_for_p1_complete( ofaDossierNew *self );
 static void       on_apply( GtkAssistant *assistant, ofaDossierNew *self );
 static void       on_cancel( GtkAssistant *assistant, ofaDossierNew *self );
 static gboolean   is_willing_to_quit( ofaDossierNew *self );
 static void       on_close( GtkAssistant *assistant, ofaDossierNew *self );
 static void       do_close( ofaDossierNew *self );
+static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
+static GtkWidget *container_get_child_by_name( GtkContainer *container, const gchar *name );
 
 GType
 ofa_dossier_new_get_type( void )
@@ -295,6 +303,10 @@ instance_dispose( GObject *window )
 		gtk_main_quit();
 		gtk_widget_destroy( GTK_WIDGET( self->private->assistant ));
 
+		g_free( self->private->p1_ds_name );
+		g_free( self->private->p1_ds_label );
+		g_free( self->private->p1_provider_label );
+
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
 			G_OBJECT_CLASS( st_parent_class )->dispose( window );
@@ -394,27 +406,6 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self )
 	}
 }
 
-/*
- * Returns: the index of the given page, or -1 if not found
- */
-static gint
-assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page )
-{
-	gint count, i;
-	GtkWidget *page_n;
-
-	count = gtk_assistant_get_n_pages( assistant );
-	page_n = NULL;
-	for( i=0 ; i<count ; ++i ){
-		page_n = gtk_assistant_get_nth_page( assistant, i );
-		if( page_n == page ){
-			return( i );
-		}
-	}
-
-	return( -1 );
-}
-
 static void
 do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page )
 {
@@ -466,6 +457,7 @@ do_init_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page )
 	static const gchar *thisfn = "ofa_dossier_new_do_init_p1_dsn_definition";
 	GtkGrid *grid;
 	GtkWidget *widget;
+	GtkWidget *entry;
 
 	g_debug( "%s: self=%p, page=%p",
 			thisfn, ( void * ) self, ( void * ) page );
@@ -475,38 +467,69 @@ do_init_p1_dsn_definition( ofaDossierNew *self, GtkWidget *page )
 		widget = gdaui_provider_selector_new();
 		gtk_grid_attach( grid, widget, 1,1,1,1 );
 		gtk_widget_show( widget );
+		/* take into account the initial selection which doesn't trigger
+		 * the 'changed' signal
+		 */
+		on_p1_provider_changed( GTK_COMBO_BOX( widget ), self );
+		g_signal_connect( widget, "changed", G_CALLBACK( on_p1_provider_changed ), self );
+
+		entry = container_get_child_by_name( GTK_CONTAINER( page ), "p1-name" );
+		g_signal_connect( entry, "changed", G_CALLBACK( on_p1_ds_name_changed ), self );
+
+		entry = container_get_child_by_name( GTK_CONTAINER( page ), "p1-description" );
+		g_signal_connect( entry, "changed", G_CALLBACK( on_p1_ds_label_changed ), self );
 
 	} else {
 		g_warning( "%s: unable to find 'p1-grid1' widget", thisfn );
 	}
 }
 
-static GtkWidget *
-container_get_child_by_name( GtkContainer *container, const gchar *name )
+static void
+on_p1_ds_name_changed( GtkEntry *widget, ofaDossierNew *self )
 {
-	GList *children = gtk_container_get_children( container );
-	GList *ic;
-	GtkWidget *found = NULL;
-	GtkWidget *child;
-	const gchar *child_name;
+	const gchar *label;
 
-	for( ic = children ; ic && !found ; ic = ic->next ){
+	label = gtk_entry_get_text( widget );
+	g_free( self->private->p1_ds_name );
+	self->private->p1_ds_name = g_strdup( label );
 
-		if( GTK_IS_WIDGET( ic->data )){
-			child = GTK_WIDGET( ic->data );
-			child_name = gtk_buildable_get_name( GTK_BUILDABLE( child ));
-			if( child_name && strlen( child_name ) && !g_ascii_strcasecmp( name, child_name )){
-				found = child;
-				break;
-			}
-			if( GTK_IS_CONTAINER( child )){
-				found = container_get_child_by_name( GTK_CONTAINER( child ), name );
-			}
-		}
-	}
+	check_for_p1_complete( self );
+}
 
-	g_list_free( children );
-	return( found );
+static void
+on_p1_provider_changed( GtkComboBox *widget, ofaDossierNew *self )
+{
+	const gchar *label;
+
+	label = gdaui_provider_selector_get_provider( GDAUI_PROVIDER_SELECTOR( widget ));
+	g_free( self->private->p1_provider_label );
+	self->private->p1_provider_label = g_strdup( label );
+	self->private->p1_provider_obj =
+			gdaui_provider_selector_get_provider_obj( GDAUI_PROVIDER_SELECTOR( widget ));;
+
+	check_for_p1_complete( self );
+}
+
+static void
+on_p1_ds_label_changed( GtkEntry *widget, ofaDossierNew *self )
+{
+	const gchar *label;
+
+	label = gtk_entry_get_text( widget );
+	g_free( self->private->p1_ds_label );
+	self->private->p1_ds_label = g_strdup( label );
+}
+
+static void
+check_for_p1_complete( ofaDossierNew *self )
+{
+	GtkWidget *page;
+	ofaDossierNewPrivate *priv;
+
+	priv = self->private;
+	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_DSN_DEFINITION );
+	gtk_assistant_set_page_complete( priv->assistant, page,
+			priv->p1_ds_name && g_utf8_strlen( priv->p1_ds_name, -1 ) && priv->p1_provider_obj );
 }
 
 static void
@@ -589,4 +612,53 @@ static void
 do_close( ofaDossierNew *self )
 {
 	g_object_unref( self );
+}
+
+/*
+ * Returns: the index of the given page, or -1 if not found
+ */
+static gint
+assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page )
+{
+	gint count, i;
+	GtkWidget *page_n;
+
+	count = gtk_assistant_get_n_pages( assistant );
+	page_n = NULL;
+	for( i=0 ; i<count ; ++i ){
+		page_n = gtk_assistant_get_nth_page( assistant, i );
+		if( page_n == page ){
+			return( i );
+		}
+	}
+
+	return( -1 );
+}
+
+static GtkWidget *
+container_get_child_by_name( GtkContainer *container, const gchar *name )
+{
+	GList *children = gtk_container_get_children( container );
+	GList *ic;
+	GtkWidget *found = NULL;
+	GtkWidget *child;
+	const gchar *child_name;
+
+	for( ic = children ; ic && !found ; ic = ic->next ){
+
+		if( GTK_IS_WIDGET( ic->data )){
+			child = GTK_WIDGET( ic->data );
+			child_name = gtk_buildable_get_name( GTK_BUILDABLE( child ));
+			if( child_name && strlen( child_name ) && !g_ascii_strcasecmp( name, child_name )){
+				found = child;
+				break;
+			}
+			if( GTK_IS_CONTAINER( child )){
+				found = container_get_child_by_name( GTK_CONTAINER( child ), name );
+			}
+		}
+	}
+
+	g_list_free( children );
+	return( found );
 }
