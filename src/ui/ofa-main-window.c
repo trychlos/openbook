@@ -52,6 +52,8 @@ struct _ofaMainWindowPrivate {
 	 */
 };
 
+static gboolean pref_confirm_on_altf4 = FALSE;
+
 static GtkApplicationWindowClass *st_parent_class = NULL;
 
 static GType    register_type( void );
@@ -219,6 +221,7 @@ static gboolean
 on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_delete_event";
+	gboolean ok_to_quit;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( toplevel ), FALSE );
 
@@ -227,7 +230,9 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 			( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ),
 			( void * ) event, ( void * ) user_data );
 
-	return( !ofa_main_window_is_willing_to_quit( OFA_MAIN_WINDOW( toplevel )));
+	ok_to_quit = !pref_confirm_on_altf4 || ofa_main_window_is_willing_to_quit( OFA_MAIN_WINDOW( toplevel ));
+
+	return( !ok_to_quit );
 }
 
 gboolean
@@ -241,7 +246,7 @@ ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
-			_( "Etes-vous sûr de vouloir quitter l'application ?" ));
+			_( "Are you sure you want terminate the application ?" ));
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,

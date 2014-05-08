@@ -74,20 +74,22 @@ enum {
 	OFA_PROP_N_PROPERTIES
 };
 
+static gboolean pref_confirm_on_quit = FALSE;
+
 static       GtkApplicationClass *st_parent_class = NULL;
 
 static const gchar               *st_application_id    = "org.trychlos.openbook.ui";
 static const GApplicationFlags    st_application_flags = G_APPLICATION_NON_UNIQUE;
 
 static const gchar               *st_application_name  = N_( "Open Freelance Accounting" );
-static const gchar               *st_description       = N_( "La comptabilité pour les professionnels libéraux" );
+static const gchar               *st_description       = N_( "The double-entry accounting for the freelances" );
 static const gchar               *st_icon_name         = N_( "openbook" );
 
 static       gboolean             st_version_opt       = FALSE;
 
 static       GOptionEntry         st_option_entries[]  = {
 	{ "version"   , 'v', 0, G_OPTION_ARG_NONE, &st_version_opt,
-			N_( "Affiche la version de l'application, et termine [non]" ), NULL },
+			N_( "print the version of the application, et exit gracefully [no]" ), NULL },
 	{ NULL }
 };
 
@@ -711,7 +713,7 @@ on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	windows = gtk_application_get_windows( GTK_APPLICATION( application ));
 	if( windows ){
 		window = OFA_MAIN_WINDOW( windows->data );
-		if( ofa_main_window_is_willing_to_quit( window )){
+		if( !pref_confirm_on_quit || ofa_main_window_is_willing_to_quit( window )){
 			gtk_widget_destroy( GTK_WIDGET( window ));
 		}
 	} else {

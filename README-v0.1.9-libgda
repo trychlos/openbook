@@ -1,0 +1,20 @@
+ Open Freelance Accounting - TODO
+ $Id$
+
+ Summary
+ =======
+
+   What is this
+
+-----------------------------------------------------------------------
+ What is this
+ ============
+
+ The 0.1.9-libgda is a try to use the libgda (aka Gnome-DB) library. It
+ appears that this library seems very complex, and not of an immediate
+ use.
+
+ So just keep stuck with MariaDB (ex. MySQL) for now.
+
+-----------------------------------------------------------------------
+ P. Wieser - Last updated on 2014, may 7th

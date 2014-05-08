@@ -33,27 +33,37 @@
 
   10 2014- 5- 3 ofa_application_on_open: to be written
 
-  13 2014- 5- 4 cancel on escape in dossier_new assistant
-
   14 2014- 5- 4 have a preference: assistant cancel on escape
-
-  15 2014- 5- 4 take into account cancel on escape preference in
-                dossier_new assistant
+     2014- 5- 5 ofa-dossier-new.c: variable 'pref_quit_on_escape'
 
   16 2014- 5- 4 preference: ask confirmation when clicking cancel in
                 an assistant
+     2014- 5- 5 ofa-dossier-new.c: variable 'pref_confirm_on_cancel'
 
   17 2014- 5- 4 preference: ask confirmation when hitting escape in
                 an assistant
+     2014- 5- 5 ofa-dossier-new.c: variable 'pref_confirm_on_escape'
 
   18 2014- 5- 4 preference: ask confirmation when quitting the
                  application
+     2014- 5- 5 ofa-application.c: variable 'pref_confirm_on_quit'
+                ofa-main-window.c: variable 'pref_confirm_on_altf4'
 
-  19 2014- 5- 4 Dossier/New - page p1: provider selection: fix the order
-                of the focus of the fields (provider selector is the first
-                but should be the second)
+  20 2014- 5- 5 Assistant Dossier/New: display the asterisks (mandatory)
+                in another color (grey ? red ? blue ?)
 
-  20
+  21 2014- 5- 6 Assistant DossierNew: let the user be able to choose to
+                create a new database (if the data provider allows it)
+                or to use an existing one
+
+  22 2014- 5- 7 Assistant DossierNew: determine if an holder should be
+                hidden (the initial connection password is just entered
+                as clear text, but shouldn't) - For now, there is a bad
+                hack on the holder id 'PASSWORD'
+                (see do_init_p2_provider_params and display_p4_params
+                 functions)
+
+  23
 
 -----------------------------------------------------------------------
  DONE
@@ -62,11 +72,23 @@
   11 2014- 5- 3 Alt+F4: application gracefully exits and main window and
                 application are correctly finalized - should intercept
                 the keystroke to ask the user (quit requested)
-     2014- 5- 3 done (svn commit #3355)
+     2014- 5- 3 Done (svn commit #3355)
 
   12 2014- 5- 3 Control-Q: exit the application without finalizing the
                 objects
-     2014- 5- 3 done (svn commit # 3356)
+     2014- 5- 3 Done (svn commit # 3356)
+
+  13 2014- 5- 4 cancel on escape in dossier_new assistant
+     2014- 5- 5 Done
+
+  15 2014- 5- 4 take into account cancel on escape preference in
+                dossier_new assistant
+     2014- 5- 5 Done
+
+  19 2014- 5- 4 Dossier/New - page p1: provider selection: fix the order
+                of the focus of the fields (provider selector is the first
+                but should be the second)
+     2014- 5- 5 Done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
