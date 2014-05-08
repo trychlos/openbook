@@ -29,7 +29,6 @@
 #endif
 
 #include <glib/gi18n.h>
-#include <libgda-ui/libgda-ui.h>
 #include <stdlib.h>
 
 #include "ui/ofa-main-window.h"
@@ -202,8 +201,6 @@ ofa_main_window_new( const ofaApplication *application )
 			NULL );
 
 	g_signal_connect( window, "delete-event", G_CALLBACK( on_delete_event ), NULL );
-
-	gdaui_init();
 
 	return( window );
 }

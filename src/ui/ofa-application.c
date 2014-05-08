@@ -29,11 +29,11 @@
 #endif
 
 #include <glib/gi18n.h>
-#include <libgda/libgda.h>
 #include <string.h>
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-new.h"
+#include "ui/ofa-settings.h"
 
 /* private class data
  */
@@ -124,7 +124,6 @@ static const GActionEntry st_app_entries[] = {
 
 static const gchar  *st_appmenu_xml = PKGUIDIR "/ofa-app-menubar.ui";
 static const gchar  *st_appmenu_id  = "app-menu";
-
 
 GType
 ofa_application_get_type( void )
@@ -240,28 +239,28 @@ instance_init( GTypeInstance *application, gpointer klass )
 static void
 instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
 {
-	ofaApplication *self;
+	ofaApplicationPrivate *priv;
 
 	g_return_if_fail( OFA_IS_APPLICATION( object ));
-	self = OFA_APPLICATION( object );
+	priv = OFA_APPLICATION( object )->private;
 
-	if( !self->private->dispose_has_run ){
+	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
 			case OFA_PROP_OPTIONS_ID:
-				g_value_set_pointer( value, self->private->options );
+				g_value_set_pointer( value, priv->options );
 				break;
 
 			case OFA_PROP_APPLICATION_NAME_ID:
-				g_value_set_string( value, self->private->application_name );
+				g_value_set_string( value, priv->application_name );
 				break;
 
 			case OFA_PROP_DESCRIPTION_ID:
-				g_value_set_string( value, self->private->description );
+				g_value_set_string( value, priv->description );
 				break;
 
 			case OFA_PROP_ICON_NAME_ID:
-				g_value_set_string( value, self->private->icon_name );
+				g_value_set_string( value, priv->icon_name );
 				break;
 
 			default:
@@ -274,31 +273,31 @@ instance_get_property( GObject *object, guint property_id, GValue *value, GParam
 static void
 instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
 {
-	ofaApplication *self;
+	ofaApplicationPrivate *priv;
 
 	g_return_if_fail( OFA_IS_APPLICATION( object ));
-	self = OFA_APPLICATION( object );
+	priv = OFA_APPLICATION( object )->private;
 
-	if( !self->private->dispose_has_run ){
+	if( !priv->dispose_has_run ){
 
 		switch( property_id ){
 			case OFA_PROP_OPTIONS_ID:
-				self->private->options = g_value_get_pointer( value );
+				priv->options = g_value_get_pointer( value );
 				break;
 
 			case OFA_PROP_APPLICATION_NAME_ID:
-				g_free( self->private->application_name );
-				self->private->application_name = g_value_dup_string( value );
+				g_free( priv->application_name );
+				priv->application_name = g_value_dup_string( value );
 				break;
 
 			case OFA_PROP_DESCRIPTION_ID:
-				g_free( self->private->description );
-				self->private->description = g_value_dup_string( value );
+				g_free( priv->description );
+				priv->description = g_value_dup_string( value );
 				break;
 
 			case OFA_PROP_ICON_NAME_ID:
-				g_free( self->private->icon_name );
-				self->private->icon_name = g_value_dup_string( value );
+				g_free( priv->icon_name );
+				priv->icon_name = g_value_dup_string( value );
 				break;
 
 			default:
@@ -312,17 +311,19 @@ static void
 instance_dispose( GObject *application )
 {
 	static const gchar *thisfn = "ofa_application_instance_dispose";
-	ofaApplication *self;
+	ofaApplicationPrivate *priv;
 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
 
-	self = OFA_APPLICATION( application );
+	priv = OFA_APPLICATION( application )->private;
 
-	if( !self->private->dispose_has_run ){
+	if( !priv->dispose_has_run ){
 
 		g_debug( "%s: application=%p (%s)", thisfn, ( void * ) application, G_OBJECT_TYPE_NAME( application ));
 
-		self->private->dispose_has_run = TRUE;
+		priv->dispose_has_run = TRUE;
+
+		ofa_settings_free();
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
@@ -335,17 +336,17 @@ static void
 instance_finalize( GObject *application )
 {
 	static const gchar *thisfn = "ofa_application_instance_finalize";
-	ofaApplication *self;
+	ofaApplicationPrivate *priv;
 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
 
 	g_debug( "%s: application=%p (%s)", thisfn, ( void * ) application, G_OBJECT_TYPE_NAME( application ));
 
-	self = OFA_APPLICATION( application );
+	priv = OFA_APPLICATION( application )->private;
 
-	g_strfreev( self->private->argv );
+	g_strfreev( priv->argv );
 
-	g_free( self->private );
+	g_free( priv );
 
 	/* chain call to parent class */
 	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
@@ -412,7 +413,6 @@ ofa_application_run_with_args( ofaApplication *application, int argc, GStrv argv
 		init_i18n( application );
 		g_set_application_name( priv->application_name );
 		gtk_window_set_default_icon_name( priv->icon_name );
-		gda_init();
 
 		if( init_gtk_args( application ) &&
 			manage_options( application )){

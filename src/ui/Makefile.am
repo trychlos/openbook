@@ -34,22 +34,44 @@ AM_CPPFLAGS += \
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
 	-DG_LOG_DOMAIN=\"OFA\"								\
 	-DPKGUIDIR=\"$(ui_datadir)\"						\
+	-DSYSCONFDIR=\"$(sysconfdir)\"						\
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
 
 BUILT_SOURCES = \
+	my-marshal.c										\
+	my-marshal.h										\
 	$(NULL)
 
 openbook_SOURCES = \
 	main.c												\
+	my-int-list.c										\
+	my-int-list.h										\
+	my-settings.c										\
+	my-settings.h										\
+	my-string-list.c									\
+	my-string-list.h									\
+	my-timeout.c										\
+	my-timeout.h										\
+	my-utils.c											\
+	my-utils.h											\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
+	ofa-settings.c										\
+	ofa-settings.h										\
 	$(BUILT_SOURCES)									\
 	$(NULL)
+
+my-marshal.h: my-marshal.def $(GLIB_GENMARSHAL)
+	$(GLIB_GENMARSHAL) $< --header --prefix=my_cclosure_marshal > $@
+
+my-marshal.c: my-marshal.def $(GLIB_GENMARSHAL)
+	echo "#include \"my-marshal.h\"" > $@
+	$(GLIB_GENMARSHAL) $< --body --prefix=my_cclosure_marshal >> $@
 
 openbook_LDADD = \
 	$(OPENBOOK_LIBS)									\
@@ -94,4 +116,5 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(applications_in_files)							\
 	$(ui_data_DATA)										\
+	ofa-marshal.def										\
 	$(NULL)

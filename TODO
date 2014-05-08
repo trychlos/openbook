@@ -56,14 +56,30 @@
                 create a new database (if the data provider allows it)
                 or to use an existing one
 
-  22 2014- 5- 7 Assistant DossierNew: determine if an holder should be
-                hidden (the initial connection password is just entered
-                as clear text, but shouldn't) - For now, there is a bad
-                hack on the holder id 'PASSWORD'
-                (see do_init_p2_provider_params and display_p4_params
-                 functions)
+  23 2014- 5- 8 Add a progress page to DossierNew assistant, displaying
+                the executed SQL statements
 
-  23
+  24 2014- 5- 8 Have a configuration parameter which says if user
+                preferences supersede global ones, or if global
+                preferences must be seen as mandatory ones.
+
+  25 2014- 5- 8 ofa_utils_g_value_compare
+
+  26 2014- 5- 8 ofa_utils_g_value_dup
+
+  27 2014- 5- 8 ofa_utils_g_value_new_from_string
+
+  28 2014- 5- 8 ofa_utils_g_value_dump
+
+  29 2014- 5- 8 Define a G_TYPE_STRING_LIST GType to be used as a GValue
+
+  30 2014- 5- 8 Define a G_TYPE_INT_LIST GType to be used as a GValue
+
+  31 2014- 5- 8 Undo the actions partially done if Dossier New cannot be
+                terminated (act as a commit transaction), so that all is
+                left as this was initially if something goes wrong
+
+  32
 
 -----------------------------------------------------------------------
  DONE
@@ -89,6 +105,14 @@
                 of the focus of the fields (provider selector is the first
                 but should be the second)
      2014- 5- 5 Done
+
+  22 2014- 5- 7 Assistant DossierNew: determine if an holder should be
+                hidden (the initial connection password is just entered
+                as clear text, but shouldn't) - For now, there is a bad
+                hack on the holder id 'PASSWORD'
+                (see do_init_p2_provider_params and display_p4_params
+                 functions)
+     2014- 5- 7 Given up with 0.1.9-libgda version
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

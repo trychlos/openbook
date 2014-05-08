@@ -74,13 +74,22 @@ if test "${PKG_CONFIG}" = "no"; then
 	AC_MSG_ERROR([You need to install pkgconfig])
 fi
 
-# Oldest supported distribution as of Apr. 2013: Ubuntu 10 LTS (Gnome 2.30)
+# Oldest supported distribution as of May 2014: ?
 glib_required=2.28
 gtk_required=3.4
 OFA_CHECK_FOR_GTK
 OFA_CHECK_MODULE([GLIB], [glib-2.0 >= ${glib_required}])
-OFA_CHECK_MODULE([GDA],  [libgda-5.0 >= 5.0])
-OFA_CHECK_MODULE([GDAUI],[libgda-ui-5.0 >= 5.0])
+
+MYSQL_CLIENT([5.5.0])
+OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${MYSQL_CLIENT_CFLAGS}"
+OPENBOOK_LIBS="${OPENBOOK_LIBS} ${MYSQL_CLIENT_LIBS}"
+
+# GLib marshaling
+AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal, no)
+if test "${GLIB_GENMARSHAL}" = "no"; then
+	AC_MSG_WARN([glib2-devel installed, but glib-genmarshal not found])
+	let ofa_fatal_count+=1
+fi
 
 AC_SUBST([OPENBOOK_CFLAGS])
 AC_SUBST([OPENBOOK_LIBS])

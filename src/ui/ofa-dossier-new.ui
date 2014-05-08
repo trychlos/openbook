@@ -10,8 +10,8 @@
       <object class="GtkLabel" id="p0-label1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">This assistant will guide you in the process of defining the data envelop for your new dossier.
-This definition will mainly consist in defining a new data source, possibly with its new database, then defining a first administration account.</property>
+        <property name="label" translatable="yes">This assistant will guide you in the process of defining a new database for your new dossier.
+Hit Continue.</property>
         <property name="wrap">True</property>
       </object>
       <packing>
@@ -34,8 +34,7 @@ This definition will mainly consist in defining a new data source, possibly with
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">1</property>
-                <property name="label" translatable="yes">Select the data source _provider (*) :</property>
-                <property name="use_markup">True</property>
+                <property name="label" translatable="yes">Give a _name to your new dossier (*) :</property>
                 <property name="use_underline">True</property>
               </object>
               <packing>
@@ -48,10 +47,11 @@ This definition will mainly consist in defining a new data source, possibly with
             <child>
               <object class="GtkLabel" id="p1-label1">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="xalign">1</property>
-                <property name="label" translatable="yes">Give a _name to your new data source (*) :</property>
-                <property name="use_underline">True</property>
+                <property name="can_focus">True</property>
+                <property name="has_tooltip">True</property>
+                <property name="tooltip_text" translatable="yes">You should choose a short, descriptive, name (for example, the name of your company).</property>
+                <property name="invisible_char">●</property>
+                <property name="caps_lock_warning">False</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -63,9 +63,24 @@ This definition will mainly consist in defining a new data source, possibly with
             <child>
               <object class="GtkEntry" id="p1-name">
                 <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Give a short _description to your dossier :</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="p1-description">
+                <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="has_tooltip">True</property>
-                <property name="tooltip_text" translatable="yes">The name of the new data source will also be the name of your new dossier. You should choose a short, descriptive, name (for example, the name of your company).</property>
+                <property name="tooltip_text" translatable="yes">Your short description will be displayed along with the name of the dossier when you will have to select among all dossiers at open time.</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
               </object>
@@ -76,12 +91,90 @@ This definition will mainly consist in defining a new data source, possibly with
                 <property name="height">1</property>
               </packing>
             </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="title" translatable="yes">Identify your new dossier</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="p2-box1">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <child>
+          <object class="GtkGrid" id="p2-grid1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="row_spacing">3</property>
+            <property name="column_spacing">5</property>
             <child>
-              <object class="GtkLabel" id="p1-label3">
+              <object class="GtkLabel" id="p2-label1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">1</property>
-                <property name="label" translatable="yes">Give a short _description to your data source :</property>
+                <property name="label" translatable="yes">_Database (*) :</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="p2-dbname">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="invisible_char">●</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p2-label2">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">_Host :</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="p2-host">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="invisible_char">●</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p2-label3">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">_Port :</property>
                 <property name="use_underline">True</property>
               </object>
               <packing>
@@ -92,13 +185,10 @@ This definition will mainly consist in defining a new data source, possibly with
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="p1-description">
+              <object class="GtkEntry" id="p2-port">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="has_tooltip">True</property>
-                <property name="tooltip_text" translatable="yes">The short description will be displayed along with the name of the data source when you will have to select your dossier for opening.</property>
                 <property name="invisible_char">●</property>
-                <property name="caps_lock_warning">False</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -108,7 +198,88 @@ This definition will mainly consist in defining a new data source, possibly with
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkLabel" id="p2-label4">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">_Socket :</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">3</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="p2-socket">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="invisible_char">●</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">3</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p2-label5">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">_Account (*) :</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">4</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="p2-account">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="invisible_char">●</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">4</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p2-label6">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Pass_word (*) :</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">5</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="p2-password">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="visibility">False</property>
+                <property name="invisible_char">●</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">5</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
             </child>
           </object>
           <packing>
@@ -119,19 +290,7 @@ This definition will mainly consist in defining a new data source, possibly with
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Select the data source provider</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkBox" id="p2-box1">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <child>
-          <placeholder/>
-        </child>
-      </object>
-      <packing>
-        <property name="title" translatable="yes">Define needed properties</property>
+        <property name="title" translatable="yes">Define needed informations to connect to the server</property>
       </packing>
     </child>
     <child>
@@ -139,7 +298,7 @@ This definition will mainly consist in defining a new data source, possibly with
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <object class="GtkGrid" id="grid1">
+          <object class="GtkGrid" id="p3-grid1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="row_spacing">3</property>
@@ -151,8 +310,7 @@ This definition will mainly consist in defining a new data source, possibly with
                 <property name="xalign">0</property>
                 <property name="xpad">6</property>
                 <property name="ypad">6</property>
-                <property name="label" translatable="yes">Please define your first administrative account, the one who will have all the permissions on your dossier.
-Please, keep carefully his password, as there will be no recovery way if you lose it.</property>
+                <property name="label" translatable="yes">Please define your first administrative account, the one who will have all the permissions on your dossier.</property>
                 <property name="wrap">True</property>
               </object>
               <packing>
@@ -281,7 +439,315 @@ Please, keep carefully his password, as there will be no recovery way if you los
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <placeholder/>
+          <object class="GtkGrid" id="p4-grid1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="row_spacing">3</property>
+            <property name="column_spacing">5</property>
+            <child>
+              <object class="GtkLabel" id="p4-label1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Name of the dossier :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-dos-name">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label2">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Description :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-dos-description">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label3">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">&lt;b&gt;Connection informations&lt;/b&gt;</property>
+                <property name="use_markup">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">2</property>
+                <property name="width">2</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label4">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Database :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">3</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-db-name">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">3</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label5">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Host :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">4</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-db-host">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">4</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label6">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Port :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">5</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-db-port">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">5</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label7">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Socket :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">6</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-db-socket">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">6</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label8">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Account :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">7</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-db-account">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">7</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label9">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Password :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">8</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-db-password">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">8</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label10">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">&lt;b&gt;Administrative account&lt;/b&gt;</property>
+                <property name="use_markup">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">9</property>
+                <property name="width">2</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label11">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Account :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">10</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-adm-account">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">10</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-label12">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Password :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">11</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p4-adm-password">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">11</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
         </child>
       </object>
       <packing>
@@ -301,6 +767,11 @@ Please, keep carefully his password, as there will be no recovery way if you los
         <property name="page_type">summary</property>
         <property name="title" translatable="yes">The data source has been successfully created</property>
       </packing>
+    </child>
+    <child internal-child="action_area">
+      <object class="GtkBox" id="assistant-action_area1">
+        <property name="can_focus">False</property>
+      </object>
     </child>
   </object>
 </interface>
