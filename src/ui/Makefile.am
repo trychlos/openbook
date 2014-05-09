@@ -43,6 +43,8 @@ BUILT_SOURCES = \
 
 openbook_SOURCES = \
 	main.c												\
+	my-utils.c											\
+	my-utils.h											\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-dossier-new.c									\

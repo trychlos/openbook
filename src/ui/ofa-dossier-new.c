@@ -33,6 +33,7 @@
 #include <mysql/mysql.h>
 #include <stdlib.h>
 
+#include "ui/my-utils.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-settings.h"
 #include "ui/ofo-dossier.h"
@@ -171,10 +172,6 @@ static gboolean   is_willing_to_quit( ofaDossierNew *self );
 static void       on_close( GtkAssistant *assistant, ofaDossierNew *self );
 static void       do_close( ofaDossierNew *self );
 static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
-static GtkWidget *container_get_child_by_name( GtkContainer *container, const gchar *name );
-#if 0
-static GtkWidget *container_get_child_by_type( GtkContainer *container, GType type );
-#endif
 
 GType
 ofa_dossier_new_get_type( void )
@@ -545,7 +542,7 @@ do_init_p1_dossier( ofaDossierNew *self, GtkWidget *page )
 	g_debug( "%s: self=%p, page=%p",
 			thisfn, ( void * ) self, ( void * ) page );
 
-	entry = container_get_child_by_name( GTK_CONTAINER( page ), "p1-name" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p1-name" );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_p1_name_changed ), self );
 }
 
@@ -617,7 +614,7 @@ do_init_p2_item( ofaDossierNew *self, GtkWidget *page, const gchar *field_name, 
 {
 	GtkWidget *entry;
 
-	entry = container_get_child_by_name( GTK_CONTAINER( page ), field_name );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), field_name );
 	g_signal_connect( entry, "changed", fn, ( var ? ( gpointer ) var : ( gpointer ) self ));
 }
 
@@ -712,13 +709,13 @@ do_init_p3_account( ofaDossierNew *self, GtkWidget *page )
 	g_debug( "%s: self=%p, page=%p",
 			thisfn, ( void * ) self, ( void * ) page );
 
-	entry = container_get_child_by_name( GTK_CONTAINER( page ), "p3-account" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-account" );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_p3_account_changed ), self );
 
-	entry = container_get_child_by_name( GTK_CONTAINER( page ), "p3-password" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-password" );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_p3_password_changed ), self );
 
-	entry = container_get_child_by_name( GTK_CONTAINER( page ), "p3-bis" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-bis" );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_p3_bis_changed ), self );
 }
 
@@ -781,7 +778,7 @@ check_for_p3_complete( ofaDossierNew *self )
 				priv->p3_bis && g_utf8_strlen( priv->p3_bis, -1 ) &&
 				!g_utf8_collate( priv->p3_password, priv->p3_bis )));
 
-	label = GTK_LABEL( container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" ));
+	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" ));
 	if( are_equals ){
 		gtk_label_set_text( label, "" );
 	} else {
@@ -855,7 +852,7 @@ display_p4_param( GtkWidget *page, const gchar *field_name, const gchar *value, 
 	static const gchar *thisfn = "ofa_dossier_new_display_p4_param";
 	GtkWidget *label;
 
-	label = container_get_child_by_name( GTK_CONTAINER( page ), field_name );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), field_name );
 	if( label ){
 		if( display ){
 			gtk_label_set_text( GTK_LABEL( label ), value );
@@ -1203,59 +1200,3 @@ assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page )
 
 	return( -1 );
 }
-
-static GtkWidget *
-container_get_child_by_name( GtkContainer *container, const gchar *name )
-{
-	GList *children = gtk_container_get_children( container );
-	GList *ic;
-	GtkWidget *found = NULL;
-	GtkWidget *child;
-	const gchar *child_name;
-
-	for( ic = children ; ic && !found ; ic = ic->next ){
-
-		if( GTK_IS_WIDGET( ic->data )){
-			child = GTK_WIDGET( ic->data );
-			child_name = gtk_buildable_get_name( GTK_BUILDABLE( child ));
-			if( child_name && strlen( child_name ) && !g_ascii_strcasecmp( name, child_name )){
-				found = child;
-				break;
-			}
-			if( GTK_IS_CONTAINER( child )){
-				found = container_get_child_by_name( GTK_CONTAINER( child ), name );
-			}
-		}
-	}
-
-	g_list_free( children );
-	return( found );
-}
-
-#if 0
-static GtkWidget *
-container_get_child_by_type( GtkContainer *container, GType type )
-{
-	GList *children = gtk_container_get_children( container );
-	GList *ic;
-	GtkWidget *found = NULL;
-	GtkWidget *child;
-
-	for( ic = children ; ic && !found ; ic = ic->next ){
-
-		if( GTK_IS_WIDGET( ic->data )){
-			child = GTK_WIDGET( ic->data );
-			if( G_OBJECT_TYPE( ic->data ) == type ){
-				found = GTK_WIDGET( ic->data );
-				break;
-			}
-			if( GTK_IS_CONTAINER( child )){
-				found = container_get_child_by_type( GTK_CONTAINER( child ), type );
-			}
-		}
-	}
-
-	g_list_free( children );
-	return( found );
-}
-#endif
