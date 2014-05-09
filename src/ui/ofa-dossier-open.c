@@ -50,21 +50,27 @@ struct _ofaDossierOpenClassPrivate {
 /* private instance data
  */
 struct _ofaDossierOpenPrivate {
-	gboolean       dispose_has_run;
+	gboolean        dispose_has_run;
 
 	/* properties
 	 */
-	ofaMainWindow *main_window;
+	ofaMainWindow  *main_window;
 
 	/* internals
 	 */
-	GtkDialog     *dialog;
+	GtkDialog      *dialog;
 #if 0
-	gboolean       escape_key_pressed;
+	gboolean        escape_key_pressed;
 #endif
-	gchar         *name;
-	gchar         *account;
-	gchar         *password;
+	gchar          *name;
+	gchar          *account;
+	gchar          *password;
+
+	/* return value
+	 * the structure itself, along with its datas, will be freed by the
+	 * MainWindow signal final handler
+	 */
+	ofaOpenDossier *ood;
 };
 
 /* class properties
@@ -330,12 +336,13 @@ instance_finalize( GObject *window )
  *
  * Run the selection dialog to choose a dossier to be opened
  */
-void
+ofaOpenDossier *
 ofa_dossier_open_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
 	gint code;
+	ofaOpenDossier *ood;
 
 	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
 
@@ -353,7 +360,9 @@ ofa_dossier_open_run( ofaMainWindow *main_window )
 	}
 	while( !ok_to_terminate( self, code ));
 
+	ood = self->private->ood;
 	g_object_unref( self );
+	return( ood );
 }
 
 #if 0
@@ -526,37 +535,40 @@ do_open( ofaDossierOpen *self )
 {
 	static const gchar *thisfn = "ofa_dossier_open_do_open";
 	gboolean connected;
-	gchar *host;
-	gint port;
-	gchar *socket;
-	gchar *database;
+	ofaOpenDossier *sod;
 	MYSQL mysql;
 
-	ofa_settings_get_dossier( self->private->name, &host, &port, &socket, &database );
 	connected = FALSE;
+	sod = g_new0( ofaOpenDossier, 1 );
+	ofa_settings_get_dossier( self->private->name, &sod->host, &sod->port, &sod->socket, &sod->dbname );
 
 	mysql_init( &mysql );
 
 	if( !mysql_real_connect( &mysql,
-			host,
+			sod->host,
 			self->private->account,
 			self->private->password,
-			database,
-			port,
-			socket,
+			sod->dbname,
+			sod->port,
+			sod->socket,
 			CLIENT_MULTI_RESULTS )){
+
 		connect_error( GTK_WINDOW( self->private->dialog),
-				host, self->private->account, database, port, socket, &mysql );
+				sod->host, self->private->account, sod->dbname, sod->port, sod->socket, &mysql );
+
+		g_free( sod->host );
+		g_free( sod->socket );
+		g_free( sod->dbname );
+		g_free( sod );
 
 	} else {
 		g_debug( "%s: connection successfully opened", thisfn );
 		mysql_close( &mysql );
 		connected = TRUE;
+		sod->account = g_strdup( self->private->account );
+		sod->password = g_strdup( self->private->password );
+		self->private->ood = sod;
 	}
-
-	g_free( host );
-	g_free( socket );
-	g_free( database );
 
 	return( connected );
 }

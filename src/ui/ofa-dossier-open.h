@@ -64,9 +64,9 @@ typedef struct {
 }
 	ofaDossierOpenClass;
 
-GType ofa_dossier_open_get_type( void );
+GType           ofa_dossier_open_get_type( void );
 
-void  ofa_dossier_open_run     ( ofaMainWindow *parent );
+ofaOpenDossier *ofa_dossier_open_run     ( ofaMainWindow *parent );
 
 G_END_DECLS
 

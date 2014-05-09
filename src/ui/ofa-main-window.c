@@ -33,6 +33,8 @@
 
 #include "ui/ofa-main-window.h"
 
+static gboolean pref_confirm_on_altf4 = FALSE;
+
 /* private class data
  */
 struct _ofaMainWindowClassPrivate {
@@ -51,22 +53,26 @@ struct _ofaMainWindowPrivate {
 	 */
 };
 
-static gboolean pref_confirm_on_altf4 = FALSE;
+/* signals defined here
+ */
+enum {
+	OPEN_DOSSIER,
+	LAST_SIGNAL
+};
 
-static GtkApplicationWindowClass *st_parent_class = NULL;
+static GtkApplicationWindowClass *st_parent_class           = NULL;
+static gint                       st_signals[ LAST_SIGNAL ] = { 0 };
 
 static GType    register_type( void );
 static void     class_init( ofaMainWindowClass *klass );
 static void     instance_init( GTypeInstance *instance, gpointer klass );
+static void     instance_constructed( GObject *window );
 static void     instance_dispose( GObject *window );
 static void     instance_finalize( GObject *window );
 
 static gboolean on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-
-#if 0
-/* application termination */
-static gboolean   warn_modified( ofaMainWindo w *window );
-#endif
+static void     on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void     on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
 
 GType
 ofa_main_window_get_type( void )
@@ -116,10 +122,41 @@ class_init( ofaMainWindowClass *klass )
 	st_parent_class = g_type_class_peek_parent( klass );
 
 	object_class = G_OBJECT_CLASS( klass );
+	object_class->constructed = instance_constructed;
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
 
 	klass->private = g_new0( ofaMainWindowClassPrivate, 1 );
+
+	/*
+	 * ofaMainWindow::main-signal-open-dossier:
+	 *
+	 * This signal is to be sent to the main window when someone asks
+	 * for opening a dossier.
+	 *
+	 * Arguments are the name of the dossier, along with the connection
+	 * parameters. The connection itself is supposed to have already
+	 * been validated.
+	 *
+	 * They are passed in a ofaOpenDossier structure, that the cleanup handler
+	 * takes care of freeing.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMainWindow *window,
+	 * 						ofaOpenDossier *struct,
+	 * 						gpointer user_data );
+	 */
+	st_signals[ OPEN_DOSSIER ] = g_signal_new_class_handler(
+				MAIN_SIGNAL_OPEN_DOSSIER,
+				OFA_TYPE_MAIN_WINDOW,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_open_dossier_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_POINTER );
 }
 
 static void
@@ -138,6 +175,29 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private = g_new0( ofaMainWindowPrivate, 1 );
 	priv = self->private;
 	priv->dispose_has_run = FALSE;
+}
+
+static void
+instance_constructed( GObject *window )
+{
+	static const gchar *thisfn = "ofa_main_window_instance_constructed";
+	ofaMainWindow *self;
+
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( window ));
+
+	self = OFA_MAIN_WINDOW( window );
+
+	if( !self->private->dispose_has_run ){
+
+		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+
+		/* chain up to the parent class */
+		if( G_OBJECT_CLASS( st_parent_class )->constructed ){
+			G_OBJECT_CLASS( st_parent_class )->constructed( window );
+		}
+
+		g_signal_connect( window, MAIN_SIGNAL_OPEN_DOSSIER, G_CALLBACK( on_open_dossier ), NULL );
+	}
 }
 
 static void
@@ -255,4 +315,30 @@ ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
 	gtk_widget_destroy( dialog );
 
 	return( response == GTK_RESPONSE_OK );
+}
+
+static void
+on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_open_dossier";
+
+	g_debug( "%s: window=%p, sod=%p, user_data=%p",
+			thisfn, ( void * ) window, ( void * ) sod, ( void * ) user_data );
+}
+
+static void
+on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_open_dossier_final_handler";
+
+	g_debug( "%s: window=%p, sod=%p, user_data=%p",
+			thisfn, ( void * ) window, ( void * ) sod, ( void * ) user_data );
+
+	g_free( sod->dossier );
+	g_free( sod->host );
+	g_free( sod->socket );
+	g_free( sod->dbname );
+	g_free( sod->account );
+	g_free( sod->password );
+	g_free( sod );
 }

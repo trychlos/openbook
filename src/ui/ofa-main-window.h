@@ -65,6 +65,30 @@ typedef struct {
 }
 	ofaMainWindowClass;
 
+/**
+ *  Signal to be sent to the main window in order to ask for the opening
+ * of a dossier. See also ofaOpenDossier struct below.
+ */
+#define MAIN_SIGNAL_OPEN_DOSSIER                 "main-signal-open-dossier"
+
+/**
+ * ofaOpenDossier struct
+ *
+ * This structure should be allocated by the emitter of the signal.
+ * The final, cleanup, handler will take care of freeing the data
+ * and the structure itself
+ */
+typedef struct {
+	gchar *dossier;
+	gchar *host;
+	gint   port;
+	gchar *socket;
+	gchar *dbname;
+	gchar *account;
+	gchar *password;
+}
+	ofaOpenDossier;
+
 GType          ofa_main_window_get_type          ( void );
 
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
