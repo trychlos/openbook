@@ -49,6 +49,8 @@ openbook_SOURCES = \
 	ofa-application.h									\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
+	ofa-dossier-open.c									\
+	ofa-dossier-open.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-settings.c										\
@@ -68,6 +70,7 @@ actions_files = \
 
 ui_files = \
 	ofa-dossier-new.ui									\
+	ofa-dossier-open.ui									\
 	$(NULL)
 
 images_files = \

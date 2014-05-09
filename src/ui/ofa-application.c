@@ -33,6 +33,7 @@
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-new.h"
+#include "ui/ofa-dossier-open.h"
 #include "ui/ofa-settings.h"
 
 /* private class data
@@ -680,16 +681,17 @@ on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 static void
 on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-#if 0
-	static const gchar *thisfn = "ofa_application_on_new";
-	ofaApplication *application;
+	static const gchar *thisfn = "ofa_application_on_open";
+	ofaApplicationPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	application = OFA_APPLICATION( user_data );
-#endif
+	priv = OFA_APPLICATION( user_data )->private;
+
+	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+	ofa_dossier_open_run( priv->main_window );
 }
 
 /*

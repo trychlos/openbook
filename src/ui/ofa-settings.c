@@ -345,21 +345,38 @@ ofa_settings_free( void )
  *
  * Returns the list of all defined dossiers as a newly allocated #GSList
  * list of newly allocated strings. The returned list should be
- * #my_utils_slist_free() by the caller.
+ * #g_slist_free_full() by the caller.
  */
 GSList *
 ofa_settings_get_dossiers( void )
 {
 	static const gchar *thisfn = "ofa_settings_get_dossiers";
-	GSList *list;
+	GSList *slist;
+	gchar *prefix;
+	gint spfx;
+	gchar **array, **idx;
 
 	g_debug( "%s", thisfn );
 
 	settings_new();
-	g_warning( "%s: TO BE WRITTEN", thisfn );
-	list = NULL;
 
-	return( list );
+	prefix = g_strdup_printf( "%s ", GROUP_DOSSIER );
+	spfx = g_utf8_strlen( prefix, -1 );
+	array = g_key_file_get_groups( st_settings->private->keyfile, NULL );
+	slist = NULL;
+	idx = array;
+
+	while( *idx ){
+		if( g_str_has_prefix( *idx, prefix )){
+			slist = g_slist_prepend( slist, g_strstrip( g_strdup( *idx+spfx )));
+		}
+		idx++;
+	}
+
+	g_strfreev( array );
+	g_free( prefix );
+
+	return( slist );
 }
 
 /**
@@ -382,6 +399,7 @@ ofa_settings_set_dossier( const gchar *name, ... )
 	g_debug( "%s: name=%s", thisfn, name );
 
 	settings_new();
+
 	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
 
 	va_start( ap, name );
