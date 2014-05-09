@@ -35,6 +35,7 @@
 
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-settings.h"
+#include "ui/ofo-dossier.h"
 
 /* Export Assistant
  *
@@ -967,7 +968,7 @@ make_db_global( ofaDossierNew *self )
 	}
 
 	g_string_printf( stmt,
-			"GRANT ALL ON %s.* TO '%s' WITH GRANT OPTION",
+			"GRANT ALL ON %s.* TO '%s'@'localhost' WITH GRANT OPTION",
 			self->private->p2_dbname,
 			self->private->p3_account );
 	if( !exec_mysql_query( self, &mysql, stmt->str )){
@@ -975,7 +976,7 @@ make_db_global( ofaDossierNew *self )
 	}
 
 	g_string_printf( stmt,
-			"GRANT CREATE USER, FILE ON *.* TO '%s'",
+			"GRANT CREATE USER, FILE ON *.* TO '%s'@'localhost'",
 			self->private->p3_account );
 	if( !exec_mysql_query( self, &mysql, stmt->str )){
 		goto free_stmt;
@@ -1053,6 +1054,35 @@ setup_new_dossier( ofaDossierNew *self )
 static gboolean
 create_db_model( ofaDossierNew *self )
 {
+	MYSQL mysql;
+	gint port;
+
+	/* initialize the MariaDB connection */
+	mysql_init( &mysql );
+
+	/* connect to the 'mysql' database with the newly created admin
+	 * account
+	 */
+	port = 0;
+	if( self->private->p2_port && g_utf8_strlen( self->private->p2_port, 1 )){
+		port = atoi( self->private->p2_port );
+	}
+	if( !mysql_real_connect( &mysql,
+			self->private->p2_host,
+			self->private->p3_account,
+			self->private->p3_password,
+			self->private->p2_dbname,
+			port,
+			self->private->p2_socket,
+			CLIENT_MULTI_RESULTS )){
+
+		error_on_apply( self, NULL, mysql_error( &mysql ));
+		return( FALSE );
+	}
+
+	ofo_dossier_dbmodel_update( &mysql );
+
+	mysql_close( &mysql );
 	return( TRUE );
 }
 
