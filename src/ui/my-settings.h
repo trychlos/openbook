@@ -132,7 +132,7 @@ typedef enum {
  * @type: the #mySettingsType of the value to be handled.
  * @default_value: the default value of the key.
  * @user_is_added: whether user config replace the global one or is
- *  added to it; when TRUE, the user configuration is added to the the
+ *  added to it; when TRUE, the user configuration is added to the
  *  content of the global one. This parameter is only relevant when
  *  #type is a list.
  */
@@ -147,9 +147,14 @@ typedef struct {
 
 /* pre-registration of a callback
  */
-typedef void ( *mySettingsCallback )( mySettings *settings, const gchar *group, const gchar *key, gconstpointer new_value, gboolean global, void *user_data );
+typedef void ( *mySettingsCallback )( mySettings *settings,
+		const gchar *group, const gchar *key,
+		gconstpointer old_value, gconstpointer new_value,
+		gboolean global, void *user_data );
 
-void      my_settings_register_callback( mySettings *settings, const gchar *group, const gchar *key, mySettingsCallback callback, gpointer user_data );
+void      my_settings_register_callback( mySettings *settings,
+		const gchar *group, const gchar *key,
+		mySettingsCallback callback, void *user_data );
 
 /* signal sent when the value of a key changes
  */

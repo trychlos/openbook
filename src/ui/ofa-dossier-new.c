@@ -727,13 +727,6 @@ do_prepare_p3_account( ofaDossierNew *self, GtkWidget *page )
 	}
 
 	check_for_p3_complete( self );
-
-	if( self->private->p2_first ){
-		g_return_if_fail( GTK_IS_WIDGET( self->private->p2_first ));
-		gtk_widget_grab_focus( self->private->p2_first );
-	}
-
-	check_for_p2_complete( self );
 }
 
 static void
@@ -827,11 +820,6 @@ check_for_p3_complete( ofaDossierNew *self )
 		}
 		gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
 	}
-	if( priv->p2_auth_params ){
-		g_hash_table_foreach( priv->p2_auth_params, ( GHFunc ) is_param_value_done, &count );
-	}
-	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_PROVIDER_INFOS );
-	gtk_assistant_set_page_complete( priv->assistant, page, ( count == 0 ));
 
 	gtk_assistant_set_page_complete( priv->assistant, page,
 			priv->p3_account && g_utf8_strlen( priv->p3_account, -1 ) &&
@@ -919,73 +907,10 @@ check_for_p4_complete( ofaDossierNew *self )
 	gtk_assistant_set_page_complete( priv->assistant, page, !self->private->error_when_applied );
 }
 
-/*
- * Applying the actions:
- * - create an empty database
- * - create the db model
- * - define the dossier as a user preference
- */
-static void
-display_p4_params( const gchar *key, sParamValue *spv, p4Params *str )
-{
-	gchar *content;
-
-	content = g_strdup_printf( "%s", spv->s_value );
-	if( spv->type == G_TYPE_BOOLEAN ){
-		g_free( content );
-		/* i18n: Yes and No here are textual representations of boolean values
-		 *       Off/On might also have been used */
-		content = g_strdup_printf( "%s", spv->b_value ? _( "Yes" ):_( "No" ));
-	}
-	/* TODO #22 bad hack */
-	if( !g_ascii_strcasecmp( key, "PASSWORD" )){
-		g_free( content );
-		/* i18n: the 'Set' here means that the password for the root account has been set */
-		content = g_strdup( _( "Set" ));
-	}
-	add_p4_row( str->self, str->grid, &str->row, spv->name, TRUE, content );
-	g_free( content );
-}
-
-static void
-add_p4_row( ofaDossierNew *self, GtkGrid *grid, gint *row, const gchar *label, gboolean from_provider, const gchar *value )
-{
-	GtkLabel *widget;
-	gchar *content;
-
-	widget = GTK_LABEL( gtk_label_new( NULL ));
-	if( from_provider ){
-		content = g_strdup_printf( "<i>%s</i> :", label );
-	} else {
-		content = g_strdup( label );
-	}
-	gtk_label_set_markup( widget, content );
-	g_free( content );
-	gtk_widget_set_halign( GTK_WIDGET( widget ), GTK_ALIGN_END );
-	gtk_grid_attach( grid, GTK_WIDGET( widget ), 0, *row, 1, 1 );
-
-	widget = GTK_LABEL( gtk_label_new( value ));
-	gtk_widget_set_halign( GTK_WIDGET( widget ), GTK_ALIGN_START );
-	gtk_grid_attach( grid, GTK_WIDGET( widget ), 1, ( *row )++, 1, 1 );
-}
-
-static void
-check_for_p4_complete( ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-	GtkWidget *page;
-
-	priv = self->private;
-	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_CONFIRM_BEFORE_CREATION );
-
-	gtk_assistant_set_page_complete( priv->assistant, page, !self->private->error_when_applied );
-}
-
 static void
 on_apply( GtkAssistant *assistant, ofaDossierNew *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_on_apply";
-	gchar *message;
 
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));

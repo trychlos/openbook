@@ -68,13 +68,13 @@ typedef struct {
 }
 	myStringListClass;
 
-GType         my_string_list_get_type        ( void );
+GType         my_string_list_get_type       ( void );
 
-myStringList *my_string_list_new_from_g_value( GValue *value );
+myStringList *my_string_list_new_from_string( const gchar *string );
 
-void          my_string_list_free            ( myStringList *list );
+void          my_string_list_free           ( myStringList *list );
 
-GSList       *my_string_list_get_gslist      ( myStringList *list );
+GSList       *my_string_list_get_gslist     ( myStringList *list );
 
 G_END_DECLS
 

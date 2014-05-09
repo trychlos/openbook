@@ -79,7 +79,9 @@
                 terminated (act as a commit transaction), so that all is
                 left as this was initially if something goes wrong
 
-  32
+  32 2014- 5- 9 settings_gvalue_compare to be written
+
+  33
 
 -----------------------------------------------------------------------
  DONE

@@ -10,7 +10,7 @@
       <object class="GtkLabel" id="p0-label1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">This assistant will guide you in the process of defining a new database for your new dossier.
+        <property name="label" translatable="yes">This assistant will guide you in the process of defining a database for your new dossier.
 Hit Continue.</property>
         <property name="wrap">True</property>
       </object>
@@ -30,11 +30,11 @@ Hit Continue.</property>
             <property name="row_spacing">3</property>
             <property name="column_spacing">5</property>
             <child>
-              <object class="GtkLabel" id="p1-label2">
+              <object class="GtkLabel" id="p1-label1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">1</property>
-                <property name="label" translatable="yes">Give a _name to your new dossier (*) :</property>
+                <property name="label" translatable="yes">Give a _name to your dossier (*) :</property>
                 <property name="use_underline">True</property>
               </object>
               <packing>
@@ -45,13 +45,27 @@ Hit Continue.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="p1-label1">
+              <object class="GtkEntry" id="p1-name">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="has_tooltip">True</property>
-                <property name="tooltip_text" translatable="yes">You should choose a short, descriptive, name (for example, the name of your company).</property>
+                <property name="tooltip_text" translatable="yes">You should prefer a rather short name, for example the name of your company</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p1-label2">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Enter a _description :</property>
+                <property name="use_underline">True</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -61,26 +75,10 @@ Hit Continue.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkEntry" id="p1-name">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="xalign">1</property>
-                <property name="label" translatable="yes">Give a short _description to your dossier :</property>
-                <property name="use_underline">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkEntry" id="p1-description">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="has_tooltip">True</property>
-                <property name="tooltip_text" translatable="yes">Your short description will be displayed along with the name of the dossier when you will have to select among all dossiers at open time.</property>
+                <property name="tooltip_text" translatable="yes">A one-line description of the created dossier</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
               </object>
@@ -133,6 +131,7 @@ Hit Continue.</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
+                <property name="caps_lock_warning">False</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -161,6 +160,7 @@ Hit Continue.</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
+                <property name="caps_lock_warning">False</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -189,6 +189,8 @@ Hit Continue.</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
+                <property name="caps_lock_warning">False</property>
+                <property name="input_purpose">number</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -201,6 +203,7 @@ Hit Continue.</property>
               <object class="GtkLabel" id="p2-label4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="xalign">1</property>
                 <property name="label" translatable="yes">_Socket :</property>
                 <property name="use_underline">True</property>
               </object>
@@ -216,6 +219,7 @@ Hit Continue.</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
+                <property name="caps_lock_warning">False</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -244,6 +248,7 @@ Hit Continue.</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
+                <property name="caps_lock_warning">False</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -340,6 +345,7 @@ Hit Continue.</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
+                <property name="caps_lock_warning">False</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>

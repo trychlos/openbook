@@ -38,18 +38,23 @@
 
 G_BEGIN_DECLS
 
+/* boolean manipulation
+ */
+gboolean my_utils_boolean_from_string   ( const gchar *string );
+
 /* some functions to get or set GSList list of strings
  */
 void    my_utils_slist_dump             ( const gchar *prefix, GSList *list );
-GSList *my_utils_slist_from_array       ( const gchar **str_array );
 void    my_utils_slist_free             ( GSList *slist );
+GSList *my_utils_slist_duplicate        ( GSList *slist );
+GSList *my_utils_slist_from_split       ( const gchar *text, const gchar *separator );
+GSList *my_utils_slist_from_array       ( const gchar **str_array );
 
-/* some functions to work with GValue
+/* GList list of int
  */
-gint    my_utils_g_value_compare        ( const GValue *a, const GValue *b );
-GValue *my_utils_g_value_dup            ( const GValue *a );
-void    my_utils_g_value_dump           ( const GValue *a );
-GValue *my_utils_g_value_new_from_string( GType type, const gchar *str );
+GList  *my_utils_intlist_duplicate      ( GList *list );
+GList  *my_utils_intlist_from_split     ( const gchar *text, const gchar *separator );
+gchar  *my_utils_intlist_to_string      ( GList *list, gchar *separator );
 
 /* file management
  */

@@ -33,10 +33,8 @@
 #include <string.h>
 #include <strings.h>
 
-#include "ui/my-int-list.h"
 #include "ui/my-marshal.h"
 #include "ui/my-settings.h"
-#include "ui/my-string-list.h"
 #include "ui/my-timeout.h"
 #include "ui/my-utils.h"
 
@@ -53,7 +51,6 @@ struct _mySettingsClassPrivate {
  */
 typedef struct {
 	gchar        *fname;
-	gboolean      global;
 	GKeyFile     *key_file;
 	GFileMonitor *monitor;
 	gulong        handler;
@@ -62,7 +59,7 @@ typedef struct {
 
 /* Each consumer may register a callback function which will be
  * triggered when a specific group (i.e. any key in the group), or a
- * specific key is modified.
+ * specific key is modified
  */
 typedef struct {
 	gchar             *monitored_group;
@@ -130,6 +127,7 @@ static void              class_init( mySettingsClass *klass );
 static void              instance_init( GTypeInstance *instance, gpointer klass );
 static void              instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec );
 static void              instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
+static void              instance_constructed( GObject *object );
 static void              instance_dispose( GObject *object );
 static void              instance_finalize( GObject *object );
 
@@ -144,6 +142,10 @@ static void              release_key_value( sKeyValue *value );
 static GList            *content_load_keys( mySettings *settings, GList *content, sKeyFile *keyfile );
 static mySettingsKeyDef *get_key_def( mySettings *settings, const gchar *group, const gchar *key );
 static sKeyValue        *read_key_value_from_key_file( sKeyFile *keyfile, const gchar *group, const gchar *key, const mySettingsKeyDef *keydef );
+static GValue           *settings_gvalue_new_from_string( mySettingsType type, const gchar *string );
+static void              settings_gvalue_dump( GValue *value, const gchar *prefix, mySettingsType type );
+static int               settings_gvalue_compare( GValue *a, GValue *b, mySettingsType type );
+static GValue           *settings_gvalue_dup( GValue *v, mySettingsType type );
 static sKeyValue        *read_key_value_from_content( mySettings *settings, const gchar *group, const gchar *key, mySettingsMode mode, gboolean *found, gboolean *global );
 static sKeyValue        *lookup_key_value( GList *content, const gchar *group, const gchar *key, gboolean global );
 static gboolean          write_user_key( mySettings *settings, const gchar *group, const gchar *key, const gchar *string );
@@ -199,6 +201,7 @@ class_init( mySettingsClass *klass )
 	object_class = G_OBJECT_CLASS( klass );
 	object_class->get_property = instance_get_property;
 	object_class->set_property = instance_set_property;
+	object_class->constructed = instance_constructed;
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
 
@@ -222,7 +225,14 @@ class_init( mySettingsClass *klass )
 					"The timeout when signaling external modifications",
 					0,
 					INT_MAX,
-					100,
+					1000,
+					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	g_object_class_install_property( object_class, MY_PROP_KEYDEFS_ID,
+			g_param_spec_pointer(
+					MY_PROP_KEYDEFS,
+					"Key definitions",
+					"The definition of all the known keys",
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	/*
@@ -232,15 +242,16 @@ class_init( mySettingsClass *klass )
 	 * group (i.e. any key in this group), or the value of a specific
 	 * key, is modified.
 	 *
-	 * Arguments passed to the callback are the group, the key, the new
-	 * value, and whether the modification comes from the global
+	 * Arguments passed to the callback are the group, the key, the old
+	 * and new values, and whether the modification comes from the global
 	 * preferences or from the user one.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( mySettings *settings,
 	 * 						const gchar *group,
 	 * 						const gchar *key,
-	 * 						GValue *value,
+	 * 						GValue *old_value,
+	 * 						GValue *new_value,
 	 * 						gboolean global,
 	 * 						gpointer user_data );
 	 *
@@ -253,10 +264,10 @@ class_init( mySettingsClass *klass )
 				G_CALLBACK( on_key_changed_final_handler ),
 				NULL,								/* accumulator */
 				NULL,								/* accumulator data */
-				my_cclosure_marshal_VOID__STRING_STRING_POINTER_BOOLEAN,
+				my_cclosure_marshal_VOID__POINTER_STRING_STRING_POINTER_POINTER_BOOLEAN,
 				G_TYPE_NONE,
-				4,
-				G_TYPE_STRING, G_TYPE_STRING, G_TYPE_VALUE, G_TYPE_BOOLEAN );
+				6,
+				G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_VALUE, G_TYPE_VALUE, G_TYPE_BOOLEAN );
 }
 
 static void
@@ -264,8 +275,6 @@ instance_init( GTypeInstance *instance, gpointer klass )
 {
 	static const gchar *thisfn = "my_settings_instance_init";
 	mySettings *self;
-	gchar *dir;
-	GList *content;
 
 	g_return_if_fail( MY_IS_SETTINGS( instance ));
 
@@ -285,22 +294,6 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private->timeout.handler = ( myTimeoutFunc ) on_keyfile_changed_timeout;
 	self->private->timeout.user_data = self;
 	self->private->timeout.source_id = 0;
-
-	g_debug( "%s: reading global configuration", thisfn );
-	dir = g_build_filename( SYSCONFDIR, "xdg", PACKAGE, NULL );
-	self->private->global = key_file_new( self, dir, TRUE );
-	g_free( dir );
-	content = content_load_keys( self, NULL, self->private->global );
-
-	g_debug( "%s: reading user configuration", thisfn );
-	dir = g_build_filename( g_get_home_dir(), ".config", PACKAGE, NULL );
-	g_mkdir_with_parents( dir, 0750 );
-	self->private->user = key_file_new( self, dir, FALSE );
-	g_free( dir );
-	content = content_load_keys( self, content, self->private->user );
-
-	self->private->content = g_list_copy( content );
-	g_list_free( content );
 }
 
 static void
@@ -361,6 +354,40 @@ instance_set_property( GObject *object, guint property_id, const GValue *value, 
 				break;
 		}
 	}
+}
+
+/*
+ * we have to wait for the properties being set to read the key files
+ */
+static void
+instance_constructed( GObject *object )
+{
+	static const gchar *thisfn = "my_settings_instance_constructed";
+	mySettings *self;
+	gchar *dir;
+	GList *content;
+
+	g_return_if_fail( MY_IS_SETTINGS( object ));
+
+	g_debug( "%s: object=%p", thisfn, ( void * ) object );
+
+	self = MY_SETTINGS( object );
+
+	g_debug( "%s: reading global configuration", thisfn );
+	dir = g_build_filename( SYSCONFDIR, "xdg", PACKAGE, NULL );
+	self->private->global = key_file_new( self, dir, TRUE );
+	g_free( dir );
+	content = content_load_keys( self, NULL, self->private->global );
+
+	g_debug( "%s: reading user configuration", thisfn );
+	dir = g_build_filename( g_get_home_dir(), ".config", PACKAGE, NULL );
+	g_mkdir_with_parents( dir, 0750 );
+	self->private->user = key_file_new( self, dir, FALSE );
+	g_free( dir );
+	content = content_load_keys( self, content, self->private->user );
+
+	self->private->content = g_list_copy( content );
+	g_list_free( content );
 }
 
 static void
@@ -443,14 +470,12 @@ key_file_new( mySettings *settings, const gchar *dir, gboolean global )
 	}
 	g_object_unref( file );
 
-	keyfile->global = global;
-
 	return( keyfile );
 }
 
 /*
  * one of the two monitored configuration files have changed on the disk
- * we do not try to identify which keys have actually change
+ * we do not try to identify here which keys have actually change
  * instead we trigger each registered consumer for the 'global' event
  *
  * consumers which register for the 'global_conf' event are recorded
@@ -474,6 +499,8 @@ on_keyfile_changed_timeout( mySettings *settings )
 	const sConsumer *consumer;
 	gchar *key;
 	const gchar *value;
+
+	g_debug( "%s: settings=%p", thisfn, ( void * ) settings );
 
 	/* last individual notification is older that the timeout property
 	 * we may so suppose that the burst is terminated
@@ -528,10 +555,20 @@ on_keyfile_changed_timeout( mySettings *settings )
 }
 
 static void
-on_key_changed_final_handler( mySettings *settings, gchar *group, gchar *key, GValue *new_value, gboolean global )
+on_key_changed_final_handler( mySettings *settings,
+		gchar *group, gchar *key, GValue *old_value, GValue *new_value, gboolean global )
 {
-	g_debug( "my_settings_on_key_changed_final_handler: group=%s, key=%s", group, key );
-	my_utils_g_value_dump( new_value );
+	static const gchar *thisfn = "my_settings_on_key_changed_final_handler";
+	mySettingsKeyDef *keydef;
+
+	g_debug( "%s: settings=%p, group=%s, key=%s, old_value=%p, new_value=%p, global=%s",
+			thisfn,
+			( void * ) settings,
+			group, key, ( void * ) old_value, ( void * ) new_value, global ? "True":"False" );
+
+	keydef = get_key_def( settings, group, key );
+
+	settings_gvalue_dump( new_value, thisfn, keydef ? keydef->type : 0 );
 }
 
 /*
@@ -562,12 +599,12 @@ content_diff( GList *old, GList *new )
 			knew = ( sKeyValue * ) in->data;
 			if(( gpointer ) kold->def == ( gpointer ) knew->def ){
 				found = TRUE;
-				if( my_utils_g_value_compare( kold->value, knew->value )){
+				if( settings_gvalue_compare( kold->value, knew->value, kold->def->type )){
 					/* a key has been modified */
 					kdiff = g_new0( sKeyValue, 1 );
 					kdiff->def = knew->def;
 					kdiff->global = knew->global;
-					kdiff->value = my_utils_g_value_dup( knew->value );
+					kdiff->value = settings_gvalue_dup( knew->value, knew->def->type );
 					diffs = g_list_prepend( diffs, kdiff );
 				}
 			}
@@ -577,7 +614,7 @@ content_diff( GList *old, GList *new )
 			kdiff = g_new0( sKeyValue, 1 );
 			kdiff->def = kold->def;
 			kdiff->global = FALSE;
-			kdiff->value = my_utils_g_value_new_from_string( kold->def->type, kold->def->default_value );
+			kdiff->value = settings_gvalue_new_from_string( kold->def->type, kold->def->default_value );
 			diffs = g_list_prepend( diffs, kdiff );
 		}
 	}
@@ -596,7 +633,7 @@ content_diff( GList *old, GList *new )
 			kdiff = g_new0( sKeyValue, 1 );
 			kdiff->def = knew->def;
 			kdiff->global = knew->global;
-			kdiff->value = my_utils_g_value_dup( knew->value );
+			kdiff->value = settings_gvalue_dup( knew->value, knew->def->type );
 			diffs = g_list_prepend( diffs, kdiff );
 		}
 	}
@@ -710,7 +747,7 @@ get_key_def( mySettings *settings, const gchar *group, const gchar *key )
 	g_return_val_if_fail( key && strlen( key ), NULL );
 
 	idef = settings->private->keydefs;
-	while(( idef->group || idef->key ) && !found ){
+	while( idef && !found ){
 		if( !idef->group || ( idef->group && !strcmp( group, idef->group ))){
 			if( idef->key && !strcmp( idef->key, key )){
 				found = idef;
@@ -719,7 +756,9 @@ get_key_def( mySettings *settings, const gchar *group, const gchar *key )
 		idef++;
 	}
 	if( !found ){
-		g_warning( "%s: no mySettingsKeyDef definition found for key='%s'", thisfn, key );
+		g_warning(
+				"%s: no mySettingsKeyDef definition found for group=%s, key='%s'",
+				thisfn, group, key );
 	}
 
 	return( found );
@@ -755,7 +794,7 @@ read_key_value_from_key_file( sKeyFile *keyfile, const gchar *group, const gchar
 			} else {
 				value = g_new0( sKeyValue, 1 );
 				value->def = key_def;
-				value->value = my_utils_g_value_new_from_string( key_def->type, str );
+				value->value = settings_gvalue_new_from_string( key_def->type, str );
 			}
 			break;
 
@@ -772,6 +811,100 @@ read_key_value_from_key_file( sKeyFile *keyfile, const gchar *group, const gchar
 	g_free( str );
 
 	return( value );
+}
+
+static GValue *
+settings_gvalue_new_from_string( mySettingsType type, const gchar *string )
+{
+	GValue *value;
+	gboolean bool;
+	GSList *slist;
+	GList *ilist;
+
+	value = g_new0( GValue, 1 );
+	switch( type ){
+		case MY_SETTINGS_BOOLEAN:
+			g_value_init( value, G_TYPE_BOOLEAN );
+			bool = my_utils_boolean_from_string( string );
+			g_value_set_boolean( value, bool );
+			break;
+
+		case MY_SETTINGS_STRING:
+			g_value_init( value, G_TYPE_STRING );
+			g_value_set_string( value, string );
+			break;
+
+		case MY_SETTINGS_STRING_LIST:
+			g_value_init( value, G_TYPE_POINTER );
+			slist = my_utils_slist_from_split( string, ";" );
+			g_value_set_pointer( value, ( gpointer ) slist );
+			break;
+
+		case MY_SETTINGS_INT:
+			g_value_init( value, G_TYPE_INT );
+			g_value_set_int( value, atoi( string ));
+			break;
+
+		case MY_SETTINGS_INT_LIST:
+			g_value_init( value, G_TYPE_POINTER );
+			ilist = my_utils_intlist_from_split( string, ";" );
+			g_value_set_pointer( value, ( gpointer ) ilist );
+			break;
+	}
+
+	return( value );
+}
+
+static void
+settings_gvalue_dump( GValue *value, const gchar *prefix, mySettingsType type )
+{
+	gboolean bool;
+	const gchar *str;
+	GSList *slist;
+	GList *ilist;
+	gchar *str2;
+
+	switch( type ){
+		case MY_SETTINGS_BOOLEAN:
+			bool = g_value_get_boolean( value );
+			g_debug( "%s: type=Boolean, value=%s", prefix, bool ? "True":"False" );
+			break;
+
+		case MY_SETTINGS_STRING:
+			str = g_value_get_string( value );
+			g_debug( "%s: type=String, value=%s", prefix, str );
+			break;
+
+		case MY_SETTINGS_STRING_LIST:
+			slist = ( GSList * ) g_value_get_pointer( value );
+			my_utils_slist_dump( prefix, slist );
+			break;
+
+		case MY_SETTINGS_INT:
+			g_debug( "%s: type=Int, value=%d", prefix, g_value_get_int( value ));
+			break;
+
+		case MY_SETTINGS_INT_LIST:
+			ilist = ( GList * ) g_value_get_pointer( value );
+			str2 = my_utils_intlist_to_string( ilist, ";" );
+			g_debug( "%s: type=IntList: value='%s'", prefix, str );
+			g_free( str2 );
+			break;
+	}
+}
+
+static int
+settings_gvalue_compare( GValue *a, GValue *b, mySettingsType type )
+{
+	g_warning( "settings_gvalue_compare: TODO" );
+	return( 0 );
+}
+
+static GValue *
+settings_gvalue_dup( GValue *v, mySettingsType type )
+{
+	g_warning( "settings_gvalue_dup: TODO" );
+	return( NULL );
 }
 
 /**
@@ -960,15 +1093,12 @@ my_settings_get_string_list( mySettings *settings,
 	GSList *value;
 	sKeyValue *key_value;
 	mySettingsKeyDef *key_def;
-	myStringList *list;
 
 	value = NULL;
 	key_value = read_key_value_from_content( settings, group, key, mode, found, global );
 
 	if( key_value ){
-		list = my_string_list_new_from_g_value( key_value->value );
-		value = my_string_list_get_gslist( list );
-		my_string_list_free( list );
+		value = my_utils_slist_duplicate(( GSList * ) g_value_get_pointer( key_value->value ));
 		release_key_value( key_value );
 
 	} else {
@@ -1056,15 +1186,12 @@ my_settings_get_int_list( mySettings *settings,
 	GList *value;
 	mySettingsKeyDef *key_def;
 	sKeyValue *key_value;
-	myIntList *list;
 
 	value = NULL;
 	key_value = read_key_value_from_content( settings, group, key, mode, found, global );
 
 	if( key_value ){
-		list = my_int_list_new_from_g_value( key_value->value );
-		value = my_int_list_get_glist( list );
-		my_int_list_free( list );
+		value = my_utils_intlist_duplicate(( GList * ) g_value_get_pointer( key_value->value ));
 		release_key_value( key_value );
 
 	} else {
@@ -1137,7 +1264,21 @@ read_key_value_from_content( mySettings *settings, const gchar *group, const gch
 static sKeyValue *
 lookup_key_value( GList *content, const gchar *group, const gchar *key, gboolean global )
 {
-	return( NULL );
+	sKeyValue *kv, *found;
+	GList *it;
+
+	found = NULL;
+	for( it=content ; it && !found ; it=it->next ){
+		kv = ( sKeyValue * ) it->data;
+		if(( !kv->group || !group || !strcmp( kv->group, group )) &&
+			!strcmp( kv->def->key, key ) &&
+			kv->global == global ){
+
+				found = kv;
+		}
+	}
+
+	return( found );
 }
 
 /**

@@ -186,8 +186,12 @@ free_string_item( gchar *data )
  *
  */
 myStringList *
-my_string_list_new_from_g_value( GValue *value )
+my_string_list_new_from_string( const gchar *string )
 {
+	myStringList *list;
+
+	list = g_object_new( MY_TYPE_STRING_LIST, NULL );
+
 	return( NULL );
 }
 

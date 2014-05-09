@@ -28,16 +28,15 @@
 #include <config.h>
 #endif
 
-#include "ui/my-int-list.h"
-#include "ui/my-string-list.h"
+#include "ui/my-utils.h"
 #include "ui/ofa-settings.h"
 
-#define OFA_SETTINGS_TYPE                ( settings_get_type())
-#define OFA_SETTINGS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_SETTINGS_TYPE, ofaSettings ))
-#define OFA_SETTINGS_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_SETTINGS_TYPE, ofaSettingsClass ))
-#define OFA_IS_SETTINGS( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_SETTINGS_TYPE ))
-#define OFA_IS_SETTINGS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_SETTINGS_TYPE ))
-#define OFA_SETTINGS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_SETTINGS_TYPE, ofaSettingsClass ))
+#define OFA_TYPE_SETTINGS                ( settings_get_type())
+#define OFA_SETTINGS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_SETTINGS, ofaSettings ))
+#define OFA_SETTINGS_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_SETTINGS, ofaSettingsClass ))
+#define OFA_IS_SETTINGS( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_SETTINGS ))
+#define OFA_IS_SETTINGS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_SETTINGS ))
+#define OFA_SETTINGS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_SETTINGS, ofaSettingsClass ))
 
 typedef struct _ofaSettingsPrivate       ofaSettingsPrivate;
 
@@ -72,8 +71,12 @@ struct _ofaSettingsPrivate {
 #define GROUP_GENERAL                    "General"
 #define KEY_DOSSIERS                     "Dossiers"
 
+#define GROUP_DOSSIER                    "Dossier"
+#define KEY_DESCRIPTION                  "Description"
+
 static const mySettingsKeyDef st_def_keys[] = {
-	{ GROUP_GENERAL, KEY_DOSSIERS, MY_SETTINGS_STRING_LIST, NULL, TRUE },
+	{ GROUP_GENERAL, KEY_DOSSIERS,    MY_SETTINGS_STRING_LIST, NULL, TRUE },
+	{ NULL,          KEY_DESCRIPTION, MY_SETTINGS_STRING,      NULL, FALSE },
 	{ 0 }
 };
 
@@ -214,7 +217,10 @@ static void
 settings_new( void )
 {
 	if( !st_settings ){
-		st_settings = g_object_new( OFA_SETTINGS_TYPE, NULL );
+		st_settings = g_object_new(
+				OFA_TYPE_SETTINGS,
+				MY_PROP_KEYDEFS, st_def_keys,
+				NULL );
 	}
 }
 
@@ -262,10 +268,15 @@ void
 ofa_settings_add_user_dossier( const gchar *name, const gchar *description )
 {
 	static const gchar *thisfn = "ofa_settings_add_user_dossier";
+	GSList *dossiers;
 
 	g_debug( "%s: name=%s, description=%s", thisfn, name, description );
 
 	settings_new();
+	dossiers = settings_get_dossiers( MY_SETTINGS_USER_ONLY );
+	dossiers = g_slist_prepend( dossiers, ( gpointer ) name );
+	my_settings_set_string_list( MY_SETTINGS( st_settings ), GROUP_GENERAL, KEY_DOSSIERS, dossiers );
+	my_utils_slist_free( dossiers );
 }
 
 /*
@@ -278,9 +289,7 @@ ofa_settings_add_user_dossier( const gchar *name, const gchar *description )
 static GSList *
 settings_get_dossiers( mySettingsMode mode )
 {
-	GSList *list;
-
 	g_return_val_if_fail( st_settings && OFA_IS_SETTINGS( st_settings ), NULL );
 
-	return( list );
+	return( my_settings_get_string_list( MY_SETTINGS( st_settings ), GROUP_GENERAL, KEY_DOSSIERS, mode, NULL, NULL ));
 }

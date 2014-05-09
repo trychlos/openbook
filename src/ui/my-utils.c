@@ -37,7 +37,33 @@
 
 #include "ui/my-utils.h"
 
-static void list_perms( const gchar *path, const gchar *message, const gchar *command );
+static gchar **string_to_array( const gchar *text, const gchar *separator );
+static void    list_perms( const gchar *path, const gchar *message, const gchar *command );
+static void    print_free_line( const gchar *message, const gchar *prefix, gchar *line );
+
+/**
+ * my_utils_boolean_from_string
+ * @string: a string to be converted.
+ *
+ * Returns: %TRUE if the string evaluates to "true" (case insensitive),
+ * %FALSE else.
+ *
+ * https://developer.gnome.org/glib/stable/glib-Key-value-file-parser.html:
+ * - Key files are always encoded in UTF-8.
+ * - In key files, only true and false (in lower case) are allowed."
+ *
+ * We accept here also 'Yes' or a non-zero numeric value as a non-
+ * documented facility.
+ */
+gboolean
+my_utils_boolean_from_string( const gchar *string )
+{
+	if( !string ) return( FALSE );
+
+	return( g_utf8_collate( string, "true" ) == 0 ||
+			g_ascii_strcasecmp( string, "yes" ) == 0 ||
+			atoi( string ) != 0 );
+}
 
 /**
  * my_utils_slist_dump:
@@ -65,6 +91,96 @@ my_utils_slist_dump( const gchar *prefix, GSList *list )
 }
 
 /**
+ * my_utils_slist_free:
+ * @slist: a #GSList list of strings.
+ *
+ * Releases the strings and the list itself.
+ */
+void
+my_utils_slist_free( GSList *slist )
+{
+	g_slist_foreach( slist, ( GFunc ) g_free, NULL );
+	g_slist_free( slist );
+}
+
+/**
+ * my_utils_slist_duplicate:
+ * @slist: the #GSList to be duplicated.
+ *
+ * Returns: a #GSList of strings.
+ *
+ * The returned list should be my_utils_slist_free() by the caller.
+ */
+GSList *
+my_utils_slist_duplicate( GSList *slist )
+{
+	GSList *dest_slist, *it;
+
+	dest_slist = NULL;
+
+	for( it = slist ; it != NULL ; it = it->next ){
+		dest_slist = g_slist_prepend( dest_slist, g_strdup(( gchar * ) it->data ) );
+	}
+
+	dest_slist = g_slist_reverse( dest_slist );
+
+	return( dest_slist );
+}
+
+/**
+ * my_utils_slist_from_split:
+ * @text: a string to be splitted.
+ * @separator: the string to be used as the separator.
+ *
+ * Returns: a #GSList with the list of strings after having been splitted.
+ *
+ * The returned #GSList should be my_utils_slist_free() by the caller.
+ */
+GSList *
+my_utils_slist_from_split( const gchar *text, const gchar *separator )
+{
+	GSList *slist;
+	gchar **tokens;
+
+	tokens = string_to_array( text, separator );
+	if( !tokens ){
+		return( NULL );
+	}
+
+	slist = my_utils_slist_from_array(( const gchar ** ) tokens );
+	g_strfreev( tokens );
+
+	return( slist );
+}
+
+/*
+ * string_to_array
+ */
+static gchar **
+string_to_array( const gchar *text, const gchar *separator )
+{
+	gchar **tokens;
+	gchar *source, *tmp;
+
+	if( !text ){
+		return( NULL );
+	}
+
+	source = g_strdup( text );
+	tmp = g_strstrip( source );
+
+	if( !g_utf8_strlen( tmp, -1 )){
+		return( NULL );
+	}
+
+	tokens = g_strsplit( tmp, separator, -1 );
+
+	g_free( source );
+
+	return( tokens );
+}
+
+/**
  * my_utils_slist_from_array:
  * @str_array: an NULL-terminated array of strings.
  *
@@ -89,71 +205,77 @@ my_utils_slist_from_array( const gchar **str_array )
 }
 
 /**
- * my_utils_slist_free:
- * @slist: a #GSList list of strings.
+ * my_utils_intlist_duplicate:
+ * @list: the #GList to be duplicated.
  *
- * Releases the strings and the list itself.
+ * Returns: a #GList of int.
+ *
+ * The returned list should be g_list_free() by the caller.
  */
-void
-my_utils_slist_free( GSList *slist )
+GList *
+my_utils_intlist_duplicate( GList *ilist )
 {
-	g_slist_foreach( slist, ( GFunc ) g_free, NULL );
-	g_slist_free( slist );
+	GList *dest_list, *it;
+
+	dest_list = NULL;
+
+	for( it = ilist ; it != NULL ; it = it->next ){
+		dest_list = g_list_prepend( dest_list, it->data );
+	}
+
+	dest_list = g_list_reverse( dest_list );
+
+	return( dest_list );
 }
 
 /**
- * my_utils_g_value_compare:
- * @a: a #GValue
- * @b: a #GValue
- *
- * Compare the two GValues, returning:
- * - -1 if @a is lesser than @b
- * -  0 if @a and @b are equal
- * - +1 if @a is greater than @b
- *
- * The result of comparing two GValues of different types is undefined.
+ * my_utils_intlist_from_split
  */
-gint
-my_utils_g_value_compare( const GValue *a, const GValue *b )
+GList *
+my_utils_intlist_from_split( const gchar *string, const gchar *separator )
 {
-	return( 0 );
+	GList *list;
+	gchar **array;
+	gchar **i;
+
+	array = string_to_array( string, ";" );
+	if( !array ){
+		return( NULL );
+	}
+
+	list = NULL;
+	i = ( gchar ** ) array;
+	while( *i ){
+		list = g_list_prepend( list, GINT_TO_POINTER( atoi( *i )));
+		i++;
+	}
+	list = g_list_reverse( list );
+
+	g_strfreev( array );
+
+	return( list );
 }
 
 /**
- * my_utils_g_value_dup:
- * @a: a #GValue
- *
- * Returns a deep copy of @a.
+ * my_utils_intlist_to_string:
  */
-GValue *
-my_utils_g_value_dup( const GValue *a )
+gchar *
+my_utils_intlist_to_string( GList *list, gchar *separator )
 {
-	return( NULL );
-}
+	GList *is;
+	GString *str = g_string_new( "" );
+	gboolean first;
 
-/**
- * my_utils_g_value_dump:
- * @a: a #GValue
- *
- * Dump the content of the @a #GValue.
- */
-void
-my_utils_g_value_dump( const GValue *a )
-{
-}
+	first = TRUE;
+	for( is = list ; is ; is = is->next ){
+		if( !first ){
+			str = g_string_append( str, separator );
+		}
+		g_string_append_printf( str, "%u", GPOINTER_TO_UINT( is->data ));
+		first = FALSE;
+	}
 
-/**
- * my_utils_g_value_new_from_string:
- * @type: the #GType of the #GValue to be returned.
- * @str: the source string.
- *
- * Returns a new #GValue of #GType @type, which contents the result of
- * the interpretation of @str.
- */
-GValue *
-my_utils_g_value_new_from_string( GType type, const gchar *str )
-{
-	return( NULL );
+	return( g_string_free( str, FALSE ));
 }
 
 /**
@@ -185,11 +307,23 @@ list_perms( const gchar *path, const gchar *message, const gchar *command )
 		g_error_free( error );
 
 	} else {
-		g_debug( "%s: out=%s", message, out );
-		g_debug( "%s: err=%s", message, err );
-		g_free( out );
-		g_free( err );
+		print_free_line( message, "out", out );
+		print_free_line( message, "err", err );
 	}
 
 	g_free( cmd );
+}
+
+/*
+ * just remove ending newline character
+ */
+static void
+print_free_line( const gchar *message, const gchar *prefix, gchar *line )
+{
+	gchar *newln = g_utf8_strrchr( line, -1, "U+000A" );
+	if( newln ){
+		newln = '\x00';
+	}
+	g_debug( "%s: %s=%s", message, prefix, line );
+	g_free( line );
 }

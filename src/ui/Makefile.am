@@ -45,12 +45,8 @@ BUILT_SOURCES = \
 
 openbook_SOURCES = \
 	main.c												\
-	my-int-list.c										\
-	my-int-list.h										\
 	my-settings.c										\
 	my-settings.h										\
-	my-string-list.c									\
-	my-string-list.h									\
 	my-timeout.c										\
 	my-timeout.h										\
 	my-utils.c											\
