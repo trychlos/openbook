@@ -380,6 +380,36 @@ ofa_settings_get_dossiers( void )
 }
 
 /**
+ * ofa_settings_get_dossier:
+ */
+void
+ofa_settings_get_dossier( const gchar *name, gchar **host, gint *port, gchar **socket, gchar **dbname )
+{
+	static const gchar *thisfn = "ofa_settings_get_dossier";
+	gchar *group;
+
+	g_debug( "%s: name=%s, host=%p, port=%p, socket=%p, dbname=%p",
+			thisfn, name, ( void * ) host, ( void * ) port, ( void * ) socket, ( void * ) dbname );
+
+	settings_new();
+
+	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
+	if( host ){
+		*host = g_key_file_get_string( st_settings->private->keyfile, group, "Host", NULL );
+	}
+	if( port ){
+		*port = g_key_file_get_integer( st_settings->private->keyfile, group, "Port", NULL );
+	}
+	if( socket ){
+		*socket = g_key_file_get_string( st_settings->private->keyfile, group, "Socket", NULL );
+	}
+	if( dbname ){
+		*dbname = g_key_file_get_string( st_settings->private->keyfile, group, "Database", NULL );
+	}
+	g_free( group );
+}
+
+/**
  * ofa_settings_set_dossier:
  * @name:
  *

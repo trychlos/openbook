@@ -109,6 +109,7 @@ static void      on_account_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      on_password_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  do_open( ofaDossierOpen *self );
+static void      connect_error( GtkWindow *parent, gchar *host, gchar *account, gchar *dbname, gint port, gchar *socket, MYSQL *mysql );
 
 GType
 ofa_dossier_open_get_type( void )
@@ -444,6 +445,7 @@ do_initialize_dialog( ofaDossierOpen *self )
 
 	select = gtk_tree_view_get_selection( listview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
+	g_signal_connect(G_OBJECT( select ), "changed", G_CALLBACK( on_dossier_selected ), self );
 
 	for( id=dossiers ; id ; id=id->next ){
 		gtk_list_store_append( GTK_LIST_STORE( model ), &iter );
@@ -456,7 +458,8 @@ do_initialize_dialog( ofaDossierOpen *self )
 
 	g_slist_free_full( dossiers, ( GDestroyNotify ) g_free );
 
-	g_signal_connect(G_OBJECT( select ), "changed", G_CALLBACK( on_dossier_selected ), self );
+	gtk_tree_model_get_iter_first( model, &iter );
+	gtk_tree_selection_select_iter( select, &iter );
 
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "account" ));
 	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), self );
@@ -480,6 +483,7 @@ on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self )
 	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
 		g_free( self->private->name );
 		gtk_tree_model_get( model, &iter, COL_NAME, &self->private->name, -1 );
+		g_debug( "%s: name=%s", thisfn, self->private->name );
 	}
 
 	check_for_enable_dlg( self );
@@ -513,8 +517,84 @@ check_for_enable_dlg( ofaDossierOpen *self )
 			self->private->name && self->private->account && self->private->password );
 }
 
+/*
+ * is called when the user click on the 'Open' button
+ * return %TRUE if we can open a connection, %FALSE else
+ */
 static gboolean
 do_open( ofaDossierOpen *self )
 {
-	return( TRUE );
+	static const gchar *thisfn = "ofa_dossier_open_do_open";
+	gboolean connected;
+	gchar *host;
+	gint port;
+	gchar *socket;
+	gchar *database;
+	MYSQL mysql;
+
+	ofa_settings_get_dossier( self->private->name, &host, &port, &socket, &database );
+	connected = FALSE;
+
+	mysql_init( &mysql );
+
+	if( !mysql_real_connect( &mysql,
+			host,
+			self->private->account,
+			self->private->password,
+			database,
+			port,
+			socket,
+			CLIENT_MULTI_RESULTS )){
+		connect_error( GTK_WINDOW( self->private->dialog),
+				host, self->private->account, database, port, socket, &mysql );
+
+	} else {
+		g_debug( "%s: connection successfully opened", thisfn );
+		mysql_close( &mysql );
+		connected = TRUE;
+	}
+
+	g_free( host );
+	g_free( socket );
+	g_free( database );
+
+	return( connected );
+}
+
+static void
+connect_error( GtkWindow *parent,
+		gchar *host, gchar *account, gchar *dbname, gint port, gchar *socket,
+		MYSQL *mysql )
+{
+	GtkMessageDialog *dlg;
+	GString *str;
+
+	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
+				parent,
+				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_WARNING,
+				GTK_BUTTONS_OK,
+				"%s", _( "Unable to connect to the database")));
+
+	str = g_string_new( "" );
+	if( host ){
+		g_string_append_printf( str, "Host: %s\n", host );
+	}
+	if( port > 0 ){
+		g_string_append_printf( str, "Port: %d\n", port );
+	}
+	if( socket ){
+		g_string_append_printf( str, "Socket: %s\n", socket );
+	}
+	if( dbname ){
+		g_string_append_printf( str, "Database: %s\n", dbname );
+	}
+	if( account ){
+		g_string_append_printf( str, "Account: %s\n", account );
+	}
+	gtk_message_dialog_format_secondary_text( dlg, "%s", str->str );
+	g_string_free( str, TRUE );
+
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( GTK_WIDGET( dlg ));
 }

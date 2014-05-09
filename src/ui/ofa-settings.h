@@ -53,6 +53,8 @@ typedef enum {
 void     ofa_settings_free        ( void );
 
 GSList  *ofa_settings_get_dossiers( void );
+
+void     ofa_settings_get_dossier ( const gchar *name, gchar **host, gint *port, gchar **socket, gchar **dbname );
 gboolean ofa_settings_set_dossier ( const gchar *name, ... );
 
 G_END_DECLS

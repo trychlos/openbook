@@ -66,7 +66,10 @@
   33 2014- 5- 9 DossierNew: get rid of error_on_applied variable which
                 appears useless since we have abandonned libgda
 
-  34
+  34 2014- 5- 9 DossierNew: move the settings key names to ofa_settings
+                (as ofa_settings_get_dossier)
+
+  35
 
 -----------------------------------------------------------------------
  DONE
