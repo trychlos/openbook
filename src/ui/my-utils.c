@@ -28,7 +28,9 @@
 #include <config.h>
 #endif
 
-#include "ui/my-dossier.h"
+#include <string.h>
+
+#include "ui/my-utils.h"
 
 /**
  *
@@ -52,7 +54,7 @@ my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name
 				break;
 			}
 			if( GTK_IS_CONTAINER( child )){
-				found = container_get_child_by_name( GTK_CONTAINER( child ), name );
+				found = my_utils_container_get_child_by_name( GTK_CONTAINER( child ), name );
 			}
 		}
 	}
@@ -81,7 +83,7 @@ my_utils_container_get_child_by_type( GtkContainer *container, GType type )
 				break;
 			}
 			if( GTK_IS_CONTAINER( child )){
-				found = container_get_child_by_type( GTK_CONTAINER( child ), type );
+				found = my_utils_container_get_child_by_type( GTK_CONTAINER( child ), type );
 			}
 		}
 	}

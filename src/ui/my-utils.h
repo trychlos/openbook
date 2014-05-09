@@ -33,7 +33,7 @@
  * @include: ui/my-utils.h
  */
 
-#include <gtk/gtk.h.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
