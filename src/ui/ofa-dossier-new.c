@@ -120,12 +120,13 @@ enum {
 	OFA_PROP_N_PROPERTIES
 };
 
-#define PROP_TOPLEVEL                  "dossier-new-prop-toplevel"
+#define PROP_TOPLEVEL                    "dossier-new-prop-toplevel"
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-dossier-new.ui";
-static const gchar  *st_ui_id        = "DossierNewAssistant";
+static const gchar    *st_ui_xml       = PKGUIDIR "/ofa-dossier-new.ui";
+static const gchar    *st_ui_id        = "DossierNewAssistant";
 
-static GObjectClass *st_parent_class = NULL;
+static GObjectClass   *st_parent_class = NULL;
+static ofaOpenDossier *st_ood;
 
 static GType      register_type( void );
 static void       class_init( ofaDossierNewClass *klass );
@@ -253,6 +254,10 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private = g_new0( ofaDossierNewPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+
+	/* be sure to initialize this static data each time we run the
+	 * assistant */
+	st_ood = NULL;
 }
 
 static void
@@ -401,7 +406,7 @@ instance_finalize( GObject *window )
  *
  * @main: the main window of the application.
  */
-void
+ofaOpenDossier *
 ofa_dossier_new_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run";
@@ -415,6 +420,8 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 			NULL );
 
 	gtk_main();
+
+	return( st_ood );
 }
 
 static void
@@ -893,6 +900,15 @@ on_apply( GtkAssistant *assistant, ofaDossierNew *self )
 		if( make_db_global( self )){
 			setup_new_dossier( self );
 			create_db_model( self );
+
+			st_ood = g_new0( ofaOpenDossier, 1 );
+			st_ood->dossier = g_strdup( self->private->p1_name );
+			st_ood->host = g_strdup( self->private->p2_host );
+			st_ood->port = self->private->p2_port ? atoi( self->private->p2_port ) : 0;
+			st_ood->socket = g_strdup( self->private->p2_socket );
+			st_ood->dbname = g_strdup( self->private->p2_dbname );
+			st_ood->account = g_strdup( self->private->p3_account );
+			st_ood->password = g_strdup( self->private->p3_password );
 		}
 	}
 }

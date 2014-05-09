@@ -324,6 +324,13 @@ on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data 
 
 	g_debug( "%s: window=%p, sod=%p, user_data=%p",
 			thisfn, ( void * ) window, ( void * ) sod, ( void * ) user_data );
+	g_debug( "%s: name=%s", thisfn, sod->dossier );
+	g_debug( "%s: host=%s", thisfn, sod->host );
+	g_debug( "%s: port=%d", thisfn, sod->port );
+	g_debug( "%s: socket=%s", thisfn, sod->socket );
+	g_debug( "%s: dbname=%s", thisfn, sod->dbname );
+	g_debug( "%s: account=%s", thisfn, sod->account );
+	g_debug( "%s: password=%s", thisfn, sod->password );
 }
 
 static void

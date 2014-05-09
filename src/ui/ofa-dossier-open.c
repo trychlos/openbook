@@ -565,6 +565,7 @@ do_open( ofaDossierOpen *self )
 		g_debug( "%s: connection successfully opened", thisfn );
 		mysql_close( &mysql );
 		connected = TRUE;
+		sod->dossier = g_strdup( self->private->name );
 		sod->account = g_strdup( self->private->account );
 		sod->password = g_strdup( self->private->password );
 		self->private->ood = sod;
