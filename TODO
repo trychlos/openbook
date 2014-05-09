@@ -63,7 +63,10 @@
                 terminated (act as a commit transaction), so that all is
                 left as this was initially if something goes wrong
 
-  33
+  33 2014- 5- 9 DossierNew: get rid of error_on_applied variable which
+                appears useless since we have abandonned libgda
+
+  34
 
 -----------------------------------------------------------------------
  DONE

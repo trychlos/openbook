@@ -37,6 +37,10 @@
 #include "ui/ofa-settings.h"
 #include "ui/ofo-dossier.h"
 
+static gboolean pref_quit_on_escape = TRUE;
+static gboolean pref_confirm_on_cancel = FALSE;
+static gboolean pref_confirm_on_escape = FALSE;
+
 /* Export Assistant
  *
  * pos.  type     title
@@ -105,17 +109,6 @@ struct _ofaDossierNewPrivate {
 	gboolean       error_when_applied;
 };
 
-/* the structure associated with the key in the hash tables
- */
-typedef struct {
-	gchar     *name;
-	gboolean   mandatory;
-	GType      type;
-	gchar     *s_value;
-	gboolean   b_value;
-}
-  sParamValue;
-
 /* class properties
  */
 enum {
@@ -126,65 +119,61 @@ enum {
 	OFA_PROP_N_PROPERTIES
 };
 
-#define PROP_TOPLEVEL                   "dossier-new-prop-toplevel"
+#define PROP_TOPLEVEL                  "dossier-new-prop-toplevel"
 
-static gboolean pref_quit_on_escape = TRUE;
-static gboolean pref_confirm_on_cancel = FALSE;
-static gboolean pref_confirm_on_escape = FALSE;
+static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-dossier-new.ui";
+static const gchar  *st_ui_id        = "DossierNewAssistant";
 
-static const gchar       *st_ui_xml   = PKGUIDIR "/ofa-dossier-new.ui";
-static const gchar       *st_ui_id    = "DossierNewAssistant";
+static GObjectClass *st_parent_class = NULL;
 
-static GObjectClass *st_parent_class  = NULL;
-
-static GType        register_type( void );
-static void         class_init( ofaDossierNewClass *klass );
-static void         instance_init( GTypeInstance *instance, gpointer klass );
-static void         instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec );
-static void         instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
-static void         instance_constructed( GObject *instance );
-static void         instance_dispose( GObject *instance );
-static void         instance_finalize( GObject *instance );
-static void         do_initialize_assistant( ofaDossierNew *self );
-static gboolean     on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaDossierNew *self );
-static void         on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self );
-static void         do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page );
-static void         do_prepare_p1_dossier( ofaDossierNew *self, GtkWidget *page );
-static void         do_init_p1_dossier( ofaDossierNew *self, GtkWidget *page );
-static void         on_p1_name_changed( GtkEntry *widget, ofaDossierNew *self );
-static void         check_for_p1_complete( ofaDossierNew *self );
-static void         do_prepare_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
-static void         do_init_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
-static void         do_init_p2_item( ofaDossierNew *self, GtkWidget *page, const gchar *field_name, gchar **var, GCallback fn );
-static void         on_p2_dbname_changed( GtkEntry *widget, ofaDossierNew *self );
-static void         on_p2_var_changed( GtkEntry *widget, gchar **var );
-static void         on_p2_account_changed( GtkEntry *widget, ofaDossierNew *self );
-static void         on_p2_password_changed( GtkEntry *widget, ofaDossierNew *self );
-static void         check_for_p2_complete( ofaDossierNew *self );
-static void         do_prepare_p3_account( ofaDossierNew *self, GtkWidget *page );
-static void         do_init_p3_account( ofaDossierNew *self, GtkWidget *page );
-static void         on_p3_account_changed( GtkEntry *entry, ofaDossierNew *self );
-static void         on_p3_password_changed( GtkEntry *entry, ofaDossierNew *self );
-static void         on_p3_bis_changed( GtkEntry *entry, ofaDossierNew *self );
-static void         check_for_p3_complete( ofaDossierNew *self );
-static void         do_prepare_p4_confirm( ofaDossierNew *self, GtkWidget *page );
-static void         do_init_p4_confirm( ofaDossierNew *self, GtkWidget *page );
-static void         display_p4_param( GtkWidget *page, const gchar *field_name, const gchar *value, gboolean display );
-static void         check_for_p4_complete( ofaDossierNew *self );
-static void         on_apply( GtkAssistant *assistant, ofaDossierNew *self );
-static gboolean     make_db_global( ofaDossierNew *self );
-static gboolean     exec_mysql_query( ofaDossierNew *self, MYSQL *mysql, const gchar *query );
-static void         error_on_apply( ofaDossierNew *self, const gchar *stmt, const gchar *error );
-static gboolean     setup_new_dossier( ofaDossierNew *self );
-static gboolean     create_db_model( ofaDossierNew *self );
-static void         on_cancel( GtkAssistant *assistant, ofaDossierNew *self );
-static gboolean     is_willing_to_quit( ofaDossierNew *self );
-static void         on_close( GtkAssistant *assistant, ofaDossierNew *self );
-static void         do_close( ofaDossierNew *self );
-static gint         assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
-static GtkWidget   *container_get_child_by_name( GtkContainer *container, const gchar *name );
+static GType      register_type( void );
+static void       class_init( ofaDossierNewClass *klass );
+static void       instance_init( GTypeInstance *instance, gpointer klass );
+static void       instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec );
+static void       instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
+static void       instance_constructed( GObject *instance );
+static void       instance_dispose( GObject *instance );
+static void       instance_finalize( GObject *instance );
+static void       do_initialize_assistant( ofaDossierNew *self );
+static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaDossierNew *self );
+static void       on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self );
+static void       do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page );
+static void       do_prepare_p1_dossier( ofaDossierNew *self, GtkWidget *page );
+static void       do_init_p1_dossier( ofaDossierNew *self, GtkWidget *page );
+static void       on_p1_name_changed( GtkEntry *widget, ofaDossierNew *self );
+static void       check_for_p1_complete( ofaDossierNew *self );
+static void       do_prepare_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
+static void       do_init_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
+static void       do_init_p2_item( ofaDossierNew *self, GtkWidget *page, const gchar *field_name, gchar **var, GCallback fn );
+static void       on_p2_dbname_changed( GtkEntry *widget, ofaDossierNew *self );
+static void       on_p2_var_changed( GtkEntry *widget, gchar **var );
+static void       on_p2_account_changed( GtkEntry *widget, ofaDossierNew *self );
+static void       on_p2_password_changed( GtkEntry *widget, ofaDossierNew *self );
+static void       check_for_p2_complete( ofaDossierNew *self );
+static void       do_prepare_p3_account( ofaDossierNew *self, GtkWidget *page );
+static void       do_init_p3_account( ofaDossierNew *self, GtkWidget *page );
+static void       on_p3_account_changed( GtkEntry *entry, ofaDossierNew *self );
+static void       on_p3_password_changed( GtkEntry *entry, ofaDossierNew *self );
+static void       on_p3_bis_changed( GtkEntry *entry, ofaDossierNew *self );
+static void       check_for_p3_complete( ofaDossierNew *self );
+static void       do_prepare_p4_confirm( ofaDossierNew *self, GtkWidget *page );
+static void       do_init_p4_confirm( ofaDossierNew *self, GtkWidget *page );
+static void       display_p4_param( GtkWidget *page, const gchar *field_name, const gchar *value, gboolean display );
+static void       check_for_p4_complete( ofaDossierNew *self );
+static void       on_apply( GtkAssistant *assistant, ofaDossierNew *self );
+static gboolean   make_db_global( ofaDossierNew *self );
+static gboolean   exec_mysql_query( ofaDossierNew *self, MYSQL *mysql, const gchar *query );
+static void       error_on_apply( ofaDossierNew *self, const gchar *stmt, const gchar *error );
+static gboolean   setup_new_dossier( ofaDossierNew *self );
+static gboolean   create_db_model( ofaDossierNew *self );
+static void       on_cancel( GtkAssistant *assistant, ofaDossierNew *self );
+static gboolean   is_willing_to_quit( ofaDossierNew *self );
+static void       on_close( GtkAssistant *assistant, ofaDossierNew *self );
+static void       do_close( ofaDossierNew *self );
+static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
+static GtkWidget *container_get_child_by_name( GtkContainer *container, const gchar *name );
 #if 0
-static GtkWidget   *container_get_child_by_type( GtkContainer *container, GType type );
+static GtkWidget *container_get_child_by_type( GtkContainer *container, GType type );
 #endif
 
 GType

@@ -248,6 +248,7 @@ Hit Continue.</property>
                 <property name="can_focus">True</property>
                 <property name="visibility">False</property>
                 <property name="invisible_char">●</property>
+                <property name="input_purpose">password</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -346,6 +347,7 @@ You have to note that this account will be defined at the global dataserver leve
                 <property name="can_focus">True</property>
                 <property name="visibility">False</property>
                 <property name="invisible_char">●</property>
+                <property name="input_purpose">password</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -375,6 +377,7 @@ You have to note that this account will be defined at the global dataserver leve
                 <property name="can_focus">True</property>
                 <property name="visibility">False</property>
                 <property name="invisible_char">●</property>
+                <property name="input_purpose">password</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
