@@ -81,7 +81,6 @@ struct _ofaDossierNewPrivate {
 	 */
 	gboolean       p1_page_initialized;
 	gchar         *p1_name;
-	gchar         *p1_description;
 
 	/* p2: enter connection and authentification parameters
 	 */
@@ -152,7 +151,6 @@ static void         do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page );
 static void         do_prepare_p1_dossier( ofaDossierNew *self, GtkWidget *page );
 static void         do_init_p1_dossier( ofaDossierNew *self, GtkWidget *page );
 static void         on_p1_name_changed( GtkEntry *widget, ofaDossierNew *self );
-static void         on_p1_description_changed( GtkEntry *widget, ofaDossierNew *self );
 static void         check_for_p1_complete( ofaDossierNew *self );
 static void         do_prepare_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
 static void         do_init_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
@@ -372,7 +370,6 @@ instance_dispose( GObject *window )
 		gtk_widget_destroy( GTK_WIDGET( priv->assistant ));
 
 		g_free( priv->p1_name );
-		g_free( priv->p1_description );
 
 		g_free( priv->p2_dbname );
 		g_free( priv->p2_host );
@@ -560,9 +557,6 @@ do_init_p1_dossier( ofaDossierNew *self, GtkWidget *page )
 
 	entry = container_get_child_by_name( GTK_CONTAINER( page ), "p1-name" );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_p1_name_changed ), self );
-
-	entry = container_get_child_by_name( GTK_CONTAINER( page ), "p1-description" );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_p1_description_changed ), self );
 }
 
 static void
@@ -575,16 +569,6 @@ on_p1_name_changed( GtkEntry *widget, ofaDossierNew *self )
 	self->private->p1_name = g_strdup( label );
 
 	check_for_p1_complete( self );
-}
-
-static void
-on_p1_description_changed( GtkEntry *widget, ofaDossierNew *self )
-{
-	const gchar *label;
-
-	label = gtk_entry_get_text( widget );
-	g_free( self->private->p1_description );
-	self->private->p1_description = g_strdup( label );
 }
 
 static void
@@ -865,7 +849,6 @@ do_init_p4_confirm( ofaDossierNew *self, GtkWidget *page )
 			thisfn, ( void * ) self, ( void * ) page );
 
 	display_p4_param( page, "p4-dos-name",        self->private->p1_name,        TRUE );
-	display_p4_param( page, "p4-dos-description", self->private->p1_description, TRUE );
 	display_p4_param( page, "p4-db-name",         self->private->p2_dbname,      TRUE );
 	display_p4_param( page, "p4-db-host",         self->private->p2_host,        TRUE );
 	display_p4_param( page, "p4-db-port",         self->private->p2_port,        TRUE );
@@ -1059,7 +1042,6 @@ setup_new_dossier( ofaDossierNew *self )
 	return(
 		ofa_settings_set_dossier(
 			self->private->p1_name,
-			"Description", SETTINGS_TYPE_STRING, self->private->p1_description,
 			"Provider",    SETTINGS_TYPE_STRING, "MySQL",
 			"Host",        SETTINGS_TYPE_STRING, self->private->p2_host,
 			"Port",        SETTINGS_TYPE_INT,    port,

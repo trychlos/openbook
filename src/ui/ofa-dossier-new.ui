@@ -59,36 +59,6 @@ Hit Continue.</property>
                 <property name="height">1</property>
               </packing>
             </child>
-            <child>
-              <object class="GtkLabel" id="p1-label2">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="xalign">1</property>
-                <property name="label" translatable="yes">Enter a _description :</property>
-                <property name="use_underline">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkEntry" id="p1-description">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="tooltip_text" translatable="yes">A one-line description of the created dossier</property>
-                <property name="invisible_char">●</property>
-                <property name="caps_lock_warning">False</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -477,32 +447,6 @@ Hit Continue.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="p4-label2">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="xalign">1</property>
-                <property name="label" translatable="yes">Description :</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="p4-dos-description">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkLabel" id="p4-label3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -512,7 +456,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">2</property>
+                <property name="top_attach">1</property>
                 <property name="width">2</property>
                 <property name="height">1</property>
               </packing>
@@ -526,7 +470,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">3</property>
+                <property name="top_attach">2</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -539,7 +483,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">3</property>
+                <property name="top_attach">2</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -553,7 +497,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">4</property>
+                <property name="top_attach">3</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -566,7 +510,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">4</property>
+                <property name="top_attach">3</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -580,7 +524,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">5</property>
+                <property name="top_attach">4</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -593,7 +537,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">5</property>
+                <property name="top_attach">4</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -607,7 +551,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">6</property>
+                <property name="top_attach">5</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -620,7 +564,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">6</property>
+                <property name="top_attach">5</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -634,7 +578,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">7</property>
+                <property name="top_attach">6</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -647,7 +591,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">7</property>
+                <property name="top_attach">6</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -661,7 +605,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">8</property>
+                <property name="top_attach">7</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -674,7 +618,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">8</property>
+                <property name="top_attach">7</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -689,7 +633,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">9</property>
+                <property name="top_attach">8</property>
                 <property name="width">2</property>
                 <property name="height">1</property>
               </packing>
@@ -703,7 +647,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">10</property>
+                <property name="top_attach">9</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -716,7 +660,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">10</property>
+                <property name="top_attach">9</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -730,7 +674,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">11</property>
+                <property name="top_attach">10</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -743,7 +687,7 @@ Hit Continue.</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">11</property>
+                <property name="top_attach">10</property>
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
@@ -766,12 +710,23 @@ Hit Continue.</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <placeholder/>
+          <object class="GtkLabel" id="p5-label1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">The database has been created, and your new dossier successfully defined.
+When closing this assistant, the new dossier will be automatically opened.
+Hit Close.</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
         </child>
       </object>
       <packing>
         <property name="page_type">summary</property>
-        <property name="title" translatable="yes">The data source has been successfully created</property>
+        <property name="title" translatable="yes">The dossier has been defined</property>
       </packing>
     </child>
     <child internal-child="action_area">
