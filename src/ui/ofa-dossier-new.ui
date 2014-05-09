@@ -285,7 +285,8 @@ Hit Continue.</property>
                 <property name="xalign">0</property>
                 <property name="xpad">6</property>
                 <property name="ypad">6</property>
-                <property name="label" translatable="yes">Please define your first administrative account, the one who will have all the permissions on your dossier.</property>
+                <property name="label" translatable="yes">Please define your first administrative account, the one who will have all the permissions on your dossier.
+You have to note that this account will be defined at the global dataserver level; you so have to take care yourself of its unicity.</property>
                 <property name="wrap">True</property>
               </object>
               <packing>

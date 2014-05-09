@@ -66,9 +66,10 @@ typedef struct {
 }
 	ofoDossierClass;
 
-GType    ofo_dossier_get_type      ( void );
+GType    ofo_dossier_get_type         ( void );
 
-gboolean ofo_dossier_dbmodel_update( MYSQL *mysql );
+gboolean ofo_dossier_dbmodel_create_v1( MYSQL *mysql, const gchar *account, gchar **message );
+gboolean ofo_dossier_dbmodel_update   ( MYSQL *mysql, gchar **message );
 
 G_END_DECLS
 

@@ -48,13 +48,14 @@ struct _ofoDossierPrivate {
 
 static GObjectClass *st_parent_class  = NULL;
 
-static GType register_type( void );
-static void  class_init( ofoDossierClass *klass );
-static void  instance_init( GTypeInstance *instance, gpointer klass );
-static void  instance_dispose( GObject *instance );
-static void  instance_finalize( GObject *instance );
+static GType    register_type( void );
+static void     class_init( ofoDossierClass *klass );
+static void     instance_init( GTypeInstance *instance, gpointer klass );
+static void     instance_dispose( GObject *instance );
+static void     instance_finalize( GObject *instance );
 
-static gint  dbmodel_get_version( MYSQL *mysql );
+static gint     dbmodel_get_version( MYSQL *mysql );
+static gboolean exec_query( MYSQL *mysql, gchar *query, gchar **message );
 
 GType
 ofo_dossier_get_type( void )
@@ -174,22 +175,24 @@ instance_finalize( GObject *instance )
 
 /**
  * ofo_dossier_dbmodel_update:
+ * @mysql:
+ * @message: an error message if %FALSE
  *
  * Update the DB model in the SGBD
  */
 gboolean
-ofo_dossier_dbmodel_update( MYSQL *mysql )
+ofo_dossier_dbmodel_update( MYSQL *mysql, gchar **message )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_update";
 	gint cur_version;
 
-	g_debug( "%s: mysql=%p", thisfn, ( void * ) mysql );
+	g_debug( "%s: mysql=%p, message=%p", thisfn, ( void * ) mysql, ( void * ) message );
 
 	cur_version = dbmodel_get_version( mysql );
 	g_debug( "%s: cur_version=%d, THIS_DBMODEL_VERSION=%d", thisfn, cur_version, THIS_DBMODEL_VERSION );
 
 	if( cur_version < THIS_DBMODEL_VERSION ){
-
+		g_warning( "%s: TO BE WRITTEN", thisfn );
 	}
 	return( TRUE );
 }
@@ -199,4 +202,75 @@ dbmodel_get_version( MYSQL *mysql )
 {
 	g_warning( "dbmodel_get_version: TO BE WRITTEN" );
 	return( 0 );
+}
+
+/**
+ * ofo_dossier_dbmodel_create_v1:
+ */
+gboolean
+ofo_dossier_dbmodel_create_v1( MYSQL *mysql, const gchar *account, gchar **message )
+{
+	static const gchar *thisfn = "ofo_dossier_dbmodel_create_v1";
+	gchar *query;
+
+	g_debug( "%s: mysql=%p, account=%s, message=%p",
+			thisfn, ( void * ) mysql, account, ( void * ) message );
+
+	query = g_strdup(
+			"CREATE TABLE IF NOT EXISTS T_VERSION ("
+				"VERSION_NUM  INTEGER   NOT NULL UNIQUE COMMENT 'DB model version number',"
+				"VERSION_DATE TIMESTAMP DEFAULT 0       COMMENT 'Version application timestamp')" );
+	if( !exec_query( mysql, query, message )){
+		return( FALSE );
+	}
+
+	query = g_strdup(
+			"INSERT INTO T_VERSION (VERSION_NUM) VALUES (1)" );
+	if( !exec_query( mysql, query, message )){
+		return( FALSE );
+	}
+
+	query = g_strdup(
+			"CREATE TABLE IF NOT EXISTS T_ROLES ("
+				"USER_ID  VARCHAR(32) NOT NULL UNIQUE COMMENT 'User account',"
+				"IS_ADMIN INTEGER                     COMMENT 'Whether the user has administration role')" );
+	if( !exec_query( mysql, query, message )){
+		return( FALSE );
+	}
+
+	if( account && g_utf8_strlen( account, -1 )){
+		query = g_strdup_printf(
+				"INSERT INTO T_ROLES (USER_ID, IS_ADMIN) VALUES ('%s',1)", account );
+		if( !exec_query( mysql, query, message )){
+			return( FALSE );
+		}
+	}
+
+	/* we do this only at the end of the v1 model creation
+	 * as a mark that all has been successfully done
+	 */
+	query = g_strdup(
+			"UPDATE T_VERSION SET VERSION_DATE=NOW() WHERE VERSION_NUM=1" );
+	if( !exec_query( mysql, query, message )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gboolean
+exec_query( MYSQL *mysql, gchar *query, gchar **message )
+{
+	gboolean ok = !mysql_query( mysql, query );
+
+	if( !ok ){
+		if( message ){
+			*message = g_strdup_printf( "%s\n\n%s", query, mysql_error( mysql ));
+		} else {
+			g_warning( "%s: %s", query, mysql_error( mysql ));
+		}
+	}
+
+	g_free( query );
+	return( ok );
 }

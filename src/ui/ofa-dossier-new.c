@@ -968,8 +968,30 @@ make_db_global( ofaDossierNew *self )
 	}
 
 	g_string_printf( stmt,
+			"CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'",
+			self->private->p3_account, self->private->p3_password );
+	if( !exec_mysql_query( self, &mysql, stmt->str )){
+		goto free_stmt;
+	}
+
+	g_string_printf( stmt,
+			"GRANT ALL ON %s.* TO '%s' WITH GRANT OPTION",
+			self->private->p2_dbname,
+			self->private->p3_account );
+	if( !exec_mysql_query( self, &mysql, stmt->str )){
+		goto free_stmt;
+	}
+
+	g_string_printf( stmt,
 			"GRANT ALL ON %s.* TO '%s'@'localhost' WITH GRANT OPTION",
 			self->private->p2_dbname,
+			self->private->p3_account );
+	if( !exec_mysql_query( self, &mysql, stmt->str )){
+		goto free_stmt;
+	}
+
+	g_string_printf( stmt,
+			"GRANT CREATE USER, FILE ON *.* TO '%s'",
 			self->private->p3_account );
 	if( !exec_mysql_query( self, &mysql, stmt->str )){
 		goto free_stmt;
@@ -1056,6 +1078,7 @@ create_db_model( ofaDossierNew *self )
 {
 	MYSQL mysql;
 	gint port;
+	gchar *message;
 
 	/* initialize the MariaDB connection */
 	mysql_init( &mysql );
@@ -1080,7 +1103,17 @@ create_db_model( ofaDossierNew *self )
 		return( FALSE );
 	}
 
-	ofo_dossier_dbmodel_update( &mysql );
+	if( !ofo_dossier_dbmodel_create_v1( &mysql, self->private->p3_account, &message )){
+		error_on_apply( self, NULL, message );
+		g_free( message );
+		return( FALSE );
+	}
+
+	if( !ofo_dossier_dbmodel_update( &mysql, &message )){
+		error_on_apply( self, NULL, message );
+		g_free( message );
+		return( FALSE );
+	}
 
 	mysql_close( &mysql );
 	return( TRUE );
