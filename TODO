@@ -59,27 +59,9 @@
   23 2014- 5- 8 Add a progress page to DossierNew assistant, displaying
                 the executed SQL statements
 
-  24 2014- 5- 8 Have a configuration parameter which says if user
-                preferences supersede global ones, or if global
-                preferences must be seen as mandatory ones.
-
-  25 2014- 5- 8 ofa_utils_g_value_compare
-
-  26 2014- 5- 8 ofa_utils_g_value_dup
-
-  27 2014- 5- 8 ofa_utils_g_value_new_from_string
-
-  28 2014- 5- 8 ofa_utils_g_value_dump
-
-  29 2014- 5- 8 Define a G_TYPE_STRING_LIST GType to be used as a GValue
-
-  30 2014- 5- 8 Define a G_TYPE_INT_LIST GType to be used as a GValue
-
   31 2014- 5- 8 Undo the actions partially done if Dossier New cannot be
                 terminated (act as a commit transaction), so that all is
                 left as this was initially if something goes wrong
-
-  32 2014- 5- 9 settings_gvalue_compare to be written
 
   33
 
@@ -115,6 +97,32 @@
                 (see do_init_p2_provider_params and display_p4_params
                  functions)
      2014- 5- 7 Given up with 0.1.9-libgda version
+
+  24 2014- 5- 8 Have a configuration parameter which says if user
+                preferences supersede global ones, or if global
+                preferences must be seen as mandatory ones.
+     2014- 5- 9 cancelled
+
+  25 2014- 5- 8 ofa_utils_g_value_compare
+     2014- 5- 9 cancelled
+
+  26 2014- 5- 8 ofa_utils_g_value_dup
+     2014- 5- 9 cancelled
+
+  27 2014- 5- 8 ofa_utils_g_value_new_from_string
+     2014- 5- 9 cancelled
+
+  28 2014- 5- 8 ofa_utils_g_value_dump
+     2014- 5- 9 cancelled
+
+  29 2014- 5- 8 Define a G_TYPE_STRING_LIST GType to be used as a GValue
+     2014- 5- 9 cancelled
+
+  30 2014- 5- 8 Define a G_TYPE_INT_LIST GType to be used as a GValue
+     2014- 5- 9 cancelled
+
+  32 2014- 5- 9 settings_gvalue_compare to be written
+     2014- 5- 9 cancelled
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
