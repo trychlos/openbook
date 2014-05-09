@@ -31,21 +31,29 @@
  * @short_description: The Settings Class Definition
  * @include: ui/ofa-settings.h
  *
- * The #ofaSettings class manages users preferences.
- * See also #mySettings for an in-depth description.
+ * The #ofaSettings class manages user preferences.
  *
  * #ofaSettings class defines a singleton object, which allocates itself
  * when needed.
  */
 
-#include "ui/my-settings.h"
+#include <glib.h>
 
 G_BEGIN_DECLS
 
-void    ofa_settings_free            ( void );
+/**
+ *
+ */
+typedef enum {
+	SETTINGS_TYPE_STRING = 0,
+	SETTINGS_TYPE_INT
+}
+	SettingsType;
 
-GSList *ofa_settings_get_dossiers    ( void );
-void    ofa_settings_add_user_dossier( const gchar *name, const gchar *description );
+void     ofa_settings_free        ( void );
+
+GSList  *ofa_settings_get_dossiers( void );
+gboolean ofa_settings_set_dossier ( const gchar *name, ... );
 
 G_END_DECLS
 

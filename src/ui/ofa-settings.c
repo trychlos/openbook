@@ -28,7 +28,10 @@
 #include <config.h>
 #endif
 
-#include "ui/my-utils.h"
+#include <gio/gio.h>
+#include <glib-object.h>
+#include <stdarg.h>
+
 #include "ui/ofa-settings.h"
 
 #define OFA_TYPE_SETTINGS                ( settings_get_type())
@@ -42,7 +45,7 @@ typedef struct _ofaSettingsPrivate       ofaSettingsPrivate;
 
 typedef struct {
 	/*< private >*/
-	mySettings          parent;
+	GObject             parent;
 	ofaSettingsPrivate *private;
 }
 	ofaSettings;
@@ -51,7 +54,7 @@ typedef struct _ofaSettingsClassPrivate  ofaSettingsClassPrivate;
 
 typedef struct {
 	/*< private >*/
-	mySettingsClass          parent;
+	GObjectClass             parent;
 	ofaSettingsClassPrivate *private;
 }
 	ofaSettingsClass;
@@ -66,32 +69,27 @@ struct _ofaSettingsClassPrivate {
  */
 struct _ofaSettingsPrivate {
 	gboolean   dispose_has_run;
-};
 
-#define GROUP_GENERAL                    "General"
-#define KEY_DOSSIERS                     "Dossiers"
+	GKeyFile  *keyfile;
+	gchar     *kf_name;
+};
 
 #define GROUP_DOSSIER                    "Dossier"
-#define KEY_DESCRIPTION                  "Description"
 
-static const mySettingsKeyDef st_def_keys[] = {
-	{ GROUP_GENERAL, KEY_DOSSIERS,    MY_SETTINGS_STRING_LIST, NULL, TRUE },
-	{ NULL,          KEY_DESCRIPTION, MY_SETTINGS_STRING,      NULL, FALSE },
-	{ 0 }
-};
+static GObjectClass *st_parent_class = NULL;
+static ofaSettings  *st_settings     = NULL;
 
-static mySettingsClass *st_parent_class = NULL;
-static ofaSettings     *st_settings     = NULL;
+static GType    settings_get_type( void );
+static GType    register_type( void );
+static void     class_init( ofaSettingsClass *klass );
+static void     instance_init( GTypeInstance *instance, gpointer klass );
+static void     instance_constructed( GObject *object );
+static void     instance_dispose( GObject *object );
+static void     instance_finalize( GObject *object );
 
-static GType   settings_get_type( void );
-static GType   register_type( void );
-static void    class_init( ofaSettingsClass *klass );
-static void    instance_init( GTypeInstance *instance, gpointer klass );
-static void    instance_dispose( GObject *object );
-static void    instance_finalize( GObject *object );
-
-static void    settings_new( void );
-static GSList *settings_get_dossiers( mySettingsMode mode );
+static void     settings_new( void );
+static void     load_key_file( ofaSettings *settings );
+static gboolean write_key_file( ofaSettings *settings );
 
 static GType
 settings_get_type( void )
@@ -125,7 +123,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( MY_TYPE_SETTINGS, "ofaSettings", &info, 0 );
+	type = g_type_register_static( G_TYPE_OBJECT, "ofaSettings", &info, 0 );
 
 	return( type );
 }
@@ -141,6 +139,7 @@ class_init( ofaSettingsClass *klass )
 	st_parent_class = g_type_class_peek_parent( klass );
 
 	object_class = G_OBJECT_CLASS( klass );
+	object_class->constructed = instance_constructed;
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
 
@@ -166,6 +165,28 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
+instance_constructed( GObject *object )
+{
+	static const gchar *thisfn = "ofa_settings_instance_constructed";
+	ofaSettingsPrivate *priv;
+
+	g_return_if_fail( OFA_IS_SETTINGS( object ));
+
+	priv = OFA_SETTINGS( object )->private;
+
+	if( !priv->dispose_has_run ){
+
+		g_debug( "%s: object=%p (%s)", thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+
+		if( G_OBJECT_CLASS( st_parent_class )->constructed ){
+			G_OBJECT_CLASS( st_parent_class )->constructed( object );
+		}
+
+		load_key_file( OFA_SETTINGS( object ));
+	}
+}
+
+static void
 instance_dispose( GObject *object )
 {
 	static const gchar *thisfn = "ofa_settings_instance_dispose";
@@ -180,6 +201,9 @@ instance_dispose( GObject *object )
 		g_debug( "%s: object=%p (%s)", thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
 		priv->dispose_has_run = TRUE;
+
+		g_key_file_free( priv->keyfile );
+		g_free( priv->kf_name );
 
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
 			G_OBJECT_CLASS( st_parent_class )->dispose( object );
@@ -217,11 +241,91 @@ static void
 settings_new( void )
 {
 	if( !st_settings ){
-		st_settings = g_object_new(
-				OFA_TYPE_SETTINGS,
-				MY_PROP_KEYDEFS, st_def_keys,
-				NULL );
+		st_settings = g_object_new( OFA_TYPE_SETTINGS, NULL );
 	}
+}
+
+static void
+load_key_file( ofaSettings *settings )
+{
+	static const gchar *thisfn = "ofa_settings_load_key_file";
+	gchar *dir;
+	GError *error;
+
+	g_debug( "%s: settings=%p", thisfn, ( void * ) settings );
+
+	settings->private->keyfile = g_key_file_new();
+
+	dir = g_build_filename( g_get_home_dir(), ".config", PACKAGE, NULL );
+	g_mkdir_with_parents( dir, 0750 );
+	settings->private->kf_name = g_strdup_printf( "%s/%s.conf", dir, PACKAGE );
+	g_free( dir );
+
+	error = NULL;
+	if( !g_key_file_load_from_file(
+			settings->private->keyfile,
+			settings->private->kf_name, G_KEY_FILE_KEEP_COMMENTS, &error )){
+		if( error->code != G_FILE_ERROR_NOENT ){
+			g_warning( "%s: %s (%d) %s",
+					thisfn, settings->private->kf_name, error->code, error->message );
+		} else {
+			g_debug( "%s: %s: file doesn't exist", thisfn, settings->private->kf_name );
+		}
+		g_error_free( error );
+	}
+}
+
+static gboolean
+write_key_file( ofaSettings *settings )
+{
+	static const gchar *thisfn = "ofa_settings_write_key_file";
+	gchar *data;
+	GFile *file;
+	GFileOutputStream *stream;
+	GError *error;
+	gsize length;
+
+	error = NULL;
+	data = g_key_file_to_data( settings->private->keyfile, &length, NULL );
+	file = g_file_new_for_path( settings->private->kf_name );
+
+	stream = g_file_replace( file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &error );
+	if( error ){
+		g_warning( "%s: g_file_replace: %s", thisfn, error->message );
+		g_error_free( error );
+		if( stream ){
+			g_object_unref( stream );
+		}
+		g_object_unref( file );
+		g_free( data );
+		return( FALSE );
+	}
+
+	g_output_stream_write( G_OUTPUT_STREAM( stream ), data, length, NULL, &error );
+	if( error ){
+		g_warning( "%s: g_output_stream_write: %s", thisfn, error->message );
+		g_error_free( error );
+		g_object_unref( stream );
+		g_object_unref( file );
+		g_free( data );
+		return( FALSE );
+	}
+
+	g_output_stream_close( G_OUTPUT_STREAM( stream ), NULL, &error );
+	if( error ){
+		g_warning( "%s: g_output_stream_close: %s", thisfn, error->message );
+		g_error_free( error );
+		g_object_unref( stream );
+		g_object_unref( file );
+		g_free( data );
+		return( FALSE );
+	}
+
+	g_object_unref( stream );
+	g_object_unref( file );
+	g_free( data );
+
+	return( TRUE );
 }
 
 /**
@@ -252,44 +356,68 @@ ofa_settings_get_dossiers( void )
 	g_debug( "%s", thisfn );
 
 	settings_new();
-	list = settings_get_dossiers( MY_SETTINGS_ALL );
+	g_warning( "%s: TO BE WRITTEN", thisfn );
+	list = NULL;
 
 	return( list );
 }
 
 /**
- * ofa_settings_add_user_dossier:
+ * ofa_settings_set_dossier:
  * @name:
- * @description:
  *
  * Define a new user dossier.
  */
-void
-ofa_settings_add_user_dossier( const gchar *name, const gchar *description )
+gboolean
+ofa_settings_set_dossier( const gchar *name, ... )
 {
-	static const gchar *thisfn = "ofa_settings_add_user_dossier";
-	GSList *dossiers;
+	static const gchar *thisfn = "ofa_settings_set_dossier";
+	gchar *group;
+	va_list ap;
+	const gchar *key;
+	gint type;
+	const gchar *scontent;
+	gint icontent;
 
-	g_debug( "%s: name=%s, description=%s", thisfn, name, description );
+	g_debug( "%s: name=%s", thisfn, name );
 
 	settings_new();
-	dossiers = settings_get_dossiers( MY_SETTINGS_USER_ONLY );
-	dossiers = g_slist_prepend( dossiers, ( gpointer ) name );
-	my_settings_set_string_list( MY_SETTINGS( st_settings ), GROUP_GENERAL, KEY_DOSSIERS, dossiers );
-	my_utils_slist_free( dossiers );
-}
+	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
 
-/*
- * settings_get_dossiers:
- *
- * Returns the list of defined dossiers as a newly allocated #GSList
- * list of newly allocated strings. The returned list should be
- * #my_utils_slist_free() by the caller.
- */
-static GSList *
-settings_get_dossiers( mySettingsMode mode )
-{
-	g_return_val_if_fail( st_settings && OFA_IS_SETTINGS( st_settings ), NULL );
+	va_start( ap, name );
+	while( TRUE ){
+		key = va_arg( ap, const gchar * );
+		if( !key ){
+			break;
+		}
+		type = va_arg( ap, gint );
+		switch( type ){
 
-	return( my_settings_get_string_list( MY_SETTINGS( st_settings ), GROUP_GENERAL, KEY_DOSSIERS, mode, NULL, NULL ));
+			case SETTINGS_TYPE_STRING:
+				scontent = va_arg( ap, const gchar * );
+				if( scontent && g_utf8_strlen( scontent, -1 )){
+					g_debug( "%s: setting key group=%s, key=%s, content=%s", thisfn, group, key, scontent );
+					g_key_file_set_string( st_settings->private->keyfile, group, key, scontent );
+				} else {
+					g_debug( "%s: removing key group=%s, key=%s", thisfn, group, key );
+					g_key_file_remove_key( st_settings->private->keyfile, group, key, NULL );
+				}
+				break;
+
+			case SETTINGS_TYPE_INT:
+				icontent = va_arg( ap, gint );
+				if( icontent != INT_MIN ){
+					g_debug( "%s: setting key group=%s, key=%s, content=%d", thisfn, group, key, icontent );
+					g_key_file_set_integer( st_settings->private->keyfile, group, key, icontent );
+				} else {
+					g_debug( "%s: removing key group=%s, key=%s", thisfn, group, key );
+					g_key_file_remove_key( st_settings->private->keyfile, group, key, NULL );
+				}
+				break;
+		}
+	}
+	va_end( ap );
+	g_free( group );
+
+	return( write_key_file( st_settings ));
 }

@@ -1050,9 +1050,22 @@ error_on_apply( ofaDossierNew *self, const gchar *stmt, const gchar *error )
 static gboolean
 setup_new_dossier( ofaDossierNew *self )
 {
-	ofa_settings_add_user_dossier( self->private->p1_name, self->private->p1_description );
+	gint port = INT_MIN;
 
-	return( TRUE );
+	if( self->private->p2_port ){
+		port = atoi( self->private->p2_port );
+	}
+
+	return(
+		ofa_settings_set_dossier(
+			self->private->p1_name,
+			"Description", SETTINGS_TYPE_STRING, self->private->p1_description,
+			"Provider",    SETTINGS_TYPE_STRING, "MySQL",
+			"Host",        SETTINGS_TYPE_STRING, self->private->p2_host,
+			"Port",        SETTINGS_TYPE_INT,    port,
+			"Socket",      SETTINGS_TYPE_STRING, self->private->p2_socket,
+			"Database",    SETTINGS_TYPE_STRING, self->private->p2_dbname,
+			NULL ));
 }
 
 static gboolean

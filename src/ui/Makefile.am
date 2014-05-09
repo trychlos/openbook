@@ -39,18 +39,10 @@ AM_CPPFLAGS += \
 	$(NULL)
 
 BUILT_SOURCES = \
-	my-marshal.c										\
-	my-marshal.h										\
 	$(NULL)
 
 openbook_SOURCES = \
 	main.c												\
-	my-settings.c										\
-	my-settings.h										\
-	my-timeout.c										\
-	my-timeout.h										\
-	my-utils.c											\
-	my-utils.h											\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-dossier-new.c									\
@@ -61,13 +53,6 @@ openbook_SOURCES = \
 	ofa-settings.h										\
 	$(BUILT_SOURCES)									\
 	$(NULL)
-
-my-marshal.h: my-marshal.def $(GLIB_GENMARSHAL)
-	$(GLIB_GENMARSHAL) $< --header --prefix=my_cclosure_marshal > $@
-
-my-marshal.c: my-marshal.def $(GLIB_GENMARSHAL)
-	echo "#include \"my-marshal.h\"" > $@
-	$(GLIB_GENMARSHAL) $< --body --prefix=my_cclosure_marshal >> $@
 
 openbook_LDADD = \
 	$(OPENBOOK_LIBS)									\
