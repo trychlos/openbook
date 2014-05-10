@@ -29,10 +29,6 @@
 
    8 2014- 5- 2 ofa_application_on_about: to be written
 
-   9 2014- 5- 3 ofa_application_on_new: to be written
-
-  10 2014- 5- 3 ofa_application_on_open: to be written
-
   14 2014- 5- 4 have a preference: assistant cancel on escape
      2014- 5- 5 ofa-dossier-new.c: variable 'pref_quit_on_escape'
 
@@ -63,17 +59,21 @@
                 terminated (act as a commit transaction), so that all is
                 left as this was initially if something goes wrong
 
-  33 2014- 5- 9 DossierNew: get rid of error_on_applied variable which
-                appears useless since we have abandonned libgda
+  35 2014- 5-10 DossierOpen should monitor the configuration, only
+                enabling the action when there is at least one defined
+                dossier
 
-  34 2014- 5- 9 DossierNew: move the settings key names to ofa_settings
-                (as ofa_settings_get_dossier)
-
-  35
+  36
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+   9 2014- 5- 3 ofa_application_on_new: to be written
+     2014- 5-10 Done
+
+  10 2014- 5- 3 ofa_application_on_open: to be written
+     2014- 5-10 Done
 
   11 2014- 5- 3 Alt+F4: application gracefully exits and main window and
                 application are correctly finalized - should intercept
@@ -129,6 +129,14 @@
 
   32 2014- 5- 9 settings_gvalue_compare to be written
      2014- 5- 9 cancelled
+
+  33 2014- 5- 9 DossierNew: get rid of error_on_applied variable which
+                appears useless since we have abandonned libgda
+     2014- 5-10 Done
+
+  34 2014- 5- 9 DossierNew: move the settings key names to ofa_settings
+                (as ofa_settings_get_dossier)
+     2014- 5-10 Done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

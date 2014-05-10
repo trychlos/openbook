@@ -275,6 +275,9 @@ ofo_dossier_dbmodel_update( ofaSgbd *sgbd, GtkWindow *parent, const gchar *accou
 static gint
 dbmodel_get_version( ofaSgbd *sgbd, GtkWindow *parent )
 {
+	gchar *query;
+
+	query = g_strdup( "SELECT MAX(VERSION_NUM) FROM T_VERSION" );
 	g_warning( "dbmodel_get_version: TO BE WRITTEN" );
 	return( 0 );
 }
