@@ -55,6 +55,8 @@ openbook_SOURCES = \
 	ofa-main-window.h									\
 	ofa-settings.c										\
 	ofa-settings.h										\
+	ofa-sgbd.c											\
+	ofa-sgbd.h											\
 	ofo-dossier.c										\
 	ofo-dossier.h										\
 	$(BUILT_SOURCES)									\

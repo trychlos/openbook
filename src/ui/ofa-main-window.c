@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "ui/ofa-main-window.h"
+#include "ui/ofo-dossier.h"
 
 static gboolean pref_confirm_on_altf4 = FALSE;
 
@@ -44,13 +45,14 @@ struct _ofaMainWindowClassPrivate {
 /* private instance data
  */
 struct _ofaMainWindowPrivate {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* properties
 	 */
 
 	/* internals
 	 */
+	ofoDossier *dossier;
 };
 
 /* signals defined here
@@ -204,17 +206,21 @@ static void
 instance_dispose( GObject *window )
 {
 	static const gchar *thisfn = "ofa_main_window_instance_dispose";
-	ofaMainWindow *self;
+	ofaMainWindowPrivate *priv;
 
 	g_return_if_fail( OFA_IS_MAIN_WINDOW( window ));
 
-	self = OFA_MAIN_WINDOW( window );
+	priv = OFA_MAIN_WINDOW( window )->private;
 
-	if( !self->private->dispose_has_run ){
+	if( !priv->dispose_has_run ){
 
 		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
 
-		self->private->dispose_has_run = TRUE;
+		priv->dispose_has_run = TRUE;
+
+		if( priv->dossier ){
+			g_object_unref( priv->dossier );
+		}
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
@@ -331,6 +337,14 @@ on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data 
 	g_debug( "%s: dbname=%s", thisfn, sod->dbname );
 	g_debug( "%s: account=%s", thisfn, sod->account );
 	g_debug( "%s: password=%s", thisfn, sod->password );
+
+	window->private->dossier = ofo_dossier_new( sod->dossier );
+
+	if( ofo_dossier_open(
+			window->private->dossier, GTK_WINDOW( window ),
+			sod->host, sod->port, sod->socket, sod->dbname, sod->account, sod->password )){
+
+	}
 }
 
 static void

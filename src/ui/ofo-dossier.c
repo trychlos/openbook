@@ -40,6 +40,14 @@ struct _ofoDossierClassPrivate {
  */
 struct _ofoDossierPrivate {
 	gboolean dispose_has_run;
+
+	/* properties
+	 */
+
+	/* internals
+	 */
+	gchar   *name;
+	ofaSgbd *sgbd;
 };
 
 /* the last DB model version
@@ -54,8 +62,8 @@ static void     instance_init( GTypeInstance *instance, gpointer klass );
 static void     instance_dispose( GObject *instance );
 static void     instance_finalize( GObject *instance );
 
-static gint     dbmodel_get_version( MYSQL *mysql );
-static gboolean exec_query( MYSQL *mysql, gchar *query, gchar **message );
+static gint     dbmodel_get_version( ofaSgbd *sgbd, GtkWindow *parent );
+static gboolean dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
 
 GType
 ofo_dossier_get_type( void )
@@ -146,6 +154,12 @@ instance_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
+		g_free( priv->name );
+
+		if( priv->sgbd ){
+			g_object_unref( priv->sgbd );
+		}
+
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
 			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
@@ -174,59 +188,121 @@ instance_finalize( GObject *instance )
 }
 
 /**
+ * ofo_dossier_new:
+ */
+ofoDossier *
+ofo_dossier_new( const gchar *name )
+{
+	ofoDossier *dossier;
+
+	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
+	dossier->private->name = g_strdup( name );
+
+	return( dossier );
+}
+
+/**
+ * ofo_dossier_open:
+ */
+gboolean
+ofo_dossier_open( ofoDossier *dossier, GtkWindow *parent,
+		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
+{
+	static const gchar *thisfn = "ofo_dossier_open";
+	ofaSgbd *sgbd;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	g_debug( "%s: dossier=%p, parent=%p, host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s",
+			thisfn,
+			( void * ) dossier, ( void * ) parent, host, port, socket, dbname, account, password );
+
+	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
+
+	if( !ofa_sgbd_connect( sgbd,
+			parent,
+			host,
+			port,
+			socket,
+			dbname,
+			account,
+			password )){
+
+		g_object_unref( sgbd );
+		return( FALSE );
+	}
+
+	dossier->private->sgbd = sgbd;
+
+	return( TRUE );
+}
+
+/**
  * ofo_dossier_dbmodel_update:
- * @mysql:
- * @message: an error message if %FALSE
+ * @sgbd: an already opened connection
+ * @parent: the GtkWindow which will be the parent of the error dialog, if any
+ * @account: the account which has opened this connection; it will be checked
+ *  against its permissions when trying to update the data model
  *
  * Update the DB model in the SGBD
  */
 gboolean
-ofo_dossier_dbmodel_update( MYSQL *mysql, gchar **message )
+ofo_dossier_dbmodel_update( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_update";
 	gint cur_version;
 
-	g_debug( "%s: mysql=%p, message=%p", thisfn, ( void * ) mysql, ( void * ) message );
+	g_debug( "%s: sgbd=%p, parent=%p, account=%s",
+			thisfn, ( void * ) sgbd, ( void * ) parent, account );
 
-	cur_version = dbmodel_get_version( mysql );
+	cur_version = dbmodel_get_version( sgbd, parent );
 	g_debug( "%s: cur_version=%d, THIS_DBMODEL_VERSION=%d", thisfn, cur_version, THIS_DBMODEL_VERSION );
 
 	if( cur_version < THIS_DBMODEL_VERSION ){
+		if( cur_version < 1 ){
+			dbmodel_to_v1( sgbd, parent, account );
+		}
 		g_warning( "%s: TO BE WRITTEN", thisfn );
 	}
+
 	return( TRUE );
 }
 
+/*
+ * returns the last complete version
+ * i.e. une version where the version date is set
+ */
 static gint
-dbmodel_get_version( MYSQL *mysql )
+dbmodel_get_version( ofaSgbd *sgbd, GtkWindow *parent )
 {
 	g_warning( "dbmodel_get_version: TO BE WRITTEN" );
 	return( 0 );
 }
 
 /**
- * ofo_dossier_dbmodel_create_v1:
+ * ofo_dossier_dbmodel_to_v1:
  */
-gboolean
-ofo_dossier_dbmodel_create_v1( MYSQL *mysql, const gchar *account, gchar **message )
+static gboolean
+dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 {
-	static const gchar *thisfn = "ofo_dossier_dbmodel_create_v1";
+	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v1";
 	gchar *query;
 
-	g_debug( "%s: mysql=%p, account=%s, message=%p",
-			thisfn, ( void * ) mysql, account, ( void * ) message );
+	g_debug( "%s: sgbd=%p, parent=%p, account=%s",
+			thisfn, ( void * ) sgbd, ( void * ) parent, account );
 
+	/* default value for timestamp cannot be null */
 	query = g_strdup(
 			"CREATE TABLE IF NOT EXISTS T_VERSION ("
 				"VERSION_NUM  INTEGER   NOT NULL UNIQUE COMMENT 'DB model version number',"
 				"VERSION_DATE TIMESTAMP DEFAULT 0       COMMENT 'Version application timestamp')" );
-	if( !exec_query( mysql, query, message )){
+	if( !ofa_sgbd_query( sgbd, parent, query )){
 		return( FALSE );
 	}
 
 	query = g_strdup(
 			"INSERT INTO T_VERSION (VERSION_NUM) VALUES (1)" );
-	if( !exec_query( mysql, query, message )){
+	if( !ofa_sgbd_query( sgbd, parent, query )){
 		return( FALSE );
 	}
 
@@ -234,43 +310,24 @@ ofo_dossier_dbmodel_create_v1( MYSQL *mysql, const gchar *account, gchar **messa
 			"CREATE TABLE IF NOT EXISTS T_ROLES ("
 				"USER_ID  VARCHAR(32) NOT NULL UNIQUE COMMENT 'User account',"
 				"IS_ADMIN INTEGER                     COMMENT 'Whether the user has administration role')" );
-	if( !exec_query( mysql, query, message )){
+	if( !ofa_sgbd_query( sgbd, parent, query )){
 		return( FALSE );
 	}
 
-	if( account && g_utf8_strlen( account, -1 )){
-		query = g_strdup_printf(
-				"INSERT INTO T_ROLES (USER_ID, IS_ADMIN) VALUES ('%s',1)", account );
-		if( !exec_query( mysql, query, message )){
-			return( FALSE );
-		}
+	query = g_strdup_printf(
+			"INSERT INTO T_ROLES (USER_ID, IS_ADMIN) VALUES ('%s',1)", account );
+	if( !ofa_sgbd_query( sgbd, parent, query )){
+		return( FALSE );
 	}
 
-	/* we do this only at the end of the v1 model creation
+	/* we do this only at the end of the model creation
 	 * as a mark that all has been successfully done
 	 */
 	query = g_strdup(
 			"UPDATE T_VERSION SET VERSION_DATE=NOW() WHERE VERSION_NUM=1" );
-	if( !exec_query( mysql, query, message )){
+	if( !ofa_sgbd_query( sgbd, parent, query )){
 		return( FALSE );
 	}
 
 	return( TRUE );
-}
-
-static gboolean
-exec_query( MYSQL *mysql, gchar *query, gchar **message )
-{
-	gboolean ok = !mysql_query( mysql, query );
-
-	if( !ok ){
-		if( message ){
-			*message = g_strdup_printf( "%s\n\n%s", query, mysql_error( mysql ));
-		} else {
-			g_warning( "%s: %s", query, mysql_error( mysql ));
-		}
-	}
-
-	g_free( query );
-	return( ok );
 }

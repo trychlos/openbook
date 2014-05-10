@@ -115,7 +115,6 @@ static void      on_account_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      on_password_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  do_open( ofaDossierOpen *self );
-static void      connect_error( GtkWindow *parent, gchar *host, gchar *account, gchar *dbname, gint port, gchar *socket, MYSQL *mysql );
 
 GType
 ofa_dossier_open_get_type( void )
@@ -534,80 +533,42 @@ static gboolean
 do_open( ofaDossierOpen *self )
 {
 	static const gchar *thisfn = "ofa_dossier_open_do_open";
-	gboolean connected;
+	gboolean opened;
 	ofaOpenDossier *sod;
-	MYSQL mysql;
+	ofaSgbd *sgbd;
 
-	connected = FALSE;
+	opened = FALSE;
 	sod = g_new0( ofaOpenDossier, 1 );
 	ofa_settings_get_dossier( self->private->name, &sod->host, &sod->port, &sod->socket, &sod->dbname );
+	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
 
-	mysql_init( &mysql );
-
-	if( !mysql_real_connect( &mysql,
+	if( !ofa_sgbd_connect(
+			sgbd,
+			GTK_WINDOW( self->private->dialog),
 			sod->host,
-			self->private->account,
-			self->private->password,
-			sod->dbname,
 			sod->port,
 			sod->socket,
-			CLIENT_MULTI_RESULTS )){
-
-		connect_error( GTK_WINDOW( self->private->dialog),
-				sod->host, self->private->account, sod->dbname, sod->port, sod->socket, &mysql );
+			sod->dbname,
+			self->private->account,
+			self->private->password )){
 
 		g_free( sod->host );
 		g_free( sod->socket );
 		g_free( sod->dbname );
 		g_free( sod );
-
-	} else {
-		g_debug( "%s: connection successfully opened", thisfn );
-		mysql_close( &mysql );
-		connected = TRUE;
-		sod->dossier = g_strdup( self->private->name );
-		sod->account = g_strdup( self->private->account );
-		sod->password = g_strdup( self->private->password );
-		self->private->ood = sod;
+		goto free_sgbd;
 	}
 
-	return( connected );
-}
+	opened = TRUE;
+	g_debug( "%s: connection successfully opened", thisfn );
 
-static void
-connect_error( GtkWindow *parent,
-		gchar *host, gchar *account, gchar *dbname, gint port, gchar *socket,
-		MYSQL *mysql )
-{
-	GtkMessageDialog *dlg;
-	GString *str;
+	sod->dossier = g_strdup( self->private->name );
+	sod->account = g_strdup( self->private->account );
+	sod->password = g_strdup( self->private->password );
+	self->private->ood = sod;
 
-	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				parent,
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", _( "Unable to connect to the database")));
+free_sgbd:
+	g_object_unref( sgbd );
 
-	str = g_string_new( "" );
-	if( host ){
-		g_string_append_printf( str, "Host: %s\n", host );
-	}
-	if( port > 0 ){
-		g_string_append_printf( str, "Port: %d\n", port );
-	}
-	if( socket ){
-		g_string_append_printf( str, "Socket: %s\n", socket );
-	}
-	if( dbname ){
-		g_string_append_printf( str, "Database: %s\n", dbname );
-	}
-	if( account ){
-		g_string_append_printf( str, "Account: %s\n", account );
-	}
-	gtk_message_dialog_format_secondary_text( dlg, "%s", str->str );
-	g_string_free( str, TRUE );
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
+	return( opened );
 }

@@ -30,12 +30,12 @@
 
 #include <glib/gi18n.h>
 #include <glib/gprintf.h>
-#include <mysql/mysql.h>
 #include <stdlib.h>
 
 #include "ui/my-utils.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-settings.h"
+#include "ui/ofa-sgbd.h"
 #include "ui/ofo-dossier.h"
 
 static gboolean pref_quit_on_escape = TRUE;
@@ -94,6 +94,7 @@ struct _ofaDossierNewPrivate {
 	gchar         *p2_dbname;
 	gchar         *p2_host;
 	gchar         *p2_port;
+	gint           p2_port_num;
 	gchar         *p2_socket;
 	gchar         *p2_account;
 	gchar         *p2_password;
@@ -104,10 +105,6 @@ struct _ofaDossierNewPrivate {
 	gchar         *p3_account;
 	gchar         *p3_password;
 	gchar         *p3_bis;
-
-	/* when applying...
-	 */
-	gboolean       error_when_applied;
 };
 
 /* class properties
@@ -164,8 +161,6 @@ static void       display_p4_param( GtkWidget *page, const gchar *field_name, co
 static void       check_for_p4_complete( ofaDossierNew *self );
 static void       on_apply( GtkAssistant *assistant, ofaDossierNew *self );
 static gboolean   make_db_global( ofaDossierNew *self );
-static gboolean   exec_mysql_query( ofaDossierNew *self, MYSQL *mysql, const gchar *query );
-static void       error_on_apply( ofaDossierNew *self, const gchar *stmt, const gchar *error );
 static gboolean   setup_new_dossier( ofaDossierNew *self );
 static gboolean   create_db_model( ofaDossierNew *self );
 static void       on_cancel( GtkAssistant *assistant, ofaDossierNew *self );
@@ -684,9 +679,6 @@ check_for_p2_complete( ofaDossierNew *self )
 			priv->p2_dbname && g_utf8_strlen( priv->p2_dbname, -1 ) &&
 			priv->p2_account && g_utf8_strlen( priv->p2_account, -1 ) &&
 			priv->p2_password && g_utf8_strlen( priv->p2_password, -1 ));
-
-	/* also reinit the last applied status if any */
-	self->private->error_when_applied = FALSE;
 }
 
 static void
@@ -880,8 +872,7 @@ check_for_p4_complete( ofaDossierNew *self )
 
 	priv = self->private;
 	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_CONFIRM );
-
-	gtk_assistant_set_page_complete( priv->assistant, page, !self->private->error_when_applied );
+	gtk_assistant_set_page_complete( priv->assistant, page, TRUE );
 }
 
 static void
@@ -897,6 +888,11 @@ on_apply( GtkAssistant *assistant, ofaDossierNew *self )
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
 
+		self->private->p2_port_num = 0;
+		if( self->private->p2_port && g_utf8_strlen( self->private->p2_port, 1 )){
+			self->private->p2_port_num = atoi( self->private->p2_port );
+		}
+
 		if( make_db_global( self )){
 			setup_new_dossier( self );
 			create_db_model( self );
@@ -904,7 +900,7 @@ on_apply( GtkAssistant *assistant, ofaDossierNew *self )
 			st_ood = g_new0( ofaOpenDossier, 1 );
 			st_ood->dossier = g_strdup( self->private->p1_name );
 			st_ood->host = g_strdup( self->private->p2_host );
-			st_ood->port = self->private->p2_port ? atoi( self->private->p2_port ) : 0;
+			st_ood->port = self->private->p2_port_num;
 			st_ood->socket = g_strdup( self->private->p2_socket );
 			st_ood->dbname = g_strdup( self->private->p2_dbname );
 			st_ood->account = g_strdup( self->private->p3_account );
@@ -917,39 +913,31 @@ on_apply( GtkAssistant *assistant, ofaDossierNew *self )
  * Create the empty database with a global connection to dataserver
  * - create database
  * - create admin user
- * - grant to admin user
+ * - grant admin user
  */
 static gboolean
 make_db_global( ofaDossierNew *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_make_db_global";
-	MYSQL mysql;
-	gint port;
+	ofaSgbd *sgbd;
 	GString *stmt;
 	gboolean db_created;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	/* initialize the MariaDB connection */
-	mysql_init( &mysql );
 	db_created = FALSE;
+	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
 
-	/* connect to the 'mysql' database */
-	port = 0;
-	if( self->private->p2_port && g_utf8_strlen( self->private->p2_port, 1 )){
-		port = atoi( self->private->p2_port );
-	}
-
-	if( !mysql_real_connect( &mysql,
+	if( !ofa_sgbd_connect( sgbd,
+			GTK_WINDOW( self->private->assistant ),
 			self->private->p2_host,
-			self->private->p2_account,
-			self->private->p2_password,
-			"mysql",
-			port,
+			self->private->p2_port_num,
 			self->private->p2_socket,
-			CLIENT_MULTI_RESULTS )){
+			"mysql",
+			self->private->p2_account,
+			self->private->p2_password )){
 
-		error_on_apply( self, NULL, mysql_error( &mysql ));
+		gtk_assistant_previous_page( self->private->assistant );
 		return( FALSE );
 	}
 
@@ -958,21 +946,24 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"CREATE DATABASE %s",
 			self->private->p2_dbname );
-	if( !exec_mysql_query( self, &mysql, stmt->str )){
+	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
 
 	g_string_printf( stmt,
 			"CREATE USER '%s' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
-	if( !exec_mysql_query( self, &mysql, stmt->str )){
+	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
 
 	g_string_printf( stmt,
 			"CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
-	if( !exec_mysql_query( self, &mysql, stmt->str )){
+	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
 
@@ -980,7 +971,8 @@ make_db_global( ofaDossierNew *self )
 			"GRANT ALL ON %s.* TO '%s' WITH GRANT OPTION",
 			self->private->p2_dbname,
 			self->private->p3_account );
-	if( !exec_mysql_query( self, &mysql, stmt->str )){
+	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
 
@@ -988,21 +980,24 @@ make_db_global( ofaDossierNew *self )
 			"GRANT ALL ON %s.* TO '%s'@'localhost' WITH GRANT OPTION",
 			self->private->p2_dbname,
 			self->private->p3_account );
-	if( !exec_mysql_query( self, &mysql, stmt->str )){
+	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
 
 	g_string_printf( stmt,
 			"GRANT CREATE USER, FILE ON *.* TO '%s'",
 			self->private->p3_account );
-	if( !exec_mysql_query( self, &mysql, stmt->str )){
+	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
 
 	g_string_printf( stmt,
 			"GRANT CREATE USER, FILE ON *.* TO '%s'@'localhost'",
 			self->private->p3_account );
-	if( !exec_mysql_query( self, &mysql, stmt->str )){
+	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
 
@@ -1010,49 +1005,9 @@ make_db_global( ofaDossierNew *self )
 
 free_stmt:
 	g_string_free( stmt, TRUE );
-	mysql_close( &mysql );
+	g_object_unref( sgbd );
 
 	return( db_created );
-}
-
-static gboolean
-exec_mysql_query( ofaDossierNew *self, MYSQL *mysql, const gchar *query )
-{
-	gboolean success;
-
-	success = TRUE;
-
-	if( mysql_query( mysql, query )){
-		error_on_apply( self, query, mysql_error( mysql ));
-		success = FALSE;
-	}
-
-	return( success );
-}
-
-static void
-error_on_apply( ofaDossierNew *self, const gchar *stmt, const gchar *error )
-{
-	GtkMessageDialog *dlg;
-	gchar *msg;
-
-	if( stmt ){
-		msg = g_strdup_printf( "%s\n\n%s", stmt, error );
-	} else {
-		msg = g_strdup( error );
-	}
-	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				GTK_WINDOW( self->private->assistant ),
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", msg ));
-	g_free( msg );
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
-
-	self->private->error_when_applied = TRUE;
-	gtk_assistant_previous_page( self->private->assistant );
 }
 
 static gboolean
@@ -1060,8 +1015,8 @@ setup_new_dossier( ofaDossierNew *self )
 {
 	gint port = INT_MIN;
 
-	if( self->private->p2_port ){
-		port = atoi( self->private->p2_port );
+	if( self->private->p2_port_num > 0 ){
+		port = self->private->p2_port_num;
 	}
 
 	return(
@@ -1078,47 +1033,36 @@ setup_new_dossier( ofaDossierNew *self )
 static gboolean
 create_db_model( ofaDossierNew *self )
 {
-	MYSQL mysql;
-	gint port;
-	gchar *message;
+	ofaSgbd *sgbd;
+	gboolean model_created;
 
-	/* initialize the MariaDB connection */
-	mysql_init( &mysql );
+	model_created = FALSE;
+	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
 
-	/* connect to the 'mysql' database with the newly created admin
-	 * account
-	 */
-	port = 0;
-	if( self->private->p2_port && g_utf8_strlen( self->private->p2_port, 1 )){
-		port = atoi( self->private->p2_port );
-	}
-	if( !mysql_real_connect( &mysql,
+	if( !ofa_sgbd_connect( sgbd,
+			GTK_WINDOW( self->private->assistant ),
 			self->private->p2_host,
-			self->private->p3_account,
-			self->private->p3_password,
-			self->private->p2_dbname,
-			port,
+			self->private->p2_port_num,
 			self->private->p2_socket,
-			CLIENT_MULTI_RESULTS )){
+			self->private->p2_dbname,
+			self->private->p2_account,
+			self->private->p2_password )){
 
-		error_on_apply( self, NULL, mysql_error( &mysql ));
-		return( FALSE );
+		gtk_assistant_previous_page( self->private->assistant );
+		goto free_sgbd;
 	}
 
-	if( !ofo_dossier_dbmodel_create_v1( &mysql, self->private->p3_account, &message )){
-		error_on_apply( self, NULL, message );
-		g_free( message );
-		return( FALSE );
+	if( !ofo_dossier_dbmodel_update( sgbd, GTK_WINDOW( self->private->assistant ), self->private->p3_account )){
+		gtk_assistant_previous_page( self->private->assistant );
+		goto free_sgbd;
 	}
 
-	if( !ofo_dossier_dbmodel_update( &mysql, &message )){
-		error_on_apply( self, NULL, message );
-		g_free( message );
-		return( FALSE );
-	}
+	model_created = TRUE;
 
-	mysql_close( &mysql );
-	return( TRUE );
+free_sgbd:
+	g_object_unref( sgbd );
+
+	return( model_created );
 }
 
 /*

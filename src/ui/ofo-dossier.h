@@ -36,8 +36,7 @@
  * DB definition.
  */
 
-#include <glib-object.h>
-#include <mysql/mysql.h>
+#include "ui/ofa-sgbd.h"
 
 G_BEGIN_DECLS
 
@@ -66,10 +65,14 @@ typedef struct {
 }
 	ofoDossierClass;
 
-GType    ofo_dossier_get_type         ( void );
+GType       ofo_dossier_get_type         ( void );
 
-gboolean ofo_dossier_dbmodel_create_v1( MYSQL *mysql, const gchar *account, gchar **message );
-gboolean ofo_dossier_dbmodel_update   ( MYSQL *mysql, gchar **message );
+ofoDossier *ofo_dossier_new              ( const gchar *name );
+
+gboolean    ofo_dossier_open             ( ofoDossier *dossier, GtkWindow *parent,
+		                                   const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password );
+
+gboolean    ofo_dossier_dbmodel_update   ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
 
 G_END_DECLS
 
