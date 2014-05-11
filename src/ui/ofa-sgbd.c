@@ -215,7 +215,7 @@ gboolean
 ofa_sgbd_connect( ofaSgbd *sgbd, GtkWindow *parent,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
 {
-	static const gchar *thisfn = "ofa_sgbd_connect_open";
+	static const gchar *thisfn = "ofa_sgbd_connect";
 	MYSQL *mysql;
 
 	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
@@ -290,7 +290,7 @@ connect_error( ofaSgbd *sgbd, GtkWindow *parent,
 gboolean
 ofa_sgbd_query( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 {
-	static const gchar *thisfn = "ofa_sgbd_connect_close";
+	static const gchar *thisfn = "ofa_sgbd_query";
 	gboolean query_ok = FALSE;
 
 	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
@@ -309,6 +309,59 @@ ofa_sgbd_query( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 	}
 
 	return( query_ok );
+}
+
+/**
+ * ofa_sgbd_exec_query_ex:
+ *
+ * Returns a GSList or ordered rows of the result set.
+ * Each GSList->data is a pointer to a GSList of ordered columns
+ * A field is so the GSList[column] data, is always allocated
+ * (but maybe of a zero length), or NULL (SQL-NULL translation).
+ *
+ * Returns NULL is case of an error.
+ *
+ * The returned GSList should be freed with ofa_sgbd_free_result().
+ */
+GSList *
+ofa_sgbd_query_ex( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
+{
+	static const gchar *thisfn = "ofa_sgbd_query_ex";
+	GSList *result = NULL;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	gint fields_count, i;
+
+	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+
+	g_debug( "%s: sgbd=%p, parent=%p, query='%s'",
+			thisfn, ( void * ) sgbd, ( void * ) parent, query );
+
+	if( sgbd->private->mysql ){
+		if( mysql_query( sgbd->private->mysql, query )){
+			query_error( sgbd, parent, query );
+
+		} else {
+			res = mysql_store_result( sgbd->private->mysql );
+			if( res ){
+				fields_count = mysql_num_fields( res );
+				while(( row = mysql_fetch_row( res ))){
+					GSList *col = NULL;
+					for( i=0 ; i<fields_count ; ++i ){
+						col = g_slist_prepend( col, row[i] ? g_strdup( row[i] ) : NULL );
+					}
+					col = g_slist_reverse( col );
+					result = g_slist_prepend( result, col );
+				}
+				result = g_slist_reverse( result );
+			}
+		}
+
+	} else {
+		g_warning( "%s: trying to query a non-opened connection", thisfn );
+	}
+
+	return( result );
 }
 
 static void

@@ -232,6 +232,8 @@ ofo_dossier_open( ofoDossier *dossier, GtkWindow *parent,
 		return( FALSE );
 	}
 
+	ofo_dossier_dbmodel_update( sgbd, parent, account );
+
 	dossier->private->sgbd = sgbd;
 
 	return( TRUE );
@@ -276,10 +278,28 @@ static gint
 dbmodel_get_version( ofaSgbd *sgbd, GtkWindow *parent )
 {
 	gchar *query;
+	GSList *res;
+	gint version;
 
+	version = 0;
 	query = g_strdup( "SELECT MAX(VERSION_NUM) FROM T_VERSION" );
+	res = ofa_sgbd_query_ex( sgbd, parent, query );
+	if( res ){
+		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
+		g_debug( "%s: %s", query, s );
+	}
+	g_free( query );
+
+	query = g_strdup( "SELECT MAX(VERSION_NUM) FROM T_VERSION WHERE VERSION_DATE=0" );
+	res = ofa_sgbd_query_ex( sgbd, parent, query );
+	if( res ){
+		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
+		g_debug( "%s: %s", query, s );
+	}
+	g_free( query );
+
 	g_warning( "dbmodel_get_version: TO BE WRITTEN" );
-	return( 0 );
+	return( version );
 }
 
 /**
@@ -295,40 +315,38 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 			thisfn, ( void * ) sgbd, ( void * ) parent, account );
 
 	/* default value for timestamp cannot be null */
-	query = g_strdup(
+	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS T_VERSION ("
 				"VERSION_NUM  INTEGER   NOT NULL UNIQUE COMMENT 'DB model version number',"
-				"VERSION_DATE TIMESTAMP DEFAULT 0       COMMENT 'Version application timestamp')" );
-	if( !ofa_sgbd_query( sgbd, parent, query )){
+				"VERSION_DATE TIMESTAMP DEFAULT 0       COMMENT 'Version application timestamp')" )){
 		return( FALSE );
 	}
 
-	query = g_strdup(
-			"INSERT INTO T_VERSION (VERSION_NUM) VALUES (1)" );
-	if( !ofa_sgbd_query( sgbd, parent, query )){
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT INTO T_VERSION (VERSION_NUM) VALUES (1)" )){
 		return( FALSE );
 	}
 
-	query = g_strdup(
+	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS T_ROLES ("
 				"USER_ID  VARCHAR(32) NOT NULL UNIQUE COMMENT 'User account',"
-				"IS_ADMIN INTEGER                     COMMENT 'Whether the user has administration role')" );
-	if( !ofa_sgbd_query( sgbd, parent, query )){
+				"IS_ADMIN INTEGER                     COMMENT 'Whether the user has administration role')")){
 		return( FALSE );
 	}
 
 	query = g_strdup_printf(
 			"INSERT INTO T_ROLES (USER_ID, IS_ADMIN) VALUES ('%s',1)", account );
 	if( !ofa_sgbd_query( sgbd, parent, query )){
+		g_free( query );
 		return( FALSE );
 	}
+	g_free( query );
 
 	/* we do this only at the end of the model creation
 	 * as a mark that all has been successfully done
 	 */
-	query = g_strdup(
-			"UPDATE T_VERSION SET VERSION_DATE=NOW() WHERE VERSION_NUM=1" );
-	if( !ofa_sgbd_query( sgbd, parent, query )){
+	if( !ofa_sgbd_query( sgbd, parent,
+			"UPDATE T_VERSION SET VERSION_DATE=NOW() WHERE VERSION_NUM=1" )){
 		return( FALSE );
 	}
 

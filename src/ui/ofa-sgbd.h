@@ -76,6 +76,8 @@ gboolean ofa_sgbd_connect ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *host,
 
 gboolean ofa_sgbd_query   ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query );
 
+GSList  *ofa_sgbd_query_ex( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query );
+
 G_END_DECLS
 
 #endif /* __OFA_SGBD_H__ */
