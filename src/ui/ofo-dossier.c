@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "ui/ofo-dossier.h"
 
 /* private class data
@@ -48,6 +50,13 @@ struct _ofoDossierPrivate {
 	 */
 	gchar   *name;
 	ofaSgbd *sgbd;
+
+	/* row id 0
+	 */
+	gchar   *label;						/* raison sociale */
+	gchar   *notes;						/* notes */
+	GDate   *exe_deb;					/* début d'exercice */
+	GDate   *exe_fin;					/* fin d'exercice */
 };
 
 /* the last DB model version
@@ -62,7 +71,8 @@ static void     instance_init( GTypeInstance *instance, gpointer klass );
 static void     instance_dispose( GObject *instance );
 static void     instance_finalize( GObject *instance );
 
-static gint     dbmodel_get_version( ofaSgbd *sgbd, GtkWindow *parent );
+static gboolean check_user_exists( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
+static gint     dbmodel_get_version( ofaSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
 
 GType
@@ -160,6 +170,15 @@ instance_dispose( GObject *instance )
 			g_object_unref( priv->sgbd );
 		}
 
+		g_free( priv->label );
+		g_free( priv->notes );
+		if( priv->exe_deb ){
+			g_date_free( priv->exe_deb );
+		}
+		if( priv->exe_fin ){
+			g_date_free( priv->exe_fin );
+		}
+
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
 			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
@@ -232,11 +251,38 @@ ofo_dossier_open( ofoDossier *dossier, GtkWindow *parent,
 		return( FALSE );
 	}
 
+	if( !check_user_exists( sgbd, parent, account )){
+		g_object_unref( sgbd );
+		return( FALSE );
+	}
+
 	ofo_dossier_dbmodel_update( sgbd, parent, account );
 
 	dossier->private->sgbd = sgbd;
 
 	return( TRUE );
+}
+
+static gboolean
+check_user_exists( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
+{
+	gchar *query;
+	GSList *res;
+	gboolean exists;
+
+	exists = FALSE;
+	query = g_strdup_printf( "SELECT ROL_USER FROM OFA_T_ROLES WHERE ROL_USER='%s'", account );
+	res = ofa_sgbd_query_ex( sgbd, parent, query );
+	if( res ){
+		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
+		if( !g_utf8_collate( account, s )){
+			exists = TRUE;
+		}
+		ofa_sgbd_free_result( res );
+	}
+	g_free( query );
+
+	return( exists );
 }
 
 /**
@@ -257,14 +303,13 @@ ofo_dossier_dbmodel_update( ofaSgbd *sgbd, GtkWindow *parent, const gchar *accou
 	g_debug( "%s: sgbd=%p, parent=%p, account=%s",
 			thisfn, ( void * ) sgbd, ( void * ) parent, account );
 
-	cur_version = dbmodel_get_version( sgbd, parent );
+	cur_version = dbmodel_get_version( sgbd );
 	g_debug( "%s: cur_version=%d, THIS_DBMODEL_VERSION=%d", thisfn, cur_version, THIS_DBMODEL_VERSION );
 
 	if( cur_version < THIS_DBMODEL_VERSION ){
 		if( cur_version < 1 ){
 			dbmodel_to_v1( sgbd, parent, account );
 		}
-		g_warning( "%s: TO BE WRITTEN", thisfn );
 	}
 
 	return( TRUE );
@@ -275,31 +320,22 @@ ofo_dossier_dbmodel_update( ofaSgbd *sgbd, GtkWindow *parent, const gchar *accou
  * i.e. une version where the version date is set
  */
 static gint
-dbmodel_get_version( ofaSgbd *sgbd, GtkWindow *parent )
+dbmodel_get_version( ofaSgbd *sgbd )
 {
-	gchar *query;
 	GSList *res;
-	gint version;
+	gint vmax = 0;
 
-	version = 0;
-	query = g_strdup( "SELECT MAX(VERSION_NUM) FROM T_VERSION" );
-	res = ofa_sgbd_query_ex( sgbd, parent, query );
+	res = ofa_sgbd_query_ex( sgbd, NULL,
+			"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0" );
 	if( res ){
 		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
-		g_debug( "%s: %s", query, s );
+		if( s ){
+			vmax = atoi( s );
+		}
+		ofa_sgbd_free_result( res );
 	}
-	g_free( query );
 
-	query = g_strdup( "SELECT MAX(VERSION_NUM) FROM T_VERSION WHERE VERSION_DATE=0" );
-	res = ofa_sgbd_query_ex( sgbd, parent, query );
-	if( res ){
-		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
-		g_debug( "%s: %s", query, s );
-	}
-	g_free( query );
-
-	g_warning( "dbmodel_get_version: TO BE WRITTEN" );
-	return( version );
+	return( vmax );
 }
 
 /**
@@ -316,37 +352,77 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	/* default value for timestamp cannot be null */
 	if( !ofa_sgbd_query( sgbd, parent,
-			"CREATE TABLE IF NOT EXISTS T_VERSION ("
-				"VERSION_NUM  INTEGER   NOT NULL UNIQUE COMMENT 'DB model version number',"
-				"VERSION_DATE TIMESTAMP DEFAULT 0       COMMENT 'Version application timestamp')" )){
+			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
+				"VER_NUMBER INTEGER   NOT NULL UNIQUE COMMENT 'DB model version number',"
+				"VER_DATE   TIMESTAMP DEFAULT 0       COMMENT 'Version application timestamp')" )){
 		return( FALSE );
 	}
 
 	if( !ofa_sgbd_query( sgbd, parent,
-			"INSERT INTO T_VERSION (VERSION_NUM) VALUES (1)" )){
+			"INSERT INTO OFA_T_VERSION (VER_NUMBER, VER_DATE) VALUES (1, 0)"
+				"ON DUPLICATE KEY UPDATE VER_NUMBER=1, VER_DATE=0" )){
 		return( FALSE );
 	}
 
 	if( !ofa_sgbd_query( sgbd, parent,
-			"CREATE TABLE IF NOT EXISTS T_ROLES ("
-				"USER_ID  VARCHAR(32) NOT NULL UNIQUE COMMENT 'User account',"
-				"IS_ADMIN INTEGER                     COMMENT 'Whether the user has administration role')")){
+			"CREATE TABLE IF NOT EXISTS OFA_T_ROLES ("
+				"ROL_USER     VARCHAR(20) NOT NULL UNIQUE COMMENT 'User account',"
+				"ROL_IS_ADMIN INTEGER                     COMMENT 'Whether the user has administration role')")){
 		return( FALSE );
 	}
 
 	query = g_strdup_printf(
-			"INSERT INTO T_ROLES (USER_ID, IS_ADMIN) VALUES ('%s',1)", account );
+			"INSERT INTO OFA_T_ROLES (ROL_USER, ROL_IS_ADMIN) VALUES ('%s',1)"
+				"ON DUPLICATE KEY UPDATE ROL_USER='%s'", account, account );
 	if( !ofa_sgbd_query( sgbd, parent, query )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
 
+	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
+				"DOS_ID           INTEGER UNIQUE NOT NULL     COMMENT 'Row identifier',"
+				"DOS_LABEL        VARCHAR(80)                 COMMENT 'Raison sociale',"
+				"DOS_NOTES        VARCHAR(512)                COMMENT 'Notes',"
+				"DOS_MAJ_USER     VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
+				"DOS_MAJ_STAMP    TIMESTAMP                   COMMENT 'Properties last update timestamp',"
+				"DOS_EXE_DEB      DATE           NOT NULL     COMMENT 'Date de début d\\'exercice',"
+				"DOS_EXE_FIN      DATE           NOT NULL     COMMENT 'Date de fin d\\'exercice'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
+				"CPT_NUMBER       VARCHAR(20) NOT NULL UNIQUE COMMENT 'Account number',"
+				"CPT_LABEL        VARCHAR(80)                 COMMENT 'Account label',"
+				"CPT_DEV          CHAR(3)     NOT NULL        COMMENT 'ISO 3A devise of the account',"
+				"CPT_NOTES        VARCHAR(512)                COMMENT 'Account notes',"
+				"CPT_TYPE         CHAR(1)     NOT NULL        COMMENT 'Account type, values R/D',"
+				"CPT_MAJ_USER     VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
+				"CPT_MAJ_STAMP    TIMESTAMP                   COMMENT 'Properties last update timestamp',"
+				"CPT_DEB_MNT      DECIMAL(15,5)               COMMENT 'Montant débiteur écritures validées',"
+				"CPT_DEB_ECR      INTEGER                     COMMENT 'Numéro de la dernière écriture validée imputée au débit',"
+				"CPT_DEB_DATE     DATE                        COMMENT 'Date d\\'effet',"
+				"CPT_CRE_MNT      DECIMAL(15,5)               COMMENT 'Montant créditeur écritures validées',"
+				"CPT_CRE_ECR      INTEGER                     COMMENT 'Numéro de la dernière écriture validée imputée au crédit',"
+				"CPT_CRE_DATE     DATE                        COMMENT 'Date d\\'effet',"
+				"CPT_BRO_DEB_MNT  DECIMAL(15,5)               COMMENT 'Montant débiteur écritures en brouillard',"
+				"CPT_BRO_DEB_ECR  INTEGER                     COMMENT 'Numéro de la dernière écriture en brouillard imputée au débit',"
+				"CPT_BRO_DEB_DATE DATE                        COMMENT 'Date d\\'effet',"
+				"CPT_BRO_CRE_MNT  DECIMAL(15,5)               COMMENT 'Montant créditeur écritures en brouillard',"
+				"CPT_BRO_CRE_ECR  INTEGER                     COMMENT 'Numéro de la dernière écriture de brouillard imputée au crédit',"
+				"CPT_BRO_CRE_DATE DATE                        COMMENT 'Date d\\'effet'"
+			")" )){
+		return( FALSE );
+	}
+
 	/* we do this only at the end of the model creation
 	 * as a mark that all has been successfully done
 	 */
 	if( !ofa_sgbd_query( sgbd, parent,
-			"UPDATE T_VERSION SET VERSION_DATE=NOW() WHERE VERSION_NUM=1" )){
+			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=1" )){
 		return( FALSE );
 	}
 

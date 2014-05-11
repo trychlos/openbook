@@ -68,15 +68,18 @@ typedef struct {
  */
 #define SGBD_PROVIDER_MYSQL          "MySQL"
 
-GType    ofa_sgbd_get_type( void );
+GType    ofa_sgbd_get_type   ( void );
 
-ofaSgbd *ofa_sgbd_new     ( const gchar *provider );
+ofaSgbd *ofa_sgbd_new        ( const gchar *provider );
 
-gboolean ofa_sgbd_connect ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password );
+gboolean ofa_sgbd_connect    ( ofaSgbd *sgbd, GtkWindow *parent,
+		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password );
 
-gboolean ofa_sgbd_query   ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query );
+gboolean ofa_sgbd_query      ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query );
 
-GSList  *ofa_sgbd_query_ex( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query );
+GSList  *ofa_sgbd_query_ex   ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query );
+
+void     ofa_sgbd_free_result( GSList *result );
 
 G_END_DECLS
 

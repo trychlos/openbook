@@ -314,6 +314,8 @@ ofa_sgbd_query( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 /**
  * ofa_sgbd_exec_query_ex:
  *
+ * @parent: if NULL, do not display error message
+ *
  * Returns a GSList or ordered rows of the result set.
  * Each GSList->data is a pointer to a GSList of ordered columns
  * A field is so the GSList[column] data, is always allocated
@@ -339,7 +341,9 @@ ofa_sgbd_query_ex( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 
 	if( sgbd->private->mysql ){
 		if( mysql_query( sgbd->private->mysql, query )){
-			query_error( sgbd, parent, query );
+			if( parent ){
+				query_error( sgbd, parent, query );
+			}
 
 		} else {
 			res = mysql_store_result( sgbd->private->mysql );
@@ -380,4 +384,13 @@ query_error( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 
 	gtk_dialog_run( GTK_DIALOG( dlg ));
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
+}
+
+/**
+ * ofa_sgbd_free_result:
+ */
+void
+ofa_sgbd_free_result( GSList *result )
+{
+	g_slist_foreach( result, ( GFunc ) g_slist_free_full, g_free );
 }
