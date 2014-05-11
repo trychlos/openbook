@@ -100,6 +100,7 @@ Hit Continue.</property>
               <object class="GtkEntry" id="p2-dbname">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">The name of the database that will be created to host informations of your dossier.</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
               </object>
@@ -129,6 +130,8 @@ Hit Continue.</property>
               <object class="GtkEntry" id="p2-host">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">The short or long DNS name or the IP address of the machine which hosts the dataserver.
+Leave empty for localhost.</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
               </object>
@@ -158,6 +161,8 @@ Hit Continue.</property>
               <object class="GtkEntry" id="p2-port">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">The port number on which the dataserver listens to.
+Leave empty for the default.</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
                 <property name="input_purpose">number</property>
@@ -188,6 +193,8 @@ Hit Continue.</property>
               <object class="GtkEntry" id="p2-socket">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">The path to the socket your dataserver listens to.
+Leave empty your dataserver listens on the network.</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
               </object>
@@ -217,6 +224,8 @@ Hit Continue.</property>
               <object class="GtkEntry" id="p2-account">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">The root account of your dataserver. 
+This root account must have CREATE DATABASE, and GRANT ALL permissions.</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
               </object>
@@ -246,6 +255,7 @@ Hit Continue.</property>
               <object class="GtkEntry" id="p2-password">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">The password of the root account.</property>
                 <property name="visibility">False</property>
                 <property name="invisible_char">●</property>
                 <property name="input_purpose">password</property>
@@ -316,6 +326,7 @@ You have to note that this account will be defined at the global dataserver leve
               <object class="GtkEntry" id="p3-account">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">The name of your first administrative account.</property>
                 <property name="invisible_char">●</property>
                 <property name="caps_lock_warning">False</property>
               </object>
@@ -345,6 +356,7 @@ You have to note that this account will be defined at the global dataserver leve
               <object class="GtkEntry" id="p3-password">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">The password of your first administrative account.</property>
                 <property name="visibility">False</property>
                 <property name="invisible_char">●</property>
                 <property name="input_purpose">password</property>
@@ -375,6 +387,7 @@ You have to note that this account will be defined at the global dataserver leve
               <object class="GtkEntry" id="p3-bis">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="tooltip_text" translatable="yes">For safety reasons, please enter this same password a second time.</property>
                 <property name="visibility">False</property>
                 <property name="invisible_char">●</property>
                 <property name="input_purpose">password</property>

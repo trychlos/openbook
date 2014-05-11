@@ -41,6 +41,13 @@
  * it is the primary instance of a new application. Each ofaApplication
  * is considered as a primary instance, thus creating its own ofaMainWindow.
  *
+ * [Gtk+3.8]
+ * The menubar GtkWidget is handled by GtkApplicationWindow, and is able
+ * to rebuid itself, which is fine. But it rebuilds from a
+ * menubar_section GMenu, which itself is only built at initialization
+ * time. So it appears that it is impossible to replace the menubar with
+ * the given API.
+ *
  * To display debug messages, run the command:
  *   $ G_MESSAGES_DEBUG=OFA _install/bin/openbook
  */
@@ -108,11 +115,13 @@ typedef enum {
 }
 	ofaExitCode;
 
-GType           ofa_application_get_type     ( void );
+GType           ofa_application_get_type      ( void );
 
-ofaApplication *ofa_application_new          ( void );
+ofaApplication *ofa_application_new           ( void );
 
-int             ofa_application_run_with_args( ofaApplication *application, int argc, GStrv argv );
+int             ofa_application_run_with_args ( ofaApplication *application, int argc, GStrv argv );
+
+GMenuModel     *ofa_application_get_menu_model( const ofaApplication *application );
 
 G_END_DECLS
 

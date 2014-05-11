@@ -68,6 +68,7 @@ openbook_LDADD = \
 
 actions_files = \
 	ofa-app-menubar.ui									\
+	ofa-dos-menubar.ui									\
 	$(NULL)
 
 ui_files = \

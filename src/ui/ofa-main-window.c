@@ -52,6 +52,10 @@ struct _ofaMainWindowPrivate {
 
 	/* internals
 	 */
+	GtkGrid    *grid;
+	GtkMenuBar *menubar;
+	GMenuModel *menu;					/* the menu model when a dossier is opened */
+	GtkPaned   *pane;
 	ofoDossier *dossier;
 };
 
@@ -61,6 +65,17 @@ enum {
 	OPEN_DOSSIER,
 	LAST_SIGNAL
 };
+
+static void on_close   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+
+static const GActionEntry st_dos_entries[] = {
+		{ "close",    on_close,    NULL, NULL, NULL },
+		{ "accounts", on_accounts, NULL, NULL, NULL },
+};
+
+static const gchar               *st_dosmenu_xml = PKGUIDIR "/ofa-dos-menubar.ui";
+static const gchar               *st_dosmenu_id  = "dos-menu";
 
 static GtkApplicationWindowClass *st_parent_class           = NULL;
 static gint                       st_signals[ LAST_SIGNAL ] = { 0 };
@@ -73,6 +88,7 @@ static void     instance_dispose( GObject *window );
 static void     instance_finalize( GObject *window );
 
 static gboolean on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
+static void     set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void     on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
 static void     on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
 
@@ -183,13 +199,16 @@ static void
 instance_constructed( GObject *window )
 {
 	static const gchar *thisfn = "ofa_main_window_instance_constructed";
-	ofaMainWindow *self;
+	ofaMainWindowPrivate *priv;
+	GError *error;
+	GtkBuilder *builder;
+	GMenuModel *menu;
 
 	g_return_if_fail( OFA_IS_MAIN_WINDOW( window ));
 
-	self = OFA_MAIN_WINDOW( window );
+	priv = OFA_MAIN_WINDOW( window )->private;
 
-	if( !self->private->dispose_has_run ){
+	if( !priv->dispose_has_run ){
 
 		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
 
@@ -197,6 +216,44 @@ instance_constructed( GObject *window )
 		if( G_OBJECT_CLASS( st_parent_class )->constructed ){
 			G_OBJECT_CLASS( st_parent_class )->constructed( window );
 		}
+
+		/* define the main window actions
+		 */
+		g_action_map_add_action_entries(
+				G_ACTION_MAP( window ),
+		        st_dos_entries, G_N_ELEMENTS( st_dos_entries ),
+		        ( gpointer ) window );
+
+		/* define a traditional menubar
+		 * the program will abort if GtkBuilder is not able to be parsed
+		 * from the given file
+		 */
+		error = NULL;
+		builder = gtk_builder_new();
+		if( gtk_builder_add_from_file( builder, st_dosmenu_xml, &error )){
+			menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_dosmenu_id ));
+			if( menu ){
+				priv->menu = menu;
+			} else {
+				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_dosmenu_id, st_dosmenu_xml );
+			}
+		} else {
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
+		}
+		g_object_unref( builder );
+
+		/* build the main window
+		 */
+		priv->grid = GTK_GRID( gtk_grid_new());
+		gtk_grid_set_row_homogeneous( priv->grid, FALSE );
+		gtk_container_add( GTK_CONTAINER( window ), GTK_WIDGET( priv->grid ));
+
+		gtk_window_set_default_size( GTK_WINDOW( window ), 200, 200 );
+
+		/* connect some signals
+		 */
+		g_signal_connect( window, "delete-event", G_CALLBACK( on_delete_event ), NULL );
 
 		g_signal_connect( window, MAIN_SIGNAL_OPEN_DOSSIER, G_CALLBACK( on_open_dossier ), NULL );
 	}
@@ -217,6 +274,10 @@ instance_dispose( GObject *window )
 		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
 
 		priv->dispose_has_run = TRUE;
+
+		if( priv->menu ){
+			g_object_unref( priv->menu );
+		}
 
 		if( priv->dossier ){
 			g_object_unref( priv->dossier );
@@ -263,10 +324,10 @@ ofa_main_window_new( const ofaApplication *application )
 	g_debug( "%s: application=%p", thisfn, application );
 
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW,
-			"application", application,
-			NULL );
+					"application", application,
+					NULL );
 
-	g_signal_connect( window, "delete-event", G_CALLBACK( on_delete_event ), NULL );
+	set_menubar( window, ofa_application_get_menu_model( application ));
 
 	return( window );
 }
@@ -324,6 +385,23 @@ ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
 }
 
 static void
+set_menubar( ofaMainWindow *window, GMenuModel *model )
+{
+	GtkWidget *menubar;
+
+	if( window->private->menubar ){
+		gtk_widget_destroy( GTK_WIDGET( window->private->menubar ));
+		window->private->menubar = NULL;
+	}
+
+	menubar = gtk_menu_bar_new_from_model( model );
+	gtk_grid_attach( window->private->grid, menubar, 0, 0, 1, 1 );
+	gtk_widget_show_all( GTK_WIDGET( window ));
+
+	window->private->menubar = GTK_MENU_BAR( menubar );
+}
+
+static void
 on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_open_dossier";
@@ -340,11 +418,19 @@ on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data 
 
 	window->private->dossier = ofo_dossier_new( sod->dossier );
 
-	if( ofo_dossier_open(
+	if( !ofo_dossier_open(
 			window->private->dossier, GTK_WINDOW( window ),
 			sod->host, sod->port, sod->socket, sod->dbname, sod->account, sod->password )){
 
+		g_object_unref( window->private->dossier );
+		window->private->dossier = NULL;
+		return;
 	}
+
+	window->private->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
+	gtk_grid_attach( window->private->grid, GTK_WIDGET( window->private->pane ), 0, 1, 1, 1 );
+
+	set_menubar( window, window->private->menu );
 }
 
 static void
@@ -362,4 +448,43 @@ on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpo
 	g_free( sod->account );
 	g_free( sod->password );
 	g_free( sod );
+}
+
+static void
+on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_close";
+	ofaApplication *appli;
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+	priv = OFA_MAIN_WINDOW( user_data )->private;
+
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+
+	g_object_unref( priv->dossier );
+	priv->dossier = NULL;
+
+	gtk_widget_destroy( GTK_WIDGET( priv->pane ));
+	priv->pane = NULL;
+	appli = OFA_APPLICATION( gtk_window_get_application( GTK_WINDOW( user_data )));
+	set_menubar( OFA_MAIN_WINDOW( user_data ), ofa_application_get_menu_model( appli ));
+}
+
+static void
+on_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_accounts";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+	priv = OFA_MAIN_WINDOW( user_data )->private;
+
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 }

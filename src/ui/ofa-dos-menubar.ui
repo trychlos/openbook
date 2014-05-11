@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- $Id$ -->
 <interface>
-  <menu id="app-menu">
+  <menu id="dos-menu">
     <submenu>
       <attribute name="label" translatable="yes">_Dossier</attribute>
       <section>
@@ -18,9 +18,25 @@
       </section>
       <section>
         <item>
+          <attribute name="label" translatable="yes">_Close...</attribute>
+          <attribute name="action">win.close</attribute>
+          <attribute name="accel">&lt;Control&gt;w</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
           <attribute name="label" translatable="yes">_Quit</attribute>
           <attribute name="action">app.quit</attribute>
           <attribute name="accel">&lt;Control&gt;q</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label" translatable="yes">_References</attribute>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_Chart of accounts...</attribute>
+          <attribute name="action">win.accounts</attribute>
         </item>
       </section>
     </submenu>

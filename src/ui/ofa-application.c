@@ -60,6 +60,7 @@ struct _ofaApplicationPrivate {
 	GStrv          argv;
 	int            code;
 	ofaMainWindow *main_window;
+	GMenuModel    *menu;
 };
 
 /* class properties
@@ -324,6 +325,10 @@ instance_dispose( GObject *application )
 
 		priv->dispose_has_run = TRUE;
 
+		if( priv->menu ){
+			g_object_unref( priv->menu );
+		}
+
 		ofa_settings_free();
 
 		/* chain up to the parent class */
@@ -483,7 +488,8 @@ application_startup( GApplication *application )
 	if( gtk_builder_add_from_file( builder, st_appmenu_xml, &error )){
 		menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_appmenu_id ));
 		if( menu ){
-			gtk_application_set_menubar( GTK_APPLICATION( application ), menu );
+			appli->private->menu = menu;
+			/*gtk_application_set_menubar( GTK_APPLICATION( application ), menu );*/
 		} else {
 			g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_appmenu_id, st_appmenu_xml );
 		}
@@ -756,4 +762,20 @@ on_version( ofaApplication *application )
 
 	g_debug( "%s: application=%p", application );
 #endif
+}
+
+/**
+ * ofa_application_get_menu_model:
+ */
+GMenuModel *
+ofa_application_get_menu_model( const ofaApplication *application )
+{
+	g_return_val_if_fail( OFA_IS_APPLICATION( application ), NULL );
+
+	if( !application->private->dispose_has_run ){
+
+		return( application->private->menu );
+	}
+
+	return( NULL );
 }

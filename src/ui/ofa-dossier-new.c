@@ -143,7 +143,7 @@ static void       on_p1_name_changed( GtkEntry *widget, ofaDossierNew *self );
 static void       check_for_p1_complete( ofaDossierNew *self );
 static void       do_prepare_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
 static void       do_init_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
-static void       do_init_p2_item( ofaDossierNew *self, GtkWidget *page, const gchar *field_name, gchar **var, GCallback fn );
+static void       do_init_p2_item( ofaDossierNew *self, GtkWidget *page, const gchar *field_name, gchar **var, GCallback fn, GList **focus );
 static void       on_p2_dbname_changed( GtkEntry *widget, ofaDossierNew *self );
 static void       on_p2_var_changed( GtkEntry *widget, gchar **var );
 static void       on_p2_account_changed( GtkEntry *widget, ofaDossierNew *self );
@@ -597,26 +597,34 @@ static void
 do_init_p2_dbinfos( ofaDossierNew *self, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_dossier_new_do_init_p2_dbinfos";
+	GList *focus;
+	GtkWidget *grid;
 
 	g_debug( "%s: self=%p, page=%p",
 			thisfn, ( void * ) self, ( void * ) page );
 
 	g_return_if_fail( GTK_IS_BOX( page ));
 
-	do_init_p2_item( self, page, "p2-dbname",   NULL,                      G_CALLBACK( on_p2_dbname_changed ));
-	do_init_p2_item( self, page, "p2-host",     &self->private->p2_host,   G_CALLBACK( on_p2_var_changed ));
-	do_init_p2_item( self, page, "p2-port",     &self->private->p2_port,   G_CALLBACK( on_p2_var_changed ));
-	do_init_p2_item( self, page, "p2-socket",   &self->private->p2_socket, G_CALLBACK( on_p2_var_changed ));
-	do_init_p2_item( self, page, "p2-account",  NULL,                      G_CALLBACK( on_p2_account_changed ));
-	do_init_p2_item( self, page, "p2-password", NULL,                      G_CALLBACK( on_p2_password_changed ));
+	focus = NULL;
+	do_init_p2_item( self, page, "p2-dbname",   NULL,                      G_CALLBACK( on_p2_dbname_changed ),   &focus );
+	do_init_p2_item( self, page, "p2-host",     &self->private->p2_host,   G_CALLBACK( on_p2_var_changed ),      &focus );
+	do_init_p2_item( self, page, "p2-port",     &self->private->p2_port,   G_CALLBACK( on_p2_var_changed ),      &focus );
+	do_init_p2_item( self, page, "p2-socket",   &self->private->p2_socket, G_CALLBACK( on_p2_var_changed ),      &focus );
+	do_init_p2_item( self, page, "p2-account",  NULL,                      G_CALLBACK( on_p2_account_changed ),  &focus );
+	do_init_p2_item( self, page, "p2-password", NULL,                      G_CALLBACK( on_p2_password_changed ), &focus );
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-grid1" );
+	gtk_container_set_focus_chain( GTK_CONTAINER( grid ), g_list_reverse( focus ));
 }
 
 static void
-do_init_p2_item( ofaDossierNew *self, GtkWidget *page, const gchar *field_name, gchar **var, GCallback fn )
+do_init_p2_item( ofaDossierNew *self,
+		GtkWidget *page, const gchar *field_name, gchar **var, GCallback fn, GList **focus )
 {
 	GtkWidget *entry;
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), field_name );
+	*focus = g_list_prepend( *focus, entry );
 	g_signal_connect( entry, "changed", fn, ( var ? ( gpointer ) var : ( gpointer ) self ));
 }
 
@@ -704,18 +712,25 @@ do_init_p3_account( ofaDossierNew *self, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_dossier_new_do_init_p3_account";
 	GtkWidget *entry;
+	GList *focus;
 
 	g_debug( "%s: self=%p, page=%p",
 			thisfn, ( void * ) self, ( void * ) page );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-account" );
+	focus = g_list_prepend( NULL, entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_p3_account_changed ), self );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-password" );
+	focus = g_list_prepend( focus, entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_p3_password_changed ), self );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-bis" );
+	focus = g_list_prepend( focus, entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_p3_bis_changed ), self );
+
+	gtk_container_set_focus_chain( GTK_CONTAINER( page ), g_list_reverse( focus ));
+	g_list_free( focus );
 }
 
 static void

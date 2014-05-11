@@ -63,7 +63,19 @@
                 enabling the action when there is at least one defined
                 dossier
 
-  36
+  36 2014- 5-11 win.close action should only be enabled when a dossier 
+                is opened
+
+  37 2014- 5-11 DossierNew: fix the order of the focus on pages p2 and
+                p3 (a try with gtk_container_set_focus_chain is not
+                successfull)
+
+  38 2014- 5-11 DossierOpen: fix the order of the focus
+
+  39 2014- 5-11 DossierNew: add field needed to complete the
+                OFA_T_DOSSIER table
+
+  40
 
 -----------------------------------------------------------------------
  DONE
