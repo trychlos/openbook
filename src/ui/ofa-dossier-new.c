@@ -598,7 +598,7 @@ do_init_p2_dbinfos( ofaDossierNew *self, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_dossier_new_do_init_p2_dbinfos";
 	GList *focus;
-	GtkWidget *grid;
+	/*GtkWidget *grid;*/
 
 	g_debug( "%s: self=%p, page=%p",
 			thisfn, ( void * ) self, ( void * ) page );
@@ -613,8 +613,8 @@ do_init_p2_dbinfos( ofaDossierNew *self, GtkWidget *page )
 	do_init_p2_item( self, page, "p2-account",  NULL,                      G_CALLBACK( on_p2_account_changed ),  &focus );
 	do_init_p2_item( self, page, "p2-password", NULL,                      G_CALLBACK( on_p2_password_changed ), &focus );
 
-	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-grid1" );
-	gtk_container_set_focus_chain( GTK_CONTAINER( grid ), g_list_reverse( focus ));
+	/*grid = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-grid1" );
+	gtk_container_set_focus_chain( GTK_CONTAINER( grid ), g_list_reverse( focus ));*/
 }
 
 static void
@@ -797,7 +797,7 @@ check_for_p3_complete( ofaDossierNew *self )
 		gtk_label_set_text( label, "" );
 	} else {
 		content = g_strdup_printf( "%s",
-				_( "Error: the passwords you have entered are not equal" ));
+				_( "Les deux mots de passe saisis sont différents l'un de l'autre" ));
 		gtk_label_set_text( label, content );
 		g_free( content );
 		if( !gdk_rgba_parse( &color, "#FF0000" )){
@@ -872,7 +872,7 @@ display_p4_param( GtkWidget *page, const gchar *field_name, const gchar *value, 
 			gtk_label_set_text( GTK_LABEL( label ), value );
 		} else {
 			/* i18n: 'Set' here means the password has been set */
-			gtk_label_set_text( GTK_LABEL( label ), _( "Set" ));
+			gtk_label_set_text( GTK_LABEL( label ), _( "Renseigné" ));
 		}
 	} else {
 		g_warning( "%s: unable to find '%s' field", thisfn, field_name );
@@ -1118,7 +1118,7 @@ is_willing_to_quit( ofaDossierNew *self )
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
-			_( "Are you sure you want terminate this assistant ?" ));
+			_( "Etes-vous sûr de vouloir quitter cet assistant ?" ));
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,

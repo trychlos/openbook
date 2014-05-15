@@ -28,8 +28,6 @@
 #include <config.h>
 #endif
 
-#include <glib/gi18n.h>
-
 #include "ui/my-utils.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-settings.h"
@@ -423,12 +421,14 @@ do_initialize_dialog( ofaDossierOpen *self )
 	GSList *dossiers, *id;
 	GtkTreeSelection *select;
 	GtkEntry *entry;
+	GList *focus;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn,
 			( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	dialog = self->private->dialog;
+	focus = NULL;
 
 #if 0
 	/* deals with 'Esc' key */
@@ -442,6 +442,7 @@ do_initialize_dialog( ofaDossierOpen *self )
 	model = GTK_TREE_MODEL( gtk_list_store_new( N_COLUMNS, G_TYPE_STRING ));
 	gtk_tree_view_set_model( listview, model );
 	g_object_unref( model );
+	focus = g_list_append( focus, listview );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -471,9 +472,19 @@ do_initialize_dialog( ofaDossierOpen *self )
 
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "account" ));
 	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), self );
+	focus = g_list_append( focus, entry );
 
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "password" ));
 	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), self );
+	focus = g_list_append( focus, entry );
+
+	/*  doesn't work: only the first widget of the grid get the focus !
+	grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "grid-open" ));
+	gtk_container_set_focus_chain( GTK_CONTAINER( grid ), focus );*/
+
+	/* doesn't work either: this is as the default
+	 * account -> listview -> password
+	gtk_container_set_focus_chain( GTK_CONTAINER( dialog ), focus );*/
 
 	check_for_enable_dlg( self );
 	gtk_widget_show_all( GTK_WIDGET( dialog ));
@@ -519,10 +530,12 @@ static void
 check_for_enable_dlg( ofaDossierOpen *self )
 {
 	GtkWidget *button;
+	gboolean ok_enable;
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "bt-open" );
-	gtk_widget_set_sensitive( button,
-			self->private->name && self->private->account && self->private->password );
+	ok_enable = self->private->name && self->private->account && self->private->password;
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-open" );
+	gtk_widget_set_sensitive( button, ok_enable );
 }
 
 /*

@@ -32,8 +32,85 @@
 
 #include "ui/my-utils.h"
 
+static GTimeVal st_timeval;
+static GDate    st_date;
+
 /**
+ * my_utils_quote:
  *
+ * Replace "'" quote characters with "\\'" before executing SQL queries
+ */
+gchar *
+my_utils_quote( const gchar *str )
+{
+	static const gchar *thisfn = "my_utils_quote";
+	GRegex *regex;
+	GError *error;
+	gchar *new_str;
+
+	error = NULL;
+	regex = g_regex_new( "'", 0, 0, &error );
+	if( error ){
+		g_warning( "%s: g_regex_new=%s", thisfn, error->message );
+		g_error_free( error );
+		return( NULL );
+	}
+
+	new_str = g_regex_replace_literal( regex, str, -1, 0, "\\'", 0, &error );
+	if( error ){
+		g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
+		g_error_free( error );
+		return( NULL );
+	}
+
+	g_regex_unref( regex );
+
+	return( new_str );
+}
+
+/**
+ * my_utils_date_from_str:
+ */
+const GDate *
+my_utils_date_from_str( const gchar *str )
+{
+	g_date_clear( &st_date, 1 );
+	if( str ){
+		g_date_set_parse( &st_date, str );
+	}
+	return( &st_date );
+}
+
+/**
+ * my_utils_stamp_from_str:
+ */
+const GTimeVal *
+my_utils_stamp_from_str( const gchar *str )
+{
+	g_time_val_from_iso8601( str, &st_timeval );
+	return( &st_timeval );
+}
+
+/**
+ * my_utils_timestamp:
+ *
+ * Returns a newly allocated string 'yyyy-mm-dd hh:mi:ss' suitable for
+ * inserting as a timestamp into a sgbd
+ */
+gchar *
+my_utils_timestamp( void )
+{
+	GDateTime *dt;
+	gchar *str;
+
+	dt = g_date_time_new_now_local();
+	str = g_date_time_format( dt, "%F %T" );
+
+	return( str );
+}
+
+/**
+ * my_utils_container_get_child_by_name:
  */
 GtkWidget *
 my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name )
@@ -64,7 +141,7 @@ my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name
 }
 
 /**
- *
+ * my_utils_container_get_child_by_type:
  */
 GtkWidget *
 my_utils_container_get_child_by_type( GtkContainer *container, GType type )

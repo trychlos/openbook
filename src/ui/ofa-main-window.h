@@ -37,6 +37,7 @@
  */
 
 #include "ui/ofa-application.h"
+#include "ui/ofo-dossier.h"
 
 G_BEGIN_DECLS
 
@@ -89,11 +90,21 @@ typedef struct {
 }
 	ofaOpenDossier;
 
+/* the theme id data is set against each page of the main notebook
+ */
+#define OFA_DATA_THEME_ID                        "ofa-data-theme-id"
+
 GType          ofa_main_window_get_type          ( void );
 
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
 
 gboolean       ofa_main_window_is_willing_to_quit( ofaMainWindow *window );
+
+ofoDossier    *ofa_main_window_get_dossier       ( const ofaMainWindow *window );
+
+GtkNotebook   *ofa_main_window_get_notebook      ( const ofaMainWindow *window );
+
+GtkWidget     *ofa_main_window_get_notebook_page ( const ofaMainWindow *window, gint theme );
 
 G_END_DECLS
 

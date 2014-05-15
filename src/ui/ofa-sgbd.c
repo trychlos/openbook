@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 #include <mysql/mysql.h>
+#include <string.h>
 
 #include "ui/ofa-sgbd.h"
 
@@ -259,7 +260,7 @@ connect_error( ofaSgbd *sgbd, GtkWindow *parent,
 				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 				GTK_MESSAGE_WARNING,
 				GTK_BUTTONS_OK,
-				"%s", _( "Unable to connect to the database" )));
+				"%s", _( "Impossible de se connecter à la base de données" )));
 
 	str = g_string_new( "" );
 	if( host ){
@@ -292,6 +293,8 @@ ofa_sgbd_query( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 {
 	static const gchar *thisfn = "ofa_sgbd_query";
 	gboolean query_ok = FALSE;
+	/*gchar *to_str;
+	glong length;*/
 
 	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
 
@@ -299,11 +302,15 @@ ofa_sgbd_query( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 			thisfn, ( void * ) sgbd, ( void * ) parent, query );
 
 	if( sgbd->private->mysql ){
+		/*length = g_utf8_strlen( query, -1 );
+		to_str = g_new0( char, 2*length+1 );
+		mysql_real_escape_string( sgbd->private->mysql, to_str, query, length );*/
 		if( mysql_query( sgbd->private->mysql, query )){
 			query_error( sgbd, parent, query );
 		} else {
 			query_ok = TRUE;
 		}
+		/*g_free( to_str );*/
 	} else {
 		g_warning( "%s: trying to query a non-opened connection", thisfn );
 	}

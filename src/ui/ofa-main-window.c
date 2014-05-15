@@ -31,6 +31,10 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "ui/ofa-mod-families-set.h"
+#include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-journals-set.h"
+#include "ui/ofa-models-set.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofo-dossier.h"
 
@@ -45,18 +49,20 @@ struct _ofaMainWindowClassPrivate {
 /* private instance data
  */
 struct _ofaMainWindowPrivate {
-	gboolean    dispose_has_run;
+	gboolean       dispose_has_run;
 
 	/* properties
 	 */
 
 	/* internals
 	 */
-	GtkGrid    *grid;
-	GtkMenuBar *menubar;
-	GMenuModel *menu;					/* the menu model when a dossier is opened */
-	GtkPaned   *pane;
-	ofoDossier *dossier;
+	gchar         *orig_title;
+	GtkGrid       *grid;
+	GtkMenuBar    *menubar;
+	GtkAccelGroup *accel_group;
+	GMenuModel    *menu;				/* the menu model when a dossier is opened */
+	GtkPaned      *pane;
+	ofoDossier    *dossier;
 };
 
 /* signals defined here
@@ -66,12 +72,49 @@ enum {
 	LAST_SIGNAL
 };
 
-static void on_close   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_close           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_mod_families( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
-		{ "close",    on_close,    NULL, NULL, NULL },
-		{ "accounts", on_accounts, NULL, NULL, NULL },
+		{ "close",        on_close,            NULL, NULL, NULL },
+		{ "accounts",     on_ref_accounts,     NULL, NULL, NULL },
+		{ "journals",     on_ref_journals,     NULL, NULL, NULL },
+		{ "models",       on_ref_models,       NULL, NULL, NULL },
+		{ "mod-families", on_ref_mod_families, NULL, NULL, NULL },
+};
+
+/* column ordering in the left listview
+ */
+enum {
+	COL_ITEM = 0,
+	COL_ID,
+	N_COLUMNS
+};
+
+/* displayed selectable themes in the left listview
+ */
+typedef struct {
+	const gchar *label;
+	gint         id;
+}
+	sTheme;
+
+enum {
+	THM_ACCOUNTS = 1,
+	THM_JOURNALS,
+	THM_MODELS,
+	THM_MOD_FAMILIES
+};
+
+static sTheme st_themes[] = {
+		{ N_( "Plan comptable" ),       THM_ACCOUNTS },
+		{ N_( "Journaux" ),             THM_JOURNALS },
+		{ N_( "Modèles" ),              THM_MODELS },
+		{ N_( "Familles\nde modèles" ), THM_MOD_FAMILIES },
+		{ 0 }
 };
 
 static const gchar               *st_dosmenu_xml = PKGUIDIR "/ofa-dos-menubar.ui";
@@ -80,17 +123,25 @@ static const gchar               *st_dosmenu_id  = "dos-menu";
 static GtkApplicationWindowClass *st_parent_class           = NULL;
 static gint                       st_signals[ LAST_SIGNAL ] = { 0 };
 
-static GType    register_type( void );
-static void     class_init( ofaMainWindowClass *klass );
-static void     instance_init( GTypeInstance *instance, gpointer klass );
-static void     instance_constructed( GObject *window );
-static void     instance_dispose( GObject *window );
-static void     instance_finalize( GObject *window );
+static GType      register_type( void );
+static void       class_init( ofaMainWindowClass *klass );
+static void       instance_init( GTypeInstance *instance, gpointer klass );
+static void       instance_constructed( GObject *window );
+static void       instance_dispose( GObject *window );
+static void       instance_finalize( GObject *window );
 
-static gboolean on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void     set_menubar( ofaMainWindow *window, GMenuModel *model );
-static void     on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
-static void     on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static gboolean   on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
+static void       set_menubar( ofaMainWindow *window, GMenuModel *model );
+static void       extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
+static void       on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void       add_treeview_to_pane_left( ofaMainWindow *window );
+static void       on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
+static void       add_empty_notebook_to_pane_right( ofaMainWindow *window );
+static void       on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void       ref_accounts_activate( ofaMainWindow *window );
+static void       ref_journals_activate( ofaMainWindow *window );
+static void       ref_models_activate( ofaMainWindow *window );
+static void       ref_mod_families_activate( ofaMainWindow *window );
 
 GType
 ofa_main_window_get_type( void )
@@ -244,12 +295,25 @@ instance_constructed( GObject *window )
 		g_object_unref( builder );
 
 		/* build the main window
+		 * it consists of a grid of one column:
+		 *  +--------------------------------------------------------------------+
+		 *  | menubar                                                            |
+		 *  +--------------------------------------------------------------------+
+		 *  |                                                                    |
+		 *  | an empty cell if no dossier is opened                              |
+		 *  |                                                                    |
+		 *  | or a GtkPane which is created when a dossier is opened             |
+		 *  |                                                                    |
+		 *  +--------------------------------------------------------------------+
 		 */
 		priv->grid = GTK_GRID( gtk_grid_new());
+		/*gtk_widget_set_hexpand( GTK_WIDGET( priv->grid ), TRUE );*/
+		/*gtk_widget_set_vexpand( GTK_WIDGET( priv->grid ), TRUE );*/
+		/*gtk_container_set_resize_mode( GTK_CONTAINER( priv->grid ), GTK_RESIZE_QUEUE );*/
 		gtk_grid_set_row_homogeneous( priv->grid, FALSE );
 		gtk_container_add( GTK_CONTAINER( window ), GTK_WIDGET( priv->grid ));
 
-		gtk_window_set_default_size( GTK_WINDOW( window ), 200, 200 );
+		gtk_window_set_default_size( GTK_WINDOW( window ), 600, 400 );
 
 		/* connect some signals
 		 */
@@ -274,6 +338,8 @@ instance_dispose( GObject *window )
 		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
 
 		priv->dispose_has_run = TRUE;
+
+		g_free( priv->orig_title );
 
 		if( priv->menu ){
 			g_object_unref( priv->menu );
@@ -327,6 +393,10 @@ ofa_main_window_new( const ofaApplication *application )
 					"application", application,
 					NULL );
 
+	g_object_get( G_OBJECT( application ),
+			OFA_PROP_APPLICATION_NAME, &window->private->orig_title,
+			NULL );
+
 	set_menubar( window, ofa_application_get_menu_model( application ));
 
 	return( window );
@@ -352,7 +422,8 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 	g_debug( "%s: toplevel=%p (%s), event=%p, user_data=%p",
 			thisfn,
 			( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ),
-			( void * ) event, ( void * ) user_data );
+			( void * ) event,
+			( void * ) user_data );
 
 	ok_to_quit = !pref_confirm_on_altf4 || ofa_main_window_is_willing_to_quit( OFA_MAIN_WINDOW( toplevel ));
 
@@ -370,7 +441,7 @@ ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
-			_( "Are you sure you want terminate the application ?" ));
+			_( "Etes-vous sûr de vouloir quitter l'application ?" ));
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -394,11 +465,95 @@ set_menubar( ofaMainWindow *window, GMenuModel *model )
 		window->private->menubar = NULL;
 	}
 
+	if( window->private->accel_group ){
+		gtk_window_remove_accel_group( GTK_WINDOW( window ), window->private->accel_group );
+		g_object_unref( window->private->accel_group );
+		window->private->accel_group = NULL;
+	}
+
+	/*accels = gtk_accel_groups_from_object( G_OBJECT( model ));
+	 *accels = gtk_accel_groups_from_object( G_OBJECT( menubar ));
+	 * return nil */
+
+	window->private->accel_group = gtk_accel_group_new();
+	extract_accels_rec( window, model, window->private->accel_group );
+	gtk_window_add_accel_group( GTK_WINDOW( window ), window->private->accel_group );
+
 	menubar = gtk_menu_bar_new_from_model( model );
 	gtk_grid_attach( window->private->grid, menubar, 0, 0, 1, 1 );
-	gtk_widget_show_all( GTK_WIDGET( window ));
-
 	window->private->menubar = GTK_MENU_BAR( menubar );
+	gtk_widget_show_all( GTK_WIDGET( window ));
+}
+
+static void
+extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group )
+{
+	GMenuLinkIter *lter;
+	GMenuAttributeIter *ater;
+	gint i;
+	const gchar *aname, *lname;
+	GMenuModel *lv;
+	GVariant *av;
+	guint accel_key;
+	GdkModifierType accel_mods;
+
+	/* only attribute of the two first items of the GMenuModel is 'label'
+	 * only link of the two first items of the GMenuModel are named 'submenu'
+	 * the GMenuModel pointed to by 'submenu' link has no attribute
+	 * but a link to a 'section'
+	 * GMenuModel[attribute] = (label)
+	 * GMenuModel[link] = (submenu)
+	 * GMenuModel->submenu[attribute] = NULL
+	 * GMenuModel->submenu[link] = (section)
+	 * GMenuModel->submenu->section[attribute] = (action,label,accel)
+	 * GMenuModel->submenu->section[link] = NULL
+	 *
+(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x2069b30: found link at i=0 to 0x206a690
+(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206a690: found link at i=0 to 0x206a750
+(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206a750: found accel at i=0: <Control>n
+(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206a750: found accel at i=1: <Control>o
+(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206a690: found link at i=1 to 0x206b410
+(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206b410: found accel at i=0: <Control>q
+(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x2069b30: found link at i=1 to 0x7f36cc00a000
+(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x7f36cc00a000: found link at i=0 to 0x7f36cc009f00
+	 */
+	for( i=0 ; i<g_menu_model_get_n_items( model ) ; ++i ){
+		ater = g_menu_model_iterate_item_attributes( model, i );
+		while( g_menu_attribute_iter_get_next( ater, &aname, &av )){
+			if( !strcmp( aname, "accel" )){
+				g_debug(
+						"ofa_main_window_extract_accels: model=%p: found accel at i=%d: %s",
+						( void * ) model, i, g_variant_get_string( av, NULL ));
+				gtk_accelerator_parse( g_variant_get_string( av, NULL ), &accel_key, &accel_mods );
+			}
+			g_variant_unref( av );
+		}
+		g_object_unref( ater );
+		lter = g_menu_model_iterate_item_links( model, i );
+		while( g_menu_link_iter_get_next( lter, &lname, &lv )){
+			/*g_debug( "ofa_main_window_extract_accels: model=%p: found link at i=%d to %p", ( void * ) model, i, ( void * ) lv );*/
+			extract_accels_rec( window, lv, accel_group );
+			g_object_unref( lv );
+		}
+		g_object_unref( lter );
+	}
+}
+
+static void
+set_window_title( ofaMainWindow *window )
+{
+	gchar *title;
+
+	if( window->private->dossier ){
+		title = g_strdup_printf( "%s - %s",
+				ofo_dossier_get_name( window->private->dossier ),
+				window->private->orig_title );
+	} else {
+		title = g_strdup( window->private->orig_title );
+	}
+
+	gtk_window_set_title( GTK_WINDOW( window ), title );
+	g_free( title );
 }
 
 static void
@@ -429,8 +584,110 @@ on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data 
 
 	window->private->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
 	gtk_grid_attach( window->private->grid, GTK_WIDGET( window->private->pane ), 0, 1, 1, 1 );
+	add_treeview_to_pane_left( window );
+	add_empty_notebook_to_pane_right( window );
 
 	set_menubar( window, window->private->menu );
+	set_window_title( window );
+}
+
+static void
+add_treeview_to_pane_left( ofaMainWindow *window )
+{
+	GtkFrame *frame;
+	GtkTreeView *view;
+	GtkTreeModel *model;
+	GtkCellRenderer *text_cell;
+	GtkTreeViewColumn *column;
+	GtkTreeSelection *select;
+	GtkTreeIter iter;
+	gint i;
+
+	frame = GTK_FRAME( gtk_frame_new( NULL ));
+	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
+	gtk_widget_set_margin_bottom( GTK_WIDGET( frame ), 4 );
+	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
+	gtk_paned_pack1( window->private->pane, GTK_WIDGET( frame ), FALSE, FALSE );
+
+	view = GTK_TREE_VIEW( gtk_tree_view_new());
+	gtk_widget_set_hexpand( GTK_WIDGET( view ), FALSE );
+	gtk_widget_set_vexpand( GTK_WIDGET( view ), TRUE );
+	gtk_tree_view_set_headers_visible( view, FALSE );
+	gtk_tree_view_set_activate_on_single_click( view, FALSE );
+	g_signal_connect(G_OBJECT( view ), "row-activated", G_CALLBACK( on_theme_activated ), window );
+
+	model = GTK_TREE_MODEL( gtk_list_store_new( N_COLUMNS, G_TYPE_STRING, G_TYPE_INT ));
+	gtk_tree_view_set_model( view, model );
+	g_object_unref( model );
+
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			"label",
+			text_cell,
+			"alignment", PANGO_ALIGN_CENTER,
+			"text",      COL_ITEM,
+			NULL );
+	gtk_tree_view_append_column( view, column );
+
+	select = gtk_tree_view_get_selection( view );
+	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
+
+	for( i=0; st_themes[i].label ; ++i ){
+		gtk_list_store_append( GTK_LIST_STORE( model ), &iter );
+		gtk_list_store_set(
+				GTK_LIST_STORE( model ),
+				&iter,
+				COL_ITEM, st_themes[i].label,
+				COL_ID, st_themes[i].id,
+				-1 );
+	}
+
+	gtk_tree_model_get_iter_first( model, &iter );
+	gtk_tree_selection_select_iter( select, &iter );
+
+	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( view ));
+}
+
+static void
+on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window )
+{
+	static const gchar *thisfn = "ofa_main_window_on_theme_activated";
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	gint theme_id;
+
+	g_debug( "%s: view=%p, path=%p, column=%p, window=%p",
+			thisfn, ( void * ) view, ( void * ) path, ( void * ) column, ( void * ) window );
+
+	model = gtk_tree_view_get_model( view );
+	if( gtk_tree_model_get_iter( model, &iter, path )){
+		gtk_tree_model_get( model, &iter, COL_ID, &theme_id, -1 );
+		switch( theme_id ){
+			case THM_ACCOUNTS:
+				ref_accounts_activate( window );
+				break;
+			case THM_JOURNALS:
+				ref_journals_activate( window );
+				break;
+			case THM_MODELS:
+				ref_models_activate( window );
+				break;
+			case THM_MOD_FAMILIES:
+				ref_mod_families_activate( window );
+				break;
+		}
+	}
+}
+
+static void
+add_empty_notebook_to_pane_right( ofaMainWindow *window )
+{
+	GtkNotebook *book;
+
+	book = GTK_NOTEBOOK( gtk_notebook_new());
+	gtk_widget_set_margin_right( GTK_WIDGET( book ), 4 );
+	gtk_widget_set_margin_bottom( GTK_WIDGET( book ), 4 );
+	gtk_paned_pack2( window->private->pane, GTK_WIDGET( book ), TRUE, FALSE );
 }
 
 static void
@@ -471,11 +728,13 @@ on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	gtk_widget_destroy( GTK_WIDGET( priv->pane ));
 	priv->pane = NULL;
 	appli = OFA_APPLICATION( gtk_window_get_application( GTK_WINDOW( user_data )));
+
 	set_menubar( OFA_MAIN_WINDOW( user_data ), ofa_application_get_menu_model( appli ));
+	set_window_title( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void
-on_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_ref_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_accounts";
 	ofaMainWindowPrivate *priv;
@@ -487,4 +746,147 @@ on_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	priv = OFA_MAIN_WINDOW( user_data )->private;
 
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+
+	ref_accounts_activate( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+ref_accounts_activate( ofaMainWindow *window )
+{
+	ofa_accounts_chart_run( window, window->private->dossier, THM_ACCOUNTS );
+}
+
+static void
+on_ref_journals( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_journals";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+	priv = OFA_MAIN_WINDOW( user_data )->private;
+
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+
+	ref_journals_activate( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+ref_journals_activate( ofaMainWindow *window )
+{
+	ofa_journals_set_run( window, window->private->dossier, THM_JOURNALS );
+}
+
+static void
+on_ref_models( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_models";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+	priv = OFA_MAIN_WINDOW( user_data )->private;
+
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+
+	ref_models_activate( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+ref_models_activate( ofaMainWindow *window )
+{
+	ofa_models_set_run( window, window->private->dossier, THM_MODELS );
+}
+
+static void
+on_ref_mod_families( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_mod_families";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+	priv = OFA_MAIN_WINDOW( user_data )->private;
+
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+
+	ref_mod_families_activate( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+ref_mod_families_activate( ofaMainWindow *window )
+{
+	ofa_mod_families_set_run( window, window->private->dossier, THM_MOD_FAMILIES );
+}
+
+/**
+ * ofa_main_window_get_dossier:
+ */
+ofoDossier *
+ofa_main_window_get_dossier( const ofaMainWindow *window )
+{
+	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( window ), NULL );
+
+	if( !window->private->dispose_has_run ){
+
+		return( window->private->dossier );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_main_window_get_notebook:
+ */
+GtkNotebook *
+ofa_main_window_get_notebook( const ofaMainWindow *window )
+{
+#if 0
+	GtkWidget *frame;
+#endif
+	GtkWidget *book;
+
+#if 0
+	frame = gtk_paned_get_child2( window->private->pane );
+	g_return_val_if_fail( GTK_IS_FRAME( frame ), NULL );
+
+	book = gtk_bin_get_child( GTK_BIN( frame ));
+#endif
+	book = gtk_paned_get_child2( window->private->pane );
+	g_return_val_if_fail( GTK_IS_NOTEBOOK( book ), NULL );
+
+	return( GTK_NOTEBOOK( book ));
+}
+
+/**
+ * ofa_main_window_get_notebook_page:
+ */
+GtkWidget *
+ofa_main_window_get_notebook_page( const ofaMainWindow *window, gint theme )
+{
+	GtkNotebook *book;
+	GtkWidget *page, *found;
+	gint count, i, page_thm;
+
+	found = NULL;
+
+	book = ofa_main_window_get_notebook( window );
+	if( book ){
+		count = gtk_notebook_get_n_pages( book );
+		for( i=0 ; !found && i<count ; ++i ){
+			page = gtk_notebook_get_nth_page( book, i );
+			page_thm = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), OFA_DATA_THEME_ID ));
+			if( page_thm == theme ){
+				found = page;
+			}
+		}
+	}
+
+	return( found );
 }

@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <!-- interface-requires gtk+ 3.6 -->
-  <object class="GtkDialog" id="DossierOpenDlg">
+  <object class="GtkDialog" id="JournalPropertiesDlg">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="modal">True</property>
-    <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">
@@ -31,12 +29,10 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="btn-open">
-                <property name="label">gtk-open</property>
+              <object class="GtkButton" id="btn-ok">
+                <property name="label">gtk-ok</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="can_default">True</property>
-                <property name="has_default">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
               </object>
@@ -55,53 +51,26 @@
           </packing>
         </child>
         <child>
-          <object class="GtkGrid" id="grid1">
+          <object class="GtkNotebook" id="notebook1">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="row_spacing">4</property>
-            <property name="column_spacing">8</property>
+            <property name="can_focus">True</property>
             <child>
-              <object class="GtkLabel" id="label1">
+              <object class="GtkGrid" id="grid1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="xalign">0</property>
-                <property name="label" translatable="yes">Sélectionnez le _dossier à ouvrir :</property>
-                <property name="use_underline">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkGrid" id="grid2">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="row_spacing">4</property>
-                <property name="column_spacing">3</property>
+                <property name="margin_left">4</property>
+                <property name="margin_right">4</property>
+                <property name="margin_top">4</property>
+                <property name="margin_bottom">4</property>
+                <property name="vexpand">True</property>
+                <property name="row_spacing">3</property>
+                <property name="column_spacing">4</property>
                 <child>
-                  <object class="GtkLabel" id="label3">
+                  <object class="GtkLabel" id="label4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">1</property>
-                    <property name="label" translatable="yes">Mot de _passe :</property>
-                    <property name="use_underline">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="label2">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="xalign">1</property>
-                    <property name="label" translatable="yes">_Compte :</property>
+                    <property name="label" translatable="yes">_Mnémonique :</property>
                     <property name="use_underline">True</property>
                   </object>
                   <packing>
@@ -112,12 +81,14 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="account">
+                  <object class="GtkEntry" id="p1-mnemo">
+                    <property name="width_request">40</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="margin_right">5</property>
+                    <property name="halign">start</property>
+                    <property name="max_length">3</property>
                     <property name="invisible_char">●</property>
-                    <property name="invisible_char_set">True</property>
+                    <property name="width_chars">0</property>
                     <property name="caps_lock_warning">False</property>
                   </object>
                   <packing>
@@ -128,14 +99,26 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="password">
+                  <object class="GtkLabel" id="label5">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">1</property>
+                    <property name="label" translatable="yes">_Intitulé :</property>
+                    <property name="use_underline">True</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">1</property>
+                    <property name="width">1</property>
+                    <property name="height">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="p1-label">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="margin_right">5</property>
-                    <property name="visibility">False</property>
+                    <property name="hexpand">True</property>
                     <property name="invisible_char">●</property>
-                    <property name="invisible_char_set">True</property>
-                    <property name="input_purpose">password</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
@@ -145,11 +128,16 @@
                   </packing>
                 </child>
               </object>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel" id="label1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">_Propriétés</property>
+                <property name="use_underline">True</property>
+              </object>
               <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
+                <property name="tab_fill">False</property>
               </packing>
             </child>
             <child>
@@ -158,33 +146,29 @@
                 <property name="can_focus">True</property>
                 <property name="shadow_type">in</property>
                 <child>
-                  <object class="GtkTreeView" id="treeview">
+                  <object class="GtkTextView" id="p2-notes">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="vexpand">True</property>
-                    <property name="headers_visible">False</property>
-                    <property name="enable_search">False</property>
-                    <child internal-child="selection">
-                      <object class="GtkTreeSelection" id="treeview-selection"/>
-                    </child>
+                    <property name="wrap_mode">word</property>
+                    <property name="left_margin">2</property>
                   </object>
                 </child>
               </object>
               <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-                <property name="width">1</property>
-                <property name="height">3</property>
+                <property name="position">1</property>
               </packing>
             </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
+            <child type="tab">
+              <object class="GtkLabel" id="label2">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">_Notes</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="position">1</property>
+                <property name="tab_fill">False</property>
+              </packing>
             </child>
           </object>
           <packing>
@@ -197,7 +181,7 @@
     </child>
     <action-widgets>
       <action-widget response="-6">btn-cancel</action-widget>
-      <action-widget response="-5">btn-open</action-widget>
+      <action-widget response="-5">btn-ok</action-widget>
     </action-widgets>
   </object>
 </interface>

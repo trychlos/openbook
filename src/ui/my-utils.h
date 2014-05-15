@@ -37,6 +37,12 @@
 
 G_BEGIN_DECLS
 
+gchar         *my_utils_quote( const gchar *str );
+
+const GDate   *my_utils_date_from_str ( const gchar *str );
+const GTimeVal*my_utils_stamp_from_str( const gchar *str );
+gchar         *my_utils_timestamp     ( void );
+
 GtkWidget *my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name );
 GtkWidget *my_utils_container_get_child_by_type( GtkContainer *container, GType type );
 

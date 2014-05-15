@@ -45,22 +45,52 @@ openbook_SOURCES = \
 	main.c												\
 	my-utils.c											\
 	my-utils.h											\
+	ofa-account-properties.c							\
+	ofa-account-properties.h							\
+	ofa-accounts-chart.c								\
+	ofa-accounts-chart.h								\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-dossier-open.c									\
 	ofa-dossier-open.h									\
+	ofa-journal-properties.c							\
+	ofa-journal-properties.h							\
+	ofa-journals-set.c									\
+	ofa-journals-set.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
+	ofa-model-properties.c								\
+	ofa-model-properties.h								\
+	ofa-models-set.c									\
+	ofa-models-set.h									\
+	ofa-mod-families-set.c								\
+	ofa-mod-families-set.h								\
+	ofa-mod-family-properties.c							\
+	ofa-mod-family-properties.h							\
 	ofa-settings.c										\
 	ofa-settings.h										\
 	ofa-sgbd.c											\
 	ofa-sgbd.h											\
+	ofo-account.c										\
+	ofo-account.h										\
 	ofo-dossier.c										\
 	ofo-dossier.h										\
+	ofo-journal.c										\
+	ofo-journal.h										\
+	ofo-mod-family.c									\
+	ofo-mod-family.h									\
+	ofo-model.c											\
+	ofo-model.h											\
 	$(BUILT_SOURCES)									\
 	$(NULL)
+
+#	ofa-model-properties.c								\
+#	ofa-model-properties.h								\
+#	ofa-models-set.c									\
+#	ofa-models-set.h									\
+#
 
 openbook_LDADD = \
 	$(OPENBOOK_LIBS)									\
@@ -72,8 +102,12 @@ actions_files = \
 	$(NULL)
 
 ui_files = \
+	ofa-account-properties.ui							\
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
+	ofa-journal-properties.ui							\
+	ofa-mod-family-properties.ui						\
+	ofa-model-properties.ui								\
 	$(NULL)
 
 images_files = \

@@ -84,14 +84,14 @@ static const gchar               *st_application_id    = "org.trychlos.openbook.
 static const GApplicationFlags    st_application_flags = G_APPLICATION_NON_UNIQUE;
 
 static const gchar               *st_application_name  = N_( "Open Freelance Accounting" );
-static const gchar               *st_description       = N_( "The double-entry accounting for the freelances" );
+static const gchar               *st_description       = N_( "Une comptabilité en partie-double orientée vers les freelances" );
 static const gchar               *st_icon_name         = N_( "openbook" );
 
 static       gboolean             st_version_opt       = FALSE;
 
 static       GOptionEntry         st_option_entries[]  = {
 	{ "version"   , 'v', 0, G_OPTION_ARG_NONE, &st_version_opt,
-			N_( "print the version of the application, et exit gracefully [no]" ), NULL },
+			N_( "affiche le numéro de version [no]" ), NULL },
 	{ NULL }
 };
 
@@ -639,7 +639,7 @@ init_gtk_args( ofaApplication *application )
 				&application->private->argc,
 				( char *** ) &application->private->argv );
 		if( !ret ){
-			g_warning( "%s", _( "Unable to interpret command-line arguments" ));
+			g_warning( "%s", _( "Erreur à l'interprétation des arguments en ligne de commande" ));
 			application->private->code = OFA_EXIT_CODE_ARGS;
 		}
 	}

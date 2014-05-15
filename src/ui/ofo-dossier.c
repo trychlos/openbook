@@ -30,7 +30,10 @@
 
 #include <stdlib.h>
 
+#include "ui/my-utils.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-account.h"
+#include "ui/ofo-journal.h"
 
 /* private class data
  */
@@ -41,22 +44,27 @@ struct _ofoDossierClassPrivate {
 /* private instance data
  */
 struct _ofoDossierPrivate {
-	gboolean dispose_has_run;
+	gboolean  dispose_has_run;
 
 	/* properties
 	 */
 
 	/* internals
 	 */
-	gchar   *name;
-	ofaSgbd *sgbd;
+	gchar    *name;
+	ofaSgbd  *sgbd;
+	gchar    *userid;
+	GList    *accounts;					/* chart of accounts */
+	GList    *journals;					/* journals set */
+	GList    *models;					/* entry models set */
+	GList    *mod_families;				/* model families */
 
 	/* row id 0
 	 */
-	gchar   *label;						/* raison sociale */
-	gchar   *notes;						/* notes */
-	GDate   *exe_deb;					/* début d'exercice */
-	GDate   *exe_fin;					/* fin d'exercice */
+	gchar    *label;					/* raison sociale */
+	gchar    *notes;					/* notes */
+	GDate    *exe_deb;					/* début d'exercice */
+	GDate    *exe_fin;					/* fin d'exercice */
 };
 
 /* the last DB model version
@@ -74,6 +82,18 @@ static void     instance_finalize( GObject *instance );
 static gboolean check_user_exists( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
 static gint     dbmodel_get_version( ofaSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
+static void     accounts_chart_free( GList *chart );
+static gint     accounts_cmp( const ofoAccount *a, const ofoAccount *b );
+static gint     accounts_find( const ofoAccount *a, const gchar *searched_number );
+static void     journals_set_free( GList *set );
+static gint     journals_cmp( const ofoJournal *a, const ofoJournal *b );
+static gint     journals_find( const ofoJournal *a, const gchar *searched_mnemo );
+static void     mod_families_set_free( GList *set );
+static gint     mod_families_cmp( const ofoModFamily *a, const ofoModFamily *b );
+static gint     mod_families_find( const ofoModFamily *a, gconstpointer pid );
+static void     models_set_free( GList *set );
+static gint     models_cmp( const ofoModel *a, const ofoModel *b );
+static gint     models_find( const ofoModel *a, const gchar *searched_mnemo );
 
 GType
 ofo_dossier_get_type( void )
@@ -165,9 +185,26 @@ instance_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		g_free( priv->name );
+		g_free( priv->userid );
 
 		if( priv->sgbd ){
 			g_object_unref( priv->sgbd );
+		}
+		if( priv->accounts ){
+			accounts_chart_free( priv->accounts );
+			priv->accounts = NULL;
+		}
+		if( priv->journals ){
+			journals_set_free( priv->journals );
+			priv->journals = NULL;
+		}
+		if( priv->models ){
+			models_set_free( priv->models );
+			priv->models = NULL;
+		}
+		if( priv->mod_families ){
+			mod_families_set_free( priv->mod_families );
+			priv->mod_families = NULL;
 		}
 
 		g_free( priv->label );
@@ -259,6 +296,7 @@ ofo_dossier_open( ofoDossier *dossier, GtkWindow *parent,
 	ofo_dossier_dbmodel_update( sgbd, parent, account );
 
 	dossier->private->sgbd = sgbd;
+	dossier->private->userid = g_strdup( account );
 
 	return( TRUE );
 }
@@ -366,8 +404,8 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ROLES ("
-				"ROL_USER     VARCHAR(20) NOT NULL UNIQUE COMMENT 'User account',"
-				"ROL_IS_ADMIN INTEGER                     COMMENT 'Whether the user has administration role')")){
+				"ROL_USER     VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'User account',"
+				"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role')")){
 		return( FALSE );
 	}
 
@@ -382,38 +420,155 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
-				"DOS_ID           INTEGER UNIQUE NOT NULL     COMMENT 'Row identifier',"
-				"DOS_LABEL        VARCHAR(80)                 COMMENT 'Raison sociale',"
-				"DOS_NOTES        VARCHAR(512)                COMMENT 'Notes',"
-				"DOS_MAJ_USER     VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-				"DOS_MAJ_STAMP    TIMESTAMP                   COMMENT 'Properties last update timestamp',"
-				"DOS_EXE_DEB      DATE           NOT NULL     COMMENT 'Date de début d\\'exercice',"
-				"DOS_EXE_FIN      DATE           NOT NULL     COMMENT 'Date de fin d\\'exercice'"
+				"DOS_ID           INTEGER      NOT NULL UNIQUE COMMENT 'Row identifier',"
+				"DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
+				"DOS_NOTES        VARCHAR(512)                 COMMENT 'Notes',"
+				"DOS_MAJ_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
+				"DOS_MAJ_STAMP    TIMESTAMP    NOT NULL        COMMENT 'Properties last update timestamp',"
+				"DOS_EXE_DEB      DATE         NOT NULL        COMMENT 'Date de début d\\'exercice',"
+				"DOS_EXE_FIN      DATE         NOT NULL        COMMENT 'Date de fin d\\'exercice'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
+				"DEV_CODE         VARCHAR(3)  NOT NULL UNIQUE COMMENT 'ISO-3A identifier of the currency',"
+				"DEV_LABEL        VARCHAR(80) NOT NULL        COMMENT 'Currency label',"
+				"DEV_SYMBOL       VARCHAR(3)  NOT NULL        COMMENT 'Label of the currency'"
 			")" )){
 		return( FALSE );
 	}
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
-				"CPT_NUMBER       VARCHAR(20) NOT NULL UNIQUE COMMENT 'Account number',"
-				"CPT_LABEL        VARCHAR(80)                 COMMENT 'Account label',"
-				"CPT_DEV          CHAR(3)     NOT NULL        COMMENT 'ISO 3A devise of the account',"
-				"CPT_NOTES        VARCHAR(512)                COMMENT 'Account notes',"
-				"CPT_TYPE         CHAR(1)     NOT NULL        COMMENT 'Account type, values R/D',"
-				"CPT_MAJ_USER     VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-				"CPT_MAJ_STAMP    TIMESTAMP                   COMMENT 'Properties last update timestamp',"
-				"CPT_DEB_MNT      DECIMAL(15,5)               COMMENT 'Montant débiteur écritures validées',"
-				"CPT_DEB_ECR      INTEGER                     COMMENT 'Numéro de la dernière écriture validée imputée au débit',"
-				"CPT_DEB_DATE     DATE                        COMMENT 'Date d\\'effet',"
-				"CPT_CRE_MNT      DECIMAL(15,5)               COMMENT 'Montant créditeur écritures validées',"
-				"CPT_CRE_ECR      INTEGER                     COMMENT 'Numéro de la dernière écriture validée imputée au crédit',"
-				"CPT_CRE_DATE     DATE                        COMMENT 'Date d\\'effet',"
-				"CPT_BRO_DEB_MNT  DECIMAL(15,5)               COMMENT 'Montant débiteur écritures en brouillard',"
-				"CPT_BRO_DEB_ECR  INTEGER                     COMMENT 'Numéro de la dernière écriture en brouillard imputée au débit',"
-				"CPT_BRO_DEB_DATE DATE                        COMMENT 'Date d\\'effet',"
-				"CPT_BRO_CRE_MNT  DECIMAL(15,5)               COMMENT 'Montant créditeur écritures en brouillard',"
-				"CPT_BRO_CRE_ECR  INTEGER                     COMMENT 'Numéro de la dernière écriture de brouillard imputée au crédit',"
-				"CPT_BRO_CRE_DATE DATE                        COMMENT 'Date d\\'effet'"
+				"CPT_NUMBER       VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
+				"CPT_LABEL        VARCHAR(80)   NOT NULL        COMMENT 'Account label',"
+				"CPT_DEV          CHAR(3)       NOT NULL        COMMENT 'ISO 3A currency of the account',"
+				"CPT_NOTES        VARCHAR(512)                  COMMENT 'Account notes',"
+				"CPT_TYPE         CHAR(1)                       COMMENT 'Account type, values R/D',"
+				"CPT_MAJ_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
+				"CPT_MAJ_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp',"
+				"CPT_DEB_MNT      DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant débiteur écritures validées',"
+				"CPT_DEB_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au débit',"
+				"CPT_DEB_DATE     DATE                          COMMENT 'Date d\\'effet',"
+				"CPT_CRE_MNT      DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant créditeur écritures validées',"
+				"CPT_CRE_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au crédit',"
+				"CPT_CRE_DATE     DATE                          COMMENT 'Date d\\'effet',"
+				"CPT_BRO_DEB_MNT  DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant débiteur écritures en brouillard',"
+				"CPT_BRO_DEB_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture en brouillard imputée au débit',"
+				"CPT_BRO_DEB_DATE DATE                          COMMENT 'Date d\\'effet',"
+				"CPT_BRO_CRE_MNT  DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant créditeur écritures en brouillard',"
+				"CPT_BRO_CRE_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture de brouillard imputée au crédit',"
+				"CPT_BRO_CRE_DATE DATE                          COMMENT 'Date d\\'effet'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX ("
+			"	JOU_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Journal mnemonic',"
+			"	JOU_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Journal label',"
+			"	JOU_NOTES     VARCHAR(512)                COMMENT 'Journal notes',"
+			"	JOU_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
+			"	JOU_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
+			"	JOU_MAXDATE   DATE                        COMMENT 'Most recent effect date of the entries',"
+			"	JOU_CLO       DATE                        COMMENT 'Last closing date'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"	VALUES ('ACH','Journal des achats','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"	VALUES ('VEN','Journal des ventes','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"	VALUES ('EXP','Journal de l\\'exploitant','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"	VALUES ('OD','Journal des opérations diverses','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"	VALUES ('BQ','Journal de banque','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_MOD_FAMILY ("
+			"	FAM_ID        INTEGER NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'Internal model family identifier',"
+			"	FAM_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Model family label',"
+			"	FAM_NOTES     VARCHAR(512)                COMMENT 'Model family notes',"
+			"	FAM_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
+			"	FAM_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT IGNORE INTO OFA_T_MOD_FAMILY (FAM_LABEL,FAM_MAJ_USER) "
+			"	VALUES ('Opérations professionnelles','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT IGNORE INTO OFA_T_MOD_FAMILY (FAM_LABEL,FAM_MAJ_USER) "
+			"	VALUES ('Opérations de trésorerie','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT IGNORE INTO OFA_T_MOD_FAMILY (FAM_LABEL,FAM_MAJ_USER) "
+			"	VALUES ('Opérations de l\\'exploitant','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"INSERT IGNORE INTO OFA_T_MOD_FAMILY (FAM_LABEL,FAM_MAJ_USER) "
+			"	VALUES ('Opérations diverses','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES ("
+			"	MOD_ID        INTEGER NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'Internal model identifier',"
+			"	MOD_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Model mnemonic',"
+			"	MOD_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Model label',"
+			"	MOD_JOU_ID    VARCHAR(3)                  COMMENT 'Model journal',"
+			"	MOD_FAM_ID    INTEGER                     COMMENT 'Model category identifier',"
+			"	MOD_NOTES     VARCHAR(512)                COMMENT 'Model notes',"
+			"	MOD_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
+			"	MOD_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES_DET ("
+			"	MOD_ID              INTEGER NOT NULL UNIQUE COMMENT 'Internal model identifier',"
+			"	MOD_DET_RANG        INTEGER                 COMMENT 'Entry number',"
+			"	MOD_DET_CPT         VARCHAR(20)             COMMENT 'Account number',"
+			"	MOD_DET_CPT_VER     INTEGER                 COMMENT 'Account number is locked',"
+			"	MOD_DET_LABEL       VARCHAR(80) NOT NULL    COMMENT 'Entry label',"
+			"	MOD_DET_LABEL_VER   INTEGER                 COMMENT 'Entry label is locked',"
+			"	MOD_DET_DEBIT       VARCHAR(80)             COMMENT 'Debit amount',"
+			"	MOD_DET_DEBIT_VER   INTEGER                 COMMENT 'Debit amount is locked',"
+			"	MOD_DET_CREDIT      VARCHAR(80)             COMMENT 'Credit amount',"
+			"	MOD_DET_CREDIT_VER  INTEGER                 COMMENT 'Credit amount is locked'"
 			")" )){
 		return( FALSE );
 	}
@@ -427,4 +582,698 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	}
 
 	return( TRUE );
+}
+
+/**
+ * ofo_dossier_get_name:
+ *
+ * Returns: the searched account.
+ */
+const gchar *
+ofo_dossier_get_name( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !dossier->private->dispose_has_run ){
+
+		return(( const gchar * ) dossier->private->name );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_user:
+ *
+ * Returns: the currently connected user identifier.
+ */
+const gchar *
+ofo_dossier_get_user( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !dossier->private->dispose_has_run ){
+
+		return(( const gchar * ) dossier->private->userid );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_account:
+ *
+ * Returns: the searched account.
+ */
+ofoAccount *
+ofo_dossier_get_account( const ofoDossier *dossier, const gchar *number )
+{
+	static const gchar *thisfn = "ofo_dossier_get_account";
+	ofoAccount *account;
+	GList *found;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( number && g_utf8_strlen( number, -1 ), NULL );
+
+	g_debug( "%s: dossier=%p, number=%s", thisfn, ( void * ) dossier, number );
+
+	account = NULL;
+
+	if( !dossier->private->dispose_has_run ){
+
+		found = g_list_find_custom(
+				dossier->private->accounts, number, ( GCompareFunc ) accounts_find );
+		if( found ){
+			account = OFO_ACCOUNT( found->data );
+		}
+	}
+
+	return( account );
+}
+
+/**
+ * ofo_dossier_get_accounts_chart:
+ *
+ * Returns: a copy of the list (not the data) of accounts.
+ * This returned list should be g_list_free() by the caller.
+ */
+GList *
+ofo_dossier_get_accounts_chart( ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_get_accounts_chart";
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	if( !dossier->private->dispose_has_run ){
+
+		if( !dossier->private->accounts ){
+
+			dossier->private->accounts = ofo_account_load_chart( dossier->private->sgbd );
+		}
+	}
+
+	return( g_list_copy( dossier->private->accounts ));
+}
+
+/**
+ * ofo_dossier_insert_account:
+ *
+ * we deal here with an update of publicly modifiable account properties
+ * so it is not needed to check debit or credit agregats
+ */
+gboolean
+ofo_dossier_insert_account( ofoDossier *dossier, ofoAccount *account )
+{
+	GList *chart;
+	gboolean ok;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_account_insert( account, dossier->private->sgbd, dossier->private->userid )){
+
+		chart = g_list_insert_sorted( dossier->private->accounts, account, ( GCompareFunc ) accounts_cmp );
+		dossier->private->accounts = chart;
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_update_account:
+ *
+ * we deal here with an update of publicly modifiable account properties
+ * so it is not needed to check debit or credit agregats
+ */
+gboolean
+ofo_dossier_update_account( ofoDossier *dossier, ofoAccount *account, const gchar *prev_number )
+{
+	gboolean ok;
+	const gchar *new_number;
+	GList *chart;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( prev_number && g_utf8_strlen( prev_number, -1 ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_account_update(
+			account, dossier->private->sgbd, dossier->private->userid, prev_number )){
+
+		new_number = ofo_account_get_number( account );
+
+		if( g_utf8_collate( new_number, prev_number )){
+			chart = g_list_remove( dossier->private->accounts, account );
+			chart = g_list_insert_sorted( chart, account, ( GCompareFunc ) accounts_cmp );
+			dossier->private->accounts = chart;
+		}
+
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_delete_account:
+ */
+gboolean
+ofo_dossier_delete_account( ofoDossier *dossier, ofoAccount *account )
+{
+	gboolean ok;
+	GList *chart;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_account_delete( account, dossier->private->sgbd, dossier->private->userid )){
+
+		chart = g_list_remove( dossier->private->accounts, account );
+		dossier->private->accounts = chart;
+		g_object_unref( account );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static void
+accounts_chart_free( GList *chart )
+{
+	g_list_foreach( chart, ( GFunc ) g_object_unref, NULL );
+	g_list_free( chart );
+}
+
+static gint
+accounts_cmp( const ofoAccount *a, const ofoAccount *b )
+{
+	return( g_utf8_collate( ofo_account_get_number( a ), ofo_account_get_number( b )));
+}
+
+static gint
+accounts_find( const ofoAccount *a, const gchar *searched_number )
+{
+	return( g_utf8_collate( ofo_account_get_number( a ), searched_number ));
+}
+
+/**
+ * ofo_dossier_get_journal:
+ *
+ * Returns: the searched journal.
+ */
+ofoJournal *
+ofo_dossier_get_journal( const ofoDossier *dossier, const gchar *mnemo )
+{
+	static const gchar *thisfn = "ofo_dossier_get_journal";
+	ofoJournal *journal;
+	GList *found;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+
+	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
+
+	journal = NULL;
+
+	if( !dossier->private->dispose_has_run ){
+
+		found = g_list_find_custom(
+				dossier->private->journals, mnemo, ( GCompareFunc ) journals_find );
+		if( found ){
+			journal = OFO_JOURNAL( found->data );
+		}
+	}
+
+	return( journal );
+}
+
+/**
+ * ofo_dossier_get_journals_set:
+ *
+ * Returns: a copy of the list (not the data) of journals.
+ * This returned list should be g_list_free() by the caller.
+ */
+GList *
+ofo_dossier_get_journals_set( ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_get_journals_set";
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	if( !dossier->private->dispose_has_run ){
+
+		if( !dossier->private->journals ){
+
+			dossier->private->journals = ofo_journal_load_set( dossier->private->sgbd );
+		}
+	}
+
+	return( g_list_copy( dossier->private->journals ));
+}
+
+/**
+ * ofo_dossier_insert_journal:
+ *
+ * we deal here with an update of publicly modifiable journal properties
+ * so it is not needed to check the date of closing
+ */
+gboolean
+ofo_dossier_insert_journal( ofoDossier *dossier, ofoJournal *journal )
+{
+	GList *set;
+	gboolean ok;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_journal_insert( journal, dossier->private->sgbd, dossier->private->userid )){
+
+		set = g_list_insert_sorted( dossier->private->journals, journal, ( GCompareFunc ) journals_cmp );
+		dossier->private->journals = set;
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_update_journal:
+ *
+ * we deal here with an update of publicly modifiable journal properties
+ * so it is not needed to check debit or credit agregats
+ */
+gboolean
+ofo_dossier_update_journal( ofoDossier *dossier, ofoJournal *journal, const gchar *prev_mnemo )
+{
+	gboolean ok;
+	const gchar *new_mnemo;
+	GList *set;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
+	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_journal_update( journal, dossier->private->sgbd, dossier->private->userid, prev_mnemo )){
+
+		new_mnemo = ofo_journal_get_mnemo( journal );
+
+		if( g_utf8_collate( new_mnemo, prev_mnemo )){
+			set = g_list_remove( dossier->private->journals, journal );
+			set = g_list_insert_sorted( set, journal, ( GCompareFunc ) journals_cmp );
+			dossier->private->journals = set;
+		}
+
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_delete_journal:
+ */
+gboolean
+ofo_dossier_delete_journal( ofoDossier *dossier, ofoJournal *journal )
+{
+	gboolean ok;
+	GList *set;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_journal_delete( journal, dossier->private->sgbd, dossier->private->userid )){
+
+		set = g_list_remove( dossier->private->journals, journal );
+		dossier->private->journals = set;
+		g_object_unref( journal );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static void
+journals_set_free( GList *set )
+{
+	g_list_foreach( set, ( GFunc ) g_object_unref, NULL );
+	g_list_free( set );
+}
+
+static gint
+journals_cmp( const ofoJournal *a, const ofoJournal *b )
+{
+	return( g_utf8_collate( ofo_journal_get_mnemo( a ), ofo_journal_get_mnemo( b )));
+}
+
+static gint
+journals_find( const ofoJournal *a, const gchar *searched_mnemo )
+{
+	return( g_utf8_collate( ofo_journal_get_mnemo( a ), searched_mnemo ));
+}
+
+/**
+ * ofo_dossier_get_mod_family:
+ *
+ * Returns: the searched mod_family.
+ */
+ofoModFamily *
+ofo_dossier_get_mod_family( const ofoDossier *dossier, gint id )
+{
+	static const gchar *thisfn = "ofo_dossier_get_mod_family";
+	ofoModFamily *family;
+	GList *found;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_debug( "%s: dossier=%p, id=%d", thisfn, ( void * ) dossier, id );
+
+	family = NULL;
+
+	if( !dossier->private->dispose_has_run ){
+
+		found = g_list_find_custom(
+				dossier->private->mod_families,
+				GINT_TO_POINTER( id ), ( GCompareFunc ) mod_families_find );
+		if( found ){
+			family = OFO_MOD_FAMILY( found->data );
+		}
+	}
+
+	return( family );
+}
+
+/**
+ * ofo_dossier_get_mod_families_set:
+ *
+ * Returns: a copy of the list (not the data) of mod_families.
+ * This returned list should be g_list_free() by the caller.
+ */
+GList *
+ofo_dossier_get_mod_families_set( ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_get_mod_families_set";
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	if( !dossier->private->dispose_has_run ){
+
+		if( !dossier->private->mod_families ){
+
+			dossier->private->mod_families = ofo_mod_family_load_set( dossier->private->sgbd );
+		}
+	}
+
+	return( g_list_copy( dossier->private->mod_families ));
+}
+
+/**
+ * ofo_dossier_insert_mod_family:
+ *
+ * we deal here with an update of publicly modifiable mod_family properties
+ * so it is not needed to check the date of closing
+ */
+gboolean
+ofo_dossier_insert_mod_family( ofoDossier *dossier, ofoModFamily *mod_family )
+{
+	GList *set;
+	gboolean ok;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_MOD_FAMILY( mod_family ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_mod_family_insert( mod_family, dossier->private->sgbd, dossier->private->userid )){
+
+		set = g_list_insert_sorted( dossier->private->mod_families, mod_family, ( GCompareFunc ) mod_families_cmp );
+		dossier->private->mod_families = set;
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_update_mod_family:
+ */
+gboolean
+ofo_dossier_update_mod_family( ofoDossier *dossier, ofoModFamily *mod_family )
+{
+	gboolean ok;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_MOD_FAMILY( mod_family ), FALSE );
+
+	ok = ofo_mod_family_update( mod_family, dossier->private->sgbd, dossier->private->userid );
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_delete_mod_family:
+ */
+gboolean
+ofo_dossier_delete_mod_family( ofoDossier *dossier, ofoModFamily *mod_family )
+{
+	gboolean ok;
+	GList *set;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_MOD_FAMILY( mod_family ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_mod_family_delete( mod_family, dossier->private->sgbd, dossier->private->userid )){
+
+		set = g_list_remove( dossier->private->mod_families, mod_family );
+		dossier->private->mod_families = set;
+		g_object_unref( mod_family );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static void
+mod_families_set_free( GList *set )
+{
+	g_list_foreach( set, ( GFunc ) g_object_unref, NULL );
+	g_list_free( set );
+}
+
+static gint
+mod_families_cmp( const ofoModFamily *a, const ofoModFamily *b )
+{
+	gint ia, ib;
+
+	ia = ofo_mod_family_get_id( a );
+	ib = ofo_mod_family_get_id( b );
+
+	if( ia < ib ){
+		return( -1 );
+	}
+
+	if( ia > ib ){
+		return( 1 );
+	}
+
+	return( 0 );
+}
+
+static gint
+mod_families_find( const ofoModFamily *a, gconstpointer pid )
+{
+	gint id = GPOINTER_TO_INT( pid );
+	gint ia = ofo_mod_family_get_id( a );
+
+	if( ia < id ){
+		return( -1 );
+	}
+
+	if( ia > id ){
+		return( 1 );
+	}
+
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_model:
+ *
+ * Returns: the searched model.
+ */
+ofoModel *
+ofo_dossier_get_model( const ofoDossier *dossier, const gchar *mnemo )
+{
+	static const gchar *thisfn = "ofo_dossier_get_model";
+	ofoModel *model;
+	GList *found;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+
+	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
+
+	model = NULL;
+
+	if( !dossier->private->dispose_has_run ){
+
+		found = g_list_find_custom(
+				dossier->private->models, mnemo, ( GCompareFunc ) models_find );
+		if( found ){
+			model = OFO_MODEL( found->data );
+		}
+	}
+
+	return( model );
+}
+
+/**
+ * ofo_dossier_get_models_set:
+ *
+ * Returns: a copy of the list (not the data) of models.
+ * This returned list should be g_list_free() by the caller.
+ */
+GList *
+ofo_dossier_get_models_set( ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_get_models_set";
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	if( !dossier->private->dispose_has_run ){
+
+		if( !dossier->private->models ){
+
+			dossier->private->models = ofo_model_load_set( dossier->private->sgbd );
+		}
+	}
+
+	return( g_list_copy( dossier->private->models ));
+}
+
+/**
+ * ofo_dossier_insert_model:
+ *
+ * we deal here with an update of publicly modifiable model properties
+ * so it is not needed to check the date of closing
+ */
+gboolean
+ofo_dossier_insert_model( ofoDossier *dossier, ofoModel *model )
+{
+	GList *set;
+	gboolean ok;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_model_insert( model, dossier->private->sgbd, dossier->private->userid )){
+
+		set = g_list_insert_sorted( dossier->private->models, model, ( GCompareFunc ) models_cmp );
+		dossier->private->models = set;
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_update_model:
+ *
+ * we deal here with an update of publicly modifiable model properties
+ * so it is not needed to check debit or credit agregats
+ */
+gboolean
+ofo_dossier_update_model( ofoDossier *dossier, ofoModel *model, const gchar *prev_mnemo )
+{
+	gboolean ok;
+	const gchar *new_mnemo;
+	GList *set;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_model_update( model, dossier->private->sgbd, dossier->private->userid, prev_mnemo )){
+
+		new_mnemo = ofo_model_get_mnemo( model );
+
+		if( g_utf8_collate( new_mnemo, prev_mnemo )){
+			set = g_list_remove( dossier->private->models, model );
+			set = g_list_insert_sorted( set, model, ( GCompareFunc ) models_cmp );
+			dossier->private->models = set;
+		}
+
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_delete_model:
+ */
+gboolean
+ofo_dossier_delete_model( ofoDossier *dossier, ofoModel *model )
+{
+	gboolean ok;
+	GList *set;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_model_delete( model, dossier->private->sgbd, dossier->private->userid )){
+
+		set = g_list_remove( dossier->private->models, model );
+		dossier->private->models = set;
+		g_object_unref( model );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static void
+models_set_free( GList *set )
+{
+	g_list_foreach( set, ( GFunc ) g_object_unref, NULL );
+	g_list_free( set );
+}
+
+static gint
+models_cmp( const ofoModel *a, const ofoModel *b )
+{
+	return( g_utf8_collate( ofo_model_get_mnemo( a ), ofo_model_get_mnemo( b )));
+}
+
+static gint
+models_find( const ofoModel *a, const gchar *searched_mnemo )
+{
+	return( g_utf8_collate( ofo_model_get_mnemo( a ), searched_mnemo ));
 }
