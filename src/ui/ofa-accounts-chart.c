@@ -48,19 +48,18 @@ struct _ofaAccountsChartPrivate {
 	/* properties
 	 */
 
-	/* internals
+	/* are set when run for the first time (page is new)
 	 */
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
-	GList         *chart;				/* a copy of the list of accounts */
 
 	/* UI
 	 */
-	GtkNotebook   *classes_book;
+	GtkNotebook   *chart_book;			/* one page per account class */
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
 	GtkButton     *consult_btn;
 
+	/* selection
+	 */
 	ofoAccount    *selected;			/* current selection */
 	GtkTreeModel  *model;				/* the corresponding tree model */
 	GtkTreeIter   *iter;				/* a copy of the selected iter */
@@ -100,15 +99,17 @@ static GObjectClass *st_parent_class = NULL;
 static GType      register_type( void );
 static void       class_init( ofaAccountsChartClass *klass );
 static void       instance_init( GTypeInstance *instance, gpointer klass );
+static void       instance_constructed( GObject *instance );
 static void       instance_dispose( GObject *instance );
 static void       instance_finalize( GObject *instance );
-static void       setup_page_chart( ofaAccountsChart *self, gint theme_id );
-static GtkWidget *setup_classes_book( ofaAccountsChart *self );
+/*static void       setup_page_chart( ofaAccountsChart *self, gint theme_id );*/
+static void       setup_page_chart( ofaAccountsChart *self );
+static GtkWidget *setup_chart_book( ofaAccountsChart *self );
 static void       store_set_account( GtkTreeModel *model, GtkTreeIter *iter, const ofoAccount *account );
 static GtkWidget *setup_buttons_box( ofaAccountsChart *self );
 static void       setup_first_selection( ofaAccountsChart *self );
 static void       on_class_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsChart *self );
-static void       on_chart_page_finalized( ofaAccountsChart *self, GtkWidget *page );
+/*static void       on_chart_page_finalized( ofaAccountsChart *self, GtkWidget *page );*/
 static GtkWidget *notebook_create_page( ofaAccountsChart *self, GtkNotebook *book, gint class, gint position );
 static void       on_account_selected( GtkTreeSelection *selection, ofaAccountsChart *self );
 static void       on_new_account( GtkButton *button, ofaAccountsChart *self );
@@ -117,7 +118,6 @@ static void       on_delete_account( GtkButton *button, ofaAccountsChart *self )
 static void       error_undeletable( ofaAccountsChart *self, ofoAccount *account );
 static gboolean   delete_confirmed( ofaAccountsChart *self, ofoAccount *account );
 static void       on_view_entries( GtkButton *button, ofaAccountsChart *self );
-static void       accounts_chart_free( ofaAccountsChart *self );
 static void       insert_new_row( ofaAccountsChart *self, ofoAccount *account );
 
 GType
@@ -152,7 +152,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaAccountsChart", &info, 0 );
+	type = g_type_register_static( OFA_TYPE_MAIN_PAGE, "ofaAccountsChart", &info, 0 );
 
 	return( type );
 }
@@ -168,6 +168,7 @@ class_init( ofaAccountsChartClass *klass )
 	st_parent_class = g_type_class_peek_parent( klass );
 
 	object_class = G_OBJECT_CLASS( klass );
+	object_class->constructed = instance_constructed;
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
 
@@ -193,51 +194,81 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_dispose( GObject *window )
+instance_constructed( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_accounts_chart_instance_constructed";
+
+	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( instance ));
+
+	/* first chain up to the parent class */
+	if( G_OBJECT_CLASS( st_parent_class )->constructed ){
+		G_OBJECT_CLASS( st_parent_class )->constructed( instance );
+	}
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	/* then setup the page */
+#if 0
+	ofaMainWindow *window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( instance ));
+	ofoDossier *dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( instance ));
+	GtkGrid *grid = ofa_main_page_get_grid( OFA_MAIN_PAGE( instance ));
+
+	g_debug( "%s: main_window=%p (%s), dossier=%p (%s), grid=%p (%s)",
+			thisfn,
+			( void * ) window, G_OBJECT_TYPE_NAME( window ),
+			( void * ) dossier, G_OBJECT_TYPE_NAME( dossier ),
+			( void * ) grid, G_OBJECT_TYPE_NAME( grid ));
+#endif
+
+	setup_page_chart( OFA_ACCOUNTS_CHART( instance ));
+}
+
+static void
+instance_dispose( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_accounts_chart_instance_dispose";
 	ofaAccountsChartPrivate *priv;
 
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( window ));
+	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( instance ));
 
-	priv = ( OFA_ACCOUNTS_CHART( window ))->private;
+	priv = ( OFA_ACCOUNTS_CHART( instance ))->private;
 
 	if( !priv->dispose_has_run ){
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+
+		g_debug( "%s: instance=%p (%s)",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
 
-		if( priv->chart ){
-			accounts_chart_free( OFA_ACCOUNTS_CHART( window ));
-		}
 		if( priv->iter ){
 			gtk_tree_iter_free( priv->iter );
 		}
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( window );
+			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
 		}
 	}
 }
 
 static void
-instance_finalize( GObject *window )
+instance_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_accounts_chart_instance_finalize";
 	ofaAccountsChart *self;
 
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( window ));
+	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( instance ));
 
-	g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self = OFA_ACCOUNTS_CHART( window );
+	self = OFA_ACCOUNTS_CHART( instance );
 
 	g_free( self->private );
 
 	/* chain call to parent class */
 	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( window );
+		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
 	}
 }
 
@@ -249,6 +280,7 @@ instance_finalize( GObject *window )
  *
  * Display the chart of accounts, letting the user edit it
  */
+#if 0
 void
 ofa_accounts_chart_run( ofaMainWindow *main_window, ofoDossier *dossier, gint theme_id )
 {
@@ -273,6 +305,21 @@ ofa_accounts_chart_run( ofaMainWindow *main_window, ofoDossier *dossier, gint th
 		setup_page_chart( self, theme_id );
 	}
 }
+#endif
+
+/**
+ * ofa_accounts_chart_run:
+ *
+ * When called by the main_window, the page has been created
+ */
+void
+ofa_accounts_chart_run( ofaMainPage *this_page )
+{
+	static const gchar *thisfn = "ofa_accounts_chart_run";
+
+	g_debug( "%s: this_page=%p (%s)",
+			thisfn, ( void * ) this_page, G_OBJECT_TYPE_NAME( this_page ));
+}
 
 /*
  * +-----------------------------------------------------------------------+
@@ -284,13 +331,14 @@ ofa_accounts_chart_run( ofaMainWindow *main_window, ofoDossier *dossier, gint th
  * | +-----------------------------------------------+-------------------+ |
  * +-----------------------------------------------------------------------+
  */
+#if 0
 static void
 setup_page_chart( ofaAccountsChart *self, gint theme_id )
 {
 	GtkNotebook *book;
 	GtkGrid *grid;
 	GtkLabel *label;
-	GtkWidget *classes_book;
+	GtkWidget *chart_book;
 	GtkWidget *buttons_box;
 	gint page_num;
 	GtkWidget *first_tab;
@@ -308,9 +356,9 @@ setup_page_chart( ofaAccountsChart *self, gint theme_id )
 
 	g_object_set_data( G_OBJECT( grid ), OFA_DATA_THEME_ID, GINT_TO_POINTER ( theme_id ));
 
-	classes_book = setup_classes_book( self );
-	gtk_grid_attach( grid, classes_book, 0, 0, 1, 1 );
-	self->private->classes_book = GTK_NOTEBOOK( classes_book );
+	chart_book = setup_chart_book( self );
+	gtk_grid_attach( grid, chart_book, 0, 0, 1, 1 );
+	self->private->chart_book = GTK_NOTEBOOK( chart_book );
 
 	buttons_box = setup_buttons_box( self );
 	gtk_grid_attach( grid, buttons_box, 1, 0, 1, 1 );
@@ -318,7 +366,7 @@ setup_page_chart( ofaAccountsChart *self, gint theme_id )
 	gtk_widget_show_all( GTK_WIDGET( self->private->main_window ));
 	page_num = gtk_notebook_page_num( book, GTK_WIDGET( grid ));
 	gtk_notebook_set_current_page( book, page_num );
-	first_tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( classes_book ), 0 );
+	first_tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( chart_book ), 0 );
 	if( first_tab ){
 		first_treeview = GTK_WIDGET( g_object_get_data( G_OBJECT( first_tab ), DATA_PAGE_VIEW ));
 		gtk_widget_grab_focus( first_treeview );
@@ -326,11 +374,36 @@ setup_page_chart( ofaAccountsChart *self, gint theme_id )
 
 	setup_first_selection( self );
 }
+#endif
+
+static void
+setup_page_chart( ofaAccountsChart *self )
+{
+	static const gchar *thisfn = "ofa_accounts_chart_setup_page_chart";
+	GtkGrid *grid;
+	GtkWidget *chart_book;
+	GtkWidget *buttons_box;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	grid = ofa_main_page_get_grid( OFA_MAIN_PAGE( self ));
+
+	chart_book = setup_chart_book( self );
+	gtk_grid_attach( grid, chart_book, 0, 0, 1, 1 );
+	self->private->chart_book = GTK_NOTEBOOK( chart_book );
+
+	buttons_box = setup_buttons_box( self );
+	gtk_grid_attach( grid, buttons_box, 1, 0, 1, 1 );
+
+	setup_first_selection( self );
+}
 
 static GtkWidget *
-setup_classes_book( ofaAccountsChart *self )
+setup_chart_book( ofaAccountsChart *self )
 {
-	GtkNotebook *classes_book;
+	GtkNotebook *chart_book;
+	ofoDossier *dossier;
+	GList *chart;
 	gint class, prev_class;
 	GList *icpt;
 	GtkWidget *page;
@@ -339,20 +412,24 @@ setup_classes_book( ofaAccountsChart *self )
 	GtkTreeIter iter;
 	ofoAccount *account;
 
-	classes_book = GTK_NOTEBOOK( gtk_notebook_new());
-	gtk_widget_set_margin_left( GTK_WIDGET( classes_book ), 4 );
-	gtk_widget_set_margin_bottom( GTK_WIDGET( classes_book ), 4 );
+	chart_book = GTK_NOTEBOOK( gtk_notebook_new());
+	gtk_widget_set_margin_left( GTK_WIDGET( chart_book ), 4 );
+	gtk_widget_set_margin_bottom( GTK_WIDGET( chart_book ), 4 );
+
+	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+	chart = ofo_dossier_get_accounts_chart( dossier );
+	ofa_main_page_set_dataset( OFA_MAIN_PAGE( self ), chart );
 
 	prev_class = 0;
 	model = NULL;
 
-	for( icpt=self->private->chart ; icpt ; icpt=icpt->next ){
+	for( icpt=chart ; icpt ; icpt=icpt->next ){
 
 		/* create a page per class
 		 */
 		class = ofo_account_get_class( OFO_ACCOUNT( icpt->data ));
 		if( class != prev_class ){
-			page = notebook_create_page( self, classes_book, class, -1 );
+			page = notebook_create_page( self, chart_book, class, -1 );
 			view = GTK_TREE_VIEW( g_object_get_data( G_OBJECT( page ), DATA_PAGE_VIEW ));
 			model = gtk_tree_view_get_model( view );
 			prev_class = class;
@@ -363,9 +440,9 @@ setup_classes_book( ofaAccountsChart *self )
 		store_set_account( model, &iter, account );
 	}
 
-	g_signal_connect( G_OBJECT( classes_book ), "switch-page", G_CALLBACK( on_class_page_switched ), self );
+	g_signal_connect( G_OBJECT( chart_book ), "switch-page", G_CALLBACK( on_class_page_switched ), self );
 
-	return( GTK_WIDGET( classes_book ));
+	return( GTK_WIDGET( chart_book ));
 }
 
 static GtkWidget *
@@ -526,7 +603,7 @@ setup_first_selection( ofaAccountsChart *self )
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	first_tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( self->private->classes_book ), 0 );
+	first_tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( self->private->chart_book ), 0 );
 	if( first_tab ){
 		first_treeview = GTK_TREE_VIEW( g_object_get_data( G_OBJECT( first_tab ), DATA_PAGE_VIEW ));
 		model = gtk_tree_view_get_model( first_treeview );
@@ -563,6 +640,7 @@ on_class_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAcc
 	}
 }
 
+#if 0
 /*
  * return FALSE to let the widget being deleted
  */
@@ -578,6 +656,7 @@ on_chart_page_finalized( ofaAccountsChart *self, GtkWidget *page )
 
 	g_object_unref( self );
 }
+#endif
 
 static void
 on_account_selected( GtkTreeSelection *selection, ofaAccountsChart *self )
@@ -621,13 +700,16 @@ on_new_account( GtkButton *button, ofaAccountsChart *self )
 {
 	static const gchar *thisfn = "ofa_accounts_chart_on_new_account";
 	ofoAccount *account;
+	ofaMainWindow *main_window;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
+	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
+
 	account = ofo_account_new();
-	if( ofa_account_properties_run( self->private->main_window, account )){
+	if( ofa_account_properties_run( main_window, account )){
 		insert_new_row( self, account );
 	}
 }
@@ -639,6 +721,7 @@ on_update_account( GtkButton *button, ofaAccountsChart *self )
 	gchar *prev_number;
 	const gchar *new_number;
 	ofoAccount *account;
+	ofaMainWindow *main_window;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
 	g_return_if_fail( OFO_IS_ACCOUNT( self->private->selected ));
@@ -647,8 +730,9 @@ on_update_account( GtkButton *button, ofaAccountsChart *self )
 
 	account = self->private->selected;
 	prev_number = g_strdup( ofo_account_get_number( account ));
+	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
 
-	if( ofa_account_properties_run( self->private->main_window, account )){
+	if( ofa_account_properties_run( main_window, account )){
 
 		new_number = ofo_account_get_number( account );
 		if( g_utf8_collate( prev_number, new_number )){
@@ -676,6 +760,7 @@ on_delete_account( GtkButton *button, ofaAccountsChart *self )
 	ofoAccount *account;
 	GtkTreeModel *model;
 	GtkTreeIter *iter;
+	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
 	g_return_if_fail( OFO_IS_ACCOUNT( self->private->selected ));
@@ -695,12 +780,14 @@ on_delete_account( GtkButton *button, ofaAccountsChart *self )
 		return;
 	}
 
+	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+
 	if( delete_confirmed( self, account ) &&
-			ofo_dossier_delete_account( self->private->dossier, account )){
+			ofo_dossier_delete_account( dossier, account )){
 
 		/* update our chart of accounts */
-		accounts_chart_free( self );
-		self->private->chart = ofo_dossier_get_accounts_chart( self->private->dossier );
+		ofa_main_page_set_dataset(
+				OFA_MAIN_PAGE( self ), ofo_dossier_get_accounts_chart( dossier ));
 
 		/* remove the row from the model
 		 * this will cause an automatic new selection */
@@ -715,6 +802,7 @@ error_undeletable( ofaAccountsChart *self, ofoAccount *account )
 {
 	GtkMessageDialog *dlg;
 	gchar *msg;
+	ofaMainWindow *main_window;
 
 	msg = g_strdup_printf(
 				_( "Il est impossible de supprimer le compte '%s - %s' "
@@ -722,8 +810,10 @@ error_undeletable( ofaAccountsChart *self, ofoAccount *account )
 				ofo_account_get_number( account ),
 				ofo_account_get_label( account ));
 
+	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
+
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				GTK_WINDOW( self->private->main_window ),
+				GTK_WINDOW( main_window ),
 				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 				GTK_MESSAGE_WARNING,
 				GTK_BUTTONS_OK,
@@ -740,13 +830,16 @@ delete_confirmed( ofaAccountsChart *self, ofoAccount *account )
 	GtkWidget *dialog;
 	gchar *msg;
 	gint response;
+	ofaMainWindow *main_window;
 
 	msg = g_strdup_printf( _( "Etes-vous sûr de vouloir supprimer le compte '%s - %s' ?" ),
 			ofo_account_get_number( account ),
 			ofo_account_get_label( account ));
 
+	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
+
 	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( self->private->main_window ),
+			GTK_WINDOW( main_window ),
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
@@ -776,13 +869,6 @@ on_view_entries( GtkButton *button, ofaAccountsChart *self )
 }
 
 static void
-accounts_chart_free( ofaAccountsChart *self )
-{
-	g_list_free( self->private->chart );
-	self->private->chart = NULL;
-}
-
-static void
 insert_new_row( ofaAccountsChart *self, ofoAccount *account )
 {
 	gint page_num;
@@ -796,18 +882,19 @@ insert_new_row( ofaAccountsChart *self, ofoAccount *account )
 	GtkTreeView *view;
 	gboolean iter_found;
 	GtkTreePath *path;
+	ofoDossier *dossier;
 
 	/* update our chart of accounts */
-	accounts_chart_free( self );
-	self->private->chart = ofo_dossier_get_accounts_chart( self->private->dossier );
-	/*ofo_account_dump_chart( self->private->chart );*/
+	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+	ofa_main_page_set_dataset(
+			OFA_MAIN_PAGE( self ), ofo_dossier_get_accounts_chart( dossier ));
 
 	/* activate the page of the correct class, or create a new one */
 	account_class = ofo_account_get_class( account );
-	count = gtk_notebook_get_n_pages( self->private->classes_book );
+	count = gtk_notebook_get_n_pages( self->private->chart_book );
 	page_found = NULL;
 	for( i=0 ; i<count ; ++i ){
-		page = gtk_notebook_get_nth_page( self->private->classes_book, i );
+		page = gtk_notebook_get_nth_page( self->private->chart_book, i );
 		page_class = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), DATA_PAGE_CLASS ));
 		if( page_class == account_class ){
 			page_found = page;
@@ -816,11 +903,11 @@ insert_new_row( ofaAccountsChart *self, ofoAccount *account )
 	}
 	if( !page_found ){
 		page_found = notebook_create_page(
-				self, self->private->classes_book, account_class, account_class-1 );
+				self, self->private->chart_book, account_class, account_class-1 );
 	}
 	gtk_widget_show_all( page_found );
-	page_num = gtk_notebook_page_num( self->private->classes_book, page_found );
-	gtk_notebook_set_current_page( self->private->classes_book, page_num );
+	page_num = gtk_notebook_page_num( self->private->chart_book, page_found );
+	gtk_notebook_set_current_page( self->private->chart_book, page_num );
 
 	/* insert the new row at the right place */
 	view = GTK_TREE_VIEW( g_object_get_data( G_OBJECT( page_found ), DATA_PAGE_VIEW ));

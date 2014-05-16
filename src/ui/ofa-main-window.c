@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "ui/my-utils.h"
 #include "ui/ofa-mod-families-set.h"
 #include "ui/ofa-accounts-chart.h"
 #include "ui/ofa-journals-set.h"
@@ -72,6 +73,14 @@ enum {
 	LAST_SIGNAL
 };
 
+/* column ordering in the left listview
+ */
+enum {
+	COL_ITEM = 0,
+	COL_ID,
+	N_COLUMNS
+};
+
 static void on_close           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -86,21 +95,29 @@ static const GActionEntry st_dos_entries[] = {
 		{ "mod-families", on_ref_mod_families, NULL, NULL, NULL },
 };
 
-/* column ordering in the left listview
- */
-enum {
-	COL_ITEM = 0,
-	COL_ID,
-	N_COLUMNS
-};
-
-/* displayed selectable themes in the left listview
+/* This structure handles the functions which manage the pages of the
+ * main notebook:
+ * - the label which is displayed o the left treeview
+ * - the label which is displayed in the tab of the page of the main book
+ * - the local function which handles the activation in the left treeview
+ * - the external function which is finally to be called.
+ *
+ * The 'theme identifier' of a page is so the index in this structure,
+ * plus 1 in order all themes ids are greater than zero.
  */
 typedef struct {
 	const gchar *label;
-	gint         id;
+	const gchar *tab_label;
+	GType      (*fn_get_type)( void );
+	void       (*fn_local) ( ofaMainWindow * );
+	void       (*fn_extern)( ofaMainPage * );
 }
 	sTheme;
+
+static void ref_accounts_activate( ofaMainWindow *window );
+static void ref_journals_activate( ofaMainWindow *window );
+static void ref_models_activate( ofaMainWindow *window );
+static void ref_mod_families_activate( ofaMainWindow *window );
 
 enum {
 	THM_ACCOUNTS = 1,
@@ -110,10 +127,10 @@ enum {
 };
 
 static sTheme st_themes[] = {
-		{ N_( "Plan comptable" ),       THM_ACCOUNTS },
-		{ N_( "Journaux" ),             THM_JOURNALS },
-		{ N_( "Modèles" ),              THM_MODELS },
-		{ N_( "Familles\nde modèles" ), THM_MOD_FAMILIES },
+		{ N_( "Plan comptable" ),       N_( "Plan comptable" ),      ofa_accounts_chart_get_type, ref_accounts_activate,     ofa_accounts_chart_run },
+		{ N_( "Journaux" ),             N_( "Journaux" ),            NULL,                        ref_journals_activate,     NULL },
+		{ N_( "Modèles" ),              N_( "Modèles" ),             NULL,                        ref_models_activate,       NULL },
+		{ N_( "Familles\nde modèles" ), N_( "Familles de modèles" ), NULL,                        ref_mod_families_activate, NULL },
 		{ 0 }
 };
 
@@ -138,10 +155,11 @@ static void       add_treeview_to_pane_left( ofaMainWindow *window );
 static void       on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static void       add_empty_notebook_to_pane_right( ofaMainWindow *window );
 static void       on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
-static void       ref_accounts_activate( ofaMainWindow *window );
-static void       ref_journals_activate( ofaMainWindow *window );
-static void       ref_models_activate( ofaMainWindow *window );
-static void       ref_mod_families_activate( ofaMainWindow *window );
+static void         main_activate_theme( ofaMainWindow *main, gint theme );
+static GtkNotebook *main_get_book( const ofaMainWindow *window );
+static GtkWidget   *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
+static GtkWidget   *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, gint theme );
+static void         main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 
 GType
 ofa_main_window_get_type( void )
@@ -624,8 +642,7 @@ add_treeview_to_pane_left( ofaMainWindow *window )
 	column = gtk_tree_view_column_new_with_attributes(
 			"label",
 			text_cell,
-			"alignment", PANGO_ALIGN_CENTER,
-			"text",      COL_ITEM,
+			"text", COL_ITEM,
 			NULL );
 	gtk_tree_view_append_column( view, column );
 
@@ -638,7 +655,7 @@ add_treeview_to_pane_left( ofaMainWindow *window )
 				GTK_LIST_STORE( model ),
 				&iter,
 				COL_ITEM, st_themes[i].label,
-				COL_ID, st_themes[i].id,
+				COL_ID, i+1,		/* the theme identifier is the index+1 */
 				-1 );
 	}
 
@@ -660,21 +677,15 @@ on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col
 			thisfn, ( void * ) view, ( void * ) path, ( void * ) column, ( void * ) window );
 
 	model = gtk_tree_view_get_model( view );
+
 	if( gtk_tree_model_get_iter( model, &iter, path )){
 		gtk_tree_model_get( model, &iter, COL_ID, &theme_id, -1 );
-		switch( theme_id ){
-			case THM_ACCOUNTS:
-				ref_accounts_activate( window );
-				break;
-			case THM_JOURNALS:
-				ref_journals_activate( window );
-				break;
-			case THM_MODELS:
-				ref_models_activate( window );
-				break;
-			case THM_MOD_FAMILIES:
-				ref_mod_families_activate( window );
-				break;
+
+		if( st_themes[theme_id-1].fn_get_type ){
+			main_activate_theme( window, theme_id );
+
+		} else if( st_themes[theme_id-1].fn_local ){
+			( *st_themes[theme_id-1].fn_local )( window );
 		}
 	}
 }
@@ -753,7 +764,7 @@ on_ref_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 static void
 ref_accounts_activate( ofaMainWindow *window )
 {
-	ofa_accounts_chart_run( window, window->private->dossier, THM_ACCOUNTS );
+	/*ofa_accounts_chart_run( window, window->private->dossier, THM_ACCOUNTS );*/
 }
 
 static void
@@ -847,22 +858,82 @@ ofa_main_window_get_dossier( const ofaMainWindow *window )
 GtkNotebook *
 ofa_main_window_get_notebook( const ofaMainWindow *window )
 {
-#if 0
-	GtkWidget *frame;
-#endif
+	return( main_get_book( window ));
+}
+
+/*
+ * if the main page doesn't exist yet, then create it
+ * then make sure it is displayed, and activate it
+ * last run it
+ */
+static void
+main_activate_theme( ofaMainWindow *main_window, gint theme )
+{
+	/*static const gchar *thisfn = "ofa_main_window_main_book_activate_page";*/
+	GtkNotebook *main_book;
+	GtkWidget *page;
+	ofaMainPage *handler;
+
+	g_return_if_fail( st_themes[theme-1].fn_get_type );
+	g_return_if_fail( st_themes[theme-1].fn_extern );
+
+	main_book = main_get_book( main_window );
+	g_return_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ));
+
+	page = main_book_get_page( main_window, main_book, theme );
+	if( !page ){
+		page = main_book_create_page( main_window, main_book, theme );
+	}
+	g_return_if_fail( page && GTK_IS_WIDGET( page ));
+	main_book_activate_page( main_window, main_book, page );
+
+	handler = g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
+	g_return_if_fail( handler && OFA_IS_MAIN_PAGE( handler ));
+
+	(*st_themes[theme-1].fn_extern)( handler );
+}
+
+static GtkNotebook *
+main_get_book( const ofaMainWindow *window )
+{
 	GtkWidget *book;
 
-#if 0
-	frame = gtk_paned_get_child2( window->private->pane );
-	g_return_val_if_fail( GTK_IS_FRAME( frame ), NULL );
-
-	book = gtk_bin_get_child( GTK_BIN( frame ));
-#endif
 	book = gtk_paned_get_child2( window->private->pane );
 	g_return_val_if_fail( GTK_IS_NOTEBOOK( book ), NULL );
 
 	return( GTK_NOTEBOOK( book ));
 }
+
+#if 0
+static GtkWidget *
+main_book_get_page( ofaMainWindow *main, gint theme )
+{
+	GtkWidget *page;
+	GtkGrid *grid;
+	GtkLabel *label;
+	GtkNotebook *book;
+
+	page = ofa_main_window_get_notebook_page( main, theme );
+	if( !page ){
+
+		grid = GTK_GRID( gtk_grid_new());
+		gtk_grid_set_column_spacing( grid, 4 );
+
+		label = GTK_LABEL( gtk_label_new_with_mnemonic( gettext( st_themes[theme-1].tab_label )));
+
+		book = ofa_main_window_get_notebook( main );
+		gtk_notebook_append_page( book, GTK_WIDGET( grid ), GTK_WIDGET( label ));
+		gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( grid ), TRUE );
+
+		g_object_set_data( G_OBJECT( grid ), OFA_DATA_THEME_ID,   GINT_TO_POINTER ( theme ));
+		g_object_set_data( G_OBJECT( grid ), OFA_DATA_OFA_OBJECT, NULL );
+
+		page = GTK_WIDGET( grid );
+	}
+
+	return( page );
+}
+#endif
 
 /**
  * ofa_main_window_get_notebook_page:
@@ -871,22 +942,131 @@ GtkWidget *
 ofa_main_window_get_notebook_page( const ofaMainWindow *window, gint theme )
 {
 	GtkNotebook *book;
+
+	book = main_get_book( window );
+	g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
+
+	return( main_book_get_page( window, book, theme ));
+}
+
+static GtkWidget *
+main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
+{
 	GtkWidget *page, *found;
 	gint count, i, page_thm;
 
 	found = NULL;
-
-	book = ofa_main_window_get_notebook( window );
-	if( book ){
-		count = gtk_notebook_get_n_pages( book );
-		for( i=0 ; !found && i<count ; ++i ){
-			page = gtk_notebook_get_nth_page( book, i );
-			page_thm = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), OFA_DATA_THEME_ID ));
-			if( page_thm == theme ){
-				found = page;
-			}
+	count = gtk_notebook_get_n_pages( book );
+	for( i=0 ; !found && i<count ; ++i ){
+		page = gtk_notebook_get_nth_page( book, i );
+		page_thm = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), OFA_DATA_THEME ));
+		if( page_thm == theme ){
+			found = page;
 		}
 	}
 
 	return( found );
+}
+
+/*
+ * the page for this theme has not been found
+ * so, create it, simultaneously instanciating the handling object
+ */
+static GtkWidget *
+main_book_create_page( ofaMainWindow *main, GtkNotebook *book, gint theme )
+{
+	GtkGrid *grid;
+	GtkLabel *label;
+	ofaMainPage *handler;
+
+	/* all pages of the main notebook begin with a GtkGrid
+	 */
+	grid = GTK_GRID( gtk_grid_new());
+	gtk_grid_set_column_spacing( grid, 4 );
+
+	label = GTK_LABEL( gtk_label_new_with_mnemonic( gettext( st_themes[theme-1].tab_label )));
+
+	gtk_notebook_append_page( book, GTK_WIDGET( grid ), GTK_WIDGET( label ));
+	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( grid ), TRUE );
+
+	/* then instanciates the handing object
+	 */
+	handler = g_object_new(( *st_themes[theme-1].fn_get_type )(),
+			MAIN_PAGE_PROP_WINDOW,  main,
+			MAIN_PAGE_PROP_DOSSIER, main->private->dossier,
+			MAIN_PAGE_PROP_GRID,    grid,
+			NULL );
+
+	g_object_set_data( G_OBJECT( grid ), OFA_DATA_THEME,   GINT_TO_POINTER ( theme ));
+	g_object_set_data( G_OBJECT( grid ), OFA_DATA_HANDLER, handler );
+
+	return( GTK_WIDGET( grid ));
+}
+
+#if 0
+/**
+ * ofa_main_window_setup_page:
+ *
+ * This is to be called by the class which handles the page,
+ * after its first setup.
+ *
+ * This let the page be associated with the handler object, thus:
+ * - be able to reactivate the same page when the user re-asks for the option
+ * - be able to unref the runner when the widget is finalized.
+ */
+void
+ofa_main_window_setup_page( const ofaMainWindow *window, GtkWidget *page, GObject *runner, GWeakNotify fn )
+{
+	g_return_if_fail( window && OFA_IS_MAIN_WINDOW( window ));
+	g_return_if_fail( page && GTK_IS_WIDGET( page ));
+	g_return_if_fail( runner && G_IS_OBJECT( runner ));
+	g_return_if_fail( fn );
+
+	g_object_weak_ref( G_OBJECT( page ), fn, runner );
+	g_object_set_data( G_OBJECT( page ), OFA_DATA_OFA_OBJECT, runner );
+}
+#endif
+
+/*
+ * ofa_main_book_activate_page:
+ */
+static void
+main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page )
+{
+	gint page_num;
+	GtkWidget *child_book;
+	gint tab_num;
+	GtkWidget *tab;
+	GtkWidget *view;
+
+	g_return_if_fail( window && OFA_IS_MAIN_WINDOW( window ));
+	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
+	g_return_if_fail( page && GTK_IS_WIDGET( page ));
+
+	gtk_widget_show_all( GTK_WIDGET( window ));
+
+	page_num = gtk_notebook_page_num( book, page );
+	gtk_notebook_set_current_page( book, page_num );
+
+	/* children pages always have a treeview, maybe embedded in their
+	 * own notebook
+	 */
+	view = NULL;
+	child_book = my_utils_container_get_child_by_type( GTK_CONTAINER( page ), GTK_TYPE_NOTEBOOK );
+	if( child_book ){
+		tab_num = gtk_notebook_get_current_page( GTK_NOTEBOOK( child_book ));
+		if( tab_num < 0 ){
+			tab_num = 0;
+		}
+		tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( child_book ), tab_num );
+		if( tab ){
+			view = my_utils_container_get_child_by_type( GTK_CONTAINER( tab ), GTK_TYPE_TREE_VIEW );
+		}
+	}
+	if( !view ){
+		view = my_utils_container_get_child_by_type( GTK_CONTAINER( page ), GTK_TYPE_TREE_VIEW );
+	}
+	if( view ){
+		gtk_widget_grab_focus( view );
+	}
 }

@@ -347,7 +347,7 @@ setup_journals_view( ofaJournalsSet *self )
 
 	model = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( view, model );
 	g_object_unref( model );
 
@@ -456,6 +456,11 @@ store_set_journal( GtkTreeModel *model, GtkTreeIter *iter, const ofoJournal *jou
 			COL_CLOTURE, sclo,
 			COL_OBJECT, journal,
 			-1 );
+
+	/*
+	g_debug( "ofa_journals_set_store_set_journal: %s %s",
+			ofo_journal_get_mnemo( journal ), ofo_journal_get_label( journal ));
+			*/
 
 	g_free( sclo );
 }

@@ -653,9 +653,6 @@ ofo_dossier_get_account( const ofoDossier *dossier, const gchar *number )
 
 /**
  * ofo_dossier_get_accounts_chart:
- *
- * Returns: a copy of the list (not the data) of accounts.
- * This returned list should be g_list_free() by the caller.
  */
 GList *
 ofo_dossier_get_accounts_chart( ofoDossier *dossier )
@@ -674,7 +671,7 @@ ofo_dossier_get_accounts_chart( ofoDossier *dossier )
 		}
 	}
 
-	return( g_list_copy( dossier->private->accounts ));
+	return( dossier->private->accounts );
 }
 
 /**

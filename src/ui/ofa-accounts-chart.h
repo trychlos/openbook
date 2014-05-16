@@ -35,8 +35,7 @@
  * Display the chart of accounts, letting the user edit it.
  */
 
-#include "ui/ofa-main-window.h"
-#include "ui/ofo-dossier.h"
+#include "ui/ofa-main-page.h"
 
 G_BEGIN_DECLS
 
@@ -51,7 +50,7 @@ typedef struct _ofaAccountsChartPrivate        ofaAccountsChartPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                  parent;
+	ofaMainPage              parent;
 	ofaAccountsChartPrivate *private;
 }
 	ofaAccountsChart;
@@ -60,14 +59,14 @@ typedef struct _ofaAccountsChartClassPrivate   ofaAccountsChartClassPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass                  parent;
+	ofaMainPageClass              parent;
 	ofaAccountsChartClassPrivate *private;
 }
 	ofaAccountsChartClass;
 
 GType ofa_accounts_chart_get_type( void );
 
-void  ofa_accounts_chart_run     ( ofaMainWindow *parent, ofoDossier *dossier, gint theme_id );
+void  ofa_accounts_chart_run     ( ofaMainPage *this );
 
 G_END_DECLS
 
