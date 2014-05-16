@@ -31,18 +31,18 @@
 #include <glib/gi18n.h>
 
 #include "ui/my-utils.h"
-#include "ui/ofa-model-properties.h"
+#include "ui/ofa-devise-properties.h"
 #include "ui/ofo-dossier.h"
 
 /* private class data
  */
-struct _ofaModelPropertiesClassPrivate {
+struct _ofaDevisePropertiesClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
 /* private instance data
  */
-struct _ofaModelPropertiesPrivate {
+struct _ofaDevisePropertiesPrivate {
 	gboolean       dispose_has_run;
 
 	/* properties
@@ -52,38 +52,37 @@ struct _ofaModelPropertiesPrivate {
 	 */
 	ofaMainWindow *main_window;
 	GtkDialog     *dialog;
-	ofoModel      *model;
+	ofoDevise     *devise;
 	gboolean       updated;
 
 	/* data
 	 */
 	gchar         *mnemo;
 	gchar         *label;
-	gint           family;
-	gchar         *maj_user;
-	GTimeVal       maj_stamp;
+	gchar         *symbol;
 };
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-model-properties.ui";
-static const gchar  *st_ui_id        = "ModelPropertiesDlg";
+static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-devise-properties.ui";
+static const gchar  *st_ui_id        = "DevisePropertiesDlg";
 
 static GObjectClass *st_parent_class = NULL;
 
 static GType     register_type( void );
-static void      class_init( ofaModelPropertiesClass *klass );
+static void      class_init( ofaDevisePropertiesClass *klass );
 static void      instance_init( GTypeInstance *instance, gpointer klass );
 static void      instance_dispose( GObject *instance );
 static void      instance_finalize( GObject *instance );
-static void      do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model );
-static gboolean  ok_to_terminate( ofaModelProperties *self, gint code );
-static void      on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaModelProperties *self );
-static void      check_for_enable_dlg( ofaModelProperties *self );
-static gboolean  do_update( ofaModelProperties *self );
-static void      error_duplicate( ofaModelProperties *self, ofoModel *existing, const gchar *prev_number );
+static void      do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise *devise );
+static gboolean  ok_to_terminate( ofaDeviseProperties *self, gint code );
+static void      on_mnemo_changed( GtkEntry *entry, ofaDeviseProperties *self );
+static void      on_label_changed( GtkEntry *entry, ofaDeviseProperties *self );
+static void      on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self );
+static void      check_for_enable_dlg( ofaDeviseProperties *self );
+static gboolean  do_update( ofaDeviseProperties *self );
+static void      error_duplicate( ofaDeviseProperties *self, ofoDevise *existing );
 
 GType
-ofa_model_properties_get_type( void )
+ofa_devise_properties_get_type( void )
 {
 	static GType window_type = 0;
 
@@ -97,32 +96,32 @@ ofa_model_properties_get_type( void )
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_model_properties_register_type";
+	static const gchar *thisfn = "ofa_devise_properties_register_type";
 	GType type;
 
 	static GTypeInfo info = {
-		sizeof( ofaModelPropertiesClass ),
+		sizeof( ofaDevisePropertiesClass ),
 		( GBaseInitFunc ) NULL,
 		( GBaseFinalizeFunc ) NULL,
 		( GClassInitFunc ) class_init,
 		NULL,
 		NULL,
-		sizeof( ofaModelProperties ),
+		sizeof( ofaDeviseProperties ),
 		0,
 		( GInstanceInitFunc ) instance_init
 	};
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaModelProperties", &info, 0 );
+	type = g_type_register_static( G_TYPE_OBJECT, "ofaDeviseProperties", &info, 0 );
 
 	return( type );
 }
 
 static void
-class_init( ofaModelPropertiesClass *klass )
+class_init( ofaDevisePropertiesClass *klass )
 {
-	static const gchar *thisfn = "ofa_model_properties_class_init";
+	static const gchar *thisfn = "ofa_devise_properties_class_init";
 	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
@@ -133,23 +132,23 @@ class_init( ofaModelPropertiesClass *klass )
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
 
-	klass->private = g_new0( ofaModelPropertiesClassPrivate, 1 );
+	klass->private = g_new0( ofaDevisePropertiesClassPrivate, 1 );
 }
 
 static void
 instance_init( GTypeInstance *instance, gpointer klass )
 {
-	static const gchar *thisfn = "ofa_model_properties_instance_init";
-	ofaModelProperties *self;
+	static const gchar *thisfn = "ofa_devise_properties_instance_init";
+	ofaDeviseProperties *self;
 
-	g_return_if_fail( OFA_IS_MODEL_PROPERTIES( instance ));
+	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( instance ));
 
 	g_debug( "%s: instance=%p (%s), klass=%p",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
 
-	self = OFA_MODEL_PROPERTIES( instance );
+	self = OFA_DEVISE_PROPERTIES( instance );
 
-	self->private = g_new0( ofaModelPropertiesPrivate, 1 );
+	self->private = g_new0( ofaDevisePropertiesPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 	self->private->updated = FALSE;
@@ -158,12 +157,12 @@ instance_init( GTypeInstance *instance, gpointer klass )
 static void
 instance_dispose( GObject *window )
 {
-	static const gchar *thisfn = "ofa_model_properties_instance_dispose";
-	ofaModelPropertiesPrivate *priv;
+	static const gchar *thisfn = "ofa_devise_properties_instance_dispose";
+	ofaDevisePropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MODEL_PROPERTIES( window ));
+	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( window ));
 
-	priv = ( OFA_MODEL_PROPERTIES( window ))->private;
+	priv = ( OFA_DEVISE_PROPERTIES( window ))->private;
 
 	if( !priv->dispose_has_run ){
 		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
@@ -172,7 +171,7 @@ instance_dispose( GObject *window )
 
 		g_free( priv->mnemo );
 		g_free( priv->label );
-		g_free( priv->maj_user );
+		g_free( priv->symbol );
 
 		gtk_widget_destroy( GTK_WIDGET( priv->dialog ));
 
@@ -186,14 +185,14 @@ instance_dispose( GObject *window )
 static void
 instance_finalize( GObject *window )
 {
-	static const gchar *thisfn = "ofa_model_properties_instance_finalize";
-	ofaModelProperties *self;
+	static const gchar *thisfn = "ofa_devise_properties_instance_finalize";
+	ofaDeviseProperties *self;
 
-	g_return_if_fail( OFA_IS_MODEL_PROPERTIES( window ));
+	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( window ));
 
 	g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
 
-	self = OFA_MODEL_PROPERTIES( window );
+	self = OFA_DEVISE_PROPERTIES( window );
 
 	g_free( self->private );
 
@@ -204,27 +203,27 @@ instance_finalize( GObject *window )
 }
 
 /**
- * ofa_model_properties_run:
+ * ofa_devise_properties_run:
  * @main: the main window of the application.
  *
- * Update the properties of an model
+ * Update the properties of an devise
  */
 gboolean
-ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model )
+ofa_devise_properties_run( ofaMainWindow *main_window, ofoDevise *devise )
 {
-	static const gchar *thisfn = "ofa_model_properties_run";
-	ofaModelProperties *self;
+	static const gchar *thisfn = "ofa_devise_properties_run";
+	ofaDeviseProperties *self;
 	gint code;
 	gboolean updated;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
-	g_debug( "%s: main_window=%p, model=%p",
-			thisfn, ( void * ) main_window, ( void * ) model );
+	g_debug( "%s: main_window=%p, devise=%p",
+			thisfn, ( void * ) main_window, ( void * ) devise );
 
-	self = g_object_new( OFA_TYPE_MODEL_PROPERTIES, NULL );
+	self = g_object_new( OFA_TYPE_DEVISE_PROPERTIES, NULL );
 
-	do_initialize_dialog( self, main_window, model );
+	do_initialize_dialog( self, main_window, devise );
 
 	g_debug( "%s: call gtk_dialog_run", thisfn );
 	do {
@@ -241,22 +240,19 @@ ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model )
 }
 
 static void
-do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model )
+do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise *devise )
 {
-	static const gchar *thisfn = "ofa_model_properties_do_initialize_dialog";
+	static const gchar *thisfn = "ofa_devise_properties_do_initialize_dialog";
 	GError *error;
 	GtkBuilder *builder;
-	ofaModelPropertiesPrivate *priv;
+	ofaDevisePropertiesPrivate *priv;
 	gchar *title;
 	const gchar *mnemo;
 	GtkEntry *entry;
-	gchar *notes;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
 
 	priv = self->private;
 	priv->main_window = main;
-	priv->model = model;
+	priv->devise = devise;
 
 	/* create the GtkDialog */
 	error = NULL;
@@ -277,35 +273,38 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 
 		/*gtk_window_set_transient_for( GTK_WINDOW( priv->dialog ), GTK_WINDOW( main ));*/
 
-		mnemo = ofo_model_get_mnemo( model );
+		mnemo = ofo_devise_get_mnemo( devise );
 		if( !mnemo ){
-			title = g_strdup( _( "Defining a new model" ));
+			title = g_strdup( _( "Defining a new devise" ));
 		} else {
-			title = g_strdup_printf( _( "Updating model %s" ), mnemo );
+			title = g_strdup_printf( _( "Updating devise %s" ), mnemo );
 		}
 		gtk_window_set_title( GTK_WINDOW( priv->dialog ), title );
 
-		priv->mnemo = g_strdup( ofo_model_get_mnemo( model ));
+		priv->mnemo = g_strdup( ofo_devise_get_mnemo( devise ));
 		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-mnemo" ));
 		if( priv->mnemo ){
 			gtk_entry_set_text( entry, priv->mnemo );
 		}
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
+		if( mnemo ){
+			gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
+		} else {
+			g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
+		}
 
-		priv->label = g_strdup( ofo_model_get_label( model ));
+		priv->label = g_strdup( ofo_devise_get_label( devise ));
 		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-label" ));
 		if( priv->label ){
 			gtk_entry_set_text( entry, priv->label );
 		}
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 
-		notes = g_strdup( ofo_model_get_notes( model ));
-		if( notes ){
-			text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-notes" ));
-			buffer = gtk_text_buffer_new( NULL );
-			gtk_text_buffer_set_text( buffer, notes, -1 );
-			gtk_text_view_set_buffer( text, buffer );
+		priv->symbol = g_strdup( ofo_devise_get_symbol( devise ));
+		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-symbol" ));
+		if( priv->symbol ){
+			gtk_entry_set_text( entry, priv->symbol );
 		}
+		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), self );
 	}
 
 	check_for_enable_dlg( self );
@@ -316,7 +315,7 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
  * return %TRUE to allow quitting the dialog
  */
 static gboolean
-ok_to_terminate( ofaModelProperties *self, gint code )
+ok_to_terminate( ofaDeviseProperties *self, gint code )
 {
 	gboolean quit = FALSE;
 
@@ -337,7 +336,7 @@ ok_to_terminate( ofaModelProperties *self, gint code )
 }
 
 static void
-on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self )
+on_mnemo_changed( GtkEntry *entry, ofaDeviseProperties *self )
 {
 	g_free( self->private->mnemo );
 	self->private->mnemo = g_strdup( gtk_entry_get_text( entry ));
@@ -346,7 +345,7 @@ on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self )
 }
 
 static void
-on_label_changed( GtkEntry *entry, ofaModelProperties *self )
+on_label_changed( GtkEntry *entry, ofaDeviseProperties *self )
 {
 	g_free( self->private->label );
 	self->private->label = g_strdup( gtk_entry_get_text( entry ));
@@ -355,9 +354,18 @@ on_label_changed( GtkEntry *entry, ofaModelProperties *self )
 }
 
 static void
-check_for_enable_dlg( ofaModelProperties *self )
+on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self )
 {
-	ofaModelPropertiesPrivate *priv;
+	g_free( self->private->symbol );
+	self->private->symbol = g_strdup( gtk_entry_get_text( entry ));
+
+	check_for_enable_dlg( self );
+}
+
+static void
+check_for_enable_dlg( ofaDeviseProperties *self )
+{
+	ofaDevisePropertiesPrivate *priv;
 	GtkWidget *button;
 
 	priv = self->private;
@@ -368,79 +376,53 @@ check_for_enable_dlg( ofaModelProperties *self )
 }
 
 static gboolean
-do_update( ofaModelProperties *self )
+do_update( ofaDeviseProperties *self )
 {
-	gchar *prev_mnemo;
 	ofoDossier *dossier;
-	ofoModel *existing;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
-	GtkTextIter start, end;
-	gchar *notes;
+	const gchar *prev_mnemo;
+	ofoDevise *existing;
 
-	prev_mnemo = g_strdup( ofo_model_get_mnemo( self->private->model ));
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	existing = ofo_dossier_get_model( dossier, self->private->mnemo );
+	existing = ofo_dossier_get_devise( dossier, self->private->mnemo );
+	prev_mnemo = ofo_devise_get_mnemo( self->private->devise );
 
-	if( existing ){
-		/* c'est un nouveau model, ou bien un model existant dont on
-		 * veut changer le numéro: no luck, le nouveau mnemo de model
+	if( existing && !prev_mnemo ){
+		/* c'est une nouvelle devise: no luck, le nouveau code de devise
 		 * existe déjà
 		 */
-		if( !prev_mnemo || g_utf8_collate( prev_mnemo, self->private->mnemo )){
-			error_duplicate( self, existing, prev_mnemo );
-			g_free( prev_mnemo );
-			return( FALSE );
-		}
+		error_duplicate( self, existing );
+		return( FALSE );
 	}
 
-	/* le nouveau mnemo n'est pas encore utilisé,
-	 * ou bien il est déjà utilisé par ce même model (n'a pas été modifié)
+	/* le nouveau code n'est pas encore utilisé,
+	 * ou bien il est déjà utilisé par ce même devise (n'a pas été modifié)
 	 */
-	ofo_model_set_mnemo( self->private->model, self->private->mnemo );
-	ofo_model_set_label( self->private->model, self->private->label );
-
-	text = GTK_TEXT_VIEW(
-			my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-notes" ));
-	buffer = gtk_text_view_get_buffer( text );
-	gtk_text_buffer_get_start_iter( buffer, &start );
-	gtk_text_buffer_get_end_iter( buffer, &end );
-	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
-	ofo_model_set_notes( self->private->model, notes );
-	g_free( notes );
+	ofo_devise_set_mnemo( self->private->devise, self->private->mnemo );
+	ofo_devise_set_label( self->private->devise, self->private->label );
+	ofo_devise_set_symbol( self->private->devise, self->private->symbol );
 
 	if( !prev_mnemo ){
 		self->private->updated =
-				ofo_dossier_insert_model( dossier, self->private->model );
+				ofo_dossier_insert_devise( dossier, self->private->devise );
 	} else {
 		self->private->updated =
-				ofo_dossier_update_model( dossier, self->private->model, prev_mnemo );
+				ofo_dossier_update_devise( dossier, self->private->devise );
 	}
-
-	g_free( prev_mnemo );
 
 	return( self->private->updated );
 }
 
 static void
-error_duplicate( ofaModelProperties *self, ofoModel *existing, const gchar *prev_mnemo )
+error_duplicate( ofaDeviseProperties *self, ofoDevise *existing )
 {
 	GtkMessageDialog *dlg;
 	gchar *msg;
 
-	if( prev_mnemo ){
-		msg = g_strdup_printf(
-				_( "Il est impossible d'effectuer les modifications demandées "
-					"car le nouveau mnémonique '%s' est déjà utilisé par le model '%s'." ),
-				ofo_model_get_mnemo( existing ),
-				ofo_model_get_label( existing ));
-	} else {
-		msg = g_strdup_printf(
-				_( "Il est impossible de définir ce nouveau model "
-					"car son mnémonique '%s' est déjà utilisé par le model '%s'." ),
-				ofo_model_get_mnemo( existing ),
-				ofo_model_get_label( existing ));
-	}
+	msg = g_strdup_printf(
+				_( "Il est impossible de définir cette nouvelle devise "
+					"car son identifiant '%s' est déjà utilisé par la devise '%s'." ),
+				ofo_devise_get_mnemo( existing ),
+				ofo_devise_get_label( existing ));
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				GTK_WINDOW( self->private->dialog ),

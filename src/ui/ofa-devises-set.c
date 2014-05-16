@@ -30,19 +30,19 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/ofa-mod-families-set.h"
-#include "ui/ofa-mod-family-properties.h"
-#include "ui/ofo-mod-family.h"
+#include "ui/ofa-devise-properties.h"
+#include "ui/ofa-devises-set.h"
+#include "ui/ofo-devise.h"
 
 /* private class data
  */
-struct _ofaModFamiliesSetClassPrivate {
+struct _ofaDevisesSetClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
 /* private instance data
  */
-struct _ofaModFamiliesSetPrivate {
+struct _ofaDevisesSetPrivate {
 	gboolean       dispose_has_run;
 
 	/* properties
@@ -53,20 +53,22 @@ struct _ofaModFamiliesSetPrivate {
 
 	/* UI
 	 */
-	GtkTreeView   *view;				/* tree view */
+	GtkTreeView   *view;				/* the treeview on the devises set */
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
 
-	/* Selection
+	/* selection
 	 */
-	ofoModFamily  *selected;			/* current selection */
+	ofoDevise    *selected;				/* current selection */
 	GtkTreeIter   *iter;				/* a copy of the selected iter */
 };
 
 /* column ordering in the selection listview
  */
 enum {
-	COL_LABEL = 0,
+	COL_MNEMO = 0,
+	COL_LABEL,
+	COL_SYMBOL,
 	COL_OBJECT,
 	N_COLUMNS
 };
@@ -74,25 +76,25 @@ enum {
 static GObjectClass *st_parent_class = NULL;
 
 static GType      register_type( void );
-static void       class_init( ofaModFamiliesSetClass *klass );
+static void       class_init( ofaDevisesSetClass *klass );
 static void       instance_init( GTypeInstance *instance, gpointer klass );
 static void       instance_constructed( GObject *instance );
 static void       instance_dispose( GObject *instance );
 static void       instance_finalize( GObject *instance );
-static void       setup_set_page( ofaModFamiliesSet *self );
-static GtkWidget *setup_mod_families_view( ofaModFamiliesSet *self );
-static GtkWidget *setup_buttons_box( ofaModFamiliesSet *self );
-static void       setup_first_selection( ofaModFamiliesSet *self );
-static void       store_set_mod_family( GtkTreeModel *model, GtkTreeIter *iter, const ofoModFamily *family );
-static void       on_mod_family_selected( GtkTreeSelection *selection, ofaModFamiliesSet *self );
-static void       on_new_mod_family( GtkButton *button, ofaModFamiliesSet *self );
-static void       on_update_mod_family( GtkButton *button, ofaModFamiliesSet *self );
-static void       on_delete_mod_family( GtkButton *button, ofaModFamiliesSet *self );
-static gboolean   delete_confirmed( ofaModFamiliesSet *self, ofoModFamily *family );
-static void       insert_new_row( ofaModFamiliesSet *self, ofoModFamily *family );
+static void       setup_set_page( ofaDevisesSet *self );
+static GtkWidget *setup_devises_view( ofaDevisesSet *self );
+static GtkWidget *setup_buttons_box( ofaDevisesSet *self );
+static void       setup_first_selection( ofaDevisesSet *self );
+static void       store_set_devise( GtkTreeModel *model, GtkTreeIter *iter, const ofoDevise *devise );
+static void       on_devise_selected( GtkTreeSelection *selection, ofaDevisesSet *self );
+static void       on_new_devise( GtkButton *button, ofaDevisesSet *self );
+static void       on_update_devise( GtkButton *button, ofaDevisesSet *self );
+static void       on_delete_devise( GtkButton *button, ofaDevisesSet *self );
+static gboolean   delete_confirmed( ofaDevisesSet *self, ofoDevise *devise );
+static void       insert_new_row( ofaDevisesSet *self, ofoDevise *devise );
 
 GType
-ofa_mod_families_set_get_type( void )
+ofa_devises_set_get_type( void )
 {
 	static GType window_type = 0;
 
@@ -106,32 +108,32 @@ ofa_mod_families_set_get_type( void )
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_register_type";
+	static const gchar *thisfn = "ofa_devises_set_register_type";
 	GType type;
 
 	static GTypeInfo info = {
-		sizeof( ofaModFamiliesSetClass ),
+		sizeof( ofaDevisesSetClass ),
 		( GBaseInitFunc ) NULL,
 		( GBaseFinalizeFunc ) NULL,
 		( GClassInitFunc ) class_init,
 		NULL,
 		NULL,
-		sizeof( ofaModFamiliesSet ),
+		sizeof( ofaDevisesSet ),
 		0,
 		( GInstanceInitFunc ) instance_init
 	};
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( OFA_TYPE_MAIN_PAGE, "ofaModFamiliesSet", &info, 0 );
+	type = g_type_register_static( OFA_TYPE_MAIN_PAGE, "ofaDevisesSet", &info, 0 );
 
 	return( type );
 }
 
 static void
-class_init( ofaModFamiliesSetClass *klass )
+class_init( ofaDevisesSetClass *klass )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_class_init";
+	static const gchar *thisfn = "ofa_devises_set_class_init";
 	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
@@ -143,23 +145,24 @@ class_init( ofaModFamiliesSetClass *klass )
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
 
-	klass->private = g_new0( ofaModFamiliesSetClassPrivate, 1 );
+	klass->private = g_new0( ofaDevisesSetClassPrivate, 1 );
 }
 
 static void
 instance_init( GTypeInstance *instance, gpointer klass )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_instance_init";
-	ofaModFamiliesSet *self;
+	static const gchar *thisfn = "ofa_devises_set_instance_init";
+	ofaDevisesSet *self;
 
-	g_return_if_fail( OFA_IS_MOD_FAMILIES_SET( instance ));
+	g_return_if_fail( OFA_IS_DEVISES_SET( instance ));
 
 	g_debug( "%s: instance=%p (%s), klass=%p",
+
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
 
-	self = OFA_MOD_FAMILIES_SET( instance );
+	self = OFA_DEVISES_SET( instance );
 
-	self->private = g_new0( ofaModFamiliesSetPrivate, 1 );
+	self->private = g_new0( ofaDevisesSetPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 }
@@ -167,32 +170,32 @@ instance_init( GTypeInstance *instance, gpointer klass )
 static void
 instance_constructed( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_instance_constructed";
+	static const gchar *thisfn = "ofa_devises_set_instance_constructed";
 
-	g_return_if_fail( OFA_IS_MOD_FAMILIES_SET( instance ));
+	g_return_if_fail( OFA_IS_DEVISES_SET( instance ));
 
-	/* first chain up to the parent class */
+	/* first, chain up to the parent class */
 	if( G_OBJECT_CLASS( st_parent_class )->constructed ){
 		G_OBJECT_CLASS( st_parent_class )->constructed( instance );
 	}
 
-	/* then setup our page
+	/* then initialize our page
 	 */
 	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	setup_set_page( OFA_MOD_FAMILIES_SET( instance ));
+	setup_set_page( OFA_DEVISES_SET( instance ));
 }
 
 static void
 instance_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_instance_dispose";
-	ofaModFamiliesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_devises_set_instance_dispose";
+	ofaDevisesSetPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MOD_FAMILIES_SET( instance ));
+	g_return_if_fail( OFA_IS_DEVISES_SET( instance ));
 
-	priv = ( OFA_MOD_FAMILIES_SET( instance ))->private;
+	priv = ( OFA_DEVISES_SET( instance ))->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -215,15 +218,15 @@ instance_dispose( GObject *instance )
 static void
 instance_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_instance_finalize";
-	ofaModFamiliesSet *self;
+	static const gchar *thisfn = "ofa_devises_set_instance_finalize";
+	ofaDevisesSet *self;
 
-	g_return_if_fail( OFA_IS_MOD_FAMILIES_SET( instance ));
+	g_return_if_fail( OFA_IS_DEVISES_SET( instance ));
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self = OFA_MOD_FAMILIES_SET( instance );
+	self = OFA_DEVISES_SET( instance );
 
 	g_free( self->private );
 
@@ -234,36 +237,43 @@ instance_finalize( GObject *instance )
 }
 
 /**
- * ofa_mod_families_set_run:
+ * ofa_devises_set_run:
  *
  * When called by the main_window, the page has been created, showed
  * and activated - there is nothing left to do here....
  */
 void
-ofa_mod_families_set_run( ofaMainPage *this )
+ofa_devises_set_run( ofaMainPage *this )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_run";
+	static const gchar *thisfn = "ofa_devises_set_run";
 
-	g_return_if_fail( this && OFA_IS_MOD_FAMILIES_SET( this ));
+	g_return_if_fail( this && OFA_IS_DEVISES_SET( this ));
 
 	g_debug( "%s: this=%p (%s)",
 			thisfn, ( void * ) this, G_OBJECT_TYPE_NAME( this ));
 }
 
 /*
- * the page is just a treeview with the labels
+ * +-----------------------------------------------------------------------+
+ * | grid1 (this is the notebook page)                                     |
+ * | +-----------------------------------------------+-------------------+ |
+ * | | list of devises                              | buttons           | |
+ * | |                                               |                   | |
+ * | |                                               |                   | |
+ * | +-----------------------------------------------+-------------------+ |
+ * +-----------------------------------------------------------------------+
  */
 static void
-setup_set_page( ofaModFamiliesSet *self )
+setup_set_page( ofaDevisesSet *self )
 {
 	GtkGrid *grid;
-	GtkWidget *mod_families_view;
+	GtkWidget *view;
 	GtkWidget *buttons_box;
 
 	grid = ofa_main_page_get_grid( OFA_MAIN_PAGE( self ));
 
-	mod_families_view = setup_mod_families_view( self );
-	gtk_grid_attach( grid, mod_families_view, 0, 0, 1, 1 );
+	view = setup_devises_view( self );
+	gtk_grid_attach( grid, view, 0, 0, 1, 1 );
 
 	buttons_box = setup_buttons_box( self );
 	gtk_grid_attach( grid, buttons_box, 1, 0, 1, 1 );
@@ -272,7 +282,7 @@ setup_set_page( ofaModFamiliesSet *self )
 }
 
 static GtkWidget *
-setup_mod_families_view( ofaModFamiliesSet *self )
+setup_devises_view( ofaDevisesSet *self )
 {
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
@@ -281,11 +291,10 @@ setup_mod_families_view( ofaModFamiliesSet *self )
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
-	GList *ijou;
-	ofoModFamily *family;
-	GtkTreeIter iter;
-	GList *dataset;
 	ofoDossier *dossier;
+	GList *dataset, *idev;
+	ofoDevise *devise;
+	GtkTreeIter iter;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
@@ -306,9 +315,16 @@ setup_mod_families_view( ofaModFamiliesSet *self )
 
 	model = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_OBJECT ));
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( view, model );
 	g_object_unref( model );
+
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Mnémo" ),
+			text_cell, "text", COL_MNEMO,
+			NULL );
+	gtk_tree_view_append_column( view, column );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -318,27 +334,34 @@ setup_mod_families_view( ofaModFamiliesSet *self )
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( view, column );
 
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Symbole" ),
+			text_cell, "text", COL_SYMBOL,
+			NULL );
+	gtk_tree_view_append_column( view, column );
+
 	select = gtk_tree_view_get_selection( view );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_mod_family_selected ), self );
+	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_devise_selected ), self );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-	dataset = ofo_dossier_get_mod_families_set( dossier );
-	ofa_main_page_set_dataset(
-			OFA_MAIN_PAGE( self ), dataset );
+	dataset = ofo_dossier_get_devises_set( dossier );
+	ofa_main_page_set_dataset( OFA_MAIN_PAGE( self ), dataset );
+	/*ofo_devise_dump_set( dataset );*/
 
-	for( ijou=dataset ; ijou ; ijou=ijou->next ){
+	for( idev=dataset ; idev ; idev=idev->next ){
 
-		family = OFO_MOD_FAMILY( ijou->data );
+		devise = OFO_DEVISE( idev->data );
 		gtk_list_store_append( GTK_LIST_STORE( model ), &iter );
-		store_set_mod_family( model, &iter, family );
+		store_set_devise( model, &iter, devise );
 	}
 
 	return( GTK_WIDGET( frame ));
 }
 
 static GtkWidget *
-setup_buttons_box( ofaModFamiliesSet *self )
+setup_buttons_box( ofaDevisesSet *self )
 {
 	GtkBox *buttons_box;
 	GtkFrame *frame;
@@ -352,18 +375,18 @@ setup_buttons_box( ofaModFamiliesSet *self )
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 30 );
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Nouveau..." )));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_mod_family ), self );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_devise ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Modifier..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_update_mod_family ), self );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_update_devise ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	self->private->update_btn = button;
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Supprimer..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_delete_mod_family ), self );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_delete_devise ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	self->private->delete_btn = button;
 
@@ -371,7 +394,7 @@ setup_buttons_box( ofaModFamiliesSet *self )
 }
 
 static void
-setup_first_selection( ofaModFamiliesSet *self )
+setup_first_selection( ofaDevisesSet *self )
 {
 	GtkTreeModel *model;
 	GtkTreeIter iter;
@@ -385,24 +408,26 @@ setup_first_selection( ofaModFamiliesSet *self )
 }
 
 static void
-store_set_mod_family( GtkTreeModel *model, GtkTreeIter *iter, const ofoModFamily *family )
+store_set_devise( GtkTreeModel *model, GtkTreeIter *iter, const ofoDevise *devise )
 {
 	gtk_list_store_set(
 			GTK_LIST_STORE( model ),
 			iter,
-			COL_LABEL,  ofo_mod_family_get_label( family ),
-			COL_OBJECT, family,
+			COL_MNEMO,  ofo_devise_get_mnemo( devise ),
+			COL_LABEL,  ofo_devise_get_label( devise ),
+			COL_SYMBOL, ofo_devise_get_symbol( devise ),
+			COL_OBJECT, devise,
 			-1 );
 }
 
 static void
-on_mod_family_selected( GtkTreeSelection *selection, ofaModFamiliesSet *self )
+on_devise_selected( GtkTreeSelection *selection, ofaDevisesSet *self )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_on_mod_family_selected";
+	static const gchar *thisfn = "ofa_devises_set_on_devise_selected";
 	gboolean select_ok;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
-	ofoModFamily *family;
+	ofoDevise *devise;
 
 	select_ok = FALSE;
 
@@ -414,16 +439,17 @@ on_mod_family_selected( GtkTreeSelection *selection, ofaModFamiliesSet *self )
 
 	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
 
-		gtk_tree_model_get( model, &iter, COL_OBJECT, &family, -1 );
-		g_return_if_fail( OFO_IS_MOD_FAMILY( family ));
+		gtk_tree_model_get( model, &iter, COL_OBJECT, &devise, -1 );
+		g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-		g_debug( "%s: selecting %s", thisfn, ofo_mod_family_get_label( family ));
+		g_debug( "%s: selecting %s - %s",
+				thisfn, ofo_devise_get_mnemo( devise ), ofo_devise_get_label( devise ));
 
 		select_ok = TRUE;
-		self->private->selected = family;
+		self->private->selected = devise;
 		self->private->iter = gtk_tree_iter_copy( &iter );
 
-		g_object_unref( family );
+		g_object_unref( devise );
 	}
 
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
@@ -431,71 +457,69 @@ on_mod_family_selected( GtkTreeSelection *selection, ofaModFamiliesSet *self )
 }
 
 static void
-on_new_mod_family( GtkButton *button, ofaModFamiliesSet *self )
+on_new_devise( GtkButton *button, ofaDevisesSet *self )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_on_new_mod_family";
-	ofoModFamily *family;
+	static const gchar *thisfn = "ofa_devises_set_on_new_devise";
+	ofoDevise *devise;
 	ofaMainWindow *main_window;
 
-	g_return_if_fail( OFA_IS_MOD_FAMILIES_SET( self ));
+	g_return_if_fail( OFA_IS_DEVISES_SET( self ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
 	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
-	family = ofo_mod_family_new();
 
-	if( ofa_mod_family_properties_run( main_window, family )){
-		insert_new_row( self, family );
+	devise = ofo_devise_new();
+	if( ofa_devise_properties_run( main_window, devise )){
+		insert_new_row( self, devise );
 	}
 }
 
 static void
-on_update_mod_family( GtkButton *button, ofaModFamiliesSet *self )
+on_update_devise( GtkButton *button, ofaDevisesSet *self )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_on_update_mod_family";
-	ofoModFamily *family;
+	static const gchar *thisfn = "ofa_devises_set_on_update_devise";
+	ofoDevise *devise;
 	ofaMainWindow *main_window;
 
-	g_return_if_fail( OFA_IS_MOD_FAMILIES_SET( self ));
-	g_return_if_fail( OFO_IS_MOD_FAMILY( self->private->selected ));
+	g_return_if_fail( OFA_IS_DEVISES_SET( self ));
+	g_return_if_fail( OFO_IS_DEVISE( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	family = self->private->selected;
+	devise = self->private->selected;
 	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
 
-	if( ofa_mod_family_properties_run( main_window, family )){
-
-		store_set_mod_family(
-				gtk_tree_view_get_model( self->private->view ),
-				self->private->iter,
-				family );
+	if( ofa_devise_properties_run( main_window, devise )){
+			store_set_devise(
+					gtk_tree_view_get_model( self->private->view ),
+					self->private->iter,
+					devise );
 	}
 }
 
 /*
- * une famille de modèles ne peut pas être supprimée tant que des modèles
- * la référencent
+ * une devise peut être supprimée à tout moment
  */
 static void
-on_delete_mod_family( GtkButton *button, ofaModFamiliesSet *self )
+on_delete_devise( GtkButton *button, ofaDevisesSet *self )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_on_delete_mod_family";
+	static const gchar *thisfn = "ofa_devises_set_on_delete_devise";
 	ofoDossier *dossier;
 
-	g_return_if_fail( OFA_IS_MOD_FAMILIES_SET( self ));
-	g_return_if_fail( OFO_IS_MOD_FAMILY( self->private->selected ));
+	g_return_if_fail( OFA_IS_DEVISES_SET( self ));
+	g_return_if_fail( OFO_IS_DEVISE( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
 	if( delete_confirmed( self, self->private->selected ) &&
-			ofo_dossier_delete_mod_family( dossier, self->private->selected )){
+			ofo_dossier_delete_devise( dossier, self->private->selected )){
 
-		/* update our set of mod_families */
+		/* update our set of devises */
 		ofa_main_page_set_dataset(
-				OFA_MAIN_PAGE( self ), ofo_dossier_get_mod_families_set( dossier ));
+				OFA_MAIN_PAGE( self ), ofo_dossier_get_devises_set( dossier ));
 
 		/* remove the row from the model
 		 * this will cause an automatic new selection */
@@ -506,13 +530,14 @@ on_delete_mod_family( GtkButton *button, ofaModFamiliesSet *self )
 }
 
 static gboolean
-delete_confirmed( ofaModFamiliesSet *self, ofoModFamily *family )
+delete_confirmed( ofaDevisesSet *self, ofoDevise *devise )
 {
 	gchar *msg;
 	gboolean delete_ok;
 
-	msg = g_strdup_printf( _( "Etes-vous sûr de vouloir supprimer la famille de modèles '%s' ?" ),
-			ofo_mod_family_get_label( family ));
+	msg = g_strdup_printf( _( "Etes-vous sûr de vouloir supprimer le devise '%s - %s' ?" ),
+			ofo_devise_get_mnemo( devise ),
+			ofo_devise_get_label( devise ));
 
 	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
 
@@ -522,30 +547,30 @@ delete_confirmed( ofaModFamiliesSet *self, ofoModFamily *family )
 }
 
 static void
-insert_new_row( ofaModFamiliesSet *self, ofoModFamily *family )
+insert_new_row( ofaDevisesSet *self, ofoDevise *devise )
 {
 	GtkTreeModel *model;
 	GtkTreeIter iter, new_iter;
 	GValue value = G_VALUE_INIT;
-	const gchar *fam_label, *iter_label;
+	const gchar *mnemo, *devise_mnemo;
 	gboolean iter_found;
 	GtkTreePath *path;
 	ofoDossier *dossier;
 
-	/* update our set of mod_families */
+	/* update our set of devises */
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 	ofa_main_page_set_dataset(
-			OFA_MAIN_PAGE( self ), ofo_dossier_get_mod_families_set( dossier ));
+			OFA_MAIN_PAGE( self ), ofo_dossier_get_devises_set( dossier ));
 
 	/* insert the new row at the right place */
 	model = gtk_tree_view_get_model( self->private->view );
 	iter_found = FALSE;
 	if( gtk_tree_model_get_iter_first( model, &iter )){
-		fam_label = ofo_mod_family_get_label( family );
+		devise_mnemo = ofo_devise_get_mnemo( devise );
 		while( !iter_found ){
-			gtk_tree_model_get_value( model, &iter, COL_LABEL, &value );
-			iter_label = g_value_get_string( &value );
-			if( g_utf8_collate( iter_label, fam_label ) > 0 ){
+			gtk_tree_model_get_value( model, &iter, COL_MNEMO, &value );
+			mnemo = g_value_get_string( &value );
+			if( g_utf8_collate( mnemo, devise_mnemo ) > 0 ){
 				iter_found = TRUE;
 				break;
 			}
@@ -560,9 +585,9 @@ insert_new_row( ofaModFamiliesSet *self, ofoModFamily *family )
 	} else {
 		gtk_list_store_insert_before( GTK_LIST_STORE( model ), &new_iter, &iter );
 	}
-	store_set_mod_family( model, &new_iter, family );
+	store_set_devise( model, &new_iter, devise );
 
-	/* select the newly added model */
+	/* select the newly added devise */
 	path = gtk_tree_model_get_path( model, &new_iter );
 	gtk_tree_view_set_cursor( self->private->view, path, NULL, FALSE );
 	gtk_widget_grab_focus( GTK_WIDGET( self->private->view ));

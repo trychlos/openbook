@@ -58,6 +58,7 @@ struct _ofoDossierPrivate {
 	GList    *journals;					/* journals set */
 	GList    *models;					/* entry models set */
 	GList    *mod_families;				/* model families */
+	GList    *devises;					/* devises */
 
 	/* row id 0
 	 */
@@ -85,6 +86,9 @@ static gboolean dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *ac
 static void     accounts_chart_free( GList *chart );
 static gint     accounts_cmp( const ofoAccount *a, const ofoAccount *b );
 static gint     accounts_find( const ofoAccount *a, const gchar *searched_number );
+static void     devises_set_free( GList *set );
+static gint     devises_cmp( const ofoDevise *a, const ofoDevise *b );
+static gint     devises_find( const ofoDevise *a, const gchar *searched );
 static void     journals_set_free( GList *set );
 static gint     journals_cmp( const ofoJournal *a, const ofoJournal *b );
 static gint     journals_find( const ofoJournal *a, const gchar *searched_mnemo );
@@ -205,6 +209,10 @@ instance_dispose( GObject *instance )
 		if( priv->mod_families ){
 			mod_families_set_free( priv->mod_families );
 			priv->mod_families = NULL;
+		}
+		if( priv->devises ){
+			devises_set_free( priv->devises );
+			priv->devises = NULL;
 		}
 
 		g_free( priv->label );
@@ -410,8 +418,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	}
 
 	query = g_strdup_printf(
-			"INSERT INTO OFA_T_ROLES (ROL_USER, ROL_IS_ADMIN) VALUES ('%s',1)"
-				"ON DUPLICATE KEY UPDATE ROL_USER='%s'", account, account );
+			"INSERT IGNORE INTO OFA_T_ROLES (ROL_USER, ROL_IS_ADMIN) VALUES ('%s',1)", account );
 	if( !ofa_sgbd_query( sgbd, parent, query )){
 		g_free( query );
 		return( FALSE );
@@ -426,7 +433,8 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 				"DOS_MAJ_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
 				"DOS_MAJ_STAMP    TIMESTAMP    NOT NULL        COMMENT 'Properties last update timestamp',"
 				"DOS_EXE_DEB      DATE         NOT NULL        COMMENT 'Date de début d\\'exercice',"
-				"DOS_EXE_FIN      DATE         NOT NULL        COMMENT 'Date de fin d\\'exercice'"
+				"DOS_EXE_FIN      DATE         NOT NULL        COMMENT 'Date de fin d\\'exercice',"
+				"DOS_LAST_ECR     INTEGER            DEFAULT 0 COMMENT 'Dernier numéro d\\'écriture attribué'"
 			")" )){
 		return( FALSE );
 	}
@@ -439,6 +447,16 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 			")" )){
 		return( FALSE );
 	}
+
+	query = g_strdup(
+			"INSERT IGNORE INTO OFA_T_DEVISES "
+			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES "
+			"	('EUR','Euro','€')" );
+	if( !ofa_sgbd_query( sgbd, parent, query )){
+		g_free( query );
+		return( FALSE );
+	}
+	g_free( query );
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
@@ -779,6 +797,145 @@ static gint
 accounts_find( const ofoAccount *a, const gchar *searched_number )
 {
 	return( g_utf8_collate( ofo_account_get_number( a ), searched_number ));
+}
+
+/**
+ * ofo_dossier_get_devise:
+ *
+ * Returns: the searched devise.
+ */
+ofoDevise *
+ofo_dossier_get_devise( const ofoDossier *dossier, const gchar *mnemo )
+{
+	static const gchar *thisfn = "ofo_dossier_get_devise";
+	GList *found;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+
+	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
+
+	if( !dossier->private->dispose_has_run ){
+
+		found = g_list_find_custom(
+				dossier->private->devises, mnemo, ( GCompareFunc ) devises_find );
+		if( found ){
+			return( OFO_DEVISE( found->data ));
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_devises_set:
+ */
+GList *
+ofo_dossier_get_devises_set( ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_get_devises_set";
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	if( !dossier->private->dispose_has_run ){
+
+		if( !dossier->private->devises ){
+
+			dossier->private->devises = ofo_devise_load_set( dossier->private->sgbd );
+		}
+	}
+
+	return( dossier->private->devises );
+}
+
+/**
+ * ofo_dossier_insert_devise:
+ *
+ * we deal here with an update of publicly modifiable devise properties
+ */
+gboolean
+ofo_dossier_insert_devise( ofoDossier *dossier, ofoDevise *devise )
+{
+	GList *set;
+	gboolean ok;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_devise_insert( devise, dossier->private->sgbd )){
+
+		set = g_list_insert_sorted( dossier->private->devises, devise, ( GCompareFunc ) devises_cmp );
+		dossier->private->devises = set;
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_update_devise:
+ *
+ * we deal here with an update of publicly modifiable devise properties
+ */
+gboolean
+ofo_dossier_update_devise( ofoDossier *dossier, ofoDevise *devise )
+{
+	gboolean ok;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
+
+	ok = ofo_devise_update( devise, dossier->private->sgbd );
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_delete_devise:
+ */
+gboolean
+ofo_dossier_delete_devise( ofoDossier *dossier, ofoDevise *devise )
+{
+	gboolean ok;
+	GList *set;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_devise_delete( devise, dossier->private->sgbd )){
+
+		set = g_list_remove( dossier->private->devises, devise );
+		dossier->private->devises = set;
+		g_object_unref( devise );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static void
+devises_set_free( GList *set )
+{
+	g_list_foreach( set, ( GFunc ) g_object_unref, NULL );
+	g_list_free( set );
+}
+
+static gint
+devises_cmp( const ofoDevise *a, const ofoDevise *b )
+{
+	return( g_utf8_collate( ofo_devise_get_mnemo( a ), ofo_devise_get_mnemo( b )));
+}
+
+static gint
+devises_find( const ofoDevise *a, const gchar *searched )
+{
+	return( g_utf8_collate( ofo_devise_get_mnemo( a ), searched ));
 }
 
 /**

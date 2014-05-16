@@ -50,6 +50,10 @@
           <attribute name="label" translatable="yes">F_amilles de modèles...</attribute>
           <attribute name="action">win.mod-families</attribute>
         </item>
+        <item>
+          <attribute name="label" translatable="yes">_Devises...</attribute>
+          <attribute name="action">win.devises</attribute>
+        </item>
       </section>
     </submenu>
     <submenu>

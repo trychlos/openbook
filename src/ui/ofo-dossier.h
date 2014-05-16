@@ -41,6 +41,7 @@
 
 #include "ui/ofa-sgbd.h"
 #include "ui/ofo-account.h"
+#include "ui/ofo-devise.h"
 #include "ui/ofo-mod-family.h"
 #include "ui/ofo-journal.h"
 #include "ui/ofo-model.h"
@@ -89,6 +90,12 @@ GList        *ofo_dossier_get_accounts_chart( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_account    ( ofoDossier *dossier, ofoAccount *account );
 gboolean      ofo_dossier_update_account    ( ofoDossier *dossier, ofoAccount *account, const gchar *prev_number );
 gboolean      ofo_dossier_delete_account    ( ofoDossier *dossier, ofoAccount *account );
+
+ofoDevise    *ofo_dossier_get_devise        ( const ofoDossier *dossier, const gchar *number );
+GList        *ofo_dossier_get_devises_set   ( ofoDossier *dossier );
+gboolean      ofo_dossier_insert_devise     ( ofoDossier *dossier, ofoDevise *devise );
+gboolean      ofo_dossier_update_devise     ( ofoDossier *dossier, ofoDevise *devise );
+gboolean      ofo_dossier_delete_devise     ( ofoDossier *dossier, ofoDevise *devise );
 
 ofoJournal   *ofo_dossier_get_journal       ( const ofoDossier *dossier, const gchar *mnemo );
 GList        *ofo_dossier_get_journals_set  ( ofoDossier *dossier );

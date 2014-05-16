@@ -51,6 +51,10 @@ openbook_SOURCES = \
 	ofa-accounts-chart.h								\
 	ofa-application.c									\
 	ofa-application.h									\
+	ofa-devise-properties.c								\
+	ofa-devise-properties.h								\
+	ofa-devises-set.c									\
+	ofa-devises-set.h									\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-dossier-open.c									\
@@ -77,6 +81,8 @@ openbook_SOURCES = \
 	ofa-sgbd.h											\
 	ofo-account.c										\
 	ofo-account.h										\
+	ofo-devise.c										\
+	ofo-devise.h										\
 	ofo-dossier.c										\
 	ofo-dossier.h										\
 	ofo-journal.c										\
@@ -105,6 +111,7 @@ actions_files = \
 
 ui_files = \
 	ofa-account-properties.ui							\
+	ofa-devise-properties.ui							\
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
 	ofa-journal-properties.ui							\

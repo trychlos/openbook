@@ -83,7 +83,6 @@
                 </child>
                 <child>
                   <object class="GtkEntry" id="p1-number">
-                    <property name="width_request">200</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="tooltip_text" translatable="yes">Numéro de compte
@@ -91,7 +90,7 @@ Il doit commencer par un chiffre entre 1 et 9, plus au moins un autre caractère
                     <property name="halign">start</property>
                     <property name="max_length">20</property>
                     <property name="invisible_char">●</property>
-                    <property name="width_chars">0</property>
+                    <property name="width_chars">22</property>
                     <property name="caps_lock_warning">False</property>
                   </object>
                   <packing>
@@ -166,17 +165,19 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                   <object class="GtkFrame" id="frame3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="valign">start</property>
                     <property name="label_xalign">0</property>
                     <property name="shadow_type">in</property>
                     <child>
                       <object class="GtkAlignment" id="alignment3">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="left_padding">12</property>
+                        <property name="left_padding">6</property>
                         <child>
                           <object class="GtkGrid" id="grid5">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="valign">start</property>
                             <property name="column_homogeneous">True</property>
                             <child>
                               <object class="GtkRadioButton" id="p1-root-account">

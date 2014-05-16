@@ -34,6 +34,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-mod-families-set.h"
 #include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-devises-set.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofa-models-set.h"
 #include "ui/ofa-main-window.h"
@@ -86,6 +87,7 @@ static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpo
 static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_mod_families( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_devises     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
 		{ "close",        on_close,            NULL, NULL, NULL },
@@ -93,6 +95,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "journals",     on_ref_journals,     NULL, NULL, NULL },
 		{ "models",       on_ref_models,       NULL, NULL, NULL },
 		{ "mod-families", on_ref_mod_families, NULL, NULL, NULL },
+		{ "devises",      on_ref_devises,      NULL, NULL, NULL },
 };
 
 /* This structure handles the functions which manage the pages of the
@@ -118,7 +121,8 @@ enum {
 	THM_ACCOUNTS = 1,
 	THM_JOURNALS,
 	THM_MODELS,
-	THM_MOD_FAMILIES
+	THM_MOD_FAMILIES,
+	THM_DEVISES
 };
 
 static sTheme st_themes[] = {
@@ -146,6 +150,12 @@ static sTheme st_themes[] = {
 				N_( "Familles de modèles" ),
 				ofa_mod_families_set_get_type,
 				ofa_mod_families_set_run },
+
+		{ THM_DEVISES,
+				N_( "Devises" ),
+				N_( "Devises" ),
+				ofa_devises_set_get_type,
+				ofa_devises_set_run },
 
 		{ 0 }
 };
@@ -807,6 +817,19 @@ on_ref_mod_families( GSimpleAction *action, GVariant *parameter, gpointer user_d
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MOD_FAMILIES );
+}
+
+static void
+on_ref_devises( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_mod_families";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_DEVISES );
 }
 
 /**

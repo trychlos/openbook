@@ -1,5 +1,5 @@
 /*
-* Open Freelance Accounting
+ * Open Freelance Accounting
  * A double-entry accounting application for freelances.
  *
  * Copyright (C) 2014 Pierre Wieser (see AUTHORS)

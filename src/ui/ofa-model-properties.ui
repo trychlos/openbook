@@ -98,11 +98,11 @@
                             </child>
                             <child>
                               <object class="GtkEntry" id="p1-mnemo">
-                                <property name="width_request">60</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="max_length">6</property>
                                 <property name="invisible_char">●</property>
+                                <property name="width_chars">6</property>
                                 <property name="invisible_char_set">True</property>
                                 <property name="caps_lock_warning">False</property>
                               </object>
