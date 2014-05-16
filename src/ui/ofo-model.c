@@ -69,6 +69,7 @@ struct _ofoModelPrivate {
 
 typedef struct {
 	gint     rang;						/* the order of the entry, from 0 */
+	gchar   *comment;
 	gchar   *account;					/* account */
 	gboolean account_locked;			/* account is locked */
 	gchar   *label;
@@ -160,6 +161,7 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private = g_new0( ofoModelPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+	self->private->id = -1;
 }
 
 static void
@@ -235,6 +237,7 @@ details_list_free( ofoModel *model )
 static void
 details_list_free_detail( sModDetail *detail )
 {
+	g_free( detail->comment );
 	g_free( detail->account );
 	g_free( detail->label );
 	g_free( detail->debit );
@@ -314,7 +317,7 @@ ofo_model_load_set( ofaSgbd *sgbd )
 		model = OFO_MODEL( im->data );
 
 		query = g_strdup_printf(
-				"SELECT MOD_DET_RANG,"
+				"SELECT MOD_DET_RANG,MODE_DET_COMMENT,"
 				"	MOD_DET_CPT,MOD_DET_CPT_VER,"
 				"	MOD_DET_LABEL,MOD_DET_LABEL_VER,"
 				"	MOD_DET_MONTANT,MOD_DET_MONTANT_VER,"
@@ -329,6 +332,8 @@ ofo_model_load_set( ofaSgbd *sgbd )
 			icol = ( GSList * ) irow->data;
 			detail = g_new0( sModDetail, 1 );
 			detail->rang = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			detail->comment = g_strdup(( gchar * ) icol->data );
 			icol = icol->next;
 			detail->account = g_strdup(( gchar * ) icol->data );
 			icol = icol->next;
@@ -490,6 +495,22 @@ ofo_model_get_notes( const ofoModel *model )
 	}
 
 	return( notes );
+}
+
+/**
+ * ofo_model_get_count:
+ */
+gint
+ofo_model_get_count( const ofoModel *model )
+{
+	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+
+	if( !model->private->dispose_has_run ){
+
+		return( g_list_length( model->private->details ));
+	}
+
+	return( 0 );
 }
 
 /**

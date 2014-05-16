@@ -60,8 +60,40 @@ struct _ofaModelPropertiesPrivate {
 	gchar         *mnemo;
 	gchar         *label;
 	gint           family;
+	gchar         *journal;				/* journal mnemo */
 	gchar         *maj_user;
 	GTimeVal       maj_stamp;
+};
+
+/* column ordering in the model family combobox
+ */
+enum {
+	FAM_COL_LABEL = 0,
+	FAM_COL_ID,
+	FAM_N_COLUMNS
+};
+
+/* column ordering in the journal combobox
+ */
+enum {
+	JOU_COL_MNEMO = 0,
+	JOU_COL_LABEL,
+	JOU_N_COLUMNS
+};
+
+/* columns in the detail treeview
+ */
+enum {
+	DET_COL_COMMENT = 0,
+	DET_COL_ACCOUNT,
+	DET_COL_ACCOUNT_VER,
+	DET_COL_LABEL,
+	DET_COL_LABEL_VER,
+	DET_COL_DEBIT,
+	DET_COL_DEBIT_VER,
+	DET_COL_CREDIT,
+	DET_COL_CREDIT_VER,
+	DET_N_COLUMNS
 };
 
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-model-properties.ui";
@@ -75,9 +107,21 @@ static void      instance_init( GTypeInstance *instance, gpointer klass );
 static void      instance_dispose( GObject *instance );
 static void      instance_finalize( GObject *instance );
 static void      do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model );
+static gboolean  init_dialog_from_builder( ofaModelProperties *self );
+static void      init_dialog_title( ofaModelProperties *self );
+static void      init_dialog_family( ofaModelProperties *self );
+static void      init_dialog_mnemo( ofaModelProperties *self );
+static void      init_dialog_label( ofaModelProperties *self );
+static void      init_dialog_journal( ofaModelProperties *self );
+static void      init_dialog_notes( ofaModelProperties *self );
+static void      init_dialog_detail( ofaModelProperties *self );
 static gboolean  ok_to_terminate( ofaModelProperties *self, gint code );
+static void      on_family_changed( GtkComboBox *box, ofaModelProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaModelProperties *self );
+static void      on_journal_changed( GtkComboBox *box, ofaModelProperties *self );
+static void      on_detail_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self );
+static void      on_detail_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self );
 static void      check_for_enable_dlg( ofaModelProperties *self );
 static gboolean  do_update( ofaModelProperties *self );
 static void      error_duplicate( ofaModelProperties *self, ofoModel *existing, const gchar *prev_number );
@@ -172,6 +216,7 @@ instance_dispose( GObject *window )
 
 		g_free( priv->mnemo );
 		g_free( priv->label );
+		g_free( priv->journal );
 		g_free( priv->maj_user );
 
 		gtk_widget_destroy( GTK_WIDGET( priv->dialog ));
@@ -243,28 +288,49 @@ ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model )
 static void
 do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model )
 {
-	static const gchar *thisfn = "ofa_model_properties_do_initialize_dialog";
-	GError *error;
-	GtkBuilder *builder;
 	ofaModelPropertiesPrivate *priv;
-	gchar *title;
-	const gchar *mnemo;
-	GtkEntry *entry;
-	gchar *notes;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
 
 	priv = self->private;
 	priv->main_window = main;
 	priv->model = model;
 
-	/* create the GtkDialog */
+	if( !init_dialog_from_builder( self )){
+		return;
+	}
+	g_return_if_fail( priv->dialog && GTK_IS_DIALOG( priv->dialog ));
+
+	init_dialog_title( self );
+	init_dialog_family( self );
+	init_dialog_mnemo( self );
+	init_dialog_label( self );
+	init_dialog_journal( self );
+	init_dialog_notes( self );
+	init_dialog_detail( self );
+
+	check_for_enable_dlg( self );
+	gtk_widget_show_all( GTK_WIDGET( priv->dialog ));
+}
+
+static gboolean
+init_dialog_from_builder( ofaModelProperties *self )
+{
+	static const gchar *thisfn = "ofa_model_properties_do_init_dialog_from_builder";
+	GError *error;
+	GtkBuilder *builder;
+	ofaModelPropertiesPrivate *priv;
+	gboolean ok;
+
+	ok = FALSE;
+	priv = self->private;
+
 	error = NULL;
 	builder = gtk_builder_new();
 	if( gtk_builder_add_from_file( builder, st_ui_xml, &error )){
 		priv->dialog = GTK_DIALOG( gtk_builder_get_object( builder, st_ui_id ));
 		if( !priv->dialog ){
 			g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_ui_id, st_ui_xml );
+		} else {
+			ok = TRUE;
 		}
 	} else {
 		g_warning( "%s: %s", thisfn, error->message );
@@ -272,44 +338,330 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 	}
 	g_object_unref( builder );
 
-	/* initialize the newly created dialog */
-	if( priv->dialog ){
+	return( ok );
+}
 
-		/*gtk_window_set_transient_for( GTK_WINDOW( priv->dialog ), GTK_WINDOW( main ));*/
+static void
+init_dialog_title( ofaModelProperties *self )
+{
+	ofaModelPropertiesPrivate *priv;
+	const gchar *mnemo;
+	gchar *title;
 
-		mnemo = ofo_model_get_mnemo( model );
-		if( !mnemo ){
-			title = g_strdup( _( "Defining a new model" ));
-		} else {
-			title = g_strdup_printf( _( "Updating model %s" ), mnemo );
-		}
-		gtk_window_set_title( GTK_WINDOW( priv->dialog ), title );
+	priv = self->private;
+	mnemo = ofo_model_get_mnemo( priv->model );
 
-		priv->mnemo = g_strdup( ofo_model_get_mnemo( model ));
-		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-mnemo" ));
-		if( priv->mnemo ){
-			gtk_entry_set_text( entry, priv->mnemo );
-		}
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
+	if( !mnemo ){
+		title = g_strdup( _( "Defining a new model" ));
+	} else {
+		title = g_strdup_printf( _( "Updating model %s" ), mnemo );
+	}
 
-		priv->label = g_strdup( ofo_model_get_label( model ));
-		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-label" ));
-		if( priv->label ){
-			gtk_entry_set_text( entry, priv->label );
-		}
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
+	gtk_window_set_title( GTK_WINDOW( priv->dialog ), title );
+	g_free( title );
+}
 
-		notes = g_strdup( ofo_model_get_notes( model ));
-		if( notes ){
-			text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-notes" ));
-			buffer = gtk_text_buffer_new( NULL );
-			gtk_text_buffer_set_text( buffer, notes, -1 );
-			gtk_text_view_set_buffer( text, buffer );
+static void
+init_dialog_family( ofaModelProperties *self )
+{
+	ofaModelPropertiesPrivate *priv;
+	GtkComboBox *combo;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GtkCellRenderer *text_cell;
+	ofoDossier *dossier;
+	GList *set, *elt;
+	gint idx, i;
+	ofoModFamily *family;
+
+	priv = self->private;
+
+	/* returns -1 if unset */
+	priv->family = ofo_model_get_family( priv->model );
+	combo = GTK_COMBO_BOX( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-family" ));
+
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+			FAM_N_COLUMNS,
+			G_TYPE_STRING, G_TYPE_INT ));
+	gtk_combo_box_set_model( combo, tmodel );
+	g_object_unref( tmodel );
+
+	text_cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", FAM_COL_LABEL );
+
+	dossier = ofa_main_window_get_dossier( priv->main_window );
+	set = ofo_dossier_get_mod_families_set( dossier );
+
+	idx = -1;
+	for( elt=set, i=0 ; elt ; elt=elt->next, ++i ){
+		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
+		family = OFO_MOD_FAMILY( elt->data );
+		gtk_list_store_set(
+				GTK_LIST_STORE( tmodel ),
+				&iter,
+				FAM_COL_LABEL, ofo_mod_family_get_label( family ),
+				FAM_COL_ID, GINT_TO_POINTER( ofo_mod_family_get_id( family )),
+				-1 );
+		if( priv->family == ofo_mod_family_get_id( family )){
+			idx = i;
 		}
 	}
 
-	check_for_enable_dlg( self );
-	gtk_widget_show_all( GTK_WIDGET( priv->dialog ));
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_family_changed ), self );
+
+	if( idx != -1 ){
+		gtk_combo_box_set_active( combo, idx );
+	}
+}
+
+static void
+init_dialog_mnemo( ofaModelProperties *self )
+{
+	ofaModelPropertiesPrivate *priv;
+	GtkEntry *entry;
+
+	priv = self->private;
+
+	priv->mnemo = g_strdup( ofo_model_get_mnemo( priv->model ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-mnemo" ));
+	if( priv->mnemo ){
+		gtk_entry_set_text( entry, priv->mnemo );
+	}
+
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
+}
+
+static void
+init_dialog_label( ofaModelProperties *self )
+{
+	ofaModelPropertiesPrivate *priv;
+	GtkEntry *entry;
+
+	priv = self->private;
+
+	priv->label = g_strdup( ofo_model_get_label( priv->model ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-label" ));
+	if( priv->label ){
+		gtk_entry_set_text( entry, priv->label );
+	}
+
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
+}
+
+static void
+init_dialog_journal( ofaModelProperties *self )
+{
+	ofaModelPropertiesPrivate *priv;
+	GtkComboBox *combo;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GtkCellRenderer *text_cell;
+	ofoDossier *dossier;
+	GList *set, *elt;
+	gint idx, i;
+	ofoJournal *journal;
+
+	priv = self->private;
+
+	priv->journal = g_strdup( ofo_model_get_journal( priv->model ));
+	combo = GTK_COMBO_BOX( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-journal" ));
+
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+			JOU_N_COLUMNS,
+			G_TYPE_STRING, G_TYPE_STRING ));
+	gtk_combo_box_set_model( combo, tmodel );
+	g_object_unref( tmodel );
+
+	text_cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_MNEMO );
+
+	text_cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_LABEL );
+
+	dossier = ofa_main_window_get_dossier( priv->main_window );
+	set = ofo_dossier_get_journals_set( dossier );
+
+	idx = -1;
+	for( elt=set, i=0 ; elt ; elt=elt->next, ++i ){
+		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
+		journal = OFO_JOURNAL( elt->data );
+		gtk_list_store_set(
+				GTK_LIST_STORE( tmodel ),
+				&iter,
+				JOU_COL_MNEMO, ofo_journal_get_mnemo( journal ),
+				JOU_COL_LABEL, ofo_journal_get_label( journal ),
+				-1 );
+		if( priv->journal &&
+				g_utf8_collate( priv->journal, ofo_journal_get_mnemo( journal ))){
+			idx = i;
+		}
+	}
+
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_journal_changed ), self );
+
+	if( idx != -1 ){
+		gtk_combo_box_set_active( combo, idx );
+	}
+}
+
+static void
+init_dialog_notes( ofaModelProperties *self )
+{
+	ofaModelPropertiesPrivate *priv;
+	gchar *notes;
+	GtkTextView *text;
+	GtkTextBuffer *buffer;
+
+	priv = self->private;
+
+	notes = g_strdup( ofo_model_get_notes( priv->model ));
+	if( notes ){
+		text = GTK_TEXT_VIEW(
+				my_utils_container_get_child_by_name(
+						GTK_CONTAINER( priv->dialog ), "p2-notes" ));
+		buffer = gtk_text_buffer_new( NULL );
+		gtk_text_buffer_set_text( buffer, notes, -1 );
+		gtk_text_view_set_buffer( text, buffer );
+	}
+}
+
+static void
+init_dialog_detail( ofaModelProperties *self )
+{
+	ofaModelPropertiesPrivate *priv;
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+	GtkCellRenderer *text_cell, *toggle_cell;
+	GtkTreeViewColumn *column;
+	gint count;
+	GtkTreeIter iter;
+
+	priv = self->private;
+
+	tview = GTK_TREE_VIEW(
+				my_utils_container_get_child_by_name(
+						GTK_CONTAINER( priv->dialog ), "p1-detail" ));
+
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+				DET_N_COLUMNS,
+				G_TYPE_STRING,
+				G_TYPE_STRING, G_TYPE_BOOLEAN,
+				G_TYPE_STRING, G_TYPE_BOOLEAN,
+				G_TYPE_STRING, G_TYPE_BOOLEAN,
+				G_TYPE_STRING, G_TYPE_BOOLEAN ));
+
+	gtk_tree_view_set_model( tview, tmodel );
+	g_object_unref( tmodel );
+
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Description" ),
+			text_cell, "text", DET_COL_COMMENT,
+			NULL );
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_detail_edited ), self );
+
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Compte" ),
+			text_cell, "text", DET_COL_ACCOUNT,
+			NULL );
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_detail_edited ), self );
+
+	toggle_cell = gtk_cell_renderer_toggle_new();
+	gtk_cell_renderer_toggle_set_activatable( GTK_CELL_RENDERER_TOGGLE( toggle_cell ), TRUE );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Ver." ),
+			toggle_cell, "active", DET_COL_ACCOUNT_VER,
+			NULL );
+	gtk_tree_view_append_column( tview, column );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_detail_toggled ), self );
+
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Intitulé" ),
+			text_cell, "text", DET_COL_LABEL,
+			NULL );
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_detail_edited ), self );
+
+	toggle_cell = gtk_cell_renderer_toggle_new();
+	gtk_cell_renderer_toggle_set_activatable( GTK_CELL_RENDERER_TOGGLE( toggle_cell ), TRUE );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Ver." ),
+			toggle_cell, "active", DET_COL_LABEL_VER,
+			NULL );
+	gtk_tree_view_append_column( tview, column );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_detail_toggled ), self );
+
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
+	column = gtk_tree_view_column_new();
+	gtk_tree_view_column_pack_end( column, text_cell, TRUE );
+	gtk_tree_view_column_set_title( column, _( "Débit" ));
+	gtk_tree_view_column_add_attribute( column, text_cell, "text", DET_COL_DEBIT );
+	gtk_tree_view_column_set_min_width( column, 80 );
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_detail_edited ), self );
+
+	toggle_cell = gtk_cell_renderer_toggle_new();
+	gtk_cell_renderer_toggle_set_activatable( GTK_CELL_RENDERER_TOGGLE( toggle_cell ), TRUE );
+	column = gtk_tree_view_column_new();
+	gtk_tree_view_column_pack_end( column, toggle_cell, FALSE );
+	gtk_tree_view_column_set_title( column, _( "Ver." ));
+	gtk_tree_view_column_add_attribute( column, toggle_cell, "active", DET_COL_DEBIT_VER );
+	gtk_tree_view_append_column( tview, column );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_detail_toggled ), self );
+
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
+	column = gtk_tree_view_column_new();
+	gtk_tree_view_column_pack_end( column, text_cell, TRUE );
+	gtk_tree_view_column_set_title( column, _( "Crédit" ));
+	gtk_tree_view_column_add_attribute( column, text_cell, "text", DET_COL_CREDIT );
+	gtk_tree_view_column_set_min_width( column, 80 );
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_detail_edited ), self );
+
+	toggle_cell = gtk_cell_renderer_toggle_new();
+	gtk_cell_renderer_toggle_set_activatable( GTK_CELL_RENDERER_TOGGLE( toggle_cell ), TRUE );
+	column = gtk_tree_view_column_new();
+	gtk_tree_view_column_pack_end( column, toggle_cell, FALSE );
+	gtk_tree_view_column_set_title( column, _( "Ver." ));
+	gtk_tree_view_column_add_attribute( column, toggle_cell, "active", DET_COL_CREDIT_VER );
+	gtk_tree_view_append_column( tview, column );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_detail_toggled ), self );
+
+	count = ofo_model_get_count( self->private->model );
+	if( !count ){
+		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
+		gtk_list_store_set(
+				GTK_LIST_STORE( tmodel ),
+				&iter,
+				DET_COL_ACCOUNT, "",
+				DET_COL_ACCOUNT_VER, FALSE,
+				DET_COL_LABEL, "",
+				DET_COL_LABEL_VER, FALSE,
+				DET_COL_DEBIT, "",
+				DET_COL_DEBIT_VER, FALSE,
+				DET_COL_CREDIT, "",
+				DET_COL_CREDIT_VER, FALSE,
+				-1 );
+	}
 }
 
 /*
@@ -337,6 +689,24 @@ ok_to_terminate( ofaModelProperties *self, gint code )
 }
 
 static void
+on_family_changed( GtkComboBox *box, ofaModelProperties *self )
+{
+	static const gchar *thisfn = "ofa_model_properties_on_family_changed";
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gint id;
+
+	if( gtk_combo_box_get_active_iter( box, &iter )){
+		tmodel = gtk_combo_box_get_model( box );
+		gtk_tree_model_get( tmodel, &iter, FAM_COL_ID, &id, -1 );
+		self->private->family = id;
+		g_debug( "%s: family changed to %d", thisfn, id );
+	}
+
+	check_for_enable_dlg( self );
+}
+
+static void
 on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self )
 {
 	g_free( self->private->mnemo );
@@ -352,6 +722,41 @@ on_label_changed( GtkEntry *entry, ofaModelProperties *self )
 	self->private->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
+}
+
+static void
+on_journal_changed( GtkComboBox *box, ofaModelProperties *self )
+{
+	static const gchar *thisfn = "ofa_model_properties_on_journal_changed";
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	if( gtk_combo_box_get_active_iter( box, &iter )){
+		tmodel = gtk_combo_box_get_model( box );
+		g_free( self->private->journal );
+		gtk_tree_model_get( tmodel, &iter, JOU_COL_MNEMO, &self->private->journal, -1 );
+		g_debug( "%s: journal changed to %s", thisfn, self->private->journal );
+	}
+
+	check_for_enable_dlg( self );
+}
+
+static void
+on_detail_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self )
+{
+	static const gchar *thisfn = "ofa_model_properties_on_detail_edited";
+
+	g_debug( "%s: cell=%p, path=%s, new_text=%s, self=%p",
+			thisfn, ( void * ) cell, path, new_text, ( void * ) self );
+}
+
+static void
+on_detail_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self )
+{
+	static const gchar *thisfn = "ofa_model_properties_on_detail_toggled";
+
+	g_debug( "%s: cell=%p, path=%s,  self=%p",
+			thisfn, ( void * ) cell, path, ( void * ) self );
 }
 
 static void

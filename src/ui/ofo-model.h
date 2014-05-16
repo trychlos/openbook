@@ -78,6 +78,8 @@ gint         ofo_model_get_family   ( const ofoModel *model );
 const gchar *ofo_model_get_journal  ( const ofoModel *model );
 const gchar *ofo_model_get_notes    ( const ofoModel *model );
 
+gint         ofo_model_get_count    ( const ofoModel *model );
+
 void         ofo_model_set_id       ( ofoModel *model, gint id );
 void         ofo_model_set_mnemo    ( ofoModel *model, const gchar *mnemo );
 void         ofo_model_set_label    ( ofoModel *model, const gchar *label );

@@ -85,17 +85,25 @@
                 a label instead of only a text
 
   44 2014- 5-13 ofaAccountsChart: set an accelerator for each page of
-                the classes book (e.g. Alt+1, etc.)
+                the classes book (e.g. Alt+1, etc.); set the label of
+                this accel as a tooltip of the notebook's page
 
   45 2014- 5-13 ofaMainWindow left pane: set the width of the tree
 
   46 2014- 5-13 chart of accounts: this is a user preference whether
                 a double clic enter in 'Update' or in 'Consult entries'
 
-  49 2014- 5-15 Account and Journal properties: monitor notes size so
+  49 2014- 5-15 All properties: monitor "notes" size so
                 that we stop the entering at 512 chars
 
-  50
+  50 2014- 5-17 when defining a new model, the default family should be
+                the current family in models_set
+
+  51 2014- 5-17 Be able to use an underscore in the label of the model
+                families; this underscore should be usable as a shortcut
+                when dealing with the models in models set
+
+  52
 
 -----------------------------------------------------------------------
  DONE
