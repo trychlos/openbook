@@ -71,10 +71,12 @@ static GObjectClass *st_parent_class = NULL;
 static GType register_type( void );
 static void  class_init( ofaMainPageClass *klass );
 static void  instance_init( GTypeInstance *instance, gpointer klass );
+static void  instance_constructed( GObject *instance );
 static void  instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec );
 static void  instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
 static void  instance_dispose( GObject *instance );
 static void  instance_finalize( GObject *instance );
+static void  on_grid_finalized( ofaMainPage *self, GObject *grid );
 static void  main_page_free_dataset( const ofaMainPage *page );
 
 GType
@@ -125,6 +127,7 @@ class_init( ofaMainPageClass *klass )
 	st_parent_class = g_type_class_peek_parent( klass );
 
 	object_class = G_OBJECT_CLASS( klass );
+	object_class->constructed = instance_constructed;
 	object_class->get_property = instance_get_property;
 	object_class->set_property = instance_set_property;
 	object_class->dispose = instance_dispose;
@@ -181,6 +184,41 @@ instance_init( GTypeInstance *instance, gpointer klass )
 
 	self->private->dispose_has_run = FALSE;
 	self->private->theme = -1;
+}
+
+static void
+instance_constructed( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_main_page_instance_constructed";
+	ofaMainPagePrivate *priv;
+
+	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
+
+	priv = ( OFA_MAIN_PAGE( instance ))->private;
+
+	/* first, chain up to the parent class */
+	if( G_OBJECT_CLASS( st_parent_class )->constructed ){
+		G_OBJECT_CLASS( st_parent_class )->constructed( instance );
+	}
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+#if 0
+	g_debug( "%s: main_window=%p, dossier=%p, theme=%d, grid=%p",
+			thisfn,
+			( void * ) priv->main_window,
+			( void * ) priv->dossier,
+			priv->theme,
+			( void * ) priv->grid );
+#endif
+
+	/* attach a weak reference to the grid widget to unref this object */
+	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
+	g_object_weak_ref(
+			G_OBJECT( priv->grid ),
+			( GWeakNotify ) on_grid_finalized,
+			OFA_MAIN_PAGE( instance ));
 }
 
 /*
@@ -270,7 +308,9 @@ instance_dispose( GObject *instance )
 	priv = ( OFA_MAIN_PAGE( instance ))->private;
 
 	if( !priv->dispose_has_run ){
-		g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+		g_debug( "%s: instance=%p (%s)",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -301,6 +341,19 @@ instance_finalize( GObject *instance )
 	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
 		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
 	}
+}
+
+static void
+on_grid_finalized( ofaMainPage *self, GObject *grid )
+{
+	static const gchar *thisfn = "ofa_main_page_on_grid_finalized";
+
+	g_debug( "%s: self=%p (%s), grid=%p",
+			thisfn,
+			( void * ) self, G_OBJECT_TYPE_NAME( self ),
+			( void * ) grid );
+
+	g_object_unref( self );
 }
 
 /**
@@ -480,4 +533,34 @@ ofa_main_page_set_theme( ofaMainPage *page, gint theme )
 
 		page->private->theme = theme;
 	}
+}
+
+/**
+ * ofa_main_page_delete_confirmed:
+ *
+ * Returns: %TRUE if the deletion is confirmed by the user.
+ */
+gboolean
+ofa_main_page_delete_confirmed( const ofaMainPage *page, const gchar *message )
+{
+	GtkWidget *dialog;
+	gint response;
+
+	dialog = gtk_message_dialog_new(
+			GTK_WINDOW( page->private->main_window ),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE,
+			"%s", message );
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_DELETE, GTK_RESPONSE_OK,
+			NULL );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
 }

@@ -814,9 +814,6 @@ ofo_dossier_get_journal( const ofoDossier *dossier, const gchar *mnemo )
 
 /**
  * ofo_dossier_get_journals_set:
- *
- * Returns: a copy of the list (not the data) of journals.
- * This returned list should be g_list_free() by the caller.
  */
 GList *
 ofo_dossier_get_journals_set( ofoDossier *dossier )
@@ -835,7 +832,7 @@ ofo_dossier_get_journals_set( ofoDossier *dossier )
 		}
 	}
 
-	return( g_list_copy( dossier->private->journals ));
+	return( dossier->private->journals );
 }
 
 /**
@@ -977,9 +974,6 @@ ofo_dossier_get_mod_family( const ofoDossier *dossier, gint id )
 
 /**
  * ofo_dossier_get_mod_families_set:
- *
- * Returns: a copy of the list (not the data) of mod_families.
- * This returned list should be g_list_free() by the caller.
  */
 GList *
 ofo_dossier_get_mod_families_set( ofoDossier *dossier )
@@ -998,7 +992,7 @@ ofo_dossier_get_mod_families_set( ofoDossier *dossier )
 		}
 	}
 
-	return( g_list_copy( dossier->private->mod_families ));
+	return( dossier->private->mod_families );
 }
 
 /**
@@ -1166,7 +1160,7 @@ ofo_dossier_get_models_set( ofoDossier *dossier )
 		}
 	}
 
-	return( g_list_copy( dossier->private->models ));
+	return( dossier->private->models );
 }
 
 /**

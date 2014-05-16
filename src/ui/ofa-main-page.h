@@ -92,6 +92,8 @@ void           ofa_main_page_set_grid       ( ofaMainPage *page, GtkGrid *grid )
 gint           ofa_main_page_get_theme      ( const ofaMainPage *page );
 void           ofa_main_page_set_theme      ( ofaMainPage *page, gint theme );
 
+gboolean       ofa_main_page_delete_confirmed( const ofaMainPage *page, const gchar *message );
+
 G_END_DECLS
 
 #endif /* __OFA_MAIN_PAGE_H__ */

@@ -51,9 +51,6 @@ struct _ofaModelsSetPrivate {
 
 	/* internals
 	 */
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
-	GList         *set;					/* a copy of the list of models (ledgers) */
 
 	/* UI
 	 */
@@ -61,6 +58,9 @@ struct _ofaModelsSetPrivate {
 	GtkWidget     *others;				/* a page for unclassed models */
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
+
+	/* Selection
+	 */
 	ofoModel      *selected;			/* current selection */
 	GtkTreeModel  *model;
 	GtkTreeIter   *iter;				/* a copy of the selected iter */
@@ -85,10 +85,10 @@ static GObjectClass *st_parent_class = NULL;
 static GType      register_type( void );
 static void       class_init( ofaModelsSetClass *klass );
 static void       instance_init( GTypeInstance *instance, gpointer klass );
+static void       instance_constructed( GObject *instance );
 static void       instance_dispose( GObject *instance );
 static void       instance_finalize( GObject *instance );
-static void       setup_set_page( ofaModelsSet *self, gint theme_id );
-static void       on_set_page_finalized( ofaModelsSet *self, GtkWidget *page );
+static void       setup_set_page( ofaModelsSet *self );
 static void       on_family_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self );
 static GtkWidget *setup_models_view( ofaModelsSet *self );
 static GtkWidget *setup_buttons_box( ofaModelsSet *self );
@@ -102,7 +102,6 @@ static void       on_update_model( GtkButton *button, ofaModelsSet *self );
 static void       on_delete_model( GtkButton *button, ofaModelsSet *self );
 static gboolean   delete_confirmed( ofaModelsSet *self, ofoModel *model );
 static void       insert_new_row( ofaModelsSet *self, ofoModel *model );
-static void       models_set_free( ofaModelsSet *self );
 
 GType
 ofa_models_set_get_type( void )
@@ -136,7 +135,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaModelsSet", &info, 0 );
+	type = g_type_register_static( OFA_TYPE_MAIN_PAGE, "ofaModelsSet", &info, 0 );
 
 	return( type );
 }
@@ -152,6 +151,7 @@ class_init( ofaModelsSetClass *klass )
 	st_parent_class = g_type_class_peek_parent( klass );
 
 	object_class = G_OBJECT_CLASS( klass );
+	object_class->constructed = instance_constructed;
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
 
@@ -177,85 +177,90 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_dispose( GObject *window )
+instance_constructed( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_models_set_instance_constructed";
+
+	g_return_if_fail( OFA_IS_MODELS_SET( instance ));
+
+	/* first chain up to the parent class */
+	if( G_OBJECT_CLASS( st_parent_class )->constructed ){
+		G_OBJECT_CLASS( st_parent_class )->constructed( instance );
+	}
+
+	/* then setup the page
+	 */
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	setup_set_page( OFA_MODELS_SET( instance ));
+}
+
+static void
+instance_dispose( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_models_set_instance_dispose";
 	ofaModelsSetPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MODELS_SET( window ));
+	g_return_if_fail( OFA_IS_MODELS_SET( instance ));
 
-	priv = ( OFA_MODELS_SET( window ))->private;
+	priv = ( OFA_MODELS_SET( instance ))->private;
 
 	if( !priv->dispose_has_run ){
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+
+		g_debug( "%s: instance=%p (%s)",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
 
-		if( priv->set ){
-			models_set_free( OFA_MODELS_SET( window ));
-		}
 		if( priv->iter ){
 			gtk_tree_iter_free( priv->iter );
 		}
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( window );
+			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
 		}
 	}
 }
 
 static void
-instance_finalize( GObject *window )
+instance_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_models_set_instance_finalize";
 	ofaModelsSet *self;
 
-	g_return_if_fail( OFA_IS_MODELS_SET( window ));
+	g_return_if_fail( OFA_IS_MODELS_SET( instance ));
 
-	g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self = OFA_MODELS_SET( window );
+	self = OFA_MODELS_SET( instance );
 
 	g_free( self->private );
 
 	/* chain call to parent class */
 	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( window );
+		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
 	}
 }
 
 /**
  * ofa_models_set_run:
- * @main: the main window of the application.
- * @dossier: the currently opened dossier
- * @theme_id: the identifier of the page in the main notebook
  *
- * Display the chart of accounts, letting the user edit it
+ * When called by the main_window, the page has been created, showed
+ * and activated - there is nothing left to do here....
  */
 void
-ofa_models_set_run( ofaMainWindow *main_window, ofoDossier *dossier, gint theme_id )
+ofa_models_set_run( ofaMainPage *this )
 {
 	static const gchar *thisfn = "ofa_models_set_run";
-	ofaModelsSet *self;
-	GtkWidget *page;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
-	g_return_if_fail( OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( this && OFA_IS_MODELS_SET( this ));
 
-	g_debug( "%s: main_window=%p, dossier=%p, theme_id=%d",
-			thisfn, ( void * ) main_window, ( void * ) dossier, theme_id );
-
-	page = ofa_main_window_get_notebook_page( main_window, theme_id );
-	if( !page ){
-
-		self = g_object_new( OFA_TYPE_MODELS_SET, NULL );
-		self->private->main_window = main_window;
-		self->private->dossier = dossier;
-		self->private->set = ofo_dossier_get_models_set( dossier );
-
-		setup_set_page( self, theme_id );
-	}
+	g_debug( "%s: this=%p (%s)",
+			thisfn, ( void * ) this, G_OBJECT_TYPE_NAME( this ));
 }
 
 /*
@@ -263,65 +268,22 @@ ofa_models_set_run( ofaMainWindow *main_window, ofoDossier *dossier, gint theme_
  * in each page, the models for the category are listed in a treeview
  */
 static void
-setup_set_page( ofaModelsSet *self, gint theme_id )
+setup_set_page( ofaModelsSet *self )
 {
-	GtkNotebook *book;
 	GtkGrid *grid;
-	GtkLabel *label;
 	GtkWidget *models_book;
 	GtkWidget *buttons_box;
-	gint page_num;
-	GtkWidget *first_tab;
-	GtkWidget *first_treeview;
 
-	book = ofa_main_window_get_notebook( self->private->main_window );
+	grid = ofa_main_page_get_grid( OFA_MAIN_PAGE( self ));
 
-	/* this is the new page of the main notebook
-	 */
-	grid = GTK_GRID( gtk_grid_new());
-	g_object_weak_ref( G_OBJECT( grid ), ( GWeakNotify ) on_set_page_finalized, self );
-	gtk_grid_set_column_spacing( grid, 4 );
-
-	label = GTK_LABEL( gtk_label_new_with_mnemonic( _( "Modèles" )));
-	gtk_notebook_append_page( book, GTK_WIDGET( grid ), GTK_WIDGET( label ));
-	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( grid ), TRUE );
-
-	g_object_set_data( G_OBJECT( grid ), OFA_DATA_THEME_ID, GINT_TO_POINTER ( theme_id ));
-
-	/* build the children for this page
-	 */
 	models_book = setup_models_view( self );
 	gtk_grid_attach( grid, models_book, 0, 0, 1, 1 );
+	self->private->book = GTK_NOTEBOOK( models_book );
 
 	buttons_box = setup_buttons_box( self );
 	gtk_grid_attach( grid, buttons_box, 1, 0, 1, 1 );
 
-	gtk_widget_show_all( GTK_WIDGET( self->private->main_window ));
-	page_num = gtk_notebook_page_num( book, GTK_WIDGET( grid ));
-	gtk_notebook_set_current_page( book, page_num );
-	first_tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( models_book ), 0 );
-	if( first_tab ){
-		first_treeview = GTK_WIDGET( g_object_get_data( G_OBJECT( first_tab ), DATA_PAGE_VIEW ));
-		gtk_widget_grab_focus( first_treeview );
-	}
-
 	setup_first_selection( self );
-}
-
-/*
- * return FALSE to let the widget being deleted
- */
-static void
-on_set_page_finalized( ofaModelsSet *self, GtkWidget *page )
-{
-	static const gchar *thisfn = "ofa_models_set_on_set_page_finalized";
-
-	g_debug( "%s: self=%p (%s), page=%p",
-			thisfn,
-			( void * ) self, G_OBJECT_TYPE_NAME( self ),
-			( void * ) page );
-
-	g_object_unref( self );
 }
 
 /*
@@ -353,8 +315,9 @@ static GtkWidget *
 setup_models_view( ofaModelsSet *self )
 {
 	GtkNotebook *book;
+	ofoDossier *dossier;
 	GList *famset, *ifam;
-	GList *imod;
+	GList *models, *imod;
 	ofoModel *ofomodel;
 	gint fam_id;
 	GtkWidget *page;
@@ -366,7 +329,8 @@ setup_models_view( ofaModelsSet *self )
 	gtk_widget_set_margin_left( GTK_WIDGET( book ), 4 );
 	gtk_widget_set_margin_bottom( GTK_WIDGET( book ), 4 );
 
-	famset = ofo_dossier_get_mod_families_set( self->private->dossier );
+	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+	famset = ofo_dossier_get_mod_families_set( dossier );
 
 	for( ifam=famset ; ifam ; ifam=ifam->next ){
 		notebook_create_page( self, book,
@@ -375,9 +339,11 @@ setup_models_view( ofaModelsSet *self )
 				-1 );
 	}
 
-	g_list_free( famset );
+	models = ofo_dossier_get_models_set( dossier );
+	ofa_main_page_set_dataset(
+			OFA_MAIN_PAGE( self ), models );
 
-	for( imod=self->private->set ; imod ; imod=imod->next ){
+	for( imod=models ; imod ; imod=imod->next ){
 		ofomodel = OFO_MODEL( imod->data );
 		fam_id = ofo_model_get_family( ofomodel );
 		page = notebook_find_page( self, fam_id );
@@ -586,13 +552,16 @@ on_new_model( GtkButton *button, ofaModelsSet *self )
 {
 	static const gchar *thisfn = "ofa_models_set_on_new_model";
 	ofoModel *model;
+	ofaMainWindow *main_window;
 
 	g_return_if_fail( OFA_IS_MODELS_SET( self ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
+	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
 	model = ofo_model_new();
-	if( ofa_model_properties_run( self->private->main_window, model )){
+
+	if( ofa_model_properties_run( main_window, model )){
 		insert_new_row( self, model );
 	}
 }
@@ -604,6 +573,7 @@ on_update_model( GtkButton *button, ofaModelsSet *self )
 	gchar *prev_mnemo;
 	const gchar *new_mnemo;
 	ofoModel *model;
+	ofaMainWindow *main_window;
 
 	g_return_if_fail( OFA_IS_MODELS_SET( self ));
 	g_return_if_fail( OFO_IS_MODEL( self->private->selected ));
@@ -612,8 +582,9 @@ on_update_model( GtkButton *button, ofaModelsSet *self )
 
 	model = self->private->selected;
 	prev_mnemo = g_strdup( ofo_model_get_mnemo( model ));
+	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
 
-	if( ofa_model_properties_run( self->private->main_window, model )){
+	if( ofa_model_properties_run( main_window, model )){
 
 		new_mnemo = ofo_model_get_mnemo( model );
 		if( g_utf8_collate( prev_mnemo, new_mnemo )){
@@ -638,18 +609,21 @@ static void
 on_delete_model( GtkButton *button, ofaModelsSet *self )
 {
 	static const gchar *thisfn = "ofa_models_set_on_delete_model";
+	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_MODELS_SET( self ));
 	g_return_if_fail( OFO_IS_MODEL( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
+	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+
 	if( delete_confirmed( self, self->private->selected ) &&
-			ofo_dossier_delete_model( self->private->dossier, self->private->selected )){
+			ofo_dossier_delete_model( dossier, self->private->selected )){
 
 		/* update our set of models */
-		models_set_free( self );
-		self->private->set = ofo_dossier_get_models_set( self->private->dossier );
+		ofa_main_page_set_dataset(
+				OFA_MAIN_PAGE( self ), ofo_dossier_get_models_set( dossier ));
 
 		/* remove the row from the model
 		 * this will cause an automatic new selection */
@@ -660,31 +634,18 @@ on_delete_model( GtkButton *button, ofaModelsSet *self )
 static gboolean
 delete_confirmed( ofaModelsSet *self, ofoModel *model )
 {
-	GtkWidget *dialog;
 	gchar *msg;
-	gint response;
+	gboolean delete_ok;
 
 	msg = g_strdup_printf( _( "Etes-vous sûr de vouloir supprimer le modèle '%s - %s' ?" ),
 			ofo_model_get_mnemo( model ),
 			ofo_model_get_label( model ));
 
-	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( self->private->main_window ),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			"%s", msg );
+	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
 
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_DELETE, GTK_RESPONSE_OK,
-			NULL );
+	g_free( msg );
 
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
+	return( delete_ok );
 }
 
 static void
@@ -700,10 +661,12 @@ insert_new_row( ofaModelsSet *self, ofoModel *ofomodel )
 	const gchar *mnemo, *model_mnemo;
 	gboolean iter_found;
 	GtkTreePath *path;
+	ofoDossier *dossier;
 
 	/* update our set of models */
-	models_set_free( self );
-	self->private->set = ofo_dossier_get_models_set( self->private->dossier );
+	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+	ofa_main_page_set_dataset(
+			OFA_MAIN_PAGE( self ), ofo_dossier_get_models_set( dossier ));
 
 	/* activate the page of the correct class, or create a new one */
 	fam_id = ofo_model_get_family( ofomodel );
@@ -745,11 +708,4 @@ insert_new_row( ofaModelsSet *self, ofoModel *ofomodel )
 	gtk_tree_view_set_cursor( view, path, NULL, FALSE );
 	gtk_widget_grab_focus( GTK_WIDGET( view ));
 	gtk_tree_path_free( path );
-}
-
-static void
-models_set_free( ofaModelsSet *self )
-{
-	g_list_free( self->private->set );
-	self->private->set = NULL;
 }

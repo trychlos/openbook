@@ -95,7 +95,6 @@ typedef struct {
  * - a pointer to the GObject-derived ofa* object which runs the page
  */
 #define OFA_DATA_THEME    "ofa-data-theme"
-#define OFA_DATA_THEME_ID    "ofa-data-theme"
 #define OFA_DATA_HANDLER  "ofa-data-handler"
 
 GType          ofa_main_window_get_type          ( void );
@@ -105,9 +104,6 @@ ofaMainWindow *ofa_main_window_new               ( const ofaApplication *applica
 gboolean       ofa_main_window_is_willing_to_quit( ofaMainWindow *window );
 
 ofoDossier    *ofa_main_window_get_dossier       ( const ofaMainWindow *window );
-
-GtkNotebook   *ofa_main_window_get_notebook      ( const ofaMainWindow *window );
-GtkWidget     *ofa_main_window_get_notebook_page ( const ofaMainWindow *window, gint theme );
 
 G_END_DECLS
 
