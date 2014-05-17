@@ -43,7 +43,6 @@
 #include "ui/ofo-base.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
-#include "ui/ofo-mod-family.h"
 #include "ui/ofo-journal.h"
 #include "ui/ofo-model.h"
 
@@ -101,7 +100,7 @@ gboolean      ofo_dossier_delete_devise     ( ofoDossier *dossier, ofoDevise *de
 ofoJournal   *ofo_dossier_get_journal       ( const ofoDossier *dossier, const gchar *mnemo );
 GList        *ofo_dossier_get_journals_set  ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_journal    ( ofoDossier *dossier, ofoJournal *journal );
-gboolean      ofo_dossier_update_journal    ( ofoDossier *dossier, ofoJournal *journal, const gchar *prev_mnemo );
+gboolean      ofo_dossier_update_journal    ( ofoDossier *dossier, ofoJournal *journal );
 gboolean      ofo_dossier_delete_journal    ( ofoDossier *dossier, ofoJournal *journal );
 
 ofoModel     *ofo_dossier_get_model         ( const ofoDossier *dossier, const gchar *mnemo );

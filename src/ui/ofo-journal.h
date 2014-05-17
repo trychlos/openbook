@@ -76,12 +76,14 @@ ofoJournal  *ofo_journal_new          ( void );
 GList       *ofo_journal_load_set     ( ofaSgbd *sgbd );
 void         ofo_journal_dump_set     ( GList *chart );
 
+gint         ofo_journal_get_id       ( const ofoJournal *journal );
 const gchar *ofo_journal_get_mnemo    ( const ofoJournal *journal );
 const gchar *ofo_journal_get_label    ( const ofoJournal *journal );
 const gchar *ofo_journal_get_notes    ( const ofoJournal *journal );
 const GDate *ofo_journal_get_maxdate  ( const ofoJournal *journal );
 const GDate *ofo_journal_get_cloture  ( const ofoJournal *journal );
 
+void         ofo_journal_set_id       ( ofoJournal *journal, gint id );
 void         ofo_journal_set_mnemo    ( ofoJournal *journal, const gchar *number );
 void         ofo_journal_set_label    ( ofoJournal *journal, const gchar *label );
 void         ofo_journal_set_notes    ( ofoJournal *journal, const gchar *notes );
@@ -91,7 +93,7 @@ void         ofo_journal_set_maxdate  ( ofoJournal *journal, const GDate *date )
 void         ofo_journal_set_cloture  ( ofoJournal *journal, const GDate *date );
 
 gboolean     ofo_journal_insert       ( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user );
-gboolean     ofo_journal_update       ( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
+gboolean     ofo_journal_update       ( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user );
 gboolean     ofo_journal_delete       ( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user );
 
 G_END_DECLS

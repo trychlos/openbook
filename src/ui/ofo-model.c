@@ -56,7 +56,7 @@ struct _ofoModelPrivate {
 	gint     id;
 	gchar   *mnemo;
 	gchar   *label;
-	gchar   *journal;
+	gint     journal;
 	gchar   *notes;
 	gchar   *maj_user;
 	GTimeVal maj_stamp;
@@ -160,7 +160,9 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private = g_new0( ofoModelPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+
 	self->private->id = -1;
+	self->private->journal = -1;
 }
 
 static void
@@ -183,7 +185,6 @@ instance_dispose( GObject *instance )
 
 		g_free( priv->mnemo );
 		g_free( priv->label );
-		g_free( priv->journal );
 		g_free( priv->notes );
 		g_free( priv->maj_user );
 
@@ -294,7 +295,9 @@ ofo_model_load_set( ofaSgbd *sgbd )
 		icol = icol->next;
 		ofo_model_set_label( model, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_model_set_journal( model, ( gchar * ) icol->data );
+		if( icol->data ){
+			ofo_model_set_journal( model, atoi(( gchar * ) icol->data ));
+		}
 		icol = icol->next;
 		ofo_model_set_notes( model, ( gchar * ) icol->data );
 		icol = icol->next;
@@ -439,19 +442,17 @@ ofo_model_get_label( const ofoModel *model )
 /**
  * ofo_model_get_journal:
  */
-const gchar *
+gint
 ofo_model_get_journal( const ofoModel *model )
 {
-	const gchar *journal = NULL;
-
-	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+	g_return_val_if_fail( OFO_IS_MODEL( model ), -1 );
 
 	if( !model->private->dispose_has_run ){
 
-		journal = model->private->journal;
+		return( model->private->journal );
 	}
 
-	return( journal );
+	return( -1 );
 }
 
 /**
@@ -534,13 +535,13 @@ ofo_model_set_label( ofoModel *model, const gchar *label )
  * ofo_model_set_journal:
  */
 void
-ofo_model_set_journal( ofoModel *model, const gchar *journal )
+ofo_model_set_journal( ofoModel *model, gint journal )
 {
 	g_return_if_fail( OFO_IS_MODEL( model ));
 
 	if( !model->private->dispose_has_run ){
 
-		model->private->journal = g_strdup( journal );
+		model->private->journal = journal;
 	}
 }
 
@@ -613,7 +614,7 @@ ofo_model_insert( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	(MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_NOTES,"
-			"	MOD_MAJ_USER, MOD_MAJ_STAMP) VALUES ('%s','%s','%s',",
+			"	MOD_MAJ_USER, MOD_MAJ_STAMP) VALUES ('%s','%s',%d,",
 			ofo_model_get_mnemo( model ),
 			label,
 			ofo_model_get_journal( model ));
@@ -689,7 +690,7 @@ ofo_model_update( ofoModel *model, ofaSgbd *sgbd, const gchar *user, const gchar
 	}
 
 	g_string_append_printf( query, "MOD_LABEL='%s',", label );
-	g_string_append_printf( query, "MOD_JOU_ID='%s',", ofo_model_get_journal( model ));
+	g_string_append_printf( query, "MOD_JOU_ID=%d,", ofo_model_get_journal( model ));
 
 	if( notes && g_utf8_strlen( notes, -1 )){
 		g_string_append_printf( query, "MOD_NOTES='%s',", notes );

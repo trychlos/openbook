@@ -53,6 +53,7 @@ struct _ofoJournalPrivate {
 
 	/* sgbd data
 	 */
+	gint     id;
 	gchar   *mnemo;
 	gchar   *label;
 	gchar   *notes;
@@ -140,6 +141,8 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private = g_new0( ofoJournalPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+
+	self->private->id = -1;
 }
 
 static void
@@ -223,7 +226,7 @@ ofo_journal_load_set( ofaSgbd *sgbd )
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
 	result = ofa_sgbd_query_ex( sgbd, NULL,
-			"SELECT JOU_MNEMO,JOU_LABEL,JOU_NOTES,"
+			"SELECT JOU_ID,JOU_MNEMO,JOU_LABEL,JOU_NOTES,"
 			"	JOU_MAJ_USER,JOU_MAJ_STAMP,"
 			"	JOU_MAXDATE,JOU_CLO"
 			"	FROM OFA_T_JOURNAUX "
@@ -234,6 +237,8 @@ ofo_journal_load_set( ofaSgbd *sgbd )
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
 		journal = ofo_journal_new();
+		ofo_journal_set_id( journal, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
 		ofo_journal_set_mnemo( journal, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_journal_set_label( journal, ( gchar * ) icol->data );
@@ -270,6 +275,22 @@ ofo_journal_dump_set( GList *set )
 		priv = OFO_JOURNAL( ic->data )->private;
 		g_debug( "%s: journal %s - %s", thisfn, priv->mnemo, priv->label );
 	}
+}
+
+/**
+ * ofo_journal_get_id:
+ */
+gint
+ofo_journal_get_id( const ofoJournal *journal )
+{
+	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), -1 );
+
+	if( !journal->private->dispose_has_run ){
+
+		return( journal->private->id );
+	}
+
+	return( -1 );
 }
 
 /**
@@ -364,6 +385,20 @@ ofo_journal_get_cloture( const ofoJournal *journal )
 	}
 
 	return( date );
+}
+
+/**
+ * ofo_journal_set_id:
+ */
+void
+ofo_journal_set_id( ofoJournal *journal, gint id )
+{
+	g_return_if_fail( OFO_IS_JOURNAL( journal ));
+
+	if( !journal->private->dispose_has_run ){
+
+		journal->private->id = id;
+	}
 }
 
 /**
@@ -466,9 +501,6 @@ ofo_journal_set_cloture( ofoJournal *journal, const GDate *date )
 
 /**
  * ofo_journal_insert:
- *
- * we deal here with an update of publicly modifiable journal properties
- * so it is not needed to check the date of closing
  */
 gboolean
 ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
@@ -477,6 +509,7 @@ ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 	gchar *label, *notes;
 	gboolean ok;
 	gchar *stamp;
+	GSList *result, *icol;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
 	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
@@ -507,7 +540,22 @@ ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 
 		ofo_journal_set_maj_user( journal, user );
 		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str( stamp ));
-		ok = TRUE;
+
+		g_string_printf( query,
+				"SELECT JOU_ID FROM OFA_T_JOURNAUX"
+				"	WHERE JOU_MNEMO='%s' AND JOU_MAJ_STAMP='%s'",
+				ofo_journal_get_mnemo( journal ), stamp );
+
+		result = ofa_sgbd_query_ex( sgbd, NULL, query->str );
+
+		if( result ){
+			icol = ( GSList * ) result->data;
+			ofo_journal_set_id( journal, atoi(( gchar * ) icol->data ));
+
+			ofa_sgbd_free_result( result );
+
+			ok = TRUE;
+		}
 	}
 
 	g_string_free( query, TRUE );
@@ -520,35 +568,26 @@ ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 
 /**
  * ofo_journal_update:
- *
- * we deal here with an update of publicly modifiable journal properties
- * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_journal_update( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
+ofo_journal_update( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
 	gboolean ok;
-	const gchar *new_mnemo;
 	gchar *stamp;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
 	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
-	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_journal_get_label( journal ));
 	notes = my_utils_quote( ofo_journal_get_notes( journal ));
-	new_mnemo = ofo_journal_get_mnemo( journal );
 	stamp = my_utils_timestamp();
 
 	query = g_string_new( "UPDATE OFA_T_JOURNAUX SET " );
 
-	if( g_utf8_collate( new_mnemo, prev_mnemo )){
-		g_string_append_printf( query, "JOU_MNEMO='%s',", new_mnemo );
-	}
-
+	g_string_append_printf( query, "JOU_MNEMO='%s',", ofo_journal_get_mnemo( journal ));
 	g_string_append_printf( query, "JOU_LABEL='%s',", label );
 
 	if( notes && g_utf8_strlen( notes, -1 )){
@@ -559,10 +598,7 @@ ofo_journal_update( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user, const
 
 	g_string_append_printf( query,
 			"	JOU_MAJ_USER='%s',JOU_MAJ_STAMP='%s'"
-			"	WHERE JOU_MNEMO='%s'",
-					user,
-					stamp,
-					prev_mnemo );
+			"	WHERE JOU_ID=%d", user, stamp, ofo_journal_get_id( journal ));
 
 	if( ofa_sgbd_query( sgbd, NULL, query->str )){
 
@@ -591,9 +627,8 @@ ofo_journal_delete( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
 
 	query = g_strdup_printf(
-			"DELETE FROM OFA_T_JOURNAUX"
-			"	WHERE JOU_MNEMO='%s'",
-					ofo_journal_get_mnemo( journal ));
+			"DELETE FROM OFA_T_JOURNAUX WHERE JOU_ID=%d",
+					ofo_journal_get_id( journal ));
 
 	ok = ofa_sgbd_query( sgbd, NULL, query );
 

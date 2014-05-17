@@ -105,7 +105,6 @@ ui_files = \
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
 	ofa-journal-properties.ui							\
-	ofa-mod-family-properties.ui						\
 	ofa-model-properties.ui								\
 	$(NULL)
 

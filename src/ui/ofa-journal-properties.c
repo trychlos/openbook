@@ -281,7 +281,7 @@ do_initialize_dialog( ofaJournalProperties *self, ofaMainWindow *main, ofoJourna
 		if( !jou_mnemo ){
 			title = g_strdup( _( "Defining a new journal" ));
 		} else {
-			title = g_strdup_printf( _( "Updating journal %s" ), jou_mnemo );
+			title = g_strdup_printf( _( "Updating « %s » journal" ), jou_mnemo );
 		}
 		gtk_window_set_title( GTK_WINDOW( priv->dialog ), title );
 
@@ -367,6 +367,10 @@ check_for_enable_dlg( ofaJournalProperties *self )
 			priv->label && g_utf8_strlen( priv->label, -1 ));
 }
 
+/*
+ * either creating a new journal (prev_mnemo is empty)
+ * or updating an existing one, and prev_mnemo may have been modified
+ */
 static gboolean
 do_update( ofaJournalProperties *self )
 {
@@ -384,7 +388,7 @@ do_update( ofaJournalProperties *self )
 
 	if( existing ){
 		/* c'est un nouveau journal, ou bien un journal existant dont on
-		 * veut changer le numéro: no luck, le nouveau mnemo de journal
+		 * veut changer le mnémonique: no luck, le nouveau mnemo de journal
 		 * existe déjà
 		 */
 		if( !prev_mnemo || g_utf8_collate( prev_mnemo, self->private->mnemo )){
@@ -414,7 +418,7 @@ do_update( ofaJournalProperties *self )
 				ofo_dossier_insert_journal( dossier, self->private->journal );
 	} else {
 		self->private->updated =
-				ofo_dossier_update_journal( dossier, self->private->journal, prev_mnemo );
+				ofo_dossier_update_journal( dossier, self->private->journal );
 	}
 
 	g_free( prev_mnemo );

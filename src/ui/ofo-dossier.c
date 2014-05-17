@@ -478,6 +478,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX ("
+			"	JOU_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern journal identifier',"
 			"	JOU_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Journal mnemonic',"
 			"	JOU_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Journal label',"
 			"	JOU_NOTES     VARCHAR(512)                COMMENT 'Journal notes',"
@@ -522,10 +523,9 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES ("
 			"	MOD_ID        INTEGER NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'Internal model identifier',"
-			"	MOD_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Model mnemonic',"
+			"	MOD_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Model mnemonic',"
 			"	MOD_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Model label',"
-			"	MOD_JOU_ID    VARCHAR(3)                  COMMENT 'Model journal',"
-			"	MOD_FAM_ID    INTEGER                     COMMENT 'Model category identifier',"
+			"	MOD_JOU_ID    INTEGER                     COMMENT 'Model journal',"
 			"	MOD_NOTES     VARCHAR(512)                COMMENT 'Model notes',"
 			"	MOD_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	MOD_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
@@ -980,32 +980,23 @@ ofo_dossier_insert_journal( ofoDossier *dossier, ofoJournal *journal )
 
 /**
  * ofo_dossier_update_journal:
- *
- * we deal here with an update of publicly modifiable journal properties
- * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_dossier_update_journal( ofoDossier *dossier, ofoJournal *journal, const gchar *prev_mnemo )
+ofo_dossier_update_journal( ofoDossier *dossier, ofoJournal *journal )
 {
 	gboolean ok;
-	const gchar *new_mnemo;
 	GList *set;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
-	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
 
 	ok = FALSE;
 
-	if( ofo_journal_update( journal, dossier->private->sgbd, dossier->private->userid, prev_mnemo )){
+	if( ofo_journal_update( journal, dossier->private->sgbd, dossier->private->userid )){
 
-		new_mnemo = ofo_journal_get_mnemo( journal );
-
-		if( g_utf8_collate( new_mnemo, prev_mnemo )){
-			set = g_list_remove( dossier->private->journals, journal );
-			set = g_list_insert_sorted( set, journal, ( GCompareFunc ) journals_cmp );
-			dossier->private->journals = set;
-		}
+		set = g_list_remove( dossier->private->journals, journal );
+		set = g_list_insert_sorted( set, journal, ( GCompareFunc ) journals_cmp );
+		dossier->private->journals = set;
 
 		ok = TRUE;
 	}

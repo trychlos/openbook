@@ -82,13 +82,12 @@
                 </child>
                 <child>
                   <object class="GtkEntry" id="p1-mnemo">
-                    <property name="width_request">40</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="halign">start</property>
                     <property name="max_length">3</property>
                     <property name="invisible_char">●</property>
-                    <property name="width_chars">0</property>
+                    <property name="width_chars">4</property>
                     <property name="caps_lock_warning">False</property>
                   </object>
                   <packing>
@@ -118,7 +117,9 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="hexpand">True</property>
+                    <property name="max_length">80</property>
                     <property name="invisible_char">●</property>
+                    <property name="width_chars">40</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>

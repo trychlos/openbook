@@ -75,7 +75,7 @@ void         ofo_model_dump_set     ( GList *chart );
 gint         ofo_model_get_id       ( const ofoModel *model );
 const gchar *ofo_model_get_mnemo    ( const ofoModel *model );
 const gchar *ofo_model_get_label    ( const ofoModel *model );
-const gchar *ofo_model_get_journal  ( const ofoModel *model );
+gint         ofo_model_get_journal  ( const ofoModel *model );
 const gchar *ofo_model_get_notes    ( const ofoModel *model );
 
 gint         ofo_model_get_count    ( const ofoModel *model );
@@ -83,7 +83,7 @@ gint         ofo_model_get_count    ( const ofoModel *model );
 void         ofo_model_set_id       ( ofoModel *model, gint id );
 void         ofo_model_set_mnemo    ( ofoModel *model, const gchar *mnemo );
 void         ofo_model_set_label    ( ofoModel *model, const gchar *label );
-void         ofo_model_set_journal  ( ofoModel *model, const gchar *journal );
+void         ofo_model_set_journal  ( ofoModel *model, gint journal );
 void         ofo_model_set_notes    ( ofoModel *model, const gchar *notes );
 void         ofo_model_set_maj_user ( ofoModel *model, const gchar *user );
 void         ofo_model_set_maj_stamp( ofoModel *model, const GTimeVal *stamp );

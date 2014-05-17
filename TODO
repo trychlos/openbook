@@ -106,7 +106,12 @@
   52 2014- 5-17 change the title of the pages of the models notebook
                 when the label of a journal is changed
 
-  53
+  53 2014- 5-17 on pages which embed a notebook, one should reset
+                button sensititviy when switching the page
+                because the on_selection_changed may not be triggered,
+                e.g. if the list is empty
+
+  54
 
 -----------------------------------------------------------------------
  DONE

@@ -277,7 +277,7 @@ do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise 
 		if( !mnemo ){
 			title = g_strdup( _( "Defining a new devise" ));
 		} else {
-			title = g_strdup_printf( _( "Updating devise %s" ), mnemo );
+			title = g_strdup_printf( _( "Updating « %s » devise" ), mnemo );
 		}
 		gtk_window_set_title( GTK_WINDOW( priv->dialog ), title );
 

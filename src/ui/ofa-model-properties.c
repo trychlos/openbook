@@ -59,7 +59,7 @@ struct _ofaModelPropertiesPrivate {
 	 */
 	gchar         *mnemo;
 	gchar         *label;
-	gchar         *journal;				/* journal mnemo */
+	gint           journal;				/* journal id */
 	gchar         *maj_user;
 	GTimeVal       maj_stamp;
 };
@@ -67,8 +67,9 @@ struct _ofaModelPropertiesPrivate {
 /* column ordering in the journal combobox
  */
 enum {
-	JOU_COL_MNEMO = 0,
-	JOU_COL_LABEL,
+	JOU_COL_ID = 0,
+	JOU_COL_MNEMO,
+	/*JOU_COL_LABEL,*/
 	JOU_N_COLUMNS
 };
 
@@ -205,7 +206,6 @@ instance_dispose( GObject *window )
 
 		g_free( priv->mnemo );
 		g_free( priv->label );
-		g_free( priv->journal );
 		g_free( priv->maj_user );
 
 		gtk_widget_destroy( GTK_WIDGET( priv->dialog ));
@@ -398,7 +398,7 @@ init_dialog_journal( ofaModelProperties *self )
 
 	priv = self->private;
 
-	priv->journal = g_strdup( ofo_model_get_journal( priv->model ));
+	priv->journal = ofo_model_get_journal( priv->model );
 	combo = GTK_COMBO_BOX( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-journal" ));
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
@@ -411,9 +411,9 @@ init_dialog_journal( ofaModelProperties *self )
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_MNEMO );
 
-	text_cell = gtk_cell_renderer_text_new();
+	/*text_cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_LABEL );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_LABEL );*/
 
 	dossier = ofa_main_window_get_dossier( priv->main_window );
 	set = ofo_dossier_get_journals_set( dossier );
@@ -425,11 +425,11 @@ init_dialog_journal( ofaModelProperties *self )
 		gtk_list_store_set(
 				GTK_LIST_STORE( tmodel ),
 				&iter,
+				JOU_COL_ID,    ofo_journal_get_id( journal ),
 				JOU_COL_MNEMO, ofo_journal_get_mnemo( journal ),
-				JOU_COL_LABEL, ofo_journal_get_label( journal ),
+				/*JOU_COL_LABEL, ofo_journal_get_label( journal ),*/
 				-1 );
-		if( priv->journal &&
-				g_utf8_collate( priv->journal, ofo_journal_get_mnemo( journal ))){
+		if( priv->journal == ofo_journal_get_id( journal )){
 			idx = i;
 		}
 	}
@@ -649,9 +649,8 @@ on_journal_changed( GtkComboBox *box, ofaModelProperties *self )
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 		tmodel = gtk_combo_box_get_model( box );
-		g_free( self->private->journal );
-		gtk_tree_model_get( tmodel, &iter, JOU_COL_MNEMO, &self->private->journal, -1 );
-		g_debug( "%s: journal changed to %s", thisfn, self->private->journal );
+		gtk_tree_model_get( tmodel, &iter, JOU_COL_ID, &self->private->journal, -1 );
+		g_debug( "%s: journal changed to %d", thisfn, self->private->journal );
 	}
 
 	check_for_enable_dlg( self );
@@ -685,7 +684,8 @@ check_for_enable_dlg( ofaModelProperties *self )
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
 	gtk_widget_set_sensitive( button,
 			priv->mnemo && g_utf8_strlen( priv->mnemo, -1 ) &&
-			priv->label && g_utf8_strlen( priv->label, -1 ));
+			priv->label && g_utf8_strlen( priv->label, -1 ) &&
+			priv->journal > 0 );
 }
 
 static gboolean

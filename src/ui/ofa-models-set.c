@@ -88,8 +88,8 @@ static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint n
 static GtkWidget *setup_models_view( ofaModelsSet *self );
 static GtkWidget *setup_buttons_box( ofaModelsSet *self );
 static void       setup_first_selection( ofaModelsSet *self );
-static GtkWidget *notebook_create_page( ofaModelsSet *self, GtkNotebook *book, const gchar *jou_mnemo, const gchar *jou_label, gint position );
-static GtkWidget *notebook_find_page( ofaModelsSet *self, const gchar *jou_mnemo );
+static GtkWidget *notebook_create_page( ofaModelsSet *self, GtkNotebook *book, gint jou_id, const gchar *jou_label, gint position );
+static GtkWidget *notebook_find_page( ofaModelsSet *self, gint jou_id );
 static void       store_set_model( GtkTreeModel *model, GtkTreeIter *iter, const ofoModel *ofomodel );
 static void       on_model_selected( GtkTreeSelection *selection, ofaModelsSet *self );
 static void       on_new_model( GtkButton *button, ofaModelsSet *self );
@@ -294,7 +294,7 @@ setup_models_view( ofaModelsSet *self )
 	GList *jouset, *ijou;
 	GList *models, *imod;
 	ofoModel *ofomodel;
-	const gchar *jou_mnemo;
+	gint jou_id;
 	GtkWidget *page;
 	GtkTreeView *view;
 	GtkTreeModel *model;
@@ -309,7 +309,7 @@ setup_models_view( ofaModelsSet *self )
 
 	for( ijou=jouset ; ijou ; ijou=ijou->next ){
 		notebook_create_page( self, book,
-				ofo_journal_get_mnemo( OFO_JOURNAL( ijou->data )),
+				ofo_journal_get_id( OFO_JOURNAL( ijou->data )),
 				ofo_journal_get_label( OFO_JOURNAL( ijou->data )),
 				-1 );
 	}
@@ -320,8 +320,8 @@ setup_models_view( ofaModelsSet *self )
 
 	for( imod=models ; imod ; imod=imod->next ){
 		ofomodel = OFO_MODEL( imod->data );
-		jou_mnemo = ofo_model_get_journal( ofomodel );
-		page = notebook_find_page( self, jou_mnemo );
+		jou_id = ofo_model_get_journal( ofomodel );
+		page = notebook_find_page( self, jou_id );
 
 		g_return_val_if_fail( page && GTK_IS_WIDGET( page ), NULL );
 
@@ -390,7 +390,7 @@ setup_first_selection( ofaModelsSet *self )
 }
 
 static GtkWidget *
-notebook_create_page( ofaModelsSet *self, GtkNotebook *book, const gchar *jou_mnemo, const gchar *jou_label, gint position )
+notebook_create_page( ofaModelsSet *self, GtkNotebook *book, gint jou_id, const gchar *jou_label, gint position )
 {
 	GtkScrolledWindow *scroll;
 	GtkLabel *label;
@@ -406,7 +406,7 @@ notebook_create_page( ofaModelsSet *self, GtkNotebook *book, const gchar *jou_mn
 	label = GTK_LABEL( gtk_label_new( jou_label ));
 	gtk_notebook_insert_page( book, GTK_WIDGET( scroll ), GTK_WIDGET( label ), position );
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( scroll ), TRUE );
-	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_FAMILY, g_strdup( jou_mnemo ));
+	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_FAMILY, GINT_TO_POINTER( jou_id ));
 
 	view = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_vexpand( GTK_WIDGET( view ), TRUE );
@@ -443,19 +443,19 @@ notebook_create_page( ofaModelsSet *self, GtkNotebook *book, const gchar *jou_mn
 }
 
 static GtkWidget *
-notebook_find_page( ofaModelsSet *self, const gchar *jou_mnemo )
+notebook_find_page( ofaModelsSet *self, gint jou_id )
 {
 	gint count, i;
 	GtkWidget *page, *found;
-	const gchar *page_jou;
+	gint page_jou;
 
 	count = gtk_notebook_get_n_pages( self->private->book );
 	found = NULL;
 
 	for( i=0 ; i<count ; ++i ){
 		page = gtk_notebook_get_nth_page( self->private->book, i );
-		page_jou = ( const gchar *) g_object_get_data( G_OBJECT( page ), DATA_PAGE_FAMILY );
-		if( !g_utf8_collate( page_jou, jou_mnemo )){
+		page_jou = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), DATA_PAGE_FAMILY ));
+		if( page_jou == jou_id ){
 			found = page;
 			break;
 		}
@@ -464,7 +464,7 @@ notebook_find_page( ofaModelsSet *self, const gchar *jou_mnemo )
 	if( !found ){
 		if( !self->private->others ){
 			self->private->others =
-					notebook_create_page( self, self->private->book, "", _( "Hors journaux" ), -1 );
+					notebook_create_page( self, self->private->book, -1, _( "Hors journaux" ), -1 );
 		}
 		found = self->private->others;
 	}
@@ -618,7 +618,7 @@ delete_confirmed( ofaModelsSet *self, ofoModel *model )
 static void
 insert_new_row( ofaModelsSet *self, ofoModel *ofomodel )
 {
-	const gchar *journal;
+	gint journal;
 	GtkWidget *page;
 	gint page_num;
 	GtkTreeView *view;
