@@ -57,12 +57,7 @@ struct _ofaAccountsChartPrivate {
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
 	GtkButton     *consult_btn;
-
-	/* selection
-	 */
-	ofoAccount    *selected;			/* current selection */
-	GtkTreeModel  *model;				/* the corresponding tree model */
-	GtkTreeIter   *iter;				/* a copy of the selected iter */
+	GtkTreeView   *current;				/* tree view of the current page */
 };
 
 /* column ordering in the selection listview
@@ -227,10 +222,6 @@ instance_dispose( GObject *instance )
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
-
-		if( priv->iter ){
-			gtk_tree_iter_free( priv->iter );
-		}
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
@@ -530,57 +521,16 @@ setup_first_selection( ofaAccountsChart *self )
 static void
 on_class_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsChart *self )
 {
-	static const gchar *thisfn = "ofa_accounts_chart_on_class_page_switched";
-	GtkTreeView *view;
-	GtkTreeSelection *select;
-	GtkTreeIter iter;
-
-	view = GTK_TREE_VIEW( g_object_get_data( G_OBJECT( wpage ), DATA_PAGE_VIEW ));
-	select = gtk_tree_view_get_selection( view );
-
-	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
-		g_debug( "%s: re-selecting current iter", thisfn );
-		/* select_iter is not enough to send the 'changed' signal
-		 * so unselect before, then re-select after */
-		/*gtk_tree_selection_unselect_iter( select, &iter );
-		gtk_tree_selection_select_iter( select, &iter );*/
-
-	} else {
-		g_debug( "%s: no selection", thisfn );
-	}
+	self->private->current =
+			GTK_TREE_VIEW( g_object_get_data( G_OBJECT( wpage ), DATA_PAGE_VIEW ));
 }
 
 static void
 on_account_selected( GtkTreeSelection *selection, ofaAccountsChart *self )
 {
-	static const gchar *thisfn = "ofa_accounts_chart_on_account_selected";
-	GtkTreeIter iter;
-	GtkTreeModel *model;
-	ofoAccount *account;
 	gboolean select_ok;
 
-	select_ok = FALSE;
-
-	if( self->private->selected ){
-		self->private->selected = NULL;
-		self->private->model = NULL;
-		gtk_tree_iter_free( self->private->iter );
-	}
-
-	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-
-		gtk_tree_model_get( model, &iter, COL_OBJECT, &account, -1 );
-		g_return_if_fail( OFO_IS_ACCOUNT( account ));
-		g_debug( "%s: selecting %s - %s",
-				thisfn, ofo_account_get_number( account ), ofo_account_get_label( account ));
-
-		select_ok = TRUE;
-		self->private->selected = account;
-		self->private->model = model;
-		self->private->iter = gtk_tree_iter_copy( &iter );
-
-		g_object_unref( account );
-	}
+	select_ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
 
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
@@ -610,35 +560,41 @@ static void
 on_update_account( GtkButton *button, ofaAccountsChart *self )
 {
 	static const gchar *thisfn = "ofa_accounts_chart_on_update_account";
+	GtkTreeSelection *select;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	ofoAccount *account;
 	gchar *prev_number;
 	const gchar *new_number;
-	ofoAccount *account;
-	ofaMainWindow *main_window;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
-	g_return_if_fail( OFO_IS_ACCOUNT( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	account = self->private->selected;
-	prev_number = g_strdup( ofo_account_get_number( account ));
-	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
+	select = gtk_tree_view_get_selection( self->private->current );
+	if( gtk_tree_selection_get_selected( select, &model, &iter )){
 
-	if( ofa_account_properties_run( main_window, account )){
+		gtk_tree_model_get( model, &iter, COL_OBJECT, &account, -1 );
+		g_object_unref( account );
 
-		new_number = ofo_account_get_number( account );
-		if( g_utf8_collate( prev_number, new_number )){
-			g_return_if_fail( self->private->selected );
-			gtk_list_store_remove( GTK_LIST_STORE( self->private->model ), self->private->iter );
-			insert_new_row( self, account );
+		prev_number = g_strdup( ofo_account_get_number( account ));
 
-		} else {
-			g_return_if_fail( self->private->selected );
-			store_set_account( self->private->model, self->private->iter, self->private->selected );
+		if( ofa_account_properties_run(
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), account )){
+
+			new_number = ofo_account_get_number( account );
+
+			if( g_utf8_collate( prev_number, new_number )){
+				gtk_list_store_remove( GTK_LIST_STORE( model ), &iter );
+				insert_new_row( self, account );
+
+			} else {
+				store_set_account( model, &iter, account );
+			}
 		}
-	}
 
-	g_free( prev_number );
+		g_free( prev_number );
+	}
 }
 
 /*
@@ -649,44 +605,45 @@ static void
 on_delete_account( GtkButton *button, ofaAccountsChart *self )
 {
 	static const gchar *thisfn = "ofa_accounts_chart_on_delete_account";
-	ofoAccount *account;
+	GtkTreeSelection *select;
 	GtkTreeModel *model;
-	GtkTreeIter *iter;
+	GtkTreeIter iter;
+	ofoAccount *account;
 	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
-	g_return_if_fail( OFO_IS_ACCOUNT( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	account = self->private->selected;
-	model = self->private->model;
-	iter = gtk_tree_iter_copy( self->private->iter );
+	select = gtk_tree_view_get_selection( self->private->current );
+	if( gtk_tree_selection_get_selected( select, &model, &iter )){
 
-	if( ofo_account_get_deb_mnt( account ) ||
-			ofo_account_get_cre_mnt( account ) ||
-			ofo_account_get_bro_deb_mnt( account ) ||
-			ofo_account_get_bro_cre_mnt( account )) {
+		gtk_tree_model_get( model, &iter, COL_OBJECT, &account, -1 );
+		g_object_unref( account );
 
-		error_undeletable( self, account );
-		return;
+		if( ofo_account_get_deb_mnt( account ) ||
+				ofo_account_get_cre_mnt( account ) ||
+				ofo_account_get_bro_deb_mnt( account ) ||
+				ofo_account_get_bro_cre_mnt( account )) {
+
+			error_undeletable( self, account );
+			return;
+		}
+
+		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+
+		if( delete_confirmed( self, account ) &&
+				ofo_dossier_delete_account( dossier, account )){
+
+			/* update our chart of accounts */
+			ofa_main_page_set_dataset(
+					OFA_MAIN_PAGE( self ), ofo_dossier_get_accounts_chart( dossier ));
+
+			/* remove the row from the model
+			 * this will cause an automatic new selection */
+			gtk_list_store_remove( GTK_LIST_STORE( model ), &iter );
+		}
 	}
-
-	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-
-	if( delete_confirmed( self, account ) &&
-			ofo_dossier_delete_account( dossier, account )){
-
-		/* update our chart of accounts */
-		ofa_main_page_set_dataset(
-				OFA_MAIN_PAGE( self ), ofo_dossier_get_accounts_chart( dossier ));
-
-		/* remove the row from the model
-		 * this will cause an automatic new selection */
-		gtk_list_store_remove( GTK_LIST_STORE( model ), iter );
-	}
-
-	gtk_tree_iter_free( iter );
 }
 
 static void
@@ -739,7 +696,6 @@ on_view_entries( GtkButton *button, ofaAccountsChart *self )
 	static const gchar *thisfn = "ofa_accounts_chart_on_view_entries";
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
-	g_return_if_fail( OFO_IS_ACCOUNT( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 }
