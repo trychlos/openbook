@@ -34,13 +34,13 @@
 #include "ui/my-utils.h"
 #include "ui/ofo-journal.h"
 
-/* private class data
+/* priv class data
  */
 struct _ofoJournalClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
-/* private instance data
+/* priv instance data
  */
 struct _ofoJournalPrivate {
 	gboolean dispose_has_run;
@@ -63,136 +63,77 @@ struct _ofoJournalPrivate {
 	GDate    cloture;
 };
 
-static ofoBaseClass *st_parent_class  = NULL;
+G_DEFINE_TYPE( ofoJournal, ofo_journal, OFO_TYPE_BASE )
 
-static GType  register_type( void );
-static void   class_init( ofoJournalClass *klass );
-static void   instance_init( GTypeInstance *instance, gpointer klass );
-static void   instance_dispose( GObject *instance );
-static void   instance_finalize( GObject *instance );
-
-GType
-ofo_journal_get_type( void )
-{
-	static GType st_type = 0;
-
-	if( !st_type ){
-		st_type = register_type();
-	}
-
-	return( st_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_journal_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoJournalClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofoJournal ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoJournal", &info, 0 );
-
-	return( type );
-}
+#define OFO_JOURNAL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_JOURNAL, ofoJournalPrivate))
 
 static void
-class_init( ofoJournalClass *klass )
+ofo_journal_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_journal_class_init";
-	GObjectClass *object_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofoJournalClassPrivate, 1 );
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofo_journal_instance_init";
+	static const gchar *thisfn = "ofo_journal_finalize";
 	ofoJournal *self;
 
-	g_return_if_fail( OFO_IS_JOURNAL( instance ));
-
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	self = OFO_JOURNAL( instance );
 
-	self->private = g_new0( ofoJournalPrivate, 1 );
+	g_free( self->priv->mnemo );
+	g_free( self->priv->label );
+	g_free( self->priv->notes );
+	g_free( self->priv->maj_user );
 
-	self->private->dispose_has_run = FALSE;
-
-	self->private->id = -1;
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_journal_parent_class )->finalize( instance );
 }
 
 static void
-instance_dispose( GObject *instance )
+ofo_journal_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_journal_instance_dispose";
-	ofoJournalPrivate *priv;
+	static const gchar *thisfn = "ofo_journal_dispose";
+	ofoJournal *self;
 
-	g_return_if_fail( OFO_IS_JOURNAL( instance ));
+	self = OFO_JOURNAL( instance );
 
-	priv = ( OFO_JOURNAL( instance ))->private;
-
-	if( !priv->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: instance=%p (%s): %s - %s",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-				priv->mnemo, priv->label );
+				self->priv->mnemo, self->priv->label );
 
-		priv->dispose_has_run = TRUE;
-
-		g_free( priv->mnemo );
-		g_free( priv->label );
-		g_free( priv->notes );
-		g_free( priv->maj_user );
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
+		self->priv->dispose_has_run = TRUE;
 	}
+
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_journal_parent_class )->dispose( instance );
 }
 
 static void
-instance_finalize( GObject *instance )
+ofo_journal_init( ofoJournal *self )
 {
-	static const gchar *thisfn = "ofo_journal_instance_finalize";
-	ofoJournalPrivate *priv;
+	static const gchar *thisfn = "ofo_journal_init";
 
-	g_return_if_fail( OFO_IS_JOURNAL( instance ));
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	self->priv = OFO_JOURNAL_GET_PRIVATE( self );
 
-	priv = OFO_JOURNAL( instance )->private;
+	self->priv->dispose_has_run = FALSE;
 
-	g_free( priv );
+	self->priv->id = -1;
+}
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
+static void
+ofo_journal_class_init( ofoJournalClass *klass )
+{
+	static const gchar *thisfn = "ofo_journal_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = ofo_journal_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ofo_journal_finalize;
+
+	klass->priv = g_new0( ofoJournalClassPrivate, 1 );
 }
 
 /**
@@ -272,7 +213,7 @@ ofo_journal_dump_set( GList *set )
 	GList *ic;
 
 	for( ic=set ; ic ; ic=ic->next ){
-		priv = OFO_JOURNAL( ic->data )->private;
+		priv = OFO_JOURNAL( ic->data )->priv;
 		g_debug( "%s: journal %s - %s", thisfn, priv->mnemo, priv->label );
 	}
 }
@@ -285,9 +226,9 @@ ofo_journal_get_id( const ofoJournal *journal )
 {
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), -1 );
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		return( journal->private->id );
+		return( journal->priv->id );
 	}
 
 	return( -1 );
@@ -303,9 +244,9 @@ ofo_journal_get_mnemo( const ofoJournal *journal )
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		mnemo = journal->private->mnemo;
+		mnemo = journal->priv->mnemo;
 	}
 
 	return( mnemo );
@@ -321,9 +262,9 @@ ofo_journal_get_label( const ofoJournal *journal )
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		label = journal->private->label;
+		label = journal->priv->label;
 	}
 
 	return( label );
@@ -339,9 +280,9 @@ ofo_journal_get_notes( const ofoJournal *journal )
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		notes = journal->private->notes;
+		notes = journal->priv->notes;
 	}
 
 	return( notes );
@@ -359,9 +300,9 @@ ofo_journal_get_maxdate( const ofoJournal *journal )
 
 	date = NULL;
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		date = ( const GDate * ) &journal->private->maxdate;
+		date = ( const GDate * ) &journal->priv->maxdate;
 	}
 
 	return( date );
@@ -379,9 +320,9 @@ ofo_journal_get_cloture( const ofoJournal *journal )
 
 	date = NULL;
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		date = ( const GDate * ) &journal->private->cloture;
+		date = ( const GDate * ) &journal->priv->cloture;
 	}
 
 	return( date );
@@ -395,9 +336,9 @@ ofo_journal_set_id( ofoJournal *journal, gint id )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		journal->private->id = id;
+		journal->priv->id = id;
 	}
 }
 
@@ -409,9 +350,9 @@ ofo_journal_set_mnemo( ofoJournal *journal, const gchar *mnemo )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		journal->private->mnemo = g_strdup( mnemo );
+		journal->priv->mnemo = g_strdup( mnemo );
 	}
 }
 
@@ -423,9 +364,9 @@ ofo_journal_set_label( ofoJournal *journal, const gchar *label )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		journal->private->label = g_strdup( label );
+		journal->priv->label = g_strdup( label );
 	}
 }
 
@@ -437,9 +378,9 @@ ofo_journal_set_notes( ofoJournal *journal, const gchar *notes )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		journal->private->notes = g_strdup( notes );
+		journal->priv->notes = g_strdup( notes );
 	}
 }
 
@@ -451,9 +392,9 @@ ofo_journal_set_maj_user( ofoJournal *journal, const gchar *maj_user )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		journal->private->maj_user = g_strdup( maj_user );
+		journal->priv->maj_user = g_strdup( maj_user );
 	}
 }
 
@@ -465,9 +406,9 @@ ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *maj_stamp )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		memcpy( &journal->private->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+		memcpy( &journal->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -479,9 +420,9 @@ ofo_journal_set_maxdate( ofoJournal *journal, const GDate *date )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		memcpy( &journal->private->maxdate, date, sizeof( GDate ));
+		memcpy( &journal->priv->maxdate, date, sizeof( GDate ));
 	}
 }
 
@@ -493,9 +434,9 @@ ofo_journal_set_cloture( ofoJournal *journal, const GDate *date )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->private->dispose_has_run ){
+	if( !journal->priv->dispose_has_run ){
 
-		memcpy( &journal->private->cloture, date, sizeof( GDate ));
+		memcpy( &journal->priv->cloture, date, sizeof( GDate ));
 	}
 }
 

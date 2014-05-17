@@ -51,23 +51,23 @@ G_BEGIN_DECLS
 #define OFO_IS_JOURNAL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_JOURNAL ))
 #define OFO_JOURNAL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_JOURNAL, ofoJournalClass ))
 
-typedef struct _ofoJournalPrivate       ofoJournalPrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase            parent;
-	ofoJournalPrivate *private;
-}
-	ofoJournal;
-
 typedef struct _ofoJournalClassPrivate  ofoJournalClassPrivate;
 
 typedef struct {
 	/*< private >*/
 	ofoBaseClass            parent;
-	ofoJournalClassPrivate *private;
+	ofoJournalClassPrivate *priv;
 }
 	ofoJournalClass;
+
+typedef struct _ofoJournalPrivate       ofoJournalPrivate;
+
+typedef struct {
+	/*< private >*/
+	ofoBase            parent;
+	ofoJournalPrivate *priv;
+}
+	ofoJournal;
 
 GType        ofo_journal_get_type     ( void );
 
