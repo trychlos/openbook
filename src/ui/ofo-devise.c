@@ -53,6 +53,7 @@ struct _ofoDevisePrivate {
 
 	/* sgbd data
 	 */
+	gint     id;
 	gchar   *mnemo;
 	gchar   *label;
 	gchar   *symbol;
@@ -136,6 +137,8 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private = g_new0( ofoDevisePrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+
+	self->private->id = -1;
 }
 
 static void
@@ -218,7 +221,7 @@ ofo_devise_load_set( ofaSgbd *sgbd )
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
 	result = ofa_sgbd_query_ex( sgbd, NULL,
-			"SELECT DEV_CODE,DEV_LABEL,DEV_SYMBOL "
+			"SELECT DEV_ID,DEV_CODE,DEV_LABEL,DEV_SYMBOL "
 			"	FROM OFA_T_DEVISES "
 			"	ORDER BY DEV_CODE ASC" );
 
@@ -227,6 +230,8 @@ ofo_devise_load_set( ofaSgbd *sgbd )
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
 		devise = ofo_devise_new();
+		ofo_devise_set_id( devise, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
 		ofo_devise_set_mnemo( devise, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_devise_set_label( devise, ( gchar * ) icol->data );
@@ -255,6 +260,22 @@ ofo_devise_dump_set( GList *set )
 		priv = OFO_DEVISE( ic->data )->private;
 		g_debug( "%s: devise %s - %s", thisfn, priv->mnemo, priv->label );
 	}
+}
+
+/**
+ * ofo_devise_get_id:
+ */
+gint
+ofo_devise_get_id( const ofoDevise *devise )
+{
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), -1 );
+
+	if( !devise->private->dispose_has_run ){
+
+		return( devise->private->id );
+	}
+
+	return( -1 );
 }
 
 /**
@@ -306,6 +327,20 @@ ofo_devise_get_symbol( const ofoDevise *devise )
 }
 
 /**
+ * ofo_devise_set_id:
+ */
+void
+ofo_devise_set_id( ofoDevise *devise, gint id )
+{
+	g_return_if_fail( OFO_IS_DEVISE( devise ));
+
+	if( !devise->private->dispose_has_run ){
+
+		devise->private->id = id;
+	}
+}
+
+/**
  * ofo_devise_set_mnemo:
  */
 void
@@ -349,9 +384,6 @@ ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol )
 
 /**
  * ofo_devise_insert:
- *
- * we deal here with an update of publicly modifiable devise properties
- * so it is not needed to check the date of closing
  */
 gboolean
 ofo_devise_insert( ofoDevise *devise, ofaSgbd *sgbd )
@@ -360,6 +392,7 @@ ofo_devise_insert( ofoDevise *devise, ofaSgbd *sgbd )
 	gchar *label;
 	const gchar *symbol;
 	gboolean ok;
+	GSList *result, *icol;
 
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
 	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
@@ -384,7 +417,24 @@ ofo_devise_insert( ofoDevise *devise, ofaSgbd *sgbd )
 
 	query = g_string_append( query, ")" );
 
-	ok = ofa_sgbd_query( sgbd, NULL, query->str );
+	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+
+		g_string_printf( query,
+				"SELECT DEV_ID FROM OFA_T_DEVISES"
+				"	WHERE DEV_CODE='%s'",
+				ofo_devise_get_mnemo( devise ));
+
+		result = ofa_sgbd_query_ex( sgbd, NULL, query->str );
+
+		if( result ){
+			icol = ( GSList * ) result->data;
+			ofo_devise_set_id( devise, atoi(( gchar * ) icol->data ));
+
+			ofa_sgbd_free_result( result );
+
+			ok = TRUE;
+		}
+	}
 
 	g_string_free( query, TRUE );
 	g_free( label );

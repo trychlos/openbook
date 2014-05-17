@@ -635,8 +635,8 @@ ofo_model_insert( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
 
 		g_string_printf( query,
 				"SELECT MOD_ID FROM OFA_T_MODELES"
-				"	WHERE MOD_MNEMO='%s' AND MOD_MAJ_STAMP='%s'",
-				ofo_model_get_mnemo( model ), stamp );
+				"	WHERE MOD_MNEMO='%s'",
+				ofo_model_get_mnemo( model ));
 
 		result = ofa_sgbd_query_ex( sgbd, NULL, query->str );
 

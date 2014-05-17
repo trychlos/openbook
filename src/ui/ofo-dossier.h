@@ -91,7 +91,7 @@ gboolean      ofo_dossier_insert_account    ( ofoDossier *dossier, ofoAccount *a
 gboolean      ofo_dossier_update_account    ( ofoDossier *dossier, ofoAccount *account, const gchar *prev_number );
 gboolean      ofo_dossier_delete_account    ( ofoDossier *dossier, ofoAccount *account );
 
-ofoDevise    *ofo_dossier_get_devise        ( const ofoDossier *dossier, const gchar *number );
+ofoDevise    *ofo_dossier_get_devise        ( const ofoDossier *dossier, const gchar *code );
 GList        *ofo_dossier_get_devises_set   ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_devise     ( ofoDossier *dossier, ofoDevise *devise );
 gboolean      ofo_dossier_update_devise     ( ofoDossier *dossier, ofoDevise *devise );

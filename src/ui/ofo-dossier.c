@@ -434,9 +434,10 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
-				"DEV_CODE         VARCHAR(3)  NOT NULL UNIQUE COMMENT 'ISO-3A identifier of the currency',"
-				"DEV_LABEL        VARCHAR(80) NOT NULL        COMMENT 'Currency label',"
-				"DEV_SYMBOL       VARCHAR(3)  NOT NULL        COMMENT 'Label of the currency'"
+			"	DEV_ID INTEGER NOT NULL AUTO_INCREMENT UNIQUE COMMENT 'Internal identifier of the currency',"
+			"	DEV_CODE    VARCHAR(3) BINARY NOT NULL UNIQUE COMMENT 'ISO-3A identifier of the currency',"
+			"	DEV_LABEL        VARCHAR(80) NOT NULL        COMMENT 'Currency label',"
+			"	DEV_SYMBOL       VARCHAR(3)  NOT NULL        COMMENT 'Label of the currency'"
 			")" )){
 		return( FALSE );
 	}

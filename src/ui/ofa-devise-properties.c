@@ -286,11 +286,12 @@ do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise 
 		if( priv->mnemo ){
 			gtk_entry_set_text( entry, priv->mnemo );
 		}
-		if( mnemo ){
+		/*if( mnemo ){
 			gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
 		} else {
 			g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
-		}
+		}*/
+		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
 
 		priv->label = g_strdup( ofo_devise_get_label( devise ));
 		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-label" ));

@@ -543,8 +543,8 @@ ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 
 		g_string_printf( query,
 				"SELECT JOU_ID FROM OFA_T_JOURNAUX"
-				"	WHERE JOU_MNEMO='%s' AND JOU_MAJ_STAMP='%s'",
-				ofo_journal_get_mnemo( journal ), stamp );
+				"	WHERE JOU_MNEMO='%s'",
+				ofo_journal_get_mnemo( journal ));
 
 		result = ofa_sgbd_query_ex( sgbd, NULL, query->str );
 
