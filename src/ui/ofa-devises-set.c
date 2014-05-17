@@ -56,11 +56,6 @@ struct _ofaDevisesSetPrivate {
 	GtkTreeView   *view;				/* the treeview on the devises set */
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
-
-	/* selection
-	 */
-	ofoDevise    *selected;				/* current selection */
-	GtkTreeIter   *iter;				/* a copy of the selected iter */
 };
 
 /* column ordering in the selection listview
@@ -203,10 +198,6 @@ instance_dispose( GObject *instance )
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
-
-		if( priv->iter ){
-			gtk_tree_iter_free( priv->iter );
-		}
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
@@ -423,34 +414,9 @@ store_set_devise( GtkTreeModel *model, GtkTreeIter *iter, const ofoDevise *devis
 static void
 on_devise_selected( GtkTreeSelection *selection, ofaDevisesSet *self )
 {
-	static const gchar *thisfn = "ofa_devises_set_on_devise_selected";
 	gboolean select_ok;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	ofoDevise *devise;
 
-	select_ok = FALSE;
-
-	if( self->private->selected ){
-		self->private->selected = NULL;
-		gtk_tree_iter_free( self->private->iter );
-		self->private->iter = NULL;
-	}
-
-	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-
-		gtk_tree_model_get( model, &iter, COL_OBJECT, &devise, -1 );
-		g_return_if_fail( OFO_IS_DEVISE( devise ));
-
-		g_debug( "%s: selecting %s - %s",
-				thisfn, ofo_devise_get_mnemo( devise ), ofo_devise_get_label( devise ));
-
-		select_ok = TRUE;
-		self->private->selected = devise;
-		self->private->iter = gtk_tree_iter_copy( &iter );
-
-		g_object_unref( devise );
-	}
+	select_ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
 
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
@@ -479,22 +445,26 @@ static void
 on_update_devise( GtkButton *button, ofaDevisesSet *self )
 {
 	static const gchar *thisfn = "ofa_devises_set_on_update_devise";
+	GtkTreeSelection *select;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
 	ofoDevise *devise;
-	ofaMainWindow *main_window;
 
 	g_return_if_fail( OFA_IS_DEVISES_SET( self ));
-	g_return_if_fail( OFO_IS_DEVISE( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	devise = self->private->selected;
-	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
+	select = gtk_tree_view_get_selection( self->private->view );
+	if( gtk_tree_selection_get_selected( select, &model, &iter )){
 
-	if( ofa_devise_properties_run( main_window, devise )){
-			store_set_devise(
-					gtk_tree_view_get_model( self->private->view ),
-					self->private->iter,
-					devise );
+		gtk_tree_model_get( model, &iter, COL_OBJECT, &devise, -1 );
+		g_object_unref( devise );
+
+		if( ofa_devise_properties_run(
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), devise )){
+
+				store_set_devise( model, &iter, devise );
+		}
 	}
 }
 
@@ -505,27 +475,35 @@ static void
 on_delete_devise( GtkButton *button, ofaDevisesSet *self )
 {
 	static const gchar *thisfn = "ofa_devises_set_on_delete_devise";
+	GtkTreeSelection *select;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	ofoDevise *devise;
 	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_DEVISES_SET( self ));
-	g_return_if_fail( OFO_IS_DEVISE( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+	select = gtk_tree_view_get_selection( self->private->view );
+	if( gtk_tree_selection_get_selected( select, &model, &iter )){
 
-	if( delete_confirmed( self, self->private->selected ) &&
-			ofo_dossier_delete_devise( dossier, self->private->selected )){
+		gtk_tree_model_get( model, &iter, COL_OBJECT, &devise, -1 );
+		g_object_unref( devise );
 
-		/* update our set of devises */
-		ofa_main_page_set_dataset(
-				OFA_MAIN_PAGE( self ), ofo_dossier_get_devises_set( dossier ));
+		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
-		/* remove the row from the model
-		 * this will cause an automatic new selection */
-		gtk_list_store_remove(
-				GTK_LIST_STORE( gtk_tree_view_get_model( self->private->view )),
-				self->private->iter );
+		if( delete_confirmed( self, devise ) &&
+				ofo_dossier_delete_devise( dossier, devise )){
+
+			/* update our set of devises */
+			ofa_main_page_set_dataset(
+					OFA_MAIN_PAGE( self ), ofo_dossier_get_devises_set( dossier ));
+
+			/* remove the row from the model
+			 * this will cause an automatic new selection */
+			gtk_list_store_remove( GTK_LIST_STORE( model ), &iter );
+		}
 	}
 }
 
