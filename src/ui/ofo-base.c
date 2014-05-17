@@ -42,127 +42,49 @@ struct _ofoBasePrivate {
 	gboolean dispose_has_run;
 };
 
-static GObjectClass *st_parent_class  = NULL;
+G_DEFINE_TYPE( ofoBase, ofo_base, G_TYPE_OBJECT )
 
-static GType  register_type( void );
-static void   class_init( ofoBaseClass *klass );
-static void   instance_init( GTypeInstance *instance, gpointer klass );
-static void   instance_dispose( GObject *instance );
-static void   instance_finalize( GObject *instance );
+#define OFO_BASE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_BASE, ofoBasePrivate))
 
-GType
-ofo_base_get_type( void )
+static void
+ofo_base_finalize( GObject *instance )
 {
-	static GType st_type = 0;
+	/*ofoBase *self = OFO_BASE( instance );*/
 
-	if( !st_type ){
-		st_type = register_type();
-	}
+	/* free data here */
 
-	return( st_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_base_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoBaseClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofoBase ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( G_TYPE_OBJECT, "ofoBase", &info, 0 );
-
-	return( type );
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_base_parent_class )->finalize( instance );
 }
 
 static void
-class_init( ofoBaseClass *klass )
+ofo_base_dispose( GObject *instance )
+{
+	/*ofoBase *self = OFO_BASE( instance );*/
+
+	/* unref member objects here */
+
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_base_parent_class )->dispose( instance );
+}
+
+static void
+ofo_base_init( ofoBase *self )
+{
+	self->priv = OFO_BASE_GET_PRIVATE( self );
+
+	self->priv->dispose_has_run = FALSE;
+}
+
+static void
+ofo_base_class_init( ofoBaseClass *klass )
 {
 	static const gchar *thisfn = "ofo_base_class_init";
-	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	st_parent_class = g_type_class_peek_parent( klass );
+	G_OBJECT_CLASS( klass )->dispose = ofo_base_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ofo_base_finalize;
 
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofoBaseClassPrivate, 1 );
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	/*static const gchar *thisfn = "ofo_base_instance_init";*/
-	ofoBase *self;
-
-	g_return_if_fail( OFO_IS_BASE( instance ));
-
-	/*g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );*/
-
-	self = OFO_BASE( instance );
-
-	self->private = g_new0( ofoBasePrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-}
-
-static void
-instance_dispose( GObject *instance )
-{
-	/*static const gchar *thisfn = "ofo_base_instance_dispose";*/
-	ofoBasePrivate *priv;
-
-	g_return_if_fail( OFO_IS_BASE( instance ));
-
-	priv = ( OFO_BASE( instance ))->private;
-
-	if( !priv->dispose_has_run ){
-
-		/*g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));*/
-
-		priv->dispose_has_run = TRUE;
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
-	}
-}
-
-static void
-instance_finalize( GObject *instance )
-{
-	/*static const gchar *thisfn = "ofo_base_instance_finalize";*/
-	ofoBasePrivate *priv;
-
-	g_return_if_fail( OFO_IS_BASE( instance ));
-
-	/*g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));*/
-
-	priv = OFO_BASE( instance )->private;
-
-	g_free( priv );
-
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
+	klass->priv = g_new0( ofoBaseClassPrivate, 1 );
 }
