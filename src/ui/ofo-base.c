@@ -107,13 +107,13 @@ class_init( ofoBaseClass *klass )
 static void
 instance_init( GTypeInstance *instance, gpointer klass )
 {
-	static const gchar *thisfn = "ofo_base_instance_init";
+	/*static const gchar *thisfn = "ofo_base_instance_init";*/
 	ofoBase *self;
 
 	g_return_if_fail( OFO_IS_BASE( instance ));
 
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	/*g_debug( "%s: instance=%p (%s), klass=%p",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );*/
 
 	self = OFO_BASE( instance );
 
@@ -125,7 +125,7 @@ instance_init( GTypeInstance *instance, gpointer klass )
 static void
 instance_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_base_instance_dispose";
+	/*static const gchar *thisfn = "ofo_base_instance_dispose";*/
 	ofoBasePrivate *priv;
 
 	g_return_if_fail( OFO_IS_BASE( instance ));
@@ -134,8 +134,8 @@ instance_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		/*g_debug( "%s: instance=%p (%s)",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));*/
 
 		priv->dispose_has_run = TRUE;
 
@@ -149,12 +149,13 @@ instance_dispose( GObject *instance )
 static void
 instance_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_base_instance_finalize";
+	/*static const gchar *thisfn = "ofo_base_instance_finalize";*/
 	ofoBasePrivate *priv;
 
 	g_return_if_fail( OFO_IS_BASE( instance ));
 
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	/*g_debug( "%s: instance=%p (%s)",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));*/
 
 	priv = OFO_BASE( instance )->private;
 

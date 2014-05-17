@@ -232,7 +232,7 @@ ofo_devise_load_set( ofaSgbd *sgbd )
 		devise = ofo_devise_new();
 		ofo_devise_set_id( devise, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
-		ofo_devise_set_mnemo( devise, ( gchar * ) icol->data );
+		ofo_devise_set_code( devise, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_devise_set_label( devise, ( gchar * ) icol->data );
 		icol = icol->next;
@@ -279,10 +279,10 @@ ofo_devise_get_id( const ofoDevise *devise )
 }
 
 /**
- * ofo_devise_get_mnemo:
+ * ofo_devise_get_code:
  */
 const gchar *
-ofo_devise_get_mnemo( const ofoDevise *devise )
+ofo_devise_get_code( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
@@ -341,10 +341,10 @@ ofo_devise_set_id( ofoDevise *devise, gint id )
 }
 
 /**
- * ofo_devise_set_mnemo:
+ * ofo_devise_set_code:
  */
 void
-ofo_devise_set_mnemo( ofoDevise *devise, const gchar *mnemo )
+ofo_devise_set_code( ofoDevise *devise, const gchar *mnemo )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
@@ -406,7 +406,7 @@ ofo_devise_insert( ofoDevise *devise, ofaSgbd *sgbd )
 	g_string_append_printf( query,
 			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL)"
 			"	VALUES ('%s','%s',",
-			ofo_devise_get_mnemo( devise ),
+			ofo_devise_get_code( devise ),
 			label );
 
 	if( symbol && g_utf8_strlen( symbol, -1 )){
@@ -422,7 +422,7 @@ ofo_devise_insert( ofoDevise *devise, ofaSgbd *sgbd )
 		g_string_printf( query,
 				"SELECT DEV_ID FROM OFA_T_DEVISES"
 				"	WHERE DEV_CODE='%s'",
-				ofo_devise_get_mnemo( devise ));
+				ofo_devise_get_code( devise ));
 
 		result = ofa_sgbd_query_ex( sgbd, NULL, query->str );
 
@@ -474,7 +474,7 @@ ofo_devise_update( ofoDevise *devise, ofaSgbd *sgbd )
 	}
 
 	g_string_append_printf( query,
-			"	WHERE DEV_CODE='%s'", ofo_devise_get_mnemo( devise ));
+			"	WHERE DEV_CODE='%s'", ofo_devise_get_code( devise ));
 
 	ok = ofa_sgbd_query( sgbd, NULL, query->str );
 
@@ -499,7 +499,7 @@ ofo_devise_delete( ofoDevise *devise, ofaSgbd *sgbd )
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_DEVISES"
 			"	WHERE DEV_CODE='%s'",
-					ofo_devise_get_mnemo( devise ));
+					ofo_devise_get_code( devise ));
 
 	ok = ofa_sgbd_query( sgbd, NULL, query );
 

@@ -66,26 +66,26 @@ typedef struct {
 }
 	ofoDeviseClass;
 
-GType        ofo_devise_get_type     ( void );
+GType        ofo_devise_get_type  ( void );
 
-ofoDevise   *ofo_devise_new          ( void );
+ofoDevise   *ofo_devise_new       ( void );
 
-GList       *ofo_devise_load_set     ( ofaSgbd *sgbd );
-void         ofo_devise_dump_set     ( GList *chart );
+GList       *ofo_devise_load_set  ( ofaSgbd *sgbd );
+void         ofo_devise_dump_set  ( GList *chart );
 
-gint         ofo_devise_get_id       ( const ofoDevise *devise );
-const gchar *ofo_devise_get_mnemo    ( const ofoDevise *devise );
-const gchar *ofo_devise_get_label    ( const ofoDevise *devise );
-const gchar *ofo_devise_get_symbol   ( const ofoDevise *devise );
+gint         ofo_devise_get_id    ( const ofoDevise *devise );
+const gchar *ofo_devise_get_code  ( const ofoDevise *devise );
+const gchar *ofo_devise_get_label ( const ofoDevise *devise );
+const gchar *ofo_devise_get_symbol( const ofoDevise *devise );
 
-void         ofo_devise_set_id       ( ofoDevise *devise, gint id );
-void         ofo_devise_set_mnemo    ( ofoDevise *devise, const gchar *code );
-void         ofo_devise_set_label    ( ofoDevise *devise, const gchar *label );
-void         ofo_devise_set_symbol   ( ofoDevise *devise, const gchar *symbol );
+void         ofo_devise_set_id    ( ofoDevise *devise, gint id );
+void         ofo_devise_set_code  ( ofoDevise *devise, const gchar *code );
+void         ofo_devise_set_label ( ofoDevise *devise, const gchar *label );
+void         ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol );
 
-gboolean     ofo_devise_insert       ( ofoDevise *devise, ofaSgbd *sgbd );
-gboolean     ofo_devise_update       ( ofoDevise *devise, ofaSgbd *sgbd );
-gboolean     ofo_devise_delete       ( ofoDevise *devise, ofaSgbd *sgbd );
+gboolean     ofo_devise_insert    ( ofoDevise *devise, ofaSgbd *sgbd );
+gboolean     ofo_devise_update    ( ofoDevise *devise, ofaSgbd *sgbd );
+gboolean     ofo_devise_delete    ( ofoDevise *devise, ofaSgbd *sgbd );
 
 G_END_DECLS
 

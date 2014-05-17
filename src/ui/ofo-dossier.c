@@ -456,7 +456,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
 				"CPT_NUMBER       VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
 				"CPT_LABEL        VARCHAR(80)   NOT NULL        COMMENT 'Account label',"
-				"CPT_DEV          CHAR(3)       NOT NULL        COMMENT 'ISO 3A currency of the account',"
+				"CPT_DEV_ID       INTEGER                       COMMENT 'Identifier of the currency of the account',"
 				"CPT_NOTES        VARCHAR(512)                  COMMENT 'Account notes',"
 				"CPT_TYPE         CHAR(1)                       COMMENT 'Account type, values R/D',"
 				"CPT_MAJ_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
@@ -889,13 +889,13 @@ devises_set_free( GList *set )
 static gint
 devises_cmp( const ofoDevise *a, const ofoDevise *b )
 {
-	return( g_utf8_collate( ofo_devise_get_mnemo( a ), ofo_devise_get_mnemo( b )));
+	return( g_utf8_collate( ofo_devise_get_code( a ), ofo_devise_get_code( b )));
 }
 
 static gint
 devises_find( const ofoDevise *a, const gchar *searched )
 {
-	return( g_utf8_collate( ofo_devise_get_mnemo( a ), searched ));
+	return( g_utf8_collate( ofo_devise_get_code( a ), searched ));
 }
 
 /**

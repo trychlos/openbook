@@ -55,7 +55,7 @@ struct _ofoAccountPrivate {
 	 */
 	gchar   *number;
 	gchar   *label;
-	gchar   *devise;
+	gint     devise;
 	gchar   *notes;
 	gchar   *type;
 	gchar   *maj_user;
@@ -152,6 +152,8 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private = g_new0( ofoAccountPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+
+	self->private->devise = -1;
 }
 
 static void
@@ -174,7 +176,6 @@ instance_dispose( GObject *instance )
 
 		g_free( priv->number );
 		g_free( priv->label );
-		g_free( priv->devise );
 		g_free( priv->type );
 		g_free( priv->notes );
 		g_free( priv->maj_user );
@@ -237,7 +238,7 @@ ofo_account_load_chart( ofaSgbd *sgbd )
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
 	result = ofa_sgbd_query_ex( sgbd, NULL,
-			"SELECT CPT_NUMBER,CPT_LABEL,CPT_DEV,CPT_NOTES,CPT_TYPE,"
+			"SELECT CPT_NUMBER,CPT_LABEL,CPT_DEV_ID,CPT_NOTES,CPT_TYPE,"
 			"	CPT_MAJ_USER,CPT_MAJ_STAMP,"
 			"	CPT_DEB_MNT,CPT_DEB_ECR,CPT_DEB_DATE,"
 			"	CPT_CRE_MNT,CPT_CRE_ECR,CPT_CRE_DATE,"
@@ -255,7 +256,9 @@ ofo_account_load_chart( ofaSgbd *sgbd )
 		icol = icol->next;
 		ofo_account_set_label( account, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_account_set_devise( account, ( gchar * ) icol->data );
+		if( icol->data ){
+			ofo_account_set_devise( account, atoi(( gchar * ) icol->data ));
+		}
 		icol = icol->next;
 		ofo_account_set_notes( account, ( gchar * ) icol->data );
 		icol = icol->next;
@@ -392,19 +395,17 @@ ofo_account_get_label( const ofoAccount *account )
 /**
  * ofo_account_get_devise:
  */
-const gchar *
+gint
 ofo_account_get_devise( const ofoAccount *account )
 {
-	const gchar *devise = NULL;
-
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
+	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), -1 );
 
 	if( !account->private->dispose_has_run ){
 
-		devise = account->private->devise;
+		return( account->private->devise );
 	}
 
-	return( devise );
+	return( -1 );
 }
 
 /**
@@ -693,13 +694,15 @@ ofo_account_is_root( const ofoAccount *account )
  * ofo_account_is_valid_data:
  */
 gboolean
-ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar *devise, const gchar *type )
+ofo_account_is_valid_data( const gchar *number, const gchar *label, gint devise, const gchar *type )
 {
 	gunichar code;
 	gint value;
 	gboolean is_root;
 
-	/* is account number valid ? */
+	/* is account number valid ?
+	 * must begin with a digit, and be at least two chars
+	 */
 	if( !number || g_utf8_strlen( number, -1 ) < 2 ){
 		return( FALSE );
 	}
@@ -719,7 +722,7 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 	is_root = ( type && !g_utf8_collate( type, "R" ));
 
 	/* devise must be set for detail account */
-	if( !is_root && ( !devise || !g_utf8_strlen( devise, -1 ))){
+	if( !is_root && devise <= 0 ){
 		return( FALSE );
 	}
 
@@ -758,13 +761,13 @@ ofo_account_set_label( ofoAccount *account, const gchar *label )
  * ofo_account_set_devise:
  */
 void
-ofo_account_set_devise( ofoAccount *account, const gchar *devise )
+ofo_account_set_devise( ofoAccount *account, gint devise )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
 	if( !account->private->dispose_has_run ){
 
-		account->private->devise = g_strdup( devise );
+		account->private->devise = devise;
 	}
 }
 
@@ -1017,7 +1020,7 @@ ofo_account_insert( ofoAccount *account, ofaSgbd *sgbd, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_COMPTES" );
 
 	g_string_append_printf( query,
-			"	(CPT_NUMBER, CPT_LABEL, CPT_TYPE, CPT_NOTES, CPT_DEV, CPT_MAJ_USER, CPT_MAJ_STAMP)"
+			"	(CPT_NUMBER, CPT_LABEL, CPT_TYPE, CPT_NOTES, CPT_DEV_ID, CPT_MAJ_USER, CPT_MAJ_STAMP)"
 			"	VALUES ('%s','%s','%s',",
 					ofo_account_get_number( account ),
 					label,
@@ -1029,10 +1032,13 @@ ofo_account_insert( ofoAccount *account, ofaSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "'%s','%s','%s')",
-					ofo_account_get_devise( account ),
-					user,
-					stamp );
+	if( ofo_account_is_root( account )){
+		query = g_string_append( query, "NULL," );
+	} else {
+		g_string_append_printf( query, "%d,", ofo_account_get_devise( account ));
+	}
+
+	g_string_append_printf( query, "'%s','%s')", user, stamp );
 
 	if( ofa_sgbd_query( sgbd, NULL, query->str )){
 
@@ -1091,11 +1097,15 @@ ofo_account_update( ofoAccount *account, ofaSgbd *sgbd, const gchar *user, const
 		query = g_string_append( query, "CPT_NOTES=NULL," );
 	}
 
+	if( ofo_account_is_root( account )){
+		query = g_string_append( query, "CPT_DEV_ID=NULL," );
+	} else {
+		g_string_append_printf( query, "CPT_DEV_ID=%d,", ofo_account_get_devise( account ));
+	}
+
 	g_string_append_printf( query,
-			"	CPT_DEV='%s', "
 			"	CPT_MAJ_USER='%s',CPT_MAJ_STAMP='%s'"
 			"	WHERE CPT_NUMBER='%s'",
-					ofo_account_get_devise( account ),
 					user,
 					stamp,
 					prev_number );

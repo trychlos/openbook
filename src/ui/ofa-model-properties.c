@@ -650,7 +650,7 @@ on_journal_changed( GtkComboBox *box, ofaModelProperties *self )
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 		tmodel = gtk_combo_box_get_model( box );
 		gtk_tree_model_get( tmodel, &iter, JOU_COL_ID, &self->private->journal, -1 );
-		g_debug( "%s: journal changed to %d", thisfn, self->private->journal );
+		g_debug( "%s: journal changed to id=%d", thisfn, self->private->journal );
 	}
 
 	check_for_enable_dlg( self );

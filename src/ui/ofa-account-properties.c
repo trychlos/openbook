@@ -65,7 +65,7 @@ struct _ofaAccountPropertiesPrivate {
 	 */
 	gchar         *number;
 	gchar         *label;
-	gchar         *devise;
+	gint           devise;
 	gchar         *type;
 	gchar         *maj_user;
 	GTimeVal       maj_stamp;
@@ -86,22 +86,10 @@ struct _ofaAccountPropertiesPrivate {
 /* column ordering in the devise selection listview
  */
 enum {
-	COL_DEVISE = 0,
-	COL_SYMBOL,
+	COL_ID = 0,
+	COL_DEVISE,
 	COL_LABEL,
 	N_COLUMNS
-};
-
-typedef struct {
-	gchar *code;
-	gchar *symbol;
-	gchar *label;
-}
-	sDevise;
-
-static const sDevise st_devises[] = {
-		{ "EUR", "€", "Euro" },
-		{0,0,0}
 };
 
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-account-properties.ui";
@@ -216,7 +204,6 @@ instance_dispose( GObject *window )
 
 		g_free( priv->number );
 		g_free( priv->label );
-		g_free( priv->devise );
 		g_free( priv->type );
 		g_free( priv->maj_user );
 
@@ -307,6 +294,8 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 	GtkRadioButton *root_btn, *detail_btn;
 	GtkCellRenderer *text_cell;
 	gchar *notes;
+	ofoDossier *dossier;
+	GList *devset, *idev;
 
 	priv = self->private;
 	priv->main_window = main;
@@ -353,12 +342,12 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 		}
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 
-		priv->devise = g_strdup( ofo_account_get_devise( account ));
+		priv->devise = ofo_account_get_devise( account );
 		combo = GTK_COMBO_BOX( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-devise" ));
 
 		model = GTK_TREE_MODEL( gtk_list_store_new(
 				N_COLUMNS,
-				G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING ));
+				G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING ));
 		gtk_combo_box_set_model( combo, model );
 		g_object_unref( model );
 
@@ -368,31 +357,29 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 
 		text_cell = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", COL_SYMBOL );
-
-		text_cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
 		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", COL_LABEL );
 
+		dossier = ofa_main_window_get_dossier( main );
+		devset = ofo_dossier_get_devises_set( dossier );
+
 		idx = -1;
-		for( i=0 ; st_devises[i].code ; ++i ){
+		for( i=0, idev=devset ; idev ; ++i, idev=idev->next ){
 			gtk_list_store_append( GTK_LIST_STORE( model ), &iter );
 			gtk_list_store_set(
 					GTK_LIST_STORE( model ),
 					&iter,
-					COL_DEVISE, st_devises[i].code,
-					COL_SYMBOL, st_devises[i].symbol,
-					COL_LABEL,  st_devises[i].label,
+					COL_ID,     ofo_devise_get_id( OFO_DEVISE( idev->data )),
+					COL_DEVISE, ofo_devise_get_code( OFO_DEVISE( idev->data )),
+					COL_LABEL,  ofo_devise_get_label( OFO_DEVISE( idev->data )),
 					-1 );
-			if( priv->devise && !g_utf8_collate( priv->devise, st_devises[i].code )){
+			if( priv->devise == ofo_devise_get_id( OFO_DEVISE( idev->data ))){
 				idx = i;
 			}
 		}
 		g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_devise_changed ), self );
 		if( idx == -1 ){
-			idx = 0;
+			gtk_combo_box_set_active( combo, idx );
 		}
-		gtk_combo_box_set_active( combo, idx );
 
 		priv->type = g_strdup( ofo_account_get_type_account( account ));
 		root_btn = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-root-account" ));
@@ -581,13 +568,13 @@ static void
 on_devise_changed( GtkComboBox *box, ofaAccountProperties *self )
 {
 	static const gchar *thisfn = "ofa_account_properties_on_devise_changed";
-	gint idx;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
 
-	idx = gtk_combo_box_get_active( box );
-	if( idx != -1 ){
-		g_debug( "%s: setting account currency to %s", thisfn, st_devises[idx].code );
-		g_free( self->private->devise );
-		self->private->devise = g_strdup( st_devises[idx].code );
+	if( gtk_combo_box_get_active_iter( box, &iter )){
+		tmodel = gtk_combo_box_get_model( box );
+		gtk_tree_model_get( tmodel, &iter, COL_ID, &self->private->devise, -1 );
+		g_debug( "%s: devise changed to id=%d", thisfn, self->private->devise );
 	}
 
 	check_for_enable_dlg( self );
@@ -624,6 +611,7 @@ check_for_enable_dlg( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
 	gboolean vierge;
+	gboolean is_root;
 	GtkEntry *entry;
 	GtkComboBox *combo;
 	GtkRadioButton *root_btn, *detail_btn;
@@ -638,9 +626,7 @@ check_for_enable_dlg( ofaAccountProperties *self )
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-number" ));
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), vierge );
 
-	combo = GTK_COMBO_BOX( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-devise" ));
-	gtk_widget_set_sensitive( GTK_WIDGET( combo ), vierge );
-
+	is_root = ( priv->type && !g_utf8_collate( priv->type, "R" ));
 	root_btn = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-root-account" ));
 	detail_btn = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-detail-account" ));
 	if( priv->type && !g_utf8_collate( priv->type, "D" )){
@@ -650,6 +636,9 @@ check_for_enable_dlg( ofaAccountProperties *self )
 		gtk_widget_set_sensitive( GTK_WIDGET( root_btn ), TRUE );
 		gtk_widget_set_sensitive( GTK_WIDGET( detail_btn ), TRUE );
 	}
+
+	combo = GTK_COMBO_BOX( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-devise" ));
+	gtk_widget_set_sensitive( GTK_WIDGET( combo ), vierge && !is_root );
 
 	ok_enabled = ofo_account_is_valid_data( priv->number, priv->label, priv->devise, priv->type );
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );

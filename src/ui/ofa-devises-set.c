@@ -404,7 +404,7 @@ store_set_devise( GtkTreeModel *model, GtkTreeIter *iter, const ofoDevise *devis
 	gtk_list_store_set(
 			GTK_LIST_STORE( model ),
 			iter,
-			COL_MNEMO,  ofo_devise_get_mnemo( devise ),
+			COL_MNEMO,  ofo_devise_get_code( devise ),
 			COL_LABEL,  ofo_devise_get_label( devise ),
 			COL_SYMBOL, ofo_devise_get_symbol( devise ),
 			COL_OBJECT, devise,
@@ -514,7 +514,7 @@ delete_confirmed( ofaDevisesSet *self, ofoDevise *devise )
 	gboolean delete_ok;
 
 	msg = g_strdup_printf( _( "Etes-vous sûr de vouloir supprimer le devise '%s - %s' ?" ),
-			ofo_devise_get_mnemo( devise ),
+			ofo_devise_get_code( devise ),
 			ofo_devise_get_label( devise ));
 
 	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
@@ -544,7 +544,7 @@ insert_new_row( ofaDevisesSet *self, ofoDevise *devise )
 	model = gtk_tree_view_get_model( self->private->view );
 	iter_found = FALSE;
 	if( gtk_tree_model_get_iter_first( model, &iter )){
-		devise_mnemo = ofo_devise_get_mnemo( devise );
+		devise_mnemo = ofo_devise_get_code( devise );
 		while( !iter_found ){
 			gtk_tree_model_get_value( model, &iter, COL_MNEMO, &value );
 			mnemo = g_value_get_string( &value );

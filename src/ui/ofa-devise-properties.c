@@ -273,7 +273,7 @@ do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise 
 
 		/*gtk_window_set_transient_for( GTK_WINDOW( priv->dialog ), GTK_WINDOW( main ));*/
 
-		mnemo = ofo_devise_get_mnemo( devise );
+		mnemo = ofo_devise_get_code( devise );
 		if( !mnemo ){
 			title = g_strdup( _( "Defining a new devise" ));
 		} else {
@@ -281,7 +281,7 @@ do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise 
 		}
 		gtk_window_set_title( GTK_WINDOW( priv->dialog ), title );
 
-		priv->mnemo = g_strdup( ofo_devise_get_mnemo( devise ));
+		priv->mnemo = g_strdup( ofo_devise_get_code( devise ));
 		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-mnemo" ));
 		if( priv->mnemo ){
 			gtk_entry_set_text( entry, priv->mnemo );
@@ -373,7 +373,8 @@ check_for_enable_dlg( ofaDeviseProperties *self )
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
 	gtk_widget_set_sensitive( button,
 			priv->mnemo && g_utf8_strlen( priv->mnemo, -1 ) &&
-			priv->label && g_utf8_strlen( priv->label, -1 ));
+			priv->label && g_utf8_strlen( priv->label, -1 ) &&
+			priv->symbol && g_utf8_strlen( priv->symbol, -1 ));
 }
 
 static gboolean
@@ -385,7 +386,7 @@ do_update( ofaDeviseProperties *self )
 
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
 	existing = ofo_dossier_get_devise( dossier, self->private->mnemo );
-	prev_mnemo = ofo_devise_get_mnemo( self->private->devise );
+	prev_mnemo = ofo_devise_get_code( self->private->devise );
 
 	if( existing && !prev_mnemo ){
 		/* c'est une nouvelle devise: no luck, le nouveau code de devise
@@ -398,7 +399,7 @@ do_update( ofaDeviseProperties *self )
 	/* le nouveau code n'est pas encore utilisé,
 	 * ou bien il est déjà utilisé par ce même devise (n'a pas été modifié)
 	 */
-	ofo_devise_set_mnemo( self->private->devise, self->private->mnemo );
+	ofo_devise_set_code( self->private->devise, self->private->mnemo );
 	ofo_devise_set_label( self->private->devise, self->private->label );
 	ofo_devise_set_symbol( self->private->devise, self->private->symbol );
 
@@ -422,7 +423,7 @@ error_duplicate( ofaDeviseProperties *self, ofoDevise *existing )
 	msg = g_strdup_printf(
 				_( "Il est impossible de définir cette nouvelle devise "
 					"car son identifiant '%s' est déjà utilisé par la devise '%s'." ),
-				ofo_devise_get_mnemo( existing ),
+				ofo_devise_get_code( existing ),
 				ofo_devise_get_label( existing ));
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(

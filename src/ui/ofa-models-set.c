@@ -72,7 +72,7 @@ enum {
 
 /* data attached to each page of the model category notebook
  */
-#define DATA_PAGE_FAMILY                "data-page-family"
+#define DATA_PAGE_JOURNAL                "data-page-journal"
 #define DATA_PAGE_VIEW                  "data-page-treeview"
 
 static GObjectClass *st_parent_class = NULL;
@@ -406,7 +406,7 @@ notebook_create_page( ofaModelsSet *self, GtkNotebook *book, gint jou_id, const 
 	label = GTK_LABEL( gtk_label_new( jou_label ));
 	gtk_notebook_insert_page( book, GTK_WIDGET( scroll ), GTK_WIDGET( label ), position );
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( scroll ), TRUE );
-	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_FAMILY, GINT_TO_POINTER( jou_id ));
+	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_JOURNAL, GINT_TO_POINTER( jou_id ));
 
 	view = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_vexpand( GTK_WIDGET( view ), TRUE );
@@ -454,7 +454,7 @@ notebook_find_page( ofaModelsSet *self, gint jou_id )
 
 	for( i=0 ; i<count ; ++i ){
 		page = gtk_notebook_get_nth_page( self->private->book, i );
-		page_jou = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), DATA_PAGE_FAMILY ));
+		page_jou = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), DATA_PAGE_JOURNAL ));
 		if( page_jou == jou_id ){
 			found = page;
 			break;
