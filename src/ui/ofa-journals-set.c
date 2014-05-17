@@ -56,11 +56,6 @@ struct _ofaJournalsSetPrivate {
 	GtkTreeView   *view;				/* the treeview on the journals set */
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
-
-	/* selection
-	 */
-	ofoJournal    *selected;			/* current selection */
-	GtkTreeIter   *iter;				/* a copy of the selected iter */
 };
 
 /* column ordering in the selection listview
@@ -204,10 +199,6 @@ instance_dispose( GObject *instance )
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
-
-		if( priv->iter ){
-			gtk_tree_iter_free( priv->iter );
-		}
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
@@ -441,34 +432,9 @@ store_set_journal( GtkTreeModel *model, GtkTreeIter *iter, const ofoJournal *jou
 static void
 on_journal_selected( GtkTreeSelection *selection, ofaJournalsSet *self )
 {
-	static const gchar *thisfn = "ofa_journals_set_on_journal_selected";
 	gboolean select_ok;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	ofoJournal *journal;
 
-	select_ok = FALSE;
-
-	if( self->private->selected ){
-		self->private->selected = NULL;
-		gtk_tree_iter_free( self->private->iter );
-		self->private->iter = NULL;
-	}
-
-	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-
-		gtk_tree_model_get( model, &iter, COL_OBJECT, &journal, -1 );
-		g_return_if_fail( OFO_IS_JOURNAL( journal ));
-
-		g_debug( "%s: selecting %s - %s",
-				thisfn, ofo_journal_get_mnemo( journal ), ofo_journal_get_label( journal ));
-
-		select_ok = TRUE;
-		self->private->selected = journal;
-		self->private->iter = gtk_tree_iter_copy( &iter );
-
-		g_object_unref( journal );
-	}
+	select_ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
 
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
@@ -497,38 +463,40 @@ static void
 on_update_journal( GtkButton *button, ofaJournalsSet *self )
 {
 	static const gchar *thisfn = "ofa_journals_set_on_update_journal";
+	GtkTreeSelection *select;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
 	gchar *prev_mnemo;
 	const gchar *new_mnemo;
 	ofoJournal *journal;
-	ofaMainWindow *main_window;
 
 	g_return_if_fail( OFA_IS_JOURNALS_SET( self ));
-	g_return_if_fail( OFO_IS_JOURNAL( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	journal = self->private->selected;
-	prev_mnemo = g_strdup( ofo_journal_get_mnemo( journal ));
-	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
+	select = gtk_tree_view_get_selection( self->private->view );
+	if( gtk_tree_selection_get_selected( select, &model, &iter )){
 
-	if( ofa_journal_properties_run( main_window, journal )){
+		gtk_tree_model_get( model, &iter, COL_OBJECT, &journal, -1 );
+		g_object_unref( journal );
 
-		new_mnemo = ofo_journal_get_mnemo( journal );
-		if( g_utf8_collate( prev_mnemo, new_mnemo )){
-			gtk_list_store_remove(
-					GTK_LIST_STORE( gtk_tree_view_get_model( self->private->view )),
-					self->private->iter );
-			insert_new_row( self, journal );
+		prev_mnemo = g_strdup( ofo_journal_get_mnemo( journal ));
 
-		} else {
-			store_set_journal(
-					gtk_tree_view_get_model( self->private->view ),
-					self->private->iter,
-					journal );
+		if( ofa_journal_properties_run(
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), journal )){
+
+			new_mnemo = ofo_journal_get_mnemo( journal );
+			if( g_utf8_collate( prev_mnemo, new_mnemo )){
+				gtk_list_store_remove( GTK_LIST_STORE( model ), &iter );
+				insert_new_row( self, journal );
+
+			} else {
+				store_set_journal( model, &iter, journal );
+			}
 		}
-	}
 
-	g_free( prev_mnemo );
+		g_free( prev_mnemo );
+	}
 }
 
 /*
@@ -539,34 +507,42 @@ static void
 on_delete_journal( GtkButton *button, ofaJournalsSet *self )
 {
 	static const gchar *thisfn = "ofa_journals_set_on_delete_journal";
+	GtkTreeSelection *select;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	ofoJournal *journal;
 	const GDate *dmax;
 	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_JOURNALS_SET( self ));
-	g_return_if_fail( OFO_IS_JOURNAL( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	dmax = ofo_journal_get_maxdate( self->private->selected );
-	if( g_date_valid( dmax )){
-		error_undeletable( self, self->private->selected );
-		return;
-	}
+	select = gtk_tree_view_get_selection( self->private->view );
+	if( gtk_tree_selection_get_selected( select, &model, &iter )){
 
-	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+		gtk_tree_model_get( model, &iter, COL_OBJECT, &journal, -1 );
+		g_object_unref( journal );
 
-	if( delete_confirmed( self, self->private->selected ) &&
-			ofo_dossier_delete_journal( dossier, self->private->selected )){
+		dmax = ofo_journal_get_maxdate( journal );
+		if( g_date_valid( dmax )){
+			error_undeletable( self, journal );
+			return;
+		}
 
-		/* update our set of journals */
-		ofa_main_page_set_dataset(
-				OFA_MAIN_PAGE( self ), ofo_dossier_get_journals_set( dossier ));
+		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
-		/* remove the row from the model
-		 * this will cause an automatic new selection */
-		gtk_list_store_remove(
-				GTK_LIST_STORE( gtk_tree_view_get_model( self->private->view )),
-				self->private->iter );
+		if( delete_confirmed( self, journal ) &&
+				ofo_dossier_delete_journal( dossier, journal )){
+
+			/* update our set of journals */
+			ofa_main_page_set_dataset(
+					OFA_MAIN_PAGE( self ), ofo_dossier_get_journals_set( dossier ));
+
+			/* remove the row from the model
+			 * this will cause an automatic new selection */
+			gtk_list_store_remove( GTK_LIST_STORE( model ), &iter );
+		}
 	}
 }
 

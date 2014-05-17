@@ -439,10 +439,7 @@ on_update_mod_family( GtkButton *button, ofaModFamiliesSet *self )
 				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
 				family )){
 
-			store_set_mod_family(
-					gtk_tree_view_get_model( self->private->view ),
-					&iter,
-					family );
+			store_set_mod_family( model, &iter, family );
 		}
 	}
 }
