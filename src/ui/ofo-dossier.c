@@ -35,13 +35,13 @@
 #include "ui/ofo-account.h"
 #include "ui/ofo-journal.h"
 
-/* private class data
+/* priv class data
  */
 struct _ofoDossierClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
-/* private instance data
+/* priv instance data
  */
 struct _ofoDossierPrivate {
 	gboolean  dispose_has_run;
@@ -67,17 +67,13 @@ struct _ofoDossierPrivate {
 	GDate    *exe_fin;					/* fin d'exercice */
 };
 
+G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
+
+#define OFO_DOSSIER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_DOSSIER, ofoDossierPrivate))
+
 /* the last DB model version
  */
 #define THIS_DBMODEL_VERSION            1
-
-static ofoBaseClass *st_parent_class  = NULL;
-
-static GType    register_type( void );
-static void     class_init( ofoDossierClass *klass );
-static void     instance_init( GTypeInstance *instance, gpointer klass );
-static void     instance_dispose( GObject *instance );
-static void     instance_finalize( GObject *instance );
 
 static gboolean check_user_exists( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
 static gint     dbmodel_get_version( ofaSgbd *sgbd );
@@ -95,153 +91,99 @@ static void     models_set_free( GList *set );
 static gint     models_cmp( const ofoModel *a, const ofoModel *b );
 static gint     models_find( const ofoModel *a, const gchar *searched_mnemo );
 
-GType
-ofo_dossier_get_type( void )
-{
-	static GType st_type = 0;
-
-	if( !st_type ){
-		st_type = register_type();
-	}
-
-	return( st_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_dossier_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoDossierClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofoDossier ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoDossier", &info, 0 );
-
-	return( type );
-}
-
 static void
-class_init( ofoDossierClass *klass )
+ofo_dossier_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_dossier_class_init";
-	GObjectClass *object_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofoDossierClassPrivate, 1 );
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofo_dossier_instance_init";
+	static const gchar *thisfn = "ofo_dossier_finalize";
 	ofoDossier *self;
 
-	g_return_if_fail( OFO_IS_DOSSIER( instance ));
-
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	self = OFO_DOSSIER( instance );
 
-	self->private = g_new0( ofoDossierPrivate, 1 );
+	g_free( self->priv->name );
+	g_free( self->priv->userid );
 
-	self->private->dispose_has_run = FALSE;
+	if( self->priv->accounts ){
+		accounts_chart_free( self->priv->accounts );
+		self->priv->accounts = NULL;
+	}
+	if( self->priv->devises ){
+		devises_set_free( self->priv->devises );
+		self->priv->devises = NULL;
+	}
+	if( self->priv->journals ){
+		journals_set_free( self->priv->journals );
+		self->priv->journals = NULL;
+	}
+	if( self->priv->models ){
+		models_set_free( self->priv->models );
+		self->priv->models = NULL;
+	}
+
+	g_free( self->priv->label );
+	g_free( self->priv->notes );
+
+	if( self->priv->exe_deb ){
+		g_date_free( self->priv->exe_deb );
+	}
+	if( self->priv->exe_fin ){
+		g_date_free( self->priv->exe_fin );
+	}
+
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_dossier_parent_class )->finalize( instance );
 }
 
 static void
-instance_dispose( GObject *instance )
+ofo_dossier_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_dossier_instance_dispose";
-	ofoDossierPrivate *priv;
+	static const gchar *thisfn = "ofo_dossier_dispose";
+	ofoDossier *self;
 
-	g_return_if_fail( OFO_IS_DOSSIER( instance ));
+	self = OFO_DOSSIER( instance );
 
-	priv = ( OFO_DOSSIER( instance ))->private;
-
-	if( !priv->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: instance=%p (%s)",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-		priv->dispose_has_run = TRUE;
+		self->priv->dispose_has_run = TRUE;
 
-		g_free( priv->name );
-		g_free( priv->userid );
-
-		if( priv->sgbd ){
-			g_object_unref( priv->sgbd );
-		}
-
-		if( priv->accounts ){
-			accounts_chart_free( priv->accounts );
-			priv->accounts = NULL;
-		}
-		if( priv->devises ){
-			devises_set_free( priv->devises );
-			priv->devises = NULL;
-		}
-		if( priv->journals ){
-			journals_set_free( priv->journals );
-			priv->journals = NULL;
-		}
-		if( priv->models ){
-			models_set_free( priv->models );
-			priv->models = NULL;
-		}
-
-		g_free( priv->label );
-		g_free( priv->notes );
-		if( priv->exe_deb ){
-			g_date_free( priv->exe_deb );
-		}
-		if( priv->exe_fin ){
-			g_date_free( priv->exe_fin );
-		}
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
+		if( self->priv->sgbd ){
+			g_clear_object( &self->priv->sgbd );
 		}
 	}
+
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_dossier_parent_class )->dispose( instance );
 }
 
 static void
-instance_finalize( GObject *instance )
+ofo_dossier_init( ofoDossier *self )
 {
-	static const gchar *thisfn = "ofo_dossier_instance_finalize";
-	ofoDossierPrivate *priv;
+	static const gchar *thisfn = "ofo_dossier_init";
 
-	g_return_if_fail( OFO_IS_DOSSIER( instance ));
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	self->priv = OFO_DOSSIER_GET_PRIVATE( self );
 
-	priv = OFO_DOSSIER( instance )->private;
+	self->priv->dispose_has_run = FALSE;
+}
 
-	g_free( priv );
+static void
+ofo_dossier_class_init( ofoDossierClass *klass )
+{
+	static const gchar *thisfn = "ofo_dossier_class_init";
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = ofo_dossier_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ofo_dossier_finalize;
+
+	klass->priv = g_new0( ofoDossierClassPrivate, 1 );
 }
 
 /**
@@ -253,7 +195,7 @@ ofo_dossier_new( const gchar *name )
 	ofoDossier *dossier;
 
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
-	dossier->private->name = g_strdup( name );
+	dossier->priv->name = g_strdup( name );
 
 	return( dossier );
 }
@@ -296,8 +238,8 @@ ofo_dossier_open( ofoDossier *dossier, GtkWindow *parent,
 
 	ofo_dossier_dbmodel_update( sgbd, parent, account );
 
-	dossier->private->sgbd = sgbd;
-	dossier->private->userid = g_strdup( account );
+	dossier->priv->sgbd = sgbd;
+	dossier->priv->userid = g_strdup( account );
 
 	return( TRUE );
 }
@@ -572,9 +514,9 @@ ofo_dossier_get_name( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
-		return(( const gchar * ) dossier->private->name );
+		return(( const gchar * ) dossier->priv->name );
 	}
 
 	return( NULL );
@@ -590,9 +532,9 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
-		return(( const gchar * ) dossier->private->userid );
+		return(( const gchar * ) dossier->priv->userid );
 	}
 
 	return( NULL );
@@ -617,10 +559,10 @@ ofo_dossier_get_account( const ofoDossier *dossier, const gchar *number )
 
 	account = NULL;
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
 		found = g_list_find_custom(
-				dossier->private->accounts, number, ( GCompareFunc ) accounts_find );
+				dossier->priv->accounts, number, ( GCompareFunc ) accounts_find );
 		if( found ){
 			account = OFO_ACCOUNT( found->data );
 		}
@@ -641,15 +583,15 @@ ofo_dossier_get_accounts_chart( ofoDossier *dossier )
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
-		if( !dossier->private->accounts ){
+		if( !dossier->priv->accounts ){
 
-			dossier->private->accounts = ofo_account_load_chart( dossier->private->sgbd );
+			dossier->priv->accounts = ofo_account_load_chart( dossier->priv->sgbd );
 		}
 	}
 
-	return( dossier->private->accounts );
+	return( dossier->priv->accounts );
 }
 
 /**
@@ -669,10 +611,10 @@ ofo_dossier_insert_account( ofoDossier *dossier, ofoAccount *account )
 
 	ok = FALSE;
 
-	if( ofo_account_insert( account, dossier->private->sgbd, dossier->private->userid )){
+	if( ofo_account_insert( account, dossier->priv->sgbd, dossier->priv->userid )){
 
-		chart = g_list_insert_sorted( dossier->private->accounts, account, ( GCompareFunc ) accounts_cmp );
-		dossier->private->accounts = chart;
+		chart = g_list_insert_sorted( dossier->priv->accounts, account, ( GCompareFunc ) accounts_cmp );
+		dossier->priv->accounts = chart;
 		ok = TRUE;
 	}
 
@@ -699,14 +641,14 @@ ofo_dossier_update_account( ofoDossier *dossier, ofoAccount *account, const gcha
 	ok = FALSE;
 
 	if( ofo_account_update(
-			account, dossier->private->sgbd, dossier->private->userid, prev_number )){
+			account, dossier->priv->sgbd, dossier->priv->userid, prev_number )){
 
 		new_number = ofo_account_get_number( account );
 
 		if( g_utf8_collate( new_number, prev_number )){
-			chart = g_list_remove( dossier->private->accounts, account );
+			chart = g_list_remove( dossier->priv->accounts, account );
 			chart = g_list_insert_sorted( chart, account, ( GCompareFunc ) accounts_cmp );
-			dossier->private->accounts = chart;
+			dossier->priv->accounts = chart;
 		}
 
 		ok = TRUE;
@@ -729,10 +671,10 @@ ofo_dossier_delete_account( ofoDossier *dossier, ofoAccount *account )
 
 	ok = FALSE;
 
-	if( ofo_account_delete( account, dossier->private->sgbd, dossier->private->userid )){
+	if( ofo_account_delete( account, dossier->priv->sgbd, dossier->priv->userid )){
 
-		chart = g_list_remove( dossier->private->accounts, account );
-		dossier->private->accounts = chart;
+		chart = g_list_remove( dossier->priv->accounts, account );
+		dossier->priv->accounts = chart;
 		g_object_unref( account );
 		ok = TRUE;
 	}
@@ -775,10 +717,10 @@ ofo_dossier_get_devise( const ofoDossier *dossier, const gchar *mnemo )
 
 	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
 		found = g_list_find_custom(
-				dossier->private->devises, mnemo, ( GCompareFunc ) devises_find );
+				dossier->priv->devises, mnemo, ( GCompareFunc ) devises_find );
 		if( found ){
 			return( OFO_DEVISE( found->data ));
 		}
@@ -799,15 +741,15 @@ ofo_dossier_get_devises_set( ofoDossier *dossier )
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
-		if( !dossier->private->devises ){
+		if( !dossier->priv->devises ){
 
-			dossier->private->devises = ofo_devise_load_set( dossier->private->sgbd );
+			dossier->priv->devises = ofo_devise_load_set( dossier->priv->sgbd );
 		}
 	}
 
-	return( dossier->private->devises );
+	return( dossier->priv->devises );
 }
 
 /**
@@ -826,10 +768,10 @@ ofo_dossier_insert_devise( ofoDossier *dossier, ofoDevise *devise )
 
 	ok = FALSE;
 
-	if( ofo_devise_insert( devise, dossier->private->sgbd )){
+	if( ofo_devise_insert( devise, dossier->priv->sgbd )){
 
-		set = g_list_insert_sorted( dossier->private->devises, devise, ( GCompareFunc ) devises_cmp );
-		dossier->private->devises = set;
+		set = g_list_insert_sorted( dossier->priv->devises, devise, ( GCompareFunc ) devises_cmp );
+		dossier->priv->devises = set;
 		ok = TRUE;
 	}
 
@@ -849,7 +791,7 @@ ofo_dossier_update_devise( ofoDossier *dossier, ofoDevise *devise )
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
 
-	ok = ofo_devise_update( devise, dossier->private->sgbd );
+	ok = ofo_devise_update( devise, dossier->priv->sgbd );
 
 	return( ok );
 }
@@ -868,10 +810,10 @@ ofo_dossier_delete_devise( ofoDossier *dossier, ofoDevise *devise )
 
 	ok = FALSE;
 
-	if( ofo_devise_delete( devise, dossier->private->sgbd )){
+	if( ofo_devise_delete( devise, dossier->priv->sgbd )){
 
-		set = g_list_remove( dossier->private->devises, devise );
-		dossier->private->devises = set;
+		set = g_list_remove( dossier->priv->devises, devise );
+		dossier->priv->devises = set;
 		g_object_unref( devise );
 		ok = TRUE;
 	}
@@ -917,10 +859,10 @@ ofo_dossier_get_journal( const ofoDossier *dossier, const gchar *mnemo )
 
 	journal = NULL;
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
 		found = g_list_find_custom(
-				dossier->private->journals, mnemo, ( GCompareFunc ) journals_find );
+				dossier->priv->journals, mnemo, ( GCompareFunc ) journals_find );
 		if( found ){
 			journal = OFO_JOURNAL( found->data );
 		}
@@ -941,15 +883,15 @@ ofo_dossier_get_journals_set( ofoDossier *dossier )
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
-		if( !dossier->private->journals ){
+		if( !dossier->priv->journals ){
 
-			dossier->private->journals = ofo_journal_load_set( dossier->private->sgbd );
+			dossier->priv->journals = ofo_journal_load_set( dossier->priv->sgbd );
 		}
 	}
 
-	return( dossier->private->journals );
+	return( dossier->priv->journals );
 }
 
 /**
@@ -969,10 +911,10 @@ ofo_dossier_insert_journal( ofoDossier *dossier, ofoJournal *journal )
 
 	ok = FALSE;
 
-	if( ofo_journal_insert( journal, dossier->private->sgbd, dossier->private->userid )){
+	if( ofo_journal_insert( journal, dossier->priv->sgbd, dossier->priv->userid )){
 
-		set = g_list_insert_sorted( dossier->private->journals, journal, ( GCompareFunc ) journals_cmp );
-		dossier->private->journals = set;
+		set = g_list_insert_sorted( dossier->priv->journals, journal, ( GCompareFunc ) journals_cmp );
+		dossier->priv->journals = set;
 		ok = TRUE;
 	}
 
@@ -993,11 +935,11 @@ ofo_dossier_update_journal( ofoDossier *dossier, ofoJournal *journal )
 
 	ok = FALSE;
 
-	if( ofo_journal_update( journal, dossier->private->sgbd, dossier->private->userid )){
+	if( ofo_journal_update( journal, dossier->priv->sgbd, dossier->priv->userid )){
 
-		set = g_list_remove( dossier->private->journals, journal );
+		set = g_list_remove( dossier->priv->journals, journal );
 		set = g_list_insert_sorted( set, journal, ( GCompareFunc ) journals_cmp );
-		dossier->private->journals = set;
+		dossier->priv->journals = set;
 
 		ok = TRUE;
 	}
@@ -1019,10 +961,10 @@ ofo_dossier_delete_journal( ofoDossier *dossier, ofoJournal *journal )
 
 	ok = FALSE;
 
-	if( ofo_journal_delete( journal, dossier->private->sgbd, dossier->private->userid )){
+	if( ofo_journal_delete( journal, dossier->priv->sgbd, dossier->priv->userid )){
 
-		set = g_list_remove( dossier->private->journals, journal );
-		dossier->private->journals = set;
+		set = g_list_remove( dossier->priv->journals, journal );
+		dossier->priv->journals = set;
 		g_object_unref( journal );
 		ok = TRUE;
 	}
@@ -1068,10 +1010,10 @@ ofo_dossier_get_model( const ofoDossier *dossier, const gchar *mnemo )
 
 	model = NULL;
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
 		found = g_list_find_custom(
-				dossier->private->models, mnemo, ( GCompareFunc ) models_find );
+				dossier->priv->models, mnemo, ( GCompareFunc ) models_find );
 		if( found ){
 			model = OFO_MODEL( found->data );
 		}
@@ -1095,15 +1037,15 @@ ofo_dossier_get_models_set( ofoDossier *dossier )
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	if( !dossier->private->dispose_has_run ){
+	if( !dossier->priv->dispose_has_run ){
 
-		if( !dossier->private->models ){
+		if( !dossier->priv->models ){
 
-			dossier->private->models = ofo_model_load_set( dossier->private->sgbd );
+			dossier->priv->models = ofo_model_load_set( dossier->priv->sgbd );
 		}
 	}
 
-	return( dossier->private->models );
+	return( dossier->priv->models );
 }
 
 /**
@@ -1123,10 +1065,10 @@ ofo_dossier_insert_model( ofoDossier *dossier, ofoModel *model )
 
 	ok = FALSE;
 
-	if( ofo_model_insert( model, dossier->private->sgbd, dossier->private->userid )){
+	if( ofo_model_insert( model, dossier->priv->sgbd, dossier->priv->userid )){
 
-		set = g_list_insert_sorted( dossier->private->models, model, ( GCompareFunc ) models_cmp );
-		dossier->private->models = set;
+		set = g_list_insert_sorted( dossier->priv->models, model, ( GCompareFunc ) models_cmp );
+		dossier->priv->models = set;
 		ok = TRUE;
 	}
 
@@ -1152,14 +1094,14 @@ ofo_dossier_update_model( ofoDossier *dossier, ofoModel *model, const gchar *pre
 
 	ok = FALSE;
 
-	if( ofo_model_update( model, dossier->private->sgbd, dossier->private->userid, prev_mnemo )){
+	if( ofo_model_update( model, dossier->priv->sgbd, dossier->priv->userid, prev_mnemo )){
 
 		new_mnemo = ofo_model_get_mnemo( model );
 
 		if( g_utf8_collate( new_mnemo, prev_mnemo )){
-			set = g_list_remove( dossier->private->models, model );
+			set = g_list_remove( dossier->priv->models, model );
 			set = g_list_insert_sorted( set, model, ( GCompareFunc ) models_cmp );
-			dossier->private->models = set;
+			dossier->priv->models = set;
 		}
 
 		ok = TRUE;
@@ -1182,10 +1124,10 @@ ofo_dossier_delete_model( ofoDossier *dossier, ofoModel *model )
 
 	ok = FALSE;
 
-	if( ofo_model_delete( model, dossier->private->sgbd, dossier->private->userid )){
+	if( ofo_model_delete( model, dossier->priv->sgbd, dossier->priv->userid )){
 
-		set = g_list_remove( dossier->private->models, model );
-		dossier->private->models = set;
+		set = g_list_remove( dossier->priv->models, model );
+		dossier->priv->models = set;
 		g_object_unref( model );
 		ok = TRUE;
 	}

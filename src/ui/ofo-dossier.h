@@ -55,23 +55,23 @@ G_BEGIN_DECLS
 #define OFO_IS_DOSSIER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_DOSSIER ))
 #define OFO_DOSSIER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_DOSSIER, ofoDossierClass ))
 
-typedef struct _ofoDossierPrivate       ofoDossierPrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase            parent;
-	ofoDossierPrivate *private;
-}
-	ofoDossier;
-
 typedef struct _ofoDossierClassPrivate  ofoDossierClassPrivate;
 
 typedef struct {
 	/*< private >*/
 	ofoBaseClass            parent;
-	ofoDossierClassPrivate *private;
+	ofoDossierClassPrivate *priv;
 }
 	ofoDossierClass;
+
+typedef struct _ofoDossierPrivate       ofoDossierPrivate;
+
+typedef struct {
+	/*< private >*/
+	ofoBase            parent;
+	ofoDossierPrivate *priv;
+}
+	ofoDossier;
 
 GType         ofo_dossier_get_type( void );
 
