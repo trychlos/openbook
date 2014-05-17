@@ -40,6 +40,7 @@
  */
 
 #include "ui/ofa-sgbd.h"
+#include "ui/ofo-base.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-mod-family.h"
@@ -59,7 +60,7 @@ typedef struct _ofoDossierPrivate       ofoDossierPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject            parent;
+	ofoBase            parent;
 	ofoDossierPrivate *private;
 }
 	ofoDossier;
@@ -68,7 +69,7 @@ typedef struct _ofoDossierClassPrivate  ofoDossierClassPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass            parent;
+	ofoBaseClass            parent;
 	ofoDossierClassPrivate *private;
 }
 	ofoDossierClass;

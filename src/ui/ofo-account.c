@@ -74,7 +74,7 @@ struct _ofoAccountPrivate {
 	GDate    bro_cre_date;
 };
 
-static GObjectClass *st_parent_class  = NULL;
+static ofoBaseClass *st_parent_class  = NULL;
 
 static GType  register_type( void );
 static void   class_init( ofoAccountClass *klass );
@@ -114,7 +114,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_OBJECT, "ofoAccount", &info, 0 );
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoAccount", &info, 0 );
 
 	return( type );
 }

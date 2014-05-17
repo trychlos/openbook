@@ -40,6 +40,7 @@
  */
 
 #include "ui/ofa-sgbd.h"
+#include "ui/ofo-base.h"
 
 G_BEGIN_DECLS
 
@@ -54,7 +55,7 @@ typedef struct _ofoAccountPrivate       ofoAccountPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject            parent;
+	ofoBase            parent;
 	ofoAccountPrivate *private;
 }
 	ofoAccount;
@@ -63,7 +64,7 @@ typedef struct _ofoAccountClassPrivate  ofoAccountClassPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass            parent;
+	ofoBaseClass            parent;
 	ofoAccountClassPrivate *private;
 }
 	ofoAccountClass;

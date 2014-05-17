@@ -36,6 +36,7 @@
  */
 
 #include "ui/ofa-sgbd.h"
+#include "ui/ofo-base.h"
 
 G_BEGIN_DECLS
 
@@ -50,7 +51,7 @@ typedef struct _ofoModelPrivate       ofoModelPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject          parent;
+	ofoBase          parent;
 	ofoModelPrivate *private;
 }
 	ofoModel;
@@ -59,7 +60,7 @@ typedef struct _ofoModelClassPrivate  ofoModelClassPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass          parent;
+	ofoBaseClass          parent;
 	ofoModelClassPrivate *private;
 }
 	ofoModelClass;

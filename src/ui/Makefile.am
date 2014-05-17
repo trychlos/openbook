@@ -81,6 +81,8 @@ openbook_SOURCES = \
 	ofa-sgbd.h											\
 	ofo-account.c										\
 	ofo-account.h										\
+	ofo-base.c											\
+	ofo-base.h											\
 	ofo-devise.c										\
 	ofo-devise.h										\
 	ofo-dossier.c										\

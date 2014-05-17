@@ -58,7 +58,7 @@ struct _ofoDevisePrivate {
 	gchar   *symbol;
 };
 
-static GObjectClass *st_parent_class  = NULL;
+static ofoBaseClass *st_parent_class  = NULL;
 
 static GType  register_type( void );
 static void   class_init( ofoDeviseClass *klass );
@@ -98,7 +98,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_OBJECT, "ofoDevise", &info, 0 );
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoDevise", &info, 0 );
 
 	return( type );
 }

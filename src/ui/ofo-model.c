@@ -81,7 +81,7 @@ typedef struct {
 }
 	sModDetail;
 
-static GObjectClass *st_parent_class  = NULL;
+static ofoBaseClass *st_parent_class  = NULL;
 
 static GType  register_type( void );
 static void   class_init( ofoModelClass *klass );
@@ -123,7 +123,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_OBJECT, "ofoModel", &info, 0 );
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoModel", &info, 0 );
 
 	return( type );
 }
