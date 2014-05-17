@@ -22,47 +22,6 @@
 #
 # $Id$
 
-ACLOCAL_AMFLAGS = -I m4
-
 SUBDIRS = \
-	m4									\
-	maintainer							\
-	misc								\
-	po									\
-	src									\
+	delete								\
 	$(NULL)
-
-DISTCHECK_CONFIGURE_FLAGS = \
-	--enable-silent-rules				\
-	--enable-as-needed					\
-	--disable-scrollkeeper				\
-	$(NULL)
-
-EXTRA_DIST = \
-	intltool-extract.in					\
-	intltool-merge.in					\
-	intltool-update.in					\
-	$(NULL)
-
-DISTCLEANFILES = \
-	intltool-extract					\
-	intltool-merge						\
-	intltool-update						\
-	$(NULL)
-
-pkgdocdir = $(datarootdir)/doc/@PACKAGE@-@VERSION@
-
-dist_pkgdoc_DATA = \
-	AUTHORS								\
-	ChangeLog							\
-	COPYING								\
-	COPYING-DOCS						\
-	INSTALL								\
-	MAINTAINERS							\
-	NEWS								\
-	README								\
-	TODO								\
-	$(NULL)
-
-uninstall-hook:
-	-\rm -fr $(DESTDIR)$(pkgdocdir)

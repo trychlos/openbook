@@ -94,12 +94,6 @@ openbook_SOURCES = \
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
-#	ofa-model-properties.c								\
-#	ofa-model-properties.h								\
-#	ofa-models-set.c									\
-#	ofa-models-set.h									\
-#
-
 openbook_LDADD = \
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
@@ -150,5 +144,4 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(applications_in_files)							\
 	$(ui_data_DATA)										\
-	ofa-marshal.def										\
 	$(NULL)

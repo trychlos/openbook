@@ -56,11 +56,6 @@ struct _ofaModFamiliesSetPrivate {
 	GtkTreeView   *view;				/* tree view */
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
-
-	/* Selection
-	 */
-	ofoModFamily  *selected;			/* current selection */
-	GtkTreeIter   *iter;				/* a copy of the selected iter */
 };
 
 /* column ordering in the selection listview
@@ -200,10 +195,6 @@ instance_dispose( GObject *instance )
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
-
-		if( priv->iter ){
-			gtk_tree_iter_free( priv->iter );
-		}
 
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
@@ -398,33 +389,9 @@ store_set_mod_family( GtkTreeModel *model, GtkTreeIter *iter, const ofoModFamily
 static void
 on_mod_family_selected( GtkTreeSelection *selection, ofaModFamiliesSet *self )
 {
-	static const gchar *thisfn = "ofa_mod_families_set_on_mod_family_selected";
 	gboolean select_ok;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	ofoModFamily *family;
 
-	select_ok = FALSE;
-
-	if( self->private->selected ){
-		self->private->selected = NULL;
-		gtk_tree_iter_free( self->private->iter );
-		self->private->iter = NULL;
-	}
-
-	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-
-		gtk_tree_model_get( model, &iter, COL_OBJECT, &family, -1 );
-		g_return_if_fail( OFO_IS_MOD_FAMILY( family ));
-
-		g_debug( "%s: selecting %s", thisfn, ofo_mod_family_get_label( family ));
-
-		select_ok = TRUE;
-		self->private->selected = family;
-		self->private->iter = gtk_tree_iter_copy( &iter );
-
-		g_object_unref( family );
-	}
+	select_ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
 
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
@@ -454,22 +421,29 @@ on_update_mod_family( GtkButton *button, ofaModFamiliesSet *self )
 {
 	static const gchar *thisfn = "ofa_mod_families_set_on_update_mod_family";
 	ofoModFamily *family;
-	ofaMainWindow *main_window;
+	GtkTreeSelection *select;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
 
 	g_return_if_fail( OFA_IS_MOD_FAMILIES_SET( self ));
-	g_return_if_fail( OFO_IS_MOD_FAMILY( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	family = self->private->selected;
-	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
+	select = gtk_tree_view_get_selection( self->private->view );
+	if( gtk_tree_selection_get_selected( select, &model, &iter )){
 
-	if( ofa_mod_family_properties_run( main_window, family )){
+		gtk_tree_model_get( model, &iter, COL_OBJECT, &family, -1 );
+		g_object_unref( family );
 
-		store_set_mod_family(
-				gtk_tree_view_get_model( self->private->view ),
-				self->private->iter,
-				family );
+		if( ofa_mod_family_properties_run(
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+				family )){
+
+			store_set_mod_family(
+					gtk_tree_view_get_model( self->private->view ),
+					&iter,
+					family );
+		}
 	}
 }
 
@@ -482,26 +456,35 @@ on_delete_mod_family( GtkButton *button, ofaModFamiliesSet *self )
 {
 	static const gchar *thisfn = "ofa_mod_families_set_on_delete_mod_family";
 	ofoDossier *dossier;
+	ofoModFamily *family;
+	GtkTreeSelection *select;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
 
 	g_return_if_fail( OFA_IS_MOD_FAMILIES_SET( self ));
-	g_return_if_fail( OFO_IS_MOD_FAMILY( self->private->selected ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+	select = gtk_tree_view_get_selection( self->private->view );
+	if( gtk_tree_selection_get_selected( select, &model, &iter )){
 
-	if( delete_confirmed( self, self->private->selected ) &&
-			ofo_dossier_delete_mod_family( dossier, self->private->selected )){
+		gtk_tree_model_get( model, &iter, COL_OBJECT, &family, -1 );
+		g_object_unref( family );
 
-		/* update our set of mod_families */
-		ofa_main_page_set_dataset(
-				OFA_MAIN_PAGE( self ), ofo_dossier_get_mod_families_set( dossier ));
+		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
-		/* remove the row from the model
-		 * this will cause an automatic new selection */
-		gtk_list_store_remove(
-				GTK_LIST_STORE( gtk_tree_view_get_model( self->private->view )),
-				self->private->iter );
+		if( delete_confirmed( self, family ) &&
+				ofo_dossier_delete_mod_family( dossier, family )){
+
+			/* update our set of mod_families */
+			ofa_main_page_set_dataset(
+					OFA_MAIN_PAGE( self ), ofo_dossier_get_mod_families_set( dossier ));
+
+			/* remove the row from the model
+			 * this will cause an automatic new selection */
+			gtk_list_store_remove(
+					GTK_LIST_STORE( model ), &iter );
+		}
 	}
 }
 
