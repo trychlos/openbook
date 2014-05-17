@@ -55,10 +55,9 @@ struct _ofoDossierPrivate {
 	ofaSgbd  *sgbd;
 	gchar    *userid;
 	GList    *accounts;					/* chart of accounts */
+	GList    *devises;					/* devises */
 	GList    *journals;					/* journals set */
 	GList    *models;					/* entry models set */
-	GList    *mod_families;				/* model families */
-	GList    *devises;					/* devises */
 
 	/* row id 0
 	 */
@@ -92,9 +91,6 @@ static gint     devises_find( const ofoDevise *a, const gchar *searched );
 static void     journals_set_free( GList *set );
 static gint     journals_cmp( const ofoJournal *a, const ofoJournal *b );
 static gint     journals_find( const ofoJournal *a, const gchar *searched_mnemo );
-static void     mod_families_set_free( GList *set );
-static gint     mod_families_cmp( const ofoModFamily *a, const ofoModFamily *b );
-static gint     mod_families_find( const ofoModFamily *a, gconstpointer pid );
 static void     models_set_free( GList *set );
 static gint     models_cmp( const ofoModel *a, const ofoModel *b );
 static gint     models_find( const ofoModel *a, const gchar *searched_mnemo );
@@ -194,9 +190,14 @@ instance_dispose( GObject *instance )
 		if( priv->sgbd ){
 			g_object_unref( priv->sgbd );
 		}
+
 		if( priv->accounts ){
 			accounts_chart_free( priv->accounts );
 			priv->accounts = NULL;
+		}
+		if( priv->devises ){
+			devises_set_free( priv->devises );
+			priv->devises = NULL;
 		}
 		if( priv->journals ){
 			journals_set_free( priv->journals );
@@ -205,14 +206,6 @@ instance_dispose( GObject *instance )
 		if( priv->models ){
 			models_set_free( priv->models );
 			priv->models = NULL;
-		}
-		if( priv->mod_families ){
-			mod_families_set_free( priv->mod_families );
-			priv->mod_families = NULL;
-		}
-		if( priv->devises ){
-			devises_set_free( priv->devises );
-			priv->devises = NULL;
 		}
 
 		g_free( priv->label );
@@ -523,41 +516,6 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	if( !ofa_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
 			"	VALUES ('BQ','Journal de banque','Default')" )){
-		return( FALSE );
-	}
-
-	if( !ofa_sgbd_query( sgbd, parent,
-			"CREATE TABLE IF NOT EXISTS OFA_T_MOD_FAMILY ("
-			"	FAM_ID        INTEGER NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'Internal model family identifier',"
-			"	FAM_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Model family label',"
-			"	FAM_NOTES     VARCHAR(512)                COMMENT 'Model family notes',"
-			"	FAM_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-			"	FAM_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
-			")" )){
-		return( FALSE );
-	}
-
-	if( !ofa_sgbd_query( sgbd, parent,
-			"INSERT IGNORE INTO OFA_T_MOD_FAMILY (FAM_LABEL,FAM_MAJ_USER) "
-			"	VALUES ('Opérations professionnelles','Default')" )){
-		return( FALSE );
-	}
-
-	if( !ofa_sgbd_query( sgbd, parent,
-			"INSERT IGNORE INTO OFA_T_MOD_FAMILY (FAM_LABEL,FAM_MAJ_USER) "
-			"	VALUES ('Opérations de trésorerie','Default')" )){
-		return( FALSE );
-	}
-
-	if( !ofa_sgbd_query( sgbd, parent,
-			"INSERT IGNORE INTO OFA_T_MOD_FAMILY (FAM_LABEL,FAM_MAJ_USER) "
-			"	VALUES ('Opérations de l\\'exploitant','Default')" )){
-		return( FALSE );
-	}
-
-	if( !ofa_sgbd_query( sgbd, parent,
-			"INSERT IGNORE INTO OFA_T_MOD_FAMILY (FAM_LABEL,FAM_MAJ_USER) "
-			"	VALUES ('Opérations diverses','Default')" )){
 		return( FALSE );
 	}
 
@@ -1097,171 +1055,6 @@ static gint
 journals_find( const ofoJournal *a, const gchar *searched_mnemo )
 {
 	return( g_utf8_collate( ofo_journal_get_mnemo( a ), searched_mnemo ));
-}
-
-/**
- * ofo_dossier_get_mod_family:
- *
- * Returns: the searched mod_family.
- */
-ofoModFamily *
-ofo_dossier_get_mod_family( const ofoDossier *dossier, gint id )
-{
-	static const gchar *thisfn = "ofo_dossier_get_mod_family";
-	ofoModFamily *family;
-	GList *found;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p, id=%d", thisfn, ( void * ) dossier, id );
-
-	family = NULL;
-
-	if( !dossier->private->dispose_has_run ){
-
-		found = g_list_find_custom(
-				dossier->private->mod_families,
-				GINT_TO_POINTER( id ), ( GCompareFunc ) mod_families_find );
-		if( found ){
-			family = OFO_MOD_FAMILY( found->data );
-		}
-	}
-
-	return( family );
-}
-
-/**
- * ofo_dossier_get_mod_families_set:
- */
-GList *
-ofo_dossier_get_mod_families_set( ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_dossier_get_mod_families_set";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	if( !dossier->private->dispose_has_run ){
-
-		if( !dossier->private->mod_families ){
-
-			dossier->private->mod_families = ofo_mod_family_load_set( dossier->private->sgbd );
-		}
-	}
-
-	return( dossier->private->mod_families );
-}
-
-/**
- * ofo_dossier_insert_mod_family:
- *
- * we deal here with an update of publicly modifiable mod_family properties
- * so it is not needed to check the date of closing
- */
-gboolean
-ofo_dossier_insert_mod_family( ofoDossier *dossier, ofoModFamily *mod_family )
-{
-	GList *set;
-	gboolean ok;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_MOD_FAMILY( mod_family ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_mod_family_insert( mod_family, dossier->private->sgbd, dossier->private->userid )){
-
-		set = g_list_insert_sorted( dossier->private->mod_families, mod_family, ( GCompareFunc ) mod_families_cmp );
-		dossier->private->mod_families = set;
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_update_mod_family:
- */
-gboolean
-ofo_dossier_update_mod_family( ofoDossier *dossier, ofoModFamily *mod_family )
-{
-	gboolean ok;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_MOD_FAMILY( mod_family ), FALSE );
-
-	ok = ofo_mod_family_update( mod_family, dossier->private->sgbd, dossier->private->userid );
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_delete_mod_family:
- */
-gboolean
-ofo_dossier_delete_mod_family( ofoDossier *dossier, ofoModFamily *mod_family )
-{
-	gboolean ok;
-	GList *set;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_MOD_FAMILY( mod_family ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_mod_family_delete( mod_family, dossier->private->sgbd, dossier->private->userid )){
-
-		set = g_list_remove( dossier->private->mod_families, mod_family );
-		dossier->private->mod_families = set;
-		g_object_unref( mod_family );
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-static void
-mod_families_set_free( GList *set )
-{
-	g_list_foreach( set, ( GFunc ) g_object_unref, NULL );
-	g_list_free( set );
-}
-
-static gint
-mod_families_cmp( const ofoModFamily *a, const ofoModFamily *b )
-{
-	gint ia, ib;
-
-	ia = ofo_mod_family_get_id( a );
-	ib = ofo_mod_family_get_id( b );
-
-	if( ia < ib ){
-		return( -1 );
-	}
-
-	if( ia > ib ){
-		return( 1 );
-	}
-
-	return( 0 );
-}
-
-static gint
-mod_families_find( const ofoModFamily *a, gconstpointer pid )
-{
-	gint id = GPOINTER_TO_INT( pid );
-	gint ia = ofo_mod_family_get_id( a );
-
-	if( ia < id ){
-		return( -1 );
-	}
-
-	if( ia > id ){
-		return( 1 );
-	}
-
-	return( 0 );
 }
 
 /**

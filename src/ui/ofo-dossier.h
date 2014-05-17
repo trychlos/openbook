@@ -104,12 +104,6 @@ gboolean      ofo_dossier_insert_journal    ( ofoDossier *dossier, ofoJournal *j
 gboolean      ofo_dossier_update_journal    ( ofoDossier *dossier, ofoJournal *journal, const gchar *prev_mnemo );
 gboolean      ofo_dossier_delete_journal    ( ofoDossier *dossier, ofoJournal *journal );
 
-ofoModFamily *ofo_dossier_get_mod_family      ( const ofoDossier *dossier, gint id );
-GList        *ofo_dossier_get_mod_families_set( ofoDossier *dossier );
-gboolean      ofo_dossier_insert_mod_family   ( ofoDossier *dossier, ofoModFamily *mod_family );
-gboolean      ofo_dossier_update_mod_family   ( ofoDossier *dossier, ofoModFamily *mod_family );
-gboolean      ofo_dossier_delete_mod_family   ( ofoDossier *dossier, ofoModFamily *mod_family );
-
 ofoModel     *ofo_dossier_get_model         ( const ofoDossier *dossier, const gchar *mnemo );
 GList        *ofo_dossier_get_models_set    ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_model      ( ofoDossier *dossier, ofoModel *model );

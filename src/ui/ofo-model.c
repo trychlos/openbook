@@ -56,7 +56,6 @@ struct _ofoModelPrivate {
 	gint     id;
 	gchar   *mnemo;
 	gchar   *label;
-	gint     family;
 	gchar   *journal;
 	gchar   *notes;
 	gchar   *maj_user;
@@ -279,7 +278,7 @@ ofo_model_load_set( ofaSgbd *sgbd )
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
 	result = ofa_sgbd_query_ex( sgbd, NULL,
-			"SELECT MOD_ID,MOD_MNEMO,MOD_LABEL,MOD_FAM_ID,MOD_JOU_ID,MOD_NOTES,"
+			"SELECT MOD_ID,MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_NOTES,"
 			"	MOD_MAJ_USER,MOD_MAJ_STAMP"
 			"	FROM OFA_T_MODELES "
 			"	ORDER BY MOD_MNEMO ASC" );
@@ -294,10 +293,6 @@ ofo_model_load_set( ofaSgbd *sgbd )
 		ofo_model_set_mnemo( model, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_model_set_label( model, ( gchar * ) icol->data );
-		icol = icol->next;
-		if( icol->data ){
-			ofo_model_set_family( model, atoi(( gchar * ) icol->data ));
-		}
 		icol = icol->next;
 		ofo_model_set_journal( model, ( gchar * ) icol->data );
 		icol = icol->next;
@@ -442,26 +437,6 @@ ofo_model_get_label( const ofoModel *model )
 }
 
 /**
- * ofo_model_get_family:
- */
-gint
-ofo_model_get_family( const ofoModel *model )
-{
-	gint family;
-
-	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
-
-	family = -1;
-
-	if( !model->private->dispose_has_run ){
-
-		family = model->private->family;
-	}
-
-	return( family );
-}
-
-/**
  * ofo_model_get_journal:
  */
 const gchar *
@@ -556,20 +531,6 @@ ofo_model_set_label( ofoModel *model, const gchar *label )
 }
 
 /**
- * ofo_model_set_family:
- */
-void
-ofo_model_set_family( ofoModel *model, gint family )
-{
-	g_return_if_fail( OFO_IS_MODEL( model ));
-
-	if( !model->private->dispose_has_run ){
-
-		model->private->family = family;
-	}
-}
-
-/**
  * ofo_model_set_journal:
  */
 void
@@ -651,12 +612,11 @@ ofo_model_insert( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_MODELES" );
 
 	g_string_append_printf( query,
-			"	(MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_FAM_ID,MOD_NOTES,"
-			"	MOD_MAJ_USER, MOD_MAJ_STAMP) VALUES ('%s','%s','%s',%d",
+			"	(MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_NOTES,"
+			"	MOD_MAJ_USER, MOD_MAJ_STAMP) VALUES ('%s','%s','%s',",
 			ofo_model_get_mnemo( model ),
 			label,
-			ofo_model_get_journal( model ),
-			ofo_model_get_family( model ));
+			ofo_model_get_journal( model ));
 
 	if( notes && g_utf8_strlen( notes, -1 )){
 		g_string_append_printf( query, "'%s',", notes );
@@ -722,23 +682,24 @@ ofo_model_update( ofoModel *model, ofaSgbd *sgbd, const gchar *user, const gchar
 	new_mnemo = ofo_model_get_mnemo( model );
 	stamp = my_utils_timestamp();
 
-	query = g_string_new( "UPDATE OFA_T_JOURNAUX SET " );
+	query = g_string_new( "UPDATE OFA_T_MODELES SET " );
 
 	if( g_utf8_collate( new_mnemo, prev_mnemo )){
-		g_string_append_printf( query, "JOU_MNEMO='%s',", new_mnemo );
+		g_string_append_printf( query, "MOD_MNEMO='%s',", new_mnemo );
 	}
 
-	g_string_append_printf( query, "JOU_LABEL='%s',", label );
+	g_string_append_printf( query, "MOD_LABEL='%s',", label );
+	g_string_append_printf( query, "MOD_JOU_ID='%s',", ofo_model_get_journal( model ));
 
 	if( notes && g_utf8_strlen( notes, -1 )){
-		g_string_append_printf( query, "JOU_NOTES='%s',", notes );
+		g_string_append_printf( query, "MOD_NOTES='%s',", notes );
 	} else {
-		query = g_string_append( query, "JOU_NOTES=NULL," );
+		query = g_string_append( query, "MOD_NOTES=NULL," );
 	}
 
 	g_string_append_printf( query,
-			"	JOU_MAJ_USER='%s',JOU_MAJ_STAMP='%s'"
-			"	WHERE JOU_MNEMO='%s'",
+			"	MOD_MAJ_USER='%s',MOD_MAJ_STAMP='%s'"
+			"	WHERE MOD_MNEMO='%s'",
 					user,
 					stamp,
 					prev_mnemo );
@@ -770,8 +731,8 @@ ofo_model_delete( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
 	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
 
 	query = g_strdup_printf(
-			"DELETE FROM OFA_T_JOURNAUX"
-			"	WHERE JOU_MNEMO='%s'",
+			"DELETE FROM OFA_T_MODELES"
+			"	WHERE MOD_MNEMO='%s'",
 					ofo_model_get_mnemo( model ));
 
 	ok = ofa_sgbd_query( sgbd, NULL, query );

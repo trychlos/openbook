@@ -59,18 +59,9 @@ struct _ofaModelPropertiesPrivate {
 	 */
 	gchar         *mnemo;
 	gchar         *label;
-	gint           family;
 	gchar         *journal;				/* journal mnemo */
 	gchar         *maj_user;
 	GTimeVal       maj_stamp;
-};
-
-/* column ordering in the model family combobox
- */
-enum {
-	FAM_COL_LABEL = 0,
-	FAM_COL_ID,
-	FAM_N_COLUMNS
 };
 
 /* column ordering in the journal combobox
@@ -109,14 +100,12 @@ static void      instance_finalize( GObject *instance );
 static void      do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model );
 static gboolean  init_dialog_from_builder( ofaModelProperties *self );
 static void      init_dialog_title( ofaModelProperties *self );
-static void      init_dialog_family( ofaModelProperties *self );
 static void      init_dialog_mnemo( ofaModelProperties *self );
 static void      init_dialog_label( ofaModelProperties *self );
 static void      init_dialog_journal( ofaModelProperties *self );
 static void      init_dialog_notes( ofaModelProperties *self );
 static void      init_dialog_detail( ofaModelProperties *self );
 static gboolean  ok_to_terminate( ofaModelProperties *self, gint code );
-static void      on_family_changed( GtkComboBox *box, ofaModelProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_journal_changed( GtkComboBox *box, ofaModelProperties *self );
@@ -300,7 +289,6 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 	g_return_if_fail( priv->dialog && GTK_IS_DIALOG( priv->dialog ));
 
 	init_dialog_title( self );
-	init_dialog_family( self );
 	init_dialog_mnemo( self );
 	init_dialog_label( self );
 	init_dialog_journal( self );
@@ -359,60 +347,6 @@ init_dialog_title( ofaModelProperties *self )
 
 	gtk_window_set_title( GTK_WINDOW( priv->dialog ), title );
 	g_free( title );
-}
-
-static void
-init_dialog_family( ofaModelProperties *self )
-{
-	ofaModelPropertiesPrivate *priv;
-	GtkComboBox *combo;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkCellRenderer *text_cell;
-	ofoDossier *dossier;
-	GList *set, *elt;
-	gint idx, i;
-	ofoModFamily *family;
-
-	priv = self->private;
-
-	/* returns -1 if unset */
-	priv->family = ofo_model_get_family( priv->model );
-	combo = GTK_COMBO_BOX( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-family" ));
-
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			FAM_N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_INT ));
-	gtk_combo_box_set_model( combo, tmodel );
-	g_object_unref( tmodel );
-
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", FAM_COL_LABEL );
-
-	dossier = ofa_main_window_get_dossier( priv->main_window );
-	set = ofo_dossier_get_mod_families_set( dossier );
-
-	idx = -1;
-	for( elt=set, i=0 ; elt ; elt=elt->next, ++i ){
-		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
-		family = OFO_MOD_FAMILY( elt->data );
-		gtk_list_store_set(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				FAM_COL_LABEL, ofo_mod_family_get_label( family ),
-				FAM_COL_ID, GINT_TO_POINTER( ofo_mod_family_get_id( family )),
-				-1 );
-		if( priv->family == ofo_mod_family_get_id( family )){
-			idx = i;
-		}
-	}
-
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_family_changed ), self );
-
-	if( idx != -1 ){
-		gtk_combo_box_set_active( combo, idx );
-	}
 }
 
 static void
@@ -686,24 +620,6 @@ ok_to_terminate( ofaModelProperties *self, gint code )
 	}
 
 	return( quit );
-}
-
-static void
-on_family_changed( GtkComboBox *box, ofaModelProperties *self )
-{
-	static const gchar *thisfn = "ofa_model_properties_on_family_changed";
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gint id;
-
-	if( gtk_combo_box_get_active_iter( box, &iter )){
-		tmodel = gtk_combo_box_get_model( box );
-		gtk_tree_model_get( tmodel, &iter, FAM_COL_ID, &id, -1 );
-		self->private->family = id;
-		g_debug( "%s: family changed to %d", thisfn, id );
-	}
-
-	check_for_enable_dlg( self );
 }
 
 static void

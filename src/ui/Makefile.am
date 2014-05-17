@@ -71,10 +71,6 @@ openbook_SOURCES = \
 	ofa-model-properties.h								\
 	ofa-models-set.c									\
 	ofa-models-set.h									\
-	ofa-mod-families-set.c								\
-	ofa-mod-families-set.h								\
-	ofa-mod-family-properties.c							\
-	ofa-mod-family-properties.h							\
 	ofa-settings.c										\
 	ofa-settings.h										\
 	ofa-sgbd.c											\
@@ -89,8 +85,6 @@ openbook_SOURCES = \
 	ofo-dossier.h										\
 	ofo-journal.c										\
 	ofo-journal.h										\
-	ofo-mod-family.c									\
-	ofo-mod-family.h									\
 	ofo-model.c											\
 	ofo-model.h											\
 	$(BUILT_SOURCES)									\

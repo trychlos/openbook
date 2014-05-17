@@ -33,7 +33,7 @@
 #include "ui/ofa-model-properties.h"
 #include "ui/ofa-models-set.h"
 #include "ui/ofo-model.h"
-#include "ui/ofo-mod-family.h"
+#include "ui/ofo-journal.h"
 
 /* private class data
  */
@@ -54,7 +54,7 @@ struct _ofaModelsSetPrivate {
 
 	/* UI
 	 */
-	GtkNotebook   *book;				/* one page per model category */
+	GtkNotebook   *book;				/* one page per journal d'imputation */
 	GtkWidget     *others;				/* a page for unclassed models */
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
@@ -84,12 +84,12 @@ static void       instance_constructed( GObject *instance );
 static void       instance_dispose( GObject *instance );
 static void       instance_finalize( GObject *instance );
 static void       setup_set_page( ofaModelsSet *self );
-static void       on_family_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self );
+static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self );
 static GtkWidget *setup_models_view( ofaModelsSet *self );
 static GtkWidget *setup_buttons_box( ofaModelsSet *self );
 static void       setup_first_selection( ofaModelsSet *self );
-static GtkWidget *notebook_create_page( ofaModelsSet *self, GtkNotebook *book, gint fam_id, const gchar *fam_label, gint position );
-static GtkWidget *notebook_find_page( ofaModelsSet *self, gint fam_id );
+static GtkWidget *notebook_create_page( ofaModelsSet *self, GtkNotebook *book, const gchar *jou_mnemo, const gchar *jou_label, gint position );
+static GtkWidget *notebook_find_page( ofaModelsSet *self, const gchar *jou_mnemo );
 static void       store_set_model( GtkTreeModel *model, GtkTreeIter *iter, const ofoModel *ofomodel );
 static void       on_model_selected( GtkTreeSelection *selection, ofaModelsSet *self );
 static void       on_new_model( GtkButton *button, ofaModelsSet *self );
@@ -280,7 +280,7 @@ setup_set_page( ofaModelsSet *self )
 /*
  */
 static void
-on_family_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self )
+on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self )
 {
 	self->private->current =
 			GTK_TREE_VIEW( g_object_get_data( G_OBJECT( wpage ), DATA_PAGE_VIEW ));
@@ -291,10 +291,10 @@ setup_models_view( ofaModelsSet *self )
 {
 	GtkNotebook *book;
 	ofoDossier *dossier;
-	GList *famset, *ifam;
+	GList *jouset, *ijou;
 	GList *models, *imod;
 	ofoModel *ofomodel;
-	gint fam_id;
+	const gchar *jou_mnemo;
 	GtkWidget *page;
 	GtkTreeView *view;
 	GtkTreeModel *model;
@@ -305,12 +305,12 @@ setup_models_view( ofaModelsSet *self )
 	gtk_widget_set_margin_bottom( GTK_WIDGET( book ), 4 );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-	famset = ofo_dossier_get_mod_families_set( dossier );
+	jouset = ofo_dossier_get_journals_set( dossier );
 
-	for( ifam=famset ; ifam ; ifam=ifam->next ){
+	for( ijou=jouset ; ijou ; ijou=ijou->next ){
 		notebook_create_page( self, book,
-				ofo_mod_family_get_id( OFO_MOD_FAMILY( ifam->data )),
-				ofo_mod_family_get_label( OFO_MOD_FAMILY( ifam->data )),
+				ofo_journal_get_mnemo( OFO_JOURNAL( ijou->data )),
+				ofo_journal_get_label( OFO_JOURNAL( ijou->data )),
 				-1 );
 	}
 
@@ -320,8 +320,8 @@ setup_models_view( ofaModelsSet *self )
 
 	for( imod=models ; imod ; imod=imod->next ){
 		ofomodel = OFO_MODEL( imod->data );
-		fam_id = ofo_model_get_family( ofomodel );
-		page = notebook_find_page( self, fam_id );
+		jou_mnemo = ofo_model_get_journal( ofomodel );
+		page = notebook_find_page( self, jou_mnemo );
 
 		g_return_val_if_fail( page && GTK_IS_WIDGET( page ), NULL );
 
@@ -331,7 +331,7 @@ setup_models_view( ofaModelsSet *self )
 		store_set_model( model, &iter, ofomodel );
 	}
 
-	g_signal_connect( G_OBJECT( book ), "switch-page", G_CALLBACK( on_family_page_switched ), self );
+	g_signal_connect( G_OBJECT( book ), "switch-page", G_CALLBACK( on_page_switched ), self );
 
 	return( GTK_WIDGET( book ));
 }
@@ -390,7 +390,7 @@ setup_first_selection( ofaModelsSet *self )
 }
 
 static GtkWidget *
-notebook_create_page( ofaModelsSet *self, GtkNotebook *book, gint fam_id, const gchar *fam_label, gint position )
+notebook_create_page( ofaModelsSet *self, GtkNotebook *book, const gchar *jou_mnemo, const gchar *jou_label, gint position )
 {
 	GtkScrolledWindow *scroll;
 	GtkLabel *label;
@@ -403,10 +403,10 @@ notebook_create_page( ofaModelsSet *self, GtkNotebook *book, gint fam_id, const 
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
 	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 
-	label = GTK_LABEL( gtk_label_new( fam_label ));
+	label = GTK_LABEL( gtk_label_new( jou_label ));
 	gtk_notebook_insert_page( book, GTK_WIDGET( scroll ), GTK_WIDGET( label ), position );
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( scroll ), TRUE );
-	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_FAMILY, GINT_TO_POINTER( fam_id ));
+	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_FAMILY, g_strdup( jou_mnemo ));
 
 	view = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_vexpand( GTK_WIDGET( view ), TRUE );
@@ -443,19 +443,19 @@ notebook_create_page( ofaModelsSet *self, GtkNotebook *book, gint fam_id, const 
 }
 
 static GtkWidget *
-notebook_find_page( ofaModelsSet *self, gint fam_id )
+notebook_find_page( ofaModelsSet *self, const gchar *jou_mnemo )
 {
 	gint count, i;
 	GtkWidget *page, *found;
-	gint page_fam;
+	const gchar *page_jou;
 
 	count = gtk_notebook_get_n_pages( self->private->book );
 	found = NULL;
 
 	for( i=0 ; i<count ; ++i ){
 		page = gtk_notebook_get_nth_page( self->private->book, i );
-		page_fam = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), DATA_PAGE_FAMILY ));
-		if( page_fam == fam_id ){
+		page_jou = ( const gchar *) g_object_get_data( G_OBJECT( page ), DATA_PAGE_FAMILY );
+		if( !g_utf8_collate( page_jou, jou_mnemo )){
 			found = page;
 			break;
 		}
@@ -464,7 +464,7 @@ notebook_find_page( ofaModelsSet *self, gint fam_id )
 	if( !found ){
 		if( !self->private->others ){
 			self->private->others =
-					notebook_create_page( self, self->private->book, -1, _( "Non classés" ), -1 );
+					notebook_create_page( self, self->private->book, "", _( "Hors journaux" ), -1 );
 		}
 		found = self->private->others;
 	}
@@ -618,7 +618,7 @@ delete_confirmed( ofaModelsSet *self, ofoModel *model )
 static void
 insert_new_row( ofaModelsSet *self, ofoModel *ofomodel )
 {
-	gint fam_id;
+	const gchar *journal;
 	GtkWidget *page;
 	gint page_num;
 	GtkTreeView *view;
@@ -636,8 +636,8 @@ insert_new_row( ofaModelsSet *self, ofoModel *ofomodel )
 			OFA_MAIN_PAGE( self ), ofo_dossier_get_models_set( dossier ));
 
 	/* activate the page of the correct class, or create a new one */
-	fam_id = ofo_model_get_family( ofomodel );
-	page = notebook_find_page( self, fam_id );
+	journal = ofo_model_get_journal( ofomodel );
+	page = notebook_find_page( self, journal );
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 
 	gtk_widget_show_all( page );
