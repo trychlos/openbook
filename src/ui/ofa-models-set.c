@@ -58,12 +58,7 @@ struct _ofaModelsSetPrivate {
 	GtkWidget     *others;				/* a page for unclassed models */
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
-
-	/* Selection
-	 */
-	ofoModel      *selected;			/* current selection */
-	GtkTreeModel  *model;
-	GtkTreeIter   *iter;				/* a copy of the selected iter */
+	GtkTreeView   *current;				/* tree view of the current page */
 };
 
 /* column ordering in the selection listview
@@ -214,10 +209,6 @@ instance_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		if( priv->iter ){
-			gtk_tree_iter_free( priv->iter );
-		}
-
 		/* chain up to the parent class */
 		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
 			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
@@ -291,24 +282,8 @@ setup_set_page( ofaModelsSet *self )
 static void
 on_family_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self )
 {
-	static const gchar *thisfn = "ofa_models_set_on_family_page_switched";
-	GtkTreeView *view;
-	GtkTreeSelection *select;
-	GtkTreeIter iter;
-
-	view = GTK_TREE_VIEW( g_object_get_data( G_OBJECT( wpage ), DATA_PAGE_VIEW ));
-	select = gtk_tree_view_get_selection( view );
-
-	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
-		g_debug( "%s: re-selecting current iter", thisfn );
-		/* select_iter is not enough to send the 'changed' signal
-		 * so unselect before, then re-select after */
-		/*gtk_tree_selection_unselect_iter( select, &iter );
-		gtk_tree_selection_select_iter( select, &iter );*/
-
-	} else {
-		g_debug( "%s: no selection", thisfn );
-	}
+	self->private->current =
+			GTK_TREE_VIEW( g_object_get_data( G_OBJECT( wpage ), DATA_PAGE_VIEW ));
 }
 
 static GtkWidget *
@@ -512,36 +487,9 @@ store_set_model( GtkTreeModel *model, GtkTreeIter *iter, const ofoModel *ofomode
 static void
 on_model_selected( GtkTreeSelection *selection, ofaModelsSet *self )
 {
-	static const gchar *thisfn = "ofa_models_set_on_model_selected";
 	gboolean select_ok;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	ofoModel *ofomodel;
 
-	select_ok = FALSE;
-
-	if( self->private->selected ){
-		self->private->selected = NULL;
-		self->private->model = NULL;
-		gtk_tree_iter_free( self->private->iter );
-		self->private->iter = NULL;
-	}
-
-	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-
-		gtk_tree_model_get( model, &iter, COL_OBJECT, &ofomodel, -1 );
-		g_return_if_fail( OFO_IS_MODEL( ofomodel ));
-
-		g_debug( "%s: selecting %s - %s",
-				thisfn, ofo_model_get_mnemo( ofomodel ), ofo_model_get_label( ofomodel ));
-
-		select_ok = TRUE;
-		self->private->selected = ofomodel;
-		self->private->model = model;
-		self->private->iter = gtk_tree_iter_copy( &iter );
-
-		g_object_unref( ofomodel );
-	}
+	select_ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
 
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
@@ -570,35 +518,43 @@ static void
 on_update_model( GtkButton *button, ofaModelsSet *self )
 {
 	static const gchar *thisfn = "ofa_models_set_on_update_model";
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
 	gchar *prev_mnemo;
 	const gchar *new_mnemo;
 	ofoModel *model;
-	ofaMainWindow *main_window;
 
 	g_return_if_fail( OFA_IS_MODELS_SET( self ));
-	g_return_if_fail( OFO_IS_MODEL( self->private->selected ));
+	g_return_if_fail( self->private->current && GTK_IS_TREE_VIEW( self->private->current ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	model = self->private->selected;
-	prev_mnemo = g_strdup( ofo_model_get_mnemo( model ));
-	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
+	select = gtk_tree_view_get_selection( self->private->current );
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
-	if( ofa_model_properties_run( main_window, model )){
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
+		g_object_unref( model );
 
-		new_mnemo = ofo_model_get_mnemo( model );
-		if( g_utf8_collate( prev_mnemo, new_mnemo )){
-			gtk_list_store_remove(
-					GTK_LIST_STORE( self->private->model ),
-					self->private->iter );
-			insert_new_row( self, model );
+		prev_mnemo = g_strdup( ofo_model_get_mnemo( model ));
 
-		} else {
-			store_set_model( self->private->model, self->private->iter, model );
+		if( ofa_model_properties_run(
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), model )){
+
+			new_mnemo = ofo_model_get_mnemo( model );
+			if( g_utf8_collate( prev_mnemo, new_mnemo )){
+				gtk_list_store_remove(
+						GTK_LIST_STORE( tmodel ),
+						&iter );
+				insert_new_row( self, model );
+
+			} else {
+				store_set_model( tmodel, &iter, model );
+			}
 		}
-	}
 
-	g_free( prev_mnemo );
+		g_free( prev_mnemo );
+	}
 }
 
 /*
@@ -609,25 +565,36 @@ static void
 on_delete_model( GtkButton *button, ofaModelsSet *self )
 {
 	static const gchar *thisfn = "ofa_models_set_on_delete_model";
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoModel *model;
 	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_MODELS_SET( self ));
-	g_return_if_fail( OFO_IS_MODEL( self->private->selected ));
+	g_return_if_fail( self->private->current && GTK_IS_TREE_VIEW( self->private->current ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+	select = gtk_tree_view_get_selection( self->private->current );
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
-	if( delete_confirmed( self, self->private->selected ) &&
-			ofo_dossier_delete_model( dossier, self->private->selected )){
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
+		g_object_unref( model );
 
-		/* update our set of models */
-		ofa_main_page_set_dataset(
-				OFA_MAIN_PAGE( self ), ofo_dossier_get_models_set( dossier ));
+		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
-		/* remove the row from the model
-		 * this will cause an automatic new selection */
-		gtk_list_store_remove( GTK_LIST_STORE( self->private->model ), self->private->iter );
+		if( delete_confirmed( self, model ) &&
+				ofo_dossier_delete_model( dossier, model )){
+
+			/* update our set of models */
+			ofa_main_page_set_dataset(
+					OFA_MAIN_PAGE( self ), ofo_dossier_get_models_set( dossier ));
+
+			/* remove the row from the model
+			 * this will cause an automatic new selection */
+			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
+		}
 	}
 }
 
@@ -704,7 +671,7 @@ insert_new_row( ofaModelsSet *self, ofoModel *ofomodel )
 	store_set_model( model, &new_iter, ofomodel );
 
 	/* select the newly added model */
-	path = gtk_tree_model_get_path( self->private->model, &new_iter );
+	path = gtk_tree_model_get_path( model, &new_iter );
 	gtk_tree_view_set_cursor( view, path, NULL, FALSE );
 	gtk_widget_grab_focus( GTK_WIDGET( view ));
 	gtk_tree_path_free( path );
