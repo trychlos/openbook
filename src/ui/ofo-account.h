@@ -51,23 +51,23 @@ G_BEGIN_DECLS
 #define OFO_IS_ACCOUNT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_ACCOUNT ))
 #define OFO_ACCOUNT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_ACCOUNT, ofoAccountClass ))
 
-typedef struct _ofoAccountPrivate       ofoAccountPrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase            parent;
-	ofoAccountPrivate *private;
-}
-	ofoAccount;
-
 typedef struct _ofoAccountClassPrivate  ofoAccountClassPrivate;
 
 typedef struct {
 	/*< private >*/
 	ofoBaseClass            parent;
-	ofoAccountClassPrivate *private;
+	ofoAccountClassPrivate *priv;
 }
 	ofoAccountClass;
+
+typedef struct _ofoAccountPrivate       ofoAccountPrivate;
+
+typedef struct {
+	/*< private >*/
+	ofoBase            parent;
+	ofoAccountPrivate *priv;
+}
+	ofoAccount;
 
 GType        ofo_account_get_type        ( void );
 

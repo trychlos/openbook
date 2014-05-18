@@ -34,13 +34,13 @@
 #include "ui/my-utils.h"
 #include "ui/ofo-account.h"
 
-/* private class data
+/* priv class data
  */
 struct _ofoAccountClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
-/* private instance data
+/* priv instance data
  */
 struct _ofoAccountPrivate {
 	gboolean dispose_has_run;
@@ -74,137 +74,78 @@ struct _ofoAccountPrivate {
 	GDate    bro_cre_date;
 };
 
-static ofoBaseClass *st_parent_class  = NULL;
+G_DEFINE_TYPE( ofoAccount, ofo_account, OFO_TYPE_BASE )
 
-static GType  register_type( void );
-static void   class_init( ofoAccountClass *klass );
-static void   instance_init( GTypeInstance *instance, gpointer klass );
-static void   instance_dispose( GObject *instance );
-static void   instance_finalize( GObject *instance );
-
-GType
-ofo_account_get_type( void )
-{
-	static GType st_type = 0;
-
-	if( !st_type ){
-		st_type = register_type();
-	}
-
-	return( st_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_account_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoAccountClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofoAccount ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoAccount", &info, 0 );
-
-	return( type );
-}
+#define OFO_ACCOUNT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_ACCOUNT, ofoAccountPrivate))
 
 static void
-class_init( ofoAccountClass *klass )
+ofo_account_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_account_class_init";
-	GObjectClass *object_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofoAccountClassPrivate, 1 );
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofo_account_instance_init";
+	static const gchar *thisfn = "ofo_account_finalize";
 	ofoAccount *self;
 
-	g_return_if_fail( OFO_IS_ACCOUNT( instance ));
-
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	self = OFO_ACCOUNT( instance );
 
-	self->private = g_new0( ofoAccountPrivate, 1 );
+	g_free( self->priv->number );
+	g_free( self->priv->label );
+	g_free( self->priv->type );
+	g_free( self->priv->notes );
+	g_free( self->priv->maj_user );
 
-	self->private->dispose_has_run = FALSE;
-
-	self->private->devise = -1;
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_account_parent_class )->finalize( instance );
 }
 
 static void
-instance_dispose( GObject *instance )
+ofo_account_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_account_instance_dispose";
-	ofoAccountPrivate *priv;
+	static const gchar *thisfn = "ofo_account_dispose";
+	ofoAccount *self;
 
-	g_return_if_fail( OFO_IS_ACCOUNT( instance ));
+	self = OFO_ACCOUNT( instance );
 
-	priv = ( OFO_ACCOUNT( instance ))->private;
-
-	if( !priv->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: instance=%p (%s): %s - %s",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-				priv->number, priv->label );
+				self->priv->number, self->priv->label );
 
-		priv->dispose_has_run = TRUE;
-
-		g_free( priv->number );
-		g_free( priv->label );
-		g_free( priv->type );
-		g_free( priv->notes );
-		g_free( priv->maj_user );
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
+		self->priv->dispose_has_run = TRUE;
 	}
+
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_account_parent_class )->dispose( instance );
 }
 
 static void
-instance_finalize( GObject *instance )
+ofo_account_init( ofoAccount *self )
 {
-	static const gchar *thisfn = "ofo_account_instance_finalize";
-	ofoAccountPrivate *priv;
+	static const gchar *thisfn = "ofo_account_init";
 
-	g_return_if_fail( OFO_IS_ACCOUNT( instance ));
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	self->priv = OFO_ACCOUNT_GET_PRIVATE( self );
 
-	priv = OFO_ACCOUNT( instance )->private;
+	self->priv->dispose_has_run = FALSE;
 
-	g_free( priv );
+	self->priv->devise = -1;
+}
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
+static void
+ofo_account_class_init( ofoAccountClass *klass )
+{
+	static const gchar *thisfn = "ofo_account_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = ofo_account_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ofo_account_finalize;
+
+	klass->priv = g_new0( ofoAccountClassPrivate, 1 );
 }
 
 /**
@@ -327,7 +268,7 @@ ofo_account_dump_chart( GList *chart )
 	GList *ic;
 
 	for( ic=chart ; ic ; ic=ic->next ){
-		priv = OFO_ACCOUNT( ic->data )->private;
+		priv = OFO_ACCOUNT( ic->data )->priv;
 		g_debug( "%s: account %s - %s", thisfn, priv->number, priv->label );
 	}
 }
@@ -345,9 +286,9 @@ ofo_account_get_class( const ofoAccount *account )
 
 	class = 0;
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		number = g_strdup( account->private->number );
+		number = g_strdup( account->priv->number );
 		number[1] = '\0';
 		class = atoi( number );
 		g_free( number );
@@ -366,9 +307,9 @@ ofo_account_get_number( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		number = account->private->number;
+		number = account->priv->number;
 	}
 
 	return( number );
@@ -384,9 +325,9 @@ ofo_account_get_label( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		label = account->private->label;
+		label = account->priv->label;
 	}
 
 	return( label );
@@ -400,9 +341,9 @@ ofo_account_get_devise( const ofoAccount *account )
 {
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), -1 );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		return( account->private->devise );
+		return( account->priv->devise );
 	}
 
 	return( -1 );
@@ -418,9 +359,9 @@ ofo_account_get_notes( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		notes = account->private->notes;
+		notes = account->priv->notes;
 	}
 
 	return( notes );
@@ -436,9 +377,9 @@ ofo_account_get_type_account( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		type = account->private->type;
+		type = account->priv->type;
 	}
 
 	return( type );
@@ -454,9 +395,9 @@ ofo_account_get_deb_mnt( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0.0 );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		mnt = account->private->deb_mnt;
+		mnt = account->priv->deb_mnt;
 	}
 
 	return( mnt );
@@ -472,9 +413,9 @@ ofo_account_get_deb_ecr( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0 );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		ecr = account->private->deb_ecr;
+		ecr = account->priv->deb_ecr;
 	}
 
 	return( ecr );
@@ -492,9 +433,9 @@ ofo_account_get_deb_date( const ofoAccount *account )
 
 	date = NULL;
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		date = ( const GDate * ) &account->private->deb_date;
+		date = ( const GDate * ) &account->priv->deb_date;
 	}
 
 	return( date );
@@ -510,9 +451,9 @@ ofo_account_get_cre_mnt( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0.0 );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		mnt = account->private->cre_mnt;
+		mnt = account->priv->cre_mnt;
 	}
 
 	return( mnt );
@@ -528,9 +469,9 @@ ofo_account_get_cre_ecr( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0 );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		ecr = account->private->cre_ecr;
+		ecr = account->priv->cre_ecr;
 	}
 
 	return( ecr );
@@ -548,9 +489,9 @@ ofo_account_get_cre_date( const ofoAccount *account )
 
 	date = NULL;
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		date = ( const GDate * ) &account->private->cre_date;
+		date = ( const GDate * ) &account->priv->cre_date;
 	}
 
 	return( date );
@@ -566,9 +507,9 @@ ofo_account_get_bro_deb_mnt( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0.0 );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		mnt = account->private->bro_deb_mnt;
+		mnt = account->priv->bro_deb_mnt;
 	}
 
 	return( mnt );
@@ -584,9 +525,9 @@ ofo_account_get_bro_deb_ecr( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0 );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		ecr = account->private->bro_deb_ecr;
+		ecr = account->priv->bro_deb_ecr;
 	}
 
 	return( ecr );
@@ -604,9 +545,9 @@ ofo_account_get_bro_deb_date( const ofoAccount *account )
 
 	date = NULL;
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		date = ( const GDate * ) &account->private->bro_deb_date;
+		date = ( const GDate * ) &account->priv->bro_deb_date;
 	}
 
 	return( date );
@@ -622,9 +563,9 @@ ofo_account_get_bro_cre_mnt( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0.0 );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		mnt = account->private->bro_cre_mnt;
+		mnt = account->priv->bro_cre_mnt;
 	}
 
 	return( mnt );
@@ -640,9 +581,9 @@ ofo_account_get_bro_cre_ecr( const ofoAccount *account )
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0 );
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		ecr = account->private->bro_cre_ecr;
+		ecr = account->priv->bro_cre_ecr;
 	}
 
 	return( ecr );
@@ -660,9 +601,9 @@ ofo_account_get_bro_cre_date( const ofoAccount *account )
 
 	date = NULL;
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		date = ( const GDate * ) &account->private->bro_cre_date;
+		date = ( const GDate * ) &account->priv->bro_cre_date;
 	}
 
 	return( date );
@@ -680,9 +621,9 @@ ofo_account_is_root( const ofoAccount *account )
 
 	is_root = FALSE;
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		if( account->private->type && !g_utf8_collate( account->private->type, "R" )){
+		if( account->priv->type && !g_utf8_collate( account->priv->type, "R" )){
 			is_root = TRUE;
 		}
 	}
@@ -737,9 +678,9 @@ ofo_account_set_number( ofoAccount *account, const gchar *number )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->number = g_strdup( number );
+		account->priv->number = g_strdup( number );
 	}
 }
 
@@ -751,9 +692,9 @@ ofo_account_set_label( ofoAccount *account, const gchar *label )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->label = g_strdup( label );
+		account->priv->label = g_strdup( label );
 	}
 }
 
@@ -765,9 +706,9 @@ ofo_account_set_devise( ofoAccount *account, gint devise )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->devise = devise;
+		account->priv->devise = devise;
 	}
 }
 
@@ -779,9 +720,9 @@ ofo_account_set_notes( ofoAccount *account, const gchar *notes )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->notes = g_strdup( notes );
+		account->priv->notes = g_strdup( notes );
 	}
 }
 
@@ -793,9 +734,9 @@ ofo_account_set_type( ofoAccount *account, const gchar *type )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->type = g_strdup( type );
+		account->priv->type = g_strdup( type );
 	}
 }
 
@@ -807,9 +748,9 @@ ofo_account_set_maj_user( ofoAccount *account, const gchar *maj_user )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->maj_user = g_strdup( maj_user );
+		account->priv->maj_user = g_strdup( maj_user );
 	}
 }
 
@@ -821,9 +762,9 @@ ofo_account_set_maj_stamp( ofoAccount *account, const GTimeVal *maj_stamp )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		memcpy( &account->private->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+		memcpy( &account->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -835,9 +776,9 @@ ofo_account_set_deb_mnt( ofoAccount *account, gdouble mnt )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->deb_mnt = mnt;
+		account->priv->deb_mnt = mnt;
 	}
 }
 
@@ -849,9 +790,9 @@ ofo_account_set_deb_ecr( ofoAccount *account, gint num )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->deb_ecr = num;
+		account->priv->deb_ecr = num;
 	}
 }
 
@@ -863,9 +804,9 @@ ofo_account_set_deb_date( ofoAccount *account, const GDate *date )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		memcpy( &account->private->deb_date, date, sizeof( GDate ));
+		memcpy( &account->priv->deb_date, date, sizeof( GDate ));
 	}
 }
 
@@ -877,9 +818,9 @@ ofo_account_set_cre_mnt( ofoAccount *account, gdouble mnt )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->cre_mnt = mnt;
+		account->priv->cre_mnt = mnt;
 	}
 }
 
@@ -891,9 +832,9 @@ ofo_account_set_cre_ecr( ofoAccount *account, gint num )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->deb_ecr = num;
+		account->priv->deb_ecr = num;
 	}
 }
 
@@ -905,9 +846,9 @@ ofo_account_set_cre_date( ofoAccount *account, const GDate *date )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		memcpy( &account->private->deb_date, date, sizeof( GDate ));
+		memcpy( &account->priv->deb_date, date, sizeof( GDate ));
 	}
 }
 
@@ -919,9 +860,9 @@ ofo_account_set_bro_deb_mnt( ofoAccount *account, gdouble mnt )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->bro_deb_mnt = mnt;
+		account->priv->bro_deb_mnt = mnt;
 	}
 }
 
@@ -933,9 +874,9 @@ ofo_account_set_bro_deb_ecr( ofoAccount *account, gint num )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->bro_deb_ecr = num;
+		account->priv->bro_deb_ecr = num;
 	}
 }
 
@@ -947,9 +888,9 @@ ofo_account_set_bro_deb_date( ofoAccount *account, const GDate *date )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		memcpy( &account->private->bro_deb_date, date, sizeof( GDate ));
+		memcpy( &account->priv->bro_deb_date, date, sizeof( GDate ));
 	}
 }
 
@@ -961,9 +902,9 @@ ofo_account_set_bro_cre_mnt( ofoAccount *account, gdouble mnt )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->bro_cre_mnt = mnt;
+		account->priv->bro_cre_mnt = mnt;
 	}
 }
 
@@ -975,9 +916,9 @@ ofo_account_set_bro_cre_ecr( ofoAccount *account, gint num )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		account->private->bro_deb_ecr = num;
+		account->priv->bro_deb_ecr = num;
 	}
 }
 
@@ -989,9 +930,9 @@ ofo_account_set_bro_cre_date( ofoAccount *account, const GDate *date )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-	if( !account->private->dispose_has_run ){
+	if( !account->priv->dispose_has_run ){
 
-		memcpy( &account->private->bro_deb_date, date, sizeof( GDate ));
+		memcpy( &account->priv->bro_deb_date, date, sizeof( GDate ));
 	}
 }
 
