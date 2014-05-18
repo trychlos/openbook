@@ -34,13 +34,13 @@
 #include "ui/my-utils.h"
 #include "ui/ofo-devise.h"
 
-/* private class data
+/* priv class data
  */
 struct _ofoDeviseClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
-/* private instance data
+/* priv instance data
  */
 struct _ofoDevisePrivate {
 	gboolean dispose_has_run;
@@ -59,135 +59,76 @@ struct _ofoDevisePrivate {
 	gchar   *symbol;
 };
 
-static ofoBaseClass *st_parent_class  = NULL;
+G_DEFINE_TYPE( ofoDevise, ofo_devise, OFO_TYPE_BASE )
 
-static GType  register_type( void );
-static void   class_init( ofoDeviseClass *klass );
-static void   instance_init( GTypeInstance *instance, gpointer klass );
-static void   instance_dispose( GObject *instance );
-static void   instance_finalize( GObject *instance );
-
-GType
-ofo_devise_get_type( void )
-{
-	static GType st_type = 0;
-
-	if( !st_type ){
-		st_type = register_type();
-	}
-
-	return( st_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofo_devise_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofoDeviseClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofoDevise ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFO_TYPE_BASE, "ofoDevise", &info, 0 );
-
-	return( type );
-}
+#define OFO_DEVISE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_DEVISE, ofoDevisePrivate))
 
 static void
-class_init( ofoDeviseClass *klass )
+ofo_devise_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_devise_class_init";
-	GObjectClass *object_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofoDeviseClassPrivate, 1 );
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofo_devise_instance_init";
+	static const gchar *thisfn = "ofo_devise_finalize";
 	ofoDevise *self;
 
-	g_return_if_fail( OFO_IS_DEVISE( instance ));
-
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	self = OFO_DEVISE( instance );
 
-	self->private = g_new0( ofoDevisePrivate, 1 );
+	g_free( self->priv->mnemo );
+	g_free( self->priv->label );
+	g_free( self->priv->symbol );
 
-	self->private->dispose_has_run = FALSE;
-
-	self->private->id = -1;
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_devise_parent_class )->finalize( instance );
 }
 
 static void
-instance_dispose( GObject *instance )
+ofo_devise_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_devise_instance_dispose";
-	ofoDevisePrivate *priv;
+	static const gchar *thisfn = "ofo_devise_dispose";
+	ofoDevise *self;
 
-	g_return_if_fail( OFO_IS_DEVISE( instance ));
+	self = OFO_DEVISE( instance );
 
-	priv = ( OFO_DEVISE( instance ))->private;
-
-	if( !priv->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: instance=%p (%s): %s - %s",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-				priv->mnemo, priv->label );
+				self->priv->mnemo, self->priv->label );
 
-		priv->dispose_has_run = TRUE;
-
-		g_free( priv->mnemo );
-		g_free( priv->label );
-		g_free( priv->symbol );
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
+		self->priv->dispose_has_run = TRUE;
 	}
+
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_devise_parent_class )->dispose( instance );
 }
 
 static void
-instance_finalize( GObject *instance )
+ofo_devise_init( ofoDevise *self )
 {
-	static const gchar *thisfn = "ofo_devise_instance_finalize";
-	ofoDevisePrivate *priv;
+	static const gchar *thisfn = "ofo_devise_init";
 
-	g_return_if_fail( OFO_IS_DEVISE( instance ));
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	self->priv = OFO_DEVISE_GET_PRIVATE( self );
 
-	priv = OFO_DEVISE( instance )->private;
+	self->priv->dispose_has_run = FALSE;
 
-	g_free( priv );
+	self->priv->id = -1;
+}
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
+static void
+ofo_devise_class_init( ofoDeviseClass *klass )
+{
+	static const gchar *thisfn = "ofo_devise_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = ofo_devise_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ofo_devise_finalize;
+
+	klass->priv = g_new0( ofoDeviseClassPrivate, 1 );
 }
 
 /**
@@ -257,7 +198,7 @@ ofo_devise_dump_set( GList *set )
 	GList *ic;
 
 	for( ic=set ; ic ; ic=ic->next ){
-		priv = OFO_DEVISE( ic->data )->private;
+		priv = OFO_DEVISE( ic->data )->priv;
 		g_debug( "%s: devise %s - %s", thisfn, priv->mnemo, priv->label );
 	}
 }
@@ -270,9 +211,9 @@ ofo_devise_get_id( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), -1 );
 
-	if( !devise->private->dispose_has_run ){
+	if( !devise->priv->dispose_has_run ){
 
-		return( devise->private->id );
+		return( devise->priv->id );
 	}
 
 	return( -1 );
@@ -286,9 +227,9 @@ ofo_devise_get_code( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
-	if( !devise->private->dispose_has_run ){
+	if( !devise->priv->dispose_has_run ){
 
-		return( devise->private->mnemo );
+		return( devise->priv->mnemo );
 	}
 
 	return( NULL );
@@ -302,9 +243,9 @@ ofo_devise_get_label( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
-	if( !devise->private->dispose_has_run ){
+	if( !devise->priv->dispose_has_run ){
 
-		return( devise->private->label );
+		return( devise->priv->label );
 	}
 
 	return( NULL );
@@ -318,9 +259,9 @@ ofo_devise_get_symbol( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
-	if( !devise->private->dispose_has_run ){
+	if( !devise->priv->dispose_has_run ){
 
-		return( devise->private->symbol );
+		return( devise->priv->symbol );
 	}
 
 	return( NULL );
@@ -334,9 +275,9 @@ ofo_devise_set_id( ofoDevise *devise, gint id )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->private->dispose_has_run ){
+	if( !devise->priv->dispose_has_run ){
 
-		devise->private->id = id;
+		devise->priv->id = id;
 	}
 }
 
@@ -348,9 +289,9 @@ ofo_devise_set_code( ofoDevise *devise, const gchar *mnemo )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->private->dispose_has_run ){
+	if( !devise->priv->dispose_has_run ){
 
-		devise->private->mnemo = g_strdup( mnemo );
+		devise->priv->mnemo = g_strdup( mnemo );
 	}
 }
 
@@ -362,9 +303,9 @@ ofo_devise_set_label( ofoDevise *devise, const gchar *label )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->private->dispose_has_run ){
+	if( !devise->priv->dispose_has_run ){
 
-		devise->private->label = g_strdup( label );
+		devise->priv->label = g_strdup( label );
 	}
 }
 
@@ -376,9 +317,9 @@ ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->private->dispose_has_run ){
+	if( !devise->priv->dispose_has_run ){
 
-		devise->private->symbol = g_strdup( symbol );
+		devise->priv->symbol = g_strdup( symbol );
 	}
 }
 

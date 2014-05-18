@@ -48,23 +48,23 @@ G_BEGIN_DECLS
 #define OFO_IS_DEVISE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_DEVISE ))
 #define OFO_DEVISE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_DEVISE, ofoDeviseClass ))
 
-typedef struct _ofoDevisePrivate       ofoDevisePrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase           parent;
-	ofoDevisePrivate *private;
-}
-	ofoDevise;
-
 typedef struct _ofoDeviseClassPrivate  ofoDeviseClassPrivate;
 
 typedef struct {
 	/*< private >*/
 	ofoBaseClass           parent;
-	ofoDeviseClassPrivate *private;
+	ofoDeviseClassPrivate *priv;
 }
 	ofoDeviseClass;
+
+typedef struct _ofoDevisePrivate       ofoDevisePrivate;
+
+typedef struct {
+	/*< private >*/
+	ofoBase           parent;
+	ofoDevisePrivate *priv;
+}
+	ofoDevise;
 
 GType        ofo_devise_get_type  ( void );
 
