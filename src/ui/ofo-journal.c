@@ -34,12 +34,6 @@
 #include "ui/my-utils.h"
 #include "ui/ofo-journal.h"
 
-/* priv class data
- */
-struct _ofoJournalClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* priv instance data
  */
 struct _ofoJournalPrivate {
@@ -130,10 +124,10 @@ ofo_journal_class_init( ofoJournalClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	g_type_class_add_private( klass, sizeof( ofoJournalPrivate ));
+
 	G_OBJECT_CLASS( klass )->dispose = ofo_journal_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_journal_finalize;
-
-	klass->priv = g_new0( ofoJournalClassPrivate, 1 );
 }
 
 /**

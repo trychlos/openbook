@@ -34,12 +34,6 @@
 #include "ui/my-utils.h"
 #include "ui/ofo-devise.h"
 
-/* priv class data
- */
-struct _ofoDeviseClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* priv instance data
  */
 struct _ofoDevisePrivate {
@@ -125,10 +119,10 @@ ofo_devise_class_init( ofoDeviseClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	g_type_class_add_private( klass, sizeof( ofoDevisePrivate ));
+
 	G_OBJECT_CLASS( klass )->dispose = ofo_devise_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_devise_finalize;
-
-	klass->priv = g_new0( ofoDeviseClassPrivate, 1 );
 }
 
 /**

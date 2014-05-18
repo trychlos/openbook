@@ -72,7 +72,7 @@ GType    ofa_sgbd_get_type   ( void );
 
 ofaSgbd *ofa_sgbd_new        ( const gchar *provider );
 
-gboolean ofa_sgbd_connect    ( ofaSgbd *sgbd, GtkWindow *parent,
+gboolean ofa_sgbd_connect    ( ofaSgbd *sgbd,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password );
 
 gboolean ofa_sgbd_query      ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query );

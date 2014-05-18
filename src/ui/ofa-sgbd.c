@@ -61,7 +61,7 @@ static void  class_init( ofaSgbdClass *klass );
 static void  instance_init( GTypeInstance *instance, gpointer klass );
 static void  instance_dispose( GObject *instance );
 static void  instance_finalize( GObject *instance );
-static void  connect_error( ofaSgbd *sgbd, GtkWindow *parent, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
+static void  error_connect( ofaSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
 static void  query_error( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query );
 
 GType
@@ -213,7 +213,7 @@ ofa_sgbd_new( const gchar *provider )
  * The connection will be automatically closed when unreffing the object.
  */
 gboolean
-ofa_sgbd_connect( ofaSgbd *sgbd, GtkWindow *parent,
+ofa_sgbd_connect( ofaSgbd *sgbd,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofa_sgbd_connect";
@@ -221,10 +221,9 @@ ofa_sgbd_connect( ofaSgbd *sgbd, GtkWindow *parent,
 
 	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
 
-	g_debug( "%s: sgbd=%p, parent=%p (%s), host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s",
+	g_debug( "%s: sgbd=%p, host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s",
 			thisfn,
 			( void * ) sgbd,
-			( void * ) parent, G_OBJECT_TYPE_NAME( parent ),
 			host, port, socket, dbname, account, password );
 
 	mysql = g_new0( MYSQL, 1 );
@@ -239,7 +238,7 @@ ofa_sgbd_connect( ofaSgbd *sgbd, GtkWindow *parent,
 			socket,
 			CLIENT_MULTI_RESULTS )){
 
-		connect_error( sgbd, parent, host, port, socket, dbname, account );
+		error_connect( sgbd, host, port, socket, dbname, account );
 		g_free( mysql );
 		return( FALSE );
 	}
@@ -249,14 +248,14 @@ ofa_sgbd_connect( ofaSgbd *sgbd, GtkWindow *parent,
 }
 
 static void
-connect_error( ofaSgbd *sgbd, GtkWindow *parent,
+error_connect( ofaSgbd *sgbd,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account )
 {
 	GtkMessageDialog *dlg;
 	GString *str;
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				parent,
+				NULL,
 				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 				GTK_MESSAGE_WARNING,
 				GTK_BUTTONS_OK,

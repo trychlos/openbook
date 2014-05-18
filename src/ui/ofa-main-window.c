@@ -608,7 +608,7 @@ on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data 
 	window->private->dossier = ofo_dossier_new( sod->dossier );
 
 	if( !ofo_dossier_open(
-			window->private->dossier, GTK_WINDOW( window ),
+			window->private->dossier,
 			sod->host, sod->port, sod->socket, sod->dbname, sod->account, sod->password )){
 
 		g_object_unref( window->private->dossier );

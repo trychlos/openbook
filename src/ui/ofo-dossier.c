@@ -28,18 +28,13 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 
 #include "ui/my-utils.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-journal.h"
-
-/* priv class data
- */
-struct _ofoDossierClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
 
 /* priv instance data
  */
@@ -54,10 +49,11 @@ struct _ofoDossierPrivate {
 	gchar    *name;
 	ofaSgbd  *sgbd;
 	gchar    *userid;
+
 	GList    *accounts;					/* chart of accounts */
 	GList    *devises;					/* devises */
-	GList    *journals;					/* journals set */
-	GList    *models;					/* entry models set */
+	GList    *journals;					/* journals */
+	GList    *models;					/* entry models */
 
 	/* row id 0
 	 */
@@ -75,7 +71,6 @@ G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
  */
 #define THIS_DBMODEL_VERSION            1
 
-static gboolean check_user_exists( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
 static gint     dbmodel_get_version( ofaSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
 static void     accounts_chart_free( GList *chart );
@@ -180,10 +175,10 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	g_type_class_add_private( klass, sizeof( ofoDossierPrivate ));
+
 	G_OBJECT_CLASS( klass )->dispose = ofo_dossier_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_dossier_finalize;
-
-	klass->priv = g_new0( ofoDossierClassPrivate, 1 );
 }
 
 /**
@@ -200,11 +195,55 @@ ofo_dossier_new( const gchar *name )
 	return( dossier );
 }
 
+static gboolean
+check_user_exists( ofaSgbd *sgbd, const gchar *account )
+{
+	gchar *query;
+	GSList *res;
+	gboolean exists;
+
+	exists = FALSE;
+	query = g_strdup_printf( "SELECT ROL_USER FROM OFA_T_ROLES WHERE ROL_USER='%s'", account );
+	res = ofa_sgbd_query_ex( sgbd, NULL, query );
+	if( res ){
+		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
+		if( !g_utf8_collate( account, s )){
+			exists = TRUE;
+		}
+		ofa_sgbd_free_result( res );
+	}
+	g_free( query );
+
+	return( exists );
+}
+
+static void
+error_user_not_exists( ofoDossier *dossier, const gchar *account )
+{
+	GtkMessageDialog *dlg;
+	gchar *str;
+
+	str = g_strdup_printf(
+			_( "Le compte %s n'est pas habilité à se connecter au dossier %s" ),
+			account, dossier->priv->name );
+
+	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
+				NULL,
+				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_WARNING,
+				GTK_BUTTONS_OK,
+				"%s", str ));
+
+	g_free( str );
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( GTK_WIDGET( dlg ));
+}
+
 /**
  * ofo_dossier_open:
  */
 gboolean
-ofo_dossier_open( ofoDossier *dossier, GtkWindow *parent,
+ofo_dossier_open( ofoDossier *dossier,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofo_dossier_open";
@@ -212,14 +251,13 @@ ofo_dossier_open( ofoDossier *dossier, GtkWindow *parent,
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
-	g_debug( "%s: dossier=%p, parent=%p, host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s",
+	g_debug( "%s: dossier=%p, host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s",
 			thisfn,
-			( void * ) dossier, ( void * ) parent, host, port, socket, dbname, account, password );
+			( void * ) dossier, host, port, socket, dbname, account, password );
 
 	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
 
 	if( !ofa_sgbd_connect( sgbd,
-			parent,
 			host,
 			port,
 			socket,
@@ -231,39 +269,18 @@ ofo_dossier_open( ofoDossier *dossier, GtkWindow *parent,
 		return( FALSE );
 	}
 
-	if( !check_user_exists( sgbd, parent, account )){
+	if( !check_user_exists( sgbd, account )){
+		error_user_not_exists( dossier, account );
 		g_object_unref( sgbd );
 		return( FALSE );
 	}
 
-	ofo_dossier_dbmodel_update( sgbd, parent, account );
+	ofo_dossier_dbmodel_update( sgbd, NULL, account );
 
 	dossier->priv->sgbd = sgbd;
 	dossier->priv->userid = g_strdup( account );
 
 	return( TRUE );
-}
-
-static gboolean
-check_user_exists( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
-{
-	gchar *query;
-	GSList *res;
-	gboolean exists;
-
-	exists = FALSE;
-	query = g_strdup_printf( "SELECT ROL_USER FROM OFA_T_ROLES WHERE ROL_USER='%s'", account );
-	res = ofa_sgbd_query_ex( sgbd, parent, query );
-	if( res ){
-		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
-		if( !g_utf8_collate( account, s )){
-			exists = TRUE;
-		}
-		ofa_sgbd_free_result( res );
-	}
-	g_free( query );
-
-	return( exists );
 }
 
 /**

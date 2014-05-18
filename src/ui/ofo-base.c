@@ -30,12 +30,6 @@
 
 #include "ui/ofo-base.h"
 
-/* private class data
- */
-struct _ofoBaseClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofoBasePrivate {
@@ -83,8 +77,8 @@ ofo_base_class_init( ofoBaseClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	g_type_class_add_private( klass, sizeof( ofoBasePrivate ));
+
 	G_OBJECT_CLASS( klass )->dispose = ofo_base_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_base_finalize;
-
-	klass->priv = g_new0( ofoBaseClassPrivate, 1 );
 }

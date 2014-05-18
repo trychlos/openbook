@@ -111,7 +111,11 @@
                 because the on_selection_changed may not be triggered,
                 e.g. if the list is empty
 
-  54
+  54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments.
+
+  55 2014- 5-18 ofo_dossier_insert: use ofoBase virtual function.
+
+  56
 
 -----------------------------------------------------------------------
  DONE

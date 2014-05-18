@@ -55,12 +55,9 @@ G_BEGIN_DECLS
 #define OFO_IS_DOSSIER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_DOSSIER ))
 #define OFO_DOSSIER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_DOSSIER, ofoDossierClass ))
 
-typedef struct _ofoDossierClassPrivate  ofoDossierClassPrivate;
-
 typedef struct {
 	/*< private >*/
 	ofoBaseClass            parent;
-	ofoDossierClassPrivate *priv;
 }
 	ofoDossierClass;
 
@@ -77,7 +74,7 @@ GType         ofo_dossier_get_type( void );
 
 ofoDossier   *ofo_dossier_new     ( const gchar *name );
 
-gboolean      ofo_dossier_open    ( ofoDossier *dossier, GtkWindow *parent,
+gboolean      ofo_dossier_open    ( ofoDossier *dossier,
 										const gchar *host, gint port,
 										const gchar *socket, const gchar *dbname,
 										const gchar *account, const gchar *password );

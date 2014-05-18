@@ -47,12 +47,9 @@ G_BEGIN_DECLS
 #define OFO_IS_MODEL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_MODEL ))
 #define OFO_MODEL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_MODEL, ofoModelClass ))
 
-typedef struct _ofoModelClassPrivate  ofoModelClassPrivate;
-
 typedef struct {
 	/*< private >*/
 	ofoBaseClass          parent;
-	ofoModelClassPrivate *priv;
 }
 	ofoModelClass;
 

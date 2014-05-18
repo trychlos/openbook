@@ -557,7 +557,6 @@ do_open( ofaDossierOpen *self )
 
 	if( !ofa_sgbd_connect(
 			sgbd,
-			GTK_WINDOW( self->private->dialog),
 			sod->host,
 			sod->port,
 			sod->socket,

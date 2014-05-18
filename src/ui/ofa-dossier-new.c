@@ -944,7 +944,6 @@ make_db_global( ofaDossierNew *self )
 	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
 
 	if( !ofa_sgbd_connect( sgbd,
-			GTK_WINDOW( self->private->assistant ),
 			self->private->p2_host,
 			self->private->p2_port_num,
 			self->private->p2_socket,
@@ -1055,7 +1054,6 @@ create_db_model( ofaDossierNew *self )
 	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
 
 	if( !ofa_sgbd_connect( sgbd,
-			GTK_WINDOW( self->private->assistant ),
 			self->private->p2_host,
 			self->private->p2_port_num,
 			self->private->p2_socket,
