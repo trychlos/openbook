@@ -273,20 +273,29 @@ ofo_account_dump_chart( GList *chart )
 gint
 ofo_account_get_class( const ofoAccount *account )
 {
-	gchar *number;
-	gint class;
-
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0 );
-
-	class = 0;
 
 	if( !account->priv->dispose_has_run ){
 
-		number = g_strdup( account->priv->number );
-		number[1] = '\0';
-		class = atoi( number );
-		g_free( number );
+		return( ofo_account_get_class_from_number( account->priv->number ));
 	}
+
+	return( 0 );
+}
+
+/**
+ * ofo_account_get_class_from_number:
+ */
+gint
+ofo_account_get_class_from_number( const gchar *account_number )
+{
+	gchar *number;
+	gint class;
+
+	number = g_strdup( account_number );
+	number[1] = '\0';
+	class = atoi( number );
+	g_free( number );
 
 	return( class );
 }

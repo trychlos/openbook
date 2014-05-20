@@ -322,7 +322,13 @@ check_for_enable_dlg( ofaAccountSelect *self )
 static gboolean
 do_update( ofaAccountSelect *self )
 {
-	self->private->account_number = ofa_account_notebook_get_selected( self->private->child );
+	ofoAccount *account;
+
+	account = ofa_account_notebook_get_selected( self->private->child );
+	if( account ){
+		self->private->account_number = g_strdup( ofo_account_get_number( account ));
+		g_object_unref( account );
+	}
 
 	return( TRUE );
 }

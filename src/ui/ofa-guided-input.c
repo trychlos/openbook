@@ -447,7 +447,7 @@ cell_render_entry( ofaGuidedInput *self, GtkCellRenderer *cell, gboolean locked 
 	GdkRGBA bg;
 
 	if( locked ){
-		gdk_rgba_parse( &bg, "#c8c8c8" );
+		gdk_rgba_parse( &bg, "#e0e0e0" );
 		g_object_set( G_OBJECT( cell ),
 				"mode", GTK_CELL_RENDERER_MODE_INERT,
 				"cell-background-rgba", &bg,

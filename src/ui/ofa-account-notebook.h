@@ -36,6 +36,7 @@
  * inside of a notebook, with one class per page.
  */
 
+#include "ui/ofo-account.h"
 #include "ui/ofo-dossier.h"
 
 G_BEGIN_DECLS
@@ -101,7 +102,11 @@ typedef struct {
 
 ofaAccountNotebook *ofa_account_notebook_init_dialog ( ofaAccountNotebookParms *parms );
 
-gchar              *ofa_account_notebook_get_selected( ofaAccountNotebook *self );
+ofoAccount         *ofa_account_notebook_get_selected( ofaAccountNotebook *self );
+
+gboolean            ofa_account_notebook_insert      ( ofaAccountNotebook *self, ofoAccount *account );
+
+gboolean            ofa_account_notebook_remove      ( ofaAccountNotebook *self, const gchar *number );
 
 G_END_DECLS
 

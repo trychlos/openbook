@@ -101,6 +101,7 @@ static void       setup_first_selection( ofaAccountNotebook *self );
 static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountNotebook *self );
 static void       on_account_selected( GtkTreeSelection *selection, ofaAccountNotebook *self );
 static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self );
+static GtkWidget *find_page( ofaAccountNotebook *self, const gchar *number );
 
 GType
 ofa_account_notebook_get_type( void )
@@ -489,20 +490,20 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 /**
  * ofa_account_notebook_get_selected:
  *
- * Returns the currently selected account number, as a newly allocated
- * string which must be g_free() by the caller.
+ * Returns a new reference on the currently selected account, which
+ * should be g_object_unref() by the caller after usage.
  */
-gchar *
+ofoAccount *
 ofa_account_notebook_get_selected( ofaAccountNotebook *self )
 {
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	gchar *number;
+	ofoAccount *account;
 
 	g_return_val_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ), NULL );
 
-	number = NULL;
+	account = NULL;
 
 	if( !self->private->dispose_has_run && self->private->view ){
 
@@ -510,9 +511,159 @@ ofa_account_notebook_get_selected( ofaAccountNotebook *self )
 
 		select = gtk_tree_view_get_selection( self->private->view );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-			gtk_tree_model_get( tmodel, &iter, COL_NUMBER, &number, -1 );
+			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
 		}
 	}
 
-	return( number );
+	return( account );
+}
+
+/**
+ * ofa_account_notebook_insert:
+ */
+gboolean
+ofa_account_notebook_insert( ofaAccountNotebook *self, ofoAccount *account )
+{
+	gint account_class;
+	gint page_num, cmp;
+	GtkWidget *page;
+	GtkWidget *tview;
+	GtkTreeModel *tmodel;
+	gboolean iter_found;
+	GtkTreeIter iter, new_iter;
+	const gchar *account_num;
+	gchar *iter_num;
+	GtkTreePath *path;
+
+	g_return_val_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ), FALSE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+
+	if( !self->private->dispose_has_run ){
+
+		/* activate the page of the correct class, or create a new one */
+		page = find_page( self, ofo_account_get_number( account ));
+		if( !page ){
+			account_class = ofo_account_get_class( account );
+			page = book_create_page(
+					self, self->private->book, account_class, account_class-1 );
+		}
+		gtk_widget_show_all( page );
+		page_num = gtk_notebook_page_num( self->private->book, page );
+		gtk_notebook_set_current_page( self->private->book, page_num );
+
+		/* insert the new row at the right place */
+		tview = my_utils_container_get_child_by_type( GTK_CONTAINER( page ), GTK_TYPE_TREE_VIEW );
+		g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), FALSE );
+
+		tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
+		iter_found = FALSE;
+		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+			account_num = ofo_account_get_number( account );
+			while( !iter_found ){
+				gtk_tree_model_get( tmodel, &iter, COL_NUMBER, &iter_num, -1 );
+				cmp = g_utf8_collate( iter_num, account_num );
+				g_free( iter_num );
+				if( cmp > 0 ){
+					iter_found = TRUE;
+					break;
+				}
+				if( !gtk_tree_model_iter_next( tmodel, &iter )){
+					break;
+				}
+			}
+		}
+		if( !iter_found ){
+			gtk_list_store_append( GTK_LIST_STORE( tmodel ), &new_iter );
+		} else {
+			gtk_list_store_insert_before( GTK_LIST_STORE( tmodel ), &new_iter, &iter );
+		}
+		store_set_account( tmodel, &new_iter, account );
+
+		/* select the newly added account */
+		path = gtk_tree_model_get_path( tmodel, &new_iter );
+		gtk_tree_view_set_cursor( GTK_TREE_VIEW( tview ), path, NULL, FALSE );
+		gtk_widget_grab_focus( tview );
+		gtk_tree_path_free( path );
+	}
+
+	return( TRUE );
+}
+
+/**
+ * ofa_account_notebook_remove:
+ */
+gboolean
+ofa_account_notebook_remove( ofaAccountNotebook *self, const gchar *number )
+{
+	static const gchar *thisfn = "ofa_account_notebook_remove";
+	GtkWidget *page;
+	GtkWidget *tview;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gchar *iter_num;
+	gint cmp;
+	gboolean iter_found;
+
+	g_debug( "%s: self=%p, number=%s", thisfn, ( void * ) self, number );
+
+	g_return_val_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ), FALSE );
+	g_return_val_if_fail( number && g_utf8_strlen( number, -1 ), FALSE );
+
+	if( !self->private->dispose_has_run ){
+
+		page = find_page( self, number );
+		g_return_val_if_fail( page && GTK_IS_CONTAINER( page ), FALSE );
+
+		tview = my_utils_container_get_child_by_type( GTK_CONTAINER( page ), GTK_TYPE_TREE_VIEW );
+		g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), FALSE );
+
+		iter_found = FALSE;
+		tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
+
+		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+			while( !iter_found ){
+				gtk_tree_model_get( tmodel, &iter, COL_NUMBER, &iter_num, -1 );
+				cmp = g_utf8_collate( iter_num, number );
+				g_free( iter_num );
+				if( cmp == 0 ){
+					iter_found = TRUE;
+					break;
+				}
+				if( !gtk_tree_model_iter_next( tmodel, &iter )){
+					break;
+				}
+			}
+		}
+		if( !iter_found ){
+			g_debug( "%s: number %s not found", thisfn, number );
+			return( FALSE );
+		}
+
+		gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
+	}
+
+	return( TRUE );
+}
+
+static GtkWidget *
+find_page( ofaAccountNotebook *self, const gchar *number )
+{
+	gint account_class;
+	gint page_class;
+	gint count, i;
+	GtkWidget *page, *page_found;
+
+	account_class = ofo_account_get_class_from_number( number );
+	count = gtk_notebook_get_n_pages( self->private->book );
+
+	for( i=0, page_found=NULL ; i<count ; ++i ){
+		page = gtk_notebook_get_nth_page( self->private->book, i );
+		page_class = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), DATA_PAGE_CLASS ));
+		if( page_class == account_class ){
+			page_found = page;
+			break;
+		}
+	}
+
+	return( page_found );
 }
