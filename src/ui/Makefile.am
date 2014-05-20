@@ -45,10 +45,14 @@ openbook_SOURCES = \
 	main.c												\
 	my-utils.c											\
 	my-utils.h											\
+	ofa-account-notebook.c								\
+	ofa-account-notebook.h								\
 	ofa-account-properties.c							\
 	ofa-account-properties.h							\
 	ofa-accounts-chart.c								\
 	ofa-accounts-chart.h								\
+	ofa-account-select.c								\
+	ofa-account-select.h								\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-devise-properties.c								\
@@ -111,6 +115,7 @@ actions_files = \
 
 ui_files = \
 	ofa-account-properties.ui							\
+	ofa-account-select.ui								\
 	ofa-devise-properties.ui							\
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\

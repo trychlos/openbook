@@ -509,6 +509,7 @@ init_dialog_detail( ofaModelProperties *self )
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_min_width( column, 90 );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_account_edited ), self );
 
 	toggle_cell = gtk_cell_renderer_toggle_new();
@@ -546,7 +547,7 @@ init_dialog_detail( ofaModelProperties *self )
 	gtk_tree_view_column_pack_end( column, text_cell, TRUE );
 	gtk_tree_view_column_set_title( column, _( "Debit" ));
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", DET_COL_DEBIT );
-	gtk_tree_view_column_set_min_width( column, 80 );
+	gtk_tree_view_column_set_min_width( column, 90 );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_debit_edited ), self );
@@ -566,7 +567,7 @@ init_dialog_detail( ofaModelProperties *self )
 	gtk_tree_view_column_pack_end( column, text_cell, TRUE );
 	gtk_tree_view_column_set_title( column, _( "Credit" ));
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", DET_COL_CREDIT );
-	gtk_tree_view_column_set_min_width( column, 80 );
+	gtk_tree_view_column_set_min_width( column, 90 );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_credit_edited ), self );

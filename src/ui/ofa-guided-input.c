@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofo-dossier.h"
@@ -66,9 +67,13 @@ struct _ofaGuidedInputPrivate {
 enum {
 	COL_RANG = 0,
 	COL_ACCOUNT,
+	COL_ACCOUNT_FORMULA,
 	COL_LABEL,
+	COL_LABEL_FORMULA,
 	COL_DEBIT,
+	COL_DEBIT_FORMULA,
 	COL_CREDIT,
+	COL_CREDIT_FORMULA,
 	N_COLUMNS
 };
 
@@ -86,7 +91,13 @@ static void      do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main
 static gboolean  ok_to_terminate( ofaGuidedInput *self, gint code );
 static void      init_dialog_journal( ofaGuidedInput *self );
 static void      init_dialog_entries( ofaGuidedInput *self );
+static void      cell_renderer_rang( GtkTreeViewColumn *column, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self );
+static void      cell_renderer_account( GtkTreeViewColumn *column, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self );
+static void      cell_renderer_label( GtkTreeViewColumn *column, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self );
+static void      cell_renderer_debit( GtkTreeViewColumn *column, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self );
+static void      cell_renderer_credit( GtkTreeViewColumn *column, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self );
 static void      add_row_entry( ofaGuidedInput *self, gint i );
+static void      add_row_entry_set( GtkTreeModel *tmodel, GtkTreeIter *iter, gint col, const gchar *string );
 static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self );
 static void      on_account_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self );
 static void      on_label_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self );
@@ -336,6 +347,8 @@ init_dialog_entries( ofaGuidedInput *self )
 	GtkWidget *view;
 	GtkTreeModel *tmodel;
 	gint count,i;
+	GtkCellRenderer *text_cell;
+	GtkTreeViewColumn *column;
 
 	view = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-entries" );
 	g_return_if_fail( view && GTK_IS_TREE_VIEW( view ));
@@ -343,23 +356,12 @@ init_dialog_entries( ofaGuidedInput *self )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 				N_COLUMNS,
-				G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING ));
+				G_TYPE_INT,
+				G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
+				G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING ));
 
 	gtk_tree_view_set_model( self->private->view, tmodel );
 	g_object_unref( tmodel );
-
-	count = ofo_model_get_detail_count( self->private->model );
-	for( i=0 ; i<count ; ++i ){
-		add_row_entry( self, i );
-	}
-}
-
-static void
-add_row_entry( ofaGuidedInput *self, gint i )
-{
-	GtkCellRenderer *text_cell;
-	GtkTreeViewColumn *column;
-	gboolean locked;
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -368,22 +370,22 @@ add_row_entry( ofaGuidedInput *self, gint i )
 			NULL );
 	gtk_tree_view_append_column( self->private->view, column );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) cell_renderer_rang, self, NULL );
 
 	text_cell = gtk_cell_renderer_text_new();
-	locked = ofo_model_get_detail_account_locked( self->private->model, i );
-	g_object_set( G_OBJECT( text_cell ), "editable", !locked, NULL );
+	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Account" ),
 			text_cell, "text", COL_ACCOUNT,
 			NULL );
 	gtk_tree_view_append_column( self->private->view, column );
-	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_min_width( column, 90 );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) cell_renderer_account, self, NULL );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_account_edited ), self );
 
 	text_cell = gtk_cell_renderer_text_new();
-	locked = ofo_model_get_detail_label_locked( self->private->model, i );
-	g_object_set( G_OBJECT( text_cell ), "editable", !locked, NULL );
+	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
 			text_cell, "text", COL_LABEL,
@@ -391,31 +393,159 @@ add_row_entry( ofaGuidedInput *self, gint i )
 	gtk_tree_view_append_column( self->private->view, column );
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) cell_renderer_label, self, NULL );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_label_edited ), self );
 
 	text_cell = gtk_cell_renderer_text_new();
-	locked = ofo_model_get_detail_debit_locked( self->private->model, i );
-	g_object_set( G_OBJECT( text_cell ), "editable", !locked, NULL );
+	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Debit" ),
 			text_cell, "text", COL_DEBIT,
 			NULL );
 	gtk_tree_view_append_column( self->private->view, column );
-	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_min_width( column, 90 );
+	gtk_tree_view_column_set_alignment( column, 1.0 );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) cell_renderer_debit, self, NULL );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_debit_edited ), self );
 
 	text_cell = gtk_cell_renderer_text_new();
-	locked = ofo_model_get_detail_credit_locked( self->private->model, i );
-	g_object_set( G_OBJECT( text_cell ), "editable", !locked, NULL );
+	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Credit" ),
 			text_cell, "text", COL_CREDIT,
 			NULL );
 	gtk_tree_view_append_column( self->private->view, column );
-	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_min_width( column, 90 );
+	gtk_tree_view_column_set_alignment( column, 1.0 );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) cell_renderer_credit, self, NULL );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_credit_edited ), self );
+
+	count = ofo_model_get_detail_count( self->private->model );
+	for( i=0 ; i<count ; ++i ){
+		add_row_entry( self, i );
+	}
+}
+
+static void
+cell_renderer_rang( GtkTreeViewColumn *column, GtkCellRenderer *cell,
+        GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self )
+{
+	gtk_cell_renderer_set_sensitive( cell, FALSE );
+}
+
+static void
+cell_render_entry( ofaGuidedInput *self, GtkCellRenderer *cell, gboolean locked )
+{
+	GdkRGBA bg;
+
+	if( locked ){
+		gdk_rgba_parse( &bg, "#c8c8c8" );
+		g_object_set( G_OBJECT( cell ),
+				"mode", GTK_CELL_RENDERER_MODE_INERT,
+				"cell-background-rgba", &bg,
+				NULL );
+
+	} else {
+		gdk_rgba_parse( &bg, "#ffffff" );
+		g_object_set( G_OBJECT( cell ),
+				"mode", GTK_CELL_RENDERER_MODE_EDITABLE,
+				"cell-background-rgba", &bg,
+				NULL );
+	}
+}
+
+static void
+cell_renderer_account( GtkTreeViewColumn *column, GtkCellRenderer *cell,
+        GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self )
+{
+	gint rang;
+	gboolean locked;
+
+	gtk_tree_model_get( tmodel, iter, COL_RANG, &rang, -1 );
+	locked = ofo_model_get_detail_account_locked( self->private->model, rang-1 );
+	cell_render_entry( self, cell, locked );
+}
+
+static void
+cell_renderer_label( GtkTreeViewColumn *column, GtkCellRenderer *cell,
+        GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self )
+{
+	gint rang;
+	gboolean locked;
+
+	gtk_tree_model_get( tmodel, iter, COL_RANG, &rang, -1 );
+	locked = ofo_model_get_detail_label_locked( self->private->model, rang-1 );
+	cell_render_entry( self, cell, locked );
+}
+
+static void
+cell_renderer_debit( GtkTreeViewColumn *column, GtkCellRenderer *cell,
+        GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self )
+{
+	gint rang;
+	gboolean locked;
+
+	gtk_tree_model_get( tmodel, iter, COL_RANG, &rang, -1 );
+	locked = ofo_model_get_detail_debit_locked( self->private->model, rang-1 );
+	cell_render_entry( self, cell, locked );
+}
+
+static void
+cell_renderer_credit( GtkTreeViewColumn *column, GtkCellRenderer *cell,
+        GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedInput *self )
+{
+	gint rang;
+	gboolean locked;
+
+	gtk_tree_model_get( tmodel, iter, COL_RANG, &rang, -1 );
+	locked = ofo_model_get_detail_credit_locked( self->private->model, rang-1 );
+	cell_render_entry( self, cell, locked );
+}
+
+static void
+add_row_entry( ofaGuidedInput *self, gint i )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	tmodel = gtk_tree_view_get_model( self->private->view );
+	gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
+	gtk_list_store_set(
+			GTK_LIST_STORE( tmodel ),
+			&iter,
+			COL_RANG, i+1,
+			-1 );
+
+	add_row_entry_set( tmodel, &iter, COL_ACCOUNT, ofo_model_get_detail_account( self->private->model, i ));
+	add_row_entry_set( tmodel, &iter, COL_LABEL,   ofo_model_get_detail_label( self->private->model, i ));
+	add_row_entry_set( tmodel, &iter, COL_DEBIT,   ofo_model_get_detail_debit( self->private->model, i ));
+	add_row_entry_set( tmodel, &iter, COL_CREDIT,  ofo_model_get_detail_credit( self->private->model, i ));
+}
+
+static void
+add_row_entry_set( GtkTreeModel *tmodel, GtkTreeIter *iter, gint col, const gchar *string )
+{
+	gchar *label, *formula;
+
+	if( string && string[0] == '=' ){
+		label = g_strdup( "" );
+		formula = g_strdup( string );
+	} else {
+		label = g_strdup( string );
+		formula = g_strdup( "" );
+	}
+
+	gtk_list_store_set(
+			GTK_LIST_STORE( tmodel ),
+			iter,
+			col,   label,
+			col+1, formula,
+			-1 );
+
+	g_free( formula );
+	g_free( label );
 }
 
 static void
@@ -438,10 +568,36 @@ on_detail_editing( ofaGuidedInput *self, const gchar *path, const gchar *text, g
 	}
 }
 
+/*
+ * check that the account exists
+ * else open a dialog for selection
+ */
 static void
 on_account_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self )
 {
-	on_detail_editing( self, path, new_text, COL_ACCOUNT );
+	ofoDossier *dossier;
+	ofoAccount *account;
+	gchar *number;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	dossier = ofa_main_window_get_dossier( self->private->main_window );
+	account = ofo_dossier_get_account( dossier, new_text );
+	if( account ){
+		number = g_strdup( new_text );
+	} else {
+		number = ofa_account_select_run( self->private->main_window );
+		if( !number ){
+			tmodel = gtk_tree_view_get_model( self->private->view );
+			if( gtk_tree_model_get_iter_from_string( tmodel, &iter, path )){
+				gtk_tree_model_get( tmodel, &iter, COL_ACCOUNT, &number, -1 );
+			}
+		}
+	}
+
+	on_detail_editing( self, path, number, COL_ACCOUNT );
+
+	g_free( number );
 }
 
 static void
