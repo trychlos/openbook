@@ -69,19 +69,21 @@ ofoModel    *ofo_model_new          ( void );
 GList       *ofo_model_load_set     ( ofaSgbd *sgbd );
 void         ofo_model_dump_set     ( GList *chart );
 
-gint         ofo_model_get_id       ( const ofoModel *model );
-const gchar *ofo_model_get_mnemo    ( const ofoModel *model );
-const gchar *ofo_model_get_label    ( const ofoModel *model );
-gint         ofo_model_get_journal  ( const ofoModel *model );
-const gchar *ofo_model_get_notes    ( const ofoModel *model );
+gint         ofo_model_get_id            ( const ofoModel *model );
+const gchar *ofo_model_get_mnemo         ( const ofoModel *model );
+const gchar *ofo_model_get_label         ( const ofoModel *model );
+gint         ofo_model_get_journal       ( const ofoModel *model );
+gboolean     ofo_model_get_journal_locked( const ofoModel *model );
+const gchar *ofo_model_get_notes         ( const ofoModel *model );
 
-void         ofo_model_set_id       ( ofoModel *model, gint id );
-void         ofo_model_set_mnemo    ( ofoModel *model, const gchar *mnemo );
-void         ofo_model_set_label    ( ofoModel *model, const gchar *label );
-void         ofo_model_set_journal  ( ofoModel *model, gint journal );
-void         ofo_model_set_notes    ( ofoModel *model, const gchar *notes );
-void         ofo_model_set_maj_user ( ofoModel *model, const gchar *user );
-void         ofo_model_set_maj_stamp( ofoModel *model, const GTimeVal *stamp );
+void         ofo_model_set_id            ( ofoModel *model, gint id );
+void         ofo_model_set_mnemo         ( ofoModel *model, const gchar *mnemo );
+void         ofo_model_set_label         ( ofoModel *model, const gchar *label );
+void         ofo_model_set_journal       ( ofoModel *model, gint journal );
+void         ofo_model_set_journal_locked( ofoModel *model, gboolean journal_locked );
+void         ofo_model_set_notes         ( ofoModel *model, const gchar *notes );
+void         ofo_model_set_maj_user      ( ofoModel *model, const gchar *user );
+void         ofo_model_set_maj_stamp     ( ofoModel *model, const GTimeVal *stamp );
 
 gint         ofo_model_get_detail_count         ( const ofoModel *model );
 const gchar *ofo_model_get_detail_comment       ( const ofoModel *model, gint idx );

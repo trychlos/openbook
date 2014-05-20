@@ -65,6 +65,7 @@ struct _ofaModelPropertiesPrivate {
 	gchar         *mnemo;
 	gchar         *label;
 	gint           journal;				/* journal id */
+	gboolean       journal_locked;
 	gchar         *maj_user;
 	GTimeVal       maj_stamp;
 };
@@ -110,12 +111,14 @@ static void      init_dialog_title( ofaModelProperties *self );
 static void      init_dialog_mnemo( ofaModelProperties *self );
 static void      init_dialog_label( ofaModelProperties *self );
 static void      init_dialog_journal( ofaModelProperties *self );
+static void      init_dialog_journal_locked( ofaModelProperties *self );
 static void      init_dialog_notes( ofaModelProperties *self );
 static void      init_dialog_detail( ofaModelProperties *self );
 static gboolean  ok_to_terminate( ofaModelProperties *self, gint code );
 static void      on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_journal_changed( GtkComboBox *box, ofaModelProperties *self );
+static void      on_journal_locked_toggled( GtkToggleButton *toggle, ofaModelProperties *self );
 static void      add_detail_row( ofaModelProperties *self, gint idx );
 static void      on_add_clicked( GtkButton *button, ofaModelProperties *self );
 static void      on_description_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self );
@@ -309,6 +312,7 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 	init_dialog_mnemo( self );
 	init_dialog_label( self );
 	init_dialog_journal( self );
+	init_dialog_journal_locked( self );
 	init_dialog_notes( self );
 	init_dialog_detail( self );
 
@@ -459,6 +463,21 @@ init_dialog_journal( ofaModelProperties *self )
 	if( idx != -1 ){
 		gtk_combo_box_set_active( combo, idx );
 	}
+}
+
+static void
+init_dialog_journal_locked( ofaModelProperties *self )
+{
+	ofaModelPropertiesPrivate *priv;
+	GtkToggleButton *btn;
+
+	priv = self->private;
+
+	priv->journal_locked = ofo_model_get_journal_locked( priv->model );
+	btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-jou-locked" ));
+	gtk_toggle_button_set_active( btn, priv->journal_locked );
+
+	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_journal_locked_toggled ), self );
 }
 
 static void
@@ -747,6 +766,13 @@ on_journal_changed( GtkComboBox *box, ofaModelProperties *self )
 		g_free( str );
 	}
 
+	check_for_enable_dlg( self );
+}
+
+static void
+on_journal_locked_toggled( GtkToggleButton *btn, ofaModelProperties *self )
+{
+	self->private->journal_locked = gtk_toggle_button_get_active( btn );
 	check_for_enable_dlg( self );
 }
 

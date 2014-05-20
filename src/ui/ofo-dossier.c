@@ -495,6 +495,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 			"	MOD_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Model mnemonic',"
 			"	MOD_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Model label',"
 			"	MOD_JOU_ID    INTEGER                     COMMENT 'Model journal',"
+			"	MOD_JOU_VER   INTEGER                     COMMENT 'Journal is locked',"
 			"	MOD_NOTES     VARCHAR(512)                COMMENT 'Model notes',"
 			"	MOD_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	MOD_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
