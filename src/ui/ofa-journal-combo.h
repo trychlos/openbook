@@ -64,25 +64,55 @@ typedef struct {
 }
 	ofaJournalComboClass;
 
-/* a callback to be triggered when a new journal is selected
- * passed parameters are:
+/**
+ * ofaJournalComboCb:
+ *
+ * A callback to be triggered when a new journal is selected.
+ *
+ * Passed parameters are:
  * - intern identifier
  * - mnemo
  * - label
+ * - user_data provided at init_dialog() time
  */
 typedef void ( *ofaJournalComboCb )( gint, const gchar *, const gchar *, gpointer );
 
 GType            ofa_journal_combo_get_type   ( void );
 
-ofaJournalCombo *ofa_journal_combo_init_dialog( GtkDialog *dialog,
-											const gchar *combo_name, const gchar *label_name,
-											ofoDossier *dossier,
-											gboolean disp_mnemo, gboolean disp_label,
-											ofaJournalComboCb pfn, gpointer user_data,
-											gint initial_id );
+/**
+ * ofaJournalComboParms
+ *
+ * The structure passed to the init_dialog() function.
+ *
+ * @dialog: the parent dialog of the target combo box
+ * @dossier: the current opened ofoDossier
+ * @combo_name: the name of the GtkComboBox widget
+ * @label_name: [allow-none]: the name of a GtkLabel widget which will
+ *  receive the label of the selected journal each time the selection
+ *  changes
+ * @disp_mnemo: whether the combo box should display the mnemo
+ * @disp_label: whether the combo box should display the label
+ * @pfn: [allow-none]: a user-provided callback which will be triggered
+ *  on each selection change
+ * @user_data: user-data passed to the callback
+ * @initial_id: the journal identifier of the initial selection, or -1
+ */
+typedef struct {
+	GtkDialog        *dialog;
+	ofoDossier       *dossier;
+	const gchar      *combo_name;
+	const gchar      *label_name;
+	gboolean          disp_mnemo;
+	gboolean          disp_label;
+	ofaJournalComboCb pfn;
+	gpointer          user_data;
+	gint              initial_id;
+}
+	ofaJournalComboParms;
 
-gint             ofa_journal_combo_get_selection( ofaJournalCombo *box,
-											gchar **mnemo, gchar **label );
+ofaJournalCombo *ofa_journal_combo_init_dialog  ( ofaJournalComboParms *parms );
+
+gint             ofa_journal_combo_get_selection( ofaJournalCombo *self, gchar **mnemo, gchar **label );
 
 G_END_DECLS
 

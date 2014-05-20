@@ -325,20 +325,26 @@ static void
 init_dialog_journal( ofaGuidedInput *self )
 {
 	GtkWidget *combo;
+	ofaJournalComboParms parms;
 
 	self->private->journal_id = ofo_model_get_journal( self->private->model );
 
-	ofa_journal_combo_init_dialog(
-			self->private->dialog, "p1-journal", NULL,
-			ofa_main_window_get_dossier( self->private->main_window ),
-			FALSE, TRUE,
-			( ofaJournalComboCb ) on_journal_changed, self,
-			self->private->journal_id );
+	parms.dialog = self->private->dialog;
+	parms.dossier = ofa_main_window_get_dossier( self->private->main_window );
+	parms.combo_name = "p1-journal";
+	parms.label_name = NULL;
+	parms.disp_mnemo = FALSE;
+	parms.disp_label = TRUE;
+	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
+	parms.user_data = self;
+	parms.initial_id = self->private->journal_id;
+
+	ofa_journal_combo_init_dialog( &parms );
 
 	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-journal" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 
-	gtk_widget_set_sensitive( combo, ofo_model_get_journal_locked( self->private->model ));
+	gtk_widget_set_sensitive( combo, !ofo_model_get_journal_locked( self->private->model ));
 }
 
 static void

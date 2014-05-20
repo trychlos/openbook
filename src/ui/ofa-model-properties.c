@@ -299,6 +299,7 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 {
 	ofaModelPropertiesPrivate *priv;
 	GtkButton *button;
+	ofaJournalComboParms parms;
 
 	priv = self->private;
 	priv->main_window = main;
@@ -313,12 +314,17 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 	init_dialog_mnemo( self );
 	init_dialog_label( self );
 
-	priv->journal_combo = ofa_journal_combo_init_dialog(
-			priv->dialog, "p1-journal", "p1-jou-label",
-			ofa_main_window_get_dossier( main ),
-			TRUE, FALSE,
-			( ofaJournalComboCb ) on_journal_changed, ( gpointer ) self,
-			ofo_model_get_journal( model ));
+	parms.dialog = priv->dialog;
+	parms.dossier = ofa_main_window_get_dossier( main );
+	parms.combo_name = "p1-journal";
+	parms.label_name = "p1-jou-label";
+	parms.disp_mnemo = TRUE;
+	parms.disp_label = FALSE;
+	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
+	parms.user_data = self;
+	parms.initial_id = ofo_model_get_journal( model );
+
+	priv->journal_combo = ofa_journal_combo_init_dialog( &parms );
 
 	init_dialog_journal_locked( self );
 	init_dialog_notes( self );

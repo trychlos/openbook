@@ -46,9 +46,9 @@ struct _ofaJournalComboPrivate {
 	/* input data
 	 */
 	GtkDialog         *dialog;
+	ofoDossier        *dossier;
 	gchar             *combo_name;
 	gchar             *label_name;
-	ofoDossier        *dossier;
 	ofaJournalComboCb  pfn;
 	gpointer           user_data;
 
@@ -195,20 +195,9 @@ instance_finalize( GObject *window )
 
 /**
  * ofa_journal_combo_init_dialog:
- * @dialog: the parent #GtkDialog
- * @combo_name: the name of the combo box widget
- * @label_name: [allow-none]: the name of a GtkLabel on which we will
- *  display the label of the journal when the selection changes
- * @dossier: the current #ofoDossier
- * @fn: [allow-none]: a callback to be triggered when the selection
- *  changes
- * @id: the journal identifier of the initial selection, or -1
  */
 ofaJournalCombo *
-ofa_journal_combo_init_dialog( GtkDialog *dialog,
-			const gchar *combo_name, const gchar *label_name, ofoDossier *dossier,
-			gboolean disp_mnemo, gboolean disp_label,
-			ofaJournalComboCb pfn, gpointer user_data, gint initial_id )
+ofa_journal_combo_init_dialog( ofaJournalComboParms *parms )
 {
 	static const gchar *thisfn = "ofa_journal_combo_init_dialog";
 	ofaJournalCombo *self;
@@ -221,25 +210,28 @@ ofa_journal_combo_init_dialog( GtkDialog *dialog,
 	gint idx, i;
 	ofoJournal *journal;
 
-	g_return_val_if_fail( GTK_IS_DIALOG( dialog ), NULL );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_debug( "%s: parms=%p", thisfn, ( void * ) parms );
 
-	g_debug( "%s: dialog=%p, combo_name=%s, label_name=%s, dossier=%p, pfn=%p, user_data=%p, initial_id=%d",
-			thisfn, ( void * ) dialog, combo_name, label_name,
-			( void * ) dossier, ( void * ) pfn, ( void * ) user_data, initial_id );
+	g_return_val_if_fail( GTK_IS_DIALOG( parms->dialog ), NULL );
+	g_return_val_if_fail( OFO_IS_DOSSIER( parms->dossier ), NULL );
+	g_return_val_if_fail( parms->combo_name && g_utf8_strlen( parms->combo_name, -1 ), NULL );
 
-	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), combo_name );
+	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( parms->dialog ), parms->combo_name );
 	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), NULL );
 
 	self = g_object_new( OFA_TYPE_JOURNAL_COMBO, NULL );
 
 	priv = self->private;
-	priv->dialog = dialog;
-	priv->combo_name = g_strdup( combo_name );
-	priv->label_name = g_strdup( label_name );
-	priv->dossier = dossier;
-	priv->pfn = pfn;
-	priv->user_data = user_data;
+
+	/* parms data */
+	priv->dialog = parms->dialog;
+	priv->dossier = parms->dossier;
+	priv->combo_name = g_strdup( parms->combo_name );
+	priv->label_name = g_strdup( parms->label_name );
+	priv->pfn = parms->pfn;
+	priv->user_data = parms->user_data;
+
+	/* runtime data */
 	priv->combo = GTK_COMBO_BOX( combo );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
@@ -248,19 +240,19 @@ ofa_journal_combo_init_dialog( GtkDialog *dialog,
 	gtk_combo_box_set_model( priv->combo, tmodel );
 	g_object_unref( tmodel );
 
-	if( disp_mnemo ){
+	if( parms->disp_mnemo ){
 		text_cell = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
 		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_MNEMO );
 	}
 
-	if( disp_label ){
+	if( parms->disp_label ){
 		text_cell = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
 		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_LABEL );
 	}
 
-	set = ofo_dossier_get_journals_set( dossier );
+	set = ofo_dossier_get_journals_set( parms->dossier );
 
 	for( elt=set, i=0, idx=-1 ; elt ; elt=elt->next, ++i ){
 		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
@@ -272,7 +264,7 @@ ofa_journal_combo_init_dialog( GtkDialog *dialog,
 				JOU_COL_MNEMO, ofo_journal_get_mnemo( journal ),
 				JOU_COL_LABEL, ofo_journal_get_label( journal ),
 				-1 );
-		if( initial_id == ofo_journal_get_id( journal )){
+		if( parms->initial_id == ofo_journal_get_id( journal )){
 			idx = i;
 		}
 	}
