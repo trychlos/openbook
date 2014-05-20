@@ -193,6 +193,13 @@ instance_finalize( GObject *window )
 	}
 }
 
+static void
+on_dialog_finalized( ofaJournalCombo *self, gpointer this_was_the_dialog )
+{
+	g_return_if_fail( self && OFA_IS_JOURNAL_COMBO( self ));
+	g_object_unref( self );
+}
+
 /**
  * ofa_journal_combo_init_dialog:
  */
@@ -232,6 +239,9 @@ ofa_journal_combo_init_dialog( ofaJournalComboParms *parms )
 	priv->label_name = g_strdup( parms->label_name );
 	priv->pfn = parms->pfn;
 	priv->user_data = parms->user_data;
+
+	/* setup a weak reference on the dialog to auto-unref */
+	g_object_weak_ref( G_OBJECT( priv->dialog ), ( GWeakNotify ) on_dialog_finalized, self );
 
 	/* runtime data */
 	priv->combo = GTK_COMBO_BOX( combo );

@@ -219,6 +219,13 @@ instance_finalize( GObject *instance )
 	}
 }
 
+static void
+on_dialog_finalized( ofaAccountNotebook *self, gpointer this_was_the_dialog )
+{
+	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
+	g_object_unref( self );
+}
+
 /**
  * ofa_account_notebook_init_dialog:
  */
@@ -243,6 +250,9 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 	self->private->user_data_select = parms->user_data_select;
 	self->private->pfnDoubleClic = parms->pfnDoubleClic;
 	self->private->user_data_double_clic = parms->user_data_double_clic;
+
+	/* setup a weak reference on the dialog to auto-unref */
+	g_object_weak_ref( G_OBJECT( self->private->book ), ( GWeakNotify ) on_dialog_finalized, self );
 
 	setup_book( self );
 	setup_first_selection( self );
