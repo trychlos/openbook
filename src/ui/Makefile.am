@@ -61,6 +61,8 @@ openbook_SOURCES = \
 	ofa-dossier-open.h									\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
+	ofa-journal-combo.c									\
+	ofa-journal-combo.h									\
 	ofa-journal-properties.c							\
 	ofa-journal-properties.h							\
 	ofa-journals-set.c									\

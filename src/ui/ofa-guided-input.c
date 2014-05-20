@@ -32,6 +32,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-guided-input.h"
+#include "ui/ofa-journal-combo.h"
 #include "ui/ofo-dossier.h"
 
 /* private class data
@@ -50,12 +51,13 @@ struct _ofaGuidedInputPrivate {
 
 	/* internals
 	 */
-	ofaMainWindow *main_window;
-	GtkDialog     *dialog;
-	ofoModel      *model;
+	ofaMainWindow  *main_window;
+	GtkDialog      *dialog;
+	const ofoModel *model;
 
 	/* data
 	 */
+	gint            journal_id;
 };
 
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-guided-input.ui";
@@ -68,8 +70,12 @@ static void      class_init( ofaGuidedInputClass *klass );
 static void      instance_init( GTypeInstance *instance, gpointer klass );
 static void      instance_dispose( GObject *instance );
 static void      instance_finalize( GObject *instance );
-static void      do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, ofoModel *model );
+static void      do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel *model );
 static gboolean  ok_to_terminate( ofaGuidedInput *self, gint code );
+static void      init_dialog_journal( ofaGuidedInput *self );
+static void      init_dialog_entries( ofaGuidedInput *self );
+static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self );
+static void      check_for_enable_dlg( ofaGuidedInput *self );
 static gboolean  do_update( ofaGuidedInput *self );
 
 GType
@@ -142,6 +148,8 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private = g_new0( ofaGuidedInputPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+
+	self->private->journal_id = -1;
 }
 
 static void
@@ -195,7 +203,7 @@ instance_finalize( GObject *window )
  * Update the properties of an journal
  */
 void
-ofa_guided_input_run( ofaMainWindow *main_window, ofoModel *model )
+ofa_guided_input_run( ofaMainWindow *main_window, const ofoModel *model )
 {
 	static const gchar *thisfn = "ofa_guided_input_run";
 	ofaGuidedInput *self;
@@ -222,7 +230,7 @@ ofa_guided_input_run( ofaMainWindow *main_window, ofoModel *model )
 }
 
 static void
-do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, ofoModel *model )
+do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel *model )
 {
 	static const gchar *thisfn = "ofa_guided_input_do_initialize_dialog";
 	GError *error;
@@ -251,6 +259,9 @@ do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, ofoModel *model
 	if( priv->dialog ){
 
 		/*gtk_window_set_transient_for( GTK_WINDOW( priv->dialog ), GTK_WINDOW( main ));*/
+
+		init_dialog_journal( self );
+		init_dialog_entries( self );
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( priv->dialog ));
@@ -278,6 +289,37 @@ ok_to_terminate( ofaGuidedInput *self, gint code )
 	}
 
 	return( quit );
+}
+
+static void
+init_dialog_journal( ofaGuidedInput *self )
+{
+	ofa_journal_combo_init_dialog(
+			self->private->dialog, "p1-journal", NULL,
+			ofa_main_window_get_dossier( self->private->main_window ),
+			FALSE, TRUE,
+			( ofaJournalComboCb ) on_journal_changed, self,
+			ofo_model_get_journal( self->private->model ));
+}
+
+static void
+init_dialog_entries( ofaGuidedInput *self )
+{
+
+}
+
+static void
+on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self )
+{
+	self->private->journal_id = id;
+
+	check_for_enable_dlg( self );
+}
+
+static void
+check_for_enable_dlg( ofaGuidedInput *self )
+{
+
 }
 
 /*

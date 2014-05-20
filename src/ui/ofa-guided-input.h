@@ -65,7 +65,7 @@ typedef struct {
 
 GType ofa_guided_input_get_type( void );
 
-void  ofa_guided_input_run     ( ofaMainWindow *parent, ofoModel *model );
+void  ofa_guided_input_run     ( ofaMainWindow *parent, const ofoModel *model );
 
 G_END_DECLS
 

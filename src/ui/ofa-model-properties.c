@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofa-journal-combo.h"
 #include "ui/ofa-model-properties.h"
 #include "ui/ofo-dossier.h"
 
@@ -50,11 +51,12 @@ struct _ofaModelPropertiesPrivate {
 
 	/* internals
 	 */
-	ofaMainWindow *main_window;
-	GtkDialog     *dialog;
-	ofoModel      *model;
-	GtkTreeView   *view;				/* the treeview which display the detail lines */
-	gint           count;				/* count of detail lines */
+	ofaMainWindow   *main_window;
+	GtkDialog       *dialog;
+	ofoModel        *model;
+	ofaJournalCombo *journal_combo;
+	GtkTreeView     *view;				/* the treeview which display the detail lines */
+	gint             count;				/* count of detail lines */
 
 	/* result
 	 */
@@ -110,14 +112,13 @@ static gboolean  init_dialog_from_builder( ofaModelProperties *self );
 static void      init_dialog_title( ofaModelProperties *self );
 static void      init_dialog_mnemo( ofaModelProperties *self );
 static void      init_dialog_label( ofaModelProperties *self );
-static void      init_dialog_journal( ofaModelProperties *self );
 static void      init_dialog_journal_locked( ofaModelProperties *self );
 static void      init_dialog_notes( ofaModelProperties *self );
 static void      init_dialog_detail( ofaModelProperties *self );
 static gboolean  ok_to_terminate( ofaModelProperties *self, gint code );
 static void      on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaModelProperties *self );
-static void      on_journal_changed( GtkComboBox *box, ofaModelProperties *self );
+static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaModelProperties *self );
 static void      on_journal_locked_toggled( GtkToggleButton *toggle, ofaModelProperties *self );
 static void      add_detail_row( ofaModelProperties *self, gint idx );
 static void      on_add_clicked( GtkButton *button, ofaModelProperties *self );
@@ -311,7 +312,14 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 	init_dialog_title( self );
 	init_dialog_mnemo( self );
 	init_dialog_label( self );
-	init_dialog_journal( self );
+
+	priv->journal_combo = ofa_journal_combo_init_dialog(
+			priv->dialog, "p1-journal", "p1-jou-label",
+			ofa_main_window_get_dossier( main ),
+			TRUE, FALSE,
+			( ofaJournalComboCb ) on_journal_changed, ( gpointer ) self,
+			ofo_model_get_journal( model ));
+
 	init_dialog_journal_locked( self );
 	init_dialog_notes( self );
 	init_dialog_detail( self );
@@ -349,6 +357,9 @@ init_dialog_from_builder( ofaModelProperties *self )
 		g_error_free( error );
 	}
 	g_object_unref( builder );
+
+	g_debug( "%s: dialog=%p (%s)",
+			thisfn, ( void * ) priv->dialog, G_OBJECT_TYPE_NAME( priv->dialog ));
 
 	return( ok );
 }
@@ -405,64 +416,6 @@ init_dialog_label( ofaModelProperties *self )
 	}
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
-}
-
-static void
-init_dialog_journal( ofaModelProperties *self )
-{
-	ofaModelPropertiesPrivate *priv;
-	GtkComboBox *combo;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkCellRenderer *text_cell;
-	ofoDossier *dossier;
-	GList *set, *elt;
-	gint idx, i;
-	ofoJournal *journal;
-
-	priv = self->private;
-
-	priv->journal = ofo_model_get_journal( priv->model );
-	combo = GTK_COMBO_BOX( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-journal" ));
-
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			JOU_N_COLUMNS,
-			G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING ));
-	gtk_combo_box_set_model( combo, tmodel );
-	g_object_unref( tmodel );
-
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_MNEMO );
-
-	/*text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_LABEL );*/
-
-	dossier = ofa_main_window_get_dossier( priv->main_window );
-	set = ofo_dossier_get_journals_set( dossier );
-
-	idx = -1;
-	for( elt=set, i=0 ; elt ; elt=elt->next, ++i ){
-		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
-		journal = OFO_JOURNAL( elt->data );
-		gtk_list_store_set(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				JOU_COL_ID,    ofo_journal_get_id( journal ),
-				JOU_COL_MNEMO, ofo_journal_get_mnemo( journal ),
-				JOU_COL_LABEL, ofo_journal_get_label( journal ),
-				-1 );
-		if( priv->journal == ofo_journal_get_id( journal )){
-			idx = i;
-		}
-	}
-
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_journal_changed ), self );
-
-	if( idx != -1 ){
-		gtk_combo_box_set_active( combo, idx );
-	}
 }
 
 static void
@@ -748,23 +701,11 @@ on_add_clicked( GtkButton *button, ofaModelProperties *self )
 }
 
 static void
-on_journal_changed( GtkComboBox *box, ofaModelProperties *self )
+on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaModelProperties *self )
 {
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkLabel *label;
-	gchar *str;
+	g_return_if_fail( self && OFA_IS_MODEL_PROPERTIES( self ));
 
-	if( gtk_combo_box_get_active_iter( box, &iter )){
-		tmodel = gtk_combo_box_get_model( box );
-		gtk_tree_model_get( tmodel, &iter,
-				JOU_COL_ID, &self->private->journal,
-				JOU_COL_LABEL, &str,
-				-1 );
-		label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-jou-label" ));
-		gtk_label_set_text( label, str );
-		g_free( str );
-	}
+	self->private->journal = id;
 
 	check_for_enable_dlg( self );
 }
@@ -867,7 +808,7 @@ check_for_enable_dlg( ofaModelProperties *self )
 	GtkWidget *button;
 
 	priv = self->private;
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "btn-ok" );
 	gtk_widget_set_sensitive( button,
 			priv->mnemo && g_utf8_strlen( priv->mnemo, -1 ) &&
 			priv->label && g_utf8_strlen( priv->label, -1 ) &&
@@ -907,6 +848,7 @@ do_update( ofaModelProperties *self )
 	ofo_model_set_mnemo( self->private->model, self->private->mnemo );
 	ofo_model_set_label( self->private->model, self->private->label );
 	ofo_model_set_journal( self->private->model, self->private->journal );
+	ofo_model_set_journal_locked( self->private->model, self->private->journal_locked );
 
 	text = GTK_TEXT_VIEW(
 			my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p3-notes" ));
