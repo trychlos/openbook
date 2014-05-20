@@ -242,6 +242,7 @@ do_initialize_dialog( ofaAccountSelect *self )
 	GtkBuilder *builder;
 	ofaAccountSelectPrivate *priv;
 	GtkWidget *book;
+	ofaAccountNotebookParms parms;
 
 	priv = self->private;
 
@@ -267,11 +268,14 @@ do_initialize_dialog( ofaAccountSelect *self )
 		book = my_utils_container_get_child_by_type( GTK_CONTAINER( priv->dialog ), GTK_TYPE_NOTEBOOK );
 		g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
 
-		priv->child = ofa_account_notebook_init_dialog(
-							GTK_NOTEBOOK( book ),
-							ofa_main_window_get_dossier( priv->main_window ),
-							NULL, NULL,
-							( ofaAccountNotebookCb ) on_account_activated, self );
+		parms.book = GTK_NOTEBOOK( book );
+		parms.dossier = ofa_main_window_get_dossier( priv->main_window );
+		parms.pfnSelect = NULL;
+		parms.user_data_select = NULL;
+		parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_account_activated;
+		parms.user_data_double_clic = self;
+
+		priv->child = ofa_account_notebook_init_dialog( &parms );
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( priv->dialog ));

@@ -65,17 +65,43 @@ typedef struct {
 }
 	ofaAccountNotebookClass;
 
-/* a callback triggered when the selected account changes
+/**
+ * ofaAccountNotebookCb:
+ *
+ * A callback triggered when the selected account changes.
+ *
+ * Passed arguments are:
+ * - the selected account number
+ * - provided user data.
  */
 typedef void ( *ofaAccountNotebookCb )( const gchar *, gpointer );
 
 GType ofa_account_notebook_get_type   ( void );
 
-ofaAccountNotebook *ofa_account_notebook_init_dialog( GtkNotebook *book, ofoDossier *dossier,
-											ofaAccountNotebookCb pfnSelect, gpointer user_data_select,
-											ofaAccountNotebookCb pfnDoubleClic, gpointer user_data_double_clic );
+/**
+ * ofaAccountNotebookParms:
+ * @book: an empty notebook which must have been defined by the caller
+ * @dossier: the currently opened ofoDossier
+ * @pfnSelect: [allow-none]: a user-provided callback which will be
+ *  triggered each time the selection changes
+ * @user_data_select:
+ * @pfnDoubleClic: [allow-none]: a user-provided callback which will be
+ *  triggered each time a new row is activated (by hitting Enter or
+ *  double-clicking the row)
+ */
+typedef struct {
+	GtkNotebook         *book;
+	ofoDossier          *dossier;
+	ofaAccountNotebookCb pfnSelect;
+	gpointer             user_data_select;
+	ofaAccountNotebookCb pfnDoubleClic;
+	gpointer             user_data_double_clic;
+}
+	ofaAccountNotebookParms;
 
-gchar *ofa_account_notebook_get_selected( ofaAccountNotebook *self );
+ofaAccountNotebook *ofa_account_notebook_init_dialog ( ofaAccountNotebookParms *parms );
+
+gchar              *ofa_account_notebook_get_selected( ofaAccountNotebook *self );
 
 G_END_DECLS
 

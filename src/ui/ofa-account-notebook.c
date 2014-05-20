@@ -222,28 +222,26 @@ instance_finalize( GObject *instance )
  * ofa_account_notebook_init_dialog:
  */
 ofaAccountNotebook *
-ofa_account_notebook_init_dialog( GtkNotebook *book, ofoDossier *dossier,
-		ofaAccountNotebookCb pfnSelect, gpointer user_data_select,
-		ofaAccountNotebookCb pfnDoubleClic, gpointer user_data_double_clic  )
+ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 {
 	static const gchar *thisfn = "ofa_account_notebook_init_dialog";
 	ofaAccountNotebook *self;
 
-	g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier), NULL );
+	g_return_val_if_fail( parms, NULL );
 
-	g_debug( "%s: book=%p, dossier=%p, pfnSelect=%p, user_data_select=%p, pfnDoubleClic=%p, user_data_double_clic=%p",
-			thisfn, ( void * ) book, ( void * ) dossier,
-			( void * ) pfnSelect, ( void * ) user_data_select, ( void * ) pfnDoubleClic, ( void * ) user_data_double_clic );
+	g_debug( "%s: parms=%p", thisfn, ( void * ) parms );
+
+	g_return_val_if_fail( parms->book && GTK_IS_NOTEBOOK( parms->book ), NULL );
+	g_return_val_if_fail( parms->dossier && OFO_IS_DOSSIER( parms->dossier), NULL );
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_NOTEBOOK, NULL );
 
-	self->private->book = book;
-	self->private->dossier = dossier;
-	self->private->pfnSelect = pfnSelect;
-	self->private->user_data_select = user_data_select;
-	self->private->pfnDoubleClic = pfnDoubleClic;
-	self->private->user_data_double_clic = user_data_double_clic;
+	self->private->book = parms->book;
+	self->private->dossier = parms->dossier;
+	self->private->pfnSelect = parms->pfnSelect;
+	self->private->user_data_select = parms->user_data_select;
+	self->private->pfnDoubleClic = parms->pfnDoubleClic;
+	self->private->user_data_double_clic = parms->user_data_double_clic;
 
 	setup_book( self );
 	setup_first_selection( self );
@@ -506,7 +504,8 @@ ofa_account_notebook_get_selected( ofaAccountNotebook *self )
 
 	number = NULL;
 
-	if( self->private->view ){
+	if( !self->private->dispose_has_run && self->private->view ){
+
 		g_return_val_if_fail( GTK_IS_TREE_VIEW( self->private->view ), NULL );
 
 		select = gtk_tree_view_get_selection( self->private->view );

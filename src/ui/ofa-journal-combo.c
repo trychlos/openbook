@@ -210,6 +210,8 @@ ofa_journal_combo_init_dialog( ofaJournalComboParms *parms )
 	gint idx, i;
 	ofoJournal *journal;
 
+	g_return_val_if_fail( parms, NULL );
+
 	g_debug( "%s: parms=%p", thisfn, ( void * ) parms );
 
 	g_return_val_if_fail( GTK_IS_DIALOG( parms->dialog ), NULL );
