@@ -80,7 +80,7 @@ static void      on_mnemo_changed( GtkEntry *entry, ofaJournalProperties *self )
 static void      on_label_changed( GtkEntry *entry, ofaJournalProperties *self );
 static void      check_for_enable_dlg( ofaJournalProperties *self );
 static gboolean  do_update( ofaJournalProperties *self );
-static void      error_duplicate( ofaJournalProperties *self, ofoJournal *existing, const gchar *prev_number );
+static void      error_duplicate( ofaJournalProperties *self, ofoJournal *existing );
 
 GType
 ofa_journal_properties_get_type( void )
@@ -392,7 +392,7 @@ do_update( ofaJournalProperties *self )
 		 * existe déjà
 		 */
 		if( !prev_mnemo || g_utf8_collate( prev_mnemo, self->private->mnemo )){
-			error_duplicate( self, existing, prev_mnemo );
+			error_duplicate( self, existing );
 			g_free( prev_mnemo );
 			return( FALSE );
 		}
@@ -427,24 +427,16 @@ do_update( ofaJournalProperties *self )
 }
 
 static void
-error_duplicate( ofaJournalProperties *self, ofoJournal *existing, const gchar *prev_mnemo )
+error_duplicate( ofaJournalProperties *self, ofoJournal *existing )
 {
 	GtkMessageDialog *dlg;
 	gchar *msg;
 
-	if( prev_mnemo ){
-		msg = g_strdup_printf(
-				_( "Il est impossible d'effectuer les modifications demandées "
-					"car le nouveau mnémonique '%s' est déjà utilisé par le journal '%s'." ),
+	msg = g_strdup_printf(
+			_( "Unable to set the journal mnemonic to '%s' "
+				"as this one is already used by the existing '%s'" ),
 				ofo_journal_get_mnemo( existing ),
 				ofo_journal_get_label( existing ));
-	} else {
-		msg = g_strdup_printf(
-				_( "Il est impossible de définir ce nouveau journal "
-					"car son mnémonique '%s' est déjà utilisé par le journal '%s'." ),
-				ofo_journal_get_mnemo( existing ),
-				ofo_journal_get_label( existing ));
-	}
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				GTK_WINDOW( self->private->dialog ),

@@ -34,8 +34,10 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-accounts-chart.h"
 #include "ui/ofa-devises-set.h"
+#include "ui/ofa-guided-input.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofa-models-set.h"
+#include "ui/ofa-taux-set.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofo-dossier.h"
 
@@ -73,80 +75,105 @@ enum {
 	LAST_SIGNAL
 };
 
-/* column ordering in the left listview
+/* the actions handled from the menubar
  */
-enum {
-	COL_ITEM = 0,
-	COL_ID,
-	N_COLUMNS
-};
-
 static void on_close           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_guided      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_devises     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_taux        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
 		{ "close",        on_close,            NULL, NULL, NULL },
+		{ "guided",       on_ope_guided,       NULL, NULL, NULL },
 		{ "accounts",     on_ref_accounts,     NULL, NULL, NULL },
 		{ "journals",     on_ref_journals,     NULL, NULL, NULL },
 		{ "models",       on_ref_models,       NULL, NULL, NULL },
 		{ "devises",      on_ref_devises,      NULL, NULL, NULL },
+		{ "taux",         on_ref_taux,         NULL, NULL, NULL },
 };
 
 /* This structure handles the functions which manage the pages of the
  * main notebook:
- * - the label which is displayed o the left treeview
  * - the label which is displayed in the tab of the page of the main book
- * - the local function which handles the activation in the left treeview
- * - the external function which is finally to be called.
- *
- * The 'theme identifier' of a page is so the index in this structure,
- * plus 1 in order all themes ids are greater than zero.
+ * - the GObject get_type() function
+ * - the external function which is finally to be called  with the newly
+ *   created object.
  */
 typedef struct {
-	gint         theme;
+	gint         theme_id;
 	const gchar *label;
-	const gchar *tab_label;
 	GType      (*fn_get_type)( void );
 	void       (*fn_extern)( ofaMainPage * );
 }
-	sTheme;
+	sThemeDef;
 
 enum {
 	THM_ACCOUNTS = 1,
+	THM_DEVISES,
 	THM_JOURNALS,
 	THM_MODELS,
-	THM_DEVISES
+	THM_TAUX
 };
 
-static sTheme st_themes[] = {
+static sThemeDef st_theme_defs[] = {
 
 		{ THM_ACCOUNTS,
-				N_( "Plan comptable" ),
-				N_( "Plan comptable" ),
+				N_( "Chart of accounts" ),
 				ofa_accounts_chart_get_type,
 				ofa_accounts_chart_run },
 
 		{ THM_JOURNALS,
-				N_( "Journaux" ),
-				N_( "Journaux" ),
+				N_( "Journals" ),
 				ofa_journals_set_get_type,
 				ofa_journals_set_run },
 
 		{ THM_MODELS,
-				N_( "Modèles" ),
-				N_( "Modèles" ),
+				N_( "Entry models" ),
 				ofa_models_set_get_type,
 				ofa_models_set_run },
 
 		{ THM_DEVISES,
-				N_( "Devises" ),
-				N_( "Devises" ),
+				N_( "Currencies" ),
 				ofa_devises_set_get_type,
 				ofa_devises_set_run },
 
+		{ THM_TAUX,
+				N_( "Rates" ),
+				ofa_taux_set_get_type,
+				ofa_taux_set_run },
+
+		{ 0 }
+};
+
+/* Left treeview definition.
+ * For ergonomy reason, we may have here several items which points
+ * to the same theme
+ */
+typedef struct {
+	const gchar *label;
+	gint         theme_id;
+	GType      (*fn_get_type)( void );
+	void       (*fn_extern)( ofaMainPage * );
+}
+	sTreeDef;
+
+enum {
+	COL_TREE_IDX = 0,					/* index of the sTreeDef definition in the array */
+	COL_LABEL,							/* tree label */
+	N_COLUMNS
+};
+
+static sTreeDef st_tree_defs[] = {
+
+		{ N_( "Guided input" ),      THM_MODELS },
+		{ N_( "Chart of accounts" ), THM_ACCOUNTS },
+		{ N_( "Journals" ),          THM_JOURNALS },
+		{ N_( "Entry models" ),      THM_MODELS },
+		{ N_( "Currencies" ),        THM_DEVISES },
+		{ N_( "Rates" ),             THM_TAUX },
 		{ 0 }
 };
 
@@ -163,19 +190,20 @@ static void  instance_constructed( GObject *window );
 static void  instance_dispose( GObject *window );
 static void  instance_finalize( GObject *window );
 
-static gboolean     on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void         set_menubar( ofaMainWindow *window, GMenuModel *model );
-static void         extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
-static void         on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
-static void         add_treeview_to_pane_left( ofaMainWindow *window );
-static void         on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
-static void         add_empty_notebook_to_pane_right( ofaMainWindow *window );
-static void         on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
-static void         main_activate_theme( ofaMainWindow *main, gint theme );
-static GtkNotebook *main_get_book( const ofaMainWindow *window );
-static GtkWidget   *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
-static GtkWidget   *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, gint theme );
-static void         main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
+static gboolean      on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
+static void          set_menubar( ofaMainWindow *window, GMenuModel *model );
+static void          extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
+static void          on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void          add_treeview_to_pane_left( ofaMainWindow *window );
+static void          on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
+static const sThemeDef *get_theme_def_from_id( gint theme_id );
+static void          add_empty_notebook_to_pane_right( ofaMainWindow *window );
+static void          on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void          main_activate_theme( ofaMainWindow *main, gint theme );
+static GtkNotebook  *main_get_book( const ofaMainWindow *window );
+static GtkWidget    *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
+static GtkWidget    *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
+static void          main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 
 GType
 ofa_main_window_get_type( void )
@@ -475,7 +503,7 @@ ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
-			_( "Etes-vous sûr de vouloir quitter l'application ?" ));
+			_( "Are you sure you want to quit the application ?" ));
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -650,7 +678,7 @@ add_treeview_to_pane_left( ofaMainWindow *window )
 	gtk_tree_view_set_activate_on_single_click( view, FALSE );
 	g_signal_connect(G_OBJECT( view ), "row-activated", G_CALLBACK( on_theme_activated ), window );
 
-	model = GTK_TREE_MODEL( gtk_list_store_new( N_COLUMNS, G_TYPE_STRING, G_TYPE_INT ));
+	model = GTK_TREE_MODEL( gtk_list_store_new( N_COLUMNS, G_TYPE_INT, G_TYPE_STRING ));
 	gtk_tree_view_set_model( view, model );
 	g_object_unref( model );
 
@@ -658,20 +686,20 @@ add_treeview_to_pane_left( ofaMainWindow *window )
 	column = gtk_tree_view_column_new_with_attributes(
 			"label",
 			text_cell,
-			"text", COL_ITEM,
+			"text", COL_LABEL,
 			NULL );
 	gtk_tree_view_append_column( view, column );
 
 	select = gtk_tree_view_get_selection( view );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 
-	for( i=0; st_themes[i].label ; ++i ){
+	for( i=0; st_tree_defs[i].label ; ++i ){
 		gtk_list_store_append( GTK_LIST_STORE( model ), &iter );
 		gtk_list_store_set(
 				GTK_LIST_STORE( model ),
 				&iter,
-				COL_ITEM, st_themes[i].label,
-				COL_ID, i+1,		/* the theme identifier is the index+1 */
+				COL_TREE_IDX, i,
+				COL_LABEL,    st_tree_defs[i].label,
 				-1 );
 	}
 
@@ -681,13 +709,16 @@ add_treeview_to_pane_left( ofaMainWindow *window )
 	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( view ));
 }
 
+/*
+ * the theme is activated from the left treeview pane
+ */
 static void
 on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window )
 {
 	static const gchar *thisfn = "ofa_main_window_on_theme_activated";
 	GtkTreeModel *model;
 	GtkTreeIter iter;
-	gint theme_id;
+	gint idx;
 
 	g_debug( "%s: view=%p, path=%p, column=%p, window=%p",
 			thisfn, ( void * ) view, ( void * ) path, ( void * ) column, ( void * ) window );
@@ -695,12 +726,30 @@ on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col
 	model = gtk_tree_view_get_model( view );
 
 	if( gtk_tree_model_get_iter( model, &iter, path )){
-		gtk_tree_model_get( model, &iter, COL_ID, &theme_id, -1 );
+		gtk_tree_model_get( model, &iter, COL_TREE_IDX, &idx, -1 );
 
-		if( st_themes[theme_id-1].fn_get_type ){
-			main_activate_theme( window, theme_id );
+		main_activate_theme( window, st_tree_defs[idx].theme_id );
+	}
+}
+
+/*
+ * return NULL if not found
+ */
+static const sThemeDef *
+get_theme_def_from_id( gint theme_id )
+{
+	static const gchar *thisfn = "ofa_main_window_get_theme_def_from_id";
+	gint i;
+
+	for( i=0 ; st_theme_defs[i].label ; ++i ){
+		if( st_theme_defs[i].theme_id == theme_id ){
+			return(( sThemeDef * ) &st_theme_defs[i] );
 		}
 	}
+
+	g_warning( "%s: unable to find theme definition for id=%d", thisfn, theme_id );
+
+	return( NULL );
 }
 
 static void
@@ -758,9 +807,22 @@ on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 }
 
 static void
+on_ope_guided( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_guided";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MODELS );
+}
+
+static void
 on_ref_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_accounts";
+	static const gchar *thisfn = "ofa_main_window_on_ref_accounts";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -773,7 +835,7 @@ on_ref_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 static void
 on_ref_journals( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_journals";
+	static const gchar *thisfn = "ofa_main_window_on_ref_journals";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -786,7 +848,7 @@ on_ref_journals( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 static void
 on_ref_models( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_models";
+	static const gchar *thisfn = "ofa_main_window_on_ref_models";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -799,7 +861,7 @@ on_ref_models( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 static void
 on_ref_devises( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_mod_families";
+	static const gchar *thisfn = "ofa_main_window_on_ref_devises";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -807,6 +869,19 @@ on_ref_devises( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_DEVISES );
+}
+
+static void
+on_ref_taux( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ref_taux";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_TAUX );
 }
 
 /**
@@ -837,18 +912,21 @@ main_activate_theme( ofaMainWindow *main_window, gint theme )
 	GtkNotebook *main_book;
 	GtkWidget *page;
 	ofaMainPage *handler;
+	const sThemeDef *theme_def;
 
 	g_debug( "%s: main_window=%p, theme=%d", thisfn, ( void * ) main_window, theme );
-
-	g_return_if_fail( st_themes[theme-1].fn_get_type );
-	g_return_if_fail( st_themes[theme-1].fn_extern );
 
 	main_book = main_get_book( main_window );
 	g_return_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ));
 
+	theme_def = get_theme_def_from_id( theme );
+	g_return_if_fail( theme_def );
+	g_return_if_fail( theme_def->fn_get_type );
+	g_return_if_fail( theme_def->fn_extern );
+
 	page = main_book_get_page( main_window, main_book, theme );
 	if( !page ){
-		page = main_book_create_page( main_window, main_book, theme );
+		page = main_book_create_page( main_window, main_book, theme_def );
 	}
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 	main_book_activate_page( main_window, main_book, page );
@@ -856,7 +934,7 @@ main_activate_theme( ofaMainWindow *main_window, gint theme )
 	handler = g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
 	g_return_if_fail( handler && OFA_IS_MAIN_PAGE( handler ));
 
-	(*st_themes[theme-1].fn_extern)( handler );
+	(*theme_def->fn_extern)( handler );
 }
 
 static GtkNotebook *
@@ -894,7 +972,7 @@ main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
  * so, create it, simultaneously instanciating the handling object
  */
 static GtkWidget *
-main_book_create_page( ofaMainWindow *main, GtkNotebook *book, gint theme )
+main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def )
 {
 	GtkGrid *grid;
 	GtkLabel *label;
@@ -905,20 +983,20 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, gint theme )
 	grid = GTK_GRID( gtk_grid_new());
 	gtk_grid_set_column_spacing( grid, 4 );
 
-	label = GTK_LABEL( gtk_label_new_with_mnemonic( gettext( st_themes[theme-1].tab_label )));
+	label = GTK_LABEL( gtk_label_new_with_mnemonic( gettext( theme_def->label )));
 
 	gtk_notebook_append_page( book, GTK_WIDGET( grid ), GTK_WIDGET( label ));
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( grid ), TRUE );
 
 	/* then instanciates the handing object
 	 */
-	handler = g_object_new(( *st_themes[theme-1].fn_get_type )(),
+	handler = g_object_new(( *theme_def->fn_get_type )(),
 			MAIN_PAGE_PROP_WINDOW,  main,
 			MAIN_PAGE_PROP_DOSSIER, main->private->dossier,
 			MAIN_PAGE_PROP_GRID,    grid,
 			NULL );
 
-	g_object_set_data( G_OBJECT( grid ), OFA_DATA_THEME,   GINT_TO_POINTER ( theme ));
+	g_object_set_data( G_OBJECT( grid ), OFA_DATA_THEME,   GINT_TO_POINTER ( theme_def->theme_id ));
 	g_object_set_data( G_OBJECT( grid ), OFA_DATA_HANDLER, handler );
 
 	return( GTK_WIDGET( grid ));

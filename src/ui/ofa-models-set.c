@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 
+#include "ui/ofa-guided-input.h"
 #include "ui/ofa-model-properties.h"
 #include "ui/ofa-models-set.h"
 #include "ui/ofo-model.h"
@@ -58,6 +59,7 @@ struct _ofaModelsSetPrivate {
 	GtkWidget     *others;				/* a page for unclassed models */
 	GtkButton     *update_btn;
 	GtkButton     *delete_btn;
+	GtkButton     *guided_input_btn;
 	GtkTreeView   *current;				/* tree view of the current page */
 };
 
@@ -72,8 +74,8 @@ enum {
 
 /* data attached to each page of the model category notebook
  */
-#define DATA_PAGE_JOURNAL                "data-page-journal"
-#define DATA_PAGE_VIEW                  "data-page-treeview"
+#define DATA_PAGE_JOURNAL                "data-page-journal-id"
+#define DATA_PAGE_VIEW                   "data-page-treeview"
 
 static GObjectClass *st_parent_class = NULL;
 
@@ -97,6 +99,7 @@ static void       on_update_model( GtkButton *button, ofaModelsSet *self );
 static void       on_delete_model( GtkButton *button, ofaModelsSet *self );
 static gboolean   delete_confirmed( ofaModelsSet *self, ofoModel *model );
 static void       insert_new_row( ofaModelsSet *self, ofoModel *model );
+static void       on_guided_input( GtkButton *button, ofaModelsSet *self );
 
 GType
 ofa_models_set_get_type( void )
@@ -269,7 +272,6 @@ setup_set_page( ofaModelsSet *self )
 
 	models_book = setup_models_view( self );
 	gtk_grid_attach( grid, models_book, 0, 0, 1, 1 );
-	self->private->book = GTK_NOTEBOOK( models_book );
 
 	buttons_box = setup_buttons_box( self );
 	gtk_grid_attach( grid, buttons_box, 1, 0, 1, 1 );
@@ -303,6 +305,7 @@ setup_models_view( ofaModelsSet *self )
 	book = GTK_NOTEBOOK( gtk_notebook_new());
 	gtk_widget_set_margin_left( GTK_WIDGET( book ), 4 );
 	gtk_widget_set_margin_bottom( GTK_WIDGET( book ), 4 );
+	self->private->book = GTK_NOTEBOOK( book );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 	jouset = ofo_dossier_get_journals_set( dossier );
@@ -350,21 +353,31 @@ setup_buttons_box( ofaModelsSet *self )
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 30 );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Nouveau..." )));
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_New..." )));
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_model ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Modifier..." )));
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Update..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_update_model ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	self->private->update_btn = button;
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Supprimer..." )));
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Delete..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_delete_model ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	self->private->delete_btn = button;
+
+	frame = GTK_FRAME( gtk_frame_new( NULL ));
+	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 25 );
+	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
+	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 0 );
+
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Guided input..." )));
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_guided_input ), self );
+	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
+	self->private->guided_input_btn = button;
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -422,14 +435,14 @@ notebook_create_page( ofaModelsSet *self, GtkNotebook *book, gint jou_id, const 
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Mnémo" ),
+			_( "Mnemo" ),
 			text_cell, "text", COL_MNEMO,
 			NULL );
 	gtk_tree_view_append_column( view, column );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Intitulé" ),
+			_( "Label" ),
 			text_cell, "text", COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
@@ -464,7 +477,7 @@ notebook_find_page( ofaModelsSet *self, gint jou_id )
 	if( !found ){
 		if( !self->private->others ){
 			self->private->others =
-					notebook_create_page( self, self->private->book, -1, _( "Hors journaux" ), -1 );
+					notebook_create_page( self, self->private->book, -1, _( "Unjournalized" ), -1 );
 		}
 		found = self->private->others;
 	}
@@ -604,7 +617,7 @@ delete_confirmed( ofaModelsSet *self, ofoModel *model )
 	gchar *msg;
 	gboolean delete_ok;
 
-	msg = g_strdup_printf( _( "Etes-vous sûr de vouloir supprimer le modèle '%s - %s' ?" ),
+	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' entry model ?" ),
 			ofo_model_get_mnemo( model ),
 			ofo_model_get_label( model ));
 
@@ -675,4 +688,29 @@ insert_new_row( ofaModelsSet *self, ofoModel *ofomodel )
 	gtk_tree_view_set_cursor( view, path, NULL, FALSE );
 	gtk_widget_grab_focus( GTK_WIDGET( view ));
 	gtk_tree_path_free( path );
+}
+
+static void
+on_guided_input( GtkButton *button, ofaModelsSet *self )
+{
+	static const gchar *thisfn = "ofa_models_set_on_guided_input";
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoModel *model;
+
+	g_return_if_fail( OFA_IS_MODELS_SET( self ));
+	g_return_if_fail( self->private->current && GTK_IS_TREE_VIEW( self->private->current ));
+
+	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
+
+	select = gtk_tree_view_get_selection( self->private->current );
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
+		g_object_unref( model );
+
+		ofa_guided_input_run(
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), model );
+	}
 }

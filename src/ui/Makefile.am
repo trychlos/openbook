@@ -59,6 +59,8 @@ openbook_SOURCES = \
 	ofa-dossier-new.h									\
 	ofa-dossier-open.c									\
 	ofa-dossier-open.h									\
+	ofa-guided-input.c									\
+	ofa-guided-input.h									\
 	ofa-journal-properties.c							\
 	ofa-journal-properties.h							\
 	ofa-journals-set.c									\
@@ -75,6 +77,10 @@ openbook_SOURCES = \
 	ofa-settings.h										\
 	ofa-sgbd.c											\
 	ofa-sgbd.h											\
+	ofa-taux-properties.c								\
+	ofa-taux-properties.h								\
+	ofa-taux-set.c										\
+	ofa-taux-set.h										\
 	ofo-account.c										\
 	ofo-account.h										\
 	ofo-base.c											\
@@ -87,6 +93,8 @@ openbook_SOURCES = \
 	ofo-journal.h										\
 	ofo-model.c											\
 	ofo-model.h											\
+	ofo-taux.c											\
+	ofo-taux.h											\
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
@@ -106,6 +114,7 @@ ui_files = \
 	ofa-dossier-open.ui									\
 	ofa-journal-properties.ui							\
 	ofa-model-properties.ui								\
+	ofa-taux-properties.ui								\
 	$(NULL)
 
 images_files = \

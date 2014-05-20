@@ -45,6 +45,7 @@
 #include "ui/ofo-devise.h"
 #include "ui/ofo-journal.h"
 #include "ui/ofo-model.h"
+#include "ui/ofo-taux.h"
 
 G_BEGIN_DECLS
 
@@ -105,6 +106,16 @@ GList        *ofo_dossier_get_models_set    ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_model      ( ofoDossier *dossier, ofoModel *model );
 gboolean      ofo_dossier_update_model      ( ofoDossier *dossier, ofoModel *model, const gchar *prev_mnemo );
 gboolean      ofo_dossier_delete_model      ( ofoDossier *dossier, ofoModel *model );
+
+ofoTaux      *ofo_dossier_check_for_taux    ( const ofoDossier *dossier,
+												gint id, const gchar *mnemo,
+												const GDate *begin, const GDate *end );
+/* this is a the standard method which one use to get a taux for a date
+ * ofoTaux      *ofo_dossier_get_taux          ( const ofoDossier *dossier, const gchar *mnemo, const GDate *date );*/
+GList        *ofo_dossier_get_taux_set      ( ofoDossier *dossier );
+gboolean      ofo_dossier_insert_taux       ( ofoDossier *dossier, ofoTaux *taux );
+gboolean      ofo_dossier_update_taux       ( ofoDossier *dossier, ofoTaux *taux );
+gboolean      ofo_dossier_delete_taux       ( ofoDossier *dossier, ofoTaux *taux );
 
 gboolean      ofo_dossier_dbmodel_update    ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
 

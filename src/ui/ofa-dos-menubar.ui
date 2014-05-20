@@ -6,49 +6,62 @@
       <attribute name="label" translatable="yes">_Dossier</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Nouveau...</attribute>
+          <attribute name="label" translatable="yes">_New...</attribute>
           <attribute name="action">app.new</attribute>
           <attribute name="accel">&lt;Control&gt;n</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Ouvrir...</attribute>
+          <attribute name="label" translatable="yes">_Open...</attribute>
           <attribute name="action">app.open</attribute>
           <attribute name="accel">&lt;Control&gt;o</attribute>
         </item>
       </section>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Fermer...</attribute>
+          <attribute name="label" translatable="yes">_Close...</attribute>
           <attribute name="action">win.close</attribute>
           <attribute name="accel">&lt;Control&gt;w</attribute>
         </item>
       </section>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Quitter</attribute>
+          <attribute name="label" translatable="yes">_Quit</attribute>
           <attribute name="action">app.quit</attribute>
           <attribute name="accel">&lt;Control&gt;q</attribute>
         </item>
       </section>
     </submenu>
     <submenu>
-      <attribute name="label" translatable="yes">_Références</attribute>
+      <attribute name="label" translatable="yes">_Operations</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">Plan _comptable...</attribute>
+          <attribute name="label" translatable="yes">_Guided input...</attribute>
+          <attribute name="action">win.guided</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label" translatable="yes">_References</attribute>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">Chart of _Accounts...</attribute>
           <attribute name="action">win.accounts</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Journaux...</attribute>
+          <attribute name="label" translatable="yes">_Journals...</attribute>
           <attribute name="action">win.journals</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Modèles de saisie...</attribute>
+          <attribute name="label" translatable="yes">Entry _Models...</attribute>
           <attribute name="action">win.models</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Devises...</attribute>
+          <attribute name="label" translatable="yes">_Currencies...</attribute>
           <attribute name="action">win.devises</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Rates...</attribute>
+          <attribute name="action">win.taux</attribute>
         </item>
       </section>
     </submenu>

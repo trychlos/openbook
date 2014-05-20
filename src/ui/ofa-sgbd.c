@@ -259,7 +259,7 @@ error_connect( ofaSgbd *sgbd,
 				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 				GTK_MESSAGE_WARNING,
 				GTK_BUTTONS_OK,
-				"%s", _( "Impossible de se connecter à la base de données" )));
+				"%s", _( "Unable to connect to the database" )));
 
 	str = g_string_new( "" );
 	if( host ){

@@ -421,8 +421,8 @@ error_duplicate( ofaDeviseProperties *self, ofoDevise *existing )
 	gchar *msg;
 
 	msg = g_strdup_printf(
-				_( "Il est impossible de définir cette nouvelle devise "
-					"car son identifiant '%s' est déjà utilisé par la devise '%s'." ),
+			_( "Unable to set the currency identifier to '%s' "
+				"as this one is already used by the existing '%s'" ),
 				ofo_devise_get_code( existing ),
 				ofo_devise_get_label( existing ));
 

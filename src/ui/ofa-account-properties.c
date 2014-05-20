@@ -112,7 +112,7 @@ static void      on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *s
 static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *type );
 static void      check_for_enable_dlg( ofaAccountProperties *self );
 static gboolean  do_update( ofaAccountProperties *self );
-static void      error_duplicate( ofaAccountProperties *self, ofoAccount *existing, const gchar *prev_number );
+static void      error_duplicate( ofaAccountProperties *self, ofoAccount *existing );
 
 GType
 ofa_account_properties_get_type( void )
@@ -419,12 +419,7 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 
 		memcpy( &priv->deb_date, ofo_account_get_deb_date( account ), sizeof( GDate ));
 		label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-deb-date" ));
-		if( g_date_valid( &priv->deb_date )){
-			str = g_strdup_printf( "%2u/%2u/%4u",
-					g_date_get_day( &priv->deb_date ), g_date_get_month( &priv->deb_date ), g_date_get_year( &priv->deb_date ));
-		} else {
-			str = g_strdup( "" );
-		}
+		str = my_utils_display_from_date( &priv->deb_date );
 		gtk_label_set_text( label, str );
 		g_free( str );
 
@@ -446,12 +441,7 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 
 		memcpy( &priv->cre_date, ofo_account_get_cre_date( account ), sizeof( GDate ));
 		label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-cre-date" ));
-		if( g_date_valid( &priv->cre_date )){
-			str = g_strdup_printf( "%2u/%2u/%4u",
-					g_date_get_day( &priv->cre_date ), g_date_get_month( &priv->cre_date ), g_date_get_year( &priv->cre_date ));
-		} else {
-			str = g_strdup( "" );
-		}
+		str = my_utils_display_from_date( &priv->cre_date );
 		gtk_label_set_text( label, str );
 		g_free( str );
 
@@ -473,12 +463,7 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 
 		memcpy( &priv->bro_deb_date, ofo_account_get_bro_deb_date( account ), sizeof( GDate ));
 		label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-bro-deb-date" ));
-		if( g_date_valid( &priv->bro_deb_date )){
-			str = g_strdup_printf( "%2u/%2u/%4u",
-					g_date_get_day( &priv->bro_deb_date ), g_date_get_month( &priv->bro_deb_date ), g_date_get_year( &priv->bro_deb_date ));
-		} else {
-			str = g_strdup( "" );
-		}
+		str = my_utils_display_from_date( &priv->bro_deb_date );
 		gtk_label_set_text( label, str );
 		g_free( str );
 
@@ -500,12 +485,7 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 
 		memcpy( &priv->bro_cre_date, ofo_account_get_bro_cre_date( account ), sizeof( GDate ));
 		label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-bro-cre-date" ));
-		if( g_date_valid( &priv->bro_cre_date )){
-			str = g_strdup_printf( "%2u/%2u/%4u",
-					g_date_get_day( &priv->bro_cre_date ), g_date_get_month( &priv->bro_cre_date ), g_date_get_year( &priv->bro_cre_date ));
-		} else {
-			str = g_strdup( "" );
-		}
+		str = my_utils_display_from_date( &priv->bro_cre_date );
 		gtk_label_set_text( label, str );
 		g_free( str );
 
@@ -666,7 +646,7 @@ do_update( ofaAccountProperties *self )
 		 * existe déjà
 		 */
 		if( !prev_number || g_utf8_collate( prev_number, self->private->number )){
-			error_duplicate( self, existing, prev_number );
+			error_duplicate( self, existing );
 			g_free( prev_number );
 			return( FALSE );
 		}
@@ -703,24 +683,16 @@ do_update( ofaAccountProperties *self )
 }
 
 static void
-error_duplicate( ofaAccountProperties *self, ofoAccount *existing, const gchar *prev_number )
+error_duplicate( ofaAccountProperties *self, ofoAccount *existing )
 {
 	GtkMessageDialog *dlg;
 	gchar *msg;
 
-	if( prev_number ){
-		msg = g_strdup_printf(
-				_( "Il est impossible d'effectuer les modifications demandées "
-					"car le nouveau numéro '%s' est déjà utilisé par le compte '%s'." ),
+	msg = g_strdup_printf(
+			_( "Unable to set the account number to '%s' "
+				"as this one is already used by the existing '%s'" ),
 				ofo_account_get_number( existing ),
 				ofo_account_get_label( existing ));
-	} else {
-		msg = g_strdup_printf(
-				_( "Il est impossible de définir ce nouveau compte "
-					"car son numéro '%s' est déjà utilisé par le compte '%s'." ),
-				ofo_account_get_number( existing ),
-				ofo_account_get_label( existing ));
-	}
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				GTK_WINDOW( self->private->dialog ),

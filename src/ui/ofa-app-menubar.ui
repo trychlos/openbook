@@ -6,29 +6,29 @@
       <attribute name="label" translatable="yes">_Dossier</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Nouveau...</attribute>
+          <attribute name="label" translatable="yes">_New...</attribute>
           <attribute name="action">app.new</attribute>
           <attribute name="accel">&lt;Control&gt;n</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Ouvrir...</attribute>
+          <attribute name="label" translatable="yes">_Open...</attribute>
           <attribute name="action">app.open</attribute>
           <attribute name="accel">&lt;Control&gt;o</attribute>
         </item>
       </section>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Quitter</attribute>
+          <attribute name="label" translatable="yes">_Quit</attribute>
           <attribute name="action">app.quit</attribute>
           <attribute name="accel">&lt;Control&gt;q</attribute>
         </item>
       </section>
     </submenu>
     <submenu>
-      <attribute name="label" translatable="yes">_Aide</attribute>
+      <attribute name="label" translatable="yes">_Help</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Au sujet d'Openbook...</attribute>
+          <attribute name="label" translatable="yes">_About Openbook...</attribute>
           <attribute name="action">app.about</attribute>
         </item>
       </section>

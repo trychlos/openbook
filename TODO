@@ -111,11 +111,60 @@
                 because the on_selection_changed may not be triggered,
                 e.g. if the list is empty
 
-  54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments.
+  54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments,
+                re-enabling error messages.
 
   55 2014- 5-18 ofo_dossier_insert: use ofoBase virtual function.
 
-  56
+  56 2014- 5-19 have an entry for date
+
+  57 2014- 5-19 have an entry for numbers (montants et taux)
+
+  58 2014- 5-19 allow the treeviewes to be sorted
+
+  59 2014- 5-19 reset all sentences in english
+                as the g_date_set_parse uses the current locale, the 
+                only way to enter a date as dd/mm/yyyy is to use the
+                french locale 
+
+  60 2014- 5-19 manage locale as a user preference (format for entering
+                date, amounts and rates)
+
+  61 2014- 5-19 manage dataserver locale as a user preference (format 
+                for storing date, amounts and rates) - this is rather
+                a configuration information than actually a user pref..
+
+  62 2014- 5-19 review all the rates management:
+                there should be a maste record (the rate) and child
+                records (the different periods of validity)
+
+  63 2014- 5-19 TauxPropertiesDlg: second column of grid seems to extends,
+                but shouldn't. Labels on the third column are correctly 
+                left-aligned but shifted on the right 
+
+  64 2014- 5-19 there is no need to store the dataset in the ofaMainPage
+                as the TreeModel is enough to store the data
+
+  65 2014- 5-19 Entry model properties: be able to reorder the detail
+                lines by drag and drop. 
+
+  66 2014- 5-19 Entry model properties - check_enable_dlg
+                check that detail lines are ok (enough and balanced).
+
+  67 2014- 5-19 EntryModel properties: row number is not right aligned
+                but should
+
+  68 2014- 5-19 EntryModel properties: display row number as an 
+                insensitive (grayed) text
+
+  69 2014- 5-19 EntryModel properties: implement Up/Down
+
+  70 2014- 5-19 EntryModel properties: implement Remove with a user
+                confirmation.
+
+  71 2014- 5-19 Get an entry with a model.
+
+  72
 
 -----------------------------------------------------------------------
  DONE

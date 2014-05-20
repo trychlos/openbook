@@ -72,15 +72,15 @@ enum {
 };
 
 static const gchar  *st_class_labels[] = {
-		N_( "Classe I" ),
-		N_( "Classe II" ),
-		N_( "Classe III" ),
-		N_( "Classe IV" ),
-		N_( "Comptes financiers" ),
-		N_( "Comptes de charges" ),
-		N_( "Comptes de produits" ),
-		N_( "Classe VIII" ),
-		N_( "Classe IX" ),
+		N_( "Class I" ),
+		N_( "Class II" ),
+		N_( "Class III" ),
+		N_( "Class IV" ),
+		N_( "Financial accounts" ),
+		N_( "Expense accounts" ),
+		N_( "Revenue accounts" ),
+		N_( "Class VIII" ),
+		N_( "Class IX" ),
 		NULL
 };
 
@@ -381,14 +381,14 @@ notebook_create_page( ofaAccountsChart *self, GtkNotebook *book, gint class, gin
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Numéro" ),
+			_( "Number" ),
 			text_cell, "text", COL_NUMBER,
 			NULL );
 	gtk_tree_view_append_column( view, column );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Intitulé" ),
+			_( "Label" ),
 			text_cell, "text", COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
@@ -403,7 +403,7 @@ notebook_create_page( ofaAccountsChart *self, GtkNotebook *book, gint class, gin
 	gtk_widget_set_margin_right( GTK_WIDGET( label ), 12 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_tree_view_column_set_widget( column, GTK_WIDGET( label ));*/
-	gtk_tree_view_column_set_title( column, _( "Débit" ));
+	gtk_tree_view_column_set_title( column, _( "Debit" ));
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_DEBIT );
 	gtk_tree_view_column_set_min_width( column, 120 );
@@ -418,7 +418,7 @@ notebook_create_page( ofaAccountsChart *self, GtkNotebook *book, gint class, gin
 	gtk_widget_set_margin_right( GTK_WIDGET( label ), 12 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_tree_view_column_set_widget( column, GTK_WIDGET( label ));*/
-	gtk_tree_view_column_set_title( column, _( "Crédit" ));
+	gtk_tree_view_column_set_title( column, _( "Credit" ));
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_CREDIT );
 	gtk_tree_view_column_set_min_width( column, 120 );
@@ -470,23 +470,28 @@ setup_buttons_box( ofaAccountsChart *self )
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 30 );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Nouveau..." )));
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_New..." )));
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_account ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Modifier..." )));
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Update..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_update_account ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	self->private->update_btn = button;
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Supprimer..." )));
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Delete..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_delete_account ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	self->private->delete_btn = button;
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Ecritures..." )));
+	frame = GTK_FRAME( gtk_frame_new( NULL ));
+	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 25 );
+	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
+	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 0 );
+
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "View _entries..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
@@ -654,8 +659,8 @@ error_undeletable( ofaAccountsChart *self, ofoAccount *account )
 	ofaMainWindow *main_window;
 
 	msg = g_strdup_printf(
-				_( "Il est impossible de supprimer le compte '%s - %s' "
-					"car au moins un de ses soldes est non nul." ),
+				_( "We are unable to remove the '%s - %s' account "
+					"as at least one of its amounts is not nul" ),
 				ofo_account_get_number( account ),
 				ofo_account_get_label( account ));
 
@@ -679,7 +684,7 @@ delete_confirmed( ofaAccountsChart *self, ofoAccount *account )
 	gchar *msg;
 	gboolean delete_ok;
 
-	msg = g_strdup_printf( _( "Etes-vous sûr de vouloir supprimer le compte '%s - %s' ?" ),
+	msg = g_strdup_printf( _( "Are you sure you want delete the '%s - %s' account ?" ),
 			ofo_account_get_number( account ),
 			ofo_account_get_label( account ));
 

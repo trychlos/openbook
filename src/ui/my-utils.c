@@ -82,6 +82,54 @@ my_utils_date_from_str( const gchar *str )
 }
 
 /**
+ * my_utils_display_from_date:
+ *
+ * returns the date as 'dd/mm/yyyy' suitable for display in a newly
+ * allocated string that the user must g_free().
+ * or a new empty string if the date is invalid
+ */
+gchar *
+my_utils_display_from_date( const GDate *date )
+{
+	gchar *str;
+
+	if( g_date_valid( date )){
+		str = g_strdup_printf( "%2.2d/%2.2d/%4.4d",
+				g_date_get_day( date ),
+				g_date_get_month( date ),
+				g_date_get_year( date ));
+	} else {
+		str = g_strdup( "" );
+	}
+
+	return( str );
+}
+
+/**
+ * my_utils_sql_from_date:
+ *
+ * returns the date as 'yyyy-mm-dd' suitable for SQL insertion in a newly
+ * allocated string that the user must g_free().
+ * or NULL if the date is invalid
+ */
+gchar *
+my_utils_sql_from_date( const GDate *date )
+{
+	gchar *str;
+
+	str = NULL ;
+
+	if( g_date_valid( date )){
+		str = g_strdup_printf( "%4.4d-%2.2d-%2.2d",
+				g_date_get_year( date ),
+				g_date_get_month( date ),
+				g_date_get_day( date ));
+	}
+
+	return( str );
+}
+
+/**
  * my_utils_stamp_from_str:
  */
 const GTimeVal *

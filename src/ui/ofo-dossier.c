@@ -54,13 +54,14 @@ struct _ofoDossierPrivate {
 	GList    *devises;					/* devises */
 	GList    *journals;					/* journals */
 	GList    *models;					/* entry models */
+	GList    *taux;						/* taux */
 
 	/* row id 0
 	 */
 	gchar    *label;					/* raison sociale */
 	gchar    *notes;					/* notes */
-	GDate    *exe_deb;					/* début d'exercice */
-	GDate    *exe_fin;					/* fin d'exercice */
+	GDate     exe_deb;					/* début d'exercice */
+	GDate     exe_fin;					/* fin d'exercice */
 };
 
 G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
@@ -70,6 +71,14 @@ G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
 /* the last DB model version
  */
 #define THIS_DBMODEL_VERSION            1
+
+typedef struct {
+	gint         id;
+	const gchar *mnemo;
+	const GDate *begin;
+	const GDate *end;
+}
+	sCheckTaux;
 
 static gint     dbmodel_get_version( ofaSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
@@ -85,6 +94,9 @@ static gint     journals_find( const ofoJournal *a, const gchar *searched_mnemo 
 static void     models_set_free( GList *set );
 static gint     models_cmp( const ofoModel *a, const ofoModel *b );
 static gint     models_find( const ofoModel *a, const gchar *searched_mnemo );
+static void     taux_set_free( GList *set );
+static gint     taux_cmp( const ofoTaux *a, const ofoTaux *b );
+static gint     taux_check( const ofoTaux *a, sCheckTaux *check );
 
 static void
 ofo_dossier_finalize( GObject *instance )
@@ -116,16 +128,13 @@ ofo_dossier_finalize( GObject *instance )
 		models_set_free( self->priv->models );
 		self->priv->models = NULL;
 	}
+	if( self->priv->taux ){
+		taux_set_free( self->priv->taux );
+		self->priv->taux = NULL;
+	}
 
 	g_free( self->priv->label );
 	g_free( self->priv->notes );
-
-	if( self->priv->exe_deb ){
-		g_date_free( self->priv->exe_deb );
-	}
-	if( self->priv->exe_fin ){
-		g_date_free( self->priv->exe_fin );
-	}
 
 	/* chain up to parent class */
 	G_OBJECT_CLASS( ofo_dossier_parent_class )->finalize( instance );
@@ -224,7 +233,7 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 	gchar *str;
 
 	str = g_strdup_printf(
-			_( "Le compte %s n'est pas habilité à se connecter au dossier %s" ),
+			_( "'%s' account is not allowed to connect to '%s' dossier" ),
 			account, dossier->priv->name );
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
@@ -439,9 +448,9 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX ("
 			"	JOU_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern journal identifier',"
-			"	JOU_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Journal mnemonic',"
-			"	JOU_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Journal label',"
-			"	JOU_NOTES     VARCHAR(512)                COMMENT 'Journal notes',"
+			"	JOU_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Taux mnemonic',"
+			"	JOU_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Taux label',"
+			"	JOU_NOTES     VARCHAR(512)                COMMENT 'Taux notes',"
 			"	JOU_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	JOU_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
 			"	JOU_MAXDATE   DATE                        COMMENT 'Most recent effect date of the entries',"
@@ -452,31 +461,31 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('ACH','Journal des achats','Default')" )){
+			"	VALUES ('ACH','Taux des achats','Default')" )){
 		return( FALSE );
 	}
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('VEN','Journal des ventes','Default')" )){
+			"	VALUES ('VEN','Taux des ventes','Default')" )){
 		return( FALSE );
 	}
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('EXP','Journal de l\\'exploitant','Default')" )){
+			"	VALUES ('EXP','Taux de l\\'exploitant','Default')" )){
 		return( FALSE );
 	}
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('OD','Journal des opérations diverses','Default')" )){
+			"	VALUES ('OD','Taux des opérations diverses','Default')" )){
 		return( FALSE );
 	}
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('BQ','Journal de banque','Default')" )){
+			"	VALUES ('BQ','Taux de banque','Default')" )){
 		return( FALSE );
 	}
 
@@ -495,17 +504,33 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES_DET ("
-			"	MOD_ID              INTEGER NOT NULL UNIQUE COMMENT 'Internal model identifier',"
-			"	MOD_DET_RANG        INTEGER                 COMMENT 'Entry number',"
+			"	MOD_ID              INTEGER NOT NULL        COMMENT 'Internal model identifier',"
+			"	MOD_DET_RANG        INTEGER NOT NULL        COMMENT 'Entry number',"
 			"	MOD_DET_COMMENT     VARCHAR(80)             COMMENT 'Entry label',"
-			"	MOD_DET_CPT         VARCHAR(20)             COMMENT 'Account number',"
-			"	MOD_DET_CPT_VER     INTEGER                 COMMENT 'Account number is locked',"
+			"	MOD_DET_ACCOUNT     VARCHAR(20)             COMMENT 'Account number',"
+			"	MOD_DET_ACCOUNT_VER INTEGER                 COMMENT 'Account number is locked',"
 			"	MOD_DET_LABEL       VARCHAR(80)             COMMENT 'Entry label',"
 			"	MOD_DET_LABEL_VER   INTEGER                 COMMENT 'Entry label is locked',"
 			"	MOD_DET_DEBIT       VARCHAR(80)             COMMENT 'Debit amount',"
 			"	MOD_DET_DEBIT_VER   INTEGER                 COMMENT 'Debit amount is locked',"
 			"	MOD_DET_CREDIT      VARCHAR(80)             COMMENT 'Credit amount',"
-			"	MOD_DET_CREDIT_VER  INTEGER                 COMMENT 'Credit amount is locked'"
+			"	MOD_DET_CREDIT_VER  INTEGER                 COMMENT 'Credit amount is locked',"
+			"	CONSTRAINT PRIMARY KEY (MOD_ID, MOD_DET_RANG)"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX ("
+			"	TAX_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern taux identifier',"
+			"	TAX_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Taux mnemonic',"
+			"	TAX_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Taux label',"
+			"	TAX_NOTES     VARCHAR(512)                COMMENT 'Taux notes',"
+			"	TAX_VAL_DEB   DATE                        COMMENT 'Validity begin date',"
+			"	TAX_VAL_FIN   DATE                        COMMENT 'Validity end date',"
+			"	TAX_TAUX      DECIMAL(15,5)               COMMENT 'Taux value',"
+			"	TAX_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
+			"	TAX_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
 			")" )){
 		return( FALSE );
 	}
@@ -1169,4 +1194,283 @@ static gint
 models_find( const ofoModel *a, const gchar *searched_mnemo )
 {
 	return( g_utf8_collate( ofo_model_get_mnemo( a ), searched_mnemo ));
+}
+
+/**
+ * ofo_dossier_check_for_taux:
+ * @mnemo: desired mnemo
+ * @begin: desired beginning of validity.
+ *  If not valid, then it is considered without limit.
+ * @end: desired end of validity
+ *  If not valid, then it is considered without limit.
+ *
+ * Checks if it is possible to define a new taux with the specified
+ * arguments, regarding the other taux already defined. In particular,
+ * the desired validity period must not overlap an already existing
+ * one.
+ *
+ * Returns: NULL if the definition would be possible, or a pointer
+ * to the object which prevents the definition.
+ */
+ofoTaux *
+ofo_dossier_check_for_taux( const ofoDossier *dossier, gint id, const gchar *mnemo, const GDate *begin, const GDate *end )
+{
+	static const gchar *thisfn = "ofo_dossier_check_for_taux";
+	ofoTaux *taux;
+	GList *found;
+	gchar *sbegin, *send;
+	sCheckTaux check;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+	g_return_val_if_fail( begin, NULL );
+	g_return_val_if_fail( end, NULL );
+
+	sbegin = my_utils_display_from_date( begin );
+	send = my_utils_display_from_date( end );
+
+	g_debug( "%s: dossier=%p, id=%d, mnemo=%s, begin=%s, end=%s",
+			thisfn, ( void * ) dossier, id, mnemo, sbegin, send );
+
+	g_free( send );
+	g_free( sbegin );
+
+	taux = NULL;
+
+	if( !dossier->priv->dispose_has_run ){
+
+		check.id = id;
+		check.mnemo = mnemo;
+		check.begin = begin;
+		check.end = end;
+
+		found = g_list_find_custom(
+				dossier->priv->taux, &check, ( GCompareFunc ) taux_check );
+		if( found ){
+			taux = OFO_TAUX( found->data );
+		}
+	}
+
+	return( taux );
+}
+
+#if 0
+/**
+ * ofo_dossier_get_taux:
+ *
+ * Returns: the searched taux.
+ */
+ofoTaux *
+ofo_dossier_get_taux( const ofoDossier *dossier, const gchar *mnemo )
+{
+	static const gchar *thisfn = "ofo_dossier_get_taux";
+	ofoTaux *taux;
+	GList *found;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+
+	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
+
+	taux = NULL;
+
+	if( !dossier->priv->dispose_has_run ){
+
+		found = g_list_find_custom(
+				dossier->priv->taux, mnemo, ( GCompareFunc ) taux_find );
+		if( found ){
+			taux = OFO_TAUX( found->data );
+		}
+	}
+
+	return( taux );
+}
+#endif
+
+/**
+ * ofo_dossier_get_taux_set:
+ */
+GList *
+ofo_dossier_get_taux_set( ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_get_taux_set";
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	if( !dossier->priv->dispose_has_run ){
+
+		if( !dossier->priv->taux ){
+
+			dossier->priv->taux = ofo_taux_load_set( dossier->priv->sgbd );
+		}
+	}
+
+	return( dossier->priv->taux );
+}
+
+/**
+ * ofo_dossier_insert_taux:
+ *
+ * we deal here with an update of publicly modifiable taux properties
+ * so it is not needed to check the date of closing
+ */
+gboolean
+ofo_dossier_insert_taux( ofoDossier *dossier, ofoTaux *taux )
+{
+	GList *set;
+	gboolean ok;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_taux_insert( taux, dossier->priv->sgbd, dossier->priv->userid )){
+
+		set = g_list_insert_sorted( dossier->priv->taux, taux, ( GCompareFunc ) taux_cmp );
+		dossier->priv->taux = set;
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_update_taux:
+ */
+gboolean
+ofo_dossier_update_taux( ofoDossier *dossier, ofoTaux *taux )
+{
+	gboolean ok;
+	GList *set;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_taux_update( taux, dossier->priv->sgbd, dossier->priv->userid )){
+
+		set = g_list_remove( dossier->priv->taux, taux );
+		set = g_list_insert_sorted( set, taux, ( GCompareFunc ) taux_cmp );
+		dossier->priv->taux = set;
+
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_delete_taux:
+ */
+gboolean
+ofo_dossier_delete_taux( ofoDossier *dossier, ofoTaux *taux )
+{
+	gboolean ok;
+	GList *set;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
+
+	ok = FALSE;
+
+	if( ofo_taux_delete( taux, dossier->priv->sgbd, dossier->priv->userid )){
+
+		set = g_list_remove( dossier->priv->taux, taux );
+		dossier->priv->taux = set;
+		g_object_unref( taux );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static void
+taux_set_free( GList *set )
+{
+	g_list_foreach( set, ( GFunc ) g_object_unref, NULL );
+	g_list_free( set );
+}
+
+static gint
+taux_cmp( const ofoTaux *a, const ofoTaux *b )
+{
+	gint im;
+	im = g_utf8_collate( ofo_taux_get_mnemo( a ), ofo_taux_get_mnemo( b ));
+	if( im ){
+		return( im );
+	}
+	return( g_date_compare( ofo_taux_get_val_begin( a ), ofo_taux_get_val_begin( b )));
+}
+
+/*
+ * we are searching here a taux which would prevent the definition of a
+ * new record with the specifications given in @check - no comparaison
+ * needed, just return zero if such a record is found
+ */
+static gint
+taux_check( const ofoTaux *ref, sCheckTaux *candidate )
+{
+	const GDate *ref_begin, *ref_end;
+	gboolean begin_ok, end_ok; /* TRUE if periods are compatible */
+
+	/* do not check against the same record */
+	if( ofo_taux_get_id( ref ) == candidate->id ){
+		return( 1 );
+	}
+
+	if( g_utf8_collate( ofo_taux_get_mnemo( ref ), candidate->mnemo )){
+		return( 1 ); /* anything but zero */
+	}
+
+	/* found another taux with the same mnemo
+	 * does its validity period overlap ours ?
+	 */
+	ref_begin = ofo_taux_get_val_begin( ref );
+	ref_end = ofo_taux_get_val_begin( ref );
+
+	if( !g_date_valid( candidate->begin )){
+		/* candidate begin is invalid => validity since the very
+		 * beginning of the world : the reference must have a valid begin
+		 * date greater that the candidate end date */
+		begin_ok = ( g_date_valid( ref_begin ) &&
+						g_date_valid( candidate->end ) &&
+						g_date_compare( ref_begin, candidate->end ) > 0 );
+	} else {
+		/* valid candidate beginning date
+		 * => the reference is either before or after the candidate
+		 *  so either the reference ends before the candidate begins
+		 *   or the reference begins after the candidate has ended */
+		begin_ok = ( g_date_valid( ref_end ) &&
+						g_date_compare( ref_end, candidate->begin ) < 0 ) ||
+					( g_date_valid( ref_begin ) &&
+						g_date_valid( candidate->end ) &&
+						g_date_compare( ref_begin, candidate->end ) > 0 );
+	}
+
+	if( !g_date_valid( candidate->end )){
+		/* candidate ending date is invalid => infinite validity is
+		 * required - this is possible if reference as an ending
+		 * validity before the beginning of the candidate */
+		end_ok = ( g_date_valid( ref_end ) &&
+					g_date_valid( candidate->begin ) &&
+					g_date_compare( ref_end, candidate->begin ) < 0 );
+	} else {
+		/* candidate ending date valid
+		 * => the reference is either before or after the candidate
+		 * so the reference ends before the candidate begins
+		 *  or the reference begins afer the candidate has ended */
+		end_ok = ( g_date_valid( ref_end ) &&
+						g_date_valid( candidate->begin ) &&
+						g_date_compare( ref_end, candidate->begin ) < 0 ) ||
+					( g_date_valid( ref_begin ) &&
+							g_date_compare( ref_begin, candidate->end ) > 0 );
+	}
+	if( !begin_ok || !end_ok ){
+		return( 0 );
+	}
+	return( 1 );
 }

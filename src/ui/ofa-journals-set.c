@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 
+#include "ui/my-utils.h"
 #include "ui/ofa-journal-properties.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofo-journal.h"
@@ -313,14 +314,14 @@ setup_journals_view( ofaJournalsSet *self )
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Mnémo" ),
+			_( "Mnemo" ),
 			text_cell, "text", COL_MNEMO,
 			NULL );
 	gtk_tree_view_append_column( view, column );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Intitulé" ),
+			_( "Label" ),
 			text_cell, "text", COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
@@ -328,7 +329,7 @@ setup_journals_view( ofaJournalsSet *self )
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Dernière clôture" ),
+			_( "Last closing" ),
 			text_cell, "text", COL_CLOTURE,
 			NULL );
 	gtk_tree_view_append_column( view, column );
@@ -365,17 +366,17 @@ setup_buttons_box( ofaJournalsSet *self )
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 30 );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Nouveau..." )));
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_New..." )));
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_journal ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Modifier..." )));
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Update..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_update_journal ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	self->private->update_btn = button;
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Supprimer..." )));
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Delete..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_delete_journal ), self );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
@@ -405,12 +406,7 @@ store_set_journal( GtkTreeModel *model, GtkTreeIter *iter, const ofoJournal *jou
 	gchar *sclo;
 
 	dclo = ofo_journal_get_cloture( journal );
-	if( !g_date_valid( dclo )){
-		sclo = g_strdup( "" );
-	} else {
-		sclo = g_strdup_printf( "%2u/%2u/%4u",
-				g_date_get_day( dclo ), g_date_get_month( dclo ), g_date_get_year( dclo ));
-	}
+	sclo = my_utils_display_from_date( dclo );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( model ),
@@ -554,8 +550,8 @@ error_undeletable( ofaJournalsSet *self, ofoJournal *journal )
 	ofaMainWindow *main_window;
 
 	msg = g_strdup_printf(
-				_( "Il est impossible de supprimer le journal '%s - %s' "
-					"car une écriture y a déjà été enregistrée." ),
+				_( "We are unable to delete the '%s - %s' journal "
+					"as at least one entry has been recorded" ),
 				ofo_journal_get_mnemo( journal ),
 				ofo_journal_get_label( journal ));
 
@@ -579,7 +575,7 @@ delete_confirmed( ofaJournalsSet *self, ofoJournal *journal )
 	gchar *msg;
 	gboolean delete_ok;
 
-	msg = g_strdup_printf( _( "Etes-vous sûr de vouloir supprimer le journal '%s - %s' ?" ),
+	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' journal ?" ),
 			ofo_journal_get_mnemo( journal ),
 			ofo_journal_get_label( journal ));
 

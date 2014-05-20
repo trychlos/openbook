@@ -797,7 +797,7 @@ check_for_p3_complete( ofaDossierNew *self )
 		gtk_label_set_text( label, "" );
 	} else {
 		content = g_strdup_printf( "%s",
-				_( "Les deux mots de passe saisis sont différents l'un de l'autre" ));
+				_( "The two entered passwords are different each others" ));
 		gtk_label_set_text( label, content );
 		g_free( content );
 		if( !gdk_rgba_parse( &color, "#FF0000" )){
@@ -872,7 +872,7 @@ display_p4_param( GtkWidget *page, const gchar *field_name, const gchar *value, 
 			gtk_label_set_text( GTK_LABEL( label ), value );
 		} else {
 			/* i18n: 'Set' here means the password has been set */
-			gtk_label_set_text( GTK_LABEL( label ), _( "Renseigné" ));
+			gtk_label_set_text( GTK_LABEL( label ), _( "Set" ));
 		}
 	} else {
 		g_warning( "%s: unable to find '%s' field", thisfn, field_name );
@@ -1116,7 +1116,7 @@ is_willing_to_quit( ofaDossierNew *self )
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
-			_( "Etes-vous sûr de vouloir quitter cet assistant ?" ));
+			_( "Are you sure you want to quit this assistant ?" ));
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
