@@ -105,6 +105,7 @@ static void       setup_first_selection( ofaAccountsChart *self );
 static void       on_class_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsChart *self );
 static GtkWidget *notebook_create_page( ofaAccountsChart *self, GtkNotebook *book, gint class, gint position );
 static void       on_account_selected( GtkTreeSelection *selection, ofaAccountsChart *self );
+static void       enable_buttons( ofaAccountsChart *self, GtkTreeSelection *selection );
 static void       on_new_account( GtkButton *button, ofaAccountsChart *self );
 static void       on_update_account( GtkButton *button, ofaAccountsChart *self );
 static void       on_delete_account( GtkButton *button, ofaAccountsChart *self );
@@ -526,12 +527,23 @@ setup_first_selection( ofaAccountsChart *self )
 static void
 on_class_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsChart *self )
 {
+	GtkTreeSelection *select;
+
 	self->private->current =
 			GTK_TREE_VIEW( g_object_get_data( G_OBJECT( wpage ), DATA_PAGE_VIEW ));
+
+	select = gtk_tree_view_get_selection( self->private->current );
+	enable_buttons( self, select );
 }
 
 static void
 on_account_selected( GtkTreeSelection *selection, ofaAccountsChart *self )
+{
+	enable_buttons( self, selection );
+}
+
+static void
+enable_buttons( ofaAccountsChart *self, GtkTreeSelection *selection )
 {
 	gboolean select_ok;
 
