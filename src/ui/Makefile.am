@@ -112,6 +112,7 @@ ui_files = \
 	ofa-devise-properties.ui							\
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
+	ofa-guided-input.ui									\
 	ofa-journal-properties.ui							\
 	ofa-model-properties.ui								\
 	ofa-taux-properties.ui								\

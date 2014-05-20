@@ -94,6 +94,7 @@ static GtkWidget *notebook_create_page( ofaModelsSet *self, GtkNotebook *book, g
 static GtkWidget *notebook_find_page( ofaModelsSet *self, gint jou_id );
 static void       store_set_model( GtkTreeModel *model, GtkTreeIter *iter, const ofoModel *ofomodel );
 static void       on_model_selected( GtkTreeSelection *selection, ofaModelsSet *self );
+static void       enable_buttons( ofaModelsSet *self, GtkTreeSelection *selection );
 static void       on_new_model( GtkButton *button, ofaModelsSet *self );
 static void       on_update_model( GtkButton *button, ofaModelsSet *self );
 static void       on_delete_model( GtkButton *button, ofaModelsSet *self );
@@ -284,8 +285,13 @@ setup_set_page( ofaModelsSet *self )
 static void
 on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self )
 {
+	GtkTreeSelection *select;
+
 	self->private->current =
 			GTK_TREE_VIEW( g_object_get_data( G_OBJECT( wpage ), DATA_PAGE_VIEW ));
+
+	select = gtk_tree_view_get_selection( self->private->current );
+	enable_buttons( self, select );
 }
 
 static GtkWidget *
@@ -500,12 +506,19 @@ store_set_model( GtkTreeModel *model, GtkTreeIter *iter, const ofoModel *ofomode
 static void
 on_model_selected( GtkTreeSelection *selection, ofaModelsSet *self )
 {
+	enable_buttons( self, selection );
+}
+
+static void
+enable_buttons( ofaModelsSet *self, GtkTreeSelection *selection )
+{
 	gboolean select_ok;
 
 	select_ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
 
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
 	gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
+	gtk_widget_set_sensitive( GTK_WIDGET( self->private->guided_input_btn ), select_ok );
 }
 
 static void
