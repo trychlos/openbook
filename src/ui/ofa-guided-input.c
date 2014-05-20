@@ -54,10 +54,22 @@ struct _ofaGuidedInputPrivate {
 	ofaMainWindow  *main_window;
 	GtkDialog      *dialog;
 	const ofoModel *model;
+	GtkTreeView    *view;				/* entries tree view */
 
 	/* data
 	 */
 	gint            journal_id;
+};
+
+/* columns of the list of entries
+ */
+enum {
+	COL_RANG = 0,
+	COL_ACCOUNT,
+	COL_LABEL,
+	COL_DEBIT,
+	COL_CREDIT,
+	N_COLUMNS
 };
 
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-guided-input.ui";
@@ -74,7 +86,12 @@ static void      do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main
 static gboolean  ok_to_terminate( ofaGuidedInput *self, gint code );
 static void      init_dialog_journal( ofaGuidedInput *self );
 static void      init_dialog_entries( ofaGuidedInput *self );
+static void      add_row_entry( ofaGuidedInput *self, gint i );
 static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self );
+static void      on_account_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self );
+static void      on_label_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self );
+static void      on_debit_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self );
+static void      on_credit_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self );
 static void      check_for_enable_dlg( ofaGuidedInput *self );
 static gboolean  do_update( ofaGuidedInput *self );
 
@@ -262,6 +279,8 @@ do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel 
 
 		init_dialog_journal( self );
 		init_dialog_entries( self );
+
+		check_for_enable_dlg( self );
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( priv->dialog ));
@@ -294,18 +313,109 @@ ok_to_terminate( ofaGuidedInput *self, gint code )
 static void
 init_dialog_journal( ofaGuidedInput *self )
 {
+	GtkWidget *combo;
+
+	self->private->journal_id = ofo_model_get_journal( self->private->model );
+
 	ofa_journal_combo_init_dialog(
 			self->private->dialog, "p1-journal", NULL,
 			ofa_main_window_get_dossier( self->private->main_window ),
 			FALSE, TRUE,
 			( ofaJournalComboCb ) on_journal_changed, self,
-			ofo_model_get_journal( self->private->model ));
+			self->private->journal_id );
+
+	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-journal" );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+
+	gtk_widget_set_sensitive( combo, ofo_model_get_journal_locked( self->private->model ));
 }
 
 static void
 init_dialog_entries( ofaGuidedInput *self )
 {
+	GtkWidget *view;
+	GtkTreeModel *tmodel;
+	gint count,i;
 
+	view = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-entries" );
+	g_return_if_fail( view && GTK_IS_TREE_VIEW( view ));
+	self->private->view = GTK_TREE_VIEW( view );
+
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+				N_COLUMNS,
+				G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING ));
+
+	gtk_tree_view_set_model( self->private->view, tmodel );
+	g_object_unref( tmodel );
+
+	count = ofo_model_get_detail_count( self->private->model );
+	for( i=0 ; i<count ; ++i ){
+		add_row_entry( self, i );
+	}
+}
+
+static void
+add_row_entry( ofaGuidedInput *self, gint i )
+{
+	GtkCellRenderer *text_cell;
+	GtkTreeViewColumn *column;
+	gboolean locked;
+
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			"",
+			text_cell, "text", COL_RANG,
+			NULL );
+	gtk_tree_view_append_column( self->private->view, column );
+	gtk_tree_view_column_set_alignment( column, 1.0 );
+
+	text_cell = gtk_cell_renderer_text_new();
+	locked = ofo_model_get_detail_account_locked( self->private->model, i );
+	g_object_set( G_OBJECT( text_cell ), "editable", !locked, NULL );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Account" ),
+			text_cell, "text", COL_ACCOUNT,
+			NULL );
+	gtk_tree_view_append_column( self->private->view, column );
+	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_account_edited ), self );
+
+	text_cell = gtk_cell_renderer_text_new();
+	locked = ofo_model_get_detail_label_locked( self->private->model, i );
+	g_object_set( G_OBJECT( text_cell ), "editable", !locked, NULL );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Label" ),
+			text_cell, "text", COL_LABEL,
+			NULL );
+	gtk_tree_view_append_column( self->private->view, column );
+	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_label_edited ), self );
+
+	text_cell = gtk_cell_renderer_text_new();
+	locked = ofo_model_get_detail_debit_locked( self->private->model, i );
+	g_object_set( G_OBJECT( text_cell ), "editable", !locked, NULL );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Debit" ),
+			text_cell, "text", COL_DEBIT,
+			NULL );
+	gtk_tree_view_append_column( self->private->view, column );
+	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_debit_edited ), self );
+
+	text_cell = gtk_cell_renderer_text_new();
+	locked = ofo_model_get_detail_credit_locked( self->private->model, i );
+	g_object_set( G_OBJECT( text_cell ), "editable", !locked, NULL );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Credit" ),
+			text_cell, "text", COL_CREDIT,
+			NULL );
+	gtk_tree_view_append_column( self->private->view, column );
+	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_credit_edited ), self );
 }
 
 static void
@@ -317,9 +427,44 @@ on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedIn
 }
 
 static void
+on_detail_editing( ofaGuidedInput *self, const gchar *path, const gchar *text, gint col )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	tmodel = gtk_tree_view_get_model( self->private->view );
+	if( gtk_tree_model_get_iter_from_string( tmodel, &iter, path )){
+		gtk_list_store_set( GTK_LIST_STORE( tmodel ), &iter, col, text, -1 );
+	}
+}
+
+static void
+on_account_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self )
+{
+	on_detail_editing( self, path, new_text, COL_ACCOUNT );
+}
+
+static void
+on_label_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self )
+{
+	on_detail_editing( self, path, new_text, COL_LABEL );
+}
+
+static void
+on_debit_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self )
+{
+	on_detail_editing( self, path, new_text, COL_DEBIT );
+}
+
+static void
+on_credit_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaGuidedInput *self )
+{
+	on_detail_editing( self, path, new_text, COL_CREDIT );
+}
+
+static void
 check_for_enable_dlg( ofaGuidedInput *self )
 {
-
 }
 
 /*
