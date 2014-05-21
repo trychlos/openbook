@@ -48,7 +48,7 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< private >*/
-	GObjectClass         parent;
+	GObjectClass parent;
 }
 	ofoBaseClass;
 

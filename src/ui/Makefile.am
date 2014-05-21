@@ -95,6 +95,8 @@ openbook_SOURCES = \
 	ofo-devise.h										\
 	ofo-dossier.c										\
 	ofo-dossier.h										\
+	ofo-entry.c											\
+	ofo-entry.h											\
 	ofo-journal.c										\
 	ofo-journal.h										\
 	ofo-model.c											\

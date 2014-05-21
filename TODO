@@ -179,7 +179,11 @@
 
   78 2014- 5-21 Guided Input: check that the effect date is valid
 
-  79
+  79 2014- 5-21 replace memcpy with g_memdup when possible
+
+  80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
+
+  81
 
 -----------------------------------------------------------------------
  DONE
