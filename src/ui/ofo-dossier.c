@@ -80,6 +80,12 @@ typedef struct {
 }
 	sCheckTaux;
 
+typedef struct {
+	const gchar *mnemo;
+	const GDate *date;
+}
+	sFindTaux;
+
 static gint     dbmodel_get_version( ofaSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
 static void     accounts_chart_free( GList *chart );
@@ -97,6 +103,7 @@ static gint     models_find( const ofoModel *a, const gchar *searched_mnemo );
 static void     taux_set_free( GList *set );
 static gint     taux_cmp( const ofoTaux *a, const ofoTaux *b );
 static gint     taux_check( const ofoTaux *a, sCheckTaux *check );
+static gint     taux_find( const ofoTaux *a, const sFindTaux *parms );
 
 static void
 ofo_dossier_finalize( GObject *instance )
@@ -589,11 +596,11 @@ ofo_dossier_get_user( const ofoDossier *dossier )
  * Returns: the searched account.
  */
 ofoAccount *
-ofo_dossier_get_account( const ofoDossier *dossier, const gchar *number )
+ofo_dossier_get_account( ofoDossier *dossier, const gchar *number )
 {
 	static const gchar *thisfn = "ofo_dossier_get_account";
 	ofoAccount *account;
-	GList *found;
+	GList *set, *found;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( number && g_utf8_strlen( number, -1 ), NULL );
@@ -604,8 +611,8 @@ ofo_dossier_get_account( const ofoDossier *dossier, const gchar *number )
 
 	if( !dossier->priv->dispose_has_run ){
 
-		found = g_list_find_custom(
-				dossier->priv->accounts, number, ( GCompareFunc ) accounts_find );
+		set = ofo_dossier_get_accounts_chart( dossier );
+		found = g_list_find_custom( set, number, ( GCompareFunc ) accounts_find );
 		if( found ){
 			account = OFO_ACCOUNT( found->data );
 		}
@@ -750,10 +757,10 @@ accounts_find( const ofoAccount *a, const gchar *searched_number )
  * Returns: the searched devise.
  */
 ofoDevise *
-ofo_dossier_get_devise( const ofoDossier *dossier, const gchar *mnemo )
+ofo_dossier_get_devise( ofoDossier *dossier, const gchar *mnemo )
 {
 	static const gchar *thisfn = "ofo_dossier_get_devise";
-	GList *found;
+	GList *set, *found;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
@@ -762,8 +769,8 @@ ofo_dossier_get_devise( const ofoDossier *dossier, const gchar *mnemo )
 
 	if( !dossier->priv->dispose_has_run ){
 
-		found = g_list_find_custom(
-				dossier->priv->devises, mnemo, ( GCompareFunc ) devises_find );
+		set = ofo_dossier_get_devises_set( dossier );
+		found = g_list_find_custom( set, mnemo, ( GCompareFunc ) devises_find );
 		if( found ){
 			return( OFO_DEVISE( found->data ));
 		}
@@ -889,11 +896,11 @@ devises_find( const ofoDevise *a, const gchar *searched )
  * Returns: the searched journal.
  */
 ofoJournal *
-ofo_dossier_get_journal( const ofoDossier *dossier, const gchar *mnemo )
+ofo_dossier_get_journal( ofoDossier *dossier, const gchar *mnemo )
 {
 	static const gchar *thisfn = "ofo_dossier_get_journal";
 	ofoJournal *journal;
-	GList *found;
+	GList *set, *found;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
@@ -904,8 +911,8 @@ ofo_dossier_get_journal( const ofoDossier *dossier, const gchar *mnemo )
 
 	if( !dossier->priv->dispose_has_run ){
 
-		found = g_list_find_custom(
-				dossier->priv->journals, mnemo, ( GCompareFunc ) journals_find );
+		set = ofo_dossier_get_journals_set( dossier );
+		found = g_list_find_custom( set, mnemo, ( GCompareFunc ) journals_find );
 		if( found ){
 			journal = OFO_JOURNAL( found->data );
 		}
@@ -1040,11 +1047,11 @@ journals_find( const ofoJournal *a, const gchar *searched_mnemo )
  * Returns: the searched model.
  */
 ofoModel *
-ofo_dossier_get_model( const ofoDossier *dossier, const gchar *mnemo )
+ofo_dossier_get_model( ofoDossier *dossier, const gchar *mnemo )
 {
 	static const gchar *thisfn = "ofo_dossier_get_model";
 	ofoModel *model;
-	GList *found;
+	GList *set, *found;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
@@ -1055,8 +1062,8 @@ ofo_dossier_get_model( const ofoDossier *dossier, const gchar *mnemo )
 
 	if( !dossier->priv->dispose_has_run ){
 
-		found = g_list_find_custom(
-				dossier->priv->models, mnemo, ( GCompareFunc ) models_find );
+		set = ofo_dossier_get_models_set( dossier );
+		found = g_list_find_custom( set, mnemo, ( GCompareFunc ) models_find );
 		if( found ){
 			model = OFO_MODEL( found->data );
 		}
@@ -1214,7 +1221,7 @@ models_find( const ofoModel *a, const gchar *searched_mnemo )
  * to the object which prevents the definition.
  */
 ofoTaux *
-ofo_dossier_check_for_taux( const ofoDossier *dossier, gint id, const gchar *mnemo, const GDate *begin, const GDate *end )
+ofo_dossier_check_for_taux( ofoDossier *dossier, gint id, const gchar *mnemo, const GDate *begin, const GDate *end )
 {
 	static const gchar *thisfn = "ofo_dossier_check_for_taux";
 	ofoTaux *taux;
@@ -1255,18 +1262,19 @@ ofo_dossier_check_for_taux( const ofoDossier *dossier, gint id, const gchar *mne
 	return( taux );
 }
 
-#if 0
 /**
  * ofo_dossier_get_taux:
+ * @date: [allow-none]: the effect date at which the rate must be valid
  *
  * Returns: the searched taux.
  */
 ofoTaux *
-ofo_dossier_get_taux( const ofoDossier *dossier, const gchar *mnemo )
+ofo_dossier_get_taux( ofoDossier *dossier, const gchar *mnemo, const GDate *date )
 {
 	static const gchar *thisfn = "ofo_dossier_get_taux";
 	ofoTaux *taux;
-	GList *found;
+	GList *set, *found;
+	sFindTaux parms;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
@@ -1277,8 +1285,10 @@ ofo_dossier_get_taux( const ofoDossier *dossier, const gchar *mnemo )
 
 	if( !dossier->priv->dispose_has_run ){
 
-		found = g_list_find_custom(
-				dossier->priv->taux, mnemo, ( GCompareFunc ) taux_find );
+		set = ofo_dossier_get_taux_set( dossier );
+		parms.mnemo = mnemo;
+		parms.date = date;
+		found = g_list_find_custom( set, &parms, ( GCompareFunc ) taux_find );
 		if( found ){
 			taux = OFO_TAUX( found->data );
 		}
@@ -1286,7 +1296,6 @@ ofo_dossier_get_taux( const ofoDossier *dossier, const gchar *mnemo )
 
 	return( taux );
 }
-#endif
 
 /**
  * ofo_dossier_get_taux_set:
@@ -1474,4 +1483,34 @@ taux_check( const ofoTaux *ref, sCheckTaux *candidate )
 		return( 0 );
 	}
 	return( 1 );
+}
+
+static gint
+taux_find( const ofoTaux *a, const sFindTaux *parms )
+{
+	gint cmp_mnemo;
+	gint cmp_date;
+	const GDate *val_begin, *val_end;
+
+	cmp_mnemo = g_utf8_collate( ofo_taux_get_mnemo( a ), parms->mnemo );
+
+	if( cmp_mnemo == 0 && parms->date && g_date_valid( parms->date )){
+		val_begin = ofo_taux_get_val_begin( a );
+		val_end = ofo_taux_get_val_end( a );
+		if( val_begin && g_date_valid( val_begin )){
+			cmp_date = g_date_compare( val_begin, parms->date );
+			if( cmp_date >= 0 ){
+				return( cmp_date );
+			}
+		}
+		if( val_end && g_date_valid( val_end )){
+			cmp_date = g_date_compare( val_end, parms->date );
+			if( cmp_date <= 0 ){
+				return( cmp_date );
+			}
+		}
+		return( 0 );
+	}
+
+	return( cmp_mnemo );
 }

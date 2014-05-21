@@ -39,7 +39,6 @@
  * at run time.
  *
  * Columns are named with a letter:
- * - Description: 'E'
  * - Account: 'A'
  * - Label: 'L'
  * - Debit: 'D':
@@ -64,6 +63,9 @@
  * - the formula '=SOLDE' says that the given entry will balance the
  *   operation; the amount will be computed at run time to be sure
  *   all entries are equally balanced between debit and credit.
+ *
+ * - the formula '=IDEM' says that the given entry will take the same
+ *   value than those of the previous row, same column.
  */
 
 #include "ui/ofa-main-window.h"

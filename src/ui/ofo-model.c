@@ -567,7 +567,7 @@ ofo_model_get_detail_comment( const ofoModel *model, gint idx )
 	GList *idet;
 	sModDetail *sdet;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+	g_return_val_if_fail( idx >= 0 && OFO_IS_MODEL( model ), NULL );
 
 	if( !model->priv->dispose_has_run ){
 
@@ -589,7 +589,7 @@ ofo_model_get_detail_account( const ofoModel *model, gint idx )
 	GList *idet;
 	sModDetail *sdet;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+	g_return_val_if_fail( idx >= 0 && OFO_IS_MODEL( model ), NULL );
 
 	if( !model->priv->dispose_has_run ){
 
@@ -611,7 +611,7 @@ ofo_model_get_detail_account_locked( const ofoModel *model, gint idx )
 	GList *idet;
 	sModDetail *sdet;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+	g_return_val_if_fail( idx >= 0 && OFO_IS_MODEL( model ), FALSE );
 
 	if( !model->priv->dispose_has_run ){
 
@@ -633,7 +633,7 @@ ofo_model_get_detail_label( const ofoModel *model, gint idx )
 	GList *idet;
 	sModDetail *sdet;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+	g_return_val_if_fail( idx >= 0 && OFO_IS_MODEL( model ), NULL );
 
 	if( !model->priv->dispose_has_run ){
 
@@ -655,7 +655,7 @@ ofo_model_get_detail_label_locked( const ofoModel *model, gint idx )
 	GList *idet;
 	sModDetail *sdet;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+	g_return_val_if_fail( idx >= 0 && OFO_IS_MODEL( model ), FALSE );
 
 	if( !model->priv->dispose_has_run ){
 
@@ -677,7 +677,7 @@ ofo_model_get_detail_debit( const ofoModel *model, gint idx )
 	GList *idet;
 	sModDetail *sdet;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+	g_return_val_if_fail( idx >= 0 && OFO_IS_MODEL( model ), NULL );
 
 	if( !model->priv->dispose_has_run ){
 
@@ -699,7 +699,7 @@ ofo_model_get_detail_debit_locked( const ofoModel *model, gint idx )
 	GList *idet;
 	sModDetail *sdet;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+	g_return_val_if_fail( idx >= 0 && OFO_IS_MODEL( model ), FALSE );
 
 	if( !model->priv->dispose_has_run ){
 
@@ -721,7 +721,7 @@ ofo_model_get_detail_credit( const ofoModel *model, gint idx )
 	GList *idet;
 	sModDetail *sdet;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+	g_return_val_if_fail( idx >= 0 && OFO_IS_MODEL( model ), NULL );
 
 	if( !model->priv->dispose_has_run ){
 
@@ -743,7 +743,7 @@ ofo_model_get_detail_credit_locked( const ofoModel *model, gint idx )
 	GList *idet;
 	sModDetail *sdet;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+	g_return_val_if_fail( idx >= 0 && OFO_IS_MODEL( model ), FALSE );
 
 	if( !model->priv->dispose_has_run ){
 
@@ -753,6 +753,15 @@ ofo_model_get_detail_credit_locked( const ofoModel *model, gint idx )
 	}
 
 	return( FALSE );
+}
+
+/**
+ * ofo_model_detail_is_formula:
+ */
+gboolean
+ofo_model_detail_is_formula( const gchar *str )
+{
+	return( str && str[0] == '=' );
 }
 
 /**

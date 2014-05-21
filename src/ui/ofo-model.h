@@ -96,6 +96,8 @@ gboolean     ofo_model_get_detail_debit_locked  ( const ofoModel *model, gint id
 const gchar *ofo_model_get_detail_credit        ( const ofoModel *model, gint idx );
 gboolean     ofo_model_get_detail_credit_locked ( const ofoModel *model, gint idx );
 
+gboolean     ofo_model_detail_is_formula        ( const gchar *str );
+
 void         ofo_model_set_detail   ( const ofoModel *model, gint idx,
 										const gchar *comment,
 										const gchar *account, gboolean account_locked,

@@ -83,35 +83,35 @@ gboolean      ofo_dossier_open    ( ofoDossier *dossier,
 const gchar  *ofo_dossier_get_name( const ofoDossier *dossier );
 const gchar  *ofo_dossier_get_user( const ofoDossier *dossier );
 
-ofoAccount   *ofo_dossier_get_account       ( const ofoDossier *dossier, const gchar *number );
+ofoAccount   *ofo_dossier_get_account       ( ofoDossier *dossier, const gchar *number );
 GList        *ofo_dossier_get_accounts_chart( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_account    ( ofoDossier *dossier, ofoAccount *account );
 gboolean      ofo_dossier_update_account    ( ofoDossier *dossier, ofoAccount *account, const gchar *prev_number );
 gboolean      ofo_dossier_delete_account    ( ofoDossier *dossier, ofoAccount *account );
 
-ofoDevise    *ofo_dossier_get_devise        ( const ofoDossier *dossier, const gchar *code );
+ofoDevise    *ofo_dossier_get_devise        ( ofoDossier *dossier, const gchar *code );
 GList        *ofo_dossier_get_devises_set   ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_devise     ( ofoDossier *dossier, ofoDevise *devise );
 gboolean      ofo_dossier_update_devise     ( ofoDossier *dossier, ofoDevise *devise );
 gboolean      ofo_dossier_delete_devise     ( ofoDossier *dossier, ofoDevise *devise );
 
-ofoJournal   *ofo_dossier_get_journal       ( const ofoDossier *dossier, const gchar *mnemo );
+ofoJournal   *ofo_dossier_get_journal       ( ofoDossier *dossier, const gchar *mnemo );
 GList        *ofo_dossier_get_journals_set  ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_journal    ( ofoDossier *dossier, ofoJournal *journal );
 gboolean      ofo_dossier_update_journal    ( ofoDossier *dossier, ofoJournal *journal );
 gboolean      ofo_dossier_delete_journal    ( ofoDossier *dossier, ofoJournal *journal );
 
-ofoModel     *ofo_dossier_get_model         ( const ofoDossier *dossier, const gchar *mnemo );
+ofoModel     *ofo_dossier_get_model         ( ofoDossier *dossier, const gchar *mnemo );
 GList        *ofo_dossier_get_models_set    ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_model      ( ofoDossier *dossier, ofoModel *model );
 gboolean      ofo_dossier_update_model      ( ofoDossier *dossier, ofoModel *model, const gchar *prev_mnemo );
 gboolean      ofo_dossier_delete_model      ( ofoDossier *dossier, ofoModel *model );
 
-ofoTaux      *ofo_dossier_check_for_taux    ( const ofoDossier *dossier,
+ofoTaux      *ofo_dossier_check_for_taux    ( ofoDossier *dossier,
 												gint id, const gchar *mnemo,
 												const GDate *begin, const GDate *end );
-/* this is a the standard method which one use to get a taux for a date
- * ofoTaux      *ofo_dossier_get_taux          ( const ofoDossier *dossier, const gchar *mnemo, const GDate *date );*/
+/* this is a the standard method which one use to get a taux for a date */
+ofoTaux      *ofo_dossier_get_taux          ( ofoDossier *dossier, const gchar *mnemo, const GDate *date );
 GList        *ofo_dossier_get_taux_set      ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_taux       ( ofoDossier *dossier, ofoTaux *taux );
 gboolean      ofo_dossier_update_taux       ( ofoDossier *dossier, ofoTaux *taux );
