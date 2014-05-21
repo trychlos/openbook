@@ -909,7 +909,7 @@ check_for_all_entries( ofaGuidedInput *self )
 	for( idx=0 ; idx<count ; ++idx ){
 		deb = get_amount( self, COL_DEBIT, idx+1 );
 		cred = get_amount( self, COL_CREDIT, idx+1 );
-		if( deb != 0.0 || cred != 0.0 ){
+		if( deb+cred != 0.0 ){
 			ok &= check_for_entry( self, idx+1 );
 		}
 	}
