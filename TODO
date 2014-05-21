@@ -174,7 +174,12 @@
   76 2014- 5-21 Open AccountNotebook on a specified account, or as close
                 as it is possible when only giving first digit(s)
 
-  77
+  77 2014- 5-21 Guided Input: default effect date is operation date
+                or first davailable date
+
+  78 2014- 5-21 Guided Input: check that the effect date is valid
+
+  79
 
 -----------------------------------------------------------------------
  DONE

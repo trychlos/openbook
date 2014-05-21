@@ -453,11 +453,32 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	}
 
 	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_ECRITURES ("
+			"	ECR_EFFET     DATE NOT NULL               COMMENT 'Imputation effect date',"
+			"	ECR_NUMBER    INTEGER NOT NULL            COMMENT 'Entry number',"
+			"	ECR_OPE       DATE NOT NULL               COMMENT 'Operation date',"
+			"	ECR_LABEL     VARCHAR(80)                 COMMENT 'Entry label',"
+			"	ECR_REF       VARCHAR(20)                 COMMENT 'Piece reference',"
+			"	ECR_DEV_ID    INTEGER                     COMMENT 'Internal identifier of the currency',"
+			"	ECR_JOU_ID    INTEGER                     COMMENT 'Internal identifier of the journal',"
+			"	ECR_MONTANT   DECIMAL(15,5)               COMMENT 'Entry amount',"
+			"	ECR_SENS      VARCHAR(2)                  COMMENT 'Sens of the entry \\'DB\\' or \\'CR\\'',"
+			"	ECR_VALID     INTEGER                     COMMENT 'If the entry has been validated',"
+			"	ECR_DELETED   INTEGER                     COMMENT 'If the entry has been deleted',"
+			"	ECR_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
+			"	ECR_MAJ_STAMP TIMESTAMP                   COMMENT 'Last update timestamp',"
+			"	CONSTRAINT PRIMARY KEY (ECR_EFFET,ECR_NUMBER),"
+			"	INDEX (ECR_NUMBER)"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX ("
 			"	JOU_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern journal identifier',"
-			"	JOU_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Taux mnemonic',"
-			"	JOU_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Taux label',"
-			"	JOU_NOTES     VARCHAR(512)                COMMENT 'Taux notes',"
+			"	JOU_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Journal mnemonic',"
+			"	JOU_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Journal label',"
+			"	JOU_NOTES     VARCHAR(512)                COMMENT 'Journal notes',"
 			"	JOU_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	JOU_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
 			"	JOU_MAXDATE   DATE                        COMMENT 'Most recent effect date of the entries',"
