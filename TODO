@@ -183,7 +183,16 @@
 
   80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
 
-  81
+  81 2014- 5-21 guided input: check_for_entry: also check that total
+                debit+credit balance is not nul
+
+  82 2014- 5-21 when creating a new entry, also pass the dossier so 
+                that the record is immediately written in sgbd
+
+  83 2014- 5-21 account notebook: display sum of validated+rough
+                balances
+
+  84
 
 -----------------------------------------------------------------------
  DONE
