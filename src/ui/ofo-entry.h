@@ -80,16 +80,32 @@ typedef enum {
 }
 	ofaEntryStatus;
 
-GType        ofo_entry_get_type( void );
+GType     ofo_entry_get_type( void );
 
-ofoEntry    *ofo_entry_new     ( const GDate *effet, const GDate *ope,
+ofoEntry *ofo_entry_new     ( ofoDossier *dossier,
+									const GDate *effet, const GDate *ope,
 									const gchar *label, const gchar *ref,
+									const gchar *account,
 									gint dev_id, gint jou_id,
 									gdouble amount, ofaEntrySens sens );
 
-gboolean     ofo_entry_insert  ( ofoEntry *entry, ofoDossier *dossier );
-gboolean     ofo_entry_validate( ofoEntry *entry, ofoDossier *dossier );
-gboolean     ofo_entry_delete  ( ofoEntry *entry, ofoDossier *dossier );
+gint           ofo_entry_get_number   ( const ofoEntry *entry );
+const gchar   *ofo_entry_get_label    ( const ofoEntry *entry );
+const GDate   *ofo_entry_get_deffect  ( const ofoEntry *entry );
+const GDate   *ofo_entry_get_dope     ( const ofoEntry *entry );
+const gchar   *ofo_entry_get_ref      ( const ofoEntry *entry );
+const gchar   *ofo_entry_get_account  ( const ofoEntry *entry );
+gint           ofo_entry_get_devise   ( const ofoEntry *entry );
+gint           ofo_entry_get_journal  ( const ofoEntry *entry );
+gdouble        ofo_entry_get_amount   ( const ofoEntry *entry );
+ofaEntrySens   ofo_entry_get_sens     ( const ofoEntry *entry );
+ofaEntryStatus ofo_entry_get_status   ( const ofoEntry *entry );
+
+void           ofo_entry_set_maj_user ( ofoEntry *entry, const gchar *user );
+void           ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *stamp );
+
+gboolean  ofo_entry_validate( ofoEntry *entry, ofoDossier *dossier );
+gboolean  ofo_entry_delete  ( ofoEntry *entry, ofoDossier *dossier );
 
 G_END_DECLS
 

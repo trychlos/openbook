@@ -71,6 +71,7 @@ G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
 /* the last DB model version
  */
 #define THIS_DBMODEL_VERSION            1
+#define THIS_DOS_ID                     1
 
 typedef struct {
 	gint         id;
@@ -395,17 +396,43 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
-				"DOS_ID           INTEGER      NOT NULL UNIQUE COMMENT 'Row identifier',"
-				"DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
-				"DOS_NOTES        VARCHAR(512)                 COMMENT 'Notes',"
-				"DOS_MAJ_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
-				"DOS_MAJ_STAMP    TIMESTAMP    NOT NULL        COMMENT 'Properties last update timestamp',"
-				"DOS_EXE_DEB      DATE         NOT NULL        COMMENT 'Date de début d\\'exercice',"
-				"DOS_EXE_FIN      DATE         NOT NULL        COMMENT 'Date de fin d\\'exercice',"
-				"DOS_LAST_ECR     INTEGER            DEFAULT 0 COMMENT 'Dernier numéro d\\'écriture attribué'"
+			"	DOS_ID           INTEGER      NOT NULL UNIQUE COMMENT 'Row identifier',"
+			"	DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
+			"	DOS_NOTES        VARCHAR(512)                 COMMENT 'Notes',"
+			"	DOS_DUREE_EXE    INTEGER                      COMMENT 'Exercice length in month',"
+			"	DOS_JOU_VALID    INTEGER                      COMMENT 'Whether journal closing automatically validate pending entries',"
+			"	DOS_MAJ_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
+			"	DOS_MAJ_STAMP    TIMESTAMP    NOT NULL        COMMENT 'Properties last update timestamp'"
 			")" )){
 		return( FALSE );
 	}
+
+	query = g_strdup(
+			"INSERT IGNORE INTO OFA_T_DOSSIER (DOS_ID) VALUE (1)" );
+	if( !ofa_sgbd_query( sgbd, parent, query )){
+		g_free( query );
+		return( FALSE );
+	}
+	g_free( query );
+
+	if( !ofa_sgbd_query( sgbd, parent,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_EXE ("
+			"	DOS_ID           INTEGER      NOT NULL        COMMENT 'Row identifier',"
+			"	DOS_EXE_DEB      DATE         NOT NULL DEFAULT 0 COMMENT 'Date de début d\\'exercice',"
+			"	DOS_EXE_FIN      DATE         NOT NULL DEFAULT 0 COMMENT 'Date de fin d\\'exercice',"
+			"	DOS_EXE_ECR      INTEGER      NOT NULL DEFAULT 0 COMMENT 'Last entry number used',"
+			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_DEB,DOS_EXE_FIN)"
+			")" )){
+		return( FALSE );
+	}
+
+	query = g_strdup(
+			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE (DOS_ID) VALUE (1)" );
+	if( !ofa_sgbd_query( sgbd, parent, query )){
+		g_free( query );
+		return( FALSE );
+	}
+	g_free( query );
 
 	if( !ofa_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
@@ -459,6 +486,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 			"	ECR_OPE       DATE NOT NULL               COMMENT 'Operation date',"
 			"	ECR_LABEL     VARCHAR(80)                 COMMENT 'Entry label',"
 			"	ECR_REF       VARCHAR(20)                 COMMENT 'Piece reference',"
+			"	ECR_COMPTE    VARCHAR(20)                 COMMENT 'Account number',"
 			"	ECR_DEV_ID    INTEGER                     COMMENT 'Internal identifier of the currency',"
 			"	ECR_JOU_ID    INTEGER                     COMMENT 'Internal identifier of the journal',"
 			"	ECR_MONTANT   DECIMAL(15,5)               COMMENT 'Entry amount',"
@@ -605,6 +633,24 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 	if( !dossier->priv->dispose_has_run ){
 
 		return(( const gchar * ) dossier->priv->userid );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_sgbd:
+ *
+ * Returns: the current connection handle.
+ */
+ofaSgbd *
+ofo_dossier_get_sgbd( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !dossier->priv->dispose_has_run ){
+
+		return( dossier->priv->sgbd );
 	}
 
 	return( NULL );
@@ -908,6 +954,45 @@ static gint
 devises_find( const ofoDevise *a, const gchar *searched )
 {
 	return( g_utf8_collate( ofo_devise_get_code( a ), searched ));
+}
+
+/**
+ * ofo_dossier_get_next_entry_number:
+ */
+gint
+ofo_dossier_get_next_entry_number( ofoDossier *dossier )
+{
+	gint next_number;
+	gchar *query;
+	GSList *result, *icol;
+
+	next_number = 1;
+
+	query = g_strdup_printf(
+			"SELECT DOS_EXE_ECR FROM OFA_T_DOSSIER_EXE "
+			"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
+					THIS_DOS_ID, DOS_STATUS_OPENED );
+
+	result = ofa_sgbd_query_ex( dossier->priv->sgbd, NULL, query );
+	g_free( query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		next_number = atoi(( gchar * ) icol->data );
+		ofa_sgbd_free_result( result );
+
+		next_number += 1;
+		query = g_strdup_printf(
+				"UPDATE OFA_T_DOSSIER_EXE "
+				"	SET DOS_EXE_ECR=%d "
+				"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
+						next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
+
+		ofa_sgbd_query( dossier->priv->sgbd, NULL, query );
+		g_free( query );
+	}
+
+	return( next_number );
 }
 
 /**

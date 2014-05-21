@@ -71,6 +71,20 @@ typedef struct {
 }
 	ofoDossier;
 
+/**
+ * ofaDossierStatus:
+ *
+ * Status of the exercice.
+ *
+ * The system makes sure there is at most one opened exercice at any
+ * time.
+ */
+typedef enum {
+	DOS_STATUS_OPENED = 1,
+	DOS_STATUS_CLOSED
+}
+	ofaDossierStatus;
+
 GType         ofo_dossier_get_type( void );
 
 ofoDossier   *ofo_dossier_new     ( const gchar *name );
@@ -82,6 +96,7 @@ gboolean      ofo_dossier_open    ( ofoDossier *dossier,
 
 const gchar  *ofo_dossier_get_name( const ofoDossier *dossier );
 const gchar  *ofo_dossier_get_user( const ofoDossier *dossier );
+ofaSgbd      *ofo_dossier_get_sgbd( const ofoDossier *dossier );
 
 ofoAccount   *ofo_dossier_get_account       ( ofoDossier *dossier, const gchar *number );
 GList        *ofo_dossier_get_accounts_chart( ofoDossier *dossier );
@@ -94,6 +109,8 @@ GList        *ofo_dossier_get_devises_set   ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_devise     ( ofoDossier *dossier, ofoDevise *devise );
 gboolean      ofo_dossier_update_devise     ( ofoDossier *dossier, ofoDevise *devise );
 gboolean      ofo_dossier_delete_devise     ( ofoDossier *dossier, ofoDevise *devise );
+
+gint          ofo_dossier_get_next_entry_number( ofoDossier *dossier );
 
 ofoJournal   *ofo_dossier_get_journal       ( ofoDossier *dossier, const gchar *mnemo );
 GList        *ofo_dossier_get_journals_set  ( ofoDossier *dossier );

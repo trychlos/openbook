@@ -183,16 +183,21 @@
 
   80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
 
-  81 2014- 5-21 guided input: check_for_entry: also check that total
-                debit+credit balance is not nul
-
   82 2014- 5-21 when creating a new entry, also pass the dossier so 
                 that the record is immediately written in sgbd
 
   83 2014- 5-21 account notebook: display sum of validated+rough
                 balances
 
-  84
+  84 2014- 5-21 Port the GuidedInput code model to ModelProperties
+                (GtkGrid+GtkEntry instead of GtkTreeView)
+
+  85 2014- 5-21 Color the frame of the invalid GtkEntry
+                + set data "ofa-data-entry-valid"
+                + my_utils_entry_is_valid
+                + my_utils_entry_set_valid
+
+  86
 
 -----------------------------------------------------------------------
  DONE
@@ -282,6 +287,10 @@
   73 2014- 5-20 GuidedInput: use TAB to navigate between fields of the
                 entries tree view
      2014- 5-21 done by using GtkGrid + GtkEntry instead of a treeview.
+
+  81 2014- 5-21 guided input: check_for_entry: also check that total
+                debit+credit balance is not nul
+     2014- 5-21 done svn #3488
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
