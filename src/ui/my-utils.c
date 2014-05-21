@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <string.h>
 
 #include "ui/my-utils.h"
@@ -84,22 +85,50 @@ my_utils_date_from_str( const gchar *str )
 /**
  * my_utils_display_from_date:
  *
- * returns the date as 'dd/mm/yyyy' suitable for display in a newly
+ * returns the date as 'dd mmm yyyy' suitable for display in a newly
  * allocated string that the user must g_free().
  * or a new empty string if the date is invalid
  */
 gchar *
-my_utils_display_from_date( const GDate *date )
+my_utils_display_from_date( const GDate *date, myUtilsDateFormat format )
 {
+	static const gchar *st_month[] = {
+			N_( "janv." ),
+			N_( "feb." ),
+			N_( "mar." ),
+			N_( "apr." ),
+			N_( "may" ),
+			N_( "jun." ),
+			N_( "jul." ),
+			N_( "aug." ),
+			N_( "sept." ),
+			N_( "oct." ),
+			N_( "nov." ),
+			N_( "dec." )
+	};
 	gchar *str;
 
+	str = g_strdup( "" );
+
 	if( g_date_valid( date )){
-		str = g_strdup_printf( "%2.2d/%2.2d/%4.4d",
-				g_date_get_day( date ),
-				g_date_get_month( date ),
-				g_date_get_year( date ));
-	} else {
-		str = g_strdup( "" );
+		switch( format ){
+
+			case MY_UTILS_DATE_DMMM:
+				g_free( str );
+				str = g_strdup_printf( "%d %s %4.4d",
+						g_date_get_day( date ),
+						gettext( st_month[g_date_get_month( date )-1] ),
+						g_date_get_year( date ));
+				break;
+
+			case MY_UTILS_DATE_DDMM:
+				g_free( str );
+				str = g_strdup_printf( "%2.2d/%2.2d/%4.4d",
+						g_date_get_day( date ),
+						g_date_get_month( date ),
+						g_date_get_year( date ));
+				break;
+		}
 	}
 
 	return( str );
@@ -155,6 +184,50 @@ my_utils_timestamp( void )
 	str = g_date_time_format( dt, "%F %T" );
 
 	return( str );
+}
+
+/**
+ * my_utils_entry_get_valid
+ */
+gboolean
+my_utils_entry_get_valid( GtkEntry *entry )
+{
+	return( TRUE );
+}
+
+/**
+ * my_utils_entry_set_valid
+ */
+void
+my_utils_entry_set_valid( GtkEntry *entry, gboolean valid )
+{
+	static const gchar *thisfn = "my_utils_entry_set_valid";
+	static GtkCssProvider *css_provider = NULL;
+	GError *error;
+	GtkStyleContext *style;
+
+	if( !css_provider ){
+		css_provider = gtk_css_provider_new();
+		error = NULL;
+		if( !gtk_css_provider_load_from_path( css_provider, PKGUIDIR "/ofa.css", &error )){
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
+			g_clear_object( &css_provider );
+		}
+	}
+
+	if( css_provider ){
+		style = gtk_widget_get_style_context( GTK_WIDGET( entry ));
+		if( valid ){
+			gtk_style_context_remove_class( style, "ofaInvalid" );
+			gtk_style_context_add_class( style, "ofaValid" );
+		} else {
+			gtk_style_context_remove_class( style, "ofaValid" );
+			gtk_style_context_add_class( style, "ofaInvalid" );
+		}
+		gtk_style_context_add_provider( style,
+				GTK_STYLE_PROVIDER( css_provider ), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+	}
 }
 
 /**

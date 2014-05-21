@@ -312,14 +312,14 @@ do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *tau
 
 		memcpy( &priv->begin, ofo_taux_get_val_begin( taux ), sizeof( GDate ));
 		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-begin" ));
-		str = my_utils_display_from_date( &priv->begin );
+		str = my_utils_display_from_date( &priv->begin, MY_UTILS_DATE_DMMM );
 		gtk_entry_set_text( entry, str );
 		g_free( str );
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
 
 		memcpy( &priv->end, ofo_taux_get_val_end( taux ), sizeof( GDate ));
 		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-end" ));
-		str = my_utils_display_from_date( &priv->end );
+		str = my_utils_display_from_date( &priv->end, MY_UTILS_DATE_DMMM );
 		gtk_entry_set_text( entry, str );
 		g_free( str );
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
@@ -400,7 +400,7 @@ on_begin_changed( GtkEntry *entry, ofaTauxProperties *self )
 	if( !content || !g_utf8_strlen( content, -1 )){
 		str = g_strdup( "" );
 	} else if( g_date_valid( &self->private->begin )){
-		str = my_utils_display_from_date( &self->private->begin );
+		str = my_utils_display_from_date( &self->private->begin, MY_UTILS_DATE_DMMM );
 	} else {
 		str = g_strdup( _( "invalid" ));
 	}
@@ -426,7 +426,7 @@ on_end_changed( GtkEntry *entry, ofaTauxProperties *self )
 	if( !content || !g_utf8_strlen( content, -1 )){
 		str = g_strdup( "" );
 	} else if( g_date_valid( &self->private->end )){
-		str = my_utils_display_from_date( &self->private->end );
+		str = my_utils_display_from_date( &self->private->end, MY_UTILS_DATE_DMMM );
 	} else {
 		str = g_strdup( _( "invalid" ));
 	}
@@ -565,12 +565,12 @@ error_duplicate( ofaTauxProperties *self, ofoTaux *preventer )
 	gchar *sbegin, *send;
 	gchar *msg;
 
-	sbegin = my_utils_display_from_date( &self->private->begin );
+	sbegin = my_utils_display_from_date( &self->private->begin, MY_UTILS_DATE_DMMM );
 	if( !g_utf8_strlen( sbegin, -1 )){
 		g_free( sbegin );
 		sbegin = g_strdup( _( "(unlimited)" ));
 	}
-	send = my_utils_display_from_date( &self->private->end );
+	send = my_utils_display_from_date( &self->private->end, MY_UTILS_DATE_DMMM );
 	if( !g_utf8_strlen( send, -1 )){
 		g_free( send );
 		send = g_strdup( _( "(illimité)" ));

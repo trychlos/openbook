@@ -406,7 +406,7 @@ store_set_journal( GtkTreeModel *model, GtkTreeIter *iter, const ofoJournal *jou
 	gchar *sclo;
 
 	dclo = ofo_journal_get_cloture( journal );
-	sclo = my_utils_display_from_date( dclo );
+	sclo = my_utils_display_from_date( dclo, MY_UTILS_DATE_DMMM );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( model ),

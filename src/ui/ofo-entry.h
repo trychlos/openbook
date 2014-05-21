@@ -35,7 +35,8 @@
  * This class implements the Entry behavior.
  */
 
-#include "ui/ofo-dossier.h"
+#include "ui/ofa-sgbd.h"
+#include "ui/ofo-base.h"
 
 G_BEGIN_DECLS
 
@@ -80,14 +81,15 @@ typedef enum {
 }
 	ofaEntryStatus;
 
-GType     ofo_entry_get_type( void );
+GType     ofo_entry_get_type  ( void );
 
-ofoEntry *ofo_entry_new     ( ofoDossier *dossier,
+ofoEntry *ofo_entry_insert_new( ofaSgbd *sgbd, const gchar *user,
 									const GDate *effet, const GDate *ope,
 									const gchar *label, const gchar *ref,
 									const gchar *account,
 									gint dev_id, gint jou_id,
-									gdouble amount, ofaEntrySens sens );
+									gdouble amount, ofaEntrySens sens,
+									gint number );
 
 gint           ofo_entry_get_number   ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_label    ( const ofoEntry *entry );
@@ -104,8 +106,8 @@ ofaEntryStatus ofo_entry_get_status   ( const ofoEntry *entry );
 void           ofo_entry_set_maj_user ( ofoEntry *entry, const gchar *user );
 void           ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *stamp );
 
-gboolean  ofo_entry_validate( ofoEntry *entry, ofoDossier *dossier );
-gboolean  ofo_entry_delete  ( ofoEntry *entry, ofoDossier *dossier );
+gboolean  ofo_entry_validate( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user );
+gboolean  ofo_entry_delete  ( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user );
 
 G_END_DECLS
 

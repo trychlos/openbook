@@ -65,7 +65,7 @@ G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
 #define OFO_ENTRY_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_ENTRY, ofoEntryPrivate))
 
-static gboolean ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier );
+static gboolean ofo_entry_insert( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user );
 
 static void
 ofo_entry_finalize( GObject *instance )
@@ -142,22 +142,19 @@ ofo_entry_class_init( ofoEntryClass *klass )
  * ofo_entry_new:
  */
 ofoEntry *
-ofo_entry_new( ofoDossier *dossier,
+ofo_entry_insert_new( ofaSgbd *sgbd, const gchar *user,
 					const GDate *effet, const GDate *ope, const gchar *label, const gchar *ref,
 					const gchar *account,
-					gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens )
+					gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens,
+					gint number )
 {
 	ofoEntry *entry;
 
 	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
 
-	if( effet && g_date_valid( effet )){
-		memcpy( &entry->priv->effect, effet, sizeof( GDate ));
-	}
-	entry->priv->number = 0;
-	if( ope && g_date_valid( ope )){
-		memcpy( &entry->priv->operation, ope, sizeof( GDate ));
-	}
+	memcpy( &entry->priv->effect, effet, sizeof( GDate ));
+	entry->priv->number = number;
+	memcpy( &entry->priv->operation, ope, sizeof( GDate ));
 	entry->priv->label = g_strdup( label );
 	entry->priv->ref = g_strdup( ref );
 	entry->priv->account = g_strdup( account );
@@ -167,7 +164,7 @@ ofo_entry_new( ofoDossier *dossier,
 	entry->priv->sens = sens;
 	entry->priv->status = ENT_STATUS_ROUGH;
 
-	if( !ofo_entry_insert( entry, dossier )){
+	if( !ofo_entry_insert( entry, sgbd, user )){
 		g_clear_object( &entry );
 	}
 
@@ -276,7 +273,7 @@ ofo_entry_get_account( const ofoEntry *entry )
 gint
 ofo_entry_get_devise( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_TAUX( entry ), -1 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
 
 	if( !entry->priv->dispose_has_run ){
 
@@ -292,7 +289,7 @@ ofo_entry_get_devise( const ofoEntry *entry )
 gint
 ofo_entry_get_journal( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_TAUX( entry ), -1 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
 
 	if( !entry->priv->dispose_has_run ){
 
@@ -308,7 +305,7 @@ ofo_entry_get_journal( const ofoEntry *entry )
 gdouble
 ofo_entry_get_amount( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_TAUX( entry ), 0.0 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), 0.0 );
 
 	if( !entry->priv->dispose_has_run ){
 
@@ -324,7 +321,7 @@ ofo_entry_get_amount( const ofoEntry *entry )
 ofaEntrySens
 ofo_entry_get_sens( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_TAUX( entry ), -1 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
 
 	if( !entry->priv->dispose_has_run ){
 
@@ -340,7 +337,7 @@ ofo_entry_get_sens( const ofoEntry *entry )
 ofaEntryStatus
 ofo_entry_get_status( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_TAUX( entry ), -1 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
 
 	if( !entry->priv->dispose_has_run ){
 
@@ -382,7 +379,7 @@ ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *maj_stamp )
  * ofo_entry_insert:
  */
 static gboolean
-ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
+ofo_entry_insert( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *ref;
@@ -390,19 +387,14 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 	gchar amount[1+G_ASCII_DTOSTR_BUF_SIZE];
 	gboolean ok;
 	gchar *stamp;
-	const gchar *user;
 
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-
-	/* first, get the next entry number available */
-	entry->priv->number = ofo_dossier_get_next_entry_number( dossier );
+	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
 
 	label = my_utils_quote( ofo_entry_get_label( entry ));
 	ref = my_utils_quote( ofo_entry_get_ref( entry ));
 	deff = my_utils_sql_from_date( ofo_entry_get_deffect( entry ));
 	dope = my_utils_sql_from_date( ofo_entry_get_dope( entry ));
-	user = ofo_dossier_get_user( dossier );
 	stamp = my_utils_timestamp();
 
 	query = g_string_new( "INSERT INTO OFA_T_ECRITURES " );
@@ -436,7 +428,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 				user,
 				stamp );
 
-	if( ofa_sgbd_query( ofo_dossier_get_sgbd( dossier ), NULL, query->str )){
+	if( ofa_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_entry_set_maj_user( entry, user );
 		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str( stamp ));
@@ -458,7 +450,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
  * ofo_entry_validate:
  */
 gboolean
-ofo_entry_validate( ofoEntry *entry, ofoDossier *dossier )
+ofo_entry_validate( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
 {
 	return( FALSE );
 }
@@ -467,7 +459,7 @@ ofo_entry_validate( ofoEntry *entry, ofoDossier *dossier )
  * ofo_entry_delete:
  */
 gboolean
-ofo_entry_delete( ofoEntry *entry, ofoDossier *dossier )
+ofo_entry_delete( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
 {
 	return( FALSE );
 }

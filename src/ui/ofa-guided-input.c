@@ -61,6 +61,8 @@ struct _ofaGuidedInputPrivate {
 	/* data
 	 */
 	gint            journal_id;
+	GDate           dope;
+	GDate           deff;
 	gdouble         total_debits;
 	gdouble         total_credits;
 };
@@ -143,6 +145,8 @@ static void      add_row_entry_set( ofaGuidedInput *self, gint col_id, gint row 
 static const sColumnDef *find_column_def_from_col_id( ofaGuidedInput *self, gint col_id );
 static const sColumnDef *find_column_def_from_letter( ofaGuidedInput *self, gchar letter );
 static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self );
+static void      on_dope_changed( GtkEntry *entry, ofaGuidedInput *self );
+static void      on_deffet_changed( GtkEntry *entry, ofaGuidedInput *self );
 static void      on_entry_changed( GtkEntry *entry, ofaGuidedInput *self );
 static gboolean  on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
 static gboolean  on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
@@ -153,9 +157,13 @@ static void      update_formula( ofaGuidedInput *self, const gchar *formula, Gtk
 static gdouble   compute_formula_solde( ofaGuidedInput *self, gint column_id, gint row );
 static void      update_all_totals( ofaGuidedInput *self );
 static gdouble   get_amount( ofaGuidedInput *self, gint col_id, gint row );
+static gboolean  check_for_journal( ofaGuidedInput *self );
+static gboolean  check_for_dates( ofaGuidedInput *self );
 static gboolean  check_for_all_entries( ofaGuidedInput *self );
 static gboolean  check_for_entry( ofaGuidedInput *self, gint row );
+static void      set_comment( ofaGuidedInput *self, const gchar *comment );
 static gboolean  do_update( ofaGuidedInput *self );
+static gboolean  do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece );
 
 GType
 ofa_guided_input_get_type( void )
@@ -229,6 +237,8 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private->dispose_has_run = FALSE;
 
 	self->private->journal_id = -1;
+	g_date_clear( &self->private->dope, 1 );
+	g_date_clear( &self->private->deff, 1 );
 }
 
 static void
@@ -315,6 +325,7 @@ do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel 
 	GError *error;
 	GtkBuilder *builder;
 	ofaGuidedInputPrivate *priv;
+	GtkWidget *entry;
 
 	priv = self->private;
 	priv->main_window = main;
@@ -340,6 +351,15 @@ do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel 
 		/*gtk_window_set_transient_for( GTK_WINDOW( priv->dialog ), GTK_WINDOW( main ));*/
 
 		init_dialog_journal( self );
+
+		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-dope" );
+		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_dope_changed ), self );
+
+		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
+		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_deffet_changed ), self );
+
 		init_dialog_entries( self );
 
 		check_for_enable_dlg( self );
@@ -571,6 +591,48 @@ on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedIn
 }
 
 static void
+on_dope_changed( GtkEntry *entry, ofaGuidedInput *self )
+{
+	gchar *str, *comment;
+	GtkWidget *wdeff;
+
+	g_date_set_parse( &self->private->dope, gtk_entry_get_text( entry ));
+
+	str = my_utils_display_from_date( &self->private->dope, MY_UTILS_DATE_DMMM );
+	comment = g_strdup_printf( "Operation date: %s", str );
+	set_comment( self, comment );
+	g_free( comment );
+	g_free( str );
+
+	if( g_date_valid( &self->private->dope )){
+		str = my_utils_display_from_date( &self->private->dope, MY_UTILS_DATE_DDMM );
+		wdeff = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
+		if( entry && GTK_IS_WIDGET( wdeff )){
+			gtk_entry_set_text( GTK_ENTRY( wdeff ), str );
+		}
+		g_free( str );
+	}
+
+	check_for_enable_dlg( self );
+}
+
+static void
+on_deffet_changed( GtkEntry *entry, ofaGuidedInput *self )
+{
+	gchar *str, *comment;
+
+	g_date_set_parse( &self->private->deff, gtk_entry_get_text( entry ));
+
+	str = my_utils_display_from_date( &self->private->deff, MY_UTILS_DATE_DMMM );
+	comment = g_strdup_printf( "Effect date: %s", str );
+	set_comment( self, comment );
+	g_free( comment );
+	g_free( str );
+
+	check_for_enable_dlg( self );
+}
+
+static void
 on_entry_changed( GtkEntry *entry, ofaGuidedInput *self )
 {
 	check_for_enable_dlg( self );
@@ -585,16 +647,10 @@ static gboolean
 on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
 {
 	gint row;
-	GtkWidget *comment;
-	const gchar *str;
 
-	comment = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-comment" );
-	if( comment && GTK_IS_ENTRY( comment )){
-		row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_TOP ));
-		if( row > 0 ){
-			str = ofo_model_get_detail_comment( self->private->model, row-1 );
-			gtk_entry_set_text( GTK_ENTRY( comment ), str );
-		}
+	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_TOP ));
+	if( row > 0 ){
+		set_comment( self, ofo_model_get_detail_comment( self->private->model, row-1 ));
 	}
 
 	return( FALSE );
@@ -609,9 +665,6 @@ static gboolean
 on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
 {
 	gint left;
-	GtkWidget *comment;
-
-	/*g_debug( "ofa_guided_input_on_entry_focus_out" );*/
 
 	/* check the entry we are leaving
 	 */
@@ -627,12 +680,7 @@ on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
 			break;
 	}
 
-	/* clear the description
-	 */
-	comment = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-comment" );
-	if( comment && GTK_IS_ENTRY( comment )){
-		gtk_entry_set_text( GTK_ENTRY( comment ), "" );
-	}
+	set_comment( self, "" );
 
 	return( FALSE );
 }
@@ -662,6 +710,9 @@ check_for_account( ofaGuidedInput *self, GtkEntry *entry  )
 /*
  * this is called after each field changes
  * so a good place to handle all modifications
+ *
+ * Note that we control *all* fields so that we are able to visually
+ * highlight the erroneous ones
  */
 static void
 check_for_enable_dlg( ofaGuidedInput *self )
@@ -675,7 +726,11 @@ check_for_enable_dlg( ofaGuidedInput *self )
 		update_all_formulas( self );
 		update_all_totals( self );
 
-		ok = check_for_all_entries( self );
+		ok = TRUE;
+		ok &= check_for_journal( self );
+		ok &= check_for_dates( self );
+		ok &= check_for_all_entries( self );
+
 		btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
 		if( btn && GTK_IS_BUTTON( btn )){
 			gtk_widget_set_sensitive( btn, ok );
@@ -725,7 +780,7 @@ update_formula( ofaGuidedInput *self, const gchar *formula, GtkEntry *entry )
 	iter = tokens;
 	g_debug( "%s: formula='%s'", thisfn, formula );
 	while( *iter ){
-		g_debug( "%s: iter='%s'", thisfn, *iter );
+		/*g_debug( "%s: iter='%s'", thisfn, *iter );*/
 		/*
 		 * we have:
 		 * - [ALDC]<number>
@@ -759,7 +814,7 @@ update_formula( ofaGuidedInput *self, const gchar *formula, GtkEntry *entry )
 		} else {
 			init = *iter[0];
 			row = atoi(( *iter )+1 );
-			g_debug( "%s: init=%c row=%d", thisfn, init, row );
+			/*g_debug( "%s: init=%c row=%d", thisfn, init, row );*/
 			if( row > 0 && row <= ofo_model_get_detail_count( self->private->model )){
 				col_def = find_column_def_from_letter( self, init );
 				if( col_def ){
@@ -890,11 +945,49 @@ get_amount( ofaGuidedInput *self, gint col_id, gint row )
 }
 
 /*
- * Returns TRUE if the dialog box can be validated:
- * - for entries which have a not-nul amount:
+ * Returns TRUE if a journal is set
+ */
+static gboolean
+check_for_journal( ofaGuidedInput *self )
+{
+	return( self->private->journal_id > 0 );
+}
+
+/*
+ * Returns TRUE if the dates are set
+ */
+static gboolean
+check_for_dates( ofaGuidedInput *self )
+{
+	gboolean ok, oki;
+	GtkWidget *entry;
+
+	ok = TRUE;
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-dope" );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	oki = g_date_valid( &self->private->dope );
+	my_utils_entry_set_valid( GTK_ENTRY( entry ), oki );
+	ok &= oki;
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	oki = g_date_valid( &self->private->deff );
+	my_utils_entry_set_valid( GTK_ENTRY( entry ), oki );
+	ok &= oki;
+
+	return( ok );
+}
+
+/*
+ * Returns TRUE if the entries are valid:
+ * - for entries which have a not-nul balance:
  *   > account is valid
  *   > label is set
  * - totals are the same (no diff) and not nuls
+ *
+ * Note that have to check *all* entries in order to be able to visually
+ * highlight the erroneous fields
  */
 static gboolean
 check_for_all_entries( ofaGuidedInput *self )
@@ -910,7 +1003,9 @@ check_for_all_entries( ofaGuidedInput *self )
 		deb = get_amount( self, COL_DEBIT, idx+1 );
 		cred = get_amount( self, COL_CREDIT, idx+1 );
 		if( deb+cred != 0.0 ){
-			ok &= check_for_entry( self, idx+1 );
+			if( !check_for_entry( self, idx+1 )){
+				ok = FALSE;
+			}
 		}
 	}
 
@@ -929,35 +1024,112 @@ check_for_entry( ofaGuidedInput *self, gint row )
 
 	ok = TRUE;
 
-	if( ok ){
-		entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
-		ok &= ( entry && GTK_IS_ENTRY( entry ));
+	entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+
+	account = ofo_dossier_get_account(
+			ofa_main_window_get_dossier( self->private->main_window ),
+			gtk_entry_get_text( GTK_ENTRY( entry )));
+	ok &= ( account && OFO_IS_ACCOUNT( account ));
+
+	entry = gtk_grid_get_child_at( self->private->view, COL_LABEL, row );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	str = gtk_entry_get_text( GTK_ENTRY( entry ));
+	ok &= ( str && g_utf8_strlen( str, -1 ));
+
+	return( ok );
+}
+
+static void
+set_comment( ofaGuidedInput *self, const gchar *comment )
+{
+	GtkWidget *widget;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-comment" );
+	if( widget && GTK_IS_ENTRY( widget )){
+		gtk_entry_set_text( GTK_ENTRY( widget ), comment );
 	}
-	if( ok ){
-		account = ofo_dossier_get_account(
-				ofa_main_window_get_dossier( self->private->main_window ),
-				gtk_entry_get_text( GTK_ENTRY( entry )));
-		ok &= ( account && OFO_IS_ACCOUNT( account ));
+}
+
+/*
+ * generate the entries
+ */
+static gboolean
+do_update( ofaGuidedInput *self )
+{
+	gboolean ok;
+	GtkWidget *entry;
+	gint count, idx;
+	gdouble deb, cred;
+	const gchar *piece;
+
+	ok = TRUE;
+
+	piece = NULL;
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-piece" );
+	if( entry && GTK_IS_ENTRY( entry )){
+		piece = gtk_entry_get_text( GTK_ENTRY( entry ));
 	}
 
-	if( ok ){
-		entry = gtk_grid_get_child_at( self->private->view, COL_LABEL, row );
-		ok &= ( entry && GTK_IS_ENTRY( entry ));
-	}
-	if( ok ){
-		str = gtk_entry_get_text( GTK_ENTRY( entry ));
-		ok &= ( str && g_utf8_strlen( str, -1 ));
+	count = ofo_model_get_detail_count( self->private->model );
+
+	for( idx=0 ; idx<count ; ++idx ){
+		deb = get_amount( self, COL_DEBIT, idx+1 );
+		cred = get_amount( self, COL_CREDIT, idx+1 );
+		if( deb+cred != 0.0 ){
+			if( !do_update_with_entry( self, idx+1, piece )){
+				ok = FALSE;
+			}
+		}
 	}
 
 	return( ok );
 }
 
 /*
- * either creating a new journal (prev_mnemo is empty)
- * or updating an existing one, and prev_mnemo may have been modified
+ * generate the entries
  */
 static gboolean
-do_update( ofaGuidedInput *self )
+do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece )
 {
-	return( TRUE );
+	gboolean ok;
+	GtkWidget *entry;
+	const gchar *account_number;
+	ofoAccount *account;
+	const gchar *label;
+	gdouble deb, cre, amount;
+	ofaEntrySens sens;
+
+	entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	account_number = gtk_entry_get_text( GTK_ENTRY( entry ));
+	account = ofo_dossier_get_account(
+					ofa_main_window_get_dossier( self->private->main_window ),
+					account_number );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+
+	entry = gtk_grid_get_child_at( self->private->view, COL_LABEL, row );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	label = gtk_entry_get_text( GTK_ENTRY( entry ));
+	g_return_val_if_fail( label && g_utf8_strlen( label, -1 ), FALSE );
+
+	deb = get_amount( self, COL_DEBIT, row );
+	cre = get_amount( self, COL_CREDIT, row );
+	if( deb > cre ){
+		amount = deb - cre;
+		sens = ENT_SENS_DEBIT;
+	} else {
+		amount = cre - deb;
+		sens = ENT_SENS_CREDIT;
+	}
+
+	ok = ofo_dossier_insert_entry(
+			ofa_main_window_get_dossier( self->private->main_window ),
+			&self->private->deff, &self->private->dope, label, piece,
+			account_number,
+			ofo_account_get_devise( account ),
+			self->private->journal_id,
+			amount, sens );
+
+	return( ok );
 }

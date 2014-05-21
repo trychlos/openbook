@@ -423,10 +423,10 @@ store_set_taux( GtkTreeModel *model, GtkTreeIter *iter, const ofoTaux *taux )
 	gchar *sbegin, *send, *staux;
 
 	d = ofo_taux_get_val_begin( taux );
-	sbegin = my_utils_display_from_date( d );
+	sbegin = my_utils_display_from_date( d, MY_UTILS_DATE_DMMM );
 
 	d = ofo_taux_get_val_end( taux );
-	send = my_utils_display_from_date( d );
+	send = my_utils_display_from_date( d, MY_UTILS_DATE_DMMM );
 
 	staux = g_strdup_printf( "%.3lf", ofo_taux_get_taux( taux ));
 
@@ -503,13 +503,13 @@ on_update_taux( GtkButton *button, ofaTauxSet *self )
 		g_object_unref( taux );
 
 		prev_mnemo = g_strdup( ofo_taux_get_mnemo( taux ));
-		prev_val = my_utils_display_from_date( ofo_taux_get_val_begin( taux ));
+		prev_val = my_utils_display_from_date( ofo_taux_get_val_begin( taux ), MY_UTILS_DATE_DMMM );
 
 		if( ofa_taux_properties_run(
 				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), taux )){
 
 			new_mnemo = ofo_taux_get_mnemo( taux );
-			new_val = my_utils_display_from_date( ofo_taux_get_val_begin( taux ));
+			new_val = my_utils_display_from_date( ofo_taux_get_val_begin( taux ), MY_UTILS_DATE_DMMM );
 
 			if( g_utf8_collate( prev_mnemo, new_mnemo ) || g_utf8_collate( prev_val, new_val )){
 				gtk_list_store_remove( GTK_LIST_STORE( model ), &iter );

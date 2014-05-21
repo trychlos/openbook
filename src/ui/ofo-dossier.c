@@ -95,6 +95,7 @@ static gint     accounts_find( const ofoAccount *a, const gchar *searched_number
 static void     devises_set_free( GList *set );
 static gint     devises_cmp( const ofoDevise *a, const ofoDevise *b );
 static gint     devises_find( const ofoDevise *a, const gchar *searched );
+static gint     entry_get_next_number( ofoDossier *dossier );
 static void     journals_set_free( GList *set );
 static gint     journals_cmp( const ofoJournal *a, const ofoJournal *b );
 static gint     journals_find( const ofoJournal *a, const gchar *searched_mnemo );
@@ -374,8 +375,8 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	}
 
 	if( !ofa_sgbd_query( sgbd, parent,
-			"INSERT INTO OFA_T_VERSION (VER_NUMBER, VER_DATE) VALUES (1, 0)"
-				"ON DUPLICATE KEY UPDATE VER_NUMBER=1, VER_DATE=0" )){
+			"INSERT IGNORE INTO OFA_T_VERSION "
+			"	(VER_NUMBER, VER_DATE) VALUES (1, 0)" )){
 		return( FALSE );
 	}
 
@@ -387,7 +388,8 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	}
 
 	query = g_strdup_printf(
-			"INSERT IGNORE INTO OFA_T_ROLES (ROL_USER, ROL_IS_ADMIN) VALUES ('%s',1)", account );
+			"INSERT IGNORE INTO OFA_T_ROLES "
+			"	(ROL_USER, ROL_IS_ADMIN) VALUES ('%s',1)", account );
 	if( !ofa_sgbd_query( sgbd, parent, query )){
 		g_free( query );
 		return( FALSE );
@@ -421,13 +423,14 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 			"	DOS_EXE_DEB      DATE         NOT NULL DEFAULT 0 COMMENT 'Date de début d\\'exercice',"
 			"	DOS_EXE_FIN      DATE         NOT NULL DEFAULT 0 COMMENT 'Date de fin d\\'exercice',"
 			"	DOS_EXE_ECR      INTEGER      NOT NULL DEFAULT 0 COMMENT 'Last entry number used',"
+			"	DOS_EXE_STATUS   INTEGER                         COMMENT 'Status of this exercice',"
 			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_DEB,DOS_EXE_FIN)"
 			")" )){
 		return( FALSE );
 	}
 
 	query = g_strdup(
-			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE (DOS_ID) VALUE (1)" );
+			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE (DOS_ID,DOS_EXE_STATUS) VALUE (1,1)" );
 	if( !ofa_sgbd_query( sgbd, parent, query )){
 		g_free( query );
 		return( FALSE );
@@ -633,24 +636,6 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 	if( !dossier->priv->dispose_has_run ){
 
 		return(( const gchar * ) dossier->priv->userid );
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_sgbd:
- *
- * Returns: the current connection handle.
- */
-ofaSgbd *
-ofo_dossier_get_sgbd( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !dossier->priv->dispose_has_run ){
-
-		return( dossier->priv->sgbd );
 	}
 
 	return( NULL );
@@ -957,10 +942,39 @@ devises_find( const ofoDevise *a, const gchar *searched )
 }
 
 /**
- * ofo_dossier_get_next_entry_number:
+ * ofo_dossier_insert_entry:
  */
-gint
-ofo_dossier_get_next_entry_number( ofoDossier *dossier )
+gboolean
+ofo_dossier_insert_entry( ofoDossier *dossier,
+								const GDate *effet, const GDate *ope,
+								const gchar *label, const gchar *ref, const gchar *account,
+								gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens )
+{
+	gint number;
+	ofoEntry *entry;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( effet && g_date_valid( effet ), FALSE );
+	g_return_val_if_fail( ope && g_date_valid( ope ), FALSE );
+	g_return_val_if_fail( label && g_utf8_strlen( label, -1 ), FALSE );
+	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), FALSE );
+	g_return_val_if_fail( amount != 0.0, FALSE );
+
+	number = entry_get_next_number( dossier );
+
+	entry = ofo_entry_insert_new(
+				dossier->priv->sgbd, dossier->priv->userid,
+				effet, ope, label, ref, account,
+				dev_id, jou_id, amount, sens, number );
+
+	return( entry != NULL );
+}
+
+/*
+ * entry_get_next_number:
+ */
+static gint
+entry_get_next_number( ofoDossier *dossier )
 {
 	gint next_number;
 	gchar *query;
@@ -1339,8 +1353,8 @@ ofo_dossier_check_for_taux( ofoDossier *dossier, gint id, const gchar *mnemo, co
 	g_return_val_if_fail( begin, NULL );
 	g_return_val_if_fail( end, NULL );
 
-	sbegin = my_utils_display_from_date( begin );
-	send = my_utils_display_from_date( end );
+	sbegin = my_utils_display_from_date( begin, MY_UTILS_DATE_DMMM );
+	send = my_utils_display_from_date( end, MY_UTILS_DATE_DMMM );
 
 	g_debug( "%s: dossier=%p, id=%d, mnemo=%s, begin=%s, end=%s",
 			thisfn, ( void * ) dossier, id, mnemo, sbegin, send );

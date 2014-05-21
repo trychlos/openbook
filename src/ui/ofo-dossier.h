@@ -43,6 +43,7 @@
 #include "ui/ofo-base.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
+#include "ui/ofo-entry.h"
 #include "ui/ofo-journal.h"
 #include "ui/ofo-model.h"
 #include "ui/ofo-taux.h"
@@ -96,7 +97,6 @@ gboolean      ofo_dossier_open    ( ofoDossier *dossier,
 
 const gchar  *ofo_dossier_get_name( const ofoDossier *dossier );
 const gchar  *ofo_dossier_get_user( const ofoDossier *dossier );
-ofaSgbd      *ofo_dossier_get_sgbd( const ofoDossier *dossier );
 
 ofoAccount   *ofo_dossier_get_account       ( ofoDossier *dossier, const gchar *number );
 GList        *ofo_dossier_get_accounts_chart( ofoDossier *dossier );
@@ -110,7 +110,12 @@ gboolean      ofo_dossier_insert_devise     ( ofoDossier *dossier, ofoDevise *de
 gboolean      ofo_dossier_update_devise     ( ofoDossier *dossier, ofoDevise *devise );
 gboolean      ofo_dossier_delete_devise     ( ofoDossier *dossier, ofoDevise *devise );
 
-gint          ofo_dossier_get_next_entry_number( ofoDossier *dossier );
+gboolean      ofo_dossier_insert_entry      ( ofoDossier *dossier,
+												const GDate *effet, const GDate *ope,
+												const gchar *label, const gchar *ref,
+												const gchar *account,
+												gint dev_id, gint jou_id,
+												gdouble amount, ofaEntrySens sens );
 
 ofoJournal   *ofo_dossier_get_journal       ( ofoDossier *dossier, const gchar *mnemo );
 GList        *ofo_dossier_get_journals_set  ( ofoDossier *dossier );

@@ -419,7 +419,7 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 
 		memcpy( &priv->deb_date, ofo_account_get_deb_date( account ), sizeof( GDate ));
 		label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-deb-date" ));
-		str = my_utils_display_from_date( &priv->deb_date );
+		str = my_utils_display_from_date( &priv->deb_date, MY_UTILS_DATE_DMMM );
 		gtk_label_set_text( label, str );
 		g_free( str );
 
@@ -441,7 +441,7 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 
 		memcpy( &priv->cre_date, ofo_account_get_cre_date( account ), sizeof( GDate ));
 		label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-cre-date" ));
-		str = my_utils_display_from_date( &priv->cre_date );
+		str = my_utils_display_from_date( &priv->cre_date, MY_UTILS_DATE_DMMM );
 		gtk_label_set_text( label, str );
 		g_free( str );
 
@@ -463,7 +463,7 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 
 		memcpy( &priv->bro_deb_date, ofo_account_get_bro_deb_date( account ), sizeof( GDate ));
 		label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-bro-deb-date" ));
-		str = my_utils_display_from_date( &priv->bro_deb_date );
+		str = my_utils_display_from_date( &priv->bro_deb_date, MY_UTILS_DATE_DMMM );
 		gtk_label_set_text( label, str );
 		g_free( str );
 
@@ -485,7 +485,7 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 
 		memcpy( &priv->bro_cre_date, ofo_account_get_bro_cre_date( account ), sizeof( GDate ));
 		label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-bro-cre-date" ));
-		str = my_utils_display_from_date( &priv->bro_cre_date );
+		str = my_utils_display_from_date( &priv->bro_cre_date, MY_UTILS_DATE_DMMM );
 		gtk_label_set_text( label, str );
 		g_free( str );
 

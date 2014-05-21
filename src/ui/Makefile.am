@@ -115,6 +115,10 @@ actions_files = \
 	ofa-dos-menubar.ui									\
 	$(NULL)
 
+rc_files = \
+	ofa.css
+	$(NULL)
+
 ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
@@ -132,6 +136,7 @@ images_files = \
 
 ui_data_DATA = \
 	$(actions_files)									\
+	$(rc_files)											\
 	$(ui_files)											\
 	$(images_files)										\
 	$(NULL)
