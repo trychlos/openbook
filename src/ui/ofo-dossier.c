@@ -598,6 +598,19 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 		return( FALSE );
 	}
 
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX_DET ("
+			"	TAX_ID        INTEGER     NOT NULL        COMMENT 'Intern taux identifier',"
+			"	TAX_VAL_DEB   DATE                        COMMENT 'Validity begin date',"
+			"	TAX_VAL_FIN   DATE                        COMMENT 'Validity end date',"
+			"	TAX_TAUX      DECIMAL(15,5)               COMMENT 'Taux value',"
+			"	TAX_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
+			"	TAX_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
+			"	CONSTRAINT PRIMARY KEY (TAX_ID,TAX_VAL_DEB,TAX_VAL_FIN)"
+			")" )){
+		return( FALSE );
+	}
+
 	/* we do this only at the end of the model creation
 	 * as a mark that all has been successfully done
 	 */

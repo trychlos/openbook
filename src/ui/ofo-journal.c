@@ -245,7 +245,7 @@ journal_load_dataset( void )
 	 */
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT JOU_ID,JOU_DEV_ID,"
-			"	JOU_CLO_DEB,JOU_CLO_CRE,JOU_DEB,JOU_CRE,"
+			"	JOU_CLO_DEB,JOU_CLO_CRE,JOU_DEB,JOU_CRE "
 			"	FROM OFA_T_JOURNAUX_DET "
 			"	ORDER BY JOU_ID ASC,JOU_DEV_ID ASC" );
 
@@ -662,6 +662,8 @@ ofo_journal_insert( ofoJournal *journal, ofoDossier *dossier )
 
 			st->dataset = g_list_insert_sorted(
 					st->dataset, journal, ( GCompareFunc ) journal_cmp_by_ptr );
+
+			return( TRUE );
 		}
 	}
 
@@ -818,6 +820,8 @@ ofo_journal_update( ofoJournal *journal, ofoDossier *dossier )
 			st->dataset = g_list_remove( st->dataset, journal );
 			st->dataset = g_list_insert_sorted(
 					st->dataset, journal, ( GCompareFunc ) journal_cmp_by_ptr );
+
+			return( TRUE );
 		}
 	}
 
@@ -896,6 +900,8 @@ ofo_journal_delete( ofoJournal *journal, ofoDossier *dossier )
 
 			st->dataset = g_list_remove( st->dataset, journal );
 			g_object_unref( journal );
+
+			return( TRUE );
 		}
 	}
 

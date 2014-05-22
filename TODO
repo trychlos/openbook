@@ -197,7 +197,7 @@
 
   98 2014- 5-22 refactoring of ofoBase which maintains the dataset
                 as a private data of the class
-                -> ofoJournal - done
+                -> ofoJournal - done svn #3480
 
 -----------------------------------------------------------------------
  DONE
