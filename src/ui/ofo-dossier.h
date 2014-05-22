@@ -78,12 +78,6 @@ const gchar  *ofo_dossier_get_name( const ofoDossier *dossier );
 const gchar  *ofo_dossier_get_user( const ofoDossier *dossier );
 ofoSgbd      *ofo_dossier_get_sgbd( const ofoDossier *dossier );
 
-ofoAccount   *ofo_dossier_get_account       ( ofoDossier *dossier, const gchar *number );
-GList        *ofo_dossier_get_accounts_chart( ofoDossier *dossier );
-gboolean      ofo_dossier_insert_account    ( ofoDossier *dossier, ofoAccount *account );
-gboolean      ofo_dossier_update_account    ( ofoDossier *dossier, ofoAccount *account, const gchar *prev_number );
-gboolean      ofo_dossier_delete_account    ( ofoDossier *dossier, ofoAccount *account );
-
 gboolean      ofo_dossier_entry_insert      ( ofoDossier *dossier,
 												const GDate *effet, const GDate *ope,
 												const gchar *label, const gchar *ref,

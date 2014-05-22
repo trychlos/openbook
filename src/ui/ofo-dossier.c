@@ -50,7 +50,6 @@ struct _ofoDossierPrivate {
 	ofoSgbd  *sgbd;
 	gchar    *userid;
 
-	GList    *accounts;					/* chart of accounts */
 	GList    *models;					/* entry models */
 	GList    *taux;						/* taux */
 
@@ -87,9 +86,6 @@ typedef struct {
 
 static gint     dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
-static void     accounts_chart_free( GList *chart );
-static gint     accounts_cmp( const ofoAccount *a, const ofoAccount *b );
-static gint     accounts_find( const ofoAccount *a, const gchar *searched_number );
 static gint     entry_get_next_number( ofoDossier *dossier );
 static void     models_set_free( GList *set );
 static gint     models_cmp( const ofoModel *a, const ofoModel *b );
@@ -113,10 +109,6 @@ ofo_dossier_finalize( GObject *instance )
 	g_free( self->priv->name );
 	g_free( self->priv->userid );
 
-	if( self->priv->accounts ){
-		accounts_chart_free( self->priv->accounts );
-		self->priv->accounts = NULL;
-	}
 	if( self->priv->models ){
 		models_set_free( self->priv->models );
 		self->priv->models = NULL;
@@ -148,6 +140,7 @@ ofo_dossier_dispose( GObject *instance )
 
 		self->priv->dispose_has_run = TRUE;
 
+		ofo_account_clear_static();
 		ofo_devise_clear_static();
 		ofo_journal_clear_static();
 
@@ -667,167 +660,6 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofo_dossier_get_account:
- *
- * Returns: the searched account.
- */
-ofoAccount *
-ofo_dossier_get_account( ofoDossier *dossier, const gchar *number )
-{
-	static const gchar *thisfn = "ofo_dossier_get_account";
-	ofoAccount *account;
-	GList *set, *found;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( number && g_utf8_strlen( number, -1 ), NULL );
-
-	g_debug( "%s: dossier=%p, number=%s", thisfn, ( void * ) dossier, number );
-
-	account = NULL;
-
-	if( !dossier->priv->dispose_has_run ){
-
-		set = ofo_dossier_get_accounts_chart( dossier );
-		found = g_list_find_custom( set, number, ( GCompareFunc ) accounts_find );
-		if( found ){
-			account = OFO_ACCOUNT( found->data );
-		}
-	}
-
-	return( account );
-}
-
-/**
- * ofo_dossier_get_accounts_chart:
- */
-GList *
-ofo_dossier_get_accounts_chart( ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_dossier_get_accounts_chart";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	if( !dossier->priv->dispose_has_run ){
-
-		if( !dossier->priv->accounts ){
-
-			dossier->priv->accounts = ofo_account_load_chart( dossier->priv->sgbd );
-		}
-	}
-
-	return( dossier->priv->accounts );
-}
-
-/**
- * ofo_dossier_insert_account:
- *
- * we deal here with an update of publicly modifiable account properties
- * so it is not needed to check debit or credit agregats
- */
-gboolean
-ofo_dossier_insert_account( ofoDossier *dossier, ofoAccount *account )
-{
-	GList *chart;
-	gboolean ok;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_account_insert( account, dossier->priv->sgbd, dossier->priv->userid )){
-
-		chart = g_list_insert_sorted( dossier->priv->accounts, account, ( GCompareFunc ) accounts_cmp );
-		dossier->priv->accounts = chart;
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_update_account:
- *
- * we deal here with an update of publicly modifiable account properties
- * so it is not needed to check debit or credit agregats
- */
-gboolean
-ofo_dossier_update_account( ofoDossier *dossier, ofoAccount *account, const gchar *prev_number )
-{
-	gboolean ok;
-	const gchar *new_number;
-	GList *chart;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( prev_number && g_utf8_strlen( prev_number, -1 ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_account_update(
-			account, dossier->priv->sgbd, dossier->priv->userid, prev_number )){
-
-		new_number = ofo_account_get_number( account );
-
-		if( g_utf8_collate( new_number, prev_number )){
-			chart = g_list_remove( dossier->priv->accounts, account );
-			chart = g_list_insert_sorted( chart, account, ( GCompareFunc ) accounts_cmp );
-			dossier->priv->accounts = chart;
-		}
-
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_delete_account:
- */
-gboolean
-ofo_dossier_delete_account( ofoDossier *dossier, ofoAccount *account )
-{
-	gboolean ok;
-	GList *chart;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_account_delete( account, dossier->priv->sgbd, dossier->priv->userid )){
-
-		chart = g_list_remove( dossier->priv->accounts, account );
-		dossier->priv->accounts = chart;
-		g_object_unref( account );
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-static void
-accounts_chart_free( GList *chart )
-{
-	g_list_foreach( chart, ( GFunc ) g_object_unref, NULL );
-	g_list_free( chart );
-}
-
-static gint
-accounts_cmp( const ofoAccount *a, const ofoAccount *b )
-{
-	return( g_utf8_collate( ofo_account_get_number( a ), ofo_account_get_number( b )));
-}
-
-static gint
-accounts_find( const ofoAccount *a, const gchar *searched_number )
-{
-	return( g_utf8_collate( ofo_account_get_number( a ), searched_number ));
 }
 
 /**

@@ -699,7 +699,7 @@ check_for_account( ofaGuidedInput *self, GtkEntry *entry  )
 
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
 	asked_account = gtk_entry_get_text( entry );
-	account = ofo_dossier_get_account( dossier, asked_account );
+	account = ofo_account_get_by_number( dossier, asked_account );
 	if( !account || ofo_account_is_root( account )){
 		number = ofa_account_select_run( self->private->main_window, asked_account );
 		if( number ){
@@ -1029,7 +1029,7 @@ check_for_entry( ofaGuidedInput *self, gint row )
 	entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 
-	account = ofo_dossier_get_account(
+	account = ofo_account_get_by_number(
 			ofa_main_window_get_dossier( self->private->main_window ),
 			gtk_entry_get_text( GTK_ENTRY( entry )));
 	ok &= ( account && OFO_IS_ACCOUNT( account ));
@@ -1105,7 +1105,7 @@ do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece )
 	entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	account_number = gtk_entry_get_text( GTK_ENTRY( entry ));
-	account = ofo_dossier_get_account(
+	account = ofo_account_get_by_number(
 					ofa_main_window_get_dossier( self->private->main_window ),
 					account_number );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );

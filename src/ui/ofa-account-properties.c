@@ -638,7 +638,7 @@ do_update( ofaAccountProperties *self )
 
 	prev_number = g_strdup( ofo_account_get_number( self->private->account ));
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	existing = ofo_dossier_get_account( dossier, self->private->number );
+	existing = ofo_account_get_by_number( dossier, self->private->number );
 
 	if( existing ){
 		/* c'est un nouveau compte, ou bien un compte existant dont on
@@ -671,10 +671,10 @@ do_update( ofaAccountProperties *self )
 
 	if( !prev_number ){
 		self->private->updated =
-				ofo_dossier_insert_account( dossier, self->private->account );
+				ofo_account_insert( self->private->account, dossier );
 	} else {
 		self->private->updated =
-				ofo_dossier_update_account( dossier, self->private->account, prev_number );
+				ofo_account_update( self->private->account, dossier, prev_number );
 	}
 
 	g_free( prev_number );

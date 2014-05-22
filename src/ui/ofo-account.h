@@ -39,8 +39,7 @@
  * load data local infile '/home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/GTD-TR/OLA01 - Specifications/Plan comptable notarial 1988 simplié.csv' into table OFA_T_COMPTES fields terminated by ';' (@dummy,CPT_NUMBER,CPT_LABEL,CPT_NOTES);
  */
 
-#include "ui/ofo-base.h"
-#include "ui/ofo-sgbd.h"
+#include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -68,9 +67,12 @@ typedef struct {
 
 GType        ofo_account_get_type        ( void ) G_GNUC_CONST;
 
+GList       *ofo_account_get_dataset     ( ofoDossier *dossier );
+ofoAccount  *ofo_account_get_by_number   ( ofoDossier *dossier, const gchar *number );
+void         ofo_account_clear_static    ( void );
+
 ofoAccount  *ofo_account_new             ( void );
 
-GList       *ofo_account_load_chart      ( ofoSgbd *sgbd );
 void         ofo_account_dump_chart      ( GList *chart );
 
 gint         ofo_account_get_class       ( const ofoAccount *account );
@@ -92,6 +94,7 @@ gdouble      ofo_account_get_bro_cre_mnt ( const ofoAccount *account );
 gint         ofo_account_get_bro_cre_ecr ( const ofoAccount *account );
 const GDate *ofo_account_get_bro_cre_date( const ofoAccount *account );
 
+gboolean     ofo_account_is_deletable         ( const ofoAccount *account );
 gboolean     ofo_account_is_root              ( const ofoAccount *account );
 gboolean     ofo_account_is_valid_data        ( const gchar *number, const gchar *label, gint devise, const gchar *type );
 gint         ofo_account_get_class_from_number( const gchar *number );
@@ -116,9 +119,9 @@ void         ofo_account_set_bro_cre_mnt ( ofoAccount *account, gdouble mnt );
 void         ofo_account_set_bro_cre_ecr ( ofoAccount *account, gint num );
 void         ofo_account_set_bro_cre_date( ofoAccount *account, const GDate *date );
 
-gboolean     ofo_account_insert          ( ofoAccount *account, ofoSgbd *sgbd, const gchar *user );
-gboolean     ofo_account_update          ( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
-gboolean     ofo_account_delete          ( ofoAccount *account, ofoSgbd *sgbd, const gchar *user );
+gboolean     ofo_account_insert          ( ofoAccount *account, ofoDossier *dossier );
+gboolean     ofo_account_update          ( ofoAccount *account, ofoDossier *dossier, const gchar *prev_number );
+gboolean     ofo_account_delete          ( ofoAccount *account, ofoDossier *dossier );
 
 G_END_DECLS
 

@@ -329,20 +329,24 @@ setup_buttons_box( ofaAccountsChart *self )
 }
 
 /*
+ * ofaAccountNotebook callback:
  * first selection occurs during initialization of the chart notebook
  * thus at a moment where the buttons where not yet created
  */
 static void
 on_account_selected( const gchar *number, ofaAccountsChart *self )
 {
-	gboolean select_ok;
+	ofoAccount *account;
 
-	select_ok = number && g_utf8_strlen( number, -1 );
+	account = ofa_account_notebook_get_selected( self->private->chart_child );
 
 	if( self->private->update_btn ){
-		gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
-		gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
-		gtk_widget_set_sensitive( GTK_WIDGET( self->private->consult_btn ), select_ok );
+		gtk_widget_set_sensitive(
+				GTK_WIDGET( self->private->update_btn ), account != NULL );
+		gtk_widget_set_sensitive(
+				GTK_WIDGET( self->private->delete_btn ), account && ofo_account_is_deletable( account ));
+		gtk_widget_set_sensitive(
+				GTK_WIDGET( self->private->consult_btn ), account != NULL );
 	}
 }
 
@@ -366,7 +370,7 @@ on_new_account( GtkButton *button, ofaAccountsChart *self )
 		/* update our chart of accounts */
 		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 		ofa_main_page_set_dataset(
-				OFA_MAIN_PAGE( self ), ofo_dossier_get_accounts_chart( dossier ));
+				OFA_MAIN_PAGE( self ), ofo_account_get_dataset( dossier ));
 
 		/* insert the account in its right place */
 		ofa_account_notebook_insert( self->private->chart_child, account );
@@ -431,11 +435,11 @@ on_delete_account( GtkButton *button, ofaAccountsChart *self )
 		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
 		if( delete_confirmed( self, account ) &&
-				ofo_dossier_delete_account( dossier, account )){
+				ofo_account_delete( account, dossier )){
 
 			/* update our chart of accounts */
 			ofa_main_page_set_dataset(
-					OFA_MAIN_PAGE( self ), ofo_dossier_get_accounts_chart( dossier ));
+					OFA_MAIN_PAGE( self ), ofo_account_get_dataset( dossier ));
 
 			/* remove the row from the model
 			 * this will cause an automatic new selection */

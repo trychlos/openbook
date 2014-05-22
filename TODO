@@ -169,9 +169,6 @@
   86 2014- 5-21 all GtkFrame: make sure that the label doesn't use
                 underscore as the widget can not get focus
 
-  87 2014- 5-22 Guided input: check that the selected account is of
-                type detail
-
   89 2014- 522 Guided input: have a transaction when writing the new
                entries so that we can rollback in case of an error
 
@@ -182,10 +179,7 @@
                 - if it contains some entries ? -> NO
                 - if entry models are defined on it ? -> yes, but
                   entry models have so to be reclassed in "no journal"
-                  which made them invalid
-
-  93 2014- 5-22 implement journal_load_set: load the journal_det
-                table
+                  which made them invalid if their journal is locked
 
   94 2014- 5-22 implement journal_record_entry
 
@@ -198,6 +192,7 @@
   98 2014- 5-22 refactoring of ofoBase which maintains the dataset
                 as a private data of the class
                 -> ofoJournal - done svn #3480
+                -> ofoDevise - done svn #3483
 
 -----------------------------------------------------------------------
  DONE
@@ -344,11 +339,19 @@
                 balances
      2014- 5-22 Done svn# 3478
 
+  87 2014- 5-22 Guided input: check that the selected account is of
+                type detail
+     2014- 5-22 done
+
   88 2014- 5-22 rename ofaSgbd to ofoSgbd
      2014 -5-22 done svn #3471
 
   90 2014- 5-22 remove GtkWindow *parent from dbmodel_to_v1 arguments
      2014- 5-22 done svn #3473
+
+  93 2014- 5-22 implement journal_load_set: load the journal_det
+                table
+     2014- 5-22 done
 
   95 2014- 5-22 implement journal_is_deletable
      2014- 5-22 done

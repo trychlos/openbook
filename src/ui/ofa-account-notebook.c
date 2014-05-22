@@ -289,7 +289,7 @@ setup_book( ofaAccountNotebook *self )
 
 	/* create a page per class
 	 */
-	chart = ofo_dossier_get_accounts_chart( self->private->dossier );
+	chart = ofo_account_get_dataset( self->private->dossier );
 
 	for( ic=chart, prev_class=0, tmodel=NULL ; ic ; ic=ic->next ){
 
