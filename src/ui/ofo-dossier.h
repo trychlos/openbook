@@ -108,13 +108,14 @@ gboolean      ofo_dossier_insert_devise     ( ofoDossier *dossier, ofoDevise *de
 gboolean      ofo_dossier_update_devise     ( ofoDossier *dossier, ofoDevise *devise );
 gboolean      ofo_dossier_delete_devise     ( ofoDossier *dossier, ofoDevise *devise );
 
-gboolean      ofo_dossier_insert_entry      ( ofoDossier *dossier,
+gboolean      ofo_dossier_entry_insert      ( ofoDossier *dossier,
 												const GDate *effet, const GDate *ope,
 												const gchar *label, const gchar *ref,
 												const gchar *account,
 												gint dev_id, gint jou_id,
 												gdouble amount, ofaEntrySens sens );
 
+ofoJournal   *ofo_dossier_journal_get_by_id ( ofoDossier *dossier, gint id );
 ofoJournal   *ofo_dossier_get_journal       ( ofoDossier *dossier, const gchar *mnemo );
 GList        *ofo_dossier_get_journals_set  ( ofoDossier *dossier );
 gboolean      ofo_dossier_insert_journal    ( ofoDossier *dossier, ofoJournal *journal );

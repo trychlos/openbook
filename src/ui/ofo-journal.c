@@ -53,7 +53,6 @@ struct _ofoJournalPrivate {
 	gchar   *notes;
 	gchar   *maj_user;
 	GTimeVal maj_stamp;
-	GDate    maxdate;
 	GDate    cloture;
 };
 
@@ -163,7 +162,7 @@ ofo_journal_load_set( ofoSgbd *sgbd )
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT JOU_ID,JOU_MNEMO,JOU_LABEL,JOU_NOTES,"
 			"	JOU_MAJ_USER,JOU_MAJ_STAMP,"
-			"	JOU_MAXDATE,JOU_CLO"
+			"	JOU_CLO"
 			"	FROM OFA_T_JOURNAUX "
 			"	ORDER BY JOU_MNEMO ASC" );
 
@@ -183,8 +182,6 @@ ofo_journal_load_set( ofoSgbd *sgbd )
 		ofo_journal_set_maj_user( journal, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str(( gchar * ) icol->data ));
-		icol = icol->next;
-		ofo_journal_set_maxdate( journal, my_utils_date_from_str(( gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_journal_set_cloture( journal, my_utils_date_from_str(( gchar * ) icol->data ));
 
@@ -283,26 +280,6 @@ ofo_journal_get_notes( const ofoJournal *journal )
 }
 
 /**
- * ofo_journal_get_maxdate:
- */
-const GDate *
-ofo_journal_get_maxdate( const ofoJournal *journal )
-{
-	const GDate *date;
-
-	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
-
-	date = NULL;
-
-	if( !journal->priv->dispose_has_run ){
-
-		date = ( const GDate * ) &journal->priv->maxdate;
-	}
-
-	return( date );
-}
-
-/**
  * ofo_journal_get_cloture:
  */
 const GDate *
@@ -320,6 +297,22 @@ ofo_journal_get_cloture( const ofoJournal *journal )
 	}
 
 	return( date );
+}
+
+/**
+ * ofo_journal_is_empty:
+ */
+gboolean
+ofo_journal_is_empty( const ofoJournal *journal )
+{
+	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
+
+	if( !journal->priv->dispose_has_run ){
+
+		g_warning( "ofo_journal_is_empty: TO BE WRITTEN" );
+	}
+
+	return( FALSE );
 }
 
 /**
@@ -403,20 +396,6 @@ ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *maj_stamp )
 	if( !journal->priv->dispose_has_run ){
 
 		memcpy( &journal->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
-	}
-}
-
-/**
- * ofo_journal_set_maxdate:
- */
-void
-ofo_journal_set_maxdate( ofoJournal *journal, const GDate *date )
-{
-	g_return_if_fail( OFO_IS_JOURNAL( journal ));
-
-	if( !journal->priv->dispose_has_run ){
-
-		memcpy( &journal->priv->maxdate, date, sizeof( GDate ));
 	}
 }
 
@@ -568,6 +547,25 @@ ofo_journal_delete( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 	ok = ofo_sgbd_query( sgbd, query );
 
 	g_free( query );
+
+	return( ok );
+}
+
+/**
+ * ofo_journal_record_entry:
+ *
+ * Record the last entry in the journal
+ */
+gboolean
+ofo_journal_record_entry( ofoJournal *journal, ofoSgbd *sgbd, ofoEntry *entry )
+{
+	gboolean ok;
+
+	g_return_val_if_fail( journal && OFO_IS_JOURNAL( journal ), FALSE );
+	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+
+	ok = TRUE;
 
 	return( ok );
 }

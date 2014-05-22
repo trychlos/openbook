@@ -157,9 +157,6 @@
 
   80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
 
-  83 2014- 5-21 account notebook: display sum of validated+rough
-                balances
-
   84 2014- 5-21 Port the GuidedInput code model to ModelProperties
                 (GtkGrid+GtkEntry instead of GtkTreeView)
 
@@ -182,10 +179,25 @@
                 should be configured in a table
 
   92 2014- 5-22 are we allowed to delete a journal ?
-                - if it contains some entries ?
-                - if entry models are defined on it ?
+                - if it contains some entries ? -> NO
+                - if entry models are defined on it ? -> yes, but
+                  entry models have so to be reclassed in "no journal"
+                  which made them invalid
 
-  93
+  93 2014- 5-22 implement journal_load_set: load the journal_det
+                table
+
+  94 2014- 5-22 implement journal_record_entry
+
+  95 2014- 5-22 implement journal_is_empty
+
+  96 2014- 5-22 entry_models: check that journal always exist as it
+                may be deleted at any time while it is empty -
+                so reclass the entry models on journal-changed signal
+
+  97 2014- 5-22 journals set: add a 'view entries' function 
+
+  98
 
 -----------------------------------------------------------------------
  DONE
@@ -327,6 +339,10 @@
   82 2014- 5-21 when creating a new entry, also pass the dossier so 
                 that the record is immediately written in sgbd
      2014- 5-21 done
+
+  83 2014- 5-21 account notebook: display sum of validated+rough
+                balances
+     2014- 5-22 Done svn# 3478
 
   88 2014- 5-22 rename ofaSgbd to ofoSgbd
      2014 -5-22 done svn #3471

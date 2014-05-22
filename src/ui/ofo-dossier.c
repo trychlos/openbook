@@ -99,6 +99,7 @@ static gint     entry_get_next_number( ofoDossier *dossier );
 static void     journals_set_free( GList *set );
 static gint     journals_cmp( const ofoJournal *a, const ofoJournal *b );
 static gint     journals_find( const ofoJournal *a, const gchar *searched_mnemo );
+static gint     journals_find_by_id( const ofoJournal *a, gconstpointer b );
 static void     models_set_free( GList *set );
 static gint     models_cmp( const ofoModel *a, const ofoModel *b );
 static gint     models_find( const ofoModel *a, const gchar *searched_mnemo );
@@ -509,8 +510,20 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	JOU_NOTES     VARCHAR(512)                COMMENT 'Journal notes',"
 			"	JOU_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	JOU_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
-			"	JOU_MAXDATE   DATE                        COMMENT 'Most recent effect date of the entries',"
 			"	JOU_CLO       DATE                        COMMENT 'Last closing date'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_DET ("
+			"	JOU_ID        INTEGER  NOT NULL           COMMENT 'Internal journal identifier',"
+			"	JOU_DEV_ID    INTEGER  NOT NULL UNIQUE    COMMENT 'Internal currency identifier',"
+			"	JOU_CLO_DEB   DECIMAL(15,5)               COMMENT 'Debit balance at last closing',"
+			"	JOU_CLO_CRE   DECIMAL(15,5)               COMMENT 'Credit balance at last closing',"
+			"	JOU_DEB       DECIMAL(15,5)               COMMENT 'Current debit balance',"
+			"	JOU_CRE       DECIMAL(15,5)               COMMENT 'Current credit balance',"
+			"	CONSTRAINT PRIMARY KEY (JOU_ID,JOU_DEV_ID)"
 			")" )){
 		return( FALSE );
 	}
@@ -940,16 +953,17 @@ devises_find( const ofoDevise *a, const gchar *searched )
 }
 
 /**
- * ofo_dossier_insert_entry:
+ * ofo_dossier_entry_insert:
  */
 gboolean
-ofo_dossier_insert_entry( ofoDossier *dossier,
+ofo_dossier_entry_insert( ofoDossier *dossier,
 								const GDate *effet, const GDate *ope,
 								const gchar *label, const gchar *ref, const gchar *account,
 								gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens )
 {
 	gint number;
 	ofoEntry *entry;
+	ofoJournal *journal;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( effet && g_date_valid( effet ), FALSE );
@@ -964,6 +978,11 @@ ofo_dossier_insert_entry( ofoDossier *dossier,
 				dossier->priv->sgbd, dossier->priv->userid,
 				effet, ope, label, ref, account,
 				dev_id, jou_id, amount, sens, number );
+
+	journal = ofo_dossier_journal_get_by_id( dossier, jou_id );
+	g_return_val_if_fail( journal && OFO_IS_JOURNAL( journal ), FALSE );
+
+	ofo_journal_record_entry( journal, dossier->priv->sgbd, entry );
 
 	return( entry != NULL );
 }
@@ -1005,6 +1024,35 @@ entry_get_next_number( ofoDossier *dossier )
 	}
 
 	return( next_number );
+}
+
+/**
+ * ofo_dossier_journal_get_by_id:
+ *
+ * Returns: the searched journal.
+ */
+ofoJournal *
+ofo_dossier_journal_get_by_id( ofoDossier *dossier, gint id )
+{
+	static const gchar *thisfn = "ofo_dossier_journal_get_by_id";
+	GList *set, *found;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( id > 0, NULL );
+
+	if( !dossier->priv->dispose_has_run ){
+
+		g_debug( "%s: dossier=%p, id=%d", thisfn, ( void * ) dossier, id );
+
+		set = ofo_dossier_get_journals_set( dossier );
+		found = g_list_find_custom(
+					set, GINT_TO_POINTER( id ), ( GCompareFunc ) journals_find_by_id );
+		if( found ){
+			return( OFO_JOURNAL( found->data ));
+		}
+	}
+
+	return( NULL );
 }
 
 /**
@@ -1156,6 +1204,12 @@ static gint
 journals_find( const ofoJournal *a, const gchar *searched_mnemo )
 {
 	return( g_utf8_collate( ofo_journal_get_mnemo( a ), searched_mnemo ));
+}
+
+static gint
+journals_find_by_id( const ofoJournal *a, gconstpointer b )
+{
+	return( ofo_journal_get_id( a ) - GPOINTER_TO_INT( b ));
 }
 
 /**

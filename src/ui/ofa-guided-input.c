@@ -1125,7 +1125,7 @@ do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece )
 		sens = ENT_SENS_CREDIT;
 	}
 
-	ok = ofo_dossier_insert_entry(
+	ok = ofo_dossier_entry_insert(
 			ofa_main_window_get_dossier( self->private->main_window ),
 			&self->private->deff, &self->private->dope, label, piece,
 			account_number,

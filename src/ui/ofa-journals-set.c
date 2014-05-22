@@ -512,7 +512,6 @@ on_delete_journal( GtkButton *button, ofaJournalsSet *self )
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 	ofoJournal *journal;
-	const GDate *dmax;
 	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_JOURNALS_SET( self ));
@@ -525,8 +524,7 @@ on_delete_journal( GtkButton *button, ofaJournalsSet *self )
 		gtk_tree_model_get( model, &iter, COL_OBJECT, &journal, -1 );
 		g_object_unref( journal );
 
-		dmax = ofo_journal_get_maxdate( journal );
-		if( g_date_valid( dmax )){
+		if( !ofo_journal_is_empty( journal )){
 			error_undeletable( self, journal );
 			return;
 		}
