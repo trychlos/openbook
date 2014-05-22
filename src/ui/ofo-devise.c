@@ -465,7 +465,7 @@ devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd )
 static gboolean
 devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd )
 {
-	GString *query;
+	gchar *query;
 	gchar *label;
 	const gchar *symbol;
 	gboolean ok;
@@ -473,25 +473,17 @@ devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd )
 	label = my_utils_quote( ofo_devise_get_label( devise ));
 	symbol = ofo_devise_get_symbol( devise );
 
-	query = g_string_new( "INSERT INTO OFA_T_DEVISES" );
-
-	g_string_append_printf( query,
+	query = g_strdup_printf(
+			"INSERT INTO OFA_T_DEVISES "
 			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL)"
-			"	VALUES ('%s','%s',",
+			"	VALUES ('%s','%s','%s')",
 			ofo_devise_get_code( devise ),
-			label );
+			label,
+			symbol );
 
-	if( symbol && g_utf8_strlen( symbol, -1 )){
-		g_string_append_printf( query, "'%s'", symbol );
-	} else {
-		query = g_string_append( query, "NULL" );
-	}
+	ok = ofo_sgbd_query( sgbd, query );
 
-	query = g_string_append( query, ")" );
-
-	ok = ofo_sgbd_query( sgbd, query->str );
-
-	g_string_free( query, TRUE );
+	g_free( query );
 	g_free( label );
 
 	return( ok );
@@ -571,30 +563,24 @@ ofo_devise_update( ofoDevise *devise, ofoDossier *dossier )
 static gboolean
 devise_do_update( ofoDevise *devise, ofoSgbd *sgbd )
 {
-	GString *query;
+	gchar *query;
 	gchar *label;
-	const gchar *symbol;
 	gboolean ok;
 
 	label = my_utils_quote( ofo_devise_get_label( devise ));
-	symbol = ofo_devise_get_symbol( devise );
 
-	query = g_string_new( "UPDATE OFA_T_DEVISES SET " );
+	query = g_strdup_printf(
+			"UPDATE OFA_T_DEVISES SET "
+			"	DEV_CODE='%s',DEV_LABEL='%s',DEV_SYMBOL='%s'"
+			"	WHERE DEV_ID=%d",
+			ofo_devise_get_code( devise ),
+			label,
+			ofo_devise_get_symbol( devise ),
+			ofo_devise_get_id( devise ));
 
-	g_string_append_printf( query, "DEV_LABEL='%s',", label );
+	ok = ofo_sgbd_query( sgbd, query );
 
-	if( symbol && g_utf8_strlen( symbol, -1 )){
-		g_string_append_printf( query, "DEV_SYMBOL='%s'", symbol );
-	} else {
-		query = g_string_append( query, "DEV_SYMBOL=NULL" );
-	}
-
-	g_string_append_printf( query,
-			"	WHERE DEV_CODE='%s'", ofo_devise_get_code( devise ));
-
-	ok = ofo_sgbd_query( sgbd, query->str );
-
-	g_string_free( query, TRUE );
+	g_free( query );
 	g_free( label );
 
 	return( ok );
