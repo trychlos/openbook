@@ -385,7 +385,7 @@ do_update( ofaDeviseProperties *self )
 	ofoDevise *existing;
 
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	existing = ofo_dossier_get_devise( dossier, self->private->mnemo );
+	existing = ofo_devise_get_by_code( dossier, self->private->mnemo );
 	prev_mnemo = ofo_devise_get_code( self->private->devise );
 
 	if( existing && !prev_mnemo ){
@@ -405,10 +405,10 @@ do_update( ofaDeviseProperties *self )
 
 	if( !prev_mnemo ){
 		self->private->updated =
-				ofo_dossier_insert_devise( dossier, self->private->devise );
+				ofo_devise_insert( self->private->devise, dossier );
 	} else {
 		self->private->updated =
-				ofo_dossier_update_devise( dossier, self->private->devise );
+				ofo_devise_update( self->private->devise, dossier );
 	}
 
 	return( self->private->updated );

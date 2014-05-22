@@ -51,7 +51,6 @@ struct _ofoDossierPrivate {
 	gchar    *userid;
 
 	GList    *accounts;					/* chart of accounts */
-	GList    *devises;					/* devises */
 	GList    *models;					/* entry models */
 	GList    *taux;						/* taux */
 
@@ -91,9 +90,6 @@ static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static void     accounts_chart_free( GList *chart );
 static gint     accounts_cmp( const ofoAccount *a, const ofoAccount *b );
 static gint     accounts_find( const ofoAccount *a, const gchar *searched_number );
-static void     devises_set_free( GList *set );
-static gint     devises_cmp( const ofoDevise *a, const ofoDevise *b );
-static gint     devises_find( const ofoDevise *a, const gchar *searched );
 static gint     entry_get_next_number( ofoDossier *dossier );
 static void     models_set_free( GList *set );
 static gint     models_cmp( const ofoModel *a, const ofoModel *b );
@@ -120,10 +116,6 @@ ofo_dossier_finalize( GObject *instance )
 	if( self->priv->accounts ){
 		accounts_chart_free( self->priv->accounts );
 		self->priv->accounts = NULL;
-	}
-	if( self->priv->devises ){
-		devises_set_free( self->priv->devises );
-		self->priv->devises = NULL;
 	}
 	if( self->priv->models ){
 		models_set_free( self->priv->models );
@@ -156,7 +148,8 @@ ofo_dossier_dispose( GObject *instance )
 
 		self->priv->dispose_has_run = TRUE;
 
-		ofo_journal_clear_dataset();
+		ofo_devise_clear_static();
+		ofo_journal_clear_static();
 
 		if( self->priv->sgbd ){
 			g_clear_object( &self->priv->sgbd );
@@ -835,145 +828,6 @@ static gint
 accounts_find( const ofoAccount *a, const gchar *searched_number )
 {
 	return( g_utf8_collate( ofo_account_get_number( a ), searched_number ));
-}
-
-/**
- * ofo_dossier_get_devise:
- *
- * Returns: the searched devise.
- */
-ofoDevise *
-ofo_dossier_get_devise( ofoDossier *dossier, const gchar *mnemo )
-{
-	static const gchar *thisfn = "ofo_dossier_get_devise";
-	GList *set, *found;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
-
-	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
-
-	if( !dossier->priv->dispose_has_run ){
-
-		set = ofo_dossier_get_devises_set( dossier );
-		found = g_list_find_custom( set, mnemo, ( GCompareFunc ) devises_find );
-		if( found ){
-			return( OFO_DEVISE( found->data ));
-		}
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_devises_set:
- */
-GList *
-ofo_dossier_get_devises_set( ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_dossier_get_devises_set";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	if( !dossier->priv->dispose_has_run ){
-
-		if( !dossier->priv->devises ){
-
-			dossier->priv->devises = ofo_devise_load_set( dossier->priv->sgbd );
-		}
-	}
-
-	return( dossier->priv->devises );
-}
-
-/**
- * ofo_dossier_insert_devise:
- *
- * we deal here with an update of publicly modifiable devise properties
- */
-gboolean
-ofo_dossier_insert_devise( ofoDossier *dossier, ofoDevise *devise )
-{
-	GList *set;
-	gboolean ok;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_devise_insert( devise, dossier->priv->sgbd )){
-
-		set = g_list_insert_sorted( dossier->priv->devises, devise, ( GCompareFunc ) devises_cmp );
-		dossier->priv->devises = set;
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_update_devise:
- *
- * we deal here with an update of publicly modifiable devise properties
- */
-gboolean
-ofo_dossier_update_devise( ofoDossier *dossier, ofoDevise *devise )
-{
-	gboolean ok;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-
-	ok = ofo_devise_update( devise, dossier->priv->sgbd );
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_delete_devise:
- */
-gboolean
-ofo_dossier_delete_devise( ofoDossier *dossier, ofoDevise *devise )
-{
-	gboolean ok;
-	GList *set;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_devise_delete( devise, dossier->priv->sgbd )){
-
-		set = g_list_remove( dossier->priv->devises, devise );
-		dossier->priv->devises = set;
-		g_object_unref( devise );
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-static void
-devises_set_free( GList *set )
-{
-	g_list_foreach( set, ( GFunc ) g_object_unref, NULL );
-	g_list_free( set );
-}
-
-static gint
-devises_cmp( const ofoDevise *a, const ofoDevise *b )
-{
-	return( g_utf8_collate( ofo_devise_get_code( a ), ofo_devise_get_code( b )));
-}
-
-static gint
-devises_find( const ofoDevise *a, const gchar *searched )
-{
-	return( g_utf8_collate( ofo_devise_get_code( a ), searched ));
 }
 
 /**

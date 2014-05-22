@@ -84,12 +84,6 @@ gboolean      ofo_dossier_insert_account    ( ofoDossier *dossier, ofoAccount *a
 gboolean      ofo_dossier_update_account    ( ofoDossier *dossier, ofoAccount *account, const gchar *prev_number );
 gboolean      ofo_dossier_delete_account    ( ofoDossier *dossier, ofoAccount *account );
 
-ofoDevise    *ofo_dossier_get_devise        ( ofoDossier *dossier, const gchar *code );
-GList        *ofo_dossier_get_devises_set   ( ofoDossier *dossier );
-gboolean      ofo_dossier_insert_devise     ( ofoDossier *dossier, ofoDevise *devise );
-gboolean      ofo_dossier_update_devise     ( ofoDossier *dossier, ofoDevise *devise );
-gboolean      ofo_dossier_delete_devise     ( ofoDossier *dossier, ofoDevise *devise );
-
 gboolean      ofo_dossier_entry_insert      ( ofoDossier *dossier,
 												const GDate *effet, const GDate *ope,
 												const gchar *label, const gchar *ref,

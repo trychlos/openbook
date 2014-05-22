@@ -36,8 +36,7 @@
  * DB definition.
  */
 
-#include "ui/ofo-base.h"
-#include "ui/ofo-sgbd.h"
+#include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -65,24 +64,27 @@ typedef struct {
 
 GType        ofo_devise_get_type  ( void ) G_GNUC_CONST;
 
-ofoDevise   *ofo_devise_new       ( void );
+GList       *ofo_devise_get_dataset  ( ofoDossier *dossier );
+ofoDevise   *ofo_devise_get_by_code  ( ofoDossier *dossier, const gchar *code );
+void         ofo_devise_clear_static ( void );
 
-GList       *ofo_devise_load_set  ( ofoSgbd *sgbd );
-void         ofo_devise_dump_set  ( GList *chart );
+ofoDevise   *ofo_devise_new       ( void );
 
 gint         ofo_devise_get_id    ( const ofoDevise *devise );
 const gchar *ofo_devise_get_code  ( const ofoDevise *devise );
 const gchar *ofo_devise_get_label ( const ofoDevise *devise );
 const gchar *ofo_devise_get_symbol( const ofoDevise *devise );
 
+gboolean     ofo_devise_is_deletable( const ofoDevise *devise );
+
 void         ofo_devise_set_id    ( ofoDevise *devise, gint id );
 void         ofo_devise_set_code  ( ofoDevise *devise, const gchar *code );
 void         ofo_devise_set_label ( ofoDevise *devise, const gchar *label );
 void         ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol );
 
-gboolean     ofo_devise_insert    ( ofoDevise *devise, ofoSgbd *sgbd );
-gboolean     ofo_devise_update    ( ofoDevise *devise, ofoSgbd *sgbd );
-gboolean     ofo_devise_delete    ( ofoDevise *devise, ofoSgbd *sgbd );
+gboolean     ofo_devise_insert    ( ofoDevise *devise, ofoDossier *dossier );
+gboolean     ofo_devise_update    ( ofoDevise *devise, ofoDossier *dossier );
+gboolean     ofo_devise_delete    ( ofoDevise *devise, ofoDossier *dossier );
 
 G_END_DECLS
 

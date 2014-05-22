@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofo-dossier.h"
 #include "ui/ofo-devise.h"
 
 /* priv instance data
@@ -48,7 +49,7 @@ struct _ofoDevisePrivate {
 	/* sgbd data
 	 */
 	gint     id;
-	gchar   *mnemo;
+	gchar   *code;
 	gchar   *label;
 	gchar   *symbol;
 };
@@ -56,6 +57,20 @@ struct _ofoDevisePrivate {
 G_DEFINE_TYPE( ofoDevise, ofo_devise, OFO_TYPE_BASE )
 
 #define OFO_DEVISE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_DEVISE, ofoDevisePrivate))
+
+static ofoBaseStatic *st_static = NULL;
+
+static ofoBaseStatic *get_static_data( ofoDossier *dossier );
+static GList         *devise_load_dataset( void );
+static ofoDevise     *devise_find_by_code( GList *set, const gchar *code );
+static gint           devise_cmp_by_code( const ofoDevise *a, const gchar *code );
+static gboolean       devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd );
+static gboolean       devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd );
+static gboolean       devise_reset_id( ofoDevise *devise, ofoSgbd *sgbd );
+static gboolean       devise_do_update( ofoDevise *devise, ofoSgbd *sgbd );
+static gboolean       devise_do_delete( ofoDevise *devise, ofoSgbd *sgbd );
+static gint           devise_cmp_by_code( const ofoDevise *a, const gchar *code );
+static gint           devise_cmp_by_ptr( const ofoDevise *a, const ofoDevise *b );
 
 static void
 ofo_devise_finalize( GObject *instance )
@@ -68,7 +83,7 @@ ofo_devise_finalize( GObject *instance )
 
 	self = OFO_DEVISE( instance );
 
-	g_free( self->priv->mnemo );
+	g_free( self->priv->code );
 	g_free( self->priv->label );
 	g_free( self->priv->symbol );
 
@@ -88,7 +103,7 @@ ofo_devise_dispose( GObject *instance )
 
 		g_debug( "%s: instance=%p (%s): %s - %s",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-				self->priv->mnemo, self->priv->label );
+				self->priv->code, self->priv->label );
 
 		self->priv->dispose_has_run = TRUE;
 	}
@@ -125,42 +140,58 @@ ofo_devise_class_init( ofoDeviseClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_devise_finalize;
 }
 
-/**
- * ofo_devise_new:
- */
-ofoDevise *
-ofo_devise_new( void )
+static ofoBaseStatic *
+get_static_data( ofoDossier *dossier )
 {
-	ofoDevise *devise;
-
-	devise = g_object_new( OFO_TYPE_DEVISE, NULL );
-
-	return( devise );
+	if( !st_static ){
+		st_static = g_new0( ofoBaseStatic, 1 );
+		st_static->dossier = OFO_BASE( dossier );
+	}
+	return( st_static );
 }
 
 /**
- * ofo_devise_load_set:
+ * ofo_devise_get_dataset:
  *
- * Loads/reloads the ordered list of devises
+ * Loads the list of devises ordered by ascending mnemo.
+ *
+ * The returned list is owned by the #ofoDevise class, and should
+ * not be freed by the caller.
  */
 GList *
-ofo_devise_load_set( ofoSgbd *sgbd )
+ofo_devise_get_dataset( ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_devise_load_set";
+	static const gchar *thisfn = "ofo_devise_get_dataset";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	st = get_static_data( dossier );
+	if( !st->dataset ){
+		st->dataset = devise_load_dataset();
+	}
+
+	return( st->dataset );
+}
+
+static GList *
+devise_load_dataset( void )
+{
 	GSList *result, *irow, *icol;
 	ofoDevise *devise;
-	GList *set;
+	GList *dataset;
+	ofoSgbd *sgbd;
 
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), NULL );
-
-	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
+	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_static->dossier ));
 
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT DEV_ID,DEV_CODE,DEV_LABEL,DEV_SYMBOL "
 			"	FROM OFA_T_DEVISES "
 			"	ORDER BY DEV_CODE ASC" );
 
-	set = NULL;
+	dataset = NULL;
 
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
@@ -173,28 +204,80 @@ ofo_devise_load_set( ofoSgbd *sgbd )
 		icol = icol->next;
 		ofo_devise_set_symbol( devise, ( gchar * ) icol->data );
 
-		set = g_list_prepend( set, devise );
+		dataset = g_list_prepend( dataset, devise );
 	}
 
 	ofo_sgbd_free_result( result );
 
-	return( g_list_reverse( set ));
+	return( g_list_reverse( dataset ));
 }
 
 /**
- * ofo_devise_dump_set:
+ * ofo_devise_get_by_code:
+ *
+ * Returns: the searched currency, or %NULL.
+ *
+ * The returned object is owned by the #ofoDevise class, and should
+ * not be unreffed by the caller.
+ */
+ofoDevise *
+ofo_devise_get_by_code( ofoDossier *dossier, const gchar *code )
+{
+	static const gchar *thisfn = "ofo_devise_get_by_code";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( code && g_utf8_strlen( code, -1 ), NULL );
+
+	g_debug( "%s: dossier=%p, code=%s", thisfn, ( void * ) dossier, code );
+
+	st = get_static_data( dossier );
+	if( !st->dataset ){
+		st->dataset = devise_load_dataset();
+	}
+
+	return( devise_find_by_code( st->dataset, code ));
+}
+
+static ofoDevise *
+devise_find_by_code( GList *set, const gchar *code )
+{
+	GList *found;
+
+	found = g_list_find_custom(
+				set, code, ( GCompareFunc ) devise_cmp_by_code );
+	if( found ){
+		return( OFO_DEVISE( found->data ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_devise_clear_static:
  */
 void
-ofo_devise_dump_set( GList *set )
+ofo_devise_clear_static( void )
 {
-	static const gchar *thisfn = "ofo_devise_dump_set";
-	ofoDevisePrivate *priv;
-	GList *ic;
-
-	for( ic=set ; ic ; ic=ic->next ){
-		priv = OFO_DEVISE( ic->data )->priv;
-		g_debug( "%s: devise %s - %s", thisfn, priv->mnemo, priv->label );
+	if( st_static ){
+		g_list_foreach( st_static->dataset, ( GFunc ) g_object_unref, NULL );
+		g_list_free( st_static->dataset );
+		g_free( st_static );
+		st_static = NULL;
 	}
+}
+
+/**
+ * ofo_devise_new:
+ */
+ofoDevise *
+ofo_devise_new( void )
+{
+	ofoDevise *devise;
+
+	devise = g_object_new( OFO_TYPE_DEVISE, NULL );
+
+	return( devise );
 }
 
 /**
@@ -223,7 +306,7 @@ ofo_devise_get_code( const ofoDevise *devise )
 
 	if( !devise->priv->dispose_has_run ){
 
-		return( devise->priv->mnemo );
+		return( devise->priv->code );
 	}
 
 	return( NULL );
@@ -262,6 +345,25 @@ ofo_devise_get_symbol( const ofoDevise *devise )
 }
 
 /**
+ * ofo_devise_is_deletable:
+ *
+ * A currency should not be deleted while it is referenced by an
+ * account.
+ */
+gboolean
+ofo_devise_is_deletable( const ofoDevise *devise )
+{
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
+
+	if( !devise->priv->dispose_has_run ){
+
+		g_warning( "ofo_devise_is_deletable: TO BE WRITTEN" );
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofo_devise_set_id:
  */
 void
@@ -279,13 +381,13 @@ ofo_devise_set_id( ofoDevise *devise, gint id )
  * ofo_devise_set_code:
  */
 void
-ofo_devise_set_code( ofoDevise *devise, const gchar *mnemo )
+ofo_devise_set_code( ofoDevise *devise, const gchar *code )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
 	if( !devise->priv->dispose_has_run ){
 
-		devise->priv->mnemo = g_strdup( mnemo );
+		devise->priv->code = g_strdup( code );
 	}
 }
 
@@ -321,18 +423,53 @@ ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol )
  * ofo_devise_insert:
  */
 gboolean
-ofo_devise_insert( ofoDevise *devise, ofoSgbd *sgbd )
+ofo_devise_insert( ofoDevise *devise, ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_devise_insert";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !devise->priv->dispose_has_run ){
+
+		g_debug( "%s: devise=%p, dossier=%p",
+				thisfn, ( void * ) devise, ( void * ) dossier );
+
+		st = get_static_data( dossier );
+		if( !st->dataset ){
+			st->dataset = devise_load_dataset();
+		}
+
+		if( devise_do_insert(
+					devise,
+					ofo_dossier_get_sgbd( dossier ))){
+
+			st->dataset = g_list_insert_sorted(
+					st->dataset, devise, ( GCompareFunc ) devise_cmp_by_ptr );
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd )
+{
+	return( devise_insert_main( devise, sgbd ) &&
+			devise_reset_id( devise, sgbd ));
+}
+
+static gboolean
+devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd )
 {
 	GString *query;
 	gchar *label;
 	const gchar *symbol;
 	gboolean ok;
-	GSList *result, *icol;
 
-	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
-
-	ok = FALSE;
 	label = my_utils_quote( ofo_devise_get_label( devise ));
 	symbol = ofo_devise_get_symbol( devise );
 
@@ -352,29 +489,77 @@ ofo_devise_insert( ofoDevise *devise, ofoSgbd *sgbd )
 
 	query = g_string_append( query, ")" );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
-
-		g_string_printf( query,
-				"SELECT DEV_ID FROM OFA_T_DEVISES"
-				"	WHERE DEV_CODE='%s'",
-				ofo_devise_get_code( devise ));
-
-		result = ofo_sgbd_query_ex( sgbd, query->str );
-
-		if( result ){
-			icol = ( GSList * ) result->data;
-			ofo_devise_set_id( devise, atoi(( gchar * ) icol->data ));
-
-			ofo_sgbd_free_result( result );
-
-			ok = TRUE;
-		}
-	}
+	ok = ofo_sgbd_query( sgbd, query->str );
 
 	g_string_free( query, TRUE );
 	g_free( label );
 
 	return( ok );
+}
+
+static gboolean
+devise_reset_id( ofoDevise *devise, ofoSgbd *sgbd )
+{
+	gchar *query;
+	gboolean ok;
+	GSList *result, *icol;
+
+	ok = FALSE ;
+
+	query = g_strdup_printf(
+			"SELECT DEV_ID FROM OFA_T_DEVISES"
+			"	WHERE DEV_CODE='%s'",
+			ofo_devise_get_code( devise ));
+
+	result = ofo_sgbd_query_ex( sgbd, query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		ofo_devise_set_id( devise, atoi(( gchar * ) icol->data ));
+		ofo_sgbd_free_result( result );
+		ok = TRUE;
+	}
+
+	g_free( query );
+
+	return( ok );
+}
+
+/**
+ * ofo_devise_update:
+ */
+gboolean
+ofo_devise_update( ofoDevise *devise, ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_devise_update";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !devise->priv->dispose_has_run ){
+
+		g_debug( "%s: devise=%p, dossier=%p",
+				thisfn, ( void * ) devise, ( void * ) dossier );
+
+		st = get_static_data( dossier );
+		if( !st->dataset ){
+			st->dataset = devise_load_dataset();
+		}
+
+		if( devise_do_update(
+					devise,
+					ofo_dossier_get_sgbd( dossier ))){
+
+			st->dataset = g_list_remove( st->dataset, devise );
+			st->dataset = g_list_insert_sorted(
+					st->dataset, devise, ( GCompareFunc ) devise_cmp_by_ptr );
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
 }
 
 /**
@@ -383,18 +568,14 @@ ofo_devise_insert( ofoDevise *devise, ofoSgbd *sgbd )
  * we deal here with an update of publicly modifiable devise properties
  * mnemo is not modifiable
  */
-gboolean
-ofo_devise_update( ofoDevise *devise, ofoSgbd *sgbd )
+static gboolean
+devise_do_update( ofoDevise *devise, ofoSgbd *sgbd )
 {
 	GString *query;
 	gchar *label;
 	const gchar *symbol;
 	gboolean ok;
 
-	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
-
-	ok = FALSE;
 	label = my_utils_quote( ofo_devise_get_label( devise ));
 	symbol = ofo_devise_get_symbol( devise );
 
@@ -423,13 +604,42 @@ ofo_devise_update( ofoDevise *devise, ofoSgbd *sgbd )
  * ofo_devise_delete:
  */
 gboolean
-ofo_devise_delete( ofoDevise *devise, ofoSgbd *sgbd )
+ofo_devise_delete( ofoDevise *devise, ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_devise_delete";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !devise->priv->dispose_has_run ){
+
+		g_debug( "%s: devise=%p, dossier=%p",
+				thisfn, ( void * ) devise, ( void * ) dossier );
+
+		st = get_static_data( dossier );
+		if( !st->dataset ){
+			st->dataset = devise_load_dataset();
+		}
+
+		if( devise_do_delete(
+					devise,
+					ofo_dossier_get_sgbd( dossier ))){
+
+			st->dataset = g_list_remove( st->dataset, devise );
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+devise_do_delete( ofoDevise *devise, ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;
-
-	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_DEVISES"
@@ -441,4 +651,16 @@ ofo_devise_delete( ofoDevise *devise, ofoSgbd *sgbd )
 	g_free( query );
 
 	return( ok );
+}
+
+static gint
+devise_cmp_by_code( const ofoDevise *a, const gchar *code )
+{
+	return( g_utf8_collate( ofo_devise_get_code( a ), code ));
+}
+
+static gint
+devise_cmp_by_ptr( const ofoDevise *a, const ofoDevise *b )
+{
+	return( g_utf8_collate( ofo_devise_get_code( a ), ofo_devise_get_code( b )));
 }

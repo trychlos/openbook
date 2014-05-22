@@ -39,8 +39,8 @@
  * load data local infile '/home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/GTD-TR/OLA01 - Specifications/Plan comptable notarial 1988 simplié.csv' into table OFA_T_COMPTES fields terminated by ';' (@dummy,CPT_NUMBER,CPT_LABEL,CPT_NOTES);
  */
 
-#include "ui/ofo-entry.h"
 #include "ui/ofo-dossier-def.h"
+#include "ui/ofo-entry.h"
 
 G_BEGIN_DECLS
 
@@ -71,7 +71,7 @@ GType        ofo_journal_get_type     ( void ) G_GNUC_CONST;
 GList       *ofo_journal_get_dataset  ( ofoDossier *dossier );
 ofoJournal  *ofo_journal_get_by_id    ( ofoDossier *dossier, gint id );
 ofoJournal  *ofo_journal_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo );
-void         ofo_journal_clear_dataset( void );
+void         ofo_journal_clear_static ( void );
 
 ofoJournal  *ofo_journal_new          ( void );
 

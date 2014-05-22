@@ -74,18 +74,18 @@ G_DEFINE_TYPE( ofoJournal, ofo_journal, OFO_TYPE_BASE )
 static ofoBaseStatic *st_static = NULL;
 
 static ofoBaseStatic *get_static_data( ofoDossier *dossier );
-static GList            *journal_load_dataset( void );
-static ofoJournal       *journal_find_by_id( GList *set, gint id );
-static gint              journal_cmp_by_id( const ofoJournal *a, gconstpointer b );
-static ofoJournal       *journal_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint              journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo );
-static gint              journal_cmp_by_ptr( const ofoJournal *a, const ofoJournal *b );
-static gboolean          journal_do_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
-static gboolean          journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
-static gboolean          journal_reset_id( ofoJournal *journal, ofoSgbd *sgbd );
-static gboolean          journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd );
-static gboolean          journal_do_update( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
-static gboolean          journal_do_delete( ofoJournal *journal, ofoSgbd *sgbd );
+static GList         *journal_load_dataset( void );
+static ofoJournal    *journal_find_by_id( GList *set, gint id );
+static ofoJournal    *journal_find_by_mnemo( GList *set, const gchar *mnemo );
+static gboolean       journal_do_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
+static gboolean       journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
+static gboolean       journal_reset_id( ofoJournal *journal, ofoSgbd *sgbd );
+static gboolean       journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd );
+static gboolean       journal_do_update( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
+static gboolean       journal_do_delete( ofoJournal *journal, ofoSgbd *sgbd );
+static gint           journal_cmp_by_id( const ofoJournal *a, gconstpointer b );
+static gint           journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo );
+static gint           journal_cmp_by_ptr( const ofoJournal *a, const ofoJournal *b );
 
 static void
 ofo_journal_finalize( GObject *instance )
@@ -323,12 +323,6 @@ journal_find_by_id( GList *set, gint id )
 	return( NULL );
 }
 
-static gint
-journal_cmp_by_id( const ofoJournal *a, gconstpointer b )
-{
-	return( ofo_journal_get_id( a ) - GPOINTER_TO_INT( b ));
-}
-
 /**
  * ofo_journal_get_by_mnemo:
  *
@@ -340,7 +334,7 @@ journal_cmp_by_id( const ofoJournal *a, gconstpointer b )
 ofoJournal *
 ofo_journal_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
-	static const gchar *thisfn = "ofo_journal_get_by_id";
+	static const gchar *thisfn = "ofo_journal_get_by_mnemo";
 	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
@@ -370,23 +364,11 @@ journal_find_by_mnemo( GList *set, const gchar *mnemo )
 	return( NULL );
 }
 
-static gint
-journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo )
-{
-	return( g_utf8_collate( ofo_journal_get_mnemo( a ), mnemo ));
-}
-
-static gint
-journal_cmp_by_ptr( const ofoJournal *a, const ofoJournal *b )
-{
-	return( g_utf8_collate( ofo_journal_get_mnemo( a ), ofo_journal_get_mnemo( b )));
-}
-
 /**
- * ofo_journal_clear_dataset:
+ * ofo_journal_clear_static:
  */
 void
-ofo_journal_clear_dataset( void )
+ofo_journal_clear_static( void )
 {
 	if( st_static ){
 		g_list_foreach( st_static->dataset, ( GFunc ) g_object_unref, NULL );
@@ -953,4 +935,22 @@ ofo_journal_record_entry( ofoJournal *journal, ofoSgbd *sgbd, ofoEntry *entry )
 	ok = TRUE;
 
 	return( ok );
+}
+
+static gint
+journal_cmp_by_id( const ofoJournal *a, gconstpointer b )
+{
+	return( ofo_journal_get_id( a ) - GPOINTER_TO_INT( b ));
+}
+
+static gint
+journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo )
+{
+	return( g_utf8_collate( ofo_journal_get_mnemo( a ), mnemo ));
+}
+
+static gint
+journal_cmp_by_ptr( const ofoJournal *a, const ofoJournal *b )
+{
+	return( g_utf8_collate( ofo_journal_get_mnemo( a ), ofo_journal_get_mnemo( b )));
 }

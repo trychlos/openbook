@@ -337,7 +337,7 @@ setup_devises_view( ofaDevisesSet *self )
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_devise_selected ), self );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-	dataset = ofo_dossier_get_devises_set( dossier );
+	dataset = ofo_devise_get_dataset( dossier );
 	ofa_main_page_set_dataset( OFA_MAIN_PAGE( self ), dataset );
 	/*ofo_devise_dump_set( dataset );*/
 
@@ -414,12 +414,19 @@ store_set_devise( GtkTreeModel *model, GtkTreeIter *iter, const ofoDevise *devis
 static void
 on_devise_selected( GtkTreeSelection *selection, ofaDevisesSet *self )
 {
-	gboolean select_ok;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoDevise *devise;
 
-	select_ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &devise, -1 );
+		g_object_unref( devise );
+	}
 
-	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
-	gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->update_btn ), devise != NULL );
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->delete_btn ), devise && ofo_devise_is_deletable( devise ));
 }
 
 static void
@@ -494,11 +501,11 @@ on_delete_devise( GtkButton *button, ofaDevisesSet *self )
 		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
 		if( delete_confirmed( self, devise ) &&
-				ofo_dossier_delete_devise( dossier, devise )){
+				ofo_devise_delete( devise, dossier )){
 
 			/* update our set of devises */
 			ofa_main_page_set_dataset(
-					OFA_MAIN_PAGE( self ), ofo_dossier_get_devises_set( dossier ));
+					OFA_MAIN_PAGE( self ), ofo_devise_get_dataset( dossier ));
 
 			/* remove the row from the model
 			 * this will cause an automatic new selection */
@@ -538,7 +545,7 @@ insert_new_row( ofaDevisesSet *self, ofoDevise *devise )
 	/* update our set of devises */
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 	ofa_main_page_set_dataset(
-			OFA_MAIN_PAGE( self ), ofo_dossier_get_devises_set( dossier ));
+			OFA_MAIN_PAGE( self ), ofo_devise_get_dataset( dossier ));
 
 	/* insert the new row at the right place */
 	model = gtk_tree_view_get_model( self->private->view );

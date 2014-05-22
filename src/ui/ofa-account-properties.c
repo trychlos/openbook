@@ -360,7 +360,7 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", COL_LABEL );
 
 		dossier = ofa_main_window_get_dossier( main );
-		devset = ofo_dossier_get_devises_set( dossier );
+		devset = ofo_devise_get_dataset( dossier );
 
 		idx = -1;
 		for( i=0, idev=devset ; idev ; ++i, idev=idev->next ){
