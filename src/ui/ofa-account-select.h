@@ -66,7 +66,7 @@ typedef struct {
 
 GType  ofa_account_select_get_type( void );
 
-gchar *ofa_account_select_run     ( ofaMainWindow *main_window );
+gchar *ofa_account_select_run     ( ofaMainWindow *main_window, const gchar *asked_number );
 
 G_END_DECLS
 

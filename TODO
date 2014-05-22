@@ -86,10 +86,6 @@
   43 2014- 5-12 ofaMainWindow left pane: should display a big icon and
                 a label instead of only a text
 
-  44 2014- 5-13 ofaAccountsChart: set an accelerator for each page of
-                the classes book (e.g. Alt+1, etc.); set the label of
-                this accel as a tooltip of the notebook's page
-
   45 2014- 5-13 ofaMainWindow left pane: set the width of the tree
 
   46 2014- 5-13 chart of accounts: this is a user preference whether
@@ -106,6 +102,8 @@
   51 2014- 5-17 Be able to use an underscore in the label of the model
                 families; this underscore should be usable as a shortcut
                 when dealing with the models in models set
+     2014- 5-22 Family class is abandonned, but the subject is the same 
+                with Journal clas
 
   52 2014- 5-17 change the title of the pages of the models notebook
                 when the label of a journal is changed
@@ -123,11 +121,6 @@
 
   58 2014- 5-19 allow the treeviewes to be sorted
 
-  59 2014- 5-19 reset all sentences in english
-                as the g_date_set_parse uses the current locale, the 
-                only way to enter a date as dd/mm/yyyy is to use the
-                french locale 
-
   60 2014- 5-19 manage locale as a user preference (format for entering
                 date, amounts and rates)
 
@@ -136,7 +129,7 @@
                 a configuration information than actually a user pref..
 
   62 2014- 5-19 review all the rates management:
-                there should be a maste record (the rate) and child
+                there should be a master record (the rate) and child
                 records (the different periods of validity)
 
   63 2014- 5-19 TauxPropertiesDlg: second column of grid seems to extends,
@@ -148,15 +141,6 @@
 
   65 2014- 5-19 Entry model properties: be able to reorder the detail
                 lines by drag and drop. 
-
-  66 2014- 5-19 Entry model properties - check_enable_dlg
-                check that detail lines are ok (enough and balanced).
-
-  67 2014- 5-19 EntryModel properties: row number is not right aligned
-                but should
-
-  68 2014- 5-19 EntryModel properties: display row number as an 
-                insensitive (grayed) text
 
   69 2014- 5-19 EntryModel properties: implement Up/Down
 
@@ -286,6 +270,11 @@
   38 2014- 5-11 DossierOpen: fix the order of the focus
      2014- 5-22 done
 
+  44 2014- 5-13 ofaAccountsChart: set an accelerator for each page of
+                the classes book (e.g. Alt+1, etc.); set the label of
+                this accel as a tooltip of the notebook's page
+     2014- 5-22 done svn #3474
+
   47 2014- 5-13 ofaAccountProperties: check that account number begins
                 with a 1-9 digit
      2014- 5-15 Done
@@ -298,6 +287,24 @@
   54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments,
                 re-enabling error messages.
      2014- 5-22 done svn #3472
+
+  59 2014- 5-19 reset all sentences in english
+                as the g_date_set_parse uses the current locale, the 
+                only way to enter a date as dd/mm/yyyy is to use the
+                french locale 
+     2014- 5-22 done
+
+  66 2014- 5-19 Entry model properties - check_enable_dlg
+                check that detail lines are ok (enough and balanced).
+     2014- 5-22 done
+
+  67 2014- 5-19 EntryModel properties: row number is not right aligned
+                but should
+     2014- 5-22 done
+
+  68 2014- 5-19 EntryModel properties: display row number as an 
+                insensitive (grayed) text
+     2014- 5-22 done
 
   71 2014- 5-19 Get an entry with a model
      2014- 5-22 done

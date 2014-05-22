@@ -103,6 +103,7 @@ typedef struct {
 	gpointer             user_data_select;
 	ofaAccountNotebookCb pfnDoubleClic;
 	gpointer             user_data_double_clic;
+	const gchar         *account_number;
 }
 	ofaAccountNotebookParms;
 

@@ -68,7 +68,7 @@ static void     class_init( ofaAccountSelectClass *klass );
 static void     instance_init( GTypeInstance *instance, gpointer klass );
 static void     instance_dispose( GObject *instance );
 static void     instance_finalize( GObject *instance );
-static void     do_initialize_dialog( ofaAccountSelect *self );
+static void     do_initialize_dialog( ofaAccountSelect *self, const gchar *asked_number );
 static gboolean ok_to_terminate( ofaAccountSelect *self, gint code );
 static void     on_account_activated( const gchar *number, ofaAccountSelect *self );
 static void     check_for_enable_dlg( ofaAccountSelect *self );
@@ -201,7 +201,7 @@ instance_finalize( GObject *instance )
  * that must be g_free() by the caller
  */
 gchar *
-ofa_account_select_run( ofaMainWindow *main_window )
+ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelect *self;
@@ -210,14 +210,14 @@ ofa_account_select_run( ofaMainWindow *main_window )
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
-	g_debug( "%s: main_window=%p",
-			thisfn, ( void * ) main_window );
+	g_debug( "%s: main_window=%p, asked_number=%s",
+			thisfn, ( void * ) main_window, asked_number );
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
 
 	self->private->main_window = main_window;
 
-	do_initialize_dialog( self );
+	do_initialize_dialog( self, asked_number );
 
 	g_debug( "%s: call gtk_dialog_run", thisfn );
 	do {
@@ -235,7 +235,7 @@ ofa_account_select_run( ofaMainWindow *main_window )
 }
 
 static void
-do_initialize_dialog( ofaAccountSelect *self )
+do_initialize_dialog( ofaAccountSelect *self, const gchar *asked_number )
 {
 	static const gchar *thisfn = "ofa_account_select_do_initialize_dialog";
 	GError *error;
@@ -274,6 +274,7 @@ do_initialize_dialog( ofaAccountSelect *self )
 		parms.user_data_select = NULL;
 		parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_account_activated;
 		parms.user_data_double_clic = self;
+		parms.account_number = asked_number;
 
 		priv->child = ofa_account_notebook_init_dialog( &parms );
 	}

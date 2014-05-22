@@ -694,12 +694,14 @@ check_for_account( ofaGuidedInput *self, GtkEntry *entry  )
 {
 	ofoDossier *dossier;
 	ofoAccount *account;
+	const gchar *asked_account;
 	gchar *number;
 
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	account = ofo_dossier_get_account( dossier, gtk_entry_get_text( entry ));
-	if( !account ){
-		number = ofa_account_select_run( self->private->main_window );
+	asked_account = gtk_entry_get_text( entry );
+	account = ofo_dossier_get_account( dossier, asked_account );
+	if( !account || ofo_account_is_root( account )){
+		number = ofa_account_select_run( self->private->main_window, asked_account );
 		if( number ){
 			gtk_entry_set_text( entry, number );
 			g_free( number );
