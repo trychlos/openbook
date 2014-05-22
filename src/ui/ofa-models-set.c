@@ -422,7 +422,7 @@ notebook_create_page( ofaModelsSet *self, GtkNotebook *book, gint jou_id, const 
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
 	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 
-	label = GTK_LABEL( gtk_label_new( jou_label ));
+	label = GTK_LABEL( gtk_label_new_with_mnemonic( jou_label ));
 	gtk_notebook_insert_page( book, GTK_WIDGET( scroll ), GTK_WIDGET( label ), position );
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( scroll ), TRUE );
 	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_JOURNAL, GINT_TO_POINTER( jou_id ));
