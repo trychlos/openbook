@@ -412,8 +412,10 @@ store_set_account( GtkTreeModel *model, GtkTreeIter *iter, const ofoAccount *acc
 		sdeb = g_strdup( "" );
 		scre = g_strdup( "" );
 	} else {
-		sdeb = g_strdup_printf( "%.2f €", ofo_account_get_deb_mnt( account ));
-		scre = g_strdup_printf( "%.2f €", ofo_account_get_cre_mnt( account ));
+		sdeb = g_strdup_printf( "%.2f €",
+				ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
+		scre = g_strdup_printf( "%.2f €",
+				ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
 	}
 	gtk_list_store_set(
 			GTK_LIST_STORE( model ),

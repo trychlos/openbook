@@ -99,12 +99,6 @@
      2014- 5-22 Family class is abandonned, but the subject is the same 
                 with Journal clas
 
-  51 2014- 5-17 Be able to use an underscore in the label of the model
-                families; this underscore should be usable as a shortcut
-                when dealing with the models in models set
-     2014- 5-22 Family class is abandonned, but the subject is the same 
-                with Journal class
-
   52 2014- 5-17 change the title of the pages of the models notebook
                 when the label of a journal is changed
 
@@ -282,6 +276,13 @@
                 collaboration of ofoAccount typically for the list of
                 fields 
      2014- 5-14 Done
+
+  51 2014- 5-17 Be able to use an underscore in the label of the model
+                families; this underscore should be usable as a shortcut
+                when dealing with the models in models set
+     2014- 5-22 Family class is abandonned, but the subject is the same 
+                with Journal class
+     2014- 5-22 done svn #3477
 
   54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments,
                 re-enabling error messages.
