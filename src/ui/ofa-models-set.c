@@ -314,7 +314,7 @@ setup_models_view( ofaModelsSet *self )
 	self->private->book = GTK_NOTEBOOK( book );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-	jouset = ofo_dossier_get_journals_set( dossier );
+	jouset = ofo_journal_get_dataset( dossier );
 
 	for( ijou=jouset ; ijou ; ijou=ijou->next ){
 		notebook_create_page( self, book,

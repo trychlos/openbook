@@ -71,24 +71,23 @@ enum {
 
 static GObjectClass *st_parent_class = NULL;
 
-static GType      register_type( void );
-static void       class_init( ofaJournalsSetClass *klass );
-static void       instance_init( GTypeInstance *instance, gpointer klass );
-static void       instance_constructed( GObject *instance );
-static void       instance_dispose( GObject *instance );
-static void       instance_finalize( GObject *instance );
-static void       setup_set_page( ofaJournalsSet *self );
-static GtkWidget *setup_journals_view( ofaJournalsSet *self );
-static GtkWidget *setup_buttons_box( ofaJournalsSet *self );
-static void       setup_first_selection( ofaJournalsSet *self );
-static void       store_set_journal( GtkTreeModel *model, GtkTreeIter *iter, const ofoJournal *journal );
-static void       on_journal_selected( GtkTreeSelection *selection, ofaJournalsSet *self );
-static void       on_new_journal( GtkButton *button, ofaJournalsSet *self );
-static void       on_update_journal( GtkButton *button, ofaJournalsSet *self );
-static void       on_delete_journal( GtkButton *button, ofaJournalsSet *self );
-static void       error_undeletable( ofaJournalsSet *self, ofoJournal *journal );
-static gboolean   delete_confirmed( ofaJournalsSet *self, ofoJournal *journal );
-static void       insert_new_row( ofaJournalsSet *self, ofoJournal *journal );
+static GType       register_type( void );
+static void        class_init( ofaJournalsSetClass *klass );
+static void        instance_init( GTypeInstance *instance, gpointer klass );
+static void        instance_constructed( GObject *instance );
+static void        instance_dispose( GObject *instance );
+static void        instance_finalize( GObject *instance );
+static void        setup_set_page( ofaJournalsSet *self );
+static GtkWidget  *setup_journals_view( ofaJournalsSet *self );
+static GtkWidget  *setup_buttons_box( ofaJournalsSet *self );
+static void        setup_first_selection( ofaJournalsSet *self );
+static void        store_set_journal( GtkTreeModel *model, GtkTreeIter *iter, const ofoJournal *journal );
+static void        on_journal_selected( GtkTreeSelection *selection, ofaJournalsSet *self );
+static void        on_new_journal( GtkButton *button, ofaJournalsSet *self );
+static void        on_update_journal( GtkButton *button, ofaJournalsSet *self );
+static void        on_delete_journal( GtkButton *button, ofaJournalsSet *self );
+static gboolean    delete_confirmed( ofaJournalsSet *self, ofoJournal *journal );
+static void        insert_new_row( ofaJournalsSet *self, ofoJournal *journal );
 
 GType
 ofa_journals_set_get_type( void )
@@ -339,7 +338,7 @@ setup_journals_view( ofaJournalsSet *self )
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_journal_selected ), self );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-	dataset = ofo_dossier_get_journals_set( dossier );
+	dataset = ofo_journal_get_dataset( dossier );
 	ofa_main_page_set_dataset( OFA_MAIN_PAGE( self ), dataset );
 
 	for( ijou=dataset ; ijou ; ijou=ijou->next ){
@@ -428,12 +427,21 @@ store_set_journal( GtkTreeModel *model, GtkTreeIter *iter, const ofoJournal *jou
 static void
 on_journal_selected( GtkTreeSelection *selection, ofaJournalsSet *self )
 {
-	gboolean select_ok;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoJournal *journal;
 
-	select_ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
+	journal = NULL;
 
-	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
-	gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &journal, -1 );
+		g_object_unref( journal );
+	}
+
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->update_btn ), journal != NULL );
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->delete_btn ), journal && ofo_journal_is_deletable( journal ));
 }
 
 static void
@@ -450,8 +458,11 @@ on_new_journal( GtkButton *button, ofaJournalsSet *self )
 	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
 
 	journal = ofo_journal_new();
+
 	if( ofa_journal_properties_run( main_window, journal )){
+
 		insert_new_row( self, journal );
+
 		g_signal_emit_by_name( self,
 				MAIN_PAGE_SIGNAL_JOURNAL_UPDATED, MAIN_PAGE_OBJECT_CREATED, journal );
 	}
@@ -524,19 +535,16 @@ on_delete_journal( GtkButton *button, ofaJournalsSet *self )
 		gtk_tree_model_get( model, &iter, COL_OBJECT, &journal, -1 );
 		g_object_unref( journal );
 
-		if( !ofo_journal_is_empty( journal )){
-			error_undeletable( self, journal );
-			return;
-		}
+		g_return_if_fail( ofo_journal_is_deletable( journal ));
 
 		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
 		if( delete_confirmed( self, journal ) &&
-				ofo_dossier_delete_journal( dossier, journal )){
+				ofo_journal_delete( journal, dossier )){
 
 			/* update our set of journals */
 			ofa_main_page_set_dataset(
-					OFA_MAIN_PAGE( self ), ofo_dossier_get_journals_set( dossier ));
+					OFA_MAIN_PAGE( self ), ofo_journal_get_dataset( dossier ));
 
 			g_signal_emit_by_name( self,
 					MAIN_PAGE_SIGNAL_JOURNAL_UPDATED, MAIN_PAGE_OBJECT_DELETED, journal );
@@ -546,33 +554,6 @@ on_delete_journal( GtkButton *button, ofaJournalsSet *self )
 			gtk_list_store_remove( GTK_LIST_STORE( model ), &iter );
 		}
 	}
-}
-
-static void
-error_undeletable( ofaJournalsSet *self, ofoJournal *journal )
-{
-	GtkMessageDialog *dlg;
-	gchar *msg;
-	ofaMainWindow *main_window;
-
-	msg = g_strdup_printf(
-				_( "We are unable to delete the '%s - %s' journal "
-					"as at least one entry has been recorded" ),
-				ofo_journal_get_mnemo( journal ),
-				ofo_journal_get_label( journal ));
-
-	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
-
-	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				GTK_WINDOW( main_window ),
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", msg ));
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
-	g_free( msg );
 }
 
 static gboolean
@@ -606,7 +587,7 @@ insert_new_row( ofaJournalsSet *self, ofoJournal *journal )
 	/* update our set of journals */
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 	ofa_main_page_set_dataset(
-			OFA_MAIN_PAGE( self ), ofo_dossier_get_journals_set( dossier ));
+			OFA_MAIN_PAGE( self ), ofo_journal_get_dataset( dossier ));
 
 	/* insert the new row at the right place */
 	model = gtk_tree_view_get_model( self->private->view );

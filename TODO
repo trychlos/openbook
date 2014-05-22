@@ -189,15 +189,15 @@
 
   94 2014- 5-22 implement journal_record_entry
 
-  95 2014- 5-22 implement journal_is_empty
-
   96 2014- 5-22 entry_models: check that journal always exist as it
                 may be deleted at any time while it is empty -
                 so reclass the entry models on journal-changed signal
 
   97 2014- 5-22 journals set: add a 'view entries' function 
 
-  98
+  98 2014- 5-22 refactoring of ofoBase which maintains the dataset
+                as a private data of the class
+                -> ofoJournal - done
 
 -----------------------------------------------------------------------
  DONE
@@ -349,6 +349,9 @@
 
   90 2014- 5-22 remove GtkWindow *parent from dbmodel_to_v1 arguments
      2014- 5-22 done svn #3473
+
+  95 2014- 5-22 implement journal_is_deletable
+     2014- 5-22 done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

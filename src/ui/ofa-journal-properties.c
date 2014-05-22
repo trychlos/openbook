@@ -384,7 +384,7 @@ do_update( ofaJournalProperties *self )
 
 	prev_mnemo = g_strdup( ofo_journal_get_mnemo( self->private->journal ));
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	existing = ofo_dossier_get_journal( dossier, self->private->mnemo );
+	existing = ofo_journal_get_by_mnemo( dossier, self->private->mnemo );
 
 	if( existing ){
 		/* c'est un nouveau journal, ou bien un journal existant dont on
@@ -415,10 +415,10 @@ do_update( ofaJournalProperties *self )
 
 	if( !prev_mnemo ){
 		self->private->updated =
-				ofo_dossier_insert_journal( dossier, self->private->journal );
+				ofo_journal_insert( self->private->journal, dossier );
 	} else {
 		self->private->updated =
-				ofo_dossier_update_journal( dossier, self->private->journal );
+				ofo_journal_update( self->private->journal, dossier );
 	}
 
 	g_free( prev_mnemo );

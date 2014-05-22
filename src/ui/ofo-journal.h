@@ -40,6 +40,7 @@
  */
 
 #include "ui/ofo-entry.h"
+#include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -67,10 +68,12 @@ typedef struct {
 
 GType        ofo_journal_get_type     ( void ) G_GNUC_CONST;
 
-ofoJournal  *ofo_journal_new          ( void );
+GList       *ofo_journal_get_dataset  ( ofoDossier *dossier );
+ofoJournal  *ofo_journal_get_by_id    ( ofoDossier *dossier, gint id );
+ofoJournal  *ofo_journal_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo );
+void         ofo_journal_clear_dataset( void );
 
-GList       *ofo_journal_load_set     ( ofoSgbd *sgbd );
-void         ofo_journal_dump_set     ( GList *chart );
+ofoJournal  *ofo_journal_new          ( void );
 
 gint         ofo_journal_get_id       ( const ofoJournal *journal );
 const gchar *ofo_journal_get_mnemo    ( const ofoJournal *journal );
@@ -78,7 +81,7 @@ const gchar *ofo_journal_get_label    ( const ofoJournal *journal );
 const gchar *ofo_journal_get_notes    ( const ofoJournal *journal );
 const GDate *ofo_journal_get_cloture  ( const ofoJournal *journal );
 
-gboolean     ofo_journal_is_empty     ( const ofoJournal *journal );
+gboolean     ofo_journal_is_deletable ( const ofoJournal *journal );
 
 void         ofo_journal_set_id       ( ofoJournal *journal, gint id );
 void         ofo_journal_set_mnemo    ( ofoJournal *journal, const gchar *number );
@@ -88,9 +91,9 @@ void         ofo_journal_set_maj_user ( ofoJournal *journal, const gchar *user )
 void         ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *stamp );
 void         ofo_journal_set_cloture  ( ofoJournal *journal, const GDate *date );
 
-gboolean     ofo_journal_insert       ( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
-gboolean     ofo_journal_update       ( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
-gboolean     ofo_journal_delete       ( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
+gboolean     ofo_journal_insert       ( ofoJournal *journal, ofoDossier *dossier );
+gboolean     ofo_journal_update       ( ofoJournal *journal, ofoDossier *dossier );
+gboolean     ofo_journal_delete       ( ofoJournal *journal, ofoDossier *dossier );
 
 gboolean     ofo_journal_record_entry ( ofoJournal *journal, ofoSgbd *sgbd, ofoEntry *entry );
 

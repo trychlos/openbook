@@ -39,6 +39,9 @@
  * demand, et releases it on instance dispose.
  */
 
+#include "ui/ofo-dossier-def.h"
+
+#include "ui/ofo-sgbd.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-entry.h"
@@ -47,28 +50,6 @@
 #include "ui/ofo-taux.h"
 
 G_BEGIN_DECLS
-
-#define OFO_TYPE_DOSSIER                ( ofo_dossier_get_type())
-#define OFO_DOSSIER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_DOSSIER, ofoDossier ))
-#define OFO_DOSSIER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_DOSSIER, ofoDossierClass ))
-#define OFO_IS_DOSSIER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_DOSSIER ))
-#define OFO_IS_DOSSIER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_DOSSIER ))
-#define OFO_DOSSIER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_DOSSIER, ofoDossierClass ))
-
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoDossierClass;
-
-typedef struct _ofoDossierPrivate       ofoDossierPrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase            parent;
-	ofoDossierPrivate *priv;
-}
-	ofoDossier;
 
 /**
  * ofaDossierStatus:
@@ -95,6 +76,7 @@ gboolean      ofo_dossier_open    ( ofoDossier *dossier,
 
 const gchar  *ofo_dossier_get_name( const ofoDossier *dossier );
 const gchar  *ofo_dossier_get_user( const ofoDossier *dossier );
+ofoSgbd      *ofo_dossier_get_sgbd( const ofoDossier *dossier );
 
 ofoAccount   *ofo_dossier_get_account       ( ofoDossier *dossier, const gchar *number );
 GList        *ofo_dossier_get_accounts_chart( ofoDossier *dossier );
@@ -114,13 +96,6 @@ gboolean      ofo_dossier_entry_insert      ( ofoDossier *dossier,
 												const gchar *account,
 												gint dev_id, gint jou_id,
 												gdouble amount, ofaEntrySens sens );
-
-ofoJournal   *ofo_dossier_journal_get_by_id ( ofoDossier *dossier, gint id );
-ofoJournal   *ofo_dossier_get_journal       ( ofoDossier *dossier, const gchar *mnemo );
-GList        *ofo_dossier_get_journals_set  ( ofoDossier *dossier );
-gboolean      ofo_dossier_insert_journal    ( ofoDossier *dossier, ofoJournal *journal );
-gboolean      ofo_dossier_update_journal    ( ofoDossier *dossier, ofoJournal *journal );
-gboolean      ofo_dossier_delete_journal    ( ofoDossier *dossier, ofoJournal *journal );
 
 ofoModel     *ofo_dossier_get_model         ( ofoDossier *dossier, const gchar *mnemo );
 GList        *ofo_dossier_get_models_set    ( ofoDossier *dossier );

@@ -213,7 +213,7 @@ ofa_journal_combo_init_dialog( ofaJournalComboParms *parms )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *text_cell;
-	GList *set, *elt;
+	const GList *set, *elt;
 	gint idx, i;
 	ofoJournal *journal;
 
@@ -264,7 +264,7 @@ ofa_journal_combo_init_dialog( ofaJournalComboParms *parms )
 		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_LABEL );
 	}
 
-	set = ofo_dossier_get_journals_set( parms->dossier );
+	set = ofo_journal_get_dataset( parms->dossier );
 
 	for( elt=set, i=0, idx=-1 ; elt ; elt=elt->next, ++i ){
 		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );

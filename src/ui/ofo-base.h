@@ -61,6 +61,20 @@ typedef struct {
 }
 	ofoBase;
 
+/**
+ * ofoBaseStatic:
+ *
+ * This structure is used by every derived class (but ofoDossier which
+ * doesn't need it), in order to store its own dataset.
+ * It is the responsability of the using child class to manage its own
+ * static pointer to this structure.
+ */
+typedef struct {
+	GList   *dataset;
+	ofoBase *dossier;
+}
+	ofoBaseStatic;
+
 GType    ofo_base_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS

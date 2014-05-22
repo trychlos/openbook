@@ -52,7 +52,6 @@ struct _ofoDossierPrivate {
 
 	GList    *accounts;					/* chart of accounts */
 	GList    *devises;					/* devises */
-	GList    *journals;					/* journals */
 	GList    *models;					/* entry models */
 	GList    *taux;						/* taux */
 
@@ -96,10 +95,6 @@ static void     devises_set_free( GList *set );
 static gint     devises_cmp( const ofoDevise *a, const ofoDevise *b );
 static gint     devises_find( const ofoDevise *a, const gchar *searched );
 static gint     entry_get_next_number( ofoDossier *dossier );
-static void     journals_set_free( GList *set );
-static gint     journals_cmp( const ofoJournal *a, const ofoJournal *b );
-static gint     journals_find( const ofoJournal *a, const gchar *searched_mnemo );
-static gint     journals_find_by_id( const ofoJournal *a, gconstpointer b );
 static void     models_set_free( GList *set );
 static gint     models_cmp( const ofoModel *a, const ofoModel *b );
 static gint     models_find( const ofoModel *a, const gchar *searched_mnemo );
@@ -129,10 +124,6 @@ ofo_dossier_finalize( GObject *instance )
 	if( self->priv->devises ){
 		devises_set_free( self->priv->devises );
 		self->priv->devises = NULL;
-	}
-	if( self->priv->journals ){
-		journals_set_free( self->priv->journals );
-		self->priv->journals = NULL;
 	}
 	if( self->priv->models ){
 		models_set_free( self->priv->models );
@@ -164,6 +155,8 @@ ofo_dossier_dispose( GObject *instance )
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		self->priv->dispose_has_run = TRUE;
+
+		ofo_journal_clear_dataset();
 
 		if( self->priv->sgbd ){
 			g_clear_object( &self->priv->sgbd );
@@ -653,6 +646,24 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_sgbd:
+ *
+ * Returns: the current sgbd handler.
+ */
+ofoSgbd *
+ofo_dossier_get_sgbd( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !dossier->priv->dispose_has_run ){
+
+		return( dossier->priv->sgbd );
+	}
+
+	return( NULL );
+}
+
+/**
  * ofo_dossier_get_account:
  *
  * Returns: the searched account.
@@ -979,7 +990,7 @@ ofo_dossier_entry_insert( ofoDossier *dossier,
 				effet, ope, label, ref, account,
 				dev_id, jou_id, amount, sens, number );
 
-	journal = ofo_dossier_journal_get_by_id( dossier, jou_id );
+	journal = ofo_journal_get_by_id( dossier, jou_id );
 	g_return_val_if_fail( journal && OFO_IS_JOURNAL( journal ), FALSE );
 
 	ofo_journal_record_entry( journal, dossier->priv->sgbd, entry );
@@ -1024,192 +1035,6 @@ entry_get_next_number( ofoDossier *dossier )
 	}
 
 	return( next_number );
-}
-
-/**
- * ofo_dossier_journal_get_by_id:
- *
- * Returns: the searched journal.
- */
-ofoJournal *
-ofo_dossier_journal_get_by_id( ofoDossier *dossier, gint id )
-{
-	static const gchar *thisfn = "ofo_dossier_journal_get_by_id";
-	GList *set, *found;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( id > 0, NULL );
-
-	if( !dossier->priv->dispose_has_run ){
-
-		g_debug( "%s: dossier=%p, id=%d", thisfn, ( void * ) dossier, id );
-
-		set = ofo_dossier_get_journals_set( dossier );
-		found = g_list_find_custom(
-					set, GINT_TO_POINTER( id ), ( GCompareFunc ) journals_find_by_id );
-		if( found ){
-			return( OFO_JOURNAL( found->data ));
-		}
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_journal:
- *
- * Returns: the searched journal.
- */
-ofoJournal *
-ofo_dossier_get_journal( ofoDossier *dossier, const gchar *mnemo )
-{
-	static const gchar *thisfn = "ofo_dossier_get_journal";
-	ofoJournal *journal;
-	GList *set, *found;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
-
-	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
-
-	journal = NULL;
-
-	if( !dossier->priv->dispose_has_run ){
-
-		set = ofo_dossier_get_journals_set( dossier );
-		found = g_list_find_custom( set, mnemo, ( GCompareFunc ) journals_find );
-		if( found ){
-			journal = OFO_JOURNAL( found->data );
-		}
-	}
-
-	return( journal );
-}
-
-/**
- * ofo_dossier_get_journals_set:
- */
-GList *
-ofo_dossier_get_journals_set( ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_dossier_get_journals_set";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	if( !dossier->priv->dispose_has_run ){
-
-		if( !dossier->priv->journals ){
-
-			dossier->priv->journals = ofo_journal_load_set( dossier->priv->sgbd );
-		}
-	}
-
-	return( dossier->priv->journals );
-}
-
-/**
- * ofo_dossier_insert_journal:
- *
- * we deal here with an update of publicly modifiable journal properties
- * so it is not needed to check the date of closing
- */
-gboolean
-ofo_dossier_insert_journal( ofoDossier *dossier, ofoJournal *journal )
-{
-	GList *set;
-	gboolean ok;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_journal_insert( journal, dossier->priv->sgbd, dossier->priv->userid )){
-
-		set = g_list_insert_sorted( dossier->priv->journals, journal, ( GCompareFunc ) journals_cmp );
-		dossier->priv->journals = set;
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_update_journal:
- */
-gboolean
-ofo_dossier_update_journal( ofoDossier *dossier, ofoJournal *journal )
-{
-	gboolean ok;
-	GList *set;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_journal_update( journal, dossier->priv->sgbd, dossier->priv->userid )){
-
-		set = g_list_remove( dossier->priv->journals, journal );
-		set = g_list_insert_sorted( set, journal, ( GCompareFunc ) journals_cmp );
-		dossier->priv->journals = set;
-
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_delete_journal:
- */
-gboolean
-ofo_dossier_delete_journal( ofoDossier *dossier, ofoJournal *journal )
-{
-	gboolean ok;
-	GList *set;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_journal_delete( journal, dossier->priv->sgbd, dossier->priv->userid )){
-
-		set = g_list_remove( dossier->priv->journals, journal );
-		dossier->priv->journals = set;
-		g_object_unref( journal );
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-static void
-journals_set_free( GList *set )
-{
-	g_list_foreach( set, ( GFunc ) g_object_unref, NULL );
-	g_list_free( set );
-}
-
-static gint
-journals_cmp( const ofoJournal *a, const ofoJournal *b )
-{
-	return( g_utf8_collate( ofo_journal_get_mnemo( a ), ofo_journal_get_mnemo( b )));
-}
-
-static gint
-journals_find( const ofoJournal *a, const gchar *searched_mnemo )
-{
-	return( g_utf8_collate( ofo_journal_get_mnemo( a ), searched_mnemo ));
-}
-
-static gint
-journals_find_by_id( const ofoJournal *a, gconstpointer b )
-{
-	return( ofo_journal_get_id( a ) - GPOINTER_TO_INT( b ));
 }
 
 /**
