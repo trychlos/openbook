@@ -39,8 +39,8 @@
  * load data local infile '/home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/GTD-TR/OLA01 - Specifications/Plan comptable notarial 1988 simplié.csv' into table OFA_T_COMPTES fields terminated by ';' (@dummy,CPT_NUMBER,CPT_LABEL,CPT_NOTES);
  */
 
-#include "ui/ofa-sgbd.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-sgbd.h"
 
 G_BEGIN_DECLS
 
@@ -66,11 +66,11 @@ typedef struct {
 }
 	ofoJournal;
 
-GType        ofo_journal_get_type     ( void );
+GType        ofo_journal_get_type     ( void ) G_GNUC_CONST;
 
 ofoJournal  *ofo_journal_new          ( void );
 
-GList       *ofo_journal_load_set     ( ofaSgbd *sgbd );
+GList       *ofo_journal_load_set     ( ofoSgbd *sgbd );
 void         ofo_journal_dump_set     ( GList *chart );
 
 gint         ofo_journal_get_id       ( const ofoJournal *journal );
@@ -89,9 +89,9 @@ void         ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *sta
 void         ofo_journal_set_maxdate  ( ofoJournal *journal, const GDate *date );
 void         ofo_journal_set_cloture  ( ofoJournal *journal, const GDate *date );
 
-gboolean     ofo_journal_insert       ( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user );
-gboolean     ofo_journal_update       ( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user );
-gboolean     ofo_journal_delete       ( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user );
+gboolean     ofo_journal_insert       ( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
+gboolean     ofo_journal_update       ( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
+gboolean     ofo_journal_delete       ( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
 
 G_END_DECLS
 

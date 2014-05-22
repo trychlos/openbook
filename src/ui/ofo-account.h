@@ -39,8 +39,8 @@
  * load data local infile '/home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/GTD-TR/OLA01 - Specifications/Plan comptable notarial 1988 simplié.csv' into table OFA_T_COMPTES fields terminated by ';' (@dummy,CPT_NUMBER,CPT_LABEL,CPT_NOTES);
  */
 
-#include "ui/ofa-sgbd.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-sgbd.h"
 
 G_BEGIN_DECLS
 
@@ -66,11 +66,11 @@ typedef struct {
 }
 	ofoAccount;
 
-GType        ofo_account_get_type        ( void );
+GType        ofo_account_get_type        ( void ) G_GNUC_CONST;
 
 ofoAccount  *ofo_account_new             ( void );
 
-GList       *ofo_account_load_chart      ( ofaSgbd *sgbd );
+GList       *ofo_account_load_chart      ( ofoSgbd *sgbd );
 void         ofo_account_dump_chart      ( GList *chart );
 
 gint         ofo_account_get_class       ( const ofoAccount *account );
@@ -116,9 +116,9 @@ void         ofo_account_set_bro_cre_mnt ( ofoAccount *account, gdouble mnt );
 void         ofo_account_set_bro_cre_ecr ( ofoAccount *account, gint num );
 void         ofo_account_set_bro_cre_date( ofoAccount *account, const GDate *date );
 
-gboolean     ofo_account_insert          ( ofoAccount *account, ofaSgbd *sgbd, const gchar *user );
-gboolean     ofo_account_update          ( ofoAccount *account, ofaSgbd *sgbd, const gchar *user, const gchar *prev_number );
-gboolean     ofo_account_delete          ( ofoAccount *account, ofaSgbd *sgbd, const gchar *user );
+gboolean     ofo_account_insert          ( ofoAccount *account, ofoSgbd *sgbd, const gchar *user );
+gboolean     ofo_account_update          ( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
+gboolean     ofo_account_delete          ( ofoAccount *account, ofoSgbd *sgbd, const gchar *user );
 
 G_END_DECLS
 

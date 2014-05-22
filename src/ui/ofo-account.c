@@ -161,18 +161,18 @@ ofo_account_new( void )
  * Loads/reloads the ordered list of accounts
  */
 GList *
-ofo_account_load_chart( ofaSgbd *sgbd )
+ofo_account_load_chart( ofoSgbd *sgbd )
 {
 	static const gchar *thisfn = "ofo_account_load_chart";
 	GSList *result, *irow, *icol;
 	ofoAccount *account;
 	GList *chart;
 
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), NULL );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), NULL );
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofa_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd, NULL,
 			"SELECT CPT_NUMBER,CPT_LABEL,CPT_DEV_ID,CPT_NOTES,CPT_TYPE,"
 			"	CPT_MAJ_USER,CPT_MAJ_STAMP,"
 			"	CPT_DEB_MNT,CPT_DEB_ECR,CPT_DEB_DATE,"
@@ -246,7 +246,7 @@ ofo_account_load_chart( ofaSgbd *sgbd )
 		chart = g_list_prepend( chart, account );
 	}
 
-	ofa_sgbd_free_result( result );
+	ofo_sgbd_free_result( result );
 
 	return( g_list_reverse( chart ));
 }
@@ -946,7 +946,7 @@ ofo_account_set_bro_cre_date( ofoAccount *account, const GDate *date )
  * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_account_insert( ofoAccount *account, ofaSgbd *sgbd, const gchar *user )
+ofo_account_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -954,7 +954,7 @@ ofo_account_insert( ofoAccount *account, ofaSgbd *sgbd, const gchar *user )
 	gchar *stamp;
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_account_get_label( account ));
@@ -984,7 +984,7 @@ ofo_account_insert( ofoAccount *account, ofaSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp );
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_account_set_maj_user( account, user );
 		ofo_account_set_maj_stamp( account, my_utils_stamp_from_str( stamp ));
@@ -1006,7 +1006,7 @@ ofo_account_insert( ofoAccount *account, ofaSgbd *sgbd, const gchar *user )
  * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_account_update( ofoAccount *account, ofaSgbd *sgbd, const gchar *user, const gchar *prev_number )
+ofo_account_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const gchar *prev_number )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1015,7 +1015,7 @@ ofo_account_update( ofoAccount *account, ofaSgbd *sgbd, const gchar *user, const
 	gchar *stamp;
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 	g_return_val_if_fail( prev_number && g_utf8_strlen( prev_number, -1 ), FALSE );
 
 	ok = FALSE;
@@ -1054,7 +1054,7 @@ ofo_account_update( ofoAccount *account, ofaSgbd *sgbd, const gchar *user, const
 					stamp,
 					prev_number );
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_account_set_maj_user( account, user );
 		ofo_account_set_maj_stamp( account, my_utils_stamp_from_str( stamp ));
@@ -1073,20 +1073,20 @@ ofo_account_update( ofoAccount *account, ofaSgbd *sgbd, const gchar *user, const
  * ofo_account_delete:
  */
 gboolean
-ofo_account_delete( ofoAccount *account, ofaSgbd *sgbd, const gchar *user )
+ofo_account_delete( ofoAccount *account, ofoSgbd *sgbd, const gchar *user )
 {
 	gchar *query;
 	gboolean ok;
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_COMPTES"
 			"	WHERE CPT_NUMBER='%s'",
 					ofo_account_get_number( account ));
 
-	ok = ofa_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, NULL, query );
 
 	g_free( query );
 

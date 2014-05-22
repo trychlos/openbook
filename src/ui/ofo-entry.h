@@ -35,8 +35,8 @@
  * This class implements the Entry behavior.
  */
 
-#include "ui/ofa-sgbd.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-sgbd.h"
 
 G_BEGIN_DECLS
 
@@ -81,9 +81,9 @@ typedef enum {
 }
 	ofaEntryStatus;
 
-GType     ofo_entry_get_type  ( void );
+GType     ofo_entry_get_type  ( void ) G_GNUC_CONST;
 
-ofoEntry *ofo_entry_insert_new( ofaSgbd *sgbd, const gchar *user,
+ofoEntry *ofo_entry_insert_new( ofoSgbd *sgbd, const gchar *user,
 									const GDate *effet, const GDate *ope,
 									const gchar *label, const gchar *ref,
 									const gchar *account,
@@ -106,8 +106,8 @@ ofaEntryStatus ofo_entry_get_status   ( const ofoEntry *entry );
 void           ofo_entry_set_maj_user ( ofoEntry *entry, const gchar *user );
 void           ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *stamp );
 
-gboolean  ofo_entry_validate( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user );
-gboolean  ofo_entry_delete  ( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user );
+gboolean  ofo_entry_validate( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
+gboolean  ofo_entry_delete  ( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
 
 G_END_DECLS
 

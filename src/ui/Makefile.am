@@ -81,8 +81,6 @@ openbook_SOURCES = \
 	ofa-models-set.h									\
 	ofa-settings.c										\
 	ofa-settings.h										\
-	ofa-sgbd.c											\
-	ofa-sgbd.h											\
 	ofa-taux-properties.c								\
 	ofa-taux-properties.h								\
 	ofa-taux-set.c										\
@@ -99,6 +97,8 @@ openbook_SOURCES = \
 	ofo-entry.h											\
 	ofo-journal.c										\
 	ofo-journal.h										\
+	ofo-sgbd.c											\
+	ofo-sgbd.h											\
 	ofo-model.c											\
 	ofo-model.h											\
 	ofo-taux.c											\

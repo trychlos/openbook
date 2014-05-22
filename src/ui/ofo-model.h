@@ -35,8 +35,8 @@
  * This class implements the Model behavior
  */
 
-#include "ui/ofa-sgbd.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-sgbd.h"
 
 G_BEGIN_DECLS
 
@@ -62,11 +62,11 @@ typedef struct {
 }
 	ofoModel;
 
-GType        ofo_model_get_type     ( void );
+GType        ofo_model_get_type     ( void ) G_GNUC_CONST;
 
 ofoModel    *ofo_model_new          ( void );
 
-GList       *ofo_model_load_set     ( ofaSgbd *sgbd );
+GList       *ofo_model_load_set     ( ofoSgbd *sgbd );
 void         ofo_model_dump_set     ( GList *chart );
 
 gint         ofo_model_get_id            ( const ofoModel *model );
@@ -105,9 +105,9 @@ void         ofo_model_set_detail   ( const ofoModel *model, gint idx,
 										const gchar *debit, gboolean debit_locked,
 										const gchar *credit, gboolean credit_locked );
 
-gboolean     ofo_model_insert       ( ofoModel *model, ofaSgbd *sgbd, const gchar *user );
-gboolean     ofo_model_update       ( ofoModel *model, ofaSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
-gboolean     ofo_model_delete       ( ofoModel *model, ofaSgbd *sgbd, const gchar *user );
+gboolean     ofo_model_insert       ( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
+gboolean     ofo_model_update       ( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
+gboolean     ofo_model_delete       ( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
 
 G_END_DECLS
 

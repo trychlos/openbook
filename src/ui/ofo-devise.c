@@ -144,18 +144,18 @@ ofo_devise_new( void )
  * Loads/reloads the ordered list of devises
  */
 GList *
-ofo_devise_load_set( ofaSgbd *sgbd )
+ofo_devise_load_set( ofoSgbd *sgbd )
 {
 	static const gchar *thisfn = "ofo_devise_load_set";
 	GSList *result, *irow, *icol;
 	ofoDevise *devise;
 	GList *set;
 
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), NULL );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), NULL );
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofa_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd, NULL,
 			"SELECT DEV_ID,DEV_CODE,DEV_LABEL,DEV_SYMBOL "
 			"	FROM OFA_T_DEVISES "
 			"	ORDER BY DEV_CODE ASC" );
@@ -176,7 +176,7 @@ ofo_devise_load_set( ofaSgbd *sgbd )
 		set = g_list_prepend( set, devise );
 	}
 
-	ofa_sgbd_free_result( result );
+	ofo_sgbd_free_result( result );
 
 	return( g_list_reverse( set ));
 }
@@ -321,7 +321,7 @@ ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol )
  * ofo_devise_insert:
  */
 gboolean
-ofo_devise_insert( ofoDevise *devise, ofaSgbd *sgbd )
+ofo_devise_insert( ofoDevise *devise, ofoSgbd *sgbd )
 {
 	GString *query;
 	gchar *label;
@@ -330,7 +330,7 @@ ofo_devise_insert( ofoDevise *devise, ofaSgbd *sgbd )
 	GSList *result, *icol;
 
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_devise_get_label( devise ));
@@ -352,20 +352,20 @@ ofo_devise_insert( ofoDevise *devise, ofaSgbd *sgbd )
 
 	query = g_string_append( query, ")" );
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		g_string_printf( query,
 				"SELECT DEV_ID FROM OFA_T_DEVISES"
 				"	WHERE DEV_CODE='%s'",
 				ofo_devise_get_code( devise ));
 
-		result = ofa_sgbd_query_ex( sgbd, NULL, query->str );
+		result = ofo_sgbd_query_ex( sgbd, NULL, query->str );
 
 		if( result ){
 			icol = ( GSList * ) result->data;
 			ofo_devise_set_id( devise, atoi(( gchar * ) icol->data ));
 
-			ofa_sgbd_free_result( result );
+			ofo_sgbd_free_result( result );
 
 			ok = TRUE;
 		}
@@ -384,7 +384,7 @@ ofo_devise_insert( ofoDevise *devise, ofaSgbd *sgbd )
  * mnemo is not modifiable
  */
 gboolean
-ofo_devise_update( ofoDevise *devise, ofaSgbd *sgbd )
+ofo_devise_update( ofoDevise *devise, ofoSgbd *sgbd )
 {
 	GString *query;
 	gchar *label;
@@ -392,7 +392,7 @@ ofo_devise_update( ofoDevise *devise, ofaSgbd *sgbd )
 	gboolean ok;
 
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_devise_get_label( devise ));
@@ -411,7 +411,7 @@ ofo_devise_update( ofoDevise *devise, ofaSgbd *sgbd )
 	g_string_append_printf( query,
 			"	WHERE DEV_CODE='%s'", ofo_devise_get_code( devise ));
 
-	ok = ofa_sgbd_query( sgbd, NULL, query->str );
+	ok = ofo_sgbd_query( sgbd, NULL, query->str );
 
 	g_string_free( query, TRUE );
 	g_free( label );
@@ -423,20 +423,20 @@ ofo_devise_update( ofoDevise *devise, ofaSgbd *sgbd )
  * ofo_devise_delete:
  */
 gboolean
-ofo_devise_delete( ofoDevise *devise, ofaSgbd *sgbd )
+ofo_devise_delete( ofoDevise *devise, ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;
 
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_DEVISES"
 			"	WHERE DEV_CODE='%s'",
 					ofo_devise_get_code( devise ));
 
-	ok = ofa_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, NULL, query );
 
 	g_free( query );
 

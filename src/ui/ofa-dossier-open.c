@@ -548,14 +548,14 @@ do_open( ofaDossierOpen *self )
 	static const gchar *thisfn = "ofa_dossier_open_do_open";
 	gboolean opened;
 	ofaOpenDossier *sod;
-	ofaSgbd *sgbd;
+	ofoSgbd *sgbd;
 
 	opened = FALSE;
 	sod = g_new0( ofaOpenDossier, 1 );
 	ofa_settings_get_dossier( self->private->name, &sod->host, &sod->port, &sod->socket, &sod->dbname );
-	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
+	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
 
-	if( !ofa_sgbd_connect(
+	if( !ofo_sgbd_connect(
 			sgbd,
 			sod->host,
 			sod->port,

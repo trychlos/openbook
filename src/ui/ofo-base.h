@@ -35,7 +35,7 @@
  * The ofoBase class is the class base for application objects.
  */
 
-#include "ui/ofa-sgbd.h"
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 

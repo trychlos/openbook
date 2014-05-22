@@ -65,7 +65,7 @@ G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
 #define OFO_ENTRY_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_ENTRY, ofoEntryPrivate))
 
-static gboolean ofo_entry_insert( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user );
+static gboolean ofo_entry_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
 
 static void
 ofo_entry_finalize( GObject *instance )
@@ -142,7 +142,7 @@ ofo_entry_class_init( ofoEntryClass *klass )
  * ofo_entry_new:
  */
 ofoEntry *
-ofo_entry_insert_new( ofaSgbd *sgbd, const gchar *user,
+ofo_entry_insert_new( ofoSgbd *sgbd, const gchar *user,
 					const GDate *effet, const GDate *ope, const gchar *label, const gchar *ref,
 					const gchar *account,
 					gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens,
@@ -379,7 +379,7 @@ ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *maj_stamp )
  * ofo_entry_insert:
  */
 static gboolean
-ofo_entry_insert( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
+ofo_entry_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *ref;
@@ -389,7 +389,7 @@ ofo_entry_insert( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
 	gchar *stamp;
 
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	label = my_utils_quote( ofo_entry_get_label( entry ));
 	ref = my_utils_quote( ofo_entry_get_ref( entry ));
@@ -428,7 +428,7 @@ ofo_entry_insert( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
 				user,
 				stamp );
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_entry_set_maj_user( entry, user );
 		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str( stamp ));
@@ -450,7 +450,7 @@ ofo_entry_insert( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
  * ofo_entry_validate:
  */
 gboolean
-ofo_entry_validate( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
+ofo_entry_validate( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
 {
 	return( FALSE );
 }
@@ -459,7 +459,7 @@ ofo_entry_validate( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
  * ofo_entry_delete:
  */
 gboolean
-ofo_entry_delete( ofoEntry *entry, ofaSgbd *sgbd, const gchar *user )
+ofo_entry_delete( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
 {
 	return( FALSE );
 }

@@ -32,17 +32,17 @@
 #include <mysql/mysql.h>
 #include <string.h>
 
-#include "ui/ofa-sgbd.h"
+#include "ui/ofo-sgbd.h"
 
 /* private class data
  */
-struct _ofaSgbdClassPrivate {
+struct _ofoSgbdClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
 /* private instance data
  */
-struct _ofaSgbdPrivate {
+struct _ofoSgbdPrivate {
 	gboolean dispose_has_run;
 
 	/* properties
@@ -54,172 +54,114 @@ struct _ofaSgbdPrivate {
 	MYSQL   *mysql;
 };
 
-static GObjectClass *st_parent_class  = NULL;
+G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 
-static GType register_type( void );
-static void  class_init( ofaSgbdClass *klass );
-static void  instance_init( GTypeInstance *instance, gpointer klass );
-static void  instance_dispose( GObject *instance );
-static void  instance_finalize( GObject *instance );
-static void  error_connect( ofaSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
-static void  query_error( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query );
+#define OFO_SGBD_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_SGBD, ofoSgbdPrivate))
 
-GType
-ofa_sgbd_get_type( void )
+static void  error_connect( ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
+static void  query_error( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query );
+
+static void
+ofo_sgbd_finalize( GObject *instance )
 {
-	static GType st_type = 0;
+	static const gchar *thisfn = "ofo_sgbd_finalize";
+	ofoSgbd *self;
 
-	if( !st_type ){
-		st_type = register_type();
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	self = OFO_SGBD( instance );
+
+	g_free( self->priv->provider );
+
+	if( self->priv->mysql ){
+		mysql_close( self->priv->mysql );
+		g_free( self->priv->mysql );
 	}
 
-	return( st_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_sgbd_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaSgbdClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaSgbd ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaSgbd", &info, 0 );
-
-	return( type );
+	/* chain up to parent class */
+	G_OBJECT_CLASS( ofo_sgbd_parent_class )->finalize( instance );
 }
 
 static void
-class_init( ofaSgbdClass *klass )
+ofo_sgbd_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_sgbd_class_init";
-	GObjectClass *object_class;
+	static const gchar *thisfn = "ofo_sgbd_dispose";
+	ofoSgbd *self;
 
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+	self = OFO_SGBD( instance );
 
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaSgbdClassPrivate, 1 );
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_sgbd_instance_init";
-	ofaSgbd *self;
-
-	g_return_if_fail( OFA_IS_SGBD( instance ));
-
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
-
-	self = OFA_SGBD( instance );
-
-	self->private = g_new0( ofaSgbdPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-}
-
-static void
-instance_dispose( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_sgbd_instance_dispose";
-	ofaSgbdPrivate *priv;
-
-	g_return_if_fail( OFA_IS_SGBD( instance ));
-
-	priv = ( OFA_SGBD( instance ))->private;
-
-	if( !priv->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: instance=%p (%s)",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-		priv->dispose_has_run = TRUE;
-
-		g_free( priv->provider );
-
-		if( priv->mysql ){
-			mysql_close( priv->mysql );
-			g_free( priv->mysql );
-		}
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
+		self->priv->dispose_has_run = TRUE;
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofo_sgbd_parent_class )->dispose( instance );
 }
 
 static void
-instance_finalize( GObject *instance )
+ofo_sgbd_init( ofoSgbd *self )
 {
-	static const gchar *thisfn = "ofa_sgbd_instance_finalize";
-	ofaSgbdPrivate *priv;
+	static const gchar *thisfn = "ofo_sgbd_init";
 
-	g_return_if_fail( OFA_IS_SGBD( instance ));
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	self->priv = OFO_SGBD_GET_PRIVATE( self );
 
-	priv = OFA_SGBD( instance )->private;
+	self->priv->dispose_has_run = FALSE;
+}
 
-	g_free( priv );
+static void
+ofo_sgbd_class_init( ofoSgbdClass *klass )
+{
+	static const gchar *thisfn = "ofo_sgbd_class_init";
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	g_type_class_add_private( klass, sizeof( ofoSgbdPrivate ));
+
+	G_OBJECT_CLASS( klass )->dispose = ofo_sgbd_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ofo_sgbd_finalize;
 }
 
 /**
- * ofa_sgbd_new:
+ * ofo_sgbd_new:
  *
- * Allocates a new ofaSgbd object, and that's all
+ * Allocates a new ofoSgbd object, and that's all
  */
-ofaSgbd *
-ofa_sgbd_new( const gchar *provider )
+ofoSgbd *
+ofo_sgbd_new( const gchar *provider )
 {
-	static const gchar *thisfn = "ofa_sgbd_new";
-	ofaSgbd *sgbd;
+	static const gchar *thisfn = "ofo_sgbd_new";
+	ofoSgbd *sgbd;
 
 	g_debug( "%s: provider=%s", thisfn, provider );
 
-	sgbd = g_object_new( OFA_TYPE_SGBD, NULL );
+	sgbd = g_object_new( OFO_TYPE_SGBD, NULL );
 
-	sgbd->private->provider = g_strdup( provider );
+	sgbd->priv->provider = g_strdup( provider );
 
 	return( sgbd );
 }
 
 /**
- * ofa_sgbd_connect:
+ * ofo_sgbd_connect:
  *
  * The connection will be automatically closed when unreffing the object.
  */
 gboolean
-ofa_sgbd_connect( ofaSgbd *sgbd,
+ofo_sgbd_connect( ofoSgbd *sgbd,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
 {
-	static const gchar *thisfn = "ofa_sgbd_connect";
+	static const gchar *thisfn = "ofo_sgbd_connect";
 	MYSQL *mysql;
 
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	g_debug( "%s: sgbd=%p, host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s",
 			thisfn,
@@ -243,12 +185,12 @@ ofa_sgbd_connect( ofaSgbd *sgbd,
 		return( FALSE );
 	}
 
-	sgbd->private->mysql = mysql;
+	sgbd->priv->mysql = mysql;
 	return( TRUE );
 }
 
 static void
-error_connect( ofaSgbd *sgbd,
+error_connect( ofoSgbd *sgbd,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account )
 {
 	GtkMessageDialog *dlg;
@@ -285,26 +227,26 @@ error_connect( ofaSgbd *sgbd,
 }
 
 /**
- * ofa_sgbd_exec_query:
+ * ofo_sgbd_exec_query:
  */
 gboolean
-ofa_sgbd_query( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
+ofo_sgbd_query( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
 {
-	static const gchar *thisfn = "ofa_sgbd_query";
+	static const gchar *thisfn = "ofo_sgbd_query";
 	gboolean query_ok = FALSE;
 	/*gchar *to_str;
 	glong length;*/
 
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	g_debug( "%s: sgbd=%p, parent=%p, query='%s'",
 			thisfn, ( void * ) sgbd, ( void * ) parent, query );
 
-	if( sgbd->private->mysql ){
+	if( sgbd->priv->mysql ){
 		/*length = g_utf8_strlen( query, -1 );
 		to_str = g_new0( char, 2*length+1 );
-		mysql_real_escape_string( sgbd->private->mysql, to_str, query, length );*/
-		if( mysql_query( sgbd->private->mysql, query )){
+		mysql_real_escape_string( sgbd->priv->mysql, to_str, query, length );*/
+		if( mysql_query( sgbd->priv->mysql, query )){
 			query_error( sgbd, parent, query );
 		} else {
 			query_ok = TRUE;
@@ -318,7 +260,7 @@ ofa_sgbd_query( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 }
 
 /**
- * ofa_sgbd_exec_query_ex:
+ * ofo_sgbd_exec_query_ex:
  *
  * @parent: if NULL, do not display error message
  *
@@ -329,30 +271,30 @@ ofa_sgbd_query( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
  *
  * Returns NULL is case of an error.
  *
- * The returned GSList should be freed with ofa_sgbd_free_result().
+ * The returned GSList should be freed with ofo_sgbd_free_result().
  */
 GSList *
-ofa_sgbd_query_ex( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
+ofo_sgbd_query_ex( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
 {
-	static const gchar *thisfn = "ofa_sgbd_query_ex";
+	static const gchar *thisfn = "ofo_sgbd_query_ex";
 	GSList *result = NULL;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 	gint fields_count, i;
 
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	g_debug( "%s: sgbd=%p, parent=%p, query='%s'",
 			thisfn, ( void * ) sgbd, ( void * ) parent, query );
 
-	if( sgbd->private->mysql ){
-		if( mysql_query( sgbd->private->mysql, query )){
+	if( sgbd->priv->mysql ){
+		if( mysql_query( sgbd->priv->mysql, query )){
 			if( parent ){
 				query_error( sgbd, parent, query );
 			}
 
 		} else {
-			res = mysql_store_result( sgbd->private->mysql );
+			res = mysql_store_result( sgbd->priv->mysql );
 			if( res ){
 				fields_count = mysql_num_fields( res );
 				while(( row = mysql_fetch_row( res ))){
@@ -375,7 +317,7 @@ ofa_sgbd_query_ex( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 }
 
 static void
-query_error( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
+query_error( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
 {
 	GtkMessageDialog *dlg;
 
@@ -386,17 +328,17 @@ query_error( ofaSgbd *sgbd, GtkWindow *parent, const gchar *query )
 				GTK_BUTTONS_OK,
 				"%s", query ));
 
-	gtk_message_dialog_format_secondary_text( dlg, "%s", mysql_error( sgbd->private->mysql ));
+	gtk_message_dialog_format_secondary_text( dlg, "%s", mysql_error( sgbd->priv->mysql ));
 
 	gtk_dialog_run( GTK_DIALOG( dlg ));
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
 }
 
 /**
- * ofa_sgbd_free_result:
+ * ofo_sgbd_free_result:
  */
 void
-ofa_sgbd_free_result( GSList *result )
+ofo_sgbd_free_result( GSList *result )
 {
 	g_slist_foreach( result, ( GFunc ) g_slist_free_full, g_free );
 }

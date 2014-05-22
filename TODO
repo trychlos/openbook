@@ -200,7 +200,12 @@
   87 2014- 5-22 Guided input: check that the selected account is of
                 type detail
 
-  88
+  88 2014- 5-22 rename ofaSgbd to ofoSgbd
+
+  89 2014- 522 Guided input: have a transaction when writing the new
+               entries so that we can rollback in case of an error
+
+  90
 
 -----------------------------------------------------------------------
  DONE

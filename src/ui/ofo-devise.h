@@ -36,8 +36,8 @@
  * DB definition.
  */
 
-#include "ui/ofa-sgbd.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-sgbd.h"
 
 G_BEGIN_DECLS
 
@@ -63,11 +63,11 @@ typedef struct {
 }
 	ofoDevise;
 
-GType        ofo_devise_get_type  ( void );
+GType        ofo_devise_get_type  ( void ) G_GNUC_CONST;
 
 ofoDevise   *ofo_devise_new       ( void );
 
-GList       *ofo_devise_load_set  ( ofaSgbd *sgbd );
+GList       *ofo_devise_load_set  ( ofoSgbd *sgbd );
 void         ofo_devise_dump_set  ( GList *chart );
 
 gint         ofo_devise_get_id    ( const ofoDevise *devise );
@@ -80,9 +80,9 @@ void         ofo_devise_set_code  ( ofoDevise *devise, const gchar *code );
 void         ofo_devise_set_label ( ofoDevise *devise, const gchar *label );
 void         ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol );
 
-gboolean     ofo_devise_insert    ( ofoDevise *devise, ofaSgbd *sgbd );
-gboolean     ofo_devise_update    ( ofoDevise *devise, ofaSgbd *sgbd );
-gboolean     ofo_devise_delete    ( ofoDevise *devise, ofaSgbd *sgbd );
+gboolean     ofo_devise_insert    ( ofoDevise *devise, ofoSgbd *sgbd );
+gboolean     ofo_devise_update    ( ofoDevise *devise, ofoSgbd *sgbd );
+gboolean     ofo_devise_delete    ( ofoDevise *devise, ofoSgbd *sgbd );
 
 G_END_DECLS
 

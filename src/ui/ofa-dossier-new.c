@@ -35,7 +35,6 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-settings.h"
-#include "ui/ofa-sgbd.h"
 #include "ui/ofo-dossier.h"
 
 static gboolean pref_quit_on_escape = TRUE;
@@ -934,16 +933,16 @@ static gboolean
 make_db_global( ofaDossierNew *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_make_db_global";
-	ofaSgbd *sgbd;
+	ofoSgbd *sgbd;
 	GString *stmt;
 	gboolean db_created;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	db_created = FALSE;
-	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
+	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
 
-	if( !ofa_sgbd_connect( sgbd,
+	if( !ofo_sgbd_connect( sgbd,
 			self->private->p2_host,
 			self->private->p2_port_num,
 			self->private->p2_socket,
@@ -960,7 +959,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"CREATE DATABASE %s",
 			self->private->p2_dbname );
-	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -968,7 +967,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"CREATE USER '%s' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
-	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -976,7 +975,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
-	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -985,7 +984,7 @@ make_db_global( ofaDossierNew *self )
 			"GRANT ALL ON %s.* TO '%s' WITH GRANT OPTION",
 			self->private->p2_dbname,
 			self->private->p3_account );
-	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -994,7 +993,7 @@ make_db_global( ofaDossierNew *self )
 			"GRANT ALL ON %s.* TO '%s'@'localhost' WITH GRANT OPTION",
 			self->private->p2_dbname,
 			self->private->p3_account );
-	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -1002,7 +1001,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"GRANT CREATE USER, FILE ON *.* TO '%s'",
 			self->private->p3_account );
-	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -1010,7 +1009,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"GRANT CREATE USER, FILE ON *.* TO '%s'@'localhost'",
 			self->private->p3_account );
-	if( !ofa_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -1047,13 +1046,13 @@ setup_new_dossier( ofaDossierNew *self )
 static gboolean
 create_db_model( ofaDossierNew *self )
 {
-	ofaSgbd *sgbd;
+	ofoSgbd *sgbd;
 	gboolean model_created;
 
 	model_created = FALSE;
-	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
+	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
 
-	if( !ofa_sgbd_connect( sgbd,
+	if( !ofo_sgbd_connect( sgbd,
 			self->private->p2_host,
 			self->private->p2_port_num,
 			self->private->p2_socket,

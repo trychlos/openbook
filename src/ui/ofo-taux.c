@@ -150,18 +150,18 @@ ofo_taux_new( void )
  * Loads/reloads the ordered list of tauxs
  */
 GList *
-ofo_taux_load_set( ofaSgbd *sgbd )
+ofo_taux_load_set( ofoSgbd *sgbd )
 {
 	static const gchar *thisfn = "ofo_taux_load_set";
 	GSList *result, *irow, *icol;
 	ofoTaux *taux;
 	GList *set;
 
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), NULL );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), NULL );
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofa_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd, NULL,
 			"SELECT TAX_ID,TAX_MNEMO,TAX_LABEL,TAX_NOTES,"
 			"	TAX_VAL_DEB,TAX_VAL_FIN,TAX_TAUX,"
 			"	TAX_MAJ_USER,TAX_MAJ_STAMP"
@@ -196,7 +196,7 @@ ofo_taux_load_set( ofaSgbd *sgbd )
 		set = g_list_prepend( set, taux );
 	}
 
-	ofa_sgbd_free_result( result );
+	ofo_sgbd_free_result( result );
 
 	return( g_list_reverse( set ));
 }
@@ -465,7 +465,7 @@ ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *maj_stamp )
  * ofo_taux_insert:
  */
 gboolean
-ofo_taux_insert( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
+ofo_taux_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -476,7 +476,7 @@ ofo_taux_insert( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
 	GSList *result, *icol;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_taux_get_label( taux ));
@@ -517,7 +517,7 @@ ofo_taux_insert( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
 				g_ascii_dtostr( rate, G_ASCII_DTOSTR_BUF_SIZE, ofo_taux_get_taux( taux )),
 				user, stamp );
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_taux_set_maj_user( taux, user );
 		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
@@ -527,12 +527,12 @@ ofo_taux_insert( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
 				"	WHERE TAX_MNEMO='%s'",
 				ofo_taux_get_mnemo( taux ));
 
-		result = ofa_sgbd_query_ex( sgbd, NULL, query->str );
+		result = ofo_sgbd_query_ex( sgbd, NULL, query->str );
 
 		if( result ){
 			icol = ( GSList * ) result->data;
 			ofo_taux_set_id( taux, atoi(( gchar * ) icol->data ));
-			ofa_sgbd_free_result( result );
+			ofo_sgbd_free_result( result );
 			ok = TRUE;
 		}
 	}
@@ -551,7 +551,7 @@ ofo_taux_insert( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
  * ofo_taux_update:
  */
 gboolean
-ofo_taux_update( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
+ofo_taux_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -561,7 +561,7 @@ ofo_taux_update( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
 	gchar rate[1+G_ASCII_DTOSTR_BUF_SIZE];
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_taux_get_label( taux ));
@@ -599,7 +599,7 @@ ofo_taux_update( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
 			g_ascii_dtostr( rate, G_ASCII_DTOSTR_BUF_SIZE, ofo_taux_get_taux( taux )),
 			user, stamp, ofo_taux_get_id( taux ));
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_taux_set_maj_user( taux, user );
 		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
@@ -617,19 +617,19 @@ ofo_taux_update( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
  * ofo_taux_delete:
  */
 gboolean
-ofo_taux_delete( ofoTaux *taux, ofaSgbd *sgbd, const gchar *user )
+ofo_taux_delete( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 {
 	gchar *query;
 	gboolean ok;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_TAUX WHERE TAX_ID=%d",
 					ofo_taux_get_id( taux ));
 
-	ok = ofa_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, NULL, query );
 
 	g_free( query );
 

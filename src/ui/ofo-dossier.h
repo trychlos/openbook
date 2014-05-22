@@ -39,8 +39,6 @@
  * demand, et releases it on instance dispose.
  */
 
-#include "ui/ofa-sgbd.h"
-#include "ui/ofo-base.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-entry.h"
@@ -86,7 +84,7 @@ typedef enum {
 }
 	ofaDossierStatus;
 
-GType         ofo_dossier_get_type( void );
+GType         ofo_dossier_get_type( void ) G_GNUC_CONST;
 
 ofoDossier   *ofo_dossier_new     ( const gchar *name );
 
@@ -139,7 +137,7 @@ gboolean      ofo_dossier_insert_taux       ( ofoDossier *dossier, ofoTaux *taux
 gboolean      ofo_dossier_update_taux       ( ofoDossier *dossier, ofoTaux *taux );
 gboolean      ofo_dossier_delete_taux       ( ofoDossier *dossier, ofoTaux *taux );
 
-gboolean      ofo_dossier_dbmodel_update    ( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
+gboolean      ofo_dossier_dbmodel_update    ( ofoSgbd *sgbd, GtkWindow *parent, const gchar *account );
 
 G_END_DECLS
 

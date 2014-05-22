@@ -200,7 +200,7 @@ ofo_model_new( void )
  * Loads/reloads the ordered list of models
  */
 GList *
-ofo_model_load_set( ofaSgbd *sgbd )
+ofo_model_load_set( ofoSgbd *sgbd )
 {
 	static const gchar *thisfn = "ofo_model_load_set";
 	GSList *result, *irow, *icol;
@@ -210,11 +210,11 @@ ofo_model_load_set( ofaSgbd *sgbd )
 	sModDetail *detail;
 	GList *details;
 
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), NULL );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), NULL );
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofa_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd, NULL,
 			"SELECT MOD_ID,MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_JOU_VER,MOD_NOTES,"
 			"	MOD_MAJ_USER,MOD_MAJ_STAMP "
 			"	FROM OFA_T_MODELES "
@@ -249,7 +249,7 @@ ofo_model_load_set( ofaSgbd *sgbd )
 		set = g_list_prepend( set, model );
 	}
 
-	ofa_sgbd_free_result( result );
+	ofo_sgbd_free_result( result );
 
 	for( im=set ; im ; im=im->next ){
 
@@ -264,7 +264,7 @@ ofo_model_load_set( ofaSgbd *sgbd )
 				"	FROM OFA_T_MODELES_DET "
 				"	WHERE MOD_ID=%d ORDER BY MOD_DET_RANG ASC", ofo_model_get_id( model ));
 
-		result = ofa_sgbd_query_ex( sgbd, NULL, query );
+		result = ofo_sgbd_query_ex( sgbd, NULL, query );
 		details = NULL;
 
 		for( irow=result ; irow ; irow=irow->next ){
@@ -300,7 +300,7 @@ ofo_model_load_set( ofaSgbd *sgbd )
 			details = g_list_prepend( details, detail );
 		}
 
-		ofa_sgbd_free_result( result );
+		ofo_sgbd_free_result( result );
 		model->priv->details = g_list_reverse( details );
 	}
 
@@ -817,7 +817,7 @@ ofo_model_set_detail( const ofoModel *model, gint idx, const gchar *comment,
 }
 
 static gboolean
-ofo_model_insert_details( ofoModel *model, ofaSgbd *sgbd, gint rang, sModDetail *detail )
+ofo_model_insert_details( ofoModel *model, ofoSgbd *sgbd, gint rang, sModDetail *detail )
 {
 	GString *query;
 	gboolean ok;
@@ -873,7 +873,7 @@ ofo_model_insert_details( ofoModel *model, ofaSgbd *sgbd, gint rang, sModDetail 
 
 	query = g_string_append( query, ")" );
 
-	ok = ofa_sgbd_query( sgbd, NULL, query->str );
+	ok = ofo_sgbd_query( sgbd, NULL, query->str );
 
 	g_string_free( query, TRUE );
 
@@ -881,7 +881,7 @@ ofo_model_insert_details( ofoModel *model, ofaSgbd *sgbd, gint rang, sModDetail 
 }
 
 static gboolean
-ofo_model_delete_details( ofoModel *model, ofaSgbd *sgbd )
+ofo_model_delete_details( ofoModel *model, ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;
@@ -890,7 +890,7 @@ ofo_model_delete_details( ofoModel *model, ofaSgbd *sgbd )
 			"DELETE FROM OFA_T_MODELES_DET WHERE MOD_ID=%d",
 			ofo_model_get_id( model ));
 
-	ok = ofa_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, NULL, query );
 
 	g_free( query );
 
@@ -898,7 +898,7 @@ ofo_model_delete_details( ofoModel *model, ofaSgbd *sgbd )
 }
 
 static gboolean
-ofo_model_insert_details_ex( ofoModel *model, ofaSgbd *sgbd )
+ofo_model_insert_details_ex( ofoModel *model, ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GList *idet;
@@ -931,7 +931,7 @@ ofo_model_insert_details_ex( ofoModel *model, ofaSgbd *sgbd )
  * so it is not needed to check the date of closing
  */
 gboolean
-ofo_model_insert( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
+ofo_model_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -940,7 +940,7 @@ ofo_model_insert( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
 	GSList *result, *icol;
 
 	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_model_get_label( model ));
@@ -966,7 +966,7 @@ ofo_model_insert( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"'%s','%s')", user, stamp );
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_model_set_maj_user( model, user );
 		ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
@@ -976,13 +976,13 @@ ofo_model_insert( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
 				"	WHERE MOD_MNEMO='%s'",
 				ofo_model_get_mnemo( model ));
 
-		result = ofa_sgbd_query_ex( sgbd, NULL, query->str );
+		result = ofo_sgbd_query_ex( sgbd, NULL, query->str );
 
 		if( result ){
 			icol = ( GSList * ) result->data;
 			ofo_model_set_id( model, atoi(( gchar * ) icol->data ));
 
-			ofa_sgbd_free_result( result );
+			ofo_sgbd_free_result( result );
 
 			ok = ofo_model_insert_details_ex( model, sgbd );
 		}
@@ -1003,7 +1003,7 @@ ofo_model_insert( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
  * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_model_update( ofoModel *model, ofaSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
+ofo_model_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1012,7 +1012,7 @@ ofo_model_update( ofoModel *model, ofaSgbd *sgbd, const gchar *user, const gchar
 	gchar *stamp;
 
 	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
 
 	ok = FALSE;
@@ -1044,7 +1044,7 @@ ofo_model_update( ofoModel *model, ofaSgbd *sgbd, const gchar *user, const gchar
 					stamp,
 					prev_mnemo );
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_model_set_maj_user( model, user );
 		ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
@@ -1063,20 +1063,20 @@ ofo_model_update( ofoModel *model, ofaSgbd *sgbd, const gchar *user, const gchar
  * ofo_model_delete:
  */
 gboolean
-ofo_model_delete( ofoModel *model, ofaSgbd *sgbd, const gchar *user )
+ofo_model_delete( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
 {
 	gchar *query;
 	gboolean ok;
 
 	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_MODELES"
 			"	WHERE MOD_MNEMO='%s'",
 					ofo_model_get_mnemo( model ));
 
-	ok = ofa_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, NULL, query );
 
 	g_free( query );
 

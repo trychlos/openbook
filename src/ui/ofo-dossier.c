@@ -47,7 +47,7 @@ struct _ofoDossierPrivate {
 	/* internals
 	 */
 	gchar    *name;
-	ofaSgbd  *sgbd;
+	ofoSgbd  *sgbd;
 	gchar    *userid;
 
 	GList    *accounts;					/* chart of accounts */
@@ -87,8 +87,8 @@ typedef struct {
 }
 	sFindTaux;
 
-static gint     dbmodel_get_version( ofaSgbd *sgbd );
-static gboolean dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account );
+static gint     dbmodel_get_version( ofoSgbd *sgbd );
+static gboolean dbmodel_to_v1( ofoSgbd *sgbd, GtkWindow *parent, const gchar *account );
 static void     accounts_chart_free( GList *chart );
 static gint     accounts_cmp( const ofoAccount *a, const ofoAccount *b );
 static gint     accounts_find( const ofoAccount *a, const gchar *searched_number );
@@ -214,7 +214,7 @@ ofo_dossier_new( const gchar *name )
 }
 
 static gboolean
-check_user_exists( ofaSgbd *sgbd, const gchar *account )
+check_user_exists( ofoSgbd *sgbd, const gchar *account )
 {
 	gchar *query;
 	GSList *res;
@@ -222,13 +222,13 @@ check_user_exists( ofaSgbd *sgbd, const gchar *account )
 
 	exists = FALSE;
 	query = g_strdup_printf( "SELECT ROL_USER FROM OFA_T_ROLES WHERE ROL_USER='%s'", account );
-	res = ofa_sgbd_query_ex( sgbd, NULL, query );
+	res = ofo_sgbd_query_ex( sgbd, NULL, query );
 	if( res ){
 		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
 		if( !g_utf8_collate( account, s )){
 			exists = TRUE;
 		}
-		ofa_sgbd_free_result( res );
+		ofo_sgbd_free_result( res );
 	}
 	g_free( query );
 
@@ -265,7 +265,7 @@ ofo_dossier_open( ofoDossier *dossier,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofo_dossier_open";
-	ofaSgbd *sgbd;
+	ofoSgbd *sgbd;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
@@ -273,9 +273,9 @@ ofo_dossier_open( ofoDossier *dossier,
 			thisfn,
 			( void * ) dossier, host, port, socket, dbname, account, password );
 
-	sgbd = ofa_sgbd_new( SGBD_PROVIDER_MYSQL );
+	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
 
-	if( !ofa_sgbd_connect( sgbd,
+	if( !ofo_sgbd_connect( sgbd,
 			host,
 			port,
 			socket,
@@ -311,7 +311,7 @@ ofo_dossier_open( ofoDossier *dossier,
  * Update the DB model in the SGBD
  */
 gboolean
-ofo_dossier_dbmodel_update( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
+ofo_dossier_dbmodel_update( ofoSgbd *sgbd, GtkWindow *parent, const gchar *account )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_update";
 	gint cur_version;
@@ -336,19 +336,19 @@ ofo_dossier_dbmodel_update( ofaSgbd *sgbd, GtkWindow *parent, const gchar *accou
  * i.e. une version where the version date is set
  */
 static gint
-dbmodel_get_version( ofaSgbd *sgbd )
+dbmodel_get_version( ofoSgbd *sgbd )
 {
 	GSList *res;
 	gint vmax = 0;
 
-	res = ofa_sgbd_query_ex( sgbd, NULL,
+	res = ofo_sgbd_query_ex( sgbd, NULL,
 			"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0" );
 	if( res ){
 		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
 		if( s ){
 			vmax = atoi( s );
 		}
-		ofa_sgbd_free_result( res );
+		ofo_sgbd_free_result( res );
 	}
 
 	return( vmax );
@@ -358,7 +358,7 @@ dbmodel_get_version( ofaSgbd *sgbd )
  * ofo_dossier_dbmodel_to_v1:
  */
 static gboolean
-dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
+dbmodel_to_v1( ofoSgbd *sgbd, GtkWindow *parent, const gchar *account )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v1";
 	gchar *query;
@@ -367,20 +367,20 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 			thisfn, ( void * ) sgbd, ( void * ) parent, account );
 
 	/* default value for timestamp cannot be null */
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
 				"VER_NUMBER INTEGER   NOT NULL UNIQUE COMMENT 'DB model version number',"
 				"VER_DATE   TIMESTAMP DEFAULT 0       COMMENT 'Version application timestamp')" )){
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_VERSION "
 			"	(VER_NUMBER, VER_DATE) VALUES (1, 0)" )){
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ROLES ("
 				"ROL_USER     VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'User account',"
 				"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role')")){
@@ -390,13 +390,13 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_ROLES "
 			"	(ROL_USER, ROL_IS_ADMIN) VALUES ('%s',1)", account );
-	if( !ofa_sgbd_query( sgbd, parent, query )){
+	if( !ofo_sgbd_query( sgbd, parent, query )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID           INTEGER      NOT NULL UNIQUE COMMENT 'Row identifier',"
 			"	DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
@@ -411,13 +411,13 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	query = g_strdup(
 			"INSERT IGNORE INTO OFA_T_DOSSIER (DOS_ID) VALUE (1)" );
-	if( !ofa_sgbd_query( sgbd, parent, query )){
+	if( !ofo_sgbd_query( sgbd, parent, query )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_EXE ("
 			"	DOS_ID           INTEGER      NOT NULL        COMMENT 'Row identifier',"
 			"	DOS_EXE_DEB      DATE         NOT NULL DEFAULT 0 COMMENT 'Date de début d\\'exercice',"
@@ -431,13 +431,13 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 
 	query = g_strdup(
 			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE (DOS_ID,DOS_EXE_STATUS) VALUE (1,1)" );
-	if( !ofa_sgbd_query( sgbd, parent, query )){
+	if( !ofo_sgbd_query( sgbd, parent, query )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
 			"	DEV_ID INTEGER NOT NULL AUTO_INCREMENT UNIQUE COMMENT 'Internal identifier of the currency',"
 			"	DEV_CODE    VARCHAR(3) BINARY NOT NULL UNIQUE COMMENT 'ISO-3A identifier of the currency',"
@@ -451,13 +451,13 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 			"INSERT IGNORE INTO OFA_T_DEVISES "
 			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES "
 			"	('EUR','Euro','€')" );
-	if( !ofa_sgbd_query( sgbd, parent, query )){
+	if( !ofo_sgbd_query( sgbd, parent, query )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
 				"CPT_NUMBER       VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
 				"CPT_LABEL        VARCHAR(80)   NOT NULL        COMMENT 'Account label',"
@@ -482,7 +482,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ECRITURES ("
 			"	ECR_EFFET     DATE NOT NULL               COMMENT 'Imputation effect date',"
 			"	ECR_NUMBER    INTEGER NOT NULL            COMMENT 'Entry number',"
@@ -503,7 +503,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX ("
 			"	JOU_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern journal identifier',"
 			"	JOU_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Journal mnemonic',"
@@ -517,37 +517,37 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
 			"	VALUES ('ACH','Taux des achats','Default')" )){
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
 			"	VALUES ('VEN','Taux des ventes','Default')" )){
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
 			"	VALUES ('EXP','Taux de l\\'exploitant','Default')" )){
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
 			"	VALUES ('OD','Taux des opérations diverses','Default')" )){
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
 			"	VALUES ('BQ','Taux de banque','Default')" )){
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES ("
 			"	MOD_ID        INTEGER NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'Internal model identifier',"
 			"	MOD_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Model mnemonic',"
@@ -561,7 +561,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES_DET ("
 			"	MOD_ID              INTEGER NOT NULL        COMMENT 'Internal model identifier',"
 			"	MOD_DET_RANG        INTEGER NOT NULL        COMMENT 'Entry number',"
@@ -579,7 +579,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX ("
 			"	TAX_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern taux identifier',"
 			"	TAX_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Taux mnemonic',"
@@ -597,7 +597,7 @@ dbmodel_to_v1( ofaSgbd *sgbd, GtkWindow *parent, const gchar *account )
 	/* we do this only at the end of the model creation
 	 * as a mark that all has been successfully done
 	 */
-	if( !ofa_sgbd_query( sgbd, parent,
+	if( !ofo_sgbd_query( sgbd, parent,
 			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=1" )){
 		return( FALSE );
 	}
@@ -987,13 +987,13 @@ entry_get_next_number( ofoDossier *dossier )
 			"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
 					THIS_DOS_ID, DOS_STATUS_OPENED );
 
-	result = ofa_sgbd_query_ex( dossier->priv->sgbd, NULL, query );
+	result = ofo_sgbd_query_ex( dossier->priv->sgbd, NULL, query );
 	g_free( query );
 
 	if( result ){
 		icol = ( GSList * ) result->data;
 		next_number = atoi(( gchar * ) icol->data );
-		ofa_sgbd_free_result( result );
+		ofo_sgbd_free_result( result );
 
 		next_number += 1;
 		query = g_strdup_printf(
@@ -1002,7 +1002,7 @@ entry_get_next_number( ofoDossier *dossier )
 				"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
 						next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
 
-		ofa_sgbd_query( dossier->priv->sgbd, NULL, query );
+		ofo_sgbd_query( dossier->priv->sgbd, NULL, query );
 		g_free( query );
 	}
 

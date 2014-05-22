@@ -149,18 +149,18 @@ ofo_journal_new( void )
  * Loads/reloads the ordered list of journals
  */
 GList *
-ofo_journal_load_set( ofaSgbd *sgbd )
+ofo_journal_load_set( ofoSgbd *sgbd )
 {
 	static const gchar *thisfn = "ofo_journal_load_set";
 	GSList *result, *irow, *icol;
 	ofoJournal *journal;
 	GList *set;
 
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), NULL );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), NULL );
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofa_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd, NULL,
 			"SELECT JOU_ID,JOU_MNEMO,JOU_LABEL,JOU_NOTES,"
 			"	JOU_MAJ_USER,JOU_MAJ_STAMP,"
 			"	JOU_MAXDATE,JOU_CLO"
@@ -191,7 +191,7 @@ ofo_journal_load_set( ofaSgbd *sgbd )
 		set = g_list_prepend( set, journal );
 	}
 
-	ofa_sgbd_free_result( result );
+	ofo_sgbd_free_result( result );
 
 	return( g_list_reverse( set ));
 }
@@ -438,7 +438,7 @@ ofo_journal_set_cloture( ofoJournal *journal, const GDate *date )
  * ofo_journal_insert:
  */
 gboolean
-ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
+ofo_journal_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -447,7 +447,7 @@ ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 	GSList *result, *icol;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_journal_get_label( journal ));
@@ -471,7 +471,7 @@ ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"'%s','%s')", user, stamp );
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_journal_set_maj_user( journal, user );
 		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str( stamp ));
@@ -481,13 +481,13 @@ ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 				"	WHERE JOU_MNEMO='%s'",
 				ofo_journal_get_mnemo( journal ));
 
-		result = ofa_sgbd_query_ex( sgbd, NULL, query->str );
+		result = ofo_sgbd_query_ex( sgbd, NULL, query->str );
 
 		if( result ){
 			icol = ( GSList * ) result->data;
 			ofo_journal_set_id( journal, atoi(( gchar * ) icol->data ));
 
-			ofa_sgbd_free_result( result );
+			ofo_sgbd_free_result( result );
 
 			ok = TRUE;
 		}
@@ -505,7 +505,7 @@ ofo_journal_insert( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
  * ofo_journal_update:
  */
 gboolean
-ofo_journal_update( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
+ofo_journal_update( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -513,7 +513,7 @@ ofo_journal_update( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 	gchar *stamp;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_journal_get_label( journal ));
@@ -535,7 +535,7 @@ ofo_journal_update( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
 			"	JOU_MAJ_USER='%s',JOU_MAJ_STAMP='%s'"
 			"	WHERE JOU_ID=%d", user, stamp, ofo_journal_get_id( journal ));
 
-	if( ofa_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, NULL, query->str )){
 
 		ofo_journal_set_maj_user( journal, user );
 		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str( stamp ));
@@ -553,19 +553,19 @@ ofo_journal_update( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
  * ofo_journal_delete:
  */
 gboolean
-ofo_journal_delete( ofoJournal *journal, ofaSgbd *sgbd, const gchar *user )
+ofo_journal_delete( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 {
 	gchar *query;
 	gboolean ok;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
-	g_return_val_if_fail( OFA_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_JOURNAUX WHERE JOU_ID=%d",
 					ofo_journal_get_id( journal ));
 
-	ok = ofa_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, NULL, query );
 
 	g_free( query );
 
