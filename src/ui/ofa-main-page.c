@@ -66,7 +66,14 @@ enum {
 	PROP_N_PROPERTIES
 };
 
-static GObjectClass *st_parent_class = NULL;
+/* signals defined
+ */
+enum {
+	JOURNAL_CHANGED = 0,
+	LAST_SIGNAL
+};
+static GObjectClass *st_parent_class           = NULL;
+static gint          st_signals[ LAST_SIGNAL ] = { 0 };
 
 static GType register_type( void );
 static void  class_init( ofaMainPageClass *klass );
@@ -77,6 +84,7 @@ static void  instance_set_property( GObject *object, guint property_id, const GV
 static void  instance_dispose( GObject *instance );
 static void  instance_finalize( GObject *instance );
 static void  on_grid_finalized( ofaMainPage *self, GObject *grid );
+static void  on_journal_changed_class_handler( ofaMainPage *page, ofaMainPageUpdateType type, ofoBase *journal );
 static void  main_page_free_dataset( const ofaMainPage *page );
 
 GType
@@ -163,6 +171,31 @@ class_init( ofaMainPageClass *klass )
 					INT_MAX,
 					-1,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	/**
+	 * main-page-signal-journal-updated:
+	 *
+	 * The signal is emitted when an #ofoJournal is created, updated or
+	 * deleted.
+	 *
+	 * The class handler calls the class initialize_gtk_toplevel() virtual
+	 * method.
+	 *
+	 * The default virtual method just does nothing.
+	 */
+	st_signals[ JOURNAL_CHANGED ] =
+			g_signal_new_class_handler(
+					MAIN_PAGE_SIGNAL_JOURNAL_UPDATED,
+					G_TYPE_FROM_CLASS( klass ),
+					G_SIGNAL_RUN_LAST,
+					G_CALLBACK( on_journal_changed_class_handler ),
+					NULL,
+					NULL,
+					g_cclosure_marshal_VOID__UINT_POINTER,
+					G_TYPE_NONE,
+					2,
+					G_TYPE_UINT,
+					G_TYPE_POINTER );
 
 	klass->private = g_new0( ofaMainPageClassPrivate, 1 );
 }
@@ -354,6 +387,27 @@ on_grid_finalized( ofaMainPage *self, GObject *grid )
 			( void * ) grid );
 
 	g_object_unref( self );
+}
+
+/*
+ * default class handler for MAIN_PAGE_SIGNAL_JOURNAL_UPDATED signal
+ */
+static void
+on_journal_changed_class_handler( ofaMainPage *page, ofaMainPageUpdateType type, ofoBase *journal )
+{
+	static const gchar *thisfn = "ofa_main_page_on_journal_changed_class_handler";
+
+	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+	g_return_if_fail( journal && OFO_IS_BASE( journal ));
+
+	if( !page->private->dispose_has_run ){
+
+		g_debug( "%s: page=%p (%s), type=%d, journal=%p (%s)",
+				thisfn,
+				( void * ) page, G_OBJECT_TYPE_NAME( page ),
+				type,
+				( void * ) journal, G_OBJECT_TYPE_NAME( journal ));
+	}
 }
 
 /**

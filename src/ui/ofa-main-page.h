@@ -68,12 +68,28 @@ typedef struct {
 }
 	ofaMainPageClass;
 
-/* properties set against this base class at instanciation time
+/**
+ * Properties set against this base class at instanciation time
  */
 #define MAIN_PAGE_PROP_WINDOW   "main-page-prop-window"
 #define MAIN_PAGE_PROP_DOSSIER  "main-page-prop-dossier"
 #define MAIN_PAGE_PROP_GRID     "main-page-prop-grid"
 #define MAIN_PAGE_PROP_THEME    "main-page-prop-theme"
+
+/**
+ * Whether an object has been created, updated or deleted
+ */
+typedef enum {
+	MAIN_PAGE_OBJECT_CREATED = 1,
+	MAIN_PAGE_OBJECT_UPDATED,
+	MAIN_PAGE_OBJECT_DELETED
+}
+	ofaMainPageUpdateType;
+
+/**
+ * Signals defined on this base class
+ */
+#define MAIN_PAGE_SIGNAL_JOURNAL_UPDATED    "main-page-signal-journal-updated"
 
 GType          ofa_main_page_get_type       ( void );
 

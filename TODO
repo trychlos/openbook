@@ -154,9 +154,6 @@
   75 2014- 5-21 Optimize AccountNotebook to not recreate it each time
                 it is called
 
-  76 2014- 5-21 Open AccountNotebook on a specified account, or as close
-                as it is possible when only giving first digit(s)
-
   77 2014- 5-21 Guided Input: default effect date is operation date
                 or first davailable date
 
@@ -190,7 +187,9 @@
   91 2014- 5-22 the name of the class names in the accounts chart
                 should be configured in a table
 
-  92
+  92 2014- 5-22 are we allowed to delete a journal ?
+                - if it contains some entries ?
+                - if entry models are defined on it ?
 
   93
 
@@ -315,6 +314,10 @@
   73 2014- 5-20 GuidedInput: use TAB to navigate between fields of the
                 entries tree view
      2014- 5-21 done by using GtkGrid + GtkEntry instead of a treeview.
+
+  76 2014- 5-21 Open AccountNotebook on a specified account, or as close
+                as it is possible when only giving first digit(s)
+     2014- 5-22 Done svn #3475
 
   81 2014- 5-21 guided input: check_for_entry: also check that total
                 debit+credit balance is not nul

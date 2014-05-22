@@ -452,6 +452,8 @@ on_new_journal( GtkButton *button, ofaJournalsSet *self )
 	journal = ofo_journal_new();
 	if( ofa_journal_properties_run( main_window, journal )){
 		insert_new_row( self, journal );
+		g_signal_emit_by_name( self,
+				MAIN_PAGE_SIGNAL_JOURNAL_UPDATED, MAIN_PAGE_OBJECT_CREATED, journal );
 	}
 }
 
@@ -489,6 +491,9 @@ on_update_journal( GtkButton *button, ofaJournalsSet *self )
 			} else {
 				store_set_journal( model, &iter, journal );
 			}
+
+			g_signal_emit_by_name( self,
+					MAIN_PAGE_SIGNAL_JOURNAL_UPDATED, MAIN_PAGE_OBJECT_UPDATED, journal );
 		}
 
 		g_free( prev_mnemo );
@@ -534,6 +539,9 @@ on_delete_journal( GtkButton *button, ofaJournalsSet *self )
 			/* update our set of journals */
 			ofa_main_page_set_dataset(
 					OFA_MAIN_PAGE( self ), ofo_dossier_get_journals_set( dossier ));
+
+			g_signal_emit_by_name( self,
+					MAIN_PAGE_SIGNAL_JOURNAL_UPDATED, MAIN_PAGE_OBJECT_DELETED, journal );
 
 			/* remove the row from the model
 			 * this will cause an automatic new selection */
