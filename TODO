@@ -111,9 +111,6 @@
                 because the on_selection_changed may not be triggered,
                 e.g. if the list is empty
 
-  54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments,
-                re-enabling error messages.
-
   55 2014- 5-18 ofo_dossier_insert: use ofoBase virtual function.
 
   56 2014- 5-19 have an entry for date
@@ -288,6 +285,10 @@
                 collaboration of ofoAccount typically for the list of
                 fields 
      2014- 5-14 Done
+
+  54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments,
+                re-enabling error messages.
+     2014- 5-22 done svn #3472
 
   72 2014- 5-20 check that ofaJournalCombo object is disposed
      2014- 5-20 done svn commit #3463

@@ -1064,7 +1064,7 @@ create_db_model( ofaDossierNew *self )
 		goto free_sgbd;
 	}
 
-	if( !ofo_dossier_dbmodel_update( sgbd, GTK_WINDOW( self->private->assistant ), self->private->p3_account )){
+	if( !ofo_dossier_dbmodel_update( sgbd, self->private->p3_account )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_sgbd;
 	}

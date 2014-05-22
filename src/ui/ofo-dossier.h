@@ -39,8 +39,6 @@
  * demand, et releases it on instance dispose.
  */
 
-#include <gtk/gtk.h>
-
 #include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-entry.h"
@@ -139,7 +137,7 @@ gboolean      ofo_dossier_insert_taux       ( ofoDossier *dossier, ofoTaux *taux
 gboolean      ofo_dossier_update_taux       ( ofoDossier *dossier, ofoTaux *taux );
 gboolean      ofo_dossier_delete_taux       ( ofoDossier *dossier, ofoTaux *taux );
 
-gboolean      ofo_dossier_dbmodel_update    ( ofoSgbd *sgbd, GtkWindow *parent, const gchar *account );
+gboolean      ofo_dossier_dbmodel_update    ( ofoSgbd *sgbd, const gchar *account );
 
 G_END_DECLS
 

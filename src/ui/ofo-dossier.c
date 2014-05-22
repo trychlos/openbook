@@ -88,7 +88,7 @@ typedef struct {
 	sFindTaux;
 
 static gint     dbmodel_get_version( ofoSgbd *sgbd );
-static gboolean dbmodel_to_v1( ofoSgbd *sgbd, GtkWindow *parent, const gchar *account );
+static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static void     accounts_chart_free( GList *chart );
 static gint     accounts_cmp( const ofoAccount *a, const ofoAccount *b );
 static gint     accounts_find( const ofoAccount *a, const gchar *searched_number );
@@ -293,7 +293,7 @@ ofo_dossier_open( ofoDossier *dossier,
 		return( FALSE );
 	}
 
-	ofo_dossier_dbmodel_update( sgbd, NULL, account );
+	ofo_dossier_dbmodel_update( sgbd, account );
 
 	dossier->priv->sgbd = sgbd;
 	dossier->priv->userid = g_strdup( account );
@@ -311,20 +311,19 @@ ofo_dossier_open( ofoDossier *dossier,
  * Update the DB model in the SGBD
  */
 gboolean
-ofo_dossier_dbmodel_update( ofoSgbd *sgbd, GtkWindow *parent, const gchar *account )
+ofo_dossier_dbmodel_update( ofoSgbd *sgbd, const gchar *account )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_update";
 	gint cur_version;
 
-	g_debug( "%s: sgbd=%p, parent=%p, account=%s",
-			thisfn, ( void * ) sgbd, ( void * ) parent, account );
+	g_debug( "%s: sgbd=%p, account=%s", thisfn, ( void * ) sgbd, account );
 
 	cur_version = dbmodel_get_version( sgbd );
 	g_debug( "%s: cur_version=%d, THIS_DBMODEL_VERSION=%d", thisfn, cur_version, THIS_DBMODEL_VERSION );
 
 	if( cur_version < THIS_DBMODEL_VERSION ){
 		if( cur_version < 1 ){
-			dbmodel_to_v1( sgbd, parent, account );
+			dbmodel_to_v1( sgbd, account );
 		}
 	}
 
@@ -358,13 +357,12 @@ dbmodel_get_version( ofoSgbd *sgbd )
  * ofo_dossier_dbmodel_to_v1:
  */
 static gboolean
-dbmodel_to_v1( ofoSgbd *sgbd, GtkWindow *parent, const gchar *account )
+dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v1";
 	gchar *query;
 
-	g_debug( "%s: sgbd=%p, parent=%p, account=%s",
-			thisfn, ( void * ) sgbd, ( void * ) parent, account );
+	g_debug( "%s: sgbd=%p, account=%s", thisfn, ( void * ) sgbd, account );
 
 	/* default value for timestamp cannot be null */
 	if( !ofo_sgbd_query( sgbd,

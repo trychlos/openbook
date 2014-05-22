@@ -36,6 +36,8 @@
  * inside of a notebook, with one class per page.
  */
 
+#include <gtk/gtk.h>
+
 #include "ui/ofo-account.h"
 #include "ui/ofo-dossier.h"
 
