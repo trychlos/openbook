@@ -50,7 +50,6 @@ struct _ofoDossierPrivate {
 	ofoSgbd  *sgbd;
 	gchar    *userid;
 
-	GList    *models;					/* entry models */
 	GList    *taux;						/* taux */
 
 	/* row id 0
@@ -87,9 +86,6 @@ typedef struct {
 static gint     dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static gint     entry_get_next_number( ofoDossier *dossier );
-static void     models_set_free( GList *set );
-static gint     models_cmp( const ofoModel *a, const ofoModel *b );
-static gint     models_find( const ofoModel *a, const gchar *searched_mnemo );
 static void     taux_set_free( GList *set );
 static gint     taux_cmp( const ofoTaux *a, const ofoTaux *b );
 static gint     taux_check( const ofoTaux *a, sCheckTaux *check );
@@ -109,10 +105,6 @@ ofo_dossier_finalize( GObject *instance )
 	g_free( self->priv->name );
 	g_free( self->priv->userid );
 
-	if( self->priv->models ){
-		models_set_free( self->priv->models );
-		self->priv->models = NULL;
-	}
 	if( self->priv->taux ){
 		taux_set_free( self->priv->taux );
 		self->priv->taux = NULL;
@@ -143,6 +135,7 @@ ofo_dossier_dispose( GObject *instance )
 		ofo_account_clear_static();
 		ofo_devise_clear_static();
 		ofo_journal_clear_static();
+		ofo_model_clear_static();
 
 		if( self->priv->sgbd ){
 			g_clear_object( &self->priv->sgbd );
@@ -734,169 +727,6 @@ entry_get_next_number( ofoDossier *dossier )
 	}
 
 	return( next_number );
-}
-
-/**
- * ofo_dossier_get_model:
- *
- * Returns: the searched model.
- */
-ofoModel *
-ofo_dossier_get_model( ofoDossier *dossier, const gchar *mnemo )
-{
-	static const gchar *thisfn = "ofo_dossier_get_model";
-	ofoModel *model;
-	GList *set, *found;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
-
-	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
-
-	model = NULL;
-
-	if( !dossier->priv->dispose_has_run ){
-
-		set = ofo_dossier_get_models_set( dossier );
-		found = g_list_find_custom( set, mnemo, ( GCompareFunc ) models_find );
-		if( found ){
-			model = OFO_MODEL( found->data );
-		}
-	}
-
-	return( model );
-}
-
-/**
- * ofo_dossier_get_models_set:
- *
- * Returns: a copy of the list (not the data) of models.
- * This returned list should be g_list_free() by the caller.
- */
-GList *
-ofo_dossier_get_models_set( ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_dossier_get_models_set";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	if( !dossier->priv->dispose_has_run ){
-
-		if( !dossier->priv->models ){
-
-			dossier->priv->models = ofo_model_load_set( dossier->priv->sgbd );
-		}
-	}
-
-	return( dossier->priv->models );
-}
-
-/**
- * ofo_dossier_insert_model:
- *
- * we deal here with an update of publicly modifiable model properties
- * so it is not needed to check the date of closing
- */
-gboolean
-ofo_dossier_insert_model( ofoDossier *dossier, ofoModel *model )
-{
-	GList *set;
-	gboolean ok;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_model_insert( model, dossier->priv->sgbd, dossier->priv->userid )){
-
-		set = g_list_insert_sorted( dossier->priv->models, model, ( GCompareFunc ) models_cmp );
-		dossier->priv->models = set;
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_update_model:
- *
- * we deal here with an update of publicly modifiable model properties
- * so it is not needed to check debit or credit agregats
- */
-gboolean
-ofo_dossier_update_model( ofoDossier *dossier, ofoModel *model, const gchar *prev_mnemo )
-{
-	gboolean ok;
-	const gchar *new_mnemo;
-	GList *set;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_model_update( model, dossier->priv->sgbd, dossier->priv->userid, prev_mnemo )){
-
-		new_mnemo = ofo_model_get_mnemo( model );
-
-		if( g_utf8_collate( new_mnemo, prev_mnemo )){
-			set = g_list_remove( dossier->priv->models, model );
-			set = g_list_insert_sorted( set, model, ( GCompareFunc ) models_cmp );
-			dossier->priv->models = set;
-		}
-
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_delete_model:
- */
-gboolean
-ofo_dossier_delete_model( ofoDossier *dossier, ofoModel *model )
-{
-	gboolean ok;
-	GList *set;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-
-	ok = FALSE;
-
-	if( ofo_model_delete( model, dossier->priv->sgbd, dossier->priv->userid )){
-
-		set = g_list_remove( dossier->priv->models, model );
-		dossier->priv->models = set;
-		g_object_unref( model );
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-static void
-models_set_free( GList *set )
-{
-	g_list_foreach( set, ( GFunc ) g_object_unref, NULL );
-	g_list_free( set );
-}
-
-static gint
-models_cmp( const ofoModel *a, const ofoModel *b )
-{
-	return( g_utf8_collate( ofo_model_get_mnemo( a ), ofo_model_get_mnemo( b )));
-}
-
-static gint
-models_find( const ofoModel *a, const gchar *searched_mnemo )
-{
-	return( g_utf8_collate( ofo_model_get_mnemo( a ), searched_mnemo ));
 }
 
 /**

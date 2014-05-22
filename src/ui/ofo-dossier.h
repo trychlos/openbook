@@ -85,15 +85,10 @@ gboolean      ofo_dossier_entry_insert      ( ofoDossier *dossier,
 												gint dev_id, gint jou_id,
 												gdouble amount, ofaEntrySens sens );
 
-ofoModel     *ofo_dossier_get_model         ( ofoDossier *dossier, const gchar *mnemo );
-GList        *ofo_dossier_get_models_set    ( ofoDossier *dossier );
-gboolean      ofo_dossier_insert_model      ( ofoDossier *dossier, ofoModel *model );
-gboolean      ofo_dossier_update_model      ( ofoDossier *dossier, ofoModel *model, const gchar *prev_mnemo );
-gboolean      ofo_dossier_delete_model      ( ofoDossier *dossier, ofoModel *model );
-
 ofoTaux      *ofo_dossier_check_for_taux    ( ofoDossier *dossier,
 												gint id, const gchar *mnemo,
 												const GDate *begin, const GDate *end );
+
 /* this is a the standard method which one use to get a taux for a date */
 ofoTaux      *ofo_dossier_get_taux          ( ofoDossier *dossier, const gchar *mnemo, const GDate *date );
 GList        *ofo_dossier_get_taux_set      ( ofoDossier *dossier );

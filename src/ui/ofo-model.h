@@ -35,8 +35,7 @@
  * This class implements the Model behavior
  */
 
-#include "ui/ofo-base.h"
-#include "ui/ofo-sgbd.h"
+#include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -62,12 +61,13 @@ typedef struct {
 }
 	ofoModel;
 
-GType        ofo_model_get_type     ( void ) G_GNUC_CONST;
+GType        ofo_model_get_type          ( void ) G_GNUC_CONST;
 
-ofoModel    *ofo_model_new          ( void );
+GList       *ofo_model_get_dataset       ( ofoDossier *dossier );
+ofoModel    *ofo_model_get_by_mnemo      ( ofoDossier *dossier, const gchar *mnemo );
+void         ofo_model_clear_static      ( void );
 
-GList       *ofo_model_load_set     ( ofoSgbd *sgbd );
-void         ofo_model_dump_set     ( GList *chart );
+ofoModel    *ofo_model_new               ( void );
 
 gint         ofo_model_get_id            ( const ofoModel *model );
 const gchar *ofo_model_get_mnemo         ( const ofoModel *model );
@@ -75,6 +75,8 @@ const gchar *ofo_model_get_label         ( const ofoModel *model );
 gint         ofo_model_get_journal       ( const ofoModel *model );
 gboolean     ofo_model_get_journal_locked( const ofoModel *model );
 const gchar *ofo_model_get_notes         ( const ofoModel *model );
+
+gboolean     ofo_model_is_deletable      ( const ofoModel *model );
 
 void         ofo_model_set_id            ( ofoModel *model, gint id );
 void         ofo_model_set_mnemo         ( ofoModel *model, const gchar *mnemo );
@@ -105,9 +107,9 @@ void         ofo_model_set_detail   ( const ofoModel *model, gint idx,
 										const gchar *debit, gboolean debit_locked,
 										const gchar *credit, gboolean credit_locked );
 
-gboolean     ofo_model_insert       ( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
-gboolean     ofo_model_update       ( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
-gboolean     ofo_model_delete       ( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
+gboolean     ofo_model_insert       ( ofoModel *model, ofoDossier *dossier );
+gboolean     ofo_model_update       ( ofoModel *model, ofoDossier *dossier, const gchar *prev_mnemo );
+gboolean     ofo_model_delete       ( ofoModel *model, ofoDossier *dossier );
 
 G_END_DECLS
 

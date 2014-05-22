@@ -323,7 +323,7 @@ setup_models_view( ofaModelsSet *self )
 				-1 );
 	}
 
-	models = ofo_dossier_get_models_set( dossier );
+	models = ofo_model_get_dataset( dossier );
 	ofa_main_page_set_dataset(
 			OFA_MAIN_PAGE( self ), models );
 
@@ -512,13 +512,24 @@ on_model_selected( GtkTreeSelection *selection, ofaModelsSet *self )
 static void
 enable_buttons( ofaModelsSet *self, GtkTreeSelection *selection )
 {
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoModel *model;
 	gboolean select_ok;
 
-	select_ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
 
-	gtk_widget_set_sensitive( GTK_WIDGET( self->private->update_btn ), select_ok );
-	gtk_widget_set_sensitive( GTK_WIDGET( self->private->delete_btn ), select_ok );
-	gtk_widget_set_sensitive( GTK_WIDGET( self->private->guided_input_btn ), select_ok );
+	select_ok = gtk_tree_selection_get_selected( selection, &tmodel, &iter );
+	if( select_ok ){
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
+		g_object_unref( model );
+	}
+
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->update_btn ), select_ok );
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->delete_btn ), model && ofo_model_is_deletable( model ));
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->guided_input_btn ), select_ok );
 }
 
 static void
@@ -611,11 +622,11 @@ on_delete_model( GtkButton *button, ofaModelsSet *self )
 		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
 		if( delete_confirmed( self, model ) &&
-				ofo_dossier_delete_model( dossier, model )){
+				ofo_model_delete( model, dossier )){
 
 			/* update our set of models */
 			ofa_main_page_set_dataset(
-					OFA_MAIN_PAGE( self ), ofo_dossier_get_models_set( dossier ));
+					OFA_MAIN_PAGE( self ), ofo_model_get_dataset( dossier ));
 
 			/* remove the row from the model
 			 * this will cause an automatic new selection */
@@ -659,7 +670,7 @@ insert_new_row( ofaModelsSet *self, ofoModel *ofomodel )
 	/* update our set of models */
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 	ofa_main_page_set_dataset(
-			OFA_MAIN_PAGE( self ), ofo_dossier_get_models_set( dossier ));
+			OFA_MAIN_PAGE( self ), ofo_model_get_dataset( dossier ));
 
 	/* activate the page of the correct class, or create a new one */
 	journal = ofo_model_get_journal( ofomodel );

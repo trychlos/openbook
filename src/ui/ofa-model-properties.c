@@ -835,7 +835,7 @@ do_update( ofaModelProperties *self )
 
 	prev_mnemo = g_strdup( ofo_model_get_mnemo( self->private->model ));
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	existing = ofo_dossier_get_model( dossier, self->private->mnemo );
+	existing = ofo_model_get_by_mnemo( dossier, self->private->mnemo );
 
 	if( existing ){
 		/* c'est un nouveau model, ou bien un model existant dont on
@@ -870,10 +870,10 @@ do_update( ofaModelProperties *self )
 
 	if( !prev_mnemo ){
 		self->private->updated =
-				ofo_dossier_insert_model( dossier, self->private->model );
+				ofo_model_insert( self->private->model, dossier );
 	} else {
 		self->private->updated =
-				ofo_dossier_update_model( dossier, self->private->model, prev_mnemo );
+				ofo_model_update( self->private->model, dossier, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofo-dossier.h"
 #include "ui/ofo-model.h"
 
 /* priv instance data
@@ -78,8 +79,43 @@ G_DEFINE_TYPE( ofoModel, ofo_model, OFO_TYPE_BASE )
 
 #define OFO_MODEL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_MODEL, ofoModelPrivate))
 
-static void   details_list_free( ofoModel *model );
-static void   details_list_free_detail( sModDetail *detail );
+static ofoBaseStatic *st_static = NULL;
+
+static ofoBaseStatic *get_static_data( ofoDossier *dossier );
+static GList         *model_load_dataset( void );
+static ofoModel      *model_find_by_mnemo( GList *set, const gchar *mnemo );
+static gboolean       model_do_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
+static gboolean       model_insert_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
+static gboolean       model_reset_id( ofoModel *model, ofoSgbd *sgbd );
+static gboolean       model_delete_details( ofoModel *model, ofoSgbd *sgbd );
+static gboolean       model_insert_details_ex( ofoModel *model, ofoSgbd *sgbd );
+static gboolean       model_insert_details( ofoModel *model, ofoSgbd *sgbd, gint rang, sModDetail *detail );
+static gboolean       model_do_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
+static gboolean       model_update_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
+static gboolean       model_do_delete( ofoModel *model, ofoSgbd *sgbd );
+static gint           model_cmp_by_mnemo( const ofoModel *a, const gchar *mnemo );
+static gint           model_cmp_by_ptr( const ofoModel *a, const ofoModel *b );
+
+static void
+details_list_free_detail( sModDetail *detail )
+{
+	g_free( detail->comment );
+	g_free( detail->account );
+	g_free( detail->label );
+	g_free( detail->debit );
+	g_free( detail->credit );
+	g_free( detail );
+}
+
+static void
+details_list_free( ofoModel *model )
+{
+	ofoModelPrivate *priv = model->priv;
+	if( priv->details ){
+		g_list_free_full( priv->details, ( GDestroyNotify ) details_list_free_detail );
+		priv->details = NULL;
+	}
+}
 
 static void
 ofo_model_finalize( GObject *instance )
@@ -155,64 +191,54 @@ ofo_model_class_init( ofoModelClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_model_finalize;
 }
 
-static void
-details_list_free( ofoModel *model )
+static ofoBaseStatic *
+get_static_data( ofoDossier *dossier )
 {
-	ofoModelPrivate *priv;
-
-	g_return_if_fail( OFO_IS_MODEL( model ));
-
-	priv = model->priv;
-
-	if( priv->details ){
-		g_list_free_full( priv->details, ( GDestroyNotify ) details_list_free_detail );
-		priv->details = NULL;
+	if( !st_static ){
+		st_static = g_new0( ofoBaseStatic, 1 );
+		st_static->dossier = OFO_BASE( dossier );
 	}
-}
-
-static void
-details_list_free_detail( sModDetail *detail )
-{
-	g_free( detail->comment );
-	g_free( detail->account );
-	g_free( detail->label );
-	g_free( detail->debit );
-	g_free( detail->credit );
-	g_free( detail );
+	return( st_static );
 }
 
 /**
- * ofo_model_new:
- */
-ofoModel *
-ofo_model_new( void )
-{
-	ofoModel *model;
-
-	model = g_object_new( OFO_TYPE_MODEL, NULL );
-
-	return( model );
-}
-
-/**
- * ofo_model_load_set:
+ * ofo_model_get_dataset:
  *
- * Loads/reloads the ordered list of models
+ * Loads the list of models ordered by ascending mnemo.
+ *
+ * The returned list ordered by ascending mnemo.
+ * It is owned by this class and should not be freed by the caller.
  */
 GList *
-ofo_model_load_set( ofoSgbd *sgbd )
+ofo_model_get_dataset( ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_model_load_set";
+	static const gchar *thisfn = "ofo_model_get_dataset";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	st = get_static_data( dossier );
+	if( !st->dataset ){
+		st->dataset = model_load_dataset();
+	}
+
+	return( st->dataset );
+}
+
+static GList *
+model_load_dataset( void )
+{
+	ofoSgbd *sgbd;
 	GSList *result, *irow, *icol;
 	ofoModel *model;
-	GList *set, *im;
+	GList *dataset, *im;
 	gchar *query;
 	sModDetail *detail;
 	GList *details;
 
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), NULL );
-
-	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
+	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_static->dossier ));
 
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT MOD_ID,MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_JOU_VER,MOD_NOTES,"
@@ -220,7 +246,7 @@ ofo_model_load_set( ofoSgbd *sgbd )
 			"	FROM OFA_T_MODELES "
 			"	ORDER BY MOD_MNEMO ASC" );
 
-	set = NULL;
+	dataset = NULL;
 
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
@@ -245,13 +271,12 @@ ofo_model_load_set( ofoSgbd *sgbd )
 		icol = icol->next;
 		ofo_model_set_maj_stamp( model, my_utils_stamp_from_str(( gchar * ) icol->data ));
 
-		g_debug( "%s: mnemo=%s", thisfn, model->priv->mnemo );
-		set = g_list_prepend( set, model );
+		dataset = g_list_prepend( dataset, model );
 	}
 
 	ofo_sgbd_free_result( result );
 
-	for( im=set ; im ; im=im->next ){
+	for( im=dataset ; im ; im=im->next ){
 
 		model = OFO_MODEL( im->data );
 
@@ -296,7 +321,6 @@ ofo_model_load_set( ofoSgbd *sgbd )
 				detail->credit_locked = atoi(( gchar * ) icol->data );
 			}
 
-			g_debug( "%s: detail=%s", thisfn, detail->comment );
 			details = g_list_prepend( details, detail );
 		}
 
@@ -304,23 +328,75 @@ ofo_model_load_set( ofoSgbd *sgbd )
 		model->priv->details = g_list_reverse( details );
 	}
 
-	return( g_list_reverse( set ));
+	return( g_list_reverse( dataset ));
 }
 
 /**
- * ofo_model_dump_set:
+ * ofo_model_get_by_mnemo:
+ *
+ * Returns: the searched model, or %NULL.
+ *
+ * The returned object is owned by the #ofoModel class, and should
+ * not be unreffed by the caller.
+ */
+ofoModel *
+ofo_model_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
+{
+	static const gchar *thisfn = "ofo_model_get_by_mnemo";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+
+	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
+
+	st = get_static_data( dossier );
+	if( !st->dataset ){
+		st->dataset = model_load_dataset();
+	}
+
+	return( model_find_by_mnemo( st->dataset, mnemo ));
+}
+
+static ofoModel *
+model_find_by_mnemo( GList *set, const gchar *mnemo )
+{
+	GList *found;
+
+	found = g_list_find_custom(
+				set, mnemo, ( GCompareFunc ) model_cmp_by_mnemo );
+	if( found ){
+		return( OFO_MODEL( found->data ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_model_clear_static:
  */
 void
-ofo_model_dump_set( GList *set )
+ofo_model_clear_static( void )
 {
-	static const gchar *thisfn = "ofo_model_dump_set";
-	ofoModelPrivate *priv;
-	GList *ic;
-
-	for( ic=set ; ic ; ic=ic->next ){
-		priv = OFO_MODEL( ic->data )->priv;
-		g_debug( "%s: model %s - %s", thisfn, priv->mnemo, priv->label );
+	if( st_static ){
+		g_list_foreach( st_static->dataset, ( GFunc ) g_object_unref, NULL );
+		g_list_free( st_static->dataset );
+		g_free( st_static );
+		st_static = NULL;
 	}
+}
+
+/**
+ * ofo_model_new:
+ */
+ofoModel *
+ofo_model_new( void )
+{
+	ofoModel *model;
+
+	model = g_object_new( OFO_TYPE_MODEL, NULL );
+
+	return( model );
 }
 
 /**
@@ -427,6 +503,22 @@ ofo_model_get_notes( const ofoModel *model )
 	}
 
 	return( notes );
+}
+
+/**
+ * ofo_model_is_deletable:
+ */
+gboolean
+ofo_model_is_deletable( const ofoModel *model )
+{
+	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+
+	if( !model->priv->dispose_has_run ){
+
+		return( TRUE );
+	}
+
+	return( FALSE );
 }
 
 /**
@@ -816,8 +908,170 @@ ofo_model_set_detail( const ofoModel *model, gint idx, const gchar *comment,
 	}
 }
 
+/**
+ * ofo_model_insert:
+ *
+ * we deal here with an update of publicly modifiable model properties
+ * so it is not needed to check the date of closing
+ */
+gboolean
+ofo_model_insert( ofoModel *model, ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_model_insert";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !model->priv->dispose_has_run ){
+
+		g_debug( "%s: model=%p, dossier=%p",
+				thisfn, ( void * ) model, ( void * ) dossier );
+
+		st = get_static_data( dossier );
+		if( !st->dataset ){
+			st->dataset = model_load_dataset();
+		}
+
+		if( model_do_insert(
+					model,
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ))){
+
+			st->dataset = g_list_insert_sorted(
+					st->dataset, model, ( GCompareFunc ) model_cmp_by_ptr );
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
 static gboolean
-ofo_model_insert_details( ofoModel *model, ofoSgbd *sgbd, gint rang, sModDetail *detail )
+model_do_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
+{
+	return( model_insert_main( model, sgbd, user ) &&
+			model_reset_id( model, sgbd ) &&
+			model_delete_details( model, sgbd ) &&
+			model_insert_details_ex( model, sgbd ));
+}
+
+static gboolean
+model_insert_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
+{
+	gboolean ok;
+	GString *query;
+	gchar *label, *notes;
+	gchar *stamp;
+
+	label = my_utils_quote( ofo_model_get_label( model ));
+	notes = my_utils_quote( ofo_model_get_notes( model ));
+	stamp = my_utils_timestamp();
+
+	query = g_string_new( "INSERT INTO OFA_T_MODELES" );
+
+	g_string_append_printf( query,
+			"	(MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_JOU_VER,MOD_NOTES,"
+			"	MOD_MAJ_USER, MOD_MAJ_STAMP) VALUES ('%s','%s',%d,%d,",
+			ofo_model_get_mnemo( model ),
+			label,
+			ofo_model_get_journal( model ),
+			ofo_model_get_journal_locked( model ) ? 1:0 );
+
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "'%s',", notes );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	g_string_append_printf( query,
+			"'%s','%s')", user, stamp );
+
+	ok = ofo_sgbd_query( sgbd, query->str );
+
+	ofo_model_set_maj_user( model, user );
+	ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
+
+	g_string_free( query, TRUE );
+	g_free( notes );
+	g_free( label );
+	g_free( stamp );
+
+	return( ok );
+}
+
+static gboolean
+model_reset_id( ofoModel *model, ofoSgbd *sgbd )
+{
+	gboolean ok;
+	gchar *query;
+	GSList *result, *icol;
+
+	ok = FALSE;
+
+	query = g_strdup_printf(
+				"SELECT MOD_ID FROM OFA_T_MODELES"
+				"	WHERE MOD_MNEMO='%s'",
+				ofo_model_get_mnemo( model ));
+
+	result = ofo_sgbd_query_ex( sgbd, query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		ofo_model_set_id( model, atoi(( gchar * ) icol->data ));
+		ofo_sgbd_free_result( result );
+		ok = TRUE;
+	}
+
+	g_free( query );
+
+	return( ok );
+}
+
+static gboolean
+model_delete_details( ofoModel *model, ofoSgbd *sgbd )
+{
+	gchar *query;
+	gboolean ok;
+
+	query = g_strdup_printf(
+			"DELETE FROM OFA_T_MODELES_DET WHERE MOD_ID=%d",
+			ofo_model_get_id( model ));
+
+	ok = ofo_sgbd_query( sgbd, query );
+
+	g_free( query );
+
+	return( ok );
+}
+
+static gboolean
+model_insert_details_ex( ofoModel *model, ofoSgbd *sgbd )
+{
+	gboolean ok;
+	GList *idet;
+	sModDetail *sdet;
+	gint rang;
+
+	ok = FALSE;
+
+	if( model_delete_details( model, sgbd )){
+		ok = TRUE;
+		for( idet=model->priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
+			sdet = ( sModDetail * ) idet->data;
+			if( !model_insert_details( model, sgbd, rang, sdet )){
+				ok = FALSE;
+				break;
+			}
+		}
+	}
+
+	return( ok );
+}
+
+static gboolean
+model_insert_details( ofoModel *model, ofoSgbd *sgbd, gint rang, sModDetail *detail )
 {
 	GString *query;
 	gboolean ok;
@@ -880,122 +1134,6 @@ ofo_model_insert_details( ofoModel *model, ofoSgbd *sgbd, gint rang, sModDetail 
 	return( ok );
 }
 
-static gboolean
-ofo_model_delete_details( ofoModel *model, ofoSgbd *sgbd )
-{
-	gchar *query;
-	gboolean ok;
-
-	query = g_strdup_printf(
-			"DELETE FROM OFA_T_MODELES_DET WHERE MOD_ID=%d",
-			ofo_model_get_id( model ));
-
-	ok = ofo_sgbd_query( sgbd, query );
-
-	g_free( query );
-
-	return( ok );
-}
-
-static gboolean
-ofo_model_insert_details_ex( ofoModel *model, ofoSgbd *sgbd )
-{
-	gboolean ok;
-	GList *idet;
-	sModDetail *sdet;
-	gint rang;
-
-	ok = FALSE;
-
-	if( ofo_model_delete_details( model, sgbd )){
-
-		ok = TRUE;
-
-		for( idet=model->priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
-
-			sdet = ( sModDetail * ) idet->data;
-			if( !ofo_model_insert_details( model, sgbd, rang, sdet )){
-				ok = FALSE;
-				break;
-			}
-		}
-	}
-
-	return( ok );
-}
-
-/**
- * ofo_model_insert:
- *
- * we deal here with an update of publicly modifiable model properties
- * so it is not needed to check the date of closing
- */
-gboolean
-ofo_model_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
-{
-	GString *query;
-	gchar *label, *notes;
-	gboolean ok;
-	gchar *stamp;
-	GSList *result, *icol;
-
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
-
-	ok = FALSE;
-	label = my_utils_quote( ofo_model_get_label( model ));
-	notes = my_utils_quote( ofo_model_get_notes( model ));
-	stamp = my_utils_timestamp();
-
-	query = g_string_new( "INSERT INTO OFA_T_MODELES" );
-
-	g_string_append_printf( query,
-			"	(MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_JOU_VER,MOD_NOTES,"
-			"	MOD_MAJ_USER, MOD_MAJ_STAMP) VALUES ('%s','%s',%d,%d,",
-			ofo_model_get_mnemo( model ),
-			label,
-			ofo_model_get_journal( model ),
-			ofo_model_get_journal_locked( model ) ? 1:0 );
-
-	if( notes && g_utf8_strlen( notes, -1 )){
-		g_string_append_printf( query, "'%s',", notes );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
-
-	g_string_append_printf( query,
-			"'%s','%s')", user, stamp );
-
-	if( ofo_sgbd_query( sgbd, query->str )){
-
-		ofo_model_set_maj_user( model, user );
-		ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
-
-		g_string_printf( query,
-				"SELECT MOD_ID FROM OFA_T_MODELES"
-				"	WHERE MOD_MNEMO='%s'",
-				ofo_model_get_mnemo( model ));
-
-		result = ofo_sgbd_query_ex( sgbd, query->str );
-
-		if( result ){
-			icol = ( GSList * ) result->data;
-			ofo_model_set_id( model, atoi(( gchar * ) icol->data ));
-
-			ofo_sgbd_free_result( result );
-
-			ok = ofo_model_insert_details_ex( model, sgbd );
-		}
-	}
-
-	g_string_free( query, TRUE );
-	g_free( notes );
-	g_free( label );
-	g_free( stamp );
-
-	return( ok );
-}
-
 /**
  * ofo_model_update:
  *
@@ -1003,19 +1141,59 @@ ofo_model_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
  * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_model_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
+ofo_model_update( ofoModel *model, ofoDossier *dossier, const gchar *prev_mnemo )
 {
+	static const gchar *thisfn = "ofo_model_update";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
+
+	if( !model->priv->dispose_has_run ){
+
+		g_debug( "%s: model=%p, dossier=%p, prev_mnemo=%s",
+				thisfn, ( void * ) model, ( void * ) dossier, prev_mnemo );
+
+		st = get_static_data( dossier );
+		if( !st->dataset ){
+			st->dataset = model_load_dataset();
+		}
+
+		if( model_do_update(
+					model,
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ),
+					prev_mnemo )){
+
+			st->dataset = g_list_remove( st->dataset, model );
+			st->dataset = g_list_insert_sorted(
+					st->dataset, model, ( GCompareFunc ) model_cmp_by_ptr );
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+model_do_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
+{
+	return( model_update_main( model, sgbd, user, prev_mnemo ) &&
+			model_delete_details( model, sgbd ) &&
+			model_insert_details_ex( model, sgbd ));
+}
+
+static gboolean
+model_update_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
+{
+	gboolean ok;
 	GString *query;
 	gchar *label, *notes;
-	gboolean ok;
 	const gchar *new_mnemo;
 	gchar *stamp;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
-	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
-
-	ok = FALSE;
 	label = my_utils_quote( ofo_model_get_label( model ));
 	notes = my_utils_quote( ofo_model_get_notes( model ));
 	new_mnemo = ofo_model_get_mnemo( model );
@@ -1039,18 +1217,15 @@ ofo_model_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar
 
 	g_string_append_printf( query,
 			"	MOD_MAJ_USER='%s',MOD_MAJ_STAMP='%s'"
-			"	WHERE MOD_MNEMO='%s'",
+			"	WHERE MOD_ID=%d",
 					user,
 					stamp,
-					prev_mnemo );
+					ofo_model_get_id( model ));
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	ok = ofo_sgbd_query( sgbd, query->str );
 
-		ofo_model_set_maj_user( model, user );
-		ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
-
-		ok = ofo_model_insert_details_ex( model, sgbd );
-	}
+	ofo_model_set_maj_user( model, user );
+	ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
 
 	g_string_free( query, TRUE );
 	g_free( notes );
@@ -1063,22 +1238,66 @@ ofo_model_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar
  * ofo_model_delete:
  */
 gboolean
-ofo_model_delete( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
+ofo_model_delete( ofoModel *model, ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_model_delete";
+	ofoBaseStatic *st;
+
+	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !model->priv->dispose_has_run ){
+
+		g_debug( "%s: model=%p, dossier=%p",
+				thisfn, ( void * ) model, ( void * ) dossier );
+
+		st = get_static_data( dossier );
+		if( !st->dataset ){
+			st->dataset = model_load_dataset();
+		}
+
+		if( model_do_delete(
+					model,
+					ofo_dossier_get_sgbd( dossier ))){
+
+			st->dataset = g_list_remove( st->dataset, model );
+			g_object_unref( model );
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+model_do_delete( ofoModel *model, ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;
 
-	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
-
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_MODELES"
-			"	WHERE MOD_MNEMO='%s'",
-					ofo_model_get_mnemo( model ));
+			"	WHERE MOD_ID=%d",
+					ofo_model_get_id( model ));
 
 	ok = ofo_sgbd_query( sgbd, query );
 
 	g_free( query );
 
+	ok &= model_delete_details( model, sgbd );
+
 	return( ok );
+}
+
+static gint
+model_cmp_by_mnemo( const ofoModel *a, const gchar *mnemo )
+{
+	return( g_utf8_collate( ofo_model_get_mnemo( a ), mnemo ));
+}
+
+static gint
+model_cmp_by_ptr( const ofoModel *a, const ofoModel *b )
+{
+	return( g_utf8_collate( ofo_model_get_mnemo( a ), ofo_model_get_mnemo( b )));
 }

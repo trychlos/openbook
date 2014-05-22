@@ -193,6 +193,10 @@
                 as a private data of the class
                 -> ofoJournal - done svn #3480
                 -> ofoDevise - done svn #3483
+                -> ofoAccount - done svn #3484
+                -> ofoTaux
+                -> ofoModel
+                -> ofoEntry
 
 -----------------------------------------------------------------------
  DONE

@@ -75,7 +75,6 @@ static void       on_account_selected( const gchar *number, ofaAccountsChart *se
 static void       on_new_account( GtkButton *button, ofaAccountsChart *self );
 static void       on_update_account( GtkButton *button, ofaAccountsChart *self );
 static void       on_delete_account( GtkButton *button, ofaAccountsChart *self );
-static void       error_undeletable( ofaAccountsChart *self, ofoAccount *account );
 static gboolean   delete_confirmed( ofaAccountsChart *self, ofoAccount *account );
 static void       on_view_entries( GtkButton *button, ofaAccountsChart *self );
 
@@ -422,15 +421,7 @@ on_delete_account( GtkButton *button, ofaAccountsChart *self )
 	account = ofa_account_notebook_get_selected( self->private->chart_child );
 	if( account ){
 		g_object_unref( account );
-
-		if( ofo_account_get_deb_mnt( account ) ||
-				ofo_account_get_cre_mnt( account ) ||
-				ofo_account_get_bro_deb_mnt( account ) ||
-				ofo_account_get_bro_cre_mnt( account )) {
-
-			error_undeletable( self, account );
-			return;
-		}
+		g_return_if_fail( ofo_account_is_deletable( account ));
 
 		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
@@ -446,33 +437,6 @@ on_delete_account( GtkButton *button, ofaAccountsChart *self )
 			ofa_account_notebook_remove( self->private->chart_child, ofo_account_get_number( account ));
 		}
 	}
-}
-
-static void
-error_undeletable( ofaAccountsChart *self, ofoAccount *account )
-{
-	GtkMessageDialog *dlg;
-	gchar *msg;
-	ofaMainWindow *main_window;
-
-	msg = g_strdup_printf(
-				_( "We are unable to remove the '%s - %s' account "
-					"as at least one of its amounts is not nul" ),
-				ofo_account_get_number( account ),
-				ofo_account_get_label( account ));
-
-	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
-
-	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				GTK_WINDOW( main_window ),
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", msg ));
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
-	g_free( msg );
 }
 
 static gboolean
