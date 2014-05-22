@@ -155,7 +155,7 @@ ofo_devise_load_set( ofoSgbd *sgbd )
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofo_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT DEV_ID,DEV_CODE,DEV_LABEL,DEV_SYMBOL "
 			"	FROM OFA_T_DEVISES "
 			"	ORDER BY DEV_CODE ASC" );
@@ -352,14 +352,14 @@ ofo_devise_insert( ofoDevise *devise, ofoSgbd *sgbd )
 
 	query = g_string_append( query, ")" );
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		g_string_printf( query,
 				"SELECT DEV_ID FROM OFA_T_DEVISES"
 				"	WHERE DEV_CODE='%s'",
 				ofo_devise_get_code( devise ));
 
-		result = ofo_sgbd_query_ex( sgbd, NULL, query->str );
+		result = ofo_sgbd_query_ex( sgbd, query->str );
 
 		if( result ){
 			icol = ( GSList * ) result->data;
@@ -411,7 +411,7 @@ ofo_devise_update( ofoDevise *devise, ofoSgbd *sgbd )
 	g_string_append_printf( query,
 			"	WHERE DEV_CODE='%s'", ofo_devise_get_code( devise ));
 
-	ok = ofo_sgbd_query( sgbd, NULL, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str );
 
 	g_string_free( query, TRUE );
 	g_free( label );
@@ -436,7 +436,7 @@ ofo_devise_delete( ofoDevise *devise, ofoSgbd *sgbd )
 			"	WHERE DEV_CODE='%s'",
 					ofo_devise_get_code( devise ));
 
-	ok = ofo_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, query );
 
 	g_free( query );
 

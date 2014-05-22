@@ -214,7 +214,7 @@ ofo_model_load_set( ofoSgbd *sgbd )
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofo_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT MOD_ID,MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_JOU_VER,MOD_NOTES,"
 			"	MOD_MAJ_USER,MOD_MAJ_STAMP "
 			"	FROM OFA_T_MODELES "
@@ -264,7 +264,7 @@ ofo_model_load_set( ofoSgbd *sgbd )
 				"	FROM OFA_T_MODELES_DET "
 				"	WHERE MOD_ID=%d ORDER BY MOD_DET_RANG ASC", ofo_model_get_id( model ));
 
-		result = ofo_sgbd_query_ex( sgbd, NULL, query );
+		result = ofo_sgbd_query_ex( sgbd, query );
 		details = NULL;
 
 		for( irow=result ; irow ; irow=irow->next ){
@@ -873,7 +873,7 @@ ofo_model_insert_details( ofoModel *model, ofoSgbd *sgbd, gint rang, sModDetail 
 
 	query = g_string_append( query, ")" );
 
-	ok = ofo_sgbd_query( sgbd, NULL, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str );
 
 	g_string_free( query, TRUE );
 
@@ -890,7 +890,7 @@ ofo_model_delete_details( ofoModel *model, ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_MODELES_DET WHERE MOD_ID=%d",
 			ofo_model_get_id( model ));
 
-	ok = ofo_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, query );
 
 	g_free( query );
 
@@ -966,7 +966,7 @@ ofo_model_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"'%s','%s')", user, stamp );
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_model_set_maj_user( model, user );
 		ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
@@ -976,7 +976,7 @@ ofo_model_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
 				"	WHERE MOD_MNEMO='%s'",
 				ofo_model_get_mnemo( model ));
 
-		result = ofo_sgbd_query_ex( sgbd, NULL, query->str );
+		result = ofo_sgbd_query_ex( sgbd, query->str );
 
 		if( result ){
 			icol = ( GSList * ) result->data;
@@ -1044,7 +1044,7 @@ ofo_model_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar
 					stamp,
 					prev_mnemo );
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_model_set_maj_user( model, user );
 		ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
@@ -1076,7 +1076,7 @@ ofo_model_delete( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
 			"	WHERE MOD_MNEMO='%s'",
 					ofo_model_get_mnemo( model ));
 
-	ok = ofo_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, query );
 
 	g_free( query );
 

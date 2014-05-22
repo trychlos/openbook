@@ -200,12 +200,12 @@
   87 2014- 5-22 Guided input: check that the selected account is of
                 type detail
 
-  88 2014- 5-22 rename ofaSgbd to ofoSgbd
-
   89 2014- 522 Guided input: have a transaction when writing the new
                entries so that we can rollback in case of an error
 
-  90
+  90 2014- 5-22 remove GtkWindow *parent from dbmodel_to_v1 arguments
+
+  91
 
 -----------------------------------------------------------------------
  DONE
@@ -303,6 +303,9 @@
   82 2014- 5-21 when creating a new entry, also pass the dossier so 
                 that the record is immediately written in sgbd
      2014- 5-21 done
+
+  88 2014- 5-22 rename ofaSgbd to ofoSgbd
+     2014 -5-22 done svn #3471
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

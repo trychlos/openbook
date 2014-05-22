@@ -172,7 +172,7 @@ ofo_account_load_chart( ofoSgbd *sgbd )
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofo_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT CPT_NUMBER,CPT_LABEL,CPT_DEV_ID,CPT_NOTES,CPT_TYPE,"
 			"	CPT_MAJ_USER,CPT_MAJ_STAMP,"
 			"	CPT_DEB_MNT,CPT_DEB_ECR,CPT_DEB_DATE,"
@@ -984,7 +984,7 @@ ofo_account_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp );
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_account_set_maj_user( account, user );
 		ofo_account_set_maj_stamp( account, my_utils_stamp_from_str( stamp ));
@@ -1054,7 +1054,7 @@ ofo_account_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const
 					stamp,
 					prev_number );
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_account_set_maj_user( account, user );
 		ofo_account_set_maj_stamp( account, my_utils_stamp_from_str( stamp ));
@@ -1086,7 +1086,7 @@ ofo_account_delete( ofoAccount *account, ofoSgbd *sgbd, const gchar *user )
 			"	WHERE CPT_NUMBER='%s'",
 					ofo_account_get_number( account ));
 
-	ok = ofo_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, query );
 
 	g_free( query );
 

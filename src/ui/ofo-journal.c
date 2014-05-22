@@ -160,7 +160,7 @@ ofo_journal_load_set( ofoSgbd *sgbd )
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofo_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT JOU_ID,JOU_MNEMO,JOU_LABEL,JOU_NOTES,"
 			"	JOU_MAJ_USER,JOU_MAJ_STAMP,"
 			"	JOU_MAXDATE,JOU_CLO"
@@ -471,7 +471,7 @@ ofo_journal_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"'%s','%s')", user, stamp );
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_journal_set_maj_user( journal, user );
 		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str( stamp ));
@@ -481,7 +481,7 @@ ofo_journal_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 				"	WHERE JOU_MNEMO='%s'",
 				ofo_journal_get_mnemo( journal ));
 
-		result = ofo_sgbd_query_ex( sgbd, NULL, query->str );
+		result = ofo_sgbd_query_ex( sgbd, query->str );
 
 		if( result ){
 			icol = ( GSList * ) result->data;
@@ -535,7 +535,7 @@ ofo_journal_update( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 			"	JOU_MAJ_USER='%s',JOU_MAJ_STAMP='%s'"
 			"	WHERE JOU_ID=%d", user, stamp, ofo_journal_get_id( journal ));
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_journal_set_maj_user( journal, user );
 		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str( stamp ));
@@ -565,7 +565,7 @@ ofo_journal_delete( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 			"DELETE FROM OFA_T_JOURNAUX WHERE JOU_ID=%d",
 					ofo_journal_get_id( journal ));
 
-	ok = ofo_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, query );
 
 	g_free( query );
 

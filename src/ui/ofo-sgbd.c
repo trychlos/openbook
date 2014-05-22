@@ -29,6 +29,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <gtk/gtk.h>
 #include <mysql/mysql.h>
 #include <string.h>
 
@@ -59,7 +60,7 @@ G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 #define OFO_SGBD_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_SGBD, ofoSgbdPrivate))
 
 static void  error_connect( ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
-static void  query_error( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query );
+static void  error_query( ofoSgbd *sgbd, const gchar *query );
 
 static void
 ofo_sgbd_finalize( GObject *instance )
@@ -230,7 +231,7 @@ error_connect( ofoSgbd *sgbd,
  * ofo_sgbd_exec_query:
  */
 gboolean
-ofo_sgbd_query( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
+ofo_sgbd_query( ofoSgbd *sgbd, const gchar *query )
 {
 	static const gchar *thisfn = "ofo_sgbd_query";
 	gboolean query_ok = FALSE;
@@ -239,15 +240,14 @@ ofo_sgbd_query( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
 
 	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
-	g_debug( "%s: sgbd=%p, parent=%p, query='%s'",
-			thisfn, ( void * ) sgbd, ( void * ) parent, query );
+	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
 
 	if( sgbd->priv->mysql ){
 		/*length = g_utf8_strlen( query, -1 );
 		to_str = g_new0( char, 2*length+1 );
 		mysql_real_escape_string( sgbd->priv->mysql, to_str, query, length );*/
 		if( mysql_query( sgbd->priv->mysql, query )){
-			query_error( sgbd, parent, query );
+			error_query( sgbd, query );
 		} else {
 			query_ok = TRUE;
 		}
@@ -274,7 +274,7 @@ ofo_sgbd_query( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
  * The returned GSList should be freed with ofo_sgbd_free_result().
  */
 GSList *
-ofo_sgbd_query_ex( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
+ofo_sgbd_query_ex( ofoSgbd *sgbd, const gchar *query )
 {
 	static const gchar *thisfn = "ofo_sgbd_query_ex";
 	GSList *result = NULL;
@@ -284,14 +284,11 @@ ofo_sgbd_query_ex( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
 
 	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
-	g_debug( "%s: sgbd=%p, parent=%p, query='%s'",
-			thisfn, ( void * ) sgbd, ( void * ) parent, query );
+	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
 
 	if( sgbd->priv->mysql ){
 		if( mysql_query( sgbd->priv->mysql, query )){
-			if( parent ){
-				query_error( sgbd, parent, query );
-			}
+			error_query( sgbd, query );
 
 		} else {
 			res = mysql_store_result( sgbd->priv->mysql );
@@ -317,12 +314,12 @@ ofo_sgbd_query_ex( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
 }
 
 static void
-query_error( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query )
+error_query( ofoSgbd *sgbd, const gchar *query )
 {
 	GtkMessageDialog *dlg;
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				parent,
+				NULL,
 				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 				GTK_MESSAGE_WARNING,
 				GTK_BUTTONS_OK,

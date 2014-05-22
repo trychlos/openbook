@@ -959,7 +959,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"CREATE DATABASE %s",
 			self->private->p2_dbname );
-	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -967,7 +967,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"CREATE USER '%s' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
-	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -975,7 +975,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
-	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -984,7 +984,7 @@ make_db_global( ofaDossierNew *self )
 			"GRANT ALL ON %s.* TO '%s' WITH GRANT OPTION",
 			self->private->p2_dbname,
 			self->private->p3_account );
-	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -993,7 +993,7 @@ make_db_global( ofaDossierNew *self )
 			"GRANT ALL ON %s.* TO '%s'@'localhost' WITH GRANT OPTION",
 			self->private->p2_dbname,
 			self->private->p3_account );
-	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -1001,7 +1001,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"GRANT CREATE USER, FILE ON *.* TO '%s'",
 			self->private->p3_account );
-	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}
@@ -1009,7 +1009,7 @@ make_db_global( ofaDossierNew *self )
 	g_string_printf( stmt,
 			"GRANT CREATE USER, FILE ON *.* TO '%s'@'localhost'",
 			self->private->p3_account );
-	if( !ofo_sgbd_query( sgbd, GTK_WINDOW( self->private->assistant ), stmt->str )){
+	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		gtk_assistant_previous_page( self->private->assistant );
 		goto free_stmt;
 	}

@@ -428,7 +428,7 @@ ofo_entry_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
 				user,
 				stamp );
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_entry_set_maj_user( entry, user );
 		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str( stamp ));

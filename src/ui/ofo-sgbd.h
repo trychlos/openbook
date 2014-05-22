@@ -34,7 +34,6 @@
  */
 
 #include <glib-object.h>
-#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
@@ -76,9 +75,9 @@ gboolean ofo_sgbd_connect    ( ofoSgbd *sgbd,
 								const gchar *dbname,
 								const gchar *account, const gchar *password );
 
-gboolean ofo_sgbd_query      ( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query );
+gboolean ofo_sgbd_query      ( ofoSgbd *sgbd, const gchar *query );
 
-GSList  *ofo_sgbd_query_ex   ( ofoSgbd *sgbd, GtkWindow *parent, const gchar *query );
+GSList  *ofo_sgbd_query_ex   ( ofoSgbd *sgbd, const gchar *query );
 
 void     ofo_sgbd_free_result( GSList *result );
 

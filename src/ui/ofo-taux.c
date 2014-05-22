@@ -161,7 +161,7 @@ ofo_taux_load_set( ofoSgbd *sgbd )
 
 	g_debug( "%s: sgbd=%p", thisfn, ( void * ) sgbd );
 
-	result = ofo_sgbd_query_ex( sgbd, NULL,
+	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT TAX_ID,TAX_MNEMO,TAX_LABEL,TAX_NOTES,"
 			"	TAX_VAL_DEB,TAX_VAL_FIN,TAX_TAUX,"
 			"	TAX_MAJ_USER,TAX_MAJ_STAMP"
@@ -517,7 +517,7 @@ ofo_taux_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 				g_ascii_dtostr( rate, G_ASCII_DTOSTR_BUF_SIZE, ofo_taux_get_taux( taux )),
 				user, stamp );
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_taux_set_maj_user( taux, user );
 		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
@@ -527,7 +527,7 @@ ofo_taux_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 				"	WHERE TAX_MNEMO='%s'",
 				ofo_taux_get_mnemo( taux ));
 
-		result = ofo_sgbd_query_ex( sgbd, NULL, query->str );
+		result = ofo_sgbd_query_ex( sgbd, query->str );
 
 		if( result ){
 			icol = ( GSList * ) result->data;
@@ -599,7 +599,7 @@ ofo_taux_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 			g_ascii_dtostr( rate, G_ASCII_DTOSTR_BUF_SIZE, ofo_taux_get_taux( taux )),
 			user, stamp, ofo_taux_get_id( taux ));
 
-	if( ofo_sgbd_query( sgbd, NULL, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_taux_set_maj_user( taux, user );
 		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
@@ -629,7 +629,7 @@ ofo_taux_delete( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 			"DELETE FROM OFA_T_TAUX WHERE TAX_ID=%d",
 					ofo_taux_get_id( taux ));
 
-	ok = ofo_sgbd_query( sgbd, NULL, query );
+	ok = ofo_sgbd_query( sgbd, query );
 
 	g_free( query );
 

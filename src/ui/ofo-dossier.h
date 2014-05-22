@@ -39,6 +39,8 @@
  * demand, et releases it on instance dispose.
  */
 
+#include <gtk/gtk.h>
+
 #include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-entry.h"
