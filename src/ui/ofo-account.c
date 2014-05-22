@@ -285,6 +285,8 @@ ofo_account_get_class( const ofoAccount *account )
 
 /**
  * ofo_account_get_class_from_number:
+ *
+ * TODO: make this UTF8-compliant....
  */
 gint
 ofo_account_get_class_from_number( const gchar *account_number )

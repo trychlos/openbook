@@ -48,7 +48,7 @@ typedef struct _ofoSgbdClassPrivate  ofoSgbdClassPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass *parent;
+	GObjectClass parent;
 }
 	ofoSgbdClass;
 

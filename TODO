@@ -47,6 +47,7 @@
 
   20 2014- 5- 5 Assistant Dossier/New: display the asterisks (mandatory)
                 in another color (grey ? red ? blue ?)
+     2014- 5-22 see also Todo #85
 
   21 2014- 5- 6 Assistant DossierNew: let the user be able to choose to
                 create a new database (if the data provider allows it)
@@ -62,15 +63,15 @@
   35 2014- 5-10 DossierOpen should monitor the configuration, only
                 enabling the action when there is at least one defined
                 dossier
+     2014- 5-22 see also TODO #42
 
   36 2014- 5-11 win.close action should only be enabled when a dossier 
                 is opened
+     2014- 5-22 see also TODO #42
 
   37 2014- 5-11 DossierNew: fix the order of the focus on pages p2 and
                 p3 (a try with gtk_container_set_focus_chain is not
                 successfull)
-
-  38 2014- 5-11 DossierOpen: fix the order of the focus
 
   39 2014- 5-11 DossierNew: add field needed to complete the
                 OFA_T_DOSSIER table to p1 page
@@ -80,6 +81,7 @@
   41 2014- 5-12 ofaMainWindow: set menu tooltips
 
   42 2014- 5-12 ofaMainWindow: set menu items sensitivities
+     2014- 5-22 See also TODO #35 and #36
 
   43 2014- 5-12 ofaMainWindow left pane: should display a big icon and
                 a label instead of only a text
@@ -98,6 +100,8 @@
 
   50 2014- 5-17 when defining a new model, the default family should be
                 the current family in models_set
+     2014- 5-22 Family class is abandonned, but the subject is the same 
+                with Journal clas
 
   51 2014- 5-17 Be able to use an underscore in the label of the model
                 families; this underscore should be usable as a shortcut
@@ -159,8 +163,6 @@
   70 2014- 5-19 EntryModel properties: implement Remove with a user
                 confirmation.
 
-  71 2014- 5-19 Get an entry with a model.
-
   74 2014- 5-21 Guided input: when quitting the dialog with Escape
                 while the focus is on an Account entry, then the
                 account notebook fires, but shouldn't.
@@ -190,6 +192,7 @@
                 + set data "ofa-data-entry-valid"
                 + my_utils_entry_is_valid
                 + my_utils_entry_set_valid
+     2014- 5-22 see also Todo #20
 
   86 2014- 5-21 all GtkFrame: make sure that the label doesn't use
                 underscore as the widget can not get focus
@@ -200,9 +203,12 @@
   89 2014- 522 Guided input: have a transaction when writing the new
                entries so that we can rollback in case of an error
 
-  90 2014- 5-22 remove GtkWindow *parent from dbmodel_to_v1 arguments
+  91 2014- 5-22 the name of the class names in the accounts chart
+                should be configured in a table
 
-  91
+  92
+
+  93
 
 -----------------------------------------------------------------------
  DONE
@@ -277,6 +283,9 @@
                 (as ofa_settings_get_dossier)
      2014- 5-10 Done
 
+  38 2014- 5-11 DossierOpen: fix the order of the focus
+     2014- 5-22 done
+
   47 2014- 5-13 ofaAccountProperties: check that account number begins
                 with a 1-9 digit
      2014- 5-15 Done
@@ -289,6 +298,9 @@
   54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments,
                 re-enabling error messages.
      2014- 5-22 done svn #3472
+
+  71 2014- 5-19 Get an entry with a model
+     2014- 5-22 done
 
   72 2014- 5-20 check that ofaJournalCombo object is disposed
      2014- 5-20 done svn commit #3463
@@ -307,6 +319,9 @@
 
   88 2014- 5-22 rename ofaSgbd to ofoSgbd
      2014 -5-22 done svn #3471
+
+  90 2014- 5-22 remove GtkWindow *parent from dbmodel_to_v1 arguments
+     2014- 5-22 done svn #3473
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

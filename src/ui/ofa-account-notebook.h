@@ -34,6 +34,10 @@
  *
  * This is a convenience class which manages the display of the accounts
  * inside of a notebook, with one class per page.
+ *
+ * At creation time, this convenience class defines a Alt+1..Alt+9
+ * mnemonic for each class at the GtkWindow parent level. These
+ * mnemonics are removed when disposing.
  */
 
 #include <gtk/gtk.h>
