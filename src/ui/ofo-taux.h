@@ -35,8 +35,7 @@
  * This class implements the Taux behavior.
  */
 
-#include "ui/ofo-base.h"
-#include "ui/ofo-sgbd.h"
+#include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -64,10 +63,11 @@ typedef struct {
 
 GType        ofo_taux_get_type     ( void ) G_GNUC_CONST;
 
-ofoTaux     *ofo_taux_new          ( void );
+GList       *ofo_taux_get_dataset  ( ofoDossier *dossier );
+ofoTaux     *ofo_taux_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo, const GDate *date );
+ofoTaux     *ofo_taux_is_data_valid( ofoDossier *dossier, gint id, const gchar *mnemo, const GDate *begin, const GDate *end );
 
-GList       *ofo_taux_load_set     ( ofoSgbd *sgbd );
-void         ofo_taux_dump_set     ( GList *chart );
+ofoTaux     *ofo_taux_new          ( void );
 
 gint         ofo_taux_get_id       ( const ofoTaux *taux );
 const gchar *ofo_taux_get_mnemo    ( const ofoTaux *taux );
@@ -87,7 +87,7 @@ void         ofo_taux_set_taux     ( ofoTaux *taux, gdouble value );
 void         ofo_taux_set_maj_user ( ofoTaux *taux, const gchar *user );
 void         ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *stamp );
 
-gboolean     ofo_taux_insert       ( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
+gboolean     ofo_taux_insert       ( ofoTaux *taux, ofoDossier *dossier );
 gboolean     ofo_taux_update       ( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
 gboolean     ofo_taux_delete       ( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
 

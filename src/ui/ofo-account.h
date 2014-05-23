@@ -69,7 +69,6 @@ GType        ofo_account_get_type        ( void ) G_GNUC_CONST;
 
 GList       *ofo_account_get_dataset     ( ofoDossier *dossier );
 ofoAccount  *ofo_account_get_by_number   ( ofoDossier *dossier, const gchar *number );
-void         ofo_account_clear_static    ( void );
 
 ofoAccount  *ofo_account_new             ( void );
 

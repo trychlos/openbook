@@ -73,16 +73,15 @@ G_DEFINE_TYPE( ofoAccount, ofo_account, OFO_TYPE_BASE )
 
 #define OFO_ACCOUNT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_ACCOUNT, ofoAccountPrivate))
 
-static ofoBaseStatic *st_static = NULL;
+OFO_BASE_DEFINE_GLOBAL( st_global, account )
 
-static ofoBaseStatic *get_static_data( ofoDossier *dossier );
-static GList         *account_load_dataset( void );
-static ofoAccount    *account_find_by_number( GList *set, const gchar *number );
-static gboolean       account_do_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user );
-static gboolean       account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
-static gboolean       account_do_delete( ofoAccount *account, ofoSgbd *sgbd );
-static gint           account_cmp_by_number( const ofoAccount *a, const gchar *number );
-static gint           account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
+static GList      *account_load_dataset( void );
+static ofoAccount *account_find_by_number( GList *set, const gchar *number );
+static gboolean    account_do_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user );
+static gboolean    account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
+static gboolean    account_do_delete( ofoAccount *account, ofoSgbd *sgbd );
+static gint        account_cmp_by_number( const ofoAccount *a, const gchar *number );
+static gint        account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
 
 static void
 ofo_account_finalize( GObject *instance )
@@ -154,39 +153,26 @@ ofo_account_class_init( ofoAccountClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_account_finalize;
 }
 
-static ofoBaseStatic *
-get_static_data( ofoDossier *dossier )
-{
-	if( !st_static ){
-		st_static = g_new0( ofoBaseStatic, 1 );
-		st_static->dossier = OFO_BASE( dossier );
-	}
-	return( st_static );
-}
-
 /**
  * ofo_account_get_dataset:
+ * @dossier: the currently opened #ofoDossier dossier.
  *
- * Loads the list of accounts ordered by ascending mnemo.
- *
- * The list is kept by this class as a static data.
+ * Returns: The list of #ofoAccount accounts, ordered by ascending
+ * number. The returned list is owned by the #ofoAccount class, and
+ * should not be freed by the caller.
  */
 GList *
 ofo_account_get_dataset( ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_get_dataset";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	st = get_static_data( dossier );
-	if( !st->dataset ){
-		st->dataset = account_load_dataset();
-	}
+	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
-	return( st->dataset );
+	return( st_global->dataset );
 }
 
 /**
@@ -202,7 +188,7 @@ account_load_dataset( void )
 	ofoAccount *account;
 	GList *dataset;
 
-	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_static->dossier ));
+	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT CPT_NUMBER,CPT_LABEL,CPT_DEV_ID,CPT_NOTES,CPT_TYPE,"
@@ -295,19 +281,15 @@ ofoAccount *
 ofo_account_get_by_number( ofoDossier *dossier, const gchar *number )
 {
 	static const gchar *thisfn = "ofo_account_get_by_number";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( number && g_utf8_strlen( number, -1 ), NULL );
 
 	g_debug( "%s: dossier=%p, number=%s", thisfn, ( void * ) dossier, number );
 
-	st = get_static_data( dossier );
-	if( !st->dataset ){
-		st->dataset = account_load_dataset();
-	}
+	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
-	return( account_find_by_number( st->dataset, number ));
+	return( account_find_by_number( st_global->dataset, number ));
 }
 
 static ofoAccount *
@@ -322,20 +304,6 @@ account_find_by_number( GList *set, const gchar *number )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofo_account_clear_static:
- */
-void
-ofo_account_clear_static( void )
-{
-	if( st_static ){
-		g_list_foreach( st_static->dataset, ( GFunc ) g_object_unref, NULL );
-		g_list_free( st_static->dataset );
-		g_free( st_static );
-		st_static = NULL;
-	}
 }
 
 /**
@@ -1074,7 +1042,6 @@ gboolean
 ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_insert";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
@@ -1084,19 +1051,14 @@ ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
 		g_debug( "%s: account=%p, dossier=%p",
 				thisfn, ( void * ) account, ( void * ) dossier );
 
-		st = get_static_data( dossier );
-		if( !st->dataset ){
-			st->dataset = account_load_dataset();
-		}
+		OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
 		if( account_do_insert(
 					account,
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			st->dataset = g_list_insert_sorted(
-					st->dataset, account, ( GCompareFunc ) account_cmp_by_ptr );
-
+			OFO_BASE_ADD_TO_DATASET( st_global, account );
 			return( TRUE );
 		}
 	}
@@ -1173,7 +1135,6 @@ gboolean
 ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_number )
 {
 	static const gchar *thisfn = "ofo_account_update";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
@@ -1184,10 +1145,7 @@ ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_
 		g_debug( "%s: account=%p, dossier=%p, prev_number=%s",
 				thisfn, ( void * ) account, ( void * ) dossier, prev_number );
 
-		st = get_static_data( dossier );
-		if( !st->dataset ){
-			st->dataset = account_load_dataset();
-		}
+		OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
 		if( account_do_update(
 					account,
@@ -1195,10 +1153,7 @@ ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_
 					ofo_dossier_get_user( dossier ),
 					prev_number )){
 
-			st->dataset = g_list_remove( st->dataset, account );
-			st->dataset = g_list_insert_sorted(
-					st->dataset, account, ( GCompareFunc ) account_cmp_by_ptr );
-
+			OFO_BASE_UPDATE_DATASET( st_global, account );
 			return( TRUE );
 		}
 	}
@@ -1274,7 +1229,6 @@ gboolean
 ofo_account_delete( ofoAccount *account, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_delete";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
@@ -1284,18 +1238,13 @@ ofo_account_delete( ofoAccount *account, ofoDossier *dossier )
 		g_debug( "%s: account=%p, dossier=%p",
 				thisfn, ( void * ) account, ( void * ) dossier );
 
-		st = get_static_data( dossier );
-		if( !st->dataset ){
-			st->dataset = account_load_dataset();
-		}
+		OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
 		if( account_do_delete(
 					account,
 					ofo_dossier_get_sgbd( dossier ))){
 
-			st->dataset = g_list_remove( st->dataset, account );
-			g_object_unref( account );
-
+			OFO_BASE_REMOVE_FROM_DATASET( st_global, account );
 			return( TRUE );
 		}
 	}

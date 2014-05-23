@@ -832,7 +832,7 @@ update_formula( ofaGuidedInput *self, const gchar *formula, GtkEntry *entry )
 
 			} else {
 				g_debug( "%s: searching for taux %s", thisfn, *iter );
-				rate = ofo_dossier_get_taux(
+				rate = ofo_taux_get_by_mnemo(
 						ofa_main_window_get_dossier( self->private->main_window ), *iter, NULL );
 				if( rate && OFO_IS_TAUX( rate )){
 					g_warning( "%s: TODO", thisfn );

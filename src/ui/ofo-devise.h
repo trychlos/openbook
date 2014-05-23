@@ -66,7 +66,6 @@ GType        ofo_devise_get_type  ( void ) G_GNUC_CONST;
 
 GList       *ofo_devise_get_dataset  ( ofoDossier *dossier );
 ofoDevise   *ofo_devise_get_by_code  ( ofoDossier *dossier, const gchar *code );
-void         ofo_devise_clear_static ( void );
 
 ofoDevise   *ofo_devise_new       ( void );
 

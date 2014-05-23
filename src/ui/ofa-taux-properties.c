@@ -523,7 +523,7 @@ do_update( ofaTauxProperties *self )
 	 *
 	 */
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	preventer = ofo_dossier_check_for_taux(
+	preventer = ofo_taux_is_data_valid(
 			dossier,
 			self->private->id, self->private->mnemo, &self->private->begin, &self->private->end );
 
@@ -549,7 +549,7 @@ do_update( ofaTauxProperties *self )
 
 	if( self->private->id == -1 ){
 		self->private->updated =
-				ofo_dossier_insert_taux( dossier, self->private->taux );
+				ofo_taux_insert( self->private->taux, dossier );
 	} else {
 		self->private->updated =
 				ofo_dossier_update_taux( dossier, self->private->taux );

@@ -71,9 +71,8 @@ G_DEFINE_TYPE( ofoJournal, ofo_journal, OFO_TYPE_BASE )
 
 #define OFO_JOURNAL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_JOURNAL, ofoJournalPrivate))
 
-static ofoBaseStatic *st_static = NULL;
+OFO_BASE_DEFINE_GLOBAL( st_global, journal )
 
-static ofoBaseStatic *get_static_data( ofoDossier *dossier );
 static GList         *journal_load_dataset( void );
 static ofoJournal    *journal_find_by_id( GList *set, gint id );
 static ofoJournal    *journal_find_by_mnemo( GList *set, const gchar *mnemo );
@@ -158,39 +157,26 @@ ofo_journal_class_init( ofoJournalClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_journal_finalize;
 }
 
-static ofoBaseStatic *
-get_static_data( ofoDossier *dossier )
-{
-	if( !st_static ){
-		st_static = g_new0( ofoBaseStatic, 1 );
-		st_static->dossier = OFO_BASE( dossier );
-	}
-	return( st_static );
-}
-
 /**
  * ofo_journal_get_dataset:
+ * @dossier: the currently opened #ofoDossier dossier.
  *
- * Loads the list of journals ordered by ascending mnemo.
- *
- * The list is kept by this class as a static data.
+ * Returns: The list of #ofoJournal journals, ordered by ascending
+ * mnemonic. The returned list is owned by the #ofoJournal class, and
+ * should not be freed by the caller.
  */
 GList *
 ofo_journal_get_dataset( ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_journal_get_dataset";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	st = get_static_data( dossier );
-	if( !st->dataset ){
-		st->dataset = journal_load_dataset();
-	}
+	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
-	return( st->dataset );
+	return( st_global->dataset );
 }
 
 static GList *
@@ -203,7 +189,7 @@ journal_load_dataset( void )
 	gint prev_jou, jou_id;
 	sDetailBalance *balance;
 
-	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_static->dossier ));
+	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
 	/* Journals list is loaded 'jou_id' order so that we will be able
 	 * to easily load the balance details.
@@ -294,19 +280,15 @@ ofoJournal *
 ofo_journal_get_by_id( ofoDossier *dossier, gint id )
 {
 	static const gchar *thisfn = "ofo_journal_get_by_id";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( id > 0, NULL );
 
 	g_debug( "%s: dossier=%p, id=%d", thisfn, ( void * ) dossier, id );
 
-	st = get_static_data( dossier );
-	if( !st->dataset ){
-		st->dataset = journal_load_dataset();
-	}
+	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
-	return( journal_find_by_id( st->dataset, id ));
+	return( journal_find_by_id( st_global->dataset, id ));
 }
 
 static ofoJournal *
@@ -335,19 +317,15 @@ ofoJournal *
 ofo_journal_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
 	static const gchar *thisfn = "ofo_journal_get_by_mnemo";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
 
 	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
 
-	st = get_static_data( dossier );
-	if( !st->dataset ){
-		st->dataset = journal_load_dataset();
-	}
+	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
-	return( journal_find_by_mnemo( st->dataset, mnemo ));
+	return( journal_find_by_mnemo( st_global->dataset, mnemo ));
 }
 
 static ofoJournal *
@@ -362,20 +340,6 @@ journal_find_by_mnemo( GList *set, const gchar *mnemo )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofo_journal_clear_static:
- */
-void
-ofo_journal_clear_static( void )
-{
-	if( st_static ){
-		g_list_foreach( st_static->dataset, ( GFunc ) g_object_unref, NULL );
-		g_list_free( st_static->dataset );
-		g_free( st_static );
-		st_static = NULL;
-	}
 }
 
 /**
@@ -622,7 +586,6 @@ gboolean
 ofo_journal_insert( ofoJournal *journal, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_journal_insert";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
@@ -632,19 +595,14 @@ ofo_journal_insert( ofoJournal *journal, ofoDossier *dossier )
 		g_debug( "%s: journal=%p, dossier=%p",
 				thisfn, ( void * ) journal, ( void * ) dossier );
 
-		st = get_static_data( dossier );
-		if( !st->dataset ){
-			st->dataset = journal_load_dataset();
-		}
+		OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 		if( journal_do_insert(
 					journal,
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			st->dataset = g_list_insert_sorted(
-					st->dataset, journal, ( GCompareFunc ) journal_cmp_by_ptr );
-
+			OFO_BASE_ADD_TO_DATASET( st_global, journal );
 			return( TRUE );
 		}
 	}
@@ -779,7 +737,6 @@ gboolean
 ofo_journal_update( ofoJournal *journal, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_journal_update";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
@@ -789,20 +746,14 @@ ofo_journal_update( ofoJournal *journal, ofoDossier *dossier )
 		g_debug( "%s: journal=%p, dossier=%p",
 				thisfn, ( void * ) journal, ( void * ) dossier );
 
-		st = get_static_data( dossier );
-		if( !st->dataset ){
-			st->dataset = journal_load_dataset();
-		}
+		OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 		if( journal_do_update(
 					journal,
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			st->dataset = g_list_remove( st->dataset, journal );
-			st->dataset = g_list_insert_sorted(
-					st->dataset, journal, ( GCompareFunc ) journal_cmp_by_ptr );
-
+			OFO_BASE_UPDATE_DATASET( st_global, journal );
 			return( TRUE );
 		}
 	}
@@ -861,7 +812,6 @@ gboolean
 ofo_journal_delete( ofoJournal *journal, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_journal_delete";
-	ofoBaseStatic *st;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
@@ -871,18 +821,13 @@ ofo_journal_delete( ofoJournal *journal, ofoDossier *dossier )
 		g_debug( "%s: journal=%p, dossier=%p",
 				thisfn, ( void * ) journal, ( void * ) dossier );
 
-		st = get_static_data( dossier );
-		if( !st->dataset ){
-			st->dataset = journal_load_dataset();
-		}
+		OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 		if( journal_do_delete(
 					journal,
 					ofo_dossier_get_sgbd( dossier ))){
 
-			st->dataset = g_list_remove( st->dataset, journal );
-			g_object_unref( journal );
-
+			OFO_BASE_REMOVE_FROM_DATASET( st_global, journal );
 			return( TRUE );
 		}
 	}

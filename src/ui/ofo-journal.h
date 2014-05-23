@@ -71,7 +71,6 @@ GType        ofo_journal_get_type     ( void ) G_GNUC_CONST;
 GList       *ofo_journal_get_dataset  ( ofoDossier *dossier );
 ofoJournal  *ofo_journal_get_by_id    ( ofoDossier *dossier, gint id );
 ofoJournal  *ofo_journal_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo );
-void         ofo_journal_clear_static ( void );
 
 ofoJournal  *ofo_journal_new          ( void );
 

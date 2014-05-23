@@ -65,7 +65,6 @@ GType        ofo_model_get_type          ( void ) G_GNUC_CONST;
 
 GList       *ofo_model_get_dataset       ( ofoDossier *dossier );
 ofoModel    *ofo_model_get_by_mnemo      ( ofoDossier *dossier, const gchar *mnemo );
-void         ofo_model_clear_static      ( void );
 
 ofoModel    *ofo_model_new               ( void );
 

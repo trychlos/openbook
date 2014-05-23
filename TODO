@@ -195,7 +195,7 @@
                 -> ofoDevise - done svn #3483
                 -> ofoAccount - done svn #3484
                 -> ofoTaux
-                -> ofoModel
+                -> ofoModel -> done svn #3485
                 -> ofoEntry
 
 -----------------------------------------------------------------------

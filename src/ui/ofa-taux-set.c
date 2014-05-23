@@ -356,7 +356,7 @@ setup_taux_view( ofaTauxSet *self )
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_taux_selected ), self );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-	dataset = ofo_dossier_get_taux_set( dossier );
+	dataset = ofo_taux_get_dataset( dossier );
 	ofa_main_page_set_dataset( OFA_MAIN_PAGE( self ), dataset );
 
 	for( it=dataset ; it ; it=it->next ){
@@ -557,7 +557,7 @@ on_delete_taux( GtkButton *button, ofaTauxSet *self )
 
 			/* update our set of taux */
 			ofa_main_page_set_dataset(
-					OFA_MAIN_PAGE( self ), ofo_dossier_get_taux_set( dossier ));
+					OFA_MAIN_PAGE( self ), ofo_taux_get_dataset( dossier ));
 
 			/* remove the row from the model
 			 * this will cause an automatic new selection */
@@ -598,7 +598,7 @@ insert_new_row( ofaTauxSet *self, ofoTaux *taux )
 	/* update our set of taux */
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 	ofa_main_page_set_dataset(
-			OFA_MAIN_PAGE( self ), ofo_dossier_get_taux_set( dossier ));
+			OFA_MAIN_PAGE( self ), ofo_taux_get_dataset( dossier ));
 
 	/* insert the new row at the right place */
 	model = gtk_tree_view_get_model( self->private->view );

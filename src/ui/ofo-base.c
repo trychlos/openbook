@@ -82,3 +82,26 @@ ofo_base_class_init( ofoBaseClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ofo_base_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_base_finalize;
 }
+
+/**
+ *
+ */
+ofoBaseGlobal *
+ofo_base_get_global( ofoBaseGlobal *ptr, ofoBase *dossier, GWeakNotify fn, gpointer user_data )
+{
+	ofoBaseGlobal *new_ptr;
+
+	new_ptr = ptr;
+
+	if( !ptr ){
+
+		/* allocate a new global structure */
+		new_ptr = g_new0( ofoBaseGlobal, 1 );
+		new_ptr->dossier = dossier;
+
+		/* be advertise when the main object disappears */
+		g_object_weak_ref( G_OBJECT( dossier ), fn, user_data );
+	}
+
+	return( new_ptr );
+}
