@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofa-main-page.h"
 #include "ui/ofa-journal-properties.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofo-journal.h"

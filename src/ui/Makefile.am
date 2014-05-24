@@ -73,6 +73,7 @@ openbook_SOURCES = \
 	ofa-journals-set.h									\
 	ofa-main-page.c										\
 	ofa-main-page.h										\
+	ofa-main-page-def.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-model-properties.c								\

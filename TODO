@@ -208,10 +208,6 @@
  101 2014- 5-24 when updating the currency of an account, the 'delete'
                 button of the 'currencies' page should be updated
 
- 102 2014- 5-24 test the GtkTreeSortable interface - if not works:
-                define an interface for ofaMainPage which sorts the 
-                embedded treeview on the specified column
-
  103 2014- 5-24 load OFA-T-DOSSIER data when opening
 
  104 2014- 5-24 when updating a devise, only enable OK if code is not
@@ -219,7 +215,10 @@
 
  105 2014- 5-24 after delete, reset the focus to tree view
 
- 106
+ 106 2014- 5-25 check how and when is set the ofaMainPage 'theme' 
+                property ?
+
+ 107
 
 -----------------------------------------------------------------------
  DONE
@@ -382,6 +381,11 @@
 
   95 2014- 5-22 implement journal_is_deletable
      2014- 5-22 done
+
+ 102 2014- 5-24 test the GtkTreeSortable interface - if not works:
+                define an interface for ofaMainPage which sorts the 
+                embedded treeview on the specified column
+     2014- 5-24 done svn #3487
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

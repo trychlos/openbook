@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 
+#include "ui/ofa-main-page.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-model-properties.h"
 #include "ui/ofa-models-set.h"

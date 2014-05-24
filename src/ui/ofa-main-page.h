@@ -39,34 +39,11 @@
  * (this class).
  */
 
+#include "ui/ofa-main-page-def.h"
+#include "ui/ofo-dossier-def.h"
 #include "ui/ofa-main-window.h"
 
 G_BEGIN_DECLS
-
-#define OFA_TYPE_MAIN_PAGE                ( ofa_main_page_get_type())
-#define OFA_MAIN_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MAIN_PAGE, ofaMainPage ))
-#define OFA_MAIN_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MAIN_PAGE, ofaMainPageClass ))
-#define OFA_IS_MAIN_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MAIN_PAGE ))
-#define OFA_IS_MAIN_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MAIN_PAGE ))
-#define OFA_MAIN_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MAIN_PAGE, ofaMainPageClass ))
-
-typedef struct _ofaMainPagePrivate        ofaMainPagePrivate;
-
-typedef struct {
-	/*< private >*/
-	GObject             parent;
-	ofaMainPagePrivate *private;
-}
-	ofaMainPage;
-
-typedef struct _ofaMainPageClassPrivate   ofaMainPageClassPrivate;
-
-typedef struct {
-	/*< private >*/
-	GObjectClass             parent;
-	ofaMainPageClassPrivate *private;
-}
-	ofaMainPageClass;
 
 /**
  * Properties set against this base class at instanciation time
@@ -94,19 +71,15 @@ typedef enum {
 GType          ofa_main_page_get_type       ( void );
 
 ofaMainWindow *ofa_main_page_get_main_window( const ofaMainPage *page );
-void           ofa_main_page_set_main_window( ofaMainPage *page, ofaMainWindow *window );
-
 ofoDossier    *ofa_main_page_get_dossier    ( const ofaMainPage *page );
-void           ofa_main_page_set_dossier    ( ofaMainPage *page, ofoDossier *dossier );
+GtkGrid       *ofa_main_page_get_grid       ( const ofaMainPage *page );
+gint           ofa_main_page_get_theme      ( const ofaMainPage *page );
 
 GList         *ofa_main_page_get_dataset    ( const ofaMainPage *page );
 void           ofa_main_page_set_dataset    ( ofaMainPage *page, GList *dataset );
 
-GtkGrid       *ofa_main_page_get_grid       ( const ofaMainPage *page );
-void           ofa_main_page_set_grid       ( ofaMainPage *page, GtkGrid *grid );
-
-gint           ofa_main_page_get_theme      ( const ofaMainPage *page );
-void           ofa_main_page_set_theme      ( ofaMainPage *page, gint theme );
+GtkWidget     *ofa_main_page_get_update_btn ( const ofaMainPage *page );
+GtkWidget     *ofa_main_page_get_delete_btn ( const ofaMainPage *page );
 
 gboolean       ofa_main_page_delete_confirmed( const ofaMainPage *page, const gchar *message );
 

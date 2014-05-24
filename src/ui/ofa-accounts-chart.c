@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 
+#include "ui/ofa-main-page.h"
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-accounts-chart.h"

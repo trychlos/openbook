@@ -363,15 +363,23 @@ check_for_enable_dlg( ofaDeviseProperties *self )
 {
 	ofaDevisePropertiesPrivate *priv;
 	GtkWidget *button;
+	gboolean ok;
+	ofoDevise *exists;
 
 	priv = self->private;
 
 	button = my_utils_container_get_child_by_name(
-			GTK_CONTAINER( priv->dialog ), "btn-ok" );
+					GTK_CONTAINER( priv->dialog ), "btn-ok" );
 
-	gtk_widget_set_sensitive(
-			button,
-			ofo_devise_is_valid( priv->code, priv->label, priv->symbol ));
+	ok = ofo_devise_is_valid( priv->code, priv->label, priv->symbol );
+	if( ok ){
+		exists = ofo_devise_get_by_code(
+				ofa_main_window_get_dossier( priv->main_window ), priv->code );
+		ok &= !exists ||
+				( ofo_devise_get_id( exists ) == ofo_devise_get_id( priv->devise ));
+	}
+
+	gtk_widget_set_sensitive( button, ok );
 }
 
 static gboolean
