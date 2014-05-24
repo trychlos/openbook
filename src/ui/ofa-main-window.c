@@ -1007,10 +1007,8 @@ static void
 main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page )
 {
 	gint page_num;
-	GtkWidget *child_book;
-	gint tab_num;
-	GtkWidget *tab;
 	GtkWidget *view;
+	ofaMainPage *handler;
 
 	g_return_if_fail( window && OFA_IS_MAIN_WINDOW( window ));
 	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
@@ -1021,24 +1019,10 @@ main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidg
 	page_num = gtk_notebook_page_num( book, page );
 	gtk_notebook_set_current_page( book, page_num );
 
-	/* children pages always have a treeview, maybe embedded in their
-	 * own notebook
-	 */
-	view = NULL;
-	child_book = my_utils_container_get_child_by_type( GTK_CONTAINER( page ), GTK_TYPE_NOTEBOOK );
-	if( child_book ){
-		tab_num = gtk_notebook_get_current_page( GTK_NOTEBOOK( child_book ));
-		if( tab_num < 0 ){
-			tab_num = 0;
-		}
-		tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( child_book ), tab_num );
-		if( tab ){
-			view = my_utils_container_get_child_by_type( GTK_CONTAINER( tab ), GTK_TYPE_TREE_VIEW );
-		}
-	}
-	if( !view ){
-		view = my_utils_container_get_child_by_type( GTK_CONTAINER( page ), GTK_TYPE_TREE_VIEW );
-	}
+	handler = ( ofaMainPage * ) g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
+	g_return_if_fail( handler && OFA_IS_MAIN_PAGE( handler ));
+	view = ofa_main_page_get_treeview( handler );
+
 	if( view ){
 		gtk_widget_grab_focus( view );
 	}

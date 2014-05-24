@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 
+#include "ui/my-utils.h"
 #include "ui/ofa-main-page.h"
 
 /* private instance data
@@ -562,6 +563,25 @@ ofa_main_page_get_dossier( const ofaMainPage *page )
 }
 
 /**
+ * ofa_main_page_get_theme:
+ *
+ * Returns -1 if theme is not set.
+ * If theme is set, it is strictly greater than zero (start with 1).
+ */
+gint
+ofa_main_page_get_theme( const ofaMainPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+
+	if( !page->private->dispose_has_run ){
+
+		return( page->private->theme );
+	}
+
+	return( -1 );
+}
+
+/**
  * ofa_main_page_get_grid:
  */
 GtkGrid *
@@ -591,22 +611,46 @@ on_grid_finalized( ofaMainPage *self, GObject *grid )
 }
 
 /**
- * ofa_main_page_get_theme:
+ * ofa_main_page_get_treeview:
  *
- * Returns -1 if theme is not set.
- * If theme is set, it is strictly greater than zero (start with 1).
+ * Each page of the main notebook is built inside of a GtkGrid.
+ * This GtkGrid is supposed to hold a GtkTreeView, more or less direcly,
+ * maybe via another GtkNotebook (e.g. see #ofAccountsChart).
  */
-gint
-ofa_main_page_get_theme( const ofaMainPage *page )
+GtkWidget *
+ofa_main_page_get_treeview( const ofaMainPage *page )
 {
+	GtkWidget *child_book;
+	gint tab_num;
+	GtkWidget *tab;
+	GtkWidget *view;
+
 	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+
+	view = NULL;
 
 	if( !page->private->dispose_has_run ){
 
-		return( page->private->theme );
+		child_book = my_utils_container_get_child_by_type(
+									GTK_CONTAINER( page ), GTK_TYPE_NOTEBOOK );
+		if( child_book ){
+			tab_num = gtk_notebook_get_current_page( GTK_NOTEBOOK( child_book ));
+			if( tab_num < 0 ){
+				tab_num = 0;
+			}
+			tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( child_book ), tab_num );
+			if( tab ){
+				view = my_utils_container_get_child_by_type(
+									GTK_CONTAINER( tab ), GTK_TYPE_TREE_VIEW );
+			}
+		}
+		if( !view ){
+			view = my_utils_container_get_child_by_type(
+									GTK_CONTAINER( page ), GTK_TYPE_TREE_VIEW );
+		}
 	}
 
-	return( -1 );
+	return( view );
 }
 
 /**
