@@ -51,7 +51,7 @@ enum {
 	N_COLUMNS
 };
 
-static GObjectClass *st_parent_class = NULL;
+static ofaMainPageClass *st_parent_class = NULL;
 
 static GType      register_type( void );
 static void       class_init( ofaDevisesSetClass *klass );
@@ -113,7 +113,8 @@ class_init( ofaDevisesSetClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	st_parent_class = g_type_class_peek_parent( klass );
+	st_parent_class = ( ofaMainPageClass * ) g_type_class_peek_parent( klass );
+	g_return_if_fail( st_parent_class && OFA_IS_MAIN_PAGE_CLASS( st_parent_class ));
 
 	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
 	G_OBJECT_CLASS( klass )->finalize = instance_finalize;

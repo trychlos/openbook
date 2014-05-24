@@ -56,7 +56,7 @@ enum {
 	N_COLUMNS
 };
 
-static GObjectClass *st_parent_class = NULL;
+static ofaMainPageClass *st_parent_class = NULL;
 
 static GType      register_type( void );
 static void       class_init( ofaJournalsSetClass *klass );
@@ -64,6 +64,7 @@ static void       instance_init( GTypeInstance *instance, gpointer klass );
 static void       instance_dispose( GObject *instance );
 static void       instance_finalize( GObject *instance );
 static GtkWidget *v_setup_view( ofaMainPage *page );
+static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
 static void       insert_new_row( ofaJournalsSet *self, ofoJournal *journal, gboolean with_selection );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaJournalsSet *self );
@@ -73,6 +74,7 @@ static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaJournalsSet *self, ofoJournal *journal );
+static void       on_view_entries( GtkButton *button, ofaJournalsSet *self );
 
 GType
 ofa_journals_set_get_type( void )
@@ -118,12 +120,14 @@ class_init( ofaJournalsSetClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	st_parent_class = g_type_class_peek_parent( klass );
+	st_parent_class = ( ofaMainPageClass * ) g_type_class_peek_parent( klass );
+	g_return_if_fail( st_parent_class && OFA_IS_MAIN_PAGE_CLASS( st_parent_class ));
 
 	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
 	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
 
 	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_MAIN_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_MAIN_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
@@ -258,6 +262,30 @@ v_setup_view( ofaMainPage *page )
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	return( GTK_WIDGET( frame ));
+}
+
+static GtkWidget *
+v_setup_buttons( ofaMainPage *page )
+{
+	GtkWidget *buttons_box;
+	GtkFrame *frame;
+	GtkButton *button;
+
+	g_return_val_if_fail( OFA_IS_JOURNALS_SET( page ), NULL );
+
+	buttons_box = st_parent_class->setup_buttons( page );
+
+	frame = GTK_FRAME( gtk_frame_new( NULL ));
+	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 25 );
+	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
+	gtk_box_pack_start( GTK_BOX( buttons_box ), GTK_WIDGET( frame ), FALSE, FALSE, 0 );
+
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "View _entries..." )));
+	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), page );
+	gtk_box_pack_start( GTK_BOX( buttons_box ), GTK_WIDGET( button ), FALSE, FALSE, 0 );
+
+	return( buttons_box );
 }
 
 static void
@@ -502,4 +530,14 @@ delete_confirmed( ofaJournalsSet *self, ofoJournal *journal )
 	g_free( msg );
 
 	return( delete_ok );
+}
+
+static void
+on_view_entries( GtkButton *button, ofaJournalsSet *self )
+{
+	static const gchar *thisfn = "ofa_journals_set_on_view_entries";
+
+	g_return_if_fail( OFA_IS_JOURNALS_SET( self ));
+
+	g_warning( "%s: TO BE WRITTEN", thisfn );
 }

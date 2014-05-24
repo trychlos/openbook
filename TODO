@@ -215,7 +215,9 @@
  107 2014- 5-24 have a message when current exercice changes
                 so that e.g. the journals set may adapt its display
 
- 108
+ 108 2014- 5-24 ofaJournalsSet: implement on_view_entries
+
+ 109
 
 -----------------------------------------------------------------------
  DONE

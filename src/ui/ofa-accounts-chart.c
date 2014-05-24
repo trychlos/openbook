@@ -468,5 +468,5 @@ on_view_entries( GtkButton *button, ofaAccountsChart *self )
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
 
-	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
+	g_warning( "%s: TO BE WRITTEN", thisfn );
 }
