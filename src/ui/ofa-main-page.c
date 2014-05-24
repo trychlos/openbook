@@ -398,6 +398,8 @@ v_setup_page( ofaMainPage *page )
 	GtkWidget *view;
 	GtkWidget *buttons_box;
 
+	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+
 	view = NULL;
 	if( OFA_MAIN_PAGE_GET_CLASS( page )->setup_view ){
 		view = OFA_MAIN_PAGE_GET_CLASS( page )->setup_view( page );
@@ -425,6 +427,8 @@ v_setup_buttons( ofaMainPage *page )
 	GtkBox *buttons_box;
 	GtkFrame *frame;
 	GtkButton *button;
+
+	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
 
 	buttons_box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_VERTICAL, 6 ));
 	gtk_widget_set_margin_right( GTK_WIDGET( buttons_box ), 4 );
@@ -458,6 +462,9 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 {
 	static const gchar *thisfn = "ofa_main_page_v_on_new_clicked";
 
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+
 	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_new_clicked ){
 		OFA_MAIN_PAGE_GET_CLASS( page )->on_new_clicked( button, page );
 
@@ -472,6 +479,9 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 {
 	static const gchar *thisfn = "ofa_main_page_v_on_update_clicked";
 
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+
 	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_update_clicked ){
 		OFA_MAIN_PAGE_GET_CLASS( page )->on_update_clicked( button, page );
 
@@ -485,6 +495,9 @@ static void
 v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 {
 	static const gchar *thisfn = "ofa_main_page_v_on_delete_clicked";
+
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
 
 	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_delete_clicked ){
 		OFA_MAIN_PAGE_GET_CLASS( page )->on_delete_clicked( button, page );
@@ -650,7 +663,8 @@ ofa_main_page_get_update_btn( const ofaMainPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run ){
+	if( !page->private->dispose_has_run &&
+			page->private->btn_update ){
 
 		return( GTK_WIDGET( page->private->btn_update ));
 	}
@@ -666,7 +680,8 @@ ofa_main_page_get_delete_btn( const ofaMainPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run ){
+	if( !page->private->dispose_has_run &&
+			page->private->btn_delete ){
 
 		return( GTK_WIDGET( page->private->btn_delete ));
 	}

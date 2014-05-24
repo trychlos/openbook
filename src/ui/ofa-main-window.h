@@ -34,6 +34,34 @@
  * @include: ui/ofa-main-window.h
  *
  * This class manages the main window.
+ *
+ * Structure of the main window:
+ * +------------------------------------------------------------------+
+ * | ofaMainWindow (derived from GtkApplicationWindow)                |
+ * | +--------------------------------------------------------------+ |
+ * | | GtkGrid                                                      | |
+ * | | +----------------------------------------------------------+ | |
+ * | | | GtkMenuBar                                               | | |
+ * | | +----------------------------------------------------------+ | |
+ * | | | +-----------------+------------------------------------+ | | |
+ * | | | | GtkPaned        |                                    | | | |
+ * | | | | +-------------+ | +--------------------------------+ | | | |
+ * | | | | | GtkTreeView | | | GtkNotebook                    | | | | |
+ * | | | | |             | | |                                | | | | |
+ * | | | | |             | | | where each page is a GtkGrid   | | | | |
+ * | | | | |             | | |  which is handled by an        | | | | |
+ * | | | | |             | | |  ofaMainPage                   | | | | |
+ * | | | | |             | | |                                | | | | |
+ * | | | | |             | | | The GtkGrid is supposed to     | | | | |
+ * | | | | |             | | |  embed a GtkTreeView, either   | | | | |
+ * | | | | |             | | |  directly of via a GtkNotebook | | | | |
+ * | | | | |             | | |                                | | | | |
+ * | | | | |             | | |                                | | | | |
+ * | | | | +-------------+ | +--------------------------------+ | | | |
+ * | | | +-----------------+------------------------------------+ | | |
+ * | | +----------------------------------------------------------+ | |
+ * | +--------------------------------------------------------------+ |
+ * +------------------------------------------------------------------+
  */
 
 #include "ui/ofa-application.h"
@@ -89,13 +117,6 @@ typedef struct {
 	gchar *password;
 }
 	ofaOpenDossier;
-
-/* Are set against each page of the main notebook:
- * - the theme identifier when creating the page
- * - a pointer to the GObject-derived ofa* object which runs the page
- */
-#define OFA_DATA_THEME    "ofa-data-theme"
-#define OFA_DATA_HANDLER  "ofa-data-handler"
 
 GType          ofa_main_window_get_type          ( void );
 

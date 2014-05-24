@@ -106,7 +106,6 @@ typedef struct {
 	gint         theme_id;
 	const gchar *label;
 	GType      (*fn_get_type)( void );
-	void       (*fn_extern)( ofaMainPage * );
 }
 	sThemeDef;
 
@@ -122,28 +121,23 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_ACCOUNTS,
 				N_( "Chart of accounts" ),
-				ofa_accounts_chart_get_type,
-				ofa_accounts_chart_run },
+				ofa_accounts_chart_get_type },
 
 		{ THM_JOURNALS,
 				N_( "Journals" ),
-				ofa_journals_set_get_type,
-				ofa_journals_set_run },
+				ofa_journals_set_get_type },
 
 		{ THM_MODELS,
 				N_( "Entry models" ),
-				ofa_models_set_get_type,
-				ofa_models_set_run },
+				ofa_models_set_get_type },
 
 		{ THM_DEVISES,
 				N_( "Currencies" ),
-				ofa_devises_set_get_type,
-				ofa_devises_set_run },
+				ofa_devises_set_get_type },
 
 		{ THM_TAUX,
 				N_( "Rates" ),
-				ofa_taux_set_get_type,
-				ofa_taux_set_run },
+				ofa_taux_set_get_type },
 
 		{ 0 }
 };
@@ -155,8 +149,6 @@ static sThemeDef st_theme_defs[] = {
 typedef struct {
 	const gchar *label;
 	gint         theme_id;
-	GType      (*fn_get_type)( void );
-	void       (*fn_extern)( ofaMainPage * );
 }
 	sTreeDef;
 
@@ -176,6 +168,11 @@ static sTreeDef st_tree_defs[] = {
 		{ N_( "Rates" ),             THM_TAUX },
 		{ 0 }
 };
+
+/* A pointer to the handling ofaMainPage object is set against each page
+ * ( the GtkGrid) of the main notebook
+ */
+#define OFA_DATA_HANDLER                "ofa-data-handler"
 
 static const gchar               *st_dosmenu_xml = PKGUIDIR "/ofa-dos-menubar.ui";
 static const gchar               *st_dosmenu_id  = "dos-menu";
@@ -911,7 +908,6 @@ main_activate_theme( ofaMainWindow *main_window, gint theme )
 	static const gchar *thisfn = "ofa_main_window_main_book_activate_page";
 	GtkNotebook *main_book;
 	GtkWidget *page;
-	ofaMainPage *handler;
 	const sThemeDef *theme_def;
 
 	g_debug( "%s: main_window=%p, theme=%d", thisfn, ( void * ) main_window, theme );
@@ -922,7 +918,6 @@ main_activate_theme( ofaMainWindow *main_window, gint theme )
 	theme_def = get_theme_def_from_id( theme );
 	g_return_if_fail( theme_def );
 	g_return_if_fail( theme_def->fn_get_type );
-	g_return_if_fail( theme_def->fn_extern );
 
 	page = main_book_get_page( main_window, main_book, theme );
 	if( !page ){
@@ -930,11 +925,6 @@ main_activate_theme( ofaMainWindow *main_window, gint theme )
 	}
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 	main_book_activate_page( main_window, main_book, page );
-
-	handler = g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
-	g_return_if_fail( handler && OFA_IS_MAIN_PAGE( handler ));
-
-	(*theme_def->fn_extern)( handler );
 }
 
 static GtkNotebook *
@@ -953,12 +943,15 @@ main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
 {
 	GtkWidget *page, *found;
 	gint count, i, page_thm;
+	ofaMainPage *handler;
 
 	found = NULL;
 	count = gtk_notebook_get_n_pages( book );
 	for( i=0 ; !found && i<count ; ++i ){
 		page = gtk_notebook_get_nth_page( book, i );
-		page_thm = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page ), OFA_DATA_THEME ));
+		handler = ( ofaMainPage * ) g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
+		g_return_val_if_fail( handler && OFA_IS_MAIN_PAGE( handler ), NULL );
+		page_thm = ofa_main_page_get_theme( handler );
 		if( page_thm == theme ){
 			found = page;
 		}
@@ -969,7 +962,8 @@ main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
 
 /*
  * the page for this theme has not been found
- * so, create it, simultaneously instanciating the handling object
+ * so, create it as an empty GtkGrid, simultaneously instanciating the
+ * handling object as an ofaMainPage
  */
 static GtkWidget *
 main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def )
@@ -988,15 +982,16 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 	gtk_notebook_append_page( book, GTK_WIDGET( grid ), GTK_WIDGET( label ));
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( grid ), TRUE );
 
-	/* then instanciates the handing object
+	/* then instanciates the handling object which happens to be an
+	 * ofaMainPage
 	 */
 	handler = g_object_new(( *theme_def->fn_get_type )(),
-			MAIN_PAGE_PROP_WINDOW,  main,
-			MAIN_PAGE_PROP_DOSSIER, main->private->dossier,
-			MAIN_PAGE_PROP_GRID,    grid,
-			NULL );
+					MAIN_PAGE_PROP_WINDOW,  main,
+					MAIN_PAGE_PROP_DOSSIER, main->private->dossier,
+					MAIN_PAGE_PROP_GRID,    grid,
+					MAIN_PAGE_PROP_THEME,   theme_def->theme_id,
+					NULL );
 
-	g_object_set_data( G_OBJECT( grid ), OFA_DATA_THEME,   GINT_TO_POINTER ( theme_def->theme_id ));
 	g_object_set_data( G_OBJECT( grid ), OFA_DATA_HANDLER, handler );
 
 	return( GTK_WIDGET( grid ));
@@ -1004,6 +999,9 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 
 /*
  * ofa_main_book_activate_page:
+ *
+ * Activating the page mainly consists in giving the focus to the first
+ * embedded treeview.
  */
 static void
 main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page )
