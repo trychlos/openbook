@@ -63,6 +63,7 @@ static void       v_init_view( ofaMainPage *page );
 static void       insert_new_row( ofaDevisesSet *self, ofoDevise *devise, gboolean with_selection );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDevisesSet *self );
 static void       setup_first_selection( ofaDevisesSet *self );
+static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
 static void       on_devise_selected( GtkTreeSelection *selection, ofaDevisesSet *self );
 static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
@@ -215,6 +216,7 @@ v_setup_view( ofaMainPage *page )
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
+	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), page );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
@@ -346,6 +348,12 @@ setup_first_selection( ofaDevisesSet *self )
 	}
 
 	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+}
+
+static void
+on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page )
+{
+	v_on_update_clicked( NULL, page );
 }
 
 static void
