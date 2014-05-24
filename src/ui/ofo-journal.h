@@ -68,10 +68,10 @@ typedef struct {
 
 GType        ofo_journal_get_type     ( void ) G_GNUC_CONST;
 
-GList       *ofo_journal_get_dataset  ( ofoDossier *dossier );
-ofoJournal  *ofo_journal_get_by_id    ( ofoDossier *dossier, gint id );
-ofoJournal  *ofo_journal_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo );
-gboolean     ofo_journal_use_devise   ( ofoDossier *dossier, gint dev_id );
+GList       *ofo_journal_get_dataset  ( const ofoDossier *dossier );
+ofoJournal  *ofo_journal_get_by_id    ( const ofoDossier *dossier, gint id );
+ofoJournal  *ofo_journal_get_by_mnemo ( const ofoDossier *dossier, const gchar *mnemo );
+gboolean     ofo_journal_use_devise   ( const ofoDossier *dossier, gint dev_id );
 
 ofoJournal  *ofo_journal_new          ( void );
 
@@ -82,7 +82,7 @@ const gchar *ofo_journal_get_notes    ( const ofoJournal *journal );
 
 const GDate *ofo_journal_get_cloture  ( const ofoJournal *journal, gint exe_id );
 
-gboolean     ofo_journal_is_deletable ( const ofoJournal *journal );
+gboolean     ofo_journal_is_deletable ( const ofoJournal *journal, const ofoDossier *dossier );
 gboolean     ofo_journal_is_valid     ( const gchar *mnemo, const gchar *label );
 
 void         ofo_journal_set_id       ( ofoJournal *journal, gint id );

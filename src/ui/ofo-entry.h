@@ -82,9 +82,10 @@ typedef enum {
 }
 	ofaEntryStatus;
 
-GType     ofo_entry_get_type  ( void ) G_GNUC_CONST;
+GType     ofo_entry_get_type   ( void ) G_GNUC_CONST;
 
-gboolean  ofo_entry_use_devise( ofoDossier *dossier, gint dev_id );
+gboolean  ofo_entry_use_devise ( const ofoDossier *dossier, gint dev_id );
+gboolean  ofo_entry_use_journal( const ofoDossier *dossier, gint jou_id );
 
 ofoEntry *ofo_entry_insert_new( ofoSgbd *sgbd, const gchar *user,
 									const GDate *effet, const GDate *ope,

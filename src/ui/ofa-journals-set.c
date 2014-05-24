@@ -380,7 +380,10 @@ on_journal_selected( GtkTreeSelection *selection, ofaJournalsSet *self )
 
 	gtk_widget_set_sensitive(
 			ofa_main_page_get_delete_btn( OFA_MAIN_PAGE( self )),
-			journal && OFO_IS_JOURNAL( journal ) && ofo_journal_is_deletable( journal ));
+			journal &&
+					OFO_IS_JOURNAL( journal ) &&
+					ofo_journal_is_deletable( journal,
+							ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ))));
 }
 
 static void
@@ -453,6 +456,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
+	ofoDossier *dossier;
 	ofoJournal *journal;
 
 	g_return_if_fail( page && OFA_IS_JOURNALS_SET( page ));
@@ -465,10 +469,11 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &journal, -1 );
 		g_object_unref( journal );
 
-		g_return_if_fail( ofo_journal_is_deletable( journal ));
+		dossier = ofa_main_page_get_dossier( page );
+		g_return_if_fail( ofo_journal_is_deletable( journal, dossier ));
 
 		if( delete_confirmed( OFA_JOURNALS_SET( page ), journal ) &&
-				ofo_journal_delete( journal, ofa_main_page_get_dossier( page ))){
+				ofo_journal_delete( journal, dossier )){
 
 			g_signal_emit_by_name(
 					page, OFA_SIGNAL_JOURNAL_UPDATED, MAIN_PAGE_OBJECT_DELETED, journal );

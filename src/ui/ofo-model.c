@@ -83,6 +83,7 @@ OFO_BASE_DEFINE_GLOBAL( st_global, model )
 
 static GList         *model_load_dataset( void );
 static ofoModel      *model_find_by_mnemo( GList *set, const gchar *mnemo );
+static gint           model_count_for_journal( ofoSgbd *sgbd, gint jou_id );
 static gboolean       model_do_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
 static gboolean       model_insert_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
 static gboolean       model_reset_id( ofoModel *model, ofoSgbd *sgbd );
@@ -199,7 +200,7 @@ ofo_model_class_init( ofoModelClass *klass )
  * should not be freed by the caller.
  */
 GList *
-ofo_model_get_dataset( ofoDossier *dossier )
+ofo_model_get_dataset( const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_model_get_dataset";
 
@@ -325,7 +326,7 @@ model_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoModel *
-ofo_model_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
+ofo_model_get_by_mnemo( const ofoDossier *dossier, const gchar *mnemo )
 {
 	static const gchar *thisfn = "ofo_model_get_by_mnemo";
 
@@ -351,6 +352,44 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_model_use_journal:
+ *
+ * Returns: %TRUE if a recorded entry makes use of the specified currency.
+ */
+gboolean
+ofo_model_use_journal( const ofoDossier *dossier, gint jou_id )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	return( model_count_for_journal( ofo_dossier_get_sgbd( dossier ), jou_id ) > 0 );
+}
+
+static gint
+model_count_for_journal( ofoSgbd *sgbd, gint jou_id )
+{
+	gint count;
+	gchar *query;
+	GSList *result, *icol;
+
+	query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_MODELES "
+				"	WHERE MOD_JOU_ID=%d",
+					jou_id );
+
+	count = 0;
+	result = ofo_sgbd_query_ex( sgbd, query );
+	g_free( query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		count = atoi(( gchar * ) icol->data );
+		ofo_sgbd_free_result( result );
+	}
+
+	return( count );
 }
 
 /**

@@ -63,8 +63,9 @@ typedef struct {
 
 GType        ofo_model_get_type          ( void ) G_GNUC_CONST;
 
-GList       *ofo_model_get_dataset       ( ofoDossier *dossier );
-ofoModel    *ofo_model_get_by_mnemo      ( ofoDossier *dossier, const gchar *mnemo );
+GList       *ofo_model_get_dataset       ( const ofoDossier *dossier );
+ofoModel    *ofo_model_get_by_mnemo      ( const ofoDossier *dossier, const gchar *mnemo );
+gboolean     ofo_model_use_journal       ( const ofoDossier *dossier, gint jou_id );
 
 ofoModel    *ofo_model_new               ( void );
 

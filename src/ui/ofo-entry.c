@@ -68,6 +68,7 @@ G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 #define OFO_ENTRY_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_ENTRY, ofoEntryPrivate))
 
 static gint     entry_count_for_devise( ofoSgbd *sgbd, gint dev_id );
+static gint     entry_count_for_journal( ofoSgbd *sgbd, gint jou_id );
 static gboolean ofo_entry_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
 
 static void
@@ -147,7 +148,7 @@ ofo_entry_class_init( ofoEntryClass *klass )
  * Returns: %TRUE if a recorded entry makes use of the specified currency.
  */
 gboolean
-ofo_entry_use_devise( ofoDossier *dossier, gint dev_id )
+ofo_entry_use_devise( const ofoDossier *dossier, gint dev_id )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
@@ -165,6 +166,44 @@ entry_count_for_devise( ofoSgbd *sgbd, gint dev_id )
 				"SELECT COUNT(*) FROM OFA_T_ECRITURES "
 				"	WHERE ECR_DEV_ID=%d",
 					dev_id );
+
+	count = 0;
+	result = ofo_sgbd_query_ex( sgbd, query );
+	g_free( query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		count = atoi(( gchar * ) icol->data );
+		ofo_sgbd_free_result( result );
+	}
+
+	return( count );
+}
+
+/**
+ * ofo_entry_use_journal:
+ *
+ * Returns: %TRUE if a recorded entry makes use of the specified currency.
+ */
+gboolean
+ofo_entry_use_journal( const ofoDossier *dossier, gint jou_id )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	return( entry_count_for_journal( ofo_dossier_get_sgbd( dossier ), jou_id ) > 0 );
+}
+
+static gint
+entry_count_for_journal( ofoSgbd *sgbd, gint jou_id )
+{
+	gint count;
+	gchar *query;
+	GSList *result, *icol;
+
+	query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_ECRITURES "
+				"	WHERE ECR_JOU_ID=%d",
+					jou_id );
 
 	count = 0;
 	result = ofo_sgbd_query_ex( sgbd, query );

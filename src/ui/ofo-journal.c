@@ -33,7 +33,9 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-entry.h"
 #include "ui/ofo-journal.h"
+#include "ui/ofo-model.h"
 
 /* priv instance data
  */
@@ -176,7 +178,7 @@ ofo_journal_class_init( ofoJournalClass *klass )
  * provided dataset.
  */
 GList *
-ofo_journal_get_dataset( ofoDossier *dossier )
+ofo_journal_get_dataset( const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_journal_get_dataset";
 
@@ -302,7 +304,7 @@ journal_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoJournal *
-ofo_journal_get_by_id( ofoDossier *dossier, gint id )
+ofo_journal_get_by_id( const ofoDossier *dossier, gint id )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( id > 0, NULL );
@@ -335,7 +337,7 @@ journal_find_by_id( GList *set, gint id )
  * not be unreffed by the caller.
  */
 ofoJournal *
-ofo_journal_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
+ofo_journal_get_by_mnemo( const ofoDossier *dossier, const gchar *mnemo )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
@@ -366,7 +368,7 @@ journal_find_by_mnemo( GList *set, const gchar *mnemo )
  * currency.
  */
 gboolean
-ofo_journal_use_devise( ofoDossier *dossier, gint dev_id )
+ofo_journal_use_devise( const ofoDossier *dossier, gint dev_id )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
@@ -424,6 +426,7 @@ ofo_journal_get_id( const ofoJournal *journal )
 		return( journal->priv->id );
 	}
 
+	g_assert_not_reached();
 	return( OFO_BASE_UNSET_ID );
 }
 
@@ -442,6 +445,7 @@ ofo_journal_get_mnemo( const ofoJournal *journal )
 		mnemo = journal->priv->mnemo;
 	}
 
+	g_assert_not_reached();
 	return( mnemo );
 }
 
@@ -460,6 +464,7 @@ ofo_journal_get_label( const ofoJournal *journal )
 		label = journal->priv->label;
 	}
 
+	g_assert_not_reached();
 	return( label );
 }
 
@@ -469,16 +474,15 @@ ofo_journal_get_label( const ofoJournal *journal )
 const gchar *
 ofo_journal_get_notes( const ofoJournal *journal )
 {
-	const gchar *notes = NULL;
-
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
 	if( !journal->priv->dispose_has_run ){
 
-		notes = journal->priv->notes;
+		return(( const gchar * ) journal->priv->notes );
 	}
 
-	return( notes );
+	g_assert_not_reached();
+	return( NULL );
 }
 
 /**
@@ -499,6 +503,7 @@ ofo_journal_get_cloture( const ofoJournal *journal, gint exe_id )
 		}
 	}
 
+	g_assert_not_reached();
 	return( NULL );
 }
 
@@ -523,30 +528,43 @@ journal_find_exe_by_id( const ofoJournal *journal, gint exe_id )
  *
  * A journal is considered to be deletable if no entry has been recorded
  * during the current exercice - This means that all its amounts must be
- * nuls for all currencies
+ * nuls for all currencies.
  *
  * There is no need to test for the last closing date as this is not
- * relevant here: if set, it may be from the previous exercice, and if
- * unset, we have to check for the details
+ * relevant here: even if set, they does not mean that there has been
+ * any entries recorded on the journal.
+ *
+ * More: a journal should not be deleted while it is referenced by a
+ * model or an entry.
  */
 gboolean
-ofo_journal_is_deletable( const ofoJournal *journal )
+ofo_journal_is_deletable( const ofoJournal *journal, const ofoDossier *dossier )
 {
 	gboolean ok;
 	GList *ic;
+	gint exe_id;
 	sDetailDev *detail;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
+	/* a journal whose internal identifier is not set is deletable,
+	 * but this should never appear */
+	g_return_val_if_fail( ofo_journal_get_id( journal ) > 0, TRUE );
 
 	if( !journal->priv->dispose_has_run ){
 
 		ok = TRUE;
+		exe_id = ofo_dossier_get_exercice_id( dossier );
 
 		for( ic=journal->priv->amounts ; ic && ok ; ic=ic->next ){
 			detail = ( sDetailDev * ) ic->data;
-			ok &= detail->clo_deb == 0.0 && detail->clo_cre == 0.0 &&
-					detail->deb == 0.0 && detail->cre == 0.0;
+			if( detail->exe_id == exe_id ){
+				ok &= detail->clo_deb == 0.0 && detail->clo_cre == 0.0 &&
+						detail->deb == 0.0 && detail->cre == 0.0;
+			}
 		}
+
+		ok &= !ofo_entry_use_journal( dossier, ofo_journal_get_id( journal )) &&
+				!ofo_model_use_journal( dossier, ofo_journal_get_id( journal ));
 
 		return( ok );
 	}
@@ -696,6 +714,7 @@ ofo_journal_insert( ofoJournal *journal, ofoDossier *dossier )
 		}
 	}
 
+	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -841,6 +860,7 @@ ofo_journal_update( ofoJournal *journal, ofoDossier *dossier )
 		}
 	}
 
+	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -915,6 +935,7 @@ ofo_journal_delete( ofoJournal *journal, ofoDossier *dossier )
 		}
 	}
 
+	g_assert_not_reached();
 	return( FALSE );
 }
 

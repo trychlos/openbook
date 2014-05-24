@@ -152,7 +152,7 @@ ofo_devise_class_init( ofoDeviseClass *klass )
  * provided dataset.
  */
 GList *
-ofo_devise_get_dataset( ofoDossier *dossier )
+ofo_devise_get_dataset( const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_devise_get_dataset";
 
@@ -210,7 +210,7 @@ devise_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoDevise *
-ofo_devise_get_by_code( ofoDossier *dossier, const gchar *code )
+ofo_devise_get_by_code( const ofoDossier *dossier, const gchar *code )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( code && g_utf8_strlen( code, -1 ), NULL );
@@ -260,6 +260,7 @@ ofo_devise_get_id( const ofoDevise *devise )
 		return( devise->priv->id );
 	}
 
+	g_assert_not_reached();
 	return( OFO_BASE_UNSET_ID );
 }
 
@@ -276,6 +277,7 @@ ofo_devise_get_code( const ofoDevise *devise )
 		return( devise->priv->code );
 	}
 
+	g_assert_not_reached();
 	return( NULL );
 }
 
@@ -292,6 +294,7 @@ ofo_devise_get_label( const ofoDevise *devise )
 		return( devise->priv->label );
 	}
 
+	g_assert_not_reached();
 	return( NULL );
 }
 
@@ -308,6 +311,7 @@ ofo_devise_get_symbol( const ofoDevise *devise )
 		return( devise->priv->symbol );
 	}
 
+	g_assert_not_reached();
 	return( NULL );
 }
 
@@ -336,6 +340,7 @@ ofo_devise_is_deletable( const ofoDevise *devise )
 				!ofo_account_use_devise( dossier, ofo_devise_get_id( devise )));
 	}
 
+	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -438,6 +443,7 @@ ofo_devise_insert( ofoDevise *devise, ofoDossier *dossier )
 		}
 	}
 
+	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -522,6 +528,7 @@ ofo_devise_update( ofoDevise *devise, ofoDossier *dossier )
 		}
 	}
 
+	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -584,6 +591,7 @@ ofo_devise_delete( ofoDevise *devise, ofoDossier *dossier )
 		}
 	}
 
+	g_assert_not_reached();
 	return( FALSE );
 }
 
