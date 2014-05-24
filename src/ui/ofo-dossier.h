@@ -73,6 +73,8 @@ const gchar  *ofo_dossier_get_name( const ofoDossier *dossier );
 const gchar  *ofo_dossier_get_user( const ofoDossier *dossier );
 ofoSgbd      *ofo_dossier_get_sgbd( const ofoDossier *dossier );
 
+gint          ofo_dossier_get_exercice_id( const ofoDossier *dossier );
+
 gboolean      ofo_dossier_entry_insert      ( ofoDossier *dossier,
 												const GDate *effet, const GDate *ope,
 												const gchar *label, const gchar *ref,

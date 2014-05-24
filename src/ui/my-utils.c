@@ -110,7 +110,7 @@ my_utils_display_from_date( const GDate *date, myUtilsDateFormat format )
 
 	str = g_strdup( "" );
 
-	if( g_date_valid( date )){
+	if( date && g_date_valid( date )){
 		switch( format ){
 
 			case MY_UTILS_DATE_DMMM:

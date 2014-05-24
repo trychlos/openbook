@@ -58,18 +58,13 @@ typedef struct {
 }
 	ofaDevisesSet;
 
-typedef struct _ofaDevisesSetClassPrivate   ofaDevisesSetClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	ofaMainPageClass           parent;
-	ofaDevisesSetClassPrivate *private;
+	ofaMainPageClass parent;
 }
 	ofaDevisesSetClass;
 
 GType ofa_devises_set_get_type( void );
-
-void  ofa_devises_set_run     ( ofaMainPage *this );
 
 G_END_DECLS
 

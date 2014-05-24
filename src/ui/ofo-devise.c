@@ -212,12 +212,8 @@ devise_load_dataset( void )
 ofoDevise *
 ofo_devise_get_by_code( ofoDossier *dossier, const gchar *code )
 {
-	static const gchar *thisfn = "ofo_devise_get_by_code";
-
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( code && g_utf8_strlen( code, -1 ), NULL );
-
-	g_debug( "%s: dossier=%p, code=%s", thisfn, ( void * ) dossier, code );
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
 

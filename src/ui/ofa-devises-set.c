@@ -35,12 +35,6 @@
 #include "ui/ofa-devises-set.h"
 #include "ui/ofo-devise.h"
 
-/* private class data
- */
-struct _ofaDevisesSetClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaDevisesSetPrivate {
@@ -69,7 +63,6 @@ static void       v_init_view( ofaMainPage *page );
 static void       insert_new_row( ofaDevisesSet *self, ofoDevise *devise, gboolean with_selection );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDevisesSet *self );
 static void       setup_first_selection( ofaDevisesSet *self );
-static void       store_set_devise( GtkTreeModel *model, GtkTreeIter *iter, const ofoDevise *devise );
 static void       on_devise_selected( GtkTreeSelection *selection, ofaDevisesSet *self );
 static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
@@ -117,17 +110,13 @@ static void
 class_init( ofaDevisesSetClass *klass )
 {
 	static const gchar *thisfn = "ofa_devises_set_class_init";
-	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
 	st_parent_class = g_type_class_peek_parent( klass );
 
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaDevisesSetClassPrivate, 1 );
+	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
+	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
 
 	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
@@ -171,12 +160,10 @@ instance_dispose( GObject *instance )
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->dispose( instance );
 }
 
 static void
@@ -194,27 +181,8 @@ instance_finalize( GObject *instance )
 
 	g_free( self->private );
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
-}
-
-/**
- * ofa_devises_set_run:
- *
- * When called by the main_window, the page has been created, showed
- * and activated - there is nothing left to do here....
- */
-void
-ofa_devises_set_run( ofaMainPage *this )
-{
-	static const gchar *thisfn = "ofa_devises_set_run";
-
-	g_return_if_fail( this && OFA_IS_DEVISES_SET( this ));
-
-	g_debug( "%s: this=%p (%s)",
-			thisfn, ( void * ) this, G_OBJECT_TYPE_NAME( this ));
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->finalize( instance );
 }
 
 static GtkWidget *
@@ -223,8 +191,8 @@ v_setup_view( ofaMainPage *page )
 	ofaDevisesSet *self;
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
-	GtkTreeView *view;
-	GtkTreeModel *model;
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
@@ -242,23 +210,23 @@ v_setup_view( ofaMainPage *page )
 	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( scroll ));
 
-	view = GTK_TREE_VIEW( gtk_tree_view_new());
-	gtk_widget_set_vexpand( GTK_WIDGET( view ), TRUE );
-	gtk_tree_view_set_headers_visible( view, TRUE );
-	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( view ));
+	tview = GTK_TREE_VIEW( gtk_tree_view_new());
+	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
+	gtk_tree_view_set_headers_visible( tview, TRUE );
+	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
 
-	model = GTK_TREE_MODEL( gtk_list_store_new(
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
-	gtk_tree_view_set_model( view, model );
-	g_object_unref( model );
+	gtk_tree_view_set_model( tview, tmodel );
+	g_object_unref( tmodel );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "ISO 3A code" ),
 			text_cell, "text", COL_CODE,
 			NULL );
-	gtk_tree_view_append_column( view, column );
+	gtk_tree_view_append_column( tview, column );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -266,24 +234,24 @@ v_setup_view( ofaMainPage *page )
 			text_cell, "text", COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_append_column( view, column );
+	gtk_tree_view_append_column( tview, column );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Symbol" ),
 			text_cell, "text", COL_SYMBOL,
 			NULL );
-	gtk_tree_view_append_column( view, column );
+	gtk_tree_view_append_column( tview, column );
 
-	select = gtk_tree_view_get_selection( view );
+	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_devise_selected ), self );
 
 	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( model ), ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
 	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( model ),
+			GTK_TREE_SORTABLE( tmodel ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	return( GTK_WIDGET( frame ));
@@ -298,7 +266,7 @@ v_init_view( ofaMainPage *page )
 	ofoDevise *devise;
 
 	self = OFA_DEVISES_SET( page );
-	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+	dossier = ofa_main_page_get_dossier( page );
 	dataset = ofo_devise_get_dataset( dossier );
 
 	for( iset=dataset ; iset ; iset=iset->next ){
@@ -380,19 +348,6 @@ setup_first_selection( ofaDevisesSet *self )
 }
 
 static void
-store_set_devise( GtkTreeModel *model, GtkTreeIter *iter, const ofoDevise *devise )
-{
-	gtk_list_store_set(
-			GTK_LIST_STORE( model ),
-			iter,
-			COL_CODE,  ofo_devise_get_code( devise ),
-			COL_LABEL,  ofo_devise_get_label( devise ),
-			COL_SYMBOL, ofo_devise_get_symbol( devise ),
-			COL_OBJECT, devise,
-			-1 );
-}
-
-static void
 on_devise_selected( GtkTreeSelection *selection, ofaDevisesSet *self )
 {
 	GtkTreeModel *tmodel;
@@ -418,12 +373,17 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 {
 	ofoDevise *devise;
 
+	g_return_if_fail( page && OFA_IS_DEVISES_SET( page ));
+
 	devise = ofo_devise_new();
 
 	if( ofa_devise_properties_run(
 			ofa_main_page_get_main_window( page ), devise )){
 
 		insert_new_row( OFA_DEVISES_SET( page ), devise, TRUE );
+
+	} else {
+		g_object_unref( devise );
 	}
 }
 
@@ -436,6 +396,8 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 	GtkTreeIter iter;
 	ofoDevise *devise;
 
+	g_return_if_fail( page && OFA_IS_DEVISES_SET( page ));
+
 	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( page ));
 	select = gtk_tree_view_get_selection( tview );
 
@@ -447,7 +409,13 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 		if( ofa_devise_properties_run(
 				ofa_main_page_get_main_window( page ), devise )){
 
-			store_set_devise( tmodel, &iter, devise );
+			gtk_list_store_set(
+					GTK_LIST_STORE( tmodel ),
+					&iter,
+					COL_CODE,  ofo_devise_get_code( devise ),
+					COL_LABEL,  ofo_devise_get_label( devise ),
+					COL_SYMBOL, ofo_devise_get_symbol( devise ),
+					-1 );
 		}
 	}
 
@@ -463,6 +431,8 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 	GtkTreeIter iter;
 	ofoDevise *devise;
 
+	g_return_if_fail( page && OFA_IS_DEVISES_SET( page ));
+
 	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( page ));
 	select = gtk_tree_view_get_selection( tview );
 
@@ -470,6 +440,8 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &devise, -1 );
 		g_object_unref( devise );
+
+		g_return_if_fail( ofo_devise_is_deletable( devise ));
 
 		if( delete_confirmed( OFA_DEVISES_SET( page ), devise ) &&
 				ofo_devise_delete( devise, ofa_main_page_get_dossier( page ))){

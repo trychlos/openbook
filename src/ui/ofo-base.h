@@ -76,15 +76,15 @@ typedef struct {
 }
 	ofoBaseGlobal;
 
-#define OFO_BASE_DEFINE_GLOBAL( V,T )         static ofoBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer user_data, GObject *finalizing_dossier ) \
-												{ if((V)){ g_list_foreach((V)->dataset, (GFunc) g_object_unref, NULL ); g_list_free((V)->dataset ); \
-												g_free((V)); (V)=NULL; }}
+#define OFO_BASE_DEFINE_GLOBAL( V,T )       static ofoBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer user_data, GObject *finalizing_dossier ) \
+												{ g_debug( #T "_clear_global:" ); if(V){ g_list_foreach((V)->dataset, (GFunc) g_object_unref, NULL ); \
+												g_list_free((V)->dataset ); g_free(V); (V)=NULL; }}
 
-#define OFO_BASE_SET_GLOBAL( P,D,T )        ({ (P)=ofo_base_get_global((P),(OFO_BASE((D))),(GWeakNotify)(T ## _clear_global),NULL); if(!(P)->dataset){ (P)->dataset=(T ## _load_dataset)();} })
+#define OFO_BASE_SET_GLOBAL( P,D,T )        ({ (P)=ofo_base_get_global((P),OFO_BASE(D),(GWeakNotify)(T ## _clear_global),NULL); if(!(P)->dataset){ (P)->dataset=(T ## _load_dataset)();} })
 
 #define OFO_BASE_ADD_TO_DATASET( P,T )      ({ (P)->dataset=g_list_insert_sorted((P)->dataset,(T),(GCompareFunc)(T ## _cmp_by_ptr)); })
-#define OFO_BASE_REMOVE_FROM_DATASET( P,T ) ({ (P)->dataset=g_list_remove((P)->dataset,(T)); g_object_unref((T)); })
-#define OFO_BASE_UPDATE_DATASET( P,T )      ({ OFO_BASE_REMOVE_FROM_DATASET((P),(T)); OFO_BASE_ADD_TO_DATASET(P,T); })
+#define OFO_BASE_REMOVE_FROM_DATASET( P,T ) ({ (P)->dataset=g_list_remove((P)->dataset,(T)); g_object_unref(T); })
+#define OFO_BASE_UPDATE_DATASET( P,T )      ({ g_object_ref(T); OFO_BASE_REMOVE_FROM_DATASET((P),(T)); OFO_BASE_ADD_TO_DATASET((P),T); })
 
 #define OFO_BASE_UNSET_ID                   -1
 

@@ -66,7 +66,7 @@ typedef enum {
 /**
  * Signals defined on this base class
  */
-#define MAIN_PAGE_SIGNAL_JOURNAL_UPDATED    "main-page-signal-journal-updated"
+#define OFA_SIGNAL_JOURNAL_UPDATED          "ofa-signal-journal-updated"
 
 GType          ofa_main_page_get_type       ( void );
 

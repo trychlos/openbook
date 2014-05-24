@@ -56,12 +56,9 @@ typedef struct {
 }
 	ofaJournalProperties;
 
-typedef struct _ofaJournalPropertiesClassPrivate   ofaJournalPropertiesClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GObjectClass                      parent;
-	ofaJournalPropertiesClassPrivate *private;
+	GObjectClass parent;
 }
 	ofaJournalPropertiesClass;
 

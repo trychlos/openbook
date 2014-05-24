@@ -35,7 +35,7 @@
  * Display the chart of accounts, letting the user edit it.
  */
 
-#include "ui/ofa-main-page.h"
+#include "ui/ofa-main-page-def.h"
 
 G_BEGIN_DECLS
 
@@ -55,18 +55,13 @@ typedef struct {
 }
 	ofaJournalsSet;
 
-typedef struct _ofaJournalsSetClassPrivate   ofaJournalsSetClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	ofaMainPageClass            parent;
-	ofaJournalsSetClassPrivate *private;
+	ofaMainPageClass parent;
 }
 	ofaJournalsSetClass;
 
 GType ofa_journals_set_get_type( void );
-
-void  ofa_journals_set_run     ( ofaMainPage *this );
 
 G_END_DECLS
 

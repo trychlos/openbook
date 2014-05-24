@@ -86,11 +86,15 @@ static void       instance_get_property( GObject *object, guint property_id, GVa
 static void       instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
 static void       instance_dispose( GObject *instance );
 static void       instance_finalize( GObject *instance );
-static void       v_setup_page( ofaMainPage *self );
-static GtkWidget *v_setup_buttons( ofaMainPage *self );
-static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
-static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
-static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
+static void       do_setup_page( ofaMainPage *page );
+static void       v_setup_page( ofaMainPage *page );
+static GtkWidget *do_setup_view( ofaMainPage *page );
+static GtkWidget *do_setup_buttons( ofaMainPage *page );
+static GtkWidget *v_setup_buttons( ofaMainPage *page );
+static void       do_init_view( ofaMainPage *page );
+static void       do_on_new_clicked( GtkButton *button, ofaMainPage *page );
+static void       do_on_update_clicked( GtkButton *button, ofaMainPage *page );
+static void       do_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static void       on_journal_changed_class_handler( ofaMainPage *page, ofaMainPageUpdateType type, ofoBase *journal );
 static void       on_grid_finalized( ofaMainPage *self, GObject *grid );
 static void       main_page_free_dataset( const ofaMainPage *page );
@@ -193,7 +197,7 @@ class_init( ofaMainPageClass *klass )
 	 */
 	st_signals[ JOURNAL_CHANGED ] =
 			g_signal_new_class_handler(
-					MAIN_PAGE_SIGNAL_JOURNAL_UPDATED,
+					OFA_SIGNAL_JOURNAL_UPDATED,
 					G_TYPE_FROM_CLASS( klass ),
 					G_SIGNAL_RUN_LAST,
 					G_CALLBACK( on_journal_changed_class_handler ),
@@ -260,7 +264,8 @@ instance_constructed( GObject *instance )
 			( void * ) priv->grid );
 #endif
 
-	/* attach a weak reference to the grid widget to unref this object */
+	/* attach a weak reference to the grid widget to unref this object
+	 * and (more useful) the derived class which handles it */
 	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
 	g_object_weak_ref(
 			G_OBJECT( priv->grid ),
@@ -268,7 +273,7 @@ instance_constructed( GObject *instance )
 			OFA_MAIN_PAGE( instance ));
 
 	/* let the child class setup its page */
-	OFA_MAIN_PAGE_GET_CLASS( instance )->setup_page( OFA_MAIN_PAGE( instance ));
+	do_setup_page( OFA_MAIN_PAGE( instance ));
 }
 
 /*
@@ -394,6 +399,19 @@ instance_finalize( GObject *instance )
 }
 
 static void
+do_setup_page( ofaMainPage *page )
+{
+	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+
+	if( OFA_MAIN_PAGE_GET_CLASS( page )->setup_page ){
+		OFA_MAIN_PAGE_GET_CLASS( page )->setup_page( page );
+
+	} else {
+		v_setup_page( page );
+	}
+}
+
+static void
 v_setup_page( ofaMainPage *page )
 {
 	GtkWidget *view;
@@ -401,25 +419,56 @@ v_setup_page( ofaMainPage *page )
 
 	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
 
-	view = NULL;
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->setup_view ){
-		view = OFA_MAIN_PAGE_GET_CLASS( page )->setup_view( page );
-	}
+	view = do_setup_view( page );
 	if( view ){
 		gtk_grid_attach( page->private->grid, view, 0, 0, 1, 1 );
 	}
 
-	buttons_box = NULL;
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->setup_buttons ){
-		buttons_box = OFA_MAIN_PAGE_GET_CLASS( page )->setup_buttons( page );
-	}
+	buttons_box = do_setup_buttons( page );
 	if( buttons_box ){
 		gtk_grid_attach( page->private->grid, buttons_box, 1, 0, 1, 1 );
 	}
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->init_view ){
-		OFA_MAIN_PAGE_GET_CLASS( page )->init_view( page );
+	do_init_view( page );
+}
+
+static GtkWidget *
+do_setup_view( ofaMainPage *page )
+{
+	static const gchar *thisfn = "ofa_main_page_do_setup_view";
+	GtkWidget *view;
+
+	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+
+	view = NULL;
+
+	if( OFA_MAIN_PAGE_GET_CLASS( page )->setup_view ){
+		view = OFA_MAIN_PAGE_GET_CLASS( page )->setup_view( page );
+
+	} else {
+		g_debug( "%s: page=%p", thisfn, ( void * ) page );
 	}
+
+	return( view );
+}
+
+static GtkWidget *
+do_setup_buttons( ofaMainPage *page )
+{
+	GtkWidget *buttons_box;
+
+	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+
+	buttons_box = NULL;
+
+	if( OFA_MAIN_PAGE_GET_CLASS( page )->setup_buttons ){
+		buttons_box = OFA_MAIN_PAGE_GET_CLASS( page )->setup_buttons( page );
+
+	} else {
+		v_setup_buttons( page );
+	}
+
+	return( buttons_box );
 }
 
 static GtkWidget *
@@ -439,19 +488,19 @@ v_setup_buttons( ofaMainPage *page )
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 30 );
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_New..." )));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( v_on_new_clicked ), page );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_new_clicked ), page );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	page->private->btn_new = button;
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Update..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( v_on_update_clicked ), page );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_update_clicked ), page );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	page->private->btn_update = button;
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Delete..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( v_on_delete_clicked ), page );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_delete_clicked ), page );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	page->private->btn_delete = button;
 
@@ -459,9 +508,24 @@ v_setup_buttons( ofaMainPage *page )
 }
 
 static void
-v_on_new_clicked( GtkButton *button, ofaMainPage *page )
+do_init_view( ofaMainPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_v_on_new_clicked";
+	static const gchar *thisfn = "ofa_main_page_do_init_view";
+
+	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+
+	if( OFA_MAIN_PAGE_GET_CLASS( page )->init_view ){
+		OFA_MAIN_PAGE_GET_CLASS( page )->init_view( page );
+
+	} else {
+		g_debug( "%s: page=%p", thisfn, ( void * ) page );
+	}
+}
+
+static void
+do_on_new_clicked( GtkButton *button, ofaMainPage *page )
+{
+	static const gchar *thisfn = "ofa_main_page_do_on_new_clicked";
 
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
@@ -476,9 +540,9 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 static void
-v_on_update_clicked( GtkButton *button, ofaMainPage *page )
+do_on_update_clicked( GtkButton *button, ofaMainPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_v_on_update_clicked";
+	static const gchar *thisfn = "ofa_main_page_do_on_update_clicked";
 
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
@@ -493,9 +557,9 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 static void
-v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
+do_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_v_on_delete_clicked";
+	static const gchar *thisfn = "ofa_main_page_do_on_delete_clicked";
 
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
@@ -510,7 +574,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 /*
- * default class handler for MAIN_PAGE_SIGNAL_JOURNAL_UPDATED signal
+ * default class handler for OFA_SIGNAL_JOURNAL_UPDATED signal
  */
 static void
 on_journal_changed_class_handler( ofaMainPage *page, ofaMainPageUpdateType type, ofoBase *journal )

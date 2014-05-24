@@ -34,12 +34,6 @@
 #include "ui/ofa-journal-properties.h"
 #include "ui/ofo-dossier.h"
 
-/* private class data
- */
-struct _ofaJournalPropertiesClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaJournalPropertiesPrivate {
@@ -80,7 +74,6 @@ static void      on_mnemo_changed( GtkEntry *entry, ofaJournalProperties *self )
 static void      on_label_changed( GtkEntry *entry, ofaJournalProperties *self );
 static void      check_for_enable_dlg( ofaJournalProperties *self );
 static gboolean  do_update( ofaJournalProperties *self );
-static void      error_duplicate( ofaJournalProperties *self, ofoJournal *existing );
 
 GType
 ofa_journal_properties_get_type( void )
@@ -123,17 +116,13 @@ static void
 class_init( ofaJournalPropertiesClass *klass )
 {
 	static const gchar *thisfn = "ofa_journal_properties_class_init";
-	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
 	st_parent_class = g_type_class_peek_parent( klass );
 
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaJournalPropertiesClassPrivate, 1 );
+	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
+	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
 }
 
 static void
@@ -156,17 +145,17 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_dispose( GObject *window )
+instance_dispose( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_journal_properties_instance_dispose";
 	ofaJournalPropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_JOURNAL_PROPERTIES( window ));
+	g_return_if_fail( OFA_IS_JOURNAL_PROPERTIES( instance ));
 
-	priv = ( OFA_JOURNAL_PROPERTIES( window ))->private;
+	priv = ( OFA_JOURNAL_PROPERTIES( instance ))->private;
 
 	if( !priv->dispose_has_run ){
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+		g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -175,32 +164,28 @@ instance_dispose( GObject *window )
 		g_free( priv->maj_user );
 
 		gtk_widget_destroy( GTK_WIDGET( priv->dialog ));
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( window );
-		}
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->dispose( instance );
 }
 
 static void
-instance_finalize( GObject *window )
+instance_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_journal_properties_instance_finalize";
 	ofaJournalProperties *self;
 
-	g_return_if_fail( OFA_IS_JOURNAL_PROPERTIES( window ));
+	g_return_if_fail( OFA_IS_JOURNAL_PROPERTIES( instance ));
 
-	g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self = OFA_JOURNAL_PROPERTIES( window );
+	self = OFA_JOURNAL_PROPERTIES( instance );
 
 	g_free( self->private );
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( window );
-	}
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->finalize( instance );
 }
 
 /**
@@ -359,12 +344,21 @@ check_for_enable_dlg( ofaJournalProperties *self )
 {
 	ofaJournalPropertiesPrivate *priv;
 	GtkWidget *button;
+	ofoJournal *exists;
+	gboolean ok;
 
 	priv = self->private;
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
-	gtk_widget_set_sensitive( button,
-			priv->mnemo && g_utf8_strlen( priv->mnemo, -1 ) &&
-			priv->label && g_utf8_strlen( priv->label, -1 ));
+	button = my_utils_container_get_child_by_name(
+						GTK_CONTAINER( self->private->dialog ), "btn-ok" );
+	ok = ofo_journal_is_valid( priv->mnemo, priv->label );
+	if( ok ){
+		exists = ofo_journal_get_by_mnemo(
+				ofa_main_window_get_dossier( priv->main_window ), priv->mnemo );
+		ok &= !exists ||
+				( ofo_journal_get_id( exists ) == ofo_journal_get_id( priv->journal ));
+	}
+
+	gtk_widget_set_sensitive( button, ok );
 }
 
 /*
@@ -374,7 +368,6 @@ check_for_enable_dlg( ofaJournalProperties *self )
 static gboolean
 do_update( ofaJournalProperties *self )
 {
-	gchar *prev_mnemo;
 	ofoDossier *dossier;
 	ofoJournal *existing;
 	GtkTextView *text;
@@ -382,21 +375,11 @@ do_update( ofaJournalProperties *self )
 	GtkTextIter start, end;
 	gchar *notes;
 
-	prev_mnemo = g_strdup( ofo_journal_get_mnemo( self->private->journal ));
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
 	existing = ofo_journal_get_by_mnemo( dossier, self->private->mnemo );
-
-	if( existing ){
-		/* c'est un nouveau journal, ou bien un journal existant dont on
-		 * veut changer le mnémonique: no luck, le nouveau mnemo de journal
-		 * existe déjà
-		 */
-		if( !prev_mnemo || g_utf8_collate( prev_mnemo, self->private->mnemo )){
-			error_duplicate( self, existing );
-			g_free( prev_mnemo );
-			return( FALSE );
-		}
-	}
+	g_return_val_if_fail(
+			!existing ||
+			ofo_journal_get_id( existing ) == ofo_journal_get_id( self->private->journal ), NULL );
 
 	/* le nouveau mnemo n'est pas encore utilisé,
 	 * ou bien il est déjà utilisé par ce même journal (n'a pas été modifié)
@@ -413,7 +396,7 @@ do_update( ofaJournalProperties *self )
 	ofo_journal_set_notes( self->private->journal, notes );
 	g_free( notes );
 
-	if( !prev_mnemo ){
+	if( !existing ){
 		self->private->updated =
 				ofo_journal_insert( self->private->journal, dossier );
 	} else {
@@ -421,31 +404,5 @@ do_update( ofaJournalProperties *self )
 				ofo_journal_update( self->private->journal, dossier );
 	}
 
-	g_free( prev_mnemo );
-
 	return( self->private->updated );
-}
-
-static void
-error_duplicate( ofaJournalProperties *self, ofoJournal *existing )
-{
-	GtkMessageDialog *dlg;
-	gchar *msg;
-
-	msg = g_strdup_printf(
-			_( "Unable to set the journal mnemonic to '%s' "
-				"as this one is already used by the existing '%s'" ),
-				ofo_journal_get_mnemo( existing ),
-				ofo_journal_get_label( existing ));
-
-	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				GTK_WINDOW( self->private->dialog ),
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", msg ));
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
-	g_free( msg );
 }

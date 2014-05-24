@@ -213,7 +213,10 @@
  105 2014- 5-24 after delete, reset the focus to tree view
      2014- 5-24 done with devise - svn #3489
 
- 107
+ 107 2014- 5-24 have a message when current exercice changes
+                so that e.g. the journals set may adapt its display
+
+ 108
 
 -----------------------------------------------------------------------
  DONE

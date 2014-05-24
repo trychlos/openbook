@@ -34,12 +34,6 @@
 #include "ui/ofa-devise-properties.h"
 #include "ui/ofo-dossier.h"
 
-/* private class data
- */
-struct _ofaDevisePropertiesClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaDevisePropertiesPrivate {
@@ -79,7 +73,6 @@ static void      on_label_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      check_for_enable_dlg( ofaDeviseProperties *self );
 static gboolean  do_update( ofaDeviseProperties *self );
-static void      error_duplicate( ofaDeviseProperties *self, ofoDevise *existing );
 
 GType
 ofa_devise_properties_get_type( void )
@@ -122,17 +115,13 @@ static void
 class_init( ofaDevisePropertiesClass *klass )
 {
 	static const gchar *thisfn = "ofa_devise_properties_class_init";
-	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
 	st_parent_class = g_type_class_peek_parent( klass );
 
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaDevisePropertiesClassPrivate, 1 );
+	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
+	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
 }
 
 static void
@@ -155,17 +144,17 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_dispose( GObject *window )
+instance_dispose( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_devise_properties_instance_dispose";
 	ofaDevisePropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( window ));
+	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( instance ));
 
-	priv = ( OFA_DEVISE_PROPERTIES( window ))->private;
+	priv = ( OFA_DEVISE_PROPERTIES( instance ))->private;
 
 	if( !priv->dispose_has_run ){
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+		g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -174,32 +163,28 @@ instance_dispose( GObject *window )
 		g_free( priv->symbol );
 
 		gtk_widget_destroy( GTK_WIDGET( priv->dialog ));
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( window );
-		}
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->dispose( instance );
 }
 
 static void
-instance_finalize( GObject *window )
+instance_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_devise_properties_instance_finalize";
 	ofaDeviseProperties *self;
 
-	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( window ));
+	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( instance ));
 
-	g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self = OFA_DEVISE_PROPERTIES( window );
+	self = OFA_DEVISE_PROPERTIES( instance );
 
 	g_free( self->private );
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( window );
-	}
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->finalize( instance );
 }
 
 /**
@@ -386,29 +371,19 @@ static gboolean
 do_update( ofaDeviseProperties *self )
 {
 	ofoDossier *dossier;
-	const gchar *prev_code;
 	ofoDevise *existing;
 
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
 	existing = ofo_devise_get_by_code( dossier, self->private->code );
-	prev_code = ofo_devise_get_code( self->private->devise );
+	g_return_val_if_fail(
+			!existing ||
+			ofo_devise_get_id( existing ) == ofo_devise_get_id( self->private->devise ), NULL );
 
-	if( existing && !prev_code ){
-		/* c'est une nouvelle devise: no luck, le nouveau code de devise
-		 * existe déjà
-		 */
-		error_duplicate( self, existing );
-		return( FALSE );
-	}
-
-	/* le nouveau code n'est pas encore utilisé,
-	 * ou bien il est déjà utilisé par ce même devise (n'a pas été modifié)
-	 */
 	ofo_devise_set_code( self->private->devise, self->private->code );
 	ofo_devise_set_label( self->private->devise, self->private->label );
 	ofo_devise_set_symbol( self->private->devise, self->private->symbol );
 
-	if( !prev_code ){
+	if( !existing ){
 		self->private->updated =
 				ofo_devise_insert( self->private->devise, dossier );
 	} else {
@@ -417,28 +392,4 @@ do_update( ofaDeviseProperties *self )
 	}
 
 	return( self->private->updated );
-}
-
-static void
-error_duplicate( ofaDeviseProperties *self, ofoDevise *existing )
-{
-	GtkMessageDialog *dlg;
-	gchar *msg;
-
-	msg = g_strdup_printf(
-			_( "Unable to set the currency identifier to '%s' "
-				"as this one is already used by the existing '%s'" ),
-				ofo_devise_get_code( existing ),
-				ofo_devise_get_label( existing ));
-
-	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				GTK_WINDOW( self->private->dialog ),
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", msg ));
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
-	g_free( msg );
 }

@@ -84,6 +84,7 @@ static GList         *journal_load_dataset( void );
 static ofoJournal    *journal_find_by_id( GList *set, gint id );
 static ofoJournal    *journal_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint           journal_count_for_devise( ofoSgbd *sgbd, gint dev_id );
+static sDetailExe    *journal_find_exe_by_id( const ofoJournal *journal, gint exe_id );
 static gboolean       journal_do_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
 static gboolean       journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
 static gboolean       journal_get_back_id( ofoJournal *journal, ofoSgbd *sgbd );
@@ -100,10 +101,11 @@ ofo_journal_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_journal_finalize";
 	ofoJournal *self;
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
 	self = OFO_JOURNAL( instance );
+
+	g_debug( "%s: instance=%p (%s): %s - %s",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			self->priv->mnemo, self->priv->label );
 
 	g_free( self->priv->mnemo );
 	g_free( self->priv->label );
@@ -119,16 +121,11 @@ ofo_journal_finalize( GObject *instance )
 static void
 ofo_journal_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_journal_dispose";
 	ofoJournal *self;
 
 	self = OFO_JOURNAL( instance );
 
 	if( !self->priv->dispose_has_run ){
-
-		g_debug( "%s: instance=%p (%s): %s - %s",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-				self->priv->mnemo, self->priv->label );
 
 		self->priv->dispose_has_run = TRUE;
 	}
@@ -149,7 +146,7 @@ ofo_journal_init( ofoJournal *self )
 
 	self->priv->dispose_has_run = FALSE;
 
-	self->priv->id = -1;
+	self->priv->id = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -172,6 +169,11 @@ ofo_journal_class_init( ofoJournalClass *klass )
  * Returns: The list of #ofoJournal journals, ordered by ascending
  * mnemonic. The returned list is owned by the #ofoJournal class, and
  * should not be freed by the caller.
+ *
+ * Note: The list is returned (and maintained) sorted for debug
+ * facility only. Any way, the display treeview (#ofoJournalsSet class)
+ * makes use of a sortable model which doesn't care of the order of the
+ * provided dataset.
  */
 GList *
 ofo_journal_get_dataset( ofoDossier *dossier )
@@ -193,22 +195,18 @@ journal_load_dataset( void )
 	GSList *result, *irow, *icol;
 	ofoJournal *journal;
 	ofoSgbd *sgbd;
-	GList *dataset;
-	gint prev_jou, jou_id;
+	GList *dataset, *iset;
+	gchar *query;
 	sDetailDev *balance;
+	sDetailExe *exercice;
 
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
-	/* Journals list is loaded in 'jou_id' order so that we will be able
-	 * to easily load the balance details.
-	 * It will have to be reordered before returning as all the callers
-	 * expect to have it in display order
-	 */
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT JOU_ID,JOU_MNEMO,JOU_LABEL,JOU_NOTES,"
 			"	JOU_MAJ_USER,JOU_MAJ_STAMP "
 			"	FROM OFA_T_JOURNAUX "
-			"	ORDER BY JOU_ID ASC" );
+			"	ORDER BY JOU_MNEMO ASC" );
 
 	dataset = NULL;
 
@@ -232,47 +230,67 @@ journal_load_dataset( void )
 
 	ofo_sgbd_free_result( result );
 
-	/* Then load the details per currency
+	/* then load the details
 	 */
-	result = ofo_sgbd_query_ex( sgbd,
-			"SELECT JOU_ID,JOU_EXE_ID,JOU_DEV_ID,"
-			"	JOU_CLO_DEB,JOU_CLO_CRE,JOU_DEB,JOU_CRE "
-			"	FROM OFA_T_JOURNAUX_DET "
-			"	ORDER BY JOU_ID ASC,JOU_EXE_ID ASC,JOU_DEV_ID ASC" );
+	for( iset=dataset ; iset ; iset=iset->next ){
 
-	prev_jou = -1;
-	journal = NULL;						/* so that gcc -pedantic is happy */
+		journal = OFO_JOURNAL( iset->data );
 
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = ( GSList * ) irow->data;
-		balance = g_new0( sDetailDev, 1 );
-		jou_id =  atoi(( gchar * ) icol->data );
-		if( jou_id != prev_jou ){
-			prev_jou = jou_id;
-			journal = journal_find_by_id( dataset, jou_id );
-			journal->priv->amounts = NULL;
+		query = g_strdup_printf(
+				"SELECT JOU_EXE_ID,JOU_DEV_ID,"
+				"	JOU_DEV_CLO_DEB,JOU_DEV_CLO_CRE,JOU_DEV_DEB,JOU_DEV_CRE "
+				"	FROM OFA_T_JOURNAUX_DEV "
+				"	WHERE JOU_ID=%d "
+				"	ORDER BY JOU_EXE_ID ASC,JOU_DEV_ID ASC",
+						ofo_journal_get_id( journal ));
+
+		result = ofo_sgbd_query_ex( sgbd, query );
+		g_free( query );
+
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			balance = g_new0( sDetailDev, 1 );
+			balance->exe_id = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			balance->dev_id = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			balance->clo_deb = g_ascii_strtod(( gchar * ) icol->data, NULL );
+			icol = icol->next;
+			balance->clo_cre = g_ascii_strtod(( gchar * ) icol->data, NULL );
+			icol = icol->next;
+			balance->deb = g_ascii_strtod(( gchar * ) icol->data, NULL );
+			icol = icol->next;
+			balance->cre = g_ascii_strtod(( gchar * ) icol->data, NULL );
+
+			journal->priv->amounts = g_list_prepend( journal->priv->amounts, balance );
 		}
-		icol = icol->next;
-		balance->exe_id = atoi(( gchar * ) icol->data );
-		icol = icol->next;
-		balance->dev_id = atoi(( gchar * ) icol->data );
-		icol = icol->next;
-		balance->clo_deb = g_ascii_strtod(( gchar * ) icol->data, NULL );
-		icol = icol->next;
-		balance->clo_cre = g_ascii_strtod(( gchar * ) icol->data, NULL );
-		icol = icol->next;
-		balance->deb = g_ascii_strtod(( gchar * ) icol->data, NULL );
-		icol = icol->next;
-		balance->cre = g_ascii_strtod(( gchar * ) icol->data, NULL );
 
-		journal->priv->amounts = g_list_prepend( journal->priv->amounts, balance );
+		ofo_sgbd_free_result( result );
+
+		query = g_strdup_printf(
+				"SELECT JOU_EXE_ID,JOU_EXE_LAST_CLO "
+				"	FROM OFA_T_JOURNAUX_EXE "
+				"	WHERE JOU_ID=%d "
+				"	ORDER BY JOU_EXE_ID ASC",
+						ofo_journal_get_id( journal ));
+
+		result = ofo_sgbd_query_ex( sgbd, query );
+		g_free( query );
+
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			exercice = g_new0( sDetailExe, 1 );
+			exercice->exe_id = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			memcpy( &exercice->last_clo, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+
+			journal->priv->exes = g_list_prepend( journal->priv->exes, exercice );
+		}
+
+		ofo_sgbd_free_result( result );
 	}
 
-	ofo_sgbd_free_result( result );
-
-	/* Last, sort the journal list in ascending mnemo order
-	 */
-	return( g_list_sort( dataset, ( GCompareFunc ) journal_cmp_by_ptr ));
+	return( g_list_reverse( dataset ));
 }
 
 /**
@@ -286,12 +304,8 @@ journal_load_dataset( void )
 ofoJournal *
 ofo_journal_get_by_id( ofoDossier *dossier, gint id )
 {
-	static const gchar *thisfn = "ofo_journal_get_by_id";
-
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( id > 0, NULL );
-
-	g_debug( "%s: dossier=%p, id=%d", thisfn, ( void * ) dossier, id );
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
@@ -323,12 +337,8 @@ journal_find_by_id( GList *set, gint id )
 ofoJournal *
 ofo_journal_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
-	static const gchar *thisfn = "ofo_journal_get_by_mnemo";
-
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
-
-	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
@@ -407,14 +417,14 @@ ofo_journal_new( void )
 gint
 ofo_journal_get_id( const ofoJournal *journal )
 {
-	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), -1 );
+	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), OFO_BASE_UNSET_ID );
 
 	if( !journal->priv->dispose_has_run ){
 
 		return( journal->priv->id );
 	}
 
-	return( -1 );
+	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -474,23 +484,39 @@ ofo_journal_get_notes( const ofoJournal *journal )
 /**
  * ofo_journal_get_cloture:
  */
-/*
 const GDate *
-ofo_journal_get_cloture( const ofoJournal *journal )
+ofo_journal_get_cloture( const ofoJournal *journal, gint exe_id )
 {
-	const GDate *date;
+	sDetailExe *sexe;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	date = NULL;
-
 	if( !journal->priv->dispose_has_run ){
 
-		date = ( const GDate * ) &journal->priv->cloture;
+		sexe = journal_find_exe_by_id( journal, exe_id );
+		if( sexe ){
+			return(( const GDate * ) &sexe->last_clo );
+		}
 	}
 
-	return( date );
-}*/
+	return( NULL );
+}
+
+static sDetailExe *
+journal_find_exe_by_id( const ofoJournal *journal, gint exe_id )
+{
+	GList *idet;
+	sDetailExe *sdet;
+
+	for( idet=journal->priv->exes ; idet ; idet=idet->next ){
+		sdet = ( sDetailExe * ) idet->data;
+		if( sdet->exe_id == exe_id ){
+			return( sdet );
+		}
+	}
+
+	return( NULL );
+}
 
 /**
  * ofo_journal_is_deletable:
@@ -526,6 +552,21 @@ ofo_journal_is_deletable( const ofoJournal *journal )
 	}
 
 	return( FALSE );
+}
+
+/**
+ * ofo_journal_is_valid:
+ *
+ * Returns: %TRUE if the provided data makes the ofoJournal a valid
+ * object.
+ *
+ * Note that this does NOT check for key duplicate.
+ */
+gboolean
+ofo_journal_is_valid( const gchar *mnemo, const gchar *label )
+{
+	return( mnemo && g_utf8_strlen( mnemo, -1 ) &&
+			label && g_utf8_strlen( label, -1 ));
 }
 
 /**

@@ -56,12 +56,9 @@ typedef struct {
 }
 	ofaDeviseProperties;
 
-typedef struct _ofaDevisePropertiesClassPrivate   ofaDevisePropertiesClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GObjectClass                     parent;
-	ofaDevisePropertiesClassPrivate *private;
+	GObjectClass parent;
 }
 	ofaDevisePropertiesClass;
 

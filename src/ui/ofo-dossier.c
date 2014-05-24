@@ -457,31 +457,31 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('ACH','Taux des achats','Default')" )){
+			"	VALUES ('ACH','Journal des achats','Default')" )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('VEN','Taux des ventes','Default')" )){
+			"	VALUES ('VEN','Journal des ventes','Default')" )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('EXP','Taux de l\\'exploitant','Default')" )){
+			"	VALUES ('EXP','Journal de l\\'exploitant','Default')" )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('OD','Taux des opérations diverses','Default')" )){
+			"	VALUES ('OD','Journal des opérations diverses','Default')" )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('BQ','Taux de banque','Default')" )){
+			"	VALUES ('BQ','Journal de banque','Default')" )){
 		return( FALSE );
 	}
 
@@ -629,6 +629,24 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_exercice_id:
+ *
+ * Returns: the internal identifier of the current exercice.
+ */
+gint
+ofo_dossier_get_exercice_id( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), -1 );
+
+	if( !dossier->priv->dispose_has_run ){
+
+		return( dossier->priv->exe_id );
+	}
+
+	return( -1 );
 }
 
 /**

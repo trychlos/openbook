@@ -55,14 +55,15 @@ typedef struct {
 
 typedef struct {
 	/*< private members >*/
-	GObjectClass             parent;
+	GObjectClass parent;
 
 	/*< protected virtual functions >*/
 	/**
 	 * setup_page:
 	 * @page: this #ofaMainPage object.
 	 *
-	 * This virtual function is called during instance construction.
+	 * This virtual function is called at the end of instance
+	 * construction (before instance initialization be triggered).
 	 * The base class implementation successively calls #setup_view()
 	 * and #setup_buttons_box() virtual methods, attaching the two
 	 * returned widgets respectively on columns 0 and 1 of the main
@@ -114,7 +115,8 @@ typedef struct {
 	 * This virtual function is triggered when the 'New' button
 	 * installed by the above #setup_buttons() virtual function is
 	 * clicked.
-	 * The base class implementation does nothing.
+	 * This is a pure virtual function, that the child class should
+	 * implement.
 	 */
 	void        ( *on_new_clicked )   ( GtkButton *button, ofaMainPage *page );
 
@@ -125,7 +127,8 @@ typedef struct {
 	 * This virtual function is triggered when the 'Update' button
 	 * installed by the above #setup_buttons() virtual function is
 	 * clicked.
-	 * The base class implementation does nothing.
+	 * This is a pure virtual function, that the child class should
+	 * implement.
 	 */
 	void        ( *on_update_clicked )( GtkButton *button, ofaMainPage *page );
 
@@ -136,7 +139,8 @@ typedef struct {
 	 * This virtual function is triggered when the 'Delete' button
 	 * installed by the above #setup_buttons() virtual function is
 	 * clicked.
-	 * The base class implementation does nothing.
+	 * This is a pure virtual function, that the child class should
+	 * implement.
 	 */
 	void        ( *on_delete_clicked )( GtkButton *button, ofaMainPage *page );
 }
