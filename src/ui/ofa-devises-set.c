@@ -45,16 +45,6 @@ struct _ofaDevisesSetClassPrivate {
  */
 struct _ofaDevisesSetPrivate {
 	gboolean       dispose_has_run;
-
-	/* properties
-	 */
-
-	/* internals
-	 */
-
-	/* UI
-	 */
-	GtkTreeView   *view;				/* the treeview on the devises set */
 };
 
 /* column ordering in the selection listview
@@ -256,7 +246,6 @@ v_setup_view( ofaMainPage *page )
 	gtk_widget_set_vexpand( GTK_WIDGET( view ), TRUE );
 	gtk_tree_view_set_headers_visible( view, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( view ));
-	self->private->view = GTK_TREE_VIEW( view );
 
 	model = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
@@ -324,11 +313,13 @@ v_init_view( ofaMainPage *page )
 static void
 insert_new_row( ofaDevisesSet *self, ofoDevise *devise, gboolean with_selection )
 {
+	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreePath *path;
 
-	tmodel = gtk_tree_view_get_model( self->private->view );
+	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( OFA_MAIN_PAGE( self )));
+	tmodel = gtk_tree_view_get_model( tview );
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( tmodel ),
 			&iter,
@@ -342,9 +333,9 @@ insert_new_row( ofaDevisesSet *self, ofoDevise *devise, gboolean with_selection 
 	/* select the newly added devise */
 	if( with_selection ){
 		path = gtk_tree_model_get_path( tmodel, &iter );
-		gtk_tree_view_set_cursor( self->private->view, path, NULL, FALSE );
+		gtk_tree_view_set_cursor( tview, path, NULL, FALSE );
 		gtk_tree_path_free( path );
-		gtk_widget_grab_focus( GTK_WIDGET( self->private->view ));
+		gtk_widget_grab_focus( GTK_WIDGET( tview ));
 	}
 }
 
@@ -373,17 +364,19 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDevisesS
 static void
 setup_first_selection( ofaDevisesSet *self )
 {
+	GtkTreeView *tview;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	model = gtk_tree_view_get_model( self->private->view );
+	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( OFA_MAIN_PAGE( self )));
+	model = gtk_tree_view_get_model( tview );
 	if( gtk_tree_model_get_iter_first( model, &iter )){
-		select = gtk_tree_view_get_selection( self->private->view );
+		select = gtk_tree_view_get_selection( tview );
 		gtk_tree_selection_select_iter( select, &iter );
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( self->private->view ));
+	gtk_widget_grab_focus( GTK_WIDGET( tview ));
 }
 
 static void
@@ -437,14 +430,14 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 static void
 v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 {
-	ofaDevisesSet *self;
+	GtkTreeView *tview;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoDevise *devise;
 
-	self = OFA_DEVISES_SET( page );
-	select = gtk_tree_view_get_selection( self->private->view );
+	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( page ));
+	select = gtk_tree_view_get_selection( tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
@@ -458,27 +451,27 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 		}
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( self->private->view ));
+	gtk_widget_grab_focus( GTK_WIDGET( tview ));
 }
 
 static void
 v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 {
-	ofaDevisesSet *self;
+	GtkTreeView *tview;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoDevise *devise;
 
-	self = OFA_DEVISES_SET( page );
-	select = gtk_tree_view_get_selection( self->private->view );
+	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( page ));
+	select = gtk_tree_view_get_selection( tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &devise, -1 );
 		g_object_unref( devise );
 
-		if( delete_confirmed( self, devise ) &&
+		if( delete_confirmed( OFA_DEVISES_SET( page ), devise ) &&
 				ofo_devise_delete( devise, ofa_main_page_get_dossier( page ))){
 
 			/* remove the row from the tmodel
@@ -487,7 +480,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 		}
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( self->private->view ));
+	gtk_widget_grab_focus( GTK_WIDGET( tview ));
 }
 
 static gboolean

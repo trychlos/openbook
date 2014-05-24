@@ -632,7 +632,7 @@ ofa_main_page_get_treeview( const ofaMainPage *page )
 	if( !page->private->dispose_has_run ){
 
 		child_book = my_utils_container_get_child_by_type(
-									GTK_CONTAINER( page ), GTK_TYPE_NOTEBOOK );
+									GTK_CONTAINER( page->private->grid ), GTK_TYPE_NOTEBOOK );
 		if( child_book ){
 			tab_num = gtk_notebook_get_current_page( GTK_NOTEBOOK( child_book ));
 			if( tab_num < 0 ){
@@ -646,7 +646,7 @@ ofa_main_page_get_treeview( const ofaMainPage *page )
 		}
 		if( !view ){
 			view = my_utils_container_get_child_by_type(
-									GTK_CONTAINER( page ), GTK_TYPE_TREE_VIEW );
+									GTK_CONTAINER( page->private->grid ), GTK_TYPE_TREE_VIEW );
 		}
 	}
 
