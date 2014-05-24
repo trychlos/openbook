@@ -35,7 +35,9 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-journal-combo.h"
+#include "ui/ofo-account.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-taux.h"
 
 /* private class data
  */

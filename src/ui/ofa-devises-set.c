@@ -61,7 +61,7 @@ struct _ofaDevisesSetPrivate {
 /* column ordering in the selection listview
  */
 enum {
-	COL_MNEMO = 0,
+	COL_CODE = 0,
 	COL_LABEL,
 	COL_SYMBOL,
 	COL_OBJECT,
@@ -79,6 +79,7 @@ static void       instance_finalize( GObject *instance );
 static void       setup_set_page( ofaDevisesSet *self );
 static GtkWidget *setup_devises_view( ofaDevisesSet *self );
 static GtkWidget *setup_buttons_box( ofaDevisesSet *self );
+static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDevisesSet *self );
 static void       setup_first_selection( ofaDevisesSet *self );
 static void       store_set_devise( GtkTreeModel *model, GtkTreeIter *iter, const ofoDevise *devise );
 static void       on_devise_selected( GtkTreeSelection *selection, ofaDevisesSet *self );
@@ -312,8 +313,8 @@ setup_devises_view( ofaDevisesSet *self )
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Mnemo" ),
-			text_cell, "text", COL_MNEMO,
+			_( "ISO 3A code" ),
+			text_cell, "text", COL_CODE,
 			NULL );
 	gtk_tree_view_append_column( view, column );
 
@@ -335,6 +336,13 @@ setup_devises_view( ofaDevisesSet *self )
 	select = gtk_tree_view_get_selection( view );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_devise_selected ), self );
+
+	gtk_tree_sortable_set_default_sort_func(
+			GTK_TREE_SORTABLE( model ), ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( model ),
+			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 	dataset = ofo_devise_get_dataset( dossier );
@@ -384,6 +392,28 @@ setup_buttons_box( ofaDevisesSet *self )
 	return( GTK_WIDGET( buttons_box ));
 }
 
+static gint
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDevisesSet *self )
+{
+	gchar *acod, *bcod, *afold, *bfold;
+	gint cmp;
+
+	gtk_tree_model_get( tmodel, a, COL_CODE, &acod, -1 );
+	afold = g_utf8_casefold( acod, -1 );
+
+	gtk_tree_model_get( tmodel, b, COL_CODE, &bcod, -1 );
+	bfold = g_utf8_casefold( bcod, -1 );
+
+	cmp = g_utf8_collate( afold, bfold );
+
+	g_free( acod );
+	g_free( afold );
+	g_free( bcod );
+	g_free( bfold );
+
+	return( cmp );
+}
+
 static void
 setup_first_selection( ofaDevisesSet *self )
 {
@@ -404,7 +434,7 @@ store_set_devise( GtkTreeModel *model, GtkTreeIter *iter, const ofoDevise *devis
 	gtk_list_store_set(
 			GTK_LIST_STORE( model ),
 			iter,
-			COL_MNEMO,  ofo_devise_get_code( devise ),
+			COL_CODE,  ofo_devise_get_code( devise ),
 			COL_LABEL,  ofo_devise_get_label( devise ),
 			COL_SYMBOL, ofo_devise_get_symbol( devise ),
 			COL_OBJECT, devise,
@@ -424,9 +454,12 @@ on_devise_selected( GtkTreeSelection *selection, ofaDevisesSet *self )
 	}
 
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->update_btn ), devise != NULL );
+			GTK_WIDGET( self->private->update_btn ),
+			devise && OFO_IS_DEVISE( devise ));
+
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->delete_btn ), devise && ofo_devise_is_deletable( devise ));
+			GTK_WIDGET( self->private->delete_btn ),
+			devise && OFO_IS_DEVISE( devise ) && ofo_devise_is_deletable( devise ));
 }
 
 static void
@@ -434,16 +467,17 @@ on_new_devise( GtkButton *button, ofaDevisesSet *self )
 {
 	static const gchar *thisfn = "ofa_devises_set_on_new_devise";
 	ofoDevise *devise;
-	ofaMainWindow *main_window;
 
 	g_return_if_fail( OFA_IS_DEVISES_SET( self ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
-
 	devise = ofo_devise_new();
-	if( ofa_devise_properties_run( main_window, devise )){
+
+	if( ofa_devise_properties_run(
+			ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+			devise )){
+
 		insert_new_row( self, devise );
 	}
 }
@@ -468,7 +502,8 @@ on_update_devise( GtkButton *button, ofaDevisesSet *self )
 		g_object_unref( devise );
 
 		if( ofa_devise_properties_run(
-				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), devise )){
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+				devise )){
 
 				store_set_devise( model, &iter, devise );
 		}
@@ -553,7 +588,7 @@ insert_new_row( ofaDevisesSet *self, ofoDevise *devise )
 	if( gtk_tree_model_get_iter_first( model, &iter )){
 		devise_mnemo = ofo_devise_get_code( devise );
 		while( !iter_found ){
-			gtk_tree_model_get_value( model, &iter, COL_MNEMO, &value );
+			gtk_tree_model_get_value( model, &iter, COL_CODE, &value );
 			mnemo = g_value_get_string( &value );
 			if( g_utf8_collate( mnemo, devise_mnemo ) > 0 ){
 				iter_found = TRUE;

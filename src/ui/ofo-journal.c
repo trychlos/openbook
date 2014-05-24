@@ -54,18 +54,25 @@ struct _ofoJournalPrivate {
 	gchar   *notes;
 	gchar   *maj_user;
 	GTimeVal maj_stamp;
-	GDate    cloture;
+	GList   *exes;						/* exercices */
 	GList   *amounts;					/* balances per currency */
 };
 
 typedef struct {
+	gint     exe_id;
 	gint     dev_id;
 	gdouble  clo_deb;
 	gdouble  clo_cre;
 	gdouble  deb;
 	gdouble  cre;
 }
-	sDetailBalance;
+	sDetailDev;
+
+typedef struct {
+	gint     exe_id;
+	GDate    last_clo;
+}
+	sDetailExe;
 
 G_DEFINE_TYPE( ofoJournal, ofo_journal, OFO_TYPE_BASE )
 
@@ -76,9 +83,10 @@ OFO_BASE_DEFINE_GLOBAL( st_global, journal )
 static GList         *journal_load_dataset( void );
 static ofoJournal    *journal_find_by_id( GList *set, gint id );
 static ofoJournal    *journal_find_by_mnemo( GList *set, const gchar *mnemo );
+static gint           journal_count_for_devise( ofoSgbd *sgbd, gint dev_id );
 static gboolean       journal_do_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
 static gboolean       journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
-static gboolean       journal_reset_id( ofoJournal *journal, ofoSgbd *sgbd );
+static gboolean       journal_get_back_id( ofoJournal *journal, ofoSgbd *sgbd );
 static gboolean       journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd );
 static gboolean       journal_do_update( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
 static gboolean       journal_do_delete( ofoJournal *journal, ofoSgbd *sgbd );
@@ -187,19 +195,18 @@ journal_load_dataset( void )
 	ofoSgbd *sgbd;
 	GList *dataset;
 	gint prev_jou, jou_id;
-	sDetailBalance *balance;
+	sDetailDev *balance;
 
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
-	/* Journals list is loaded 'jou_id' order so that we will be able
+	/* Journals list is loaded in 'jou_id' order so that we will be able
 	 * to easily load the balance details.
 	 * It will have to be reordered before returning as all the callers
 	 * expect to have it in display order
 	 */
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT JOU_ID,JOU_MNEMO,JOU_LABEL,JOU_NOTES,"
-			"	JOU_MAJ_USER,JOU_MAJ_STAMP,"
-			"	JOU_CLO"
+			"	JOU_MAJ_USER,JOU_MAJ_STAMP "
 			"	FROM OFA_T_JOURNAUX "
 			"	ORDER BY JOU_ID ASC" );
 
@@ -219,34 +226,34 @@ journal_load_dataset( void )
 		ofo_journal_set_maj_user( journal, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str(( gchar * ) icol->data ));
-		icol = icol->next;
-		ofo_journal_set_cloture( journal, my_utils_date_from_str(( gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, journal );
 	}
 
 	ofo_sgbd_free_result( result );
 
-	/* Then load the details
+	/* Then load the details per currency
 	 */
 	result = ofo_sgbd_query_ex( sgbd,
-			"SELECT JOU_ID,JOU_DEV_ID,"
+			"SELECT JOU_ID,JOU_EXE_ID,JOU_DEV_ID,"
 			"	JOU_CLO_DEB,JOU_CLO_CRE,JOU_DEB,JOU_CRE "
 			"	FROM OFA_T_JOURNAUX_DET "
-			"	ORDER BY JOU_ID ASC,JOU_DEV_ID ASC" );
+			"	ORDER BY JOU_ID ASC,JOU_EXE_ID ASC,JOU_DEV_ID ASC" );
 
 	prev_jou = -1;
 	journal = NULL;						/* so that gcc -pedantic is happy */
 
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
-		balance = g_new0( sDetailBalance, 1 );
+		balance = g_new0( sDetailDev, 1 );
 		jou_id =  atoi(( gchar * ) icol->data );
 		if( jou_id != prev_jou ){
 			prev_jou = jou_id;
 			journal = journal_find_by_id( dataset, jou_id );
 			journal->priv->amounts = NULL;
 		}
+		icol = icol->next;
+		balance->exe_id = atoi(( gchar * ) icol->data );
 		icol = icol->next;
 		balance->dev_id = atoi(( gchar * ) icol->data );
 		icol = icol->next;
@@ -343,6 +350,45 @@ journal_find_by_mnemo( GList *set, const gchar *mnemo )
 }
 
 /**
+ * ofo_journal_use_devise:
+ *
+ * Returns: %TRUE if a recorded journal makes use of the specified
+ * currency.
+ */
+gboolean
+ofo_journal_use_devise( ofoDossier *dossier, gint dev_id )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	return( journal_count_for_devise( ofo_dossier_get_sgbd( dossier ), dev_id ) > 0 );
+}
+
+static gint
+journal_count_for_devise( ofoSgbd *sgbd, gint dev_id )
+{
+	gint count;
+	gchar *query;
+	GSList *result, *icol;
+
+	query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_JOURNAUX_DEV "
+				"	WHERE JOU_DEV_ID=%d",
+					dev_id );
+
+	count = 0;
+	result = ofo_sgbd_query_ex( sgbd, query );
+	g_free( query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		count = atoi(( gchar * ) icol->data );
+		ofo_sgbd_free_result( result );
+	}
+
+	return( count );
+}
+
+/**
  * ofo_journal_new:
  */
 ofoJournal *
@@ -428,6 +474,7 @@ ofo_journal_get_notes( const ofoJournal *journal )
 /**
  * ofo_journal_get_cloture:
  */
+/*
 const GDate *
 ofo_journal_get_cloture( const ofoJournal *journal )
 {
@@ -443,7 +490,7 @@ ofo_journal_get_cloture( const ofoJournal *journal )
 	}
 
 	return( date );
-}
+}*/
 
 /**
  * ofo_journal_is_deletable:
@@ -461,7 +508,7 @@ ofo_journal_is_deletable( const ofoJournal *journal )
 {
 	gboolean ok;
 	GList *ic;
-	sDetailBalance *detail;
+	sDetailDev *detail;
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
 
@@ -470,7 +517,7 @@ ofo_journal_is_deletable( const ofoJournal *journal )
 		ok = TRUE;
 
 		for( ic=journal->priv->amounts ; ic && ok ; ic=ic->next ){
-			detail = ( sDetailBalance * ) ic->data;
+			detail = ( sDetailDev * ) ic->data;
 			ok &= detail->clo_deb == 0.0 && detail->clo_cre == 0.0 &&
 					detail->deb == 0.0 && detail->cre == 0.0;
 		}
@@ -568,6 +615,7 @@ ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *maj_stamp )
 /**
  * ofo_journal_set_cloture:
  */
+/*
 void
 ofo_journal_set_cloture( ofoJournal *journal, const GDate *date )
 {
@@ -577,7 +625,7 @@ ofo_journal_set_cloture( ofoJournal *journal, const GDate *date )
 
 		memcpy( &journal->priv->cloture, date, sizeof( GDate ));
 	}
-}
+}*/
 
 /**
  * ofo_journal_insert:
@@ -614,7 +662,7 @@ static gboolean
 journal_do_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 {
 	return( journal_insert_main( journal, sgbd, user ) &&
-			journal_reset_id( journal, sgbd ) &&
+			journal_get_back_id( journal, sgbd ) &&
 			journal_insert_details( journal, sgbd ));
 }
 
@@ -662,20 +710,14 @@ journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-journal_reset_id( ofoJournal *journal, ofoSgbd *sgbd )
+journal_get_back_id( ofoJournal *journal, ofoSgbd *sgbd )
 {
-	GString *query;
 	gboolean ok;
 	GSList *result, *icol;
 
 	ok = FALSE;
 
-	query = g_string_new( "SELECT JOU_ID FROM OFA_T_JOURNAUX" );
-	g_string_append_printf( query,
-			"	WHERE JOU_MNEMO='%s'",
-			ofo_journal_get_mnemo( journal ));
-
-	result = ofo_sgbd_query_ex( sgbd, query->str );
+	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
 
 	if( result ){
 		icol = ( GSList * ) result->data;
@@ -683,8 +725,6 @@ journal_reset_id( ofoJournal *journal, ofoSgbd *sgbd )
 		ofo_sgbd_free_result( result );
 		ok = TRUE;
 	}
-
-	g_string_free( query, TRUE );
 
 	return( ok );
 }
@@ -694,7 +734,7 @@ journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd )
 {
 	GString *query;
 	GList *idet;
-	sDetailBalance *detail;
+	sDetailDev *detail;
 	gboolean ok;
 	gchar sclodeb[1+G_ASCII_DTOSTR_BUF_SIZE];
 	gchar sclocre[1+G_ASCII_DTOSTR_BUF_SIZE];
@@ -706,13 +746,15 @@ journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd )
 
 	for( idet=journal->priv->amounts ; idet ; idet=idet->next ){
 
-		detail = ( sDetailBalance * ) idet->data;
+		detail = ( sDetailDev * ) idet->data;
 
 		g_string_printf( query,
-					"INSERT INTO OFA_T_JOURNAUX_DET "
-					"	(JOU_ID,JOU_DEV_ID,JOU_CLO_DEB,JOU_CLO_CRE,JOU_DEB,JOU_CRE) "
-					"	VALUES (%d,%d,%s,%s,%s,%s)",
+					"INSERT INTO OFA_T_JOURNAUX_DEV "
+					"	(JOU_ID,JOU_EXE_ID,JOU_DEV_ID,"
+					"	JOU_DEV_CLO_DEB,JOU_DEV_CLO_CRE,JOU_DEV_DEB,JOU_DEV_CRE) "
+					"	VALUES (%d,%d,%d,%s,%s,%s,%s)",
 					ofo_journal_get_id( journal ),
+					detail->exe_id,
 					detail->dev_id,
 					g_ascii_dtostr( sclodeb, G_ASCII_DTOSTR_BUF_SIZE, detail->clo_deb ),
 					g_ascii_dtostr( sclocre, G_ASCII_DTOSTR_BUF_SIZE, detail->clo_cre ),
@@ -853,7 +895,15 @@ journal_do_delete( ofoJournal *journal, ofoSgbd *sgbd )
 	g_free( query );
 
 	query = g_strdup_printf(
-			"DELETE FROM OFA_T_JOURNAUX_DET WHERE JOU_ID=%d",
+			"DELETE FROM OFA_T_JOURNAUX_DEV WHERE JOU_ID=%d",
+					ofo_journal_get_id( journal ));
+
+	ok &= ofo_sgbd_query( sgbd, query );
+
+	g_free( query );
+
+	query = g_strdup_printf(
+			"DELETE FROM OFA_T_JOURNAUX_EXE WHERE JOU_ID=%d",
 					ofo_journal_get_id( journal ));
 
 	ok &= ofo_sgbd_query( sgbd, query );

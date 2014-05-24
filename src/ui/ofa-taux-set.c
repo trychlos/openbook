@@ -64,9 +64,6 @@ struct _ofaTauxSetPrivate {
 enum {
 	COL_MNEMO = 0,
 	COL_LABEL,
-	COL_BEGIN,
-	COL_END,
-	COL_TAUX,
 	COL_OBJECT,
 	N_COLUMNS
 };
@@ -309,7 +306,7 @@ setup_taux_view( ofaTauxSet *self )
 
 	model = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( view, model );
 	g_object_unref( model );
 
@@ -328,7 +325,7 @@ setup_taux_view( ofaTauxSet *self )
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( view, column );
 
-	text_cell = gtk_cell_renderer_text_new();
+	/*text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Begin of val." ),
 			text_cell, "text", COL_BEGIN,
@@ -349,7 +346,7 @@ setup_taux_view( ofaTauxSet *self )
 			NULL );
 	gtk_tree_view_append_column( view, column );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_set_min_width( column, 80 );
+	gtk_tree_view_column_set_min_width( column, 80 );*/
 
 	select = gtk_tree_view_get_selection( view );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
@@ -419,36 +416,13 @@ setup_first_selection( ofaTauxSet *self )
 static void
 store_set_taux( GtkTreeModel *model, GtkTreeIter *iter, const ofoTaux *taux )
 {
-	const GDate *d;
-	gchar *sbegin, *send, *staux;
-
-	d = ofo_taux_get_val_begin( taux );
-	sbegin = my_utils_display_from_date( d, MY_UTILS_DATE_DMMM );
-
-	d = ofo_taux_get_val_end( taux );
-	send = my_utils_display_from_date( d, MY_UTILS_DATE_DMMM );
-
-	staux = g_strdup_printf( "%.3lf", ofo_taux_get_taux( taux ));
-
 	gtk_list_store_set(
 			GTK_LIST_STORE( model ),
 			iter,
 			COL_MNEMO,  ofo_taux_get_mnemo( taux ),
 			COL_LABEL,  ofo_taux_get_label( taux ),
-			COL_BEGIN,  sbegin,
-			COL_END,    send,
-			COL_TAUX,   staux,
 			COL_OBJECT, taux,
 			-1 );
-
-	/*
-	g_debug( "ofa_taux_set_store_set_taux: %s %s",
-			ofo_taux_get_mnemo( taux ), ofo_taux_get_label( taux ));
-			*/
-
-	g_free( sbegin );
-	g_free( send );
-	g_free( staux );
 }
 
 static void
@@ -488,7 +462,7 @@ on_update_taux( GtkButton *button, ofaTauxSet *self )
 	GtkTreeSelection *select;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
-	gchar *prev_mnemo, *prev_val, *new_val;
+	gchar *prev_mnemo;
 	const gchar *new_mnemo;
 	ofoTaux *taux;
 
@@ -503,26 +477,22 @@ on_update_taux( GtkButton *button, ofaTauxSet *self )
 		g_object_unref( taux );
 
 		prev_mnemo = g_strdup( ofo_taux_get_mnemo( taux ));
-		prev_val = my_utils_display_from_date( ofo_taux_get_val_begin( taux ), MY_UTILS_DATE_DMMM );
+		/*prev_val = my_utils_display_from_date( ofo_taux_get_val_begin( taux ), MY_UTILS_DATE_DMMM );*/
 
 		if( ofa_taux_properties_run(
 				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), taux )){
 
 			new_mnemo = ofo_taux_get_mnemo( taux );
-			new_val = my_utils_display_from_date( ofo_taux_get_val_begin( taux ), MY_UTILS_DATE_DMMM );
+			/*new_val = my_utils_display_from_date( ofo_taux_get_val_begin( taux ), MY_UTILS_DATE_DMMM );*/
 
-			if( g_utf8_collate( prev_mnemo, new_mnemo ) || g_utf8_collate( prev_val, new_val )){
+			if( g_utf8_collate( prev_mnemo, new_mnemo )){
 				gtk_list_store_remove( GTK_LIST_STORE( model ), &iter );
 				insert_new_row( self, taux );
 
 			} else {
 				store_set_taux( model, &iter, taux );
 			}
-
-			g_free( new_val );
 		}
-
-		g_free( prev_val );
 		g_free( prev_mnemo );
 	}
 }
@@ -553,7 +523,7 @@ on_delete_taux( GtkButton *button, ofaTauxSet *self )
 		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
 		if( delete_confirmed( self, taux ) &&
-				ofo_dossier_delete_taux( dossier, taux )){
+				ofo_taux_delete( taux, dossier )){
 
 			/* update our set of taux */
 			ofa_main_page_set_dataset(
@@ -589,7 +559,7 @@ insert_new_row( ofaTauxSet *self, ofoTaux *taux )
 	GtkTreeModel *model;
 	GtkTreeIter iter, new_iter;
 	const gchar *taux_mnemo;
-	gchar *mod_mnemo, *mod_date, *taux_date;
+	gchar *mod_mnemo;
 	gint cmp;
 	gboolean iter_found;
 	GtkTreePath *path;
@@ -605,18 +575,12 @@ insert_new_row( ofaTauxSet *self, ofoTaux *taux )
 	iter_found = FALSE;
 	if( gtk_tree_model_get_iter_first( model, &iter )){
 		taux_mnemo = ofo_taux_get_mnemo( taux );
-		taux_date = my_utils_sql_from_date( ofo_taux_get_val_begin( taux ));
 		while( !iter_found ){
 			gtk_tree_model_get( model, &iter,
 					COL_MNEMO, &mod_mnemo,
-					COL_BEGIN, &mod_date,
 					-1 );
 			cmp = g_utf8_collate( mod_mnemo, taux_mnemo );
 			if( cmp > 0 ){
-				iter_found = TRUE;
-				break;
-			}
-			if( cmp == 0 && g_utf8_collate( mod_date, taux_date ) > 0 ){
 				iter_found = TRUE;
 				break;
 			}
@@ -624,7 +588,6 @@ insert_new_row( ofaTauxSet *self, ofoTaux *taux )
 				break;
 			}
 			g_free( mod_mnemo );
-			g_free( mod_date );
 		}
 	}
 	if( !iter_found ){

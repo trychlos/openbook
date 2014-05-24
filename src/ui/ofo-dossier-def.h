@@ -28,7 +28,7 @@
 #define __OFO_DOSSIER_DEF_H__
 
 /**
- * SECTION: ofo_dossier_def
+ * SECTION: ofo_dossier
  * @short_description: #ofoDossier class definition.
  * @include: ui/ofo-dossier-def.h
  *

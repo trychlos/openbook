@@ -86,6 +86,8 @@ typedef struct {
 #define OFO_BASE_REMOVE_FROM_DATASET( P,T ) ({ (P)->dataset=g_list_remove((P)->dataset,(T)); g_object_unref((T)); })
 #define OFO_BASE_UPDATE_DATASET( P,T )      ({ OFO_BASE_REMOVE_FROM_DATASET((P),(T)); OFO_BASE_ADD_TO_DATASET(P,T); })
 
+#define OFO_BASE_UNSET_ID                   -1
+
 GType          ofo_base_get_type  ( void ) G_GNUC_CONST;
 
 ofoBaseGlobal *ofo_base_get_global( ofoBaseGlobal *ptr,

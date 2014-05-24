@@ -77,6 +77,7 @@ OFO_BASE_DEFINE_GLOBAL( st_global, account )
 
 static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
+static gint        account_count_for_devise( ofoSgbd *sgbd, gint dev_id );
 static gboolean    account_do_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user );
 static gboolean    account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
 static gboolean    account_do_delete( ofoAccount *account, ofoSgbd *sgbd );
@@ -87,12 +88,11 @@ static void
 ofo_account_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_account_finalize";
-	ofoAccount *self;
+	ofoAccount *self = OFO_ACCOUNT( instance );
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	self = OFO_ACCOUNT( instance );
+	g_debug( "%s: instance=%p (%s): %s - %s",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			self->priv->number, self->priv->label );
 
 	g_free( self->priv->number );
 	g_free( self->priv->label );
@@ -107,16 +107,11 @@ ofo_account_finalize( GObject *instance )
 static void
 ofo_account_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_account_dispose";
 	ofoAccount *self;
 
 	self = OFO_ACCOUNT( instance );
 
 	if( !self->priv->dispose_has_run ){
-
-		g_debug( "%s: instance=%p (%s): %s - %s",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-				self->priv->number, self->priv->label );
 
 		self->priv->dispose_has_run = TRUE;
 	}
@@ -193,10 +188,10 @@ account_load_dataset( void )
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT CPT_NUMBER,CPT_LABEL,CPT_DEV_ID,CPT_NOTES,CPT_TYPE,"
 			"	CPT_MAJ_USER,CPT_MAJ_STAMP,"
-			"	CPT_DEB_MNT,CPT_DEB_ECR,CPT_DEB_DATE,"
-			"	CPT_CRE_MNT,CPT_CRE_ECR,CPT_CRE_DATE,"
-			"	CPT_BRO_DEB_MNT,CPT_BRO_DEB_ECR,CPT_BRO_DEB_DATE,"
-			"	CPT_BRO_CRE_MNT,CPT_BRO_CRE_ECR,CPT_BRO_CRE_DATE "
+			"	CPT_DEB_ECR,CPT_DEB_DATE,CPT_DEB_MNT,"
+			"	CPT_CRE_ECR,CPT_CRE_DATE,CPT_CRE_MNT,"
+			"	CPT_BRO_DEB_ECR,CPT_BRO_DEB_DATE,CPT_BRO_DEB_MNT,"
+			"	CPT_BRO_CRE_ECR,CPT_BRO_CRE_DATE,CPT_BRO_CRE_MNT "
 			"	FROM OFA_T_COMPTES "
 			"	ORDER BY CPT_NUMBER ASC" );
 
@@ -209,6 +204,8 @@ account_load_dataset( void )
 		icol = icol->next;
 		ofo_account_set_label( account, ( gchar * ) icol->data );
 		icol = icol->next;
+		/* devise may be left unset for root accounts, though is
+		 * mandatory for detail ones */
 		if( icol->data ){
 			ofo_account_set_devise( account, atoi(( gchar * ) icol->data ));
 		}
@@ -220,10 +217,6 @@ account_load_dataset( void )
 		ofo_account_set_maj_user( account, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_account_set_maj_stamp( account, my_utils_stamp_from_str(( gchar * ) icol->data ));
-		icol = icol->next;
-		if( icol->data ){
-			ofo_account_set_deb_mnt( account, g_ascii_strtod(( gchar * ) icol->data, NULL ));
-		}
 		/*g_debug( "%s: deb_mnt str=%s mnt=%f obj=%f", thisfn, ( gchar * ) icol->data, g_ascii_strtod(( gchar * ) icol->data, NULL ), ofo_account_get_deb_mnt( account ));*/
 		icol = icol->next;
 		if( icol->data ){
@@ -233,7 +226,7 @@ account_load_dataset( void )
 		ofo_account_set_deb_date( account, my_utils_date_from_str(( gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
-			ofo_account_set_cre_mnt( account, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+			ofo_account_set_deb_mnt( account, g_ascii_strtod(( gchar * ) icol->data, NULL ));
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -243,7 +236,7 @@ account_load_dataset( void )
 		ofo_account_set_cre_date( account, my_utils_date_from_str(( gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
-			ofo_account_set_bro_deb_mnt( account, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+			ofo_account_set_cre_mnt( account, g_ascii_strtod(( gchar * ) icol->data, NULL ));
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -253,7 +246,7 @@ account_load_dataset( void )
 		ofo_account_set_bro_deb_date( account, my_utils_date_from_str(( gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
-			ofo_account_set_bro_cre_mnt( account, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+			ofo_account_set_bro_deb_mnt( account, g_ascii_strtod(( gchar * ) icol->data, NULL ));
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -261,6 +254,12 @@ account_load_dataset( void )
 		}
 		icol = icol->next;
 		ofo_account_set_bro_cre_date( account, my_utils_date_from_str(( gchar * ) icol->data ));
+		icol = icol->next;
+		if( icol->data ){
+			ofo_account_set_bro_cre_mnt( account, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+		}
+
+		g_debug( "ofo_account_load_dataset: %s - %s", account->priv->number, account->priv->label );
 		dataset = g_list_prepend( dataset, account );
 	}
 
@@ -304,6 +303,44 @@ account_find_by_number( GList *set, const gchar *number )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_account_use_devise:
+ *
+ * Returns: %TRUE if a recorded account makes use of the specified currency.
+ */
+gboolean
+ofo_account_use_devise( ofoDossier *dossier, gint dev_id )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	return( account_count_for_devise( ofo_dossier_get_sgbd( dossier ), dev_id ) > 0 );
+}
+
+static gint
+account_count_for_devise( ofoSgbd *sgbd, gint dev_id )
+{
+	gint count;
+	gchar *query;
+	GSList *result, *icol;
+
+	count = 0;
+	query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_COMPTES "
+				"	WHERE CPT_DEV_ID=%d",
+					dev_id );
+
+	result = ofo_sgbd_query_ex( sgbd, query );
+	g_free( query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		count = atoi(( gchar * ) icol->data );
+		ofo_sgbd_free_result( result );
+	}
+
+	return( count );
 }
 
 /**
@@ -1034,9 +1071,14 @@ ofo_account_set_bro_cre_date( ofoAccount *account, const GDate *date )
 
 /**
  * ofo_account_insert:
+ * @account: the new #ofoAccount account to be inserted.
+ * @dossier: the currently opened #ofoDossier dossier.
  *
- * we deal here with an update of publicly modifiable account properties
- * so it is not needed to check debit or credit agregats
+ * This function is only of use when the user modifies the public
+ * properties of an account. It is no worth to deal here with amounts
+ * and/or debit/credit agregates.
+ *
+ * Returns: %TRUE if the insertion has been successful.
  */
 gboolean
 ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
@@ -1066,12 +1108,6 @@ ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
 	return( FALSE );
 }
 
-/**
- * ofo_account_insert:
- *
- * we deal here with an update of publicly modifiable account properties
- * so it is not needed to check debit or credit agregats
- */
 static gboolean
 account_do_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user )
 {
@@ -1089,18 +1125,11 @@ account_do_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_COMPTES" );
 
 	g_string_append_printf( query,
-			"	(CPT_NUMBER, CPT_LABEL, CPT_TYPE, CPT_NOTES, CPT_DEV_ID, "
+			"	(CPT_NUMBER,CPT_LABEL,CPT_DEV_ID,CPT_NOTES,CPT_TYPE,"
 			"	CPT_MAJ_USER, CPT_MAJ_STAMP)"
-			"	VALUES ('%s','%s','%s',",
+			"	VALUES ('%s','%s',",
 					ofo_account_get_number( account ),
-					label,
-					ofo_account_get_type_account( account ));
-
-	if( notes && g_utf8_strlen( notes, -1 )){
-		g_string_append_printf( query, "'%s',", notes );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
+					label );
 
 	if( ofo_account_is_root( account )){
 		query = g_string_append( query, "NULL," );
@@ -1108,7 +1137,16 @@ account_do_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user )
 		g_string_append_printf( query, "%d,", ofo_account_get_devise( account ));
 	}
 
-	g_string_append_printf( query, "'%s','%s')", user, stamp );
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "'%s',", notes );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	g_string_append_printf( query,
+			"'%s','%s','%s')",
+			ofo_account_get_type_account( account ),
+			user, stamp );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
@@ -1183,10 +1221,13 @@ account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const 
 		g_string_append_printf( query, "CPT_NUMBER='%s',", new_number );
 	}
 
-	g_string_append_printf( query,
-			"	CPT_LABEL='%s',CPT_TYPE='%s',",
-					label,
-					ofo_account_get_type_account( account ));
+	g_string_append_printf( query, "CPT_LABEL='%s',", label );
+
+	if( ofo_account_is_root( account )){
+		query = g_string_append( query, "CPT_DEV_ID=NULL," );
+	} else {
+		g_string_append_printf( query, "CPT_DEV_ID=%d,", ofo_account_get_devise( account ));
+	}
 
 	if( notes && g_utf8_strlen( notes, -1 )){
 		g_string_append_printf( query, "CPT_NOTES='%s',", notes );
@@ -1194,11 +1235,9 @@ account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const 
 		query = g_string_append( query, "CPT_NOTES=NULL," );
 	}
 
-	if( ofo_account_is_root( account )){
-		query = g_string_append( query, "CPT_DEV_ID=NULL," );
-	} else {
-		g_string_append_printf( query, "CPT_DEV_ID=%d,", ofo_account_get_devise( account ));
-	}
+	g_string_append_printf( query,
+			"	CPT_TYPE='%s',",
+					ofo_account_get_type_account( account ));
 
 	g_string_append_printf( query,
 			"	CPT_MAJ_USER='%s',CPT_MAJ_STAMP='%s'"

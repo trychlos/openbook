@@ -64,7 +64,6 @@ struct _ofaJournalsSetPrivate {
 enum {
 	COL_MNEMO = 0,
 	COL_LABEL,
-	COL_CLOTURE,
 	COL_OBJECT,
 	N_COLUMNS
 };
@@ -307,7 +306,7 @@ setup_journals_view( ofaJournalsSet *self )
 
 	model = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( view, model );
 	g_object_unref( model );
 
@@ -324,13 +323,6 @@ setup_journals_view( ofaJournalsSet *self )
 			text_cell, "text", COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_append_column( view, column );
-
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Last closing" ),
-			text_cell, "text", COL_CLOTURE,
-			NULL );
 	gtk_tree_view_append_column( view, column );
 
 	select = gtk_tree_view_get_selection( view );
@@ -401,27 +393,13 @@ setup_first_selection( ofaJournalsSet *self )
 static void
 store_set_journal( GtkTreeModel *model, GtkTreeIter *iter, const ofoJournal *journal )
 {
-	const GDate *dclo;
-	gchar *sclo;
-
-	dclo = ofo_journal_get_cloture( journal );
-	sclo = my_utils_display_from_date( dclo, MY_UTILS_DATE_DMMM );
-
 	gtk_list_store_set(
 			GTK_LIST_STORE( model ),
 			iter,
 			COL_MNEMO,   ofo_journal_get_mnemo( journal ),
 			COL_LABEL,   ofo_journal_get_label( journal ),
-			COL_CLOTURE, sclo,
 			COL_OBJECT, journal,
 			-1 );
-
-	/*
-	g_debug( "ofa_journals_set_store_set_journal: %s %s",
-			ofo_journal_get_mnemo( journal ), ofo_journal_get_label( journal ));
-			*/
-
-	g_free( sclo );
 }
 
 static void

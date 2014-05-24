@@ -32,8 +32,11 @@
 #include <string.h>
 
 #include "ui/my-utils.h"
-#include "ui/ofo-dossier.h"
+#include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
+#include "ui/ofo-dossier.h"
+#include "ui/ofo-entry.h"
+#include "ui/ofo-journal.h"
 
 /* priv instance data
  */
@@ -65,7 +68,7 @@ static ofoDevise *devise_find_by_code( GList *set, const gchar *code );
 static gint       devise_cmp_by_code( const ofoDevise *a, const gchar *code );
 static gboolean   devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd );
 static gboolean   devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd );
-static gboolean   devise_reset_id( ofoDevise *devise, ofoSgbd *sgbd );
+static gboolean   devise_get_back_id( ofoDevise *devise, ofoSgbd *sgbd );
 static gboolean   devise_do_update( ofoDevise *devise, ofoSgbd *sgbd );
 static gboolean   devise_do_delete( ofoDevise *devise, ofoSgbd *sgbd );
 static gint       devise_cmp_by_code( const ofoDevise *a, const gchar *code );
@@ -77,10 +80,11 @@ ofo_devise_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_devise_finalize";
 	ofoDevise *self;
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
 	self = OFO_DEVISE( instance );
+
+	g_debug( "%s: instance=%p (%s): %s - %s",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			self->priv->code, self->priv->label );
 
 	g_free( self->priv->code );
 	g_free( self->priv->label );
@@ -93,16 +97,11 @@ ofo_devise_finalize( GObject *instance )
 static void
 ofo_devise_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_devise_dispose";
 	ofoDevise *self;
 
 	self = OFO_DEVISE( instance );
 
 	if( !self->priv->dispose_has_run ){
-
-		g_debug( "%s: instance=%p (%s): %s - %s",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-				self->priv->code, self->priv->label );
 
 		self->priv->dispose_has_run = TRUE;
 	}
@@ -123,7 +122,7 @@ ofo_devise_init( ofoDevise *self )
 
 	self->priv->dispose_has_run = FALSE;
 
-	self->priv->id = -1;
+	self->priv->id = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -146,6 +145,11 @@ ofo_devise_class_init( ofoDeviseClass *klass )
  * Returns: The list of #ofoDevise devises, ordered by ascending
  * mnemonic. The returned list is owned by the #ofoDevise class, and
  * should not be freed by the caller.
+ *
+ * Note: The list is returned (and maintained) sorted for debug
+ * facility only. Any way, the display treeview (#ofoDevisesSet class)
+ * makes use of a sortable model which doesn't care of the order of the
+ * provided dataset.
  */
 GList *
 ofo_devise_get_dataset( ofoDossier *dossier )
@@ -253,14 +257,14 @@ ofo_devise_new( void )
 gint
 ofo_devise_get_id( const ofoDevise *devise )
 {
-	g_return_val_if_fail( OFO_IS_DEVISE( devise ), -1 );
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), OFO_BASE_UNSET_ID );
 
 	if( !devise->priv->dispose_has_run ){
 
 		return( devise->priv->id );
 	}
 
-	return( -1 );
+	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -315,19 +319,44 @@ ofo_devise_get_symbol( const ofoDevise *devise )
  * ofo_devise_is_deletable:
  *
  * A currency should not be deleted while it is referenced by an
- * account.
+ * account, a journal, an entry.
  */
 gboolean
 ofo_devise_is_deletable( const ofoDevise *devise )
 {
-	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
+	ofoDossier *dossier;
+
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
+	/* a devise whose internal identifier is not set is deletable,
+	 * but this should never appear */
+	g_return_val_if_fail( ofo_devise_get_id( devise ) > 0, TRUE );
 
 	if( !devise->priv->dispose_has_run ){
 
-		g_warning( "ofo_devise_is_deletable: TO BE WRITTEN" );
+		dossier = OFO_DOSSIER( st_global->dossier );
+
+		return( !ofo_entry_use_devise( dossier, ofo_devise_get_id( devise )) &&
+				!ofo_journal_use_devise( dossier, ofo_devise_get_id( devise )) &&
+				!ofo_account_use_devise( dossier, ofo_devise_get_id( devise )));
 	}
 
 	return( FALSE );
+}
+
+/**
+ * ofo_devise_is_valid:
+ *
+ * Returns: %TRUE if the provided data makes the ofoDevise a valid
+ * object.
+ *
+ * Note that this does NOT check for key duplicate.
+ */
+gboolean
+ofo_devise_is_valid( const gchar *code, const gchar *label, const gchar *symbol )
+{
+	return( code && g_utf8_strlen( code, -1 ) &&
+			label && g_utf8_strlen( label, -1 ) &&
+			symbol && g_utf8_strlen( symbol, -1 ));
 }
 
 /**
@@ -420,7 +449,7 @@ static gboolean
 devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd )
 {
 	return( devise_insert_main( devise, sgbd ) &&
-			devise_reset_id( devise, sgbd ));
+			devise_get_back_id( devise, sgbd ));
 }
 
 static gboolean
@@ -451,20 +480,14 @@ devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd )
 }
 
 static gboolean
-devise_reset_id( ofoDevise *devise, ofoSgbd *sgbd )
+devise_get_back_id( ofoDevise *devise, ofoSgbd *sgbd )
 {
-	gchar *query;
 	gboolean ok;
 	GSList *result, *icol;
 
 	ok = FALSE ;
 
-	query = g_strdup_printf(
-			"SELECT DEV_ID FROM OFA_T_DEVISES"
-			"	WHERE DEV_CODE='%s'",
-			ofo_devise_get_code( devise ));
-
-	result = ofo_sgbd_query_ex( sgbd, query );
+	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
 
 	if( result ){
 		icol = ( GSList * ) result->data;
@@ -472,8 +495,6 @@ devise_reset_id( ofoDevise *devise, ofoSgbd *sgbd )
 		ofo_sgbd_free_result( result );
 		ok = TRUE;
 	}
-
-	g_free( query );
 
 	return( ok );
 }
@@ -511,8 +532,8 @@ ofo_devise_update( ofoDevise *devise, ofoDossier *dossier )
 /**
  * ofo_devise_update:
  *
- * we deal here with an update of publicly modifiable devise properties
- * mnemo is not modifiable
+ * We deal here with an update of publicly modifiable devise properties.
+ * All fields are mandatory.
  */
 static gboolean
 devise_do_update( ofoDevise *devise, ofoSgbd *sgbd )
@@ -578,8 +599,8 @@ devise_do_delete( ofoDevise *devise, ofoSgbd *sgbd )
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_DEVISES"
-			"	WHERE DEV_CODE='%s'",
-					ofo_devise_get_code( devise ));
+			"	WHERE DEV_ID=%d",
+					ofo_devise_get_id( devise ));
 
 	ok = ofo_sgbd_query( sgbd, query );
 

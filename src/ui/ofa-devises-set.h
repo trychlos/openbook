@@ -33,6 +33,9 @@
  * @include: ui/ofa-devises-set.h
  *
  * Display the list of known devises, letting the user edit it.
+ *
+ * The display treeview is sorted in a the ascending currency code
+ * order with insensitive case.
  */
 
 #include "ui/ofa-main-page.h"

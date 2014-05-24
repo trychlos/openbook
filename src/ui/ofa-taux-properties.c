@@ -61,9 +61,6 @@ struct _ofaTauxPropertiesPrivate {
 	gint           id;
 	gchar         *mnemo;
 	gchar         *label;
-	GDate          begin;
-	GDate          end;
-	gdouble        value;
 	gchar         *maj_user;
 	GTimeVal       maj_stamp;
 };
@@ -82,9 +79,9 @@ static void      do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *m
 static gboolean  ok_to_terminate( ofaTauxProperties *self, gint code );
 static void      on_mnemo_changed( GtkEntry *entry, ofaTauxProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaTauxProperties *self );
-static void      on_begin_changed( GtkEntry *entry, ofaTauxProperties *self );
+/*static void      on_begin_changed( GtkEntry *entry, ofaTauxProperties *self );
 static void      on_end_changed( GtkEntry *entry, ofaTauxProperties *self );
-static void      on_taux_changed( GtkEntry *entry, ofaTauxProperties *self );
+static void      on_taux_changed( GtkEntry *entry, ofaTauxProperties *self );*/
 static void      check_for_enable_dlg( ofaTauxProperties *self );
 static gboolean  do_update( ofaTauxProperties *self );
 static void      error_duplicate( ofaTauxProperties *self, ofoTaux *existing );
@@ -259,7 +256,7 @@ do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *tau
 	gchar *title;
 	const gchar *mnemo;
 	GtkEntry *entry;
-	gchar *str;
+	/*gchar *str;*/
 	gchar *notes;
 	GtkTextView *text;
 	GtkTextBuffer *buffer;
@@ -310,7 +307,7 @@ do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *tau
 		}
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 
-		memcpy( &priv->begin, ofo_taux_get_val_begin( taux ), sizeof( GDate ));
+		/*memcpy( &priv->begin, ofo_taux_get_val_begin( taux ), sizeof( GDate ));
 		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-begin" ));
 		str = my_utils_display_from_date( &priv->begin, MY_UTILS_DATE_DMMM );
 		gtk_entry_set_text( entry, str );
@@ -329,7 +326,7 @@ do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *tau
 		str = g_strdup_printf( "%.3lf", priv->value );
 		gtk_entry_set_text( entry, str );
 		g_free( str );
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_taux_changed ), self );
+		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_taux_changed ), self );*/
 
 		notes = g_strdup( ofo_taux_get_notes( taux ));
 		if( notes ){
@@ -386,6 +383,7 @@ on_label_changed( GtkEntry *entry, ofaTauxProperties *self )
 	check_for_enable_dlg( self );
 }
 
+/*
 static void
 on_begin_changed( GtkEntry *entry, ofaTauxProperties *self )
 {
@@ -461,20 +459,20 @@ on_taux_changed( GtkEntry *entry, ofaTauxProperties *self )
 	g_free( markup );
 
 	check_for_enable_dlg( self );
-}
+}*/
 
 static void
 check_for_enable_dlg( ofaTauxProperties *self )
 {
 	ofaTauxPropertiesPrivate *priv;
 	GtkWidget *button;
-	GtkEntry *entry;
+	/*GtkEntry *entry;
 	const gchar *str;
-	gboolean begin_ok, end_ok, taux_ok;
+	gboolean begin_ok, end_ok, taux_ok;*/
 
 	priv = self->private;
 
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-begin" ));
+	/*entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-begin" ));
 	str = gtk_entry_get_text( entry );
 	begin_ok = ( !str || !g_utf8_strlen( str, -1 ) || g_date_valid( &priv->begin ));
 
@@ -484,15 +482,12 @@ check_for_enable_dlg( ofaTauxProperties *self )
 
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-taux" ));
 	str = gtk_entry_get_text( entry );
-	taux_ok = ( str && g_utf8_strlen( str, -1 ));
+	taux_ok = ( str && g_utf8_strlen( str, -1 ));*/
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
 	gtk_widget_set_sensitive( button,
 			priv->mnemo && g_utf8_strlen( priv->mnemo, -1 ) &&
-			priv->label && g_utf8_strlen( priv->label, -1 ) &&
-			begin_ok &&
-			end_ok &&
-			taux_ok );
+			priv->label && g_utf8_strlen( priv->label, -1 ));
 }
 
 /*
@@ -523,9 +518,11 @@ do_update( ofaTauxProperties *self )
 	 *
 	 */
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
+	/*
 	preventer = ofo_taux_is_data_valid(
 			dossier,
-			self->private->id, self->private->mnemo, &self->private->begin, &self->private->end );
+			self->private->id, self->private->mnemo, &self->private->begin, &self->private->end );*/
+	preventer = NULL;
 
 	if( preventer ){
 		error_duplicate( self, preventer );
@@ -534,9 +531,9 @@ do_update( ofaTauxProperties *self )
 
 	ofo_taux_set_mnemo( self->private->taux, self->private->mnemo );
 	ofo_taux_set_label( self->private->taux, self->private->label );
-	ofo_taux_set_val_begin( self->private->taux, &self->private->begin );
+	/*ofo_taux_set_val_begin( self->private->taux, &self->private->begin );
 	ofo_taux_set_val_end( self->private->taux, &self->private->end );
-	ofo_taux_set_taux( self->private->taux, self->private->value );
+	ofo_taux_set_taux( self->private->taux, self->private->value );*/
 
 	text = GTK_TEXT_VIEW(
 			my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-notes" ));
@@ -552,7 +549,7 @@ do_update( ofaTauxProperties *self )
 				ofo_taux_insert( self->private->taux, dossier );
 	} else {
 		self->private->updated =
-				ofo_dossier_update_taux( dossier, self->private->taux );
+				ofo_taux_update( self->private->taux, dossier );
 	}
 
 	return( self->private->updated );
@@ -562,10 +559,10 @@ static void
 error_duplicate( ofaTauxProperties *self, ofoTaux *preventer )
 {
 	GtkMessageDialog *dlg;
-	gchar *sbegin, *send;
+	/*gchar *sbegin, *send;*/
 	gchar *msg;
 
-	sbegin = my_utils_display_from_date( &self->private->begin, MY_UTILS_DATE_DMMM );
+	/*sbegin = my_utils_display_from_date( &self->private->begin, MY_UTILS_DATE_DMMM );
 	if( !g_utf8_strlen( sbegin, -1 )){
 		g_free( sbegin );
 		sbegin = g_strdup( _( "(unlimited)" ));
@@ -574,15 +571,17 @@ error_duplicate( ofaTauxProperties *self, ofoTaux *preventer )
 	if( !g_utf8_strlen( send, -1 )){
 		g_free( send );
 		send = g_strdup( _( "(illimité)" ));
-	}
+	}*/
+
+	/*_( "Unable to set '%s' asked mnemonic and validity period as "
+		"these overlap with the already existing '%s' whose "
+		"current validity is from %s to %s" ),*/
 
 	msg = g_strdup_printf(
 				_( "Unable to set '%s' asked mnemonic and validity period as "
-					"these overlap with the already existing '%s' whose "
-					"current validity is from %s to %s" ),
+					"these overlap with the already existing '%s'" ),
 				ofo_taux_get_mnemo( preventer ),
-				ofo_taux_get_label( preventer ),
-				sbegin, send );
+				ofo_taux_get_label( preventer ));
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				GTK_WINDOW( self->private->dialog ),
@@ -595,6 +594,6 @@ error_duplicate( ofaTauxProperties *self, ofoTaux *preventer )
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
 
 	g_free( msg );
-	g_free( send );
-	g_free( sbegin );
+	/*g_free( send );
+	g_free( sbegin );*/
 }

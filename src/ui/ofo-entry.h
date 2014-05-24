@@ -36,6 +36,7 @@
  */
 
 #include "ui/ofo-base.h"
+#include "ui/ofo-dossier-def.h"
 #include "ui/ofo-sgbd.h"
 
 G_BEGIN_DECLS
@@ -82,6 +83,8 @@ typedef enum {
 	ofaEntryStatus;
 
 GType     ofo_entry_get_type  ( void ) G_GNUC_CONST;
+
+gboolean  ofo_entry_use_devise( ofoDossier *dossier, gint dev_id );
 
 ofoEntry *ofo_entry_insert_new( ofoSgbd *sgbd, const gchar *user,
 									const GDate *effet, const GDate *ope,

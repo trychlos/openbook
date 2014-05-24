@@ -48,10 +48,11 @@ struct _ofoDossierPrivate {
 	ofoSgbd  *sgbd;
 	gchar    *userid;
 
-	/* row id 0
+	/* row id 1
 	 */
 	gchar    *label;					/* raison sociale */
 	gchar    *notes;					/* notes */
+	gint      exe_id;					/* current exercice identifier */
 	GDate     exe_deb;					/* début d'exercice */
 	GDate     exe_fin;					/* fin d'exercice */
 };
@@ -308,8 +309,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 	/* default value for timestamp cannot be null */
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
-				"VER_NUMBER INTEGER   NOT NULL UNIQUE COMMENT 'DB model version number',"
-				"VER_DATE   TIMESTAMP DEFAULT 0       COMMENT 'Version application timestamp')" )){
+			"	VER_NUMBER INTEGER NOT NULL UNIQUE DEFAULT 0 COMMENT 'DB model version number',"
+			"	VER_DATE   TIMESTAMP DEFAULT 0               COMMENT 'Version application timestamp')" )){
 		return( FALSE );
 	}
 
@@ -336,13 +337,58 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 	g_free( query );
 
 	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
+			"	CPT_NUMBER       VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
+			"	CPT_LABEL        VARCHAR(80)   NOT NULL        COMMENT 'Account label',"
+			"	CPT_DEV_ID       INTEGER                       COMMENT 'Identifier of the currency of the account',"
+			"	CPT_NOTES        VARCHAR(512)                  COMMENT 'Account notes',"
+			"	CPT_TYPE         CHAR(1)                       COMMENT 'Account type, values R/D',"
+			"	CPT_MAJ_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
+			"	CPT_MAJ_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp',"
+			"	CPT_DEB_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au débit',"
+			"	CPT_DEB_DATE     DATE                          COMMENT 'Date d\\'effet',"
+			"	CPT_DEB_MNT      DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant débiteur écritures validées',"
+			"	CPT_CRE_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au crédit',"
+			"	CPT_CRE_DATE     DATE                          COMMENT 'Date d\\'effet',"
+			"	CPT_CRE_MNT      DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant créditeur écritures validées',"
+			"	CPT_BRO_DEB_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture en brouillard imputée au débit',"
+			"	CPT_BRO_DEB_DATE DATE                          COMMENT 'Date d\\'effet',"
+			"	CPT_BRO_DEB_MNT  DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant débiteur écritures en brouillard',"
+			"	CPT_BRO_CRE_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture de brouillard imputée au crédit',"
+			"	CPT_BRO_CRE_DATE DATE                          COMMENT 'Date d\\'effet',"
+			"	CPT_BRO_CRE_MNT  DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant créditeur écritures en brouillard'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
+			"	DEV_ID     INTEGER NOT NULL AUTO_INCREMENT UNIQUE COMMENT 'Internal identifier of the currency',"
+			"	DEV_CODE   VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
+			"	DEV_LABEL  VARCHAR(80) NOT NULL                   COMMENT 'Currency label',"
+			"	DEV_SYMBOL VARCHAR(3)  NOT NULL                   COMMENT 'Label of the currency'"
+			")" )){
+		return( FALSE );
+	}
+
+	query = g_strdup(
+			"INSERT IGNORE INTO OFA_T_DEVISES "
+			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES "
+			"	('EUR','Euro','€')" );
+	if( !ofo_sgbd_query( sgbd, query )){
+		g_free( query );
+		return( FALSE );
+	}
+	g_free( query );
+
+	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
-			"	DOS_ID           INTEGER      NOT NULL UNIQUE COMMENT 'Row identifier',"
+			"	DOS_ID           INTEGER   NOT NULL UNIQUE    COMMENT 'Row identifier',"
 			"	DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
 			"	DOS_NOTES        VARCHAR(512)                 COMMENT 'Notes',"
 			"	DOS_DUREE_EXE    INTEGER                      COMMENT 'Exercice length in month',"
 			"	DOS_MAJ_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
-			"	DOS_MAJ_STAMP    TIMESTAMP    NOT NULL        COMMENT 'Properties last update timestamp'"
+			"	DOS_MAJ_STAMP    TIMESTAMP NOT NULL           COMMENT 'Properties last update timestamp'"
 			")" )){
 		return( FALSE );
 	}
@@ -361,82 +407,37 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	DOS_EXE_ID       INTEGER      NOT NULL        COMMENT 'Exercice identifier',"
 			"	DOS_EXE_DEB      DATE         NOT NULL DEFAULT 0 COMMENT 'Date de début d\\'exercice',"
 			"	DOS_EXE_FIN      DATE         NOT NULL DEFAULT 0 COMMENT 'Date de fin d\\'exercice',"
-			"	DOS_EXE_ECR      INTEGER      NOT NULL DEFAULT 0 COMMENT 'Last entry number used',"
-			"	DOS_EXE_STATUS   INTEGER                         COMMENT 'Status of this exercice',"
+			"	DOS_EXE_LAST_ECR INTEGER      NOT NULL DEFAULT 0 COMMENT 'Last entry number used',"
+			"	DOS_EXE_STATUS   INTEGER      NOT NULL DEFAULT 0 COMMENT 'Status of this exercice',"
 			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_ID)"
 			")" )){
 		return( FALSE );
 	}
 
 	query = g_strdup(
-			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE (DOS_ID,DOS_EXE_STATUS) VALUE (1,1)" );
+			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE (DOS_ID,DOS_EXE_ID,DOS_EXE_STATUS) VALUE (1,1,1)" );
 	if( !ofo_sgbd_query( sgbd, query )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
-
-	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
-			"	DEV_ID INTEGER NOT NULL AUTO_INCREMENT UNIQUE COMMENT 'Internal identifier of the currency',"
-			"	DEV_CODE    VARCHAR(3) BINARY NOT NULL UNIQUE COMMENT 'ISO-3A identifier of the currency',"
-			"	DEV_LABEL        VARCHAR(80) NOT NULL        COMMENT 'Currency label',"
-			"	DEV_SYMBOL       VARCHAR(3)  NOT NULL        COMMENT 'Label of the currency'"
-			")" )){
-		return( FALSE );
-	}
-
-	query = g_strdup(
-			"INSERT IGNORE INTO OFA_T_DEVISES "
-			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES "
-			"	('EUR','Euro','€')" );
-	if( !ofo_sgbd_query( sgbd, query )){
-		g_free( query );
-		return( FALSE );
-	}
-	g_free( query );
-
-	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
-				"CPT_NUMBER       VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
-				"CPT_LABEL        VARCHAR(80)   NOT NULL        COMMENT 'Account label',"
-				"CPT_DEV_ID       INTEGER                       COMMENT 'Identifier of the currency of the account',"
-				"CPT_NOTES        VARCHAR(512)                  COMMENT 'Account notes',"
-				"CPT_TYPE         CHAR(1)                       COMMENT 'Account type, values R/D',"
-				"CPT_MAJ_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
-				"CPT_MAJ_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp',"
-				"CPT_DEB_MNT      DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant débiteur écritures validées',"
-				"CPT_DEB_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au débit',"
-				"CPT_DEB_DATE     DATE                          COMMENT 'Date d\\'effet',"
-				"CPT_CRE_MNT      DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant créditeur écritures validées',"
-				"CPT_CRE_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au crédit',"
-				"CPT_CRE_DATE     DATE                          COMMENT 'Date d\\'effet',"
-				"CPT_BRO_DEB_MNT  DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant débiteur écritures en brouillard',"
-				"CPT_BRO_DEB_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture en brouillard imputée au débit',"
-				"CPT_BRO_DEB_DATE DATE                          COMMENT 'Date d\\'effet',"
-				"CPT_BRO_CRE_MNT  DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant créditeur écritures en brouillard',"
-				"CPT_BRO_CRE_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture de brouillard imputée au crédit',"
-				"CPT_BRO_CRE_DATE DATE                          COMMENT 'Date d\\'effet'"
-			")" )){
-		return( FALSE );
-	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ECRITURES ("
-			"	ECR_EFFET     DATE NOT NULL               COMMENT 'Imputation effect date',"
+			"	ECR_DEFFET    DATE NOT NULL               COMMENT 'Imputation effect date',"
 			"	ECR_NUMBER    INTEGER NOT NULL            COMMENT 'Entry number',"
-			"	ECR_OPE       DATE NOT NULL               COMMENT 'Operation date',"
+			"	ECR_DOPE      DATE NOT NULL               COMMENT 'Operation date',"
 			"	ECR_LABEL     VARCHAR(80)                 COMMENT 'Entry label',"
 			"	ECR_REF       VARCHAR(20)                 COMMENT 'Piece reference',"
 			"	ECR_COMPTE    VARCHAR(20)                 COMMENT 'Account number',"
 			"	ECR_DEV_ID    INTEGER                     COMMENT 'Internal identifier of the currency',"
-			"	ECR_JOU_ID    INTEGER                     COMMENT 'Internal identifier of the journal',"
 			"	ECR_MONTANT   DECIMAL(15,5)               COMMENT 'Entry amount',"
 			"	ECR_SENS      INTEGER                     COMMENT 'Sens of the entry \\'DB\\' or \\'CR\\'',"
+			"	ECR_JOU_ID    INTEGER                     COMMENT 'Internal identifier of the journal',"
 			"	ECR_STATUS    INTEGER                     COMMENT 'Is the entry validated or deleted ?',"
 			"	ECR_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
 			"	ECR_MAJ_STAMP TIMESTAMP                   COMMENT 'Last update timestamp',"
-			"	CONSTRAINT PRIMARY KEY (ECR_EFFET,ECR_NUMBER),"
+			"	CONSTRAINT PRIMARY KEY (ECR_DEFFET,ECR_NUMBER),"
 			"	INDEX (ECR_NUMBER)"
 			")" )){
 		return( FALSE );
@@ -449,21 +450,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	JOU_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Journal label',"
 			"	JOU_NOTES     VARCHAR(512)                COMMENT 'Journal notes',"
 			"	JOU_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-			"	JOU_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
-			"	JOU_CLO       DATE                        COMMENT 'Last closing date'"
-			")" )){
-		return( FALSE );
-	}
-
-	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_DET ("
-			"	JOU_ID        INTEGER  NOT NULL           COMMENT 'Internal journal identifier',"
-			"	JOU_DEV_ID    INTEGER  NOT NULL UNIQUE    COMMENT 'Internal currency identifier',"
-			"	JOU_CLO_DEB   DECIMAL(15,5)               COMMENT 'Debit balance at last closing',"
-			"	JOU_CLO_CRE   DECIMAL(15,5)               COMMENT 'Credit balance at last closing',"
-			"	JOU_DEB       DECIMAL(15,5)               COMMENT 'Current debit balance',"
-			"	JOU_CRE       DECIMAL(15,5)               COMMENT 'Current credit balance',"
-			"	CONSTRAINT PRIMARY KEY (JOU_ID,JOU_DEV_ID)"
+			"	JOU_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
 			")" )){
 		return( FALSE );
 	}
@@ -495,6 +482,30 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
 			"	VALUES ('BQ','Taux de banque','Default')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_DEV ("
+			"	JOU_ID          INTEGER  NOT NULL         COMMENT 'Internal journal identifier',"
+			"	JOU_EXE_ID      INTEGER  NOT NULL         COMMENT 'Internal exercice identifier',"
+			"	JOU_DEV_ID      INTEGER  NOT NULL         COMMENT 'Internal currency identifier',"
+			"	JOU_DEV_CLO_DEB DECIMAL(15,5)             COMMENT 'Debit balance at last closing',"
+			"	JOU_DEV_CLO_CRE DECIMAL(15,5)             COMMENT 'Credit balance at last closing',"
+			"	JOU_DEV_DEB     DECIMAL(15,5)             COMMENT 'Current debit balance',"
+			"	JOU_DEV_CRE     DECIMAL(15,5)             COMMENT 'Current credit balance',"
+			"	CONSTRAINT PRIMARY KEY (JOU_ID,JOU_EXE_ID,JOU_DEV_ID)"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_EXE ("
+			"	JOU_ID           INTEGER  NOT NULL        COMMENT 'Internal journal identifier',"
+			"	JOU_EXE_ID       INTEGER  NOT NULL        COMMENT 'Internal exercice identifier',"
+			"	JOU_EXE_LAST_CLO DATE                     COMMENT 'Last closing date of the exercice',"
+			"	CONSTRAINT PRIMARY KEY (JOU_ID,JOU_EXE_ID)"
+			")" )){
 		return( FALSE );
 	}
 
@@ -536,9 +547,6 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	TAX_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Taux mnemonic',"
 			"	TAX_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Taux label',"
 			"	TAX_NOTES     VARCHAR(512)                COMMENT 'Taux notes',"
-			"	TAX_VAL_DEB   DATE                        COMMENT 'Validity begin date',"
-			"	TAX_VAL_FIN   DATE                        COMMENT 'Validity end date',"
-			"	TAX_TAUX      DECIMAL(15,5)               COMMENT 'Taux value',"
 			"	TAX_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	TAX_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
 			")" )){
@@ -546,13 +554,13 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX_DET ("
-			"	TAX_ID        INTEGER     NOT NULL        COMMENT 'Intern taux identifier',"
-			"	TAX_VAL_DEB   DATE                        COMMENT 'Validity begin date',"
-			"	TAX_VAL_FIN   DATE                        COMMENT 'Validity end date',"
-			"	TAX_TAUX      DECIMAL(15,5)               COMMENT 'Taux value',"
-			"	TAX_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-			"	TAX_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
+			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX_VAL ("
+			"	TAX_ID            INTEGER     NOT NULL    COMMENT 'Intern taux identifier',"
+			"	TAX_VAL_DEB       DATE                    COMMENT 'Validity begin date',"
+			"	TAX_VAL_FIN       DATE                    COMMENT 'Validity end date',"
+			"	TAX_VAL_TAUX      DECIMAL(15,5)           COMMENT 'Taux value',"
+			"	TAX_VAL_MAJ_USER  VARCHAR(20)             COMMENT 'User responsible of properties last update',"
+			"	TAX_VAL_MAJ_STAMP TIMESTAMP               COMMENT 'Properties last update timestamp',"
 			"	CONSTRAINT PRIMARY KEY (TAX_ID,TAX_VAL_DEB,TAX_VAL_FIN)"
 			")" )){
 		return( FALSE );
@@ -626,6 +634,7 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 /**
  * ofo_dossier_entry_insert:
  */
+#include "ui/ofo-journal.h"
 gboolean
 ofo_dossier_entry_insert( ofoDossier *dossier,
 								const GDate *effet, const GDate *ope,
@@ -695,30 +704,4 @@ entry_get_next_number( ofoDossier *dossier )
 	}
 
 	return( next_number );
-}
-
-/**
- * ofo_dossier_update_taux:
- */
-gboolean
-ofo_dossier_update_taux( ofoDossier *dossier, ofoTaux *taux )
-{
-	gboolean ok;
-
-	ok = FALSE;
-
-	return( ok );
-}
-
-/**
- * ofo_dossier_delete_taux:
- */
-gboolean
-ofo_dossier_delete_taux( ofoDossier *dossier, ofoTaux *taux )
-{
-	gboolean ok;
-
-	ok = FALSE;
-
-	return( ok );
 }

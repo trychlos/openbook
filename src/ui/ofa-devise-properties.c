@@ -57,7 +57,7 @@ struct _ofaDevisePropertiesPrivate {
 
 	/* data
 	 */
-	gchar         *mnemo;
+	gchar         *code;
 	gchar         *label;
 	gchar         *symbol;
 };
@@ -74,7 +74,7 @@ static void      instance_dispose( GObject *instance );
 static void      instance_finalize( GObject *instance );
 static void      do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise *devise );
 static gboolean  ok_to_terminate( ofaDeviseProperties *self, gint code );
-static void      on_mnemo_changed( GtkEntry *entry, ofaDeviseProperties *self );
+static void      on_code_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      check_for_enable_dlg( ofaDeviseProperties *self );
@@ -169,7 +169,7 @@ instance_dispose( GObject *window )
 
 		priv->dispose_has_run = TRUE;
 
-		g_free( priv->mnemo );
+		g_free( priv->code );
 		g_free( priv->label );
 		g_free( priv->symbol );
 
@@ -247,7 +247,7 @@ do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise 
 	GtkBuilder *builder;
 	ofaDevisePropertiesPrivate *priv;
 	gchar *title;
-	const gchar *mnemo;
+	const gchar *code;
 	GtkEntry *entry;
 
 	priv = self->private;
@@ -273,25 +273,20 @@ do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise 
 
 		/*gtk_window_set_transient_for( GTK_WINDOW( priv->dialog ), GTK_WINDOW( main ));*/
 
-		mnemo = ofo_devise_get_code( devise );
-		if( !mnemo ){
+		code = ofo_devise_get_code( devise );
+		if( !code ){
 			title = g_strdup( _( "Defining a new devise" ));
 		} else {
-			title = g_strdup_printf( _( "Updating « %s » devise" ), mnemo );
+			title = g_strdup_printf( _( "Updating « %s » devise" ), code );
 		}
 		gtk_window_set_title( GTK_WINDOW( priv->dialog ), title );
 
-		priv->mnemo = g_strdup( ofo_devise_get_code( devise ));
-		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-mnemo" ));
-		if( priv->mnemo ){
-			gtk_entry_set_text( entry, priv->mnemo );
+		priv->code = g_strdup( ofo_devise_get_code( devise ));
+		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-code" ));
+		if( priv->code ){
+			gtk_entry_set_text( entry, priv->code );
 		}
-		/*if( mnemo ){
-			gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
-		} else {
-			g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
-		}*/
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
+		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_code_changed ), self );
 
 		priv->label = g_strdup( ofo_devise_get_label( devise ));
 		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-label" ));
@@ -337,10 +332,10 @@ ok_to_terminate( ofaDeviseProperties *self, gint code )
 }
 
 static void
-on_mnemo_changed( GtkEntry *entry, ofaDeviseProperties *self )
+on_code_changed( GtkEntry *entry, ofaDeviseProperties *self )
 {
-	g_free( self->private->mnemo );
-	self->private->mnemo = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->private->code );
+	self->private->code = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -370,25 +365,27 @@ check_for_enable_dlg( ofaDeviseProperties *self )
 	GtkWidget *button;
 
 	priv = self->private;
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
-	gtk_widget_set_sensitive( button,
-			priv->mnemo && g_utf8_strlen( priv->mnemo, -1 ) &&
-			priv->label && g_utf8_strlen( priv->label, -1 ) &&
-			priv->symbol && g_utf8_strlen( priv->symbol, -1 ));
+
+	button = my_utils_container_get_child_by_name(
+			GTK_CONTAINER( priv->dialog ), "btn-ok" );
+
+	gtk_widget_set_sensitive(
+			button,
+			ofo_devise_is_valid( priv->code, priv->label, priv->symbol ));
 }
 
 static gboolean
 do_update( ofaDeviseProperties *self )
 {
 	ofoDossier *dossier;
-	const gchar *prev_mnemo;
+	const gchar *prev_code;
 	ofoDevise *existing;
 
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	existing = ofo_devise_get_by_code( dossier, self->private->mnemo );
-	prev_mnemo = ofo_devise_get_code( self->private->devise );
+	existing = ofo_devise_get_by_code( dossier, self->private->code );
+	prev_code = ofo_devise_get_code( self->private->devise );
 
-	if( existing && !prev_mnemo ){
+	if( existing && !prev_code ){
 		/* c'est une nouvelle devise: no luck, le nouveau code de devise
 		 * existe déjà
 		 */
@@ -399,11 +396,11 @@ do_update( ofaDeviseProperties *self )
 	/* le nouveau code n'est pas encore utilisé,
 	 * ou bien il est déjà utilisé par ce même devise (n'a pas été modifié)
 	 */
-	ofo_devise_set_code( self->private->devise, self->private->mnemo );
+	ofo_devise_set_code( self->private->devise, self->private->code );
 	ofo_devise_set_label( self->private->devise, self->private->label );
 	ofo_devise_set_symbol( self->private->devise, self->private->symbol );
 
-	if( !prev_mnemo ){
+	if( !prev_code ){
 		self->private->updated =
 				ofo_devise_insert( self->private->devise, dossier );
 	} else {

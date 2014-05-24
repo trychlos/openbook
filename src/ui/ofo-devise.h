@@ -75,6 +75,7 @@ const gchar *ofo_devise_get_label ( const ofoDevise *devise );
 const gchar *ofo_devise_get_symbol( const ofoDevise *devise );
 
 gboolean     ofo_devise_is_deletable( const ofoDevise *devise );
+gboolean     ofo_devise_is_valid    ( const gchar *code, const gchar *label, const gchar *symbol );
 
 void         ofo_devise_set_id    ( ofoDevise *devise, gint id );
 void         ofo_devise_set_code  ( ofoDevise *devise, const gchar *code );

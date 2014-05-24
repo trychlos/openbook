@@ -71,6 +71,7 @@ GType        ofo_journal_get_type     ( void ) G_GNUC_CONST;
 GList       *ofo_journal_get_dataset  ( ofoDossier *dossier );
 ofoJournal  *ofo_journal_get_by_id    ( ofoDossier *dossier, gint id );
 ofoJournal  *ofo_journal_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo );
+gboolean     ofo_journal_use_devise   ( ofoDossier *dossier, gint dev_id );
 
 ofoJournal  *ofo_journal_new          ( void );
 
@@ -78,7 +79,7 @@ gint         ofo_journal_get_id       ( const ofoJournal *journal );
 const gchar *ofo_journal_get_mnemo    ( const ofoJournal *journal );
 const gchar *ofo_journal_get_label    ( const ofoJournal *journal );
 const gchar *ofo_journal_get_notes    ( const ofoJournal *journal );
-const GDate *ofo_journal_get_cloture  ( const ofoJournal *journal );
+/*const GDate *ofo_journal_get_cloture  ( const ofoJournal *journal );*/
 
 gboolean     ofo_journal_is_deletable ( const ofoJournal *journal );
 
@@ -88,7 +89,7 @@ void         ofo_journal_set_label    ( ofoJournal *journal, const gchar *label 
 void         ofo_journal_set_notes    ( ofoJournal *journal, const gchar *notes );
 void         ofo_journal_set_maj_user ( ofoJournal *journal, const gchar *user );
 void         ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *stamp );
-void         ofo_journal_set_cloture  ( ofoJournal *journal, const GDate *date );
+/*void         ofo_journal_set_cloture  ( ofoJournal *journal, const GDate *date );*/
 
 gboolean     ofo_journal_insert       ( ofoJournal *journal, ofoDossier *dossier );
 gboolean     ofo_journal_update       ( ofoJournal *journal, ofoDossier *dossier );

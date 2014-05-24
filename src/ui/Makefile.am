@@ -100,6 +100,7 @@ openbook_SOURCES = \
 	ofo-journal.h										\
 	ofo-sgbd.c											\
 	ofo-sgbd.h											\
+	ofo-sgbd-def.h										\
 	ofo-model.c											\
 	ofo-model.h											\
 	ofo-taux.c											\

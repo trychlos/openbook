@@ -337,7 +337,11 @@ on_account_selected( const gchar *number, ofaAccountsChart *self )
 {
 	ofoAccount *account;
 
-	account = ofa_account_notebook_get_selected( self->private->chart_child );
+	account = NULL;
+
+	if( self->private->chart_child ){
+		account = ofa_account_notebook_get_selected( self->private->chart_child );
+	}
 
 	if( self->private->update_btn ){
 		gtk_widget_set_sensitive(

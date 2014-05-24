@@ -24,8 +24,8 @@
  * $Id$
  */
 
-#ifndef __OFO_SGBD_H__
-#define __OFO_SGBD_H__
+#ifndef __OFO_SGBD_DEF_H__
+#define __OFO_SGBD_DEF_H__
 
 /**
  * SECTION: ofo_sgbd
@@ -33,30 +33,34 @@
  * @include: ui/ofo-sgbd.h
  */
 
-#include "ui/ofo-sgbd-def.h"
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 
-/**
- * Known SGBD providers
- */
-#define SGBD_PROVIDER_MYSQL  "MySQL"
+#define OFO_TYPE_SGBD                ( ofo_sgbd_get_type())
+#define OFO_SGBD( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_SGBD, ofoSgbd ))
+#define OFO_SGBD_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_SGBD, ofoSgbdClass ))
+#define OFO_IS_SGBD( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_SGBD ))
+#define OFO_IS_SGBD_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_SGBD ))
+#define OFO_SGBD_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_SGBD, ofoSgbdClass ))
 
-GType    ofo_sgbd_get_type   ( void ) G_GNUC_CONST;
+typedef struct _ofoSgbdClassPrivate  ofoSgbdClassPrivate;
 
-ofoSgbd *ofo_sgbd_new        ( const gchar *provider );
+typedef struct {
+	/*< private >*/
+	GObjectClass parent;
+}
+	ofoSgbdClass;
 
-gboolean ofo_sgbd_connect    ( ofoSgbd *sgbd,
-								const gchar *host, gint port, const gchar *socket,
-								const gchar *dbname,
-								const gchar *account, const gchar *password );
+typedef struct _ofoSgbdPrivate       ofoSgbdPrivate;
 
-gboolean ofo_sgbd_query      ( ofoSgbd *sgbd, const gchar *query );
-
-GSList  *ofo_sgbd_query_ex   ( ofoSgbd *sgbd, const gchar *query );
-
-void     ofo_sgbd_free_result( GSList *result );
+typedef struct {
+	/*< private >*/
+	GObject         parent;
+	ofoSgbdPrivate *priv;
+}
+	ofoSgbd;
 
 G_END_DECLS
 
-#endif /* __OFO_SGBD_H__ */
+#endif /* __OFO_SGBD_DEF_H__ */

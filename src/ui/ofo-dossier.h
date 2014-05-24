@@ -40,14 +40,9 @@
  */
 
 #include "ui/ofo-dossier-def.h"
+#include "ui/ofo-sgbd-def.h"
 
-#include "ui/ofo-sgbd.h"
-#include "ui/ofo-account.h"
-#include "ui/ofo-devise.h"
 #include "ui/ofo-entry.h"
-#include "ui/ofo-journal.h"
-#include "ui/ofo-model.h"
-#include "ui/ofo-taux.h"
 
 G_BEGIN_DECLS
 
@@ -84,9 +79,6 @@ gboolean      ofo_dossier_entry_insert      ( ofoDossier *dossier,
 												const gchar *account,
 												gint dev_id, gint jou_id,
 												gdouble amount, ofaEntrySens sens );
-
-gboolean      ofo_dossier_update_taux       ( ofoDossier *dossier, ofoTaux *taux );
-gboolean      ofo_dossier_delete_taux       ( ofoDossier *dossier, ofoTaux *taux );
 
 gboolean      ofo_dossier_dbmodel_update    ( ofoSgbd *sgbd, const gchar *account );
 

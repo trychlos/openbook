@@ -65,7 +65,7 @@ GType        ofo_taux_get_type     ( void ) G_GNUC_CONST;
 
 GList       *ofo_taux_get_dataset  ( ofoDossier *dossier );
 ofoTaux     *ofo_taux_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo, const GDate *date );
-ofoTaux     *ofo_taux_is_data_valid( ofoDossier *dossier, gint id, const gchar *mnemo, const GDate *begin, const GDate *end );
+/*ofoTaux     *ofo_taux_is_data_valid( ofoDossier *dossier, gint id, const gchar *mnemo, const GDate *begin, const GDate *end );*/
 
 ofoTaux     *ofo_taux_new          ( void );
 
@@ -73,23 +73,24 @@ gint         ofo_taux_get_id       ( const ofoTaux *taux );
 const gchar *ofo_taux_get_mnemo    ( const ofoTaux *taux );
 const gchar *ofo_taux_get_label    ( const ofoTaux *taux );
 const gchar *ofo_taux_get_notes    ( const ofoTaux *taux );
-const GDate *ofo_taux_get_val_begin( const ofoTaux *taux );
+/*const GDate *ofo_taux_get_val_begin( const ofoTaux *taux );
 const GDate *ofo_taux_get_val_end  ( const ofoTaux *taux );
-gdouble      ofo_taux_get_taux     ( const ofoTaux *taux );
+gdouble      ofo_taux_get_taux     ( const ofoTaux *taux );*/
 
 void         ofo_taux_set_id       ( ofoTaux *taux, gint id );
 void         ofo_taux_set_mnemo    ( ofoTaux *taux, const gchar *number );
 void         ofo_taux_set_label    ( ofoTaux *taux, const gchar *label );
 void         ofo_taux_set_notes    ( ofoTaux *taux, const gchar *notes );
-void         ofo_taux_set_val_begin( ofoTaux *taux, const GDate *date );
-void         ofo_taux_set_val_end  ( ofoTaux *taux, const GDate *date );
-void         ofo_taux_set_taux     ( ofoTaux *taux, gdouble value );
 void         ofo_taux_set_maj_user ( ofoTaux *taux, const gchar *user );
 void         ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *stamp );
 
+/*void         ofo_taux_set_begin    ( ofoTaux *taux, const GDate *date );
+void         ofo_taux_set_end      ( ofoTaux *taux, const GDate *date );
+void         ofo_taux_set_taux     ( ofoTaux *taux, gdouble value );*/
+
 gboolean     ofo_taux_insert       ( ofoTaux *taux, ofoDossier *dossier );
-gboolean     ofo_taux_update       ( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
-gboolean     ofo_taux_delete       ( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
+gboolean     ofo_taux_update       ( ofoTaux *taux, ofoDossier *dossier );
+gboolean     ofo_taux_delete       ( ofoTaux *taux, ofoDossier *dossier );
 
 G_END_DECLS
 
