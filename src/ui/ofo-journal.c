@@ -436,17 +436,15 @@ ofo_journal_get_id( const ofoJournal *journal )
 const gchar *
 ofo_journal_get_mnemo( const ofoJournal *journal )
 {
-	const gchar *mnemo = NULL;
-
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
 	if( !journal->priv->dispose_has_run ){
 
-		mnemo = journal->priv->mnemo;
+		return(( const gchar * ) journal->priv->mnemo );
 	}
 
 	g_assert_not_reached();
-	return( mnemo );
+	return( NULL );
 }
 
 /**
@@ -455,17 +453,15 @@ ofo_journal_get_mnemo( const ofoJournal *journal )
 const gchar *
 ofo_journal_get_label( const ofoJournal *journal )
 {
-	const gchar *label = NULL;
-
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
 	if( !journal->priv->dispose_has_run ){
 
-		label = journal->priv->label;
+		return(( const gchar * ) journal->priv->label );
 	}
 
 	g_assert_not_reached();
-	return( label );
+	return( NULL );
 }
 
 /**
@@ -503,7 +499,6 @@ ofo_journal_get_cloture( const ofoJournal *journal, gint exe_id )
 		}
 	}
 
-	g_assert_not_reached();
 	return( NULL );
 }
 

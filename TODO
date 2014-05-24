@@ -88,9 +88,6 @@
 
   45 2014- 5-13 ofaMainWindow left pane: set the width of the tree
 
-  46 2014- 5-13 chart of accounts: this is a user preference whether
-                a double clic enter in 'Update' or in 'Consult entries'
-
   49 2014- 5-15 All properties: monitor "notes" size so
                 that we stop the entering at 512 chars
 
@@ -107,11 +104,9 @@
                 because the on_selection_changed may not be triggered,
                 e.g. if the list is empty
 
-  55 2014- 5-18 ofo_dossier_insert: use ofoBase virtual function.
+  56 2014- 5-19 have an entry-derived class for date
 
-  56 2014- 5-19 have an entry for date
-
-  57 2014- 5-19 have an entry for numbers (montants et taux)
+  57 2014- 5-19 have an entry-derived class for numbers (montants et taux)
 
   58 2014- 5-19 allow the treeviewes to be sorted
 
@@ -175,19 +170,11 @@
   91 2014- 5-22 the name of the class names in the accounts chart
                 should be configured in a table
 
-  92 2014- 5-22 are we allowed to delete a journal ?
-                - if it contains some entries ? -> NO
-                - if entry models are defined on it ? -> yes, but
-                  entry models have so to be reclassed in "no journal"
-                  which made them invalid if their journal is locked
-
   94 2014- 5-22 implement journal_record_entry
 
   96 2014- 5-22 entry_models: check that journal always exist as it
                 may be deleted at any time while it is empty -
                 so reclass the entry models on journal-changed signal
-
-  97 2014- 5-22 journals set: add a 'view entries' function 
 
   98 2014- 5-22 refactoring of ofoBase which maintains the dataset
                 as a private data of the class
@@ -300,6 +287,11 @@
                 this accel as a tooltip of the notebook's page
      2014- 5-22 done svn #3474
 
+  46 2014- 5-13 chart of accounts: this is a user preference whether
+                a double clic enter in 'Update' or in 'Consult entries'
+     2014- 5-24 no, default should be to update, as this the general 
+                rule for other treeviews
+
   47 2014- 5-13 ofaAccountProperties: check that account number begins
                 with a 1-9 digit
      2014- 5-15 Done
@@ -319,6 +311,9 @@
   54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments,
                 re-enabling error messages.
      2014- 5-22 done svn #3472
+
+  55 2014- 5-18 ofo_dossier_insert: use ofoBase virtual function.
+     2014- 5-24 definitively, no -> cancelled
 
   59 2014- 5-19 reset all sentences in english
                 as the g_date_set_parse uses the current locale, the 
@@ -374,12 +369,22 @@
   90 2014- 5-22 remove GtkWindow *parent from dbmodel_to_v1 arguments
      2014- 5-22 done svn #3473
 
+  92 2014- 5-22 are we allowed to delete a journal ?
+                - if it contains some entries ? -> NO
+                - if entry models are defined on it ? -> yes, but
+                  entry models have so to be reclassed in "no journal"
+                  which made them invalid if their journal is locked
+     2014- 5-22 actually, no - cf. svn #3495 
+
   93 2014- 5-22 implement journal_load_set: load the journal_det
                 table
      2014- 5-22 done
 
   95 2014- 5-22 implement journal_is_deletable
      2014- 5-22 done
+
+  97 2014- 5-22 journals set: add a 'view entries' function 
+     2014- 5-24 done - svn #3496
 
   99 2014- 5-23 when loading Journal, only load for the current exercice
      2014- 5-24 done: for now, load all what is exists
