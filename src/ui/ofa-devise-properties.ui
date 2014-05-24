@@ -37,7 +37,7 @@
                         <property name="tooltip_markup" translatable="yes">Code devise ISO 3A</property>
                         <property name="tooltip_text" translatable="yes">Code devise ISO 3A</property>
                         <property name="xalign">1</property>
-                        <property name="label" translatable="yes">_Code ISO 3A :</property>
+                        <property name="label" translatable="yes">ISO 3A _Code :</property>
                         <property name="use_underline">True</property>
                       </object>
                       <packing>
