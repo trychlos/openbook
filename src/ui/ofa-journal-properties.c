@@ -235,10 +235,6 @@ do_initialize_dialog( ofaJournalProperties *self, ofaMainWindow *main, ofoJourna
 	gchar *title;
 	const gchar *jou_mnemo;
 	GtkEntry *entry;
-	gchar *notes, *stamp, *str;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
-	GtkLabel *label;
 
 	priv = self->private;
 	priv->main_window = main;
@@ -285,21 +281,10 @@ do_initialize_dialog( ofaJournalProperties *self, ofaMainWindow *main, ofoJourna
 		}
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 
-		notes = g_strdup( ofo_journal_get_notes( journal ));
-		if( notes ){
-			text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-notes" ));
-			buffer = gtk_text_buffer_new( NULL );
-			gtk_text_buffer_set_text( buffer, notes, -1 );
-			gtk_text_view_set_buffer( text, buffer );
-		}
+		my_utils_init_notes_ex( journal );
 
 		if( jou_mnemo ){
-			label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "px-last-update" ));
-			stamp = my_utils_str_from_stamp( ofo_journal_get_maj_stamp( priv->journal ));
-			str = g_strdup_printf( "%s (%s)", stamp, ofo_journal_get_maj_user( priv->journal ));
-			gtk_label_set_text( label, str );
-			g_free( str );
-			g_free( stamp );
+			my_utils_init_maj_user_stamp_ex( journal );
 		}
 	}
 
@@ -380,10 +365,6 @@ do_update( ofaJournalProperties *self )
 {
 	ofoDossier *dossier;
 	ofoJournal *existing;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
-	GtkTextIter start, end;
-	gchar *notes;
 
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
 	existing = ofo_journal_get_by_mnemo( dossier, self->private->mnemo );
@@ -397,14 +378,7 @@ do_update( ofaJournalProperties *self )
 	ofo_journal_set_mnemo( self->private->journal, self->private->mnemo );
 	ofo_journal_set_label( self->private->journal, self->private->label );
 
-	text = GTK_TEXT_VIEW(
-			my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-notes" ));
-	buffer = gtk_text_view_get_buffer( text );
-	gtk_text_buffer_get_start_iter( buffer, &start );
-	gtk_text_buffer_get_end_iter( buffer, &end );
-	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
-	ofo_journal_set_notes( self->private->journal, notes );
-	g_free( notes );
+	my_utils_getback_notes_ex( journal );
 
 	if( !existing ){
 		self->private->updated =

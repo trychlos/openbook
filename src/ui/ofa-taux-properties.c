@@ -256,11 +256,6 @@ do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *tau
 	gchar *title;
 	const gchar *mnemo;
 	GtkEntry *entry;
-	gchar *stamp, *str;
-	gchar *notes;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
-	GtkLabel *label;
 
 	priv = self->private;
 	priv->main_window = main;
@@ -329,21 +324,10 @@ do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *tau
 		g_free( str );
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_taux_changed ), self );*/
 
-		notes = g_strdup( ofo_taux_get_notes( taux ));
-		if( notes ){
-			text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p2-notes" ));
-			buffer = gtk_text_buffer_new( NULL );
-			gtk_text_buffer_set_text( buffer, notes, -1 );
-			gtk_text_view_set_buffer( text, buffer );
-		}
+		my_utils_init_notes_ex( taux );
 
 		if( mnemo ){
-			label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "px-last-update" ));
-			stamp = my_utils_str_from_stamp( ofo_taux_get_maj_stamp( priv->taux ));
-			str = g_strdup_printf( "%s (%s)", stamp, ofo_taux_get_maj_user( priv->taux ));
-			gtk_label_set_text( label, str );
-			g_free( str );
-			g_free( stamp );
+			my_utils_init_maj_user_stamp_ex( taux );
 		}
 	}
 
@@ -510,10 +494,6 @@ do_update( ofaTauxProperties *self )
 {
 	ofoDossier *dossier;
 	ofoTaux *preventer;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
-	GtkTextIter start, end;
-	gchar *notes;
 
 	/* - we are defining a new mnemo (either by creating a new record
 	 *   or by modifying an existing record to a new mnemo)
@@ -545,14 +525,7 @@ do_update( ofaTauxProperties *self )
 	ofo_taux_set_val_end( self->private->taux, &self->private->end );
 	ofo_taux_set_taux( self->private->taux, self->private->value );*/
 
-	text = GTK_TEXT_VIEW(
-			my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-notes" ));
-	buffer = gtk_text_view_get_buffer( text );
-	gtk_text_buffer_get_start_iter( buffer, &start );
-	gtk_text_buffer_get_end_iter( buffer, &end );
-	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
-	ofo_taux_set_notes( self->private->taux, notes );
-	g_free( notes );
+	my_utils_getback_notes_ex( taux );
 
 	if( self->private->id == -1 ){
 		self->private->updated =

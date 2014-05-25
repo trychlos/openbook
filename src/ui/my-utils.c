@@ -328,3 +328,43 @@ my_utils_container_get_child_by_type( GtkContainer *container, GType type )
 	g_list_free( children );
 	return( found );
 }
+
+/**
+ * my_utils_init_notes:
+ */
+void
+my_utils_init_notes( GtkContainer *container,
+								const gchar *widget_name, const gchar *notes )
+{
+	GtkTextView *text;
+	GtkTextBuffer *buffer;
+
+	if( notes ){
+		text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( container, widget_name ));
+		buffer = gtk_text_buffer_new( NULL );
+		gtk_text_buffer_set_text( buffer, notes, -1 );
+		gtk_text_view_set_buffer( text, buffer );
+	}
+}
+
+/**
+ * my_utils_init_maj_user_stamp:
+ */
+void
+my_utils_init_maj_user_stamp( GtkContainer *container,
+								const gchar *label_name, const GTimeVal *stamp, const gchar *user )
+{
+	GtkLabel *label;
+	gchar *str_stamp, *str;
+
+	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, label_name );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	str_stamp = my_utils_str_from_stamp( stamp );
+	str = g_strdup_printf( "%s (%s)", str_stamp, user );
+
+	gtk_label_set_text( label, str );
+
+	g_free( str );
+	g_free( str_stamp );
+}

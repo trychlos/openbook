@@ -48,18 +48,30 @@ typedef enum {
 
 gchar         *my_utils_quote( const gchar *str );
 
-const GDate   *my_utils_date_from_str     ( const gchar *str );
-gchar         *my_utils_display_from_date ( const GDate *date, myUtilsDateFormat format );
-gchar         *my_utils_sql_from_date     ( const GDate *date );
-const GTimeVal*my_utils_stamp_from_str    ( const gchar *str );
-gchar         *my_utils_str_from_stamp    ( const GTimeVal *stamp );
-gchar         *my_utils_timestamp         ( void );
+const GDate   *my_utils_date_from_str      ( const gchar *str );
+gchar         *my_utils_display_from_date  ( const GDate *date, myUtilsDateFormat format );
+gchar         *my_utils_sql_from_date      ( const GDate *date );
+const GTimeVal*my_utils_stamp_from_str     ( const gchar *str );
+gchar         *my_utils_str_from_stamp     ( const GTimeVal *stamp );
+gchar         *my_utils_timestamp          ( void );
 
-gboolean       my_utils_entry_get_valid   ( GtkEntry *entry );
-void           my_utils_entry_set_valid   ( GtkEntry *entry, gboolean valid );
+gboolean       my_utils_entry_get_valid    ( GtkEntry *entry );
+void           my_utils_entry_set_valid    ( GtkEntry *entry, gboolean valid );
 
-GtkWidget *my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name );
-GtkWidget *my_utils_container_get_child_by_type( GtkContainer *container, GType type );
+GtkWidget     *my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name );
+GtkWidget     *my_utils_container_get_child_by_type( GtkContainer *container, GType type );
+
+void           my_utils_init_notes         ( GtkContainer *container, const gchar *widget_name, const gchar *notes );
+
+#define        my_utils_init_notes_ex( T )    my_utils_init_notes( GTK_CONTAINER( self->private->dialog ), "pn-notes", ofo_ ## T ## _get_notes( self->private->T))
+
+#define        my_utils_getback_notes_ex( T ) GtkTextView *text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "pn-notes" )); \
+												GtkTextBuffer *buffer = gtk_text_view_get_buffer( text ); GtkTextIter start, end; gtk_text_buffer_get_start_iter( buffer, &start ); \
+												gtk_text_buffer_get_end_iter( buffer, &end ); gchar *notes; notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE ); \
+												ofo_ ## T ## _set_notes( self->private->T, notes ); g_free( notes );
+
+void           my_utils_init_maj_user_stamp( GtkContainer *container, const gchar *label_name, const GTimeVal *stamp, const gchar *user );
+#define        my_utils_init_maj_user_stamp_ex( T ) my_utils_init_maj_user_stamp( GTK_CONTAINER( self->private->dialog ), "px-last-update", ofo_ ## T ## _get_maj_stamp( self->private->T ), ofo_ ## T ## _get_maj_user( self->private->T ))
 
 G_END_DECLS
 
