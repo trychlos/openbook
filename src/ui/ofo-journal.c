@@ -90,7 +90,7 @@ static sDetailExe    *journal_find_exe_by_id( const ofoJournal *journal, gint ex
 static gboolean       journal_do_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
 static gboolean       journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
 static gboolean       journal_get_back_id( ofoJournal *journal, ofoSgbd *sgbd );
-static gboolean       journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd );
+/*static gboolean       journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd );*/
 static gboolean       journal_do_update( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
 static gboolean       journal_do_delete( ofoJournal *journal, ofoSgbd *sgbd );
 static gint           journal_cmp_by_id( const ofoJournal *a, gconstpointer b );
@@ -482,6 +482,40 @@ ofo_journal_get_notes( const ofoJournal *journal )
 }
 
 /**
+ * ofo_journal_get_maj_user:
+ */
+const gchar *
+ofo_journal_get_maj_user( const ofoJournal *journal )
+{
+	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
+
+	if( !journal->priv->dispose_has_run ){
+
+		return(( const gchar * ) journal->priv->maj_user );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_journal_get_maj_stamp:
+ */
+const GTimeVal *
+ofo_journal_get_maj_stamp( const ofoJournal *journal )
+{
+	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
+
+	if( !journal->priv->dispose_has_run ){
+
+		return(( const GTimeVal * ) &journal->priv->maj_stamp );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
  * ofo_journal_get_cloture:
  */
 const GDate *
@@ -683,6 +717,8 @@ ofo_journal_set_cloture( ofoJournal *journal, const GDate *date )
 
 /**
  * ofo_journal_insert:
+ *
+ * Only insert here a new journal, so only the main properties
  */
 gboolean
 ofo_journal_insert( ofoJournal *journal, ofoDossier *dossier )
@@ -717,8 +753,7 @@ static gboolean
 journal_do_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 {
 	return( journal_insert_main( journal, sgbd, user ) &&
-			journal_get_back_id( journal, sgbd ) &&
-			journal_insert_details( journal, sgbd ));
+			journal_get_back_id( journal, sgbd ));
 }
 
 static gboolean
@@ -729,6 +764,7 @@ journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 	gboolean ok;
 	gchar *stamp;
 
+	ok = FALSE;
 	label = my_utils_quote( ofo_journal_get_label( journal ));
 	notes = my_utils_quote( ofo_journal_get_notes( journal ));
 	stamp = my_utils_timestamp();
@@ -751,10 +787,12 @@ journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 			"'%s','%s')",
 			user, stamp );
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	if( ofo_sgbd_query( sgbd, query->str )){
 
-	ofo_journal_set_maj_user( journal, user );
-	ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str( stamp ));
+		ofo_journal_set_maj_user( journal, user );
+		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str( stamp ));
+		ok = TRUE;
+	}
 
 	g_string_free( query, TRUE );
 	g_free( notes );
@@ -784,6 +822,7 @@ journal_get_back_id( ofoJournal *journal, ofoSgbd *sgbd )
 	return( ok );
 }
 
+#if 0
 static gboolean
 journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd )
 {
@@ -823,6 +862,7 @@ journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd )
 
 	return( ok );
 }
+#endif
 
 /**
  * ofo_journal_update:

@@ -33,6 +33,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-model.h"
 #include "ui/ofo-sgbd.h"
 #include "ui/ofo-taux.h"
 
@@ -95,6 +96,8 @@ static void           taux_set_maj_user( sTauxValid *tv, const gchar *user);
 static void           taux_set_maj_stamp( sTauxValid *tv, const GTimeVal *stamp );
 static ofoTaux       *taux_find_by_mnemo( GList *set, const gchar *mnemo, const GDate *date );
 static gboolean       taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
+static gboolean       taux_insert_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
+static gboolean       taux_get_back_id( ofoTaux *taux, ofoSgbd *sgbd );
 static gboolean       taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
 static gboolean       taux_do_delete( ofoTaux *taux, ofoSgbd *sgbd );
 static gint           taux_cmp_by_mnemo( const ofoTaux *a, const sCmpMneDat *parms );
@@ -107,10 +110,11 @@ ofo_taux_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_taux_finalize";
 	ofoTaux *self;
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
 	self = OFO_TAUX( instance );
+
+	g_debug( "%s: instance=%p (%s): %s - %s",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			self->priv->mnemo, self->priv->label );
 
 	g_free( self->priv->mnemo );
 	g_free( self->priv->label );
@@ -124,16 +128,11 @@ ofo_taux_finalize( GObject *instance )
 static void
 ofo_taux_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_taux_dispose";
 	ofoTaux *self;
 
 	self = OFO_TAUX( instance );
 
 	if( !self->priv->dispose_has_run ){
-
-		g_debug( "%s: instance=%p (%s): %s - %s",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-				self->priv->mnemo, self->priv->label );
 
 		self->priv->dispose_has_run = TRUE;
 	}
@@ -154,7 +153,7 @@ ofo_taux_init( ofoTaux *self )
 
 	self->priv->dispose_has_run = FALSE;
 
-	self->priv->id = -1;
+	self->priv->id = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -399,14 +398,15 @@ ofo_taux_new( void )
 gint
 ofo_taux_get_id( const ofoTaux *taux )
 {
-	g_return_val_if_fail( OFO_IS_TAUX( taux ), -1 );
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), OFO_BASE_UNSET_ID );
 
 	if( !taux->priv->dispose_has_run ){
 
 		return( taux->priv->id );
 	}
 
-	return( -1 );
+	g_assert_not_reached();
+	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -415,16 +415,15 @@ ofo_taux_get_id( const ofoTaux *taux )
 const gchar *
 ofo_taux_get_mnemo( const ofoTaux *taux )
 {
-	const gchar *mnemo = NULL;
-
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
 	if( !taux->priv->dispose_has_run ){
 
-		mnemo = taux->priv->mnemo;
+		return(( const gchar * ) taux->priv->mnemo );
 	}
 
-	return( mnemo );
+	g_assert_not_reached();
+	return( NULL );
 }
 
 /**
@@ -433,16 +432,15 @@ ofo_taux_get_mnemo( const ofoTaux *taux )
 const gchar *
 ofo_taux_get_label( const ofoTaux *taux )
 {
-	const gchar *label = NULL;
-
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
 	if( !taux->priv->dispose_has_run ){
 
-		label = taux->priv->label;
+		return(( const gchar * ) taux->priv->label );
 	}
 
-	return( label );
+	g_assert_not_reached();
+	return( NULL );
 }
 
 /**
@@ -451,71 +449,162 @@ ofo_taux_get_label( const ofoTaux *taux )
 const gchar *
 ofo_taux_get_notes( const ofoTaux *taux )
 {
-	const gchar *notes = NULL;
-
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
 	if( !taux->priv->dispose_has_run ){
 
-		notes = taux->priv->notes;
+		return(( const gchar * ) taux->priv->notes );
 	}
 
-	return( notes );
+	g_assert_not_reached();
+	return( NULL );
 }
 
 /**
- * ofo_taux_get_val_begin:
+ * ofo_taux_get_maj_user:
  */
-/*
-const GDate *
-ofo_taux_get_val_begin( const ofoTaux *taux )
+const gchar *
+ofo_taux_get_maj_user( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
 	if( !taux->priv->dispose_has_run ){
 
-		return(( const GDate * ) &taux->priv->val_begin );
+		return(( const gchar * ) taux->priv->maj_user );
 	}
 
+	g_assert_not_reached();
 	return( NULL );
 }
-*/
 
 /**
- * ofo_taux_get_val_end:
+ * ofo_taux_get_maj_stamp:
  */
-/*
-const GDate *
-ofo_taux_get_val_end( const ofoTaux *taux )
+const GTimeVal *
+ofo_taux_get_maj_stamp( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
 	if( !taux->priv->dispose_has_run ){
 
-		return(( const GDate * ) &taux->priv->val_end );
+		return(( const GTimeVal * ) &taux->priv->maj_stamp );
 	}
 
+	g_assert_not_reached();
 	return( NULL );
 }
-*/
 
 /**
- * ofo_taux_get_taux:
+ * ofo_taux_get_val_count:
  */
-/*
-gdouble
-ofo_taux_get_taux( const ofoTaux *taux )
+gint
+ofo_taux_get_val_count( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), 0 );
 
 	if( !taux->priv->dispose_has_run ){
 
-		return( taux->priv->taux );
+		return( g_list_length( taux->priv->valids ));
 	}
 
 	return( 0 );
 }
-*/
+
+/**
+ * ofo_taux_get_val_begin:
+ */
+const GDate *
+ofo_taux_get_val_begin( const ofoTaux *taux, gint idx )
+{
+	GList *nth;
+	sTauxValid *rate;
+
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
+
+	if( !taux->priv->dispose_has_run ){
+
+		nth = g_list_nth( taux->priv->valids, idx );
+		if( nth ){
+			rate = ( sTauxValid * ) nth->data;
+			return(( const GDate * ) &rate->begin );
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_taux_get_val_end:
+ */
+const GDate *
+ofo_taux_get_val_end( const ofoTaux *taux, gint idx )
+{
+	GList *nth;
+	sTauxValid *rate;
+
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
+
+	if( !taux->priv->dispose_has_run ){
+
+		nth = g_list_nth( taux->priv->valids, idx );
+		if( nth ){
+			rate = ( sTauxValid * ) nth->data;
+			return(( const GDate * ) &rate->end );
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_taux_get_val_rate:
+ */
+gdouble
+ofo_taux_get_val_rate( const ofoTaux *taux, gint idx )
+{
+	GList *nth;
+	sTauxValid *rate;
+
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), 0 );
+
+	if( !taux->priv->dispose_has_run ){
+
+		nth = g_list_nth( taux->priv->valids, idx );
+		if( nth ){
+			rate = ( sTauxValid * ) nth->data;
+			return( rate->rate );
+		}
+	}
+
+	return( 0 );
+}
+
+/**
+ * ofo_taux_is_deletable:
+ *
+ * A rate cannot be deleted if it is referenced in the debit or the
+ * credit formulas of a model detail line.
+ */
+gboolean
+ofo_taux_is_deletable( const ofoTaux *taux )
+{
+	ofoDossier *dossier;
+
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
+	/* a rate whose internal identifier is not set is deletable,
+	 * but this should never appear */
+	g_return_val_if_fail( ofo_taux_get_id( taux ) > 0, TRUE );
+
+	if( !taux->priv->dispose_has_run ){
+
+		dossier = OFO_DOSSIER( st_global->dossier );
+
+		return( !ofo_model_use_taux( dossier, ofo_taux_get_mnemo( taux )));
+	}
+
+	g_assert_not_reached();
+	return( FALSE );
+}
 
 /**
  * ofo_taux_set_id:
@@ -678,6 +767,8 @@ taux_set_maj_stamp( sTauxValid *tv, const GTimeVal *maj_stamp )
 
 /**
  * ofo_taux_insert:
+ *
+ * First creation of a new rate.
  */
 gboolean
 ofo_taux_insert( ofoTaux *taux, ofoDossier *dossier )
@@ -710,14 +801,17 @@ ofo_taux_insert( ofoTaux *taux, ofoDossier *dossier )
 static gboolean
 taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 {
-#if 0
+	return( taux_insert_main( taux, sgbd, user ) &&
+			taux_get_back_id( taux, sgbd ));
+}
+
+static gboolean
+taux_insert_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
+{
 	GString *query;
 	gchar *label, *notes;
-	gchar *dbegin, *dend;
-	gchar rate[1+G_ASCII_DTOSTR_BUF_SIZE];
 	gboolean ok;
 	gchar *stamp;
-	GSList *result, *icol;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
 	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
@@ -726,14 +820,11 @@ taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 	label = my_utils_quote( ofo_taux_get_label( taux ));
 	notes = my_utils_quote( ofo_taux_get_notes( taux ));
 	stamp = my_utils_timestamp();
-	dbegin = my_utils_sql_from_date( ofo_taux_get_val_begin( taux ));
-	dend = my_utils_sql_from_date( ofo_taux_get_val_end( taux ));
 
 	query = g_string_new( "INSERT INTO OFA_T_TAUX" );
 
 	g_string_append_printf( query,
 			"	(TAX_MNEMO,TAX_LABEL,TAX_NOTES,"
-			"	TAX_VAL_DEB, TAX_VAL_FIN,TAX_TAUX,"
 			"	TAX_MAJ_USER, TAX_MAJ_STAMP) VALUES ('%s','%s',",
 			ofo_taux_get_mnemo( taux ),
 			label );
@@ -744,53 +835,41 @@ taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	if( dbegin && g_utf8_strlen( dbegin, -1 )){
-		g_string_append_printf( query, "'%s',", dbegin );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
-
-	if( dend && g_utf8_strlen( dend, -1 )){
-		g_string_append_printf( query, "'%s',", dend );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
-
-	g_string_append_printf( query,
-				"%s,'%s','%s')",
-				g_ascii_dtostr( rate, G_ASCII_DTOSTR_BUF_SIZE, ofo_taux_get_taux( taux )),
-				user, stamp );
+	g_string_append_printf( query, "'%s','%s')", user, stamp );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_taux_set_maj_user( taux, user );
 		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
-
-		g_string_printf( query,
-				"SELECT TAX_ID FROM OFA_T_TAUX"
-				"	WHERE TAX_MNEMO='%s'",
-				ofo_taux_get_mnemo( taux ));
-
-		result = ofo_sgbd_query_ex( sgbd, query->str );
-
-		if( result ){
-			icol = ( GSList * ) result->data;
-			ofo_taux_set_id( taux, atoi(( gchar * ) icol->data ));
-			ofo_sgbd_free_result( result );
-			ok = TRUE;
-		}
+		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
-	g_free( dbegin );
-	g_free( dend );
 	g_free( notes );
 	g_free( label );
 	g_free( stamp );
 
 	return( ok );
-#endif
-	return( TRUE );
+}
+
+static gboolean
+taux_get_back_id( ofoTaux *taux, ofoSgbd *sgbd )
+{
+	gboolean ok;
+	GSList *result, *icol;
+
+	ok = FALSE;
+
+	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		ofo_taux_set_id( taux, atoi(( gchar * ) icol->data ));
+		ofo_sgbd_free_result( result );
+		ok = TRUE;
+	}
+
+	return( ok );
 }
 
 #if 0
@@ -880,6 +959,8 @@ taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 
 /**
  * ofo_taux_update:
+ *
+ * Only update here the main properties.
  */
 gboolean
 ofo_taux_update( ofoTaux *taux, ofoDossier *dossier )
@@ -912,7 +993,53 @@ ofo_taux_update( ofoTaux *taux, ofoDossier *dossier )
 static gboolean
 taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 {
+	GString *query;
+	gchar *label, *notes;
+	gboolean ok;
+	gchar *stamp;
+
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
+
+	ok = FALSE;
+	label = my_utils_quote( ofo_taux_get_label( taux ));
+	notes = my_utils_quote( ofo_taux_get_notes( taux ));
+	stamp = my_utils_timestamp();
+
+	query = g_string_new( "UPDATE OFA_T_TAUX SET " );
+
+	g_string_append_printf( query, "TAX_MNEMO='%s',", ofo_taux_get_mnemo( taux ));
+	g_string_append_printf( query, "TAX_LABEL='%s',", label );
+
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "TAX_NOTES='%s',", notes );
+	} else {
+		query = g_string_append( query, "TAX_NOTES=NULL," );
+	}
+
+	g_string_append_printf( query,
+			"	TAX_MAJ_USER='%s',TAX_MAJ_STAMP='%s'"
+			"	WHERE TAX_ID=%d",
+					user, stamp, ofo_taux_get_id( taux ));
+
+	if( ofo_sgbd_query( sgbd, query->str )){
+
+		ofo_taux_set_maj_user( taux, user );
+		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
+		ok = TRUE;
+	}
+
+	g_string_free( query, TRUE );
+	g_free( notes );
+	g_free( label );
+
+	return( ok );
+}
+
 #if 0
+static gboolean
+taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
+{
 	GString *query;
 	gchar *label, *notes;
 	gboolean ok;
@@ -971,9 +1098,9 @@ taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 	g_free( label );
 
 	return( ok );
-#endif
 	return( TRUE );
 }
+#endif
 
 /**
  * ofo_taux_delete:

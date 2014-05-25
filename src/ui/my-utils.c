@@ -31,6 +31,8 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
+#include <time.h>
+
 #include "ui/my-utils.h"
 
 static GTimeVal st_timeval;
@@ -160,12 +162,43 @@ my_utils_sql_from_date( const GDate *date )
 
 /**
  * my_utils_stamp_from_str:
+ *
+ * SQL timestamp is returned as a string '2014-05-24 20:05:46'
  */
 const GTimeVal *
 my_utils_stamp_from_str( const gchar *str )
 {
-	g_time_val_from_iso8601( str, &st_timeval );
+	gint y, m, d, H, M, S;
+	struct tm broken;
+
+	sscanf( str, "%d-%d-%d %d:%d:%d", &y, &m, &d, &H, &M, &S );
+	memset( &broken, '\0', sizeof( broken ));
+	broken.tm_year = y - 1900;
+	broken.tm_mon = m-1;	/* 0 to 11 */
+	broken.tm_mday = d;
+	broken.tm_hour = H;
+	broken.tm_min = M;
+	broken.tm_sec = S;
+	broken.tm_isdst = -1;
+	st_timeval.tv_sec = mktime( &broken );
+	st_timeval.tv_usec = 0;
 	return( &st_timeval );
+}
+
+/**
+ * my_utils_str_from_stamp:
+ */
+gchar *
+my_utils_str_from_stamp( const GTimeVal *stamp )
+{
+	GDateTime *dt;
+	gchar *str;
+
+	dt = g_date_time_new_from_timeval_local( stamp );
+	str = g_date_time_format( dt, "%d-%m-%Y %H:%M:%S" );
+	g_date_time_unref( dt );
+
+	return( str );
 }
 
 /**

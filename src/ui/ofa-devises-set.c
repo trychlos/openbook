@@ -38,7 +38,7 @@
 /* private instance data
  */
 struct _ofaDevisesSetPrivate {
-	gboolean       dispose_has_run;
+	gboolean dispose_has_run;
 };
 
 /* column ordering in the selection listview
@@ -190,7 +190,6 @@ instance_finalize( GObject *instance )
 static GtkWidget *
 v_setup_view( ofaMainPage *page )
 {
-	ofaDevisesSet *self;
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
@@ -198,8 +197,6 @@ v_setup_view( ofaMainPage *page )
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
-
-	self = OFA_DEVISES_SET( page );
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
@@ -248,10 +245,10 @@ v_setup_view( ofaMainPage *page )
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_devise_selected ), self );
+	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_devise_selected ), page );
 
 	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
 	gtk_tree_sortable_set_sort_column_id(
 			GTK_TREE_SORTABLE( tmodel ),

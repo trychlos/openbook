@@ -66,38 +66,40 @@ typedef struct {
 }
 	ofoJournal;
 
-GType        ofo_journal_get_type     ( void ) G_GNUC_CONST;
+GType           ofo_journal_get_type     ( void ) G_GNUC_CONST;
 
-GList       *ofo_journal_get_dataset  ( const ofoDossier *dossier );
-ofoJournal  *ofo_journal_get_by_id    ( const ofoDossier *dossier, gint id );
-ofoJournal  *ofo_journal_get_by_mnemo ( const ofoDossier *dossier, const gchar *mnemo );
-gboolean     ofo_journal_use_devise   ( const ofoDossier *dossier, gint dev_id );
+GList          *ofo_journal_get_dataset  ( const ofoDossier *dossier );
+ofoJournal     *ofo_journal_get_by_id    ( const ofoDossier *dossier, gint id );
+ofoJournal     *ofo_journal_get_by_mnemo ( const ofoDossier *dossier, const gchar *mnemo );
+gboolean        ofo_journal_use_devise   ( const ofoDossier *dossier, gint dev_id );
 
-ofoJournal  *ofo_journal_new          ( void );
+ofoJournal     *ofo_journal_new          ( void );
 
-gint         ofo_journal_get_id       ( const ofoJournal *journal );
-const gchar *ofo_journal_get_mnemo    ( const ofoJournal *journal );
-const gchar *ofo_journal_get_label    ( const ofoJournal *journal );
-const gchar *ofo_journal_get_notes    ( const ofoJournal *journal );
+gint            ofo_journal_get_id       ( const ofoJournal *journal );
+const gchar    *ofo_journal_get_mnemo    ( const ofoJournal *journal );
+const gchar    *ofo_journal_get_label    ( const ofoJournal *journal );
+const gchar    *ofo_journal_get_notes    ( const ofoJournal *journal );
+const gchar    *ofo_journal_get_maj_user ( const ofoJournal *journal );
+const GTimeVal *ofo_journal_get_maj_stamp( const ofoJournal *journal );
 
-const GDate *ofo_journal_get_cloture  ( const ofoJournal *journal, gint exe_id );
+const GDate    *ofo_journal_get_cloture  ( const ofoJournal *journal, gint exe_id );
 
-gboolean     ofo_journal_is_deletable ( const ofoJournal *journal, const ofoDossier *dossier );
-gboolean     ofo_journal_is_valid     ( const gchar *mnemo, const gchar *label );
+gboolean        ofo_journal_is_deletable ( const ofoJournal *journal, const ofoDossier *dossier );
+gboolean        ofo_journal_is_valid     ( const gchar *mnemo, const gchar *label );
 
-void         ofo_journal_set_id       ( ofoJournal *journal, gint id );
-void         ofo_journal_set_mnemo    ( ofoJournal *journal, const gchar *number );
-void         ofo_journal_set_label    ( ofoJournal *journal, const gchar *label );
-void         ofo_journal_set_notes    ( ofoJournal *journal, const gchar *notes );
-void         ofo_journal_set_maj_user ( ofoJournal *journal, const gchar *user );
-void         ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *stamp );
+void            ofo_journal_set_id       ( ofoJournal *journal, gint id );
+void            ofo_journal_set_mnemo    ( ofoJournal *journal, const gchar *number );
+void            ofo_journal_set_label    ( ofoJournal *journal, const gchar *label );
+void            ofo_journal_set_notes    ( ofoJournal *journal, const gchar *notes );
+void            ofo_journal_set_maj_user ( ofoJournal *journal, const gchar *user );
+void            ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *stamp );
 /*void         ofo_journal_set_cloture  ( ofoJournal *journal, const GDate *date );*/
 
-gboolean     ofo_journal_insert       ( ofoJournal *journal, ofoDossier *dossier );
-gboolean     ofo_journal_update       ( ofoJournal *journal, ofoDossier *dossier );
-gboolean     ofo_journal_delete       ( ofoJournal *journal, ofoDossier *dossier );
+gboolean        ofo_journal_insert       ( ofoJournal *journal, ofoDossier *dossier );
+gboolean        ofo_journal_update       ( ofoJournal *journal, ofoDossier *dossier );
+gboolean        ofo_journal_delete       ( ofoJournal *journal, ofoDossier *dossier );
 
-gboolean     ofo_journal_record_entry ( ofoJournal *journal, ofoSgbd *sgbd, ofoEntry *entry );
+gboolean        ofo_journal_record_entry ( ofoJournal *journal, ofoSgbd *sgbd, ofoEntry *entry );
 
 G_END_DECLS
 

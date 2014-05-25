@@ -327,7 +327,6 @@ insert_new_row( ofaJournalsSet *self, ofoJournal *journal, gboolean with_selecti
 			ofo_journal_get_cloture( journal, self->private->exe_id ),
 			MY_UTILS_DATE_DMMM );
 
-	g_debug( "insert_new_row: before ref_count=%d", G_OBJECT( journal )->ref_count );
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( tmodel ),
 			&iter,
@@ -337,7 +336,6 @@ insert_new_row( ofaJournalsSet *self, ofoJournal *journal, gboolean with_selecti
 			COL_CLOSING, sclo,
 			COL_OBJECT,  journal,
 			-1 );
-	g_debug( "insert_new_row: after ref_count=%d", G_OBJECT( journal )->ref_count );
 
 	g_free( sclo );
 

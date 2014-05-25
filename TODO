@@ -73,7 +73,7 @@
                 p3 (a try with gtk_container_set_focus_chain is not
                 successfull)
 
-  39 2014- 5-11 DossierNew: add field needed to complete the
+  39 2014- 5-11 DossierNew: add fields needed to complete the
                 OFA_T_DOSSIER table to p1 page
 
   40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
@@ -204,7 +204,11 @@
 
  108 2014- 5-24 ofaJournalsSet: implement on_view_entries
 
- 109
+ 109 2014- 5-25 Devises: add notes, maj_user and maj_stamp
+
+ 110 2014- 5-25 p1-last-update -> px-last-update
+
+ 111
 
 -----------------------------------------------------------------------
  DONE

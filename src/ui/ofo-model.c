@@ -84,6 +84,7 @@ OFO_BASE_DEFINE_GLOBAL( st_global, model )
 static GList         *model_load_dataset( void );
 static ofoModel      *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint           model_count_for_journal( ofoSgbd *sgbd, gint jou_id );
+static gint           model_count_for_taux( ofoSgbd *sgbd, const gchar *mnemo );
 static gboolean       model_do_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
 static gboolean       model_insert_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
 static gboolean       model_reset_id( ofoModel *model, ofoSgbd *sgbd );
@@ -378,6 +379,44 @@ model_count_for_journal( ofoSgbd *sgbd, gint jou_id )
 				"SELECT COUNT(*) FROM OFA_T_MODELES "
 				"	WHERE MOD_JOU_ID=%d",
 					jou_id );
+
+	count = 0;
+	result = ofo_sgbd_query_ex( sgbd, query );
+	g_free( query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		count = atoi(( gchar * ) icol->data );
+		ofo_sgbd_free_result( result );
+	}
+
+	return( count );
+}
+
+/**
+ * ofo_model_use_taux:
+ *
+ * Returns: %TRUE if a recorded entry makes use of the specified rate.
+ */
+gboolean
+ofo_model_use_taux( const ofoDossier *dossier, const gchar *mnemo )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	return( model_count_for_taux( ofo_dossier_get_sgbd( dossier ), mnemo ) > 0 );
+}
+
+static gint
+model_count_for_taux( ofoSgbd *sgbd, const gchar *mnemo )
+{
+	gint count;
+	gchar *query;
+	GSList *result, *icol;
+
+	query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_MODELES_DET "
+				"	WHERE MOD_DET_DEBIT LIKE '%%%s%%' OR MOD_DET_CREDIT LIKE '%%%s%%'",
+					mnemo, mnemo );
 
 	count = 0;
 	result = ofo_sgbd_query_ex( sgbd, query );
