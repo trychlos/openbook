@@ -204,8 +204,6 @@
 
  108 2014- 5-24 ofaJournalsSet: implement on_view_entries
 
- 109 2014- 5-25 Devises: add notes, maj_user and maj_stamp
-
  111
 
 -----------------------------------------------------------------------
@@ -403,6 +401,9 @@
  106 2014- 5-24 check how and when is set the ofaMainPage 'theme' 
                 property ?
      2014- 5-24 done svn #3491
+
+ 109 2014- 5-25 Devises: add notes, maj_user and maj_stamp
+     2014- 5-25 done - svn #3501
 
  110 2014- 5-25 p1-last-update -> px-last-update
      2014- 5-25 done - svn #3500
