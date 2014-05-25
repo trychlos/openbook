@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofo-base.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
@@ -55,6 +56,9 @@ struct _ofoDevisePrivate {
 	gchar   *code;
 	gchar   *label;
 	gchar   *symbol;
+	gchar   *notes;
+	gchar   *maj_user;
+	GTimeVal maj_stamp;
 };
 
 G_DEFINE_TYPE( ofoDevise, ofo_devise, OFO_TYPE_BASE )
@@ -66,10 +70,10 @@ OFO_BASE_DEFINE_GLOBAL( st_global, devise )
 static GList     *devise_load_dataset( void );
 static ofoDevise *devise_find_by_code( GList *set, const gchar *code );
 static gint       devise_cmp_by_code( const ofoDevise *a, const gchar *code );
-static gboolean   devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd );
-static gboolean   devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd );
+static gboolean   devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user );
+static gboolean   devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user );
 static gboolean   devise_get_back_id( ofoDevise *devise, ofoSgbd *sgbd );
-static gboolean   devise_do_update( ofoDevise *devise, ofoSgbd *sgbd );
+static gboolean   devise_do_update( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user );
 static gboolean   devise_do_delete( ofoDevise *devise, ofoSgbd *sgbd );
 static gint       devise_cmp_by_code( const ofoDevise *a, const gchar *code );
 static gint       devise_cmp_by_ptr( const ofoDevise *a, const ofoDevise *b );
@@ -176,7 +180,8 @@ devise_load_dataset( void )
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
 	result = ofo_sgbd_query_ex( sgbd,
-			"SELECT DEV_ID,DEV_CODE,DEV_LABEL,DEV_SYMBOL "
+			"SELECT DEV_ID,DEV_CODE,DEV_LABEL,DEV_SYMBOL,"
+			"	DEV_NOTES,DEV_MAJ_USER,DEV_MAJ_STAMP "
 			"	FROM OFA_T_DEVISES "
 			"	ORDER BY DEV_CODE ASC" );
 
@@ -192,6 +197,12 @@ devise_load_dataset( void )
 		ofo_devise_set_label( devise, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_devise_set_symbol( devise, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_devise_set_notes( devise, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_devise_set_maj_user( devise, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_devise_set_maj_stamp( devise, my_utils_stamp_from_str(( gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, devise );
 	}
@@ -274,7 +285,7 @@ ofo_devise_get_code( const ofoDevise *devise )
 
 	if( !devise->priv->dispose_has_run ){
 
-		return( devise->priv->code );
+		return(( const gchar * ) devise->priv->code );
 	}
 
 	g_assert_not_reached();
@@ -291,7 +302,7 @@ ofo_devise_get_label( const ofoDevise *devise )
 
 	if( !devise->priv->dispose_has_run ){
 
-		return( devise->priv->label );
+		return(( const gchar * ) devise->priv->label );
 	}
 
 	g_assert_not_reached();
@@ -308,7 +319,58 @@ ofo_devise_get_symbol( const ofoDevise *devise )
 
 	if( !devise->priv->dispose_has_run ){
 
-		return( devise->priv->symbol );
+		return(( const gchar * ) devise->priv->symbol );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_devise_get_notes:
+ */
+const gchar *
+ofo_devise_get_notes( const ofoDevise *devise )
+{
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
+
+	if( !devise->priv->dispose_has_run ){
+
+		return(( const gchar * ) devise->priv->notes );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_devise_get_maj_user:
+ */
+const gchar *
+ofo_devise_get_maj_user( const ofoDevise *devise )
+{
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
+
+	if( !devise->priv->dispose_has_run ){
+
+		return(( const gchar * ) devise->priv->maj_user );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_devise_get_maj_stamp:
+ */
+const GTimeVal *
+ofo_devise_get_maj_stamp( const ofoDevise *devise )
+{
+	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
+
+	if( !devise->priv->dispose_has_run ){
+
+		return(( const GTimeVal * ) &devise->priv->maj_stamp );
 	}
 
 	g_assert_not_reached();
@@ -417,6 +479,48 @@ ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol )
 }
 
 /**
+ * ofo_devise_set_notes:
+ */
+void
+ofo_devise_set_notes( ofoDevise *devise, const gchar *notes )
+{
+	g_return_if_fail( OFO_IS_DEVISE( devise ));
+
+	if( !devise->priv->dispose_has_run ){
+
+		devise->priv->notes = g_strdup( notes );
+	}
+}
+
+/**
+ * ofo_devise_set_maj_user:
+ */
+void
+ofo_devise_set_maj_user( ofoDevise *devise, const gchar *user )
+{
+	g_return_if_fail( OFO_IS_DEVISE( devise ));
+
+	if( !devise->priv->dispose_has_run ){
+
+		devise->priv->maj_user = g_strdup( user );
+	}
+}
+
+/**
+ * ofo_devise_set_maj_stamp:
+ */
+void
+ofo_devise_set_maj_stamp( ofoDevise *devise, const GTimeVal *stamp )
+{
+	g_return_if_fail( OFO_IS_DEVISE( devise ));
+
+	if( !devise->priv->dispose_has_run ){
+
+		memcpy( &devise->priv->maj_stamp, stamp, sizeof( GTimeVal ));
+	}
+}
+
+/**
  * ofo_devise_insert:
  */
 gboolean
@@ -436,7 +540,8 @@ ofo_devise_insert( ofoDevise *devise, ofoDossier *dossier )
 
 		if( devise_do_insert(
 					devise,
-					ofo_dossier_get_sgbd( dossier ))){
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, devise );
 			return( TRUE );
@@ -448,35 +553,57 @@ ofo_devise_insert( ofoDevise *devise, ofoDossier *dossier )
 }
 
 static gboolean
-devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd )
+devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user )
 {
-	return( devise_insert_main( devise, sgbd ) &&
+	return( devise_insert_main( devise, sgbd, user ) &&
 			devise_get_back_id( devise, sgbd ));
 }
 
 static gboolean
-devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd )
+devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user )
 {
-	gchar *query;
-	gchar *label;
+	GString *query;
+	gchar *label, *notes, *stamp;
 	const gchar *symbol;
 	gboolean ok;
 
+	ok = FALSE;
 	label = my_utils_quote( ofo_devise_get_label( devise ));
 	symbol = ofo_devise_get_symbol( devise );
+	notes = my_utils_quote( ofo_devise_get_notes( devise ));
+	stamp = my_utils_timestamp();
 
-	query = g_strdup_printf(
+	query = g_string_new( "" );
+	g_string_append_printf( query,
 			"INSERT INTO OFA_T_DEVISES "
-			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL)"
-			"	VALUES ('%s','%s','%s')",
+			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL,"
+			"	DEV_NOTES,DEV_MAJ_USER,DEV_MAJ_STAMP)"
+			"	VALUES ('%s','%s','%s',",
 			ofo_devise_get_code( devise ),
 			label,
 			symbol );
 
-	ok = ofo_sgbd_query( sgbd, query );
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "'%s',", notes );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
 
-	g_free( query );
+	g_string_append_printf( query,
+			"'%s','%s')",
+			user, stamp );
+
+	if( ofo_sgbd_query( sgbd, query->str )){
+
+		ofo_devise_set_maj_user( devise, user );
+		ofo_devise_set_maj_stamp( devise, my_utils_stamp_from_str( stamp ));
+		ok = TRUE;
+	}
+
+	g_string_free( query, TRUE );
 	g_free( label );
+	g_free( notes );
+	g_free( stamp );
 
 	return( ok );
 }
@@ -521,7 +648,8 @@ ofo_devise_update( ofoDevise *devise, ofoDossier *dossier )
 
 		if( devise_do_update(
 					devise,
-					ofo_dossier_get_sgbd( dossier ))){
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
 			OFO_BASE_UPDATE_DATASET( st_global, devise );
 			return( TRUE );
@@ -532,34 +660,47 @@ ofo_devise_update( ofoDevise *devise, ofoDossier *dossier )
 	return( FALSE );
 }
 
-/**
- * ofo_devise_update:
- *
- * We deal here with an update of publicly modifiable devise properties.
- * All fields are mandatory.
- */
 static gboolean
-devise_do_update( ofoDevise *devise, ofoSgbd *sgbd )
+devise_do_update( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user )
 {
-	gchar *query;
-	gchar *label;
+	GString *query;
+	gchar *label, *notes, *stamp;
 	gboolean ok;
 
+	ok = FALSE;
 	label = my_utils_quote( ofo_devise_get_label( devise ));
+	notes = my_utils_quote( ofo_devise_get_notes( devise ));
+	stamp = my_utils_timestamp();
 
-	query = g_strdup_printf(
-			"UPDATE OFA_T_DEVISES SET "
-			"	DEV_CODE='%s',DEV_LABEL='%s',DEV_SYMBOL='%s'"
-			"	WHERE DEV_ID=%d",
+	query = g_string_new( "UPDATE OFA_T_DEVISES SET " );
+
+	g_string_append_printf( query,
+			"	DEV_CODE='%s',DEV_LABEL='%s',DEV_SYMBOL='%s',",
 			ofo_devise_get_code( devise ),
 			label,
-			ofo_devise_get_symbol( devise ),
-			ofo_devise_get_id( devise ));
+			ofo_devise_get_symbol( devise ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "DEV_NOTES='%s',", notes );
+	} else {
+		query = g_string_append( query, "DEV_NOTES=NULL," );
+	}
 
-	g_free( query );
+	g_string_append_printf( query,
+			"	DEV_MAJ_USER='%s',DEV_MAJ_STAMP='%s'"
+			"	WHERE DEV_ID=%d", user, stamp, ofo_devise_get_id( devise ));
+
+	if( ofo_sgbd_query( sgbd, query->str )){
+
+		ofo_devise_set_maj_user( devise, user );
+		ofo_devise_set_maj_stamp( devise, my_utils_stamp_from_str( stamp ));
+		ok = TRUE;
+	}
+
+	g_string_free( query, TRUE );
 	g_free( label );
+	g_free( notes );
+	g_free( stamp );
 
 	return( ok );
 }

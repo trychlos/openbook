@@ -40,7 +40,7 @@
  * #ofoDossier class.
  */
 
-#include "ui/ofo-base.h"
+#include "ui/ofo-base-def.h"
 
 G_BEGIN_DECLS
 

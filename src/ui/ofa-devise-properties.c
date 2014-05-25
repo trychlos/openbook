@@ -234,6 +234,8 @@ do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise 
 	gchar *title;
 	const gchar *code;
 	GtkEntry *entry;
+	GtkLabel *label;
+	gchar *stamp, *str;
 
 	priv = self->private;
 	priv->main_window = main;
@@ -286,6 +288,15 @@ do_initialize_dialog( ofaDeviseProperties *self, ofaMainWindow *main, ofoDevise 
 			gtk_entry_set_text( entry, priv->symbol );
 		}
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), self );
+
+		if( code ){
+			label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "px-last-update" ));
+			stamp = my_utils_str_from_stamp( ofo_devise_get_maj_stamp( priv->devise ));
+			str = g_strdup_printf( "%s (%s)", stamp, ofo_devise_get_maj_user( priv->devise ));
+			gtk_label_set_text( label, str );
+			g_free( str );
+			g_free( stamp );
+		}
 	}
 
 	check_for_enable_dlg( self );
@@ -372,6 +383,10 @@ do_update( ofaDeviseProperties *self )
 {
 	ofoDossier *dossier;
 	ofoDevise *existing;
+	GtkTextView *text;
+	GtkTextBuffer *buffer;
+	GtkTextIter start, end;
+	gchar *notes;
 
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
 	existing = ofo_devise_get_by_code( dossier, self->private->code );
@@ -382,6 +397,15 @@ do_update( ofaDeviseProperties *self )
 	ofo_devise_set_code( self->private->devise, self->private->code );
 	ofo_devise_set_label( self->private->devise, self->private->label );
 	ofo_devise_set_symbol( self->private->devise, self->private->symbol );
+
+	text = GTK_TEXT_VIEW(
+			my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-notes" ));
+	buffer = gtk_text_view_get_buffer( text );
+	gtk_text_buffer_get_start_iter( buffer, &start );
+	gtk_text_buffer_get_end_iter( buffer, &end );
+	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
+	ofo_devise_set_notes( self->private->devise, notes );
+	g_free( notes );
 
 	if( !existing ){
 		self->private->updated =

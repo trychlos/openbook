@@ -206,8 +206,6 @@
 
  109 2014- 5-25 Devises: add notes, maj_user and maj_stamp
 
- 110 2014- 5-25 p1-last-update -> px-last-update
-
  111
 
 -----------------------------------------------------------------------
@@ -405,6 +403,9 @@
  106 2014- 5-24 check how and when is set the ofaMainPage 'theme' 
                 property ?
      2014- 5-24 done svn #3491
+
+ 110 2014- 5-25 p1-last-update -> px-last-update
+     2014- 5-25 done - svn #3500
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

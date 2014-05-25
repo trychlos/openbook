@@ -52,21 +52,27 @@ my_utils_quote( const gchar *str )
 	gchar *new_str;
 
 	error = NULL;
-	regex = g_regex_new( "'", 0, 0, &error );
-	if( error ){
-		g_warning( "%s: g_regex_new=%s", thisfn, error->message );
-		g_error_free( error );
-		return( NULL );
-	}
+	new_str = NULL;
 
-	new_str = g_regex_replace_literal( regex, str, -1, 0, "\\'", 0, &error );
-	if( error ){
-		g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
-		g_error_free( error );
-		return( NULL );
-	}
+	if( str && g_utf8_strlen( str, -1 )){
 
-	g_regex_unref( regex );
+		regex = g_regex_new( "'", 0, 0, &error );
+		if( error ){
+			g_warning( "%s: g_regex_new=%s", thisfn, error->message );
+			g_error_free( error );
+			return( NULL );
+		}
+
+		new_str = g_regex_replace_literal( regex, str, -1, 0, "\\'", 0, &error );
+		if( error ){
+			g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
+			g_error_free( error );
+			g_regex_unref( regex );
+			return( NULL );
+		}
+
+		g_regex_unref( regex );
+	}
 
 	return( new_str );
 }

@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofo-base.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
 #include "ui/ofo-journal.h"

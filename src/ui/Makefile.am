@@ -90,6 +90,7 @@ openbook_SOURCES = \
 	ofo-account.h										\
 	ofo-base.c											\
 	ofo-base.h											\
+	ofo-base-def.h										\
 	ofo-devise.c										\
 	ofo-devise.h										\
 	ofo-dossier.c										\

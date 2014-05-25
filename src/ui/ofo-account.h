@@ -39,6 +39,7 @@
  * load data local infile '/home/pierre/data/pierre@wieser.fr@cloud.trychlos.org/GTD-TR/OLA01 - Specifications/Plan comptable notarial 1988 simplié.csv' into table OFA_T_COMPTES fields terminated by ';' (@dummy,CPT_NUMBER,CPT_LABEL,CPT_NOTES);
  */
 
+#include "ui/ofo-base-def.h"
 #include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS

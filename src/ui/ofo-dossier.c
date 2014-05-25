@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofo-base.h"
 #include "ui/ofo-dossier.h"
 
 /* priv instance data
@@ -363,10 +364,13 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
-			"	DEV_ID     INTEGER NOT NULL AUTO_INCREMENT UNIQUE COMMENT 'Internal identifier of the currency',"
-			"	DEV_CODE   VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
-			"	DEV_LABEL  VARCHAR(80) NOT NULL                   COMMENT 'Currency label',"
-			"	DEV_SYMBOL VARCHAR(3)  NOT NULL                   COMMENT 'Label of the currency'"
+			"	DEV_ID        INTEGER NOT NULL AUTO_INCREMENT UNIQUE COMMENT 'Internal identifier of the currency',"
+			"	DEV_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
+			"	DEV_LABEL     VARCHAR(80) NOT NULL                   COMMENT 'Currency label',"
+			"	DEV_SYMBOL    VARCHAR(3)  NOT NULL                   COMMENT 'Label of the currency',"
+			"	DEV_NOTES     VARCHAR(512)                           COMMENT 'Currency notes',"
+			"	DEV_MAJ_USER  VARCHAR(20)                            COMMENT 'User responsible of properties last update',"
+			"	DEV_MAJ_STAMP TIMESTAMP                              COMMENT 'Properties last update timestamp'"
 			")" )){
 		return( FALSE );
 	}

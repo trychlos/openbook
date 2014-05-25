@@ -32,6 +32,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-main-page.h"
+#include "ui/ofo-base.h"
 
 /* private instance data
  */

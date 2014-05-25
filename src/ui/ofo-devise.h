@@ -36,6 +36,7 @@
  * DB definition.
  */
 
+#include "ui/ofo-base-def.h"
 #include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -62,29 +63,35 @@ typedef struct {
 }
 	ofoDevise;
 
-GType        ofo_devise_get_type  ( void ) G_GNUC_CONST;
+GType           ofo_devise_get_type     ( void ) G_GNUC_CONST;
 
-GList       *ofo_devise_get_dataset  ( const ofoDossier *dossier );
-ofoDevise   *ofo_devise_get_by_code  ( const ofoDossier *dossier, const gchar *code );
+GList          *ofo_devise_get_dataset  ( const ofoDossier *dossier );
+ofoDevise      *ofo_devise_get_by_code  ( const ofoDossier *dossier, const gchar *code );
 
-ofoDevise   *ofo_devise_new       ( void );
+ofoDevise      *ofo_devise_new          ( void );
 
-gint         ofo_devise_get_id    ( const ofoDevise *devise );
-const gchar *ofo_devise_get_code  ( const ofoDevise *devise );
-const gchar *ofo_devise_get_label ( const ofoDevise *devise );
-const gchar *ofo_devise_get_symbol( const ofoDevise *devise );
+gint            ofo_devise_get_id       ( const ofoDevise *devise );
+const gchar    *ofo_devise_get_code     ( const ofoDevise *devise );
+const gchar    *ofo_devise_get_label    ( const ofoDevise *devise );
+const gchar    *ofo_devise_get_symbol   ( const ofoDevise *devise );
+const gchar    *ofo_devise_get_notes    ( const ofoDevise *devise );
+const gchar    *ofo_devise_get_maj_user ( const ofoDevise *devise );
+const GTimeVal *ofo_devise_get_maj_stamp( const ofoDevise *devise );
 
-gboolean     ofo_devise_is_deletable( const ofoDevise *devise );
-gboolean     ofo_devise_is_valid    ( const gchar *code, const gchar *label, const gchar *symbol );
+gboolean        ofo_devise_is_deletable ( const ofoDevise *devise );
+gboolean        ofo_devise_is_valid     ( const gchar *code, const gchar *label, const gchar *symbol );
 
-void         ofo_devise_set_id    ( ofoDevise *devise, gint id );
-void         ofo_devise_set_code  ( ofoDevise *devise, const gchar *code );
-void         ofo_devise_set_label ( ofoDevise *devise, const gchar *label );
-void         ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol );
+void            ofo_devise_set_id       ( ofoDevise *devise, gint id );
+void            ofo_devise_set_code     ( ofoDevise *devise, const gchar *code );
+void            ofo_devise_set_label    ( ofoDevise *devise, const gchar *label );
+void            ofo_devise_set_symbol   ( ofoDevise *devise, const gchar *symbol );
+void            ofo_devise_set_notes    ( ofoDevise *devise, const gchar *notes );
+void            ofo_devise_set_maj_user ( ofoDevise *devise, const gchar *user );
+void            ofo_devise_set_maj_stamp( ofoDevise *devise, const GTimeVal *stamp );
 
-gboolean     ofo_devise_insert    ( ofoDevise *devise, ofoDossier *dossier );
-gboolean     ofo_devise_update    ( ofoDevise *devise, ofoDossier *dossier );
-gboolean     ofo_devise_delete    ( ofoDevise *devise, ofoDossier *dossier );
+gboolean        ofo_devise_insert    ( ofoDevise *devise, ofoDossier *dossier );
+gboolean        ofo_devise_update    ( ofoDevise *devise, ofoDossier *dossier );
+gboolean        ofo_devise_delete    ( ofoDevise *devise, ofoDossier *dossier );
 
 G_END_DECLS
 

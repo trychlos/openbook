@@ -35,7 +35,7 @@
  * This class implements the Entry behavior.
  */
 
-#include "ui/ofo-base.h"
+#include "ui/ofo-base-def.h"
 #include "ui/ofo-dossier-def.h"
 #include "ui/ofo-sgbd.h"
 
