@@ -338,7 +338,7 @@ do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *tau
 		}
 
 		if( mnemo ){
-			label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-last-update" ));
+			label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "px-last-update" ));
 			stamp = my_utils_str_from_stamp( ofo_taux_get_maj_stamp( priv->taux ));
 			str = g_strdup_printf( "%s (%s)", stamp, ofo_taux_get_maj_user( priv->taux ));
 			gtk_label_set_text( label, str );

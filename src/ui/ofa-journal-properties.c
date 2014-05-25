@@ -294,7 +294,7 @@ do_initialize_dialog( ofaJournalProperties *self, ofaMainWindow *main, ofoJourna
 		}
 
 		if( jou_mnemo ){
-			label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-last-update" ));
+			label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "px-last-update" ));
 			stamp = my_utils_str_from_stamp( ofo_journal_get_maj_stamp( priv->journal ));
 			str = g_strdup_printf( "%s (%s)", stamp, ofo_journal_get_maj_user( priv->journal ));
 			gtk_label_set_text( label, str );
