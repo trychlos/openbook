@@ -454,6 +454,9 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 			ofa_main_page_get_main_window( page ), taux )){
 
 		insert_new_row( OFA_TAUX_SET( page ), taux, TRUE );
+
+	} else {
+		g_object_unref( taux );
 	}
 }
 

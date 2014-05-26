@@ -55,18 +55,13 @@ typedef struct {
 }
 	ofaModelsSet;
 
-typedef struct _ofaModelsSetClassPrivate   ofaModelsSetClassPrivate;
-
 typedef struct {
 	/*< private >*/
 	ofaMainPageClass          parent;
-	ofaModelsSetClassPrivate *private;
 }
 	ofaModelsSetClass;
 
 GType ofa_models_set_get_type( void );
-
-void  ofa_models_set_run     ( ofaMainPage *this );
 
 G_END_DECLS
 

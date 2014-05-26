@@ -107,7 +107,7 @@ static void      class_init( ofaModelPropertiesClass *klass );
 static void      instance_init( GTypeInstance *instance, gpointer klass );
 static void      instance_dispose( GObject *instance );
 static void      instance_finalize( GObject *instance );
-static void      do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model );
+static void      do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model, gint journal_id );
 static gboolean  init_dialog_from_builder( ofaModelProperties *self );
 static void      init_dialog_title( ofaModelProperties *self );
 static void      init_dialog_mnemo( ofaModelProperties *self );
@@ -260,11 +260,14 @@ instance_finalize( GObject *window )
 /**
  * ofa_model_properties_run:
  * @main: the main window of the application.
+ * @model:
+ * @journal_id: set to the current journal when creating a new model,
+ *  left to OFO_BASE_UNSET_ID when updating an existing model.
  *
  * Update the properties of an model
  */
 gboolean
-ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model )
+ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model, gint journal_id )
 {
 	static const gchar *thisfn = "ofa_model_properties_run";
 	ofaModelProperties *self;
@@ -278,7 +281,7 @@ ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model )
 
 	self = g_object_new( OFA_TYPE_MODEL_PROPERTIES, NULL );
 
-	do_initialize_dialog( self, main_window, model );
+	do_initialize_dialog( self, main_window, model, journal_id );
 
 	g_debug( "%s: call gtk_dialog_run", thisfn );
 	do {
@@ -295,11 +298,13 @@ ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model )
 }
 
 static void
-do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model )
+do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model, gint journal_id )
 {
 	ofaModelPropertiesPrivate *priv;
 	GtkButton *button;
 	ofaJournalComboParms parms;
+	gboolean is_new;
+	const gchar *mnemo;
 
 	priv = self->private;
 	priv->main_window = main;
@@ -314,6 +319,9 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 	init_dialog_mnemo( self );
 	init_dialog_label( self );
 
+	mnemo = ofo_model_get_mnemo( model );
+	is_new = !mnemo || g_utf8_strlen( mnemo, -1 );
+
 	parms.dialog = priv->dialog;
 	parms.dossier = ofa_main_window_get_dossier( main );
 	parms.combo_name = "p1-journal";
@@ -322,7 +330,7 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 	parms.disp_label = FALSE;
 	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
 	parms.user_data = self;
-	parms.initial_id = ofo_model_get_journal( model );
+	parms.initial_id = is_new ? journal_id : ofo_model_get_journal( model );
 
 	priv->journal_combo = ofa_journal_combo_init_dialog( &parms );
 

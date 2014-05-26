@@ -62,6 +62,7 @@ static void       instance_dispose( GObject *instance );
 static void       instance_finalize( GObject *instance );
 static GtkWidget *v_setup_view( ofaMainPage *page );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
+static void       v_init_view( ofaMainPage *page );
 static void       on_row_activated( const gchar *number, ofaMainPage *page );
 static void       on_account_selected( const gchar *number, ofaAccountsChart *self );
 static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
@@ -122,6 +123,7 @@ class_init( ofaAccountsChartClass *klass )
 
 	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_MAIN_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_MAIN_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_MAIN_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
@@ -201,7 +203,6 @@ v_setup_view( ofaMainPage *page )
 	parms.user_data_select = page;
 	parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_row_activated;
 	parms.user_data_double_clic = page;
-	parms.account_number = NULL;
 
 	OFA_ACCOUNTS_CHART( page )->private->chart_child = ofa_account_notebook_init_dialog( &parms );
 
@@ -229,6 +230,12 @@ v_setup_buttons( ofaMainPage *page )
 	OFA_ACCOUNTS_CHART( page )->private->consult_btn = button;
 
 	return( GTK_WIDGET( buttons_box ));
+}
+
+static void
+v_init_view( ofaMainPage *page )
+{
+	ofa_account_notebook_init_view( OFA_ACCOUNTS_CHART( page )->private->chart_child, NULL );
 }
 
 /*
@@ -280,12 +287,16 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
 
 	account = ofo_account_new();
+
 	if( ofa_account_properties_run(
 			ofa_main_page_get_main_window( page ), account )){
 
 		/* insert the account in its right place */
 		ofa_account_notebook_insert(
 				OFA_ACCOUNTS_CHART( page )->private->chart_child, account );
+
+	} else {
+		g_object_unref( account );
 	}
 }
 

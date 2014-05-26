@@ -100,7 +100,7 @@ typedef struct {
 
 GType    ofa_model_properties_get_type( void );
 
-gboolean ofa_model_properties_run     ( ofaMainWindow *parent, ofoModel *model );
+gboolean ofa_model_properties_run     ( ofaMainWindow *parent, ofoModel *model, gint journal_id );
 
 G_END_DECLS
 

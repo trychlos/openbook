@@ -274,14 +274,13 @@ do_initialize_dialog( ofaAccountSelect *self, const gchar *asked_number )
 		parms.user_data_select = NULL;
 		parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_account_activated;
 		parms.user_data_double_clic = self;
-		parms.account_number = asked_number;
 
 		priv->child = ofa_account_notebook_init_dialog( &parms );
+		gtk_widget_show_all( GTK_WIDGET( priv->dialog ));
+		ofa_account_notebook_init_view( priv->child, asked_number );
+
+		check_for_enable_dlg( self );
 	}
-
-	gtk_widget_show_all( GTK_WIDGET( priv->dialog ));
-
-	check_for_enable_dlg( self );
 }
 
 /*

@@ -103,11 +103,12 @@ typedef struct {
 	gpointer             user_data_select;
 	ofaAccountNotebookCb pfnDoubleClic;
 	gpointer             user_data_double_clic;
-	const gchar         *account_number;
 }
 	ofaAccountNotebookParms;
 
 ofaAccountNotebook *ofa_account_notebook_init_dialog ( ofaAccountNotebookParms *parms );
+
+void                ofa_account_notebook_init_view   ( ofaAccountNotebook *self, const gchar *number );
 
 ofoAccount         *ofa_account_notebook_get_selected( ofaAccountNotebook *self );
 
