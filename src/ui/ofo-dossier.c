@@ -563,8 +563,6 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	TAX_VAL_DEB       DATE                    COMMENT 'Validity begin date',"
 			"	TAX_VAL_FIN       DATE                    COMMENT 'Validity end date',"
 			"	TAX_VAL_TAUX      DECIMAL(15,5)           COMMENT 'Taux value',"
-			"	TAX_VAL_MAJ_USER  VARCHAR(20)             COMMENT 'User responsible of properties last update',"
-			"	TAX_VAL_MAJ_STAMP TIMESTAMP               COMMENT 'Properties last update timestamp',"
 			"	CONSTRAINT PRIMARY KEY (TAX_ID,TAX_VAL_DEB,TAX_VAL_FIN)"
 			")" )){
 		return( FALSE );

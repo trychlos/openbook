@@ -32,14 +32,9 @@
 #include <stdarg.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofo-base.h"
 #include "ui/ofa-taux-properties.h"
 #include "ui/ofo-dossier.h"
-
-/* private class data
- */
-struct _ofaTauxPropertiesClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
 
 /* private instance data
  */
@@ -55,14 +50,28 @@ struct _ofaTauxPropertiesPrivate {
 	GtkDialog     *dialog;
 	ofoTaux       *taux;
 	gboolean       updated;
+	gint           count;				/* count of rows added to the grid */
 
 	/* data
 	 */
 	gint           id;
 	gchar         *mnemo;
 	gchar         *label;
-	gchar         *maj_user;
-	GTimeVal       maj_stamp;
+};
+
+#define DATA_COLUMN                  "ofa-data-column"
+#define DATA_ROW                     "ofa-data-row"
+
+/* the columns in the dynamic grid
+ */
+enum {
+	COL_ADD = 0,
+	COL_BEGIN,
+	COL_END,
+	COL_RATE,
+	COL_MESSAGE,
+	COL_REMOVE,
+	N_COLUMNS
 };
 
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-taux-properties.ui";
@@ -77,14 +86,21 @@ static void      instance_dispose( GObject *instance );
 static void      instance_finalize( GObject *instance );
 static void      do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *taux );
 static gboolean  ok_to_terminate( ofaTauxProperties *self, gint code );
+static void      insert_new_row( ofaTauxProperties *self, gint idx );
+static void      add_empty_row( ofaTauxProperties *self, GtkGrid *grid );
+static void      add_button( ofaTauxProperties *self, GtkGrid *grid, const gchar *stock_id, gint column, gint row );
 static void      on_mnemo_changed( GtkEntry *entry, ofaTauxProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaTauxProperties *self );
-/*static void      on_begin_changed( GtkEntry *entry, ofaTauxProperties *self );
-static void      on_end_changed( GtkEntry *entry, ofaTauxProperties *self );
-static void      on_taux_changed( GtkEntry *entry, ofaTauxProperties *self );*/
+static gboolean  on_date_focus_in( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self );
+static gboolean  on_focus_out( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self );
+static void      on_date_changed( GtkEntry *entry, ofaTauxProperties *self );
+static gboolean  on_rate_focus_in( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self );
+static void      on_rate_changed( GtkEntry *entry, ofaTauxProperties *self );
+static void      set_grid_line_comment( ofaTauxProperties *self, GtkWidget *widget, const gchar *comment );
+static void      on_button_clicked( GtkButton *button, ofaTauxProperties *self );
+static void      remove_row( ofaTauxProperties *self, GtkGrid *grid, gint row );
 static void      check_for_enable_dlg( ofaTauxProperties *self );
 static gboolean  do_update( ofaTauxProperties *self );
-static void      error_duplicate( ofaTauxProperties *self, ofoTaux *existing );
 
 GType
 ofa_taux_properties_get_type( void )
@@ -127,17 +143,13 @@ static void
 class_init( ofaTauxPropertiesClass *klass )
 {
 	static const gchar *thisfn = "ofa_taux_properties_class_init";
-	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
 	st_parent_class = g_type_class_peek_parent( klass );
 
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaTauxPropertiesClassPrivate, 1 );
+	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
+	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
 }
 
 static void
@@ -158,7 +170,8 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self->private->dispose_has_run = FALSE;
 	self->private->updated = FALSE;
 
-	self->private->id = -1;
+	self->private->id = OFO_BASE_UNSET_ID;
+	self->private->count = 0;
 }
 
 static void
@@ -178,15 +191,12 @@ instance_dispose( GObject *window )
 
 		g_free( priv->mnemo );
 		g_free( priv->label );
-		g_free( priv->maj_user );
 
 		gtk_widget_destroy( GTK_WIDGET( priv->dialog ));
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( window );
-		}
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->dispose( window );
 }
 
 static void
@@ -203,10 +213,8 @@ instance_finalize( GObject *window )
 
 	g_free( self->private );
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( window );
-	}
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->finalize( window );
 }
 
 /**
@@ -253,9 +261,11 @@ do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *tau
 	GError *error;
 	GtkBuilder *builder;
 	ofaTauxPropertiesPrivate *priv;
+	gint count, idx;
 	gchar *title;
 	const gchar *mnemo;
 	GtkEntry *entry;
+	GtkGrid *grid;
 
 	priv = self->private;
 	priv->main_window = main;
@@ -303,26 +313,14 @@ do_initialize_dialog( ofaTauxProperties *self, ofaMainWindow *main, ofoTaux *tau
 		}
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 
-		/*memcpy( &priv->begin, ofo_taux_get_val_begin( taux ), sizeof( GDate ));
-		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-begin" ));
-		str = my_utils_display_from_date( &priv->begin, MY_UTILS_DATE_DMMM );
-		gtk_entry_set_text( entry, str );
-		g_free( str );
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
-
-		memcpy( &priv->end, ofo_taux_get_val_end( taux ), sizeof( GDate ));
-		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-end" ));
-		str = my_utils_display_from_date( &priv->end, MY_UTILS_DATE_DMMM );
-		gtk_entry_set_text( entry, str );
-		g_free( str );
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
-
-		priv->value = ofo_taux_get_taux( taux );
-		entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-taux" ));
-		str = g_strdup_printf( "%.3lf", priv->value );
-		gtk_entry_set_text( entry, str );
-		g_free( str );
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_taux_changed ), self );*/
+		count = ofo_taux_get_val_count( priv->taux );
+		for( idx=0 ; idx<count ; ++idx ){
+			insert_new_row( self, idx );
+		}
+		if( !count ){
+			grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-grid" ));
+			add_button( self, grid, GTK_STOCK_ADD, COL_ADD, 1 );
+		}
 
 		my_utils_init_notes_ex( taux );
 
@@ -360,6 +358,113 @@ ok_to_terminate( ofaTauxProperties *self, gint code )
 }
 
 static void
+insert_new_row( ofaTauxProperties *self, gint idx )
+{
+	GtkGrid *grid;
+	GtkEntry *entry;
+	const GDate *d;
+	gdouble rate;
+	gchar *str;
+	gint row;
+
+	grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-grid" ));
+	add_empty_row( self, grid );
+	row = self->private->count;
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_BEGIN, row ));
+	d = ofo_taux_get_val_begin( self->private->taux, idx );
+	if( d && g_date_valid( d )){
+		str = my_utils_display_from_date( d, MY_UTILS_DATE_DDMM );
+	} else {
+		str = g_strdup( "" );
+	}
+	gtk_entry_set_text( entry, str );
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_END, row ));
+	d = ofo_taux_get_val_end( self->private->taux, idx );
+	if( d && g_date_valid( d )){
+		str = my_utils_display_from_date( d, MY_UTILS_DATE_DDMM );
+	} else {
+		str = g_strdup( "" );
+	}
+	gtk_entry_set_text( entry, str );
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_RATE, row ));
+	rate = ofo_taux_get_val_rate( self->private->taux, idx );
+	str = g_strdup_printf( "%.2lf", rate );
+	gtk_entry_set_text( entry, str );
+}
+
+/*
+ * idx is counted from zero
+ */
+static void
+add_empty_row( ofaTauxProperties *self, GtkGrid *grid )
+{
+	GtkEntry *entry;
+	GtkLabel *label;
+	gint row;
+
+	row = self->private->count + 1;
+
+	gtk_widget_destroy( gtk_grid_get_child_at( grid, COL_ADD, row ));
+
+	entry = GTK_ENTRY( gtk_entry_new());
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_date_focus_in ), self );
+	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
+	gtk_entry_set_max_length( entry, 10 );
+	gtk_entry_set_width_chars( entry, 10 );
+	gtk_grid_attach( grid, GTK_WIDGET( entry ), COL_BEGIN, row, 1, 1 );
+
+	entry = GTK_ENTRY( gtk_entry_new());
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_date_focus_in ), self );
+	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
+	gtk_entry_set_max_length( entry, 10 );
+	gtk_entry_set_width_chars( entry, 10 );
+	gtk_grid_attach( grid, GTK_WIDGET( entry ), COL_END, row, 1, 1 );
+
+	entry = GTK_ENTRY( gtk_entry_new());
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_rate_focus_in ), self );
+	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_rate_changed ), self );
+	gtk_entry_set_max_length( entry, 10 );
+	gtk_entry_set_width_chars( entry, 10 );
+	gtk_grid_attach( grid, GTK_WIDGET( entry ), COL_RATE, row, 1, 1 );
+
+	label = GTK_LABEL( gtk_label_new( "" ));
+	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
+	gtk_widget_set_hexpand( GTK_WIDGET( label ), TRUE );
+	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), COL_MESSAGE, row, 1, 1 );
+
+	add_button( self, grid, GTK_STOCK_REMOVE, COL_REMOVE, row );
+	add_button( self, grid, GTK_STOCK_ADD, COL_ADD, row+1 );
+
+	self->private->count = row;
+	gtk_widget_show_all( GTK_WIDGET( grid ));
+}
+
+static void
+add_button( ofaTauxProperties *self, GtkGrid *grid, const gchar *stock_id, gint column, gint row )
+{
+	GtkWidget *image;
+	GtkButton *button;
+
+	image = gtk_image_new_from_stock( stock_id, GTK_ICON_SIZE_BUTTON );
+	button = GTK_BUTTON( gtk_button_new());
+	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
+	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_button_set_image( button, image );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
+	gtk_grid_attach( grid, GTK_WIDGET( button ), column, row, 1, 1 );
+}
+
+static void
 on_mnemo_changed( GtkEntry *entry, ofaTauxProperties *self )
 {
 	g_free( self->private->mnemo );
@@ -377,111 +482,190 @@ on_label_changed( GtkEntry *entry, ofaTauxProperties *self )
 	check_for_enable_dlg( self );
 }
 
+static gboolean
+on_date_focus_in( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self )
+{
+	on_date_changed( GTK_ENTRY( entry ), self );
+	return( FALSE );
+}
+
+static gboolean
+on_focus_out( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self )
+{
+	set_grid_line_comment( self, entry, "" );
+	return( FALSE );
+}
+
+static void
+on_date_changed( GtkEntry *entry, ofaTauxProperties *self )
+{
+	const gchar *content;
+	GDate date;
+	gchar *str;
+
+	content = gtk_entry_get_text( entry );
+	g_date_set_parse( &date, content );
+
+	if( !content || !g_utf8_strlen( content, -1 )){
+		str = g_strdup( "" );
+	} else if( g_date_valid( &date )){
+		str = my_utils_display_from_date( &date, MY_UTILS_DATE_DMMM );
+	} else {
+		str = g_strdup( _( "invalid" ));
+	}
+	set_grid_line_comment( self, GTK_WIDGET( entry ), str );
+	g_free( str );
+
+	check_for_enable_dlg( self );
+}
+
+static gboolean
+on_rate_focus_in( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self )
+{
+	on_rate_changed( GTK_ENTRY( entry ), self );
+	return( FALSE );
+}
+
+static void
+on_rate_changed( GtkEntry *entry, ofaTauxProperties *self )
+{
+	const gchar *content;
+	gchar *str;
+	gdouble value;
+
+	content = gtk_entry_get_text( entry );
+	value = g_ascii_strtod( content, NULL );
+
+	if( !content || !g_utf8_strlen( content, -1 )){
+		str = g_strdup( "" );
+	} else {
+		str = g_strdup_printf( "%.3lf", value );
+	}
+	set_grid_line_comment( self, GTK_WIDGET( entry ), str );
+	g_free( str );
+
+	check_for_enable_dlg( self );
+}
+
+static void
+set_grid_line_comment( ofaTauxProperties *self, GtkWidget *widget, const gchar *comment )
+{
+	GtkGrid *grid;
+	gint row;
+	GtkLabel *label;
+	gchar *markup;
+
+	grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-grid" ));
+	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( widget ), DATA_ROW ));
+	label = GTK_LABEL( gtk_grid_get_child_at( grid, COL_MESSAGE, row ));
+	markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", comment );
+	gtk_label_set_markup( label, markup );
+	g_free( markup );
+}
+
+static void
+on_button_clicked( GtkButton *button, ofaTauxProperties *self )
+{
+	GtkGrid *grid;
+	gint column, row;
+
+	grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-grid" ));
+	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_COLUMN ));
+	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
+	switch( column ){
+		case COL_ADD:
+			add_empty_row( self, grid );
+			break;
+		case COL_REMOVE:
+			remove_row( self, grid, row );
+			break;
+	}
+}
+
+static void
+remove_row( ofaTauxProperties *self, GtkGrid *grid, gint row )
+{
+	gint i, line;
+	GtkWidget *widget;
+
+	/* first remove the line
+	 * note that there is no 'add' button in a used line */
+	for( i=0 ; i<N_COLUMNS ; ++i ){
+		if( i != COL_ADD ){
+			gtk_widget_destroy( gtk_grid_get_child_at( grid, i, row ));
+		}
+	}
+
+	/* then move the follow lines one row up */
+	for( line=row+1 ; line<self->private->count ; ++line ){
+		for( i=0 ; i<N_COLUMNS ; ++i ){
+			widget = gtk_grid_get_child_at( grid, i, line );
+			if( widget ){
+				g_object_ref( widget );
+				gtk_container_remove( GTK_CONTAINER( grid ), widget );
+				gtk_grid_attach( grid, widget, i, line-1, 1, 1 );
+				g_object_unref( widget );
+			}
+		}
+	}
+
+	/* last update the lines count */
+	self->private->count -= 1;
+}
+
 /*
-static void
-on_begin_changed( GtkEntry *entry, ofaTauxProperties *self )
-{
-	const gchar *content;
-	gchar *str, *markup;
-	GtkLabel *label;
-
-	content = gtk_entry_get_text( entry );
-	g_date_set_parse( &self->private->begin, content );
-
-	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-begin-label" ));
-	if( !content || !g_utf8_strlen( content, -1 )){
-		str = g_strdup( "" );
-	} else if( g_date_valid( &self->private->begin )){
-		str = my_utils_display_from_date( &self->private->begin, MY_UTILS_DATE_DMMM );
-	} else {
-		str = g_strdup( _( "invalid" ));
-	}
-	markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", str );
-	gtk_label_set_markup( label, markup );
-	g_free( str );
-	g_free( markup );
-
-	check_for_enable_dlg( self );
-}
-
-static void
-on_end_changed( GtkEntry *entry, ofaTauxProperties *self )
-{
-	const gchar *content;
-	gchar *str, *markup;
-	GtkLabel *label;
-
-	content = gtk_entry_get_text( entry );
-	g_date_set_parse( &self->private->end, content );
-
-	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-end-label" ));
-	if( !content || !g_utf8_strlen( content, -1 )){
-		str = g_strdup( "" );
-	} else if( g_date_valid( &self->private->end )){
-		str = my_utils_display_from_date( &self->private->end, MY_UTILS_DATE_DMMM );
-	} else {
-		str = g_strdup( _( "invalid" ));
-	}
-	markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", str );
-	gtk_label_set_markup( label, markup );
-	g_free( str );
-	g_free( markup );
-
-	check_for_enable_dlg( self );
-}
-
-static void
-on_taux_changed( GtkEntry *entry, ofaTauxProperties *self )
-{
-	const gchar *content;
-	gchar *str, *markup;
-	GtkLabel *label;
-
-	content = gtk_entry_get_text( entry );
-	self->private->value = g_ascii_strtod( content, NULL );
-
-	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-taux-label" ));
-
-	if( !content || !g_utf8_strlen( content, -1 )){
-		str = g_strdup( "" );
-	} else {
-		str = g_strdup_printf( "%.3lf", self->private->value );
-	}
-	markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", str );
-	gtk_label_set_markup( label, markup );
-	g_free( str );
-	g_free( markup );
-
-	check_for_enable_dlg( self );
-}*/
-
+ * are we able to validate this rate, and all its validities
+ */
 static void
 check_for_enable_dlg( ofaTauxProperties *self )
 {
 	ofaTauxPropertiesPrivate *priv;
 	GtkWidget *button;
-	/*GtkEntry *entry;
-	const gchar *str;
-	gboolean begin_ok, end_ok, taux_ok;*/
+	GList *valids;
+	sTauxVData *vdata;
+	gint i;
+	GtkGrid *grid;
+	GtkEntry *entry;
+	const gchar *sbegin, *send, *srate;
+	gboolean ok;
+	ofoTaux *exists;
 
 	priv = self->private;
+	grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-grid" ));
 
-	/*entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-begin" ));
-	str = gtk_entry_get_text( entry );
-	begin_ok = ( !str || !g_utf8_strlen( str, -1 ) || g_date_valid( &priv->begin ));
+	for( i=1, valids=NULL ; i<=priv->count ; ++i ){
+		entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_BEGIN, i ));
+		sbegin = gtk_entry_get_text( entry );
+		entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_END, i ));
+		send = gtk_entry_get_text( entry );
+		entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_RATE, i ));
+		srate = gtk_entry_get_text( entry );
+		if(( sbegin && g_utf8_strlen( sbegin, -1 )) ||
+			( send && g_utf8_strlen( send, -1 )) ||
+			( srate && g_utf8_strlen( srate, -1 ))){
 
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-end" ));
-	str = gtk_entry_get_text( entry );
-	end_ok = ( !str || !g_utf8_strlen( str, -1 ) || g_date_valid( &priv->end ));
+			vdata = g_new0( sTauxVData, 1 );
+			g_date_set_parse( &vdata->begin, sbegin );
+			g_date_set_parse( &vdata->end, send );
+			vdata->rate = g_ascii_strtod( srate, NULL );
+			valids = g_list_prepend( valids, vdata );
+		}
+	}
 
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-taux" ));
-	str = gtk_entry_get_text( entry );
-	taux_ok = ( str && g_utf8_strlen( str, -1 ));*/
+	ok = ofo_taux_is_valid( priv->mnemo, priv->label, g_list_reverse( valids ));
+
+	g_list_free_full( valids, ( GDestroyNotify ) g_free );
+
+	if( ok ){
+		exists = ofo_taux_get_by_mnemo(
+				ofa_main_window_get_dossier( self->private->main_window ),
+				self->private->mnemo );
+		ok &= !exists ||
+				ofo_taux_get_id( exists ) == ofo_taux_get_id( self->private->taux );
+	}
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
-	gtk_widget_set_sensitive( button,
-			priv->mnemo && g_utf8_strlen( priv->mnemo, -1 ) &&
-			priv->label && g_utf8_strlen( priv->label, -1 ));
+	gtk_widget_set_sensitive( button, ok );
 }
 
 /*
@@ -493,7 +677,11 @@ static gboolean
 do_update( ofaTauxProperties *self )
 {
 	ofoDossier *dossier;
-	ofoTaux *preventer;
+	ofoTaux *exists;
+	gint i;
+	GtkGrid *grid;
+	GtkEntry *entry;
+	const gchar *sbegin, *send, *srate;
 
 	/* - we are defining a new mnemo (either by creating a new record
 	 *   or by modifying an existing record to a new mnemo)
@@ -508,24 +696,32 @@ do_update( ofaTauxProperties *self )
 	 *
 	 */
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	/*
-	preventer = ofo_taux_is_data_valid(
-			dossier,
-			self->private->id, self->private->mnemo, &self->private->begin, &self->private->end );*/
-	preventer = NULL;
-
-	if( preventer ){
-		error_duplicate( self, preventer );
-		return( FALSE );
-	}
+	exists = ofo_taux_get_by_mnemo( dossier, self->private->mnemo );
+	g_return_val_if_fail( !exists  ||
+			ofo_taux_get_id( exists ) == ofo_taux_get_id( self->private->taux ), FALSE );
 
 	ofo_taux_set_mnemo( self->private->taux, self->private->mnemo );
 	ofo_taux_set_label( self->private->taux, self->private->label );
-	/*ofo_taux_set_val_begin( self->private->taux, &self->private->begin );
-	ofo_taux_set_val_end( self->private->taux, &self->private->end );
-	ofo_taux_set_taux( self->private->taux, self->private->value );*/
 
 	my_utils_getback_notes_ex( taux );
+
+	grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p2-grid" ));
+	ofo_taux_free_val_all( self->private->taux );
+
+	for( i=1 ; i<=self->private->count ; ++i ){
+		entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_BEGIN, i ));
+		sbegin = gtk_entry_get_text( entry );
+		entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_END, i ));
+		send = gtk_entry_get_text( entry );
+		entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_RATE, i ));
+		srate = gtk_entry_get_text( entry );
+		if(( sbegin && g_utf8_strlen( sbegin, -1 )) ||
+			( send && g_utf8_strlen( send, -1 )) ||
+			( srate && g_utf8_strlen( srate, -1 ))){
+
+			ofo_taux_add_val( self->private->taux, sbegin, send, srate );
+		}
+	}
 
 	if( self->private->id == -1 ){
 		self->private->updated =
@@ -536,47 +732,4 @@ do_update( ofaTauxProperties *self )
 	}
 
 	return( self->private->updated );
-}
-
-static void
-error_duplicate( ofaTauxProperties *self, ofoTaux *preventer )
-{
-	GtkMessageDialog *dlg;
-	/*gchar *sbegin, *send;*/
-	gchar *msg;
-
-	/*sbegin = my_utils_display_from_date( &self->private->begin, MY_UTILS_DATE_DMMM );
-	if( !g_utf8_strlen( sbegin, -1 )){
-		g_free( sbegin );
-		sbegin = g_strdup( _( "(unlimited)" ));
-	}
-	send = my_utils_display_from_date( &self->private->end, MY_UTILS_DATE_DMMM );
-	if( !g_utf8_strlen( send, -1 )){
-		g_free( send );
-		send = g_strdup( _( "(illimité)" ));
-	}*/
-
-	/*_( "Unable to set '%s' asked mnemonic and validity period as "
-		"these overlap with the already existing '%s' whose "
-		"current validity is from %s to %s" ),*/
-
-	msg = g_strdup_printf(
-				_( "Unable to set '%s' asked mnemonic and validity period as "
-					"these overlap with the already existing '%s'" ),
-				ofo_taux_get_mnemo( preventer ),
-				ofo_taux_get_label( preventer ));
-
-	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				GTK_WINDOW( self->private->dialog ),
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", msg ));
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
-
-	g_free( msg );
-	/*g_free( send );
-	g_free( sbegin );*/
 }

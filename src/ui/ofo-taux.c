@@ -60,28 +60,25 @@ struct _ofoTauxPrivate {
 	GList   *valids;
 };
 
+/* these are sgbd datas for each validitiy period
+ */
 typedef struct {
 	GDate    begin;
 	GDate    end;
 	gdouble  rate;
-	gchar   *maj_user;
-	GTimeVal maj_stamp;
 }
 	sTauxValid;
 
+#if 0
+/* the structure used when searching for a rate by mnemo,
+ *  at a specified date (cf. ofo_taux_get_by_mnemo())
+ */
 typedef struct {
 	const gchar *mnemo;
 	const GDate *date;
 }
 	sCmpMneDat;
-
-typedef struct {
-	gint         id;
-	const gchar *mnemo;
-	const GDate *begin;
-	const GDate *end;
-}
-	sCheckMneBegEnd;
+#endif
 
 G_DEFINE_TYPE( ofoTaux, ofo_taux, OFO_TYPE_BASE )
 
@@ -90,20 +87,35 @@ G_DEFINE_TYPE( ofoTaux, ofo_taux, OFO_TYPE_BASE )
 OFO_BASE_DEFINE_GLOBAL( st_global, taux )
 
 static GList         *taux_load_dataset( void );
-static void           taux_set_begin( sTauxValid *tv, const GDate *date );
-static void           taux_set_end( sTauxValid *tv, const GDate *date );
-static void           taux_set_taux( sTauxValid *tv, gdouble rate );
-static void           taux_set_maj_user( sTauxValid *tv, const gchar *user);
-static void           taux_set_maj_stamp( sTauxValid *tv, const GTimeVal *stamp );
-static ofoTaux       *taux_find_by_mnemo( GList *set, const gchar *mnemo, const GDate *date );
+static void           taux_set_val_begin( sTauxValid *tv, const GDate *date );
+static void           taux_set_val_end( sTauxValid *tv, const GDate *date );
+static void           taux_set_val_taux( sTauxValid *tv, gdouble rate );
+static ofoTaux       *taux_find_by_mnemo( GList *set, const gchar *mnemo );
 static gboolean       taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
 static gboolean       taux_insert_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
 static gboolean       taux_get_back_id( ofoTaux *taux, ofoSgbd *sgbd );
+static gboolean       taux_delete_validities( ofoTaux *taux, ofoSgbd *sgbd );
+static gboolean       taux_insert_validities( ofoTaux *taux, ofoSgbd *sgbd );
+static gboolean       taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, ofoSgbd *sgbd );
 static gboolean       taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
+static gboolean       taux_update_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
 static gboolean       taux_do_delete( ofoTaux *taux, ofoSgbd *sgbd );
-static gint           taux_cmp_by_mnemo( const ofoTaux *a, const sCmpMneDat *parms );
+static gint           taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo );
+static gint           taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent );
 static gint           taux_cmp_by_ptr( const ofoTaux *a, const ofoTaux *b );
-/*static gint           taux_check_by_period( const ofoTaux *ref, sCheckMneBegEnd *candidate );*/
+
+static void
+taux_free_validity( sTauxValid *sval )
+{
+	g_free( sval );
+}
+
+static void
+taux_free_validities( ofoTaux *taux )
+{
+	g_list_free_full( taux->priv->valids, ( GDestroyNotify ) taux_free_validity );
+	taux->priv->valids = NULL;
+}
 
 static void
 ofo_taux_finalize( GObject *instance )
@@ -121,6 +133,7 @@ ofo_taux_finalize( GObject *instance )
 	g_free( self->priv->label );
 	g_free( self->priv->notes );
 	g_free( self->priv->maj_user );
+	taux_free_validities( self );
 
 	/* chain up to parent class */
 	G_OBJECT_CLASS( ofo_taux_parent_class )->finalize( instance );
@@ -237,8 +250,7 @@ taux_load_dataset( void )
 		taux->priv->valids = NULL;
 
 		query = g_strdup_printf(
-					"SELECT TAX_VAL_DEB,TAX_VAL_FIN,TAX_VAL_TAUX,"
-					"	TAX_VAL_MAJ_USER,TAX_VAL_MAJ_STAMP "
+					"SELECT TAX_VAL_DEB,TAX_VAL_FIN,TAX_VAL_TAUX"
 					"	FROM OFA_T_TAUX_VAL "
 					"	WHERE TAX_ID=%d",
 					ofo_taux_get_id( taux ));
@@ -248,17 +260,13 @@ taux_load_dataset( void )
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			valid = g_new0( sTauxValid, 1 );
-			taux_set_begin( valid, my_utils_date_from_str(( gchar * ) icol->data ));
+			taux_set_val_begin( valid, my_utils_date_from_str(( gchar * ) icol->data ));
 			icol = icol->next;
-			taux_set_end( valid, my_utils_date_from_str(( gchar * ) icol->data ));
+			taux_set_val_end( valid, my_utils_date_from_str(( gchar * ) icol->data ));
 			icol = icol->next;
 			if( icol->data ){
-				taux_set_taux( valid, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+				taux_set_val_taux( valid, g_ascii_strtod(( gchar * ) icol->data, NULL ));
 			}
-			icol = icol->next;
-			taux_set_maj_user( valid, ( gchar * ) icol->data );
-			icol = icol->next;
-			taux_set_maj_stamp( valid, my_utils_stamp_from_str(( gchar * ) icol->data ));
 
 			taux->priv->valids = g_list_prepend( taux->priv->valids, valid );
 		}
@@ -272,6 +280,26 @@ taux_load_dataset( void )
 
 /**
  * ofo_taux_get_by_mnemo:
+ *
+ * Returns: the searched taux, or %NULL.
+ *
+ * The returned object is owned by the #ofoTaux class, and should
+ * not be unreffed by the caller.
+ */
+ofoTaux *
+ofo_taux_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
+
+	return( taux_find_by_mnemo( st_global->dataset, mnemo ));
+}
+
+#if 0
+/**
+ * ofo_taux_get_by_mnemo:
  * @date: [allow-none]: the effect date at which the rate must be valid
  *
  * Returns: the searched taux, or %NULL.
@@ -280,7 +308,7 @@ taux_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoTaux *
-ofo_taux_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo, const GDate *date )
+ofo_taux_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
 	static const gchar *thisfn = "ofo_taux_get_by_mnemo";
 
@@ -312,73 +340,21 @@ taux_find_by_mnemo( GList *set, const gchar *mnemo, const GDate *date )
 
 	return( NULL );
 }
-
-/**
- * ofo_taux_is_data_valid:
- * @mnemo: desired mnemo
- * @begin: desired beginning of validity.
- *  If not valid, then it is considered without limit.
- * @end: desired end of validity
- *  If not valid, then it is considered without limit.
- *
- * Checks if it is possible to define a new period of validity with the
- * specified arguments, regarding the other taux already defined. In
- * particular, the desired validity period must not overlap an already
- * existing one.
- *
- * Returns: NULL if the definition would be possible, or a pointer
- * to the object which prevents the definition.
- */
-/*
-ofoTaux *
-ofo_taux_is_data_valid( ofoDossier *dossier,
-		gint id, const gchar *mnemo, const GDate *begin, const GDate *end )
-{
-	static const gchar *thisfn = "ofo_taux_is_data_valid";
-	gchar *sbegin, *send;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
-	g_return_val_if_fail( begin, NULL );
-	g_return_val_if_fail( end, NULL );
-
-	sbegin = my_utils_display_from_date( begin, MY_UTILS_DATE_DMMM );
-	send = my_utils_display_from_date( end, MY_UTILS_DATE_DMMM );
-
-	g_debug( "%s: dossier=%p, id=%d, mnemo=%s, begin=%s, end=%s",
-			thisfn, ( void * ) dossier, id, mnemo, sbegin, send );
-
-	g_free( send );
-	g_free( sbegin );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
-
-	return( taux_is_data_valid( st_global->dataset, id, mnemo, begin, end ));
-}
+#endif
 
 static ofoTaux *
-taux_is_data_valid( GList *set,
-		gint id, const gchar *mnemo, const GDate *begin, const GDate *end )
+taux_find_by_mnemo( GList *set, const gchar *mnemo )
 {
-	ofoTaux *taux;
 	GList *found;
-	sCheckMneBegEnd parms;
-
-	taux = NULL;
-
-	parms.id = id;
-	parms.mnemo = mnemo;
-	parms.begin = begin;
-	parms.end = end;
 
 	found = g_list_find_custom(
-			set, &parms, ( GCompareFunc ) taux_check_by_period );
+				set, mnemo, ( GCompareFunc ) taux_cmp_by_mnemo );
 	if( found ){
-		taux = OFO_TAUX( found->data );
+		return( OFO_TAUX( found->data ));
 	}
 
-	return( taux );
-}*/
+	return( NULL );
+}
 
 /**
  * ofo_taux_new:
@@ -496,6 +472,105 @@ ofo_taux_get_maj_stamp( const ofoTaux *taux )
 }
 
 /**
+ * ofo_taux_get_min_valid:
+ */
+const GDate *
+ofo_taux_get_min_valid( const ofoTaux *taux )
+{
+	GList *iv;
+	const GDate *min;
+	sTauxValid *sval;
+
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
+
+	if( !taux->priv->dispose_has_run ){
+
+		for (min=NULL, iv=taux->priv->valids ; iv ; iv=iv->next ){
+			sval = ( sTauxValid * ) iv->data;
+			if( !min ){
+				min = &sval->begin;
+			} else if( my_utils_date_cmp( &sval->begin, min, TRUE ) < 0 ){
+				min = &sval->begin;
+			}
+		}
+
+		return( min );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_taux_get_max_valid:
+ */
+const GDate *
+ofo_taux_get_max_valid( const ofoTaux *taux )
+{
+	GList *iv;
+	const GDate *max;
+	sTauxValid *sval;
+
+	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
+
+	if( !taux->priv->dispose_has_run ){
+
+		for (max=NULL, iv=taux->priv->valids ; iv ; iv=iv->next ){
+			sval = ( sTauxValid * ) iv->data;
+			if( !max ){
+				max = &sval->end;
+			} else if( my_utils_date_cmp( &sval->end, max, FALSE ) < 0 ){
+				max = &sval->end;
+			}
+		}
+
+		return( max );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_taux_add_val:
+ */
+void
+ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const char *rate )
+{
+	sTauxValid *sval;
+
+	g_return_if_fail( taux && OFO_IS_TAUX( taux ));
+
+	if( !taux->priv->dispose_has_run ){
+
+		sval = g_new0( sTauxValid, 1 );
+		g_date_set_parse( &sval->begin, begin );
+		g_date_set_parse( &sval->end, end );
+		sval->rate = g_ascii_strtod( rate, NULL );
+		taux->priv->valids = g_list_append( taux->priv->valids, sval );
+	}
+}
+
+/**
+ * ofo_taux_free_val_all:
+ *
+ * Clear all validities of the rate object.
+ * This is normally done just before adding new validities, when
+ * preparing for a sgbd update.
+ */
+void
+ofo_taux_free_val_all( ofoTaux *taux )
+{
+
+	g_return_if_fail( taux && OFO_IS_TAUX( taux ));
+
+	if( !taux->priv->dispose_has_run ){
+
+		taux_free_validities( taux );
+	}
+}
+
+/**
  * ofo_taux_get_val_count:
  */
 gint
@@ -581,6 +656,16 @@ ofo_taux_get_val_rate( const ofoTaux *taux, gint idx )
 }
 
 /**
+ * ofo_taux_get_val_rate_by_date
+ */
+gdouble
+ofo_taux_get_val_rate_by_date( const ofoTaux *taux, const GDate *date )
+{
+	g_warning( "ofo_taux_get_val_rate_by_date: TO BE WRITTEN" );
+	return( 0 );
+}
+
+/**
  * ofo_taux_is_deletable:
  *
  * A rate cannot be deleted if it is referenced in the debit or the
@@ -608,6 +693,35 @@ ofo_taux_is_deletable( const ofoTaux *taux )
 }
 
 /**
+ * ofo_taux_is_valid:
+ *
+ * Note that we only check for the intrinsec validity of the provided
+ * data. This does NOT check for an possible duplicate mnemo or so.
+ *
+ * In order to check that all provided periods of validity are
+ * consistent between each others, we are trying to sort them from the
+ * infinite past to the infinite future - if this doesn't work
+ * (probably because overlapping each others), then the provided data
+ * is not valid
+ */
+gboolean
+ofo_taux_is_valid( const gchar *mnemo, const gchar *label, GList *validities )
+{
+	gboolean ok;
+	gboolean consistent;
+
+	ok = mnemo && g_utf8_strlen( mnemo, -1 ) &&
+			label && g_utf8_strlen( label, -1 );
+
+	consistent = TRUE;
+	validities = g_list_sort_with_data(
+			validities, ( GCompareDataFunc ) taux_cmp_by_vdata, &consistent );
+	ok &= consistent;
+
+	return( ok );
+}
+
+/**
  * ofo_taux_set_id:
  */
 void
@@ -631,6 +745,7 @@ ofo_taux_set_mnemo( ofoTaux *taux, const gchar *mnemo )
 
 	if( !taux->priv->dispose_has_run ){
 
+		g_free( taux->priv->mnemo );
 		taux->priv->mnemo = g_strdup( mnemo );
 	}
 }
@@ -645,6 +760,7 @@ ofo_taux_set_label( ofoTaux *taux, const gchar *label )
 
 	if( !taux->priv->dispose_has_run ){
 
+		g_free( taux->priv->label );
 		taux->priv->label = g_strdup( label );
 	}
 }
@@ -659,71 +775,9 @@ ofo_taux_set_notes( ofoTaux *taux, const gchar *notes )
 
 	if( !taux->priv->dispose_has_run ){
 
+		g_free( taux->priv->notes );
 		taux->priv->notes = g_strdup( notes );
 	}
-}
-
-/**
- * ofo_taux_set_val_begin:
- */
-/*
-void
-ofo_taux_set_val_begin( ofoTaux *taux, const GDate *date )
-{
-	g_return_if_fail( OFO_IS_TAUX( taux ));
-
-	if( !taux->priv->dispose_has_run ){
-
-		memcpy( &taux->priv->val_begin, date, sizeof( GDate ));
-	}
-}*/
-
-static void
-taux_set_begin( sTauxValid *tv, const GDate *date )
-{
-	memcpy( &tv->begin, date, sizeof( GDate ));
-}
-
-/**
- * ofo_taux_set_val_end:
- */
-/*
-void
-ofo_taux_set_val_end( ofoTaux *taux, const GDate *date )
-{
-	g_return_if_fail( OFO_IS_TAUX( taux ));
-
-	if( !taux->priv->dispose_has_run ){
-
-		memcpy( &taux->priv->val_end, date, sizeof( GDate ));
-	}
-}*/
-
-static void
-taux_set_end( sTauxValid *tv, const GDate *date )
-{
-	memcpy( &tv->end, date, sizeof( GDate ));
-}
-
-/**
- * ofo_taux_set_taux:
- */
-/*
-void
-ofo_taux_set_taux( ofoTaux *taux, gdouble value )
-{
-	g_return_if_fail( OFO_IS_TAUX( taux ));
-
-	if( !taux->priv->dispose_has_run ){
-
-		taux->priv->taux = value;
-	}
-}*/
-
-static void
-taux_set_taux( sTauxValid *tv, gdouble value )
-{
-	tv->rate = value;
 }
 
 /**
@@ -736,14 +790,9 @@ ofo_taux_set_maj_user( ofoTaux *taux, const gchar *maj_user )
 
 	if( !taux->priv->dispose_has_run ){
 
+		g_free( taux->priv->maj_user );
 		taux->priv->maj_user = g_strdup( maj_user );
 	}
-}
-
-static void
-taux_set_maj_user( sTauxValid *tv, const gchar *maj_user )
-{
-	tv->maj_user = g_strdup( maj_user );
 }
 
 /**
@@ -761,15 +810,29 @@ ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *maj_stamp )
 }
 
 static void
-taux_set_maj_stamp( sTauxValid *tv, const GTimeVal *maj_stamp )
+taux_set_val_begin( sTauxValid *tv, const GDate *date )
 {
-	memcpy( &tv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+	memcpy( &tv->begin, date, sizeof( GDate ));
+}
+
+static void
+taux_set_val_end( sTauxValid *tv, const GDate *date )
+{
+	memcpy( &tv->end, date, sizeof( GDate ));
+}
+
+static void
+taux_set_val_taux( sTauxValid *tv, gdouble value )
+{
+	tv->rate = value;
 }
 
 /**
  * ofo_taux_insert:
  *
- * First creation of a new rate.
+ * First creation of a new rate. This may contain zéro to n validity
+ * datail rows. But, if it doesn't, the we take care of removing all
+ * previously existing old validity rows.
  */
 gboolean
 ofo_taux_insert( ofoTaux *taux, ofoDossier *dossier )
@@ -803,7 +866,9 @@ static gboolean
 taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 {
 	return( taux_insert_main( taux, sgbd, user ) &&
-			taux_get_back_id( taux, sgbd ));
+			taux_get_back_id( taux, sgbd ) &&
+			taux_delete_validities( taux, sgbd ) &&
+			taux_insert_validities( taux, sgbd ));
 }
 
 static gboolean
@@ -873,90 +938,81 @@ taux_get_back_id( ofoTaux *taux, ofoSgbd *sgbd )
 	return( ok );
 }
 
-#if 0
 static gboolean
-taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
+taux_delete_validities( ofoTaux *taux, ofoSgbd *sgbd )
 {
-	GString *query;
-	gchar *label, *notes;
-	gchar *dbegin, *dend;
-	gchar rate[1+G_ASCII_DTOSTR_BUF_SIZE];
 	gboolean ok;
-	gchar *stamp;
-	GSList *result, *icol;
+	gchar *query;
 
-	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
+	query = g_strdup_printf(
+			"DELETE FROM OFA_T_TAUX_VAL WHERE TAX_ID=%d",
+					ofo_taux_get_id( taux ));
 
-	ok = FALSE;
-	label = my_utils_quote( ofo_taux_get_label( taux ));
-	notes = my_utils_quote( ofo_taux_get_notes( taux ));
-	stamp = my_utils_timestamp();
-	dbegin = my_utils_sql_from_date( ofo_taux_get_val_begin( taux ));
-	dend = my_utils_sql_from_date( ofo_taux_get_val_end( taux ));
+	ok = ofo_sgbd_query( sgbd, query );
 
-	query = g_string_new( "INSERT INTO OFA_T_TAUX" );
+	g_free( query );
+
+	return( ok );
+}
+
+static gboolean
+taux_insert_validities( ofoTaux *taux, ofoSgbd *sgbd )
+{
+	gboolean ok;
+	GList *idet;
+	sTauxValid *sdet;
+
+	ok = TRUE;
+	for( idet=taux->priv->valids ; idet ; idet=idet->next ){
+		sdet = ( sTauxValid * ) idet->data;
+		ok &= taux_insert_validity( taux, sdet, sgbd );
+	}
+
+	return( ok );
+}
+
+static gboolean
+taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, ofoSgbd *sgbd )
+{
+	gboolean ok;
+	GString *query;
+	gchar *dbegin, *dend, *rate;
+
+	dbegin = my_utils_sql_from_date( &sdet->begin );
+	dend = my_utils_sql_from_date( &sdet->end );
+	rate = my_utils_sql_from_double( sdet->rate );
+
+	query = g_string_new( "INSERT INTO OFA_T_TAUX_VAL " );
 
 	g_string_append_printf( query,
-			"	(TAX_MNEMO,TAX_LABEL,TAX_NOTES,"
-			"	TAX_VAL_DEB, TAX_VAL_FIN,TAX_TAUX,"
-			"	TAX_MAJ_USER, TAX_MAJ_STAMP) VALUES ('%s','%s',",
-			ofo_taux_get_mnemo( taux ),
-			label );
-
-	if( notes && g_utf8_strlen( notes, -1 )){
-		g_string_append_printf( query, "'%s',", notes );
-	} else {
-		query = g_string_append( query, "NULL," );
-	}
+			"	(TAX_ID,"
+			"	TAX_VAL_DEB,TAX_VAL_FIN,TAX_VAL_TAUX) "
+			"	VALUES (%d,",
+					ofo_taux_get_id( taux ));
 
 	if( dbegin && g_utf8_strlen( dbegin, -1 )){
 		g_string_append_printf( query, "'%s',", dbegin );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, "0," );
 	}
 
 	if( dend && g_utf8_strlen( dend, -1 )){
 		g_string_append_printf( query, "'%s',", dend );
 	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, "0," );
 	}
 
-	g_string_append_printf( query,
-				"%s,'%s','%s')",
-				g_ascii_dtostr( rate, G_ASCII_DTOSTR_BUF_SIZE, ofo_taux_get_taux( taux )),
-				user, stamp );
+	g_string_append_printf( query, "%s)", rate );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
-
-		ofo_taux_set_maj_user( taux, user );
-		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
-
-		g_string_printf( query,
-				"SELECT TAX_ID FROM OFA_T_TAUX"
-				"	WHERE TAX_MNEMO='%s'",
-				ofo_taux_get_mnemo( taux ));
-
-		result = ofo_sgbd_query_ex( sgbd, query->str );
-
-		if( result ){
-			icol = ( GSList * ) result->data;
-			ofo_taux_set_id( taux, atoi(( gchar * ) icol->data ));
-			ofo_sgbd_free_result( result );
-			ok = TRUE;
-		}
-	}
+	ok = ofo_sgbd_query( sgbd, query->str );
 
 	g_string_free( query, TRUE );
 	g_free( dbegin );
 	g_free( dend );
-	g_free( notes );
-	g_free( label );
-	g_free( stamp );
+	g_free( rate );
 
 	return( ok );
 }
-#endif
 
 /**
  * ofo_taux_update:
@@ -993,6 +1049,14 @@ ofo_taux_update( ofoTaux *taux, ofoDossier *dossier )
 
 static gboolean
 taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
+{
+	return( taux_update_main( taux, sgbd, user ) &&
+			taux_delete_validities( taux, sgbd ) &&
+			taux_insert_validities( taux, sgbd ));
+}
+
+static gboolean
+taux_update_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1037,72 +1101,6 @@ taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 	return( ok );
 }
 
-#if 0
-static gboolean
-taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
-{
-	GString *query;
-	gchar *label, *notes;
-	gboolean ok;
-	gchar *stamp;
-	gchar *dbegin, *dend;
-	gchar rate[1+G_ASCII_DTOSTR_BUF_SIZE];
-
-	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
-
-	ok = FALSE;
-	label = my_utils_quote( ofo_taux_get_label( taux ));
-	notes = my_utils_quote( ofo_taux_get_notes( taux ));
-	stamp = my_utils_timestamp();
-	dbegin = my_utils_sql_from_date( ofo_taux_get_val_begin( taux ));
-	dend = my_utils_sql_from_date( ofo_taux_get_val_end( taux ));
-
-	query = g_string_new( "UPDATE OFA_T_TAUX SET " );
-
-	g_string_append_printf( query, "TAX_MNEMO='%s',", ofo_taux_get_mnemo( taux ));
-	g_string_append_printf( query, "TAX_LABEL='%s',", label );
-
-	if( notes && g_utf8_strlen( notes, -1 )){
-		g_string_append_printf( query, "TAX_NOTES='%s',", notes );
-	} else {
-		query = g_string_append( query, "TAX_NOTES=NULL," );
-	}
-
-	if( dbegin && g_utf8_strlen( dbegin, -1 )){
-		g_string_append_printf( query, "TAX_VAL_DEB='%s',", dbegin );
-	} else {
-		query = g_string_append( query, "TAX_VAL_DEB=NULL," );
-	}
-
-	if( dend && g_utf8_strlen( dend, -1 )){
-		g_string_append_printf( query, "TAX_VAL_FIN='%s',", dend );
-	} else {
-		query = g_string_append( query, "TAX_VAL_FIN=NULL," );
-	}
-
-	g_string_append_printf( query,
-			"	TAX_TAUX=%s,TAX_MAJ_USER='%s',TAX_MAJ_STAMP='%s'"
-			"	WHERE TAX_ID=%d",
-			g_ascii_dtostr( rate, G_ASCII_DTOSTR_BUF_SIZE, ofo_taux_get_taux( taux )),
-			user, stamp, ofo_taux_get_id( taux ));
-
-	if( ofo_sgbd_query( sgbd, query->str )){
-
-		ofo_taux_set_maj_user( taux, user );
-		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
-		ok = TRUE;
-	}
-
-	g_string_free( query, TRUE );
-	g_free( notes );
-	g_free( label );
-
-	return( ok );
-	return( TRUE );
-}
-#endif
-
 /**
  * ofo_taux_delete:
  */
@@ -1113,6 +1111,7 @@ ofo_taux_delete( ofoTaux *taux, ofoDossier *dossier )
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( ofo_taux_is_deletable( taux ), FALSE );
 
 	if( !taux->priv->dispose_has_run ){
 
@@ -1159,119 +1158,94 @@ taux_do_delete( ofoTaux *taux, ofoSgbd *sgbd )
 }
 
 static gint
-taux_cmp_by_mnemo( const ofoTaux *a, const sCmpMneDat *parms )
+taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo )
 {
+	return( g_utf8_collate( ofo_taux_get_mnemo( a ), mnemo ));
+}
+
 /*
-	gint cmp_mnemo;
-	gint cmp_date;
-	const GDate *val_begin, *val_end;
+ * sorting two period of validities
+ * setting consistent to %FALSE if the two overlaps each other
+ *
+ * A period "a" is said lesser than a period "b" if "a" begins before "b".
+ * If "a" and "b" begins on the same date, (this is an inconsistent
+ * case), then "a" is said lesser than "b" if "a" ends before "b".
+ * If "a" and "b" ends on the same date, then periods are said equal.
+ *
+ *                     +----------------------------------------------+
+ *                     |                    "b"                       |
+ *                     |         begin                  end           |
+ *                     |    set      invalid      set      invalid    |
+ * +-------------------+-----------+---------+-----------+------------+
+ * | "a" begin set     |   bs-bs   |  bs-bi  |           |            |
+ * | "a" begin invalid |   bi-bs   |  bi-bi  |           |            |
+ * | "a" end set       |           |         |  es-es    |   es-ei    |
+ * | "a" end invalid   |           |         |  ei-es    |   ei-ei    |
+ * +-----+-------------+-----------+---------+-----------+------------+
+ */
 
-	cmp_mnemo = g_utf8_collate( ofo_taux_get_mnemo( a ), parms->mnemo );
-
-	if( cmp_mnemo == 0 && parms->date && g_date_valid( parms->date )){
-		val_begin = ofo_taux_get_val_begin( a );
-		val_end = ofo_taux_get_val_end( a );
-		if( val_begin && g_date_valid( val_begin )){
-			cmp_date = g_date_compare( val_begin, parms->date );
-			if( cmp_date >= 0 ){
-				return( cmp_date );
+static gint
+taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent )
+{
+	/* does 'a' start from the infinite ? */
+	if( !g_date_valid( &a->begin )){
+		/* 'a' starts from the infinite */
+		if( !g_date_valid( &b->begin )){
+			/* 'bi-bi' case
+			 * the two dates start from the infinite: this is not
+			 * consistent - compare the end dates */
+			if( consistent ){
+				*consistent = FALSE;
+			}
+			if( !g_date_valid( &a->end )){
+				if( !g_date_valid( &b->end )){
+					return( 0 );
+				} else {
+					return( -1 );
+				}
+			} else if( !g_date_valid( &b->end )){
+				return( 1 );
+			} else {
+				return( g_date_compare( &a->end, &b->end ));
 			}
 		}
-		if( val_end && g_date_valid( val_end )){
-			cmp_date = g_date_compare( val_end, parms->date );
-			if( cmp_date <= 0 ){
-				return( cmp_date );
+		/* 'bi-bs' case
+		 *  'a' starts from the infinite while 'b-begin' is set
+		 * for this be consistant, a must ends before b starts
+		 * whatever be the case, 'a' is said lesser than 'b' */
+		if( !g_date_valid( &a->end ) || g_date_compare( &a->end, &b->begin ) >= 0 ){
+			if( consistent ){
+				*consistent = FALSE;
 			}
 		}
-		return( 0 );
+		return( -1 );
 	}
 
-	return( cmp_mnemo );
-	*/
-	return( 0 );
+	/* a starts from a fixed date */
+	if( !g_date_valid( &b->begin )){
+		/* 'bs-bi' case
+		 * 'b' is said lesser than 'a'
+		 * for this be consistent, 'b' must ends before 'a' starts */
+		if( !g_date_valid( &b->end ) || g_date_compare( &b->end, &a->begin ) >= 0 ){
+			if( consistent ){
+				*consistent = FALSE;
+			}
+		}
+		return( 1 );
+	}
+
+	/* 'bs-bs' case
+	 * 'a' and 'b' both starts from a set date: b must ends before 'a' starts */
+	if( !g_date_valid( &b->end ) || g_date_compare( &b->end, &a->begin ) >= 0 ){
+		if( consistent ){
+			*consistent = FALSE;
+		}
+	}
+	return( g_date_compare( &a->begin, &a->end ));
 }
 
 static gint
 taux_cmp_by_ptr( const ofoTaux *a, const ofoTaux *b )
 {
-	/*
-	gint im;
-	im = g_utf8_collate( ofo_taux_get_mnemo( a ), ofo_taux_get_mnemo( b ));
-	if( im ){
-		return( im );
-	}
-	return( g_date_compare( ofo_taux_get_val_begin( a ), ofo_taux_get_val_begin( b )));*/
-	return( 0 );
+	return( g_utf8_collate( ofo_taux_get_mnemo( a ), ofo_taux_get_mnemo( b )));
 }
-
-/*
- * we are searching here a taux which would prevent the definition of a
- * new record with the specifications given in @check - no comparaison
- * needed, just return zero if such a record is found
- */
-#if 0
-static gint
-taux_check_by_period( const ofoTaux *ref, sCheckMneBegEnd *candidate )
-{
-	const GDate *ref_begin, *ref_end;
-	gboolean begin_ok, end_ok; /* TRUE if periods are compatible */
-
-	/* do not check against the same record */
-	if( ofo_taux_get_id( ref ) == candidate->id ){
-		return( 1 );
-	}
-
-	if( g_utf8_collate( ofo_taux_get_mnemo( ref ), candidate->mnemo )){
-		return( 1 ); /* anything but zero */
-	}
-
-	/* found another taux with the same mnemo
-	 * does its validity period overlap ours ?
-	 */
-	ref_begin = ofo_taux_get_val_begin( ref );
-	ref_end = ofo_taux_get_val_begin( ref );
-
-	if( !g_date_valid( candidate->begin )){
-		/* candidate begin is invalid => validity since the very
-		 * beginning of the world : the reference must have a valid begin
-		 * date greater that the candidate end date */
-		begin_ok = ( g_date_valid( ref_begin ) &&
-						g_date_valid( candidate->end ) &&
-						g_date_compare( ref_begin, candidate->end ) > 0 );
-	} else {
-		/* valid candidate beginning date
-		 * => the reference is either before or after the candidate
-		 *  so either the reference ends before the candidate begins
-		 *   or the reference begins after the candidate has ended */
-		begin_ok = ( g_date_valid( ref_end ) &&
-						g_date_compare( ref_end, candidate->begin ) < 0 ) ||
-					( g_date_valid( ref_begin ) &&
-						g_date_valid( candidate->end ) &&
-						g_date_compare( ref_begin, candidate->end ) > 0 );
-	}
-
-	if( !g_date_valid( candidate->end )){
-		/* candidate ending date is invalid => infinite validity is
-		 * required - this is possible if reference as an ending
-		 * validity before the beginning of the candidate */
-		end_ok = ( g_date_valid( ref_end ) &&
-					g_date_valid( candidate->begin ) &&
-					g_date_compare( ref_end, candidate->begin ) < 0 );
-	} else {
-		/* candidate ending date valid
-		 * => the reference is either before or after the candidate
-		 * so the reference ends before the candidate begins
-		 *  or the reference begins afer the candidate has ended */
-		end_ok = ( g_date_valid( ref_end ) &&
-						g_date_valid( candidate->begin ) &&
-						g_date_compare( ref_end, candidate->begin ) < 0 ) ||
-					( g_date_valid( ref_begin ) &&
-							g_date_compare( ref_begin, candidate->end ) > 0 );
-	}
-	if( !begin_ok || !end_ok ){
-		return( 0 );
-	}
-	return( 1 );
-	return( 0 );
-}
-#endif

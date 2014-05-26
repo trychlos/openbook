@@ -34,10 +34,16 @@
  *
  * Update the taux properties.
  *
- * From the ofaTauxSet page, new taux is creating a new taux or a new
- * validity of an existing taux.
- * When creating a new validity, we must check that it doesn't override
- * an already existing validity period.
+ * From the ofaTauxSet page, create a new taux, or update an existing
+ * one. in the two cases, zero, one or more validities can be created,
+ * updated, deleted.
+ *
+ * The content of the provided ofoTaux object is not modified until the
+ * do_update() function. At this time, all its content is _replaced_
+ * with which is found in the dialog box.
+ *
+ * When creating a new validity, we take care of checking that it
+ * doesn't override an already existing validity period.
  *
  * Examples:
  * Existing validity
@@ -63,17 +69,14 @@ typedef struct _ofaTauxPropertiesPrivate        ofaTauxPropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                      parent;
+	GObject                   parent;
 	ofaTauxPropertiesPrivate *private;
 }
 	ofaTauxProperties;
 
-typedef struct _ofaTauxPropertiesClassPrivate   ofaTauxPropertiesClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GObjectClass                      parent;
-	ofaTauxPropertiesClassPrivate *private;
+	GObjectClass parent;
 }
 	ofaTauxPropertiesClass;
 

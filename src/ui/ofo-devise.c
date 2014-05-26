@@ -446,6 +446,7 @@ ofo_devise_set_code( ofoDevise *devise, const gchar *code )
 
 	if( !devise->priv->dispose_has_run ){
 
+		g_free( devise->priv->code );
 		devise->priv->code = g_strdup( code );
 	}
 }
@@ -460,6 +461,7 @@ ofo_devise_set_label( ofoDevise *devise, const gchar *label )
 
 	if( !devise->priv->dispose_has_run ){
 
+		g_free( devise->priv->label );
 		devise->priv->label = g_strdup( label );
 	}
 }
@@ -474,6 +476,7 @@ ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol )
 
 	if( !devise->priv->dispose_has_run ){
 
+		g_free( devise->priv->symbol );
 		devise->priv->symbol = g_strdup( symbol );
 	}
 }
@@ -488,6 +491,7 @@ ofo_devise_set_notes( ofoDevise *devise, const gchar *notes )
 
 	if( !devise->priv->dispose_has_run ){
 
+		g_free( devise->priv->notes );
 		devise->priv->notes = g_strdup( notes );
 	}
 }
@@ -502,6 +506,7 @@ ofo_devise_set_maj_user( ofoDevise *devise, const gchar *user )
 
 	if( !devise->priv->dispose_has_run ){
 
+		g_free( devise->priv->maj_user );
 		devise->priv->maj_user = g_strdup( user );
 	}
 }
@@ -715,6 +720,7 @@ ofo_devise_delete( ofoDevise *devise, ofoDossier *dossier )
 
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( ofo_devise_is_deletable( devise ), FALSE );
 
 	if( !devise->priv->dispose_has_run ){
 

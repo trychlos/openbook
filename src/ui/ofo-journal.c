@@ -641,6 +641,7 @@ ofo_journal_set_mnemo( ofoJournal *journal, const gchar *mnemo )
 
 	if( !journal->priv->dispose_has_run ){
 
+		g_free( journal->priv->mnemo );
 		journal->priv->mnemo = g_strdup( mnemo );
 	}
 }
@@ -655,6 +656,7 @@ ofo_journal_set_label( ofoJournal *journal, const gchar *label )
 
 	if( !journal->priv->dispose_has_run ){
 
+		g_free( journal->priv->label );
 		journal->priv->label = g_strdup( label );
 	}
 }
@@ -669,6 +671,7 @@ ofo_journal_set_notes( ofoJournal *journal, const gchar *notes )
 
 	if( !journal->priv->dispose_has_run ){
 
+		g_free( journal->priv->notes );
 		journal->priv->notes = g_strdup( notes );
 	}
 }
@@ -683,6 +686,7 @@ ofo_journal_set_maj_user( ofoJournal *journal, const gchar *maj_user )
 
 	if( !journal->priv->dispose_has_run ){
 
+		g_free( journal->priv->maj_user );
 		journal->priv->maj_user = g_strdup( maj_user );
 	}
 }
@@ -954,6 +958,7 @@ ofo_journal_delete( ofoJournal *journal, ofoDossier *dossier )
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( ofo_journal_is_deletable( journal, dossier ), FALSE );
 
 	if( !journal->priv->dispose_has_run ){
 

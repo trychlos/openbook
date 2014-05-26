@@ -51,9 +51,12 @@ gchar         *my_utils_quote( const gchar *str );
 const GDate   *my_utils_date_from_str      ( const gchar *str );
 gchar         *my_utils_display_from_date  ( const GDate *date, myUtilsDateFormat format );
 gchar         *my_utils_sql_from_date      ( const GDate *date );
+gint           my_utils_date_cmp           ( const GDate *a, const GDate *b, gboolean infinite_is_past );
 const GTimeVal*my_utils_stamp_from_str     ( const gchar *str );
 gchar         *my_utils_str_from_stamp     ( const GTimeVal *stamp );
 gchar         *my_utils_timestamp          ( void );
+
+gchar         *my_utils_sql_from_double    ( gdouble value );
 
 gboolean       my_utils_entry_get_valid    ( GtkEntry *entry );
 void           my_utils_entry_set_valid    ( GtkEntry *entry, gboolean valid );

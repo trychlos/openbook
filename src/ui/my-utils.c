@@ -167,6 +167,43 @@ my_utils_sql_from_date( const GDate *date )
 }
 
 /**
+ * my_utils_date_cmp:
+ * @infinite_is_past: if %TRUE, then an infinite value (i.e. an invalid
+ *  date) is considered lesser than anything, but another infinite value.
+ *  Else, an invalid value is considered infinite in the future.
+ *
+ * Compare the two dates, returning -1, 0 or 1 if a less than, equal or
+ * greater than b.
+ * This supposes that the two pointers are not null.
+ * An invalid date is considered infinite.
+ *
+ * Returns: -1, 0 or 1.
+ */
+gint
+my_utils_date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
+{
+	g_return_val_if_fail( a, 0 );
+	g_return_val_if_fail( b, 0 );
+
+	if( !g_date_valid( a )){
+		if( !g_date_valid( b)){
+			/* a and b are infinite: returns equal */
+			return( 0 );
+		}
+		/* a is infinite, but not b */
+		return( infinite_is_past ? -1 : 1 );
+	}
+
+	if( !g_date_valid( b )){
+		/* b is infinite, but not a */
+		return( infinite_is_past ? 1 : -1 );
+	}
+
+	/* a and b are valid */
+	return( g_date_compare( a, b ));
+}
+
+/**
  * my_utils_stamp_from_str:
  *
  * SQL timestamp is returned as a string '2014-05-24 20:05:46'
@@ -223,6 +260,22 @@ my_utils_timestamp( void )
 	str = g_date_time_format( dt, "%F %T" );
 
 	return( str );
+}
+
+/**
+ * my_utils_sql_from_double:
+ *
+ * Returns: a newly allocated string which represents the specified
+ * value, suitable for an SQL insertion.
+ */
+gchar *
+my_utils_sql_from_double( gdouble value )
+{
+	gchar amount[1+G_ASCII_DTOSTR_BUF_SIZE];
+
+	g_ascii_dtostr( amount, G_ASCII_DTOSTR_BUF_SIZE, value );
+
+	return( g_strdup( amount ));
 }
 
 /**

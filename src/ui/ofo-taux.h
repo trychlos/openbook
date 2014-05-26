@@ -61,11 +61,22 @@ typedef struct {
 }
 	ofoTaux;
 
+/**
+ * sTauxVData:
+ *
+ * The structure used to validate all the validities of a rate.
+ */
+typedef struct {
+	GDate   begin;
+	GDate   end;
+	gdouble rate;
+}
+	sTauxVData;
+
 GType           ofo_taux_get_type     ( void ) G_GNUC_CONST;
 
 GList          *ofo_taux_get_dataset  ( ofoDossier *dossier );
-ofoTaux        *ofo_taux_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo, const GDate *date );
-/*ofoTaux     *ofo_taux_is_data_valid( ofoDossier *dossier, gint id, const gchar *mnemo, const GDate *begin, const GDate *end );*/
+ofoTaux        *ofo_taux_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo );
 
 ofoTaux        *ofo_taux_new          ( void );
 
@@ -76,12 +87,21 @@ const gchar    *ofo_taux_get_notes    ( const ofoTaux *taux );
 const gchar    *ofo_taux_get_maj_user ( const ofoTaux *taux );
 const GTimeVal *ofo_taux_get_maj_stamp( const ofoTaux *taux );
 
+const GDate    *ofo_taux_get_min_valid( const ofoTaux *taux );
+const GDate    *ofo_taux_get_max_valid( const ofoTaux *taux );
+
+void            ofo_taux_add_val      ( ofoTaux *taux, const gchar *begin, const gchar *end, const char *rate );
+void            ofo_taux_free_val_all ( ofoTaux *taux );
+
 gint            ofo_taux_get_val_count( const ofoTaux *taux );
 const GDate    *ofo_taux_get_val_begin( const ofoTaux *taux, gint idx );
 const GDate    *ofo_taux_get_val_end  ( const ofoTaux *taux, gint idx );
 gdouble         ofo_taux_get_val_rate ( const ofoTaux *taux, gint idx );
 
+gdouble         ofo_taux_get_val_rate_by_date( const ofoTaux *taux, const GDate *date );
+
 gboolean        ofo_taux_is_deletable ( const ofoTaux *taux );
+gboolean        ofo_taux_is_valid     ( const gchar *mnemo, const gchar *label, GList *validities );
 
 void            ofo_taux_set_id       ( ofoTaux *taux, gint id );
 void            ofo_taux_set_mnemo    ( ofoTaux *taux, const gchar *number );
@@ -90,13 +110,9 @@ void            ofo_taux_set_notes    ( ofoTaux *taux, const gchar *notes );
 void            ofo_taux_set_maj_user ( ofoTaux *taux, const gchar *user );
 void            ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *stamp );
 
-/*void         ofo_taux_set_begin    ( ofoTaux *taux, const GDate *date );
-void         ofo_taux_set_end      ( ofoTaux *taux, const GDate *date );
-void         ofo_taux_set_taux     ( ofoTaux *taux, gdouble value );*/
-
-gboolean        ofo_taux_insert       ( ofoTaux *taux, ofoDossier *dossier );
-gboolean        ofo_taux_update       ( ofoTaux *taux, ofoDossier *dossier );
-gboolean        ofo_taux_delete       ( ofoTaux *taux, ofoDossier *dossier );
+gboolean        ofo_taux_insert         ( ofoTaux *taux, ofoDossier *dossier );
+gboolean        ofo_taux_update         ( ofoTaux *taux, ofoDossier *dossier );
+gboolean        ofo_taux_delete         ( ofoTaux *taux, ofoDossier *dossier );
 
 G_END_DECLS
 
