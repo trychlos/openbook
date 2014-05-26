@@ -33,6 +33,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-base-prot.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
@@ -42,13 +43,6 @@
 /* priv instance data
  */
 struct _ofoDevisePrivate {
-	gboolean dispose_has_run;
-
-	/* properties
-	 */
-
-	/* internals
-	 */
 
 	/* sgbd data
 	 */
@@ -101,13 +95,11 @@ ofo_devise_finalize( GObject *instance )
 static void
 ofo_devise_dispose( GObject *instance )
 {
-	ofoDevise *self;
+	g_return_if_fail( OFO_IS_DEVISE( instance ));
 
-	self = OFO_DEVISE( instance );
+	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-	if( !self->priv->dispose_has_run ){
-
-		self->priv->dispose_has_run = TRUE;
+		/* unref member objects here */
 	}
 
 	/* chain up to parent class */
@@ -123,8 +115,6 @@ ofo_devise_init( ofoDevise *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = OFO_DEVISE_GET_PRIVATE( self );
-
-	self->priv->dispose_has_run = FALSE;
 
 	self->priv->id = OFO_BASE_UNSET_ID;
 }
@@ -266,7 +256,7 @@ ofo_devise_get_id( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), OFO_BASE_UNSET_ID );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		return( devise->priv->id );
 	}
@@ -283,7 +273,7 @@ ofo_devise_get_code( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		return(( const gchar * ) devise->priv->code );
 	}
@@ -300,7 +290,7 @@ ofo_devise_get_label( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		return(( const gchar * ) devise->priv->label );
 	}
@@ -317,7 +307,7 @@ ofo_devise_get_symbol( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		return(( const gchar * ) devise->priv->symbol );
 	}
@@ -334,7 +324,7 @@ ofo_devise_get_notes( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		return(( const gchar * ) devise->priv->notes );
 	}
@@ -351,7 +341,7 @@ ofo_devise_get_maj_user( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		return(( const gchar * ) devise->priv->maj_user );
 	}
@@ -368,7 +358,7 @@ ofo_devise_get_maj_stamp( const ofoDevise *devise )
 {
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), NULL );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		return(( const GTimeVal * ) &devise->priv->maj_stamp );
 	}
@@ -393,7 +383,7 @@ ofo_devise_is_deletable( const ofoDevise *devise )
 	 * but this should never appear */
 	g_return_val_if_fail( ofo_devise_get_id( devise ) > 0, TRUE );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		dossier = OFO_DOSSIER( st_global->dossier );
 
@@ -430,7 +420,7 @@ ofo_devise_set_id( ofoDevise *devise, gint id )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		devise->priv->id = id;
 	}
@@ -444,7 +434,7 @@ ofo_devise_set_code( ofoDevise *devise, const gchar *code )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		g_free( devise->priv->code );
 		devise->priv->code = g_strdup( code );
@@ -459,7 +449,7 @@ ofo_devise_set_label( ofoDevise *devise, const gchar *label )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		g_free( devise->priv->label );
 		devise->priv->label = g_strdup( label );
@@ -474,7 +464,7 @@ ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		g_free( devise->priv->symbol );
 		devise->priv->symbol = g_strdup( symbol );
@@ -489,7 +479,7 @@ ofo_devise_set_notes( ofoDevise *devise, const gchar *notes )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		g_free( devise->priv->notes );
 		devise->priv->notes = g_strdup( notes );
@@ -504,7 +494,7 @@ ofo_devise_set_maj_user( ofoDevise *devise, const gchar *user )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		g_free( devise->priv->maj_user );
 		devise->priv->maj_user = g_strdup( user );
@@ -519,7 +509,7 @@ ofo_devise_set_maj_stamp( ofoDevise *devise, const GTimeVal *stamp )
 {
 	g_return_if_fail( OFO_IS_DEVISE( devise ));
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		memcpy( &devise->priv->maj_stamp, stamp, sizeof( GTimeVal ));
 	}
@@ -536,7 +526,7 @@ ofo_devise_insert( ofoDevise *devise, ofoDossier *dossier )
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		g_debug( "%s: devise=%p, dossier=%p",
 				thisfn, ( void * ) devise, ( void * ) dossier );
@@ -620,7 +610,6 @@ devise_get_back_id( ofoDevise *devise, ofoSgbd *sgbd )
 	GSList *result, *icol;
 
 	ok = FALSE ;
-
 	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
 
 	if( result ){
@@ -644,7 +633,7 @@ ofo_devise_update( ofoDevise *devise, ofoDossier *dossier )
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		g_debug( "%s: devise=%p, dossier=%p",
 				thisfn, ( void * ) devise, ( void * ) dossier );
@@ -722,7 +711,7 @@ ofo_devise_delete( ofoDevise *devise, ofoDossier *dossier )
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( ofo_devise_is_deletable( devise ), FALSE );
 
-	if( !devise->priv->dispose_has_run ){
+	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
 		g_debug( "%s: devise=%p, dossier=%p",
 				thisfn, ( void * ) devise, ( void * ) dossier );

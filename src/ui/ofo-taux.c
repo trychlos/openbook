@@ -33,6 +33,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-base-prot.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-model.h"
 #include "ui/ofo-sgbd.h"
@@ -41,13 +42,6 @@
 /* priv instance data
  */
 struct _ofoTauxPrivate {
-	gboolean dispose_has_run;
-
-	/* properties
-	 */
-
-	/* internals
-	 */
 
 	/* sgbd data
 	 */
@@ -142,13 +136,11 @@ ofo_taux_finalize( GObject *instance )
 static void
 ofo_taux_dispose( GObject *instance )
 {
-	ofoTaux *self;
+	g_return_if_fail( OFO_IS_TAUX( instance ));
 
-	self = OFO_TAUX( instance );
+	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-	if( !self->priv->dispose_has_run ){
-
-		self->priv->dispose_has_run = TRUE;
+		/* unref member objects here */
 	}
 
 	/* chain up to parent class */
@@ -164,8 +156,6 @@ ofo_taux_init( ofoTaux *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = OFO_TAUX_GET_PRIVATE( self );
-
-	self->priv->dispose_has_run = FALSE;
 
 	self->priv->id = OFO_BASE_UNSET_ID;
 }
@@ -377,7 +367,7 @@ ofo_taux_get_id( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), OFO_BASE_UNSET_ID );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		return( taux->priv->id );
 	}
@@ -394,7 +384,7 @@ ofo_taux_get_mnemo( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		return(( const gchar * ) taux->priv->mnemo );
 	}
@@ -411,7 +401,7 @@ ofo_taux_get_label( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		return(( const gchar * ) taux->priv->label );
 	}
@@ -428,7 +418,7 @@ ofo_taux_get_notes( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		return(( const gchar * ) taux->priv->notes );
 	}
@@ -445,7 +435,7 @@ ofo_taux_get_maj_user( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		return(( const gchar * ) taux->priv->maj_user );
 	}
@@ -462,7 +452,7 @@ ofo_taux_get_maj_stamp( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		return(( const GTimeVal * ) &taux->priv->maj_stamp );
 	}
@@ -483,7 +473,7 @@ ofo_taux_get_min_valid( const ofoTaux *taux )
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		for (min=NULL, iv=taux->priv->valids ; iv ; iv=iv->next ){
 			sval = ( sTauxValid * ) iv->data;
@@ -513,7 +503,7 @@ ofo_taux_get_max_valid( const ofoTaux *taux )
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		for (max=NULL, iv=taux->priv->valids ; iv ; iv=iv->next ){
 			sval = ( sTauxValid * ) iv->data;
@@ -541,7 +531,7 @@ ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const cha
 
 	g_return_if_fail( taux && OFO_IS_TAUX( taux ));
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		sval = g_new0( sTauxValid, 1 );
 		g_date_set_parse( &sval->begin, begin );
@@ -564,7 +554,7 @@ ofo_taux_free_val_all( ofoTaux *taux )
 
 	g_return_if_fail( taux && OFO_IS_TAUX( taux ));
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		taux_free_validities( taux );
 	}
@@ -578,7 +568,7 @@ ofo_taux_get_val_count( const ofoTaux *taux )
 {
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), 0 );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		return( g_list_length( taux->priv->valids ));
 	}
@@ -597,7 +587,7 @@ ofo_taux_get_val_begin( const ofoTaux *taux, gint idx )
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		nth = g_list_nth( taux->priv->valids, idx );
 		if( nth ){
@@ -620,7 +610,7 @@ ofo_taux_get_val_end( const ofoTaux *taux, gint idx )
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		nth = g_list_nth( taux->priv->valids, idx );
 		if( nth ){
@@ -643,7 +633,7 @@ ofo_taux_get_val_rate( const ofoTaux *taux, gint idx )
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), 0 );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		nth = g_list_nth( taux->priv->valids, idx );
 		if( nth ){
@@ -681,7 +671,7 @@ ofo_taux_is_deletable( const ofoTaux *taux )
 	 * but this should never appear */
 	g_return_val_if_fail( ofo_taux_get_id( taux ) > 0, TRUE );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		dossier = OFO_DOSSIER( st_global->dossier );
 
@@ -729,7 +719,7 @@ ofo_taux_set_id( ofoTaux *taux, gint id )
 {
 	g_return_if_fail( OFO_IS_TAUX( taux ));
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		taux->priv->id = id;
 	}
@@ -743,7 +733,7 @@ ofo_taux_set_mnemo( ofoTaux *taux, const gchar *mnemo )
 {
 	g_return_if_fail( OFO_IS_TAUX( taux ));
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		g_free( taux->priv->mnemo );
 		taux->priv->mnemo = g_strdup( mnemo );
@@ -758,7 +748,7 @@ ofo_taux_set_label( ofoTaux *taux, const gchar *label )
 {
 	g_return_if_fail( OFO_IS_TAUX( taux ));
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		g_free( taux->priv->label );
 		taux->priv->label = g_strdup( label );
@@ -773,7 +763,7 @@ ofo_taux_set_notes( ofoTaux *taux, const gchar *notes )
 {
 	g_return_if_fail( OFO_IS_TAUX( taux ));
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		g_free( taux->priv->notes );
 		taux->priv->notes = g_strdup( notes );
@@ -788,7 +778,7 @@ ofo_taux_set_maj_user( ofoTaux *taux, const gchar *maj_user )
 {
 	g_return_if_fail( OFO_IS_TAUX( taux ));
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		g_free( taux->priv->maj_user );
 		taux->priv->maj_user = g_strdup( maj_user );
@@ -803,7 +793,7 @@ ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *maj_stamp )
 {
 	g_return_if_fail( OFO_IS_TAUX( taux ));
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		memcpy( &taux->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
 	}
@@ -842,7 +832,7 @@ ofo_taux_insert( ofoTaux *taux, ofoDossier *dossier )
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		g_debug( "%s: taux=%p, dossier=%p",
 				thisfn, ( void * ) taux, ( void * ) dossier );
@@ -925,7 +915,6 @@ taux_get_back_id( ofoTaux *taux, ofoSgbd *sgbd )
 	GSList *result, *icol;
 
 	ok = FALSE;
-
 	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
 
 	if( result ){
@@ -1027,7 +1016,7 @@ ofo_taux_update( ofoTaux *taux, ofoDossier *dossier )
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		g_debug( "%s: taux=%p, dossier=%p",
 				thisfn, ( void * ) taux, ( void * ) dossier );
@@ -1113,7 +1102,7 @@ ofo_taux_delete( ofoTaux *taux, ofoDossier *dossier )
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( ofo_taux_is_deletable( taux ), FALSE );
 
-	if( !taux->priv->dispose_has_run ){
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
 		g_debug( "%s: taux=%p, dossier=%p",
 				thisfn, ( void * ) taux, ( void * ) dossier );

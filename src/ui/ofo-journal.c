@@ -33,6 +33,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-base-prot.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
 #include "ui/ofo-journal.h"
@@ -41,13 +42,6 @@
 /* priv instance data
  */
 struct _ofoJournalPrivate {
-	gboolean dispose_has_run;
-
-	/* properties
-	 */
-
-	/* internals
-	 */
 
 	/* sgbd data
 	 */
@@ -124,13 +118,11 @@ ofo_journal_finalize( GObject *instance )
 static void
 ofo_journal_dispose( GObject *instance )
 {
-	ofoJournal *self;
+	g_return_if_fail( OFO_IS_JOURNAL( instance ));
 
-	self = OFO_JOURNAL( instance );
+	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-	if( !self->priv->dispose_has_run ){
-
-		self->priv->dispose_has_run = TRUE;
+		/* unref member objects here */
 	}
 
 	/* chain up to parent class */
@@ -146,8 +138,6 @@ ofo_journal_init( ofoJournal *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = OFO_JOURNAL_GET_PRIVATE( self );
-
-	self->priv->dispose_has_run = FALSE;
 
 	self->priv->id = OFO_BASE_UNSET_ID;
 }
@@ -422,7 +412,7 @@ ofo_journal_get_id( const ofoJournal *journal )
 {
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), OFO_BASE_UNSET_ID );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		return( journal->priv->id );
 	}
@@ -439,7 +429,7 @@ ofo_journal_get_mnemo( const ofoJournal *journal )
 {
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		return(( const gchar * ) journal->priv->mnemo );
 	}
@@ -456,7 +446,7 @@ ofo_journal_get_label( const ofoJournal *journal )
 {
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		return(( const gchar * ) journal->priv->label );
 	}
@@ -473,7 +463,7 @@ ofo_journal_get_notes( const ofoJournal *journal )
 {
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		return(( const gchar * ) journal->priv->notes );
 	}
@@ -490,7 +480,7 @@ ofo_journal_get_maj_user( const ofoJournal *journal )
 {
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		return(( const gchar * ) journal->priv->maj_user );
 	}
@@ -507,7 +497,7 @@ ofo_journal_get_maj_stamp( const ofoJournal *journal )
 {
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		return(( const GTimeVal * ) &journal->priv->maj_stamp );
 	}
@@ -526,7 +516,7 @@ ofo_journal_get_cloture( const ofoJournal *journal, gint exe_id )
 
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), NULL );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		sexe = journal_find_exe_by_id( journal, exe_id );
 		if( sexe ){
@@ -580,7 +570,7 @@ ofo_journal_is_deletable( const ofoJournal *journal, const ofoDossier *dossier )
 	 * but this should never appear */
 	g_return_val_if_fail( ofo_journal_get_id( journal ) > 0, TRUE );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		ok = TRUE;
 		exe_id = ofo_dossier_get_exercice_id( dossier );
@@ -625,7 +615,7 @@ ofo_journal_set_id( ofoJournal *journal, gint id )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		journal->priv->id = id;
 	}
@@ -639,7 +629,7 @@ ofo_journal_set_mnemo( ofoJournal *journal, const gchar *mnemo )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		g_free( journal->priv->mnemo );
 		journal->priv->mnemo = g_strdup( mnemo );
@@ -654,7 +644,7 @@ ofo_journal_set_label( ofoJournal *journal, const gchar *label )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		g_free( journal->priv->label );
 		journal->priv->label = g_strdup( label );
@@ -669,7 +659,7 @@ ofo_journal_set_notes( ofoJournal *journal, const gchar *notes )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		g_free( journal->priv->notes );
 		journal->priv->notes = g_strdup( notes );
@@ -684,7 +674,7 @@ ofo_journal_set_maj_user( ofoJournal *journal, const gchar *maj_user )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		g_free( journal->priv->maj_user );
 		journal->priv->maj_user = g_strdup( maj_user );
@@ -699,7 +689,7 @@ ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *maj_stamp )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		memcpy( &journal->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
 	}
@@ -733,7 +723,7 @@ ofo_journal_insert( ofoJournal *journal, ofoDossier *dossier )
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		g_debug( "%s: journal=%p, dossier=%p",
 				thisfn, ( void * ) journal, ( void * ) dossier );
@@ -814,7 +804,6 @@ journal_get_back_id( ofoJournal *journal, ofoSgbd *sgbd )
 	GSList *result, *icol;
 
 	ok = FALSE;
-
 	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
 
 	if( result ){
@@ -883,7 +872,7 @@ ofo_journal_update( ofoJournal *journal, ofoDossier *dossier )
 	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		g_debug( "%s: journal=%p, dossier=%p",
 				thisfn, ( void * ) journal, ( void * ) dossier );
@@ -960,7 +949,7 @@ ofo_journal_delete( ofoJournal *journal, ofoDossier *dossier )
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( ofo_journal_is_deletable( journal, dossier ), FALSE );
 
-	if( !journal->priv->dispose_has_run ){
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		g_debug( "%s: journal=%p, dossier=%p",
 				thisfn, ( void * ) journal, ( void * ) dossier );

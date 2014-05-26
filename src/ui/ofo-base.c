@@ -1,6 +1,5 @@
 /*
- * Open Freelance Accounting
- * A double-entry accounting application for freelances.
+ * Open Freelance Accounting * A double-entry accounting application for freelances.
  *
  * Copyright (C) 2014 Pierre Wieser (see AUTHORS)
  *
@@ -29,11 +28,12 @@
 #endif
 
 #include "ui/ofo-base.h"
+#include "ui/ofo-base-prot.h"
 
 /* private instance data
  */
 struct _ofoBasePrivate {
-	gboolean dispose_has_run;
+	void *empty;						/* so that gcc -pedantic is empty */
 };
 
 G_DEFINE_TYPE( ofoBase, ofo_base, G_TYPE_OBJECT )
@@ -43,9 +43,10 @@ G_DEFINE_TYPE( ofoBase, ofo_base, G_TYPE_OBJECT )
 static void
 ofo_base_finalize( GObject *instance )
 {
-	/*ofoBase *self = OFO_BASE( instance );*/
+	ofoBase *self = OFO_BASE( instance );
 
 	/* free data here */
+	g_free( self->prot );
 
 	/* chain up to parent class */
 	G_OBJECT_CLASS( ofo_base_parent_class )->finalize( instance );
@@ -54,9 +55,14 @@ ofo_base_finalize( GObject *instance )
 static void
 ofo_base_dispose( GObject *instance )
 {
-	/*ofoBase *self = OFO_BASE( instance );*/
+	ofoBase *self = OFO_BASE( instance );
 
-	/* unref member objects here */
+	if( self->prot->dispose_has_run ){
+
+		self->prot->dispose_has_run = TRUE;
+
+		/* unref member objects here */
+	}
 
 	/* chain up to parent class */
 	G_OBJECT_CLASS( ofo_base_parent_class )->dispose( instance );
@@ -67,7 +73,9 @@ ofo_base_init( ofoBase *self )
 {
 	self->priv = OFO_BASE_GET_PRIVATE( self );
 
-	self->priv->dispose_has_run = FALSE;
+	self->prot = g_new0( ofoBaseProtected, 1 );
+
+	self->prot->dispose_has_run = FALSE;
 }
 
 static void
