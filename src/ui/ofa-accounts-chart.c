@@ -63,10 +63,11 @@ static void       instance_finalize( GObject *instance );
 static GtkWidget *v_setup_view( ofaMainPage *page );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
-static void       on_row_activated( const gchar *number, ofaMainPage *page );
-static void       on_account_selected( const gchar *number, ofaAccountsChart *self );
+static void       on_row_activated( ofoAccount *account, ofaMainPage *page );
+static void       on_account_selected( ofoAccount *account, ofaAccountsChart *self );
 static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
+static void       do_update_with_account( ofaAccountsChart *self, ofoAccount *account );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaAccountsChart *self, ofoAccount *account );
 static void       on_view_entries( GtkButton *button, ofaAccountsChart *self );
@@ -242,9 +243,9 @@ v_init_view( ofaMainPage *page )
  * ofaAccountNotebook callback:
  */
 static void
-on_row_activated( const gchar *number, ofaMainPage *page )
+on_row_activated( ofoAccount *account, ofaMainPage *page )
 {
-	v_on_update_clicked( NULL, page );
+	do_update_with_account( OFA_ACCOUNTS_CHART( page ), account );
 }
 
 /*
@@ -253,16 +254,8 @@ on_row_activated( const gchar *number, ofaMainPage *page )
  * thus at a moment where the buttons where not yet created
  */
 static void
-on_account_selected( const gchar *number, ofaAccountsChart *self )
+on_account_selected( ofoAccount *account, ofaAccountsChart *self )
 {
-	ofoAccount *account;
-
-	account = NULL;
-
-	if( self->private->chart_child ){
-		account = ofa_account_notebook_get_selected( self->private->chart_child );
-	}
-
 	if( account ){
 		gtk_widget_set_sensitive(
 				ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),
@@ -306,7 +299,6 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 	static const gchar *thisfn = "ofa_accounts_chart_v_on_update_clicked";
 	ofaAccountsChart *self;
 	ofoAccount *account;
-	gchar *prev_number;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( page ));
 
@@ -315,17 +307,27 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 	self = OFA_ACCOUNTS_CHART( page );
 	account = ofa_account_notebook_get_selected( self->private->chart_child );
 	if( account ){
+		do_update_with_account( self, account );
+	}
+}
+
+static void
+do_update_with_account( ofaAccountsChart *self, ofoAccount *account )
+{
+	gchar *prev_number;
+
+	if( account ){
+		g_return_if_fail( OFO_IS_ACCOUNT( account ));
 		prev_number = g_strdup( ofo_account_get_number( account ));
 
 		if( ofa_account_properties_run(
-				ofa_main_page_get_main_window( page ), account )){
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), account )){
 
 			ofa_account_notebook_remove( self->private->chart_child, prev_number );
 			ofa_account_notebook_insert( self->private->chart_child, account );
 		}
 
 		g_free( prev_number );
-		g_object_unref( account );
 	}
 
 	ofa_account_notebook_grab_focus( self->private->chart_child );
@@ -350,7 +352,6 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 	self = OFA_ACCOUNTS_CHART( page );
 	account = ofa_account_notebook_get_selected( self->private->chart_child );
 	if( account ){
-		g_object_unref( account );
 		g_return_if_fail( ofo_account_is_deletable( account ));
 
 		dossier = ofa_main_page_get_dossier( page );

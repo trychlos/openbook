@@ -33,6 +33,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofo-account.h"
+#include "ui/ofo-dossier.h"
 
 /* private class data
  */
@@ -629,16 +630,14 @@ on_account_selected( GtkTreeSelection *selection, ofaAccountNotebook *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoAccount *account;
-	const gchar *number;
 
 	if( self->private->pfnSelect &&
 			gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
 		g_object_unref( account );
-		number = ofo_account_get_number( account );
 
-		( *self->private->pfnSelect )( number, self->private->user_data_select );
+		( *self->private->pfnSelect )( account, self->private->user_data_select );
 	}
 }
 
@@ -649,7 +648,6 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoAccount *account;
-	const gchar *number;
 
 	if( self->private->pfnDoubleClic ){
 
@@ -658,18 +656,14 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 
 			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
 			g_object_unref( account );
-			number = ofo_account_get_number( account );
 
-			( *self->private->pfnDoubleClic)( number, self->private->user_data_double_clic );
+			( *self->private->pfnDoubleClic)( account, self->private->user_data_double_clic );
 		}
 	}
 }
 
 /**
  * ofa_account_notebook_get_selected:
- *
- * Returns a new reference on the currently selected account, which
- * should be g_object_unref() by the caller after usage.
  */
 ofoAccount *
 ofa_account_notebook_get_selected( ofaAccountNotebook *self )
@@ -690,6 +684,7 @@ ofa_account_notebook_get_selected( ofaAccountNotebook *self )
 		select = gtk_tree_view_get_selection( self->private->view );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
+			g_object_unref( account );
 		}
 	}
 

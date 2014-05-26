@@ -91,11 +91,6 @@
   49 2014- 5-15 All properties: monitor "notes" size so
                 that we stop the entering at 512 chars
 
-  50 2014- 5-17 when defining a new model, the default family should be
-                the current family in models_set
-     2014- 5-22 Family class is abandonned, but the subject is the same 
-                with Journal class
-
   52 2014- 5-17 change the title of the pages of the models notebook
                 when the label of a journal is changed
 
@@ -290,6 +285,12 @@
                 fields 
      2014- 5-14 Done
 
+  50 2014- 5-17 when defining a new model, the default family should be
+                the current family in models_set
+     2014- 5-22 Family class is abandonned, but the subject is the same 
+                with Journal class
+     2014- 5-26 Done - svn #3508
+
   51 2014- 5-17 Be able to use an underscore in the label of the model
                 families; this underscore should be usable as a shortcut
                 when dealing with the models in models set
@@ -424,6 +425,8 @@
  112 2014- 5-26 dispose_has_run is a protected data of the ofoBase
                 base class
      2014 -5-26 done svn #3506
+
+ 113 2014- 5-26 only include '-def.h' header files in the headers
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

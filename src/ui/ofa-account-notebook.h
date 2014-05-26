@@ -43,7 +43,7 @@
 #include <gtk/gtk.h>
 
 #include "ui/ofo-account.h"
-#include "ui/ofo-dossier.h"
+#include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -78,10 +78,10 @@ typedef struct {
  * A callback triggered when the selected account changes.
  *
  * Passed arguments are:
- * - the selected account number
+ * - the selected account
  * - provided user data.
  */
-typedef void ( *ofaAccountNotebookCb )( const gchar *, gpointer );
+typedef void ( *ofaAccountNotebookCb )( ofoAccount *, gpointer );
 
 GType ofa_account_notebook_get_type   ( void );
 
