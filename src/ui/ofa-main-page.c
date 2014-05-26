@@ -719,22 +719,6 @@ ofa_main_page_get_treeview( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_dataset:
- */
-GList *
-ofa_main_page_get_dataset( const ofaMainPage *page )
-{
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
-
-	if( !page->private->dispose_has_run ){
-
-		return( page->private->dataset );
-	}
-
-	return( NULL );
-}
-
-/**
  * ofa_main_page_set_dataset:
  */
 void

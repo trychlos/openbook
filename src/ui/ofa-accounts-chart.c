@@ -36,12 +36,6 @@
 #include "ui/ofa-accounts-chart.h"
 #include "ui/ofo-account.h"
 
-/* private class data
- */
-struct _ofaAccountsChartClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaAccountsChartPrivate {
@@ -56,26 +50,23 @@ struct _ofaAccountsChartPrivate {
 	/* UI
 	 */
 	ofaAccountNotebook *chart_child;
-	GtkButton          *update_btn;
-	GtkButton          *delete_btn;
 	GtkButton          *consult_btn;
 };
 
-static GObjectClass *st_parent_class = NULL;
+static ofaMainPageClass *st_parent_class = NULL;
 
 static GType      register_type( void );
 static void       class_init( ofaAccountsChartClass *klass );
 static void       instance_init( GTypeInstance *instance, gpointer klass );
-static void       instance_constructed( GObject *instance );
 static void       instance_dispose( GObject *instance );
 static void       instance_finalize( GObject *instance );
-static void       setup_page_chart( ofaAccountsChart *self );
-static GtkWidget *setup_chart_book( ofaAccountsChart *self );
-static GtkWidget *setup_buttons_box( ofaAccountsChart *self );
+static GtkWidget *v_setup_view( ofaMainPage *page );
+static GtkWidget *v_setup_buttons( ofaMainPage *page );
+static void       on_row_activated( const gchar *number, ofaMainPage *page );
 static void       on_account_selected( const gchar *number, ofaAccountsChart *self );
-static void       on_new_account( GtkButton *button, ofaAccountsChart *self );
-static void       on_update_account( GtkButton *button, ofaAccountsChart *self );
-static void       on_delete_account( GtkButton *button, ofaAccountsChart *self );
+static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
+static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
+static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaAccountsChart *self, ofoAccount *account );
 static void       on_view_entries( GtkButton *button, ofaAccountsChart *self );
 
@@ -120,18 +111,20 @@ static void
 class_init( ofaAccountsChartClass *klass )
 {
 	static const gchar *thisfn = "ofa_accounts_chart_class_init";
-	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	st_parent_class = g_type_class_peek_parent( klass );
+	st_parent_class = ( ofaMainPageClass * ) g_type_class_peek_parent( klass );
+	g_return_if_fail( st_parent_class && OFA_IS_MAIN_PAGE_CLASS( st_parent_class ));
 
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->constructed = instance_constructed;
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
+	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
+	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
 
-	klass->private = g_new0( ofaAccountsChartClassPrivate, 1 );
+	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_MAIN_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
+	OFA_MAIN_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
+	OFA_MAIN_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
 }
 
 static void
@@ -153,26 +146,6 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_constructed( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_accounts_chart_instance_constructed";
-
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( instance ));
-
-	/* first chain up to the parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->constructed ){
-		G_OBJECT_CLASS( st_parent_class )->constructed( instance );
-	}
-
-	/* then setup the page
-	 */
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	setup_page_chart( OFA_ACCOUNTS_CHART( instance ));
-}
-
-static void
 instance_dispose( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_accounts_chart_instance_dispose";
@@ -188,12 +161,10 @@ instance_dispose( GObject *instance )
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->dispose( instance );
 }
 
 static void
@@ -210,60 +181,12 @@ instance_finalize( GObject *instance )
 
 	g_free( self->private );
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
-}
-
-/**
- * ofa_accounts_chart_run:
- *
- * When called by the main_window, the page has been created, showed
- * and activated - there is nothing left to do here....
- */
-void
-ofa_accounts_chart_run( ofaMainPage *this )
-{
-	static const gchar *thisfn = "ofa_accounts_chart_run";
-
-	g_return_if_fail( this && OFA_IS_ACCOUNTS_CHART( this ));
-
-	g_debug( "%s: this=%p (%s)",
-			thisfn, ( void * ) this, G_OBJECT_TYPE_NAME( this ));
-}
-
-/*
- * +-----------------------------------------------------------------------+
- * | grid1 (this is the notebook page)                                     |
- * | +-----------------------------------------------+-------------------+ |
- * | | book1                                         |                   | |
- * | | each page of the book contains accounts for   |                   | |
- * | | the corresponding class (if any)              |                   | |
- * | +-----------------------------------------------+-------------------+ |
- * +-----------------------------------------------------------------------+
- */
-static void
-setup_page_chart( ofaAccountsChart *self )
-{
-	static const gchar *thisfn = "ofa_accounts_chart_setup_page_chart";
-	GtkGrid *grid;
-	GtkWidget *chart_book;
-	GtkWidget *buttons_box;
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	grid = ofa_main_page_get_grid( OFA_MAIN_PAGE( self ));
-
-	chart_book = setup_chart_book( self );
-	gtk_grid_attach( grid, chart_book, 0, 0, 1, 1 );
-
-	buttons_box = setup_buttons_box( self );
-	gtk_grid_attach( grid, buttons_box, 1, 0, 1, 1 );
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->finalize( instance );
 }
 
 static GtkWidget *
-setup_chart_book( ofaAccountsChart *self )
+v_setup_view( ofaMainPage *page )
 {
 	GtkNotebook *chart_book;
 	ofaAccountNotebookParms parms;
@@ -273,46 +196,26 @@ setup_chart_book( ofaAccountsChart *self )
 	gtk_widget_set_margin_bottom( GTK_WIDGET( chart_book ), 4 );
 
 	parms.book = chart_book;
-	parms.dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+	parms.dossier = ofa_main_page_get_dossier( page );
 	parms.pfnSelect = ( ofaAccountNotebookCb ) on_account_selected;
-	parms.user_data_select = self;
-	parms.pfnDoubleClic = NULL;
-	parms.user_data_double_clic = NULL;
+	parms.user_data_select = page;
+	parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_row_activated;
+	parms.user_data_double_clic = page;
+	parms.account_number = NULL;
 
-	self->private->chart_child = ofa_account_notebook_init_dialog( &parms );
+	OFA_ACCOUNTS_CHART( page )->private->chart_child = ofa_account_notebook_init_dialog( &parms );
 
 	return( GTK_WIDGET( chart_book ));
 }
 
 static GtkWidget *
-setup_buttons_box( ofaAccountsChart *self )
+v_setup_buttons( ofaMainPage *page )
 {
 	GtkBox *buttons_box;
 	GtkFrame *frame;
 	GtkButton *button;
 
-	buttons_box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_VERTICAL, 6 ));
-	gtk_widget_set_margin_right( GTK_WIDGET( buttons_box ), 4 );
-
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 30 );
-
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_New..." )));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_account ), self );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Update..." )));
-	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_update_account ), self );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	self->private->update_btn = button;
-
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Delete..." )));
-	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_delete_account ), self );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	self->private->delete_btn = button;
+	buttons_box = GTK_BOX( st_parent_class->setup_buttons( page ));
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 25 );
@@ -321,11 +224,20 @@ setup_buttons_box( ofaAccountsChart *self )
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "View _entries..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), self );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), page );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	self->private->consult_btn = button;
+	OFA_ACCOUNTS_CHART( page )->private->consult_btn = button;
 
 	return( GTK_WIDGET( buttons_box ));
+}
+
+/*
+ * ofaAccountNotebook callback:
+ */
+static void
+on_row_activated( const gchar *number, ofaMainPage *page )
+{
+	v_on_update_clicked( NULL, page );
 }
 
 /*
@@ -344,60 +256,58 @@ on_account_selected( const gchar *number, ofaAccountsChart *self )
 		account = ofa_account_notebook_get_selected( self->private->chart_child );
 	}
 
-	if( self->private->update_btn ){
+	if( account ){
 		gtk_widget_set_sensitive(
-				GTK_WIDGET( self->private->update_btn ), account != NULL );
+				ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),
+				account && OFO_IS_ACCOUNT( account ));
 		gtk_widget_set_sensitive(
-				GTK_WIDGET( self->private->delete_btn ), account && ofo_account_is_deletable( account ));
+				ofa_main_page_get_delete_btn( OFA_MAIN_PAGE( self )),
+				account && OFO_IS_ACCOUNT( account ) && ofo_account_is_deletable( account ));
 		gtk_widget_set_sensitive(
-				GTK_WIDGET( self->private->consult_btn ), account != NULL );
+				GTK_WIDGET( self->private->consult_btn ),
+				account && OFO_IS_ACCOUNT( account ));
 	}
 }
 
 static void
-on_new_account( GtkButton *button, ofaAccountsChart *self )
+v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 {
-	static const gchar *thisfn = "ofa_accounts_chart_on_new_account";
+	static const gchar *thisfn = "ofa_accounts_chart_v_on_new_clicked";
 	ofoAccount *account;
-	ofaMainWindow *main_window;
-	ofoDossier *dossier;
 
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
+	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( page ));
 
-	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
-
-	main_window = ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ));
+	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
 
 	account = ofo_account_new();
-	if( ofa_account_properties_run( main_window, account )){
-
-		/* update our chart of accounts */
-		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-		ofa_main_page_set_dataset(
-				OFA_MAIN_PAGE( self ), ofo_account_get_dataset( dossier ));
+	if( ofa_account_properties_run(
+			ofa_main_page_get_main_window( page ), account )){
 
 		/* insert the account in its right place */
-		ofa_account_notebook_insert( self->private->chart_child, account );
+		ofa_account_notebook_insert(
+				OFA_ACCOUNTS_CHART( page )->private->chart_child, account );
 	}
 }
 
 static void
-on_update_account( GtkButton *button, ofaAccountsChart *self )
+v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 {
-	static const gchar *thisfn = "ofa_accounts_chart_on_update_account";
+	static const gchar *thisfn = "ofa_accounts_chart_v_on_update_clicked";
+	ofaAccountsChart *self;
 	ofoAccount *account;
 	gchar *prev_number;
 
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
+	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( page ));
 
-	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
+	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
 
+	self = OFA_ACCOUNTS_CHART( page );
 	account = ofa_account_notebook_get_selected( self->private->chart_child );
 	if( account ){
 		prev_number = g_strdup( ofo_account_get_number( account ));
 
 		if( ofa_account_properties_run(
-				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), account )){
+				ofa_main_page_get_main_window( page ), account )){
 
 			ofa_account_notebook_remove( self->private->chart_child, prev_number );
 			ofa_account_notebook_insert( self->private->chart_child, account );
@@ -406,6 +316,8 @@ on_update_account( GtkButton *button, ofaAccountsChart *self )
 		g_free( prev_number );
 		g_object_unref( account );
 	}
+
+	ofa_account_notebook_grab_focus( self->private->chart_child );
 }
 
 /*
@@ -413,35 +325,36 @@ on_update_account( GtkButton *button, ofaAccountsChart *self )
  * confirmation de l'utilisateur
  */
 static void
-on_delete_account( GtkButton *button, ofaAccountsChart *self )
+v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 {
 	static const gchar *thisfn = "ofa_accounts_chart_on_delete_account";
+	ofaAccountsChart *self;
 	ofoAccount *account;
 	ofoDossier *dossier;
 
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
+	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( page ));
 
-	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
+	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
 
+	self = OFA_ACCOUNTS_CHART( page );
 	account = ofa_account_notebook_get_selected( self->private->chart_child );
 	if( account ){
 		g_object_unref( account );
 		g_return_if_fail( ofo_account_is_deletable( account ));
 
-		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+		dossier = ofa_main_page_get_dossier( page );
 
 		if( delete_confirmed( self, account ) &&
 				ofo_account_delete( account, dossier )){
 
-			/* update our chart of accounts */
-			ofa_main_page_set_dataset(
-					OFA_MAIN_PAGE( self ), ofo_account_get_dataset( dossier ));
-
 			/* remove the row from the model
 			 * this will cause an automatic new selection */
-			ofa_account_notebook_remove( self->private->chart_child, ofo_account_get_number( account ));
+			ofa_account_notebook_remove(
+					self->private->chart_child, ofo_account_get_number( account ));
 		}
 	}
+
+	ofa_account_notebook_grab_focus( self->private->chart_child );
 }
 
 static gboolean

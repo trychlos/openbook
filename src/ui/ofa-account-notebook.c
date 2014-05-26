@@ -519,7 +519,7 @@ setup_first_selection( ofaAccountNotebook *self, const gchar *asked_number )
 
 	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		while( TRUE ){
+		while( TRUE && asked_number && g_utf8_strlen( asked_number, -1 )){
 			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
 			g_object_unref( account );
 			if( g_utf8_collate( ofo_account_get_number( account ), asked_number ) >= 0 ){
@@ -531,10 +531,13 @@ setup_first_selection( ofaAccountNotebook *self, const gchar *asked_number )
 			}
 		}
 	}
-	g_return_if_fail( gtk_list_store_iter_is_valid( GTK_LIST_STORE( tmodel ), &iter ));
 
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
-	gtk_tree_selection_select_iter( select, &iter );
+	if( gtk_list_store_iter_is_valid( GTK_LIST_STORE( tmodel ), &iter )){
+		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
+		gtk_tree_selection_select_iter( select, &iter );
+	}
+
+	gtk_widget_grab_focus( GTK_WIDGET( tview ));
 }
 
 static void
@@ -624,6 +627,24 @@ ofa_account_notebook_get_selected( ofaAccountNotebook *self )
 	}
 
 	return( account );
+}
+
+/**
+ * ofa_account_notebook_grab_focus:
+ *
+ * Reset the focus on the treeview.
+ */
+void
+ofa_account_notebook_grab_focus( ofaAccountNotebook *self )
+{
+	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
+
+	if( !self->private->dispose_has_run && self->private->view ){
+
+		g_return_if_fail( GTK_IS_TREE_VIEW( self->private->view ));
+
+		gtk_widget_grab_focus( GTK_WIDGET( self->private->view ));
+	}
 }
 
 /**

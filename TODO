@@ -117,14 +117,6 @@
                 for storing date, amounts and rates) - this is rather
                 a configuration information than actually a user pref..
 
-  62 2014- 5-19 review all the rates management:
-                there should be a master record (the rate) and child
-                records (the different periods of validity)
-
-  63 2014- 5-19 TauxPropertiesDlg: second column of grid seems to extends,
-                but shouldn't. Labels on the third column are correctly 
-                left-aligned but shifted on the right 
-
   64 2014- 5-19 there is no need to store the dataset in the ofaMainPage
                 as the TreeModel is enough to store the data
 
@@ -135,6 +127,8 @@
 
   70 2014- 5-19 EntryModel properties: implement Remove with a user
                 confirmation.
+     2014- 5-26 no confirmation needed as it is enough for the user to
+                hit the Cancel key to cancel its modifications
 
   74 2014- 5-21 Guided input: when quitting the dialog with Escape
                 while the focus is on an Account entry, then the
@@ -176,15 +170,6 @@
                 may be deleted at any time while it is empty -
                 so reclass the entry models on journal-changed signal
 
-  98 2014- 5-22 refactoring of ofoBase which maintains the dataset
-                as a private data of the class
-                -> ofoJournal - done svn #3480
-                -> ofoDevise - done svn #3483
-                -> ofoAccount - done svn #3484
-                -> ofoTaux - done
-                -> ofoModel -> done svn #3485
-                -> ofoEntry
-
  100 2014- 5-24 add a ofo_sgbd_query_1_1 method which takes a query and
                 returns the first column of the first row as an integer
                 applications are: <class>_get_back_id 
@@ -202,10 +187,12 @@
 
  111 2014- 5-26 ofo_taux_get_val_rate_by_date
 
- 112 2014- 5-26 dispose_has_run is a protected data of the ofoBase
-                base class
+ 113 2014- 5-26 have a base class for properties dialogs
 
- 113
+ 114 2014- 5-26 dispose_has_run should be a protected data of the
+                ofaMainPage base class
+
+ 115
 
 -----------------------------------------------------------------------
  DONE
@@ -322,6 +309,16 @@
                 french locale 
      2014- 5-22 done
 
+  62 2014- 5-19 review all the rates management:
+                there should be a master record (the rate) and child
+                records (the different periods of validity)
+     2014- 5-26 done
+
+  63 2014- 5-19 TauxPropertiesDlg: second column of grid seems to extends,
+                but shouldn't. Labels on the third column are correctly 
+                left-aligned but shifted on the right 
+     2014- 5-26 done
+
   66 2014- 5-19 Entry model properties - check_enable_dlg
                 check that detail lines are ok (enough and balanced).
      2014- 5-22 done
@@ -387,6 +384,15 @@
   97 2014- 5-22 journals set: add a 'view entries' function 
      2014- 5-24 done - svn #3496
 
+  98 2014- 5-22 refactoring of ofoBase which maintains the dataset
+                as a private data of the class
+                -> ofoJournal - done svn #3480
+                -> ofoDevise - done svn #3483
+                -> ofoAccount - done svn #3484
+                -> ofoTaux - done
+                -> ofoModel -> done svn #3485
+                -> ofoEntry
+
   99 2014- 5-23 when loading Journal, only load for the current exercice
      2014- 5-24 done: for now, load all what is exists
 
@@ -413,6 +419,10 @@
 
  110 2014- 5-25 p1-last-update -> px-last-update
      2014- 5-25 done - svn #3500
+
+ 112 2014- 5-26 dispose_has_run is a protected data of the ofoBase
+                base class
+     2014 -5-26 done svn #3506
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

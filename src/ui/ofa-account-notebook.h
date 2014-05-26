@@ -111,6 +111,8 @@ ofaAccountNotebook *ofa_account_notebook_init_dialog ( ofaAccountNotebookParms *
 
 ofoAccount         *ofa_account_notebook_get_selected( ofaAccountNotebook *self );
 
+void                ofa_account_notebook_grab_focus  ( ofaAccountNotebook *self );
+
 gboolean            ofa_account_notebook_insert      ( ofaAccountNotebook *self, ofoAccount *account );
 
 gboolean            ofa_account_notebook_remove      ( ofaAccountNotebook *self, const gchar *number );
