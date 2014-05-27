@@ -481,7 +481,7 @@ ofo_entry_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_ECRITURES " );
 
 	g_string_append_printf( query,
-			"	(ECR_EFFET,ECR_NUMBER,ECR_OPE,ECR_LABEL,ECR_REF,ECR_COMPTE,"
+			"	(ECR_DEFFET,ECR_NUMBER,ECR_DOPE,ECR_LABEL,ECR_REF,ECR_COMPTE,"
 			"	ECR_DEV_ID,ECR_JOU_ID,ECR_MONTANT,ECR_SENS,ECR_STATUS,"
 			"	ECR_MAJ_USER, ECR_MAJ_STAMP) "
 			"	VALUES ('%s',%d,'%s','%s',",

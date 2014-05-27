@@ -512,9 +512,9 @@ on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet
 static void
 on_model_selected( GtkTreeSelection *selection, ofaModelsSet *self )
 {
-	static const gchar *thisfn = "ofa_models_set_on_model_selected";
+	/*static const gchar *thisfn = "ofa_models_set_on_model_selected";*/
 
-	g_debug( "%s: selection=%p, self=%p", thisfn, ( void * ) selection, ( void * ) self );
+	/*g_debug( "%s: selection=%p, self=%p", thisfn, ( void * ) selection, ( void * ) self );*/
 
 	enable_buttons( self, selection );
 }
@@ -522,21 +522,22 @@ on_model_selected( GtkTreeSelection *selection, ofaModelsSet *self )
 static void
 enable_buttons( ofaModelsSet *self, GtkTreeSelection *selection )
 {
-	static const gchar *thisfn = "ofa_models_set_enable_buttons";
+	/*static const gchar *thisfn = "ofa_models_set_enable_buttons";*/
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoModel *model;
 	gboolean select_ok;
 
-	g_debug( "%s: self=%p, selection=%p", thisfn, ( void * ) self, ( void * ) selection );
+	/*g_debug( "%s: self=%p, selection=%p", thisfn, ( void * ) self, ( void * ) selection );*/
 
 	select_ok = gtk_tree_selection_get_selected( selection, &tmodel, &iter );
-	g_debug( "%s: select_ok=%s", thisfn, select_ok ? "True":"False" );
+
+	/*g_debug( "%s: select_ok=%s", thisfn, select_ok ? "True":"False" );*/
 
 	if( select_ok ){
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
 		g_object_unref( model );
-		g_debug( "%s: current selection is %s", thisfn, ofo_model_get_mnemo( model ));
+		/*g_debug( "%s: current selection is %s", thisfn, ofo_model_get_mnemo( model ));*/
 
 		gtk_widget_set_sensitive(
 				ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),

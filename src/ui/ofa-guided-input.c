@@ -37,6 +37,7 @@
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-journal.h"
 #include "ui/ofo-taux.h"
 
 /* private class data
@@ -59,6 +60,10 @@ struct _ofaGuidedInputPrivate {
 	GtkDialog      *dialog;
 	const ofoModel *model;
 	GtkGrid        *view;				/* entries view container */
+	gboolean        deffet_has_focus;
+	gboolean        deffet_changed_while_focus;
+	GDate           last_closed_exe;
+	GDate           last_closing;		/* max of closed exercice and closed journal */
 
 	/* data
 	 */
@@ -138,6 +143,7 @@ static sColumnDef st_col_defs[] = {
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-guided-input.ui";
 static const gchar  *st_ui_id        = "GuidedInputDlg";
 
+static GDate         st_last_dope    = { 0 };
 static GObjectClass *st_parent_class = NULL;
 
 static GType     register_type( void );
@@ -156,7 +162,11 @@ static const sColumnDef *find_column_def_from_col_id( ofaGuidedInput *self, gint
 static const sColumnDef *find_column_def_from_letter( ofaGuidedInput *self, gchar letter );
 static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self );
 static void      on_dope_changed( GtkEntry *entry, ofaGuidedInput *self );
+static gboolean  on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
+static gboolean  on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
 static void      on_deffet_changed( GtkEntry *entry, ofaGuidedInput *self );
+static gboolean  on_deffet_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
+static gboolean  on_deffet_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
 static void      on_button_clicked( GtkButton *button, ofaGuidedInput *self );
 static void      on_entry_changed( GtkEntry *entry, ofaGuidedInput *self );
 static gboolean  on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
@@ -164,6 +174,7 @@ static gboolean  on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuided
 static gboolean  on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInput *self );
 static void      check_for_account( ofaGuidedInput *self, GtkEntry *entry  );
 static void      check_for_enable_dlg( ofaGuidedInput *self );
+static gboolean  are_fields_validable( ofaGuidedInput *self );
 static void      update_all_formulas( ofaGuidedInput *self );
 static void      update_formula( ofaGuidedInput *self, const gchar *formula, GtkEntry *entry );
 static gdouble   compute_formula_solde( ofaGuidedInput *self, gint column_id, gint row );
@@ -338,6 +349,8 @@ do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel 
 	GtkBuilder *builder;
 	ofaGuidedInputPrivate *priv;
 	GtkWidget *entry;
+	gchar *str;
+	const GDate *date;
 
 	priv = self->private;
 	priv->main_window = main;
@@ -364,13 +377,29 @@ do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel 
 
 		init_dialog_journal( self );
 
+		date = ofo_dossier_get_last_closed_exercice(
+							ofa_main_window_get_dossier( self->private->main_window ));
+		if( date ){
+			memcpy( &self->private->last_closed_exe, date, sizeof( GDate ));
+		}
+
+		memcpy( &self->private->last_closing, &self->private->last_closed_exe, sizeof( GDate ));
+
+		memcpy( &self->private->dope, &st_last_dope, sizeof( GDate ));
+		str = my_utils_display_from_date( &self->private->dope, MY_UTILS_DATE_DDMM );
 		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-dope" );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		gtk_entry_set_text( GTK_ENTRY( entry ), str );
+		g_free( str );
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_dope_changed ), self );
+		g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), self );
+		g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
 
 		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_deffet_changed ), self );
+		g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_deffet_focus_in ), self );
+		g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_deffet_focus_out ), self );
 
 		init_dialog_entries( self );
 
@@ -592,31 +621,96 @@ find_column_def_from_letter( ofaGuidedInput *self, gchar letter )
 
 /*
  * ofaJournalCombo callback
+ *
+ * setup the last closing date as the maximum of :
+ * - the last exercice closing date
+ * - the last journal closing date
+ *
+ * this last closing date is the lower limit of the effect dates
  */
 static void
 on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self )
 {
+	ofoDossier *dossier;
+	ofoJournal *journal;
+	gint exe_id;
+	const GDate *date;
+
 	self->private->journal_id = id;
 
+	dossier = ofa_main_window_get_dossier( self->private->main_window );
+	journal = ofo_journal_get_by_id( dossier, id );
+	memcpy( &self->private->last_closing, &self->private->last_closed_exe, sizeof( GDate ));
+
+	if( journal ){
+		exe_id = ofo_dossier_get_exercice_id( dossier );
+		date = ofo_journal_get_cloture( journal, exe_id );
+		if( date && g_date_valid( date )){
+			if( g_date_valid( &self->private->last_closed_exe )){
+				if( g_date_compare( date, &self->private->last_closed_exe ) > 0 ){
+					memcpy( &self->private->last_closing, date, sizeof( GDate ));
+				}
+			} else {
+				memcpy( &self->private->last_closing, date, sizeof( GDate ));
+			}
+		}
+	}
+
 	check_for_enable_dlg( self );
+}
+
+/*
+ * setting the deffet also triggers the change signal of the deffet
+ * field (and so the comment)
+ * => we should only react to the content while the focus is in the
+ *    field
+ * More, we shouldn't triggers an automatic changes to a field which
+ * has been manually modified
+ */
+static void
+set_date_comment( ofaGuidedInput *self, const gchar *label, const GDate *date )
+{
+	gchar *str, *comment;
+
+	str = my_utils_display_from_date( date, MY_UTILS_DATE_DMMM );
+	if( !g_utf8_strlen( str, -1 )){
+		g_free( str );
+		str = g_strdup( _( "invalid" ));
+	}
+	comment = g_strdup_printf( "%s : %s", label, str );
+	set_comment( self, comment );
+	g_free( comment );
+	g_free( str );
 }
 
 static void
 on_dope_changed( GtkEntry *entry, ofaGuidedInput *self )
 {
-	gchar *str, *comment;
+	/*static const gchar *thisfn = "ofa_guided_input_on_dope_changed";*/
 	GtkWidget *wdeff;
+	gchar *str;
 
+	/*g_debug( "%s: entry=%p, self=%p", thisfn, ( void * ) entry, ( void * ) self );*/
+
+	/* check the operation date */
 	g_date_set_parse( &self->private->dope, gtk_entry_get_text( entry ));
+	set_date_comment( self, _( "Operation date" ), &self->private->dope );
 
-	str = my_utils_display_from_date( &self->private->dope, MY_UTILS_DATE_DMMM );
-	comment = g_strdup_printf( "Operation date: %s", str );
-	set_comment( self, comment );
-	g_free( comment );
-	g_free( str );
+	/* setup the effect date if it has not been manually changed */
+	if( g_date_valid( &self->private->dope ) &&
+			!self->private->deffet_changed_while_focus ){
 
-	if( g_date_valid( &self->private->dope )){
-		str = my_utils_display_from_date( &self->private->dope, MY_UTILS_DATE_DDMM );
+		if( g_date_valid( &self->private->last_closing ) &&
+			g_date_compare( &self->private->last_closing, &self->private->dope ) > 0 ){
+
+			memcpy( &self->private->deff, &self->private->last_closing, sizeof( GDate ));
+			g_date_add_days( &self->private->deff, 1 );
+
+		} else {
+			memcpy( &self->private->deff, &self->private->dope, sizeof( GDate ));
+		}
+
+		str = my_utils_display_from_date( &self->private->deff, MY_UTILS_DATE_DDMM );
 		wdeff = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
 		if( entry && GTK_IS_WIDGET( wdeff )){
 			gtk_entry_set_text( GTK_ENTRY( wdeff ), str );
@@ -627,20 +721,78 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInput *self )
 	check_for_enable_dlg( self );
 }
 
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
+{
+	set_date_comment( self, _( "Operation date" ), &self->private->dope );
+
+	return( FALSE );
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
+{
+	set_comment( self, "" );
+
+	return( FALSE );
+}
+
 static void
 on_deffet_changed( GtkEntry *entry, ofaGuidedInput *self )
 {
-	gchar *str, *comment;
+	/*static const gchar *thisfn = "ofa_guided_input_on_deffet_changed";*/
 
-	g_date_set_parse( &self->private->deff, gtk_entry_get_text( entry ));
+	/* the focus is not set to the entry
+	widget = gtk_window_get_focus( GTK_WINDOW( self->private->main_window ));
+	g_debug( "%s: entry=%p, self=%p, focus_widget=%p",
+			thisfn, ( void * ) entry, ( void * ) self, ( void * ) widget );*/
 
-	str = my_utils_display_from_date( &self->private->deff, MY_UTILS_DATE_DMMM );
-	comment = g_strdup_printf( "Effect date: %s", str );
-	set_comment( self, comment );
-	g_free( comment );
-	g_free( str );
+	if( self->private->deffet_has_focus ){
 
-	check_for_enable_dlg( self );
+		self->private->deffet_changed_while_focus = TRUE;
+		g_date_set_parse( &self->private->deff, gtk_entry_get_text( entry ));
+		set_date_comment( self, _( "Effect date" ), &self->private->deff );
+
+		check_for_enable_dlg( self );
+	}
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_deffet_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
+{
+	self->private->deffet_has_focus = TRUE;
+	set_date_comment( self, _( "Effect date" ), &self->private->deff );
+
+	return( FALSE );
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_deffet_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
+{
+	self->private->deffet_has_focus = FALSE;
+	set_comment( self, "" );
+
+	return( FALSE );
 }
 
 static void
@@ -762,19 +914,29 @@ check_for_enable_dlg( ofaGuidedInput *self )
 	if( self->private->view ){
 		g_return_if_fail( GTK_IS_GRID( self->private->view ));
 
-		update_all_formulas( self );
-		update_all_totals( self );
-
-		ok = TRUE;
-		ok &= check_for_journal( self );
-		ok &= check_for_dates( self );
-		ok &= check_for_all_entries( self );
+		ok = are_fields_validable( self );
 
 		btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
 		if( btn && GTK_IS_BUTTON( btn )){
 			gtk_widget_set_sensitive( btn, ok );
 		}
 	}
+}
+
+static gboolean
+are_fields_validable( ofaGuidedInput *self )
+{
+	gboolean ok;
+
+	update_all_formulas( self );
+	update_all_totals( self );
+
+	ok = TRUE;
+	ok &= check_for_journal( self );
+	ok &= check_for_dates( self );
+	ok &= check_for_all_entries( self );
+
+	return( ok );
 }
 
 static void
@@ -954,12 +1116,12 @@ update_all_totals( ofaGuidedInput *self )
 
 	entry = gtk_grid_get_child_at( self->private->view, COL_DEBIT, count+2 );
 	if( entry && GTK_IS_ENTRY( entry )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), str );
+		gtk_entry_set_text( GTK_ENTRY( entry ), str2 );
 	}
 
 	entry = gtk_grid_get_child_at( self->private->view, COL_CREDIT, count+2 );
 	if( entry && GTK_IS_ENTRY( entry )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), str2 );
+		gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	}
 
 	g_free( str );
@@ -989,15 +1151,28 @@ get_amount( ofaGuidedInput *self, gint col_id, gint row )
 static gboolean
 check_for_journal( ofaGuidedInput *self )
 {
-	return( self->private->journal_id > 0 );
+	static const gchar *thisfn = "ofa_guided_input_check_for_journal";
+	gboolean ok;
+
+	ok = self->private->journal_id > 0;
+	if( !ok ){
+		g_debug( "%s: journal_id=%d", thisfn, self->private->journal_id );
+	}
+
+	return( ok );
 }
 
 /*
- * Returns TRUE if the dates are set
+ * Returns TRUE if the dates are set and valid
+ *
+ * The first valid effect date is older than:
+ * - the last exercice closing date of the dossier (if set)
+ * - the last closing date of the journal (if set)
  */
 static gboolean
 check_for_dates( ofaGuidedInput *self )
 {
+	static const gchar *thisfn = "ofa_guided_input_check_for_dates";
 	gboolean ok, oki;
 	GtkWidget *entry;
 
@@ -1008,12 +1183,26 @@ check_for_dates( ofaGuidedInput *self )
 	oki = g_date_valid( &self->private->dope );
 	my_utils_entry_set_valid( GTK_ENTRY( entry ), oki );
 	ok &= oki;
+	if( !oki ){
+		g_debug( "%s: operation date is invalid", thisfn );
+	}
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	oki = g_date_valid( &self->private->deff );
 	my_utils_entry_set_valid( GTK_ENTRY( entry ), oki );
 	ok &= oki;
+	if( !oki ){
+		g_debug( "%s: effect date is invalid", thisfn );
+	}
+
+	if( g_date_valid( &self->private->last_closing )){
+		oki = g_date_compare( &self->private->last_closing, &self->private->deff ) < 0;
+		ok &= oki;
+		if( !oki ){
+			g_debug( "%s: effect date less than last closing", thisfn );
+		}
+	}
 
 	return( ok );
 }
@@ -1031,7 +1220,8 @@ check_for_dates( ofaGuidedInput *self )
 static gboolean
 check_for_all_entries( ofaGuidedInput *self )
 {
-	gboolean ok;
+	static const gchar *thisfn = "ofa_guided_input_check_for_all_entries";
+	gboolean ok, oki;
 	gint count, idx;
 	gdouble deb, cred;
 
@@ -1048,7 +1238,19 @@ check_for_all_entries( ofaGuidedInput *self )
 		}
 	}
 
-	ok &= (self->private->total_debits != 0.0 || self->private->total_credits != 0.0 );
+	oki = self->private->total_debits == self->private->total_credits;
+	ok &= oki;
+	if( !oki ){
+		g_debug( "%s: totals are not equal: debits=%2.lf, credits=%.2lfs",
+				thisfn, self->private->total_debits, self->private->total_credits );
+	}
+
+	oki= (self->private->total_debits != 0.0 || self->private->total_credits != 0.0 );
+	ok &= oki;
+	if( !oki ){
+		g_debug( "%s: one total is nul: debits=%2.lf, credits=%.2lfs",
+				thisfn, self->private->total_debits, self->private->total_credits );
+	}
 
 	return( ok );
 }
@@ -1056,7 +1258,8 @@ check_for_all_entries( ofaGuidedInput *self )
 static gboolean
 check_for_entry( ofaGuidedInput *self, gint row )
 {
-	gboolean ok;
+	static const gchar *thisfn = "ofa_guided_input_check_for_entry";
+	gboolean ok, oki;
 	GtkWidget *entry;
 	ofoAccount *account;
 	const gchar *str;
@@ -1069,12 +1272,20 @@ check_for_entry( ofaGuidedInput *self, gint row )
 	account = ofo_account_get_by_number(
 			ofa_main_window_get_dossier( self->private->main_window ),
 			gtk_entry_get_text( GTK_ENTRY( entry )));
-	ok &= ( account && OFO_IS_ACCOUNT( account ));
+	oki = ( account && OFO_IS_ACCOUNT( account ));
+	ok &= oki;
+	if( !oki ){
+		g_debug( "%s: account number=%s", thisfn, gtk_entry_get_text( GTK_ENTRY( entry )));
+	}
 
 	entry = gtk_grid_get_child_at( self->private->view, COL_LABEL, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	str = gtk_entry_get_text( GTK_ENTRY( entry ));
-	ok &= ( str && g_utf8_strlen( str, -1 ));
+	oki = ( str && g_utf8_strlen( str, -1 ));
+	ok &= oki;
+	if( !oki ){
+		g_debug( "%s: label=%s", thisfn, gtk_entry_get_text( GTK_ENTRY( entry )));
+	}
 
 	return( ok );
 }
@@ -1102,6 +1313,8 @@ do_update( ofaGuidedInput *self )
 	gdouble deb, cred;
 	const gchar *piece;
 
+	g_return_val_if_fail( are_fields_validable( self ), FALSE );
+
 	ok = TRUE;
 
 	piece = NULL;
@@ -1121,6 +1334,8 @@ do_update( ofaGuidedInput *self )
 			}
 		}
 	}
+
+	memcpy( &st_last_dope, &self->private->dope, sizeof( GDate ));
 
 	return( ok );
 }

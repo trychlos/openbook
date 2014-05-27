@@ -56,6 +56,10 @@ struct _ofoDossierPrivate {
 	gint      exe_id;					/* current exercice identifier */
 	GDate     exe_deb;					/* début d'exercice */
 	GDate     exe_fin;					/* fin d'exercice */
+
+	/* other datas
+	 */
+	GDate     last_closed_exe;
 };
 
 G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
@@ -70,6 +74,7 @@ G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
 static gint     dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static gint     entry_get_next_number( ofoDossier *dossier );
+static void     set_last_closed_exercice( const ofoDossier *dossier );
 
 static void
 ofo_dossier_finalize( GObject *instance )
@@ -127,6 +132,8 @@ ofo_dossier_init( ofoDossier *self )
 	self->priv = OFO_DOSSIER_GET_PRIVATE( self );
 
 	self->priv->dispose_has_run = FALSE;
+
+	g_date_clear( &self->priv->last_closed_exe, 1 );
 }
 
 static void
@@ -652,6 +659,48 @@ ofo_dossier_get_exercice_id( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_last_closed_exercice:
+ *
+ * Returns: the last closing date of an exercice, or a zero-ed date
+ * if there is no previous exercice.
+ */
+const GDate *
+ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !dossier->priv->dispose_has_run ){
+
+		if( !g_date_valid( &dossier->priv->last_closed_exe )){
+
+			set_last_closed_exercice( dossier );
+		}
+		return(( const GDate * ) &dossier->priv->last_closed_exe );
+	}
+
+	return( NULL );
+}
+
+static void
+set_last_closed_exercice( const ofoDossier *dossier )
+{
+	GSList *result, *icol;
+
+	result = ofo_sgbd_query_ex( dossier->priv->sgbd,
+					"SELECT MAX(DOS_EXE_FIN) FROM OFA_T_DOSSIER_EXE "
+					"	WHERE DOS_EXE_STATUS=2" );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		if( icol->data ){
+			memcpy( &dossier->priv->last_closed_exe,
+						my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+		}
+		ofo_sgbd_free_result( result );
+	}
+}
+
+/**
  * ofo_dossier_entry_insert:
  */
 #include "ui/ofo-journal.h"
@@ -700,7 +749,7 @@ entry_get_next_number( ofoDossier *dossier )
 	next_number = 1;
 
 	query = g_strdup_printf(
-			"SELECT DOS_EXE_ECR FROM OFA_T_DOSSIER_EXE "
+			"SELECT DOS_EXE_LAST_ECR FROM OFA_T_DOSSIER_EXE "
 			"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
 					THIS_DOS_ID, DOS_STATUS_OPENED );
 
@@ -715,7 +764,7 @@ entry_get_next_number( ofoDossier *dossier )
 		next_number += 1;
 		query = g_strdup_printf(
 				"UPDATE OFA_T_DOSSIER_EXE "
-				"	SET DOS_EXE_ECR=%d "
+				"	SET DOS_EXE_LAST_ECR=%d "
 				"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
 						next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
 
