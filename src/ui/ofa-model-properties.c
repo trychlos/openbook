@@ -652,22 +652,26 @@ add_button( ofaModelProperties *self, const gchar *stock_id, gint column, gint r
 static void
 update_detail_buttons( ofaModelProperties *self )
 {
-	gint row;
 	GtkWidget *button;
 
-	row = self->private->count;
+	if( self->private->count >= 1 ){
 
-	if( row >= 1 ){
-
-		button = gtk_grid_get_child_at( self->private->grid, DET_COL_UP, 1 );
+		button = gtk_grid_get_child_at(
+						self->private->grid, DET_COL_UP, 1 );
 		gtk_widget_set_sensitive( button, FALSE );
 
-		if( row > 1 ){
-			button = gtk_grid_get_child_at( self->private->grid, DET_COL_DOWN, row-1 );
+		if( self->private->count >= 2 ){
+			button = gtk_grid_get_child_at(
+							self->private->grid, DET_COL_UP, 2 );
+			gtk_widget_set_sensitive( button, TRUE );
+
+			button = gtk_grid_get_child_at(
+							self->private->grid, DET_COL_DOWN, self->private->count-1 );
 			gtk_widget_set_sensitive( button, TRUE );
 		}
 
-		button = gtk_grid_get_child_at( self->private->grid, DET_COL_DOWN, row );
+		button = gtk_grid_get_child_at(
+						self->private->grid, DET_COL_DOWN, self->private->count );
 		gtk_widget_set_sensitive( button, FALSE );
 	}
 }
@@ -770,9 +774,38 @@ check_for_enable_dlg( ofaModelProperties *self )
 }
 
 static void
+exchange_rows( ofaModelProperties *self, gint row_a, gint row_b )
+{
+	gint i;
+	GtkWidget *w_a, *w_b;
+
+	for( i=0 ; i<DET_N_COLUMNS ; ++i ){
+
+		w_a = gtk_grid_get_child_at( self->private->grid, i, row_a );
+		g_object_ref( w_a );
+		gtk_container_remove( GTK_CONTAINER( self->private->grid ), w_a );
+
+		w_b = gtk_grid_get_child_at( self->private->grid, i, row_b );
+		g_object_ref( w_b );
+		gtk_container_remove( GTK_CONTAINER( self->private->grid ), w_b );
+
+		gtk_grid_attach( self->private->grid, w_a, i, row_b, 1, 1 );
+		g_object_set_data( G_OBJECT( w_a ), DATA_ROW, GINT_TO_POINTER( row_b ));
+
+		gtk_grid_attach( self->private->grid, w_b, i, row_a, 1, 1 );
+		g_object_set_data( G_OBJECT( w_b ), DATA_ROW, GINT_TO_POINTER( row_a ));
+
+		g_object_unref( w_a );
+		g_object_unref( w_b );
+	}
+
+	update_detail_buttons( self );
+}
+
+static void
 on_button_clicked( GtkButton *button, ofaModelProperties *self )
 {
-	static const gchar *thisfn = "ofa_model_properties_on_button_clicked";
+	/*static const gchar *thisfn = "ofa_model_properties_on_button_clicked";*/
 	gint column, row;
 
 	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_COLUMN ));
@@ -783,10 +816,12 @@ on_button_clicked( GtkButton *button, ofaModelProperties *self )
 			add_empty_row( self );
 			break;
 		case DET_COL_UP:
-			g_warning( "%s: DET_COL_GO_UP", thisfn );
+			g_return_if_fail( row > 1 );
+			exchange_rows( self, row, row-1 );
 			break;
 		case DET_COL_DOWN:
-			g_warning( "%s: DET_COL_GO_DOWN", thisfn );
+			g_return_if_fail( row < self->private->count );
+			exchange_rows( self, row, row+1 );
 			break;
 		case DET_COL_REMOVE:
 			remove_row( self, row );
