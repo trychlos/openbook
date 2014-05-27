@@ -61,14 +61,15 @@ struct _ofaAccountSelectPrivate {
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-account-select.ui";
 static const gchar  *st_ui_id        = "AccountSelectDlg";
 
-static GObjectClass *st_parent_class = NULL;
+static ofaAccountSelect *st_this         = NULL;
+static GObjectClass     *st_parent_class = NULL;
 
 static GType    register_type( void );
 static void     class_init( ofaAccountSelectClass *klass );
 static void     instance_init( GTypeInstance *instance, gpointer klass );
 static void     instance_dispose( GObject *instance );
 static void     instance_finalize( GObject *instance );
-static void     do_initialize_dialog( ofaAccountSelect *self, const gchar *asked_number );
+static void     do_initialize_dialog( ofaAccountSelect *self );
 static gboolean ok_to_terminate( ofaAccountSelect *self, gint code );
 static void     on_account_activated( const gchar *number, ofaAccountSelect *self );
 static void     check_for_enable_dlg( ofaAccountSelect *self );
@@ -171,6 +172,14 @@ instance_dispose( GObject *instance )
 }
 
 static void
+on_main_window_finalized( gpointer is_null, gpointer this_was_the_dialog )
+{
+	g_return_if_fail( st_this && OFA_IS_ACCOUNT_SELECT( st_this ));
+	g_object_unref( st_this );
+	st_this = NULL;
+}
+
+static void
 instance_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_account_select_instance_finalize";
@@ -204,38 +213,46 @@ gchar *
 ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
-	ofaAccountSelect *self;
 	gint code;
-	gchar *number;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
 	g_debug( "%s: main_window=%p, asked_number=%s",
 			thisfn, ( void * ) main_window, asked_number );
 
-	self = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
+	if( !st_this ){
 
-	self->private->main_window = main_window;
+		st_this = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
+		st_this->private->main_window = main_window;
+		do_initialize_dialog( st_this );
 
-	do_initialize_dialog( self, asked_number );
+		/* setup a weak reference on the main window to auto-unref */
+		g_object_weak_ref( G_OBJECT( main_window ), ( GWeakNotify ) on_main_window_finalized, NULL );
+	}
+
+	gtk_widget_show_all( GTK_WIDGET( st_this->private->dialog ));
+
+	g_free( st_this->private->account_number );
+	st_this->private->account_number = NULL;
+
+	ofa_account_notebook_set_selected( st_this->private->child, asked_number );
+	check_for_enable_dlg( st_this );
 
 	g_debug( "%s: call gtk_dialog_run", thisfn );
 	do {
-		code = gtk_dialog_run( self->private->dialog );
+		code = gtk_dialog_run( st_this->private->dialog );
 		g_debug( "%s: gtk_dialog_run code=%d", thisfn, code );
 		/* pressing Escape key makes gtk_dialog_run returns -4 GTK_RESPONSE_DELETE_EVENT */
 	}
-	while( !ok_to_terminate( self, code ));
+	while( !ok_to_terminate( st_this, code ));
 
-	number = g_strdup( self->private->account_number );
+	gtk_widget_hide( GTK_WIDGET( st_this->private->dialog ));
 
-	g_object_unref( self );
-
-	return( number );
+	return( g_strdup( st_this->private->account_number ));
 }
 
 static void
-do_initialize_dialog( ofaAccountSelect *self, const gchar *asked_number )
+do_initialize_dialog( ofaAccountSelect *self )
 {
 	static const gchar *thisfn = "ofa_account_select_do_initialize_dialog";
 	GError *error;
@@ -276,10 +293,8 @@ do_initialize_dialog( ofaAccountSelect *self, const gchar *asked_number )
 		parms.user_data_double_clic = self;
 
 		priv->child = ofa_account_notebook_init_dialog( &parms );
-		gtk_widget_show_all( GTK_WIDGET( priv->dialog ));
-		ofa_account_notebook_init_view( priv->child, asked_number );
 
-		check_for_enable_dlg( self );
+		ofa_account_notebook_init_view( st_this->private->child, NULL );
 	}
 }
 

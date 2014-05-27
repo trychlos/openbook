@@ -112,6 +112,8 @@ void                ofa_account_notebook_init_view   ( ofaAccountNotebook *self,
 
 ofoAccount         *ofa_account_notebook_get_selected( ofaAccountNotebook *self );
 
+void                ofa_account_notebook_set_selected( ofaAccountNotebook *self, const gchar *number );
+
 void                ofa_account_notebook_grab_focus  ( ofaAccountNotebook *self );
 
 gboolean            ofa_account_notebook_insert      ( ofaAccountNotebook *self, ofoAccount *account );

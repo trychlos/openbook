@@ -741,6 +741,18 @@ ofa_account_notebook_get_selected( ofaAccountNotebook *self )
 }
 
 /**
+ * ofa_account_notebook_set_selected:
+ *
+ * Let the user reset the selection after the end of setup and
+ * initialization phases
+ */
+void
+ofa_account_notebook_set_selected( ofaAccountNotebook *self, const gchar *number )
+{
+	setup_first_selection( self, number );
+}
+
+/**
  * ofa_account_notebook_grab_focus:
  *
  * Reset the focus on the treeview.

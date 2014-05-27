@@ -177,9 +177,6 @@
 
  118 2014- 5-27 ofaGuidedInput: implement account selection
 
- 119 2014- 5-27 ofaAccountNotebook: scroll the view for display the
-                initial selection
-
  120
 
 -----------------------------------------------------------------------
@@ -441,6 +438,10 @@
  115 2014- 5-26 it seems that an account cannot be finalized after 
                 having be udated in AccountsChart (ref count issue ?)
      2014- 5-26 done - svn#3509
+
+ 119 2014- 5-27 ofaAccountNotebook: scroll the view for display the
+                initial selection
+     2014- 5-27 done - svn #3512
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
