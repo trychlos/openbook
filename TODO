@@ -128,9 +128,6 @@
 
   80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
 
-  84 2014- 5-21 Port the GuidedInput code model to ModelProperties
-                (GtkGrid+GtkEntry instead of GtkTreeView)
-
   85 2014- 5-21 Color the frame of the invalid GtkEntry
                 + set data "ofa-data-entry-valid"
                 + my_utils_entry_is_valid
@@ -369,6 +366,10 @@
   83 2014- 5-21 account notebook: display sum of validated+rough
                 balances
      2014- 5-22 Done svn# 3478
+
+  84 2014- 5-21 Port the GuidedInput code model to ModelProperties
+                (GtkGrid+GtkEntry instead of GtkTreeView)
+     2014- 5-27 done - svn #3511
 
   87 2014- 5-22 Guided input: check that the selected account is of
                 type detail

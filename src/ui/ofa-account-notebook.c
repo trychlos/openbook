@@ -547,6 +547,7 @@ setup_first_selection( ofaAccountNotebook *self, const gchar *asked_number )
 	GtkWidget *tview;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
+	GtkTreePath *path;
 	GtkTreeSelection *select;
 	gchar *model_number;
 	gint cmp;
@@ -583,11 +584,14 @@ setup_first_selection( ofaAccountNotebook *self, const gchar *asked_number )
 	}
 
 	if( gtk_list_store_iter_is_valid( GTK_LIST_STORE( tmodel ), &iter )){
+		path = gtk_tree_model_get_path( tmodel, &iter );
+		gtk_tree_view_scroll_to_cell( GTK_TREE_VIEW( tview ), path, NULL, FALSE, 0, 0 );
+		gtk_tree_path_free( path );
 		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
 		gtk_tree_selection_select_iter( select, &iter );
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+	gtk_widget_grab_focus( tview );
 }
 
 /*
