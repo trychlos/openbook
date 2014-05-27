@@ -187,8 +187,7 @@
  114 2014- 5-26 dispose_has_run should be a protected data of the
                 ofaMainPage base class
 
- 115 2014- 5-26 it seems that an account cannot be finalized after 
-                having be udated in AccountsChart (ref count issue ?)
+ 116 2014- 5-26 only include '-def.h' header files in the headers
 
 -----------------------------------------------------------------------
  DONE
@@ -426,7 +425,9 @@
                 base class
      2014 -5-26 done svn #3506
 
- 113 2014- 5-26 only include '-def.h' header files in the headers
+ 115 2014- 5-26 it seems that an account cannot be finalized after 
+                having be udated in AccountsChart (ref count issue ?)
+     2014- 5-26 done - svn#3509
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

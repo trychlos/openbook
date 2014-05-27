@@ -51,10 +51,6 @@ struct _ofaMainPagePrivate {
 	GtkButton     *btn_new;
 	GtkButton     *btn_update;
 	GtkButton     *btn_delete;
-
-	/* are set when run for the first time (page is new)
-	 */
-	GList         *dataset;				/* a g_list_copy of the dataset */
 };
 
 /* class properties
@@ -98,7 +94,6 @@ static void       do_on_update_clicked( GtkButton *button, ofaMainPage *page );
 static void       do_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static void       on_journal_changed_class_handler( ofaMainPage *page, ofaMainPageUpdateType type, ofoBase *journal );
 static void       on_grid_finalized( ofaMainPage *self, GObject *grid );
-static void       main_page_free_dataset( const ofaMainPage *page );
 
 GType
 ofa_main_page_get_type( void )
@@ -242,11 +237,13 @@ static void
 instance_constructed( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_main_page_instance_constructed";
+	ofaMainPage *self;
 	ofaMainPagePrivate *priv;
 
 	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
 
-	priv = ( OFA_MAIN_PAGE( instance ))->private;
+	self = OFA_MAIN_PAGE( instance );
+	priv = self->private;
 
 	/* first, chain up to the parent class */
 	if( G_OBJECT_CLASS( st_parent_class )->constructed ){
@@ -274,7 +271,8 @@ instance_constructed( GObject *instance )
 			OFA_MAIN_PAGE( instance ));
 
 	/* let the child class setup its page */
-	do_setup_page( OFA_MAIN_PAGE( instance ));
+	do_setup_page( self );
+	do_init_view( self );
 }
 
 /*
@@ -369,14 +367,10 @@ instance_dispose( GObject *instance )
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
-
-		main_page_free_dataset( OFA_MAIN_PAGE( instance ));
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->dispose( instance );
 }
 
 static void
@@ -393,10 +387,8 @@ instance_finalize( GObject *instance )
 
 	g_free( self->private );
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->finalize( instance );
 }
 
 static void
@@ -430,7 +422,7 @@ v_setup_page( ofaMainPage *page )
 		gtk_grid_attach( page->private->grid, buttons_box, 1, 0, 1, 1 );
 	}
 
-	do_init_view( page );
+	gtk_widget_show_all( GTK_WIDGET( page->private->grid ));
 }
 
 static GtkWidget *
@@ -680,72 +672,52 @@ on_grid_finalized( ofaMainPage *self, GObject *grid )
  *
  * Each page of the main notebook is built inside of a GtkGrid.
  * This GtkGrid is supposed to hold a GtkTreeView, more or less direcly,
- * maybe via another GtkNotebook (e.g. see #ofAccountsChart).
+ * maybe via another GtkNotebook (e.g. see #ofAccountsChart and
+ * #ofaModelsSet).
+ *
+ * This function should not be called from a 'switch-page' notebook
+ * signal handler, as the current page is not yet set at this time.
  */
-GtkWidget *
+GtkTreeView *
 ofa_main_page_get_treeview( const ofaMainPage *page )
 {
-	GtkWidget *child_book;
-	gint tab_num;
-	GtkWidget *tab;
-	GtkWidget *view;
-
 	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	GtkNotebook *child_book;
+	gint tab_num;
+	GtkWidget *tab_widget;
+	GtkTreeView *tview;
 
-	view = NULL;
+	tview = NULL;
 
 	if( !page->private->dispose_has_run ){
 
-		child_book = my_utils_container_get_child_by_type(
-									GTK_CONTAINER( page->private->grid ), GTK_TYPE_NOTEBOOK );
+		child_book =
+				( GtkNotebook * ) my_utils_container_get_child_by_type(
+													GTK_CONTAINER( page->private->grid ),
+													GTK_TYPE_NOTEBOOK );
 		if( child_book ){
+			g_return_val_if_fail( GTK_IS_NOTEBOOK( child_book ), NULL );
+
 			tab_num = gtk_notebook_get_current_page( GTK_NOTEBOOK( child_book ));
 			if( tab_num < 0 ){
-				tab_num = 0;
+				return( NULL );
 			}
-			tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( child_book ), tab_num );
-			if( tab ){
-				view = my_utils_container_get_child_by_type(
-									GTK_CONTAINER( tab ), GTK_TYPE_TREE_VIEW );
-			}
+
+			tab_widget = gtk_notebook_get_nth_page( GTK_NOTEBOOK( child_book ), tab_num );
+			g_return_val_if_fail( tab_widget && GTK_IS_WIDGET( tab_widget ), NULL );
+
+			tview = ( GtkTreeView * ) my_utils_container_get_child_by_type(
+														GTK_CONTAINER( tab_widget ),
+														GTK_TYPE_TREE_VIEW );
 		}
-		if( !view ){
-			view = my_utils_container_get_child_by_type(
-									GTK_CONTAINER( page->private->grid ), GTK_TYPE_TREE_VIEW );
+		if( !tview ){
+			tview = ( GtkTreeView * ) my_utils_container_get_child_by_type(
+														GTK_CONTAINER( page->private->grid ),
+														GTK_TYPE_TREE_VIEW );
 		}
 	}
 
-	return( view );
-}
-
-/**
- * ofa_main_page_set_dataset:
- */
-void
-ofa_main_page_set_dataset( ofaMainPage *page, GList *dataset )
-{
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
-
-	if( !page->private->dispose_has_run ){
-
-		main_page_free_dataset( page );
-		page->private->dataset = g_list_copy( dataset );
-	}
-}
-
-/*
- * ofa_main_page_free_dataset:
- */
-static void
-main_page_free_dataset( const ofaMainPage *page )
-{
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
-
-	if( page->private->dataset ){
-
-		g_list_free( page->private->dataset );
-		page->private->dataset = NULL;
-	}
+	return( tview );
 }
 
 /**
