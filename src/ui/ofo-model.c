@@ -35,6 +35,7 @@
 #include "ui/ofo-base.h"
 #include "ui/ofo-base-prot.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-journal.h"
 #include "ui/ofo-model.h"
 
 /* priv instance data
@@ -528,6 +529,40 @@ ofo_model_get_notes( const ofoModel *model )
 }
 
 /**
+ * ofo_model_get_maj_user:
+ */
+const gchar *
+ofo_model_get_maj_user( const ofoModel *model )
+{
+	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+
+	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		return(( const gchar * ) model->priv->maj_user );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_model_get_maj_stamp:
+ */
+const GTimeVal *
+ofo_model_get_maj_stamp( const ofoModel *model )
+{
+	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+
+	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		return(( const GTimeVal * ) &model->priv->maj_stamp );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
  * ofo_model_is_deletable:
  */
 gboolean
@@ -541,6 +576,20 @@ ofo_model_is_deletable( const ofoModel *model )
 	}
 
 	return( FALSE );
+}
+
+/**
+ * ofo_model_is_valid:
+ */
+gboolean
+ofo_model_is_valid( const gchar *mnemo, const gchar *label, gint journal_id )
+{
+	g_return_val_if_fail( st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+
+	return( mnemo && g_utf8_strlen( mnemo, -1 ) &&
+			label && g_utf8_strlen( label, -1 ) &&
+			journal_id > 0 &&
+			ofo_journal_get_by_id( OFO_DOSSIER( st_global->dossier ), journal_id ) != NULL );
 }
 
 /**
@@ -656,6 +705,48 @@ ofo_model_set_maj_stamp( ofoModel *model, const GTimeVal *maj_stamp )
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
 		memcpy( &model->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+	}
+}
+
+void
+ofo_model_add_detail( ofoModel *model, const gchar *comment,
+							const gchar *account, gboolean account_locked,
+							const gchar *label, gboolean label_locked,
+							const gchar *debit, gboolean debit_locked,
+							const gchar *credit, gboolean credit_locked )
+{
+	sModDetail *detail;
+
+	g_return_if_fail( OFO_IS_MODEL( model ));
+
+	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		detail = g_new0( sModDetail, 1 );
+		model->priv->details = g_list_append( model->priv->details, detail );
+
+		detail->comment = g_strdup( comment );
+		detail->account = g_strdup( account );
+		detail->account_locked = account_locked;
+		detail->label = g_strdup( label );
+		detail->label_locked = label_locked;
+		detail->debit = g_strdup( debit );
+		detail->debit_locked = debit_locked;
+		detail->credit = g_strdup( credit );
+		detail->credit_locked = credit_locked;
+	}
+}
+
+/**
+ * ofo_model_free_detail_all:
+ */
+void
+ofo_model_free_detail_all( ofoModel *model )
+{
+	g_return_if_fail( model && OFO_IS_MODEL( model ));
+
+	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		details_list_free( model );
 	}
 }
 
@@ -880,58 +971,6 @@ gboolean
 ofo_model_detail_is_formula( const gchar *str )
 {
 	return( str && str[0] == '=' );
-}
-
-/**
- * ofo_model_set_detail:
- */
-void
-ofo_model_set_detail( const ofoModel *model, gint idx, const gchar *comment,
-						const gchar *account, gboolean account_locked,
-						const gchar *label, gboolean label_locked,
-						const gchar *debit, gboolean debit_locked,
-						const gchar *credit, gboolean credit_locked )
-{
-	gint count, i;
-	sModDetail *detail;
-	GList *idet;
-
-	g_return_if_fail( OFO_IS_MODEL( model ));
-
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
-
-		count = g_list_length( model->priv->details );
-		if( idx >= count ){
-			for( i=count ; i<=idx ; ++i ){
-				detail = g_new0( sModDetail, 1 );
-				model->priv->details = g_list_append( model->priv->details, detail );
-			}
-		}
-
-		idet = g_list_nth( model->priv->details, idx );
-		g_return_if_fail( idet );
-
-		detail = ( sModDetail * ) idet->data;
-
-		g_free( detail->comment );
-		detail->comment = g_strdup( comment );
-
-		g_free( detail->account );
-		detail->account = g_strdup( account );
-		detail->account_locked = account_locked;
-
-		g_free( detail->label );
-		detail->label = g_strdup( label );
-		detail->label_locked = label_locked;
-
-		g_free( detail->debit );
-		detail->debit = g_strdup( debit );
-		detail->debit_locked = debit_locked;
-
-		g_free( detail->credit );
-		detail->credit = g_strdup( credit );
-		detail->credit_locked = credit_locked;
-	}
 }
 
 /**

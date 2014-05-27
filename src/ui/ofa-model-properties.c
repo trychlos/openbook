@@ -42,6 +42,22 @@ struct _ofaModelPropertiesClassPrivate {
 };
 
 /* private instance data
+ *
+ * each line of the grid is :
+ * - button 'Add' or line number
+ * - comment
+ * - account entry
+ * - account btn selection
+ * - account locked
+ * - label entry
+ * - label locked
+ * - debit entry
+ * - debit locked
+ * - credit entry
+ * - credit locked
+ * - button up
+ * - button down
+ * - button remove
  */
 struct _ofaModelPropertiesPrivate {
 	gboolean       dispose_has_run;
@@ -55,8 +71,8 @@ struct _ofaModelPropertiesPrivate {
 	GtkDialog       *dialog;
 	ofoModel        *model;
 	ofaJournalCombo *journal_combo;
-	GtkTreeView     *view;				/* the treeview which display the detail lines */
-	gint             count;				/* count of detail lines */
+	GtkGrid         *grid;				/* detail grid */
+	gint             count;				/* count of added detail lines */
 
 	/* result
 	 */
@@ -87,6 +103,7 @@ enum {
 	DET_COL_RANG = 0,
 	DET_COL_COMMENT,
 	DET_COL_ACCOUNT,
+	DET_COL_ACCOUNT_SELECT,
 	DET_COL_ACCOUNT_VER,
 	DET_COL_LABEL,
 	DET_COL_LABEL_VER,
@@ -94,8 +111,22 @@ enum {
 	DET_COL_DEBIT_VER,
 	DET_COL_CREDIT,
 	DET_COL_CREDIT_VER,
+	DET_COL_UP,
+	DET_COL_DOWN,
+	DET_COL_REMOVE,
 	DET_N_COLUMNS
 };
+
+#define DET_COL_ADD                  DET_COL_RANG
+
+/* each widget of the grid brings its row number */
+#define DATA_ROW                     "ofa-data-row"
+
+/* buttons also bring their column number */
+#define DATA_COLUMN                  "ofa-data-column"
+
+/* space between widgets in a detail line */
+#define DETAIL_SPACE                 2
 
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-model-properties.ui";
 static const gchar  *st_ui_id        = "ModelPropertiesDlg";
@@ -113,28 +144,22 @@ static void      init_dialog_title( ofaModelProperties *self );
 static void      init_dialog_mnemo( ofaModelProperties *self );
 static void      init_dialog_label( ofaModelProperties *self );
 static void      init_dialog_journal_locked( ofaModelProperties *self );
-static void      init_dialog_notes( ofaModelProperties *self );
 static void      init_dialog_detail( ofaModelProperties *self );
+static void      insert_new_row( ofaModelProperties *self, gint row );
+static void      add_empty_row( ofaModelProperties *self );
+static void      add_button( ofaModelProperties *self, const gchar *stock_id, gint column, gint row, gint left_margin, gint right_margin );
+static void      signal_row_added( ofaModelProperties *self );
+static void      signal_row_removed( ofaModelProperties *self );
 static gboolean  ok_to_terminate( ofaModelProperties *self, gint code );
 static void      on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaModelProperties *self );
 static void      on_journal_locked_toggled( GtkToggleButton *toggle, ofaModelProperties *self );
-static void      add_detail_row( ofaModelProperties *self, gint idx );
-static void      on_add_clicked( GtkButton *button, ofaModelProperties *self );
-static void      on_description_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self );
-static void      on_account_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self );
-static void      on_label_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self );
-static void      on_debit_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self );
-static void      on_credit_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self );
-static void      on_account_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self );
-static void      on_label_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self );
-static void      on_debit_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self );
-static void      on_credit_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self );
 static void      check_for_enable_dlg( ofaModelProperties *self );
+static void      on_button_clicked( GtkButton *button, ofaModelProperties *self );
+static void      remove_row( ofaModelProperties *self, gint row );
 static gboolean  do_update( ofaModelProperties *self );
-static void      get_detail_list( ofaModelProperties *self );
-static void      error_duplicate( ofaModelProperties *self, ofoModel *existing );
+static void      get_detail_list( ofaModelProperties *self, gint row );
 
 GType
 ofa_model_properties_get_type( void )
@@ -301,7 +326,6 @@ static void
 do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *model, gint journal_id )
 {
 	ofaModelPropertiesPrivate *priv;
-	GtkButton *button;
 	ofaJournalComboParms parms;
 	gboolean is_new;
 	const gchar *mnemo;
@@ -320,7 +344,7 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 	init_dialog_label( self );
 
 	mnemo = ofo_model_get_mnemo( model );
-	is_new = !mnemo || g_utf8_strlen( mnemo, -1 );
+	is_new = !mnemo || !g_utf8_strlen( mnemo, -1 );
 
 	parms.dialog = priv->dialog;
 	parms.dossier = ofa_main_window_get_dossier( main );
@@ -335,11 +359,8 @@ do_initialize_dialog( ofaModelProperties *self, ofaMainWindow *main, ofoModel *m
 	priv->journal_combo = ofa_journal_combo_init_dialog( &parms );
 
 	init_dialog_journal_locked( self );
-	init_dialog_notes( self );
+	my_utils_init_notes_ex( model );
 	init_dialog_detail( self );
-
-	button = GTK_BUTTON( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "btn-add" ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_add_clicked ), self );
 
 	check_for_enable_dlg( self );
 	gtk_widget_show_all( GTK_WIDGET( priv->dialog ));
@@ -396,6 +417,10 @@ init_dialog_title( ofaModelProperties *self )
 
 	gtk_window_set_title( GTK_WINDOW( priv->dialog ), title );
 	g_free( title );
+
+	if( mnemo ){
+		my_utils_init_maj_user_stamp_ex( model );
+	}
 }
 
 static void
@@ -447,158 +472,216 @@ init_dialog_journal_locked( ofaModelProperties *self )
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_journal_locked_toggled ), self );
 }
 
-static void
-init_dialog_notes( ofaModelProperties *self )
-{
-	ofaModelPropertiesPrivate *priv;
-	gchar *notes;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
-
-	priv = self->private;
-
-	notes = g_strdup( ofo_model_get_notes( priv->model ));
-	if( notes ){
-		text = GTK_TEXT_VIEW(
-				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( priv->dialog ), "p3-notes" ));
-		buffer = gtk_text_buffer_new( NULL );
-		gtk_text_buffer_set_text( buffer, notes, -1 );
-		gtk_text_view_set_buffer( text, buffer );
-	}
-}
-
+/*
+ * add one liine per
+ */
 static void
 init_dialog_detail( ofaModelProperties *self )
 {
 	ofaModelPropertiesPrivate *priv;
-	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *text_cell, *toggle_cell;
-	GtkTreeViewColumn *column;
 	gint count, i;
 
 	priv = self->private;
 
-	tview = GTK_TREE_VIEW(
-				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( priv->dialog ), "p1-detail" ));
-	self->private->view = tview;
-
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-				DET_N_COLUMNS,
-				G_TYPE_INT, G_TYPE_STRING,
-				G_TYPE_STRING, G_TYPE_BOOLEAN,
-				G_TYPE_STRING, G_TYPE_BOOLEAN,
-				G_TYPE_STRING, G_TYPE_BOOLEAN,
-				G_TYPE_STRING, G_TYPE_BOOLEAN ));
-
-	gtk_tree_view_set_model( tview, tmodel );
-	g_object_unref( tmodel );
-
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			"",
-			text_cell, "text", DET_COL_RANG,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-
-	text_cell = gtk_cell_renderer_text_new();
-	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Description" ),
-			text_cell, "text", DET_COL_COMMENT,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_description_edited ), self );
-
-	text_cell = gtk_cell_renderer_text_new();
-	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Account" ),
-			text_cell, "text", DET_COL_ACCOUNT,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_min_width( column, 90 );
-	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_account_edited ), self );
-
-	toggle_cell = gtk_cell_renderer_toggle_new();
-	gtk_cell_renderer_toggle_set_activatable( GTK_CELL_RENDERER_TOGGLE( toggle_cell ), TRUE );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Lock" ),
-			toggle_cell, "active", DET_COL_ACCOUNT_VER,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	g_signal_connect( G_OBJECT( toggle_cell ), "toggled", G_CALLBACK( on_account_toggled ), self );
-
-	text_cell = gtk_cell_renderer_text_new();
-	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Entry label" ),
-			text_cell, "text", DET_COL_LABEL,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_label_edited ), self );
-
-	toggle_cell = gtk_cell_renderer_toggle_new();
-	gtk_cell_renderer_toggle_set_activatable( GTK_CELL_RENDERER_TOGGLE( toggle_cell ), TRUE );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Lock" ),
-			toggle_cell, "active", DET_COL_LABEL_VER,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	g_signal_connect( G_OBJECT( toggle_cell ), "toggled", G_CALLBACK( on_label_toggled ), self );
-
-	text_cell = gtk_cell_renderer_text_new();
-	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
-	column = gtk_tree_view_column_new();
-	gtk_tree_view_column_pack_end( column, text_cell, TRUE );
-	gtk_tree_view_column_set_title( column, _( "Debit" ));
-	gtk_tree_view_column_add_attribute( column, text_cell, "text", DET_COL_DEBIT );
-	gtk_tree_view_column_set_min_width( column, 90 );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_debit_edited ), self );
-
-	toggle_cell = gtk_cell_renderer_toggle_new();
-	gtk_cell_renderer_toggle_set_activatable( GTK_CELL_RENDERER_TOGGLE( toggle_cell ), TRUE );
-	column = gtk_tree_view_column_new();
-	gtk_tree_view_column_pack_end( column, toggle_cell, FALSE );
-	gtk_tree_view_column_set_title( column, _( "Lock" ));
-	gtk_tree_view_column_add_attribute( column, toggle_cell, "active", DET_COL_DEBIT_VER );
-	gtk_tree_view_append_column( tview, column );
-	g_signal_connect( G_OBJECT( toggle_cell ), "toggled", G_CALLBACK( on_debit_toggled ), self );
-
-	text_cell = gtk_cell_renderer_text_new();
-	g_object_set( G_OBJECT( text_cell ), "editable", TRUE, NULL );
-	column = gtk_tree_view_column_new();
-	gtk_tree_view_column_pack_end( column, text_cell, TRUE );
-	gtk_tree_view_column_set_title( column, _( "Credit" ));
-	gtk_tree_view_column_add_attribute( column, text_cell, "text", DET_COL_CREDIT );
-	gtk_tree_view_column_set_min_width( column, 90 );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_credit_edited ), self );
-
-	toggle_cell = gtk_cell_renderer_toggle_new();
-	gtk_cell_renderer_toggle_set_activatable( GTK_CELL_RENDERER_TOGGLE( toggle_cell ), TRUE );
-	column = gtk_tree_view_column_new();
-	gtk_tree_view_column_pack_end( column, toggle_cell, FALSE );
-	gtk_tree_view_column_set_title( column, _( "Lock" ));
-	gtk_tree_view_column_add_attribute( column, toggle_cell, "active", DET_COL_CREDIT_VER );
-	gtk_tree_view_append_column( tview, column );
-	g_signal_connect( G_OBJECT( toggle_cell ), "toggled", G_CALLBACK( on_credit_toggled ), self );
+	priv->grid = ( GtkGrid * ) my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p1-details" );
+	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
 
 	count = ofo_model_get_detail_count( self->private->model );
-	for( i=0 ; i<count ; ++i ){
-		add_detail_row( self, i );
+	for( i=1 ; i<=count ; ++i ){
+		insert_new_row( self, i );
 	}
+	if( !count ){
+		add_button( self, GTK_STOCK_ADD, DET_COL_ADD, 1, DETAIL_SPACE, 0 );
+	}
+}
+
+static void
+insert_new_row( ofaModelProperties *self, gint row )
+{
+	GtkEntry *entry;
+	GtkToggleButton *toggle;
+	const gchar *str;
+
+	add_empty_row( self );
+	row = self->private->count;
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_COMMENT, row ));
+	str = ofo_model_get_detail_comment( self->private->model, row-1 );
+	gtk_entry_set_text( entry, str ? str : "" );
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT, row ));
+	str = ofo_model_get_detail_account( self->private->model, row-1 );
+	gtk_entry_set_text( entry, str ? str : "" );
+
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT_VER, row ));
+	gtk_toggle_button_set_active( toggle, ofo_model_get_detail_account_locked( self->private->model, row-1 ));
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL, row ));
+	str = ofo_model_get_detail_label( self->private->model, row-1 );
+	gtk_entry_set_text( entry, str ? str : "" );
+
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL_VER, row ));
+	gtk_toggle_button_set_active( toggle, ofo_model_get_detail_label_locked( self->private->model, row-1 ));
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT, row ));
+	str = ofo_model_get_detail_debit( self->private->model, row-1 );
+	gtk_entry_set_text( entry, str ? str : "" );
+
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT_VER, row ));
+	gtk_toggle_button_set_active( toggle, ofo_model_get_detail_debit_locked( self->private->model, row-1 ));
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT, row ));
+	str = ofo_model_get_detail_credit( self->private->model, row-1 );
+	gtk_entry_set_text( entry, str ? str : "" );
+
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT_VER, row ));
+	gtk_toggle_button_set_active( toggle, ofo_model_get_detail_credit_locked( self->private->model, row-1 ));
+}
+
+static void
+add_empty_row( ofaModelProperties *self )
+{
+	gint row;
+	GtkWidget *widget;
+	GtkEntry *entry;
+	GtkWidget *toggle;
+	gchar *str;
+
+	row = self->private->count + 1;
+	g_return_if_fail( row >= 1 );
+
+	/* the first time we enter for updating a model, the grid is fully
+	 * empty */
+	widget = gtk_grid_get_child_at( self->private->grid, DET_COL_ADD, row );
+	if( widget ){
+		gtk_widget_destroy( widget );
+	}
+
+	entry = GTK_ENTRY( gtk_entry_new());
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
+	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
+	gtk_entry_set_alignment( entry, 1.0 );
+	gtk_entry_set_width_chars( entry, 3 );
+	gtk_grid_attach( self->private->grid, GTK_WIDGET( entry ), DET_COL_RANG, row, 1, 1 );
+	str = g_strdup_printf( "%d", row );
+	gtk_entry_set_text( entry, str );
+	g_free( str );
+
+	entry = GTK_ENTRY( gtk_entry_new());
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_widget_set_margin_left( GTK_WIDGET( entry ), 2*DETAIL_SPACE );
+	gtk_entry_set_max_length( entry, 80 );
+	gtk_grid_attach( self->private->grid, GTK_WIDGET( entry ), DET_COL_COMMENT, row, 1, 1 );
+
+	entry = GTK_ENTRY( gtk_entry_new());
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_widget_set_margin_left( GTK_WIDGET( entry ), 2*DETAIL_SPACE );
+	gtk_entry_set_max_length( entry, 20 );
+	gtk_entry_set_width_chars( entry, 10 );
+	gtk_grid_attach( self->private->grid, GTK_WIDGET( entry ), DET_COL_ACCOUNT, row, 1, 1 );
+
+	add_button( self, GTK_STOCK_INDEX, DET_COL_ACCOUNT_SELECT, row, DETAIL_SPACE, 0 );
+
+	toggle = gtk_check_button_new();
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_grid_attach( self->private->grid, toggle, DET_COL_ACCOUNT_VER, row, 1, 1 );
+
+	entry = GTK_ENTRY( gtk_entry_new());
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
+	gtk_widget_set_hexpand( GTK_WIDGET( entry ), TRUE );
+	gtk_entry_set_max_length( entry, 80 );
+	gtk_entry_set_width_chars( entry, 20 );
+	gtk_grid_attach( self->private->grid, GTK_WIDGET( entry ), DET_COL_LABEL, row, 1, 1 );
+
+	toggle = gtk_check_button_new();
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_grid_attach( self->private->grid, toggle, DET_COL_LABEL_VER, row, 1, 1 );
+
+	entry = GTK_ENTRY( gtk_entry_new());
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
+	gtk_entry_set_max_length( entry, 80 );
+	gtk_entry_set_width_chars( entry, 10 );
+	gtk_grid_attach( self->private->grid, GTK_WIDGET( entry ), DET_COL_DEBIT, row, 1, 1 );
+
+	toggle = gtk_check_button_new();
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_grid_attach( self->private->grid, toggle, DET_COL_DEBIT_VER, row, 1, 1 );
+
+	entry = GTK_ENTRY( gtk_entry_new());
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
+	gtk_entry_set_max_length( entry, 80 );
+	gtk_entry_set_width_chars( entry, 10 );
+	gtk_grid_attach( self->private->grid, GTK_WIDGET( entry ), DET_COL_CREDIT, row, 1, 1 );
+
+	toggle = gtk_check_button_new();
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_grid_attach( self->private->grid, toggle, DET_COL_CREDIT_VER, row, 1, 1 );
+
+	add_button( self, GTK_STOCK_GO_UP, DET_COL_UP, row, DETAIL_SPACE, 0 );
+	add_button( self, GTK_STOCK_GO_DOWN, DET_COL_DOWN, row, DETAIL_SPACE, 0 );
+	add_button( self, GTK_STOCK_REMOVE, DET_COL_REMOVE, row, DETAIL_SPACE, 2*DETAIL_SPACE );
+	add_button( self, GTK_STOCK_ADD, DET_COL_ADD, row+1, DETAIL_SPACE, 0 );
+
+	self->private->count = row;
+
+	signal_row_added( self );
+	gtk_widget_show_all( GTK_WIDGET( self->private->grid ));
+}
+
+static void
+add_button( ofaModelProperties *self, const gchar *stock_id, gint column, gint row, gint left_margin, gint right_margin )
+{
+	GtkWidget *image;
+	GtkButton *button;
+
+	image = gtk_image_new_from_stock( stock_id, GTK_ICON_SIZE_BUTTON );
+	button = GTK_BUTTON( gtk_button_new());
+	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
+	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_widget_set_margin_left( GTK_WIDGET( button ), left_margin );
+	gtk_widget_set_margin_right( GTK_WIDGET( button ), right_margin );
+	gtk_button_set_image( button, image );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
+	gtk_grid_attach( self->private->grid, GTK_WIDGET( button ), column, row, 1, 1 );
+}
+
+static void
+update_detail_buttons( ofaModelProperties *self )
+{
+	gint row;
+	GtkWidget *button;
+
+	row = self->private->count;
+
+	if( row >= 1 ){
+
+		button = gtk_grid_get_child_at( self->private->grid, DET_COL_UP, 1 );
+		gtk_widget_set_sensitive( button, FALSE );
+
+		if( row > 1 ){
+			button = gtk_grid_get_child_at( self->private->grid, DET_COL_DOWN, row-1 );
+			gtk_widget_set_sensitive( button, TRUE );
+		}
+
+		button = gtk_grid_get_child_at( self->private->grid, DET_COL_DOWN, row );
+		gtk_widget_set_sensitive( button, FALSE );
+	}
+}
+
+static void
+signal_row_added( ofaModelProperties *self )
+{
+	update_detail_buttons( self );
+}
+
+static void
+signal_row_removed( ofaModelProperties *self )
+{
+	update_detail_buttons( self );
 }
 
 /*
@@ -644,78 +727,6 @@ on_label_changed( GtkEntry *entry, ofaModelProperties *self )
 }
 
 static void
-select_row( ofaModelProperties *self, GtkTreeModel *model, GtkTreeIter *iter )
-{
-	GtkTreePath *path;
-
-	path = gtk_tree_model_get_path( model, iter );
-	gtk_tree_view_set_cursor( self->private->view, path, NULL, FALSE );
-	gtk_widget_grab_focus( GTK_WIDGET( self->private->view ));
-	gtk_tree_path_free( path );
-}
-
-static void
-add_empty_row( ofaModelProperties *self )
-{
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-
-	tmodel = gtk_tree_view_get_model( self->private->view );
-	gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
-	self->private->count += 1;
-	gtk_list_store_set(
-			GTK_LIST_STORE( tmodel ),
-			&iter,
-			DET_COL_RANG,        self->private->count,
-			DET_COL_COMMENT,     "",
-			DET_COL_ACCOUNT,     "",
-			DET_COL_ACCOUNT_VER, FALSE,
-			DET_COL_LABEL,       "",
-			DET_COL_LABEL_VER,   FALSE,
-			DET_COL_DEBIT,       "",
-			DET_COL_DEBIT_VER,   FALSE,
-			DET_COL_CREDIT,      "",
-			DET_COL_CREDIT_VER,  FALSE,
-			-1 );
-
-	select_row( self, tmodel, &iter );
-}
-
-/*
- * idx here is the index of the detail line in the list, starting with 0
- */
-static void
-add_detail_row( ofaModelProperties *self, gint idx )
-{
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-
-	tmodel = gtk_tree_view_get_model( self->private->view );
-	gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
-	self->private->count += 1;
-	gtk_list_store_set(
-			GTK_LIST_STORE( tmodel ),
-			&iter,
-			DET_COL_RANG,        idx+1,
-			DET_COL_COMMENT,     ofo_model_get_detail_comment( self->private->model, idx ),
-			DET_COL_ACCOUNT,     ofo_model_get_detail_account( self->private->model, idx ),
-			DET_COL_ACCOUNT_VER, ofo_model_get_detail_account_locked( self->private->model, idx ),
-			DET_COL_LABEL,       ofo_model_get_detail_label( self->private->model, idx ),
-			DET_COL_LABEL_VER,   ofo_model_get_detail_label_locked( self->private->model, idx ),
-			DET_COL_DEBIT,       ofo_model_get_detail_debit( self->private->model, idx ),
-			DET_COL_DEBIT_VER,   ofo_model_get_detail_debit_locked( self->private->model, idx ),
-			DET_COL_CREDIT,      ofo_model_get_detail_credit( self->private->model, idx ),
-			DET_COL_CREDIT_VER,  ofo_model_get_detail_credit_locked( self->private->model, idx ),
-			-1 );
-}
-
-static void
-on_add_clicked( GtkButton *button, ofaModelProperties *self )
-{
-	add_empty_row( self );
-}
-
-static void
 on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaModelProperties *self )
 {
 	g_return_if_fail( self && OFA_IS_MODEL_PROPERTIES( self ));
@@ -732,87 +743,6 @@ on_journal_locked_toggled( GtkToggleButton *btn, ofaModelProperties *self )
 	check_for_enable_dlg( self );
 }
 
-static void
-on_detail_editing( ofaModelProperties *self, const gchar *path, const gchar *text, gint col )
-{
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-
-	tmodel = gtk_tree_view_get_model( self->private->view );
-	if( gtk_tree_model_get_iter_from_string( tmodel, &iter, path )){
-		gtk_list_store_set( GTK_LIST_STORE( tmodel ), &iter, col, text, -1 );
-	}
-}
-
-static void
-on_description_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self )
-{
-	on_detail_editing( self, path, new_text, DET_COL_COMMENT );
-}
-
-static void
-on_account_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self )
-{
-	on_detail_editing( self, path, new_text, DET_COL_ACCOUNT );
-}
-
-static void
-on_label_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self )
-{
-	on_detail_editing( self, path, new_text, DET_COL_LABEL );
-}
-
-static void
-on_debit_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self )
-{
-	on_detail_editing( self, path, new_text, DET_COL_DEBIT );
-}
-
-static void
-on_credit_edited( GtkCellRendererText *cell, gchar *path, gchar *new_text, ofaModelProperties *self )
-{
-	on_detail_editing( self, path, new_text, DET_COL_CREDIT );
-}
-
-static void
-on_detail_toggling( ofaModelProperties *self, GtkCellRendererToggle *cell, gchar *path, gint col )
-{
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gboolean toggled;
-
-	tmodel = gtk_tree_view_get_model( self->private->view );
-	if( gtk_tree_model_get_iter_from_string( tmodel, &iter, path )){
-		gtk_tree_model_get( tmodel, &iter, col, &toggled, -1 );
-		gtk_cell_renderer_toggle_set_active( cell, !toggled );
-		gtk_list_store_set( GTK_LIST_STORE( tmodel ), &iter, col, !toggled, -1 );
-	}
-}
-
-static void
-on_account_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self )
-{
-	on_detail_toggling( self, cell, path, DET_COL_ACCOUNT_VER );
-}
-
-static void
-on_label_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self )
-{
-	on_detail_toggling( self, cell, path, DET_COL_LABEL_VER );
-}
-
-static void
-on_debit_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self )
-{
-	on_detail_toggling( self, cell, path, DET_COL_DEBIT_VER );
-}
-
-static void
-on_credit_toggled( GtkCellRendererToggle *cell, gchar *path, ofaModelProperties *self )
-{
-	on_detail_toggling( self, cell, path, DET_COL_CREDIT_VER );
-}
-
 /*
  * we accept to save uncomplete detail lines
  */
@@ -821,13 +751,87 @@ check_for_enable_dlg( ofaModelProperties *self )
 {
 	ofaModelPropertiesPrivate *priv;
 	GtkWidget *button;
+	ofoModel *exists;
+	gboolean ok;
 
 	priv = self->private;
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "btn-ok" );
-	gtk_widget_set_sensitive( button,
-			priv->mnemo && g_utf8_strlen( priv->mnemo, -1 ) &&
-			priv->label && g_utf8_strlen( priv->label, -1 ) &&
-			priv->journal > 0 );
+	ok = ofo_model_is_valid( priv->mnemo, priv->label, priv->journal );
+
+	if( ok ){
+		exists = ofo_model_get_by_mnemo(
+						ofa_main_window_get_dossier( self->private->main_window ),
+						self->private->mnemo );
+		ok &= !exists ||
+				ofo_model_get_id( exists ) == ofo_model_get_id( self->private->model );
+	}
+
+	gtk_widget_set_sensitive( button, ok );
+}
+
+static void
+on_button_clicked( GtkButton *button, ofaModelProperties *self )
+{
+	static const gchar *thisfn = "ofa_model_properties_on_button_clicked";
+	gint column, row;
+
+	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_COLUMN ));
+	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
+
+	switch( column ){
+		case DET_COL_ADD:
+			add_empty_row( self );
+			break;
+		case DET_COL_UP:
+			g_warning( "%s: DET_COL_GO_UP", thisfn );
+			break;
+		case DET_COL_DOWN:
+			g_warning( "%s: DET_COL_GO_DOWN", thisfn );
+			break;
+		case DET_COL_REMOVE:
+			remove_row( self, row );
+			break;
+	}
+}
+
+static void
+remove_row( ofaModelProperties *self, gint row )
+{
+	gint i, line;
+	GtkWidget *widget;
+	GtkEntry *entry;
+	gchar *str;
+
+	/* first remove the line */
+	for( i=0 ; i<DET_N_COLUMNS ; ++i ){
+		gtk_widget_destroy( gtk_grid_get_child_at( self->private->grid, i, row ));
+	}
+
+	/* then move the following lines one row up */
+	for( line=row+1 ; line<=self->private->count+1 ; ++line ){
+		for( i=0 ; i<DET_N_COLUMNS ; ++i ){
+			widget = gtk_grid_get_child_at( self->private->grid, i, line );
+			if( widget ){
+				g_object_ref( widget );
+				gtk_container_remove( GTK_CONTAINER( self->private->grid ), widget );
+				gtk_grid_attach( self->private->grid, widget, i, line-1, 1, 1 );
+				g_object_set_data( G_OBJECT( widget ), DATA_ROW, GINT_TO_POINTER( line-1 ));
+				g_object_unref( widget );
+			}
+		}
+		if( line <= self->private->count ){
+			/* update the rang number on each moved line */
+			entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_RANG, line-1 ));
+			str = g_strdup_printf( "%d", line-1 );
+			gtk_entry_set_text( entry, str );
+			g_free( str );
+		}
+	}
+
+	self->private->count -= 1;
+	signal_row_removed( self );
+
+	gtk_widget_show_all( GTK_WIDGET( self->private->grid ));
 }
 
 static gboolean
@@ -835,27 +839,14 @@ do_update( ofaModelProperties *self )
 {
 	gchar *prev_mnemo;
 	ofoDossier *dossier;
-	ofoModel *existing;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
-	GtkTextIter start, end;
-	gchar *notes;
+	ofoModel *exists;
+	gint i;
 
 	prev_mnemo = g_strdup( ofo_model_get_mnemo( self->private->model ));
 	dossier = ofa_main_window_get_dossier( self->private->main_window );
-	existing = ofo_model_get_by_mnemo( dossier, self->private->mnemo );
-
-	if( existing ){
-		/* c'est un nouveau model, ou bien un model existant dont on
-		 * veut changer le numéro: no luck, le nouveau mnemo de model
-		 * existe déjà
-		 */
-		if( !prev_mnemo || g_utf8_collate( prev_mnemo, self->private->mnemo )){
-			error_duplicate( self, existing );
-			g_free( prev_mnemo );
-			return( FALSE );
-		}
-	}
+	exists = ofo_model_get_by_mnemo( dossier, self->private->mnemo );
+	g_return_val_if_fail(
+			!exists || ofo_model_get_id( exists ) == ofo_model_get_id( self->private->model ), FALSE );
 
 	/* le nouveau mnemo n'est pas encore utilisé,
 	 * ou bien il est déjà utilisé par ce même model (n'a pas été modifié)
@@ -864,17 +855,12 @@ do_update( ofaModelProperties *self )
 	ofo_model_set_label( self->private->model, self->private->label );
 	ofo_model_set_journal( self->private->model, self->private->journal );
 	ofo_model_set_journal_locked( self->private->model, self->private->journal_locked );
+	my_utils_getback_notes_ex( model );
 
-	text = GTK_TEXT_VIEW(
-			my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p3-notes" ));
-	buffer = gtk_text_view_get_buffer( text );
-	gtk_text_buffer_get_start_iter( buffer, &start );
-	gtk_text_buffer_get_end_iter( buffer, &end );
-	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
-	ofo_model_set_notes( self->private->model, notes );
-	g_free( notes );
-
-	get_detail_list( self );
+	ofo_model_free_detail_all( self->private->model );
+	for( i=1 ; i<=self->private->count ; ++i ){
+		get_detail_list( self, i );
+	}
 
 	if( !prev_mnemo ){
 		self->private->updated =
@@ -890,75 +876,44 @@ do_update( ofaModelProperties *self )
 }
 
 static void
-get_detail_list( ofaModelProperties *self )
+get_detail_list( ofaModelProperties *self, gint row )
 {
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gchar *comment, *account, *label, *debit, *credit;
+	GtkEntry *entry;
+	GtkToggleButton *toggle;
+	const gchar *comment, *account, *label, *debit, *credit;
 	gboolean account_locked, label_locked, debit_locked, credit_locked;
-	gint i;
 
-	tmodel = gtk_tree_view_get_model( self->private->view );
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		i = 0;
-		while( TRUE ){
-			gtk_tree_model_get( tmodel, &iter,
-					DET_COL_COMMENT,     &comment,
-					DET_COL_ACCOUNT,     &account,
-					DET_COL_ACCOUNT_VER, &account_locked,
-					DET_COL_LABEL,       &label,
-					DET_COL_LABEL_VER,   &label_locked,
-					DET_COL_DEBIT,       &debit,
-					DET_COL_DEBIT_VER,   &debit_locked,
-					DET_COL_CREDIT,      &credit,
-					DET_COL_CREDIT_VER,  &credit_locked,
-					-1 );
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_COMMENT, row ));
+	comment = gtk_entry_get_text( entry );
 
-			/* do not record empty lines */
-			if(( comment && g_utf8_strlen( comment, -1 )) ||
-				( label && g_utf8_strlen( label, -1 )) ||
-				( debit && g_utf8_strlen( debit, -1 )) ||
-				( credit && g_utf8_strlen( credit, -1 ))){
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT, row ));
+	account = gtk_entry_get_text( entry );
 
-				ofo_model_set_detail( self->private->model, i, comment,
-						account, account_locked, label, label_locked,
-						debit, debit_locked, credit, credit_locked );
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT_VER, row ));
+	account_locked = gtk_toggle_button_get_active( toggle );
 
-				i += 1;
-			}
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL, row ));
+	label = gtk_entry_get_text( entry );
 
-			g_free( comment );
-			g_free( account );
-			g_free( debit );
-			g_free( credit );
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL_VER, row ));
+	label_locked = gtk_toggle_button_get_active( toggle );
 
-			if( !gtk_tree_model_iter_next( tmodel, &iter )){
-				break;
-			}
-		}
-	}
-}
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT, row ));
+	debit = gtk_entry_get_text( entry );
 
-static void
-error_duplicate( ofaModelProperties *self, ofoModel *existing )
-{
-	GtkMessageDialog *dlg;
-	gchar *msg;
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT_VER, row ));
+	debit_locked = gtk_toggle_button_get_active( toggle );
 
-	msg = g_strdup_printf(
-			_( "Unable to set the entry model mnemonic to '%s' "
-				"as this one is already used by the existing '%s'" ),
-				ofo_model_get_mnemo( existing ),
-				ofo_model_get_label( existing ));
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT, row ));
+	credit = gtk_entry_get_text( entry );
 
-	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
-				GTK_WINDOW( self->private->dialog ),
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", msg ));
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT_VER, row ));
+	credit_locked = gtk_toggle_button_get_active( toggle );
 
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
-	g_free( msg );
+	ofo_model_add_detail( self->private->model,
+				comment,
+				account, account_locked,
+				label, label_locked,
+				debit, debit_locked,
+				credit, credit_locked );
 }

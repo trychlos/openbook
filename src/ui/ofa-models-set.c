@@ -84,6 +84,7 @@ static GtkWidget *book_create_page( ofaModelsSet *self, GtkNotebook *book, gint 
 static gboolean   book_activate_page_by_journal_id( ofaModelsSet *self, gint journal_id );
 static gint       book_get_page_by_journal_id( ofaModelsSet *self, gint jou_id );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaModelsSet *self );
+static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
 static void       insert_new_row( ofaModelsSet *self, ofoModel *model, gboolean with_selection );
 static void       setup_first_selection( ofaModelsSet *self );
 static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self );
@@ -304,6 +305,7 @@ book_create_page( ofaModelsSet *self, GtkNotebook *book, gint journal_id, const 
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
 	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_VIEW, tview );
+	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
@@ -401,6 +403,15 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaModelsSe
 	g_free( bfold );
 
 	return( cmp );
+}
+
+/*
+ * double click on a row opens the rate properties
+ */
+static void
+on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page )
+{
+	v_on_update_clicked( NULL, page );
 }
 
 static void

@@ -94,11 +94,6 @@
   52 2014- 5-17 change the title of the pages of the models notebook
                 when the label of a journal is changed
 
-  53 2014- 5-17 on pages which embed a notebook, one should reset
-                button sensititviy when switching the page
-                because the on_selection_changed may not be triggered,
-                e.g. if the list is empty
-
   56 2014- 5-19 have an entry-derived class for date
 
   57 2014- 5-19 have an entry-derived class for numbers (montants et taux)
@@ -112,18 +107,10 @@
                 for storing date, amounts and rates) - this is rather
                 a configuration information than actually a user pref..
 
-  64 2014- 5-19 there is no need to store the dataset in the ofaMainPage
-                as the TreeModel is enough to store the data
-
   65 2014- 5-19 Entry model properties: be able to reorder the detail
                 lines by drag and drop. 
 
   69 2014- 5-19 EntryModel properties: implement Up/Down
-
-  70 2014- 5-19 EntryModel properties: implement Remove with a user
-                confirmation.
-     2014- 5-26 no confirmation needed as it is enough for the user to
-                hit the Cancel key to cancel its modifications
 
   74 2014- 5-21 Guided input: when quitting the dialog with Escape
                 while the focus is on an Account entry, then the
@@ -188,6 +175,15 @@
                 ofaMainPage base class
 
  116 2014- 5-26 only include '-def.h' header files in the headers
+
+ 117 2014- 5-27 ofaModelsProperties: implement account selection
+
+ 118 2014- 5-27 ofaGuidedInput: implement account selection
+
+ 119 2014- 5-27 ofaAccountNotebook: scroll the view for display the
+                initial selection
+
+ 120
 
 -----------------------------------------------------------------------
  DONE
@@ -297,6 +293,12 @@
                 with Journal class
      2014- 5-22 done svn #3477
 
+  53 2014- 5-17 on pages which embed a notebook, one should reset
+                button sensititviy when switching the page
+                because the on_selection_changed may not be triggered,
+                e.g. if the list is empty
+     2014- 5-27 done
+
   54 2014- 5-18 remove GtkWindow *parent from ofa_sgbd arguments,
                 re-enabling error messages.
      2014- 5-22 done svn #3472
@@ -320,6 +322,10 @@
                 left-aligned but shifted on the right 
      2014- 5-26 done
 
+  64 2014- 5-19 there is no need to store the dataset in the ofaMainPage
+                as the TreeModel is enough to store the data
+     2014- 5-27 done - svn #3510
+
   66 2014- 5-19 Entry model properties - check_enable_dlg
                 check that detail lines are ok (enough and balanced).
      2014- 5-22 done
@@ -331,6 +337,12 @@
   68 2014- 5-19 EntryModel properties: display row number as an 
                 insensitive (grayed) text
      2014- 5-22 done
+
+  70 2014- 5-19 EntryModel properties: implement Remove with a user
+                confirmation.
+     2014- 5-26 no confirmation needed as it is enough for the user to
+                hit the Cancel key to cancel its modifications
+     2014- 5-27 done
 
   71 2014- 5-19 Get an entry with a model
      2014- 5-22 done

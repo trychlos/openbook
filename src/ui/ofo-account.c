@@ -479,6 +479,40 @@ ofo_account_get_type_account( const ofoAccount *account )
 }
 
 /**
+ * ofo_account_get_maj_user:
+ */
+const gchar *
+ofo_account_get_maj_user( const ofoAccount *account )
+{
+	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		return(( const gchar * ) account->priv->maj_user );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_account_get_maj_stamp:
+ */
+const GTimeVal *
+ofo_account_get_maj_stamp( const ofoAccount *account )
+{
+	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		return(( const GTimeVal * ) &account->priv->maj_stamp );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
  * ofo_account_get_deb_mnt:
  */
 gdouble

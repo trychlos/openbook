@@ -379,6 +379,7 @@ insert_new_row( ofaTauxProperties *self, gint idx )
 		str = g_strdup( "" );
 	}
 	gtk_entry_set_text( entry, str );
+	g_free( str );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_END, row ));
 	d = ofo_taux_get_val_end( self->private->taux, idx );
@@ -388,11 +389,13 @@ insert_new_row( ofaTauxProperties *self, gint idx )
 		str = g_strdup( "" );
 	}
 	gtk_entry_set_text( entry, str );
+	g_free( str );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( grid, COL_RATE, row ));
 	rate = ofo_taux_get_val_rate( self->private->taux, idx );
 	str = g_strdup_printf( "%.2lf", rate );
 	gtk_entry_set_text( entry, str );
+	g_free( str );
 }
 
 /*
@@ -597,17 +600,20 @@ remove_row( ofaTauxProperties *self, GtkGrid *grid, gint row )
 	}
 
 	/* then move the follow lines one row up */
-	for( line=row+1 ; line<self->private->count ; ++line ){
+	for( line=row+1 ; line<=self->private->count+1 ; ++line ){
 		for( i=0 ; i<N_COLUMNS ; ++i ){
 			widget = gtk_grid_get_child_at( grid, i, line );
 			if( widget ){
 				g_object_ref( widget );
 				gtk_container_remove( GTK_CONTAINER( grid ), widget );
 				gtk_grid_attach( grid, widget, i, line-1, 1, 1 );
+				g_object_set_data( G_OBJECT( widget ), DATA_ROW, GINT_TO_POINTER( line-1 ));
 				g_object_unref( widget );
 			}
 		}
 	}
+
+	gtk_widget_show_all( GTK_WIDGET( grid ));
 
 	/* last update the lines count */
 	self->private->count -= 1;

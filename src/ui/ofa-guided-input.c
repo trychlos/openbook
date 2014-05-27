@@ -76,6 +76,7 @@ enum {
 	COL_RANG = 0,
 	FIRST_COLUMN,
 	COL_ACCOUNT = FIRST_COLUMN,
+	COL_ACCOUNT_SELECT,
 	COL_LABEL,
 	COL_DEBIT,
 	COL_CREDIT,
@@ -96,10 +97,12 @@ typedef struct {
 }
 	sColumnDef;
 
-#define TITLE_SIDE_MARGIN               6
 #define AMOUNTS_WIDTH                  10
 #define RANG_WIDTH                      3
 #define TOTAUX_TOP_MARGIN               8
+
+/* space between widgets in a detail line */
+#define DETAIL_SPACE                    2
 
 /*
  * this works because column_id is greater than zero
@@ -110,6 +113,10 @@ static sColumnDef st_col_defs[] = {
 				"A",
 				ofo_model_get_detail_account,
 				ofo_model_get_detail_account_locked, 10, 0.0, FALSE },
+		{ COL_ACCOUNT_SELECT,
+				NULL,
+				NULL,
+				NULL, 0, 0, FALSE },
 		{ COL_LABEL,
 				"L",
 				ofo_model_get_detail_label,
@@ -125,8 +132,8 @@ static sColumnDef st_col_defs[] = {
 		{ 0 }
 };
 
-#define DATA_ENTRY_LEFT				"data-entry-left"
-#define DATA_ENTRY_TOP				"data-entry-top"
+#define DATA_COLUMN				"data-entry-left"
+#define DATA_ROW				"data-entry-top"
 
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-guided-input.ui";
 static const gchar  *st_ui_id        = "GuidedInputDlg";
@@ -144,11 +151,13 @@ static void      init_dialog_journal( ofaGuidedInput *self );
 static void      init_dialog_entries( ofaGuidedInput *self );
 static void      add_row_entry( ofaGuidedInput *self, gint i );
 static void      add_row_entry_set( ofaGuidedInput *self, gint col_id, gint row );
+static void      add_button( ofaGuidedInput *self, const gchar *stock_id, gint column, gint row );
 static const sColumnDef *find_column_def_from_col_id( ofaGuidedInput *self, gint col_id );
 static const sColumnDef *find_column_def_from_letter( ofaGuidedInput *self, gchar letter );
 static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self );
 static void      on_dope_changed( GtkEntry *entry, ofaGuidedInput *self );
 static void      on_deffet_changed( GtkEntry *entry, ofaGuidedInput *self );
+static void      on_button_clicked( GtkButton *button, ofaGuidedInput *self );
 static void      on_entry_changed( GtkEntry *entry, ofaGuidedInput *self );
 static gboolean  on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
 static gboolean  on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
@@ -432,32 +441,13 @@ init_dialog_entries( ofaGuidedInput *self )
 	g_return_if_fail( view && GTK_IS_GRID( view ));
 	self->private->view = GTK_GRID( view );
 
-	label = GTK_LABEL( gtk_label_new( _( "Account" )));
-	gtk_widget_set_margin_left( GTK_WIDGET( label ), TITLE_SIDE_MARGIN );
-	gtk_misc_set_alignment( GTK_MISC( label ), 0.0, 0.5 );
-	gtk_grid_attach( self->private->view, GTK_WIDGET( label ), COL_ACCOUNT, 0, 1, 1 );
-
-	label = GTK_LABEL( gtk_label_new( _( "Entry label" )));
-	gtk_widget_set_margin_left( GTK_WIDGET( label ), TITLE_SIDE_MARGIN );
-	gtk_misc_set_alignment( GTK_MISC( label ), 0.0, 0.5 );
-	gtk_grid_attach( self->private->view, GTK_WIDGET( label ), COL_LABEL, 0, 1, 1 );
-
-	label = GTK_LABEL( gtk_label_new( _( "Debit" )));
-	gtk_widget_set_margin_right( GTK_WIDGET( label ), TITLE_SIDE_MARGIN );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-	gtk_grid_attach( self->private->view, GTK_WIDGET( label ), COL_DEBIT, 0, 1, 1 );
-
-	label = GTK_LABEL( gtk_label_new( _( "Credit" )));
-	gtk_widget_set_margin_right( GTK_WIDGET( label ), TITLE_SIDE_MARGIN );
-	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-	gtk_grid_attach( self->private->view, GTK_WIDGET( label ), COL_CREDIT, 0, 1, 1 );
-
 	count = ofo_model_get_detail_count( self->private->model );
 	for( i=0 ; i<count ; ++i ){
 		add_row_entry( self, i );
 	}
 
 	label = GTK_LABEL( gtk_label_new( _( "Total :" )));
+	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	gtk_widget_set_margin_top( GTK_WIDGET( label ), TOTAUX_TOP_MARGIN );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_grid_attach( self->private->view, GTK_WIDGET( label ), COL_LABEL, count+1, 1, 1 );
@@ -477,6 +467,7 @@ init_dialog_entries( ofaGuidedInput *self )
 	gtk_grid_attach( self->private->view, GTK_WIDGET( entry ), COL_CREDIT, count+1, 1, 1 );
 
 	label = GTK_LABEL( gtk_label_new( _( "Diff :" )));
+	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_grid_attach( self->private->view, GTK_WIDGET( label ), COL_LABEL, count+2, 1, 1 );
 
@@ -511,6 +502,7 @@ add_row_entry( ofaGuidedInput *self, gint i )
 
 	/* other columns starting with COL_ACCOUNT=1 */
 	add_row_entry_set( self, COL_ACCOUNT, i+1 );
+	add_button( self, GTK_STOCK_INDEX, COL_ACCOUNT_SELECT, i+1 );
 	add_row_entry_set( self, COL_LABEL, i+1 );
 	add_row_entry_set( self, COL_DEBIT, i+1 );
 	add_row_entry_set( self, COL_CREDIT, i+1 );
@@ -541,8 +533,8 @@ add_row_entry_set( ofaGuidedInput *self, gint col_id, gint row )
 	locked = (*col_def->is_locked)( self->private->model, row-1 );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), !locked );
 
-	g_object_set_data( G_OBJECT( entry ), DATA_ENTRY_LEFT, GINT_TO_POINTER( col_id ));
-	g_object_set_data( G_OBJECT( entry ), DATA_ENTRY_TOP, GINT_TO_POINTER( row ));
+	g_object_set_data( G_OBJECT( entry ), DATA_COLUMN, GINT_TO_POINTER( col_id ));
+	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 
 	if( !locked ){
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_entry_changed ), self );
@@ -551,6 +543,21 @@ add_row_entry_set( ofaGuidedInput *self, gint col_id, gint row )
 	}
 
 	gtk_grid_attach( self->private->view, GTK_WIDGET( entry ), col_id, row, 1, 1 );
+}
+
+static void
+add_button( ofaGuidedInput *self, const gchar *stock_id, gint column, gint row )
+{
+	GtkWidget *image;
+	GtkButton *button;
+
+	image = gtk_image_new_from_stock( stock_id, GTK_ICON_SIZE_BUTTON );
+	button = GTK_BUTTON( gtk_button_new());
+	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
+	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
+	gtk_button_set_image( button, image );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
+	gtk_grid_attach( self->private->view, GTK_WIDGET( button ), column, row, 1, 1 );
 }
 
 static const sColumnDef *
@@ -635,6 +642,21 @@ on_deffet_changed( GtkEntry *entry, ofaGuidedInput *self )
 }
 
 static void
+on_button_clicked( GtkButton *button, ofaGuidedInput *self )
+{
+	gint column, row;
+
+	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_COLUMN ));
+	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
+
+	switch( column ){
+		case COL_ACCOUNT_SELECT:
+			g_warning( "ofa_guided_input_on_button_clicked: COL_ACCOUNT_SELECT; row=%d", row );
+			break;
+	}
+}
+
+static void
 on_entry_changed( GtkEntry *entry, ofaGuidedInput *self )
 {
 	check_for_enable_dlg( self );
@@ -649,10 +671,12 @@ static gboolean
 on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
 {
 	gint row;
+	const gchar *comment;
 
-	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_TOP ));
+	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
 	if( row > 0 ){
-		set_comment( self, ofo_model_get_detail_comment( self->private->model, row-1 ));
+		comment = ofo_model_get_detail_comment( self->private->model, row-1 );
+		set_comment( self, comment ? comment : "" );
 	}
 
 	return( FALSE );
@@ -670,7 +694,7 @@ on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
 
 	/* check the entry we are leaving
 	 */
-	left = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_LEFT ));
+	left = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
 
 	switch( left ){
 		case COL_ACCOUNT:
@@ -754,7 +778,7 @@ update_all_formulas( ofaGuidedInput *self )
 	for( idx=0 ; idx<count ; ++idx ){
 		for( col_id=FIRST_COLUMN ; col_id<N_COLUMNS ; ++col_id ){
 			col_def = find_column_def_from_col_id( self, col_id );
-			if( col_def ){
+			if( col_def && col_def->get_label ){
 				str = ( *col_def->get_label )( self->private->model, idx );
 				if( ofo_model_detail_is_formula( str )){
 					entry = gtk_grid_get_child_at( self->private->view, col_id, idx+1 );
@@ -800,16 +824,16 @@ update_formula( ofaGuidedInput *self, const gchar *formula, GtkEntry *entry )
 		 * - a rate mnemonic
 		 */
 		if( !g_utf8_collate( *iter, "SOLDE" )){
-			col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_LEFT ));
-			row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_TOP ));
+			col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
+			row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
 			solde = compute_formula_solde( self, col, row );
 			str = g_strdup_printf( "%.2lf", solde );
 			gtk_entry_set_text( entry, str );
 			g_free( str );
 
 		} else if( !g_utf8_collate( *iter, "IDEM" )){
-			row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_TOP ));
-			col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_LEFT ));
+			row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
+			col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
 			widget = gtk_grid_get_child_at( self->private->view, col, row-1 );
 			if( widget && GTK_IS_ENTRY( widget )){
 				gtk_entry_set_text( entry, gtk_entry_get_text( GTK_ENTRY( widget )));

@@ -290,11 +290,8 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 	gint i, idx;
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
 	GtkRadioButton *root_btn, *detail_btn;
 	GtkCellRenderer *text_cell;
-	gchar *notes;
 	ofoDossier *dossier;
 	GList *devset, *idev;
 
@@ -490,12 +487,10 @@ do_initialize_dialog( ofaAccountProperties *self, ofaMainWindow *main, ofoAccoun
 		gtk_label_set_text( label, str );
 		g_free( str );
 
-		notes = g_strdup( ofo_account_get_notes( account ));
-		if( notes ){
-			text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( GTK_CONTAINER( priv->dialog ), "p3-notes" ));
-			buffer = gtk_text_buffer_new( NULL );
-			gtk_text_buffer_set_text( buffer, notes, -1 );
-			gtk_text_view_set_buffer( text, buffer );
+		my_utils_init_notes_ex( account );
+
+		if( acc_number ){
+			my_utils_init_maj_user_stamp_ex( account );
 		}
 	}
 
@@ -629,11 +624,7 @@ check_for_enable_dlg( ofaAccountProperties *self )
 static gboolean
 do_update( ofaAccountProperties *self )
 {
-	GtkTextView *text;
-	GtkTextBuffer *buffer;
-	GtkTextIter start, end;
 	gchar *prev_number;
-	gchar *notes;
 	ofoDossier *dossier;
 	ofoAccount *existing;
 
@@ -660,15 +651,7 @@ do_update( ofaAccountProperties *self )
 	ofo_account_set_label( self->private->account, self->private->label );
 	ofo_account_set_type( self->private->account, self->private->type );
 	ofo_account_set_devise( self->private->account, self->private->devise );
-
-	text = GTK_TEXT_VIEW(
-			my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p3-notes" ));
-	buffer = gtk_text_view_get_buffer( text );
-	gtk_text_buffer_get_start_iter( buffer, &start );
-	gtk_text_buffer_get_end_iter( buffer, &end );
-	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
-	ofo_account_set_notes( self->private->account, notes );
-	g_free( notes );
+	my_utils_getback_notes_ex( account );
 
 	if( !prev_number ){
 		self->private->updated =
