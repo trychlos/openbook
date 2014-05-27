@@ -273,9 +273,12 @@ ofo_account_get_by_number( ofoDossier *dossier, const gchar *number )
 	static const gchar *thisfn = "ofo_account_get_by_number";
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( number && g_utf8_strlen( number, -1 ), NULL );
 
 	g_debug( "%s: dossier=%p, number=%s", thisfn, ( void * ) dossier, number );
+
+	if( !number || !g_utf8_strlen( number, -1 )){
+		return( NULL );
+	}
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 

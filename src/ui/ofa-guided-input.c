@@ -161,6 +161,7 @@ static void      on_button_clicked( GtkButton *button, ofaGuidedInput *self );
 static void      on_entry_changed( GtkEntry *entry, ofaGuidedInput *self );
 static gboolean  on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
 static gboolean  on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
+static gboolean  on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInput *self );
 static void      check_for_account( ofaGuidedInput *self, GtkEntry *entry  );
 static void      check_for_enable_dlg( ofaGuidedInput *self );
 static void      update_all_formulas( ofaGuidedInput *self );
@@ -540,6 +541,7 @@ add_row_entry_set( ofaGuidedInput *self, gint col_id, gint row )
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_entry_changed ), self );
 		g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_entry_focus_in ), self );
 		g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_entry_focus_out ), self );
+		g_signal_connect( G_OBJECT( entry ), "key-press-event", G_CALLBACK( on_key_pressed ), self );
 	}
 
 	gtk_grid_attach( self->private->view, GTK_WIDGET( entry ), col_id, row, 1, 1 );
@@ -690,23 +692,32 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
 static gboolean
 on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
 {
+	set_comment( self, "" );
+
+	return( FALSE );
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInput *self )
+{
 	gint left;
 
 	/* check the entry we are leaving
 	 */
-	left = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
+	left = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( widget ), DATA_COLUMN ));
 
 	switch( left ){
 		case COL_ACCOUNT:
-			check_for_account( self, entry );
-			break;
-		case COL_LABEL:
-		case COL_DEBIT:
-		case COL_CREDIT:
+			if( event->state == 0 && event->keyval == GDK_KEY_Tab ){
+				check_for_account( self, GTK_ENTRY( widget ));
+			}
 			break;
 	}
-
-	set_comment( self, "" );
 
 	return( FALSE );
 }
