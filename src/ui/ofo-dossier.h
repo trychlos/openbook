@@ -65,24 +65,40 @@ typedef enum {
 }
 	ofaDossierStatus;
 
-GType         ofo_dossier_get_type( void ) G_GNUC_CONST;
+GType           ofo_dossier_get_type( void ) G_GNUC_CONST;
 
-ofoDossier   *ofo_dossier_new     ( const gchar *name );
+ofoDossier     *ofo_dossier_new     ( const gchar *name );
 
-gboolean      ofo_dossier_open    ( ofoDossier *dossier,
+gboolean        ofo_dossier_open    ( ofoDossier *dossier,
 										const gchar *host, gint port,
 										const gchar *socket, const gchar *dbname,
 										const gchar *account, const gchar *password );
 
-const gchar  *ofo_dossier_get_name( const ofoDossier *dossier );
-const gchar  *ofo_dossier_get_user( const ofoDossier *dossier );
-ofoSgbd      *ofo_dossier_get_sgbd( const ofoDossier *dossier );
+const gchar    *ofo_dossier_get_name                ( const ofoDossier *dossier );
+const gchar    *ofo_dossier_get_user                ( const ofoDossier *dossier );
+ofoSgbd        *ofo_dossier_get_sgbd                ( const ofoDossier *dossier );
 
-gint          ofo_dossier_get_exercice_id         ( const ofoDossier *dossier );
-const GDate  *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );
-gint          ofo_dossier_get_next_entry_number   ( const ofoDossier *dossier );
+const gchar    *ofo_dossier_get_label               ( const ofoDossier *dossier );
+gint            ofo_dossier_get_exercice_length     ( const ofoDossier *dossier );
+const gchar    *ofo_dossier_get_notes               ( const ofoDossier *dossier );
+const gchar    *ofo_dossier_get_maj_user            ( const ofoDossier *dossier );
+const GTimeVal *ofo_dossier_get_maj_stamp           ( const ofoDossier *dossier );
 
-gboolean      ofo_dossier_dbmodel_update    ( ofoSgbd *sgbd, const gchar *account );
+gint            ofo_dossier_get_exercice_id         ( const ofoDossier *dossier );
+const GDate    *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );
+gint            ofo_dossier_get_next_entry_number   ( const ofoDossier *dossier );
+
+gboolean        ofo_dossier_is_valid                ( const gchar *label, gint duree );
+
+void            ofo_dossier_set_label               ( ofoDossier *dossier, const gchar *label );
+void            ofo_dossier_set_exercice_length     ( ofoDossier *dossier, gint duree );
+void            ofo_dossier_set_notes               ( ofoDossier *dossier, const gchar *notes );
+void            ofo_dossier_set_maj_user            ( ofoDossier *dossier, const gchar *user );
+void            ofo_dossier_set_maj_stamp           ( ofoDossier *dossier, const GTimeVal *stamp );
+
+gboolean        ofo_dossier_dbmodel_update          ( ofoSgbd *sgbd, const gchar *account );
+
+gboolean        ofo_dossier_update                  ( ofoDossier *dossier );
 
 G_END_DECLS
 

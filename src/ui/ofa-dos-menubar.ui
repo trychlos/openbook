@@ -18,6 +18,13 @@
       </section>
       <section>
         <item>
+          <attribute name="label" translatable="yes">P_roperties...</attribute>
+          <attribute name="action">win.properties</attribute>
+          <attribute name="accel">&lt;Control&gt;r</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
           <attribute name="label" translatable="yes">_Close...</attribute>
           <attribute name="action">win.close</attribute>
           <attribute name="accel">&lt;Control&gt;w</attribute>

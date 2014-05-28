@@ -51,7 +51,13 @@ struct _ofoDossierPrivate {
 	/* row id 1
 	 */
 	gchar    *label;					/* raison sociale */
+	gint      duree_exe;				/* exercice length (in month) */
 	gchar    *notes;					/* notes */
+	gchar    *maj_user;
+	GTimeVal  maj_stamp;
+
+	/* details per exercice
+	 */
 	gint      exe_id;					/* current exercice identifier */
 	GDate     exe_deb;					/* début d'exercice */
 	GDate     exe_fin;					/* fin d'exercice */
@@ -83,6 +89,8 @@ static gint     dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static void     set_last_closed_exercice( const ofoDossier *dossier );
 static void     on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data );
+static gboolean dossier_do_read( ofoDossier *dossier );
+static gboolean dossier_do_update( ofoDossier *dossier, ofoSgbd *sgbd, const gchar *user );
 
 static void
 ofo_dossier_finalize( GObject *instance )
@@ -100,6 +108,7 @@ ofo_dossier_finalize( GObject *instance )
 
 	g_free( self->priv->label );
 	g_free( self->priv->notes );
+	g_free( self->priv->maj_user );
 
 	/* chain up to parent class */
 	G_OBJECT_CLASS( ofo_dossier_parent_class )->finalize( instance );
@@ -284,7 +293,7 @@ ofo_dossier_open( ofoDossier *dossier,
 	dossier->priv->sgbd = sgbd;
 	dossier->priv->userid = g_strdup( account );
 
-	return( TRUE );
+	return( dossier_do_read( dossier ));
 }
 
 /**
@@ -677,6 +686,98 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_label:
+ *
+ * Returns: the label of the dossier.
+ */
+const gchar *
+ofo_dossier_get_label( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->label );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_exercice_length:
+ *
+ * Returns: the length of the exercice, in months.
+ */
+gint
+ofo_dossier_get_exercice_length( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), -1 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->duree_exe );
+	}
+
+	return( -1 );
+}
+
+/**
+ * ofo_dossier_get_notes:
+ *
+ * Returns: the notes attached to the dossier.
+ */
+const gchar *
+ofo_dossier_get_notes( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->notes );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_maj_user:
+ *
+ * Returns: the identifier of the user who has last updated the
+ * properties of the dossier.
+ */
+const gchar *
+ofo_dossier_get_maj_user( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->maj_user );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_stamp:
+ *
+ * Returns: the timestamp when a user has last updated the properties
+ * of the dossier.
+ */
+const GTimeVal *
+ofo_dossier_get_maj_stamp( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const GTimeVal * ) &dossier->priv->maj_stamp );
+	}
+
+	return( NULL );
+}
+
+/**
  * ofo_dossier_get_exercice_id:
  *
  * Returns: the internal identifier of the current exercice.
@@ -684,14 +785,14 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 gint
 ofo_dossier_get_exercice_id( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), -1 );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), OFO_BASE_UNSET_ID );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return( dossier->priv->exe_id );
 	}
 
-	return( -1 );
+	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -775,6 +876,92 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 	return( next_number );
 }
 
+/**
+ * ofo_dossier_is_valid:
+ */
+gboolean
+ofo_dossier_is_valid( const gchar *label, gint duree )
+{
+	return( label && g_utf8_strlen( label, -1 ) && duree > 0 );
+}
+
+/**
+ * ofo_dossier_set_label:
+ */
+void
+ofo_dossier_set_label( ofoDossier *dossier, const gchar *label )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( label && g_utf8_strlen( label, -1 ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->label );
+		dossier->priv->label = g_strdup( label );
+	}
+}
+
+/**
+ * ofo_dossier_set_exercice_length:
+ */
+void
+ofo_dossier_set_exercice_length( ofoDossier *dossier, gint duree )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( duree > 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		dossier->priv->duree_exe = duree;
+	}
+}
+
+/**
+ * ofo_dossier_set_notes:
+ */
+void
+ofo_dossier_set_notes( ofoDossier *dossier, const gchar *notes )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->notes );
+		dossier->priv->notes = g_strdup( notes );
+	}
+}
+
+/**
+ * ofo_dossier_set_maj_user:
+ */
+void
+ofo_dossier_set_maj_user( ofoDossier *dossier, const gchar *user )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( user && g_utf8_strlen( user, -1 ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->maj_user );
+		dossier->priv->maj_user = g_strdup( user );
+	}
+}
+
+/**
+ * ofo_dossier_set_maj_stamp:
+ */
+void
+ofo_dossier_set_maj_stamp( ofoDossier *dossier, const GTimeVal *stamp )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( stamp );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		memcpy( &dossier->priv->maj_stamp, stamp, sizeof( GTimeVal ));
+	}
+}
+
 static void
 on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
 {
@@ -784,4 +971,110 @@ on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer use
 			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
 
 	g_object_unref( entry );
+}
+
+static gboolean
+dossier_do_read( ofoDossier *dossier )
+{
+	gchar *query;
+	GSList *result, *icol;
+	gboolean ok;
+
+	ok = FALSE;
+
+	query = g_strdup_printf(
+			"SELECT DOS_LABEL,DOS_DUREE_EXE,DOS_NOTES,"
+			"	DOS_MAJ_USER,DOS_MAJ_STAMP "
+			"	FROM OFA_T_DOSSIER "
+			"	WHERE DOS_ID=%d", THIS_DOS_ID );
+
+	result = ofo_sgbd_query_ex( dossier->priv->sgbd, query );
+
+	g_free( query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		ofo_dossier_set_label( dossier, ( gchar * ) icol->data );
+		icol = icol->next;
+		if( icol->data ){
+			ofo_dossier_set_exercice_length( dossier, atoi(( gchar * ) icol->data ));
+		}
+		icol = icol->next;
+		ofo_dossier_set_notes( dossier, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_dossier_set_maj_user( dossier, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_dossier_set_maj_stamp( dossier, my_utils_stamp_from_str(( gchar * ) icol->data ));
+
+		ok = TRUE;
+		ofo_sgbd_free_result( result );
+	}
+
+	return( ok );
+}
+
+/**
+ * ofo_dossier_update
+ */
+gboolean
+ofo_dossier_update( ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_update";
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+		return( dossier_do_update(
+					dossier, dossier->priv->sgbd, dossier->priv->userid ));
+	}
+
+	g_assert_not_reached();
+	return( FALSE );
+}
+
+static gboolean
+dossier_do_update( ofoDossier *dossier, ofoSgbd *sgbd, const gchar *user )
+{
+	GString *query;
+	gchar *label, *notes, *stamp;
+	gboolean ok;
+
+	ok = FALSE;
+	label = my_utils_quote( ofo_dossier_get_label( dossier ));
+	notes = my_utils_quote( ofo_dossier_get_notes( dossier ));
+	stamp = my_utils_timestamp();
+
+	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
+
+	g_string_append_printf( query,
+			"	DOS_LABEL='%s',DOS_DUREE_EXE=%d,",
+					label,
+					ofo_dossier_get_exercice_length( dossier ));
+
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "DOS_NOTES='%s',", notes );
+	} else {
+		query = g_string_append( query, "DOS_NOTES=NULL," );
+	}
+
+	g_string_append_printf( query,
+			"	DOS_MAJ_USER='%s',DOS_MAJ_STAMP='%s'"
+			"	WHERE DOS_ID=%d", user, stamp, THIS_DOS_ID );
+
+	if( ofo_sgbd_query( sgbd, query->str )){
+
+		ofo_dossier_set_maj_user( dossier, user );
+		ofo_dossier_set_maj_stamp( dossier, my_utils_stamp_from_str( stamp ));
+		ok = TRUE;
+	}
+
+	g_string_free( query, TRUE );
+	g_free( label );
+	g_free( notes );
+	g_free( stamp );
+
+	return( ok );
 }

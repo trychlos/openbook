@@ -34,6 +34,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-accounts-chart.h"
 #include "ui/ofa-devises-set.h"
+#include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofa-models-set.h"
@@ -78,6 +79,7 @@ enum {
 
 /* the actions handled from the menubar
  */
+static void on_properties      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_close           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_guided      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -87,6 +89,7 @@ static void on_ref_devises     ( GSimpleAction *action, GVariant *parameter, gpo
 static void on_ref_taux        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
+		{ "properties",   on_properties,       NULL, NULL, NULL },
 		{ "close",        on_close,            NULL, NULL, NULL },
 		{ "guided",       on_ope_guided,       NULL, NULL, NULL },
 		{ "accounts",     on_ref_accounts,     NULL, NULL, NULL },
@@ -802,6 +805,21 @@ on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	set_menubar( OFA_MAIN_WINDOW( user_data ), ofa_application_get_menu_model( appli ));
 	set_window_title( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+on_properties( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_properties";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+	priv = OFA_MAIN_WINDOW( user_data )->private;
+
+	ofa_dossier_properties_run( OFA_MAIN_WINDOW( user_data ), priv->dossier );
 }
 
 static void
