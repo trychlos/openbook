@@ -282,7 +282,6 @@
                                         <child>
                                           <object class="GtkLabel" id="label2">
                                             <property name="visible">True</property>
-                                            <property name="sensitive">False</property>
                                             <property name="can_focus">False</property>
                                             <property name="margin_left">8</property>
                                             <property name="xalign">0</property>
@@ -300,7 +299,6 @@
                                         <child>
                                           <object class="GtkLabel" id="label9">
                                             <property name="visible">True</property>
-                                            <property name="sensitive">False</property>
                                             <property name="can_focus">False</property>
                                             <property name="margin_left">8</property>
                                             <property name="xalign">0</property>
@@ -318,7 +316,6 @@
                                         <child>
                                           <object class="GtkLabel" id="label10">
                                             <property name="visible">True</property>
-                                            <property name="sensitive">False</property>
                                             <property name="can_focus">False</property>
                                             <property name="margin_left">8</property>
                                             <property name="xalign">0</property>
@@ -336,7 +333,6 @@
                                         <child>
                                           <object class="GtkLabel" id="label11">
                                             <property name="visible">True</property>
-                                            <property name="sensitive">False</property>
                                             <property name="can_focus">False</property>
                                             <property name="margin_left">8</property>
                                             <property name="xalign">0</property>
@@ -354,7 +350,6 @@
                                         <child>
                                           <object class="GtkLabel" id="label12">
                                             <property name="visible">True</property>
-                                            <property name="sensitive">False</property>
                                             <property name="can_focus">False</property>
                                             <property name="margin_left">8</property>
                                             <property name="xalign">0</property>
@@ -372,7 +367,6 @@
                                         <child>
                                           <object class="GtkLabel" id="label13">
                                             <property name="visible">True</property>
-                                            <property name="sensitive">False</property>
                                             <property name="can_focus">False</property>
                                             <property name="label" translatable="yes">Lock.</property>
                                           </object>
@@ -386,7 +380,6 @@
                                         <child>
                                           <object class="GtkLabel" id="label14">
                                             <property name="visible">True</property>
-                                            <property name="sensitive">False</property>
                                             <property name="can_focus">False</property>
                                             <property name="label" translatable="yes">Lock.</property>
                                           </object>
@@ -400,7 +393,6 @@
                                         <child>
                                           <object class="GtkLabel" id="label15">
                                             <property name="visible">True</property>
-                                            <property name="sensitive">False</property>
                                             <property name="can_focus">False</property>
                                             <property name="label" translatable="yes">Lock.</property>
                                           </object>
@@ -414,7 +406,6 @@
                                         <child>
                                           <object class="GtkLabel" id="label16">
                                             <property name="visible">True</property>
-                                            <property name="sensitive">False</property>
                                             <property name="can_focus">False</property>
                                             <property name="label" translatable="yes">Lock.</property>
                                           </object>

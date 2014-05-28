@@ -467,6 +467,20 @@ ofo_account_get_class_from_number( const gchar *account_number )
 }
 
 /**
+ * ofo_account_get_level_from_number:
+ *
+ * TODO: make this UTF8-compliant....
+ */
+gint
+ofo_account_get_level_from_number( const gchar *account_number )
+{
+	if( !account_number ){
+		return( 0 );
+	}
+	return( g_utf8_strlen( account_number, -1 ));
+}
+
+/**
  * ofo_account_get_number:
  */
 const gchar *
