@@ -35,6 +35,7 @@
  * Update properties of an account.
  */
 
+#include "ui/ofa-base-dialog.h"
 #include "ui/ofa-main-window-def.h"
 #include "ui/ofo-account-def.h"
 
@@ -51,7 +52,7 @@ typedef struct _ofaAccountPropertiesPrivate        ofaAccountPropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                      parent;
+	ofaBaseDialog                parent;
 	ofaAccountPropertiesPrivate *private;
 }
 	ofaAccountProperties;
@@ -60,8 +61,7 @@ typedef struct _ofaAccountPropertiesClassPrivate   ofaAccountPropertiesClassPriv
 
 typedef struct {
 	/*< private >*/
-	GObjectClass                      parent;
-	ofaAccountPropertiesClassPrivate *private;
+	ofaBaseDialogClass parent;
 }
 	ofaAccountPropertiesClass;
 

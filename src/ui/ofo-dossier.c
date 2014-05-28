@@ -56,11 +56,12 @@ struct _ofoDossierPrivate {
 	gchar    *maj_user;
 	GTimeVal  maj_stamp;
 
-	/* details per exercice
+	/* details of current exercice
 	 */
 	gint      exe_id;					/* current exercice identifier */
 	GDate     exe_deb;					/* début d'exercice */
 	GDate     exe_fin;					/* fin d'exercice */
+	gint      last_ecr;
 
 	/* other datas
 	 */
@@ -90,6 +91,8 @@ static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static void     set_last_closed_exercice( const ofoDossier *dossier );
 static void     on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data );
 static gboolean dossier_do_read( ofoDossier *dossier );
+static gboolean dossier_read_properties( ofoDossier *dossier );
+static gboolean dossier_read_current_exercice( ofoDossier *dossier );
 static gboolean dossier_do_update( ofoDossier *dossier, ofoSgbd *sgbd, const gchar *user );
 
 static void
@@ -146,6 +149,7 @@ ofo_dossier_init( ofoDossier *self )
 
 	self->priv = OFO_DOSSIER_GET_PRIVATE( self );
 
+	self->priv->exe_id = OFO_BASE_UNSET_ID;
 	g_date_clear( &self->priv->last_closed_exe, 1 );
 }
 
@@ -778,12 +782,12 @@ ofo_dossier_get_maj_stamp( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_current_exercice_id:
+ * ofo_dossier_get_current_exe_id:
  *
  * Returns: the internal identifier of the current exercice.
  */
 gint
-ofo_dossier_get_current_exercice_id( const ofoDossier *dossier )
+ofo_dossier_get_current_exe_id( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), OFO_BASE_UNSET_ID );
 
@@ -793,6 +797,60 @@ ofo_dossier_get_current_exercice_id( const ofoDossier *dossier )
 	}
 
 	return( OFO_BASE_UNSET_ID );
+}
+
+/**
+ * ofo_dossier_get_current_exe_deb:
+ *
+ * Returns: the beginning date of the current exercice.
+ */
+const GDate *
+ofo_dossier_get_current_exe_deb( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const GDate * ) &dossier->priv->exe_deb );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_current_exe_fin:
+ *
+ * Returns: the ending date of the current exercice.
+ */
+const GDate *
+ofo_dossier_get_current_exe_fin( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const GDate * ) &dossier->priv->exe_fin );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_current_exe_last_ecr:
+ *
+ * Returns: the last entry number allocated in the current exercice.
+ */
+gint
+ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->last_ecr );
+	}
+
+	return( 0 );
 }
 
 /**
@@ -845,24 +903,15 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 {
 	gint next_number;
 	gchar *query;
-	GSList *result, *icol;
 
-	next_number = 1;
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
 
-	query = g_strdup_printf(
-			"SELECT DOS_EXE_LAST_ECR FROM OFA_T_DOSSIER_EXE "
-			"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
-					THIS_DOS_ID, DOS_STATUS_OPENED );
+	next_number = 0;
 
-	result = ofo_sgbd_query_ex( dossier->priv->sgbd, query );
-	g_free( query );
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-	if( result ){
-		icol = ( GSList * ) result->data;
-		next_number = atoi(( gchar * ) icol->data );
-		ofo_sgbd_free_result( result );
+		next_number = dossier->priv->last_ecr + 1;
 
-		next_number += 1;
 		query = g_strdup_printf(
 				"UPDATE OFA_T_DOSSIER_EXE "
 				"	SET DOS_EXE_LAST_ECR=%d "
@@ -962,6 +1011,63 @@ ofo_dossier_set_maj_stamp( ofoDossier *dossier, const GTimeVal *stamp )
 	}
 }
 
+/**
+ * ofo_dossier_set_current_exe_id:
+ */
+void
+ofo_dossier_set_current_exe_id( const ofoDossier *dossier, gint exe_id )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( exe_id > 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		dossier->priv->exe_id = exe_id;
+	}
+}
+
+/**
+ * ofo_dossier_set_current_exe_deb:
+ */
+void
+ofo_dossier_set_current_exe_deb( const ofoDossier *dossier, const GDate *date )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		memcpy( &dossier->priv->exe_deb, date, sizeof( GDate ));
+	}
+}
+
+/**
+ * ofo_dossier_set_current_exe_fin:
+ */
+void
+ofo_dossier_set_current_exe_fin( const ofoDossier *dossier, const GDate *date )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		memcpy( &dossier->priv->exe_fin, date, sizeof( GDate ));
+	}
+}
+
+/**
+ * ofo_dossier_set_current_exe_last_ecr:
+ */
+void
+ofo_dossier_set_current_exe_last_ecr( const ofoDossier *dossier, gint number )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		dossier->priv->last_ecr = number;
+	}
+}
+
 static void
 on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
 {
@@ -975,6 +1081,13 @@ on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer use
 
 static gboolean
 dossier_do_read( ofoDossier *dossier )
+{
+	return( dossier_read_properties( dossier ) &&
+			dossier_read_current_exercice( dossier ));
+}
+
+static gboolean
+dossier_read_properties( ofoDossier *dossier )
 {
 	gchar *query;
 	GSList *result, *icol;
@@ -1005,6 +1118,41 @@ dossier_do_read( ofoDossier *dossier )
 		ofo_dossier_set_maj_user( dossier, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_dossier_set_maj_stamp( dossier, my_utils_stamp_from_str(( gchar * ) icol->data ));
+
+		ok = TRUE;
+		ofo_sgbd_free_result( result );
+	}
+
+	return( ok );
+}
+
+static gboolean
+dossier_read_current_exercice( ofoDossier *dossier )
+{
+	gchar *query;
+	GSList *result, *icol;
+	gboolean ok;
+
+	ok = FALSE;
+
+	query = g_strdup_printf(
+			"SELECT DOS_EXE_ID,DOS_EXE_DEB,DOS_EXE_FIN,DOS_EXE_LAST_ECR "
+			"	FROM OFA_T_DOSSIER_EXE "
+			"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=1", THIS_DOS_ID );
+
+	result = ofo_sgbd_query_ex( dossier->priv->sgbd, query );
+
+	g_free( query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		ofo_dossier_set_current_exe_id( dossier, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_dossier_set_current_exe_deb( dossier, my_utils_date_from_str(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_dossier_set_current_exe_fin( dossier, my_utils_date_from_str(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_dossier_set_current_exe_last_ecr( dossier, atoi(( gchar * ) icol->data ));
 
 		ok = TRUE;
 		ofo_sgbd_free_result( result );

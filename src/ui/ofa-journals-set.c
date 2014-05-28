@@ -302,7 +302,7 @@ v_init_view( ofaMainPage *page )
 	dossier = ofa_main_page_get_dossier( page );
 	dataset = ofo_journal_get_dataset( dossier );
 	self = OFA_JOURNALS_SET( page );
-	self->private->exe_id = ofo_dossier_get_current_exercice_id( dossier );
+	self->private->exe_id = ofo_dossier_get_current_exe_id( dossier );
 
 	for( iset=dataset ; iset ; iset=iset->next ){
 

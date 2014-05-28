@@ -164,7 +164,25 @@
 
  126 2014- 5-28 have several demo dossiers
 
- 127
+ 127 2014- 5-28 ofaAccountNotebook: update amount accounts on new entry
+
+ 128 2014- 5-28 Dossier: have a default currency
+
+ 129 2014- 5-28 Account: archive balances after closing in ACCOUNT_EXE
+                table details
+
+ 130 2014- 5-28 do not delete an account which has an account_exe archive
+                detail record, but set a 'deleted' flag
+
+ 131 2014- 5-28 have a currency combo box convenience class
+                and report in account properties, dossier properties
+
+ 132 2014- 5-28 remove my_utils_init_notes_ex and 
+                my_utils_init_maj_user_stamp_ex as they should be no 
+                more used when all dialog box will be derived from 
+                ofaBseDialog
+
+ 133
 
 -----------------------------------------------------------------------
  DONE

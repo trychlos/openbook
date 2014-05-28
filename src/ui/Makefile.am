@@ -55,6 +55,9 @@ openbook_SOURCES = \
 	ofa-account-select.h								\
 	ofa-application.c									\
 	ofa-application.h									\
+	ofa-base-dialog.c									\
+	ofa-base-dialog.h									\
+	ofa-base-dialog-prot.h								\
 	ofa-devise-properties.c								\
 	ofa-devise-properties.h								\
 	ofa-devises-set.c									\

@@ -84,7 +84,11 @@ const gchar    *ofo_dossier_get_notes               ( const ofoDossier *dossier 
 const gchar    *ofo_dossier_get_maj_user            ( const ofoDossier *dossier );
 const GTimeVal *ofo_dossier_get_maj_stamp           ( const ofoDossier *dossier );
 
-gint            ofo_dossier_get_current_exercice_id ( const ofoDossier *dossier );
+gint            ofo_dossier_get_current_exe_id      ( const ofoDossier *dossier );
+const GDate    *ofo_dossier_get_current_exe_deb     ( const ofoDossier *dossier );
+const GDate    *ofo_dossier_get_current_exe_fin     ( const ofoDossier *dossier );
+gint            ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier );
+
 const GDate    *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );
 gint            ofo_dossier_get_next_entry_number   ( const ofoDossier *dossier );
 
@@ -95,6 +99,11 @@ void            ofo_dossier_set_exercice_length     ( ofoDossier *dossier, gint 
 void            ofo_dossier_set_notes               ( ofoDossier *dossier, const gchar *notes );
 void            ofo_dossier_set_maj_user            ( ofoDossier *dossier, const gchar *user );
 void            ofo_dossier_set_maj_stamp           ( ofoDossier *dossier, const GTimeVal *stamp );
+
+void            ofo_dossier_set_current_exe_id      ( const ofoDossier *dossier, gint exe_id );
+void            ofo_dossier_set_current_exe_deb     ( const ofoDossier *dossier, const GDate *date );
+void            ofo_dossier_set_current_exe_fin     ( const ofoDossier *dossier, const GDate *date );
+void            ofo_dossier_set_current_exe_last_ecr( const ofoDossier *dossier, gint number );
 
 gboolean        ofo_dossier_dbmodel_update          ( ofoSgbd *sgbd, const gchar *account );
 
