@@ -152,8 +152,6 @@
  114 2014- 5-26 dispose_has_run should be a protected data of the
                 ofaMainPage base class
 
- 116 2014- 5-26 only include '-def.h' header files in the headers
-
  120 2014- 5-28 import accounts
 
  121 2014- 5-28 import entry models
@@ -456,6 +454,9 @@
  115 2014- 5-26 it seems that an account cannot be finalized after 
                 having be udated in AccountsChart (ref count issue ?)
      2014- 5-26 done - svn#3509
+
+ 116 2014- 5-26 only include '-def.h' header files in the headers
+     2014- 5-28 done - svn #3527
 
  117 2014- 5-27 ofaModelsProperties: implement account selection
      2014- 5-28 done - svn #3519
