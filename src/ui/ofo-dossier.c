@@ -33,15 +33,12 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-base-prot.h"
 #include "ui/ofo-dossier.h"
 
 /* priv instance data
  */
 struct _ofoDossierPrivate {
-	gboolean  dispose_has_run;
-
-	/* properties
-	 */
 
 	/* internals
 	 */
@@ -73,7 +70,6 @@ G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
 
 static gint     dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
-static gint     entry_get_next_number( ofoDossier *dossier );
 static void     set_last_closed_exercice( const ofoDossier *dossier );
 
 static void
@@ -103,14 +99,12 @@ ofo_dossier_dispose( GObject *instance )
 	static const gchar *thisfn = "ofo_dossier_dispose";
 	ofoDossier *self;
 
-	self = OFO_DOSSIER( instance );
-
-	if( !self->priv->dispose_has_run ){
+	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
 		g_debug( "%s: instance=%p (%s)",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-		self->priv->dispose_has_run = TRUE;
+		self = OFO_DOSSIER( instance );
 
 		if( self->priv->sgbd ){
 			g_clear_object( &self->priv->sgbd );
@@ -130,8 +124,6 @@ ofo_dossier_init( ofoDossier *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = OFO_DOSSIER_GET_PRIVATE( self );
-
-	self->priv->dispose_has_run = FALSE;
 
 	g_date_clear( &self->priv->last_closed_exe, 1 );
 }
@@ -596,7 +588,7 @@ ofo_dossier_get_name( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
-	if( !dossier->priv->dispose_has_run ){
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return(( const gchar * ) dossier->priv->name );
 	}
@@ -614,7 +606,7 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
-	if( !dossier->priv->dispose_has_run ){
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return(( const gchar * ) dossier->priv->userid );
 	}
@@ -632,7 +624,7 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
-	if( !dossier->priv->dispose_has_run ){
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return( dossier->priv->sgbd );
 	}
@@ -650,7 +642,7 @@ ofo_dossier_get_exercice_id( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), -1 );
 
-	if( !dossier->priv->dispose_has_run ){
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return( dossier->priv->exe_id );
 	}
@@ -669,7 +661,7 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
-	if( !dossier->priv->dispose_has_run ){
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		if( !g_date_valid( &dossier->priv->last_closed_exe )){
 
@@ -701,46 +693,10 @@ set_last_closed_exercice( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_entry_insert:
+ * ofo_dossier_get_next_entry_number:
  */
-#include "ui/ofo-journal.h"
-gboolean
-ofo_dossier_entry_insert( ofoDossier *dossier,
-								const GDate *effet, const GDate *ope,
-								const gchar *label, const gchar *ref, const gchar *account,
-								gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens )
-{
-	gint number;
-	ofoEntry *entry;
-	ofoJournal *journal;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( effet && g_date_valid( effet ), FALSE );
-	g_return_val_if_fail( ope && g_date_valid( ope ), FALSE );
-	g_return_val_if_fail( label && g_utf8_strlen( label, -1 ), FALSE );
-	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), FALSE );
-	g_return_val_if_fail( amount != 0.0, FALSE );
-
-	number = entry_get_next_number( dossier );
-
-	entry = ofo_entry_insert_new(
-				dossier->priv->sgbd, dossier->priv->userid,
-				effet, ope, label, ref, account,
-				dev_id, jou_id, amount, sens, number );
-
-	journal = ofo_journal_get_by_id( dossier, jou_id );
-	g_return_val_if_fail( journal && OFO_IS_JOURNAL( journal ), FALSE );
-
-	ofo_journal_record_entry( journal, dossier->priv->sgbd, entry );
-
-	return( entry != NULL );
-}
-
-/*
- * entry_get_next_number:
- */
-static gint
-entry_get_next_number( ofoDossier *dossier )
+gint
+ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 {
 	gint next_number;
 	gchar *query;

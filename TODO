@@ -107,11 +107,6 @@
                 for storing date, amounts and rates) - this is rather
                 a configuration information than actually a user pref..
 
-  77 2014- 5-21 Guided Input: default effect date is operation date
-                or first davailable date
-
-  78 2014- 5-21 Guided Input: check that the effect date is valid
-
   79 2014- 5-21 replace memcpy with g_memdup when possible
 
   80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
@@ -356,6 +351,13 @@
   76 2014- 5-21 Open AccountNotebook on a specified account, or as close
                 as it is possible when only giving first digit(s)
      2014- 5-22 Done svn #3475
+
+  77 2014- 5-21 Guided Input: default effect date is operation date
+                or first davailable date
+     2014- 5-28 done - svn #3516
+
+  78 2014- 5-21 Guided Input: check that the effect date is valid
+     2014- 5-28 done - svn #3516
 
   81 2014- 5-21 guided input: check_for_entry: also check that total
                 debit+credit balance is not nul

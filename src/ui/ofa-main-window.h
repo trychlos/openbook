@@ -98,7 +98,7 @@ typedef struct {
  *  Signal to be sent to the main window in order to ask for the opening
  * of a dossier. See also ofaOpenDossier struct below.
  */
-#define MAIN_SIGNAL_OPEN_DOSSIER                 "main-signal-open-dossier"
+#define OFA_SIGNAL_OPEN_DOSSIER             "ofa-signal-open-dossier"
 
 /**
  * ofaOpenDossier struct

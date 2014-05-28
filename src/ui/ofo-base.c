@@ -36,6 +36,15 @@ struct _ofoBasePrivate {
 	void *empty;						/* so that gcc -pedantic is empty */
 };
 
+/* signals defined here
+ */
+enum {
+	NEW_ENTRY,
+	N_SIGNALS
+};
+
+static gint st_signals[ N_SIGNALS ] = { 0 };
+
 G_DEFINE_TYPE( ofoBase, ofo_base, G_TYPE_OBJECT )
 
 #define OFO_BASE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_BASE, ofoBasePrivate))
@@ -89,6 +98,38 @@ ofo_base_class_init( ofoBaseClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_base_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_base_finalize;
+
+	/*
+	 * ofoBase::ofa-signal-new-entry:
+	 *
+	 * This signal is sent by the entry being just inserted.
+	 * Other objects are suggested to connect to this signal in order
+	 * to update themselves.
+	 *
+	 * The #ofoEntry entry object is passed as an argument. The emitter
+	 * of the signal - usually the #ofoEntry class itself - takes care
+	 * of getting a reference on the object, so that consumers are sure
+	 * that the object is alive during signal processing.
+	 *
+	 * The default signal handler will decrement the reference count,
+	 * thus releasing the object for application purposes.
+	 *
+	 * Handler is of type:
+	 * 		void ( *handler )( ofoDossier *dossier,
+	 * 							ofoEntry *entry,
+	 * 							gpointer user_data );
+	 */
+	st_signals[ NEW_ENTRY ] = g_signal_new_class_handler(
+				OFA_SIGNAL_NEW_ENTRY,
+				OFO_TYPE_BASE,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_new_entry_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_POINTER );
 }
 
 /**
@@ -128,4 +169,15 @@ ofo_base_get_global( ofoBaseGlobal *ptr, ofoBase *dossier, GWeakNotify fn, gpoin
 	}
 
 	return( new_ptr );
+}
+
+static void
+on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
+{
+	static const gchar *thisfn = "ofo_base_on_new_entry_cleanup_handler";
+
+	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
+
+	g_object_unref( entry );
 }

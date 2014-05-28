@@ -75,13 +75,7 @@ ofoSgbd      *ofo_dossier_get_sgbd( const ofoDossier *dossier );
 
 gint          ofo_dossier_get_exercice_id         ( const ofoDossier *dossier );
 const GDate  *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );
-
-gboolean      ofo_dossier_entry_insert      ( ofoDossier *dossier,
-												const GDate *effet, const GDate *ope,
-												const gchar *label, const gchar *ref,
-												const gchar *account,
-												gint dev_id, gint jou_id,
-												gdouble amount, ofaEntrySens sens );
+gint          ofo_dossier_get_next_entry_number   ( const ofoDossier *dossier );
 
 gboolean      ofo_dossier_dbmodel_update    ( ofoSgbd *sgbd, const gchar *account );
 

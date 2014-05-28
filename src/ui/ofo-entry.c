@@ -33,19 +33,13 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-base-prot.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
 
 /* priv instance data
  */
 struct _ofoEntryPrivate {
-	gboolean dispose_has_run;
-
-	/* properties
-	 */
-
-	/* internals
-	 */
 
 	/* sgbd data
 	 */
@@ -70,7 +64,7 @@ G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
 static gint     entry_count_for_devise( ofoSgbd *sgbd, gint dev_id );
 static gint     entry_count_for_journal( ofoSgbd *sgbd, gint jou_id );
-static gboolean ofo_entry_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
+static gboolean entry_do_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
 
 static void
 ofo_entry_finalize( GObject *instance )
@@ -95,16 +89,13 @@ static void
 ofo_entry_dispose( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_entry_dispose";
-	ofoEntry *self;
 
-	self = OFO_ENTRY( instance );
-
-	if( !self->priv->dispose_has_run ){
+	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
 		g_debug( "%s: instance=%p (%s)",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-		self->priv->dispose_has_run = TRUE;
+		/* unref member objects here */
 	}
 
 	/* chain up to parent class */
@@ -121,11 +112,9 @@ ofo_entry_init( ofoEntry *self )
 
 	self->priv = OFO_ENTRY_GET_PRIVATE( self );
 
-	self->priv->dispose_has_run = FALSE;
-
-	self->priv->number = -1;
-	self->priv->dev_id = -1;
-	self->priv->jou_id = -1;
+	self->priv->number = OFO_BASE_UNSET_ID;
+	self->priv->dev_id = OFO_BASE_UNSET_ID;
+	self->priv->jou_id = OFO_BASE_UNSET_ID;
 	g_date_clear( &self->priv->effect, 1 );
 	g_date_clear( &self->priv->operation, 1 );
 }
@@ -220,52 +209,19 @@ entry_count_for_journal( ofoSgbd *sgbd, gint jou_id )
 }
 
 /**
- * ofo_entry_new:
- */
-ofoEntry *
-ofo_entry_insert_new( ofoSgbd *sgbd, const gchar *user,
-					const GDate *effet, const GDate *ope, const gchar *label, const gchar *ref,
-					const gchar *account,
-					gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens,
-					gint number )
-{
-	ofoEntry *entry;
-
-	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
-
-	memcpy( &entry->priv->effect, effet, sizeof( GDate ));
-	entry->priv->number = number;
-	memcpy( &entry->priv->operation, ope, sizeof( GDate ));
-	entry->priv->label = g_strdup( label );
-	entry->priv->ref = g_strdup( ref );
-	entry->priv->account = g_strdup( account );
-	entry->priv->dev_id = dev_id;
-	entry->priv->jou_id = jou_id;
-	entry->priv->amount = amount;
-	entry->priv->sens = sens;
-	entry->priv->status = ENT_STATUS_ROUGH;
-
-	if( !ofo_entry_insert( entry, sgbd, user )){
-		g_clear_object( &entry );
-	}
-
-	return( entry );
-}
-
-/**
  * ofo_entry_get_number:
  */
 gint
 ofo_entry_get_number( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), OFO_BASE_UNSET_ID );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return( entry->priv->number );
 	}
 
-	return( -1 );
+	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -276,7 +232,7 @@ ofo_entry_get_label( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return( entry->priv->label );
 	}
@@ -292,7 +248,7 @@ ofo_entry_get_deffect( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return(( const GDate * ) &entry->priv->effect );
 	}
@@ -308,7 +264,7 @@ ofo_entry_get_dope( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return(( const GDate * ) &entry->priv->operation );
 	}
@@ -324,7 +280,7 @@ ofo_entry_get_ref( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return( entry->priv->ref );
 	}
@@ -340,7 +296,7 @@ ofo_entry_get_account( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return( entry->priv->account );
 	}
@@ -354,14 +310,14 @@ ofo_entry_get_account( const ofoEntry *entry )
 gint
 ofo_entry_get_devise( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), OFO_BASE_UNSET_ID );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return( entry->priv->dev_id );
 	}
 
-	return( -1 );
+	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -370,14 +326,14 @@ ofo_entry_get_devise( const ofoEntry *entry )
 gint
 ofo_entry_get_journal( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), OFO_BASE_UNSET_ID );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return( entry->priv->jou_id );
 	}
 
-	return( -1 );
+	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -388,7 +344,7 @@ ofo_entry_get_amount( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), 0.0 );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return( entry->priv->amount );
 	}
@@ -402,14 +358,14 @@ ofo_entry_get_amount( const ofoEntry *entry )
 ofaEntrySens
 ofo_entry_get_sens( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), OFO_BASE_UNSET_ID );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return( entry->priv->sens );
 	}
 
-	return( -1 );
+	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -418,14 +374,14 @@ ofo_entry_get_sens( const ofoEntry *entry )
 ofaEntryStatus
 ofo_entry_get_status( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), OFO_BASE_UNSET_ID );
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return( entry->priv->status );
 	}
 
-	return( -1 );
+	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -436,7 +392,7 @@ ofo_entry_set_maj_user( ofoEntry *entry, const gchar *maj_user )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		entry->priv->maj_user = g_strdup( maj_user );
 	}
@@ -450,7 +406,7 @@ ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *maj_stamp )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 
-	if( !entry->priv->dispose_has_run ){
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		memcpy( &entry->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
 	}
@@ -459,8 +415,40 @@ ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *maj_stamp )
 /**
  * ofo_entry_insert:
  */
+ofoEntry *
+ofo_entry_insert( const ofoDossier *dossier,
+					const GDate *effet, const GDate *ope, const gchar *label,
+					const gchar *ref, const gchar *account,
+					gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens )
+{
+	ofoEntry *entry;
+
+	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
+
+	memcpy( &entry->priv->effect, effet, sizeof( GDate ));
+	memcpy( &entry->priv->operation, ope, sizeof( GDate ));
+	entry->priv->label = g_strdup( label );
+	entry->priv->ref = g_strdup( ref );
+	entry->priv->account = g_strdup( account );
+	entry->priv->dev_id = dev_id;
+	entry->priv->jou_id = jou_id;
+	entry->priv->amount = amount;
+	entry->priv->sens = sens;
+	entry->priv->status = ENT_STATUS_ROUGH;
+	entry->priv->number = ofo_dossier_get_next_entry_number( dossier );
+
+	if( !entry_do_insert( entry,
+				ofo_dossier_get_sgbd( dossier ),
+				ofo_dossier_get_user( dossier ))){
+
+		g_clear_object( &entry );
+	}
+
+	return( entry );
+}
+
 static gboolean
-ofo_entry_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
+entry_do_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *ref;

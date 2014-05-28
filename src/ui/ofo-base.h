@@ -66,6 +66,13 @@ typedef struct {
 
 #define OFO_BASE_UNSET_ID                   -1
 
+/**
+ * Signal to be sent by an entry being created.
+ * Other objects are suggested to connect to this signal in order to
+ * update themselves.
+ */
+#define OFA_SIGNAL_NEW_ENTRY                "ofa-signal-new-entry"
+
 GType          ofo_base_get_type  ( void ) G_GNUC_CONST;
 
 ofoBaseGlobal *ofo_base_get_global( ofoBaseGlobal *ptr,

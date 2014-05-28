@@ -257,7 +257,7 @@ class_init( ofaMainWindowClass *klass )
 	klass->private = g_new0( ofaMainWindowClassPrivate, 1 );
 
 	/*
-	 * ofaMainWindow::main-signal-open-dossier:
+	 * ofaMainWindow::ofa-signal-open-dossier:
 	 *
 	 * This signal is to be sent to the main window when someone asks
 	 * for opening a dossier.
@@ -275,7 +275,7 @@ class_init( ofaMainWindowClass *klass )
 	 * 						gpointer user_data );
 	 */
 	st_signals[ OPEN_DOSSIER ] = g_signal_new_class_handler(
-				MAIN_SIGNAL_OPEN_DOSSIER,
+				OFA_SIGNAL_OPEN_DOSSIER,
 				OFA_TYPE_MAIN_WINDOW,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_open_dossier_cleanup_handler ),
@@ -378,7 +378,7 @@ instance_constructed( GObject *window )
 		 */
 		g_signal_connect( window, "delete-event", G_CALLBACK( on_delete_event ), NULL );
 
-		g_signal_connect( window, MAIN_SIGNAL_OPEN_DOSSIER, G_CALLBACK( on_open_dossier ), NULL );
+		g_signal_connect( window, OFA_SIGNAL_OPEN_DOSSIER, G_CALLBACK( on_open_dossier ), NULL );
 	}
 }
 
@@ -763,7 +763,7 @@ add_empty_notebook_to_pane_right( ofaMainWindow *window )
 static void
 on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_open_dossier_final_handler";
+	static const gchar *thisfn = "ofa_main_window_on_open_dossier_cleanup_handler";
 
 	g_debug( "%s: window=%p, sod=%p, user_data=%p",
 			thisfn, ( void * ) window, ( void * ) sod, ( void * ) user_data );

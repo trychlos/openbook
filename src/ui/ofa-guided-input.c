@@ -1353,6 +1353,7 @@ do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece )
 	const gchar *label;
 	gdouble deb, cre, amount;
 	ofaEntrySens sens;
+	ofoEntry *new_entry;
 
 	entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
@@ -1377,13 +1378,15 @@ do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece )
 		sens = ENT_SENS_CREDIT;
 	}
 
-	ok = ofo_dossier_entry_insert(
-			ofa_main_window_get_dossier( self->private->main_window ),
-			&self->private->deff, &self->private->dope, label, piece,
-			account_number,
-			ofo_account_get_devise( account ),
-			self->private->journal_id,
-			amount, sens );
+	new_entry = ofo_entry_insert(
+					ofa_main_window_get_dossier( self->private->main_window ),
+							&self->private->deff, &self->private->dope, label,
+							piece, account_number,
+							ofo_account_get_devise( account ),
+							self->private->journal_id,
+							amount, sens );
+
+	ok = ( new_entry && OFO_IS_ENTRY( new_entry ));
 
 	return( ok );
 }

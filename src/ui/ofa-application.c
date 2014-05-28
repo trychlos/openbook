@@ -685,7 +685,7 @@ on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	ood = ofa_dossier_new_run( priv->main_window );
 	if( ood ){
-		g_signal_emit_by_name( priv->main_window, MAIN_SIGNAL_OPEN_DOSSIER, ood );
+		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, ood );
 	}
 }
 
@@ -706,7 +706,7 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	ood = ofa_dossier_open_run( priv->main_window );
 	if( ood ){
-		g_signal_emit_by_name( priv->main_window, MAIN_SIGNAL_OPEN_DOSSIER, ood );
+		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, ood );
 	}
 }
 
