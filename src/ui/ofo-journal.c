@@ -38,6 +38,7 @@
 #include "ui/ofo-entry.h"
 #include "ui/ofo-journal.h"
 #include "ui/ofo-model.h"
+#include "ui/ofo-sgbd.h"
 
 /* priv instance data
  */

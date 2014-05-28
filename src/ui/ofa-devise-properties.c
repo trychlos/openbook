@@ -32,6 +32,8 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-devise-properties.h"
+#include "ui/ofa-main-window.h"
+#include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
 
 /* private instance data

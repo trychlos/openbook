@@ -33,8 +33,8 @@
  * @include: ui/ofa-guided-input.h
  */
 
-#include "ui/ofa-main-window.h"
-#include "ui/ofo-model.h"
+#include "ui/ofa-main-window-def.h"
+#include "ui/ofo-model-def.h"
 
 G_BEGIN_DECLS
 

@@ -35,8 +35,8 @@
  * Update the journal properties.
  */
 
-#include "ui/ofa-main-window.h"
-#include "ui/ofo-journal.h"
+#include "ui/ofa-main-window-def.h"
+#include "ui/ofo-journal-def.h"
 
 G_BEGIN_DECLS
 

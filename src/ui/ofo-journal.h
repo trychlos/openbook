@@ -40,31 +40,9 @@
  */
 
 #include "ui/ofo-dossier-def.h"
-#include "ui/ofo-entry.h"
+#include "ui/ofo-journal-def.h"
 
 G_BEGIN_DECLS
-
-#define OFO_TYPE_JOURNAL                ( ofo_journal_get_type())
-#define OFO_JOURNAL( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_JOURNAL, ofoJournal ))
-#define OFO_JOURNAL_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_JOURNAL, ofoJournalClass ))
-#define OFO_IS_JOURNAL( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_JOURNAL ))
-#define OFO_IS_JOURNAL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_JOURNAL ))
-#define OFO_JOURNAL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_JOURNAL, ofoJournalClass ))
-
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoJournalClass;
-
-typedef struct _ofoJournalPrivate       ofoJournalPrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase            parent;
-	ofoJournalPrivate *priv;
-}
-	ofoJournal;
 
 GType           ofo_journal_get_type     ( void ) G_GNUC_CONST;
 

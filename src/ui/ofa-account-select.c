@@ -31,6 +31,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-main-window.h"
 #include "ui/ofo-account.h"
 
 /* private class data

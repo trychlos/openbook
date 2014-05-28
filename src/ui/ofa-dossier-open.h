@@ -35,7 +35,7 @@
  * Guide the user through the process of creating a new dossier.
  */
 
-#include "ui/ofa-main-window.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

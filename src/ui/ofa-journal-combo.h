@@ -35,7 +35,7 @@
  * A class to embed a Journals combobox in a dialog.
  */
 
-#include "ui/ofo-dossier.h"
+#include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 

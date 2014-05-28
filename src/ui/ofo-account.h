@@ -40,31 +40,10 @@
  */
 
 #include "ui/ofo-base-def.h"
+#include "ui/ofo-account-def.h"
 #include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
-
-#define OFO_TYPE_ACCOUNT                ( ofo_account_get_type())
-#define OFO_ACCOUNT( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_ACCOUNT, ofoAccount ))
-#define OFO_ACCOUNT_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_ACCOUNT, ofoAccountClass ))
-#define OFO_IS_ACCOUNT( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_ACCOUNT ))
-#define OFO_IS_ACCOUNT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_ACCOUNT ))
-#define OFO_ACCOUNT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_ACCOUNT, ofoAccountClass ))
-
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoAccountClass;
-
-typedef struct _ofoAccountPrivate       ofoAccountPrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase            parent;
-	ofoAccountPrivate *priv;
-}
-	ofoAccount;
 
 GType           ofo_account_get_type        ( void ) G_GNUC_CONST;
 

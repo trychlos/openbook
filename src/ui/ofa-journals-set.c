@@ -34,6 +34,7 @@
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-journal-properties.h"
 #include "ui/ofa-journals-set.h"
+#include "ui/ofo-dossier.h"
 #include "ui/ofo-journal.h"
 
 /* private instance data

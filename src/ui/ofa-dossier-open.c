@@ -30,8 +30,10 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-dossier-open.h"
+#include "ui/ofa-main-window.h"
 #include "ui/ofa-settings.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-sgbd.h"
 
 #if 0
 static gboolean pref_quit_on_escape = TRUE;

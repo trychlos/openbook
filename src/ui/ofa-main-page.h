@@ -41,7 +41,7 @@
 
 #include "ui/ofa-main-page-def.h"
 #include "ui/ofo-dossier-def.h"
-#include "ui/ofa-main-window.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

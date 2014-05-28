@@ -35,7 +35,7 @@
  * Display entering models.
  */
 
-#include "ui/ofa-main-page.h"
+#include "ui/ofa-main-page-def.h"
 
 G_BEGIN_DECLS
 

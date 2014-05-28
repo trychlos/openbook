@@ -33,8 +33,10 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
+#include "ui/ofa-main-window.h"
 #include "ui/ofa-taux-properties.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-taux.h"
 
 /* private instance data
  */

@@ -35,31 +35,10 @@
  * This class implements the Model behavior
  */
 
+#include "ui/ofo-model-def.h"
 #include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
-
-#define OFO_TYPE_MODEL                ( ofo_model_get_type())
-#define OFO_MODEL( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_MODEL, ofoModel ))
-#define OFO_MODEL_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_MODEL, ofoModelClass ))
-#define OFO_IS_MODEL( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_MODEL ))
-#define OFO_IS_MODEL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_MODEL ))
-#define OFO_MODEL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_MODEL, ofoModelClass ))
-
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoModelClass;
-
-typedef struct _ofoModelPrivate       ofoModelPrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase          parent;
-	ofoModelPrivate *priv;
-}
-	ofoModel;
 
 GType           ofo_model_get_type          ( void ) G_GNUC_CONST;
 

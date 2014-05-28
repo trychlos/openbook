@@ -36,32 +36,10 @@
  * DB definition.
  */
 
-#include "ui/ofo-base-def.h"
+#include "ui/ofo-devise-def.h"
 #include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
-
-#define OFO_TYPE_DEVISE                ( ofo_devise_get_type())
-#define OFO_DEVISE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_DEVISE, ofoDevise ))
-#define OFO_DEVISE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_DEVISE, ofoDeviseClass ))
-#define OFO_IS_DEVISE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_DEVISE ))
-#define OFO_IS_DEVISE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_DEVISE ))
-#define OFO_DEVISE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_DEVISE, ofoDeviseClass ))
-
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoDeviseClass;
-
-typedef struct _ofoDevisePrivate       ofoDevisePrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase           parent;
-	ofoDevisePrivate *priv;
-}
-	ofoDevise;
 
 GType           ofo_devise_get_type     ( void ) G_GNUC_CONST;
 

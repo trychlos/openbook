@@ -32,8 +32,10 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-account-properties.h"
-#include "ui/ofo-dossier.h"
+#include "ui/ofa-main-window.h"
+#include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
+#include "ui/ofo-dossier.h"
 
 #if 0
 static gboolean pref_quit_on_escape = TRUE;

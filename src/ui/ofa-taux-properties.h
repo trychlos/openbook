@@ -53,8 +53,8 @@
  *                     with 01/01/2014
  */
 
-#include "ui/ofa-main-window.h"
-#include "ui/ofo-taux.h"
+#include "ui/ofa-main-window-def.h"
+#include "ui/ofo-taux-def.h"
 
 G_BEGIN_DECLS
 

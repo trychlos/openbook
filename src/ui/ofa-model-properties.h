@@ -68,8 +68,8 @@
  *   value than those of the previous row, same column.
  */
 
-#include "ui/ofa-main-window.h"
-#include "ui/ofo-model.h"
+#include "ui/ofa-main-window-def.h"
+#include "ui/ofo-model-def.h"
 
 G_BEGIN_DECLS
 

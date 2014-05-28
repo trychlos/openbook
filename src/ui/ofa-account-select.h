@@ -30,12 +30,12 @@
 /**
  * SECTION: ofa_account_select
  * @short_description: #ofaAccountSelect class definition.
- * @include: ui/ofa-accounts-chart.h
+ * @include: ui/ofa-account-select.h
  *
  * Display the chart of accounts, letting the user edit it.
  */
 
-#include "ui/ofa-main-window.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

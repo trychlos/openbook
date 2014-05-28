@@ -76,6 +76,7 @@ openbook_SOURCES = \
 	ofa-main-page-def.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
+	ofa-main-window-def.h								\
 	ofa-model-properties.c								\
 	ofa-model-properties.h								\
 	ofa-models-set.c									\
@@ -88,12 +89,14 @@ openbook_SOURCES = \
 	ofa-taux-set.h										\
 	ofo-account.c										\
 	ofo-account.h										\
+	ofo-account-def.h									\
 	ofo-base.c											\
 	ofo-base.h											\
 	ofo-base-def.h										\
 	ofo-base-prot.h										\
 	ofo-devise.c										\
 	ofo-devise.h										\
+	ofo-devise-def.h									\
 	ofo-dossier.c										\
 	ofo-dossier.h										\
 	ofo-dossier-def.h									\
@@ -101,13 +104,16 @@ openbook_SOURCES = \
 	ofo-entry.h											\
 	ofo-journal.c										\
 	ofo-journal.h										\
+	ofo-journal-def.h									\
 	ofo-sgbd.c											\
 	ofo-sgbd.h											\
 	ofo-sgbd-def.h										\
 	ofo-model.c											\
 	ofo-model.h											\
+	ofo-model-def.h										\
 	ofo-taux.c											\
 	ofo-taux.h											\
+	ofo-taux-def.h										\
 	$(BUILT_SOURCES)									\
 	$(NULL)
 

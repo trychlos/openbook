@@ -154,8 +154,6 @@
 
  116 2014- 5-26 only include '-def.h' header files in the headers
 
- 118 2014- 5-27 ofaGuidedInput: implement account selection
-
  120 2014- 5-28 import accounts
 
  121 2014- 5-28 import entry models
@@ -461,6 +459,9 @@
 
  117 2014- 5-27 ofaModelsProperties: implement account selection
      2014- 5-28 done - svn #3519
+
+ 118 2014- 5-27 ofaGuidedInput: implement account selection
+     2014- 5-28 done - svn #3520
 
  119 2014- 5-27 ofaAccountNotebook: scroll the view for display the
                 initial selection

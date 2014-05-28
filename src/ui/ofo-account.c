@@ -34,8 +34,10 @@
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
 #include "ui/ofo-base-prot.h"
-#include "ui/ofo-dossier.h"
 #include "ui/ofo-account.h"
+#include "ui/ofo-dossier.h"
+#include "ui/ofo-entry.h"
+#include "ui/ofo-sgbd.h"
 
 /* priv instance data
  */

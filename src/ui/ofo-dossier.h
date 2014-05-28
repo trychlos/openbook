@@ -42,8 +42,6 @@
 #include "ui/ofo-dossier-def.h"
 #include "ui/ofo-sgbd-def.h"
 
-#include "ui/ofo-entry.h"
-
 G_BEGIN_DECLS
 
 /**

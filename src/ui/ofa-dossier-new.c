@@ -34,8 +34,10 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-dossier-new.h"
+#include "ui/ofa-main-window.h"
 #include "ui/ofa-settings.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-sgbd.h"
 
 static gboolean pref_quit_on_escape = TRUE;
 static gboolean pref_confirm_on_cancel = FALSE;

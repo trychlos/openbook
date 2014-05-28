@@ -36,30 +36,9 @@
  */
 
 #include "ui/ofo-dossier-def.h"
+#include "ui/ofo-taux-def.h"
 
 G_BEGIN_DECLS
-
-#define OFO_TYPE_TAUX                ( ofo_taux_get_type())
-#define OFO_TAUX( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_TAUX, ofoTaux ))
-#define OFO_TAUX_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_TAUX, ofoTauxClass ))
-#define OFO_IS_TAUX( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_TAUX ))
-#define OFO_IS_TAUX_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_TAUX ))
-#define OFO_TAUX_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_TAUX, ofoTauxClass ))
-
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoTauxClass;
-
-typedef struct _ofoTauxPrivate       ofoTauxPrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase         parent;
-	ofoTauxPrivate *priv;
-}
-	ofoTaux;
 
 /**
  * sTauxVData:

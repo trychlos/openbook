@@ -32,7 +32,9 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-journal-properties.h"
+#include "ui/ofa-main-window.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-journal.h"
 
 /* private instance data
  */

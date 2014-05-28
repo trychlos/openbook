@@ -36,6 +36,7 @@
 #include "ui/ofo-base-prot.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
+#include "ui/ofo-sgbd.h"
 
 /* priv instance data
  */
@@ -522,7 +523,7 @@ entry_do_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
  * ofo_entry_validate:
  */
 gboolean
-ofo_entry_validate( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
+ofo_entry_validate( ofoEntry *entry, ofoDossier *dossier )
 {
 	return( FALSE );
 }
@@ -531,7 +532,7 @@ ofo_entry_validate( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
  * ofo_entry_delete:
  */
 gboolean
-ofo_entry_delete( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
+ofo_entry_delete( ofoEntry *entry, ofoDossier *dossier )
 {
 	return( FALSE );
 }

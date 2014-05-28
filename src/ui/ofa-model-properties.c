@@ -34,7 +34,9 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofa-model-properties.h"
+#include "ui/ofa-main-window.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-model.h"
 
 /* private class data
  */

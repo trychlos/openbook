@@ -37,7 +37,6 @@
 
 #include "ui/ofo-base-def.h"
 #include "ui/ofo-dossier-def.h"
-#include "ui/ofo-sgbd.h"
 
 G_BEGIN_DECLS
 
@@ -109,8 +108,8 @@ ofoEntry      *ofo_entry_insert       ( const ofoDossier *dossier,
 													gint dev_id, gint jou_id,
 													gdouble amount, ofaEntrySens sens );
 
-gboolean       ofo_entry_validate     ( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
-gboolean       ofo_entry_delete       ( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
+gboolean       ofo_entry_validate     ( ofoEntry *entry, ofoDossier *dossier );
+gboolean       ofo_entry_delete       ( ofoEntry *entry, ofoDossier *dossier );
 
 G_END_DECLS
 

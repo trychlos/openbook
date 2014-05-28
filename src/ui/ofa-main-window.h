@@ -65,58 +65,16 @@
  */
 
 #include "ui/ofa-application.h"
-#include "ui/ofo-dossier.h"
+#include "ui/ofa-main-window-def.h"
+#include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_MAIN_WINDOW                ( ofa_main_window_get_type())
-#define OFA_MAIN_WINDOW( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MAIN_WINDOW, ofaMainWindow ))
-#define OFA_MAIN_WINDOW_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MAIN_WINDOW, ofaMainWindowClass ))
-#define OFA_IS_MAIN_WINDOW( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MAIN_WINDOW ))
-#define OFA_IS_MAIN_WINDOW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MAIN_WINDOW ))
-#define OFA_MAIN_WINDOW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MAIN_WINDOW, ofaMainWindowClass ))
-
-typedef struct _ofaMainWindowPrivate        ofaMainWindowPrivate;
-
-typedef struct {
-	/*< private >*/
-	GtkApplicationWindow  parent;
-	ofaMainWindowPrivate *private;
-}
-	ofaMainWindow;
-
-typedef struct _ofaMainWindowClassPrivate   ofaMainWindowClassPrivate;
-
-typedef struct {
-	/*< private >*/
-	GtkApplicationWindowClass  parent;
-	ofaMainWindowClassPrivate *private;
-}
-	ofaMainWindowClass;
-
 /**
  *  Signal to be sent to the main window in order to ask for the opening
- * of a dossier. See also ofaOpenDossier struct below.
+ * of a dossier. See also the #ofaOpenDossier struct.
  */
 #define OFA_SIGNAL_OPEN_DOSSIER             "ofa-signal-open-dossier"
-
-/**
- * ofaOpenDossier struct
- *
- * This structure should be allocated by the emitter of the signal.
- * The final, cleanup, handler will take care of freeing the data
- * and the structure itself
- */
-typedef struct {
-	gchar *dossier;
-	gchar *host;
-	gint   port;
-	gchar *socket;
-	gchar *dbname;
-	gchar *account;
-	gchar *password;
-}
-	ofaOpenDossier;
 
 GType          ofa_main_window_get_type          ( void );
 

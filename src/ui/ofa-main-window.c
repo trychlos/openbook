@@ -38,6 +38,7 @@
 #include "ui/ofa-journals-set.h"
 #include "ui/ofa-models-set.h"
 #include "ui/ofa-taux-set.h"
+#include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofo-dossier.h"
 

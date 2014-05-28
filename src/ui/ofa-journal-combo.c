@@ -31,6 +31,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofo-journal.h"
+#include "ui/ofo-dossier.h"
 
 /* private class data
  */
