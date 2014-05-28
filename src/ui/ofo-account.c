@@ -70,11 +70,16 @@ G_DEFINE_TYPE( ofoAccount, ofo_account, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, account )
 
+static gboolean st_connected = FALSE;
+
+static void        init_global_handlers( const ofoDossier *dossier );
+static void        on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data );
 static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
 static gint        account_count_for_devise( ofoSgbd *sgbd, gint dev_id );
 static gboolean    account_do_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user );
 static gboolean    account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
+static gboolean    account_update_amounts( ofoAccount *account, ofoSgbd *sgbd );
 static gboolean    account_do_delete( ofoAccount *account, ofoSgbd *sgbd );
 static gint        account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint        account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
@@ -139,6 +144,62 @@ ofo_account_class_init( ofoAccountClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_account_finalize;
 }
 
+static void
+init_global_handlers( const ofoDossier *dossier )
+{
+	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+
+	if( !st_connected ){
+		g_signal_connect( G_OBJECT( dossier ),
+					OFA_SIGNAL_NEW_ENTRY, G_CALLBACK( on_new_entry ), NULL );
+		st_connected = TRUE;
+	}
+}
+
+static void
+on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
+{
+	static const gchar *thisfn = "ofo_account_on_new_entry";
+	ofoAccount *account;
+	ofaEntrySens sens;
+	gdouble amount;
+	gint number;
+	const GDate *deffect;
+	gdouble prev;
+
+	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
+
+	if( ofo_entry_get_status( entry ) == ENT_STATUS_ROUGH ){
+
+		account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
+		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+
+		sens = ofo_entry_get_sens( entry );
+		amount = ofo_entry_get_amount( entry );
+		number = ofo_entry_get_number( entry );
+		deffect = ofo_entry_get_deffect( entry );
+
+		switch( sens ){
+			case ENT_SENS_DEBIT:
+				prev = ofo_account_get_bro_deb_mnt( account );
+				ofo_account_set_bro_deb_ecr( account, number );
+				ofo_account_set_bro_deb_date( account, deffect );
+				ofo_account_set_bro_deb_mnt( account, prev+amount );
+				break;
+			case ENT_SENS_CREDIT:
+				prev = ofo_account_get_bro_cre_mnt( account );
+				ofo_account_set_bro_cre_ecr( account, number );
+				ofo_account_set_bro_cre_date( account, deffect );
+				ofo_account_set_bro_cre_mnt( account, prev+amount );
+				break;
+		}
+
+		account_update_amounts( account, ofo_dossier_get_sgbd( dossier ));
+	}
+
+}
+
 /**
  * ofo_account_get_dataset:
  * @dossier: the currently opened #ofoDossier dossier.
@@ -156,7 +217,7 @@ ofo_account_get_dataset( ofoDossier *dossier )
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+	init_global_handlers( dossier );
 
 	return( st_global->dataset );
 }
@@ -280,7 +341,7 @@ ofo_account_get_by_number( ofoDossier *dossier, const gchar *number )
 		return( NULL );
 	}
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+	init_global_handlers( dossier );
 
 	return( account_find_by_number( st_global->dataset, number ));
 }
@@ -308,6 +369,8 @@ gboolean
 ofo_account_use_devise( ofoDossier *dossier, gint dev_id )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	init_global_handlers( dossier );
 
 	return( account_count_for_devise( ofo_dossier_get_sgbd( dossier ), dev_id ) > 0 );
 }
@@ -516,22 +579,6 @@ ofo_account_get_maj_stamp( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_deb_mnt:
- */
-gdouble
-ofo_account_get_deb_mnt( const ofoAccount *account )
-{
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0.0 );
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		return( account->priv->deb_mnt );
-	}
-
-	return( 0.0 );
-}
-
-/**
  * ofo_account_get_deb_ecr:
  */
 gint
@@ -564,16 +611,16 @@ ofo_account_get_deb_date( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_cre_mnt:
+ * ofo_account_get_deb_mnt:
  */
 gdouble
-ofo_account_get_cre_mnt( const ofoAccount *account )
+ofo_account_get_deb_mnt( const ofoAccount *account )
 {
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0.0 );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->priv->cre_mnt );
+		return( account->priv->deb_mnt );
 	}
 
 	return( 0.0 );
@@ -612,16 +659,16 @@ ofo_account_get_cre_date( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_bro_deb_mnt:
+ * ofo_account_get_cre_mnt:
  */
 gdouble
-ofo_account_get_bro_deb_mnt( const ofoAccount *account )
+ofo_account_get_cre_mnt( const ofoAccount *account )
 {
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0.0 );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->priv->bro_deb_mnt );
+		return( account->priv->cre_mnt );
 	}
 
 	return( 0.0 );
@@ -660,16 +707,16 @@ ofo_account_get_bro_deb_date( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_bro_cre_mnt:
+ * ofo_account_get_bro_deb_mnt:
  */
 gdouble
-ofo_account_get_bro_cre_mnt( const ofoAccount *account )
+ofo_account_get_bro_deb_mnt( const ofoAccount *account )
 {
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0.0 );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->priv->bro_cre_mnt );
+		return( account->priv->bro_deb_mnt );
 	}
 
 	return( 0.0 );
@@ -705,6 +752,22 @@ ofo_account_get_bro_cre_date( const ofoAccount *account )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_account_get_bro_cre_mnt:
+ */
+gdouble
+ofo_account_get_bro_cre_mnt( const ofoAccount *account )
+{
+	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), 0.0 );
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		return( account->priv->bro_cre_mnt );
+	}
+
+	return( 0.0 );
 }
 
 /**
@@ -895,20 +958,6 @@ ofo_account_set_maj_stamp( ofoAccount *account, const GTimeVal *maj_stamp )
 }
 
 /**
- * ofo_account_set_deb_mnt:
- */
-void
-ofo_account_set_deb_mnt( ofoAccount *account, gdouble mnt )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account->priv->deb_mnt = mnt;
-	}
-}
-
-/**
  * ofo_account_set_deb_ecr:
  */
 void
@@ -937,16 +986,16 @@ ofo_account_set_deb_date( ofoAccount *account, const GDate *date )
 }
 
 /**
- * ofo_account_set_cre_mnt:
+ * ofo_account_set_deb_mnt:
  */
 void
-ofo_account_set_cre_mnt( ofoAccount *account, gdouble mnt )
+ofo_account_set_deb_mnt( ofoAccount *account, gdouble mnt )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		account->priv->cre_mnt = mnt;
+		account->priv->deb_mnt = mnt;
 	}
 }
 
@@ -979,16 +1028,16 @@ ofo_account_set_cre_date( ofoAccount *account, const GDate *date )
 }
 
 /**
- * ofo_account_set_bro_deb_mnt:
+ * ofo_account_set_cre_mnt:
  */
 void
-ofo_account_set_bro_deb_mnt( ofoAccount *account, gdouble mnt )
+ofo_account_set_cre_mnt( ofoAccount *account, gdouble mnt )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		account->priv->bro_deb_mnt = mnt;
+		account->priv->cre_mnt = mnt;
 	}
 }
 
@@ -1021,16 +1070,16 @@ ofo_account_set_bro_deb_date( ofoAccount *account, const GDate *date )
 }
 
 /**
- * ofo_account_set_bro_cre_mnt:
+ * ofo_account_set_bro_deb_mnt:
  */
 void
-ofo_account_set_bro_cre_mnt( ofoAccount *account, gdouble mnt )
+ofo_account_set_bro_deb_mnt( ofoAccount *account, gdouble mnt )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		account->priv->bro_cre_mnt = mnt;
+		account->priv->bro_deb_mnt = mnt;
 	}
 }
 
@@ -1044,7 +1093,7 @@ ofo_account_set_bro_cre_ecr( ofoAccount *account, gint num )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		account->priv->bro_deb_ecr = num;
+		account->priv->bro_cre_ecr = num;
 	}
 }
 
@@ -1058,7 +1107,21 @@ ofo_account_set_bro_cre_date( ofoAccount *account, const GDate *date )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		memcpy( &account->priv->bro_deb_date, date, sizeof( GDate ));
+		memcpy( &account->priv->bro_cre_date, date, sizeof( GDate ));
+	}
+}
+
+/**
+ * ofo_account_set_bro_cre_mnt:
+ */
+void
+ofo_account_set_bro_cre_mnt( ofoAccount *account, gdouble mnt )
+{
+	g_return_if_fail( OFO_IS_ACCOUNT( account ));
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		account->priv->bro_cre_mnt = mnt;
 	}
 }
 
@@ -1086,7 +1149,7 @@ ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
 		g_debug( "%s: account=%p, dossier=%p",
 				thisfn, ( void * ) account, ( void * ) dossier );
 
-		OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+		init_global_handlers( dossier );
 
 		if( account_do_insert(
 					account,
@@ -1176,7 +1239,7 @@ ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_
 		g_debug( "%s: account=%p, dossier=%p, prev_number=%s",
 				thisfn, ( void * ) account, ( void * ) dossier, prev_number );
 
-		OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+		init_global_handlers( dossier );
 
 		if( account_do_update(
 					account,
@@ -1254,6 +1317,47 @@ account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const 
 	return( ok );
 }
 
+static gboolean
+account_update_amounts( ofoAccount *account, ofoSgbd *sgbd )
+{
+	gchar *query;
+	gboolean ok;
+	gchar *deb, *cre, *bro_deb, *bro_cre;
+
+	deb = my_utils_sql_from_double( ofo_account_get_deb_mnt( account ));
+	cre = my_utils_sql_from_double( ofo_account_get_cre_mnt( account ));
+	bro_deb = my_utils_sql_from_double( ofo_account_get_bro_deb_mnt( account ));
+	bro_cre = my_utils_sql_from_double( ofo_account_get_bro_cre_mnt( account ));
+
+	query = g_strdup_printf(
+				"UPDATE OFA_T_COMPTES SET "
+				"	CPT_DEB_ECR=%d, CPT_DEB_DATE='%s',CPT_DEB_MNT=%s,"
+				"	CPT_CRE_ECR=%d, CPT_CRE_DATE='%s',CPT_CRE_MNT=%s,"
+				"	CPT_BRO_DEB_ECR=%d, CPT_BRO_DEB_DATE='%s',CPT_BRO_DEB_MNT=%s,"
+				"	CPT_BRO_CRE_ECR=%d, CPT_BRO_CRE_DATE='%s',CPT_BRO_CRE_MNT=%s "
+				"	WHERE CPT_NUMBER='%s'",
+						ofo_account_get_deb_ecr( account ),
+						my_utils_sql_from_date( ofo_account_get_deb_date( account )),
+						deb,
+						ofo_account_get_cre_ecr( account ),
+						my_utils_sql_from_date( ofo_account_get_cre_date( account )),
+						cre,
+						ofo_account_get_bro_deb_ecr( account ),
+						my_utils_sql_from_date( ofo_account_get_bro_deb_date( account )),
+						bro_deb,
+						ofo_account_get_bro_cre_ecr( account ),
+						my_utils_sql_from_date( ofo_account_get_bro_cre_date( account )),
+						bro_cre,
+						ofo_account_get_number( account ));
+
+
+	ok = ofo_sgbd_query( sgbd, query );
+
+	g_free( query );
+
+	return( ok );
+}
+
 /**
  * ofo_account_delete:
  */
@@ -1271,7 +1375,7 @@ ofo_account_delete( ofoAccount *account, ofoDossier *dossier )
 		g_debug( "%s: account=%p, dossier=%p",
 				thisfn, ( void * ) account, ( void * ) dossier );
 
-		OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+		init_global_handlers( dossier );
 
 		if( account_do_delete(
 					account,

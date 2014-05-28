@@ -82,6 +82,11 @@ const gchar    *ofo_journal_get_notes    ( const ofoJournal *journal );
 const gchar    *ofo_journal_get_maj_user ( const ofoJournal *journal );
 const GTimeVal *ofo_journal_get_maj_stamp( const ofoJournal *journal );
 
+gdouble         ofo_journal_get_clo_deb  ( const ofoJournal *journal, gint exe_id, gint dev_id );
+gdouble         ofo_journal_get_clo_cre  ( const ofoJournal *journal, gint exe_id, gint dev_id );
+gdouble         ofo_journal_get_deb      ( const ofoJournal *journal, gint exe_id, gint dev_id );
+gdouble         ofo_journal_get_cre      ( const ofoJournal *journal, gint exe_id, gint dev_id );
+
 const GDate    *ofo_journal_get_cloture  ( const ofoJournal *journal, gint exe_id );
 
 gboolean        ofo_journal_is_deletable ( const ofoJournal *journal, const ofoDossier *dossier );
@@ -93,13 +98,15 @@ void            ofo_journal_set_label    ( ofoJournal *journal, const gchar *lab
 void            ofo_journal_set_notes    ( ofoJournal *journal, const gchar *notes );
 void            ofo_journal_set_maj_user ( ofoJournal *journal, const gchar *user );
 void            ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *stamp );
-/*void         ofo_journal_set_cloture  ( ofoJournal *journal, const GDate *date );*/
+
+void            ofo_journal_set_clo_deb  ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
+void            ofo_journal_set_clo_cre  ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
+void            ofo_journal_set_deb      ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
+void            ofo_journal_set_cre      ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
 
 gboolean        ofo_journal_insert       ( ofoJournal *journal, ofoDossier *dossier );
 gboolean        ofo_journal_update       ( ofoJournal *journal, ofoDossier *dossier );
 gboolean        ofo_journal_delete       ( ofoJournal *journal, ofoDossier *dossier );
-
-gboolean        ofo_journal_record_entry ( ofoJournal *journal, ofoSgbd *sgbd, ofoEntry *entry );
 
 G_END_DECLS
 

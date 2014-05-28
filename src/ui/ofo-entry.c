@@ -442,6 +442,9 @@ ofo_entry_insert( const ofoDossier *dossier,
 				ofo_dossier_get_user( dossier ))){
 
 		g_clear_object( &entry );
+
+	} else {
+		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_NEW_ENTRY, g_object_ref( entry ));
 	}
 
 	return( entry );

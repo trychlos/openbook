@@ -47,6 +47,13 @@
 G_BEGIN_DECLS
 
 /**
+ * Signal to be sent by an entry being created.
+ * Other objects are suggested to connect to this signal in order to
+ * update themselves.
+ */
+#define OFA_SIGNAL_NEW_ENTRY                "ofa-signal-new-entry"
+
+/**
  * ofaDossierStatus:
  *
  * Status of the exercice.

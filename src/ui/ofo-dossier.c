@@ -35,6 +35,7 @@
 #include "ui/ofo-base.h"
 #include "ui/ofo-base-prot.h"
 #include "ui/ofo-dossier.h"
+#include "ui/ofo-entry.h"
 
 /* priv instance data
  */
@@ -59,6 +60,15 @@ struct _ofoDossierPrivate {
 	GDate     last_closed_exe;
 };
 
+/* signals defined here
+ */
+enum {
+	NEW_ENTRY,
+	N_SIGNALS
+};
+
+static gint st_signals[ N_SIGNALS ] = { 0 };
+
 G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
 
 #define OFO_DOSSIER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_DOSSIER, ofoDossierPrivate))
@@ -71,6 +81,7 @@ G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
 static gint     dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static void     set_last_closed_exercice( const ofoDossier *dossier );
+static void     on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data );
 
 static void
 ofo_dossier_finalize( GObject *instance )
@@ -139,6 +150,38 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_dossier_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_dossier_finalize;
+
+	/*
+	 * ofoDossier::ofa-signal-new-entry:
+	 *
+	 * This signal is sent on the dossier by the entry being just
+	 * inserted. Other objects are suggested to connect to this signal
+	 * in order to update themselves.
+	 *
+	 * The #ofoEntry entry object is passed as an argument. The emitter
+	 * of the signal - usually the #ofoEntry class itself - should take
+	 * care of getting a reference on the object, so that consumers are
+	 * sure that the object stays alive during signal processing.
+	 *
+	 * The default signal handler will decrement the reference count,
+	 * thus releasing the object for application purposes.
+	 *
+	 * Handler is of type:
+	 * 		void ( *handler )( ofoDossier *dossier,
+	 * 							ofoEntry *entry,
+	 * 							gpointer user_data );
+	 */
+	st_signals[ NEW_ENTRY ] = g_signal_new_class_handler(
+				OFA_SIGNAL_NEW_ENTRY,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_new_entry_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_POINTER );
 }
 
 /**
@@ -729,4 +772,15 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 	}
 
 	return( next_number );
+}
+
+static void
+on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
+{
+	static const gchar *thisfn = "ofo_dossier_on_new_entry_cleanup_handler";
+
+	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
+
+	g_object_unref( entry );
 }

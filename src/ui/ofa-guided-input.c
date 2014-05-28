@@ -1241,14 +1241,14 @@ check_for_all_entries( ofaGuidedInput *self )
 	oki = self->private->total_debits == self->private->total_credits;
 	ok &= oki;
 	if( !oki ){
-		g_debug( "%s: totals are not equal: debits=%2.lf, credits=%.2lfs",
+		g_debug( "%s: totals are not equal: debits=%2.lf, credits=%.2lf",
 				thisfn, self->private->total_debits, self->private->total_credits );
 	}
 
 	oki= (self->private->total_debits != 0.0 || self->private->total_credits != 0.0 );
 	ok &= oki;
 	if( !oki ){
-		g_debug( "%s: one total is nul: debits=%2.lf, credits=%.2lfs",
+		g_debug( "%s: one total is nul: debits=%2.lf, credits=%.2lf",
 				thisfn, self->private->total_debits, self->private->total_credits );
 	}
 
@@ -1387,6 +1387,8 @@ do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece )
 							amount, sens );
 
 	ok = ( new_entry && OFO_IS_ENTRY( new_entry ));
+
+	g_object_unref( new_entry );
 
 	return( ok );
 }

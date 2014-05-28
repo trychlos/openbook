@@ -84,18 +84,18 @@ const gchar    *ofo_account_get_notes       ( const ofoAccount *account );
 const gchar    *ofo_account_get_type_account( const ofoAccount *account );
 const gchar    *ofo_account_get_maj_user    ( const ofoAccount *account );
 const GTimeVal *ofo_account_get_maj_stamp   ( const ofoAccount *account );
-gdouble         ofo_account_get_deb_mnt     ( const ofoAccount *account );
 gint            ofo_account_get_deb_ecr     ( const ofoAccount *account );
 const GDate    *ofo_account_get_deb_date    ( const ofoAccount *account );
-gdouble         ofo_account_get_cre_mnt     ( const ofoAccount *account );
+gdouble         ofo_account_get_deb_mnt     ( const ofoAccount *account );
 gint            ofo_account_get_cre_ecr     ( const ofoAccount *account );
 const GDate    *ofo_account_get_cre_date    ( const ofoAccount *account );
-gdouble         ofo_account_get_bro_deb_mnt ( const ofoAccount *account );
+gdouble         ofo_account_get_cre_mnt     ( const ofoAccount *account );
 gint            ofo_account_get_bro_deb_ecr ( const ofoAccount *account );
 const GDate    *ofo_account_get_bro_deb_date( const ofoAccount *account );
-gdouble         ofo_account_get_bro_cre_mnt ( const ofoAccount *account );
+gdouble         ofo_account_get_bro_deb_mnt ( const ofoAccount *account );
 gint            ofo_account_get_bro_cre_ecr ( const ofoAccount *account );
 const GDate    *ofo_account_get_bro_cre_date( const ofoAccount *account );
+gdouble         ofo_account_get_bro_cre_mnt ( const ofoAccount *account );
 
 gboolean        ofo_account_is_deletable         ( const ofoAccount *account );
 gboolean        ofo_account_is_root              ( const ofoAccount *account );
@@ -115,12 +115,12 @@ void            ofo_account_set_deb_date    ( ofoAccount *account, const GDate *
 void            ofo_account_set_cre_mnt     ( ofoAccount *account, gdouble mnt );
 void            ofo_account_set_cre_ecr     ( ofoAccount *account, gint num );
 void            ofo_account_set_cre_date    ( ofoAccount *account, const GDate *date );
-void            ofo_account_set_bro_deb_mnt ( ofoAccount *account, gdouble mnt );
 void            ofo_account_set_bro_deb_ecr ( ofoAccount *account, gint num );
 void            ofo_account_set_bro_deb_date( ofoAccount *account, const GDate *date );
-void            ofo_account_set_bro_cre_mnt ( ofoAccount *account, gdouble mnt );
+void            ofo_account_set_bro_deb_mnt ( ofoAccount *account, gdouble mnt );
 void            ofo_account_set_bro_cre_ecr ( ofoAccount *account, gint num );
 void            ofo_account_set_bro_cre_date( ofoAccount *account, const GDate *date );
+void            ofo_account_set_bro_cre_mnt ( ofoAccount *account, gdouble mnt );
 
 gboolean        ofo_account_insert          ( ofoAccount *account, ofoDossier *dossier );
 gboolean        ofo_account_update          ( ofoAccount *account, ofoDossier *dossier, const gchar *prev_number );
