@@ -487,7 +487,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( tcolumn ), DATA_COLUMN_ID ));
 	if( column == COL_NUMBER ){
 		number = g_string_new( "" );
-		g_string_printf( number, "%*c", level-2, ' ' );
+		g_string_printf( number, "%*c", 2*(level-2), ' ' );
 		g_string_append_printf( number, "%s", ofo_account_get_number( account ));
 		g_object_set( G_OBJECT( cell ), "text", number->str, NULL );
 		g_string_free( number, TRUE );
