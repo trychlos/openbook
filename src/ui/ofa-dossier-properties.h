@@ -21,7 +21,7 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id: ofa-dossier-properties.h 3521 2014-05-28 10:48:34Z  $
+ * $Id$
  */
 
 #ifndef __OFA_DOSSIER_PROPERTIES_H__

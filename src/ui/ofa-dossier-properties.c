@@ -21,7 +21,7 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id: ofa-dossier-properties.c 3521 2014-05-28 10:48:34Z  $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
