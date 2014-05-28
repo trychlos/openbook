@@ -195,7 +195,7 @@ on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
 	journal = ofo_journal_get_by_id( dossier, ofo_entry_get_journal( entry ));
 	g_return_if_fail( journal && OFO_IS_JOURNAL( journal ));
 
-	exe_id = ofo_dossier_get_exercice_id( dossier );
+	exe_id = ofo_dossier_get_current_exercice_id( dossier );
 	dev_id = ofo_entry_get_devise( entry );
 	sens = ofo_entry_get_sens( entry );
 	amount = ofo_entry_get_amount( entry );
@@ -758,7 +758,7 @@ ofo_journal_is_deletable( const ofoJournal *journal, const ofoDossier *dossier )
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
 		ok = TRUE;
-		exe_id = ofo_dossier_get_exercice_id( dossier );
+		exe_id = ofo_dossier_get_current_exercice_id( dossier );
 
 		for( ic=journal->priv->amounts ; ic && ok ; ic=ic->next ){
 			detail = ( sDetailDev * ) ic->data;

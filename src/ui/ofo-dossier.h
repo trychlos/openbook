@@ -84,7 +84,7 @@ const gchar    *ofo_dossier_get_notes               ( const ofoDossier *dossier 
 const gchar    *ofo_dossier_get_maj_user            ( const ofoDossier *dossier );
 const GTimeVal *ofo_dossier_get_maj_stamp           ( const ofoDossier *dossier );
 
-gint            ofo_dossier_get_exercice_id         ( const ofoDossier *dossier );
+gint            ofo_dossier_get_current_exercice_id ( const ofoDossier *dossier );
 const GDate    *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );
 gint            ofo_dossier_get_next_entry_number   ( const ofoDossier *dossier );
 

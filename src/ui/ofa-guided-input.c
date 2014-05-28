@@ -647,7 +647,7 @@ on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedIn
 	memcpy( &self->private->last_closing, &self->private->last_closed_exe, sizeof( GDate ));
 
 	if( journal ){
-		exe_id = ofo_dossier_get_exercice_id( dossier );
+		exe_id = ofo_dossier_get_current_exercice_id( dossier );
 		date = ofo_journal_get_cloture( journal, exe_id );
 		if( date && g_date_valid( date )){
 			if( g_date_valid( &self->private->last_closed_exe )){

@@ -778,12 +778,12 @@ ofo_dossier_get_maj_stamp( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_exercice_id:
+ * ofo_dossier_get_current_exercice_id:
  *
  * Returns: the internal identifier of the current exercice.
  */
 gint
-ofo_dossier_get_exercice_id( const ofoDossier *dossier )
+ofo_dossier_get_current_exercice_id( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), OFO_BASE_UNSET_ID );
 

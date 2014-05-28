@@ -138,8 +138,6 @@
  101 2014- 5-24 when updating the currency of an account, the 'delete'
                 button of the 'currencies' page should be updated
 
- 103 2014- 5-24 load OFA_T_DOSSIER data when opening
-
  107 2014- 5-24 have a message when current exercice changes
                 so that e.g. the journals set may adapt its display
 
@@ -427,6 +425,9 @@
                 define an interface for ofaMainPage which sorts the 
                 embedded treeview on the specified column
      2014- 5-24 done svn #3487
+
+ 103 2014- 5-24 load OFA_T_DOSSIER data when opening
+     2014- 5-28 done - svn #3535
 
  104 2014- 5-24 when updating a devise, only enable OK if code is not
                 a duplicate
