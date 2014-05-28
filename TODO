@@ -154,8 +154,6 @@
 
  116 2014- 5-26 only include '-def.h' header files in the headers
 
- 117 2014- 5-27 ofaModelsProperties: implement account selection
-
  118 2014- 5-27 ofaGuidedInput: implement account selection
 
  120 2014- 5-28 import accounts
@@ -460,6 +458,9 @@
  115 2014- 5-26 it seems that an account cannot be finalized after 
                 having be udated in AccountsChart (ref count issue ?)
      2014- 5-26 done - svn#3509
+
+ 117 2014- 5-27 ofaModelsProperties: implement account selection
+     2014- 5-28 done - svn #3519
 
  119 2014- 5-27 ofaAccountNotebook: scroll the view for display the
                 initial selection

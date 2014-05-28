@@ -167,6 +167,7 @@ static gboolean  on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedI
 static void      on_deffet_changed( GtkEntry *entry, ofaGuidedInput *self );
 static gboolean  on_deffet_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
 static gboolean  on_deffet_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
+static void      on_account_selection( ofaGuidedInput *self, gint row );
 static void      on_button_clicked( GtkButton *button, ofaGuidedInput *self );
 static void      on_entry_changed( GtkEntry *entry, ofaGuidedInput *self );
 static gboolean  on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
@@ -796,6 +797,20 @@ on_deffet_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self )
 }
 
 static void
+on_account_selection( ofaGuidedInput *self, gint row )
+{
+	GtkEntry *entry;
+	gchar *number;
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row ));
+	number = ofa_account_select_run( self->private->main_window, gtk_entry_get_text( entry ));
+	if( number && g_utf8_strlen( number, -1 )){
+		gtk_entry_set_text( entry, number );
+	}
+	g_free( number );
+}
+
+static void
 on_button_clicked( GtkButton *button, ofaGuidedInput *self )
 {
 	gint column, row;
@@ -805,7 +820,7 @@ on_button_clicked( GtkButton *button, ofaGuidedInput *self )
 
 	switch( column ){
 		case COL_ACCOUNT_SELECT:
-			g_warning( "ofa_guided_input_on_button_clicked: COL_ACCOUNT_SELECT; row=%d", row );
+			on_account_selection( self, row );
 			break;
 	}
 }
