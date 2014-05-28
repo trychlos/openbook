@@ -126,8 +126,6 @@
   91 2014- 5-22 the name of the class names in the accounts chart
                 should be configured in a table
 
-  94 2014- 5-22 implement journal_record_entry
-
   96 2014- 5-22 entry_models: check that journal always exist as it
                 may be deleted at any time while it is empty -
                 so reclass the entry models on journal-changed signal
@@ -160,7 +158,21 @@
 
  118 2014- 5-27 ofaGuidedInput: implement account selection
 
- 120
+ 120 2014- 5-28 import accounts
+
+ 121 2014- 5-28 import entry models
+
+ 122 2014- 5-28 import journals
+
+ 123 2014- 5-28 import currencies
+
+ 124 2014- 5-28 import standard rates
+
+ 125 2014- 5-28 import accounts
+
+ 126 2014- 5-28 have several demo dossiers
+
+ 127
 
 -----------------------------------------------------------------------
  DONE
@@ -395,6 +407,9 @@
   93 2014- 5-22 implement journal_load_set: load the journal_det
                 table
      2014- 5-22 done
+
+  94 2014- 5-22 implement journal_record_entry
+     2014- 5-28 done - svn #3518
 
   95 2014- 5-22 implement journal_is_deletable
      2014- 5-22 done

@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofa-account-select.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofa-model-properties.h"
 #include "ui/ofo-dossier.h"
@@ -155,6 +156,7 @@ static void      on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaModelProperties *self );
 static void      on_journal_locked_toggled( GtkToggleButton *toggle, ofaModelProperties *self );
+static void      on_account_selection( ofaModelProperties *self, gint row );
 static void      check_for_enable_dlg( ofaModelProperties *self );
 static void      on_button_clicked( GtkButton *button, ofaModelProperties *self );
 static void      remove_row( ofaModelProperties *self, gint row );
@@ -747,6 +749,20 @@ on_journal_locked_toggled( GtkToggleButton *btn, ofaModelProperties *self )
 	check_for_enable_dlg( self );
 }
 
+static void
+on_account_selection( ofaModelProperties *self, gint row )
+{
+	GtkEntry *entry;
+	gchar *number;
+
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT, row ));
+	number = ofa_account_select_run( self->private->main_window, gtk_entry_get_text( entry ));
+	if( number && g_utf8_strlen( number, -1 )){
+		gtk_entry_set_text( entry, number );
+	}
+	g_free( number );
+}
+
 /*
  * we accept to save uncomplete detail lines
  */
@@ -814,6 +830,9 @@ on_button_clicked( GtkButton *button, ofaModelProperties *self )
 	switch( column ){
 		case DET_COL_ADD:
 			add_empty_row( self );
+			break;
+		case DET_COL_ACCOUNT_SELECT:
+			on_account_selection( self, row );
 			break;
 		case DET_COL_UP:
 			g_return_if_fail( row > 1 );
