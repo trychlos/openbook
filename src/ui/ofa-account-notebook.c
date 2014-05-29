@@ -280,6 +280,7 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_CLASS, GINT_TO_POINTER( class ));
 
 	view = GTK_TREE_VIEW( gtk_tree_view_new());
+	gtk_widget_set_hexpand( GTK_WIDGET( view ), TRUE );
 	gtk_widget_set_vexpand( GTK_WIDGET( view ), TRUE );
 	gtk_tree_view_set_headers_visible( view, TRUE );
 	g_signal_connect(
@@ -319,20 +320,19 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 	gtk_tree_view_column_set_title( column, _( "Debit" ));
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_DEBIT );
-	gtk_tree_view_column_set_min_width( column, 120 );
+	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( view, column );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	text_cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
-	gtk_cell_renderer_set_padding( text_cell, 12, 0 );
 	column = gtk_tree_view_column_new();
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( COL_CREDIT ));
 	gtk_tree_view_column_pack_end( column, text_cell, TRUE );
 	gtk_tree_view_column_set_title( column, _( "Credit" ));
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_CREDIT );
-	gtk_tree_view_column_set_min_width( column, 120 );
+	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( view, column );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
@@ -343,6 +343,7 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 	gtk_tree_view_column_pack_end( column, text_cell, FALSE );
 	gtk_tree_view_column_set_alignment( column, 0.0 );
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_CURRENCY );
+	gtk_tree_view_column_set_min_width( column, 40 );
 	gtk_tree_view_append_column( view, column );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
@@ -484,7 +485,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	} else {
 		devise = ofo_devise_get_by_id( self->private->dossier, ofo_account_get_devise( account ));
 		if( !devise ){
-			gdk_rgba_parse( &color, "#ff0000" );
+			gdk_rgba_parse( &color, "#800000" );
 			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 		}
 	}
