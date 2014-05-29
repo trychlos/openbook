@@ -97,6 +97,7 @@ static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, o
 static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountNotebook *self );
 static void       on_account_selected( GtkTreeSelection *selection, ofaAccountNotebook *self );
 static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self );
+static void       on_account_updated( ofoDossier *dossier, ofoAccount *account, ofaAccountNotebook *self );
 
 static void
 account_notebook_finalize( GObject *instance )
@@ -196,6 +197,13 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 	self->private->user_data_select = parms->user_data_select;
 	self->private->pfnDoubleClic = parms->pfnDoubleClic;
 	self->private->user_data_double_clic = parms->user_data_double_clic;
+
+	/* connect to the dossier in order to get advertised when a new
+	 * entry occurs (and setup our balances)
+	 */
+	g_signal_connect(
+			G_OBJECT( parms->dossier),
+			OFA_SIGNAL_ACCOUNT_UPDATED, G_CALLBACK( on_account_updated ), self );
 
 	/* setup a weak reference on the dialog to auto-unref */
 	g_object_weak_ref( G_OBJECT( self->private->book ), ( GWeakNotify ) on_dialog_finalized, self );
@@ -713,6 +721,64 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 			g_object_unref( account );
 
 			( *self->private->pfnDoubleClic)( account, self->private->user_data_double_clic );
+		}
+	}
+}
+
+static void
+on_account_updated( ofoDossier *dossier, ofoAccount *account, ofaAccountNotebook *self )
+{
+	gint p_num;
+	GtkWidget *p_widget;
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	const gchar *s_number;
+	gchar *i_number;
+	gint cmp;
+	gchar *sdeb, *scre;
+
+	if( !ofo_account_is_root( account )){
+		p_num = book_get_page_by_class( self, ofo_account_get_class( account ));
+		if( p_num >= 0 ){
+			p_widget = gtk_notebook_get_nth_page( self->private->book, p_num );
+			if( p_widget ){
+				g_return_if_fail( GTK_IS_CONTAINER( p_widget ));
+
+				tview = ( GtkTreeView * )
+								my_utils_container_get_child_by_type(
+										GTK_CONTAINER( p_widget ), GTK_TYPE_TREE_VIEW );
+				g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+
+				tmodel = gtk_tree_view_get_model( tview );
+				s_number = ofo_account_get_number( account );
+
+				if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+					while( TRUE ){
+						gtk_tree_model_get( tmodel, &iter, COL_NUMBER, &i_number, -1 );
+						cmp = g_utf8_collate( i_number, s_number );
+						g_free( i_number );
+
+						if( cmp == 0 ){
+							sdeb = g_strdup_printf( "%.2f €",
+										ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
+							scre = g_strdup_printf( "%.2f €",
+										ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
+
+							gtk_list_store_set(
+									GTK_LIST_STORE( tmodel ),
+									&iter,
+									COL_DEBIT, sdeb,
+									COL_CREDIT, scre,
+									-1 );
+							break;
+
+						} else if( !gtk_tree_model_iter_next( tmodel, &iter )){
+							break;
+						}
+					}
+				}
+			}
 		}
 	}
 }

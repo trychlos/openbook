@@ -45,11 +45,15 @@
 G_BEGIN_DECLS
 
 /**
- * Signal to be sent by an entry being created.
- * Other objects are suggested to connect to this signal in order to
- * update themselves.
+ * OFA_SIGNAL_NEW_ENTRY: signal to be sent by an entry being created.
+ *                       Other objects are suggested to connect to this
+ *                       signal in order to update themselves.
+ *
+ * OFA_SIGNAL_ACCOUNT_UPDATED: signal sent by an account whose amounts
+ *                       have been updated.
  */
 #define OFA_SIGNAL_NEW_ENTRY                "ofa-signal-new-entry"
+#define OFA_SIGNAL_ACCOUNT_UPDATED          "ofa-signal-account-updated"
 
 /**
  * ofaDossierStatus:

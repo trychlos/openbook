@@ -198,6 +198,7 @@ on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
 		}
 
 		account_update_amounts( account, ofo_dossier_get_sgbd( dossier ));
+		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_ACCOUNT_UPDATED, g_object_ref( account ));
 	}
 
 }

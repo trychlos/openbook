@@ -34,6 +34,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
 #include "ui/ofo-base-prot.h"
+#include "ui/ofo-account.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
 #include "ui/ofo-sgbd.h"
@@ -72,6 +73,7 @@ struct _ofoDossierPrivate {
  */
 enum {
 	NEW_ENTRY,
+	ACCOUNT_UPDATED,
 	N_SIGNALS
 };
 
@@ -90,6 +92,7 @@ static gint     dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static void     set_last_closed_exercice( const ofoDossier *dossier );
 static void     on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data );
+static void     on_account_updated_cleanup_handler( ofoDossier *dossier, ofoAccount *account, gpointer user_data );
 static gboolean dossier_do_read( ofoDossier *dossier );
 static gboolean dossier_read_properties( ofoDossier *dossier );
 static gboolean dossier_read_current_exercice( ofoDossier *dossier );
@@ -165,7 +168,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ofo_dossier_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_dossier_finalize;
 
-	/*
+	/**
 	 * ofoDossier::ofa-signal-new-entry:
 	 *
 	 * This signal is sent on the dossier by the entry being just
@@ -190,6 +193,38 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_new_entry_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_POINTER );
+
+	/**
+	 * ofoDossier::ofa-signal-account-updated:
+	 *
+	 * This signal is sent on the dossier by the account whose amounts
+	 * have just been updated.
+	 *
+	 * The #ofoAccount account object is passed as an argument. The
+	 * emitter of the signal - usually the #ofoAccount class itself -
+	 * should take care of getting a reference on the object, so that
+	 * consumers are sure that the object stays alive during signal
+	 * processing.
+	 *
+	 * The default signal handler will decrement the reference count,
+	 * thus releasing the object for application purposes.
+	 *
+	 * Handler is of type:
+	 * 		void ( *handler )( ofoDossier *dossier,
+	 * 							ofoAccount *account,
+	 * 							gpointer user_data );
+	 */
+	st_signals[ ACCOUNT_UPDATED ] = g_signal_new_class_handler(
+				OFA_SIGNAL_ACCOUNT_UPDATED,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_account_updated_cleanup_handler ),
 				NULL,								/* accumulator */
 				NULL,								/* accumulator data */
 				NULL,
@@ -910,7 +945,8 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		next_number = dossier->priv->last_ecr + 1;
+		dossier->priv->last_ecr += 1;
+		next_number = dossier->priv->last_ecr;
 
 		query = g_strdup_printf(
 				"UPDATE OFA_T_DOSSIER_EXE "
@@ -1077,6 +1113,17 @@ on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer use
 			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
 
 	g_object_unref( entry );
+}
+
+static void
+on_account_updated_cleanup_handler( ofoDossier *dossier, ofoAccount *account, gpointer user_data )
+{
+	static const gchar *thisfn = "ofo_dossier_on_account_updated_cleanup_handler";
+
+	g_debug( "%s: dossier=%p, account=%p, user_data=%p",
+			thisfn, ( void * ) dossier, ( void * ) account, ( void * ) user_data );
+
+	g_object_unref( account );
 }
 
 static gboolean
