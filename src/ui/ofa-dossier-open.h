@@ -35,6 +35,7 @@
  * Guide the user through the process of creating a new dossier.
  */
 
+#include "ui/ofa-base-dialog.h"
 #include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -50,17 +51,14 @@ typedef struct _ofaDossierOpenPrivate        ofaDossierOpenPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                parent;
+	ofaBaseDialog          parent;
 	ofaDossierOpenPrivate *private;
 }
 	ofaDossierOpen;
 
-typedef struct _ofaDossierOpenClassPrivate   ofaDossierOpenClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GObjectClass                parent;
-	ofaDossierOpenClassPrivate *private;
+	ofaBaseDialogClass parent;
 }
 	ofaDossierOpenClass;
 
