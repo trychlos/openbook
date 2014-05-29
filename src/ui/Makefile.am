@@ -58,6 +58,8 @@ openbook_SOURCES = \
 	ofa-base-dialog.c									\
 	ofa-base-dialog.h									\
 	ofa-base-dialog-prot.h								\
+	ofa-devise-combo.c									\
+	ofa-devise-combo.h									\
 	ofa-devise-properties.c								\
 	ofa-devise-properties.h								\
 	ofa-devises-set.c									\

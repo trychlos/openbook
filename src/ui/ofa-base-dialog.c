@@ -63,8 +63,6 @@ enum {
 
 G_DEFINE_TYPE( ofaBaseDialog, ofa_base_dialog, G_TYPE_OBJECT )
 
-#define OFA_BASE_DIALOG_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFA_TYPE_BASE_DIALOG, ofaBaseDialogPrivate))
-
 static gboolean load_from_builder( ofaBaseDialog *dialog );
 static void     do_init_dialog( ofaBaseDialog *dialog );
 static gint     do_run_dialog( ofaBaseDialog *dialog );
@@ -90,7 +88,8 @@ base_dialog_finalize( GObject *instance )
 	g_free( self->priv->dialog_xml );
 	g_free( self->priv->dialog_name );
 
-	/* free protected structure */
+	/* free private and protected structures */
+	g_free( self->priv );
 	g_free( self->prot );
 
 	/* chain up to the parent class */
@@ -185,7 +184,7 @@ ofa_base_dialog_init( ofaBaseDialog *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = OFA_BASE_DIALOG_GET_PRIVATE( self );
+	self->priv = g_new0( ofaBaseDialogPrivate, 1 );
 	self->prot = g_new0( ofaBaseDialogProtected, 1 );
 }
 
@@ -195,8 +194,6 @@ ofa_base_dialog_class_init( ofaBaseDialogClass *klass )
 	static const gchar *thisfn = "ofa_base_dialog_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	g_type_class_add_private( klass, sizeof( ofaBaseDialogPrivate ));
 
 	G_OBJECT_CLASS( klass )->get_property = base_dialog_get_property;
 	G_OBJECT_CLASS( klass )->set_property = base_dialog_set_property;
@@ -251,7 +248,6 @@ ofa_base_dialog_run( ofaBaseDialog *dialog )
 
 		do_init_dialog( dialog );
 		gtk_widget_show_all( GTK_WIDGET( dialog->prot->dialog ));
-
 		code = do_run_dialog( dialog );
 	}
 
@@ -301,7 +297,6 @@ load_from_builder( ofaBaseDialog *dialog )
 	}
 
 	g_object_unref( builder );
-
 	return( loaded );
 }
 

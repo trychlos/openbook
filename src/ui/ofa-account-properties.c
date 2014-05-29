@@ -92,12 +92,10 @@ static const gchar  *st_ui_id        = "AccountPropertiesDlg";
 
 G_DEFINE_TYPE( ofaAccountProperties, ofa_account_properties, OFA_TYPE_BASE_DIALOG )
 
-#define OFA_ACCOUNT_PROPERTIES_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFA_TYPE_ACCOUNT_PROPERTIES, ofaAccountPropertiesPrivate))
-
-static void      account_properties_init_dialog( ofaBaseDialog *dialog );
-static GtkEntry *get_entry_number( ofaAccountProperties *self );
+static void      v_account_properties_init_dialog( ofaBaseDialog *dialog );
+static void      get_entry_number( ofaAccountProperties *self, GtkEntry **entry );
 static void      get_radio_root_detail( ofaAccountProperties *self, GtkRadioButton **root, GtkRadioButton **detail );
-static gboolean  account_properties_quit_on_ok( ofaBaseDialog *dialog );
+static gboolean  v_account_properties_quit_on_ok( ofaBaseDialog *dialog );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_devise_changed( GtkComboBox *combo, ofaAccountProperties *self );
@@ -124,6 +122,7 @@ account_properties_finalize( GObject *instance )
 	g_free( priv->label );
 	g_free( priv->type );
 	g_free( priv->maj_user );
+	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_account_properties_parent_class )->finalize( instance );
@@ -143,7 +142,7 @@ account_properties_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_account_properties_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_account_properties_parent_class )->dispose( instance );
 }
 
 static void
@@ -154,7 +153,7 @@ ofa_account_properties_init( ofaAccountProperties *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = OFA_ACCOUNT_PROPERTIES_GET_PRIVATE( self );
+	self->private = g_new0( ofaAccountPropertiesPrivate, 1 );
 
 	self->private->account = NULL;
 	self->private->is_new = FALSE;
@@ -168,13 +167,11 @@ ofa_account_properties_class_init( ofaAccountPropertiesClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	g_type_class_add_private( klass, sizeof( ofaAccountPropertiesPrivate ));
-
 	G_OBJECT_CLASS( klass )->dispose = account_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_properties_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = account_properties_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = account_properties_quit_on_ok;
+	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_account_properties_init_dialog;
+	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_account_properties_quit_on_ok;
 }
 
 /**
@@ -191,7 +188,7 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 	gboolean updated;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	g_return_val_if_fail( account && OFO_IS_DOSSIER( account ), FALSE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 	g_debug( "%s: main_window=%p, account=%p",
 			thisfn, ( void * ) main_window, ( void * ) account );
@@ -214,7 +211,7 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 }
 
 static void
-account_properties_init_dialog( ofaBaseDialog *dialog )
+v_account_properties_init_dialog( ofaBaseDialog *dialog )
 {
 	ofaAccountProperties *self;
 	ofaAccountPropertiesPrivate *priv;
@@ -245,7 +242,7 @@ account_properties_init_dialog( ofaBaseDialog *dialog )
 	gtk_window_set_title( GTK_WINDOW( dialog->prot->dialog ), title );
 
 	priv->number = g_strdup( acc_number );
-	entry = get_entry_number( self );
+	get_entry_number( self, &entry );
 	if( priv->number ){
 		gtk_entry_set_text( entry, priv->number );
 	}
@@ -444,18 +441,20 @@ account_properties_init_dialog( ofaBaseDialog *dialog )
 	check_for_enable_dlg( OFA_ACCOUNT_PROPERTIES( dialog ));
 }
 
-static GtkEntry *
-get_entry_number( ofaAccountProperties *self )
+static void
+get_entry_number( ofaAccountProperties *self, GtkEntry **entry )
 {
-	return( GTK_ENTRY(
+	g_return_if_fail( entry );
+	*entry = GTK_ENTRY(
 					my_utils_container_get_child_by_name(
-							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-number" )));
+							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-number" ));
 }
 
 static void
 get_radio_root_detail( ofaAccountProperties *self, GtkRadioButton **root, GtkRadioButton **detail )
 {
-	g_return_if_fail( root && detail );
+	g_return_if_fail( root );
+	g_return_if_fail( detail );
 
 	*root = GTK_RADIO_BUTTON(
 				my_utils_container_get_child_by_name(
@@ -466,7 +465,7 @@ get_radio_root_detail( ofaAccountProperties *self, GtkRadioButton **root, GtkRad
 }
 
 static gboolean
-account_properties_quit_on_ok( ofaBaseDialog *dialog )
+v_account_properties_quit_on_ok( ofaBaseDialog *dialog )
 {
 	return( do_update( OFA_ACCOUNT_PROPERTIES( dialog )));
 }
@@ -549,7 +548,7 @@ check_for_enable_dlg( ofaAccountProperties *self )
 	/* has this account already add some imputation ? */
 	vierge = !priv->deb_mnt && !priv->cre_mnt && !priv->bro_deb_mnt && !priv->bro_cre_mnt;
 
-	entry = get_entry_number( self );
+	get_entry_number( self, &entry );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), vierge );
 
 	is_root = ( priv->type && !g_utf8_collate( priv->type, "R" ));
@@ -582,15 +581,24 @@ is_dialog_validable( ofaAccountProperties *self )
 	ofaAccountPropertiesPrivate *priv;
 	ofoDossier *dossier;
 	ofoAccount *exists;
+	const gchar *prev;
 
 	priv = self->private;
 
 	ok = ofo_account_is_valid_data( priv->number, priv->label, priv->devise, priv->type );
 
+	/* intrinsec validity is ok
+	 * the number may have been modified ; the new number is acceptable
+	 * if it doesn't exist yet, or has not been modified
+	 * => we are refusing a new number which already exists and is for
+	 *    another account
+	 */
 	if( ok && !self->private->number_ok ){
+
 		dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 		exists = ofo_account_get_by_number( dossier, self->private->number );
-		self->private->number_ok = !exists || !self->private->is_new;
+		prev = ofo_account_get_number( priv->account );
+		self->private->number_ok = !exists || !g_utf8_collate( prev, priv->number );
 		ok &= self->private->number_ok;
 	}
 
@@ -600,32 +608,27 @@ is_dialog_validable( ofaAccountProperties *self )
 static gboolean
 do_update( ofaAccountProperties *self )
 {
-	gchar *prev_number;
+	const gchar *prev_number;
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	prev_number = g_strdup( ofo_account_get_number( self->private->account ));
+	prev_number = ofo_account_get_number( self->private->account );
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 
-	/* le nouveau numéro de compte n'est pas encore utilisé,
-	 * ou bien il est déjà utilisé par ce même compte (n'a pas été modifié)
-	 */
 	ofo_account_set_number( self->private->account, self->private->number );
 	ofo_account_set_label( self->private->account, self->private->label );
 	ofo_account_set_type( self->private->account, self->private->type );
 	ofo_account_set_devise( self->private->account, self->private->devise );
 	my_utils_getback_notes_ex2( account );
 
-	if( !self->private->is_new ){
+	if( self->private->is_new ){
 		self->private->updated =
 				ofo_account_insert( self->private->account, dossier );
 	} else {
 		self->private->updated =
 				ofo_account_update( self->private->account, dossier, prev_number );
 	}
-
-	g_free( prev_number );
 
 	return( self->private->updated );
 }

@@ -493,23 +493,28 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 		g_string_free( number, TRUE );
 	}
 
-	g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_NORMAL, NULL );
-	g_object_set( G_OBJECT( cell ), "weight", PANGO_WEIGHT_NORMAL, NULL );
-	g_object_set( G_OBJECT( cell ), "foreground-set", FALSE, NULL );
-	g_object_set( G_OBJECT( cell ), "background-set", FALSE, NULL );
+	g_object_set( G_OBJECT( cell ),
+						"style-set",      FALSE,
+						"weight-set",     FALSE,
+						"foreground-set", FALSE,
+						"background-set", FALSE,
+						NULL );
 
 	if( ofo_account_is_root( account )){
 
 		if( level == 2 ){
-			gdk_rgba_parse( &color, "#80ffff" );
+			gdk_rgba_parse( &color, "#c0ffff" );
 			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
 			g_object_set( G_OBJECT( cell ), "weight", PANGO_WEIGHT_BOLD, NULL );
 
 		} else if( level == 3 ){
 			gdk_rgba_parse( &color, "#0000ff" );
 			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( cell ), "weight", PANGO_WEIGHT_BOLD, NULL );
 
 		} else {
+			gdk_rgba_parse( &color, "#0000ff" );
+			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 		}
 	}

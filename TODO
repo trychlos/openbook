@@ -145,8 +145,6 @@
 
  111 2014- 5-26 ofo_taux_get_val_rate_by_date
 
- 113 2014- 5-26 have a base class for properties dialogs
-
  114 2014- 5-26 dispose_has_run should be a protected data of the
                 ofaMainPage base class
 
@@ -182,7 +180,27 @@
                 more used when all dialog box will be derived from 
                 ofaBseDialog
 
- 133
+ 133 2014- 5-28 ofaAccountProperties makes use of ofaDeviseCombo
+
+ 134 2014- 5-28 ofaAccountSelect derives from ofaBaseDialog
+
+ 135 2014- 5-28 odaDeviseProperties derives from ofaBaseDialog
+
+ 136 2014- 5-28 ofaDossierOpen derives from ofaBaseDialog
+
+ 137 2014- 5-28 ofaDossierProperties derives from ofaBaseDialog
+
+ 138 2014- 5-28 ofaGuidedInput derives from ofaBaseDialog
+
+ 139 2014- 5-28 ofaJournalProperties derives from ofaBaseDialog
+
+ 140 2014- 5-28 ofaModelProperties derives from ofaBaseDialog
+
+ 141 2014- 5-28 ofaTauxProperties derives from ofaBaseDialog
+
+ 142 2014- 5-28 remove xxxClassPrivate
+
+ 143
 
 -----------------------------------------------------------------------
  DONE
@@ -469,6 +487,9 @@
  112 2014- 5-26 dispose_has_run is a protected data of the ofoBase
                 base class
      2014 -5-26 done svn #3506
+
+ 113 2014- 5-26 have a base class for properties dialogs
+     2014- 5-28 done - svn #3540
 
  115 2014- 5-26 it seems that an account cannot be finalized after 
                 having be udated in AccountsChart (ref count issue ?)
