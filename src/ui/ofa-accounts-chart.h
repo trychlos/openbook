@@ -57,7 +57,7 @@ typedef struct {
 
 typedef struct {
 	/*< private >*/
-	ofaMainPageClass              parent;
+	ofaMainPageClass parent;
 }
 	ofaAccountsChartClass;
 

@@ -71,7 +71,7 @@ typedef struct {
 	 * The base class implementation ends up by calling #init_view()
 	 * virtual method.
 	 */
-	void        ( *setup_page )( ofaMainPage *page );
+	void        ( *setup_page )       ( ofaMainPage *page );
 
 	/**
 	 * setup_view:
@@ -82,7 +82,7 @@ typedef struct {
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
-	GtkWidget * ( *setup_view )( ofaMainPage *page );
+	GtkWidget * ( *setup_view )       ( ofaMainPage *page );
 
 	/**
 	 * setup_buttons:

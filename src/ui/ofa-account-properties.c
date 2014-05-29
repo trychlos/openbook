@@ -609,12 +609,12 @@ is_dialog_validable( ofaAccountProperties *self )
 static gboolean
 do_update( ofaAccountProperties *self )
 {
-	const gchar *prev_number;
+	gchar *prev_number;
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	prev_number = ofo_account_get_number( self->private->account );
+	prev_number = g_strdup( ofo_account_get_number( self->private->account ));
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 
 	ofo_account_set_number( self->private->account, self->private->number );
@@ -630,6 +630,8 @@ do_update( ofaAccountProperties *self )
 		self->private->updated =
 				ofo_account_update( self->private->account, dossier, prev_number );
 	}
+
+	g_free( prev_number );
 
 	return( self->private->updated );
 }
