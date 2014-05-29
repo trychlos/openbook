@@ -162,8 +162,6 @@
 
  126 2014- 5-28 have several demo dossiers
 
- 127 2014- 5-28 ofaAccountNotebook: update amount accounts on new entry
-
  128 2014- 5-28 Dossier: have a default currency
 
  129 2014- 5-28 Account: archive balances after closing in ACCOUNT_EXE
@@ -505,6 +503,9 @@
  119 2014- 5-27 ofaAccountNotebook: scroll the view for display the
                 initial selection
      2014- 5-27 done - svn #3512
+
+ 127 2014- 5-28 ofaAccountNotebook: update amount accounts on new entry
+     2014- 5-29 done - svn #3547
 
  134 2014- 5-28 ofaAccountSelect derives from ofaBaseDialog
      2014- 5-29 done - svn #3544

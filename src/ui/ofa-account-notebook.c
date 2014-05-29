@@ -33,6 +33,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofo-account.h"
+#include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
 
 /* private instance data
@@ -61,6 +62,7 @@ enum {
 	COL_LABEL,
 	COL_DEBIT,
 	COL_CREDIT,
+	COL_CURRENCY,
 	COL_OBJECT,
 	N_COLUMNS
 };
@@ -286,7 +288,7 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 
 	model = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( view, model );
 	g_object_unref( model );
 
@@ -331,6 +333,16 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_CREDIT );
 	gtk_tree_view_column_set_min_width( column, 120 );
+	gtk_tree_view_append_column( view, column );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+
+	text_cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( text_cell, 0.0, 0.5 );
+	column = gtk_tree_view_column_new();
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( COL_CURRENCY ));
+	gtk_tree_view_column_pack_end( column, text_cell, FALSE );
+	gtk_tree_view_column_set_alignment( column, 0.0 );
+	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_CURRENCY );
 	gtk_tree_view_append_column( view, column );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
@@ -413,6 +425,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountN
  * level 2 and root: bold, colored background
  * level 3 and root: colored background
  * other root: italic
+ *
+ * detail accounts who have no currency are red written.
  */
 static void
 on_cell_data_func( GtkTreeViewColumn *tcolumn,
@@ -424,6 +438,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	gint level;
 	gint column;
 	GdkRGBA color;
+	ofoDevise *devise;
 
 	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
 
@@ -464,6 +479,13 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 			gdk_rgba_parse( &color, "#0000ff" );
 			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+		}
+
+	} else {
+		devise = ofo_devise_get_by_id( self->private->dossier, ofo_account_get_devise( account ));
+		if( !devise ){
+			gdk_rgba_parse( &color, "#ff0000" );
+			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 		}
 	}
 }
@@ -510,6 +532,8 @@ insert_new_row( ofaAccountNotebook *self, ofoAccount *account, gboolean with_sel
 	GtkTreeIter iter;
 	gchar *sdeb, *scre;
 	GtkTreePath *path;
+	ofoDevise *devise;
+	gchar *cdev;
 
 	page_num = book_get_page_by_class( self, ofo_account_get_class( account ));
 	if( page_num >= 0 ){
@@ -525,23 +549,36 @@ insert_new_row( ofaAccountNotebook *self, ofoAccount *account, gboolean with_sel
 		if( ofo_account_is_root( account )){
 			sdeb = g_strdup( "" );
 			scre = g_strdup( "" );
+			cdev = g_strdup( "" );
+
 		} else {
-			sdeb = g_strdup_printf( "%.2f €",
+			sdeb = g_strdup_printf( "%.2f",
 					ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
-			scre = g_strdup_printf( "%.2f €",
+			scre = g_strdup_printf( "%.2f",
 					ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
+			devise = ofo_devise_get_by_id( self->private->dossier, ofo_account_get_devise( account ));
+			if( devise ){
+				cdev = g_strdup( ofo_devise_get_code( devise ));
+			} else {
+				cdev = g_strdup( "" );
+			}
 		}
 
 		gtk_list_store_insert_with_values(
 				GTK_LIST_STORE( tmodel ),
 				&iter,
 				-1,
-				COL_NUMBER, ofo_account_get_number( account ),
-				COL_LABEL,  ofo_account_get_label( account ),
-				COL_DEBIT,  sdeb,
-				COL_CREDIT, scre,
-				COL_OBJECT, account,
+				COL_NUMBER,   ofo_account_get_number( account ),
+				COL_LABEL,    ofo_account_get_label( account ),
+				COL_DEBIT,    sdeb,
+				COL_CREDIT,   scre,
+				COL_CURRENCY, cdev,
+				COL_OBJECT,   account,
 				-1 );
+
+		g_free( sdeb );
+		g_free( scre );
+		g_free( cdev );
 
 		/* select the newly added account */
 		if( with_selection ){
@@ -760,9 +797,9 @@ on_account_updated( ofoDossier *dossier, ofoAccount *account, ofaAccountNotebook
 						g_free( i_number );
 
 						if( cmp == 0 ){
-							sdeb = g_strdup_printf( "%.2f €",
+							sdeb = g_strdup_printf( "%.2f",
 										ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
-							scre = g_strdup_printf( "%.2f €",
+							scre = g_strdup_printf( "%.2f",
 										ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
 
 							gtk_list_store_set(

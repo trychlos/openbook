@@ -64,7 +64,9 @@ OFO_BASE_DEFINE_GLOBAL( st_global, devise )
 
 static GList     *devise_load_dataset( void );
 static ofoDevise *devise_find_by_code( GList *set, const gchar *code );
+static ofoDevise *devise_find_by_id( GList *set, gint id );
 static gint       devise_cmp_by_code( const ofoDevise *a, const gchar *code );
+static gint       devise_cmp_by_id( const ofoDevise *a, gpointer pid );
 static gboolean   devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user );
 static gboolean   devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user );
 static gboolean   devise_get_back_id( ofoDevise *devise, ofoSgbd *sgbd );
@@ -229,6 +231,38 @@ devise_find_by_code( GList *set, const gchar *code )
 
 	found = g_list_find_custom(
 				set, code, ( GCompareFunc ) devise_cmp_by_code );
+	if( found ){
+		return( OFO_DEVISE( found->data ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_devise_get_by_id:
+ *
+ * Returns: the searched currency, or %NULL.
+ *
+ * The returned object is owned by the #ofoDevise class, and should
+ * not be unreffed by the caller.
+ */
+ofoDevise *
+ofo_devise_get_by_id( const ofoDossier *dossier, gint id )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
+
+	return( devise_find_by_id( st_global->dataset, id ));
+}
+
+static ofoDevise *
+devise_find_by_id( GList *set, gint id )
+{
+	GList *found;
+
+	found = g_list_find_custom(
+				set, GINT_TO_POINTER( id ), ( GCompareFunc ) devise_cmp_by_id );
 	if( found ){
 		return( OFO_DEVISE( found->data ));
 	}
@@ -754,6 +788,23 @@ static gint
 devise_cmp_by_code( const ofoDevise *a, const gchar *code )
 {
 	return( g_utf8_collate( ofo_devise_get_code( a ), code ));
+}
+
+static gint
+devise_cmp_by_id( const ofoDevise *a, gpointer pid )
+{
+	gint aid, bid;
+
+	aid = ofo_devise_get_id( a );
+	bid = GPOINTER_TO_INT( pid );
+
+	if( aid < bid ){
+		return( -1 );
+	}
+	if( aid > bid ){
+		return( 1 );
+	}
+	return( 0 );
 }
 
 static gint
