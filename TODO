@@ -182,8 +182,6 @@
 
  133 2014- 5-28 ofaAccountProperties makes use of ofaDeviseCombo
 
- 134 2014- 5-28 ofaAccountSelect derives from ofaBaseDialog
-
  135 2014- 5-28 odaDeviseProperties derives from ofaBaseDialog
 
  136 2014- 5-28 ofaDossierOpen derives from ofaBaseDialog
@@ -202,7 +200,9 @@
 
  143 2014- 5-29 add iso 3a code to accout notebook view
 
- 144
+ 144 2014- 5-29 always use g_define_type 
+
+ 145
 
 -----------------------------------------------------------------------
  DONE
@@ -509,6 +509,9 @@
  119 2014- 5-27 ofaAccountNotebook: scroll the view for display the
                 initial selection
      2014- 5-27 done - svn #3512
+
+ 134 2014- 5-28 ofaAccountSelect derives from ofaBaseDialog
+     2014- 5-29 done - svn #3544
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
