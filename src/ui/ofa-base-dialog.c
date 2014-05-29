@@ -51,6 +51,10 @@ struct _ofaBaseDialogPrivate {
 	ofaMainWindow *main_window;
 	gchar         *dialog_xml;
 	gchar         *dialog_name;
+
+	/* internals
+	 */
+	gboolean       init_has_run;
 };
 
 /* class properties
@@ -235,23 +239,28 @@ ofa_base_dialog_class_init( ofaBaseDialogClass *klass )
 }
 
 /**
- * ofa_base_dialog_run:
+ * ofa_base_dialog_init_dialog:
  */
-gint
-ofa_base_dialog_run( ofaBaseDialog *dialog )
+gboolean
+ofa_base_dialog_init_dialog( ofaBaseDialog *dialog )
 {
-	gint code;
+	g_return_val_if_fail( OFA_IS_BASE_DIALOG( dialog ), FALSE );
 
-	code = GTK_RESPONSE_CANCEL;
+	if( !dialog->prot->dispose_has_run ){
 
-	if( load_from_builder( dialog )){
+		if( load_from_builder( dialog )){
 
-		do_init_dialog( dialog );
-		gtk_widget_show_all( GTK_WIDGET( dialog->prot->dialog ));
-		code = do_run_dialog( dialog );
+			do_init_dialog( dialog );
+
+			gtk_widget_show_all( GTK_WIDGET( dialog->prot->dialog ));
+
+			dialog->priv->init_has_run = TRUE;
+
+			return( TRUE );
+		}
 	}
 
-	return( code );
+	return( FALSE );
 }
 
 static void
@@ -298,6 +307,29 @@ load_from_builder( ofaBaseDialog *dialog )
 
 	g_object_unref( builder );
 	return( loaded );
+}
+
+/**
+ * ofa_base_dialog_run_dialog:
+ */
+gint
+ofa_base_dialog_run_dialog( ofaBaseDialog *dialog )
+{
+	gint code;
+
+	code = GTK_RESPONSE_CANCEL;
+
+	g_return_val_if_fail( OFA_IS_BASE_DIALOG( dialog ), code );
+
+	if( !dialog->prot->dispose_has_run ){
+
+		if( dialog->priv->init_has_run || ofa_base_dialog_init_dialog( dialog )){
+
+			code = do_run_dialog( dialog );
+		}
+	}
+
+	return( code );
 }
 
 static gint

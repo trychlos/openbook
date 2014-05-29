@@ -29,147 +29,100 @@
 #endif
 
 #include "ui/my-utils.h"
+#include "ui/ofa-base-dialog-prot.h"
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofo-account.h"
 
-/* private class data
- */
-struct _ofaAccountSelectClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaAccountSelectPrivate {
-	gboolean       dispose_has_run;
-
-	/* input data
-	 */
-	ofaMainWindow *main_window;
 
 	/* runtime
 	 */
-	GtkDialog     *dialog;
 	ofaAccountNotebook *child;
 
 	/* returned value
 	 */
-	gchar         *account_number;
+	gchar              *account_number;
 };
 
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-account-select.ui";
 static const gchar  *st_ui_id        = "AccountSelectDlg";
 
 static ofaAccountSelect *st_this         = NULL;
-static GObjectClass     *st_parent_class = NULL;
 
-static GType    register_type( void );
-static void     class_init( ofaAccountSelectClass *klass );
-static void     instance_init( GTypeInstance *instance, gpointer klass );
-static void     instance_dispose( GObject *instance );
-static void     instance_finalize( GObject *instance );
-static void     do_initialize_dialog( ofaAccountSelect *self );
-static gboolean ok_to_terminate( ofaAccountSelect *self, gint code );
-static void     on_account_activated( const gchar *number, ofaAccountSelect *self );
-static void     check_for_enable_dlg( ofaAccountSelect *self );
-static gboolean do_update( ofaAccountSelect *self );
+G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, OFA_TYPE_BASE_DIALOG )
 
-GType
-ofa_account_select_get_type( void )
-{
-	static GType window_type = 0;
-
-	if( !window_type ){
-		window_type = register_type();
-	}
-
-	return( window_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_account_select_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaAccountSelectClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaAccountSelect ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaAccountSelect", &info, 0 );
-
-	return( type );
-}
+static void      v_account_select_init_dialog( ofaBaseDialog *dialog );
+static gboolean  v_account_select_quit_on_ok( ofaBaseDialog *dialog );
+static void      on_account_activated( const gchar *number, ofaBaseDialog *dialog );
+static void      check_for_enable_dlg( ofaAccountSelect *self );
+static gboolean  do_update( ofaAccountSelect *self );
 
 static void
-class_init( ofaAccountSelectClass *klass )
+account_select_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_account_select_class_init";
-	GObjectClass *object_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaAccountSelectClassPrivate, 1 );
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_account_select_instance_init";
-	ofaAccountSelect *self;
-
-	g_return_if_fail( OFA_IS_ACCOUNT_SELECT( instance ));
-
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
-
-	self = OFA_ACCOUNT_SELECT( instance );
-
-	self->private = g_new0( ofaAccountSelectPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-}
-
-static void
-instance_dispose( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_account_select_instance_dispose";
+	static const gchar *thisfn = "ofa_account_select_finalize";
 	ofaAccountSelectPrivate *priv;
 
 	g_return_if_fail( OFA_IS_ACCOUNT_SELECT( instance ));
 
-	priv = ( OFA_ACCOUNT_SELECT( instance ))->private;
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	if( !priv->dispose_has_run ){
+	priv = OFA_ACCOUNT_SELECT( instance )->private;
+
+	g_free( priv->account_number );
+	g_free( priv );
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_account_select_parent_class )->finalize( instance );
+}
+
+static void
+account_select_dispose( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_account_select_dispose";
+
+	g_return_if_fail( OFA_IS_ACCOUNT_SELECT( instance ));
+
+	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
 
 		g_debug( "%s: instance=%p (%s)",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-		priv->dispose_has_run = TRUE;
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_account_select_parent_class )->dispose( instance );
+}
+
+static void
+ofa_account_select_init( ofaAccountSelect *self )
+{
+	static const gchar *thisfn = "ofa_account_select_init";
+
+	g_return_if_fail( OFA_IS_ACCOUNT_SELECT( self ));
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	self->private = g_new0( ofaAccountSelectPrivate, 1 );
+}
+
+static void
+ofa_account_select_class_init( ofaAccountSelectClass *klass )
+{
+	static const gchar *thisfn = "ofa_account_select_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = account_select_dispose;
+	G_OBJECT_CLASS( klass )->finalize = account_select_finalize;
+
+	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_account_select_init_dialog;
+	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_account_select_quit_on_ok;
 }
 
 static void
@@ -178,30 +131,6 @@ on_main_window_finalized( gpointer is_null, gpointer this_was_the_dialog )
 	g_return_if_fail( st_this && OFA_IS_ACCOUNT_SELECT( st_this ));
 	g_object_unref( st_this );
 	st_this = NULL;
-}
-
-static void
-instance_finalize( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_account_select_instance_finalize";
-	ofaAccountSelect *self;
-
-	g_return_if_fail( OFA_IS_ACCOUNT_SELECT( instance ));
-
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	self = OFA_ACCOUNT_SELECT( instance );
-
-	gtk_widget_destroy( GTK_WIDGET( self->private->dialog ));
-
-	g_free( self->private->account_number );
-
-	g_free( self->private );
-
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
 }
 
 /**
@@ -214,7 +143,6 @@ gchar *
 ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
-	gint code;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -223,15 +151,18 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 
 	if( !st_this ){
 
-		st_this = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
-		st_this->private->main_window = main_window;
-		do_initialize_dialog( st_this );
+		st_this = g_object_new(
+				OFA_TYPE_ACCOUNT_SELECT,
+				OFA_PROP_MAIN_WINDOW, main_window,
+				OFA_PROP_DIALOG_XML,  st_ui_xml,
+				OFA_PROP_DIALOG_NAME, st_ui_id,
+				NULL );
+
+		ofa_base_dialog_init_dialog( OFA_BASE_DIALOG( st_this ));
 
 		/* setup a weak reference on the main window to auto-unref */
 		g_object_weak_ref( G_OBJECT( main_window ), ( GWeakNotify ) on_main_window_finalized, NULL );
 	}
-
-	gtk_widget_show_all( GTK_WIDGET( st_this->private->dialog ));
 
 	g_free( st_this->private->account_number );
 	st_this->private->account_number = NULL;
@@ -239,100 +170,61 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 	ofa_account_notebook_set_selected( st_this->private->child, asked_number );
 	check_for_enable_dlg( st_this );
 
-	g_debug( "%s: call gtk_dialog_run", thisfn );
-	do {
-		code = gtk_dialog_run( st_this->private->dialog );
-		g_debug( "%s: gtk_dialog_run code=%d", thisfn, code );
-		/* pressing Escape key makes gtk_dialog_run returns -4 GTK_RESPONSE_DELETE_EVENT */
-	}
-	while( !ok_to_terminate( st_this, code ));
+	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( st_this ));
 
-	gtk_widget_hide( GTK_WIDGET( st_this->private->dialog ));
+	gtk_widget_hide( GTK_WIDGET( OFA_BASE_DIALOG( st_this )->prot->dialog ));
 
 	return( g_strdup( st_this->private->account_number ));
 }
 
 static void
-do_initialize_dialog( ofaAccountSelect *self )
+v_account_select_init_dialog( ofaBaseDialog *dialog )
 {
-	static const gchar *thisfn = "ofa_account_select_do_initialize_dialog";
-	GError *error;
-	GtkBuilder *builder;
 	ofaAccountSelectPrivate *priv;
 	GtkWidget *book;
 	ofaAccountNotebookParms parms;
 
-	priv = self->private;
+	priv = OFA_ACCOUNT_SELECT( dialog )->private;
 
-	/* create the GtkDialog */
-	error = NULL;
-	builder = gtk_builder_new();
-	if( gtk_builder_add_from_file( builder, st_ui_xml, &error )){
-		priv->dialog = GTK_DIALOG( gtk_builder_get_object( builder, st_ui_id ));
-		if( !priv->dialog ){
-			g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_ui_id, st_ui_xml );
-		}
-	} else {
-		g_warning( "%s: %s", thisfn, error->message );
-		g_error_free( error );
-	}
-	g_object_unref( builder );
+	book = my_utils_container_get_child_by_type( GTK_CONTAINER( dialog->prot->dialog ), GTK_TYPE_NOTEBOOK );
+	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
 
-	/* initialize the newly created dialog */
-	if( priv->dialog ){
+	parms.book = GTK_NOTEBOOK( book );
+	parms.dossier = ofa_base_dialog_get_dossier( dialog );
+	parms.pfnSelect = NULL;
+	parms.user_data_select = NULL;
+	parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_account_activated;
+	parms.user_data_double_clic = dialog;
 
-		/*gtk_window_set_transient_for( GTK_WINDOW( priv->dialog ), GTK_WINDOW( main ));*/
+	priv->child = ofa_account_notebook_init_dialog( &parms );
 
-		book = my_utils_container_get_child_by_type( GTK_CONTAINER( priv->dialog ), GTK_TYPE_NOTEBOOK );
-		g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
-
-		parms.book = GTK_NOTEBOOK( book );
-		parms.dossier = ofa_main_window_get_dossier( priv->main_window );
-		parms.pfnSelect = NULL;
-		parms.user_data_select = NULL;
-		parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_account_activated;
-		parms.user_data_double_clic = self;
-
-		priv->child = ofa_account_notebook_init_dialog( &parms );
-
-		ofa_account_notebook_init_view( st_this->private->child, NULL );
-	}
+	ofa_account_notebook_init_view( st_this->private->child, NULL );
 }
 
-/*
- * return %TRUE to allow quitting the dialog
- */
 static gboolean
-ok_to_terminate( ofaAccountSelect *self, gint code )
+v_account_select_quit_on_ok( ofaBaseDialog *dialog )
 {
-	gboolean quit = FALSE;
-
-	switch( code ){
-		case GTK_RESPONSE_NONE:
-		case GTK_RESPONSE_DELETE_EVENT:
-		case GTK_RESPONSE_CLOSE:
-		case GTK_RESPONSE_CANCEL:
-			quit = TRUE;
-			break;
-
-		case GTK_RESPONSE_OK:
-			quit = do_update( self );
-			break;
-	}
-
-	return( quit );
+	return( do_update( OFA_ACCOUNT_SELECT( dialog )));
 }
 
 static void
-on_account_activated( const gchar *number, ofaAccountSelect *self )
+on_account_activated( const gchar *number, ofaBaseDialog *dialog )
 {
-	gtk_dialog_response( self->private->dialog, GTK_RESPONSE_OK );
+	gtk_dialog_response( dialog->prot->dialog, GTK_RESPONSE_OK );
 }
 
 static void
 check_for_enable_dlg( ofaAccountSelect *self )
 {
+	ofoAccount *account;
+	GtkWidget *btn;
 
+	account = ofa_account_notebook_get_selected( self->private->child );
+
+	btn = my_utils_container_get_child_by_name(
+					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
+
+	gtk_widget_set_sensitive( btn, account && OFO_IS_ACCOUNT( account ));
 }
 
 static gboolean

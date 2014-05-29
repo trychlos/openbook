@@ -203,7 +203,7 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 
 	self->private->account = account;
 
-	ofa_base_dialog_run( OFA_BASE_DIALOG( self ));
+	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
 
 	updated = self->private->updated;
 	g_object_unref( self );

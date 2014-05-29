@@ -35,6 +35,7 @@
  * Display the chart of accounts, letting the user edit it.
  */
 
+#include "ui/ofa-base-dialog.h"
 #include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -50,7 +51,7 @@ typedef struct _ofaAccountSelectPrivate        ofaAccountSelectPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                  parent;
+	ofaBaseDialog            parent;
 	ofaAccountSelectPrivate *private;
 }
 	ofaAccountSelect;
@@ -59,8 +60,7 @@ typedef struct _ofaAccountSelectClassPrivate   ofaAccountSelectClassPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass                  parent;
-	ofaAccountSelectClassPrivate *private;
+	ofaBaseDialogClass parent;
 }
 	ofaAccountSelectClass;
 

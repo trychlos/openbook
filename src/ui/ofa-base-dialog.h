@@ -161,7 +161,9 @@ typedef struct {
 
 GType       ofa_base_dialog_get_type   ( void );
 
-gint        ofa_base_dialog_run        ( ofaBaseDialog *dialog );
+gboolean    ofa_base_dialog_init_dialog( ofaBaseDialog *dialog );
+
+gint        ofa_base_dialog_run_dialog ( ofaBaseDialog *dialog );
 
 ofoDossier *ofa_base_dialog_get_dossier( const ofaBaseDialog *dialog );
 
