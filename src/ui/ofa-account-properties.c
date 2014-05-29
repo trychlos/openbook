@@ -114,7 +114,8 @@ account_properties_finalize( GObject *instance )
 
 	g_return_if_fail( OFA_IS_ACCOUNT_PROPERTIES( instance ));
 
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	priv = OFA_ACCOUNT_PROPERTIES( instance )->private;
 

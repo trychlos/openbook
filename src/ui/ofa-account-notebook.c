@@ -35,16 +35,10 @@
 #include "ui/ofo-account.h"
 #include "ui/ofo-dossier.h"
 
-/* private class data
- */
-struct _ofaAccountNotebookClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaAccountNotebookPrivate {
-	gboolean     dispose_has_run;
+	gboolean             dispose_has_run;
 
 	/* input data
 	 */
@@ -57,7 +51,7 @@ struct _ofaAccountNotebookPrivate {
 
 	/* runtime
 	 */
-	GtkTreeView *view;					/* the tree view of the current page */
+	GtkTreeView         *view;			/* the tree view of the current page */
 };
 
 /* column ordering in the listview
@@ -89,13 +83,8 @@ static const gchar  *st_class_labels[] = {
 #define DATA_PAGE_CLASS                 "ofa-data-page-class"
 #define DATA_COLUMN_ID                  "ofa-data-column-id"
 
-static GObjectClass *st_parent_class = NULL;
+G_DEFINE_TYPE( ofaAccountNotebook, ofa_account_notebook, G_TYPE_OBJECT )
 
-static GType      register_type( void );
-static void       class_init( ofaAccountNotebookClass *klass );
-static void       instance_init( GTypeInstance *instance, gpointer klass );
-static void       instance_dispose( GObject *instance );
-static void       instance_finalize( GObject *instance );
 static void       setup_book( ofaAccountNotebook *self );
 static GtkWidget *book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class );
 static gboolean   book_activate_page_by_class( ofaAccountNotebook *self, gint class_num );
@@ -109,82 +98,29 @@ static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint n
 static void       on_account_selected( GtkTreeSelection *selection, ofaAccountNotebook *self );
 static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self );
 
-GType
-ofa_account_notebook_get_type( void )
-{
-	static GType window_type = 0;
-
-	if( !window_type ){
-		window_type = register_type();
-	}
-
-	return( window_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_account_notebook_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaAccountNotebookClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaAccountNotebook ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaAccountNotebook", &info, 0 );
-
-	return( type );
-}
-
 static void
-class_init( ofaAccountNotebookClass *klass )
+account_notebook_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_account_notebook_class_init";
-	GObjectClass *object_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaAccountNotebookClassPrivate, 1 );
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_account_notebook_instance_init";
-	ofaAccountNotebook *self;
+	static const gchar *thisfn = "ofa_account_notebook_finalize";
+	ofaAccountNotebookPrivate *priv;
 
 	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( instance ));
 
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self = OFA_ACCOUNT_NOTEBOOK( instance );
+	priv = OFA_ACCOUNT_NOTEBOOK( instance )->private;
 
-	self->private = g_new0( ofaAccountNotebookPrivate, 1 );
+	g_free( priv );
 
-	self->private->dispose_has_run = FALSE;
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_account_notebook_parent_class )->finalize( instance );
 }
 
 static void
-instance_dispose( GObject *instance )
+account_notebook_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_account_notebook_instance_dispose";
+	static const gchar *thisfn = "ofa_account_notebook_dispose";
 	ofaAccountNotebookPrivate *priv;
 
 	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( instance ));
@@ -197,32 +133,36 @@ instance_dispose( GObject *instance )
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		priv->dispose_has_run = TRUE;
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-		}
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_account_notebook_parent_class )->dispose( instance );
 }
 
 static void
-instance_finalize( GObject *instance )
+ofa_account_notebook_init( ofaAccountNotebook *self )
 {
-	static const gchar *thisfn = "ofa_account_notebook_instance_finalize";
-	ofaAccountNotebook *self;
+	static const gchar *thisfn = "ofa_account_notebook_init";
 
-	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( instance ));
+	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( self ));
 
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self = OFA_ACCOUNT_NOTEBOOK( instance );
+	self->private = g_new0( ofaAccountNotebookPrivate, 1 );
 
-	g_free( self->private );
+	self->private->dispose_has_run = FALSE;
+}
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( instance );
-	}
+static void
+ofa_account_notebook_class_init( ofaAccountNotebookClass *klass )
+{
+	static const gchar *thisfn = "ofa_account_notebook_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = account_notebook_dispose;
+	G_OBJECT_CLASS( klass )->finalize = account_notebook_finalize;
 }
 
 static void
