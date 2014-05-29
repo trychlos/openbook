@@ -212,7 +212,7 @@ on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
  * should not be freed by the caller.
  */
 GList *
-ofo_account_get_dataset( ofoDossier *dossier )
+ofo_account_get_dataset( const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_get_dataset";
 
@@ -332,7 +332,7 @@ account_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoAccount *
-ofo_account_get_by_number( ofoDossier *dossier, const gchar *number )
+ofo_account_get_by_number( const ofoDossier *dossier, const gchar *number )
 {
 	/*static const gchar *thisfn = "ofo_account_get_by_number";*/
 
@@ -369,7 +369,7 @@ account_find_by_number( GList *set, const gchar *number )
  * Returns: %TRUE if a recorded account makes use of the specified currency.
  */
 gboolean
-ofo_account_use_devise( ofoDossier *dossier, gint dev_id )
+ofo_account_use_devise( const ofoDossier *dossier, gint dev_id )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 

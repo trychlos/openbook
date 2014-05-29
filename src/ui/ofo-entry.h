@@ -101,13 +101,14 @@ ofaEntryStatus ofo_entry_get_status   ( const ofoEntry *entry );
 void           ofo_entry_set_maj_user ( ofoEntry *entry, const gchar *user );
 void           ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *stamp );
 
-ofoEntry      *ofo_entry_insert       ( const ofoDossier *dossier,
+ofoEntry      *ofo_entry_new_with_data( const ofoDossier *dossier,
 													const GDate *effet, const GDate *ope,
 													const gchar *label, const gchar *ref,
 													const gchar *account,
 													gint dev_id, gint jou_id,
 													gdouble amount, ofaEntrySens sens );
 
+gboolean       ofo_entry_insert       ( ofoEntry *entry, ofoDossier *dossier );
 gboolean       ofo_entry_validate     ( ofoEntry *entry, ofoDossier *dossier );
 gboolean       ofo_entry_delete       ( ofoEntry *entry, ofoDossier *dossier );
 

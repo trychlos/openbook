@@ -28,14 +28,18 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
 #include "ui/ofo-base-prot.h"
+#include "ui/ofo-account.h"
+#include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
+#include "ui/ofo-journal.h"
 #include "ui/ofo-sgbd.h"
 
 /* priv instance data
@@ -66,6 +70,12 @@ G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 static gint     entry_count_for_devise( ofoSgbd *sgbd, gint dev_id );
 static gint     entry_count_for_journal( ofoSgbd *sgbd, gint jou_id );
 static gboolean entry_do_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
+static void     error_journal( gint jou_id );
+static void     error_currency( gint dev_id );
+static void     error_acc_number( void );
+static void     error_account( const gchar *number );
+static void     error_acc_currency( const ofoDossier *dossier, gint dev_id, ofoAccount *account );
+static void     error_entry( const gchar *message );
 
 static void
 ofo_entry_finalize( GObject *instance )
@@ -414,15 +424,45 @@ ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *maj_stamp )
 }
 
 /**
- * ofo_entry_insert:
+ * ofo_entry_new_with_data:
+ *
+ * Create a new entry with the provided data.
+ * The entry is - at this time - unnumbered and does not have sent any
+ * advertising message. For the moment, this is only a 'project' of
+ * entry...
+ *
+ * Returns: the #ofoEntry entry object, of %NULL in case of an error.
  */
 ofoEntry *
-ofo_entry_insert( const ofoDossier *dossier,
-					const GDate *effet, const GDate *ope, const gchar *label,
-					const gchar *ref, const gchar *account,
-					gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens )
+ofo_entry_new_with_data( const ofoDossier *dossier,
+							const GDate *effet, const GDate *ope, const gchar *label,
+							const gchar *ref, const gchar *acc_number,
+							gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens )
 {
 	ofoEntry *entry;
+	ofoAccount *account;
+
+	if( jou_id <= 0 || !ofo_journal_get_by_id( dossier, jou_id )){
+		error_journal( jou_id );
+		return( NULL );
+	}
+	if( dev_id <= 0 || !ofo_devise_get_by_id( dossier, dev_id )){
+		error_currency( dev_id );
+		return( NULL );
+	}
+	if( !acc_number || !g_utf8_strlen( acc_number, -1 )){
+		error_acc_number();
+		return( NULL );
+	}
+	account = ofo_account_get_by_number( dossier, acc_number );
+	if( !account ){
+		error_account( acc_number );
+		return( NULL );
+	}
+	if( dev_id != ofo_account_get_devise( account )){
+		error_acc_currency( dossier, dev_id, account );
+		return( NULL );
+	}
 
 	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
 
@@ -430,25 +470,40 @@ ofo_entry_insert( const ofoDossier *dossier,
 	memcpy( &entry->priv->operation, ope, sizeof( GDate ));
 	entry->priv->label = g_strdup( label );
 	entry->priv->ref = g_strdup( ref );
-	entry->priv->account = g_strdup( account );
+	entry->priv->account = g_strdup( acc_number );
 	entry->priv->dev_id = dev_id;
 	entry->priv->jou_id = jou_id;
 	entry->priv->amount = amount;
 	entry->priv->sens = sens;
 	entry->priv->status = ENT_STATUS_ROUGH;
+
+	return( entry );
+}
+
+/**
+ * ofo_entry_insert:
+ *
+ * Allocates a sequential number to the entry, and records it in the
+ * sgbd. Send the corresponding advertising messages if no error occurs.
+ */
+gboolean
+ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
+{
+	gboolean ok;
+
+	ok = FALSE;
 	entry->priv->number = ofo_dossier_get_next_entry_number( dossier );
 
 	if( !entry_do_insert( entry,
 				ofo_dossier_get_sgbd( dossier ),
 				ofo_dossier_get_user( dossier ))){
 
-		g_clear_object( &entry );
-
 	} else {
 		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_NEW_ENTRY, g_object_ref( entry ));
+		ok = TRUE;
 	}
 
-	return( entry );
+	return( ok );
 }
 
 static gboolean
@@ -517,6 +572,94 @@ entry_do_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
 	g_free( stamp );
 
 	return( ok );
+}
+
+static void
+error_journal( gint jou_id )
+{
+	gchar *str;
+
+	str = g_strdup_printf( _( "Invalid journal identifier: %d" ), jou_id );
+	error_entry( str );
+
+	g_free( str );
+}
+
+static void
+error_currency( gint dev_id )
+{
+	gchar *str;
+
+	str = g_strdup_printf( _( "Invalid currency identifier: %d" ), dev_id );
+	error_entry( str );
+
+	g_free( str );
+}
+
+static void
+error_acc_number( void )
+{
+	gchar *str;
+
+	str = g_strdup( _( "Empty account number" ));
+	error_entry( str );
+
+	g_free( str );
+}
+
+static void
+error_account( const gchar *number )
+{
+	gchar *str;
+
+	str = g_strdup_printf( _( "Invalid account number: %s" ), number );
+	error_entry( str );
+
+	g_free( str );
+}
+
+static void
+error_acc_currency( const ofoDossier *dossier, gint dev_id, ofoAccount *account )
+{
+	gchar *str;
+	gint ai_dev;
+	ofoDevise *a_dev, *e_dev;
+
+	ai_dev = ofo_account_get_devise( account );
+	a_dev = ofo_devise_get_by_id( dossier, ai_dev );
+	e_dev = ofo_devise_get_by_id( dossier, dev_id );
+
+	if( !a_dev ){
+		str = g_strdup_printf( "Invalid currency for the account: %d", ai_dev );
+	} else if( !e_dev ){
+		str = g_strdup_printf( "Candidate entry makes use of invalid currency: %d", dev_id );
+	} else {
+		str = g_strdup_printf( _( "Account %s is configured for accepting %s currency. "
+				"But the candidate entry makes use of %s" ),
+					ofo_account_get_number( account ),
+					ofo_devise_get_code( a_dev ),
+					ofo_devise_get_code( e_dev ));
+	}
+	error_entry( str );
+
+	g_free( str );
+}
+
+static void
+error_entry( const gchar *message )
+{
+	GtkWidget *dialog;
+
+	dialog = gtk_message_dialog_new(
+			NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_WARNING,
+			GTK_BUTTONS_CLOSE,
+			"%s", message );
+
+	gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
 }
 
 /**

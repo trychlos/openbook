@@ -171,7 +171,7 @@
                 detail record, but set a 'deleted' flag
 
  131 2014- 5-28 have a currency combo box convenience class
-                and report in account properties, dossier properties
+                and report in dossier properties
 
  132 2014- 5-28 remove my_utils_init_notes_ex and 
                 my_utils_init_maj_user_stamp_ex as they should be no 
@@ -191,8 +191,6 @@
  141 2014- 5-28 ofaTauxProperties derives from ofaBaseDialog
 
  142 2014- 5-28 remove xxxClassPrivate
-
- 143 2014- 5-29 add iso 3a code to accout notebook view
 
  144 2014- 5-29 always use g_define_type 
 
@@ -515,6 +513,9 @@
 
  136 2014- 5-28 ofaDossierOpen derives from ofaBaseDialog
      2014- 5-29 done - svn #3546
+
+ 143 2014- 5-29 add iso 3a code to accout notebook view
+     2014- 5-29 done - svn #3548
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

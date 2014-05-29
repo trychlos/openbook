@@ -147,6 +147,7 @@ static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-guided-input.ui";
 static const gchar  *st_ui_id        = "GuidedInputDlg";
 
 static GDate         st_last_dope    = { 0 };
+static GDate         st_last_deff    = { 0 };
 static GObjectClass *st_parent_class = NULL;
 
 static GType     register_type( void );
@@ -178,7 +179,7 @@ static gboolean  on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuided
 static gboolean  on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInput *self );
 static void      check_for_account( ofaGuidedInput *self, GtkEntry *entry  );
 static void      check_for_enable_dlg( ofaGuidedInput *self );
-static gboolean  are_fields_validable( ofaGuidedInput *self );
+static gboolean  is_dialog_validable( ofaGuidedInput *self );
 static void      update_all_formulas( ofaGuidedInput *self );
 static void      update_formula( ofaGuidedInput *self, const gchar *formula, GtkEntry *entry );
 static gdouble   compute_formula_solde( ofaGuidedInput *self, gint column_id, gint row );
@@ -190,7 +191,7 @@ static gboolean  check_for_all_entries( ofaGuidedInput *self );
 static gboolean  check_for_entry( ofaGuidedInput *self, gint row );
 static void      set_comment( ofaGuidedInput *self, const gchar *comment );
 static gboolean  do_update( ofaGuidedInput *self );
-static gboolean  do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece );
+static ofoEntry *entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece );
 
 GType
 ofa_guided_input_get_type( void )
@@ -399,8 +400,12 @@ do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel 
 		g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), self );
 		g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
 
+		memcpy( &self->private->deff, &st_last_deff, sizeof( GDate ));
+		str = my_utils_display_from_date( &self->private->deff, MY_UTILS_DATE_DDMM );
 		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		gtk_entry_set_text( GTK_ENTRY( entry ), str );
+		g_free( str );
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_deffet_changed ), self );
 		g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_deffet_focus_in ), self );
 		g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_deffet_focus_out ), self );
@@ -932,17 +937,16 @@ check_for_enable_dlg( ofaGuidedInput *self )
 	if( self->private->view ){
 		g_return_if_fail( GTK_IS_GRID( self->private->view ));
 
-		ok = are_fields_validable( self );
+		ok = is_dialog_validable( self );
 
 		btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
-		if( btn && GTK_IS_BUTTON( btn )){
-			gtk_widget_set_sensitive( btn, ok );
-		}
+		g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+		gtk_widget_set_sensitive( btn, ok );
 	}
 }
 
 static gboolean
-are_fields_validable( ofaGuidedInput *self )
+is_dialog_validable( ofaGuidedInput *self )
 {
 	gboolean ok;
 
@@ -1321,6 +1325,8 @@ set_comment( ofaGuidedInput *self, const gchar *comment )
 
 /*
  * generate the entries
+ * all the entries are created in memory and checked before being
+ * serialized. Only after that, journal and accounts are updated.
  */
 static gboolean
 do_update( ofaGuidedInput *self )
@@ -1330,10 +1336,12 @@ do_update( ofaGuidedInput *self )
 	gint count, idx;
 	gdouble deb, cred;
 	const gchar *piece;
+	ofoDossier *dossier;
+	GList *entries, *it;
+	ofoEntry *record;
+	gint errors;
 
-	g_return_val_if_fail( are_fields_validable( self ), FALSE );
-
-	ok = TRUE;
+	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	piece = NULL;
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-piece" );
@@ -1342,36 +1350,56 @@ do_update( ofaGuidedInput *self )
 	}
 
 	count = ofo_model_get_detail_count( self->private->model );
+	entries = NULL;
+	errors = 0;
+	ok = FALSE;
 
 	for( idx=0 ; idx<count ; ++idx ){
 		deb = get_amount( self, COL_DEBIT, idx+1 );
 		cred = get_amount( self, COL_CREDIT, idx+1 );
 		if( deb+cred != 0.0 ){
-			if( !do_update_with_entry( self, idx+1, piece )){
-				ok = FALSE;
+			record = entry_from_detail( self, idx+1, piece );
+			if( record ){
+				entries = g_list_append( entries, record );
+			} else {
+				errors += 1;
 			}
 		}
 	}
 
+	if( !errors ){
+		ok = TRUE;
+		dossier = ofa_main_window_get_dossier( self->private->main_window );
+		for( it=entries ; it ; it=it->next ){
+			ok &= ofo_entry_insert( OFO_ENTRY( it->data ), dossier );
+			/* TODO:
+			 * in case of an error, remove the already recorded entries
+			 * of the list, decrementing the journals and the accounts
+			 * then restore the last ecr number of the dossier
+			 */
+		}
+	}
+
+	g_list_free_full( entries, g_object_unref );
+
 	memcpy( &st_last_dope, &self->private->dope, sizeof( GDate ));
+	memcpy( &st_last_deff, &self->private->deff, sizeof( GDate ));
 
 	return( ok );
 }
 
 /*
- * generate the entries
+ * create an entry in memory, adding it to the list
  */
-static gboolean
-do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece )
+static ofoEntry *
+entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 {
-	gboolean ok;
 	GtkWidget *entry;
 	const gchar *account_number;
 	ofoAccount *account;
 	const gchar *label;
 	gdouble deb, cre, amount;
 	ofaEntrySens sens;
-	ofoEntry *new_entry;
 
 	entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
@@ -1396,17 +1424,11 @@ do_update_with_entry( ofaGuidedInput *self, gint row, const gchar *piece )
 		sens = ENT_SENS_CREDIT;
 	}
 
-	new_entry = ofo_entry_insert(
+	return( ofo_entry_new_with_data(
 					ofa_main_window_get_dossier( self->private->main_window ),
 							&self->private->deff, &self->private->dope, label,
 							piece, account_number,
 							ofo_account_get_devise( account ),
 							self->private->journal_id,
-							amount, sens );
-
-	ok = ( new_entry && OFO_IS_ENTRY( new_entry ));
-
-	g_object_unref( new_entry );
-
-	return( ok );
+							amount, sens ));
 }
