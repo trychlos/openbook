@@ -56,14 +56,10 @@ struct _ofaMainPagePrivate {
 /* class properties
  */
 enum {
-	PROP_0,
-
-	PROP_WINDOW_ID,
+	PROP_WINDOW_ID = 1,
 	PROP_DOSSIER_ID,
 	PROP_GRID_ID,
 	PROP_THEME_ID,
-
-	PROP_N_PROPERTIES
 };
 
 /* signals defined
@@ -72,17 +68,11 @@ enum {
 	JOURNAL_CHANGED = 0,
 	LAST_SIGNAL
 };
-static GObjectClass *st_parent_class           = NULL;
-static gint          st_signals[ LAST_SIGNAL ] = { 0 };
 
-static GType      register_type( void );
-static void       class_init( ofaMainPageClass *klass );
-static void       instance_init( GTypeInstance *instance, gpointer klass );
-static void       instance_constructed( GObject *instance );
-static void       instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec );
-static void       instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
-static void       instance_dispose( GObject *instance );
-static void       instance_finalize( GObject *instance );
+static gint st_signals[ LAST_SIGNAL ] = { 0 };
+
+G_DEFINE_TYPE( ofaMainPage, ofa_main_page, G_TYPE_OBJECT )
+
 static void       do_setup_page( ofaMainPage *page );
 static void       v_setup_page( ofaMainPage *page );
 static GtkWidget *do_setup_view( ofaMainPage *page );
@@ -95,82 +85,225 @@ static void       do_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static void       on_journal_changed_class_handler( ofaMainPage *page, ofaMainPageUpdateType type, ofoBase *journal );
 static void       on_grid_finalized( ofaMainPage *self, GObject *grid );
 
-GType
-ofa_main_page_get_type( void )
+static void
+main_page_finalize( GObject *instance )
 {
-	static GType window_type = 0;
+	static const gchar *thisfn = "ofa_main_page_finalize";
+	ofaMainPagePrivate *priv;
 
-	if( !window_type ){
-		window_type = register_type();
-	}
+	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
 
-	return( window_type );
-}
+	priv = OFA_MAIN_PAGE( instance )->private;
 
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_main_page_register_type";
-	GType type;
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	static GTypeInfo info = {
-		sizeof( ofaMainPageClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaMainPage ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
+	/* free members here */
+	g_free( priv );
 
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaMainPage", &info, 0 );
-
-	return( type );
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_main_page_parent_class )->finalize( instance );
 }
 
 static void
-class_init( ofaMainPageClass *klass )
+main_page_dispose( GObject *instance )
+{
+	ofaMainPagePrivate *priv;
+
+	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
+
+	priv = ( OFA_MAIN_PAGE( instance ))->private;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_main_page_parent_class )->dispose( instance );
+}
+
+/*
+ * user asks for a property
+ * we have so to put the corresponding data into the provided GValue
+ */
+static void
+main_page_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
+{
+	ofaMainPagePrivate *priv;
+
+	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
+
+	priv = OFA_MAIN_PAGE( instance )->private;
+
+	if( !priv->dispose_has_run ){
+
+		switch( property_id ){
+			case PROP_WINDOW_ID:
+				g_value_set_pointer( value, priv->main_window );
+				break;
+
+			case PROP_DOSSIER_ID:
+				g_value_set_pointer( value, priv->dossier );
+				break;
+
+			case PROP_GRID_ID:
+				g_value_set_pointer( value, priv->grid );
+				break;
+
+			case PROP_THEME_ID:
+				g_value_set_int( value, priv->theme );
+				break;
+
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
+		}
+	}
+}
+
+/*
+ * the user asks to set a property and provides it into a GValue
+ * read the content of the provided GValue and set our instance datas
+ */
+static void
+main_page_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
+{
+	ofaMainPagePrivate *priv;
+
+	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
+
+	priv = OFA_MAIN_PAGE( instance )->private;
+
+	if( !priv->dispose_has_run ){
+
+		switch( property_id ){
+			case PROP_WINDOW_ID:
+				priv->main_window = g_value_get_pointer( value );
+				break;
+
+			case PROP_DOSSIER_ID:
+				priv->dossier = g_value_get_pointer( value );
+				break;
+
+			case PROP_GRID_ID:
+				priv->grid = g_value_get_pointer( value );
+				break;
+
+			case PROP_THEME_ID:
+				priv->theme = g_value_get_int( value );
+				break;
+
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
+		}
+	}
+}
+
+static void
+main_page_constructed( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_main_page_constructed";
+	ofaMainPage *self;
+	ofaMainPagePrivate *priv;
+
+	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
+
+	self = OFA_MAIN_PAGE( instance );
+	priv = self->private;
+
+	/* first, chain up to the parent class */
+	if( G_OBJECT_CLASS( ofa_main_page_parent_class )->constructed ){
+		G_OBJECT_CLASS( ofa_main_page_parent_class )->constructed( instance );
+	}
+
+#if 0
+	g_debug( "%s: main_window=%p, dossier=%p, theme=%d, grid=%p",
+			thisfn,
+			( void * ) priv->main_window,
+			( void * ) priv->dossier,
+			priv->theme,
+			( void * ) priv->grid );
+#else
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+#endif
+
+	/* attach a weak reference to the grid widget to unref this object
+	 * and (more useful) the derived class which handles it */
+	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
+	g_object_weak_ref(
+			G_OBJECT( priv->grid ),
+			( GWeakNotify ) on_grid_finalized,
+			OFA_MAIN_PAGE( instance ));
+
+	/* let the child class setup its page */
+	do_setup_page( self );
+	do_init_view( self );
+}
+
+static void
+ofa_main_page_init( ofaMainPage *self )
+{
+	static const gchar *thisfn = "ofa_main_page_init";
+
+	g_return_if_fail( OFA_IS_MAIN_PAGE( self ));
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	self->private = g_new0( ofaMainPagePrivate, 1 );
+
+	self->private->dispose_has_run = FALSE;
+	self->private->theme = -1;
+}
+
+static void
+ofa_main_page_class_init( ofaMainPageClass *klass )
 {
 	static const gchar *thisfn = "ofa_main_page_class_init";
-	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	st_parent_class = g_type_class_peek_parent( klass );
+	G_OBJECT_CLASS( klass )->constructed = main_page_constructed;
+	G_OBJECT_CLASS( klass )->get_property = main_page_get_property;
+	G_OBJECT_CLASS( klass )->set_property = main_page_set_property;
+	G_OBJECT_CLASS( klass )->dispose = main_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = main_page_finalize;
 
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->constructed = instance_constructed;
-	object_class->get_property = instance_get_property;
-	object_class->set_property = instance_set_property;
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	g_object_class_install_property( object_class, PROP_WINDOW_ID,
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_WINDOW_ID,
 			g_param_spec_pointer(
 					MAIN_PAGE_PROP_WINDOW,
 					"Main window",
 					"The main window (ofaMainWindow *)",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	g_object_class_install_property( object_class, PROP_DOSSIER_ID,
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_DOSSIER_ID,
 			g_param_spec_pointer(
 					MAIN_PAGE_PROP_DOSSIER,
 					"Current dossier",
 					"The currently opened dossier (ofoDossier *)",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	g_object_class_install_property( object_class, PROP_GRID_ID,
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_GRID_ID,
 			g_param_spec_pointer(
 					MAIN_PAGE_PROP_GRID,
 					"Page grid",
 					"The top child of the page (GtkGrid *)",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	g_object_class_install_property( object_class, PROP_THEME_ID,
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_THEME_ID,
 			g_param_spec_int(
 					MAIN_PAGE_PROP_THEME,
 					"Theme",
@@ -212,183 +345,6 @@ class_init( ofaMainPageClass *klass )
 	klass->on_new_clicked = NULL;
 	klass->on_update_clicked = NULL;
 	klass->on_delete_clicked = NULL;
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_main_page_instance_init";
-	ofaMainPage *self;
-
-	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
-
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
-
-	self = OFA_MAIN_PAGE( instance );
-
-	self->private = g_new0( ofaMainPagePrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-	self->private->theme = -1;
-}
-
-static void
-instance_constructed( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_main_page_instance_constructed";
-	ofaMainPage *self;
-	ofaMainPagePrivate *priv;
-
-	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
-
-	self = OFA_MAIN_PAGE( instance );
-	priv = self->private;
-
-	/* first, chain up to the parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->constructed ){
-		G_OBJECT_CLASS( st_parent_class )->constructed( instance );
-	}
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-#if 0
-	g_debug( "%s: main_window=%p, dossier=%p, theme=%d, grid=%p",
-			thisfn,
-			( void * ) priv->main_window,
-			( void * ) priv->dossier,
-			priv->theme,
-			( void * ) priv->grid );
-#endif
-
-	/* attach a weak reference to the grid widget to unref this object
-	 * and (more useful) the derived class which handles it */
-	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
-	g_object_weak_ref(
-			G_OBJECT( priv->grid ),
-			( GWeakNotify ) on_grid_finalized,
-			OFA_MAIN_PAGE( instance ));
-
-	/* let the child class setup its page */
-	do_setup_page( self );
-	do_init_view( self );
-}
-
-/*
- * user asks for a property
- * we have so to put the corresponding data into the provided GValue
- */
-static void
-instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
-{
-	ofaMainPagePrivate *priv;
-
-	g_return_if_fail( OFA_IS_MAIN_PAGE( object ));
-	priv = OFA_MAIN_PAGE( object )->private;
-
-	if( !priv->dispose_has_run ){
-
-		switch( property_id ){
-			case PROP_WINDOW_ID:
-				g_value_set_pointer( value, priv->main_window );
-				break;
-
-			case PROP_DOSSIER_ID:
-				g_value_set_pointer( value, priv->dossier );
-				break;
-
-			case PROP_GRID_ID:
-				g_value_set_pointer( value, priv->grid );
-				break;
-
-			case PROP_THEME_ID:
-				g_value_set_int( value, priv->theme );
-				break;
-
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
-				break;
-		}
-	}
-}
-
-/*
- * the user asks to set a property and provides it into a GValue
- * read the content of the provided GValue and set our object datas
- */
-static void
-instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
-{
-	ofaMainPagePrivate *priv;
-
-	g_return_if_fail( OFA_IS_MAIN_PAGE( object ));
-	priv = OFA_MAIN_PAGE( object )->private;
-
-	if( !priv->dispose_has_run ){
-
-		switch( property_id ){
-			case PROP_WINDOW_ID:
-				priv->main_window = g_value_get_pointer( value );
-				break;
-
-			case PROP_DOSSIER_ID:
-				priv->dossier = g_value_get_pointer( value );
-				break;
-
-			case PROP_GRID_ID:
-				priv->grid = g_value_get_pointer( value );
-				break;
-
-			case PROP_THEME_ID:
-				priv->theme = g_value_get_int( value );
-				break;
-
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
-				break;
-		}
-	}
-}
-
-static void
-instance_dispose( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_main_page_instance_dispose";
-	ofaMainPagePrivate *priv;
-
-	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
-
-	priv = ( OFA_MAIN_PAGE( instance ))->private;
-
-	if( !priv->dispose_has_run ){
-
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-		priv->dispose_has_run = TRUE;
-	}
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->dispose( instance );
-}
-
-static void
-instance_finalize( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_main_page_instance_finalize";
-	ofaMainPage *self;
-
-	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
-
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	self = OFA_MAIN_PAGE( instance );
-
-	g_free( self->private );
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->finalize( instance );
 }
 
 static void

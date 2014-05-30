@@ -179,87 +179,182 @@ static sTreeDef st_tree_defs[] = {
 /* A pointer to the handling ofaMainPage object is set against each page
  * ( the GtkGrid) of the main notebook
  */
-#define OFA_DATA_HANDLER                "ofa-data-handler"
+#define OFA_DATA_HANDLER             "ofa-data-handler"
 
-static const gchar               *st_dosmenu_xml = PKGUIDIR "/ofa-dos-menubar.ui";
-static const gchar               *st_dosmenu_id  = "dos-menu";
+static const gchar *st_dosmenu_xml = PKGUIDIR "/ofa-dos-menubar.ui";
+static const gchar *st_dosmenu_id  = "dos-menu";
 
-static GtkApplicationWindowClass *st_parent_class           = NULL;
-static gint                       st_signals[ LAST_SIGNAL ] = { 0 };
+static gint         st_signals[ LAST_SIGNAL ] = { 0 };
 
-static GType register_type( void );
-static void  class_init( ofaMainWindowClass *klass );
-static void  instance_init( GTypeInstance *instance, gpointer klass );
-static void  instance_constructed( GObject *window );
-static void  instance_dispose( GObject *window );
-static void  instance_finalize( GObject *window );
+G_DEFINE_TYPE( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW )
 
-static gboolean      on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void          set_menubar( ofaMainWindow *window, GMenuModel *model );
-static void          extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
-static void          on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
-static void          add_treeview_to_pane_left( ofaMainWindow *window );
-static void          on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
+static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
+static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
+static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
+static void             on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void             add_treeview_to_pane_left( ofaMainWindow *window );
+static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static const sThemeDef *get_theme_def_from_id( gint theme_id );
-static void          add_empty_notebook_to_pane_right( ofaMainWindow *window );
-static void          on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
-static void          main_activate_theme( ofaMainWindow *main, gint theme );
-static GtkNotebook  *main_get_book( const ofaMainWindow *window );
-static GtkWidget    *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
-static GtkWidget    *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
-static void          main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
+static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
+static void             on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void             main_activate_theme( ofaMainWindow *main, gint theme );
+static GtkNotebook     *main_get_book( const ofaMainWindow *window );
+static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
+static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
+static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 
-GType
-ofa_main_window_get_type( void )
+static void
+main_window_finalize( GObject *instance )
 {
-	static GType window_type = 0;
+	static const gchar *thisfn = "ofa_main_instance_finalize";
+	ofaMainWindowPrivate *priv;
 
-	if( !window_type ){
-		window_type = register_type();
-	}
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( instance ));
 
-	return( window_type );
-}
+	priv = OFA_MAIN_WINDOW( instance )->private;
 
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_main_window_register_type";
-	GType type;
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	static GTypeInfo info = {
-		sizeof( ofaMainWindowClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaMainWindow ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
+	/* free members here */
+	g_free( priv->orig_title );
+	g_free( priv );
 
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( GTK_TYPE_APPLICATION_WINDOW, "ofaMainWindow", &info, 0 );
-
-	return( type );
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_main_window_parent_class )->finalize( instance );
 }
 
 static void
-class_init( ofaMainWindowClass *klass )
+main_window_dispose( GObject *instance )
+{
+	ofaMainWindowPrivate *priv;
+
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( instance ));
+
+	priv = OFA_MAIN_WINDOW( instance )->private;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+
+		if( priv->menu ){
+			g_object_unref( priv->menu );
+		}
+
+		if( priv->dossier ){
+			g_object_unref( priv->dossier );
+		}
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_main_window_parent_class )->dispose( instance );
+}
+
+static void
+main_window_constructed( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_main_instance_constructed";
+	ofaMainWindowPrivate *priv;
+	GError *error;
+	GtkBuilder *builder;
+	GMenuModel *menu;
+
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( instance ));
+
+	priv = OFA_MAIN_WINDOW( instance )->private;
+
+	if( !priv->dispose_has_run ){
+
+		g_debug( "%s: instance=%p (%s)",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+		/* chain up to the parent class */
+		if( G_OBJECT_CLASS( ofa_main_window_parent_class )->constructed ){
+			G_OBJECT_CLASS( ofa_main_window_parent_class )->constructed( instance );
+		}
+
+		/* define the main instance actions
+		 */
+		g_action_map_add_action_entries(
+				G_ACTION_MAP( instance ),
+		        st_dos_entries, G_N_ELEMENTS( st_dos_entries ),
+		        ( gpointer ) instance );
+
+		/* define a traditional menubar
+		 * the program will abort if GtkBuilder is not able to be parsed
+		 * from the given file
+		 */
+		error = NULL;
+		builder = gtk_builder_new();
+		if( gtk_builder_add_from_file( builder, st_dosmenu_xml, &error )){
+			menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_dosmenu_id ));
+			if( menu ){
+				priv->menu = menu;
+			} else {
+				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_dosmenu_id, st_dosmenu_xml );
+			}
+		} else {
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
+		}
+		g_object_unref( builder );
+
+		/* build the main instance
+		 * it consists of a grid of one column:
+		 *  +--------------------------------------------------------------------+
+		 *  | menubar                                                            |
+		 *  +--------------------------------------------------------------------+
+		 *  |                                                                    |
+		 *  | an empty cell if no dossier is opened                              |
+		 *  |                                                                    |
+		 *  | or a GtkPane which is created when a dossier is opened             |
+		 *  |                                                                    |
+		 *  +--------------------------------------------------------------------+
+		 */
+		priv->grid = GTK_GRID( gtk_grid_new());
+		/*gtk_widget_set_hexpand( GTK_WIDGET( priv->grid ), TRUE );*/
+		/*gtk_widget_set_vexpand( GTK_WIDGET( priv->grid ), TRUE );*/
+		/*gtk_container_set_resize_mode( GTK_CONTAINER( priv->grid ), GTK_RESIZE_QUEUE );*/
+		gtk_grid_set_row_homogeneous( priv->grid, FALSE );
+		gtk_container_add( GTK_CONTAINER( instance ), GTK_WIDGET( priv->grid ));
+
+		gtk_window_set_default_size( GTK_WINDOW( instance ), 600, 400 );
+
+		/* connect some signals
+		 */
+		g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), NULL );
+
+		g_signal_connect( instance, OFA_SIGNAL_OPEN_DOSSIER, G_CALLBACK( on_open_dossier ), NULL );
+	}
+}
+
+static void
+ofa_main_window_init( ofaMainWindow *self )
+{
+	static const gchar *thisfn = "ofa_main_window_init";
+
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( self ));
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	self->private = g_new0( ofaMainWindowPrivate, 1 );
+
+	self->private->dispose_has_run = FALSE;
+}
+
+static void
+ofa_main_window_class_init( ofaMainWindowClass *klass )
 {
 	static const gchar *thisfn = "ofa_main_window_class_init";
-	GObjectClass *object_class;
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->constructed = instance_constructed;
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
+	G_OBJECT_CLASS( klass )->constructed = main_window_constructed;
+	G_OBJECT_CLASS( klass )->dispose = main_window_dispose;
+	G_OBJECT_CLASS( klass )->finalize = main_window_finalize;
 
 	/*
 	 * ofaMainWindow::ofa-signal-open-dossier:
@@ -290,154 +385,6 @@ class_init( ofaMainWindowClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_POINTER );
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_main_window_instance_init";
-	ofaMainWindow *self;
-	ofaMainWindowPrivate *priv;
-
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( instance ));
-
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
-
-	self = OFA_MAIN_WINDOW( instance );
-	self->private = g_new0( ofaMainWindowPrivate, 1 );
-	priv = self->private;
-	priv->dispose_has_run = FALSE;
-}
-
-static void
-instance_constructed( GObject *window )
-{
-	static const gchar *thisfn = "ofa_main_window_instance_constructed";
-	ofaMainWindowPrivate *priv;
-	GError *error;
-	GtkBuilder *builder;
-	GMenuModel *menu;
-
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( window ));
-
-	priv = OFA_MAIN_WINDOW( window )->private;
-
-	if( !priv->dispose_has_run ){
-
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->constructed ){
-			G_OBJECT_CLASS( st_parent_class )->constructed( window );
-		}
-
-		/* define the main window actions
-		 */
-		g_action_map_add_action_entries(
-				G_ACTION_MAP( window ),
-		        st_dos_entries, G_N_ELEMENTS( st_dos_entries ),
-		        ( gpointer ) window );
-
-		/* define a traditional menubar
-		 * the program will abort if GtkBuilder is not able to be parsed
-		 * from the given file
-		 */
-		error = NULL;
-		builder = gtk_builder_new();
-		if( gtk_builder_add_from_file( builder, st_dosmenu_xml, &error )){
-			menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_dosmenu_id ));
-			if( menu ){
-				priv->menu = menu;
-			} else {
-				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_dosmenu_id, st_dosmenu_xml );
-			}
-		} else {
-			g_warning( "%s: %s", thisfn, error->message );
-			g_error_free( error );
-		}
-		g_object_unref( builder );
-
-		/* build the main window
-		 * it consists of a grid of one column:
-		 *  +--------------------------------------------------------------------+
-		 *  | menubar                                                            |
-		 *  +--------------------------------------------------------------------+
-		 *  |                                                                    |
-		 *  | an empty cell if no dossier is opened                              |
-		 *  |                                                                    |
-		 *  | or a GtkPane which is created when a dossier is opened             |
-		 *  |                                                                    |
-		 *  +--------------------------------------------------------------------+
-		 */
-		priv->grid = GTK_GRID( gtk_grid_new());
-		/*gtk_widget_set_hexpand( GTK_WIDGET( priv->grid ), TRUE );*/
-		/*gtk_widget_set_vexpand( GTK_WIDGET( priv->grid ), TRUE );*/
-		/*gtk_container_set_resize_mode( GTK_CONTAINER( priv->grid ), GTK_RESIZE_QUEUE );*/
-		gtk_grid_set_row_homogeneous( priv->grid, FALSE );
-		gtk_container_add( GTK_CONTAINER( window ), GTK_WIDGET( priv->grid ));
-
-		gtk_window_set_default_size( GTK_WINDOW( window ), 600, 400 );
-
-		/* connect some signals
-		 */
-		g_signal_connect( window, "delete-event", G_CALLBACK( on_delete_event ), NULL );
-
-		g_signal_connect( window, OFA_SIGNAL_OPEN_DOSSIER, G_CALLBACK( on_open_dossier ), NULL );
-	}
-}
-
-static void
-instance_dispose( GObject *window )
-{
-	static const gchar *thisfn = "ofa_main_window_instance_dispose";
-	ofaMainWindowPrivate *priv;
-
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( window ));
-
-	priv = OFA_MAIN_WINDOW( window )->private;
-
-	if( !priv->dispose_has_run ){
-
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
-
-		priv->dispose_has_run = TRUE;
-
-		g_free( priv->orig_title );
-
-		if( priv->menu ){
-			g_object_unref( priv->menu );
-		}
-
-		if( priv->dossier ){
-			g_object_unref( priv->dossier );
-		}
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( window );
-		}
-	}
-}
-
-static void
-instance_finalize( GObject *window )
-{
-	static const gchar *thisfn = "ofa_main_window_instance_finalize";
-	ofaMainWindow *self;
-
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( window ));
-
-	g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
-
-	self = OFA_MAIN_WINDOW( window );
-
-	g_free( self->private );
-
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( window );
-	}
 }
 
 /**
