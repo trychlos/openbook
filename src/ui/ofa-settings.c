@@ -34,7 +34,7 @@
 
 #include "ui/ofa-settings.h"
 
-#define OFA_TYPE_SETTINGS                ( settings_get_type())
+#define OFA_TYPE_SETTINGS                ( ofa_settings_get_type())
 #define OFA_SETTINGS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_SETTINGS, ofaSettings ))
 #define OFA_SETTINGS_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_SETTINGS, ofaSettingsClass ))
 #define OFA_IS_SETTINGS( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_SETTINGS ))
@@ -65,88 +65,94 @@ struct _ofaSettingsPrivate {
 	gchar     *kf_name;
 };
 
-#define GROUP_DOSSIER                    "Dossier"
+#define GROUP_DOSSIER             "Dossier"
 
-static GObjectClass *st_parent_class = NULL;
-static ofaSettings  *st_settings     = NULL;
+GType ofa_settings_get_type( void ) G_GNUC_CONST;
 
-static GType    settings_get_type( void );
-static GType    register_type( void );
-static void     class_init( ofaSettingsClass *klass );
-static void     instance_init( GTypeInstance *instance, gpointer klass );
-static void     instance_constructed( GObject *object );
-static void     instance_dispose( GObject *object );
-static void     instance_finalize( GObject *object );
+static ofaSettings *st_settings = NULL;
+
+G_DEFINE_TYPE( ofaSettings, ofa_settings, G_TYPE_OBJECT )
 
 static void     settings_new( void );
 static void     load_key_file( ofaSettings *settings );
 static gboolean write_key_file( ofaSettings *settings );
 
-static GType
-settings_get_type( void )
+static void
+settings_finalize( GObject *object )
 {
-	static GType st_type = 0;
+	static const gchar *thisfn = "ofa_settings_finalize";
+	ofaSettingsPrivate *priv;
 
-	if( !st_type ){
-		st_type = register_type();
+	g_return_if_fail( OFA_IS_SETTINGS( object ));
+
+	priv = OFA_SETTINGS( object )->private;
+
+	g_debug( "%s: object=%p (%s)",
+			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+
+	/* free members here */
+	g_key_file_free( priv->keyfile );
+	g_free( priv->kf_name );
+	g_free( priv );
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_settings_parent_class )->finalize( object );
+}
+
+static void
+settings_dispose( GObject *object )
+{
+	ofaSettingsPrivate *priv;
+
+	g_return_if_fail( OFA_IS_SETTINGS( object ));
+
+	priv = OFA_SETTINGS( object )->private;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
 	}
 
-	return( st_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_settings_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaSettingsClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaSettings ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaSettings", &info, 0 );
-
-	return( type );
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_settings_parent_class )->dispose( object );
 }
 
 static void
-class_init( ofaSettingsClass *klass )
+settings_constructed( GObject *object )
 {
-	static const gchar *thisfn = "ofa_settings_class_init";
-	GObjectClass *object_class;
+	static const gchar *thisfn = "ofa_settings_constructed";
+	ofaSettingsPrivate *priv;
 
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+	g_return_if_fail( OFA_IS_SETTINGS( object ));
 
-	st_parent_class = g_type_class_peek_parent( klass );
+	priv = OFA_SETTINGS( object )->private;
 
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->constructed = instance_constructed;
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
+	if( !priv->dispose_has_run ){
+
+		g_debug( "%s: object=%p (%s)",
+				thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+
+		/* first chain up to the parent class */
+		if( G_OBJECT_CLASS( ofa_settings_parent_class )->constructed ){
+			G_OBJECT_CLASS( ofa_settings_parent_class )->constructed( object );
+		}
+
+		/* then do our stuff */
+		load_key_file( OFA_SETTINGS( object ));
+	}
 }
 
 static void
-instance_init( GTypeInstance *instance, gpointer klass )
+ofa_settings_init( ofaSettings *self )
 {
-	static const gchar *thisfn = "ofa_settings_instance_init";
-	ofaSettings *self;
+	static const gchar *thisfn = "ofa_settings_init";
 
-	g_return_if_fail( OFA_IS_SETTINGS( instance ));
+	g_return_if_fail( OFA_IS_SETTINGS( self ));
 
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
-
-	self = OFA_SETTINGS( instance );
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofaSettingsPrivate, 1 );
 
@@ -154,70 +160,15 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_constructed( GObject *object )
+ofa_settings_class_init( ofaSettingsClass *klass )
 {
-	static const gchar *thisfn = "ofa_settings_instance_constructed";
-	ofaSettingsPrivate *priv;
+	static const gchar *thisfn = "ofa_settings_class_init";
 
-	g_return_if_fail( OFA_IS_SETTINGS( object ));
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	priv = OFA_SETTINGS( object )->private;
-
-	if( !priv->dispose_has_run ){
-
-		g_debug( "%s: object=%p (%s)", thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
-
-		if( G_OBJECT_CLASS( st_parent_class )->constructed ){
-			G_OBJECT_CLASS( st_parent_class )->constructed( object );
-		}
-
-		load_key_file( OFA_SETTINGS( object ));
-	}
-}
-
-static void
-instance_dispose( GObject *object )
-{
-	static const gchar *thisfn = "ofa_settings_instance_dispose";
-	ofaSettingsPrivate *priv;
-
-	g_return_if_fail( OFA_IS_SETTINGS( object ));
-
-	priv = OFA_SETTINGS( object )->private;
-
-	if( !priv->dispose_has_run ){
-
-		g_debug( "%s: object=%p (%s)", thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
-
-		priv->dispose_has_run = TRUE;
-
-		g_key_file_free( priv->keyfile );
-		g_free( priv->kf_name );
-
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( object );
-		}
-	}
-}
-
-static void
-instance_finalize( GObject *object )
-{
-	static const gchar *thisfn = "ofa_settings_instance_finalize";
-	ofaSettingsPrivate *priv;
-
-	g_return_if_fail( OFA_IS_SETTINGS( object ));
-
-	g_debug( "%s: object=%p (%s)", thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
-
-	priv = OFA_SETTINGS( object )->private;
-
-	g_free( priv );
-
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( object );
-	}
+	G_OBJECT_CLASS( klass )->constructed = settings_constructed;
+	G_OBJECT_CLASS( klass )->dispose = settings_dispose;
+	G_OBJECT_CLASS( klass )->finalize = settings_finalize;
 }
 
 /**

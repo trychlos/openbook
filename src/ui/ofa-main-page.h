@@ -68,7 +68,7 @@ typedef enum {
  */
 #define OFA_SIGNAL_JOURNAL_UPDATED          "ofa-signal-journal-updated"
 
-GType          ofa_main_page_get_type       ( void );
+GType          ofa_main_page_get_type       ( void ) G_GNUC_CONST;
 
 ofaMainWindow *ofa_main_page_get_main_window( const ofaMainPage *page );
 ofoDossier    *ofa_main_page_get_dossier    ( const ofaMainPage *page );

@@ -60,7 +60,7 @@ typedef struct {
 }
 	ofaGuidedInputClass;
 
-GType ofa_guided_input_get_type( void );
+GType ofa_guided_input_get_type( void ) G_GNUC_CONST;
 
 void  ofa_guided_input_run     ( ofaMainWindow *parent, const ofoModel *model );
 

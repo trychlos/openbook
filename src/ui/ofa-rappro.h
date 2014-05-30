@@ -61,7 +61,7 @@ typedef struct {
 }
 	ofaRapproClass;
 
-GType ofa_rappro_get_type( void );
+GType ofa_rappro_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

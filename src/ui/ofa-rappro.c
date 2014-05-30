@@ -123,11 +123,12 @@ rappro_finalize( GObject *instance )
 
 	g_return_if_fail( OFA_IS_RAPPRO( instance ));
 
+	priv = OFA_RAPPRO( instance )->private;
+
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = OFA_RAPPRO( instance )->private;
-
+	/* free members here */
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -137,7 +138,6 @@ rappro_finalize( GObject *instance )
 static void
 rappro_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_rappro_dispose";
 	ofaRapproPrivate *priv;
 
 	g_return_if_fail( OFA_IS_RAPPRO( instance ));
@@ -146,10 +146,9 @@ rappro_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
 		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
 	}
 
 	/* chain up to the parent class */

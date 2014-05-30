@@ -74,9 +74,9 @@ G_BEGIN_DECLS
  *  Signal to be sent to the main window in order to ask for the opening
  * of a dossier. See also the #ofaOpenDossier struct.
  */
-#define OFA_SIGNAL_OPEN_DOSSIER             "ofa-signal-open-dossier"
+#define OFA_SIGNAL_OPEN_DOSSIER                  "ofa-signal-open-dossier"
 
-GType          ofa_main_window_get_type          ( void );
+GType          ofa_main_window_get_type          ( void ) G_GNUC_CONST;
 
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
 

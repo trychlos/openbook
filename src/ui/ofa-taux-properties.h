@@ -53,7 +53,7 @@
  *                     with 01/01/2014
  */
 
-#include "ui/ofa-main-window-def.h"
+#include "ui/ofa-base-dialog.h"
 #include "ui/ofo-taux-def.h"
 
 G_BEGIN_DECLS
@@ -69,18 +69,18 @@ typedef struct _ofaTauxPropertiesPrivate        ofaTauxPropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                   parent;
+	ofaBaseDialog             parent;
 	ofaTauxPropertiesPrivate *private;
 }
 	ofaTauxProperties;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass parent;
+	ofaBaseDialogClass parent;
 }
 	ofaTauxPropertiesClass;
 
-GType    ofa_taux_properties_get_type( void );
+GType    ofa_taux_properties_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_taux_properties_run     ( ofaMainWindow *parent, ofoTaux *taux );
 

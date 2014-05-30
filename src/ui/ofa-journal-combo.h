@@ -74,7 +74,7 @@ typedef struct {
  */
 typedef void ( *ofaJournalComboCb )( gint, const gchar *, const gchar *, gpointer );
 
-GType            ofa_journal_combo_get_type   ( void );
+GType            ofa_journal_combo_get_type   ( void ) G_GNUC_CONST;
 
 /**
  * ofaJournalComboParms

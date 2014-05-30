@@ -61,7 +61,7 @@ typedef struct {
 }
 	ofaAccountsChartClass;
 
-GType ofa_accounts_chart_get_type( void );
+GType ofa_accounts_chart_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

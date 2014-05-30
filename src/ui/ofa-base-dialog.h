@@ -159,7 +159,7 @@ typedef struct {
 #define OFA_PROP_DIALOG_XML                   "ofa-dialog-prop-xml"
 #define OFA_PROP_DIALOG_NAME                  "ofa-dialog-prop-name"
 
-GType          ofa_base_dialog_get_type       ( void );
+GType          ofa_base_dialog_get_type       ( void ) G_GNUC_CONST;
 
 gboolean       ofa_base_dialog_init_dialog    ( ofaBaseDialog *dialog );
 

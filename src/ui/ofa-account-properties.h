@@ -63,7 +63,7 @@ typedef struct {
 }
 	ofaAccountPropertiesClass;
 
-GType    ofa_account_properties_get_type( void );
+GType    ofa_account_properties_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_account_properties_run     ( ofaMainWindow *parent, ofoAccount *account );
 

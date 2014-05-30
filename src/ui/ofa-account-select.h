@@ -62,7 +62,7 @@ typedef struct {
 }
 	ofaAccountSelectClass;
 
-GType  ofa_account_select_get_type( void );
+GType  ofa_account_select_get_type( void ) G_GNUC_CONST;
 
 gchar *ofa_account_select_run     ( ofaMainWindow *main_window, const gchar *asked_number );
 

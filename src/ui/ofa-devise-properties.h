@@ -63,7 +63,7 @@ typedef struct {
 }
 	ofaDevisePropertiesClass;
 
-GType    ofa_devise_properties_get_type( void );
+GType    ofa_devise_properties_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_devise_properties_run     ( ofaMainWindow *parent, ofoDevise *devise );
 

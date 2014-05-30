@@ -112,7 +112,7 @@ typedef enum {
 }
 	ofaExitCode;
 
-GType           ofa_application_get_type      ( void );
+GType           ofa_application_get_type      ( void ) G_GNUC_CONST;
 
 ofaApplication *ofa_application_new           ( void );
 

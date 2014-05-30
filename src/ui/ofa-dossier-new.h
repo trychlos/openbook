@@ -61,7 +61,7 @@ typedef struct {
 }
 	ofaDossierNewClass;
 
-GType           ofa_dossier_new_get_type( void );
+GType           ofa_dossier_new_get_type( void ) G_GNUC_CONST;
 
 ofaOpenDossier *ofa_dossier_new_run     ( ofaMainWindow *parent );
 

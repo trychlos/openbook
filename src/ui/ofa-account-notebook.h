@@ -80,7 +80,7 @@ typedef struct {
  */
 typedef void ( *ofaAccountNotebookCb )( ofoAccount *, gpointer );
 
-GType ofa_account_notebook_get_type   ( void );
+GType ofa_account_notebook_get_type ( void ) G_GNUC_CONST;
 
 /**
  * ofaAccountNotebookParms:
