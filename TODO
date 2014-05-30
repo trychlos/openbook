@@ -180,8 +180,6 @@
 
  133 2014- 5-28 ofaAccountProperties makes use of ofaDeviseCombo
 
- 141 2014- 5-28 ofaTauxProperties derives from ofaBaseDialog
-
  144 2014- 5-29 always use g_define_type 
 
  145 2014- 5-30 get rid of xxx_GET_PRIVATE macro
@@ -517,6 +515,9 @@
 
  140 2014- 5-28 ofaModelProperties derives from ofaBaseDialog
      2014- 5-30 done - svn #3560
+
+ 141 2014- 5-28 ofaTauxProperties derives from ofaBaseDialog
+     2014- 5-30 done - svn #3561
 
  142 2014- 5-28 remove xxxClassPrivate
      2014- 5-30 done - svn #3556
