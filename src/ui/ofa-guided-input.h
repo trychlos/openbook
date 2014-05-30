@@ -33,7 +33,7 @@
  * @include: ui/ofa-guided-input.h
  */
 
-#include "ui/ofa-main-window-def.h"
+#include "ui/ofa-base-dialog.h"
 #include "ui/ofo-model-def.h"
 
 G_BEGIN_DECLS
@@ -49,14 +49,14 @@ typedef struct _ofaGuidedInputPrivate        ofaGuidedInputPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                parent;
+	ofaBaseDialog          parent;
 	ofaGuidedInputPrivate *private;
 }
 	ofaGuidedInput;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass parent;
+	ofaBaseDialogClass parent;
 }
 	ofaGuidedInputClass;
 

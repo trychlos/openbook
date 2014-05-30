@@ -33,6 +33,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-base-dialog-prot.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofa-main-window.h"
@@ -46,15 +47,9 @@
 /* private instance data
  */
 struct _ofaGuidedInputPrivate {
-	gboolean       dispose_has_run;
-
-	/* properties
-	 */
 
 	/* internals
 	 */
-	ofaMainWindow  *main_window;
-	GtkDialog      *dialog;
 	const ofoModel *model;
 	GtkGrid        *view;				/* entries view container */
 	gboolean        deffet_has_focus;
@@ -134,23 +129,18 @@ static sColumnDef st_col_defs[] = {
 		{ 0 }
 };
 
-#define DATA_COLUMN				"data-entry-left"
-#define DATA_ROW				"data-entry-top"
+#define DATA_COLUMN				    "data-entry-left"
+#define DATA_ROW				    "data-entry-top"
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-guided-input.ui";
-static const gchar  *st_ui_id        = "GuidedInputDlg";
+static const gchar  *st_ui_xml    = PKGUIDIR "/ofa-guided-input.ui";
+static const gchar  *st_ui_id     = "GuidedInputDlg";
 
-static GDate         st_last_dope    = { 0 };
-static GDate         st_last_deff    = { 0 };
-static GObjectClass *st_parent_class = NULL;
+static GDate         st_last_dope = { 0 };
+static GDate         st_last_deff = { 0 };
 
-static GType     register_type( void );
-static void      class_init( ofaGuidedInputClass *klass );
-static void      instance_init( GTypeInstance *instance, gpointer klass );
-static void      instance_dispose( GObject *instance );
-static void      instance_finalize( GObject *instance );
-static void      do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel *model );
-static gboolean  ok_to_terminate( ofaGuidedInput *self, gint code );
+G_DEFINE_TYPE( ofaGuidedInput, ofa_guided_input, OFA_TYPE_BASE_DIALOG )
+
+static void      v_init_dialog( ofaBaseDialog *dialog );
 static void      init_dialog_journal( ofaGuidedInput *self );
 static void      init_dialog_entries( ofaGuidedInput *self );
 static void      add_row_entry( ofaGuidedInput *self, gint i );
@@ -184,77 +174,55 @@ static gboolean  check_for_dates( ofaGuidedInput *self );
 static gboolean  check_for_all_entries( ofaGuidedInput *self );
 static gboolean  check_for_entry( ofaGuidedInput *self, gint row );
 static void      set_comment( ofaGuidedInput *self, const gchar *comment );
+static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static gboolean  do_update( ofaGuidedInput *self );
 static ofoEntry *entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece );
 
-GType
-ofa_guided_input_get_type( void )
-{
-	static GType window_type = 0;
-
-	if( !window_type ){
-		window_type = register_type();
-	}
-
-	return( window_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_guided_input_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaGuidedInputClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaGuidedInput ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaGuidedInput", &info, 0 );
-
-	return( type );
-}
-
 static void
-class_init( ofaGuidedInputClass *klass )
+guided_input_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_guided_input_class_init";
-	GObjectClass *object_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_guided_input_instance_init";
-	ofaGuidedInput *self;
+	static const gchar *thisfn = "ofa_guided_input_finalize";
+	ofaGuidedInputPrivate *priv;
 
 	g_return_if_fail( OFA_IS_GUIDED_INPUT( instance ));
 
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	priv = OFA_GUIDED_INPUT( instance )->private;
 
-	self = OFA_GUIDED_INPUT( instance );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	/* free members here */
+	g_free( priv );
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_guided_input_parent_class )->finalize( instance );
+}
+
+static void
+guided_input_dispose( GObject *instance )
+{
+	g_return_if_fail( OFA_IS_GUIDED_INPUT( instance ));
+
+	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_guided_input_parent_class )->dispose( instance );
+}
+
+static void
+ofa_guided_input_init( ofaGuidedInput *self )
+{
+	static const gchar *thisfn = "ofa_guided_input_init";
+
+	g_return_if_fail( OFA_IS_GUIDED_INPUT( self ));
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofaGuidedInputPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
 
 	self->private->journal_id = -1;
 	g_date_clear( &self->private->dope, 1 );
@@ -262,47 +230,17 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_dispose( GObject *window )
+ofa_guided_input_class_init( ofaGuidedInputClass *klass )
 {
-	static const gchar *thisfn = "ofa_guided_input_instance_dispose";
-	ofaGuidedInputPrivate *priv;
+	static const gchar *thisfn = "ofa_guided_input_class_init";
 
-	g_return_if_fail( OFA_IS_GUIDED_INPUT( window ));
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	priv = ( OFA_GUIDED_INPUT( window ))->private;
+	G_OBJECT_CLASS( klass )->dispose = guided_input_dispose;
+	G_OBJECT_CLASS( klass )->finalize = guided_input_finalize;
 
-	if( !priv->dispose_has_run ){
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
-
-		priv->dispose_has_run = TRUE;
-
-		gtk_widget_destroy( GTK_WIDGET( priv->dialog ));
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( window );
-		}
-	}
-}
-
-static void
-instance_finalize( GObject *window )
-{
-	static const gchar *thisfn = "ofa_guided_input_instance_finalize";
-	ofaGuidedInput *self;
-
-	g_return_if_fail( OFA_IS_GUIDED_INPUT( window ));
-
-	g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
-
-	self = OFA_GUIDED_INPUT( window );
-
-	g_free( self->private );
-
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( window );
-	}
+	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -316,122 +254,71 @@ ofa_guided_input_run( ofaMainWindow *main_window, const ofoModel *model )
 {
 	static const gchar *thisfn = "ofa_guided_input_run";
 	ofaGuidedInput *self;
-	gint code;
 
 	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
 
-	g_debug( "%s: main_window=%p, journal=%p",
+	g_debug( "%s: main_window=%p, model=%p",
 			thisfn, ( void * ) main_window, ( void * ) model );
 
-	self = g_object_new( OFA_TYPE_GUIDED_INPUT, NULL );
+	self = g_object_new(
+					OFA_TYPE_GUIDED_INPUT,
+					OFA_PROP_MAIN_WINDOW, main_window,
+					OFA_PROP_DIALOG_XML,  st_ui_xml,
+					OFA_PROP_DIALOG_NAME, st_ui_id,
+					NULL );
 
-	do_initialize_dialog( self, main_window, model );
+	self->private->model = model;
 
-	g_debug( "%s: call gtk_dialog_run", thisfn );
-	do {
-		code = gtk_dialog_run( self->private->dialog );
-		g_debug( "%s: gtk_dialog_run code=%d", thisfn, code );
-		/* pressing Escape key makes gtk_dialog_run returns -4 GTK_RESPONSE_DELETE_EVENT */
-	}
-	while( !ok_to_terminate( self, code ));
+	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
 
 	g_object_unref( self );
 }
 
 static void
-do_initialize_dialog( ofaGuidedInput *self, ofaMainWindow *main, const ofoModel *model )
+v_init_dialog( ofaBaseDialog *dialog )
 {
-	static const gchar *thisfn = "ofa_guided_input_do_initialize_dialog";
-	GError *error;
-	GtkBuilder *builder;
 	ofaGuidedInputPrivate *priv;
 	GtkWidget *entry;
 	gchar *str;
 	const GDate *date;
 
-	priv = self->private;
-	priv->main_window = main;
-	priv->model = model;
+	priv = OFA_GUIDED_INPUT( dialog )->private;
 
-	/* create the GtkDialog */
-	error = NULL;
-	builder = gtk_builder_new();
-	if( gtk_builder_add_from_file( builder, st_ui_xml, &error )){
-		priv->dialog = GTK_DIALOG( gtk_builder_get_object( builder, st_ui_id ));
-		if( !priv->dialog ){
-			g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_ui_id, st_ui_xml );
-		}
-	} else {
-		g_warning( "%s: %s", thisfn, error->message );
-		g_error_free( error );
-	}
-	g_object_unref( builder );
+	init_dialog_journal( OFA_GUIDED_INPUT( dialog ));
 
-	/* initialize the newly created dialog */
-	if( priv->dialog ){
-
-		/*gtk_window_set_transient_for( GTK_WINDOW( priv->dialog ), GTK_WINDOW( main ));*/
-
-		init_dialog_journal( self );
-
-		date = ofo_dossier_get_last_closed_exercice(
-							ofa_main_window_get_dossier( self->private->main_window ));
-		if( date ){
-			memcpy( &self->private->last_closed_exe, date, sizeof( GDate ));
-		}
-
-		memcpy( &self->private->last_closing, &self->private->last_closed_exe, sizeof( GDate ));
-
-		memcpy( &self->private->dope, &st_last_dope, sizeof( GDate ));
-		str = my_utils_display_from_date( &self->private->dope, MY_UTILS_DATE_DDMM );
-		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-dope" );
-		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-		gtk_entry_set_text( GTK_ENTRY( entry ), str );
-		g_free( str );
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_dope_changed ), self );
-		g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), self );
-		g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
-
-		memcpy( &self->private->deff, &st_last_deff, sizeof( GDate ));
-		str = my_utils_display_from_date( &self->private->deff, MY_UTILS_DATE_DDMM );
-		entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
-		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-		gtk_entry_set_text( GTK_ENTRY( entry ), str );
-		g_free( str );
-		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_deffet_changed ), self );
-		g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_deffet_focus_in ), self );
-		g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_deffet_focus_out ), self );
-
-		init_dialog_entries( self );
-
-		check_for_enable_dlg( self );
+	date = ofo_dossier_get_last_closed_exercice(
+						ofa_base_dialog_get_dossier( dialog ));
+	if( date ){
+		memcpy( &priv->last_closed_exe, date, sizeof( GDate ));
 	}
 
-	gtk_widget_show_all( GTK_WIDGET( priv->dialog ));
-}
+	memcpy( &priv->last_closing, &priv->last_closed_exe, sizeof( GDate ));
 
-/*
- * return %TRUE to allow quitting the dialog
- */
-static gboolean
-ok_to_terminate( ofaGuidedInput *self, gint code )
-{
-	gboolean quit = FALSE;
+	memcpy( &priv->dope, &st_last_dope, sizeof( GDate ));
+	str = my_utils_display_from_date( &priv->dope, MY_UTILS_DATE_DDMM );
+	entry = my_utils_container_get_child_by_name(
+					GTK_CONTAINER( dialog->prot->dialog ), "p1-dope" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
+	g_free( str );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_dope_changed ), dialog );
+	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), dialog );
+	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), dialog );
 
-	switch( code ){
-		case GTK_RESPONSE_NONE:
-		case GTK_RESPONSE_DELETE_EVENT:
-		case GTK_RESPONSE_CLOSE:
-		case GTK_RESPONSE_CANCEL:
-			quit = TRUE;
-			break;
+	memcpy( &priv->deff, &st_last_deff, sizeof( GDate ));
+	str = my_utils_display_from_date( &priv->deff, MY_UTILS_DATE_DDMM );
+	entry = my_utils_container_get_child_by_name(
+					GTK_CONTAINER( dialog->prot->dialog ), "p1-deffet" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
+	g_free( str );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_deffet_changed ), dialog );
+	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_deffet_focus_in ), dialog );
+	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_deffet_focus_out ), dialog );
 
-		case GTK_RESPONSE_OK:
-			quit = do_update( self );
-			break;
-	}
+	init_dialog_entries( OFA_GUIDED_INPUT( dialog ));
 
-	return( quit );
+	check_for_enable_dlg( OFA_GUIDED_INPUT( dialog ));
 }
 
 static void
@@ -442,8 +329,8 @@ init_dialog_journal( ofaGuidedInput *self )
 
 	self->private->journal_id = ofo_model_get_journal( self->private->model );
 
-	parms.dialog = self->private->dialog;
-	parms.dossier = ofa_main_window_get_dossier( self->private->main_window );
+	parms.dialog = OFA_BASE_DIALOG( self )->prot->dialog;
+	parms.dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 	parms.combo_name = "p1-journal";
 	parms.label_name = NULL;
 	parms.disp_mnemo = FALSE;
@@ -454,7 +341,8 @@ init_dialog_journal( ofaGuidedInput *self )
 
 	ofa_journal_combo_init_dialog( &parms );
 
-	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-journal" );
+	combo = my_utils_container_get_child_by_name(
+						GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-journal" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 
 	gtk_widget_set_sensitive( combo, !ofo_model_get_journal_locked( self->private->model ));
@@ -468,7 +356,8 @@ init_dialog_entries( ofaGuidedInput *self )
 	GtkLabel *label;
 	GtkEntry *entry;
 
-	view = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-entries" );
+	view = my_utils_container_get_child_by_name(
+						GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-entries" );
 	g_return_if_fail( view && GTK_IS_GRID( view ));
 	self->private->view = GTK_GRID( view );
 
@@ -639,7 +528,7 @@ on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedIn
 
 	self->private->journal_id = id;
 
-	dossier = ofa_main_window_get_dossier( self->private->main_window );
+	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 	journal = ofo_journal_get_by_id( dossier, id );
 	memcpy( &self->private->last_closing, &self->private->last_closed_exe, sizeof( GDate ));
 
@@ -712,7 +601,8 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInput *self )
 		}
 
 		str = my_utils_display_from_date( &self->private->deff, MY_UTILS_DATE_DDMM );
-		wdeff = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
+		wdeff = my_utils_container_get_child_by_name(
+							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-deffet" );
 		if( entry && GTK_IS_WIDGET( wdeff )){
 			gtk_entry_set_text( GTK_ENTRY( wdeff ), str );
 		}
@@ -803,10 +693,15 @@ on_account_selection( ofaGuidedInput *self, gint row )
 	gchar *number;
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row ));
-	number = ofa_account_select_run( self->private->main_window, gtk_entry_get_text( entry ));
+
+	number = ofa_account_select_run(
+						ofa_base_dialog_get_main_window( OFA_BASE_DIALOG( self )),
+						gtk_entry_get_text( entry ));
+
 	if( number && g_utf8_strlen( number, -1 )){
 		gtk_entry_set_text( entry, number );
 	}
+
 	g_free( number );
 }
 
@@ -901,11 +796,13 @@ check_for_account( ofaGuidedInput *self, GtkEntry *entry  )
 	const gchar *asked_account;
 	gchar *number;
 
-	dossier = ofa_main_window_get_dossier( self->private->main_window );
+	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 	asked_account = gtk_entry_get_text( entry );
 	account = ofo_account_get_by_number( dossier, asked_account );
 	if( !account || ofo_account_is_root( account )){
-		number = ofa_account_select_run( self->private->main_window, asked_account );
+		number = ofa_account_select_run(
+							ofa_base_dialog_get_main_window( OFA_BASE_DIALOG( self )),
+							asked_account );
 		if( number ){
 			gtk_entry_set_text( entry, number );
 			g_free( number );
@@ -931,8 +828,10 @@ check_for_enable_dlg( ofaGuidedInput *self )
 
 		ok = is_dialog_validable( self );
 
-		btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "btn-ok" );
+		btn = my_utils_container_get_child_by_name(
+							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
 		g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+
 		gtk_widget_set_sensitive( btn, ok );
 	}
 }
@@ -1046,7 +945,8 @@ update_formula( ofaGuidedInput *self, const gchar *formula, GtkEntry *entry )
 			} else {
 				g_debug( "%s: searching for taux %s", thisfn, *iter );
 				rate = ofo_taux_get_by_mnemo(
-						ofa_main_window_get_dossier( self->private->main_window ), *iter );
+								ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
+								*iter );
 				if( rate && OFO_IS_TAUX( rate )){
 					g_warning( "%s: TODO", thisfn );
 				} else {
@@ -1192,7 +1092,8 @@ check_for_dates( ofaGuidedInput *self )
 
 	ok = TRUE;
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-dope" );
+	entry = my_utils_container_get_child_by_name(
+							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-dope" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	oki = g_date_valid( &self->private->dope );
 	my_utils_entry_set_valid( GTK_ENTRY( entry ), oki );
@@ -1201,7 +1102,8 @@ check_for_dates( ofaGuidedInput *self )
 		g_debug( "%s: operation date is invalid", thisfn );
 	}
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-deffet" );
+	entry = my_utils_container_get_child_by_name(
+							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-deffet" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	oki = g_date_valid( &self->private->deff );
 	my_utils_entry_set_valid( GTK_ENTRY( entry ), oki );
@@ -1284,8 +1186,8 @@ check_for_entry( ofaGuidedInput *self, gint row )
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 
 	account = ofo_account_get_by_number(
-			ofa_main_window_get_dossier( self->private->main_window ),
-			gtk_entry_get_text( GTK_ENTRY( entry )));
+						ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
+						gtk_entry_get_text( GTK_ENTRY( entry )));
 	oki = ( account && OFO_IS_ACCOUNT( account ));
 	ok &= oki;
 	if( !oki ){
@@ -1309,10 +1211,20 @@ set_comment( ofaGuidedInput *self, const gchar *comment )
 {
 	GtkWidget *widget;
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-comment" );
+	widget = my_utils_container_get_child_by_name(
+							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-comment" );
 	if( widget && GTK_IS_ENTRY( widget )){
 		gtk_entry_set_text( GTK_ENTRY( widget ), comment );
 	}
+}
+
+/*
+ * return %TRUE to allow quitting the dialog
+ */
+static gboolean
+v_quit_on_ok( ofaBaseDialog *dialog )
+{
+	return( do_update( OFA_GUIDED_INPUT( dialog )));
 }
 
 /*
@@ -1336,7 +1248,8 @@ do_update( ofaGuidedInput *self )
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	piece = NULL;
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "p1-piece" );
+	entry = my_utils_container_get_child_by_name(
+							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-piece" );
 	if( entry && GTK_IS_ENTRY( entry )){
 		piece = gtk_entry_get_text( GTK_ENTRY( entry ));
 	}
@@ -1361,7 +1274,7 @@ do_update( ofaGuidedInput *self )
 
 	if( !errors ){
 		ok = TRUE;
-		dossier = ofa_main_window_get_dossier( self->private->main_window );
+		dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 		for( it=entries ; it ; it=it->next ){
 			ok &= ofo_entry_insert( OFO_ENTRY( it->data ), dossier );
 			/* TODO:
@@ -1397,8 +1310,8 @@ entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	account_number = gtk_entry_get_text( GTK_ENTRY( entry ));
 	account = ofo_account_get_by_number(
-					ofa_main_window_get_dossier( self->private->main_window ),
-					account_number );
+						ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
+						account_number );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 	entry = gtk_grid_get_child_at( self->private->view, COL_LABEL, row );
@@ -1417,7 +1330,7 @@ entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 	}
 
 	return( ofo_entry_new_with_data(
-					ofa_main_window_get_dossier( self->private->main_window ),
+					ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
 							&self->private->deff, &self->private->dope, label,
 							piece, account_number,
 							ofo_account_get_devise( account ),

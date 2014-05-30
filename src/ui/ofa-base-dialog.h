@@ -155,17 +155,19 @@ typedef struct {
  * @OFA_PROP_DIALOG_XML:       path to the xml file which contains the UI description
  * @OFA_PROP_DIALOG_NAME:      dialog box name
  */
-#define OFA_PROP_MAIN_WINDOW                "ofa-dialog-prop-main-window"
-#define OFA_PROP_DIALOG_XML                 "ofa-dialog-prop-xml"
-#define OFA_PROP_DIALOG_NAME                "ofa-dialog-prop-name"
+#define OFA_PROP_MAIN_WINDOW                  "ofa-dialog-prop-main-window"
+#define OFA_PROP_DIALOG_XML                   "ofa-dialog-prop-xml"
+#define OFA_PROP_DIALOG_NAME                  "ofa-dialog-prop-name"
 
-GType       ofa_base_dialog_get_type   ( void );
+GType          ofa_base_dialog_get_type       ( void );
 
-gboolean    ofa_base_dialog_init_dialog( ofaBaseDialog *dialog );
+gboolean       ofa_base_dialog_init_dialog    ( ofaBaseDialog *dialog );
 
-gint        ofa_base_dialog_run_dialog ( ofaBaseDialog *dialog );
+gint           ofa_base_dialog_run_dialog     ( ofaBaseDialog *dialog );
 
-ofoDossier *ofa_base_dialog_get_dossier( const ofaBaseDialog *dialog );
+ofoDossier    *ofa_base_dialog_get_dossier    ( const ofaBaseDialog *dialog );
+
+ofaMainWindow *ofa_base_dialog_get_main_window( const ofaBaseDialog *dialog );
 
 G_END_DECLS
 

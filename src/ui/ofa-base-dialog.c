@@ -486,13 +486,30 @@ v_quit_on_ok( ofaBaseDialog *dialog )
 /**
  * ofa_base_dialog_get_dossier:
  */
-ofoDossier *ofa_base_dialog_get_dossier( const ofaBaseDialog *dialog )
+ofoDossier *
+ofa_base_dialog_get_dossier( const ofaBaseDialog *dialog )
 {
 	g_return_val_if_fail( OFA_IS_BASE_DIALOG( dialog ), NULL );
 
 	if( !dialog->prot->dispose_has_run ){
 
 		return( ofa_main_window_get_dossier( dialog->priv->main_window ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_base_dialog_get_main_window:
+ */
+ofaMainWindow *
+ofa_base_dialog_get_main_window( const ofaBaseDialog *dialog )
+{
+	g_return_val_if_fail( OFA_IS_BASE_DIALOG( dialog ), NULL );
+
+	if( !dialog->prot->dispose_has_run ){
+
+		return( dialog->priv->main_window );
 	}
 
 	return( NULL );
