@@ -59,8 +59,8 @@ G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 
 #define OFO_SGBD_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_SGBD, ofoSgbdPrivate))
 
-static void  error_connect( ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
-static void  error_query( ofoSgbd *sgbd, const gchar *query );
+static void  error_connect( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
+static void  error_query( const ofoSgbd *sgbd, const gchar *query );
 
 static void
 ofo_sgbd_finalize( GObject *instance )
@@ -191,7 +191,7 @@ ofo_sgbd_connect( ofoSgbd *sgbd,
 }
 
 static void
-error_connect( ofoSgbd *sgbd,
+error_connect( const ofoSgbd *sgbd,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account )
 {
 	GtkMessageDialog *dlg;
@@ -231,7 +231,7 @@ error_connect( ofoSgbd *sgbd,
  * ofo_sgbd_exec_query:
  */
 gboolean
-ofo_sgbd_query( ofoSgbd *sgbd, const gchar *query )
+ofo_sgbd_query( const ofoSgbd *sgbd, const gchar *query )
 {
 	static const gchar *thisfn = "ofo_sgbd_query";
 	gboolean query_ok = FALSE;
@@ -274,7 +274,7 @@ ofo_sgbd_query( ofoSgbd *sgbd, const gchar *query )
  * The returned GSList should be freed with ofo_sgbd_free_result().
  */
 GSList *
-ofo_sgbd_query_ex( ofoSgbd *sgbd, const gchar *query )
+ofo_sgbd_query_ex( const ofoSgbd *sgbd, const gchar *query )
 {
 	static const gchar *thisfn = "ofo_sgbd_query_ex";
 	GSList *result = NULL;
@@ -314,7 +314,7 @@ ofo_sgbd_query_ex( ofoSgbd *sgbd, const gchar *query )
 }
 
 static void
-error_query( ofoSgbd *sgbd, const gchar *query )
+error_query( const ofoSgbd *sgbd, const gchar *query )
 {
 	GtkMessageDialog *dlg;
 

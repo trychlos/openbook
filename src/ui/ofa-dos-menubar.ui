@@ -46,6 +46,12 @@
           <attribute name="action">win.guided</attribute>
         </item>
       </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">Account _reconciliation...</attribute>
+          <attribute name="action">win.concil</attribute>
+        </item>
+      </section>
     </submenu>
     <submenu>
       <attribute name="label" translatable="yes">_References</attribute>

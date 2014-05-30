@@ -532,6 +532,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	ECR_STATUS    INTEGER                     COMMENT 'Is the entry validated or deleted ?',"
 			"	ECR_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
 			"	ECR_MAJ_STAMP TIMESTAMP                   COMMENT 'Last update timestamp',"
+			"	ECR_RAPPRO    DATE NOT NULL DEFAULT 0     COMMENT 'Reconciliation date',"
 			"	CONSTRAINT PRIMARY KEY (ECR_DEFFET,ECR_NUMBER),"
 			"	INDEX (ECR_NUMBER)"
 			")" )){

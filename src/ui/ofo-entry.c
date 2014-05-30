@@ -61,12 +61,14 @@ struct _ofoEntryPrivate {
 	ofaEntryStatus status;
 	gchar         *maj_user;
 	GTimeVal       maj_stamp;
+	GDate          rappro;
 };
 
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
 #define OFO_ENTRY_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_ENTRY, ofoEntryPrivate))
 
+static GList   *entry_load_dataset( const ofoSgbd *sgbd, const gchar *account, ofaEntryConcil mode );
 static gint     entry_count_for_devise( ofoSgbd *sgbd, gint dev_id );
 static gint     entry_count_for_journal( ofoSgbd *sgbd, gint jou_id );
 static gboolean entry_do_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
@@ -76,6 +78,7 @@ static void     error_acc_number( void );
 static void     error_account( const gchar *number );
 static void     error_acc_currency( const ofoDossier *dossier, gint dev_id, ofoAccount *account );
 static void     error_entry( const gchar *message );
+static gboolean do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd );
 
 static void
 ofo_entry_finalize( GObject *instance )
@@ -83,10 +86,11 @@ ofo_entry_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_entry_finalize";
 	ofoEntry *self;
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
 	self = OFO_ENTRY( instance );
+
+	g_debug( "%s: instance=%p (%s): %s",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			self->priv->label );
 
 	g_free( self->priv->label );
 	g_free( self->priv->ref );
@@ -99,12 +103,7 @@ ofo_entry_finalize( GObject *instance )
 static void
 ofo_entry_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_entry_dispose";
-
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
-
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		/* unref member objects here */
 	}
@@ -128,6 +127,7 @@ ofo_entry_init( ofoEntry *self )
 	self->priv->jou_id = OFO_BASE_UNSET_ID;
 	g_date_clear( &self->priv->effect, 1 );
 	g_date_clear( &self->priv->operation, 1 );
+	g_date_clear( &self->priv->rappro, 1 );
 }
 
 static void
@@ -141,6 +141,112 @@ ofo_entry_class_init( ofoEntryClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_entry_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_entry_finalize;
+}
+
+/**
+ * ofo_entry_new:
+ */
+ofoEntry *
+ofo_entry_new( void )
+{
+	return( g_object_new( OFO_TYPE_ENTRY, NULL ));
+}
+
+/**
+ * ofo_entry_get_dataset:
+ */
+GList *
+ofo_entry_get_dataset( const ofoDossier *dossier, const gchar *account, ofaEntryConcil mode )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	return( entry_load_dataset( ofo_dossier_get_sgbd( dossier ), account, mode ));
+}
+
+static GList *
+entry_load_dataset( const ofoSgbd *sgbd, const gchar *account, ofaEntryConcil mode )
+{
+	GList *dataset;
+	GString *query;
+	GSList *result, *irow, *icol;
+	ofoEntry *entry;
+
+	dataset = NULL;
+	query = g_string_new( "" );
+	g_string_printf( query,
+				"SELECT ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
+				"	ECR_DEV_ID,ECR_JOU_ID,ECR_MONTANT,ECR_SENS,"
+				"	ECR_STATUS,ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_RAPPRO "
+				"	FROM OFA_T_ECRITURES "
+				"	WHERE ECR_COMPTE='%s' AND ECR_STATUS!=2 ",
+						account );
+	switch( mode ){
+		case ENT_CONCILED_YES:
+			g_string_append_printf( query,
+				"	AND ECR_RAPPRO!=0" );
+			break;
+		case ENT_CONCILED_NO:
+			g_string_append_printf( query,
+				"	AND ECR_RAPPRO=0" );
+			break;
+		case ENT_CONCILED_ALL:
+			break;
+	}
+
+	query = g_string_append( query, " ORDER BY ECR_DOPE ASC,ECR_DEFFET ASC,ECR_NUMBER ASC" );
+	result = ofo_sgbd_query_ex( sgbd, query->str );
+	g_string_free( query, TRUE );
+
+	if( result ){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			entry = ofo_entry_new();
+			ofo_entry_set_dope( entry, my_utils_date_from_str(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_entry_set_deffect( entry, my_utils_date_from_str(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_entry_set_number( entry, atoi(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_entry_set_label( entry, ( gchar * ) icol->data );
+			icol = icol->next;
+			if( icol->data ){
+				ofo_entry_set_ref( entry, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			ofo_entry_set_devise( entry, atoi(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_entry_set_journal( entry, atoi(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_entry_set_amount( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+			icol = icol->next;
+			ofo_entry_set_sens( entry, atoi(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_entry_set_maj_user( entry, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str(( gchar * ) icol->data ));
+			icol = icol->next;
+			if( icol->data ){
+				ofo_entry_set_rappro( entry, my_utils_date_from_str(( gchar * ) icol->data ));
+			}
+
+			dataset = g_list_prepend( dataset, entry );
+		}
+
+		ofo_sgbd_free_result( result );
+	}
+
+	return( g_list_reverse( dataset ));
+}
+
+/**
+ * ofo_entry_free_dataset:
+ */
+void
+ofo_entry_free_dataset( GList *dataset )
+{
+	g_list_free_full( dataset, g_object_unref );
 }
 
 /**
@@ -396,6 +502,189 @@ ofo_entry_get_status( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_rappro:
+ */
+const GDate *
+ofo_entry_get_rappro( const ofoEntry *entry )
+{
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return(( const GDate * ) &entry->priv->rappro );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_entry_set_number:
+ */
+void
+ofo_entry_set_number( ofoEntry *entry, gint number )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( number > 0 );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		entry->priv->number = number;
+	}
+}
+
+/**
+ * ofo_entry_set_label:
+ */
+void
+ofo_entry_set_label( ofoEntry *entry, const gchar *label )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( label && g_utf8_strlen( label, -1 ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		g_free( entry->priv->label );
+		entry->priv->label = g_strdup( label );
+	}
+}
+
+/**
+ * ofo_entry_set_deffect:
+ */
+void
+ofo_entry_set_deffect( ofoEntry *entry, const GDate *deffect )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( deffect && g_date_valid( deffect ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		memcpy( &entry->priv->effect, deffect, sizeof( GDate ));
+	}
+}
+
+/**
+ * ofo_entry_set_dope:
+ */
+void
+ofo_entry_set_dope( ofoEntry *entry, const GDate *dope )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( dope && g_date_valid( dope ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		memcpy( &entry->priv->operation, dope, sizeof( GDate ));
+	}
+}
+
+/**
+ * ofo_entry_set_ref:
+ */
+void
+ofo_entry_set_ref( ofoEntry *entry, const gchar *ref )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		g_free( entry->priv->ref );
+		entry->priv->ref = g_strdup( ref );
+	}
+}
+
+/**
+ * ofo_entry_set_account:
+ */
+void
+ofo_entry_set_account( ofoEntry *entry, const gchar *account )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( account && g_utf8_strlen( account, -1 ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		g_free( entry->priv->account );
+		entry->priv->account = g_strdup( account );
+	}
+}
+
+/**
+ * ofo_entry_set_devise:
+ */
+void
+ofo_entry_set_devise( ofoEntry *entry, gint devise )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( devise > 0 );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		entry->priv->dev_id = devise;
+	}
+}
+
+/**
+ * ofo_entry_set_journal:
+ */
+void
+ofo_entry_set_journal( ofoEntry *entry, gint journal )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( journal > 0 );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		entry->priv->jou_id = journal;
+	}
+}
+
+/**
+ * ofo_entry_set_amount:
+ */
+void
+ofo_entry_set_amount( ofoEntry *entry, gdouble amount )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( amount > 0 );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		entry->priv->amount = amount;
+	}
+}
+
+/**
+ * ofo_entry_set_sens:
+ */
+void
+ofo_entry_set_sens( ofoEntry *entry, ofaEntrySens sens )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( sens > 0 );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		entry->priv->sens = sens;
+	}
+}
+
+/**
+ * ofo_entry_set_status:
+ */
+void
+ofo_entry_set_status( ofoEntry *entry, ofaEntryStatus status )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+	g_return_if_fail( status > 0 );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		entry->priv->status = status;
+	}
+}
+
+/**
  * ofo_entry_set_maj_user:
  */
 void
@@ -405,6 +694,7 @@ ofo_entry_set_maj_user( ofoEntry *entry, const gchar *maj_user )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
+		g_free( entry->priv->maj_user );
 		entry->priv->maj_user = g_strdup( maj_user );
 	}
 }
@@ -420,6 +710,26 @@ ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *maj_stamp )
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		memcpy( &entry->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+	}
+}
+
+/**
+ * ofo_entry_set_rappro:
+ *
+ * The reconciliation may be unset by setting @drappro to %NULL.
+ */
+void
+ofo_entry_set_rappro( ofoEntry *entry, const GDate *drappro )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		if( drappro && g_date_valid( drappro )){
+			memcpy( &entry->priv->rappro, drappro, sizeof( GDate ));
+		} else {
+			g_date_clear( &entry->priv->rappro, 1 );
+		}
 	}
 }
 
@@ -663,10 +973,59 @@ error_entry( const gchar *message )
 }
 
 /**
+ * ofo_entry_update_rappro:
+ */
+gboolean
+ofo_entry_update_rappro( ofoEntry *entry, const ofoDossier *dossier )
+{
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return( do_update_rappro( entry, ofo_dossier_get_sgbd( dossier )));
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd )
+{
+	gchar *query, *srappro;
+	const GDate *rappro;
+	gboolean ok;
+
+	rappro = ofo_entry_get_rappro( entry );
+	if( g_date_valid( rappro )){
+
+		srappro = my_utils_sql_from_date( rappro );
+		query = g_strdup_printf(
+					"UPDATE OFA_T_ECRITURES"
+					"	SET ECR_RAPPRO='%s'"
+					"	WHERE ECR_NUMBER=%d",
+							srappro, ofo_entry_get_number( entry ));
+		g_free( srappro );
+	} else {
+		query = g_strdup_printf(
+					"UPDATE OFA_T_ECRITURES"
+					"	SET ECR_RAPPRO=0"
+					"	WHERE ECR_NUMBER=%d",
+							ofo_entry_get_number( entry ));
+	}
+
+	ok = ofo_sgbd_query( sgbd, query );
+
+	g_free( query );
+
+	return( ok );
+}
+
+/**
  * ofo_entry_validate:
  */
 gboolean
-ofo_entry_validate( ofoEntry *entry, ofoDossier *dossier )
+ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
 {
 	return( FALSE );
 }
@@ -675,7 +1034,7 @@ ofo_entry_validate( ofoEntry *entry, ofoDossier *dossier )
  * ofo_entry_delete:
  */
 gboolean
-ofo_entry_delete( ofoEntry *entry, ofoDossier *dossier )
+ofo_entry_delete( ofoEntry *entry, const ofoDossier *dossier )
 {
 	return( FALSE );
 }

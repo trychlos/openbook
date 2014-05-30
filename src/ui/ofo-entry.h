@@ -81,8 +81,23 @@ typedef enum {
 }
 	ofaEntryStatus;
 
+/**
+ * ofaEntryConcil:
+ */
+typedef enum {
+	ENT_CONCILED_YES = 1,
+	ENT_CONCILED_NO,
+	ENT_CONCILED_ALL
+}
+	ofaEntryConcil;
+
 GType          ofo_entry_get_type     ( void ) G_GNUC_CONST;
 
+ofoEntry      *ofo_entry_new          ( void );
+
+GList         *ofo_entry_get_dataset  ( const ofoDossier *dossier,
+													const gchar *account, ofaEntryConcil mode );
+void           ofo_entry_free_dataset ( GList *dataset );
 gboolean       ofo_entry_use_devise   ( const ofoDossier *dossier, gint dev_id );
 gboolean       ofo_entry_use_journal  ( const ofoDossier *dossier, gint jou_id );
 
@@ -97,9 +112,22 @@ gint           ofo_entry_get_journal  ( const ofoEntry *entry );
 gdouble        ofo_entry_get_amount   ( const ofoEntry *entry );
 ofaEntrySens   ofo_entry_get_sens     ( const ofoEntry *entry );
 ofaEntryStatus ofo_entry_get_status   ( const ofoEntry *entry );
+const GDate   *ofo_entry_get_rappro   ( const ofoEntry *entry );
 
+void           ofo_entry_set_number   ( ofoEntry *entry, gint number );
+void           ofo_entry_set_label    ( ofoEntry *entry, const gchar *label );
+void           ofo_entry_set_deffect  ( ofoEntry *entry, const GDate *date );
+void           ofo_entry_set_dope     ( ofoEntry *entry, const GDate *date );
+void           ofo_entry_set_ref      ( ofoEntry *entry, const gchar *ref );
+void           ofo_entry_set_account  ( ofoEntry *entry, const gchar *number );
+void           ofo_entry_set_devise   ( ofoEntry *entry, gint devise );
+void           ofo_entry_set_journal  ( ofoEntry *entry, gint journal );
+void           ofo_entry_set_amount   ( ofoEntry *entry, gdouble amount );
+void           ofo_entry_set_sens     ( ofoEntry *entry, ofaEntrySens sens );
+void           ofo_entry_set_status   ( ofoEntry *entry, ofaEntryStatus status );
 void           ofo_entry_set_maj_user ( ofoEntry *entry, const gchar *user );
 void           ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *stamp );
+void           ofo_entry_set_rappro   ( ofoEntry *entry, const GDate *date );
 
 ofoEntry      *ofo_entry_new_with_data( const ofoDossier *dossier,
 													const GDate *effet, const GDate *ope,
@@ -109,8 +137,9 @@ ofoEntry      *ofo_entry_new_with_data( const ofoDossier *dossier,
 													gdouble amount, ofaEntrySens sens );
 
 gboolean       ofo_entry_insert       ( ofoEntry *entry, ofoDossier *dossier );
-gboolean       ofo_entry_validate     ( ofoEntry *entry, ofoDossier *dossier );
-gboolean       ofo_entry_delete       ( ofoEntry *entry, ofoDossier *dossier );
+gboolean       ofo_entry_update_rappro( ofoEntry *entry, const ofoDossier *dossier );
+gboolean       ofo_entry_validate     ( ofoEntry *entry, const ofoDossier *dossier );
+gboolean       ofo_entry_delete       ( ofoEntry *entry, const ofoDossier *dossier );
 
 G_END_DECLS
 

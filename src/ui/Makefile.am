@@ -88,6 +88,8 @@ openbook_SOURCES = \
 	ofa-model-properties.h								\
 	ofa-models-set.c									\
 	ofa-models-set.h									\
+	ofa-rappro.c										\
+	ofa-rappro.h										\
 	ofa-settings.c										\
 	ofa-settings.h										\
 	ofa-taux-properties.c								\

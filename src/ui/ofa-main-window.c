@@ -38,6 +38,7 @@
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofa-models-set.h"
+#include "ui/ofa-rappro.h"
 #include "ui/ofa-taux-set.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
@@ -82,6 +83,7 @@ enum {
 static void on_properties      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_close           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_guided      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_concil      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -92,6 +94,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "properties",   on_properties,       NULL, NULL, NULL },
 		{ "close",        on_close,            NULL, NULL, NULL },
 		{ "guided",       on_ope_guided,       NULL, NULL, NULL },
+		{ "concil",       on_ope_concil,       NULL, NULL, NULL },
 		{ "accounts",     on_ref_accounts,     NULL, NULL, NULL },
 		{ "journals",     on_ref_journals,     NULL, NULL, NULL },
 		{ "models",       on_ref_models,       NULL, NULL, NULL },
@@ -118,7 +121,8 @@ enum {
 	THM_DEVISES,
 	THM_JOURNALS,
 	THM_MODELS,
-	THM_TAUX
+	THM_TAUX,
+	THM_CONCIL
 };
 
 static sThemeDef st_theme_defs[] = {
@@ -143,6 +147,10 @@ static sThemeDef st_theme_defs[] = {
 				N_( "Rates" ),
 				ofa_taux_set_get_type },
 
+		{ THM_CONCIL,
+				N_( "Reconciliation" ),
+				ofa_rappro_get_type },
+
 		{ 0 }
 };
 
@@ -165,6 +173,7 @@ enum {
 static sTreeDef st_tree_defs[] = {
 
 		{ N_( "Guided input" ),      THM_MODELS },
+		{ N_( "Reconciliation" ),    THM_CONCIL },
 		{ N_( "Chart of accounts" ), THM_ACCOUNTS },
 		{ N_( "Journals" ),          THM_JOURNALS },
 		{ N_( "Entry models" ),      THM_MODELS },
@@ -761,6 +770,7 @@ add_empty_notebook_to_pane_right( ofaMainWindow *window )
 	book = GTK_NOTEBOOK( gtk_notebook_new());
 	gtk_widget_set_margin_right( GTK_WIDGET( book ), 4 );
 	gtk_widget_set_margin_bottom( GTK_WIDGET( book ), 4 );
+	gtk_notebook_set_scrollable( book, TRUE );
 	gtk_paned_pack2( window->private->pane, GTK_WIDGET( book ), TRUE, FALSE );
 }
 
@@ -833,6 +843,19 @@ on_ope_guided( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MODELS );
+}
+
+static void
+on_ope_concil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_concil";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CONCIL );
 }
 
 static void
