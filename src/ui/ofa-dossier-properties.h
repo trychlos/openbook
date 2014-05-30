@@ -35,7 +35,7 @@
  * Update the dossier properties.
  */
 
-#include "ui/ofa-main-window-def.h"
+#include "ui/ofa-base-dialog.h"
 #include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -51,14 +51,14 @@ typedef struct _ofaDossierPropertiesPrivate        ofaDossierPropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                      parent;
+	ofaBaseDialog                parent;
 	ofaDossierPropertiesPrivate *private;
 }
 	ofaDossierProperties;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass parent;
+	ofaBaseDialogClass parent;
 }
 	ofaDossierPropertiesClass;
 

@@ -76,11 +76,12 @@ devise_properties_finalize( GObject *instance )
 
 	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( instance ));
 
+	priv = OFA_DEVISE_PROPERTIES( instance )->private;
+
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = OFA_DEVISE_PROPERTIES( instance )->private;
-
+	/* free members here */
 	g_free( priv->code );
 	g_free( priv->label );
 	g_free( priv->symbol );
@@ -93,14 +94,11 @@ devise_properties_finalize( GObject *instance )
 static void
 devise_properties_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_devise_properties_dispose";
-
 	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( instance ));
 
 	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
@@ -114,7 +112,7 @@ ofa_devise_properties_init( ofaDeviseProperties *self )
 
 	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( self ));
 
-	g_debug( "%s: instance=%p (%s)",
+	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofaDevisePropertiesPrivate, 1 );

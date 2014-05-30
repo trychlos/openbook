@@ -109,11 +109,12 @@ account_notebook_finalize( GObject *instance )
 
 	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( instance ));
 
+	priv = OFA_ACCOUNT_NOTEBOOK( instance )->private;
+
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = OFA_ACCOUNT_NOTEBOOK( instance )->private;
-
+	/* free members here */
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -123,7 +124,6 @@ account_notebook_finalize( GObject *instance )
 static void
 account_notebook_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_account_notebook_dispose";
 	ofaAccountNotebookPrivate *priv;
 
 	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( instance ));
@@ -132,10 +132,9 @@ account_notebook_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
 		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
@@ -763,6 +762,9 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 	}
 }
 
+/*
+ * OFA_SIGNAL_ACCOUNT_UPDATED signal handler
+ */
 static void
 on_account_updated( ofoDossier *dossier, ofoAccount *account, ofaAccountNotebook *self )
 {

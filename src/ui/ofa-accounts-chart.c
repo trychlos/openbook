@@ -70,11 +70,12 @@ accounts_chart_finalize( GObject *instance )
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( instance ));
 
+	priv = OFA_ACCOUNTS_CHART( instance )->private;
+
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = OFA_ACCOUNTS_CHART( instance )->private;
-
+	/* free members here */
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -84,7 +85,6 @@ accounts_chart_finalize( GObject *instance )
 static void
 accounts_chart_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_accounts_chart_dispose";
 	ofaAccountsChartPrivate *priv;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( instance ));
@@ -93,10 +93,9 @@ accounts_chart_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
 		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
@@ -110,7 +109,7 @@ ofa_accounts_chart_init( ofaAccountsChart *self )
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
 
-	g_debug( "%s: instance=%p (%s)",
+	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofaAccountsChartPrivate, 1 );

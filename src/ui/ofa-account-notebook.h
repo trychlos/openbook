@@ -105,17 +105,21 @@ typedef struct {
 
 ofaAccountNotebook *ofa_account_notebook_init_dialog ( ofaAccountNotebookParms *parms );
 
-void                ofa_account_notebook_init_view   ( ofaAccountNotebook *self, const gchar *number );
+void                ofa_account_notebook_init_view   ( ofaAccountNotebook *self,
+															const gchar *number );
 
 ofoAccount         *ofa_account_notebook_get_selected( ofaAccountNotebook *self );
 
-void                ofa_account_notebook_set_selected( ofaAccountNotebook *self, const gchar *number );
+void                ofa_account_notebook_set_selected( ofaAccountNotebook *self,
+															const gchar *number );
 
 void                ofa_account_notebook_grab_focus  ( ofaAccountNotebook *self );
 
-gboolean            ofa_account_notebook_insert      ( ofaAccountNotebook *self, ofoAccount *account );
+gboolean            ofa_account_notebook_insert      ( ofaAccountNotebook *self,
+															ofoAccount *account );
 
-gboolean            ofa_account_notebook_remove      ( ofaAccountNotebook *self, const gchar *number );
+gboolean            ofa_account_notebook_remove      ( ofaAccountNotebook *self,
+															const gchar *number );
 
 G_END_DECLS
 

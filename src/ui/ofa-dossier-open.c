@@ -65,8 +65,8 @@ enum {
 
 G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, OFA_TYPE_BASE_DIALOG )
 
-static void      v_dossier_open_init_dialog( ofaBaseDialog *dialog );
-static gboolean  v_dossier_open_quit_on_ok( ofaBaseDialog *dialog );
+static void      v_init_dialog( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static void      on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self );
 static void      on_account_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      on_password_changed( GtkEntry *entry, ofaDossierOpen *self );
@@ -81,11 +81,12 @@ dossier_open_finalize( GObject *instance )
 
 	g_return_if_fail( OFA_IS_DOSSIER_OPEN( instance ));
 
+	priv = OFA_DOSSIER_OPEN( instance )->private;
+
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = OFA_DOSSIER_OPEN( instance )->private;
-
+	/* free members here */
 	g_free( priv->name );
 	g_free( priv->account );
 	g_free( priv->password );
@@ -98,14 +99,11 @@ dossier_open_finalize( GObject *instance )
 static void
 dossier_open_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_dossier_open_dispose";
-
 	g_return_if_fail( OFA_IS_DOSSIER_OPEN( instance ));
 
 	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
@@ -135,8 +133,8 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dossier_open_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_open_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_dossier_open_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_dossier_open_quit_on_ok;
+	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -194,7 +192,7 @@ on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaDossierOpen *sel
 #endif
 
 static void
-v_dossier_open_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( ofaBaseDialog *dialog )
 {
 	GtkTreeView *listview;
 	GtkTreeModel *tmodel;
@@ -274,7 +272,7 @@ v_dossier_open_init_dialog( ofaBaseDialog *dialog )
 }
 
 static gboolean
-v_dossier_open_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( ofaBaseDialog *dialog )
 {
 	return( do_open( OFA_DOSSIER_OPEN( dialog )));
 }

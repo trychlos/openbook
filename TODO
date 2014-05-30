@@ -190,8 +190,6 @@
 
  141 2014- 5-28 ofaTauxProperties derives from ofaBaseDialog
 
- 142 2014- 5-28 remove xxxClassPrivate
-
  144 2014- 5-29 always use g_define_type 
 
  145 2014- 5-30 get rid of xxx_GET_PRIVATE macro
@@ -515,6 +513,9 @@
 
  136 2014- 5-28 ofaDossierOpen derives from ofaBaseDialog
      2014- 5-29 done - svn #3546
+
+ 142 2014- 5-28 remove xxxClassPrivate
+     2014- 5-30 done - svn #3556
 
  143 2014- 5-29 add iso 3a code to accout notebook view
      2014- 5-29 done - svn #3548

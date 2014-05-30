@@ -51,13 +51,8 @@ enum {
 	N_COLUMNS
 };
 
-static ofaMainPageClass *st_parent_class = NULL;
+G_DEFINE_TYPE( ofaDevisesSet, ofa_devises_set, OFA_TYPE_MAIN_PAGE )
 
-static GType      register_type( void );
-static void       class_init( ofaDevisesSetClass *klass );
-static void       instance_init( GTypeInstance *instance, gpointer klass );
-static void       instance_dispose( GObject *instance );
-static void       instance_finalize( GObject *instance );
 static GtkWidget *v_setup_view( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
 static void       insert_new_row( ofaDevisesSet *self, ofoDevise *devise, gboolean with_selection );
@@ -70,86 +65,29 @@ static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaDevisesSet *self, ofoDevise *devise );
 
-GType
-ofa_devises_set_get_type( void )
-{
-	static GType window_type = 0;
-
-	if( !window_type ){
-		window_type = register_type();
-	}
-
-	return( window_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_devises_set_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaDevisesSetClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaDevisesSet ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( OFA_TYPE_MAIN_PAGE, "ofaDevisesSet", &info, 0 );
-
-	return( type );
-}
-
 static void
-class_init( ofaDevisesSetClass *klass )
+devises_set_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_devises_set_class_init";
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = ( ofaMainPageClass * ) g_type_class_peek_parent( klass );
-	g_return_if_fail( st_parent_class && OFA_IS_MAIN_PAGE_CLASS( st_parent_class ));
-
-	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
-	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
-
-	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
-	OFA_MAIN_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
-	OFA_MAIN_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
-	OFA_MAIN_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_devises_set_instance_init";
-	ofaDevisesSet *self;
+	static const gchar *thisfn = "ofa_devises_set_finalize";
+	ofaDevisesSetPrivate *priv;
 
 	g_return_if_fail( OFA_IS_DEVISES_SET( instance ));
 
-	g_debug( "%s: instance=%p (%s), klass=%p",
+	priv = OFA_DEVISES_SET( instance )->private;
 
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self = OFA_DEVISES_SET( instance );
+	/* free members here */
+	g_free( priv );
 
-	self->private = g_new0( ofaDevisesSetPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_devises_set_parent_class )->finalize( instance );
 }
 
 static void
-instance_dispose( GObject *instance )
+devises_set_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_devises_set_instance_dispose";
 	ofaDevisesSetPrivate *priv;
 
 	g_return_if_fail( OFA_IS_DEVISES_SET( instance ));
@@ -158,33 +96,45 @@ instance_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
 		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_devises_set_parent_class )->dispose( instance );
 }
 
 static void
-instance_finalize( GObject *instance )
+ofa_devises_set_init( ofaDevisesSet *self )
 {
-	static const gchar *thisfn = "ofa_devises_set_instance_finalize";
-	ofaDevisesSet *self;
+	static const gchar *thisfn = "ofa_devises_set_init";
 
-	g_return_if_fail( OFA_IS_DEVISES_SET( instance ));
+	g_return_if_fail( OFA_IS_DEVISES_SET( self ));
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self = OFA_DEVISES_SET( instance );
+	self->private = g_new0( ofaDevisesSetPrivate, 1 );
 
-	g_free( self->private );
+	self->private->dispose_has_run = FALSE;
+}
 
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->finalize( instance );
+static void
+ofa_devises_set_class_init( ofaDevisesSetClass *klass )
+{
+	static const gchar *thisfn = "ofa_devises_set_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = devises_set_dispose;
+	G_OBJECT_CLASS( klass )->finalize = devises_set_finalize;
+
+	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_MAIN_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
+	OFA_MAIN_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
+	OFA_MAIN_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
 }
 
 static GtkWidget *

@@ -88,11 +88,9 @@ base_dialog_finalize( GObject *instance )
 
 	self = OFA_BASE_DIALOG( instance );
 
-	/* free private data here */
+	/* free members here */
 	g_free( self->priv->dialog_xml );
 	g_free( self->priv->dialog_name );
-
-	/* free private and protected structures */
 	g_free( self->priv );
 	g_free( self->prot );
 
@@ -185,7 +183,7 @@ ofa_base_dialog_init( ofaBaseDialog *self )
 {
 	static const gchar *thisfn = "ofa_base_dialog_init";
 
-	g_debug( "%s: instance=%p (%s)",
+	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = g_new0( ofaBaseDialogPrivate, 1 );

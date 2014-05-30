@@ -48,15 +48,15 @@ struct _ofaAccountSelectPrivate {
 	gchar              *account_number;
 };
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-account-select.ui";
-static const gchar  *st_ui_id        = "AccountSelectDlg";
+static const gchar      *st_ui_xml = PKGUIDIR "/ofa-account-select.ui";
+static const gchar      *st_ui_id  = "AccountSelectDlg";
 
-static ofaAccountSelect *st_this         = NULL;
+static ofaAccountSelect *st_this   = NULL;
 
 G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, OFA_TYPE_BASE_DIALOG )
 
-static void      v_account_select_init_dialog( ofaBaseDialog *dialog );
-static gboolean  v_account_select_quit_on_ok( ofaBaseDialog *dialog );
+static void      v_init_dialog( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static void      on_account_activated( const gchar *number, ofaBaseDialog *dialog );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  do_update( ofaAccountSelect *self );
@@ -69,11 +69,12 @@ account_select_finalize( GObject *instance )
 
 	g_return_if_fail( OFA_IS_ACCOUNT_SELECT( instance ));
 
+	priv = OFA_ACCOUNT_SELECT( instance )->private;
+
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = OFA_ACCOUNT_SELECT( instance )->private;
-
+	/* free members here */
 	g_free( priv->account_number );
 	g_free( priv );
 
@@ -84,14 +85,11 @@ account_select_finalize( GObject *instance )
 static void
 account_select_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_account_select_dispose";
-
 	g_return_if_fail( OFA_IS_ACCOUNT_SELECT( instance ));
 
 	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
@@ -105,7 +103,7 @@ ofa_account_select_init( ofaAccountSelect *self )
 
 	g_return_if_fail( OFA_IS_ACCOUNT_SELECT( self ));
 
-	g_debug( "%s: instance=%p (%s)",
+	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofaAccountSelectPrivate, 1 );
@@ -121,8 +119,8 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = account_select_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_select_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_account_select_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_account_select_quit_on_ok;
+	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 static void
@@ -178,7 +176,7 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 }
 
 static void
-v_account_select_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( ofaBaseDialog *dialog )
 {
 	ofaAccountSelectPrivate *priv;
 	GtkWidget *book;
@@ -202,7 +200,7 @@ v_account_select_init_dialog( ofaBaseDialog *dialog )
 }
 
 static gboolean
-v_account_select_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( ofaBaseDialog *dialog )
 {
 	return( do_update( OFA_ACCOUNT_SELECT( dialog )));
 }

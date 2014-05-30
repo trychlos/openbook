@@ -105,29 +105,18 @@ struct _ofaDossierNewPrivate {
 /* class properties
  */
 enum {
-	OFA_PROP_0,
-
-	OFA_PROP_TOPLEVEL_ID,
-
-	OFA_PROP_N_PROPERTIES
+	OFA_PROP_TOPLEVEL_ID = 1,
 };
 
-#define PROP_TOPLEVEL                    "dossier-new-prop-toplevel"
+#define PROP_TOPLEVEL              "dossier-new-prop-toplevel"
 
-static const gchar    *st_ui_xml       = PKGUIDIR "/ofa-dossier-new.ui";
-static const gchar    *st_ui_id        = "DossierNewAssistant";
+static const gchar    *st_ui_xml = PKGUIDIR "/ofa-dossier-new.ui";
+static const gchar    *st_ui_id  = "DossierNewAssistant";
 
-static GObjectClass   *st_parent_class = NULL;
+G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, G_TYPE_OBJECT )
+
 static ofaOpenDossier *st_ood;
 
-static GType      register_type( void );
-static void       class_init( ofaDossierNewClass *klass );
-static void       instance_init( GTypeInstance *instance, gpointer klass );
-static void       instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec );
-static void       instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
-static void       instance_constructed( GObject *instance );
-static void       instance_dispose( GObject *instance );
-static void       instance_finalize( GObject *instance );
 static void       do_initialize_assistant( ofaDossierNew *self );
 static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaDossierNew *self );
 static void       on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self );
@@ -164,153 +153,81 @@ static void       on_close( GtkAssistant *assistant, ofaDossierNew *self );
 static void       do_close( ofaDossierNew *self );
 static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
 
-GType
-ofa_dossier_new_get_type( void )
-{
-	static GType window_type = 0;
-
-	if( !window_type ){
-		window_type = register_type();
-	}
-
-	return( window_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_dossier_new_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaDossierNewClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaDossierNew ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaDossierNew", &info, 0 );
-
-	return( type );
-}
-
 static void
-class_init( ofaDossierNewClass *klass )
+dossier_new_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_dossier_new_class_init";
-	GObjectClass *object_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->get_property = instance_get_property;
-	object_class->set_property = instance_set_property;
-	object_class->constructed = instance_constructed;
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	g_object_class_install_property( object_class, OFA_PROP_TOPLEVEL_ID,
-			g_param_spec_pointer(
-					PROP_TOPLEVEL,
-					"Main window",
-					"A pointer (not a ref) to the toplevel parent main window",
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_dossier_new_instance_init";
-	ofaDossierNew *self;
+	static const gchar *thisfn = "ofa_dossier_new_finalize";
+	ofaDossierNewPrivate *priv;
 
 	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
 
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	priv = OFA_DOSSIER_NEW( instance )->private;
 
-	self = OFA_DOSSIER_NEW( instance );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self->private = g_new0( ofaDossierNewPrivate, 1 );
+	/* free members here */
+	g_free( priv->p1_name );
 
-	self->private->dispose_has_run = FALSE;
+	g_free( priv->p2_dbname );
+	g_free( priv->p2_host );
+	g_free( priv->p2_port );
+	g_free( priv->p2_socket );
+	g_free( priv->p2_account );
+	g_free( priv->p2_password );
 
-	/* be sure to initialize this static data each time we run the
-	 * assistant */
-	st_ood = NULL;
+	g_free( priv->p3_account );
+	g_free( priv->p3_password );
+	g_free( priv->p3_bis );
+
+	g_free( priv );
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_dossier_new_parent_class )->finalize( instance );
 }
 
 static void
-instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
+dossier_new_dispose( GObject *instance )
 {
-	ofaDossierNew *self;
+	ofaDossierNewPrivate *priv;
 
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( object ));
-	self = OFA_DOSSIER_NEW( object );
+	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
 
-	if( !self->private->dispose_has_run ){
+	priv = ( OFA_DOSSIER_NEW( instance ))->private;
 
-		switch( property_id ){
-			case OFA_PROP_TOPLEVEL_ID:
-				g_value_set_pointer( value, self->private->main_window );
-				break;
+	if( !priv->dispose_has_run ){
 
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
-				break;
-		}
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+		gtk_main_quit();
+		gtk_widget_destroy( GTK_WIDGET( priv->assistant ));
 	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_dossier_new_parent_class )->dispose( instance );
 }
 
 static void
-instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
+dossier_new_constructed( GObject *instance )
 {
-	ofaDossierNew *self;
-
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( object ));
-	self = OFA_DOSSIER_NEW( object );
-
-	if( !self->private->dispose_has_run ){
-
-		switch( property_id ){
-			case OFA_PROP_TOPLEVEL_ID:
-				self->private->main_window = g_value_get_pointer( value );
-				break;
-
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
-				break;
-		}
-	}
-}
-
-static void
-instance_constructed( GObject *window )
-{
-	static const gchar *thisfn = "ofa_dossier_new_instance_constructed";
+	static const gchar *thisfn = "ofa_dossier_new_constructed";
 	ofaDossierNewPrivate *priv;
 	GtkBuilder *builder;
 	GError *error;
 
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( window ));
+	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
 
-	priv = OFA_DOSSIER_NEW( window )->private;
+	priv = OFA_DOSSIER_NEW( instance )->private;
 
 	if( !priv->dispose_has_run ){
 
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+		g_debug( "%s: instance=%p (%s)",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->constructed ){
-			G_OBJECT_CLASS( st_parent_class )->constructed( window );
+		if( G_OBJECT_CLASS( ofa_dossier_new_parent_class )->constructed ){
+			G_OBJECT_CLASS( ofa_dossier_new_parent_class )->constructed( instance );
 		}
 
 		/* create the GtkAssistant */
@@ -319,7 +236,7 @@ instance_constructed( GObject *window )
 		if( gtk_builder_add_from_file( builder, st_ui_xml, &error )){
 			priv->assistant = GTK_ASSISTANT( gtk_builder_get_object( builder, st_ui_id ));
 			if( priv->assistant ){
-				do_initialize_assistant( OFA_DOSSIER_NEW( window ));
+				do_initialize_assistant( OFA_DOSSIER_NEW( instance ));
 			} else {
 				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_ui_id, st_ui_xml );
 			}
@@ -332,61 +249,91 @@ instance_constructed( GObject *window )
 }
 
 static void
-instance_dispose( GObject *window )
+dossier_new_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
 {
-	static const gchar *thisfn = "ofa_dossier_new_instance_dispose";
 	ofaDossierNewPrivate *priv;
 
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( window ));
+	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
 
-	priv = ( OFA_DOSSIER_NEW( window ))->private;
+	priv = OFA_DOSSIER_NEW( instance )->private;
 
 	if( !priv->dispose_has_run ){
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
 
-		priv->dispose_has_run = TRUE;
+		switch( property_id ){
+			case OFA_PROP_TOPLEVEL_ID:
+				g_value_set_pointer( value, priv->main_window );
+				break;
 
-		gtk_main_quit();
-		gtk_widget_destroy( GTK_WIDGET( priv->assistant ));
-
-		g_free( priv->p1_name );
-
-		g_free( priv->p2_dbname );
-		g_free( priv->p2_host );
-		g_free( priv->p2_port );
-		g_free( priv->p2_socket );
-		g_free( priv->p2_account );
-		g_free( priv->p2_password );
-
-		g_free( priv->p3_account );
-		g_free( priv->p3_password );
-		g_free( priv->p3_bis );
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( window );
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
 		}
 	}
 }
 
 static void
-instance_finalize( GObject *window )
+dossier_new_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
 {
-	static const gchar *thisfn = "ofa_dossier_new_instance_finalize";
-	ofaDossierNew *self;
+	ofaDossierNewPrivate *priv;
 
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( window ));
+	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
 
-	g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
+	priv = OFA_DOSSIER_NEW( instance )->private;
 
-	self = OFA_DOSSIER_NEW( window );
+	if( !priv->dispose_has_run ){
 
-	g_free( self->private );
+		switch( property_id ){
+			case OFA_PROP_TOPLEVEL_ID:
+				priv->main_window = g_value_get_pointer( value );
+				break;
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( window );
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
+		}
 	}
+}
+
+static void
+ofa_dossier_new_init( ofaDossierNew *self )
+{
+	static const gchar *thisfn = "ofa_dossier_new_init";
+
+	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	self->private = g_new0( ofaDossierNewPrivate, 1 );
+
+	self->private->dispose_has_run = FALSE;
+
+	/* be sure to initialize this static data each time we run the
+	 * assistant */
+	st_ood = NULL;
+}
+
+static void
+ofa_dossier_new_class_init( ofaDossierNewClass *klass )
+{
+	static const gchar *thisfn = "ofa_dossier_new_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->get_property = dossier_new_get_property;
+	G_OBJECT_CLASS( klass )->set_property = dossier_new_set_property;
+	G_OBJECT_CLASS( klass )->constructed = dossier_new_constructed;
+	G_OBJECT_CLASS( klass )->dispose = dossier_new_dispose;
+	G_OBJECT_CLASS( klass )->finalize = dossier_new_finalize;
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			OFA_PROP_TOPLEVEL_ID,
+			g_param_spec_pointer(
+					PROP_TOPLEVEL,
+					"Main window",
+					"A pointer (not a ref) to the toplevel parent main window",
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 }
 
 /**
@@ -399,7 +346,7 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run";
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
 	g_debug( "%s: main_window=%p", thisfn, main_window );
 

@@ -60,42 +60,30 @@ struct _ofaApplicationPrivate {
 /* class properties
  */
 enum {
-	OFA_PROP_0,
-
-	OFA_PROP_OPTIONS_ID,
+	OFA_PROP_OPTIONS_ID = 1,
 	OFA_PROP_APPLICATION_NAME_ID,
 	OFA_PROP_DESCRIPTION_ID,
 	OFA_PROP_ICON_NAME_ID,
-
-	OFA_PROP_N_PROPERTIES
 };
 
 static gboolean pref_confirm_on_quit = FALSE;
 
-static       GtkApplicationClass *st_parent_class = NULL;
+static const gchar            *st_application_id    = "org.trychlos.openbook.ui";
+static const GApplicationFlags st_application_flags = G_APPLICATION_NON_UNIQUE;
 
-static const gchar               *st_application_id    = "org.trychlos.openbook.ui";
-static const GApplicationFlags    st_application_flags = G_APPLICATION_NON_UNIQUE;
+static const gchar            *st_application_name  = N_( "Open Freelance Accounting" );
+static const gchar            *st_description       = N_( "Une comptabilité en partie-double orientée vers les freelances" );
+static const gchar            *st_icon_name         = N_( "openbook" );
 
-static const gchar               *st_application_name  = N_( "Open Freelance Accounting" );
-static const gchar               *st_description       = N_( "Une comptabilité en partie-double orientée vers les freelances" );
-static const gchar               *st_icon_name         = N_( "openbook" );
+static       gboolean          st_version_opt       = FALSE;
 
-static       gboolean             st_version_opt       = FALSE;
-
-static       GOptionEntry         st_option_entries[]  = {
+static       GOptionEntry      st_option_entries[]  = {
 	{ "version"   , 'v', 0, G_OPTION_ARG_NONE, &st_version_opt,
 			N_( "affiche le numéro de version [no]" ), NULL },
 	{ NULL }
 };
 
-static GType    register_type( void );
-static void     class_init( ofaApplicationClass *klass );
-static void     instance_init( GTypeInstance *instance, gpointer klass );
-static void     instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec );
-static void     instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec );
-static void     instance_dispose( GObject *application );
-static void     instance_finalize( GObject *application );
+G_DEFINE_TYPE( ofaApplication, ofa_application, GTK_TYPE_APPLICATION )
 
 static void     application_startup( GApplication *application );
 static void     application_activate( GApplication *application );
@@ -121,121 +109,60 @@ static const GActionEntry st_app_entries[] = {
 static const gchar  *st_appmenu_xml = PKGUIDIR "/ofa-app-menubar.ui";
 static const gchar  *st_appmenu_id  = "app-menu";
 
-GType
-ofa_application_get_type( void )
+static void
+application_finalize( GObject *instance )
 {
-	static GType application_type = 0;
+	static const gchar *thisfn = "ofa_application_finalize";
+	ofaApplicationPrivate *priv;
 
-	if( !application_type ){
-		application_type = register_type();
+	g_return_if_fail( OFA_IS_APPLICATION( instance ));
+
+	priv = OFA_APPLICATION( instance )->private;
+
+	g_debug( "%s: application=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	/* free members here */
+	g_strfreev( priv->argv );
+	g_free( priv );
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_application_parent_class )->finalize( instance );
+}
+
+static void
+application_dispose( GObject *instance )
+{
+	ofaApplicationPrivate *priv;
+
+	g_return_if_fail( OFA_IS_APPLICATION( instance ));
+
+	priv = OFA_APPLICATION( instance )->private;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+
+		if( priv->menu ){
+			g_object_unref( priv->menu );
+		}
+
+		ofa_settings_free();
 	}
 
-	return( application_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_application_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaApplicationClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaApplication ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( GTK_TYPE_APPLICATION, "ofaApplication", &info, 0 );
-
-	return( type );
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_application_parent_class )->dispose( instance );
 }
 
 static void
-class_init( ofaApplicationClass *klass )
-{
-	static const gchar *thisfn = "ofa_application_class_init";
-	GObjectClass *object_class;
-	GApplicationClass *application_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->get_property = instance_get_property;
-	object_class->set_property = instance_set_property;
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-
-	application_class = G_APPLICATION_CLASS( klass );
-	application_class->startup = application_startup;
-	application_class->activate = application_activate;
-	application_class->open = application_open;
-
-	g_object_class_install_property( object_class, OFA_PROP_OPTIONS_ID,
-			g_param_spec_pointer(
-					OFA_PROP_OPTIONS,
-					"Option entries",
-					"The array of command-line option definitions",
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	g_object_class_install_property( object_class, OFA_PROP_APPLICATION_NAME_ID,
-			g_param_spec_string(
-					OFA_PROP_APPLICATION_NAME,
-					"Application name",
-					"The name of the application",
-					"",
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	g_object_class_install_property( object_class, OFA_PROP_DESCRIPTION_ID,
-			g_param_spec_string(
-					OFA_PROP_DESCRIPTION,
-					"Description",
-					"A short description to be displayed in the first line of --help output",
-					"",
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	g_object_class_install_property( object_class, OFA_PROP_ICON_NAME_ID,
-			g_param_spec_string(
-					OFA_PROP_ICON_NAME,
-					"Icon name",
-					"The name of the icon of the application",
-					"",
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-}
-
-static void
-instance_init( GTypeInstance *application, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_application_instance_init";
-	ofaApplication *self;
-
-	g_return_if_fail( OFA_IS_APPLICATION( application ));
-
-	g_debug( "%s: application=%p (%s), klass=%p",
-			thisfn, ( void * ) application, G_OBJECT_TYPE_NAME( application ), ( void * ) klass );
-
-	self = OFA_APPLICATION( application );
-
-	self->private = g_new0( ofaApplicationPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-}
-
-static void
-instance_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
+application_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
 {
 	ofaApplicationPrivate *priv;
 
 	g_return_if_fail( OFA_IS_APPLICATION( object ));
+
 	priv = OFA_APPLICATION( object )->private;
 
 	if( !priv->dispose_has_run ){
@@ -265,11 +192,12 @@ instance_get_property( GObject *object, guint property_id, GValue *value, GParam
 }
 
 static void
-instance_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
+application_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
 {
 	ofaApplicationPrivate *priv;
 
 	g_return_if_fail( OFA_IS_APPLICATION( object ));
+
 	priv = OFA_APPLICATION( object )->private;
 
 	if( !priv->dispose_has_run ){
@@ -302,54 +230,74 @@ instance_set_property( GObject *object, guint property_id, const GValue *value, 
 }
 
 static void
-instance_dispose( GObject *application )
+ofa_application_init( ofaApplication *self )
 {
-	static const gchar *thisfn = "ofa_application_instance_dispose";
-	ofaApplicationPrivate *priv;
+	static const gchar *thisfn = "ofa_application_init";
 
-	g_return_if_fail( OFA_IS_APPLICATION( application ));
+	g_return_if_fail( OFA_IS_APPLICATION( self ));
 
-	priv = OFA_APPLICATION( application )->private;
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	if( !priv->dispose_has_run ){
+	self->private = g_new0( ofaApplicationPrivate, 1 );
 
-		g_debug( "%s: application=%p (%s)", thisfn, ( void * ) application, G_OBJECT_TYPE_NAME( application ));
-
-		priv->dispose_has_run = TRUE;
-
-		if( priv->menu ){
-			g_object_unref( priv->menu );
-		}
-
-		ofa_settings_free();
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( application );
-		}
-	}
+	self->private->dispose_has_run = FALSE;
 }
 
 static void
-instance_finalize( GObject *application )
+ofa_application_class_init( ofaApplicationClass *klass )
 {
-	static const gchar *thisfn = "ofa_application_instance_finalize";
-	ofaApplicationPrivate *priv;
+	static const gchar *thisfn = "ofa_application_class_init";
 
-	g_return_if_fail( OFA_IS_APPLICATION( application ));
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	g_debug( "%s: application=%p (%s)", thisfn, ( void * ) application, G_OBJECT_TYPE_NAME( application ));
+	G_OBJECT_CLASS( klass )->get_property = application_get_property;
+	G_OBJECT_CLASS( klass )->set_property = application_set_property;
+	G_OBJECT_CLASS( klass )->dispose = application_dispose;
+	G_OBJECT_CLASS( klass )->finalize = application_finalize;
 
-	priv = OFA_APPLICATION( application )->private;
+	G_APPLICATION_CLASS( klass )->startup = application_startup;
+	G_APPLICATION_CLASS( klass )->activate = application_activate;
+	G_APPLICATION_CLASS( klass )->open = application_open;
 
-	g_strfreev( priv->argv );
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			OFA_PROP_OPTIONS_ID,
+			g_param_spec_pointer(
+					OFA_PROP_OPTIONS,
+					"Option entries",
+					"The array of command-line option definitions",
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	g_free( priv );
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			OFA_PROP_APPLICATION_NAME_ID,
+			g_param_spec_string(
+					OFA_PROP_APPLICATION_NAME,
+					"Application name",
+					"The name of the application",
+					"",
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( application );
-	}
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			OFA_PROP_DESCRIPTION_ID,
+			g_param_spec_string(
+					OFA_PROP_DESCRIPTION,
+					"Description",
+					"A short description to be displayed in the first line of --help output",
+					"",
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			OFA_PROP_ICON_NAME_ID,
+			g_param_spec_string(
+					OFA_PROP_ICON_NAME,
+					"Icon name",
+					"The name of the icon of the application",
+					"",
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 }
 
 /**
@@ -461,8 +409,8 @@ application_startup( GApplication *application )
 	appli = OFA_APPLICATION( application );
 
 	/* chain up to the parent class */
-	if( G_APPLICATION_CLASS( st_parent_class )->startup ){
-		G_APPLICATION_CLASS( st_parent_class )->startup( application );
+	if( G_APPLICATION_CLASS( ofa_application_parent_class )->startup ){
+		G_APPLICATION_CLASS( ofa_application_parent_class )->startup( application );
 	}
 
 	/* define the application actions */
