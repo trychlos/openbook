@@ -66,11 +66,11 @@ enum {
 G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, OFA_TYPE_BASE_DIALOG )
 
 static void      v_init_dialog( ofaBaseDialog *dialog );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static void      on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self );
 static void      on_account_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      on_password_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
+static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static gboolean  do_open( ofaDossierOpen *self );
 
 static void
@@ -271,12 +271,6 @@ v_init_dialog( ofaBaseDialog *dialog )
 	check_for_enable_dlg( OFA_DOSSIER_OPEN( dialog ));
 }
 
-static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
-{
-	return( do_open( OFA_DOSSIER_OPEN( dialog )));
-}
-
 static void
 on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self )
 {
@@ -324,6 +318,12 @@ check_for_enable_dlg( ofaDossierOpen *self )
 	button = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-open" );
 	gtk_widget_set_sensitive( button, ok_enable );
+}
+
+static gboolean
+v_quit_on_ok( ofaBaseDialog *dialog )
+{
+	return( do_open( OFA_DOSSIER_OPEN( dialog )));
 }
 
 /*

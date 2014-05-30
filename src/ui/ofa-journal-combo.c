@@ -36,7 +36,7 @@
 /* private instance data
  */
 struct _ofaJournalComboPrivate {
-	gboolean    dispose_has_run;
+	gboolean           dispose_has_run;
 
 	/* input data
 	 */
@@ -49,8 +49,8 @@ struct _ofaJournalComboPrivate {
 
 	/* runtime
 	 */
-	GtkComboBox *combo;
-	gint         current_journal_id;	/* current selection */
+	GtkComboBox       *combo;
+	gint               current_journal_id;		/* current selection */
 };
 
 /* column ordering in the journal combobox
@@ -62,79 +62,61 @@ enum {
 	JOU_N_COLUMNS
 };
 
-static GObjectClass *st_parent_class = NULL;
+G_DEFINE_TYPE( ofaJournalCombo, ofa_journal_combo, G_TYPE_OBJECT )
 
-static GType register_type( void );
-static void  class_init( ofaJournalComboClass *klass );
-static void  instance_init( GTypeInstance *instance, gpointer klass );
-static void  instance_dispose( GObject *instance );
-static void  instance_finalize( GObject *instance );
 static void  on_journal_changed( GtkComboBox *box, ofaJournalCombo *self );
 
-GType
-ofa_journal_combo_get_type( void )
-{
-	static GType window_type = 0;
-
-	if( !window_type ){
-		window_type = register_type();
-	}
-
-	return( window_type );
-}
-
-static GType
-register_type( void )
-{
-	static const gchar *thisfn = "ofa_journal_combo_register_type";
-	GType type;
-
-	static GTypeInfo info = {
-		sizeof( ofaJournalComboClass ),
-		( GBaseInitFunc ) NULL,
-		( GBaseFinalizeFunc ) NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaJournalCombo ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	g_debug( "%s", thisfn );
-
-	type = g_type_register_static( G_TYPE_OBJECT, "ofaJournalCombo", &info, 0 );
-
-	return( type );
-}
-
 static void
-class_init( ofaJournalComboClass *klass )
+journal_combo_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_journal_combo_class_init";
-	GObjectClass *object_class;
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	object_class = G_OBJECT_CLASS( klass );
-	object_class->dispose = instance_dispose;
-	object_class->finalize = instance_finalize;
-}
-
-static void
-instance_init( GTypeInstance *instance, gpointer klass )
-{
-	static const gchar *thisfn = "ofa_journal_combo_instance_init";
-	ofaJournalCombo *self;
+	static const gchar *thisfn = "ofa_journal_combo_finalize";
+	ofaJournalComboPrivate *priv;
 
 	g_return_if_fail( OFA_IS_JOURNAL_COMBO( instance ));
 
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+	priv = OFA_JOURNAL_COMBO( instance )->private;
 
-	self = OFA_JOURNAL_COMBO( instance );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	/* free members here */
+	g_free( priv->combo_name );
+	g_free( priv->label_name );
+	g_free( priv );
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_journal_combo_parent_class )->finalize( instance );
+}
+
+static void
+journal_combo_dispose( GObject *instance )
+{
+	ofaJournalComboPrivate *priv;
+
+	g_return_if_fail( OFA_IS_JOURNAL_COMBO( instance ));
+
+	priv = ( OFA_JOURNAL_COMBO( instance ))->private;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_journal_combo_parent_class )->dispose( instance );
+}
+
+static void
+ofa_journal_combo_init( ofaJournalCombo *self )
+{
+	static const gchar *thisfn = "ofa_journal_combo_init";
+
+	g_return_if_fail( OFA_IS_JOURNAL_COMBO( self ));
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofaJournalComboPrivate, 1 );
 
@@ -142,48 +124,14 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_dispose( GObject *window )
+ofa_journal_combo_class_init( ofaJournalComboClass *klass )
 {
-	static const gchar *thisfn = "ofa_journal_combo_instance_dispose";
-	ofaJournalComboPrivate *priv;
+	static const gchar *thisfn = "ofa_journal_combo_class_init";
 
-	g_return_if_fail( OFA_IS_JOURNAL_COMBO( window ));
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	priv = ( OFA_JOURNAL_COMBO( window ))->private;
-
-	if( !priv->dispose_has_run ){
-		g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
-
-		priv->dispose_has_run = TRUE;
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( st_parent_class )->dispose ){
-			G_OBJECT_CLASS( st_parent_class )->dispose( window );
-		}
-	}
-}
-
-static void
-instance_finalize( GObject *window )
-{
-	static const gchar *thisfn = "ofa_journal_combo_instance_finalize";
-	ofaJournalCombo *self;
-
-	g_return_if_fail( OFA_IS_JOURNAL_COMBO( window ));
-
-	g_debug( "%s: window=%p (%s)", thisfn, ( void * ) window, G_OBJECT_TYPE_NAME( window ));
-
-	self = OFA_JOURNAL_COMBO( window );
-
-	g_free( self->private->combo_name );
-	g_free( self->private->label_name );
-
-	g_free( self->private );
-
-	/* chain call to parent class */
-	if( G_OBJECT_CLASS( st_parent_class )->finalize ){
-		G_OBJECT_CLASS( st_parent_class )->finalize( window );
-	}
+	G_OBJECT_CLASS( klass )->dispose = journal_combo_dispose;
+	G_OBJECT_CLASS( klass )->finalize = journal_combo_finalize;
 }
 
 static void

@@ -59,13 +59,13 @@ static const gchar  *st_ui_id        = "DevisePropertiesDlg";
 
 G_DEFINE_TYPE( ofaDeviseProperties, ofa_devise_properties, OFA_TYPE_BASE_DIALOG )
 
-static void      v_devise_properties_init_dialog( ofaBaseDialog *dialog );
-static gboolean  v_devise_properties_quit_on_ok( ofaBaseDialog *dialog );
+static void      v_init_dialog( ofaBaseDialog *dialog );
 static void      on_code_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      check_for_enable_dlg( ofaDeviseProperties *self );
 static gboolean  is_dialog_validable( ofaDeviseProperties *self );
+static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static gboolean  do_update( ofaDeviseProperties *self );
 
 static void
@@ -131,8 +131,8 @@ ofa_devise_properties_class_init( ofaDevisePropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = devise_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = devise_properties_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_devise_properties_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_devise_properties_quit_on_ok;
+	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -171,7 +171,7 @@ ofa_devise_properties_run( ofaMainWindow *main_window, ofoDevise *devise )
 }
 
 static void
-v_devise_properties_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( ofaBaseDialog *dialog )
 {
 	ofaDeviseProperties *self;
 	ofaDevisePropertiesPrivate *priv;
@@ -225,12 +225,6 @@ v_devise_properties_init_dialog( ofaBaseDialog *dialog )
 	}
 
 	check_for_enable_dlg( OFA_DEVISE_PROPERTIES( dialog ));
-}
-
-static gboolean
-v_devise_properties_quit_on_ok( ofaBaseDialog *dialog )
-{
-	return( do_update( OFA_DEVISE_PROPERTIES( dialog )));
 }
 
 static void
@@ -289,6 +283,12 @@ is_dialog_validable( ofaDeviseProperties *self )
 	}
 
 	return( ok );
+}
+
+static gboolean
+v_quit_on_ok( ofaBaseDialog *dialog )
+{
+	return( do_update( OFA_DEVISE_PROPERTIES( dialog )));
 }
 
 static gboolean

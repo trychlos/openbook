@@ -35,7 +35,7 @@
  * Update the journal properties.
  */
 
-#include "ui/ofa-main-window-def.h"
+#include "ui/ofa-base-dialog.h"
 #include "ui/ofo-journal-def.h"
 
 G_BEGIN_DECLS
@@ -51,14 +51,14 @@ typedef struct _ofaJournalPropertiesPrivate        ofaJournalPropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                      parent;
+	ofaBaseDialog                parent;
 	ofaJournalPropertiesPrivate *private;
 }
 	ofaJournalProperties;
 
 typedef struct {
 	/*< private >*/
-	GObjectClass parent;
+	ofaBaseDialogClass parent;
 }
 	ofaJournalPropertiesClass;
 

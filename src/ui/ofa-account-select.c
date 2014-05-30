@@ -56,9 +56,9 @@ static ofaAccountSelect *st_this   = NULL;
 G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, OFA_TYPE_BASE_DIALOG )
 
 static void      v_init_dialog( ofaBaseDialog *dialog );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static void      on_account_activated( const gchar *number, ofaBaseDialog *dialog );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
+static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static gboolean  do_update( ofaAccountSelect *self );
 
 static void
@@ -199,12 +199,6 @@ v_init_dialog( ofaBaseDialog *dialog )
 	ofa_account_notebook_init_view( st_this->private->child, NULL );
 }
 
-static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
-{
-	return( do_update( OFA_ACCOUNT_SELECT( dialog )));
-}
-
 static void
 on_account_activated( const gchar *number, ofaBaseDialog *dialog )
 {
@@ -223,6 +217,12 @@ check_for_enable_dlg( ofaAccountSelect *self )
 					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
 
 	gtk_widget_set_sensitive( btn, account && OFO_IS_ACCOUNT( account ));
+}
+
+static gboolean
+v_quit_on_ok( ofaBaseDialog *dialog )
+{
+	return( do_update( OFA_ACCOUNT_SELECT( dialog )));
 }
 
 static gboolean

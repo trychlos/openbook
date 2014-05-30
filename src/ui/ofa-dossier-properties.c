@@ -58,10 +58,10 @@ static const gchar  *st_ui_id  = "DossierPropertiesDlg";
 G_DEFINE_TYPE( ofaDossierProperties, ofa_dossier_properties, OFA_TYPE_BASE_DIALOG )
 
 static void      v_init_dialog( ofaBaseDialog *dialog );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
+static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static gboolean  do_update( ofaDossierProperties *self );
 
 static void
@@ -201,12 +201,6 @@ v_init_dialog( ofaBaseDialog *dialog )
 	check_for_enable_dlg( self );
 }
 
-static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
-{
-	return( do_update( OFA_DOSSIER_PROPERTIES( dialog )));
-}
-
 static void
 on_label_changed( GtkEntry *entry, ofaDossierProperties *self )
 {
@@ -244,6 +238,12 @@ check_for_enable_dlg( ofaDossierProperties *self )
 	ok = ofo_dossier_is_valid( priv->label, priv->duree );
 
 	gtk_widget_set_sensitive( button, ok );
+}
+
+static gboolean
+v_quit_on_ok( ofaBaseDialog *dialog )
+{
+	return( do_update( OFA_DOSSIER_PROPERTIES( dialog )));
 }
 
 static gboolean

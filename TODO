@@ -180,8 +180,6 @@
 
  133 2014- 5-28 ofaAccountProperties makes use of ofaDeviseCombo
 
- 138 2014- 5-28 ofaGuidedInput derives from ofaBaseDialog
-
  139 2014- 5-28 ofaJournalProperties derives from ofaBaseDialog
 
  140 2014- 5-28 ofaModelProperties derives from ofaBaseDialog
@@ -514,6 +512,9 @@
 
  137 2014- 5-28 ofaDossierProperties derives from ofaBaseDialog
      2014- 5-30 done - svn #3557
+
+ 138 2014- 5-28 ofaGuidedInput derives from ofaBaseDialog
+     2014- 5-30 done - svn #3558
 
  142 2014- 5-28 remove xxxClassPrivate
      2014- 5-30 done - svn #3556

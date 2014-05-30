@@ -100,7 +100,6 @@ static void      v_init_dialog( ofaBaseDialog *dialog );
 static void      set_amount( ofaAccountProperties *self, gdouble *amount, fnGetDouble fn, const gchar *wname );
 static void      set_ecr_num( ofaAccountProperties *self, gint *num, fnGetInt fn, const gchar *wname );
 static void      set_ecr_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar *wname );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_devise_changed( GtkComboBox *combo, ofaAccountProperties *self );
@@ -109,6 +108,7 @@ static void      on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *s
 static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *type );
 static void      check_for_enable_dlg( ofaAccountProperties *self );
 static gboolean  is_dialog_validable( ofaAccountProperties *self );
+static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static gboolean  do_update( ofaAccountProperties *self );
 
 static void
@@ -399,12 +399,6 @@ set_ecr_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar
 	g_free( str );
 }
 
-static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
-{
-	return( do_update( OFA_ACCOUNT_PROPERTIES( dialog )));
-}
-
 static void
 on_number_changed( GtkEntry *entry, ofaAccountProperties *self )
 {
@@ -533,6 +527,12 @@ is_dialog_validable( ofaAccountProperties *self )
 	}
 
 	return( ok );
+}
+
+static gboolean
+v_quit_on_ok( ofaBaseDialog *dialog )
+{
+	return( do_update( OFA_ACCOUNT_PROPERTIES( dialog )));
 }
 
 static gboolean
