@@ -36,12 +36,6 @@
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-settings.h"
 
-/* private class data
- */
-struct _ofaApplicationClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaApplicationPrivate {
@@ -216,8 +210,6 @@ class_init( ofaApplicationClass *klass )
 					"The name of the icon of the application",
 					"",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	klass->private = g_new0( ofaApplicationClassPrivate, 1 );
 }
 
 static void

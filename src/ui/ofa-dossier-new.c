@@ -64,12 +64,6 @@ enum {
 	ASSIST_PAGE_DONE
 };
 
-/* private class data
- */
-struct _ofaDossierNewClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaDossierNewPrivate {
@@ -230,8 +224,6 @@ class_init( ofaDossierNewClass *klass )
 					"Main window",
 					"A pointer (not a ref) to the toplevel parent main window",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	klass->private = g_new0( ofaDossierNewClassPrivate, 1 );
 }
 
 static void

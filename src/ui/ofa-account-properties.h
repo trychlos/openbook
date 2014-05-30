@@ -57,8 +57,6 @@ typedef struct {
 }
 	ofaAccountProperties;
 
-typedef struct _ofaAccountPropertiesClassPrivate   ofaAccountPropertiesClassPrivate;
-
 typedef struct {
 	/*< private >*/
 	ofaBaseDialogClass parent;

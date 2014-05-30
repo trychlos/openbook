@@ -55,12 +55,9 @@ typedef struct {
 }
 	ofaJournalCombo;
 
-typedef struct _ofaJournalComboClassPrivate   ofaJournalComboClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GObjectClass                 parent;
-	ofaJournalComboClassPrivate *private;
+	GObjectClass parent;
 }
 	ofaJournalComboClass;
 

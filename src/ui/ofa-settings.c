@@ -50,20 +50,11 @@ typedef struct {
 }
 	ofaSettings;
 
-typedef struct _ofaSettingsClassPrivate  ofaSettingsClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GObjectClass             parent;
-	ofaSettingsClassPrivate *private;
+	GObjectClass parent;
 }
 	ofaSettingsClass;
-
-/* private class data
- */
-struct _ofaSettingsClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
 
 /* private instance data
  */
@@ -142,8 +133,6 @@ class_init( ofaSettingsClass *klass )
 	object_class->constructed = instance_constructed;
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaSettingsClassPrivate, 1 );
 }
 
 static void

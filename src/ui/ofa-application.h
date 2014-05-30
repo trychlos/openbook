@@ -72,15 +72,12 @@ typedef struct {
 }
 	ofaApplication;
 
-typedef struct _ofaApplicationClassPrivate  ofaApplicationClassPrivate;
-
 /**
  * ofaApplicationClass:
  */
 typedef struct {
 	/*< private >*/
-	GtkApplicationClass         parent;
-	ofaApplicationClassPrivate *private;
+	GtkApplicationClass parent;
 }
 	ofaApplicationClass;
 

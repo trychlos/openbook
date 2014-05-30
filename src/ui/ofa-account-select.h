@@ -56,8 +56,6 @@ typedef struct {
 }
 	ofaAccountSelect;
 
-typedef struct _ofaAccountSelectClassPrivate   ofaAccountSelectClassPrivate;
-
 typedef struct {
 	/*< private >*/
 	ofaBaseDialogClass parent;

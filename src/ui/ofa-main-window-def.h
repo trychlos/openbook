@@ -56,12 +56,9 @@ typedef struct {
 }
 	ofaMainWindow;
 
-typedef struct _ofaMainWindowClassPrivate   ofaMainWindowClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GtkApplicationWindowClass  parent;
-	ofaMainWindowClassPrivate *private;
+	GtkApplicationWindowClass parent;
 }
 	ofaMainWindowClass;
 

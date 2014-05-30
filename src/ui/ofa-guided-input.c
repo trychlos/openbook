@@ -43,12 +43,6 @@
 #include "ui/ofo-model.h"
 #include "ui/ofo-taux.h"
 
-/* private class data
- */
-struct _ofaGuidedInputClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaGuidedInputPrivate {
@@ -243,8 +237,6 @@ class_init( ofaGuidedInputClass *klass )
 	object_class = G_OBJECT_CLASS( klass );
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaGuidedInputClassPrivate, 1 );
 }
 
 static void

@@ -46,12 +46,6 @@
 
 static gboolean pref_confirm_on_altf4 = FALSE;
 
-/* private class data
- */
-struct _ofaMainWindowClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaMainWindowPrivate {
@@ -266,8 +260,6 @@ class_init( ofaMainWindowClass *klass )
 	object_class->constructed = instance_constructed;
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaMainWindowClassPrivate, 1 );
 
 	/*
 	 * ofaMainWindow::ofa-signal-open-dossier:

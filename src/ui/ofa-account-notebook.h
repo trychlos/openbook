@@ -63,8 +63,6 @@ typedef struct {
 }
 	ofaAccountNotebook;
 
-typedef struct _ofaAccountNotebookClassPrivate   ofaAccountNotebookClassPrivate;
-
 typedef struct {
 	/*< private >*/
 	GObjectClass parent;

@@ -55,12 +55,9 @@ typedef struct {
 }
 	ofaDossierNew;
 
-typedef struct _ofaDossierNewClassPrivate   ofaDossierNewClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GObjectClass               parent;
-	ofaDossierNewClassPrivate *private;
+	GObjectClass parent;
 }
 	ofaDossierNewClass;
 

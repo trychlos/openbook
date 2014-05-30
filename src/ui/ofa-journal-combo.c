@@ -33,12 +33,6 @@
 #include "ui/ofo-journal.h"
 #include "ui/ofo-dossier.h"
 
-/* private class data
- */
-struct _ofaJournalComboClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofaJournalComboPrivate {
@@ -127,8 +121,6 @@ class_init( ofaJournalComboClass *klass )
 	object_class = G_OBJECT_CLASS( klass );
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaJournalComboClassPrivate, 1 );
 }
 
 static void

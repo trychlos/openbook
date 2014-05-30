@@ -38,12 +38,6 @@
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-model.h"
 
-/* private class data
- */
-struct _ofaModelPropertiesClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  *
  * each line of the grid is :
@@ -215,8 +209,6 @@ class_init( ofaModelPropertiesClass *klass )
 	object_class = G_OBJECT_CLASS( klass );
 	object_class->dispose = instance_dispose;
 	object_class->finalize = instance_finalize;
-
-	klass->private = g_new0( ofaModelPropertiesClassPrivate, 1 );
 }
 
 static void

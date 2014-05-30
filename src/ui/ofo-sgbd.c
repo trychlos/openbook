@@ -35,12 +35,6 @@
 
 #include "ui/ofo-sgbd.h"
 
-/* private class data
- */
-struct _ofoSgbdClassPrivate {
-	void *empty;						/* so that gcc -pedantic is happy */
-};
-
 /* private instance data
  */
 struct _ofoSgbdPrivate {

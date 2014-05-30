@@ -54,12 +54,9 @@ typedef struct {
 }
 	ofaGuidedInput;
 
-typedef struct _ofaGuidedInputClassPrivate   ofaGuidedInputClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GObjectClass                parent;
-	ofaGuidedInputClassPrivate *private;
+	GObjectClass parent;
 }
 	ofaGuidedInputClass;
 

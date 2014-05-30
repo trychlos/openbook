@@ -89,12 +89,9 @@ typedef struct {
 }
 	ofaModelProperties;
 
-typedef struct _ofaModelPropertiesClassPrivate   ofaModelPropertiesClassPrivate;
-
 typedef struct {
 	/*< private >*/
-	GObjectClass                    parent;
-	ofaModelPropertiesClassPrivate *private;
+	GObjectClass parent;
 }
 	ofaModelPropertiesClass;
 
