@@ -59,6 +59,7 @@
             <property name="can_focus">True</property>
             <property name="margin_left">4</property>
             <property name="margin_bottom">4</property>
+            <property name="scrollable">True</property>
             <child>
               <placeholder/>
             </child>

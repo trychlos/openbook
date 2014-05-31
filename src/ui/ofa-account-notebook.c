@@ -33,6 +33,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofo-account.h"
+#include "ui/ofo-class.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
 
@@ -67,14 +68,17 @@ enum {
 	N_COLUMNS
 };
 
+/* there are only default labels in the case where we were not able to
+ * get the correct #ofoClass object
+ */
 static const gchar  *st_class_labels[] = {
 		N_( "Class I" ),
 		N_( "Class II" ),
 		N_( "Class III" ),
 		N_( "Class IV" ),
-		N_( "Financial accounts" ),
-		N_( "Expense accounts" ),
-		N_( "Revenue accounts" ),
+		N_( "Class V" ),
+		N_( "Class VI" ),
+		N_( "Class VII" ),
 		N_( "Class VIII" ),
 		N_( "Class IX" ),
 		NULL
@@ -263,6 +267,8 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 	gchar *str;
+	ofoClass *obj_class;
+	const gchar *obj_label;
 
 	g_debug( "%s: self=%p, book=%p, class=%d",
 			thisfn, ( void * ) self, ( void * ) book, class );
@@ -270,7 +276,13 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
 	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 
-	label = gtk_label_new( st_class_labels[class-1] );
+	obj_class = ofo_class_get_by_number( self->private->dossier, class );
+	if( obj_class && OFO_IS_CLASS( obj_class )){
+		obj_label = ofo_class_get_label( obj_class );
+	} else {
+		obj_label = st_class_labels[class-1];
+	}
+	label = gtk_label_new( obj_label );
 	str = g_strdup_printf( "Alt-%d", class );
 	gtk_widget_set_tooltip_text( label, str );
 	g_free( str );

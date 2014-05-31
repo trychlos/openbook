@@ -145,6 +145,7 @@ v_setup_view( ofaMainPage *page )
 	chart_book = GTK_NOTEBOOK( gtk_notebook_new());
 	gtk_widget_set_margin_left( GTK_WIDGET( chart_book ), 4 );
 	gtk_widget_set_margin_bottom( GTK_WIDGET( chart_book ), 4 );
+	gtk_notebook_set_scrollable( chart_book, TRUE );
 
 	parms.book = chart_book;
 	parms.dossier = ofa_main_page_get_dossier( page );
