@@ -489,6 +489,12 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 	}
 
 	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_CLASSES "
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (9,'Comptes analytiques')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
 			"	CPT_NUMBER       VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
 			"	CPT_LABEL        VARCHAR(80)   NOT NULL        COMMENT 'Account label',"

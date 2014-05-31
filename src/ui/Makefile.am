@@ -103,6 +103,9 @@ openbook_SOURCES = \
 	ofo-base.h											\
 	ofo-base-def.h										\
 	ofo-base-prot.h										\
+	ofo-class.c											\
+	ofo-class.h											\
+	ofo-class-def.h										\
 	ofo-devise.c										\
 	ofo-devise.h										\
 	ofo-devise-def.h									\

@@ -89,6 +89,7 @@ ofo_devise_finalize( GObject *instance )
 	g_free( priv->code );
 	g_free( priv->label );
 	g_free( priv->symbol );
+	g_free( priv->notes );
 	g_free( priv );
 
 	/* chain up to the parent class */
