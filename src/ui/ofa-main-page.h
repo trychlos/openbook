@@ -76,6 +76,7 @@ gint           ofa_main_page_get_theme      ( const ofaMainPage *page );
 GtkGrid       *ofa_main_page_get_grid       ( const ofaMainPage *page );
 GtkTreeView   *ofa_main_page_get_treeview   ( const ofaMainPage *page );
 
+GtkWidget     *ofa_main_page_get_new_btn    ( const ofaMainPage *page );
 GtkWidget     *ofa_main_page_get_update_btn ( const ofaMainPage *page );
 GtkWidget     *ofa_main_page_get_delete_btn ( const ofaMainPage *page );
 

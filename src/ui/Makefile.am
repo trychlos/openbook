@@ -58,6 +58,10 @@ openbook_SOURCES = \
 	ofa-base-dialog.c									\
 	ofa-base-dialog.h									\
 	ofa-base-dialog-prot.h								\
+	ofa-class-properties.c								\
+	ofa-class-properties.h								\
+	ofa-classes-set.c									\
+	ofa-classes-set.h									\
 	ofa-devise-combo.c									\
 	ofa-devise-combo.h									\
 	ofa-devise-properties.c								\
@@ -145,6 +149,7 @@ rc_files = \
 ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
+	ofa-class-properties.ui								\
 	ofa-devise-properties.ui							\
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\

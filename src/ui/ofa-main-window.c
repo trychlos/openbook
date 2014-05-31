@@ -33,6 +33,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-classes-set.h"
 #include "ui/ofa-devises-set.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-guided-input.h"
@@ -83,6 +84,7 @@ static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpo
 static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_devises     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_taux        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_classes     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
 		{ "properties",   on_properties,       NULL, NULL, NULL },
@@ -94,6 +96,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "models",       on_ref_models,       NULL, NULL, NULL },
 		{ "devises",      on_ref_devises,      NULL, NULL, NULL },
 		{ "taux",         on_ref_taux,         NULL, NULL, NULL },
+		{ "classes",      on_ref_classes,      NULL, NULL, NULL },
 };
 
 /* This structure handles the functions which manage the pages of the
@@ -116,7 +119,8 @@ enum {
 	THM_JOURNALS,
 	THM_MODELS,
 	THM_TAUX,
-	THM_CONCIL
+	THM_CONCIL,
+	THM_CLASSES
 };
 
 static sThemeDef st_theme_defs[] = {
@@ -144,6 +148,10 @@ static sThemeDef st_theme_defs[] = {
 		{ THM_CONCIL,
 				N_( "Reconciliation" ),
 				ofa_rappro_get_type },
+
+		{ THM_CLASSES,
+				N_( "Account classes" ),
+				ofa_classes_set_get_type },
 
 		{ 0 }
 };
@@ -173,6 +181,7 @@ static sTreeDef st_tree_defs[] = {
 		{ N_( "Entry models" ),      THM_MODELS },
 		{ N_( "Currencies" ),        THM_DEVISES },
 		{ N_( "Rates" ),             THM_TAUX },
+		{ N_( "Account classes" ),   THM_CLASSES },
 		{ 0 }
 };
 
@@ -860,6 +869,19 @@ on_ref_taux( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_TAUX );
+}
+
+static void
+on_ref_classes( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ref_classes";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CLASSES );
 }
 
 /**

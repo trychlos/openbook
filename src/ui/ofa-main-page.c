@@ -677,6 +677,23 @@ ofa_main_page_get_treeview( const ofaMainPage *page )
 }
 
 /**
+ * ofa_main_page_get_new_btn:
+ */
+GtkWidget *
+ofa_main_page_get_new_btn( const ofaMainPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+
+	if( !page->private->dispose_has_run &&
+			page->private->btn_new ){
+
+		return( GTK_WIDGET( page->private->btn_new ));
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_main_page_get_update_btn:
  */
 GtkWidget *
