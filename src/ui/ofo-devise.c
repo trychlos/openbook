@@ -65,11 +65,11 @@ static ofoDevise *devise_find_by_code( GList *set, const gchar *code );
 static ofoDevise *devise_find_by_id( GList *set, gint id );
 static gint       devise_cmp_by_code( const ofoDevise *a, const gchar *code );
 static gint       devise_cmp_by_id( const ofoDevise *a, gpointer pid );
-static gboolean   devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user );
-static gboolean   devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user );
-static gboolean   devise_get_back_id( ofoDevise *devise, ofoSgbd *sgbd );
-static gboolean   devise_do_update( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user );
-static gboolean   devise_do_delete( ofoDevise *devise, ofoSgbd *sgbd );
+static gboolean   devise_do_insert( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user );
+static gboolean   devise_insert_main( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user );
+static gboolean   devise_get_back_id( ofoDevise *devise, const ofoSgbd *sgbd );
+static gboolean   devise_do_update( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user );
+static gboolean   devise_do_delete( ofoDevise *devise, const ofoSgbd *sgbd );
 static gint       devise_cmp_by_code( const ofoDevise *a, const gchar *code );
 static gint       devise_cmp_by_ptr( const ofoDevise *a, const ofoDevise *b );
 
@@ -166,7 +166,7 @@ devise_load_dataset( void )
 	GSList *result, *irow, *icol;
 	ofoDevise *devise;
 	GList *dataset;
-	ofoSgbd *sgbd;
+	const ofoSgbd *sgbd;
 
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
@@ -581,14 +581,14 @@ ofo_devise_insert( ofoDevise *devise, ofoDossier *dossier )
 }
 
 static gboolean
-devise_do_insert( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user )
+devise_do_insert( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
 {
 	return( devise_insert_main( devise, sgbd, user ) &&
 			devise_get_back_id( devise, sgbd ));
 }
 
 static gboolean
-devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user )
+devise_insert_main( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp;
@@ -637,7 +637,7 @@ devise_insert_main( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-devise_get_back_id( ofoDevise *devise, ofoSgbd *sgbd )
+devise_get_back_id( ofoDevise *devise, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GSList *result, *icol;
@@ -688,7 +688,7 @@ ofo_devise_update( ofoDevise *devise, ofoDossier *dossier )
 }
 
 static gboolean
-devise_do_update( ofoDevise *devise, ofoSgbd *sgbd, const gchar *user )
+devise_do_update( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp;
@@ -765,7 +765,7 @@ ofo_devise_delete( ofoDevise *devise, ofoDossier *dossier )
 }
 
 static gboolean
-devise_do_delete( ofoDevise *devise, ofoSgbd *sgbd )
+devise_do_delete( ofoDevise *devise, const ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;

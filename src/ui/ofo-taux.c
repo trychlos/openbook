@@ -83,15 +83,15 @@ static void           taux_set_val_begin( sTauxValid *tv, const GDate *date );
 static void           taux_set_val_end( sTauxValid *tv, const GDate *date );
 static void           taux_set_val_taux( sTauxValid *tv, gdouble rate );
 static ofoTaux       *taux_find_by_mnemo( GList *set, const gchar *mnemo );
-static gboolean       taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_insert_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_get_back_id( ofoTaux *taux, ofoSgbd *sgbd );
-static gboolean       taux_delete_validities( ofoTaux *taux, ofoSgbd *sgbd );
-static gboolean       taux_insert_validities( ofoTaux *taux, ofoSgbd *sgbd );
-static gboolean       taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, ofoSgbd *sgbd );
-static gboolean       taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_update_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_do_delete( ofoTaux *taux, ofoSgbd *sgbd );
+static gboolean       taux_do_insert( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
+static gboolean       taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
+static gboolean       taux_get_back_id( ofoTaux *taux, const ofoSgbd *sgbd );
+static gboolean       taux_delete_validities( ofoTaux *taux, const ofoSgbd *sgbd );
+static gboolean       taux_insert_validities( ofoTaux *taux, const ofoSgbd *sgbd );
+static gboolean       taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd );
+static gboolean       taux_do_update( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
+static gboolean       taux_update_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
+static gboolean       taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd );
 static gint           taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo );
 static gint           taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent );
 static gint           taux_cmp_by_ptr( const ofoTaux *a, const ofoTaux *b );
@@ -198,7 +198,7 @@ ofo_taux_get_dataset( ofoDossier *dossier )
 static GList *
 taux_load_dataset( void )
 {
-	ofoSgbd *sgbd;
+	const ofoSgbd *sgbd;
 	GSList *result, *irow, *icol;
 	ofoTaux *taux;
 	GList *dataset, *it;
@@ -853,7 +853,7 @@ ofo_taux_insert( ofoTaux *taux, ofoDossier *dossier )
 }
 
 static gboolean
-taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
+taux_do_insert( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 {
 	return( taux_insert_main( taux, sgbd, user ) &&
 			taux_get_back_id( taux, sgbd ) &&
@@ -862,7 +862,7 @@ taux_do_insert( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-taux_insert_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
+taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -909,7 +909,7 @@ taux_insert_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-taux_get_back_id( ofoTaux *taux, ofoSgbd *sgbd )
+taux_get_back_id( ofoTaux *taux, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GSList *result, *icol;
@@ -928,7 +928,7 @@ taux_get_back_id( ofoTaux *taux, ofoSgbd *sgbd )
 }
 
 static gboolean
-taux_delete_validities( ofoTaux *taux, ofoSgbd *sgbd )
+taux_delete_validities( ofoTaux *taux, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	gchar *query;
@@ -945,7 +945,7 @@ taux_delete_validities( ofoTaux *taux, ofoSgbd *sgbd )
 }
 
 static gboolean
-taux_insert_validities( ofoTaux *taux, ofoSgbd *sgbd )
+taux_insert_validities( ofoTaux *taux, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GList *idet;
@@ -961,7 +961,7 @@ taux_insert_validities( ofoTaux *taux, ofoSgbd *sgbd )
 }
 
 static gboolean
-taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, ofoSgbd *sgbd )
+taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GString *query;
@@ -1037,7 +1037,7 @@ ofo_taux_update( ofoTaux *taux, ofoDossier *dossier )
 }
 
 static gboolean
-taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
+taux_do_update( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 {
 	return( taux_update_main( taux, sgbd, user ) &&
 			taux_delete_validities( taux, sgbd ) &&
@@ -1045,7 +1045,7 @@ taux_do_update( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-taux_update_main( ofoTaux *taux, ofoSgbd *sgbd, const gchar *user )
+taux_update_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1122,7 +1122,7 @@ ofo_taux_delete( ofoTaux *taux, ofoDossier *dossier )
 }
 
 static gboolean
-taux_do_delete( ofoTaux *taux, ofoSgbd *sgbd )
+taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	gchar *query;

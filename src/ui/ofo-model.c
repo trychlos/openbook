@@ -78,17 +78,17 @@ OFO_BASE_DEFINE_GLOBAL( st_global, model )
 
 static GList         *model_load_dataset( void );
 static ofoModel      *model_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint           model_count_for_journal( ofoSgbd *sgbd, gint jou_id );
-static gint           model_count_for_taux( ofoSgbd *sgbd, const gchar *mnemo );
-static gboolean       model_do_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
-static gboolean       model_insert_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user );
-static gboolean       model_get_back_id( ofoModel *model, ofoSgbd *sgbd );
-static gboolean       model_delete_details( ofoModel *model, ofoSgbd *sgbd );
-static gboolean       model_insert_details_ex( ofoModel *model, ofoSgbd *sgbd );
-static gboolean       model_insert_details( ofoModel *model, ofoSgbd *sgbd, gint rang, sModDetail *detail );
-static gboolean       model_do_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
-static gboolean       model_update_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
-static gboolean       model_do_delete( ofoModel *model, ofoSgbd *sgbd );
+static gint           model_count_for_journal( const ofoSgbd *sgbd, gint jou_id );
+static gint           model_count_for_taux( const ofoSgbd *sgbd, const gchar *mnemo );
+static gboolean       model_do_insert( ofoModel *model, const ofoSgbd *sgbd, const gchar *user );
+static gboolean       model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user );
+static gboolean       model_get_back_id( ofoModel *model, const ofoSgbd *sgbd );
+static gboolean       model_delete_details( ofoModel *model, const ofoSgbd *sgbd );
+static gboolean       model_insert_details_ex( ofoModel *model, const ofoSgbd *sgbd );
+static gboolean       model_insert_details( ofoModel *model, const ofoSgbd *sgbd, gint rang, sModDetail *detail );
+static gboolean       model_do_update( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
+static gboolean       model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
+static gboolean       model_do_delete( ofoModel *model, const ofoSgbd *sgbd );
 static gint           model_cmp_by_mnemo( const ofoModel *a, const gchar *mnemo );
 static gint           model_cmp_by_ptr( const ofoModel *a, const ofoModel *b );
 
@@ -206,7 +206,7 @@ ofo_model_get_dataset( const ofoDossier *dossier )
 static GList *
 model_load_dataset( void )
 {
-	ofoSgbd *sgbd;
+	const ofoSgbd *sgbd;
 	GSList *result, *irow, *icol;
 	ofoModel *model;
 	GList *dataset, *im;
@@ -358,7 +358,7 @@ ofo_model_use_journal( const ofoDossier *dossier, gint jou_id )
 }
 
 static gint
-model_count_for_journal( ofoSgbd *sgbd, gint jou_id )
+model_count_for_journal( const ofoSgbd *sgbd, gint jou_id )
 {
 	gint count;
 	gchar *query;
@@ -396,7 +396,7 @@ ofo_model_use_taux( const ofoDossier *dossier, const gchar *mnemo )
 }
 
 static gint
-model_count_for_taux( ofoSgbd *sgbd, const gchar *mnemo )
+model_count_for_taux( const ofoSgbd *sgbd, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
@@ -1009,7 +1009,7 @@ ofo_model_insert( ofoModel *model, ofoDossier *dossier )
 }
 
 static gboolean
-model_do_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
+model_do_insert( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 {
 	return( model_insert_main( model, sgbd, user ) &&
 			model_get_back_id( model, sgbd ) &&
@@ -1018,7 +1018,7 @@ model_do_insert( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-model_insert_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
+model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 {
 	gboolean ok;
 	GString *query;
@@ -1062,7 +1062,7 @@ model_insert_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-model_get_back_id( ofoModel *model, ofoSgbd *sgbd )
+model_get_back_id( ofoModel *model, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GSList *result, *icol;
@@ -1081,7 +1081,7 @@ model_get_back_id( ofoModel *model, ofoSgbd *sgbd )
 }
 
 static gboolean
-model_delete_details( ofoModel *model, ofoSgbd *sgbd )
+model_delete_details( ofoModel *model, const ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;
@@ -1098,7 +1098,7 @@ model_delete_details( ofoModel *model, ofoSgbd *sgbd )
 }
 
 static gboolean
-model_insert_details_ex( ofoModel *model, ofoSgbd *sgbd )
+model_insert_details_ex( ofoModel *model, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GList *idet;
@@ -1122,7 +1122,7 @@ model_insert_details_ex( ofoModel *model, ofoSgbd *sgbd )
 }
 
 static gboolean
-model_insert_details( ofoModel *model, ofoSgbd *sgbd, gint rang, sModDetail *detail )
+model_insert_details( ofoModel *model, const ofoSgbd *sgbd, gint rang, sModDetail *detail )
 {
 	GString *query;
 	gboolean ok;
@@ -1222,7 +1222,7 @@ ofo_model_update( ofoModel *model, ofoDossier *dossier, const gchar *prev_mnemo 
 }
 
 static gboolean
-model_do_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
+model_do_update( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
 {
 	return( model_update_main( model, sgbd, user, prev_mnemo ) &&
 			model_delete_details( model, sgbd ) &&
@@ -1230,7 +1230,7 @@ model_do_update( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar 
 }
 
 static gboolean
-model_update_main( ofoModel *model, ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
+model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
 {
 	gboolean ok;
 	GString *query;
@@ -1310,7 +1310,7 @@ ofo_model_delete( ofoModel *model, ofoDossier *dossier )
 }
 
 static gboolean
-model_do_delete( ofoModel *model, ofoSgbd *sgbd )
+model_do_delete( ofoModel *model, const ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;

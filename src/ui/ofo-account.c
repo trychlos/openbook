@@ -76,11 +76,11 @@ static void        init_global_handlers( const ofoDossier *dossier );
 static void        on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data );
 static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
-static gint        account_count_for_devise( ofoSgbd *sgbd, gint dev_id );
-static gboolean    account_do_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user );
-static gboolean    account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
-static gboolean    account_update_amounts( ofoAccount *account, ofoSgbd *sgbd );
-static gboolean    account_do_delete( ofoAccount *account, ofoSgbd *sgbd );
+static gint        account_count_for_devise( const ofoSgbd *sgbd, gint dev_id );
+static gboolean    account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
+static gboolean    account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );
+static gboolean    account_do_delete( ofoAccount *account, const ofoSgbd *sgbd );
 static gint        account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint        account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
 
@@ -233,7 +233,7 @@ ofo_account_get_dataset( const ofoDossier *dossier )
 static GList *
 account_load_dataset( void )
 {
-	ofoSgbd *sgbd;
+	const ofoSgbd *sgbd;
 	GSList *result, *irow, *icol;
 	ofoAccount *account;
 	GList *dataset;
@@ -378,7 +378,7 @@ ofo_account_use_devise( const ofoDossier *dossier, gint dev_id )
 }
 
 static gint
-account_count_for_devise( ofoSgbd *sgbd, gint dev_id )
+account_count_for_devise( const ofoSgbd *sgbd, gint dev_id )
 {
 	gint count;
 	gchar *query;
@@ -1181,7 +1181,7 @@ ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
 }
 
 static gboolean
-account_do_insert( ofoAccount *account, ofoSgbd *sgbd, const gchar *user )
+account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1272,7 +1272,7 @@ ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_
 }
 
 static gboolean
-account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const gchar *prev_number )
+account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1334,7 +1334,7 @@ account_do_update( ofoAccount *account, ofoSgbd *sgbd, const gchar *user, const 
 }
 
 static gboolean
-account_update_amounts( ofoAccount *account, ofoSgbd *sgbd )
+account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;
@@ -1406,7 +1406,7 @@ ofo_account_delete( ofoAccount *account, ofoDossier *dossier )
 }
 
 static gboolean
-account_do_delete( ofoAccount *account, ofoSgbd *sgbd )
+account_do_delete( ofoAccount *account, const ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;

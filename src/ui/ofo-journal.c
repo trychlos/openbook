@@ -85,19 +85,19 @@ static void        on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer 
 static GList      *journal_load_dataset( void );
 static ofoJournal *journal_find_by_id( GList *set, gint id );
 static ofoJournal *journal_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint        journal_count_for_devise( ofoSgbd *sgbd, gint dev_id );
+static gint        journal_count_for_devise( const ofoSgbd *sgbd, gint dev_id );
 static sDetailDev *journal_find_dev_by_id( const ofoJournal *journal, gint exe_id, gint dev_id );
 static sDetailExe *journal_find_exe_by_id( const ofoJournal *journal, gint exe_id );
 static sDetailDev *journal_new_dev_with_id( ofoJournal *journal, gint exe_id, gint dev_id );
 static gboolean    journal_dev_is_new( ofoJournal *journal, gint exe_id, gint dev_id );
 static void        journal_dev_set_new( ofoJournal *journal, gint exe_id, gint dev_id, gboolean is_new );
-static gboolean    journal_do_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
-static gboolean    journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
-static gboolean    journal_get_back_id( ofoJournal *journal, ofoSgbd *sgbd );
+static gboolean    journal_do_insert( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    journal_get_back_id( ofoJournal *journal, const ofoSgbd *sgbd );
 /*static gboolean       journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd );*/
-static gboolean    journal_do_update( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user );
-static gboolean    journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, ofoSgbd *sgbd );
-static gboolean    journal_do_delete( ofoJournal *journal, ofoSgbd *sgbd );
+static gboolean    journal_do_update( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofoSgbd *sgbd );
+static gboolean    journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd );
 static gint        journal_cmp_by_id( const ofoJournal *a, gconstpointer b );
 static gint        journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo );
 static gint        journal_cmp_by_ptr( const ofoJournal *a, const ofoJournal *b );
@@ -245,7 +245,7 @@ journal_load_dataset( void )
 {
 	GSList *result, *irow, *icol;
 	ofoJournal *journal;
-	ofoSgbd *sgbd;
+	const ofoSgbd *sgbd;
 	GList *dataset, *iset;
 	gchar *query;
 	sDetailDev *balance;
@@ -427,7 +427,7 @@ ofo_journal_use_devise( const ofoDossier *dossier, gint dev_id )
 }
 
 static gint
-journal_count_for_devise( ofoSgbd *sgbd, gint dev_id )
+journal_count_for_devise( const ofoSgbd *sgbd, gint dev_id )
 {
 	gint count;
 	gchar *query;
@@ -1083,14 +1083,14 @@ ofo_journal_insert( ofoJournal *journal, ofoDossier *dossier )
 }
 
 static gboolean
-journal_do_insert( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
+journal_do_insert( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user )
 {
 	return( journal_insert_main( journal, sgbd, user ) &&
 			journal_get_back_id( journal, sgbd ));
 }
 
 static gboolean
-journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
+journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1136,7 +1136,7 @@ journal_insert_main( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-journal_get_back_id( ofoJournal *journal, ofoSgbd *sgbd )
+journal_get_back_id( ofoJournal *journal, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GSList *result, *icol;
@@ -1190,7 +1190,7 @@ ofo_journal_update( ofoJournal *journal, ofoDossier *dossier )
 }
 
 static gboolean
-journal_do_update( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
+journal_do_update( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1232,7 +1232,7 @@ journal_do_update( ofoJournal *journal, ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, ofoSgbd *sgbd )
+journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;
@@ -1316,7 +1316,7 @@ ofo_journal_delete( ofoJournal *journal, ofoDossier *dossier )
 }
 
 static gboolean
-journal_do_delete( ofoJournal *journal, ofoSgbd *sgbd )
+journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;

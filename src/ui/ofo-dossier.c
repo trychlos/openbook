@@ -714,14 +714,14 @@ ofo_dossier_get_user( const ofoDossier *dossier )
  *
  * Returns: the current sgbd handler.
  */
-ofoSgbd *
+const ofoSgbd *
 ofo_dossier_get_sgbd( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( dossier->private->sgbd );
+		return(( const ofoSgbd * ) dossier->private->sgbd );
 	}
 
 	return( NULL );

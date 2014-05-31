@@ -67,9 +67,9 @@ struct _ofoEntryPrivate {
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
 static GList   *entry_load_dataset( const ofoSgbd *sgbd, const gchar *account, ofaEntryConcil mode );
-static gint     entry_count_for_devise( ofoSgbd *sgbd, gint dev_id );
-static gint     entry_count_for_journal( ofoSgbd *sgbd, gint jou_id );
-static gboolean entry_do_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user );
+static gint     entry_count_for_devise( const ofoSgbd *sgbd, gint dev_id );
+static gint     entry_count_for_journal( const ofoSgbd *sgbd, gint jou_id );
+static gboolean entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 static void     error_journal( gint jou_id );
 static void     error_currency( gint dev_id );
 static void     error_acc_number( void );
@@ -261,7 +261,7 @@ ofo_entry_use_devise( const ofoDossier *dossier, gint dev_id )
 }
 
 static gint
-entry_count_for_devise( ofoSgbd *sgbd, gint dev_id )
+entry_count_for_devise( const ofoSgbd *sgbd, gint dev_id )
 {
 	gint count;
 	gchar *query;
@@ -299,7 +299,7 @@ ofo_entry_use_journal( const ofoDossier *dossier, gint jou_id )
 }
 
 static gint
-entry_count_for_journal( ofoSgbd *sgbd, gint jou_id )
+entry_count_for_journal( const ofoSgbd *sgbd, gint jou_id )
 {
 	gint count;
 	gchar *query;
@@ -815,7 +815,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 }
 
 static gboolean
-entry_do_insert( ofoEntry *entry, ofoSgbd *sgbd, const gchar *user )
+entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *ref;
