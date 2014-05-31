@@ -107,7 +107,7 @@ typedef struct {
 }
 	ofaJournalComboParms;
 
-ofaJournalCombo *ofa_journal_combo_init_dialog  ( ofaJournalComboParms *parms );
+ofaJournalCombo *ofa_journal_combo_init_dialog  ( const ofaJournalComboParms *parms );
 
 gint             ofa_journal_combo_get_selection( ofaJournalCombo *self, gchar **mnemo, gchar **label );
 

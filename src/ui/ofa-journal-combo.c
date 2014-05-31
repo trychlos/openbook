@@ -145,7 +145,7 @@ on_dialog_finalized( ofaJournalCombo *self, gpointer this_was_the_dialog )
  * ofa_journal_combo_init_dialog:
  */
 ofaJournalCombo *
-ofa_journal_combo_init_dialog( ofaJournalComboParms *parms )
+ofa_journal_combo_init_dialog( const ofaJournalComboParms *parms )
 {
 	static const gchar *thisfn = "ofa_journal_combo_init_dialog";
 	ofaJournalCombo *self;
