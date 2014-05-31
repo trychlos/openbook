@@ -34,6 +34,7 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
+#include "ui/ofa-plugin.h"
 #include "ui/ofa-settings.h"
 
 /* private instance data
@@ -149,6 +150,7 @@ application_dispose( GObject *instance )
 			g_object_unref( priv->menu );
 		}
 
+		ofa_plugin_release_modules();
 		ofa_settings_free();
 	}
 
@@ -322,6 +324,8 @@ ofa_application_new( void )
 			OFA_PROP_DESCRIPTION,      gettext( st_description ),
 			OFA_PROP_ICON_NAME,        gettext( st_icon_name ),
 			NULL );
+
+	ofa_plugin_load_modules();
 
 	return( application );
 }

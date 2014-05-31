@@ -58,6 +58,8 @@ gchar         *my_utils_timestamp          ( void );
 
 gchar         *my_utils_sql_from_double    ( gdouble value );
 
+gchar         *my_utils_str_remove_suffix( const gchar *string, const gchar *suffix );
+
 gboolean       my_utils_entry_get_valid    ( GtkEntry *entry );
 void           my_utils_entry_set_valid    ( GtkEntry *entry, gboolean valid );
 

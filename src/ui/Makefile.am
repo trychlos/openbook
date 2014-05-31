@@ -34,6 +34,7 @@ AM_CPPFLAGS += \
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
 	-DG_LOG_DOMAIN=\"OFA\"								\
 	-DPKGUIDIR=\"$(ui_datadir)\"						\
+	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
 	-DSYSCONFDIR=\"$(sysconfdir)\"						\
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
@@ -92,6 +93,8 @@ openbook_SOURCES = \
 	ofa-model-properties.h								\
 	ofa-models-set.c									\
 	ofa-models-set.h									\
+	ofa-plugin.c										\
+	ofa-plugin.h										\
 	ofa-rappro.c										\
 	ofa-rappro.h										\
 	ofa-settings.c										\

@@ -22,7 +22,8 @@
 #
 # $Id$
 
-SUBDIRS = \
-	api									\
-	ui									\
+api_includedir = $(pkgincludedir)
+
+api_include_HEADERS = \
+	ofa-extension.h						\
 	$(NULL)

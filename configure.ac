@@ -78,7 +78,8 @@ fi
 glib_required=2.28
 gtk_required=3.4
 OFA_CHECK_FOR_GTK
-OFA_CHECK_MODULE([GLIB], [glib-2.0 >= ${glib_required}])
+OFA_CHECK_MODULE([GLIB],    [glib-2.0 >= ${glib_required}])
+OFA_CHECK_MODULE([GMODULE], [gmodule-2.0 >= ${glib_required}])
 
 MYSQL_CLIENT([5.5.0])
 OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${MYSQL_CLIENT_CFLAGS}"
@@ -108,6 +109,7 @@ AC_CONFIG_FILES([
 	misc/delete/Makefile
 	po/Makefile.in
 	src/Makefile
+	src/api/Makefile
 	src/ui/Makefile
 ])
 
