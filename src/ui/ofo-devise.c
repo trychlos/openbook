@@ -47,18 +47,16 @@ struct _ofoDevisePrivate {
 
 	/* sgbd data
 	 */
-	gint     id;
-	gchar   *code;
-	gchar   *label;
-	gchar   *symbol;
-	gchar   *notes;
-	gchar   *maj_user;
-	GTimeVal maj_stamp;
+	gint       id;
+	gchar     *code;
+	gchar     *label;
+	gchar     *symbol;
+	gchar     *notes;
+	gchar     *maj_user;
+	GTimeVal   maj_stamp;
 };
 
 G_DEFINE_TYPE( ofoDevise, ofo_devise, OFO_TYPE_BASE )
-
-#define OFO_DEVISE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_DEVISE, ofoDevisePrivate))
 
 OFO_BASE_DEFINE_GLOBAL( st_global, devise )
 
@@ -79,19 +77,21 @@ static void
 ofo_devise_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_devise_finalize";
-	ofoDevise *self;
+	ofoDevisePrivate *priv;
 
-	self = OFO_DEVISE( instance );
+	priv = OFO_DEVISE( instance )->private;
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			self->priv->code, self->priv->label );
+			priv->code, priv->label );
 
-	g_free( self->priv->code );
-	g_free( self->priv->label );
-	g_free( self->priv->symbol );
+	/* free data members here */
+	g_free( priv->code );
+	g_free( priv->label );
+	g_free( priv->symbol );
+	g_free( priv );
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_devise_parent_class )->finalize( instance );
 }
 
@@ -102,10 +102,10 @@ ofo_devise_dispose( GObject *instance )
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-		/* unref member objects here */
+		/* unref object members here */
 	}
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_devise_parent_class )->dispose( instance );
 }
 
@@ -117,9 +117,9 @@ ofo_devise_init( ofoDevise *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = OFO_DEVISE_GET_PRIVATE( self );
+	self->private = g_new0( ofoDevisePrivate, 1 );
 
-	self->priv->id = OFO_BASE_UNSET_ID;
+	self->private->id = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -128,8 +128,6 @@ ofo_devise_class_init( ofoDeviseClass *klass )
 	static const gchar *thisfn = "ofo_devise_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	g_type_class_add_private( klass, sizeof( ofoDevisePrivate ));
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_devise_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_devise_finalize;
@@ -293,7 +291,7 @@ ofo_devise_get_id( const ofoDevise *devise )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		return( devise->priv->id );
+		return( devise->private->id );
 	}
 
 	g_assert_not_reached();
@@ -310,7 +308,7 @@ ofo_devise_get_code( const ofoDevise *devise )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		return(( const gchar * ) devise->priv->code );
+		return(( const gchar * ) devise->private->code );
 	}
 
 	g_assert_not_reached();
@@ -327,7 +325,7 @@ ofo_devise_get_label( const ofoDevise *devise )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		return(( const gchar * ) devise->priv->label );
+		return(( const gchar * ) devise->private->label );
 	}
 
 	g_assert_not_reached();
@@ -344,7 +342,7 @@ ofo_devise_get_symbol( const ofoDevise *devise )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		return(( const gchar * ) devise->priv->symbol );
+		return(( const gchar * ) devise->private->symbol );
 	}
 
 	g_assert_not_reached();
@@ -361,7 +359,7 @@ ofo_devise_get_notes( const ofoDevise *devise )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		return(( const gchar * ) devise->priv->notes );
+		return(( const gchar * ) devise->private->notes );
 	}
 
 	g_assert_not_reached();
@@ -378,7 +376,7 @@ ofo_devise_get_maj_user( const ofoDevise *devise )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		return(( const gchar * ) devise->priv->maj_user );
+		return(( const gchar * ) devise->private->maj_user );
 	}
 
 	g_assert_not_reached();
@@ -395,7 +393,7 @@ ofo_devise_get_maj_stamp( const ofoDevise *devise )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &devise->priv->maj_stamp );
+		return(( const GTimeVal * ) &devise->private->maj_stamp );
 	}
 
 	g_assert_not_reached();
@@ -457,7 +455,7 @@ ofo_devise_set_id( ofoDevise *devise, gint id )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		devise->priv->id = id;
+		devise->private->id = id;
 	}
 }
 
@@ -471,8 +469,8 @@ ofo_devise_set_code( ofoDevise *devise, const gchar *code )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		g_free( devise->priv->code );
-		devise->priv->code = g_strdup( code );
+		g_free( devise->private->code );
+		devise->private->code = g_strdup( code );
 	}
 }
 
@@ -486,8 +484,8 @@ ofo_devise_set_label( ofoDevise *devise, const gchar *label )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		g_free( devise->priv->label );
-		devise->priv->label = g_strdup( label );
+		g_free( devise->private->label );
+		devise->private->label = g_strdup( label );
 	}
 }
 
@@ -501,8 +499,8 @@ ofo_devise_set_symbol( ofoDevise *devise, const gchar *symbol )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		g_free( devise->priv->symbol );
-		devise->priv->symbol = g_strdup( symbol );
+		g_free( devise->private->symbol );
+		devise->private->symbol = g_strdup( symbol );
 	}
 }
 
@@ -516,8 +514,8 @@ ofo_devise_set_notes( ofoDevise *devise, const gchar *notes )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		g_free( devise->priv->notes );
-		devise->priv->notes = g_strdup( notes );
+		g_free( devise->private->notes );
+		devise->private->notes = g_strdup( notes );
 	}
 }
 
@@ -531,8 +529,8 @@ ofo_devise_set_maj_user( ofoDevise *devise, const gchar *user )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		g_free( devise->priv->maj_user );
-		devise->priv->maj_user = g_strdup( user );
+		g_free( devise->private->maj_user );
+		devise->private->maj_user = g_strdup( user );
 	}
 }
 
@@ -546,7 +544,7 @@ ofo_devise_set_maj_stamp( ofoDevise *devise, const GTimeVal *stamp )
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		memcpy( &devise->priv->maj_stamp, stamp, sizeof( GTimeVal ));
+		memcpy( &devise->private->maj_stamp, stamp, sizeof( GTimeVal ));
 	}
 }
 

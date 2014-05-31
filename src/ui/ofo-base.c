@@ -38,17 +38,16 @@ struct _ofoBasePrivate {
 
 G_DEFINE_TYPE( ofoBase, ofo_base, G_TYPE_OBJECT )
 
-#define OFO_BASE_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_BASE, ofoBasePrivate))
-
 static void
 ofo_base_finalize( GObject *instance )
 {
 	ofoBase *self = OFO_BASE( instance );
 
-	/* free data here */
+	/* free data members here */
+	g_free( self->private );
 	g_free( self->prot );
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_base_parent_class )->finalize( instance );
 }
 
@@ -57,21 +56,21 @@ ofo_base_dispose( GObject *instance )
 {
 	ofoBase *self = OFO_BASE( instance );
 
-	if( self->prot->dispose_has_run ){
+	if( !self->prot->dispose_has_run ){
 
 		self->prot->dispose_has_run = TRUE;
 
-		/* unref member objects here */
+		/* unref object members here */
 	}
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_base_parent_class )->dispose( instance );
 }
 
 static void
 ofo_base_init( ofoBase *self )
 {
-	self->priv = OFO_BASE_GET_PRIVATE( self );
+	self->private = g_new0( ofoBasePrivate, 1 );
 
 	self->prot = g_new0( ofoBaseProtected, 1 );
 
@@ -84,8 +83,6 @@ ofo_base_class_init( ofoBaseClass *klass )
 	static const gchar *thisfn = "ofo_base_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	g_type_class_add_private( klass, sizeof( ofoBasePrivate ));
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_base_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_base_finalize;

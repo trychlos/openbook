@@ -58,7 +58,7 @@ typedef struct _ofoJournalPrivate       ofoJournalPrivate;
 typedef struct {
 	/*< private >*/
 	ofoBase            parent;
-	ofoJournalPrivate *priv;
+	ofoJournalPrivate *private;
 }
 	ofoJournal;
 

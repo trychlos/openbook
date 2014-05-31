@@ -45,13 +45,13 @@ struct _ofoTauxPrivate {
 
 	/* sgbd data
 	 */
-	gint     id;
-	gchar   *mnemo;
-	gchar   *label;
-	gchar   *notes;
-	gchar   *maj_user;
-	GTimeVal maj_stamp;
-	GList   *valids;
+	gint       id;
+	gchar     *mnemo;
+	gchar     *label;
+	gchar     *notes;
+	gchar     *maj_user;
+	GTimeVal   maj_stamp;
+	GList     *valids;
 };
 
 /* these are sgbd datas for each validitiy period
@@ -75,8 +75,6 @@ typedef struct {
 #endif
 
 G_DEFINE_TYPE( ofoTaux, ofo_taux, OFO_TYPE_BASE )
-
-#define OFO_TAUX_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_TAUX, ofoTauxPrivate))
 
 OFO_BASE_DEFINE_GLOBAL( st_global, taux )
 
@@ -107,29 +105,33 @@ taux_free_validity( sTauxValid *sval )
 static void
 taux_free_validities( ofoTaux *taux )
 {
-	g_list_free_full( taux->priv->valids, ( GDestroyNotify ) taux_free_validity );
-	taux->priv->valids = NULL;
+	g_list_free_full( taux->private->valids, ( GDestroyNotify ) taux_free_validity );
+	taux->private->valids = NULL;
 }
 
 static void
 ofo_taux_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_taux_finalize";
-	ofoTaux *self;
+	ofoTauxPrivate *priv;
 
-	self = OFO_TAUX( instance );
+	priv = OFO_TAUX( instance )->private;
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			self->priv->mnemo, self->priv->label );
+			priv->mnemo, priv->label );
 
-	g_free( self->priv->mnemo );
-	g_free( self->priv->label );
-	g_free( self->priv->notes );
-	g_free( self->priv->maj_user );
-	taux_free_validities( self );
+	/* free data members here */
+	g_free( priv->mnemo );
+	g_free( priv->label );
+	g_free( priv->notes );
+	g_free( priv->maj_user );
 
-	/* chain up to parent class */
+	taux_free_validities( OFO_TAUX( instance ));
+
+	g_free( priv );
+
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_taux_parent_class )->finalize( instance );
 }
 
@@ -140,10 +142,10 @@ ofo_taux_dispose( GObject *instance )
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-		/* unref member objects here */
+		/* unref object members here */
 	}
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_taux_parent_class )->dispose( instance );
 }
 
@@ -155,9 +157,9 @@ ofo_taux_init( ofoTaux *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = OFO_TAUX_GET_PRIVATE( self );
+	self->private = g_new0( ofoTauxPrivate, 1 );
 
-	self->priv->id = OFO_BASE_UNSET_ID;
+	self->private->id = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -166,8 +168,6 @@ ofo_taux_class_init( ofoTauxClass *klass )
 	static const gchar *thisfn = "ofo_taux_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	g_type_class_add_private( klass, sizeof( ofoTauxPrivate ));
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_taux_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_taux_finalize;
@@ -237,7 +237,7 @@ taux_load_dataset( void )
 	for( it=dataset ; it ; it=it->next ){
 
 		taux = OFO_TAUX( it->data );
-		taux->priv->valids = NULL;
+		taux->private->valids = NULL;
 
 		query = g_strdup_printf(
 					"SELECT TAX_VAL_DEB,TAX_VAL_FIN,TAX_VAL_TAUX"
@@ -258,7 +258,7 @@ taux_load_dataset( void )
 				taux_set_val_taux( valid, g_ascii_strtod(( gchar * ) icol->data, NULL ));
 			}
 
-			taux->priv->valids = g_list_prepend( taux->priv->valids, valid );
+			taux->private->valids = g_list_prepend( taux->private->valids, valid );
 		}
 
 		ofo_sgbd_free_result( result );
@@ -369,7 +369,7 @@ ofo_taux_get_id( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		return( taux->priv->id );
+		return( taux->private->id );
 	}
 
 	g_assert_not_reached();
@@ -386,7 +386,7 @@ ofo_taux_get_mnemo( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		return(( const gchar * ) taux->priv->mnemo );
+		return(( const gchar * ) taux->private->mnemo );
 	}
 
 	g_assert_not_reached();
@@ -403,7 +403,7 @@ ofo_taux_get_label( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		return(( const gchar * ) taux->priv->label );
+		return(( const gchar * ) taux->private->label );
 	}
 
 	g_assert_not_reached();
@@ -420,7 +420,7 @@ ofo_taux_get_notes( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		return(( const gchar * ) taux->priv->notes );
+		return(( const gchar * ) taux->private->notes );
 	}
 
 	g_assert_not_reached();
@@ -437,7 +437,7 @@ ofo_taux_get_maj_user( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		return(( const gchar * ) taux->priv->maj_user );
+		return(( const gchar * ) taux->private->maj_user );
 	}
 
 	g_assert_not_reached();
@@ -454,7 +454,7 @@ ofo_taux_get_maj_stamp( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &taux->priv->maj_stamp );
+		return(( const GTimeVal * ) &taux->private->maj_stamp );
 	}
 
 	g_assert_not_reached();
@@ -475,7 +475,7 @@ ofo_taux_get_min_valid( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		for (min=NULL, iv=taux->priv->valids ; iv ; iv=iv->next ){
+		for (min=NULL, iv=taux->private->valids ; iv ; iv=iv->next ){
 			sval = ( sTauxValid * ) iv->data;
 			if( !min ){
 				min = &sval->begin;
@@ -505,7 +505,7 @@ ofo_taux_get_max_valid( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		for (max=NULL, iv=taux->priv->valids ; iv ; iv=iv->next ){
+		for (max=NULL, iv=taux->private->valids ; iv ; iv=iv->next ){
 			sval = ( sTauxValid * ) iv->data;
 			if( !max ){
 				max = &sval->end;
@@ -537,7 +537,7 @@ ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const cha
 		g_date_set_parse( &sval->begin, begin );
 		g_date_set_parse( &sval->end, end );
 		sval->rate = g_ascii_strtod( rate, NULL );
-		taux->priv->valids = g_list_append( taux->priv->valids, sval );
+		taux->private->valids = g_list_append( taux->private->valids, sval );
 	}
 }
 
@@ -570,7 +570,7 @@ ofo_taux_get_val_count( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		return( g_list_length( taux->priv->valids ));
+		return( g_list_length( taux->private->valids ));
 	}
 
 	return( 0 );
@@ -589,7 +589,7 @@ ofo_taux_get_val_begin( const ofoTaux *taux, gint idx )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		nth = g_list_nth( taux->priv->valids, idx );
+		nth = g_list_nth( taux->private->valids, idx );
 		if( nth ){
 			rate = ( sTauxValid * ) nth->data;
 			return(( const GDate * ) &rate->begin );
@@ -612,7 +612,7 @@ ofo_taux_get_val_end( const ofoTaux *taux, gint idx )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		nth = g_list_nth( taux->priv->valids, idx );
+		nth = g_list_nth( taux->private->valids, idx );
 		if( nth ){
 			rate = ( sTauxValid * ) nth->data;
 			return(( const GDate * ) &rate->end );
@@ -635,7 +635,7 @@ ofo_taux_get_val_rate( const ofoTaux *taux, gint idx )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		nth = g_list_nth( taux->priv->valids, idx );
+		nth = g_list_nth( taux->private->valids, idx );
 		if( nth ){
 			rate = ( sTauxValid * ) nth->data;
 			return( rate->rate );
@@ -721,7 +721,7 @@ ofo_taux_set_id( ofoTaux *taux, gint id )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		taux->priv->id = id;
+		taux->private->id = id;
 	}
 }
 
@@ -735,8 +735,8 @@ ofo_taux_set_mnemo( ofoTaux *taux, const gchar *mnemo )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		g_free( taux->priv->mnemo );
-		taux->priv->mnemo = g_strdup( mnemo );
+		g_free( taux->private->mnemo );
+		taux->private->mnemo = g_strdup( mnemo );
 	}
 }
 
@@ -750,8 +750,8 @@ ofo_taux_set_label( ofoTaux *taux, const gchar *label )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		g_free( taux->priv->label );
-		taux->priv->label = g_strdup( label );
+		g_free( taux->private->label );
+		taux->private->label = g_strdup( label );
 	}
 }
 
@@ -765,8 +765,8 @@ ofo_taux_set_notes( ofoTaux *taux, const gchar *notes )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		g_free( taux->priv->notes );
-		taux->priv->notes = g_strdup( notes );
+		g_free( taux->private->notes );
+		taux->private->notes = g_strdup( notes );
 	}
 }
 
@@ -780,8 +780,8 @@ ofo_taux_set_maj_user( ofoTaux *taux, const gchar *maj_user )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		g_free( taux->priv->maj_user );
-		taux->priv->maj_user = g_strdup( maj_user );
+		g_free( taux->private->maj_user );
+		taux->private->maj_user = g_strdup( maj_user );
 	}
 }
 
@@ -795,7 +795,7 @@ ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *maj_stamp )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		memcpy( &taux->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+		memcpy( &taux->private->maj_stamp, maj_stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -952,7 +952,7 @@ taux_insert_validities( ofoTaux *taux, ofoSgbd *sgbd )
 	sTauxValid *sdet;
 
 	ok = TRUE;
-	for( idet=taux->priv->valids ; idet ; idet=idet->next ){
+	for( idet=taux->private->valids ; idet ; idet=idet->next ){
 		sdet = ( sTauxValid * ) idet->data;
 		ok &= taux_insert_validity( taux, sdet, sgbd );
 	}

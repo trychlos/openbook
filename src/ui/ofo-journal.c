@@ -46,14 +46,14 @@ struct _ofoJournalPrivate {
 
 	/* sgbd data
 	 */
-	gint     id;
-	gchar   *mnemo;
-	gchar   *label;
-	gchar   *notes;
-	gchar   *maj_user;
-	GTimeVal maj_stamp;
-	GList   *exes;						/* exercices */
-	GList   *amounts;					/* balances per currency */
+	gint       id;
+	gchar     *mnemo;
+	gchar     *label;
+	gchar     *notes;
+	gchar     *maj_user;
+	GTimeVal   maj_stamp;
+	GList     *exes;					/* exercices */
+	GList     *amounts;					/* balances per currency */
 };
 
 typedef struct {
@@ -75,8 +75,6 @@ typedef struct {
 	sDetailExe;
 
 G_DEFINE_TYPE( ofoJournal, ofo_journal, OFO_TYPE_BASE )
-
-#define OFO_JOURNAL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_JOURNAL, ofoJournalPrivate))
 
 OFO_BASE_DEFINE_GLOBAL( st_global, journal )
 
@@ -108,22 +106,23 @@ static void
 ofo_journal_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_journal_finalize";
-	ofoJournal *self;
+	ofoJournalPrivate *priv;
 
-	self = OFO_JOURNAL( instance );
+	priv = OFO_JOURNAL( instance )->private;
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			self->priv->mnemo, self->priv->label );
+			priv->mnemo, priv->label );
 
-	g_free( self->priv->mnemo );
-	g_free( self->priv->label );
-	g_free( self->priv->notes );
-	g_free( self->priv->maj_user );
+	/* free data members here */
+	g_free( priv->mnemo );
+	g_free( priv->label );
+	g_free( priv->notes );
+	g_free( priv->maj_user );
+	g_list_free_full( priv->amounts, ( GDestroyNotify ) g_free );
+	g_free( priv );
 
-	g_list_free_full( self->priv->amounts, ( GDestroyNotify ) g_free );
-
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_journal_parent_class )->finalize( instance );
 }
 
@@ -134,10 +133,10 @@ ofo_journal_dispose( GObject *instance )
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-		/* unref member objects here */
+		/* unref object members here */
 	}
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_journal_parent_class )->dispose( instance );
 }
 
@@ -149,9 +148,9 @@ ofo_journal_init( ofoJournal *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = OFO_JOURNAL_GET_PRIVATE( self );
+	self->private = g_new0( ofoJournalPrivate, 1 );
 
-	self->priv->id = OFO_BASE_UNSET_ID;
+	self->private->id = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -315,7 +314,7 @@ journal_load_dataset( void )
 			balance->cre = g_ascii_strtod(( gchar * ) icol->data, NULL );
 
 			balance->is_new = FALSE;
-			journal->priv->amounts = g_list_prepend( journal->priv->amounts, balance );
+			journal->private->amounts = g_list_prepend( journal->private->amounts, balance );
 		}
 
 		ofo_sgbd_free_result( result );
@@ -338,7 +337,7 @@ journal_load_dataset( void )
 			memcpy( &exercice->last_clo, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
 
 			exercice->is_new = FALSE;
-			journal->priv->exes = g_list_prepend( journal->priv->exes, exercice );
+			journal->private->exes = g_list_prepend( journal->private->exes, exercice );
 		}
 
 		ofo_sgbd_free_result( result );
@@ -475,7 +474,7 @@ ofo_journal_get_id( const ofoJournal *journal )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		return( journal->priv->id );
+		return( journal->private->id );
 	}
 
 	g_assert_not_reached();
@@ -492,7 +491,7 @@ ofo_journal_get_mnemo( const ofoJournal *journal )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		return(( const gchar * ) journal->priv->mnemo );
+		return(( const gchar * ) journal->private->mnemo );
 	}
 
 	g_assert_not_reached();
@@ -509,7 +508,7 @@ ofo_journal_get_label( const ofoJournal *journal )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		return(( const gchar * ) journal->priv->label );
+		return(( const gchar * ) journal->private->label );
 	}
 
 	g_assert_not_reached();
@@ -526,7 +525,7 @@ ofo_journal_get_notes( const ofoJournal *journal )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		return(( const gchar * ) journal->priv->notes );
+		return(( const gchar * ) journal->private->notes );
 	}
 
 	g_assert_not_reached();
@@ -543,7 +542,7 @@ ofo_journal_get_maj_user( const ofoJournal *journal )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		return(( const gchar * ) journal->priv->maj_user );
+		return(( const gchar * ) journal->private->maj_user );
 	}
 
 	g_assert_not_reached();
@@ -560,7 +559,7 @@ ofo_journal_get_maj_stamp( const ofoJournal *journal )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &journal->priv->maj_stamp );
+		return(( const GTimeVal * ) &journal->private->maj_stamp );
 	}
 
 	g_assert_not_reached();
@@ -702,7 +701,7 @@ journal_find_dev_by_id( const ofoJournal *journal, gint exe_id, gint dev_id )
 	GList *idet;
 	sDetailDev *sdet;
 
-	for( idet=journal->priv->amounts ; idet ; idet=idet->next ){
+	for( idet=journal->private->amounts ; idet ; idet=idet->next ){
 		sdet = ( sDetailDev * ) idet->data;
 		if( sdet->exe_id == exe_id && sdet->dev_id == dev_id ){
 			return( sdet );
@@ -718,7 +717,7 @@ journal_find_exe_by_id( const ofoJournal *journal, gint exe_id )
 	GList *idet;
 	sDetailExe *sdet;
 
-	for( idet=journal->priv->exes ; idet ; idet=idet->next ){
+	for( idet=journal->private->exes ; idet ; idet=idet->next ){
 		sdet = ( sDetailExe * ) idet->data;
 		if( sdet->exe_id == exe_id ){
 			return( sdet );
@@ -760,7 +759,7 @@ ofo_journal_is_deletable( const ofoJournal *journal, const ofoDossier *dossier )
 		ok = TRUE;
 		exe_id = ofo_dossier_get_current_exe_id( dossier );
 
-		for( ic=journal->priv->amounts ; ic && ok ; ic=ic->next ){
+		for( ic=journal->private->amounts ; ic && ok ; ic=ic->next ){
 			detail = ( sDetailDev * ) ic->data;
 			if( detail->exe_id == exe_id ){
 				ok &= detail->clo_deb == 0.0 && detail->clo_cre == 0.0 &&
@@ -802,7 +801,7 @@ ofo_journal_set_id( ofoJournal *journal, gint id )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		journal->priv->id = id;
+		journal->private->id = id;
 	}
 }
 
@@ -816,8 +815,8 @@ ofo_journal_set_mnemo( ofoJournal *journal, const gchar *mnemo )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		g_free( journal->priv->mnemo );
-		journal->priv->mnemo = g_strdup( mnemo );
+		g_free( journal->private->mnemo );
+		journal->private->mnemo = g_strdup( mnemo );
 	}
 }
 
@@ -831,8 +830,8 @@ ofo_journal_set_label( ofoJournal *journal, const gchar *label )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		g_free( journal->priv->label );
-		journal->priv->label = g_strdup( label );
+		g_free( journal->private->label );
+		journal->private->label = g_strdup( label );
 	}
 }
 
@@ -846,8 +845,8 @@ ofo_journal_set_notes( ofoJournal *journal, const gchar *notes )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		g_free( journal->priv->notes );
-		journal->priv->notes = g_strdup( notes );
+		g_free( journal->private->notes );
+		journal->private->notes = g_strdup( notes );
 	}
 }
 
@@ -861,8 +860,8 @@ ofo_journal_set_maj_user( ofoJournal *journal, const gchar *maj_user )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		g_free( journal->priv->maj_user );
-		journal->priv->maj_user = g_strdup( maj_user );
+		g_free( journal->private->maj_user );
+		journal->private->maj_user = g_strdup( maj_user );
 	}
 }
 
@@ -876,7 +875,7 @@ ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *maj_stamp )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		memcpy( &journal->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+		memcpy( &journal->private->maj_stamp, maj_stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -997,9 +996,9 @@ ofo_journal_set_cloture( ofoJournal *journal, const GDate *date )
 {
 	g_return_if_fail( OFO_IS_JOURNAL( journal ));
 
-	if( !journal->priv->dispose_has_run ){
+	if( !journal->private->dispose_has_run ){
 
-		memcpy( &journal->priv->cloture, date, sizeof( GDate ));
+		memcpy( &journal->private->cloture, date, sizeof( GDate ));
 	}
 }*/
 
@@ -1021,7 +1020,7 @@ journal_new_dev_with_id( ofoJournal *journal, gint exe_id, gint dev_id )
 		sdet->dev_id = dev_id;
 
 		sdet->is_new = TRUE;
-		journal->priv->amounts = g_list_prepend( journal->priv->amounts, sdet );
+		journal->private->amounts = g_list_prepend( journal->private->amounts, sdet );
 	}
 
 	return( sdet );

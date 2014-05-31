@@ -55,7 +55,7 @@ typedef struct _ofoSgbdPrivate       ofoSgbdPrivate;
 typedef struct {
 	/*< private >*/
 	GObject         parent;
-	ofoSgbdPrivate *priv;
+	ofoSgbdPrivate *private;
 }
 	ofoSgbd;
 

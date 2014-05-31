@@ -51,8 +51,6 @@ struct _ofoSgbdPrivate {
 
 G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 
-#define OFO_SGBD_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_SGBD, ofoSgbdPrivate))
-
 static void  error_connect( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
 static void  error_query( const ofoSgbd *sgbd, const gchar *query );
 
@@ -60,38 +58,38 @@ static void
 ofo_sgbd_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_sgbd_finalize";
-	ofoSgbd *self;
+	ofoSgbdPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self = OFO_SGBD( instance );
+	priv = OFO_SGBD( instance )->private;
 
-	g_free( self->priv->provider );
+	/* free data members here */
+	g_free( priv->provider );
 
-	if( self->priv->mysql ){
-		mysql_close( self->priv->mysql );
-		g_free( self->priv->mysql );
+	if( priv->mysql ){
+		mysql_close( priv->mysql );
+		g_free( priv->mysql );
 	}
+	g_free( priv );
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_sgbd_parent_class )->finalize( instance );
 }
 
 static void
 ofo_sgbd_dispose( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_sgbd_dispose";
 	ofoSgbd *self;
 
 	self = OFO_SGBD( instance );
 
-	if( !self->priv->dispose_has_run ){
+	if( !self->private->dispose_has_run ){
 
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		self->private->dispose_has_run = TRUE;
 
-		self->priv->dispose_has_run = TRUE;
+		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
@@ -106,9 +104,9 @@ ofo_sgbd_init( ofoSgbd *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = OFO_SGBD_GET_PRIVATE( self );
+	self->private = g_new0( ofoSgbdPrivate, 1 );
 
-	self->priv->dispose_has_run = FALSE;
+	self->private->dispose_has_run = FALSE;
 }
 
 static void
@@ -139,7 +137,7 @@ ofo_sgbd_new( const gchar *provider )
 
 	sgbd = g_object_new( OFO_TYPE_SGBD, NULL );
 
-	sgbd->priv->provider = g_strdup( provider );
+	sgbd->private->provider = g_strdup( provider );
 
 	return( sgbd );
 }
@@ -180,7 +178,7 @@ ofo_sgbd_connect( ofoSgbd *sgbd,
 		return( FALSE );
 	}
 
-	sgbd->priv->mysql = mysql;
+	sgbd->private->mysql = mysql;
 	return( TRUE );
 }
 
@@ -236,11 +234,11 @@ ofo_sgbd_query( const ofoSgbd *sgbd, const gchar *query )
 
 	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
 
-	if( sgbd->priv->mysql ){
+	if( sgbd->private->mysql ){
 		/*length = g_utf8_strlen( query, -1 );
 		to_str = g_new0( char, 2*length+1 );
-		mysql_real_escape_string( sgbd->priv->mysql, to_str, query, length );*/
-		if( mysql_query( sgbd->priv->mysql, query )){
+		mysql_real_escape_string( sgbd->private->mysql, to_str, query, length );*/
+		if( mysql_query( sgbd->private->mysql, query )){
 			error_query( sgbd, query );
 		} else {
 			query_ok = TRUE;
@@ -280,12 +278,12 @@ ofo_sgbd_query_ex( const ofoSgbd *sgbd, const gchar *query )
 
 	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
 
-	if( sgbd->priv->mysql ){
-		if( mysql_query( sgbd->priv->mysql, query )){
+	if( sgbd->private->mysql ){
+		if( mysql_query( sgbd->private->mysql, query )){
 			error_query( sgbd, query );
 
 		} else {
-			res = mysql_store_result( sgbd->priv->mysql );
+			res = mysql_store_result( sgbd->private->mysql );
 			if( res ){
 				fields_count = mysql_num_fields( res );
 				while(( row = mysql_fetch_row( res ))){
@@ -319,7 +317,7 @@ error_query( const ofoSgbd *sgbd, const gchar *query )
 				GTK_BUTTONS_OK,
 				"%s", query ));
 
-	gtk_message_dialog_format_secondary_text( dlg, "%s", mysql_error( sgbd->priv->mysql ));
+	gtk_message_dialog_format_secondary_text( dlg, "%s", mysql_error( sgbd->private->mysql ));
 
 	gtk_dialog_run( GTK_DIALOG( dlg ));
 	gtk_widget_destroy( GTK_WIDGET( dlg ));

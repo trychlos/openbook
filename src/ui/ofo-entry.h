@@ -58,7 +58,7 @@ typedef struct _ofoEntryPrivate       ofoEntryPrivate;
 typedef struct {
 	/*< private >*/
 	ofoBase          parent;
-	ofoEntryPrivate *priv;
+	ofoEntryPrivate *private;
 }
 	ofoEntry;
 

@@ -45,36 +45,34 @@ struct _ofoModelPrivate {
 
 	/* sgbd data
 	 */
-	gint     id;
-	gchar   *mnemo;
-	gchar   *label;
-	gint     journal;
-	gboolean journal_locked;
-	gchar   *notes;
-	gchar   *maj_user;
-	GTimeVal maj_stamp;
+	gint       id;
+	gchar     *mnemo;
+	gchar     *label;
+	gint       journal;
+	gboolean   journal_locked;
+	gchar     *notes;
+	gchar     *maj_user;
+	GTimeVal   maj_stamp;
 
 	/* lignes de détail
 	 */
-	GList   *details;					/* an (un-ordered) list of detail lines */
+	GList     *details;					/* an (un-ordered) list of detail lines */
 };
 
 typedef struct {
-	gchar   *comment;
-	gchar   *account;					/* account */
-	gboolean account_locked;			/* account is locked */
-	gchar   *label;
-	gboolean label_locked;
-	gchar   *debit;
-	gboolean debit_locked;
-	gchar   *credit;
-	gboolean credit_locked;
+	gchar     *comment;
+	gchar     *account;					/* account */
+	gboolean   account_locked;			/* account is locked */
+	gchar     *label;
+	gboolean   label_locked;
+	gchar     *debit;
+	gboolean   debit_locked;
+	gchar     *credit;
+	gboolean   credit_locked;
 }
 	sModDetail;
 
 G_DEFINE_TYPE( ofoModel, ofo_model, OFO_TYPE_BASE )
-
-#define OFO_MODEL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_MODEL, ofoModelPrivate))
 
 OFO_BASE_DEFINE_GLOBAL( st_global, model )
 
@@ -108,7 +106,7 @@ details_list_free_detail( sModDetail *detail )
 static void
 details_list_free( ofoModel *model )
 {
-	ofoModelPrivate *priv = model->priv;
+	ofoModelPrivate *priv = model->private;
 	if( priv->details ){
 		g_list_free_full( priv->details, ( GDestroyNotify ) details_list_free_detail );
 		priv->details = NULL;
@@ -119,24 +117,26 @@ static void
 ofo_model_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_model_finalize";
-	ofoModel *self;
+	ofoModelPrivate *priv;
 
-	self = OFO_MODEL( instance );
+	priv = OFO_MODEL( instance )->private;
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			self->priv->mnemo, self->priv->label );
+			priv->mnemo, priv->label );
 
-	g_free( self->priv->mnemo );
-	g_free( self->priv->label );
-	g_free( self->priv->notes );
-	g_free( self->priv->maj_user );
+	/* free data members here */
+	g_free( priv->mnemo );
+	g_free( priv->label );
+	g_free( priv->notes );
+	g_free( priv->maj_user );
 
-	if( self->priv->details ){
-		details_list_free( self );
+	if( priv->details ){
+		details_list_free( OFO_MODEL( instance ));
 	}
+	g_free( priv );
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_model_parent_class )->finalize( instance );
 }
 
@@ -147,10 +147,10 @@ ofo_model_dispose( GObject *instance )
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-		/* unref member objects here */
+		/* unref object members here */
 	}
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_model_parent_class )->dispose( instance );
 }
 
@@ -162,10 +162,10 @@ ofo_model_init( ofoModel *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = OFO_MODEL_GET_PRIVATE( self );
+	self->private = g_new0( ofoModelPrivate, 1 );
 
-	self->priv->id = -1;
-	self->priv->journal = -1;
+	self->private->id = OFO_BASE_UNSET_ID;
+	self->private->journal = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -301,7 +301,7 @@ model_load_dataset( void )
 		}
 
 		ofo_sgbd_free_result( result );
-		model->priv->details = g_list_reverse( details );
+		model->private->details = g_list_reverse( details );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -443,7 +443,7 @@ ofo_model_get_id( const ofoModel *model )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( model->priv->id );
+		return( model->private->id );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -459,7 +459,7 @@ ofo_model_get_mnemo( const ofoModel *model )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( model->priv->mnemo );
+		return( model->private->mnemo );
 	}
 
 	return( NULL );
@@ -475,7 +475,7 @@ ofo_model_get_label( const ofoModel *model )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( model->priv->label );
+		return( model->private->label );
 	}
 
 	return( NULL );
@@ -491,7 +491,7 @@ ofo_model_get_journal( const ofoModel *model )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( model->priv->journal );
+		return( model->private->journal );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -507,7 +507,7 @@ ofo_model_get_journal_locked( const ofoModel *model )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( model->priv->journal_locked );
+		return( model->private->journal_locked );
 	}
 
 	return( FALSE );
@@ -523,7 +523,7 @@ ofo_model_get_notes( const ofoModel *model )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( model->priv->notes );
+		return( model->private->notes );
 	}
 
 	return( NULL );
@@ -539,7 +539,7 @@ ofo_model_get_maj_user( const ofoModel *model )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return(( const gchar * ) model->priv->maj_user );
+		return(( const gchar * ) model->private->maj_user );
 	}
 
 	g_assert_not_reached();
@@ -556,7 +556,7 @@ ofo_model_get_maj_stamp( const ofoModel *model )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &model->priv->maj_stamp );
+		return(( const GTimeVal * ) &model->private->maj_stamp );
 	}
 
 	g_assert_not_reached();
@@ -603,7 +603,7 @@ ofo_model_set_id( ofoModel *model, gint id )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		model->priv->id = id;
+		model->private->id = id;
 	}
 }
 
@@ -617,8 +617,8 @@ ofo_model_set_mnemo( ofoModel *model, const gchar *mnemo )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		g_free( model->priv->mnemo );
-		model->priv->mnemo = g_strdup( mnemo );
+		g_free( model->private->mnemo );
+		model->private->mnemo = g_strdup( mnemo );
 	}
 }
 
@@ -632,8 +632,8 @@ ofo_model_set_label( ofoModel *model, const gchar *label )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		g_free( model->priv->label );
-		model->priv->label = g_strdup( label );
+		g_free( model->private->label );
+		model->private->label = g_strdup( label );
 	}
 }
 
@@ -647,7 +647,7 @@ ofo_model_set_journal( ofoModel *model, gint journal )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		model->priv->journal = journal;
+		model->private->journal = journal;
 	}
 }
 
@@ -661,7 +661,7 @@ ofo_model_set_journal_locked( ofoModel *model, gboolean journal_locked )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		model->priv->journal_locked = journal_locked;
+		model->private->journal_locked = journal_locked;
 	}
 }
 
@@ -675,8 +675,8 @@ ofo_model_set_notes( ofoModel *model, const gchar *notes )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		g_free( model->priv->notes );
-		model->priv->notes = g_strdup( notes );
+		g_free( model->private->notes );
+		model->private->notes = g_strdup( notes );
 	}
 }
 
@@ -690,8 +690,8 @@ ofo_model_set_maj_user( ofoModel *model, const gchar *maj_user )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		g_free( model->priv->maj_user );
-		model->priv->maj_user = g_strdup( maj_user );
+		g_free( model->private->maj_user );
+		model->private->maj_user = g_strdup( maj_user );
 	}
 }
 
@@ -705,7 +705,7 @@ ofo_model_set_maj_stamp( ofoModel *model, const GTimeVal *maj_stamp )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		memcpy( &model->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+		memcpy( &model->private->maj_stamp, maj_stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -723,7 +723,7 @@ ofo_model_add_detail( ofoModel *model, const gchar *comment,
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
 		detail = g_new0( sModDetail, 1 );
-		model->priv->details = g_list_append( model->priv->details, detail );
+		model->private->details = g_list_append( model->private->details, detail );
 
 		detail->comment = g_strdup( comment );
 		detail->account = g_strdup( account );
@@ -761,7 +761,7 @@ ofo_model_get_detail_count( const ofoModel *model )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( g_list_length( model->priv->details ));
+		return( g_list_length( model->private->details ));
 	}
 
 	return( -1 );
@@ -781,7 +781,7 @@ ofo_model_get_detail_comment( const ofoModel *model, gint idx )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		idet = g_list_nth( model->priv->details, idx );
+		idet = g_list_nth( model->private->details, idx );
 		sdet = ( sModDetail * ) idet->data;
 		return(( const gchar * ) sdet->comment );
 	}
@@ -803,7 +803,7 @@ ofo_model_get_detail_account( const ofoModel *model, gint idx )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		idet = g_list_nth( model->priv->details, idx );
+		idet = g_list_nth( model->private->details, idx );
 		sdet = ( sModDetail * ) idet->data;
 		return(( const gchar * ) sdet->account );
 	}
@@ -825,7 +825,7 @@ ofo_model_get_detail_account_locked( const ofoModel *model, gint idx )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		idet = g_list_nth( model->priv->details, idx );
+		idet = g_list_nth( model->private->details, idx );
 		sdet = ( sModDetail * ) idet->data;
 		return( sdet->account_locked );
 	}
@@ -847,7 +847,7 @@ ofo_model_get_detail_label( const ofoModel *model, gint idx )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		idet = g_list_nth( model->priv->details, idx );
+		idet = g_list_nth( model->private->details, idx );
 		sdet = ( sModDetail * ) idet->data;
 		return(( const gchar * ) sdet->label );
 	}
@@ -869,7 +869,7 @@ ofo_model_get_detail_label_locked( const ofoModel *model, gint idx )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		idet = g_list_nth( model->priv->details, idx );
+		idet = g_list_nth( model->private->details, idx );
 		sdet = ( sModDetail * ) idet->data;
 		return( sdet->label_locked );
 	}
@@ -891,7 +891,7 @@ ofo_model_get_detail_debit( const ofoModel *model, gint idx )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		idet = g_list_nth( model->priv->details, idx );
+		idet = g_list_nth( model->private->details, idx );
 		sdet = ( sModDetail * ) idet->data;
 		return(( const gchar * ) sdet->debit );
 	}
@@ -913,7 +913,7 @@ ofo_model_get_detail_debit_locked( const ofoModel *model, gint idx )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		idet = g_list_nth( model->priv->details, idx );
+		idet = g_list_nth( model->private->details, idx );
 		sdet = ( sModDetail * ) idet->data;
 		return( sdet->debit_locked );
 	}
@@ -935,7 +935,7 @@ ofo_model_get_detail_credit( const ofoModel *model, gint idx )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		idet = g_list_nth( model->priv->details, idx );
+		idet = g_list_nth( model->private->details, idx );
 		sdet = ( sModDetail * ) idet->data;
 		return(( const gchar * ) sdet->credit );
 	}
@@ -957,7 +957,7 @@ ofo_model_get_detail_credit_locked( const ofoModel *model, gint idx )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		idet = g_list_nth( model->priv->details, idx );
+		idet = g_list_nth( model->private->details, idx );
 		sdet = ( sModDetail * ) idet->data;
 		return( sdet->credit_locked );
 	}
@@ -1109,7 +1109,7 @@ model_insert_details_ex( ofoModel *model, ofoSgbd *sgbd )
 
 	if( model_delete_details( model, sgbd )){
 		ok = TRUE;
-		for( idet=model->priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
+		for( idet=model->private->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
 			sdet = ( sModDetail * ) idet->data;
 			if( !model_insert_details( model, sgbd, rang, sdet )){
 				ok = FALSE;

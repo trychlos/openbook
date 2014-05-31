@@ -58,7 +58,7 @@ typedef struct _ofoBaseProtected     ofoBaseProtected;
 typedef struct {
 	/*< private >*/
 	GObject           parent;
-	ofoBasePrivate   *priv;
+	ofoBasePrivate   *private;
 	ofoBaseProtected *prot;
 }
 	ofoBase;

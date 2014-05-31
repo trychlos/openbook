@@ -62,7 +62,7 @@ typedef struct _ofoDossierPrivate       ofoDossierPrivate;
 typedef struct {
 	/*< private >*/
 	ofoBase            parent;
-	ofoDossierPrivate *priv;
+	ofoDossierPrivate *private;
 }
 	ofoDossier;
 

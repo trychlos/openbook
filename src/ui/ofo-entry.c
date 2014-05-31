@@ -66,8 +66,6 @@ struct _ofoEntryPrivate {
 
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
-#define OFO_ENTRY_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_ENTRY, ofoEntryPrivate))
-
 static GList   *entry_load_dataset( const ofoSgbd *sgbd, const gchar *account, ofaEntryConcil mode );
 static gint     entry_count_for_devise( ofoSgbd *sgbd, gint dev_id );
 static gint     entry_count_for_journal( ofoSgbd *sgbd, gint jou_id );
@@ -84,19 +82,21 @@ static void
 ofo_entry_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_entry_finalize";
-	ofoEntry *self;
+	ofoEntryPrivate *priv;
 
-	self = OFO_ENTRY( instance );
+	priv = OFO_ENTRY( instance )->private;
 
 	g_debug( "%s: instance=%p (%s): %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			self->priv->label );
+			priv->label );
 
-	g_free( self->priv->label );
-	g_free( self->priv->ref );
-	g_free( self->priv->maj_user );
+	/* free data members here */
+	g_free( priv->label );
+	g_free( priv->ref );
+	g_free( priv->maj_user );
+	g_free( priv );
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_entry_parent_class )->finalize( instance );
 }
 
@@ -105,10 +105,10 @@ ofo_entry_dispose( GObject *instance )
 {
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-		/* unref member objects here */
+		/* unref object members here */
 	}
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_entry_parent_class )->dispose( instance );
 }
 
@@ -120,14 +120,14 @@ ofo_entry_init( ofoEntry *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = OFO_ENTRY_GET_PRIVATE( self );
+	self->private = g_new0( ofoEntryPrivate, 1 );
 
-	self->priv->number = OFO_BASE_UNSET_ID;
-	self->priv->dev_id = OFO_BASE_UNSET_ID;
-	self->priv->jou_id = OFO_BASE_UNSET_ID;
-	g_date_clear( &self->priv->effect, 1 );
-	g_date_clear( &self->priv->operation, 1 );
-	g_date_clear( &self->priv->rappro, 1 );
+	self->private->number = OFO_BASE_UNSET_ID;
+	self->private->dev_id = OFO_BASE_UNSET_ID;
+	self->private->jou_id = OFO_BASE_UNSET_ID;
+	g_date_clear( &self->private->effect, 1 );
+	g_date_clear( &self->private->operation, 1 );
+	g_date_clear( &self->private->rappro, 1 );
 }
 
 static void
@@ -136,8 +136,6 @@ ofo_entry_class_init( ofoEntryClass *klass )
 	static const gchar *thisfn = "ofo_entry_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	g_type_class_add_private( klass, sizeof( ofoEntryPrivate ));
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_entry_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_entry_finalize;
@@ -335,7 +333,7 @@ ofo_entry_get_number( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->priv->number );
+		return( entry->private->number );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -351,7 +349,7 @@ ofo_entry_get_label( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->priv->label );
+		return( entry->private->label );
 	}
 
 	return( NULL );
@@ -367,7 +365,7 @@ ofo_entry_get_deffect( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &entry->priv->effect );
+		return(( const GDate * ) &entry->private->effect );
 	}
 
 	return( NULL );
@@ -383,7 +381,7 @@ ofo_entry_get_dope( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &entry->priv->operation );
+		return(( const GDate * ) &entry->private->operation );
 	}
 
 	return( NULL );
@@ -399,7 +397,7 @@ ofo_entry_get_ref( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->priv->ref );
+		return( entry->private->ref );
 	}
 
 	return( NULL );
@@ -415,7 +413,7 @@ ofo_entry_get_account( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->priv->account );
+		return( entry->private->account );
 	}
 
 	return( NULL );
@@ -431,7 +429,7 @@ ofo_entry_get_devise( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->priv->dev_id );
+		return( entry->private->dev_id );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -447,7 +445,7 @@ ofo_entry_get_journal( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->priv->jou_id );
+		return( entry->private->jou_id );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -463,7 +461,7 @@ ofo_entry_get_amount( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->priv->amount );
+		return( entry->private->amount );
 	}
 
 	return( 0.0 );
@@ -479,7 +477,7 @@ ofo_entry_get_sens( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->priv->sens );
+		return( entry->private->sens );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -495,7 +493,7 @@ ofo_entry_get_status( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->priv->status );
+		return( entry->private->status );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -511,7 +509,7 @@ ofo_entry_get_rappro( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &entry->priv->rappro );
+		return(( const GDate * ) &entry->private->rappro );
 	}
 
 	return( NULL );
@@ -528,7 +526,7 @@ ofo_entry_set_number( ofoEntry *entry, gint number )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->priv->number = number;
+		entry->private->number = number;
 	}
 }
 
@@ -543,8 +541,8 @@ ofo_entry_set_label( ofoEntry *entry, const gchar *label )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->priv->label );
-		entry->priv->label = g_strdup( label );
+		g_free( entry->private->label );
+		entry->private->label = g_strdup( label );
 	}
 }
 
@@ -559,7 +557,7 @@ ofo_entry_set_deffect( ofoEntry *entry, const GDate *deffect )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		memcpy( &entry->priv->effect, deffect, sizeof( GDate ));
+		memcpy( &entry->private->effect, deffect, sizeof( GDate ));
 	}
 }
 
@@ -574,7 +572,7 @@ ofo_entry_set_dope( ofoEntry *entry, const GDate *dope )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		memcpy( &entry->priv->operation, dope, sizeof( GDate ));
+		memcpy( &entry->private->operation, dope, sizeof( GDate ));
 	}
 }
 
@@ -588,8 +586,8 @@ ofo_entry_set_ref( ofoEntry *entry, const gchar *ref )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->priv->ref );
-		entry->priv->ref = g_strdup( ref );
+		g_free( entry->private->ref );
+		entry->private->ref = g_strdup( ref );
 	}
 }
 
@@ -604,8 +602,8 @@ ofo_entry_set_account( ofoEntry *entry, const gchar *account )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->priv->account );
-		entry->priv->account = g_strdup( account );
+		g_free( entry->private->account );
+		entry->private->account = g_strdup( account );
 	}
 }
 
@@ -620,7 +618,7 @@ ofo_entry_set_devise( ofoEntry *entry, gint devise )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->priv->dev_id = devise;
+		entry->private->dev_id = devise;
 	}
 }
 
@@ -635,7 +633,7 @@ ofo_entry_set_journal( ofoEntry *entry, gint journal )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->priv->jou_id = journal;
+		entry->private->jou_id = journal;
 	}
 }
 
@@ -650,7 +648,7 @@ ofo_entry_set_amount( ofoEntry *entry, gdouble amount )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->priv->amount = amount;
+		entry->private->amount = amount;
 	}
 }
 
@@ -665,7 +663,7 @@ ofo_entry_set_sens( ofoEntry *entry, ofaEntrySens sens )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->priv->sens = sens;
+		entry->private->sens = sens;
 	}
 }
 
@@ -680,7 +678,7 @@ ofo_entry_set_status( ofoEntry *entry, ofaEntryStatus status )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->priv->status = status;
+		entry->private->status = status;
 	}
 }
 
@@ -694,8 +692,8 @@ ofo_entry_set_maj_user( ofoEntry *entry, const gchar *maj_user )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->priv->maj_user );
-		entry->priv->maj_user = g_strdup( maj_user );
+		g_free( entry->private->maj_user );
+		entry->private->maj_user = g_strdup( maj_user );
 	}
 }
 
@@ -709,7 +707,7 @@ ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *maj_stamp )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		memcpy( &entry->priv->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+		memcpy( &entry->private->maj_stamp, maj_stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -726,9 +724,9 @@ ofo_entry_set_rappro( ofoEntry *entry, const GDate *drappro )
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		if( drappro && g_date_valid( drappro )){
-			memcpy( &entry->priv->rappro, drappro, sizeof( GDate ));
+			memcpy( &entry->private->rappro, drappro, sizeof( GDate ));
 		} else {
-			g_date_clear( &entry->priv->rappro, 1 );
+			g_date_clear( &entry->private->rappro, 1 );
 		}
 	}
 }
@@ -776,16 +774,16 @@ ofo_entry_new_with_data( const ofoDossier *dossier,
 
 	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
 
-	memcpy( &entry->priv->effect, effet, sizeof( GDate ));
-	memcpy( &entry->priv->operation, ope, sizeof( GDate ));
-	entry->priv->label = g_strdup( label );
-	entry->priv->ref = g_strdup( ref );
-	entry->priv->account = g_strdup( acc_number );
-	entry->priv->dev_id = dev_id;
-	entry->priv->jou_id = jou_id;
-	entry->priv->amount = amount;
-	entry->priv->sens = sens;
-	entry->priv->status = ENT_STATUS_ROUGH;
+	memcpy( &entry->private->effect, effet, sizeof( GDate ));
+	memcpy( &entry->private->operation, ope, sizeof( GDate ));
+	entry->private->label = g_strdup( label );
+	entry->private->ref = g_strdup( ref );
+	entry->private->account = g_strdup( acc_number );
+	entry->private->dev_id = dev_id;
+	entry->private->jou_id = jou_id;
+	entry->private->amount = amount;
+	entry->private->sens = sens;
+	entry->private->status = ENT_STATUS_ROUGH;
 
 	return( entry );
 }
@@ -802,7 +800,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 	gboolean ok;
 
 	ok = FALSE;
-	entry->priv->number = ofo_dossier_get_next_entry_number( dossier );
+	entry->private->number = ofo_dossier_get_next_entry_number( dossier );
 
 	if( !entry_do_insert( entry,
 				ofo_dossier_get_sgbd( dossier ),

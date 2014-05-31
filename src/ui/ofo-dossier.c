@@ -81,8 +81,6 @@ static gint st_signals[ N_SIGNALS ] = { 0 };
 
 G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
 
-#define OFO_DOSSIER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OFO_TYPE_DOSSIER, ofoDossierPrivate))
-
 /* the last DB model version
  */
 #define THIS_DBMODEL_VERSION            1
@@ -102,21 +100,24 @@ static void
 ofo_dossier_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_dossier_finalize";
-	ofoDossier *self;
+	ofoDossierPrivate *priv;
+
+	priv = OFO_DOSSIER( instance )->private;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	self = OFO_DOSSIER( instance );
+	/* free data members here */
+	g_free( priv->name );
+	g_free( priv->userid );
 
-	g_free( self->priv->name );
-	g_free( self->priv->userid );
+	g_free( priv->label );
+	g_free( priv->notes );
+	g_free( priv->maj_user );
 
-	g_free( self->priv->label );
-	g_free( self->priv->notes );
-	g_free( self->priv->maj_user );
+	g_free( priv );
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_dossier_parent_class )->finalize( instance );
 }
 
@@ -124,21 +125,22 @@ static void
 ofo_dossier_dispose( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_dossier_dispose";
-	ofoDossier *self;
+	ofoDossierPrivate *priv;
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
 		g_debug( "%s: instance=%p (%s)",
 				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-		self = OFO_DOSSIER( instance );
+		priv = OFO_DOSSIER( instance )->private;
 
-		if( self->priv->sgbd ){
-			g_clear_object( &self->priv->sgbd );
+		/* unref object members here */
+		if( priv->sgbd ){
+			g_clear_object( &priv->sgbd );
 		}
 	}
 
-	/* chain up to parent class */
+	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_dossier_parent_class )->dispose( instance );
 }
 
@@ -150,10 +152,10 @@ ofo_dossier_init( ofoDossier *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = OFO_DOSSIER_GET_PRIVATE( self );
+	self->private = g_new0( ofoDossierPrivate, 1 );
 
-	self->priv->exe_id = OFO_BASE_UNSET_ID;
-	g_date_clear( &self->priv->last_closed_exe, 1 );
+	self->private->exe_id = OFO_BASE_UNSET_ID;
+	g_date_clear( &self->private->last_closed_exe, 1 );
 }
 
 static void
@@ -162,8 +164,6 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	static const gchar *thisfn = "ofo_dossier_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	g_type_class_add_private( klass, sizeof( ofoDossierPrivate ));
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_dossier_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_dossier_finalize;
@@ -242,7 +242,7 @@ ofo_dossier_new( const gchar *name )
 	ofoDossier *dossier;
 
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
-	dossier->priv->name = g_strdup( name );
+	dossier->private->name = g_strdup( name );
 
 	return( dossier );
 }
@@ -277,7 +277,7 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 
 	str = g_strdup_printf(
 			_( "'%s' account is not allowed to connect to '%s' dossier" ),
-			account, dossier->priv->name );
+			account, dossier->private->name );
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				NULL,
@@ -329,8 +329,8 @@ ofo_dossier_open( ofoDossier *dossier,
 
 	ofo_dossier_dbmodel_update( sgbd, account );
 
-	dossier->priv->sgbd = sgbd;
-	dossier->priv->userid = g_strdup( account );
+	dossier->private->sgbd = sgbd;
+	dossier->private->userid = g_strdup( account );
 
 	return( dossier_do_read( dossier ));
 }
@@ -683,7 +683,7 @@ ofo_dossier_get_name( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const gchar * ) dossier->priv->name );
+		return(( const gchar * ) dossier->private->name );
 	}
 
 	return( NULL );
@@ -701,7 +701,7 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const gchar * ) dossier->priv->userid );
+		return(( const gchar * ) dossier->private->userid );
 	}
 
 	return( NULL );
@@ -719,7 +719,7 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( dossier->priv->sgbd );
+		return( dossier->private->sgbd );
 	}
 
 	return( NULL );
@@ -737,7 +737,7 @@ ofo_dossier_get_label( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const gchar * ) dossier->priv->label );
+		return(( const gchar * ) dossier->private->label );
 	}
 
 	return( NULL );
@@ -755,7 +755,7 @@ ofo_dossier_get_exercice_length( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( dossier->priv->duree_exe );
+		return( dossier->private->duree_exe );
 	}
 
 	return( -1 );
@@ -773,7 +773,7 @@ ofo_dossier_get_notes( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const gchar * ) dossier->priv->notes );
+		return(( const gchar * ) dossier->private->notes );
 	}
 
 	return( NULL );
@@ -792,7 +792,7 @@ ofo_dossier_get_maj_user( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const gchar * ) dossier->priv->maj_user );
+		return(( const gchar * ) dossier->private->maj_user );
 	}
 
 	return( NULL );
@@ -811,7 +811,7 @@ ofo_dossier_get_maj_stamp( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &dossier->priv->maj_stamp );
+		return(( const GTimeVal * ) &dossier->private->maj_stamp );
 	}
 
 	return( NULL );
@@ -829,7 +829,7 @@ ofo_dossier_get_current_exe_id( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( dossier->priv->exe_id );
+		return( dossier->private->exe_id );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -847,7 +847,7 @@ ofo_dossier_get_current_exe_deb( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &dossier->priv->exe_deb );
+		return(( const GDate * ) &dossier->private->exe_deb );
 	}
 
 	return( NULL );
@@ -865,7 +865,7 @@ ofo_dossier_get_current_exe_fin( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &dossier->priv->exe_fin );
+		return(( const GDate * ) &dossier->private->exe_fin );
 	}
 
 	return( NULL );
@@ -883,7 +883,7 @@ ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( dossier->priv->last_ecr );
+		return( dossier->private->last_ecr );
 	}
 
 	return( 0 );
@@ -902,11 +902,11 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		if( !g_date_valid( &dossier->priv->last_closed_exe )){
+		if( !g_date_valid( &dossier->private->last_closed_exe )){
 
 			set_last_closed_exercice( dossier );
 		}
-		return(( const GDate * ) &dossier->priv->last_closed_exe );
+		return(( const GDate * ) &dossier->private->last_closed_exe );
 	}
 
 	return( NULL );
@@ -917,14 +917,14 @@ set_last_closed_exercice( const ofoDossier *dossier )
 {
 	GSList *result, *icol;
 
-	result = ofo_sgbd_query_ex( dossier->priv->sgbd,
+	result = ofo_sgbd_query_ex( dossier->private->sgbd,
 					"SELECT MAX(DOS_EXE_FIN) FROM OFA_T_DOSSIER_EXE "
 					"	WHERE DOS_EXE_STATUS=2" );
 
 	if( result ){
 		icol = ( GSList * ) result->data;
 		if( icol->data ){
-			memcpy( &dossier->priv->last_closed_exe,
+			memcpy( &dossier->private->last_closed_exe,
 						my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
 		}
 		ofo_sgbd_free_result( result );
@@ -946,8 +946,8 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		dossier->priv->last_ecr += 1;
-		next_number = dossier->priv->last_ecr;
+		dossier->private->last_ecr += 1;
+		next_number = dossier->private->last_ecr;
 
 		query = g_strdup_printf(
 				"UPDATE OFA_T_DOSSIER_EXE "
@@ -955,7 +955,7 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 				"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
 						next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
 
-		ofo_sgbd_query( dossier->priv->sgbd, query );
+		ofo_sgbd_query( dossier->private->sgbd, query );
 		g_free( query );
 	}
 
@@ -982,8 +982,8 @@ ofo_dossier_set_label( ofoDossier *dossier, const gchar *label )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		g_free( dossier->priv->label );
-		dossier->priv->label = g_strdup( label );
+		g_free( dossier->private->label );
+		dossier->private->label = g_strdup( label );
 	}
 }
 
@@ -998,7 +998,7 @@ ofo_dossier_set_exercice_length( ofoDossier *dossier, gint duree )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		dossier->priv->duree_exe = duree;
+		dossier->private->duree_exe = duree;
 	}
 }
 
@@ -1012,8 +1012,8 @@ ofo_dossier_set_notes( ofoDossier *dossier, const gchar *notes )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		g_free( dossier->priv->notes );
-		dossier->priv->notes = g_strdup( notes );
+		g_free( dossier->private->notes );
+		dossier->private->notes = g_strdup( notes );
 	}
 }
 
@@ -1028,8 +1028,8 @@ ofo_dossier_set_maj_user( ofoDossier *dossier, const gchar *user )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		g_free( dossier->priv->maj_user );
-		dossier->priv->maj_user = g_strdup( user );
+		g_free( dossier->private->maj_user );
+		dossier->private->maj_user = g_strdup( user );
 	}
 }
 
@@ -1044,7 +1044,7 @@ ofo_dossier_set_maj_stamp( ofoDossier *dossier, const GTimeVal *stamp )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		memcpy( &dossier->priv->maj_stamp, stamp, sizeof( GTimeVal ));
+		memcpy( &dossier->private->maj_stamp, stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -1059,7 +1059,7 @@ ofo_dossier_set_current_exe_id( const ofoDossier *dossier, gint exe_id )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		dossier->priv->exe_id = exe_id;
+		dossier->private->exe_id = exe_id;
 	}
 }
 
@@ -1073,7 +1073,7 @@ ofo_dossier_set_current_exe_deb( const ofoDossier *dossier, const GDate *date )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		memcpy( &dossier->priv->exe_deb, date, sizeof( GDate ));
+		memcpy( &dossier->private->exe_deb, date, sizeof( GDate ));
 	}
 }
 
@@ -1087,7 +1087,7 @@ ofo_dossier_set_current_exe_fin( const ofoDossier *dossier, const GDate *date )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		memcpy( &dossier->priv->exe_fin, date, sizeof( GDate ));
+		memcpy( &dossier->private->exe_fin, date, sizeof( GDate ));
 	}
 }
 
@@ -1101,7 +1101,7 @@ ofo_dossier_set_current_exe_last_ecr( const ofoDossier *dossier, gint number )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		dossier->priv->last_ecr = number;
+		dossier->private->last_ecr = number;
 	}
 }
 
@@ -1149,7 +1149,7 @@ dossier_read_properties( ofoDossier *dossier )
 			"	FROM OFA_T_DOSSIER "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
 
-	result = ofo_sgbd_query_ex( dossier->priv->sgbd, query );
+	result = ofo_sgbd_query_ex( dossier->private->sgbd, query );
 
 	g_free( query );
 
@@ -1188,7 +1188,7 @@ dossier_read_current_exercice( ofoDossier *dossier )
 			"	FROM OFA_T_DOSSIER_EXE "
 			"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=1", THIS_DOS_ID );
 
-	result = ofo_sgbd_query_ex( dossier->priv->sgbd, query );
+	result = ofo_sgbd_query_ex( dossier->private->sgbd, query );
 
 	g_free( query );
 
@@ -1224,7 +1224,7 @@ ofo_dossier_update( ofoDossier *dossier )
 		g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 		return( dossier_do_update(
-					dossier, dossier->priv->sgbd, dossier->priv->userid ));
+					dossier, dossier->private->sgbd, dossier->private->userid ));
 	}
 
 	g_assert_not_reached();
