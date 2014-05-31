@@ -171,7 +171,6 @@
                 detail record, but set a 'deleted' flag
 
  131 2014- 5-28 have a currency combo box convenience class
-                and report in dossier properties
 
  132 2014- 5-28 remove my_utils_init_notes_ex and 
                 my_utils_init_maj_user_stamp_ex as they should be no 
@@ -179,8 +178,6 @@
                 ofaBseDialog
 
  133 2014- 5-28 ofaAccountProperties makes use of ofaDeviseCombo
-
- 145 2014- 5-30 get rid of xxx_GET_PRIVATE macro
 
  146
 
@@ -525,6 +522,9 @@
 
  144 2014- 5-29 always use g_define_type 
      2014- 5-30 done - svn #3562
+
+ 145 2014- 5-30 get rid of xxx_GET_PRIVATE macro
+     2014- 5-31 done - svn #3563
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
