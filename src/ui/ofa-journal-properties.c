@@ -175,14 +175,12 @@ ofa_journal_properties_run( ofaMainWindow *main_window, ofoJournal *journal )
 static void
 v_init_dialog( ofaBaseDialog *dialog )
 {
-	ofaJournalProperties *self;
 	ofaJournalPropertiesPrivate *priv;
 	gchar *title;
 	const gchar *jou_mnemo;
 	GtkEntry *entry;
 
-	self = OFA_JOURNAL_PROPERTIES( dialog );
-	priv = self->private;
+	priv = OFA_JOURNAL_PROPERTIES( dialog )->private;
 
 	jou_mnemo = ofo_journal_get_mnemo( priv->journal );
 	if( !jou_mnemo ){
@@ -209,13 +207,10 @@ v_init_dialog( ofaBaseDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
-	my_utils_init_notes_ex2( journal );
+	my_utils_init_notes_ex( dialog->prot->dialog, journal );
+	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, journal );
 
-	if( !priv->is_new ){
-		my_utils_init_maj_user_stamp_ex2( journal );
-	}
-
-	check_for_enable_dlg( self );
+	check_for_enable_dlg( OFA_JOURNAL_PROPERTIES( dialog ));
 }
 
 static void
@@ -284,30 +279,28 @@ v_quit_on_ok( ofaBaseDialog *dialog )
 static gboolean
 do_update( ofaJournalProperties *self )
 {
+	ofaJournalPropertiesPrivate *priv;
 	ofoDossier *dossier;
-	ofoJournal *existing;
 
+	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
+
+	priv = self->private;
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
-	existing = ofo_journal_get_by_mnemo( dossier, self->private->mnemo );
-	g_return_val_if_fail(
-			!existing ||
-			ofo_journal_get_id( existing ) == ofo_journal_get_id( self->private->journal ), NULL );
 
 	/* le nouveau mnemo n'est pas encore utilisé,
 	 * ou bien il est déjà utilisé par ce même journal (n'a pas été modifié)
 	 */
-	ofo_journal_set_mnemo( self->private->journal, self->private->mnemo );
-	ofo_journal_set_label( self->private->journal, self->private->label );
+	ofo_journal_set_mnemo( priv->journal, priv->mnemo );
+	ofo_journal_set_label( priv->journal, priv->label );
+	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, journal );
 
-	my_utils_getback_notes_ex2( journal );
-
-	if( self->private->is_new ){
-		self->private->updated =
-				ofo_journal_insert( self->private->journal, dossier );
+	if( priv->is_new ){
+		priv->updated =
+				ofo_journal_insert( priv->journal, dossier );
 	} else {
-		self->private->updated =
-				ofo_journal_update( self->private->journal, dossier );
+		priv->updated =
+				ofo_journal_update( priv->journal, dossier );
 	}
 
-	return( self->private->updated );
+	return( priv->updated );
 }

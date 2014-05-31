@@ -173,14 +173,12 @@ ofa_devise_properties_run( ofaMainWindow *main_window, ofoDevise *devise )
 static void
 v_init_dialog( ofaBaseDialog *dialog )
 {
-	ofaDeviseProperties *self;
 	ofaDevisePropertiesPrivate *priv;
 	gchar *title;
 	const gchar *code;
 	GtkEntry *entry;
 
-	self = OFA_DEVISE_PROPERTIES( dialog );
-	priv = self->private;
+	priv = OFA_DEVISE_PROPERTIES( dialog )->private;
 
 	code = ofo_devise_get_code( priv->devise );
 	if( !code ){
@@ -218,11 +216,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), dialog );
 
-	my_utils_init_notes_ex2( devise );
-
-	if( !priv->is_new ){
-		my_utils_init_maj_user_stamp_ex2( devise );
-	}
+	my_utils_init_notes_ex( dialog->prot->dialog, devise );
+	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, devise );
 
 	check_for_enable_dlg( OFA_DEVISE_PROPERTIES( dialog ));
 }
@@ -294,25 +289,26 @@ v_quit_on_ok( ofaBaseDialog *dialog )
 static gboolean
 do_update( ofaDeviseProperties *self )
 {
+	ofaDevisePropertiesPrivate *priv;
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
+	priv = self->private;
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 
-	ofo_devise_set_code( self->private->devise, self->private->code );
-	ofo_devise_set_label( self->private->devise, self->private->label );
-	ofo_devise_set_symbol( self->private->devise, self->private->symbol );
+	ofo_devise_set_code( priv->devise, priv->code );
+	ofo_devise_set_label( priv->devise, priv->label );
+	ofo_devise_set_symbol( priv->devise, priv->symbol );
+	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, devise );
 
-	my_utils_getback_notes_ex2( devise );
-
-	if( self->private->is_new ){
-		self->private->updated =
-				ofo_devise_insert( self->private->devise, dossier );
+	if( priv->is_new ){
+		priv->updated =
+				ofo_devise_insert( priv->devise, dossier );
 	} else {
-		self->private->updated =
-				ofo_devise_update( self->private->devise, dossier );
+		priv->updated =
+				ofo_devise_update( priv->devise, dossier );
 	}
 
-	return( self->private->updated );
+	return( priv->updated );
 }

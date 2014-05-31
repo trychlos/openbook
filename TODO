@@ -175,8 +175,6 @@
                 more used when all dialog box will be derived from 
                 ofaBseDialog
 
- 133 2014- 5-28 ofaAccountProperties makes use of ofaDeviseCombo
-
  146
 
 -----------------------------------------------------------------------
@@ -490,6 +488,9 @@
 
  131 2014- 5-28 have a currency combo box convenience class
      2014- 5-31 done - svn #3566
+
+ 133 2014- 5-28 ofaAccountProperties makes use of ofaDeviseCombo
+     2014- 5-31 done - svn #3567
 
  134 2014- 5-28 ofaAccountSelect derives from ofaBaseDialog
      2014- 5-29 done - svn #3544

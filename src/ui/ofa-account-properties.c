@@ -256,7 +256,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.disp_code = TRUE;
 	parms.disp_label = TRUE;
 	parms.pfn = ( ofaDeviseComboCb ) on_devise_changed;
-	parms.user_data = dialog;
+	parms.user_data = self;
 	parms.initial_id = priv->devise;
 
 	ofa_devise_combo_init_dialog( &parms );
@@ -264,9 +264,9 @@ v_init_dialog( ofaBaseDialog *dialog )
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 
 	priv->w_root = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name(
-							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-root-account" ));
+							GTK_CONTAINER( dialog->prot->dialog ), "p1-root-account" ));
 	priv->w_detail = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name(
-							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-detail-account" ));
+							GTK_CONTAINER( dialog->prot->dialog ), "p1-detail-account" ));
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->w_root ), FALSE );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->w_detail ), FALSE );
 
@@ -303,11 +303,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 	set_ecr_num( self, &priv->bro_cre_ecr, ofo_account_get_bro_cre_ecr, "p2-bro-cre-ecr" );
 	set_ecr_date( self, &priv->bro_cre_date, ofo_account_get_bro_cre_date, "p2-bro-cre-date" );
 
-	my_utils_init_notes_ex2( account );
-
-	if( !priv->is_new ){
-		my_utils_init_maj_user_stamp_ex2( account );
-	}
+	my_utils_init_notes_ex( dialog->prot->dialog, account );
+	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, account );
 
 	check_for_enable_dlg( OFA_ACCOUNT_PROPERTIES( dialog ));
 }
@@ -492,29 +489,31 @@ v_quit_on_ok( ofaBaseDialog *dialog )
 static gboolean
 do_update( ofaAccountProperties *self )
 {
+	ofaAccountPropertiesPrivate *priv;
 	gchar *prev_number;
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
+	priv = self->private;
 	prev_number = g_strdup( ofo_account_get_number( self->private->account ));
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 
-	ofo_account_set_number( self->private->account, self->private->number );
-	ofo_account_set_label( self->private->account, self->private->label );
-	ofo_account_set_type( self->private->account, self->private->type );
-	ofo_account_set_devise( self->private->account, self->private->devise );
-	my_utils_getback_notes_ex2( account );
+	ofo_account_set_number( priv->account, priv->number );
+	ofo_account_set_label( priv->account, priv->label );
+	ofo_account_set_type( priv->account, priv->type );
+	ofo_account_set_devise( priv->account, priv->devise );
+	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, account );
 
-	if( self->private->is_new ){
-		self->private->updated =
-				ofo_account_insert( self->private->account, dossier );
+	if( priv->is_new ){
+		priv->updated =
+				ofo_account_insert( priv->account, dossier );
 	} else {
-		self->private->updated =
-				ofo_account_update( self->private->account, dossier, prev_number );
+		priv->updated =
+				ofo_account_update( priv->account, dossier, prev_number );
 	}
 
 	g_free( prev_number );
 
-	return( self->private->updated );
+	return( priv->updated );
 }

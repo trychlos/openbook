@@ -64,27 +64,26 @@ void           my_utils_entry_set_valid    ( GtkEntry *entry, gboolean valid );
 GtkWidget     *my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name );
 GtkWidget     *my_utils_container_get_child_by_type( GtkContainer *container, GType type );
 
-void           my_utils_init_notes         ( GtkContainer *container, const gchar *widget_name, const gchar *notes );
+void           my_utils_init_notes         ( GtkContainer *container,
+												const gchar *widget_name,
+												const gchar *notes );
 
-#define        my_utils_init_notes_ex( T )    my_utils_init_notes( GTK_CONTAINER( self->private->dialog ), "pn-notes", ofo_ ## T ## _get_notes( self->private->T))
+#define        my_utils_init_notes_ex( C,T ) my_utils_init_notes( GTK_CONTAINER(C),"pn-notes", ofo_ ## T ## _get_notes( priv->T))
 
-#define        my_utils_init_notes_ex2( T )   my_utils_init_notes( GTK_CONTAINER( dialog->prot->dialog ), "pn-notes", ofo_ ## T ## _get_notes( self->private->T))
+#define        my_utils_getback_notes_ex( C,T ) GtkTextView *text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( \
+												GTK_CONTAINER( C ), "pn-notes" )); GtkTextBuffer *buffer = gtk_text_view_get_buffer( text ); \
+												GtkTextIter start, end; gtk_text_buffer_get_start_iter( buffer, &start ); \
+												gtk_text_buffer_get_end_iter( buffer, &end ); gchar *notes = gtk_text_buffer_get_text( \
+												buffer, &start, &end, TRUE ); ofo_ ## T ## _set_notes( priv->T, notes ); g_free( notes );
 
-#define        my_utils_getback_notes_ex( T ) GtkTextView *text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->dialog ), "pn-notes" )); \
-												GtkTextBuffer *buffer = gtk_text_view_get_buffer( text ); GtkTextIter start, end; gtk_text_buffer_get_start_iter( buffer, &start ); \
-												gtk_text_buffer_get_end_iter( buffer, &end ); gchar *notes; notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE ); \
-												ofo_ ## T ## _set_notes( self->private->T, notes ); g_free( notes );
+void           my_utils_init_maj_user_stamp( GtkContainer *container,
+												const gchar *label_name,
+												const GTimeVal *stamp,
+												const gchar *user );
 
-#define        my_utils_getback_notes_ex2( T ) GtkTextView *text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( GTK_CONTAINER( OFA_BASE_DIALOG(self)->prot->dialog ), "pn-notes" )); \
-												GtkTextBuffer *buffer = gtk_text_view_get_buffer( text ); GtkTextIter start, end; gtk_text_buffer_get_start_iter( buffer, &start ); \
-												gtk_text_buffer_get_end_iter( buffer, &end ); gchar *notes; notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE ); \
-												ofo_ ## T ## _set_notes( self->private->T, notes ); g_free( notes );
-
-void           my_utils_init_maj_user_stamp( GtkContainer *container, const gchar *label_name, const GTimeVal *stamp, const gchar *user );
-
-#define        my_utils_init_maj_user_stamp_ex( T ) my_utils_init_maj_user_stamp( GTK_CONTAINER( self->private->dialog ), "px-last-update", ofo_ ## T ## _get_maj_stamp( self->private->T ), ofo_ ## T ## _get_maj_user( self->private->T ))
-
-#define        my_utils_init_maj_user_stamp_ex2( T ) my_utils_init_maj_user_stamp( GTK_CONTAINER( dialog->prot->dialog ), "px-last-update", ofo_ ## T ## _get_maj_stamp( self->private->T ), ofo_ ## T ## _get_maj_user( self->private->T ))
+#define        my_utils_init_maj_user_stamp_ex( C,T ) if( !priv->is_new ){ my_utils_init_maj_user_stamp( \
+														GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_maj_stamp( priv->T ), \
+														ofo_ ## T ## _get_maj_user( priv->T )); }
 
 G_END_DECLS
 

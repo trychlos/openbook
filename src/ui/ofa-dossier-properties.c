@@ -44,6 +44,7 @@ struct _ofaDossierPropertiesPrivate {
 	/* internals
 	 */
 	ofoDossier    *dossier;
+	gboolean       is_new;
 	gboolean       updated;
 
 	/* data
@@ -167,19 +168,19 @@ ofa_dossier_properties_run( ofaMainWindow *main_window, ofoDossier *dossier )
 static void
 v_init_dialog( ofaBaseDialog *dialog )
 {
-	ofaDossierProperties *self;
 	ofaDossierPropertiesPrivate *priv;
 	GtkEntry *entry;
 	gchar *str;
 
-	self = OFA_DOSSIER_PROPERTIES( dialog );
-	priv = self->private;
+	priv = OFA_DOSSIER_PROPERTIES( dialog )->private;
 
 	priv->label = g_strdup( ofo_dossier_get_label( priv->dossier ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( dialog->prot->dialog ), "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
+	} else {
+		priv->is_new = TRUE;
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
@@ -195,10 +196,10 @@ v_init_dialog( ofaBaseDialog *dialog )
 	g_free( str );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_duree_changed ), dialog );
 
-	my_utils_init_notes_ex2( dossier );
-	my_utils_init_maj_user_stamp_ex2( dossier );
+	my_utils_init_notes_ex( dialog->prot->dialog, dossier );
+	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, dossier );
 
-	check_for_enable_dlg( self );
+	check_for_enable_dlg( OFA_DOSSIER_PROPERTIES( dialog ));
 }
 
 static void
@@ -249,15 +250,18 @@ v_quit_on_ok( ofaBaseDialog *dialog )
 static gboolean
 do_update( ofaDossierProperties *self )
 {
+	ofaDossierPropertiesPrivate *priv;
+
 	g_return_val_if_fail(
 			ofo_dossier_is_valid( self->private->label, self->private->duree ), FALSE );
 
-	ofo_dossier_set_label( self->private->dossier, self->private->label );
-	ofo_dossier_set_exercice_length( self->private->dossier, self->private->duree );
+	priv = self->private;
 
-	my_utils_getback_notes_ex2( dossier );
+	ofo_dossier_set_label( priv->dossier, priv->label );
+	ofo_dossier_set_exercice_length( priv->dossier, priv->duree );
+	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, dossier );
 
-	self->private->updated = ofo_dossier_update( self->private->dossier );
+	priv->updated = ofo_dossier_update( priv->dossier );
 
-	return( self->private->updated );
+	return( priv->updated );
 }

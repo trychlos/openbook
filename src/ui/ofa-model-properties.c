@@ -289,14 +289,10 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	init_dialog_journal_locked( self );
 
-	my_utils_init_notes_ex2( model );
-
-	if( !priv->is_new ){
-		my_utils_init_maj_user_stamp_ex2( model );
-	}
+	my_utils_init_notes_ex( dialog->prot->dialog, model );
+	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, model );
 
 	init_dialog_detail( self );
-
 	check_for_enable_dlg( self );
 }
 
@@ -793,6 +789,7 @@ v_quit_on_ok( ofaBaseDialog *dialog )
 static gboolean
 do_update( ofaModelProperties *self )
 {
+	ofaModelPropertiesPrivate *priv;
 	gchar *prev_mnemo;
 	ofoDossier *dossier;
 	gint i;
@@ -800,33 +797,35 @@ do_update( ofaModelProperties *self )
 	prev_mnemo = g_strdup( ofo_model_get_mnemo( self->private->model ));
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
+	priv = self->private;
+
 	/* le nouveau mnemo n'est pas encore utilisé,
 	 * ou bien il est déjà utilisé par ce même model (n'a pas été modifié)
 	 */
-	ofo_model_set_mnemo( self->private->model, self->private->mnemo );
-	ofo_model_set_label( self->private->model, self->private->label );
-	ofo_model_set_journal( self->private->model, self->private->journal );
-	ofo_model_set_journal_locked( self->private->model, self->private->journal_locked );
-	my_utils_getback_notes_ex2( model );
+	ofo_model_set_mnemo( priv->model, priv->mnemo );
+	ofo_model_set_label( priv->model, priv->label );
+	ofo_model_set_journal( priv->model, priv->journal );
+	ofo_model_set_journal_locked( priv->model, priv->journal_locked );
+	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, model );
 
-	ofo_model_free_detail_all( self->private->model );
-	for( i=1 ; i<=self->private->count ; ++i ){
+	ofo_model_free_detail_all( priv->model );
+	for( i=1 ; i<=priv->count ; ++i ){
 		get_detail_list( self, i );
 	}
 
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 
 	if( !prev_mnemo ){
-		self->private->updated =
-				ofo_model_insert( self->private->model, dossier );
+		priv->updated =
+				ofo_model_insert( priv->model, dossier );
 	} else {
-		self->private->updated =
-				ofo_model_update( self->private->model, dossier, prev_mnemo );
+		priv->updated =
+				ofo_model_update( priv->model, dossier, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );
 
-	return( self->private->updated );
+	return( priv->updated );
 }
 
 static void

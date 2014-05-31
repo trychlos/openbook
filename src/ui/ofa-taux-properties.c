@@ -253,11 +253,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 		insert_new_row( self, idx );
 	}
 
-	my_utils_init_notes_ex2( taux );
-
-	if( !priv->is_new ){
-		my_utils_init_maj_user_stamp_ex2( taux );
-	}
+	my_utils_init_notes_ex( dialog->prot->dialog, taux );
+	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, taux );
 
 	check_for_enable_dlg( self );
 }
@@ -620,14 +617,13 @@ do_update( ofaTauxProperties *self )
 
 	priv = self->private;
 
-	ofo_taux_set_mnemo( self->private->taux, self->private->mnemo );
-	ofo_taux_set_label( self->private->taux, self->private->label );
+	ofo_taux_set_mnemo( priv->taux, priv->mnemo );
+	ofo_taux_set_label( priv->taux, priv->label );
+	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, taux );
 
-	my_utils_getback_notes_ex2( taux );
+	ofo_taux_free_val_all( priv->taux );
 
-	ofo_taux_free_val_all( self->private->taux );
-
-	for( i=1 ; i<=self->private->count ; ++i ){
+	for( i=1 ; i<=priv->count ; ++i ){
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, i ));
 		sbegin = gtk_entry_get_text( entry );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_END, i ));
@@ -638,19 +634,19 @@ do_update( ofaTauxProperties *self )
 			( send && g_utf8_strlen( send, -1 )) ||
 			( srate && g_utf8_strlen( srate, -1 ))){
 
-			ofo_taux_add_val( self->private->taux, sbegin, send, srate );
+			ofo_taux_add_val( priv->taux, sbegin, send, srate );
 		}
 	}
 
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 
-	if( self->private->id == -1 ){
-		self->private->updated =
-				ofo_taux_insert( self->private->taux, dossier );
+	if( priv->id == -1 ){
+		priv->updated =
+				ofo_taux_insert( priv->taux, dossier );
 	} else {
-		self->private->updated =
-				ofo_taux_update( self->private->taux, dossier );
+		priv->updated =
+				ofo_taux_update( priv->taux, dossier );
 	}
 
-	return( self->private->updated );
+	return( priv->updated );
 }

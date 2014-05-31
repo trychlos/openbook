@@ -384,10 +384,12 @@ my_utils_container_get_child_by_type( GtkContainer *container, GType type )
 
 /**
  * my_utils_init_notes:
+ *
+ * This function is mostly used though the "my_utils_init_notes_ex()"
+ * macro.
  */
 void
-my_utils_init_notes( GtkContainer *container,
-								const gchar *widget_name, const gchar *notes )
+my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gchar *notes )
 {
 	GtkTextView *text;
 	GtkTextBuffer *buffer;
@@ -402,6 +404,9 @@ my_utils_init_notes( GtkContainer *container,
 
 /**
  * my_utils_init_maj_user_stamp:
+ *
+ * This function is mostly used though the
+ * "my_utils_init_maj_user_stamp_ex()" macro.
  */
 void
 my_utils_init_maj_user_stamp( GtkContainer *container,
