@@ -430,6 +430,65 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 	g_free( query );
 
 	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_CLASSES ("
+			"	CLA_NUMBER       INTEGER     NOT NULL UNIQUE   COMMENT 'Class number',"
+			"	CLA_LABEL        VARCHAR(80) NOT NULL          COMMENT 'Class label',"
+			"	CLA_NOTES        VARCHAR(512)                  COMMENT 'Class notes',"
+			"	CLA_MAJ_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
+			"	CLA_MAJ_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_CLASSES "
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (1,'Comptes de capitaux')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_CLASSES "
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (2,'Comptes d\\'immobilisations')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_CLASSES "
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (3,'Comptes de stocks et en-cours')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_CLASSES "
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (4,'Comptes de tiers')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_CLASSES "
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (5,'Comptes financiers')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_CLASSES "
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (6,'Comptes de charges')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_CLASSES "
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (7,'Comptes de produits')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_CLASSES "
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (8,'Comptes spéciaux')" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
 			"	CPT_NUMBER       VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
 			"	CPT_LABEL        VARCHAR(80)   NOT NULL        COMMENT 'Account label',"
@@ -467,15 +526,11 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 		return( FALSE );
 	}
 
-	query = g_strdup(
+	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_DEVISES "
-			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES "
-			"	('EUR','Euro','€')" );
-	if( !ofo_sgbd_query( sgbd, query )){
-		g_free( query );
+			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES ('EUR','Euro','€')" )){
 		return( FALSE );
 	}
-	g_free( query );
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
@@ -490,13 +545,10 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 		return( FALSE );
 	}
 
-	query = g_strdup(
-			"INSERT IGNORE INTO OFA_T_DOSSIER (DOS_ID) VALUE (1)" );
-	if( !ofo_sgbd_query( sgbd, query )){
-		g_free( query );
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_DOSSIER (DOS_ID) VALUE (1)" )){
 		return( FALSE );
 	}
-	g_free( query );
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_EXE ("
@@ -511,13 +563,11 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 		return( FALSE );
 	}
 
-	query = g_strdup(
-			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE (DOS_ID,DOS_EXE_ID,DOS_EXE_STATUS) VALUE (1,1,1)" );
-	if( !ofo_sgbd_query( sgbd, query )){
-		g_free( query );
+	if( !ofo_sgbd_query( sgbd,
+			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE "
+			"	(DOS_ID,DOS_EXE_ID,DOS_EXE_STATUS) VALUE (1,1,1)" )){
 		return( FALSE );
 	}
-	g_free( query );
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ECRITURES ("
