@@ -53,6 +53,7 @@ struct _ofoDossierPrivate {
 	 */
 	gchar    *label;					/* raison sociale */
 	gint      duree_exe;				/* exercice length (in month) */
+	gint      devise;
 	gchar    *notes;					/* notes */
 	gchar    *maj_user;
 	GTimeVal  maj_stamp;
@@ -482,6 +483,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
 			"	DOS_NOTES        VARCHAR(512)                 COMMENT 'Notes',"
 			"	DOS_DUREE_EXE    INTEGER                      COMMENT 'Exercice length in month',"
+			"	DOS_DEV_ID       INTEGER                      COMMENT 'Default currency identifier',"
 			"	DOS_MAJ_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
 			"	DOS_MAJ_STAMP    TIMESTAMP NOT NULL           COMMENT 'Properties last update timestamp'"
 			")" )){
@@ -762,6 +764,24 @@ ofo_dossier_get_exercice_length( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_default_devise:
+ *
+ * Returns: the default currency of the dossier.
+ */
+gint
+ofo_dossier_get_default_devise( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), OFO_BASE_UNSET_ID );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->private->devise );
+	}
+
+	return( OFO_BASE_UNSET_ID );
+}
+
+/**
  * ofo_dossier_get_notes:
  *
  * Returns: the notes attached to the dossier.
@@ -1003,6 +1023,20 @@ ofo_dossier_set_exercice_length( ofoDossier *dossier, gint duree )
 }
 
 /**
+ * ofo_dossier_set_default_devise:
+ */
+void
+ofo_dossier_set_default_devise( ofoDossier *dossier, gint dev )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		dossier->private->devise = dev;
+	}
+}
+
+/**
  * ofo_dossier_set_notes:
  */
 void
@@ -1144,7 +1178,7 @@ dossier_read_properties( ofoDossier *dossier )
 	ok = FALSE;
 
 	query = g_strdup_printf(
-			"SELECT DOS_LABEL,DOS_DUREE_EXE,DOS_NOTES,"
+			"SELECT DOS_LABEL,DOS_DUREE_EXE,DOS_NOTES,DOS_DEV_ID,"
 			"	DOS_MAJ_USER,DOS_MAJ_STAMP "
 			"	FROM OFA_T_DOSSIER "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
@@ -1159,6 +1193,10 @@ dossier_read_properties( ofoDossier *dossier )
 		icol = icol->next;
 		if( icol->data ){
 			ofo_dossier_set_exercice_length( dossier, atoi(( gchar * ) icol->data ));
+		}
+		icol = icol->next;
+		if( icol->data ){
+			ofo_dossier_set_default_devise( dossier, atoi(( gchar * ) icol->data ));
 		}
 		icol = icol->next;
 		ofo_dossier_set_notes( dossier, ( gchar * ) icol->data );
@@ -1246,9 +1284,10 @@ dossier_do_update( ofoDossier *dossier, ofoSgbd *sgbd, const gchar *user )
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
 
 	g_string_append_printf( query,
-			"	DOS_LABEL='%s',DOS_DUREE_EXE=%d,",
+			"	DOS_LABEL='%s',DOS_DUREE_EXE=%d,DOS_DEV_ID=%d,",
 					label,
-					ofo_dossier_get_exercice_length( dossier ));
+					ofo_dossier_get_exercice_length( dossier ),
+					ofo_dossier_get_default_devise( dossier ));
 
 	if( notes && g_utf8_strlen( notes, -1 )){
 		g_string_append_printf( query, "DOS_NOTES='%s',", notes );

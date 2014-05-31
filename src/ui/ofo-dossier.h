@@ -84,6 +84,7 @@ ofoSgbd        *ofo_dossier_get_sgbd                ( const ofoDossier *dossier 
 
 const gchar    *ofo_dossier_get_label               ( const ofoDossier *dossier );
 gint            ofo_dossier_get_exercice_length     ( const ofoDossier *dossier );
+gint            ofo_dossier_get_default_devise      ( const ofoDossier *dossier );
 const gchar    *ofo_dossier_get_notes               ( const ofoDossier *dossier );
 const gchar    *ofo_dossier_get_maj_user            ( const ofoDossier *dossier );
 const GTimeVal *ofo_dossier_get_maj_stamp           ( const ofoDossier *dossier );
@@ -100,6 +101,7 @@ gboolean        ofo_dossier_is_valid                ( const gchar *label, gint d
 
 void            ofo_dossier_set_label               ( ofoDossier *dossier, const gchar *label );
 void            ofo_dossier_set_exercice_length     ( ofoDossier *dossier, gint duree );
+void            ofo_dossier_set_default_devise      ( ofoDossier *dossier, gint id );
 void            ofo_dossier_set_notes               ( ofoDossier *dossier, const gchar *notes );
 void            ofo_dossier_set_maj_user            ( ofoDossier *dossier, const gchar *user );
 void            ofo_dossier_set_maj_stamp           ( ofoDossier *dossier, const GTimeVal *stamp );

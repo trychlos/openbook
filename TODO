@@ -170,11 +170,6 @@
  130 2014- 5-28 do not delete an account which has an account_exe archive
                 detail record, but set a 'deleted' flag
 
- 132 2014- 5-28 remove my_utils_init_notes_ex and 
-                my_utils_init_maj_user_stamp_ex as they should be no 
-                more used when all dialog box will be derived from 
-                ofaBseDialog
-
  146
 
 -----------------------------------------------------------------------
@@ -488,6 +483,12 @@
 
  131 2014- 5-28 have a currency combo box convenience class
      2014- 5-31 done - svn #3566
+
+ 132 2014- 5-28 remove my_utils_init_notes_ex and 
+                my_utils_init_maj_user_stamp_ex as they should be no 
+                more used when all dialog box will be derived from 
+                ofaBseDialog
+     2014- 5-31 done - svn #3568
 
  133 2014- 5-28 ofaAccountProperties makes use of ofaDeviseCombo
      2014- 5-31 done - svn #3567
