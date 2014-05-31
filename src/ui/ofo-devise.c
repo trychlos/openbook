@@ -420,7 +420,8 @@ ofo_devise_is_deletable( const ofoDevise *devise )
 
 		dossier = OFO_DOSSIER( st_global->dossier );
 
-		return( !ofo_entry_use_devise( dossier, ofo_devise_get_id( devise )) &&
+		return( !ofo_dossier_use_devise( dossier, ofo_devise_get_id( devise )) &&
+				!ofo_entry_use_devise( dossier, ofo_devise_get_id( devise )) &&
 				!ofo_journal_use_devise( dossier, ofo_devise_get_id( devise )) &&
 				!ofo_account_use_devise( dossier, ofo_devise_get_id( devise )));
 	}

@@ -82,6 +82,8 @@ const gchar    *ofo_dossier_get_name                ( const ofoDossier *dossier 
 const gchar    *ofo_dossier_get_user                ( const ofoDossier *dossier );
 const ofoSgbd  *ofo_dossier_get_sgbd                ( const ofoDossier *dossier );
 
+gboolean        ofo_dossier_use_devise              ( const ofoDossier *dossier, gint devise );
+
 const gchar    *ofo_dossier_get_label               ( const ofoDossier *dossier );
 gint            ofo_dossier_get_exercice_length     ( const ofoDossier *dossier );
 gint            ofo_dossier_get_default_devise      ( const ofoDossier *dossier );

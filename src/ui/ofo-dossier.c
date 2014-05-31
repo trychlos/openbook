@@ -728,6 +728,25 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_use_devise:
+ *
+ * Returns: %TRUE if the dossier makes use of this currency, thus
+ * preventing its deletion.
+ */
+gboolean
+ofo_dossier_use_devise( const ofoDossier *dossier, gint devise )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( ofo_dossier_get_default_devise( dossier ) == devise );
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofo_dossier_get_label:
  *
  * Returns: the label of the dossier.
