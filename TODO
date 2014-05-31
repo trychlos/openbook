@@ -170,8 +170,6 @@
  130 2014- 5-28 do not delete an account which has an account_exe archive
                 detail record, but set a 'deleted' flag
 
- 131 2014- 5-28 have a currency combo box convenience class
-
  132 2014- 5-28 remove my_utils_init_notes_ex and 
                 my_utils_init_maj_user_stamp_ex as they should be no 
                 more used when all dialog box will be derived from 
@@ -489,6 +487,9 @@
 
  127 2014- 5-28 ofaAccountNotebook: update amount accounts on new entry
      2014- 5-29 done - svn #3547
+
+ 131 2014- 5-28 have a currency combo box convenience class
+     2014- 5-31 done - svn #3566
 
  134 2014- 5-28 ofaAccountSelect derives from ofaBaseDialog
      2014- 5-29 done - svn #3544

@@ -99,7 +99,7 @@ typedef struct {
 	const gchar      *label_name;
 	gboolean          disp_code;
 	gboolean          disp_label;
-	ofaDeviseComboCb pfn;
+	ofaDeviseComboCb  pfn;
 	gpointer          user_data;
 	gint              initial_id;
 }
@@ -107,7 +107,7 @@ typedef struct {
 
 GType           ofa_devise_combo_get_type     ( void ) G_GNUC_CONST;
 
-ofaDeviseCombo *ofa_devise_combo_init_dialog  ( ofaDeviseComboParms *parms );
+ofaDeviseCombo *ofa_devise_combo_init_dialog  ( const ofaDeviseComboParms *parms );
 
 gint            ofa_devise_combo_get_selection( ofaDeviseCombo *self, gchar **code, gchar **label );
 

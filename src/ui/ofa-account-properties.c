@@ -33,6 +33,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
 #include "ui/ofa-account-properties.h"
+#include "ui/ofa-devise-combo.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofo-base.h"
 #include "ui/ofo-account.h"
@@ -78,15 +79,6 @@ struct _ofaAccountPropertiesPrivate {
 	GDate           bro_cre_date;
 };
 
-/* column ordering in the devise selection listview
- */
-enum {
-	COL_ID = 0,
-	COL_DEVISE,
-	COL_LABEL,
-	N_COLUMNS
-};
-
 typedef gdouble       ( *fnGetDouble )( const ofoAccount * );
 typedef gint          ( *fnGetInt )   ( const ofoAccount * );
 typedef const GDate * ( *fnGetDate )  ( const ofoAccount * );
@@ -102,7 +94,7 @@ static void      set_ecr_num( ofaAccountProperties *self, gint *num, fnGetInt fn
 static void      set_ecr_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar *wname );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
-static void      on_devise_changed( GtkComboBox *combo, ofaAccountProperties *self );
+static void      on_devise_changed( gint id, const gchar *code, const gchar *label, ofaAccountProperties *self );
 static void      on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void      on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *type );
@@ -223,13 +215,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	gchar *title;
 	const gchar *acc_number;
 	GtkEntry *entry;
-	GtkComboBox *combo;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gint i, idx;
-	GtkCellRenderer *text_cell;
-	ofoDossier *dossier;
-	GList *devset, *idev;
+	ofaDeviseComboParms parms;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
 	priv = self->private;
@@ -262,45 +248,18 @@ v_init_dialog( ofaBaseDialog *dialog )
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
 	priv->devise = ofo_account_get_devise( priv->account );
-	combo = GTK_COMBO_BOX( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( dialog->prot->dialog ), "p1-devise" ));
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING ));
-	gtk_combo_box_set_model( combo, tmodel );
-	g_object_unref( tmodel );
+	parms.dialog = dialog->prot->dialog;
+	parms.dossier = ofa_base_dialog_get_dossier( dialog );
+	parms.combo_name = "p1-devise";
+	parms.label_name = NULL;
+	parms.disp_code = TRUE;
+	parms.disp_label = TRUE;
+	parms.pfn = ( ofaDeviseComboCb ) on_devise_changed;
+	parms.user_data = dialog;
+	parms.initial_id = priv->devise;
 
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", COL_DEVISE );
-
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", COL_LABEL );
-
-	dossier = ofa_base_dialog_get_dossier( dialog );
-	devset = ofo_devise_get_dataset( dossier );
-
-	idx = OFO_BASE_UNSET_ID;
-	for( i=0, idev=devset ; idev ; ++i, idev=idev->next ){
-		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
-		gtk_list_store_set(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				COL_ID,     ofo_devise_get_id( OFO_DEVISE( idev->data )),
-				COL_DEVISE, ofo_devise_get_code( OFO_DEVISE( idev->data )),
-				COL_LABEL,  ofo_devise_get_label( OFO_DEVISE( idev->data )),
-				-1 );
-		if( priv->devise == ofo_devise_get_id( OFO_DEVISE( idev->data ))){
-			idx = i;
-		}
-	}
-	g_signal_connect(
-			G_OBJECT( combo ), "changed", G_CALLBACK( on_devise_changed ), dialog );
-	if( idx != OFO_BASE_UNSET_ID ){
-		gtk_combo_box_set_active( combo, idx );
-	}
+	ofa_devise_combo_init_dialog( &parms );
 
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 
@@ -418,18 +377,13 @@ on_label_changed( GtkEntry *entry, ofaAccountProperties *self )
 	check_for_enable_dlg( self );
 }
 
+/*
+ * ofaDeviseComboCb
+ */
 static void
-on_devise_changed( GtkComboBox *box, ofaAccountProperties *self )
+on_devise_changed( gint id, const gchar *code, const gchar *label, ofaAccountProperties *self )
 {
-	static const gchar *thisfn = "ofa_account_properties_on_devise_changed";
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-
-	if( gtk_combo_box_get_active_iter( box, &iter )){
-		tmodel = gtk_combo_box_get_model( box );
-		gtk_tree_model_get( tmodel, &iter, COL_ID, &self->private->devise, -1 );
-		g_debug( "%s: devise changed to id=%d", thisfn, self->private->devise );
-	}
+	self->private->devise = id;
 
 	check_for_enable_dlg( self );
 }
