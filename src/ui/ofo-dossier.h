@@ -97,7 +97,7 @@ gint            ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier 
 const GDate    *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );
 gint            ofo_dossier_get_next_entry_number   ( const ofoDossier *dossier );
 
-gboolean        ofo_dossier_is_valid                ( const gchar *label, gint duree );
+gboolean        ofo_dossier_is_valid                ( const gchar *label, gint duree, gint devise );
 
 void            ofo_dossier_set_label               ( ofoDossier *dossier, const gchar *label );
 void            ofo_dossier_set_exercice_length     ( ofoDossier *dossier, gint duree );

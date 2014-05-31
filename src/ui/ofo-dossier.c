@@ -986,9 +986,11 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
  * ofo_dossier_is_valid:
  */
 gboolean
-ofo_dossier_is_valid( const gchar *label, gint duree )
+ofo_dossier_is_valid( const gchar *label, gint duree, gint devise )
 {
-	return( label && g_utf8_strlen( label, -1 ) && duree > 0 );
+	return( label && g_utf8_strlen( label, -1 ) &&
+				duree > 0 &&
+				devise > 0 );
 }
 
 /**
