@@ -165,7 +165,23 @@
  130 2014- 5-28 do not delete an account which has an account_exe archive
                 detail record, but set a 'deleted' flag
 
- 146
+ 146 2014- 5-31 ImportAssistant::do_init_p3_confirm: remove the mnemonic
+                ('_') from the GtktoggleButton label when displaying it
+
+ 147 2014- 6- 2 ImportAssistant: keep the last folder and reselect it
+
+ 148 2014- 6- 2 ImportAssistant: selecting a folder shouldn't make the
+                page complete
+
+ 149 2014- 6- 2 ImportAssistant: double-clicking a file (or activating 
+                the current selection) should advance to the next page
+
+ 150 2014- 6- 2 Reconciliation: when entries have been fetched, set the
+                'label' title column to the account label
+
+ 151 2014- 6- 2 ofaImport::on_apply: to be written
+
+ 152
 
 -----------------------------------------------------------------------
  DONE

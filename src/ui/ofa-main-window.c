@@ -37,6 +37,7 @@
 #include "ui/ofa-devises-set.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-guided-input.h"
+#include "ui/ofa-import.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofa-models-set.h"
 #include "ui/ofa-rappro.h"
@@ -79,6 +80,7 @@ static void on_properties      ( GSimpleAction *action, GVariant *parameter, gpo
 static void on_close           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_guided      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_concil      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_import      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -91,6 +93,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "close",        on_close,            NULL, NULL, NULL },
 		{ "guided",       on_ope_guided,       NULL, NULL, NULL },
 		{ "concil",       on_ope_concil,       NULL, NULL, NULL },
+		{ "import",       on_ope_import,       NULL, NULL, NULL },
 		{ "accounts",     on_ref_accounts,     NULL, NULL, NULL },
 		{ "journals",     on_ref_journals,     NULL, NULL, NULL },
 		{ "models",       on_ref_models,       NULL, NULL, NULL },
@@ -120,7 +123,7 @@ enum {
 	THM_MODELS,
 	THM_TAUX,
 	THM_CONCIL,
-	THM_CLASSES
+	THM_CLASSES,
 };
 
 static sThemeDef st_theme_defs[] = {
@@ -804,6 +807,19 @@ on_ope_concil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CONCIL );
+}
+
+static void
+on_ope_import( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_import";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_import_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void

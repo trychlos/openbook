@@ -46,6 +46,9 @@ openbook_SOURCES = \
 	main.c												\
 	my-utils.c											\
 	my-utils.h											\
+	base-window.c										\
+	base-window.h										\
+	base-window-prot.h									\
 	ofa-account-notebook.c								\
 	ofa-account-notebook.h								\
 	ofa-account-properties.c							\
@@ -77,6 +80,11 @@ openbook_SOURCES = \
 	ofa-dossier-properties.h							\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
+	ofa-iimporter.c										\
+	ofa-import.c										\
+	ofa-import.h										\
+	ofa-importer.c										\
+	ofa-importer.h										\
 	ofa-journal-combo.c									\
 	ofa-journal-combo.h									\
 	ofa-journal-properties.c							\
@@ -110,6 +118,10 @@ openbook_SOURCES = \
 	ofo-base.h											\
 	ofo-base-def.h										\
 	ofo-base-prot.h										\
+	ofo-bat.c											\
+	ofo-bat.h											\
+	ofo-bat-line.c										\
+	ofo-bat-line.h										\
 	ofo-class.c											\
 	ofo-class.h											\
 	ofo-class-def.h										\
@@ -158,6 +170,7 @@ ui_files = \
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
 	ofa-guided-input.ui									\
+	ofa-import.ui										\
 	ofa-journal-properties.ui							\
 	ofa-model-properties.ui								\
 	ofa-taux-properties.ui								\

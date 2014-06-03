@@ -224,7 +224,7 @@ ofa_plugin_load_modules( void )
 void
 ofa_plugin_release_modules( void )
 {
-	static const gchar *thisfn = "ofa_plugins_release_modules";
+	static const gchar *thisfn = "ofa_plugin_release_modules";
 	ofaPlugin *plugin;
 	GList *imod;
 	GList *iobj;
@@ -455,13 +455,13 @@ ofa_plugin_get_extensions_for_type( GType type )
 }
 
 /*
- * ofa_plugin_free_extensions_list:
+ * ofa_plugin_free_extensions:
  * @extensions: a #GList as returned by #ofa_plugin_get_extensions_for_type().
  *
  * Free the previously returned list.
  */
 void
-ofa_plugin_free_extensions_list( GList *extensions )
+ofa_plugin_free_extensions( GList *extensions )
 {
 	g_list_foreach( extensions, ( GFunc ) g_object_unref, NULL );
 	g_list_free( extensions );

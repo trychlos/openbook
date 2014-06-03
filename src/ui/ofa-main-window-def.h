@@ -36,7 +36,7 @@
  * This class manages the main window.
  */
 
-#include <glib-object.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 

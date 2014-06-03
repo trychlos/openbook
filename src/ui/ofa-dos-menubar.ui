@@ -52,6 +52,12 @@
           <attribute name="action">win.concil</attribute>
         </item>
       </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_Import...</attribute>
+          <attribute name="action">win.import</attribute>
+        </item>
+      </section>
     </submenu>
     <submenu>
       <attribute name="label" translatable="yes">_References</attribute>

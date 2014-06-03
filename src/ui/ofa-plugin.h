@@ -96,7 +96,7 @@ gint     ofa_plugin_load_modules           ( void );
 void     ofa_plugin_release_modules        ( void );
 
 GList   *ofa_plugin_get_extensions_for_type( GType type );
-void     ofa_plugin_free_extensions_list   ( GList *extensions );
+void     ofa_plugin_free_extensions        ( GList *extensions );
 
 gboolean ofa_plugin_has_id                 ( ofaPlugin *module, const gchar *id );
 

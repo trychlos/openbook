@@ -282,6 +282,7 @@ account_load_dataset( void )
 		icol = icol->next;
 		if( icol->data ){
 			ofo_account_set_deb_mnt( account, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+			/*g_debug( "account: str='%s', amount=%lf", ( gchar * ) icol->data, ofo_account_get_deb_mnt( account ));*/
 		}
 		icol = icol->next;
 		if( icol->data ){

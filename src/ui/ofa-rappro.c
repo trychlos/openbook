@@ -33,6 +33,8 @@
 #include "ui/my-utils.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-importer.h"
+#include "ui/ofa-plugin.h"
 #include "ui/ofa-rappro.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-dossier.h"
@@ -54,9 +56,18 @@ struct _ofaRapproPrivate {
 	GtkEntry     *credit;
 };
 
+/* origin of a row in the treeview:
+ *  from the entries table, or from an imported bank account transaction list
+ */
+enum {
+	FROM_ENTRIES = 1,
+	FROM_BAT
+};
+
 /* column ordering in the main entries listview
  */
 enum {
+	COL_FROM,				/* from the entries or from a bank account transaction */
 	COL_DOPE,
 	COL_PIECE,
 	COL_NUMBER,
@@ -68,7 +79,8 @@ enum {
 	N_COLUMNS
 };
 
-/* columns in the combo box
+/* columns in the combo box which let us select which type of entries
+ * are displayed
  */
 enum {
 	ENT_COL_CODE = 0,
@@ -110,6 +122,7 @@ static void       check_for_enable_fetch( ofaRappro *self );
 static gboolean   is_fetch_enableable( ofaRappro *self, ofoAccount **account, gint *mode );
 static void       on_fetch_button_clicked( GtkButton *button, ofaRappro *self );
 static void       do_fetch( ofaRappro *self );
+static void       on_file_set( GtkFileChooserButton *button, ofaRappro *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
 static void       toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path );
 static void       on_row_selected( GtkTreeSelection *selection, ofaRappro *self );
@@ -336,6 +349,7 @@ setup_rappro( ofaMainPage *page )
 	GtkGrid *grid;
 	GtkLabel *label;
 	gchar *markup;
+	GtkWidget *button;
 
 	priv = OFA_RAPPRO( page )->private;
 
@@ -368,6 +382,10 @@ setup_rappro( ofaMainPage *page )
 	gtk_label_set_mnemonic_widget( label, GTK_WIDGET( priv->concil ));
 	gtk_grid_attach( grid, GTK_WIDGET( priv->concil ), 1, 0, 1, 1 );
 
+	button = gtk_file_chooser_button_new( _( "Browse "), GTK_FILE_CHOOSER_ACTION_OPEN );
+	gtk_grid_attach( grid, GTK_WIDGET( button ), 2, 0, 1, 1 );
+	g_signal_connect( G_OBJECT( button ), "file-set", G_CALLBACK( on_file_set ), page );
+
 	return( GTK_WIDGET( frame ));
 }
 
@@ -397,6 +415,7 @@ setup_treeview( ofaMainPage *page )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
+			G_TYPE_INT,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,
 			G_TYPE_STRING,
 			G_TYPE_STRING, G_TYPE_STRING,
@@ -739,6 +758,7 @@ do_fetch( ofaRappro *self )
 				GTK_LIST_STORE( tmodel ),
 				&iter,
 				-1,
+				COL_FROM,   FROM_ENTRIES,
 				COL_DOPE,   dope,
 				COL_PIECE,  ofo_entry_get_ref( entry ),
 				COL_LABEL,  ofo_entry_get_label( entry ),
@@ -750,6 +770,21 @@ do_fetch( ofaRappro *self )
 	}
 
 	ofo_entry_free_dataset( entries );
+}
+
+/*
+ * try to import a bank account transaction list
+ */
+static void
+on_file_set( GtkFileChooserButton *button, ofaRappro *self )
+{
+	gint bat_id;
+
+	bat_id = ofa_importer_import_from_uri(
+					ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )),
+					gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button )));
+
+	g_debug( "bat_id=%d", bat_id );
 }
 
 static void

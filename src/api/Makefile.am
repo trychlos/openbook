@@ -26,4 +26,6 @@ api_includedir = $(pkgincludedir)
 
 api_include_HEADERS = \
 	ofa-extension.h						\
+	\
+	ofa-iimporter.h						\
 	$(NULL)

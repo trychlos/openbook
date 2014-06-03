@@ -110,6 +110,7 @@ AC_CONFIG_FILES([
 	po/Makefile.in
 	src/Makefile
 	src/api/Makefile
+	src/import1/Makefile
 	src/ui/Makefile
 ])
 

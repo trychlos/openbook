@@ -430,6 +430,41 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 	g_free( query );
 
 	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
+			"	BAT_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern import identifier',"
+			"	BAT_URI       VARCHAR(128)                COMMENT 'Imported URI',"
+			"	BAT_FORMAT    VARCHAR(80)                 COMMENT 'Identified file format',"
+			"	BAT_COUNT     INTEGER                     COMMENT 'Imported lines count',"
+			"	BAT_BEGIN     DATE                        COMMENT 'Begin date of the transaction list',"
+			"	BAT_END       DATE                        COMMENT 'End date of the transaction list',"
+			"	BAT_RIB       VARCHAR(80)                 COMMENT 'Bank provided RIB',"
+			"	BAT_DEVISE    VARCHAR(3)                  COMMENT 'Account currency',"
+			"	BAT_SOLDE     DECIMAL(15,5)               COMMENT 'Signed balance of the account',"
+			"	BAT_NOTES     VARCHAR(512)                COMMENT 'Import notes',"
+			"	BAT_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of import',"
+			"	BAT_MAJ_STAMP TIMESTAMP                   COMMENT 'Import timestamp'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
+			"	BAT_ID             INTEGER  NOT NULL      COMMENT 'Intern import identifier',"
+			"	BAT_LINE_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern imported line identifier',"
+			"	BAT_LINE_VALEUR    DATE                   COMMENT 'Effect date',"
+			"	BAT_LINE_OPE       DATE                   COMMENT 'Operation date',"
+			"	BAT_LINE_REF       VARCHAR(80)            COMMENT 'Bank reference',"
+			"	BAT_LINE_LABEL     VARCHAR(80)            COMMENT 'Line label',"
+			"	BAT_LINE_DEVISE    VARCHAR(3)             COMMENT 'Line currency',"
+			"	BAT_LINE_MONTANT   DECIMAL(15,5)          COMMENT 'Signed amount of the line',"
+			"	BAT_LINE_ECR       INTEGER                COMMENT 'Reciliated entry',"
+			"	BAT_LINE_MAJ_USER  VARCHAR(20)            COMMENT 'User responsible of the reconciliation',"
+			"	BAT_LINE_MAJ_STAMP TIMESTAMP              COMMENT 'Reconciliation timestamp'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CLASSES ("
 			"	CLA_NUMBER       INTEGER     NOT NULL UNIQUE   COMMENT 'Class number',"
 			"	CLA_LABEL        VARCHAR(80) NOT NULL          COMMENT 'Class label',"

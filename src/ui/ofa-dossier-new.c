@@ -741,7 +741,7 @@ check_for_p3_complete( ofaDossierNew *self )
 		gtk_label_set_text( label, content );
 		g_free( content );
 		if( !gdk_rgba_parse( &color, "#FF0000" )){
-			g_warning( "%s: unabel to parse color", thisfn );
+			g_warning( "%s: unable to parse color", thisfn );
 		}
 		gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
 	}

@@ -31,6 +31,8 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "ui/ofa-settings.h"
 
@@ -65,6 +67,7 @@ struct _ofaSettingsPrivate {
 	gchar     *kf_name;
 };
 
+#define GROUP_GENERAL             "General"
 #define GROUP_DOSSIER             "Dossier"
 
 GType ofa_settings_get_type( void ) G_GNUC_CONST;
@@ -76,6 +79,7 @@ G_DEFINE_TYPE( ofaSettings, ofa_settings, G_TYPE_OBJECT )
 static void     settings_new( void );
 static void     load_key_file( ofaSettings *settings );
 static gboolean write_key_file( ofaSettings *settings );
+static gchar  **string_to_array( const gchar *string );
 
 static void
 settings_finalize( GObject *object )
@@ -408,4 +412,96 @@ ofa_settings_set_dossier( const gchar *name, ... )
 	g_free( group );
 
 	return( write_key_file( st_settings ));
+}
+
+/**
+ * ofa_settings_get_uint_list:
+ *
+ * Returns a newly allocated GList of int, which should be
+ * g_list_free() by the caller.
+ */
+GList *
+ofa_settings_get_uint_list( const gchar *key )
+{
+	GList *list;
+	gchar *str;
+	gchar **array, **i;
+
+	list = NULL;
+
+	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
+
+	if( str && g_utf8_strlen( str, -1 )){
+		array = string_to_array( str );
+		if( array ){
+			i = ( gchar ** ) array;
+			while( *i ){
+				list = g_list_prepend( list, GINT_TO_POINTER( atoi( *i )));
+				i++;
+			}
+		}
+		g_strfreev( array );
+	}
+
+	g_free( str );
+
+	return( g_list_reverse( list ));
+}
+
+/**
+ * ofa_settings_set_uint_list:
+ */
+void
+ofa_settings_set_uint_list( const gchar *key, const GList *uint_list )
+{
+	GString *string;
+	const GList *it;
+
+	string = g_string_new( "" );
+	for( it = uint_list ; it ; it = it->next ){
+		g_string_append_printf( string, "%u;", GPOINTER_TO_UINT( it->data ));
+	}
+	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string->str );
+	g_string_free( string, TRUE );
+}
+
+/*
+ * converts a string to an array of strings
+ * accepts both:
+ * - a semi-comma-separated list of strings (the last separator, if any, is not counted)
+ * - a comma-separated list of strings between square brackets (à la GConf)
+ *
+ */
+static gchar **
+string_to_array( const gchar *string )
+{
+	gchar *sdup;
+	gchar **array;
+
+	array = NULL;
+
+	if( string && strlen( string )){
+		sdup = g_strstrip( g_strdup( string ));
+
+		/* GConf-style string list [value,value]
+		 */
+		if( sdup[0] == '[' && sdup[strlen(sdup)-1] == ']' ){
+			sdup[0] = ' ';
+			sdup[strlen(sdup)-1] = ' ';
+			sdup = g_strstrip( sdup );
+			array = g_strsplit( sdup, ",", -1 );
+
+		/* semi-comma-separated list of strings
+		 */
+		} else {
+			if( g_str_has_suffix( string, ";" )){
+				sdup[strlen(sdup)-1] = ' ';
+				sdup = g_strstrip( sdup );
+			}
+			array = g_strsplit( sdup, ";", -1 );
+		}
+		g_free( sdup );
+	}
+
+	return( array );
 }

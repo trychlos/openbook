@@ -24,5 +24,6 @@
 
 SUBDIRS = \
 	api									\
+	import1								\
 	ui									\
 	$(NULL)
