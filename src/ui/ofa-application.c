@@ -701,11 +701,9 @@ on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 static void
 on_version( ofaApplication *application )
 {
-#if 0
 	static const gchar *thisfn = "ofa_application_on_version";
 
-	g_debug( "%s: application=%p", application );
-#endif
+	g_warning( "%s: application=%p: TO BE WRITTEN", thisfn, application );
 }
 
 /**
