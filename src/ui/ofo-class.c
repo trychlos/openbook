@@ -409,7 +409,7 @@ ofo_class_set_maj_stamp( ofoClass *class, const GTimeVal *stamp )
  * ofo_class_update:
  */
 gboolean
-ofo_class_update( ofoClass *class, ofoDossier *dossier )
+ofo_class_update( ofoClass *class, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_class_update";
 

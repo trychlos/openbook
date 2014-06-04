@@ -65,7 +65,7 @@ void            ofo_class_set_notes    ( ofoClass *class, const gchar *notes );
 void            ofo_class_set_maj_user ( ofoClass *class, const gchar *user );
 void            ofo_class_set_maj_stamp( ofoClass *class, const GTimeVal *stamp );
 
-gboolean        ofo_class_update       ( ofoClass *class, ofoDossier *dossier );
+gboolean        ofo_class_update       ( ofoClass *class, const ofoDossier *dossier );
 
 G_END_DECLS
 
