@@ -32,8 +32,11 @@
  * @short_description: #ofaBatList class definition.
  * @include: ui/ofa-bat-list.h
  *
- * A convenience class which displays in a treeview the list of imported
- * Bank Account Transaction (BAT) lists.
+ * A convenience class which displays :
+ * - in a treeview, the list of imported Bank Account Transaction (BAT)
+ *   lists
+ * - in a notebook, the properties either of the currently selected
+ *   BAT file (if with tree view), or of the provided BAT file.
  */
 
 #include "ui/ofo-bat-def.h"
@@ -82,13 +85,20 @@ typedef void ( *ofaBatListCb )( const ofoBat *, gpointer );
  *
  * @container: the parent container of the target view
  * @dossier: the currently opened ofoDossier
- * @pfn: [allow-none]: a user-provided callback which will be triggered
- *  on each selection change
- * @user_data: user-data passed to the callback
+ * @with_tree_view: whether we have to manage the tree view, or not
+ *  (see e.g. ofaBatSelect vs. ofaBatProperties classes)
+ * @editable: whether user is allowed to edit the notes
+ * @pfnSelection: [allow-none]: a user-provided callback which will be
+ *  triggered on each selection change
+ * @pfnActivation: [allow-none]: a user-provided callback which will be
+ *  triggered on row activation (Enter key or double-clic)
+ * @user_data: user-data passed to the callback(s)
  */
 typedef struct {
 	GtkContainer     *container;
 	ofoDossier       *dossier;
+	gboolean          with_tree_view;
+	gboolean          editable;
 	ofaBatListCb      pfnSelection;
 	ofaBatListCb      pfnActivation;
 	gpointer          user_data;
@@ -98,6 +108,8 @@ typedef struct {
 GType         ofa_bat_list_get_type     ( void ) G_GNUC_CONST;
 
 ofaBatList   *ofa_bat_list_init_dialog  ( const ofaBatListParms *parms );
+
+void          ofa_bat_list_set_bat      ( const ofaBatList *self, const ofoBat *bat );
 
 const ofoBat *ofa_bat_list_get_selection( const ofaBatList *self );
 

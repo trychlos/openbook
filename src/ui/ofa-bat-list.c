@@ -45,6 +45,8 @@ struct _ofaBatListPrivate {
 	 */
 	GtkContainer    *container;
 	ofoDossier      *dossier;
+	gboolean         with_tree_view;
+	gboolean         editable;
 	ofaBatListCb     pfnSelection;
 	ofaBatListCb     pfnActivation;
 	gpointer         user_data;
@@ -53,6 +55,7 @@ struct _ofaBatListPrivate {
 	 */
 	GtkTreeView     *tview;					/* the BAT treeview */
 	GtkBox          *box;					/* the main container of the detail widgets */
+	GtkEntry        *id;
 	GtkEntry        *format;
 	GtkEntry        *count;
 	GtkEntry        *begin;
@@ -86,9 +89,10 @@ static void          setup_treeview( ofaBatList *self );
 static void          init_treeview( ofaBatList *self );
 static void          insert_new_row( ofaBatList *self, ofoBat *bat, gboolean with_selection );
 static void          setup_first_selection( ofaBatList *self );
+static void          set_editable_widgets( ofaBatList *self );
 static void          on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaBatList *self );
 static void          on_selection_changed( GtkTreeSelection *selection, ofaBatList *self );
-static void          setup_bat_properties( ofaBatList *self, const ofoBat *bat );
+static void          setup_bat_properties( const ofaBatList *self, const ofoBat *bat );
 static const ofoBat *get_selected_object( const ofaBatList *self, GtkTreeSelection *selection );
 
 static void
@@ -188,6 +192,8 @@ ofa_bat_list_init_dialog( const ofaBatListParms *parms )
 	/* parms data */
 	priv->container = parms->container;
 	priv->dossier = parms->dossier;
+	priv->with_tree_view = parms->with_tree_view;
+	priv->editable = parms->editable;
 	priv->pfnSelection = parms->pfnSelection;
 	priv->pfnActivation = parms->pfnActivation;
 	priv->user_data = parms->user_data;
@@ -197,9 +203,14 @@ ofa_bat_list_init_dialog( const ofaBatListParms *parms )
 
 	/* then initialize the dialog */
 	if( do_move_between_containers( self )){
-		setup_treeview( self );
-		init_treeview( self );
-		setup_first_selection( self );
+
+		if( priv->with_tree_view ){
+			setup_treeview( self );
+			init_treeview( self );
+			setup_first_selection( self );
+		}
+
+		set_editable_widgets( self );
 	}
 
 	return( self );
@@ -208,63 +219,72 @@ ofa_bat_list_init_dialog( const ofaBatListParms *parms )
 static gboolean
 do_move_between_containers( ofaBatList *self )
 {
+	ofaBatListPrivate *priv;
 	GtkWidget *window;
 	GtkWidget *tview;
 	GtkWidget *box;
 	GtkWidget *entry;
 
+	priv = self->private;
+
 	/* load our fake window */
 	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
 	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), FALSE );
 
-	/* identify our widgets */
-	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p0-treeview" );
-	g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), FALSE );
-	self->private->tview = GTK_TREE_VIEW( tview );
+	/* identify our main containers */
+	if( priv->with_tree_view ){
+		tview = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p0-treeview" );
+		g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), FALSE );
+		priv->tview = GTK_TREE_VIEW( tview );
+	}
 
 	box = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p0-box" );
 	g_return_val_if_fail( box && GTK_IS_BOX( box ), FALSE );
-	self->private->box = GTK_BOX( box );
+	priv->box = GTK_BOX( box );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p1-format" );
+	/* identifier the widgets for the properties */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-id" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	self->private->format = GTK_ENTRY( entry );
+	priv->id = GTK_ENTRY( entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p1-count" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-format" );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	priv->format = GTK_ENTRY( entry );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-count" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	gtk_entry_set_alignment( GTK_ENTRY( entry ), 1.0 );
-	self->private->count = GTK_ENTRY( entry );
+	priv->count = GTK_ENTRY( entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p1-begin" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-begin" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	self->private->begin = GTK_ENTRY( entry );
+	priv->begin = GTK_ENTRY( entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p1-end" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-end" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	self->private->end = GTK_ENTRY( entry );
+	priv->end = GTK_ENTRY( entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p1-rib" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-rib" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	self->private->rib = GTK_ENTRY( entry );
+	priv->rib = GTK_ENTRY( entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p1-devise" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-devise" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	self->private->devise = GTK_ENTRY( entry );
+	priv->devise = GTK_ENTRY( entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p1-solde" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-solde" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	self->private->solde = GTK_ENTRY( entry );
+	priv->solde = GTK_ENTRY( entry );
 
 	/* attach our grid container to the client's one */
-	box = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-box" );
+	if( priv->with_tree_view ){
+		box = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-box" );
+	} else {
+		box = GTK_WIDGET( priv->box );
+	}
 	g_return_val_if_fail( box && GTK_IS_BOX( box ), FALSE );
 
-	g_object_ref( box );
-	gtk_container_remove( GTK_CONTAINER( window ), box );
-	gtk_container_add( self->private->container, box );
-	g_object_unref( box );
-	/*gtk_widget_set_hexpand( GTK_WIDGET( box ), TRUE );
-	gtk_widget_set_vexpand( GTK_WIDGET( box ), TRUE );*/
+	gtk_widget_reparent( box, GTK_WIDGET( priv->container ));
 
 	return( TRUE );
 }
@@ -359,6 +379,19 @@ setup_first_selection( ofaBatList *self )
 	gtk_widget_grab_focus( GTK_WIDGET( self->private->tview ));
 }
 
+/*
+ * only notes are editable by the user
+ */
+static void
+set_editable_widgets( ofaBatList *self )
+{
+	GtkWidget *notes;
+
+	notes = my_utils_container_get_child_by_name( GTK_CONTAINER( self->private->box ), "pn-notes" );
+	g_return_if_fail( notes && GTK_IS_TEXT_VIEW( notes ));
+	gtk_widget_set_sensitive( notes, self->private->editable );
+}
+
 static void
 on_row_activated( GtkTreeView *tview,
 		GtkTreePath *path, GtkTreeViewColumn *column, ofaBatList *self )
@@ -388,7 +421,7 @@ on_selection_changed( GtkTreeSelection *selection, ofaBatList *self )
 }
 
 static void
-setup_bat_properties( ofaBatList *self, const ofoBat *bat )
+setup_bat_properties( const ofaBatList *self, const ofoBat *bat )
 {
 	ofaBatListPrivate *priv;
 	const gchar *conststr;
@@ -396,6 +429,10 @@ setup_bat_properties( ofaBatList *self, const ofoBat *bat )
 	const GDate *begin, *end;
 
 	priv = self->private;
+
+	str = g_strdup_printf( "%d", ofo_bat_get_id( bat ));
+	gtk_entry_set_text( priv->id, str );
+	g_free( str );
 
 	conststr = ofo_bat_get_format( bat );
 	if( conststr ){
@@ -470,6 +507,21 @@ get_selected_object( const ofaBatList *self, GtkTreeSelection *selection )
 	}
 
 	return( bat );
+}
+
+/**
+ * ofa_bat_list_set_bat:
+ */
+void
+ofa_bat_list_set_bat( const ofaBatList *self, const ofoBat *bat )
+{
+	g_return_if_fail( OFA_IS_BAT_LIST( self ));
+	g_return_if_fail( OFO_IS_BAT( bat ));
+
+	if( !self->private->dispose_has_run ){
+
+		setup_bat_properties( self, bat );
+	}
 }
 
 /**

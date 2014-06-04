@@ -61,6 +61,8 @@ const gchar    *ofo_bat_get_notes    ( const ofoBat *bat );
 const gchar    *ofo_bat_get_maj_user ( const ofoBat *bat );
 const GTimeVal *ofo_bat_get_maj_stamp( const ofoBat *bat );
 
+gboolean        ofo_bat_is_deletable ( const ofoBat *bat );
+
 void            ofo_bat_set_id       ( ofoBat *bat, gint id );
 void            ofo_bat_set_uri      ( ofoBat *bat, const gchar *uri );
 void            ofo_bat_set_format   ( ofoBat *bat, const gchar *format );
@@ -76,6 +78,8 @@ void            ofo_bat_set_maj_user ( ofoBat *bat, const gchar *user );
 void            ofo_bat_set_maj_stamp( ofoBat *bat, const GTimeVal *stamp );
 
 gboolean        ofo_bat_insert       ( ofoBat *bat, const ofoDossier *dossier );
+gboolean        ofo_bat_update       ( ofoBat *bat, const ofoDossier *dossier );
+gboolean        ofo_bat_delete       ( ofoBat *bat, const ofoDossier *dossier );
 
 G_END_DECLS
 

@@ -463,13 +463,21 @@ my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gc
 {
 	GtkTextView *text;
 	GtkTextBuffer *buffer;
+	gchar *str;
 
 	if( notes ){
-		text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( container, widget_name ));
-		buffer = gtk_text_buffer_new( NULL );
-		gtk_text_buffer_set_text( buffer, notes, -1 );
-		gtk_text_view_set_buffer( text, buffer );
+		str = g_strdup( notes );
+	} else {
+		str = g_strdup( "" );
 	}
+
+	text = GTK_TEXT_VIEW( my_utils_container_get_child_by_name( container, widget_name ));
+	buffer = gtk_text_buffer_new( NULL );
+	gtk_text_buffer_set_text( buffer, str, -1 );
+	gtk_text_view_set_buffer( text, buffer );
+
+	g_object_unref( buffer );
+	g_free( str );
 }
 
 /**

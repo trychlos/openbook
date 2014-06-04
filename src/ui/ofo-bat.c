@@ -68,6 +68,8 @@ static GList      *bat_load_dataset( void );
 static gboolean    bat_do_insert( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    bat_get_back_id( ofoBat *bat, const ofoSgbd *sgbd );
+static gboolean    bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    bat_do_delete( ofoBat *bat, const ofoSgbd *sgbd );
 static gint        bat_cmp_by_id( gint a, gint b );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
 
@@ -471,6 +473,23 @@ ofo_bat_get_maj_stamp( const ofoBat *bat )
 }
 
 /**
+ * ofo_bat_is_deletable:
+ */
+gboolean
+ofo_bat_is_deletable( const ofoBat *bat )
+{
+	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		return( TRUE );
+	}
+
+	g_assert_not_reached();
+	return( FALSE );
+}
+
+/**
  * ofo_bat_set_id:
  */
 void
@@ -816,6 +835,128 @@ bat_get_back_id( ofoBat *bat, const ofoSgbd *sgbd )
 		ofo_sgbd_free_result( result );
 		ok = TRUE;
 	}
+
+	return( ok );
+}
+
+/**
+ * ofo_bat_update:
+ */
+gboolean
+ofo_bat_update( ofoBat *bat, const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_bat_update";
+
+	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		g_debug( "%s: bat=%p, dossier=%p",
+				thisfn, ( void * ) bat, ( void * ) dossier );
+
+		OFO_BASE_SET_GLOBAL( st_global, dossier, bat );
+
+		if( bat_do_update(
+					bat,
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ))){
+
+			OFO_BASE_UPDATE_DATASET( st_global, bat );
+			return( TRUE );
+		}
+	}
+
+	g_assert_not_reached();
+	return( FALSE );
+}
+
+/*
+ * only notes may be updated
+ */
+static gboolean
+bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
+{
+	GString *query;
+	gchar *notes, *stamp;
+	gboolean ok;
+
+	ok = FALSE;
+	notes = my_utils_quote( ofo_bat_get_notes( bat ));
+	stamp = my_utils_timestamp();
+
+	query = g_string_new( "UPDATE OFA_T_BAT SET " );
+
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "BAT_NOTES='%s',", notes );
+	} else {
+		query = g_string_append( query, "BAT_NOTES=NULL," );
+	}
+
+	g_string_append_printf( query,
+			"	BAT_MAJ_USER='%s',BAT_MAJ_STAMP='%s'"
+			"	WHERE BAT_ID=%d", user, stamp, ofo_bat_get_id( bat ));
+
+	if( ofo_sgbd_query( sgbd, query->str )){
+
+		ofo_bat_set_maj_user( bat, user );
+		ofo_bat_set_maj_stamp( bat, my_utils_stamp_from_str( stamp ));
+		ok = TRUE;
+	}
+
+	g_string_free( query, TRUE );
+	g_free( notes );
+	g_free( stamp );
+
+	return( ok );
+}
+
+/**
+ * ofo_bat_delete:
+ */
+gboolean
+ofo_bat_delete( ofoBat *bat, const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_bat_delete";
+
+	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( ofo_bat_is_deletable( bat ), FALSE );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		g_debug( "%s: bat=%p, dossier=%p",
+				thisfn, ( void * ) bat, ( void * ) dossier );
+
+		OFO_BASE_SET_GLOBAL( st_global, dossier, bat );
+
+		if( bat_do_delete(
+					bat,
+					ofo_dossier_get_sgbd( dossier ))){
+
+			OFO_BASE_REMOVE_FROM_DATASET( st_global, bat );
+			return( TRUE );
+		}
+	}
+
+	g_assert_not_reached();
+	return( FALSE );
+}
+
+static gboolean
+bat_do_delete( ofoBat *bat, const ofoSgbd *sgbd )
+{
+	gchar *query;
+	gboolean ok;
+
+	query = g_strdup_printf(
+			"DELETE FROM OFA_T_BAT"
+			"	WHERE BAT_ID=%d",
+					ofo_bat_get_id( bat ));
+
+	ok = ofo_sgbd_query( sgbd, query );
+
+	g_free( query );
 
 	return( ok );
 }

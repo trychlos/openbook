@@ -182,15 +182,9 @@
 
  153 2014- 6- 3 import ofx/ofc files
 
- 154 2014- 6- 3 be able to re-use an already imported BAT (for the same
-                account) if we have been interrupted in a previous
-                session
-
  155 2014- 6- 3 GuidedInput: diff should be red
 
  156 2014- 6- 3 when selecting an account, do not allow root (or yes ?)
-
- 157 2014- 6- 4 BatList: the treeview doesn't vertically expand
 
  158 2014- 6- 4 do a coherency check (sgbd constraints, account and
                 journal balances, etc.)
@@ -567,6 +561,14 @@
  150 2014- 6- 2 Reconciliation: when entries have been fetched, set the
                 'label' title column to the account label
      2014- 6- 3 done
+
+ 154 2014- 6- 3 be able to re-use an already imported BAT (for the same
+                account) if we have been interrupted in a previous
+                session
+     2014- 6- 4 done - svn #3617
+
+ 157 2014- 6- 4 BatList: the treeview doesn't vertically expand
+     2014- 6- 4 done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

@@ -167,6 +167,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	parms.container = GTK_CONTAINER( container );
 	parms.dossier = ofa_base_dialog_get_dossier( dialog );
+	parms.with_tree_view = TRUE;
+	parms.editable = FALSE;
 	parms.pfnSelection = NULL;
 	parms.pfnActivation = ( ofaBatListCb ) on_row_activated;
 	parms.user_data = dialog;

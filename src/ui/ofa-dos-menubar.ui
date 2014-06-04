@@ -87,6 +87,12 @@
           <attribute name="action">win.classes</attribute>
         </item>
       </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">I_mported transaction files...</attribute>
+          <attribute name="action">win.batfiles</attribute>
+        </item>
+      </section>
     </submenu>
     <submenu>
       <attribute name="label" translatable="yes">_Aide</attribute>
