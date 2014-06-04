@@ -67,8 +67,7 @@ GType           ofo_bat_line_get_type     ( void ) G_GNUC_CONST;
 
 ofoBatLine     *ofo_bat_line_new          ( gint bat_id );
 
-/* this function does nothing and always returns NULL */
-GList          *ofo_bat_line_get_dataset  ( const ofoDossier *dossier );
+GList          *ofo_bat_line_get_dataset  ( const ofoDossier *dossier, gint bat_id );
 
 gint            ofo_bat_line_get_id       ( const ofoBatLine *batline );
 gint            ofo_bat_line_get_bat_id   ( const ofoBatLine *batline );
@@ -89,10 +88,12 @@ void            ofo_bat_line_set_ref      ( ofoBatLine *batline, const gchar *re
 void            ofo_bat_line_set_label    ( ofoBatLine *batline, const gchar *label );
 void            ofo_bat_line_set_currency ( ofoBatLine *batline, const gchar *currency );
 void            ofo_bat_line_set_montant  ( ofoBatLine *batline, gdouble montant );
+void            ofo_bat_line_set_ecr      ( ofoBatLine *batline, gint number );
 void            ofo_bat_line_set_maj_user ( ofoBatLine *batline, const gchar *user );
 void            ofo_bat_line_set_maj_stamp( ofoBatLine *batline, const GTimeVal *stamp );
 
 gboolean        ofo_bat_line_insert       ( ofoBatLine *batline, const ofoDossier *dossier );
+gboolean        ofo_bat_line_update       ( ofoBatLine *batline, const ofoDossier *dossier );
 
 G_END_DECLS
 

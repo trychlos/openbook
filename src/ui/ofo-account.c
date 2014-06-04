@@ -96,7 +96,7 @@ ofo_account_finalize( GObject *instance )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			priv->number, priv->label );
 
-	/* free members here */
+	/* free data members here */
 	g_free( priv->number );
 	g_free( priv->label );
 	g_free( priv->type );

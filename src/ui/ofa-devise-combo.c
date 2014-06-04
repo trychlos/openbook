@@ -57,10 +57,10 @@ struct _ofaDeviseComboPrivate {
 /* column ordering in the devise combobox
  */
 enum {
-	DEV_COL_ID = 0,
-	DEV_COL_CODE,
-	DEV_COL_LABEL,
-	JOU_N_COLUMNS
+	COL_ID = 0,
+	COL_CODE,
+	COL_LABEL,
+	N_COLUMNS
 };
 
 G_DEFINE_TYPE( ofaDeviseCombo, ofa_devise_combo, G_TYPE_OBJECT )
@@ -80,7 +80,7 @@ devise_combo_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	/* free members here */
+	/* free data members here */
 	g_free( priv->combo_name );
 	g_free( priv->label_name );
 	g_free( priv );
@@ -189,7 +189,7 @@ ofa_devise_combo_init_dialog( const ofaDeviseComboParms *parms )
 	priv->combo = GTK_COMBO_BOX( combo );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			JOU_N_COLUMNS,
+			N_COLUMNS,
 			G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING ));
 	gtk_combo_box_set_model( priv->combo, tmodel );
 	g_object_unref( tmodel );
@@ -197,13 +197,13 @@ ofa_devise_combo_init_dialog( const ofaDeviseComboParms *parms )
 	if( parms->disp_code ){
 		text_cell = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", DEV_COL_CODE );
+		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", COL_CODE );
 	}
 
 	if( parms->disp_label ){
 		text_cell = gtk_cell_renderer_text_new();
 		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), text_cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", DEV_COL_LABEL );
+		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", COL_LABEL );
 	}
 
 	set = ofo_devise_get_dataset( parms->dossier );
@@ -215,9 +215,9 @@ ofa_devise_combo_init_dialog( const ofaDeviseComboParms *parms )
 				GTK_LIST_STORE( tmodel ),
 				&iter,
 				-1,
-				DEV_COL_ID,    ofo_devise_get_id( devise ),
-				DEV_COL_CODE,  ofo_devise_get_code( devise ),
-				DEV_COL_LABEL, ofo_devise_get_label( devise ),
+				COL_ID,    ofo_devise_get_id( devise ),
+				COL_CODE,  ofo_devise_get_code( devise ),
+				COL_LABEL, ofo_devise_get_label( devise ),
 				-1 );
 		if( parms->initial_id == ofo_devise_get_id( devise )){
 			idx = i;
@@ -248,9 +248,9 @@ on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self )
 
 		tmodel = gtk_combo_box_get_model( box );
 		gtk_tree_model_get( tmodel, &iter,
-				DEV_COL_ID, &self->private->current_devise_id,
-				DEV_COL_CODE, &code,
-				DEV_COL_LABEL, &label,
+				COL_ID, &self->private->current_devise_id,
+				COL_CODE, &code,
+				COL_LABEL, &label,
 				-1 );
 
 		if( self->private->label_name ){
@@ -297,9 +297,9 @@ ofa_devise_combo_get_selection( ofaDeviseCombo *self, gchar **code, gchar **labe
 
 			tmodel = gtk_combo_box_get_model( self->private->combo );
 			gtk_tree_model_get( tmodel, &iter,
-					DEV_COL_ID,    &id,
-					DEV_COL_CODE,  &local_code,
-					DEV_COL_LABEL, &local_label,
+					COL_ID,    &id,
+					COL_CODE,  &local_code,
+					COL_LABEL, &local_label,
 					-1 );
 
 			if( code ){

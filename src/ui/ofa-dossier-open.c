@@ -86,7 +86,7 @@ dossier_open_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	/* free members here */
+	/* free data members here */
 	g_free( priv->name );
 	g_free( priv->account );
 	g_free( priv->password );

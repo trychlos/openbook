@@ -53,6 +53,7 @@ struct _ofoBatPrivate {
 	gchar     *rib;
 	gchar     *currency;
 	gdouble    solde;
+	gboolean   solde_set;
 	gchar     *notes;
 	gchar     *maj_user;
 	GTimeVal   maj_stamp;
@@ -61,8 +62,6 @@ struct _ofoBatPrivate {
 G_DEFINE_TYPE( ofoBat, ofo_bat, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, bat )
-
-static gboolean st_connected = FALSE;
 
 static void        init_global_handlers( const ofoDossier *dossier );
 static GList      *bat_load_dataset( void );
@@ -142,12 +141,6 @@ static void
 init_global_handlers( const ofoDossier *dossier )
 {
 	OFO_BASE_SET_GLOBAL( st_global, dossier, bat );
-
-	if( !st_connected ){
-		/*g_signal_connect( G_OBJECT( dossier ),
-					OFA_SIGNAL_NEW_ENTRY, G_CALLBACK( on_new_entry ), NULL );*/
-		st_connected = TRUE;
-	}
 }
 
 /**
@@ -167,7 +160,9 @@ ofo_bat_new( void )
  * ofo_bat_get_dataset:
  * @dossier: the currently opened #ofoDossier dossier.
  *
- * Returns: %NULL.
+ * Returns: The list of #ofoBat bats, ordered by ascending
+ * import date. The returned list is owned by the #ofoBat class, and
+ * should not be freed by the caller.
  */
 GList *
 ofo_bat_get_dataset( const ofoDossier *dossier )
@@ -178,7 +173,7 @@ ofo_bat_get_dataset( const ofoDossier *dossier )
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, bat );
+	init_global_handlers( dossier );
 
 	return( st_global->dataset );
 }
@@ -186,7 +181,72 @@ ofo_bat_get_dataset( const ofoDossier *dossier )
 static GList *
 bat_load_dataset( void )
 {
-	return( NULL );
+	const ofoSgbd *sgbd;
+	GSList *result, *irow, *icol;
+	ofoBat *bat;
+	GList *dataset;
+
+	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
+
+	result = ofo_sgbd_query_ex( sgbd,
+			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_COUNT,"
+			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_DEVISE,BAT_SOLDE,"
+			"	BAT_NOTES,BAT_MAJ_USER,BAT_MAJ_STAMP "
+			"	FROM OFA_T_BAT "
+			"	ORDER BY BAT_MAJ_STAMP ASC" );
+
+	dataset = NULL;
+
+	for( irow=result ; irow ; irow=irow->next ){
+		icol = ( GSList * ) irow->data;
+		bat = ofo_bat_new();
+		ofo_bat_set_id( bat, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_bat_set_uri( bat, ( gchar * ) icol->data );
+		icol = icol->next;
+		if( icol->data ){
+			ofo_bat_set_format( bat, ( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		ofo_bat_set_count( bat, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		if( icol->data ){
+			ofo_bat_set_begin( bat, my_utils_date_from_str(( gchar * ) icol->data ));
+		}
+		icol = icol->next;
+		if( icol->data ){
+			ofo_bat_set_end( bat, my_utils_date_from_str(( gchar * ) icol->data ));
+		}
+		icol = icol->next;
+		if( icol->data ){
+			ofo_bat_set_rib( bat, ( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			ofo_bat_set_currency( bat, ( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			ofo_bat_set_solde( bat, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+			ofo_bat_set_solde_set( bat, TRUE );
+		} else {
+			ofo_bat_set_solde_set( bat, FALSE );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			ofo_bat_set_notes( bat, ( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		ofo_bat_set_maj_user( bat, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_bat_set_maj_stamp( bat, my_utils_stamp_from_str(( gchar * ) icol->data ));
+
+		dataset = g_list_prepend( dataset, bat );
+	}
+
+	ofo_sgbd_free_result( result );
+
+	return( g_list_reverse( dataset ));
 }
 
 /**
@@ -340,6 +400,23 @@ ofo_bat_get_solde( const ofoBat *bat )
 
 	g_assert_not_reached();
 	return( 0 );
+}
+
+/**
+ * ofo_bat_get_solde_set:
+ */
+gboolean
+ofo_bat_get_solde_set( const ofoBat *bat )
+{
+	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		return( bat->private->solde_set );
+	}
+
+	g_assert_not_reached();
+	return( FALSE );
 }
 
 /**
@@ -534,6 +611,20 @@ ofo_bat_set_solde( ofoBat *bat, gdouble solde )
 }
 
 /**
+ * ofo_bat_set_solde_set:
+ */
+void
+ofo_bat_set_solde_set( ofoBat *bat, gboolean set )
+{
+	g_return_if_fail( OFO_IS_BAT( bat ));
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		bat->private->solde_set = set;
+	}
+}
+
+/**
  * ofo_bat_set_notes:
  */
 void
@@ -679,9 +770,13 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	str = my_utils_sql_from_double( ofo_bat_get_solde( bat ));
-	g_string_append_printf( query, "%s,", str );
-	g_free( str );
+	if( ofo_bat_get_solde_set( bat )){
+		str = my_utils_sql_from_double( ofo_bat_get_solde( bat ));
+		g_string_append_printf( query, "%s,", str );
+		g_free( str );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
 
 	str = my_utils_quote( ofo_bat_get_notes( bat ));
 	if( str && g_utf8_strlen( str, -1 )){

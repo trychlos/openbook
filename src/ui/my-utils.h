@@ -60,6 +60,8 @@ gchar         *my_utils_sql_from_double    ( gdouble value );
 
 gchar         *my_utils_str_remove_suffix( const gchar *string, const gchar *suffix );
 
+GtkWidget     *my_utils_builder_load_from_path( const gchar *path_xml, const gchar *widget_name );
+
 gboolean       my_utils_entry_get_valid    ( GtkEntry *entry );
 void           my_utils_entry_set_valid    ( GtkEntry *entry, gboolean valid );
 

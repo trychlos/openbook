@@ -79,7 +79,7 @@ journal_combo_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	/* free members here */
+	/* free data members here */
 	g_free( priv->combo_name );
 	g_free( priv->label_name );
 	g_free( priv );

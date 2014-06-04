@@ -94,7 +94,7 @@ settings_finalize( GObject *object )
 	g_debug( "%s: object=%p (%s)",
 			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
-	/* free members here */
+	/* free data members here */
 	g_key_file_free( priv->keyfile );
 	g_free( priv->kf_name );
 	g_free( priv );

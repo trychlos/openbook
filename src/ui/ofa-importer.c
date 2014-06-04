@@ -158,12 +158,11 @@ insert_imported_bat_v1( const ofoDossier *dossier, const gchar *uri, ofaIImporte
 	ofo_bat_set_begin( bat, &batv1->begin );
 	ofo_bat_set_end( bat, &batv1->end );
 	ofo_bat_set_solde( bat, batv1->solde );
+	ofo_bat_set_solde_set( bat, batv1->solde_set );
 	ofo_bat_set_rib( bat, batv1->rib );
 	ofo_bat_set_currency( bat, batv1->currency );
 
-	gboolean ok = ofo_bat_insert( bat, dossier );
-	g_debug( "insert_imported_bat_v1: bat ok =%s", ok ? "True":"False" );
-	if( !ok ){
+	if( !ofo_bat_insert( bat, dossier )){
 		g_clear_object( &bat );
 		return( -1 );
 	}
@@ -182,8 +181,7 @@ insert_imported_bat_v1( const ofoDossier *dossier, const gchar *uri, ofaIImporte
 		ofo_bat_line_set_montant( batline, str->amount );
 		ofo_bat_line_set_currency( batline, str->currency );
 
-		ok = ofo_bat_line_insert( batline, dossier );
-		g_debug( "insert_imported_bat_v1: bat_line ok =%s", ok ? "True":"False" );
+		ofo_bat_line_insert( batline, dossier );
 	}
 
 	return( id );

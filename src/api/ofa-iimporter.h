@@ -130,6 +130,7 @@ typedef struct {
 	gchar   *rib;
 	gchar   *currency;
 	gdouble  solde;
+	gboolean solde_set;
 	GList   *results;					/* list of ofaIImporterSBatv1 structs */
 }
 	ofaIImporterBatv1;

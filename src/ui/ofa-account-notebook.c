@@ -118,7 +118,7 @@ account_notebook_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	/* free members here */
+	/* free data members here */
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -410,7 +410,6 @@ book_get_page_by_class( ofaAccountNotebook *self, gint class_num )
 
 	return( -1 );
 }
-
 
 /*
  * sorting the treeview per account number

@@ -279,6 +279,49 @@ my_utils_sql_from_double( gdouble value )
 }
 
 /**
+ * my_utils_builder_load_from_path:
+ *
+ * Returns the loaded widget, or NULL.
+ */
+GtkWidget *
+my_utils_builder_load_from_path( const gchar *path_xml, const gchar *widget_name )
+{
+	static const gchar *thisfn = "my_utils_builder_load_from_path";
+	GtkWidget *widget;
+	GError *error;
+	GtkBuilder *builder;
+
+	widget = NULL;
+	error = NULL;
+	builder = gtk_builder_new();
+
+	if( gtk_builder_add_from_file( builder, path_xml, &error )){
+
+		widget = ( GtkWidget * ) gtk_builder_get_object( builder, widget_name );
+
+		if( !widget ){
+			g_warning( "%s: unable to find '%s' object in '%s' file",
+									thisfn, widget_name, path_xml );
+
+		/* take a ref on non-toplevel widgets to survive to the unref
+		 * of the builder */
+		} else {
+			if( GTK_IS_WIDGET( widget ) && !gtk_widget_is_toplevel( widget )){
+				g_object_ref( widget );
+			}
+		}
+
+	} else {
+		g_warning( "%s: %s", thisfn, error->message );
+		g_error_free( error );
+	}
+
+	g_object_unref( builder );
+
+	return( widget );
+}
+
+/**
  * my_utils_str_remove_suffix:
  * @string: source string.
  * @suffix: suffix to be removed from @string.

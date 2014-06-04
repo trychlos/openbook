@@ -123,7 +123,7 @@ application_finalize( GObject *instance )
 	g_debug( "%s: application=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	/* free members here */
+	/* free data members here */
 	g_strfreev( priv->argv );
 	g_free( priv );
 

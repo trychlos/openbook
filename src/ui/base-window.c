@@ -73,7 +73,7 @@ base_window_finalize( GObject *instance )
 
 	self = BASE_WINDOW( instance );
 
-	/* free members here */
+	/* free data members here */
 	g_free( self->private->window_xml );
 	g_free( self->private->window_name );
 	g_free( self->private );

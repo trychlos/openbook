@@ -88,7 +88,7 @@ base_dialog_finalize( GObject *instance )
 
 	self = OFA_BASE_DIALOG( instance );
 
-	/* free members here */
+	/* free data members here */
 	g_free( self->priv->dialog_xml );
 	g_free( self->priv->dialog_name );
 	g_free( self->priv );

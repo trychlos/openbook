@@ -176,12 +176,29 @@
  149 2014- 6- 2 ImportAssistant: double-clicking a file (or activating 
                 the current selection) should advance to the next page
 
- 150 2014- 6- 2 Reconciliation: when entries have been fetched, set the
-                'label' title column to the account label
-
  151 2014- 6- 2 ofaImport::on_apply: to be written
 
- 152
+ 152 2014- 6- 3 import qif files
+
+ 153 2014- 6- 3 import ofx/ofc files
+
+ 154 2014- 6- 3 be able to re-use an already imported BAT (for the same
+                account) if we have been interrupted in a previous
+                session
+
+ 155 2014- 6- 3 GuidedInput: diff should be red
+
+ 156 2014- 6- 3 when selecting an account, do not allow root (or yes ?)
+
+ 157 2014- 6- 4 BatList: the treeview doesn't vertically expand
+
+ 158 2014- 6- 4 do a coherency check (sgbd constraints, account and
+                journal balances, etc.)
+
+ 159 2014- 6- 4 open a dossier from the command-line:
+                ./_install/bin/openbook "Test OFAT v0.3" ofat ofat
+
+ 160
 
 -----------------------------------------------------------------------
  DONE
@@ -546,6 +563,10 @@
 
  145 2014- 5-30 get rid of xxx_GET_PRIVATE macro
      2014- 5-31 done - svn #3563
+
+ 150 2014- 6- 2 Reconciliation: when entries have been fetched, set the
+                'label' title column to the account label
+     2014- 6- 3 done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

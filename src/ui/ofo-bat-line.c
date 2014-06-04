@@ -59,17 +59,11 @@ struct _ofoBatLinePrivate {
 
 G_DEFINE_TYPE( ofoBatLine, ofo_bat_line, OFO_TYPE_BASE )
 
-OFO_BASE_DEFINE_GLOBAL( st_global, bat_line )
-
-static gboolean st_connected = FALSE;
-
-static void        init_global_handlers( const ofoDossier *dossier );
-static GList      *bat_line_load_dataset( void );
+static GList      *bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd );
 static gboolean    bat_line_do_insert( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    bat_line_get_back_id( ofoBatLine *bat, const ofoSgbd *sgbd );
-static gint        bat_line_cmp_by_id( gint a, gint b );
-static gint        bat_line_cmp_by_ptr( const ofoBatLine *a, const ofoBatLine *b );
+static gboolean    bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
 
 static void
 ofo_bat_line_finalize( GObject *instance )
@@ -136,18 +130,6 @@ ofo_bat_line_class_init( ofoBatLineClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_bat_line_finalize;
 }
 
-static void
-init_global_handlers( const ofoDossier *dossier )
-{
-	OFO_BASE_SET_GLOBAL( st_global, dossier, bat_line );
-
-	if( !st_connected ){
-		/*g_signal_connect( G_OBJECT( dossier ),
-					OFA_SIGNAL_NEW_ENTRY, G_CALLBACK( on_new_entry ), NULL );*/
-		st_connected = TRUE;
-	}
-}
-
 /**
  * ofo_bat_line_new:
  */
@@ -166,10 +148,11 @@ ofo_bat_line_new( gint bat_id )
  * ofo_bat_line_get_dataset:
  * @dossier: the currently opened #ofoDossier dossier.
  *
- * Returns: %NULL.
+ * Returns: the list of lines imported in the specified bank account
+ * transaction list.
  */
 GList *
-ofo_bat_line_get_dataset( const ofoDossier *dossier )
+ofo_bat_line_get_dataset( const ofoDossier *dossier, gint bat_id )
 {
 	static const gchar *thisfn = "ofo_bat_line_get_dataset";
 
@@ -177,15 +160,76 @@ ofo_bat_line_get_dataset( const ofoDossier *dossier )
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, bat_line );
-
-	return( st_global->dataset );
+	return( bat_line_load_dataset( bat_id, ofo_dossier_get_sgbd( dossier )));
 }
 
 static GList *
-bat_line_load_dataset( void )
+bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 {
-	return( NULL );
+	GString *query;
+	GSList *result, *irow, *icol;
+	GList *dataset;
+	ofoBatLine *line;
+
+	dataset = NULL;
+
+	query = g_string_new(
+					"SELECT BAT_LINE_ID,BAT_LINE_VALEUR,BAT_LINE_OPE,"
+					"	BAT_LINE_LABEL,BAT_LINE_REF,BAT_LINE_DEVISE,"
+					"	BAT_LINE_MONTANT,"
+					"	BAT_LINE_ECR,BAT_LINE_MAJ_USER,BAT_LINE_MAJ_STAMP "
+					"	FROM OFA_T_BAT_LINES " );
+
+	g_string_append_printf( query, "WHERE BAT_ID=%d ", bat_id );
+
+	query = g_string_append( query, "ORDER BY BAT_LINE_VALEUR ASC" );
+
+	result = ofo_sgbd_query_ex( sgbd, query->str );
+	g_string_free( query, TRUE );
+
+	if( result ){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			line = ofo_bat_line_new( bat_id );
+			ofo_bat_line_set_id( line, atoi(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_bat_line_set_valeur( line, my_utils_date_from_str(( gchar * ) icol->data ));
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_line_set_ope( line, my_utils_date_from_str(( gchar * ) icol->data ));
+			}
+			icol = icol->next;
+			ofo_bat_line_set_label( line, ( gchar * ) icol->data );
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_line_set_ref( line, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_line_set_currency( line, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			ofo_bat_line_set_montant( line, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_line_set_ecr( line, atoi(( gchar * ) icol->data ));
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_line_set_maj_user( line, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_line_set_maj_stamp( line, my_utils_stamp_from_str(( gchar * ) icol->data ));
+			}
+
+			dataset = g_list_prepend( dataset, line );
+		}
+
+		ofo_sgbd_free_result( result );
+	}
+
+	return( g_list_reverse( dataset ));
 }
 
 /**
@@ -318,6 +362,23 @@ ofo_bat_line_get_montant( const ofoBatLine *bat )
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
 		return( bat->private->montant );
+	}
+
+	g_assert_not_reached();
+	return( 0 );
+}
+
+/**
+ * ofo_bat_line_get_ecr:
+ */
+gint
+ofo_bat_line_get_ecr( const ofoBatLine *bat )
+{
+	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), 0 );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		return( bat->private->ecr );
 	}
 
 	g_assert_not_reached();
@@ -470,6 +531,20 @@ ofo_bat_line_set_montant( ofoBatLine *bat, gdouble montant )
 }
 
 /**
+ * ofo_bat_line_set_ecr:
+ */
+void
+ofo_bat_line_set_ecr( ofoBatLine *bat, gint number )
+{
+	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		bat->private->ecr = number;
+	}
+}
+
+/**
  * ofo_bat_line_set_maj_user:
  */
 void
@@ -518,14 +593,11 @@ ofo_bat_line_insert( ofoBatLine *bat_line, const ofoDossier *dossier )
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat_line, ( void * ) dossier );
 
-		init_global_handlers( dossier );
-
 		if( bat_line_do_insert(
 					bat_line,
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_ADD_TO_DATASET( st_global, bat_line );
 			return( TRUE );
 		}
 	}
@@ -623,14 +695,65 @@ bat_line_get_back_id( ofoBatLine *bat, const ofoSgbd *sgbd )
 	return( ok );
 }
 
-static gint
-bat_line_cmp_by_id( gint a, gint b )
+/**
+ * ofo_bat_line_update:
+ *
+ * Updating a BAT line means mainly updating the reconciliation properties
+ */
+gboolean
+ofo_bat_line_update( ofoBatLine *bat_line, const ofoDossier *dossier )
 {
-	return( a < b ? -1 : ( a > b ? 1 : 0 ));
+	static const gchar *thisfn = "ofo_bat_line_insert";
+
+	g_return_val_if_fail( OFO_IS_BAT_LINE( bat_line ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( bat_line )->prot->dispose_has_run ){
+
+		g_debug( "%s: bat=%p, dossier=%p",
+				thisfn, ( void * ) bat_line, ( void * ) dossier );
+
+		if( bat_line_do_update(
+					bat_line,
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ))){
+
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
 }
 
-static gint
-bat_line_cmp_by_ptr( const ofoBatLine *a, const ofoBatLine *b )
+static gboolean
+bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 {
-	return( bat_line_cmp_by_id( ofo_bat_line_get_id( a ), ofo_bat_line_get_id( b )));
+	gboolean ok;
+	GString *query;
+	gchar *stamp;
+	gint ecr_number;
+
+	stamp = my_utils_timestamp();
+	ecr_number = ofo_bat_line_get_ecr( bat );
+
+	query = g_string_new( "UPDATE OFA_T_BAT_LINES SET " );
+
+	if( ecr_number > 0 ){
+		g_string_append_printf( query,
+				"	BAT_LINE_ECR=%d,BAT_LINE_MAJ_USER='%s',BAT_LINE_MAJ_STAMP='%s' ",
+					ecr_number, user, stamp );
+	} else {
+		query = g_string_append( query,
+				"	BAT_LINE_ECR=NULL,BAT_LINE_MAJ_USER=NULL,BAT_LINE_MAJ_STAMP=0" );
+	}
+
+	g_string_append_printf( query,
+			"	WHERE BAT_LINE_ID=%d", ofo_bat_line_get_id( bat ));
+
+	ok = ofo_sgbd_query( sgbd, query->str );
+
+	g_string_free( query, TRUE );
+	g_free( stamp );
+
+	return( ok );
 }

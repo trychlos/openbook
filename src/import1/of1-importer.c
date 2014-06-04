@@ -380,6 +380,8 @@ import_bourso_tabulated_text_v1( of1Importer *importer, const gchar *thisfn )
 	}
 	output->currency = g_strndup( found+2, 3 );
 
+	output->solde_set = FALSE;
+
 	line = line->next;
 	str = line->data;
 	if( strlen( str )){
@@ -557,6 +559,7 @@ import_lcl_tabulated_text_v1( of1Importer *importer )
 
 			iter +=1 ;
 			output->solde = get_double( *iter );
+			output->solde_set = TRUE;
 
 			iter += 1;
 			/* no ref */
