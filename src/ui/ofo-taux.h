@@ -54,8 +54,8 @@ typedef struct {
 
 GType           ofo_taux_get_type     ( void ) G_GNUC_CONST;
 
-GList          *ofo_taux_get_dataset  ( ofoDossier *dossier );
-ofoTaux        *ofo_taux_get_by_mnemo ( ofoDossier *dossier, const gchar *mnemo );
+GList          *ofo_taux_get_dataset  ( const ofoDossier *dossier );
+ofoTaux        *ofo_taux_get_by_mnemo ( const ofoDossier *dossier, const gchar *mnemo );
 
 ofoTaux        *ofo_taux_new          ( void );
 
@@ -89,9 +89,9 @@ void            ofo_taux_set_notes    ( ofoTaux *taux, const gchar *notes );
 void            ofo_taux_set_maj_user ( ofoTaux *taux, const gchar *user );
 void            ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *stamp );
 
-gboolean        ofo_taux_insert         ( ofoTaux *taux, ofoDossier *dossier );
-gboolean        ofo_taux_update         ( ofoTaux *taux, ofoDossier *dossier );
-gboolean        ofo_taux_delete         ( ofoTaux *taux, ofoDossier *dossier );
+gboolean        ofo_taux_insert       ( ofoTaux *taux, const ofoDossier *dossier );
+gboolean        ofo_taux_update       ( ofoTaux *taux, const ofoDossier *dossier );
+gboolean        ofo_taux_delete       ( ofoTaux *taux, const ofoDossier *dossier );
 
 G_END_DECLS
 

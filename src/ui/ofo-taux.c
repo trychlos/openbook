@@ -182,7 +182,7 @@ ofo_taux_class_init( ofoTauxClass *klass )
  * should not be freed by the caller.
  */
 GList *
-ofo_taux_get_dataset( ofoDossier *dossier )
+ofo_taux_get_dataset( const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_taux_get_dataset";
 
@@ -277,7 +277,7 @@ taux_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoTaux *
-ofo_taux_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
+ofo_taux_get_by_mnemo( const ofoDossier *dossier, const gchar *mnemo )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
@@ -286,51 +286,6 @@ ofo_taux_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 
 	return( taux_find_by_mnemo( st_global->dataset, mnemo ));
 }
-
-#if 0
-/**
- * ofo_taux_get_by_mnemo:
- * @date: [allow-none]: the effect date at which the rate must be valid
- *
- * Returns: the searched taux, or %NULL.
- *
- * The returned object is owned by the #ofoTaux class, and should
- * not be unreffed by the caller.
- */
-ofoTaux *
-ofo_taux_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
-{
-	static const gchar *thisfn = "ofo_taux_get_by_mnemo";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
-
-	g_debug( "%s: dossier=%p, mnemo=%s, date=%p",
-			thisfn, ( void * ) dossier, mnemo, ( void * ) date );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
-
-	return( taux_find_by_mnemo( st_global->dataset, mnemo, date ));
-}
-
-static ofoTaux *
-taux_find_by_mnemo( GList *set, const gchar *mnemo, const GDate *date )
-{
-	GList *found;
-	sCmpMneDat parms;
-
-	parms.mnemo = mnemo;
-	parms.date = date;
-
-	found = g_list_find_custom(
-				set, &parms, ( GCompareFunc ) taux_cmp_by_mnemo );
-	if( found ){
-		return( OFO_TAUX( found->data ));
-	}
-
-	return( NULL );
-}
-#endif
 
 static ofoTaux *
 taux_find_by_mnemo( GList *set, const gchar *mnemo )
@@ -825,7 +780,7 @@ taux_set_val_taux( sTauxValid *tv, gdouble value )
  * previously existing old validity rows.
  */
 gboolean
-ofo_taux_insert( ofoTaux *taux, ofoDossier *dossier )
+ofo_taux_insert( ofoTaux *taux, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_taux_insert";
 
@@ -1009,7 +964,7 @@ taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
  * Only update here the main properties.
  */
 gboolean
-ofo_taux_update( ofoTaux *taux, ofoDossier *dossier )
+ofo_taux_update( ofoTaux *taux, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_taux_update";
 
@@ -1094,7 +1049,7 @@ taux_update_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
  * ofo_taux_delete:
  */
 gboolean
-ofo_taux_delete( ofoTaux *taux, ofoDossier *dossier )
+ofo_taux_delete( ofoTaux *taux, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_taux_delete";
 
