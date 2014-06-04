@@ -82,9 +82,9 @@ void            ofo_journal_set_clo_cre  ( ofoJournal *journal, gint exe_id, gin
 void            ofo_journal_set_deb      ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
 void            ofo_journal_set_cre      ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
 
-gboolean        ofo_journal_insert       ( ofoJournal *journal, ofoDossier *dossier );
-gboolean        ofo_journal_update       ( ofoJournal *journal, ofoDossier *dossier );
-gboolean        ofo_journal_delete       ( ofoJournal *journal, ofoDossier *dossier );
+gboolean        ofo_journal_insert       ( ofoJournal *journal, const ofoDossier *dossier );
+gboolean        ofo_journal_update       ( ofoJournal *journal, const ofoDossier *dossier );
+gboolean        ofo_journal_delete       ( ofoJournal *journal, const ofoDossier *dossier );
 
 G_END_DECLS
 

@@ -1054,7 +1054,7 @@ journal_dev_set_new( ofoJournal *journal, gint exe_id, gint dev_id, gboolean is_
  * Only insert here a new journal, so only the main properties
  */
 gboolean
-ofo_journal_insert( ofoJournal *journal, ofoDossier *dossier )
+ofo_journal_insert( ofoJournal *journal, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_journal_insert";
 
@@ -1161,7 +1161,7 @@ journal_get_back_id( ofoJournal *journal, const ofoSgbd *sgbd )
  * details of balances per currency.
  */
 gboolean
-ofo_journal_update( ofoJournal *journal, ofoDossier *dossier )
+ofo_journal_update( ofoJournal *journal, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_journal_update";
 
@@ -1287,7 +1287,7 @@ journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofo
  * Take care of deleting both main and detail records.
  */
 gboolean
-ofo_journal_delete( ofoJournal *journal, ofoDossier *dossier )
+ofo_journal_delete( ofoJournal *journal, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_journal_delete";
 
