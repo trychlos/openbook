@@ -68,9 +68,9 @@ void            ofo_devise_set_notes    ( ofoDevise *devise, const gchar *notes 
 void            ofo_devise_set_maj_user ( ofoDevise *devise, const gchar *user );
 void            ofo_devise_set_maj_stamp( ofoDevise *devise, const GTimeVal *stamp );
 
-gboolean        ofo_devise_insert    ( ofoDevise *devise, ofoDossier *dossier );
-gboolean        ofo_devise_update    ( ofoDevise *devise, ofoDossier *dossier );
-gboolean        ofo_devise_delete    ( ofoDevise *devise, ofoDossier *dossier );
+gboolean        ofo_devise_insert    ( ofoDevise *devise, const ofoDossier *dossier );
+gboolean        ofo_devise_update    ( ofoDevise *devise, const ofoDossier *dossier );
+gboolean        ofo_devise_delete    ( ofoDevise *devise, const ofoDossier *dossier );
 
 G_END_DECLS
 

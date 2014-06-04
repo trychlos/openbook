@@ -554,7 +554,7 @@ ofo_devise_set_maj_stamp( ofoDevise *devise, const GTimeVal *stamp )
  * ofo_devise_insert:
  */
 gboolean
-ofo_devise_insert( ofoDevise *devise, ofoDossier *dossier )
+ofo_devise_insert( ofoDevise *devise, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_devise_insert";
 
@@ -661,7 +661,7 @@ devise_get_back_id( ofoDevise *devise, const ofoSgbd *sgbd )
  * ofo_devise_update:
  */
 gboolean
-ofo_devise_update( ofoDevise *devise, ofoDossier *dossier )
+ofo_devise_update( ofoDevise *devise, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_devise_update";
 
@@ -738,7 +738,7 @@ devise_do_update( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
  * ofo_devise_delete:
  */
 gboolean
-ofo_devise_delete( ofoDevise *devise, ofoDossier *dossier )
+ofo_devise_delete( ofoDevise *devise, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_devise_delete";
 
