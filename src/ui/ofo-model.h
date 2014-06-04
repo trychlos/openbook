@@ -91,9 +91,9 @@ gboolean        ofo_model_get_detail_credit_locked ( const ofoModel *model, gint
 
 gboolean        ofo_model_detail_is_formula        ( const gchar *str );
 
-gboolean        ofo_model_insert       ( ofoModel *model, ofoDossier *dossier );
-gboolean        ofo_model_update       ( ofoModel *model, ofoDossier *dossier, const gchar *prev_mnemo );
-gboolean        ofo_model_delete       ( ofoModel *model, ofoDossier *dossier );
+gboolean        ofo_model_insert       ( ofoModel *model, const ofoDossier *dossier );
+gboolean        ofo_model_update       ( ofoModel *model, const ofoDossier *dossier, const gchar *prev_mnemo );
+gboolean        ofo_model_delete       ( ofoModel *model, const ofoDossier *dossier );
 
 G_END_DECLS
 

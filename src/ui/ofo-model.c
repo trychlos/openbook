@@ -981,7 +981,7 @@ ofo_model_detail_is_formula( const gchar *str )
  * so it is not needed to check the date of closing
  */
 gboolean
-ofo_model_insert( ofoModel *model, ofoDossier *dossier )
+ofo_model_insert( ofoModel *model, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_model_insert";
 
@@ -1192,7 +1192,7 @@ model_insert_details( ofoModel *model, const ofoSgbd *sgbd, gint rang, sModDetai
  * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_model_update( ofoModel *model, ofoDossier *dossier, const gchar *prev_mnemo )
+ofo_model_update( ofoModel *model, const ofoDossier *dossier, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_model_update";
 
@@ -1282,7 +1282,7 @@ model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, cons
  * ofo_model_delete:
  */
 gboolean
-ofo_model_delete( ofoModel *model, ofoDossier *dossier )
+ofo_model_delete( ofoModel *model, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_model_delete";
 
