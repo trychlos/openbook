@@ -1154,7 +1154,7 @@ ofo_account_set_bro_cre_mnt( ofoAccount *account, gdouble mnt )
  * Returns: %TRUE if the insertion has been successful.
  */
 gboolean
-ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
+ofo_account_insert( ofoAccount *account, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_insert";
 
@@ -1243,7 +1243,7 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
  * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_number )
+ofo_account_update( ofoAccount *account, const ofoDossier *dossier, const gchar *prev_number )
 {
 	static const gchar *thisfn = "ofo_account_update";
 
@@ -1379,7 +1379,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
  * ofo_account_delete:
  */
 gboolean
-ofo_account_delete( ofoAccount *account, ofoDossier *dossier )
+ofo_account_delete( ofoAccount *account, const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_delete";
 

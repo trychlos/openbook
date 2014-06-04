@@ -102,9 +102,9 @@ void            ofo_account_set_bro_cre_ecr ( ofoAccount *account, gint num );
 void            ofo_account_set_bro_cre_date( ofoAccount *account, const GDate *date );
 void            ofo_account_set_bro_cre_mnt ( ofoAccount *account, gdouble mnt );
 
-gboolean        ofo_account_insert          ( ofoAccount *account, ofoDossier *dossier );
-gboolean        ofo_account_update          ( ofoAccount *account, ofoDossier *dossier, const gchar *prev_number );
-gboolean        ofo_account_delete          ( ofoAccount *account, ofoDossier *dossier );
+gboolean        ofo_account_insert          ( ofoAccount *account, const ofoDossier *dossier );
+gboolean        ofo_account_update          ( ofoAccount *account, const ofoDossier *dossier, const gchar *prev_number );
+gboolean        ofo_account_delete          ( ofoAccount *account, const ofoDossier *dossier );
 
 G_END_DECLS
 
