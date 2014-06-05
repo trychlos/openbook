@@ -113,7 +113,14 @@ typedef enum {
 	ofaIImporterStatus;
 
 typedef enum {
-	IMPORTER_TYPE_BAT1 = 1
+	IMPORTER_TYPE_BAT = 1,
+	IMPORTER_TYPE_CLASS,
+	IMPORTER_TYPE_ACCOUNT,
+	IMPORTER_TYPE_CURRENCY,
+	IMPORTER_TYPE_JOURNAL,
+	IMPORTER_TYPE_MODEL,
+	IMPORTER_TYPE_RATE,
+	IMPORTER_TYPE_ENTRY
 }
 	ofaIImporterType;
 
@@ -123,7 +130,6 @@ typedef enum {
  * All data members are to be set on output (no input data here).
  */
 typedef struct {
-	gchar   *format;
 	gint     count;
 	GDate    begin;
 	GDate    end;
@@ -148,6 +154,16 @@ typedef struct {
 	ofaIImporterSBatv1;
 
 /**
+ * ofaIImporterRefv1:
+ * This structure is used when importing a reference table in csv format.
+ * All data members are to be set on output (no input data here).
+ */
+typedef struct {
+	gint     count;
+}
+	ofaIImporterRefv1;
+
+/**
  * ofaIImporterParms:
  * @uri:      [in]
  * @messages: [in/out]
@@ -162,8 +178,11 @@ struct _ofaIImporterParms {
 	const gchar *uri;
 	GSList      *messages;
 	gint         type;
+	gint         version;
+	gchar       *format;
 	union {
 		ofaIImporterBatv1 batv1;
+		ofaIImporterRefv1 refv1;
 	};
 };
 

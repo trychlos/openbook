@@ -38,16 +38,17 @@
 #include "ui/ofo-dossier.h"
 
 static gint try_to_import_uri( const ofoDossier *dossier, GList *modules, ofaIImporterParms *parms );
-static gint insert_imported_bat_v1( const ofoDossier *dossier, const gchar *uri, ofaIImporterBatv1 *batv1 );
+static gint insert_imported_bat_v1( const ofoDossier *dossier, const gchar *uri, const gchar *format, ofaIImporterBatv1 *batv1 );
 
 /**
  * ofa_importer_import_from_uri:
+ * @type: may be zero: all importers will have a try.
  *
  * Returns: the internal identifier of the imported file in the
  * OFA_T_IMPORT_BAT table
  */
 gint
-ofa_importer_import_from_uri( const ofoDossier *dossier, const gchar *uri )
+ofa_importer_import_from_uri( const ofoDossier *dossier, gint type, const gchar *uri )
 {
 	static const gchar *thisfn = "ofa_importer_import_from_uri";
 	GList *modules;
@@ -56,7 +57,7 @@ ofa_importer_import_from_uri( const ofoDossier *dossier, const gchar *uri )
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), -1 );
 
-	g_debug( "%s: dossier=%p, uri=%s", thisfn, ( void * ) dossier, uri );
+	g_debug( "%s: dossier=%p, type=%d, uri=%s", thisfn, ( void * ) dossier, type, uri );
 
 	if( !uri || !g_utf8_strlen( uri, -1 )){
 		return( -1 );
@@ -65,6 +66,7 @@ ofa_importer_import_from_uri( const ofoDossier *dossier, const gchar *uri )
 	memset( &parms, '\0', sizeof( ofaIImporterParms ));
 	parms.uri = ( const gchar * ) uri;
 	parms.messages = NULL;
+	parms.type = type;
 
 	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IIMPORTER );
 
@@ -81,7 +83,7 @@ ofa_importer_import_from_uri( const ofoDossier *dossier, const gchar *uri )
  * Returns: the count of successfully imported URIs
  */
 guint
-ofa_importer_import_from_uris( const ofoDossier *dossier, GSList *uris )
+ofa_importer_import_from_uris( const ofoDossier *dossier, gint type, GSList *uris )
 {
 	static const gchar *thisfn = "ofa_importer_import_from_uris";
 	GList *modules;
@@ -89,11 +91,12 @@ ofa_importer_import_from_uris( const ofoDossier *dossier, GSList *uris )
 	GSList *uri;
 	guint count;
 
-	g_debug( "%s: uris=%p", thisfn, ( void * ) uris );
+	g_debug( "%s: dossier=%p, type=%d, uris=%p", thisfn, ( void * ) dossier, type, ( void * ) uris );
 
 	count = 0;
 	memset( &parms, '\0', sizeof( ofaIImporterParms ));
 	parms.messages = NULL;
+	parms.type = type;
 
 	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IIMPORTER );
 
@@ -131,8 +134,12 @@ try_to_import_uri( const ofoDossier *dossier, GList *modules, ofaIImporterParms 
 		if( code == IMPORTER_CODE_OK ){
 			switch( parms->type ){
 
-				case IMPORTER_TYPE_BAT1:
-					id = insert_imported_bat_v1( dossier, parms->uri, &parms->batv1 );
+				case IMPORTER_TYPE_BAT:
+					if( parms->version == 1 ){
+						id = insert_imported_bat_v1( dossier, parms->uri, parms->format, &parms->batv1 );
+					} else {
+						g_warning( "%s: IMPORTER_TYPE_BAT: version=%d", thisfn, parms->version );
+					}
 					break;
 
 				default:
@@ -146,7 +153,8 @@ try_to_import_uri( const ofoDossier *dossier, GList *modules, ofaIImporterParms 
 }
 
 static gint
-insert_imported_bat_v1( const ofoDossier *dossier, const gchar *uri, ofaIImporterBatv1 *batv1 )
+insert_imported_bat_v1( const ofoDossier *dossier,
+							const gchar *uri, const gchar *format, ofaIImporterBatv1 *batv1 )
 {
 	ofoBat *bat;
 	ofoBatLine *batline;
@@ -157,7 +165,7 @@ insert_imported_bat_v1( const ofoDossier *dossier, const gchar *uri, ofaIImporte
 	bat = ofo_bat_new();
 
 	ofo_bat_set_uri( bat, uri );
-	ofo_bat_set_format( bat, batv1->format );
+	ofo_bat_set_format( bat, format );
 	ofo_bat_set_count( bat, batv1->count );
 	ofo_bat_set_begin( bat, &batv1->begin );
 	ofo_bat_set_end( bat, &batv1->end );

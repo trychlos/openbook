@@ -32,6 +32,8 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
+#include "api/ofa-iimporter.h"
+
 #include "ui/my-utils.h"
 #include "ui/ofa-import.h"
 #include "ui/ofa-importer.h"
@@ -90,10 +92,34 @@ struct _ofaImportPrivate {
 	/* p2: select a type of data to be imported
 	 */
 	gboolean         p2_page_initialized;
-	GtkToggleButton *p2_releve;
+	GSList          *p2_group;
 	gint             p2_type;
 	GtkButton       *p2_type_btn;
 };
+
+/* management of the radio buttons group
+ * types are defined in ofa-iimporter.h
+ */
+typedef struct {
+	gint         type_id;
+	const gchar *w_name;
+}
+	sRadios;
+
+static const sRadios st_radios[] = {
+		{ IMPORTER_TYPE_BAT,      "p2-releve" },
+		{ IMPORTER_TYPE_CLASS,    "p2-class" },
+		{ IMPORTER_TYPE_ACCOUNT,  "p2-account" },
+		{ IMPORTER_TYPE_CURRENCY, "p2-currency" },
+		{ IMPORTER_TYPE_JOURNAL,  "p2-journals" },
+		{ IMPORTER_TYPE_MODEL,    "p2-model" },
+		{ IMPORTER_TYPE_RATE,     "p2-rate" },
+		{ IMPORTER_TYPE_ENTRY,    "p2-entries" },
+		{ 0 }
+};
+
+/* data set against each of above radio buttons */
+#define DATA_BUTTON_TYPE           "ofa-data-button-type"
 
 /* class properties
  */
@@ -119,6 +145,7 @@ static void       on_p1_file_activated( GtkFileChooser *chooser, ofaImport *self
 static void       check_for_p1_complete( ofaImport *self );
 static void       do_prepare_p2_type( ofaImport *self, GtkWidget *page );
 static void       do_init_p2_type( ofaImport *self, GtkWidget *page );
+static void       on_p2_type_toggled( GtkToggleButton *button, ofaImport *self );
 static void       get_active_type( ofaImport *self );
 static void       check_for_p2_complete( ofaImport *self );
 static void       do_prepare_p3_confirm( ofaImport *self, GtkWidget *page );
@@ -499,11 +526,54 @@ static void
 do_init_p2_type( ofaImport *self, GtkWidget *page )
 {
 	ofaImportPrivate *priv;
+	gint i;
+	GtkWidget *button;
 
 	priv = self->private;
-	priv->p2_releve = GTK_TOGGLE_BUTTON(
-							my_utils_container_get_child_by_name(
-									GTK_CONTAINER( page ), "p2-releve" ));
+
+	for( i=0 ; st_radios[i].type_id ; ++i ){
+		button = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), st_radios[i].w_name );
+		g_object_set_data( G_OBJECT( button ), DATA_BUTTON_TYPE, GINT_TO_POINTER( st_radios[i].type_id ));
+		g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_p2_type_toggled ), self );
+		if( !priv->p2_group ){
+			priv->p2_group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( button ));
+		}
+	}
+}
+
+static void
+on_p2_type_toggled( GtkToggleButton *button, ofaImport *self )
+{
+	ofaImportPrivate *priv;
+
+	priv = self->private;
+
+	if( gtk_toggle_button_get_active( button )){
+		priv->p2_type = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_BUTTON_TYPE ));
+		priv->p2_type_btn = GTK_BUTTON( button );
+	} else {
+		priv->p2_type = 0;
+		priv->p2_type_btn = NULL;
+	}
+}
+
+static void
+get_active_type( ofaImport *self )
+{
+	ofaImportPrivate *priv;
+	GSList *ig;
+
+	priv = self->private;
+	priv->p2_type = 0;
+	priv->p2_type_btn = NULL;
+
+	for( ig=priv->p2_group ; ig ; ig=ig->next ){
+		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( ig->data ))){
+			priv->p2_type = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( ig->data ), DATA_BUTTON_TYPE ));
+			priv->p2_type_btn = GTK_BUTTON( ig->data );
+			break;
+		}
+	}
 }
 
 static void
@@ -518,20 +588,6 @@ check_for_p2_complete( ofaImport *self )
 	get_active_type( self );
 
 	gtk_assistant_set_page_complete( priv->assistant, page, priv->p2_type > 0 );
-}
-
-static void
-get_active_type( ofaImport *self )
-{
-	ofaImportPrivate *priv;
-
-	priv = self->private;
-
-	if( gtk_toggle_button_get_active( priv->p2_releve )){
-		priv->p2_type_btn = GTK_BUTTON( priv->p2_releve );
-		priv->p2_type = TYPE_BANK_ACCOUNT;
-		return;
-	}
 }
 
 /*
@@ -617,19 +673,25 @@ static void
 on_apply( GtkAssistant *assistant, ofaImport *self )
 {
 	static const gchar *thisfn = "ofa_import_on_apply";
+	ofaImportPrivate *priv;
 	guint count, i;
 
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_IMPORT( self ));
 
-	if( !self->private->dispose_has_run ){
+	priv = self->private;
+
+	if( !priv->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
 
+		get_active_type( self ),
+
 		count = ofa_importer_import_from_uris(
-						ofa_main_window_get_dossier( self->private->main_window ),
-						self->private->p1_fnames );
+						ofa_main_window_get_dossier( priv->main_window ),
+						priv->p2_type,
+						priv->p1_fnames );
 
 		for( i=0 ; i<count ; ++i ){
 			g_warning( "%s: TO BE WRITTEN", thisfn );

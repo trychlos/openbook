@@ -31,6 +31,8 @@
  * SECTION: of1_importer
  * @short_description: #of1Importer class definition.
  * @include: of1-importer.h
+ *
+ * Import Bank Account Transaction (BAT) files in tabulated text format.
  */
 
 #include <glib-object.h>

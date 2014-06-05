@@ -180,16 +180,21 @@ ofa_iimporter_free_output( ofaIImporterParms *parms )
 {
 	static const gchar *thisfn = "ofa_iimporter_free_output";
 
+	g_free( parms->format );
+
 	switch( parms->type ){
 
-		case IMPORTER_TYPE_BAT1:
-			g_free( parms->batv1.format );
-			g_free( parms->batv1.rib );
-			g_free( parms->batv1.currency );
-			g_list_free_full( parms->batv1.results, ( GDestroyNotify ) free_output_sbatv1 );
-			memset( &parms->batv1, '\0', sizeof( ofaIImporterSBatv1 ));
-			g_date_clear( &parms->batv1.begin, 1 );
-			g_date_clear( &parms->batv1.end, 1 );
+		case IMPORTER_TYPE_BAT:
+			if( parms->version == 1 ){
+				g_free( parms->batv1.rib );
+				g_free( parms->batv1.currency );
+				g_list_free_full( parms->batv1.results, ( GDestroyNotify ) free_output_sbatv1 );
+				memset( &parms->batv1, '\0', sizeof( ofaIImporterSBatv1 ));
+				g_date_clear( &parms->batv1.begin, 1 );
+				g_date_clear( &parms->batv1.end, 1 );
+			} else {
+				g_warning( "%s: IMPORTER_TYPE_BAT: version=%d", thisfn, parms->version );
+			}
 			break;
 
 		default:

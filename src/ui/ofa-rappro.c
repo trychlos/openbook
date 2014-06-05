@@ -30,6 +30,8 @@
 
 #include <glib/gi18n.h>
 
+#include "api/ofa-iimporter.h"
+
 #include "ui/my-utils.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-account-select.h"
@@ -1093,6 +1095,7 @@ on_file_set( GtkFileChooserButton *button, ofaRappro *self )
 
 	bat_id = ofa_importer_import_from_uri(
 					ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )),
+					IMPORTER_TYPE_BAT,
 					gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button )));
 
 	if( bat_id > 0 ){

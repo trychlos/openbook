@@ -57,6 +57,7 @@ struct _of1ImporterPrivate {
 typedef struct {
 	const gchar *label;
 	gint         type;
+	gint         version;
 	gint       (*fn)( of1Importer * );
 }
 	ImportFormat;
@@ -66,9 +67,9 @@ static gint import_bourso_excel2002_v1  ( of1Importer *importer );
 static gint import_lcl_tabulated_text_v1( of1Importer *importer );
 
 static ImportFormat st_import_formats[] = {
-		{ "Boursorama - Excel 95",        IMPORTER_TYPE_BAT1, import_bourso_excel95_v1 },
-		{ "Boursorama - Excel 2002",      IMPORTER_TYPE_BAT1, import_bourso_excel2002_v1 },
-		{ "LCL - Excel (tabulated text)", IMPORTER_TYPE_BAT1, import_lcl_tabulated_text_v1 },
+		{ "Boursorama - Excel 95",        IMPORTER_TYPE_BAT, 1, import_bourso_excel95_v1 },
+		{ "Boursorama - Excel 2002",      IMPORTER_TYPE_BAT, 1, import_bourso_excel2002_v1 },
+		{ "LCL - Excel (tabulated text)", IMPORTER_TYPE_BAT, 1, import_lcl_tabulated_text_v1 },
 		{ 0 }
 };
 
@@ -260,17 +261,21 @@ of1_importer_import_from_uri( const ofaIImporter *importer, ofaIImporterParms *p
 
 	for( i=0 ; st_import_formats[i].label && code!=IMPORTER_CODE_OK ; ++i ){
 
-		parms->type = st_import_formats[i].type;
-		parms->batv1.format = g_strdup( st_import_formats[i].label );
-		code = st_import_formats[i].fn( OF1_IMPORTER( importer ));
+		if( !parms->type || parms->type == st_import_formats[i].type ){
 
-		if( code != IMPORTER_CODE_OK ){
+			parms->type = st_import_formats[i].type;
+			parms->version = st_import_formats[i].version;
+			parms->format = g_strdup( st_import_formats[i].label );
+			code = st_import_formats[i].fn( OF1_IMPORTER( importer ));
 
-			str = g_strdup_printf( "%s: %s", st_import_formats[i].label, _( "unable to parse "));
-			parms->messages = g_slist_append( parms->messages, str );
-			g_debug( "%s: %s", thisfn, str );
+			if( code != IMPORTER_CODE_OK ){
 
-			ofa_iimporter_free_output( parms );
+				str = g_strdup_printf( "%s: %s", st_import_formats[i].label, _( "unable to parse "));
+				parms->messages = g_slist_append( parms->messages, str );
+				g_debug( "%s: %s", thisfn, str );
+
+				ofa_iimporter_free_output( parms );
+			}
 		}
 	}
 

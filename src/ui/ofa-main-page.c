@@ -482,7 +482,10 @@ v_setup_buttons( ofaMainPage *page )
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
 	priv->btn_delete = button;
 
-	if( priv->has_import_export ){
+	/* pwi 2014- 6- 5
+	 * temporarily disable the import/export buttons
+	 */
+	if( 0 && priv->has_import_export ){
 		frame = GTK_FRAME( gtk_frame_new( NULL ));
 		gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 		gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 8 );
