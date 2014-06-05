@@ -1340,3 +1340,70 @@ model_cmp_by_ptr( const ofoModel *a, const ofoModel *b )
 {
 	return( g_utf8_collate( ofo_model_get_mnemo( a ), ofo_model_get_mnemo( b )));
 }
+
+/**
+ * ofo_model_get_csv:
+ */
+GSList *
+ofo_model_get_csv( const ofoDossier *dossier )
+{
+	GList *set, *det;
+	GSList *lines;
+	gchar *str, *stamp;
+	ofoModel *model;
+	ofoJournal *journal;
+	const gchar *notes, *muser;
+	sModDetail *sdet;
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+
+	lines = NULL;
+
+	str = g_strdup_printf( "1;Mnemo;Label;Journal;JournalLocked;Notes;MajUser;MajStamp" );
+	lines = g_slist_prepend( lines, str );
+
+	str = g_strdup_printf( "2;Mnemo;Comment;Account;AccountLocked;Label;LabelLocked;Debit;DebitLocked;Credit;CreditLocked" );
+	lines = g_slist_prepend( lines, str );
+
+	for( set=st_global->dataset ; set ; set=set->next ){
+		model = OFO_MODEL( set->data );
+
+		journal = ofo_journal_get_by_id( dossier, ofo_model_get_journal( model ));
+		notes = ofo_model_get_notes( model );
+		muser = ofo_model_get_maj_user( model );
+		stamp = my_utils_str_from_stamp( ofo_model_get_maj_stamp( model ));
+
+		str = g_strdup_printf( "1;%s;%s;%s;%s;%s;%s;%s",
+				ofo_model_get_mnemo( model ),
+				ofo_model_get_label( model ),
+				journal ? ofo_journal_get_mnemo( journal ) : "",
+				ofo_model_get_journal_locked( model ) ? "True" : "False",
+				notes ? notes : "",
+				muser ? muser : "",
+				muser ? stamp : "" );
+
+		g_free( stamp );
+
+		lines = g_slist_prepend( lines, str );
+
+		for( det=model->private->details ; det ; det=det->next ){
+			sdet = ( sModDetail * ) det->data;
+
+			str = g_strdup_printf( "2;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s",
+					ofo_model_get_mnemo( model ),
+					sdet->comment ? sdet->comment : "",
+					sdet->account ? sdet->account : "",
+					sdet->account_locked ? "True" : "False",
+					sdet->label ? sdet->label : "",
+					sdet->label_locked ? "True" : "False",
+					sdet->debit ? sdet->debit : "",
+					sdet->debit_locked ? "True" : "False",
+					sdet->credit ? sdet->credit : "",
+					sdet->credit_locked ? "True" : "False" );
+
+			lines = g_slist_prepend( lines, str );
+		}
+	}
+
+	return( g_slist_reverse( lines ));
+}

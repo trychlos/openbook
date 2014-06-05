@@ -113,6 +113,8 @@ gdouble        ofo_entry_get_amount   ( const ofoEntry *entry );
 ofaEntrySens   ofo_entry_get_sens     ( const ofoEntry *entry );
 ofaEntryStatus ofo_entry_get_status   ( const ofoEntry *entry );
 const GDate   *ofo_entry_get_rappro   ( const ofoEntry *entry );
+const gchar   *ofo_entry_get_maj_user ( const ofoEntry *entry );
+const GTimeVal*ofo_entry_get_maj_stamp( const ofoEntry *entry );
 
 void           ofo_entry_set_number   ( ofoEntry *entry, gint number );
 void           ofo_entry_set_label    ( ofoEntry *entry, const gchar *label );
@@ -140,6 +142,8 @@ gboolean       ofo_entry_insert       ( ofoEntry *entry, ofoDossier *dossier );
 gboolean       ofo_entry_update_rappro( ofoEntry *entry, const ofoDossier *dossier );
 gboolean       ofo_entry_validate     ( ofoEntry *entry, const ofoDossier *dossier );
 gboolean       ofo_entry_delete       ( ofoEntry *entry, const ofoDossier *dossier );
+
+GSList        *ofo_entry_get_csv      ( const ofoDossier *dossier );
 
 G_END_DECLS
 

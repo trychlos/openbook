@@ -143,6 +143,30 @@ typedef struct {
 	 * implement.
 	 */
 	void        ( *on_delete_clicked )( GtkButton *button, ofaMainPage *page );
+
+	/**
+	 * on_import_clicked:
+	 * @page: this #ofaMainPage object.
+	 *
+	 * This virtual function is triggered when the 'Import' button
+	 * installed by the above #setup_buttons() virtual function is
+	 * clicked.
+	 * This is a pure virtual function, that the child class should
+	 * implement.
+	 */
+	void        ( *on_import_clicked )( GtkButton *button, ofaMainPage *page );
+
+	/**
+	 * on_export_clicked:
+	 * @page: this #ofaMainPage object.
+	 *
+	 * This virtual function is triggered when the 'Export' button
+	 * installed by the above #setup_buttons() virtual function is
+	 * clicked.
+	 * This is a pure virtual function, that the child class should
+	 * implement.
+	 */
+	void        ( *on_export_clicked )( GtkButton *button, ofaMainPage *page );
 }
 	ofaMainPageClass;
 

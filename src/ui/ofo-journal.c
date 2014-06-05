@@ -34,6 +34,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
 #include "ui/ofo-base-prot.h"
+#include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
 #include "ui/ofo-journal.h"
@@ -1367,4 +1368,108 @@ static gint
 journal_cmp_by_ptr( const ofoJournal *a, const ofoJournal *b )
 {
 	return( g_utf8_collate( ofo_journal_get_mnemo( a ), ofo_journal_get_mnemo( b )));
+}
+
+/**
+ * ofo_journal_get_csv:
+ */
+GSList *
+ofo_journal_get_csv( const ofoDossier *dossier )
+{
+	GList *set, *exe, *amount;
+	GSList *lines;
+	gchar *str, *stamp, *sdfin, *sdclo;
+	ofoJournal *journal;
+	sDetailExe *sexe;
+	sDetailDev *sdev;
+	const GDate *date;
+	ofoDevise *devise;
+	const gchar *notes, *muser;
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
+
+	lines = NULL;
+
+	str = g_strdup_printf( "1;Mnemo;Label;Notes;MajUser;MajStamp" );
+	lines = g_slist_prepend( lines, str );
+
+	str = g_strdup_printf( "2;Mnemo;Exe;Closed" );
+	lines = g_slist_prepend( lines, str );
+
+	str = g_strdup_printf( "3;Mnemo;Exe;Currency;CloDeb;CloCre;Deb;Cre" );
+	lines = g_slist_prepend( lines, str );
+
+	for( set=st_global->dataset ; set ; set=set->next ){
+		journal = OFO_JOURNAL( set->data );
+
+		notes = ofo_journal_get_notes( journal );
+		muser = ofo_journal_get_maj_user( journal );
+		stamp = my_utils_str_from_stamp( ofo_journal_get_maj_stamp( journal ));
+
+		str = g_strdup_printf( "1;%s;%s;%s;%s;%s",
+				ofo_journal_get_mnemo( journal ),
+				ofo_journal_get_label( journal ),
+				notes ? notes : "",
+				muser ? muser : "",
+				muser ? stamp : "" );
+
+		g_free( stamp );
+
+		lines = g_slist_prepend( lines, str );
+
+		for( exe=journal->private->exes ; exe ; exe=exe->next ){
+			sexe = ( sDetailExe * ) exe->data;
+
+			date = ofo_dossier_get_exe_fin( dossier, sexe->exe_id );
+			if( date && g_date_valid( date )){
+				sdfin = my_utils_sql_from_date( date );
+			} else {
+				sdfin = g_strdup( "" );
+			}
+
+			if( g_date_valid( &sexe->last_clo )){
+				sdclo = my_utils_sql_from_date( &sexe->last_clo );
+			} else {
+				sdclo = g_strdup( "" );
+			}
+
+			str = g_strdup_printf( "2;%s;%s;%s",
+					ofo_journal_get_mnemo( journal ),
+					sdfin,
+					sdclo );
+
+			g_free( sdfin );
+			g_free( sdclo );
+
+			lines = g_slist_prepend( lines, str );
+		}
+
+		for( amount=journal->private->amounts ; amount ; amount=amount->next ){
+			sdev = ( sDetailDev * ) amount->data;
+
+			date = ofo_dossier_get_exe_fin( dossier, sdev->exe_id );
+			if( date && g_date_valid( date )){
+				sdfin = my_utils_sql_from_date( date );
+			} else {
+				sdfin = g_strdup( "" );
+			}
+
+			devise = ofo_devise_get_by_id( dossier, sdev->dev_id );
+
+			str = g_strdup_printf( "3;%s;%s;%s;%.2lf;%.2lf;%.2lf;%.2lf",
+					ofo_journal_get_mnemo( journal ),
+					sdfin,
+					devise ? ofo_devise_get_code( devise ) : "",
+					ofo_journal_get_clo_deb( journal, sdev->exe_id, sdev->dev_id ),
+					ofo_journal_get_clo_cre( journal, sdev->exe_id, sdev->dev_id ),
+					ofo_journal_get_deb( journal, sdev->exe_id, sdev->dev_id ),
+					ofo_journal_get_cre( journal, sdev->exe_id, sdev->dev_id ));
+
+			g_free( sdfin );
+
+			lines = g_slist_prepend( lines, str );
+		}
+	}
+
+	return( g_slist_reverse( lines ));
 }

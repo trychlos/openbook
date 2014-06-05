@@ -48,10 +48,11 @@ G_BEGIN_DECLS
 /**
  * Properties set against this base class at instanciation time
  */
-#define MAIN_PAGE_PROP_WINDOW   "main-page-prop-window"
-#define MAIN_PAGE_PROP_DOSSIER  "main-page-prop-dossier"
-#define MAIN_PAGE_PROP_GRID     "main-page-prop-grid"
-#define MAIN_PAGE_PROP_THEME    "main-page-prop-theme"
+#define MAIN_PAGE_PROP_WINDOW            "main-page-prop-window"
+#define MAIN_PAGE_PROP_DOSSIER           "main-page-prop-dossier"
+#define MAIN_PAGE_PROP_GRID              "main-page-prop-grid"
+#define MAIN_PAGE_PROP_THEME             "main-page-prop-theme"
+#define MAIN_PAGE_PROP_HAS_IMPORT_EXPORT "main-page-prop-import-export"
 
 /**
  * Whether an object has been created, updated or deleted
@@ -79,6 +80,8 @@ GtkTreeView   *ofa_main_page_get_treeview   ( const ofaMainPage *page );
 GtkWidget     *ofa_main_page_get_new_btn    ( const ofaMainPage *page );
 GtkWidget     *ofa_main_page_get_update_btn ( const ofaMainPage *page );
 GtkWidget     *ofa_main_page_get_delete_btn ( const ofaMainPage *page );
+GtkWidget     *ofa_main_page_get_import_btn ( const ofaMainPage *page );
+GtkWidget     *ofa_main_page_get_export_btn ( const ofaMainPage *page );
 
 gboolean       ofa_main_page_delete_confirmed( const ofaMainPage *page, const gchar *message );
 

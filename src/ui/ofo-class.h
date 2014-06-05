@@ -67,6 +67,8 @@ void            ofo_class_set_maj_stamp( ofoClass *class, const GTimeVal *stamp 
 
 gboolean        ofo_class_update       ( ofoClass *class, const ofoDossier *dossier );
 
+GSList         *ofo_class_get_csv      ( const ofoDossier *dossier );
+
 G_END_DECLS
 
 #endif /* __OFO_CLASS_H__ */

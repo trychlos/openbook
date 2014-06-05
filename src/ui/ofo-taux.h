@@ -93,6 +93,8 @@ gboolean        ofo_taux_insert       ( ofoTaux *taux, const ofoDossier *dossier
 gboolean        ofo_taux_update       ( ofoTaux *taux, const ofoDossier *dossier );
 gboolean        ofo_taux_delete       ( ofoTaux *taux, const ofoDossier *dossier );
 
+GSList         *ofo_taux_get_csv      ( const ofoDossier *dossier );
+
 G_END_DECLS
 
 #endif /* __OFO_TAUX_H__ */

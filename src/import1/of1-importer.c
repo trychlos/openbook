@@ -241,9 +241,7 @@ of1_importer_import_from_uri( const ofaIImporter *importer, ofaIImporterParms *p
 	error = NULL;
 	if( !g_file_load_contents( gfile, NULL, &contents, NULL, &priv->etag, &error )){
 		str = g_strdup( error->message );
-		if( parms->messages ){
-			parms->messages = g_slist_append( parms->messages, str );
-		}
+		parms->messages = g_slist_append( parms->messages, str );
 		g_debug( "%s: %s", thisfn, str );
 		return( IMPORTER_CODE_UNABLE_TO_PARSE );
 	}
@@ -269,9 +267,7 @@ of1_importer_import_from_uri( const ofaIImporter *importer, ofaIImporterParms *p
 		if( code != IMPORTER_CODE_OK ){
 
 			str = g_strdup_printf( "%s: %s", st_import_formats[i].label, _( "unable to parse "));
-			if( parms->messages ){
-				parms->messages = g_slist_append( parms->messages, str );
-			}
+			parms->messages = g_slist_append( parms->messages, str );
 			g_debug( "%s: %s", thisfn, str );
 
 			ofa_iimporter_free_output( parms );

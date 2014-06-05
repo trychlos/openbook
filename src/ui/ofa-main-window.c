@@ -37,6 +37,7 @@
 #include "ui/ofa-classes-set.h"
 #include "ui/ofa-devises-set.h"
 #include "ui/ofa-dossier-properties.h"
+#include "ui/ofa-export.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-import.h"
 #include "ui/ofa-journals-set.h"
@@ -82,6 +83,7 @@ static void on_close           ( GSimpleAction *action, GVariant *parameter, gpo
 static void on_ope_guided      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_concil      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_export      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -96,6 +98,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "guided",       on_ope_guided,       NULL, NULL, NULL },
 		{ "concil",       on_ope_concil,       NULL, NULL, NULL },
 		{ "import",       on_ope_import,       NULL, NULL, NULL },
+		{ "export",       on_ope_export,       NULL, NULL, NULL },
 		{ "accounts",     on_ref_accounts,     NULL, NULL, NULL },
 		{ "journals",     on_ref_journals,     NULL, NULL, NULL },
 		{ "models",       on_ref_models,       NULL, NULL, NULL },
@@ -109,13 +112,19 @@ static const GActionEntry st_dos_entries[] = {
  * main notebook:
  * - the label which is displayed in the tab of the page of the main book
  * - the GObject get_type() function
- * - the external function which is finally to be called  with the newly
- *   created object.
+ *
+ * There must be here one theme per type of main notebook's page.
+ *
+ * Each main notebook's page may be reached either from a menubar action,
+ * or from an activation of an item in the left treeview (though several
+ * menubar actions and/or several items in the left treeview may lead
+ * to a same theme)
  */
 typedef struct {
 	gint         theme_id;
 	const gchar *label;
 	GType      (*fn_get_type)( void );
+	gboolean     has_import_export;
 }
 	sThemeDef;
 
@@ -134,35 +143,43 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_ACCOUNTS,
 				N_( "Chart of accounts" ),
-				ofa_accounts_chart_get_type },
+				ofa_accounts_chart_get_type,
+				TRUE },
 
 		{ THM_JOURNALS,
 				N_( "Journals" ),
-				ofa_journals_set_get_type },
+				ofa_journals_set_get_type,
+				TRUE },
 
 		{ THM_MODELS,
 				N_( "Entry models" ),
-				ofa_models_set_get_type },
+				ofa_models_set_get_type,
+				TRUE },
 
 		{ THM_DEVISES,
 				N_( "Currencies" ),
-				ofa_devises_set_get_type },
+				ofa_devises_set_get_type,
+				TRUE },
 
 		{ THM_TAUX,
 				N_( "Rates" ),
-				ofa_taux_set_get_type },
+				ofa_taux_set_get_type,
+				TRUE },
 
 		{ THM_CONCIL,
 				N_( "Reconciliation" ),
-				ofa_rappro_get_type },
+				ofa_rappro_get_type,
+				FALSE },
 
 		{ THM_CLASSES,
 				N_( "Account classes" ),
-				ofa_classes_set_get_type },
+				ofa_classes_set_get_type,
+				TRUE },
 
 		{ THM_BATFILES,
 				N_( "Imported BAT files" ),
-				ofa_bat_set_get_type },
+				ofa_bat_set_get_type,
+				TRUE },
 
 		{ 0 }
 };
@@ -832,6 +849,19 @@ on_ope_import( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 }
 
 static void
+on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_export";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_export_run( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
 on_ref_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_ref_accounts";
@@ -1027,10 +1057,11 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 	 * ofaMainPage
 	 */
 	handler = g_object_new(( *theme_def->fn_get_type )(),
-					MAIN_PAGE_PROP_WINDOW,  main,
-					MAIN_PAGE_PROP_DOSSIER, main->private->dossier,
-					MAIN_PAGE_PROP_GRID,    grid,
-					MAIN_PAGE_PROP_THEME,   theme_def->theme_id,
+					MAIN_PAGE_PROP_WINDOW,            main,
+					MAIN_PAGE_PROP_DOSSIER,           main->private->dossier,
+					MAIN_PAGE_PROP_GRID,              grid,
+					MAIN_PAGE_PROP_THEME,             theme_def->theme_id,
+					MAIN_PAGE_PROP_HAS_IMPORT_EXPORT, theme_def->has_import_export,
 					NULL );
 
 	g_object_set_data( G_OBJECT( grid ), OFA_DATA_HANDLER, handler );

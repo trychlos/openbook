@@ -159,9 +159,9 @@ typedef struct {
  * from an URI, taking back all the results on output.
  */
 struct _ofaIImporterParms {
-	gchar      *uri;
-	GSList     *messages;
-	gint        type;
+	const gchar *uri;
+	GSList      *messages;
+	gint         type;
 	union {
 		ofaIImporterBatv1 batv1;
 	};

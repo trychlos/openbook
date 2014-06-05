@@ -89,6 +89,8 @@ void           my_utils_init_maj_user_stamp( GtkContainer *container,
 														GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_maj_stamp( priv->T ), \
 														ofo_ ## T ## _get_maj_user( priv->T )); }
 
+gboolean       my_utils_output_stream_new( const gchar *uri, GFile **file, GOutputStream **stream );
+
 G_END_DECLS
 
 #endif /* __MY_UTILS_H__ */

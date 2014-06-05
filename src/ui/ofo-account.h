@@ -106,6 +106,8 @@ gboolean        ofo_account_insert          ( ofoAccount *account, const ofoDoss
 gboolean        ofo_account_update          ( ofoAccount *account, const ofoDossier *dossier, const gchar *prev_number );
 gboolean        ofo_account_delete          ( ofoAccount *account, const ofoDossier *dossier );
 
+GSList         *ofo_account_get_csv         ( const ofoDossier *dossier );
+
 G_END_DECLS
 
 #endif /* __OFO_ACCOUNT_H__ */

@@ -35,6 +35,7 @@
 #include "ui/ofo-base.h"
 #include "ui/ofo-base-prot.h"
 #include "ui/ofo-account.h"
+#include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
 #include "ui/ofo-sgbd.h"
@@ -1434,4 +1435,94 @@ static gint
 account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b )
 {
 	return( g_utf8_collate( ofo_account_get_number( a ), ofo_account_get_number( b )));
+}
+
+/**
+ * ofo_account_get_csv:
+ */
+GSList *
+ofo_account_get_csv( const ofoDossier *dossier )
+{
+	GList *set;
+	GSList *lines;
+	gchar *str, *stamp;
+	ofoAccount *account;
+	ofoDevise *devise;
+	gchar *sdeb, *scre, *sbrodeb, *sbrocre;
+	const gchar *atype, *notes, *muser;
+	const GDate *date;
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+
+	lines = NULL;
+
+	str = g_strdup_printf( "Number;Label;Currency;Type;Notes;MajUser;MajStamp;"
+			"DebEntry;DebDate;DebAmount;CreEntry;CreDate;CreAmount;"
+			"BroDebEntry;BroDebDate;BroDebAmount;BroCreEntry;BroCreDate;BroCreAmount" );
+	lines = g_slist_prepend( lines, str );
+
+	for( set=st_global->dataset ; set ; set=set->next ){
+		account = OFO_ACCOUNT( set->data );
+
+		devise = ofo_devise_get_by_id( dossier, ofo_account_get_devise( account ));
+		atype = ofo_account_get_type_account( account );
+		notes = ofo_account_get_notes( account );
+		muser = ofo_account_get_maj_user( account );
+		stamp = my_utils_str_from_stamp( ofo_account_get_maj_stamp( account ));
+		date = ofo_account_get_deb_date( account );
+		if( !date || !g_date_valid( date )){
+			sdeb = my_utils_sql_from_date( date );
+		} else {
+			sdeb = g_strdup( "" );
+		}
+		date = ofo_account_get_cre_date( account );
+		if( !date || !g_date_valid( date )){
+			scre = my_utils_sql_from_date( date );
+		} else {
+			scre = g_strdup( "" );
+		}
+		date = ofo_account_get_bro_deb_date( account );
+		if( !date || !g_date_valid( date )){
+			sbrodeb = my_utils_sql_from_date( date );
+		} else {
+			sbrodeb = g_strdup( "" );
+		}
+		date = ofo_account_get_bro_cre_date( account );
+		if( !date || !g_date_valid( date )){
+			sbrocre = my_utils_sql_from_date( date );
+		} else {
+			sbrocre = g_strdup( "" );
+		}
+
+		str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%s;%d;%s;%.2lf;%d;%s;%.2lf;%d;%s;%.2lf;%d;%s;%.2lf",
+				ofo_account_get_number( account ),
+				ofo_account_get_label( account ),
+				devise ? ofo_devise_get_code( devise ) : "",
+				atype ? atype : "",
+				notes ? notes : "",
+				muser ? muser : "",
+				muser ? stamp : "",
+				ofo_account_get_deb_ecr( account ),
+				sdeb,
+				ofo_account_get_deb_mnt( account ),
+				ofo_account_get_cre_ecr( account ),
+				scre,
+				ofo_account_get_cre_mnt( account ),
+				ofo_account_get_bro_deb_ecr( account ),
+				sbrodeb,
+				ofo_account_get_bro_deb_mnt( account ),
+				ofo_account_get_bro_cre_ecr( account ),
+				sbrocre,
+				ofo_account_get_bro_cre_mnt( account ));
+
+		g_free( stamp );
+		g_free( sdeb );
+		g_free( scre );
+		g_free( sbrodeb );
+		g_free( sbrocre );
+
+		lines = g_slist_prepend( lines, str );
+	}
+
+	return( g_slist_reverse( lines ));
 }

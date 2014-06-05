@@ -96,6 +96,8 @@ const GDate    *ofo_dossier_get_current_exe_deb     ( const ofoDossier *dossier 
 const GDate    *ofo_dossier_get_current_exe_fin     ( const ofoDossier *dossier );
 gint            ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier );
 
+const GDate    *ofo_dossier_get_exe_fin             ( const ofoDossier *dossier, gint exe_id );
+
 const GDate    *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );
 gint            ofo_dossier_get_next_entry_number   ( const ofoDossier *dossier );
 
@@ -116,6 +118,8 @@ void            ofo_dossier_set_current_exe_last_ecr( const ofoDossier *dossier,
 gboolean        ofo_dossier_dbmodel_update          ( ofoSgbd *sgbd, const gchar *account );
 
 gboolean        ofo_dossier_update                  ( ofoDossier *dossier );
+
+GSList         *ofo_dossier_get_csv                 ( const ofoDossier *dossier );
 
 G_END_DECLS
 

@@ -95,6 +95,8 @@ gboolean        ofo_model_insert       ( ofoModel *model, const ofoDossier *doss
 gboolean        ofo_model_update       ( ofoModel *model, const ofoDossier *dossier, const gchar *prev_mnemo );
 gboolean        ofo_model_delete       ( ofoModel *model, const ofoDossier *dossier );
 
+GSList         *ofo_model_get_csv      ( const ofoDossier *dossier );
+
 G_END_DECLS
 
 #endif /* __OFO_MODEL_H__ */

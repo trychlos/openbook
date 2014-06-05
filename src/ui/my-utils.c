@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <gio/gio.h>
 #include <glib/gi18n.h>
 #include <string.h>
 
@@ -503,4 +504,52 @@ my_utils_init_maj_user_stamp( GtkContainer *container,
 
 	g_free( str );
 	g_free( str_stamp );
+}
+
+/**
+ * my_utils_output_stream_new:
+ */
+gboolean
+my_utils_output_stream_new( const gchar *uri, GFile **file, GOutputStream **stream )
+{
+	static const gchar *thisfn = "my_utils_output_stream_new";
+	GError *error;
+
+	g_return_val_if_fail( uri && g_utf8_strlen( uri, -1 ), FALSE );
+	g_return_val_if_fail( file, FALSE );
+	g_return_val_if_fail( stream, FALSE );
+
+	*file = g_file_new_for_uri( uri );
+	error = NULL;
+	*stream = ( GOutputStream * ) g_file_create( *file, G_FILE_CREATE_REPLACE_DESTINATION, NULL, &error );
+	if( !*stream ){
+		if( error->code == G_IO_ERROR_EXISTS ){
+			g_error_free( error );
+			error = NULL;
+			if( !g_file_delete( *file, NULL, &error )){
+				g_warning( "%s: g_file_delete: %s", thisfn, error->message );
+				g_error_free( error );
+				g_object_unref( *file );
+				*file = NULL;
+				return( FALSE );
+			} else {
+				*stream = ( GOutputStream * ) g_file_create( *file, G_FILE_CREATE_REPLACE_DESTINATION, NULL, &error );
+				if( !*stream ){
+					g_warning( "%s: g_file_create (post delete): %s", thisfn, error->message );
+					g_error_free( error );
+					g_object_unref( *file );
+					*file = NULL;
+					return( FALSE );
+				}
+			}
+		} else {
+			g_warning( "%s: g_file_create: %s", thisfn, error->message );
+			g_error_free( error );
+			g_object_unref( *file );
+			*file = NULL;
+			return( FALSE );
+		}
+	}
+
+	return( TRUE );
 }

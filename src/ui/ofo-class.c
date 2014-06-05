@@ -500,3 +500,44 @@ class_cmp_by_ptr( const ofoClass *a, const ofoClass *b )
 {
 	return( class_cmp_by_number( a, GINT_TO_POINTER( ofo_class_get_number( b ))));
 }
+
+/**
+ * ofo_class_get_csv:
+ */
+GSList *
+ofo_class_get_csv( const ofoDossier *dossier )
+{
+	GList *set;
+	GSList *lines;
+	gchar *str, *stamp;
+	const gchar *notes, *muser;
+	ofoClass *class;
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, class );
+
+	lines = NULL;
+
+	str = g_strdup_printf( "Number;Label;Notes;MajUser;MajStamp" );
+	lines = g_slist_prepend( lines, str );
+
+	for( set=st_global->dataset ; set ; set=set->next ){
+		class = OFO_CLASS( set->data );
+
+		stamp = my_utils_str_from_stamp( ofo_class_get_maj_stamp( class ));
+		notes = ofo_class_get_notes( class );
+		muser = ofo_class_get_maj_user( class );
+
+		str = g_strdup_printf( "%d;%s;%s;%s;%s",
+				ofo_class_get_number( class ),
+				ofo_class_get_label( class ),
+				notes ? notes : "",
+				muser ? muser : "",
+				muser ? stamp : "" );
+
+		g_free( stamp );
+
+		lines = g_slist_prepend( lines, str );
+	}
+
+	return( g_slist_reverse( lines ));
+}

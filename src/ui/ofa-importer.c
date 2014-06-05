@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+
 #include "api/ofa-iimporter.h"
 #include "ui/ofa-importer.h"
 #include "ui/ofa-plugin.h"
@@ -60,10 +62,11 @@ ofa_importer_import_from_uri( const ofoDossier *dossier, const gchar *uri )
 		return( -1 );
 	}
 
-	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IIMPORTER );
-
-	parms.uri = ( gchar * ) uri;
+	memset( &parms, '\0', sizeof( ofaIImporterParms ));
+	parms.uri = ( const gchar * ) uri;
 	parms.messages = NULL;
+
+	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IIMPORTER );
 
 	id = try_to_import_uri( dossier, modules, &parms );
 
@@ -89,13 +92,14 @@ ofa_importer_import_from_uris( const ofoDossier *dossier, GSList *uris )
 	g_debug( "%s: uris=%p", thisfn, ( void * ) uris );
 
 	count = 0;
-	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IIMPORTER );
-
+	memset( &parms, '\0', sizeof( ofaIImporterParms ));
 	parms.messages = NULL;
+
+	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IIMPORTER );
 
 	for( uri=uris ; uri ; uri=uri->next ){
 
-		parms.uri = ( gchar * ) uri->data;
+		parms.uri = ( const gchar * ) uri->data;
 		if( try_to_import_uri( dossier, modules, &parms ) > 0 ){
 			count += 1;
 		}

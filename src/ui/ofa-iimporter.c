@@ -131,6 +131,12 @@ iimporter_get_interface_version( const ofaIImporter *instance )
  * Tries to import data from the URI specified in @parms, returning
  * the result in <structfield>@parms->imported</structfield>.
  *
+ * On input of this function, only parms->uri is set.
+ * parms->messages may be set or not, but should not be reinitialized
+ * by the importer plugin.
+ *
+ * It is the responsability of the importer to set the other datas.
+ *
  * Returns: the return code of the operation.
  */
 

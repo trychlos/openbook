@@ -1193,3 +1193,76 @@ taux_cmp_by_ptr( const ofoTaux *a, const ofoTaux *b )
 {
 	return( g_utf8_collate( ofo_taux_get_mnemo( a ), ofo_taux_get_mnemo( b )));
 }
+
+/**
+ * ofo_taux_get_csv:
+ */
+GSList *
+ofo_taux_get_csv( const ofoDossier *dossier )
+{
+	GList *set, *det;
+	GSList *lines;
+	gchar *str, *stamp;
+	ofoTaux *taux;
+	const gchar *notes, *muser;
+	sTauxValid *sdet;
+	gchar *sbegin, *send;
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
+
+	lines = NULL;
+
+	str = g_strdup_printf( "1;Mnemo;Label;Notes;MajUser;MajStamp" );
+	lines = g_slist_prepend( lines, str );
+
+	str = g_strdup_printf( "2;Mnemo;Begin;End;Rate" );
+	lines = g_slist_prepend( lines, str );
+
+	for( set=st_global->dataset ; set ; set=set->next ){
+		taux = OFO_TAUX( set->data );
+
+		notes = ofo_taux_get_notes( taux );
+		muser = ofo_taux_get_maj_user( taux );
+		stamp = my_utils_str_from_stamp( ofo_taux_get_maj_stamp( taux ));
+
+		str = g_strdup_printf( "1;%s;%s;%s;%s;%s",
+				ofo_taux_get_mnemo( taux ),
+				ofo_taux_get_label( taux ),
+				notes ? notes : "",
+				muser ? muser : "",
+				muser ? stamp : "" );
+
+		g_free( stamp );
+
+		lines = g_slist_prepend( lines, str );
+
+		for( det=taux->private->valids ; det ; det=det->next ){
+			sdet = ( sTauxValid * ) det->data;
+
+			if( g_date_valid( &sdet->begin )){
+				sbegin = my_utils_sql_from_date( &sdet->begin );
+			} else {
+				sbegin = g_strdup( "" );
+			}
+
+			if( g_date_valid( &sdet->end )){
+				send = my_utils_sql_from_date( &sdet->end );
+			} else {
+				send = g_strdup( "" );
+			}
+
+			str = g_strdup_printf( "2;%s;%s;%s;%.2lf",
+					ofo_taux_get_mnemo( taux ),
+					sbegin,
+					send,
+					sdet->rate );
+
+			g_free( sbegin );
+			g_free( send );
+
+			lines = g_slist_prepend( lines, str );
+		}
+	}
+
+	return( g_slist_reverse( lines ));
+}

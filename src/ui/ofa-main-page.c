@@ -45,12 +45,15 @@ struct _ofaMainPagePrivate {
 	ofoDossier    *dossier;
 	GtkGrid       *grid;
 	gint           theme;
+	gboolean       has_import_export;
 
 	/* UI
 	 */
 	GtkButton     *btn_new;
 	GtkButton     *btn_update;
 	GtkButton     *btn_delete;
+	GtkButton     *btn_import;
+	GtkButton     *btn_export;
 };
 
 /* class properties
@@ -60,6 +63,7 @@ enum {
 	PROP_DOSSIER_ID,
 	PROP_GRID_ID,
 	PROP_THEME_ID,
+	PROP_HAS_IMPORT_EXPORT_ID
 };
 
 /* signals defined
@@ -82,6 +86,8 @@ static void       do_init_view( ofaMainPage *page );
 static void       do_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       do_on_update_clicked( GtkButton *button, ofaMainPage *page );
 static void       do_on_delete_clicked( GtkButton *button, ofaMainPage *page );
+static void       do_on_import_clicked( GtkButton *button, ofaMainPage *page );
+static void       do_on_export_clicked( GtkButton *button, ofaMainPage *page );
 static void       on_journal_changed_class_handler( ofaMainPage *page, ofaMainPageUpdateType type, ofoBase *journal );
 static void       on_grid_finalized( ofaMainPage *self, GObject *grid );
 
@@ -157,6 +163,10 @@ main_page_get_property( GObject *instance, guint property_id, GValue *value, GPa
 				g_value_set_int( value, priv->theme );
 				break;
 
+			case PROP_HAS_IMPORT_EXPORT_ID:
+				g_value_set_boolean( value, priv->has_import_export );
+				break;
+
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
 				break;
@@ -194,6 +204,10 @@ main_page_set_property( GObject *instance, guint property_id, const GValue *valu
 
 			case PROP_THEME_ID:
 				priv->theme = g_value_get_int( value );
+				break;
+
+			case PROP_HAS_IMPORT_EXPORT_ID:
+				priv->has_import_export = g_value_get_boolean( value );
 				break;
 
 			default:
@@ -313,6 +327,16 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 					-1,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_HAS_IMPORT_EXPORT_ID,
+			g_param_spec_boolean(
+					MAIN_PAGE_PROP_HAS_IMPORT_EXPORT,
+					"Has import/export",
+					"Whether the page will display the 'Import...'/'Export...' buttons",
+					FALSE,
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
 	/**
 	 * main-page-signal-journal-updated:
 	 *
@@ -345,6 +369,8 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 	klass->on_new_clicked = NULL;
 	klass->on_update_clicked = NULL;
 	klass->on_delete_clicked = NULL;
+	klass->on_import_clicked = NULL;
+	klass->on_export_clicked = NULL;
 }
 
 static void
@@ -423,13 +449,16 @@ do_setup_buttons( ofaMainPage *page )
 static GtkWidget *
 v_setup_buttons( ofaMainPage *page )
 {
+	ofaMainPagePrivate *priv;
 	GtkBox *buttons_box;
 	GtkFrame *frame;
 	GtkButton *button;
 
 	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
 
-	buttons_box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_VERTICAL, 6 ));
+	priv = page->private;
+
+	buttons_box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_VERTICAL, 4 ));
 	gtk_widget_set_margin_right( GTK_WIDGET( buttons_box ), 4 );
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
@@ -439,19 +468,35 @@ v_setup_buttons( ofaMainPage *page )
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_New..." )));
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_new_clicked ), page );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	page->private->btn_new = button;
+	priv->btn_new = button;
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Update..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_update_clicked ), page );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	page->private->btn_update = button;
+	priv->btn_update = button;
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Delete..." )));
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_delete_clicked ), page );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	page->private->btn_delete = button;
+	priv->btn_delete = button;
+
+	if( priv->has_import_export ){
+		frame = GTK_FRAME( gtk_frame_new( NULL ));
+		gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
+		gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 8 );
+
+		button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Import..." )));
+		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_import_clicked ), page );
+		gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
+		priv->btn_import = button;
+
+		button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Export..." )));
+		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_export_clicked ), page );
+		gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
+		priv->btn_export = button;
+	}
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -515,6 +560,40 @@ do_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 
 	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_delete_clicked ){
 		OFA_MAIN_PAGE_GET_CLASS( page )->on_delete_clicked( button, page );
+
+	} else {
+		g_debug( "%s: button=%p, page=%p (%s)",
+				thisfn, ( void * ) button, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+	}
+}
+
+static void
+do_on_import_clicked( GtkButton *button, ofaMainPage *page )
+{
+	static const gchar *thisfn = "ofa_main_page_do_on_import_clicked";
+
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+
+	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_import_clicked ){
+		OFA_MAIN_PAGE_GET_CLASS( page )->on_import_clicked( button, page );
+
+	} else {
+		g_debug( "%s: button=%p, page=%p (%s)",
+				thisfn, ( void * ) button, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+	}
+}
+
+static void
+do_on_export_clicked( GtkButton *button, ofaMainPage *page )
+{
+	static const gchar *thisfn = "ofa_main_page_do_on_export_clicked";
+
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+
+	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_export_clicked ){
+		OFA_MAIN_PAGE_GET_CLASS( page )->on_export_clicked( button, page );
 
 	} else {
 		g_debug( "%s: button=%p, page=%p (%s)",
@@ -722,6 +801,40 @@ ofa_main_page_get_delete_btn( const ofaMainPage *page )
 			page->private->btn_delete ){
 
 		return( GTK_WIDGET( page->private->btn_delete ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_main_page_get_import_btn:
+ */
+GtkWidget *
+ofa_main_page_get_import_btn( const ofaMainPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+
+	if( !page->private->dispose_has_run &&
+			page->private->btn_import ){
+
+		return( GTK_WIDGET( page->private->btn_import ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_main_page_get_export_btn:
+ */
+GtkWidget *
+ofa_main_page_get_export_btn( const ofaMainPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+
+	if( !page->private->dispose_has_run &&
+			page->private->btn_export ){
+
+		return( GTK_WIDGET( page->private->btn_export ));
 	}
 
 	return( NULL );

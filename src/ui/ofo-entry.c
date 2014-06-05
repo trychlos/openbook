@@ -516,6 +516,40 @@ ofo_entry_get_rappro( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_maj_user:
+ */
+const gchar *
+ofo_entry_get_maj_user( const ofoEntry *entry )
+{
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return(( const gchar * ) entry->private->maj_user );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_entry_get_maj_stamp:
+ */
+const GTimeVal *
+ofo_entry_get_maj_stamp( const ofoEntry *entry )
+{
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return(( const GTimeVal * ) &entry->private->maj_stamp );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
  * ofo_entry_set_number:
  */
 void
@@ -1035,4 +1069,112 @@ gboolean
 ofo_entry_delete( ofoEntry *entry, const ofoDossier *dossier )
 {
 	return( FALSE );
+}
+
+/*
+ * as a first - bad - approach, we load all the entries in memory !!!
+ *
+ * the alternative should be to define here a callback, being called
+ * from the exporter until the end...
+ *
+ * another alternative may be to use a cursor - but no doc here at the
+ * moment :(
+ */
+GSList *
+ofo_entry_get_csv( const ofoDossier *dossier )
+{
+	GSList *result, *irow, *icol;
+	GSList *lines;
+	ofoEntry *entry;
+	gchar *str;
+	gchar *sdope, *sdeffet, *sdrappro, *stamp;
+	const gchar *sref, *muser;
+	ofoDevise *devise;
+	ofoJournal *journal;
+	const GDate *date;
+
+	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ),
+					"SELECT ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
+					"	ECR_DEV_ID,ECR_JOU_ID,ECR_COMPTE,ECR_MONTANT,ECR_SENS,"
+					"	ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_STATUS,ECR_RAPPRO "
+					"	FROM OFA_T_ECRITURES "
+					"	ORDER BY ECR_NUMBER ASC" );
+
+	lines = NULL;
+
+	str = g_strdup( "Dope;Deffect;Number;Label;Ref;Currency;Journal;Account;Amount;Sens;MajUser;MajStamp;Status;Drappro" );
+	lines = g_slist_prepend( lines, str );
+
+	for( irow=result ; irow ; irow=irow->next ){
+		icol = ( GSList * ) irow->data;
+		entry = ofo_entry_new();
+
+		ofo_entry_set_dope( entry, my_utils_date_from_str(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_deffect( entry, my_utils_date_from_str(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_number( entry, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_label( entry, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_entry_set_ref( entry, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_entry_set_devise( entry, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_journal( entry, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_account( entry, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_entry_set_amount( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+		icol = icol->next;
+		ofo_entry_set_sens( entry, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_maj_user( entry, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_rappro( entry, my_utils_date_from_str(( gchar * ) icol->data ));
+
+		sdope = my_utils_sql_from_date( ofo_entry_get_dope( entry ));
+		sdeffet = my_utils_sql_from_date( ofo_entry_get_deffect( entry ));
+		sref = ofo_entry_get_ref( entry );
+		devise = ofo_devise_get_by_id( dossier, ofo_entry_get_devise( entry ));
+		journal = ofo_journal_get_by_id( dossier, ofo_entry_get_journal( entry ));
+		muser = ofo_entry_get_maj_user( entry );
+		stamp = my_utils_str_from_stamp( ofo_entry_get_maj_stamp( entry ));
+
+		date = ofo_entry_get_rappro( entry );
+		if( date && g_date_valid( date )){
+			sdrappro = my_utils_sql_from_date( date );
+		} else {
+			sdrappro = g_strdup( "" );
+		}
+
+		str = g_strdup_printf( "%s;%s;%d;%s;%s;%s;%s;%s;%.2lf;%d;%s;%s;%d;%s",
+				sdope,
+				sdeffet,
+				ofo_entry_get_number( entry ),
+				ofo_entry_get_label( entry ),
+				sref ? sref : "",
+				devise ? ofo_devise_get_code( devise ) : "",
+				journal ? ofo_journal_get_mnemo( journal ) : "",
+				ofo_entry_get_account( entry ),
+				ofo_entry_get_amount( entry ),
+				ofo_entry_get_sens( entry ),
+				muser ? muser : "",
+				muser ? stamp : "",
+				ofo_entry_get_status( entry ),
+				sdrappro );
+
+		lines = g_slist_prepend( lines, str );
+
+		g_object_unref( entry );
+		g_free( sdrappro );
+		g_free( sdeffet );
+		g_free( sdope );
+	}
+
+	return( g_slist_reverse( lines ));
 }

@@ -812,3 +812,45 @@ devise_cmp_by_ptr( const ofoDevise *a, const ofoDevise *b )
 {
 	return( g_utf8_collate( ofo_devise_get_code( a ), ofo_devise_get_code( b )));
 }
+
+/**
+ * ofo_devise_get_csv:
+ */
+GSList *
+ofo_devise_get_csv( const ofoDossier *dossier )
+{
+	GList *set;
+	GSList *lines;
+	gchar *str, *stamp;
+	ofoDevise *devise;
+	const gchar *notes, *muser;
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
+
+	lines = NULL;
+
+	str = g_strdup_printf( "Code;Label;Symbol;Notes;MajUser;MajStamp" );
+	lines = g_slist_prepend( lines, str );
+
+	for( set=st_global->dataset ; set ; set=set->next ){
+		devise = OFO_DEVISE( set->data );
+
+		notes = ofo_devise_get_notes( devise );
+		muser = ofo_devise_get_maj_user( devise );
+		stamp = my_utils_str_from_stamp( ofo_devise_get_maj_stamp( devise ));
+
+		str = g_strdup_printf( "%s;%s;%s;%s;%s;%s",
+				ofo_devise_get_code( devise ),
+				ofo_devise_get_label( devise ),
+				ofo_devise_get_symbol( devise ),
+				notes ? notes : "",
+				muser ? muser : "",
+				muser ? stamp : "" );
+
+		g_free( stamp );
+
+		lines = g_slist_prepend( lines, str );
+	}
+
+	return( g_slist_reverse( lines ));
+}
