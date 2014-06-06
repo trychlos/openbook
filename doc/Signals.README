@@ -1,0 +1,90 @@
+ Open Freelance Accounting - TODO
+ $Id$
+
+ Summary
+ =======
+
+   Liminaries
+   ofaMainWindow signals
+     OFA_SIGNAL_OPEN_DOSSIER
+   ofoDossier signals
+     OFA_SIGNAL_OBJECT_NEW
+     OFA_SIGNAL_OBJECT_UPDATED
+     OFA_SIGNAL_OBJECT_DELETED
+     OFA_SIGNAL_DATASET_RELOADED
+
+-----------------------------------------------------------------------
+ Liminaries
+ ==========
+
+ We have define two families of signals:
+ 
+ - those which are fully separate ff the currently opened dossier are
+   defined on the ofaMainWindow class (see ofaMainWindow signals);
+ 
+ - those which act on or react to an update of any element of an opened
+   dossier are all defined on the ofoDossier (see ofoDossier signals).
+
+-----------------------------------------------------------------------
+ ofaMainWindow signals
+ =====================
+
+ Signals defined in the ofaMainWindow class all act on or react to any
+ update of an application element.
+
+   OFA_SIGNAL_OPEN_DOSSIER
+   -----------------------
+
+   This signal is defined in ofaMainWindow class.
+ 
+   It is to be sent to the main window when someone requests for 
+   opening a dossier. A possible previously already opened dossier is
+   unconditionally closed before opening a new one.
+
+-----------------------------------------------------------------------
+ ofoDossier signals
+ ==================
+
+ Signals defined in the ofoDossier class all act on or react to an
+ update of a dossier element.
+ 
+   OFA_SIGNAL_OBJECT_NEW
+   ---------------------
+   
+   This signal is sent to the dossier when a new object in inserted in
+   the sgbd. In some situations (e.g. full reload of the dataset), a
+   global flag may prevent this signal to be sent.
+
+   A reference on the newly inserted object is attached to the sent 
+   message. The ofoDossier class handler takes care of releasing this
+   reference.
+    
+   OFA_SIGNAL_OBJECT_UPDATED
+   -------------------------
+   
+   This signal is sent to the dossier when an existing object is 
+   updated in the sgbd.
+
+   A reference on the updated object is attached to the sent message. 
+   The ofoDossier class handler takes care of releasing this reference.
+   
+   OFA_SIGNAL_OBJECT_DELETED
+   -------------------------
+   
+   This signal is sent to the dossier when an existing object is 
+   deleted from the sgbd.
+
+   A reference on the deleted object is attached to the sent message. 
+   The ofoDossier class handler takes care of releasing this reference,
+   thus finalizing the object.
+   
+   OFA_SIGNAL_DATASET_RELOADED
+   ---------------------------
+
+   This signal is sent to the dossier when a full dataset is reloaded,
+   typically after an import operation.
+   
+   The sent message holds the GType of the reloaded class.
+
+-----------------------------------------------------------------------
+ P. Wieser - Last updated on 2014, june 6th
