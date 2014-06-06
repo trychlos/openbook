@@ -145,8 +145,6 @@
  114 2014- 5-26 dispose_has_run should be a protected data of the
                 ofaMainPage base class
 
- 120 2014- 5-28 import accounts
-
  121 2014- 5-28 import entry models
 
  122 2014- 5-28 import journals
@@ -541,6 +539,9 @@
  119 2014- 5-27 ofaAccountNotebook: scroll the view for display the
                 initial selection
      2014- 5-27 done - svn #3512
+
+ 120 2014- 5-28 import accounts
+     2014- 6- 6 done - svn #3645
 
  127 2014- 5-28 ofaAccountNotebook: update amount accounts on new entry
      2014- 5-29 done - svn #3547
