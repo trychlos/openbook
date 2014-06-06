@@ -58,9 +58,11 @@ OFO_BASE_DEFINE_GLOBAL( st_global, class )
 static ofoClass  *ofo_class_new( void );
 static GList     *class_load_dataset( void );
 static ofoClass  *class_find_by_number( GList *set, gint number );
+static gboolean   class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user );
+static gboolean   class_do_update( ofoClass *class, const ofoSgbd *sgbd, const gchar *user );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
-static gboolean   class_do_update( ofoClass *class, const ofoSgbd *sgbd, const gchar *user );
+static gboolean   class_do_drop_content( const ofoSgbd *sgbd );
 
 static void
 ofo_class_finalize( GObject *instance )
@@ -406,6 +408,80 @@ ofo_class_set_maj_stamp( ofoClass *class, const GTimeVal *stamp )
 }
 
 /**
+ * ofo_class_insert:
+ */
+gboolean
+ofo_class_insert( ofoClass *class, const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_class_insert";
+
+	g_return_val_if_fail( OFO_IS_CLASS( class ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( class )->prot->dispose_has_run ){
+
+		g_debug( "%s: class=%p, dossier=%p",
+				thisfn, ( void * ) class, ( void * ) dossier );
+
+		OFO_BASE_SET_GLOBAL( st_global, dossier, class );
+
+		if( class_do_insert(
+					class,
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ))){
+
+			OFO_BASE_ADD_TO_DATASET( st_global, class );
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
+{
+	GString *query;
+	const gchar *notes;
+	gchar *label;
+	gboolean ok;
+	gchar *stamp;
+
+	query = g_string_new( "INSERT INTO OFA_T_CLASSES " );
+
+	label = my_utils_quote( ofo_class_get_label( class ));
+
+	g_string_append_printf( query,
+			"	(CLA_NUMBER,CLA_LABEL,CLA_NOTES,"
+			"	 CLA_MAJ_USER,CLA_MAJ_STAMP) VALUES "
+			"	(%d,'%s',",
+					ofo_class_get_number( class ),
+					label );
+
+	notes = ofo_class_get_notes( class );
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "'%s',", notes );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	stamp = my_utils_timestamp();
+	g_string_append_printf( query, "'%s','%s')", user, stamp );
+
+	ok = ofo_sgbd_query( sgbd, query->str );
+
+	if( ok ){
+		ofo_class_set_maj_user( class, user );
+		ofo_class_set_maj_stamp( class, my_utils_stamp_from_str( stamp ));
+	}
+
+	g_free( label );
+	g_free( stamp );
+
+	return( ok );
+}
+
+/**
  * ofo_class_update:
  */
 gboolean
@@ -433,7 +509,6 @@ ofo_class_update( ofoClass *class, const ofoDossier *dossier )
 		}
 	}
 
-	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -540,4 +615,77 @@ ofo_class_get_csv( const ofoDossier *dossier )
 	}
 
 	return( g_slist_reverse( lines ));
+}
+
+/**
+ *
+ */
+void
+ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+{
+	static const gchar *thisfn = "ofo_class_set_csv";
+	ofoClass *class;
+	GSList *ili, *ico;
+	GList *new_set, *ise;
+	gint count;
+	gint errors;
+	gint number;
+	const gchar *str;
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, class );
+
+	new_set = NULL;
+	count = 0;
+	errors = 0;
+
+	for( ili=lines ; ili ; ili=ili->next ){
+		count += 1;
+		if( !( count == 1 && with_header )){
+			class = ofo_class_new();
+			ico=ili->data;
+			str = ( const gchar * ) ico->data;
+			number = atoi( str );
+			if( number < 1 || number > 9 ){
+				g_warning( "%s: (line %d) invalid class number: %d", thisfn, count, number );
+				errors += 1;
+				continue;
+			}
+			ofo_class_set_number( class, number );
+
+			ico = ico->next;
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty label", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			ofo_class_set_label( class, str );
+
+			ico = ico->next;
+			str = ( const gchar * ) ico->data;
+			if( str && g_utf8_strlen( str, -1 )){
+				ofo_class_set_notes( class, str );
+			}
+
+			new_set = g_list_prepend( new_set, class );
+		}
+	}
+
+	if( !errors ){
+		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+		st_global->dataset = NULL;
+		class_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+
+		for( ise=new_set ; ise ; ise=ise->next ){
+			ofo_class_insert( OFO_CLASS( ise->data ), dossier );
+		}
+
+		g_list_free( new_set );
+	}
+}
+
+static gboolean
+class_do_drop_content( const ofoSgbd *sgbd )
+{
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_CLASSES" ));
 }

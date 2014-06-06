@@ -65,9 +65,11 @@ void            ofo_class_set_notes    ( ofoClass *class, const gchar *notes );
 void            ofo_class_set_maj_user ( ofoClass *class, const gchar *user );
 void            ofo_class_set_maj_stamp( ofoClass *class, const GTimeVal *stamp );
 
+gboolean        ofo_class_insert       ( ofoClass *class, const ofoDossier *dossier );
 gboolean        ofo_class_update       ( ofoClass *class, const ofoDossier *dossier );
 
 GSList         *ofo_class_get_csv      ( const ofoDossier *dossier );
+void            ofo_class_set_csv      ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

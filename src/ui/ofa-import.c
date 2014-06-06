@@ -39,6 +39,7 @@
 #include "ui/ofa-importer.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-plugin.h"
+#include "ui/ofo-class.h"
 
 static gboolean pref_quit_on_escape = TRUE;
 static gboolean pref_confirm_on_cancel = FALSE;
@@ -157,6 +158,12 @@ static gboolean   is_willing_to_quit( ofaImport *self );
 static void       on_close( GtkAssistant *assistant, ofaImport *self );
 static void       do_close( ofaImport *self );
 static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
+static gint       import_class_csv( ofaImport *self );
+static gint       import_account_csv( ofaImport *self );
+static GSList    *split_csv_content( ofaImport *self );
+static void       free_csv_fields( GSList *fields );
+static void       free_csv_content( GSList *lines );
+static gboolean   confirm_import( ofaImport *self, const gchar *str );
 
 static void
 import_finalize( GObject *instance )
@@ -674,24 +681,34 @@ on_apply( GtkAssistant *assistant, ofaImport *self )
 {
 	static const gchar *thisfn = "ofa_import_on_apply";
 	ofaImportPrivate *priv;
-	guint count, i;
+	gint count, i;
 
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_IMPORT( self ));
 
 	priv = self->private;
+	count = 0;
 
 	if( !priv->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
 
-		get_active_type( self ),
+		get_active_type( self );
 
-		count = ofa_importer_import_from_uris(
-						ofa_main_window_get_dossier( priv->main_window ),
-						priv->p2_type,
-						priv->p1_fnames );
+		switch( priv->p2_type ){
+			case IMPORTER_TYPE_BAT:
+				count = ofa_importer_import_from_uris(
+								ofa_main_window_get_dossier( priv->main_window ),
+								priv->p2_type, priv->p1_fnames );
+				break;
+			case IMPORTER_TYPE_CLASS:
+				count = import_class_csv( self );
+				break;
+			case IMPORTER_TYPE_ACCOUNT:
+				count = import_account_csv( self );
+				break;
+		}
 
 		for( i=0 ; i<count ; ++i ){
 			g_warning( "%s: TO BE WRITTEN", thisfn );
@@ -793,4 +810,160 @@ assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page )
 	}
 
 	return( -1 );
+}
+
+/*
+ * columns: class;label;notes
+ * header : yes
+ */
+static gint
+import_class_csv( ofaImport *self )
+{
+	GSList *lines;
+	gchar *str;
+	gboolean ok;
+
+	str = g_strdup( _( "Importing class reference will replace the existing classes.\n"
+			"Are you sure you want drop the current classes, and import these new ones ?" ));
+
+	ok = confirm_import( self, str );
+	g_free( str );
+	if( !ok ){
+		return( -1 );
+	}
+
+	lines = split_csv_content( self );
+	if( g_slist_length( lines ) <= 1 ){
+		return( -1 );
+	}
+
+	ofo_class_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+
+	free_csv_content( lines );
+	return( 0 );
+}
+
+/*
+ * columns: class;label;notes
+ * header : yes
+ */
+static gint
+import_account_csv( ofaImport *self )
+{
+	GSList *lines;
+	gchar *str;
+	gboolean ok;
+
+	str = g_strdup( _( "Importing account reference will replace the existing accounts.\n"
+			"Are you sure you want drop all the current accounts, and reset the chart to these new ones ?" ));
+
+	ok = confirm_import( self, str );
+	g_free( str );
+	if( !ok ){
+		return( -1 );
+	}
+
+	lines = split_csv_content( self );
+	if( g_slist_length( lines ) <= 1 ){
+		return( -1 );
+	}
+
+	/*ofo_account_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );*/
+
+	free_csv_content( lines );
+	return( 0 );
+}
+
+/*
+ * Returns a GSList of lines, where each lines->data is a GSList of
+ * fields
+ */
+static GSList *
+split_csv_content( ofaImport *self )
+{
+	static const gchar *thisfn = "ofa_import_split_csv_content";
+	ofaImportPrivate *priv;
+	GFile *gfile;
+	gchar *contents;
+	GError *error;
+	gchar **lines, **iter_line;
+	gchar **fields, **iter_field;
+	GSList *s_fields, *s_lines;
+	gchar *field;
+
+	priv = self->private;
+
+	/* only deal with the first uri */
+	gfile = g_file_new_for_uri( priv->p1_fnames->data );
+	error = NULL;
+	if( !g_file_load_contents( gfile, NULL, &contents, NULL, NULL, &error )){
+		g_warning( "%s: g_file_load_contents: %s", thisfn, error->message );
+		g_error_free( error );
+		return( NULL );
+	}
+
+	lines = g_strsplit( contents, "\n", -1 );
+	g_free( contents );
+
+	s_lines = NULL;
+	iter_line = lines;
+
+	while( *iter_line ){
+		if( g_utf8_strlen( *iter_line, -1 )){
+			fields = g_strsplit(( const gchar * ) *iter_line, ";", -1 );
+			s_fields = NULL;
+			iter_field = fields;
+
+			while( *iter_field ){
+				field = g_strstrip( g_strdup( *iter_field ));
+				/*g_debug( "field='%s'", field );*/
+				s_fields = g_slist_prepend( s_fields, field );
+				iter_field++;
+			}
+
+			g_strfreev( fields );
+			s_lines = g_slist_prepend( s_lines, g_slist_reverse( s_fields ));
+		}
+		iter_line++;
+	}
+
+	g_strfreev( lines );
+	return( g_slist_reverse( s_lines ));
+}
+
+static void
+free_csv_fields( GSList *fields )
+{
+	g_slist_free_full( fields, ( GDestroyNotify ) g_free );
+}
+
+static void
+free_csv_content( GSList *lines )
+{
+	g_slist_free_full( lines, ( GDestroyNotify ) free_csv_fields );
+}
+
+static gboolean
+confirm_import( ofaImport *self, const gchar *str )
+{
+	GtkWidget *dialog;
+	gint response;
+
+	dialog = gtk_message_dialog_new(
+			GTK_WINDOW( self->private->assistant ),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE,
+			"%s", str );
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_OK, GTK_RESPONSE_OK,
+			NULL );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
 }

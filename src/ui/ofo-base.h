@@ -54,10 +54,43 @@ typedef struct {
 }
 	ofoBaseGlobal;
 
+/**
+ * OFO_BASE_DEFINE_GLOBAL:
+ *
+ * ex: OFO_BASE_DEFINE_GLOBAL( st_global, class )
+ *
+ * a) defines a static pointer 'V' to a dynamically allocated
+ *    ofoBaseGlobal structure. This structure will be actually
+ *    allocated and initialised by the #OFO_BASE_SET_GLOBAL macro.
+ *
+ * b) defines a 'T'_clear_global static function which fully clears the
+ *    above ofoBaseGlobal structure and its data.
+ *
+ * This macro is to be invoked at the toplevel, once in each source
+ * file.
+ */
 #define OFO_BASE_DEFINE_GLOBAL( V,T )       static ofoBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer user_data, GObject *finalizing_dossier ) \
 												{ g_debug( #T "_clear_global:" ); if(V){ g_list_foreach((V)->dataset, (GFunc) g_object_unref, NULL ); \
 												g_list_free((V)->dataset ); g_free(V); (V)=NULL; }}
 
+/**
+ * OFO_BASE_SET_GLOBAL:
+ *
+ * ex: OFO_BASE_SET_GLOBAL( st_global, dossier, class )
+ *
+ * a) makes sure that the global ofoBaseGlobal structure is allocated
+ *    and initialized
+ *
+ * b) auto attach to the 'dossier', so that we will clear the global
+ *    structure when the dossier be finalized
+ *
+ * c) invokes the local 'T'_load_dataset function which is supposed to
+ *    load the data, populating the dataset structure member.
+ *
+ * This macro is supposed to be invoked from each global function, in
+ * order to be sure the global structure is available.
+ * It is safe to invoke it many times, as it is auto-protected.
+ */
 #define OFO_BASE_SET_GLOBAL( P,D,T )        ({ (P)=ofo_base_get_global((P),OFO_BASE(D),(GWeakNotify)(T ## _clear_global),NULL); \
 												if(!(P)->dataset){ (P)->dataset=(T ## _load_dataset)();} })
 

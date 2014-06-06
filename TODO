@@ -212,7 +212,23 @@
  167 2014- 6- 5 ExportAssistant: pre-positionning a default uri as
                 output filename doesn't work
 
- 168
+ 168 2014- 6- 6 ImportAssistant: check that only one file is selected
+                when importing a reference table or entries (multiple
+                selection is in fact only allowed when importing BAT)
+                So is it worth ?
+
+ 169 2014- 6- 6 rename ofaBatList to (e.g.) ofaBatCommon
+
+ 170 2014- 6- 6 rename ofaAccountNotebook to (e.g.) ofaAccountCommon
+
+ 171 2014- 6- 6 rename ofaDeviseCombo to (e.g.) ofaDeviseCommon
+
+ 172 2014- 6- 6 rename ofaJournalCombo to (e.g.) ofaJournalCommon
+
+ 173 2014- 6- 6 When importing a reference, the main page must be 
+                reloaded
+
+ 174
 
 -----------------------------------------------------------------------
  DONE
