@@ -29,6 +29,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "ui/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
@@ -59,6 +60,7 @@ static const gchar  *st_ui_id  = "ClassPropertiesDlg";
 G_DEFINE_TYPE( ofaClassProperties, ofa_class_properties, OFA_TYPE_BASE_DIALOG )
 
 static void      v_init_dialog( ofaBaseDialog *dialog );
+static void      on_number_changed( GtkEntry *entry, ofaClassProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaClassProperties *self );
 static void      check_for_enable_dlg( ofaClassProperties *self );
 static gboolean  is_dialog_validable( ofaClassProperties *self );
@@ -190,9 +192,14 @@ v_init_dialog( ofaBaseDialog *dialog )
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
 						GTK_CONTAINER( dialog->prot->dialog ), "p1-number" ));
-	str = g_strdup_printf( "%d", priv->number );
+	if( priv->is_new ){
+		str = g_strdup( "" );
+	} else {
+		str = g_strdup_printf( "%d", priv->number );
+	}
 	gtk_entry_set_text( entry, str );
 	g_free( str );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_number_changed ), dialog );
 
 	priv->label = g_strdup( ofo_class_get_label( priv->class ));
 	entry = GTK_ENTRY(
@@ -207,6 +214,14 @@ v_init_dialog( ofaBaseDialog *dialog )
 	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, class );
 
 	check_for_enable_dlg( OFA_CLASS_PROPERTIES( dialog ));
+}
+
+static void
+on_number_changed( GtkEntry *entry, ofaClassProperties *self )
+{
+	self->private->number = atoi( gtk_entry_get_text( entry ));
+
+	check_for_enable_dlg( self );
 }
 
 static void
@@ -260,18 +275,24 @@ do_update( ofaClassProperties *self )
 {
 	ofaClassPropertiesPrivate *priv;
 	ofoDossier *dossier;
+	gint prev_id;
 
 	priv = self->private;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
-	g_return_val_if_fail( !priv->is_new, FALSE );
 
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
+	prev_id = ofo_class_get_number( priv->class );
 
+	ofo_class_set_number( priv->class, priv->number );
 	ofo_class_set_label( priv->class, priv->label );
 	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, class );
 
-	priv->updated = ofo_class_update( priv->class, dossier );
+	if( priv->is_new ){
+		priv->updated = ofo_class_insert( priv->class, dossier );
+	} else {
+		priv->updated = ofo_class_update( priv->class, dossier, prev_id );
+	}
 
 	return( priv->updated );
 }

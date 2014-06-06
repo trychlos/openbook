@@ -983,7 +983,7 @@ ofo_taux_update( ofoTaux *taux, const ofoDossier *dossier )
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_UPDATE_DATASET( st_global, taux );
+			OFO_BASE_UPDATE_DATASET( st_global, taux, NULL );
 			return( TRUE );
 		}
 	}

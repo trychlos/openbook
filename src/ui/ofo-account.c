@@ -74,7 +74,7 @@ OFO_BASE_DEFINE_GLOBAL( st_global, account )
 static gboolean st_connected = FALSE;
 
 static void        init_global_handlers( const ofoDossier *dossier );
-static void        on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data );
+/*static void        on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data );*/
 static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
 static gint        account_count_for_devise( const ofoSgbd *sgbd, gint dev_id );
@@ -154,16 +154,17 @@ init_global_handlers( const ofoDossier *dossier )
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
 	if( !st_connected ){
-		g_signal_connect( G_OBJECT( dossier ),
+		/*g_signal_connect( G_OBJECT( dossier ),
 					OFA_SIGNAL_UPDATED_DATASET, G_CALLBACK( on_dataset_updated ), NULL );
+					*/
 		st_connected = TRUE;
 	}
 }
 
+#if 0
 static void
 on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data )
 {
-#if 0
 	static const gchar *thisfn = "ofo_account_on_new_entry";
 	ofoAccount *account;
 	ofaEntrySens sens;
@@ -203,8 +204,8 @@ on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, 
 		account_update_amounts( account, ofo_dossier_get_sgbd( dossier ));
 		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_ACCOUNT_UPDATED, g_object_ref( account ));
 	}
-#endif
 }
+#endif
 
 /**
  * ofo_account_get_dataset:
@@ -1267,7 +1268,7 @@ ofo_account_update( ofoAccount *account, const ofoDossier *dossier, const gchar 
 					ofo_dossier_get_user( dossier ),
 					prev_number )){
 
-			OFO_BASE_UPDATE_DATASET( st_global, account );
+			OFO_BASE_UPDATE_DATASET( st_global, account, prev_number );
 			return( TRUE );
 		}
 	}

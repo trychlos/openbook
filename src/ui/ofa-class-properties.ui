@@ -72,12 +72,12 @@
                     <child>
                       <object class="GtkEntry" id="p1-number">
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="halign">start</property>
                         <property name="max_length">1</property>
                         <property name="invisible_char">●</property>
                         <property name="width_chars">4</property>
+                        <property name="xalign">1</property>
                         <property name="invisible_char_set">True</property>
                         <property name="caps_lock_warning">False</property>
                       </object>
@@ -137,12 +137,6 @@
                         <property name="width">1</property>
                         <property name="height">1</property>
                       </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
                     </child>
                   </object>
                 </child>

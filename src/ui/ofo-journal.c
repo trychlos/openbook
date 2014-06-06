@@ -82,7 +82,7 @@ OFO_BASE_DEFINE_GLOBAL( st_global, journal )
 static gboolean st_connected = FALSE;
 
 static void        init_global_handlers( const ofoDossier *dossier );
-static void        on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data );
+/*static void        on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data );*/
 static GList      *journal_load_dataset( void );
 static ofoJournal *journal_find_by_id( GList *set, gint id );
 static ofoJournal *journal_find_by_mnemo( GList *set, const gchar *mnemo );
@@ -173,16 +173,17 @@ init_global_handlers( const ofoDossier *dossier )
 	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 	if( !st_connected ){
-		g_signal_connect( G_OBJECT( dossier ),
+		/*g_signal_connect( G_OBJECT( dossier ),
 					OFA_SIGNAL_UPDATED_DATASET, G_CALLBACK( on_dataset_updated ), NULL );
+					*/
 		st_connected = TRUE;
 	}
 }
 
+#if 0
 static void
 on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data )
 {
-#if 0
 	static const gchar *thisfn = "ofo_journal_on_dataset_updated";
 	ofoJournal *journal;
 	ofaEntrySens sens;
@@ -213,8 +214,8 @@ on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, 
 	}
 
 	journal_update_amounts( journal, exe_id, dev_id, ofo_dossier_get_sgbd( dossier ));
-#endif
 }
+#endif
 
 /**
  * ofo_journal_get_dataset:
@@ -1185,7 +1186,7 @@ ofo_journal_update( ofoJournal *journal, const ofoDossier *dossier )
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_UPDATE_DATASET( st_global, journal );
+			OFO_BASE_UPDATE_DATASET( st_global, journal, NULL );
 			return( TRUE );
 		}
 	}

@@ -64,19 +64,15 @@ typedef struct {
 	ofoBase;
 
 /**
- * OFA_SIGNAL_UPDATED_DATASET: signal to be sent when an object is
- *         inserted in, updated or removed from the sgbd, or when a
- *         full dataset is reloaded from the sgbd.
+ * OFA_SIGNAL_NEW_OBJECT:
+ * OFA_SIGNAL_UPDATED_OBJECT:
+ * OFA_SIGNAL_DELETED_OBJECT:
+ * OFA_SIGNAL_RELOADED_DATASET:
  */
-#define OFA_SIGNAL_UPDATED_DATASET     "ofa-signal-updated-dataset"
-
-typedef enum {
-	SIGNAL_OBJECT_NEW = 1,
-	SIGNAL_OBJECT_UPDATED,
-	SIGNAL_OBJECT_DELETED,
-	SIGNAL_DATASET_RELOADED
-}
-	eSignalDetail;
+#define OFA_SIGNAL_NEW_OBJECT           "ofa-signal-new-object"
+#define OFA_SIGNAL_UPDATED_OBJECT       "ofa-signal-updated-object"
+#define OFA_SIGNAL_DELETED_OBJECT       "ofa-signal-deleted-object"
+#define OFA_SIGNAL_RELOADED_DATASET     "ofa-signal-reloaded-dataset"
 
 G_END_DECLS
 

@@ -862,7 +862,7 @@ ofo_bat_update( ofoBat *bat, const ofoDossier *dossier )
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_UPDATE_DATASET( st_global, bat );
+			OFO_BASE_UPDATE_DATASET( st_global, bat, NULL );
 			return( TRUE );
 		}
 	}

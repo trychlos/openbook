@@ -55,11 +55,11 @@ G_DEFINE_TYPE( ofoClass, ofo_class, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, class )
 
-static ofoClass  *ofo_class_new( void );
 static GList     *class_load_dataset( void );
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static gboolean   class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user );
-static gboolean   class_do_update( ofoClass *class, const ofoSgbd *sgbd, const gchar *user );
+static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar *user );
+static gboolean   class_do_delete( ofoClass *class, const ofoSgbd *sgbd );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
 static gboolean   class_do_drop_content( const ofoSgbd *sgbd );
@@ -72,8 +72,9 @@ ofo_class_finalize( GObject *instance )
 
 	priv = OFO_CLASS( instance )->private;
 
-	g_debug( "%s: instance=%p (%s): %s",
+	g_debug( "%s: instance=%p (%s): [%d] %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			priv->number,
 			priv->label );
 
 	/* free data members here */
@@ -126,7 +127,7 @@ ofo_class_class_init( ofoClassClass *klass )
 /**
  * ofo_class_new:
  */
-static ofoClass *
+ofoClass *
 ofo_class_new( void )
 {
 	ofoClass *class;
@@ -335,6 +336,21 @@ ofo_class_is_valid( gint number, const gchar *label )
 }
 
 /**
+ * ofo_class_is_deletable:
+ *
+ * Returns: %TRUE if the provided object may be safely deleted.
+ *
+ * As the class in only used as tabs title in the accounts notebook,
+ * and because we are providing default values, then any class may be
+ * safely deleted.
+ */
+gboolean
+ofo_class_is_deletable( const ofoClass *class )
+{
+	return( TRUE );
+}
+
+/**
  * ofo_class_set_number:
  */
 void
@@ -485,9 +501,10 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
  * ofo_class_update:
  */
 gboolean
-ofo_class_update( ofoClass *class, const ofoDossier *dossier )
+ofo_class_update( ofoClass *class, const ofoDossier *dossier, gint prev_id )
 {
 	static const gchar *thisfn = "ofo_class_update";
+	gchar *str;
 
 	g_return_val_if_fail( OFO_IS_CLASS( class ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
@@ -501,10 +518,14 @@ ofo_class_update( ofoClass *class, const ofoDossier *dossier )
 
 		if( class_do_update(
 					class,
+					prev_id,
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_UPDATE_DATASET( st_global, class );
+			str = g_strdup_printf( "%d", prev_id );
+			OFO_BASE_UPDATE_DATASET( st_global, class, str );
+			g_free( str );
+
 			return( TRUE );
 		}
 	}
@@ -513,7 +534,7 @@ ofo_class_update( ofoClass *class, const ofoDossier *dossier )
 }
 
 static gboolean
-class_do_update( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
+class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp;
@@ -526,6 +547,7 @@ class_do_update( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 
 	query = g_string_new( "UPDATE OFA_T_CLASSES SET " );
 
+	g_string_append_printf( query, "	CLA_NUMBER=%d,", ofo_class_get_number( class ));
 	g_string_append_printf( query, "	CLA_LABEL='%s',", label );
 
 	if( notes && g_utf8_strlen( notes, -1 )){
@@ -536,7 +558,7 @@ class_do_update( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	CLA_MAJ_USER='%s',CLA_MAJ_STAMP='%s'"
-			"	WHERE CLA_NUMBER=%d", user, stamp, ofo_class_get_number( class ));
+			"	WHERE CLA_NUMBER=%d", user, stamp, prev_id );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
@@ -549,6 +571,55 @@ class_do_update( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 	g_free( label );
 	g_free( notes );
 	g_free( stamp );
+
+	return( ok );
+}
+
+/**
+ * ofo_class_delete:
+ */
+gboolean
+ofo_class_delete( ofoClass *class, const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_class_delete";
+
+	g_return_val_if_fail( OFO_IS_CLASS( class ), FALSE );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( ofo_class_is_deletable( class ), FALSE );
+
+	if( !OFO_BASE( class )->prot->dispose_has_run ){
+
+		g_debug( "%s: class=%p, dossier=%p",
+				thisfn, ( void * ) class, ( void * ) dossier );
+
+		OFO_BASE_SET_GLOBAL( st_global, dossier, class );
+
+		if( class_do_delete(
+					class,
+					ofo_dossier_get_sgbd( dossier ))){
+
+			OFO_BASE_REMOVE_FROM_DATASET( st_global, class );
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+class_do_delete( ofoClass *class, const ofoSgbd *sgbd )
+{
+	gchar *query;
+	gboolean ok;
+
+	query = g_strdup_printf(
+			"DELETE FROM OFA_T_CLASSES"
+			"	WHERE CLA_NUMBER=%d",
+					ofo_class_get_number( class ));
+
+	ok = ofo_sgbd_query( sgbd, query );
+
+	g_free( query );
 
 	return( ok );
 }
@@ -693,6 +764,9 @@ ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_heade
 		}
 
 		g_list_free( new_set );
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_CLASS );
 	}
 }
 

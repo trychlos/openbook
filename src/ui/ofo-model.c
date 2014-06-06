@@ -1213,7 +1213,7 @@ ofo_model_update( ofoModel *model, const ofoDossier *dossier, const gchar *prev_
 					ofo_dossier_get_user( dossier ),
 					prev_mnemo )){
 
-			OFO_BASE_UPDATE_DATASET( st_global, model );
+			OFO_BASE_UPDATE_DATASET( st_global, model, NULL );
 			return( TRUE );
 		}
 	}

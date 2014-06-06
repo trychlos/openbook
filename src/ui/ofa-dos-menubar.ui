@@ -87,7 +87,7 @@
           <attribute name="action">win.taux</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Account classes...</attribute>
+          <attribute name="label" translatable="yes">Account c_lasses...</attribute>
           <attribute name="action">win.classes</attribute>
         </item>
       </section>

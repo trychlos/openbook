@@ -680,7 +680,7 @@ ofo_devise_update( ofoDevise *devise, const ofoDossier *dossier )
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_UPDATE_DATASET( st_global, devise );
+			OFO_BASE_UPDATE_DATASET( st_global, devise, NULL );
 			return( TRUE );
 		}
 	}

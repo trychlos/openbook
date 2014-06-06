@@ -83,7 +83,10 @@ struct _sDetailExe {
 /* signals defined here
  */
 enum {
-	DATASET_UPDATED = 0,
+	NEW_OBJECT = 0,
+	UPDATED_OBJECT,
+	DELETED_OBJECT,
+	RELOADED_DATASET,
 	N_SIGNALS
 };
 
@@ -100,7 +103,10 @@ static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
 static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
-static void        on_dataset_updated_cleanup_handler( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type );
+static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
+static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
+static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
+static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
 static gboolean    dossier_read_exercices( ofoDossier *dossier );
@@ -178,49 +184,85 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_dossier_finalize;
 
 	/**
-	 * ofoDossier::ofa-signal-dataset-updated:
-	 *
-	 * This signal is sent on the dossier in two main situations:
-	 *
-	 * a) by an object being just inserted in, updated or deleted from
-	 *    the sgbd.
-	 *    Passed arguments are then only @detail and @object.
-	 *    @type argument should be set to zero.
-	 *    The emitter of the signal should take care of passing to the
-	 *    signal a new reference on the newly inserted object, so that
-	 *    consumers can make sure that the object stays alive during
-	 *    signal processing.
-	 *    The default signal handler will decrement the reference count,
-	 *    thus releasing the object for application purposes (possibly
-	 *    for object finalization in the case of a deletion).
-	 *
-	 * b) at the dataset level, e.g. typically when it is just being
-	 *    reloaded.
-	 *    Passed arguments are then only @detail and @type, the #GType
-	 *    of the corresponding class.
-	 *    @object argument should be set to NULL.
-	 *
-	 * Other objects may connect to this signal in order to update
-	 * themselves accordingly.
+	 * ofoDossier::ofa-signal-new-object:
 	 *
 	 * Handler is of type:
 	 * 		void user_handler ( ofoDossier *dossier,
-	 * 								eSignalDetail detail,
 	 * 								ofoBase      *object,
-	 * 								GType         type,
 	 * 								gpointer      user_data );
 	 */
-	st_signals[ DATASET_UPDATED ] = g_signal_new_class_handler(
-				OFA_SIGNAL_UPDATED_DATASET,
+	st_signals[ NEW_OBJECT ] = g_signal_new_class_handler(
+				OFA_SIGNAL_NEW_OBJECT,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_dataset_updated_cleanup_handler ),
+				G_CALLBACK( on_new_object_cleanup_handler ),
 				NULL,								/* accumulator */
 				NULL,								/* accumulator data */
-				ofa_cclosure_marshal_VOID__INT_OBJECT_ULONG,
+				NULL,
 				G_TYPE_NONE,
-				3,
-				G_TYPE_INT, G_TYPE_OBJECT, G_TYPE_ULONG );
+				1,
+				G_TYPE_OBJECT );
+
+	/**
+	 * ofoDossier::ofa-signal-updated-object:
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofoDossier *dossier,
+	 * 								ofoBase      *object,
+	 * 								const gchar  *prev_id,
+	 * 								gpointer      user_data );
+	 */
+	st_signals[ UPDATED_OBJECT ] = g_signal_new_class_handler(
+				OFA_SIGNAL_UPDATED_OBJECT,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_updated_object_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				ofa_cclosure_marshal_VOID__OBJECT_STRING,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_OBJECT, G_TYPE_STRING );
+
+	/**
+	 * ofoDossier::ofa-signal-deleted-object:
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofoDossier *dossier,
+	 * 								ofoBase      *object,
+	 * 								gpointer      user_data );
+	 */
+	st_signals[ DELETED_OBJECT ] = g_signal_new_class_handler(
+				OFA_SIGNAL_DELETED_OBJECT,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_deleted_object_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_OBJECT );
+
+	/**
+	 * ofoDossier::ofa-signal-reloaded-dataset:
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofoDossier *dossier,
+	 * 								GType     type_class,
+	 * 								gpointer  user_data );
+	 */
+	st_signals[ RELOADED_DATASET ] = g_signal_new_class_handler(
+				OFA_SIGNAL_RELOADED_DATASET,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_reloaded_dataset_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_GTYPE );
 }
 
 /**
@@ -1336,28 +1378,51 @@ ofo_dossier_set_current_exe_last_ecr( const ofoDossier *dossier, gint number )
 }
 
 static void
-on_dataset_updated_cleanup_handler( ofoDossier *dossier,
-										eSignalDetail detail,
-										ofoBase *object,
-										GType type )
+on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object )
 {
-	static const gchar *thisfn = "ofo_dossier_on_dataset_updated_cleanup_handler";
+	static const gchar *thisfn = "ofo_dossier_on_new_object_cleanup_handler";
 
-	g_debug( "%s: dossier=%p, detail=%d (%s), object=%p (%s), type=%lu",
+	g_debug( "%s: dossier=%p, object=%p (%s)",
 			thisfn,
 			( void * ) dossier,
-			detail,
-			( detail == 1 ? "SIGNAL_OBJECT_NEW" :
-					( detail == 2 ? "SIGNAL_OBJECT_UPDATED" :
-					( detail == 3 ? "SIGNAL_OBJECT_DELETED" :
-					( detail ==4 ? "SIGNAL_DATASET_RELOADED" : "<unknown>" )))),
-			( void * ) object, object ? G_OBJECT_TYPE_NAME( object ) : "<unset>",
-			type );
+			( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
-	if( object ){
-		g_return_if_fail( OFO_IS_BASE( object ));
-		g_object_unref( object );
-	}
+	g_object_unref( object );
+}
+
+static void
+on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_dossier_on_updated_object_cleanup_handler";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id );
+
+	g_object_unref( object );
+}
+
+static void
+on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object )
+{
+	static const gchar *thisfn = "ofo_dossier_on_deleted_object_cleanup_handler";
+
+	g_debug( "%s: dossier=%p, object=%p (%s)",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ));
+
+	g_object_unref( object );
+}
+
+static void
+on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type )
+{
+	static const gchar *thisfn = "ofo_dossier_on_reloaded_dataset_cleanup_handler";
+
+	g_debug( "%s: dossier=%p, type=%lu", thisfn, ( void * ) dossier, type );
 }
 
 static gboolean

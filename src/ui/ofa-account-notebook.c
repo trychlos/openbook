@@ -103,7 +103,7 @@ static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, o
 static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountNotebook *self );
 static void       on_account_selected( GtkTreeSelection *selection, ofaAccountNotebook *self );
 static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self );
-static void       on_dataset_updated( ofoDossier *dossier, gint detail, ofoBase *object, GType type, ofaAccountNotebook *self );
+/*static void       on_dataset_updated( ofoDossier *dossier, gint detail, ofoBase *object, GType type, ofaAccountNotebook *self );*/
 
 static void
 account_notebook_finalize( GObject *instance )
@@ -206,9 +206,11 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 	/* connect to the dossier in order to get advertised when a new
 	 * entry occurs (and setup our balances)
 	 */
+#if 0
 	g_signal_connect(
 			G_OBJECT( parms->dossier),
 			OFA_SIGNAL_UPDATED_DATASET, G_CALLBACK( on_dataset_updated ), self );
+#endif
 
 	/* setup a weak reference on the dialog to auto-unref */
 	g_object_weak_ref( G_OBJECT( self->private->book ), ( GWeakNotify ) on_dialog_finalized, self );
@@ -782,11 +784,11 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
  *
  * - new entry: update
  */
+#if 0
 static void
 on_dataset_updated( ofoDossier *dossier,
 						gint detail, ofoBase *object, GType type, ofaAccountNotebook *self )
 {
-#if 0
 	switch( detail ){
 		case SIGNAL_OBJECT_NEW:
 			if( OFO_IS_ACCOUNT( object )){
@@ -865,8 +867,8 @@ on_dataset_updated( ofoDossier *dossier,
 			}
 		}
 	}
-#endif
 }
+#endif
 
 /**
  * ofa_account_notebook_get_selected:

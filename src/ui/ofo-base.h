@@ -54,7 +54,7 @@ typedef struct {
 	GList    *dataset;
 	ofoBase  *dossier;
 	gboolean  send_signal_new;
-	gboolean  send_signal_remove;
+	gboolean  send_signal_delete;
 }
 	ofoBaseGlobal;
 
@@ -79,6 +79,12 @@ typedef struct {
 
 /**
  * OFO_BASE_SET_GLOBAL:
+ * @P: the name of the global variable
+ *     e.g. 'st_global'
+ * @D: the name of the #ofoDossier variable
+ *     e.g. 'dossier'
+ * @T: both the name of the class and the name of the object
+ *     e.g. 'class', 'account', etc.
  *
  * ex: OFO_BASE_SET_GLOBAL( st_global, dossier, class )
  *
@@ -100,6 +106,10 @@ typedef struct {
 
 /**
  * OFO_BASE_ADD_TO_DATASET:
+ * @P: the name of the global variable
+ *     e.g. 'st_global'
+ * @T: both the name of the class and the name of the object
+ *     e.g. 'class', 'account', etc.
  *
  * ex: OFO_BASE_ADD_TO_DATASET( st_global, class )
  *
@@ -107,34 +117,54 @@ typedef struct {
  *    global dataset, keeping it sorted by calling the <T>_cmp_by_ptr()
  *    method
  *
- * b) send a OFA_SIGNAL_UPDATED_DATASET signal to the opened dossier
- *    with the SIGNAL_OBJECT_NEW detail, associated with the <T> object
+ * b) send a OFA_SIGNAL_NEW_OBJECT signal to the opened dossier,
+ *    associated to the <T> object
  */
 #define OFO_BASE_ADD_TO_DATASET( P,T )      ({ (P)->dataset=g_list_insert_sorted((P)->dataset,(T),(GCompareFunc)(T ## _cmp_by_ptr)); \
 												if((P)->send_signal_new){ g_signal_emit_by_name( G_OBJECT((P)->dossier), \
-												OFA_SIGNAL_UPDATED_DATASET, SIGNAL_OBJECT_NEW, g_object_ref(T),0 ); }})
+												OFA_SIGNAL_NEW_OBJECT, g_object_ref(T)); }})
 
+/**
+ * OFO_BASE_REMOVE_FROM_DATASET:
+ * @P: the name of the global variable
+ *     e.g. 'st_global'
+ * @T: both the name of the class and the name of the object
+ *     e.g. 'class', 'account', etc.
+ *
+ * ex: OFO_BASE_REMOVE_FROM_DATASET( st_global, class )
+ *
+ * a) insert the 'T' object (named <T> and of type OFO_TYPE_<T>) in the
+ *    global dataset, keeping it sorted by calling the <T>_cmp_by_ptr()
+ *    method
+ *
+ * b) send a OFA_SIGNAL_DELETED_OBJECT signal to the opened dossier,
+ *    associated to the <T> object
+ */
 #define OFO_BASE_REMOVE_FROM_DATASET( P,T ) ({ (P)->dataset=g_list_remove((P)->dataset,(T)); \
-												if((P)->send_signal_remove){ g_signal_emit_by_name( G_OBJECT((P)->dossier), \
-												OFA_SIGNAL_UPDATED_DATASET, SIGNAL_OBJECT_NEW, (T),0 ); }})
+												if((P)->send_signal_delete){ g_signal_emit_by_name( G_OBJECT((P)->dossier), \
+												OFA_SIGNAL_DELETED_OBJECT, (T)); }})
 
 /**
  * OFO_BASE_UPDATE_DATASET:
+ * @P: the name of the global variable
+ *     e.g. 'st_global'
+ * @T: both the name of the class and the name of the object
+ *     e.g. 'class', 'account', etc.
+ * @I: the previous string identifier
  *
- * ex: OFO_BASE_UPDATE_DATASET( st_global, class )
+ * ex: OFO_BASE_UPDATE_DATASET( st_global, class, prev_number )
  *
  * a) remove the <T> object and reinsert it in the global dataset,
  *    keeping this later sorted by calling the <T>_cmp_by_ptr() method
  *
- * b) send a OFA_SIGNAL_UPDATED_DATASET signal to the opened dossier
- *    with the SIGNAL_OBJECT_UPDATED detail, associated with the <T>
- *    object
+ * b) send a OFA_SIGNAL_UPDATED_OBJECT signal to the opened dossier,
+ *    associated to the <T> object; the previous identifier is passed
+ *    as an argument for tree views updates
  */
-#define OFO_BASE_UPDATE_DATASET( P,T )      ({ (P)->send_signal_new=FALSE; (P)->send_signal_remove=FALSE; g_object_ref(T); \
+#define OFO_BASE_UPDATE_DATASET( P,T,I )    ({ (P)->send_signal_new=FALSE; (P)->send_signal_delete=FALSE; g_object_ref(T); \
 												OFO_BASE_REMOVE_FROM_DATASET((P),(T)); OFO_BASE_ADD_TO_DATASET((P),T); \
-												g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_UPDATED_DATASET, \
-												SIGNAL_OBJECT_UPDATED, g_object_ref(T),0 ); (P)->send_signal_new=TRUE; \
-												(P)->send_signal_remove=TRUE; })
+												g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_UPDATED_OBJECT, \
+												g_object_ref(T),(I)); (P)->send_signal_new=TRUE; (P)->send_signal_delete=TRUE; })
 
 #define OFO_BASE_UNSET_ID                   -1
 
