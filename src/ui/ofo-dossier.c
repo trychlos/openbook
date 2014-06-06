@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "ui/my-utils.h"
+#include "ui/ofa-marshal.h"
 #include "ui/ofo-base.h"
 #include "ui/ofo-base-prot.h"
 #include "ui/ofo-account.h"
@@ -82,8 +83,7 @@ struct _sDetailExe {
 /* signals defined here
  */
 enum {
-	NEW_ENTRY,
-	ACCOUNT_UPDATED,
+	DATASET_UPDATED = 0,
 	N_SIGNALS
 };
 
@@ -100,8 +100,7 @@ static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
 static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
-static void        on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data );
-static void        on_account_updated_cleanup_handler( ofoDossier *dossier, ofoAccount *account, gpointer user_data );
+static void        on_dataset_updated_cleanup_handler( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
 static gboolean    dossier_read_exercices( ofoDossier *dossier );
@@ -179,68 +178,49 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_dossier_finalize;
 
 	/**
-	 * ofoDossier::ofa-signal-new-entry:
+	 * ofoDossier::ofa-signal-dataset-updated:
 	 *
-	 * This signal is sent on the dossier by the entry being just
-	 * inserted. Other objects are suggested to connect to this signal
-	 * in order to update themselves.
+	 * This signal is sent on the dossier in two main situations:
 	 *
-	 * The #ofoEntry entry object is passed as an argument. The emitter
-	 * of the signal - usually the #ofoEntry class itself - should take
-	 * care of getting a reference on the object, so that consumers are
-	 * sure that the object stays alive during signal processing.
+	 * a) by an object being just inserted in, updated or deleted from
+	 *    the sgbd.
+	 *    Passed arguments are then only @detail and @object.
+	 *    @type argument should be set to zero.
+	 *    The emitter of the signal should take care of passing to the
+	 *    signal a new reference on the newly inserted object, so that
+	 *    consumers can make sure that the object stays alive during
+	 *    signal processing.
+	 *    The default signal handler will decrement the reference count,
+	 *    thus releasing the object for application purposes (possibly
+	 *    for object finalization in the case of a deletion).
 	 *
-	 * The default signal handler will decrement the reference count,
-	 * thus releasing the object for application purposes.
+	 * b) at the dataset level, e.g. typically when it is just being
+	 *    reloaded.
+	 *    Passed arguments are then only @detail and @type, the #GType
+	 *    of the corresponding class.
+	 *    @object argument should be set to NULL.
 	 *
-	 * Handler is of type:
-	 * 		void ( *handler )( ofoDossier *dossier,
-	 * 							ofoEntry *entry,
-	 * 							gpointer user_data );
-	 */
-	st_signals[ NEW_ENTRY ] = g_signal_new_class_handler(
-				OFA_SIGNAL_NEW_ENTRY,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_new_entry_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
-
-	/**
-	 * ofoDossier::ofa-signal-account-updated:
-	 *
-	 * This signal is sent on the dossier by the account whose amounts
-	 * have just been updated.
-	 *
-	 * The #ofoAccount account object is passed as an argument. The
-	 * emitter of the signal - usually the #ofoAccount class itself -
-	 * should take care of getting a reference on the object, so that
-	 * consumers are sure that the object stays alive during signal
-	 * processing.
-	 *
-	 * The default signal handler will decrement the reference count,
-	 * thus releasing the object for application purposes.
+	 * Other objects may connect to this signal in order to update
+	 * themselves accordingly.
 	 *
 	 * Handler is of type:
-	 * 		void ( *handler )( ofoDossier *dossier,
-	 * 							ofoAccount *account,
-	 * 							gpointer user_data );
+	 * 		void user_handler ( ofoDossier *dossier,
+	 * 								eSignalDetail detail,
+	 * 								ofoBase      *object,
+	 * 								GType         type,
+	 * 								gpointer      user_data );
 	 */
-	st_signals[ ACCOUNT_UPDATED ] = g_signal_new_class_handler(
-				OFA_SIGNAL_ACCOUNT_UPDATED,
+	st_signals[ DATASET_UPDATED ] = g_signal_new_class_handler(
+				OFA_SIGNAL_DATASET_UPDATED,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				G_CALLBACK( on_account_updated_cleanup_handler ),
+				G_CALLBACK( on_dataset_updated_cleanup_handler ),
 				NULL,								/* accumulator */
 				NULL,								/* accumulator data */
-				NULL,
+				ofa_cclosure_marshal_VOID__INT_OBJECT_ULONG,
 				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
+				3,
+				G_TYPE_INT, G_TYPE_OBJECT, G_TYPE_ULONG );
 }
 
 /**
@@ -1356,25 +1336,26 @@ ofo_dossier_set_current_exe_last_ecr( const ofoDossier *dossier, gint number )
 }
 
 static void
-on_new_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
+on_dataset_updated_cleanup_handler( ofoDossier *dossier,
+										eSignalDetail detail,
+										ofoBase *object,
+										GType type,
+										gpointer user_data )
 {
-	static const gchar *thisfn = "ofo_dossier_on_new_entry_cleanup_handler";
+	static const gchar *thisfn = "ofo_dossier_on_dataset_updated_cleanup_handler";
 
-	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
-			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
+	g_debug( "%s: dossier=%p, detail=%d, object=%p (%s), type=%lu, user_data=%p",
+			thisfn,
+			( void * ) dossier,
+			detail,
+			( void * ) object, object ? G_OBJECT_TYPE_NAME( object ) : "<unset>",
+			type,
+			( void * ) user_data );
 
-	g_object_unref( entry );
-}
-
-static void
-on_account_updated_cleanup_handler( ofoDossier *dossier, ofoAccount *account, gpointer user_data )
-{
-	static const gchar *thisfn = "ofo_dossier_on_account_updated_cleanup_handler";
-
-	g_debug( "%s: dossier=%p, account=%p, user_data=%p",
-			thisfn, ( void * ) dossier, ( void * ) account, ( void * ) user_data );
-
-	g_object_unref( account );
+	if( object ){
+		g_return_if_fail( OFO_IS_BASE( object ));
+		g_object_unref( object );
+	}
 }
 
 static gboolean

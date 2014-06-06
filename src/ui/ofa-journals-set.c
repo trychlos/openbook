@@ -385,9 +385,6 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 
 		insert_new_row( OFA_JOURNALS_SET( page ), journal, TRUE );
 
-		g_signal_emit_by_name(
-				page, OFA_SIGNAL_JOURNAL_UPDATED, MAIN_PAGE_OBJECT_CREATED, journal );
-
 	} else {
 		g_object_unref( journal );
 	}
@@ -421,9 +418,6 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 					COL_MNEMO,   ofo_journal_get_mnemo( journal ),
 					COL_LABEL,   ofo_journal_get_label( journal ),
 					-1 );
-
-			g_signal_emit_by_name(
-					page, OFA_SIGNAL_JOURNAL_UPDATED, MAIN_PAGE_OBJECT_CREATED, journal );
 		}
 	}
 
@@ -459,9 +453,6 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 
 		if( delete_confirmed( OFA_JOURNALS_SET( page ), journal ) &&
 				ofo_journal_delete( journal, dossier )){
-
-			g_signal_emit_by_name(
-					page, OFA_SIGNAL_JOURNAL_UPDATED, MAIN_PAGE_OBJECT_DELETED, journal );
 
 			/* remove the row from the model
 			 * this will cause an automatic new selection */

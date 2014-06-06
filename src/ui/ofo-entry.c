@@ -836,12 +836,10 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 	ok = FALSE;
 	entry->private->number = ofo_dossier_get_next_entry_number( dossier );
 
-	if( !entry_do_insert( entry,
+	if( entry_do_insert( entry,
 				ofo_dossier_get_sgbd( dossier ),
 				ofo_dossier_get_user( dossier ))){
 
-	} else {
-		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_NEW_ENTRY, g_object_ref( entry ));
 		ok = TRUE;
 	}
 

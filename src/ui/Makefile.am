@@ -40,6 +40,8 @@ AM_CPPFLAGS += \
 	$(NULL)
 
 BUILT_SOURCES = \
+	ofa-marshal.c										\
+	ofa-marshal.h										\
 	$(NULL)
 
 openbook_SOURCES = \
@@ -159,6 +161,13 @@ openbook_SOURCES = \
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
+ofa-marshal.h: ofa-marshal.def $(GLIB_GENMARSHAL)
+	$(GLIB_GENMARSHAL) $< --header --prefix=ofa_cclosure_marshal > $@
+
+ofa-marshal.c: ofa-marshal.def $(GLIB_GENMARSHAL)
+	echo "#include \"ofa-marshal.h\"" > $@ && \
+	$(GLIB_GENMARSHAL) $< --body --prefix=ofa_cclosure_marshal >> $@
+
 openbook_LDADD = \
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
@@ -223,4 +232,5 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(applications_in_files)							\
 	$(ui_data_DATA)										\
+	ofa-marshal.def										\
 	$(NULL)

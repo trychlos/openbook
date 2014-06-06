@@ -73,7 +73,7 @@ struct _ofaMainWindowPrivate {
  */
 enum {
 	OPEN_DOSSIER,
-	LAST_SIGNAL
+	N_SIGNALS
 };
 
 /* the actions handled from the menubar
@@ -222,7 +222,7 @@ static sTreeDef st_tree_defs[] = {
 static const gchar *st_dosmenu_xml = PKGUIDIR "/ofa-dos-menubar.ui";
 static const gchar *st_dosmenu_id  = "dos-menu";
 
-static gint         st_signals[ LAST_SIGNAL ] = { 0 };
+static gint         st_signals[ N_SIGNALS ] = { 0 };
 
 G_DEFINE_TYPE( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW )
 

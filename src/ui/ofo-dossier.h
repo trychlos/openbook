@@ -45,15 +45,19 @@
 G_BEGIN_DECLS
 
 /**
- * OFA_SIGNAL_NEW_ENTRY: signal to be sent by an entry being created.
- *                       Other objects are suggested to connect to this
- *                       signal in order to update themselves.
- *
- * OFA_SIGNAL_ACCOUNT_UPDATED: signal sent by an account whose amounts
- *                       have been updated.
+ * OFA_SIGNAL_DATASET_UPDATED: signal to be sent when an object is
+ *         inserted in, updated or removed from the sgbd, or when a
+ *         full dataset is reloaded from the sgbd.
  */
-#define OFA_SIGNAL_NEW_ENTRY                "ofa-signal-new-entry"
-#define OFA_SIGNAL_ACCOUNT_UPDATED          "ofa-signal-account-updated"
+#define OFA_SIGNAL_DATASET_UPDATED     "ofa-signal-dataset_reloaded"
+
+typedef enum {
+	SIGNAL_OBJECT_NEW = 1,
+	SIGNAL_OBJECT_UPDATED,
+	SIGNAL_OBJECT_DELETED,
+	SIGNAL_DATASET_RELOADED
+}
+	eSignalDetail;
 
 /**
  * ofaDossierStatus:
@@ -69,14 +73,14 @@ typedef enum {
 }
 	ofaDossierStatus;
 
-GType           ofo_dossier_get_type( void ) G_GNUC_CONST;
+GType           ofo_dossier_get_type                ( void ) G_GNUC_CONST;
 
-ofoDossier     *ofo_dossier_new     ( const gchar *name );
+ofoDossier     *ofo_dossier_new                     ( const gchar *name );
 
-gboolean        ofo_dossier_open    ( ofoDossier *dossier,
-										const gchar *host, gint port,
-										const gchar *socket, const gchar *dbname,
-										const gchar *account, const gchar *password );
+gboolean        ofo_dossier_open                    ( ofoDossier *dossier,
+														const gchar *host, gint port,
+														const gchar *socket, const gchar *dbname,
+														const gchar *account, const gchar *password );
 
 const gchar    *ofo_dossier_get_name                ( const ofoDossier *dossier );
 const gchar    *ofo_dossier_get_user                ( const ofoDossier *dossier );

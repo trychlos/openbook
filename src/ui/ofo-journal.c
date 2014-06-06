@@ -82,7 +82,7 @@ OFO_BASE_DEFINE_GLOBAL( st_global, journal )
 static gboolean st_connected = FALSE;
 
 static void        init_global_handlers( const ofoDossier *dossier );
-static void        on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data );
+static void        on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data );
 static GList      *journal_load_dataset( void );
 static ofoJournal *journal_find_by_id( GList *set, gint id );
 static ofoJournal *journal_find_by_mnemo( GList *set, const gchar *mnemo );
@@ -90,14 +90,14 @@ static gint        journal_count_for_devise( const ofoSgbd *sgbd, gint dev_id );
 static sDetailDev *journal_find_dev_by_id( const ofoJournal *journal, gint exe_id, gint dev_id );
 static sDetailExe *journal_find_exe_by_id( const ofoJournal *journal, gint exe_id );
 static sDetailDev *journal_new_dev_with_id( ofoJournal *journal, gint exe_id, gint dev_id );
-static gboolean    journal_dev_is_new( ofoJournal *journal, gint exe_id, gint dev_id );
-static void        journal_dev_set_new( ofoJournal *journal, gint exe_id, gint dev_id, gboolean is_new );
+/*static gboolean    journal_dev_is_new( ofoJournal *journal, gint exe_id, gint dev_id );
+static void        journal_dev_set_new( ofoJournal *journal, gint exe_id, gint dev_id, gboolean is_new );*/
 static gboolean    journal_do_insert( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    journal_get_back_id( ofoJournal *journal, const ofoSgbd *sgbd );
 /*static gboolean       journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd );*/
 static gboolean    journal_do_update( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofoSgbd *sgbd );
+/*static gboolean    journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofoSgbd *sgbd );*/
 static gboolean    journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd );
 static gint        journal_cmp_by_id( const ofoJournal *a, gconstpointer b );
 static gint        journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo );
@@ -174,15 +174,16 @@ init_global_handlers( const ofoDossier *dossier )
 
 	if( !st_connected ){
 		g_signal_connect( G_OBJECT( dossier ),
-					OFA_SIGNAL_NEW_ENTRY, G_CALLBACK( on_new_entry ), NULL );
+					OFA_SIGNAL_DATASET_UPDATED, G_CALLBACK( on_dataset_updated ), NULL );
 		st_connected = TRUE;
 	}
 }
 
 static void
-on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
+on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data )
 {
-	static const gchar *thisfn = "ofo_journal_on_new_entry";
+#if 0
+	static const gchar *thisfn = "ofo_journal_on_dataset_updated";
 	ofoJournal *journal;
 	ofaEntrySens sens;
 	gint exe_id, dev_id;
@@ -212,6 +213,7 @@ on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
 	}
 
 	journal_update_amounts( journal, exe_id, dev_id, ofo_dossier_get_sgbd( dossier ));
+#endif
 }
 
 /**
@@ -1027,6 +1029,7 @@ journal_new_dev_with_id( ofoJournal *journal, gint exe_id, gint dev_id )
 	return( sdet );
 }
 
+#if 0
 static gboolean
 journal_dev_is_new( ofoJournal *journal, gint exe_id, gint dev_id )
 {
@@ -1048,6 +1051,7 @@ journal_dev_set_new( ofoJournal *journal, gint exe_id, gint dev_id, gboolean is_
 
 	sdet->is_new = is_new;
 }
+#endif
 
 /**
  * ofo_journal_insert:
@@ -1232,6 +1236,7 @@ journal_do_update( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user )
 	return( ok );
 }
 
+#if 0
 static gboolean
 journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofoSgbd *sgbd )
 {
@@ -1281,6 +1286,7 @@ journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofo
 
 	return( ok );
 }
+#endif
 
 /**
  * ofo_journal_delete:

@@ -228,7 +228,12 @@
 
  174 2014- 6- 6 ExportAssistant: change character set to ISO-8859-15
 
- 175
+ 175 2014- 6- 6 When opening a dossier in response to 
+                OFA_SIGNAL_OPEN_DOSSIER signal, one should 
+                unconditionally close a previously already opened
+                dossier.
+
+ 176
 
 -----------------------------------------------------------------------
  DONE

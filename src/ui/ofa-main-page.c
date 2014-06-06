@@ -66,15 +66,6 @@ enum {
 	PROP_HAS_IMPORT_EXPORT_ID
 };
 
-/* signals defined
- */
-enum {
-	JOURNAL_CHANGED = 0,
-	LAST_SIGNAL
-};
-
-static gint st_signals[ LAST_SIGNAL ] = { 0 };
-
 G_DEFINE_TYPE( ofaMainPage, ofa_main_page, G_TYPE_OBJECT )
 
 static void       do_setup_page( ofaMainPage *page );
@@ -88,7 +79,6 @@ static void       do_on_update_clicked( GtkButton *button, ofaMainPage *page );
 static void       do_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static void       do_on_import_clicked( GtkButton *button, ofaMainPage *page );
 static void       do_on_export_clicked( GtkButton *button, ofaMainPage *page );
-static void       on_journal_changed_class_handler( ofaMainPage *page, ofaMainPageUpdateType type, ofoBase *journal );
 static void       on_grid_finalized( ofaMainPage *self, GObject *grid );
 
 static void
@@ -337,31 +327,6 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 					FALSE,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	/**
-	 * main-page-signal-journal-updated:
-	 *
-	 * The signal is emitted when an #ofoJournal is created, updated or
-	 * deleted.
-	 *
-	 * The class handler calls the class initialize_gtk_toplevel() virtual
-	 * method.
-	 *
-	 * The default virtual method just does nothing.
-	 */
-	st_signals[ JOURNAL_CHANGED ] =
-			g_signal_new_class_handler(
-					OFA_SIGNAL_JOURNAL_UPDATED,
-					G_TYPE_FROM_CLASS( klass ),
-					G_SIGNAL_RUN_LAST,
-					G_CALLBACK( on_journal_changed_class_handler ),
-					NULL,
-					NULL,
-					g_cclosure_marshal_VOID__UINT_POINTER,
-					G_TYPE_NONE,
-					2,
-					G_TYPE_UINT,
-					G_TYPE_POINTER );
-
 	klass->setup_page = v_setup_page;
 	klass->setup_view = NULL;
 	klass->setup_buttons = v_setup_buttons;
@@ -601,27 +566,6 @@ do_on_export_clicked( GtkButton *button, ofaMainPage *page )
 	} else {
 		g_debug( "%s: button=%p, page=%p (%s)",
 				thisfn, ( void * ) button, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
-	}
-}
-
-/*
- * default class handler for OFA_SIGNAL_JOURNAL_UPDATED signal
- */
-static void
-on_journal_changed_class_handler( ofaMainPage *page, ofaMainPageUpdateType type, ofoBase *journal )
-{
-	static const gchar *thisfn = "ofa_main_page_on_journal_changed_class_handler";
-
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
-	g_return_if_fail( journal && OFO_IS_BASE( journal ));
-
-	if( !page->private->dispose_has_run ){
-
-		g_debug( "%s: page=%p (%s), type=%d, journal=%p (%s)",
-				thisfn,
-				( void * ) page, G_OBJECT_TYPE_NAME( page ),
-				type,
-				( void * ) journal, G_OBJECT_TYPE_NAME( journal ));
 	}
 }
 

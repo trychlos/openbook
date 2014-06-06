@@ -64,11 +64,6 @@ typedef enum {
 }
 	ofaMainPageUpdateType;
 
-/**
- * Signals defined on this base class
- */
-#define OFA_SIGNAL_JOURNAL_UPDATED          "ofa-signal-journal-updated"
-
 GType          ofa_main_page_get_type       ( void ) G_GNUC_CONST;
 
 ofaMainWindow *ofa_main_page_get_main_window( const ofaMainPage *page );

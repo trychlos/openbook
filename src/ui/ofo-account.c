@@ -74,13 +74,13 @@ OFO_BASE_DEFINE_GLOBAL( st_global, account )
 static gboolean st_connected = FALSE;
 
 static void        init_global_handlers( const ofoDossier *dossier );
-static void        on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data );
+static void        on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data );
 static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
 static gint        account_count_for_devise( const ofoSgbd *sgbd, gint dev_id );
 static gboolean    account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
-static gboolean    account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );
+/*static gboolean    account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );*/
 static gboolean    account_do_delete( ofoAccount *account, const ofoSgbd *sgbd );
 static gint        account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint        account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
@@ -155,14 +155,15 @@ init_global_handlers( const ofoDossier *dossier )
 
 	if( !st_connected ){
 		g_signal_connect( G_OBJECT( dossier ),
-					OFA_SIGNAL_NEW_ENTRY, G_CALLBACK( on_new_entry ), NULL );
+					OFA_SIGNAL_DATASET_UPDATED, G_CALLBACK( on_dataset_updated ), NULL );
 		st_connected = TRUE;
 	}
 }
 
 static void
-on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
+on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data )
 {
+#if 0
 	static const gchar *thisfn = "ofo_account_on_new_entry";
 	ofoAccount *account;
 	ofaEntrySens sens;
@@ -202,7 +203,7 @@ on_new_entry( ofoDossier *dossier, ofoEntry *entry, gpointer user_data )
 		account_update_amounts( account, ofo_dossier_get_sgbd( dossier ));
 		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_ACCOUNT_UPDATED, g_object_ref( account ));
 	}
-
+#endif
 }
 
 /**
@@ -1336,6 +1337,7 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 	return( ok );
 }
 
+#if 0
 static gboolean
 account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 {
@@ -1376,6 +1378,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 
 	return( ok );
 }
+#endif
 
 /**
  * ofo_account_delete:

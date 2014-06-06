@@ -103,7 +103,7 @@ static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, o
 static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountNotebook *self );
 static void       on_account_selected( GtkTreeSelection *selection, ofaAccountNotebook *self );
 static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self );
-static void       on_account_updated( ofoDossier *dossier, ofoAccount *account, ofaAccountNotebook *self );
+static void       on_dataset_updated( ofoDossier *dossier, gint detail, ofoBase *object, GType type, ofaAccountNotebook *self );
 
 static void
 account_notebook_finalize( GObject *instance )
@@ -208,7 +208,7 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 	 */
 	g_signal_connect(
 			G_OBJECT( parms->dossier),
-			OFA_SIGNAL_ACCOUNT_UPDATED, G_CALLBACK( on_account_updated ), self );
+			OFA_SIGNAL_DATASET_UPDATED, G_CALLBACK( on_dataset_updated ), self );
 
 	/* setup a weak reference on the dialog to auto-unref */
 	g_object_weak_ref( G_OBJECT( self->private->book ), ( GWeakNotify ) on_dialog_finalized, self );
@@ -774,11 +774,43 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 }
 
 /*
- * OFA_SIGNAL_ACCOUNT_UPDATED signal handler
+ * OFA_SIGNAL_DATASET_UPDATED signal handler:
+ *
+ * Actions of an account from the Account main page is already taken
+ * into account by the main page itself. We only consider it the
+ * following situations:
+ *
+ * - new entry: update
  */
 static void
-on_account_updated( ofoDossier *dossier, ofoAccount *account, ofaAccountNotebook *self )
+on_dataset_updated( ofoDossier *dossier,
+						gint detail, ofoBase *object, GType type, ofaAccountNotebook *self )
 {
+#if 0
+	switch( detail ){
+		case SIGNAL_OBJECT_NEW:
+			if( OFO_IS_ACCOUNT( object )){
+				on_dataset_updated_do_new_account( dossier, OFO_ACCOUNT( object ), self );
+			}
+			break;
+		case SIGNAL_OBJECT_UPDATED:
+			if( OFO_IS_ACCOUNT( object )){
+				on_dataset_updated_do_updated_account( dossier, OFO_ACCOUNT( object ), self );
+			}
+			break;
+		case SIGNAL_OBJECT_DELETED:
+			if( OFO_IS_ACCOUNT( object )){
+				on_dataset_updated_do_deleted_account( dossier, OFO_ACCOUNT( object ), self );
+			}
+			break;
+		case SIGNAL_DATASET_RELOADED:
+			if( OFO_IS_ACCOUNT( object )){
+				on_dataset_updated_do_new_account( dossier, OFO_ACCOUNT( object ), self );
+			}
+			break;
+	}
+#endif
+#if 0
 	gint p_num;
 	GtkWidget *p_widget;
 	GtkTreeView *tview;
@@ -788,6 +820,7 @@ on_account_updated( ofoDossier *dossier, ofoAccount *account, ofaAccountNotebook
 	gchar *i_number;
 	gint cmp;
 	gchar *sdeb, *scre;
+	ofoAccount *account = OFO_ACCOUNT( object );
 
 	if( !ofo_account_is_root( account )){
 		p_num = book_get_page_by_class( self, ofo_account_get_class( account ));
@@ -832,6 +865,7 @@ on_account_updated( ofoDossier *dossier, ofoAccount *account, ofaAccountNotebook
 			}
 		}
 	}
+#endif
 }
 
 /**
