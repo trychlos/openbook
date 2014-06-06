@@ -40,17 +40,21 @@
 G_BEGIN_DECLS
 
 /**
- * ofoBaseStatic:
+ * ofoBaseGlobal:
  *
  * This structure is used by every derived class (but ofoDossier which
  * doesn't need it), in order to store its own global data.
+ *
  * It is the responsability of the user child class to manage its own
  * version of this structure, usually through a static pointer to a
- * dynamically allocated structure.
+ * dynamically allocated structure (but see the macros below which may
+ * greatly help in this matter).
  */
 typedef struct {
-	GList   *dataset;
-	ofoBase *dossier;
+	GList    *dataset;
+	ofoBase  *dossier;
+	gboolean  send_signal_new;
+	gboolean  send_signal_remove;
 }
 	ofoBaseGlobal;
 
@@ -94,9 +98,43 @@ typedef struct {
 #define OFO_BASE_SET_GLOBAL( P,D,T )        ({ (P)=ofo_base_get_global((P),OFO_BASE(D),(GWeakNotify)(T ## _clear_global),NULL); \
 												if(!(P)->dataset){ (P)->dataset=(T ## _load_dataset)();} })
 
-#define OFO_BASE_ADD_TO_DATASET( P,T )      ({ (P)->dataset=g_list_insert_sorted((P)->dataset,(T),(GCompareFunc)(T ## _cmp_by_ptr)); })
-#define OFO_BASE_REMOVE_FROM_DATASET( P,T ) ({ (P)->dataset=g_list_remove((P)->dataset,(T)); g_object_unref(T); })
-#define OFO_BASE_UPDATE_DATASET( P,T )      ({ g_object_ref(T); OFO_BASE_REMOVE_FROM_DATASET((P),(T)); OFO_BASE_ADD_TO_DATASET((P),T); })
+/**
+ * OFO_BASE_ADD_TO_DATASET:
+ *
+ * ex: OFO_BASE_ADD_TO_DATASET( st_global, class )
+ *
+ * a) insert the 'T' object (named <T> and of type OFO_TYPE_<T>) in the
+ *    global dataset, keeping it sorted by calling the <T>_cmp_by_ptr()
+ *    method
+ *
+ * b) send a OFA_SIGNAL_UPDATED_DATASET signal to the opened dossier
+ *    with the SIGNAL_OBJECT_NEW detail, associated with the <T> object
+ */
+#define OFO_BASE_ADD_TO_DATASET( P,T )      ({ (P)->dataset=g_list_insert_sorted((P)->dataset,(T),(GCompareFunc)(T ## _cmp_by_ptr)); \
+												if((P)->send_signal_new){ g_signal_emit_by_name( G_OBJECT((P)->dossier), \
+												OFA_SIGNAL_UPDATED_DATASET, SIGNAL_OBJECT_NEW, g_object_ref(T),0 ); }})
+
+#define OFO_BASE_REMOVE_FROM_DATASET( P,T ) ({ (P)->dataset=g_list_remove((P)->dataset,(T)); \
+												if((P)->send_signal_remove){ g_signal_emit_by_name( G_OBJECT((P)->dossier), \
+												OFA_SIGNAL_UPDATED_DATASET, SIGNAL_OBJECT_NEW, (T),0 ); }})
+
+/**
+ * OFO_BASE_UPDATE_DATASET:
+ *
+ * ex: OFO_BASE_UPDATE_DATASET( st_global, class )
+ *
+ * a) remove the <T> object and reinsert it in the global dataset,
+ *    keeping this later sorted by calling the <T>_cmp_by_ptr() method
+ *
+ * b) send a OFA_SIGNAL_UPDATED_DATASET signal to the opened dossier
+ *    with the SIGNAL_OBJECT_UPDATED detail, associated with the <T>
+ *    object
+ */
+#define OFO_BASE_UPDATE_DATASET( P,T )      ({ (P)->send_signal_new=FALSE; (P)->send_signal_remove=FALSE; g_object_ref(T); \
+												OFO_BASE_REMOVE_FROM_DATASET((P),(T)); OFO_BASE_ADD_TO_DATASET((P),T); \
+												g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_UPDATED_DATASET, \
+												SIGNAL_OBJECT_UPDATED, g_object_ref(T),0 ); (P)->send_signal_new=TRUE; \
+												(P)->send_signal_remove=TRUE; })
 
 #define OFO_BASE_UNSET_ID                   -1
 

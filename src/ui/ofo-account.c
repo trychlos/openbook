@@ -155,7 +155,7 @@ init_global_handlers( const ofoDossier *dossier )
 
 	if( !st_connected ){
 		g_signal_connect( G_OBJECT( dossier ),
-					OFA_SIGNAL_DATASET_UPDATED, G_CALLBACK( on_dataset_updated ), NULL );
+					OFA_SIGNAL_UPDATED_DATASET, G_CALLBACK( on_dataset_updated ), NULL );
 		st_connected = TRUE;
 	}
 }

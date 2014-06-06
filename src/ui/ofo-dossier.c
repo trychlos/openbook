@@ -100,7 +100,7 @@ static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
 static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
-static void        on_dataset_updated_cleanup_handler( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data );
+static void        on_dataset_updated_cleanup_handler( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
 static gboolean    dossier_read_exercices( ofoDossier *dossier );
@@ -211,7 +211,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * 								gpointer      user_data );
 	 */
 	st_signals[ DATASET_UPDATED ] = g_signal_new_class_handler(
-				OFA_SIGNAL_DATASET_UPDATED,
+				OFA_SIGNAL_UPDATED_DATASET,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_dataset_updated_cleanup_handler ),
@@ -1339,18 +1339,20 @@ static void
 on_dataset_updated_cleanup_handler( ofoDossier *dossier,
 										eSignalDetail detail,
 										ofoBase *object,
-										GType type,
-										gpointer user_data )
+										GType type )
 {
 	static const gchar *thisfn = "ofo_dossier_on_dataset_updated_cleanup_handler";
 
-	g_debug( "%s: dossier=%p, detail=%d, object=%p (%s), type=%lu, user_data=%p",
+	g_debug( "%s: dossier=%p, detail=%d (%s), object=%p (%s), type=%lu",
 			thisfn,
 			( void * ) dossier,
 			detail,
+			( detail == 1 ? "SIGNAL_OBJECT_NEW" :
+					( detail == 2 ? "SIGNAL_OBJECT_UPDATED" :
+					( detail == 3 ? "SIGNAL_OBJECT_DELETED" :
+					( detail ==4 ? "SIGNAL_DATASET_RELOADED" : "<unknown>" )))),
 			( void * ) object, object ? G_OBJECT_TYPE_NAME( object ) : "<unset>",
-			type,
-			( void * ) user_data );
+			type );
 
 	if( object ){
 		g_return_if_fail( OFO_IS_BASE( object ));

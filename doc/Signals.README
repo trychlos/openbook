@@ -8,10 +8,7 @@
    ofaMainWindow signals
      OFA_SIGNAL_OPEN_DOSSIER
    ofoDossier signals
-     OFA_SIGNAL_OBJECT_NEW
-     OFA_SIGNAL_OBJECT_UPDATED
-     OFA_SIGNAL_OBJECT_DELETED
-     OFA_SIGNAL_DATASET_RELOADED
+     OFA_SIGNAL_UPDATED_DATASET
 
 -----------------------------------------------------------------------
  Liminaries
@@ -48,43 +45,44 @@
  Signals defined in the ofoDossier class all act on or react to an
  update of a dossier element.
  
-   OFA_SIGNAL_OBJECT_NEW
-   ---------------------
+   OFA_SIGNAL_UPDATED_DATASET
+   --------------------------
    
-   This signal is sent to the dossier when a new object in inserted in
-   the sgbd. In some situations (e.g. full reload of the dataset), a
-   global flag may prevent this signal to be sent.
-
-   A reference on the newly inserted object is attached to the sent 
-   message. The ofoDossier class handler takes care of releasing this
-   reference.
-    
-   OFA_SIGNAL_OBJECT_UPDATED
-   -------------------------
+   This signal is sent to the dossier in the following situations:
    
-   This signal is sent to the dossier when an existing object is 
-   updated in the sgbd.
-
-   A reference on the updated object is attached to the sent message. 
-   The ofoDossier class handler takes care of releasing this reference.
+   a. when a new object in inserted in the sgbd:
    
-   OFA_SIGNAL_OBJECT_DELETED
-   -------------------------
+      - detail is set to SIGNAL_OBJECT_NEW
+      - a new reference on the object should be passed as an argument
+        to make sure the object stays alive during the signal 
+        processing; this reference will be released by the class
+        signal handler
+      - type is unused and should be set to zero
+      
+   b. when an existing object is updated in the sgbd:
    
-   This signal is sent to the dossier when an existing object is 
-   deleted from the sgbd.
-
-   A reference on the deleted object is attached to the sent message. 
-   The ofoDossier class handler takes care of releasing this reference,
-   thus finalizing the object.
+      - detail is set to SIGNAL_OBJECT_UPDATED
+      - a new reference on the object should be passed as an argument
+        to make sure the object stays alive during the signal 
+        processing; this reference will be released by the class
+        signal handler
+      - type is unused and should be set to zero
+      
+   c. when an existing object is deleted from the sgbd:
    
-   OFA_SIGNAL_DATASET_RELOADED
-   ---------------------------
-
-   This signal is sent to the dossier when a full dataset is reloaded,
-   typically after an import operation.
+      - detail is set to SIGNAL_OBJECT_DELETED
+      - a new reference on the object should be passed as an argument
+        to make sure the object stays alive during the signal 
+        processing; this reference will be released by the class
+        signal handler (probably leading thus to the finalization of
+        the object)
+      - type is unused and should be set to zero
+      
+   d. when a dataset is fully reloaded (e.g. after an import operation):
    
-   The sent message holds the GType of the reloaded class.
+      - detail is set to SIGNAL_DATASET_RELOADED
+      - the object pointer is unused and should be set to NULL
+      - type is the GType of the reloaded class
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, june 6th

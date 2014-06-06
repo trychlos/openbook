@@ -1,4 +1,4 @@
-# ofoDossier::OFA_SIGNAL_DATASET_UPDATED
+# ofoDossier::OFA_SIGNAL_UPDATED_DATASET
 # as of GObject 2.36, glib-genmarshal doesn't natively support GType type
 # so use unsigned long
 VOID:INT,OBJECT,ULONG

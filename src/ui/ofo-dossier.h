@@ -45,21 +45,6 @@
 G_BEGIN_DECLS
 
 /**
- * OFA_SIGNAL_DATASET_UPDATED: signal to be sent when an object is
- *         inserted in, updated or removed from the sgbd, or when a
- *         full dataset is reloaded from the sgbd.
- */
-#define OFA_SIGNAL_DATASET_UPDATED     "ofa-signal-dataset_reloaded"
-
-typedef enum {
-	SIGNAL_OBJECT_NEW = 1,
-	SIGNAL_OBJECT_UPDATED,
-	SIGNAL_OBJECT_DELETED,
-	SIGNAL_DATASET_RELOADED
-}
-	eSignalDetail;
-
-/**
  * ofaDossierStatus:
  *
  * Status of the exercice.

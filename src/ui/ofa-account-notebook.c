@@ -208,7 +208,7 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 	 */
 	g_signal_connect(
 			G_OBJECT( parms->dossier),
-			OFA_SIGNAL_DATASET_UPDATED, G_CALLBACK( on_dataset_updated ), self );
+			OFA_SIGNAL_UPDATED_DATASET, G_CALLBACK( on_dataset_updated ), self );
 
 	/* setup a weak reference on the dialog to auto-unref */
 	g_object_weak_ref( G_OBJECT( self->private->book ), ( GWeakNotify ) on_dialog_finalized, self );
@@ -774,7 +774,7 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 }
 
 /*
- * OFA_SIGNAL_DATASET_UPDATED signal handler:
+ * OFA_SIGNAL_UPDATED_DATASET signal handler:
  *
  * Actions of an account from the Account main page is already taken
  * into account by the main page itself. We only consider it the
