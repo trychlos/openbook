@@ -84,6 +84,7 @@ static gboolean    account_update_amounts( ofoAccount *account, const ofoSgbd *s
 static gboolean    account_do_delete( ofoAccount *account, const ofoSgbd *sgbd );
 static gint        account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint        account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
+static gboolean    account_do_drop_content( const ofoSgbd *sgbd );
 
 static void
 ofo_account_finalize( GObject *instance )
@@ -1525,4 +1526,134 @@ ofo_account_get_csv( const ofoDossier *dossier )
 	}
 
 	return( g_slist_reverse( lines ));
+}
+
+/**
+ * ofo_account_set_csv:
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - account number
+ * - label
+ * - currency iso 3a code (mandatory for detail accounts, default to
+ *   dossier currency)
+ * - type (default to detail)
+ * - notes (opt)
+ *
+ * Replace the whole table with the provided datas.
+ * All the balances are set to zero (resp. NULL).
+ */
+void
+ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+{
+	static const gchar *thisfn = "ofo_account_set_csv";
+	ofoAccount *account;
+	GSList *ili, *ico;
+	GList *new_set, *ise;
+	gint count;
+	gint errors;
+	gint class;
+	const gchar *str, *dev_code;
+	gchar *type;
+	gint def_dev_id, dev_id;
+	ofoDevise *devise;
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+
+	new_set = NULL;
+	count = 0;
+	errors = 0;
+	def_dev_id = ofo_dossier_get_default_devise( dossier );
+
+	for( ili=lines ; ili ; ili=ili->next ){
+		count += 1;
+		if( !( count == 1 && with_header )){
+			account = ofo_account_new();
+			ico=ili->data;
+
+			/* account number */
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty account number", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			class = ofo_account_get_class_from_number( str );
+			if( class < 1 || class > 9 ){
+				g_warning( "%s: (line %d) invalid account number: %s", thisfn, count, str );
+				errors += 1;
+				continue;
+			}
+			ofo_account_set_number( account, str );
+
+			/* account label */
+			ico = ico->next;
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty label", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			ofo_account_set_label( account, str );
+
+			/* currency code */
+			ico = ico->next;
+			dev_code = ( const gchar * ) ico->data;
+
+			/* account type */
+			ico = ico->next;
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				type = g_strdup( "D" );
+			} else {
+				type = g_strdup( str );
+			}
+			ofo_account_set_type( account, type );
+
+			if( !strcmp( type, "D" )){
+				dev_id = OFO_BASE_UNSET_ID;
+				if( !dev_code || !g_utf8_strlen( str, -1 )){
+					dev_id = def_dev_id;
+				} else {
+					devise = ofo_devise_get_by_code( dossier, dev_code );
+					if( devise ){
+						dev_id = ofo_devise_get_id( devise );
+					}
+				}
+				if( dev_id <= 0 ){
+					g_warning( "%s: (line %d) invalid currency: '%s'", thisfn, count, dev_code );
+					errors += 1;
+					continue;
+				}
+				ofo_account_set_devise( account, dev_id );
+			}
+
+			/* notes */
+			ico = ico->next;
+			str = ( const gchar * ) ico->data;
+			if( str && g_utf8_strlen( str, -1 )){
+				ofo_account_set_notes( account, str );
+			}
+
+			new_set = g_list_prepend( new_set, account );
+		}
+	}
+
+	if( !errors ){
+		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+		st_global->dataset = NULL;
+		account_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+
+		for( ise=new_set ; ise ; ise=ise->next ){
+			ofo_account_insert( OFO_ACCOUNT( ise->data ), dossier );
+		}
+
+		g_list_free( new_set );
+	}
+}
+
+static gboolean
+account_do_drop_content( const ofoSgbd *sgbd )
+{
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_COMPTES" ));
 }

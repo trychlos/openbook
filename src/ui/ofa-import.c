@@ -39,6 +39,7 @@
 #include "ui/ofa-importer.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-plugin.h"
+#include "ui/ofo-account.h"
 #include "ui/ofo-class.h"
 
 static gboolean pref_quit_on_escape = TRUE;
@@ -854,7 +855,7 @@ import_account_csv( ofaImport *self )
 	gchar *str;
 	gboolean ok;
 
-	str = g_strdup( _( "Importing account reference will replace the existing accounts.\n"
+	str = g_strdup( _( "Importing a new accounts reference will replace the existing chart of accounts.\n"
 			"Are you sure you want drop all the current accounts, and reset the chart to these new ones ?" ));
 
 	ok = confirm_import( self, str );
@@ -868,7 +869,7 @@ import_account_csv( ofaImport *self )
 		return( -1 );
 	}
 
-	/*ofo_account_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );*/
+	ofo_account_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );

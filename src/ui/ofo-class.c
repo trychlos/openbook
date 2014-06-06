@@ -618,7 +618,15 @@ ofo_class_get_csv( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_class_set_csv:
  *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - class number
+ * - label
+ * - notes (opt)
+ *
+ * Replace the whole table with the provided datas.
  */
 void
 ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
@@ -643,6 +651,8 @@ ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_heade
 		if( !( count == 1 && with_header )){
 			class = ofo_class_new();
 			ico=ili->data;
+
+			/* class number */
 			str = ( const gchar * ) ico->data;
 			number = atoi( str );
 			if( number < 1 || number > 9 ){
@@ -652,6 +662,7 @@ ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_heade
 			}
 			ofo_class_set_number( class, number );
 
+			/* class label */
 			ico = ico->next;
 			str = ( const gchar * ) ico->data;
 			if( !str || !g_utf8_strlen( str, -1 )){
@@ -661,6 +672,7 @@ ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_heade
 			}
 			ofo_class_set_label( class, str );
 
+			/* notes */
 			ico = ico->next;
 			str = ( const gchar * ) ico->data;
 			if( str && g_utf8_strlen( str, -1 )){
