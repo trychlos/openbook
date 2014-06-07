@@ -64,8 +64,8 @@ openbook_SOURCES = \
 	ofa-base-dialog.c									\
 	ofa-base-dialog.h									\
 	ofa-base-dialog-prot.h								\
-	ofa-bat-list.c										\
-	ofa-bat-list.h										\
+	ofa-bat-common.c										\
+	ofa-bat-common.h										\
 	ofa-bat-properties.c								\
 	ofa-bat-properties.h								\
 	ofa-bat-select.c									\
@@ -184,7 +184,7 @@ rc_files = \
 ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
-	ofa-bat-list.ui										\
+	ofa-bat-common.ui										\
 	ofa-bat-properties.ui								\
 	ofa-bat-select.ui									\
 	ofa-class-properties.ui								\

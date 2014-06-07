@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <!-- interface-requires gtk+ 3.6 -->
-  <object class="GtkWindow" id="BatListWindow">
+  <object class="GtkWindow" id="BatCommonWindow">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkBox" id="top-box">

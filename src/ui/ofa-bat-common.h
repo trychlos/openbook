@@ -24,13 +24,13 @@
  * $Id$
  */
 
-#ifndef __OFA_BAT_LIST_H__
-#define __OFA_BAT_LIST_H__
+#ifndef __OFA_BAT_COMMON_H__
+#define __OFA_BAT_COMMON_H__
 
 /**
- * SECTION: ofa_bat_list
- * @short_description: #ofaBatList class definition.
- * @include: ui/ofa-bat-list.h
+ * SECTION: ofa_bat_common
+ * @short_description: #ofaBatCommon class definition.
+ * @include: ui/ofa-bat-common.h
  *
  * A convenience class which displays :
  * - in a treeview, the list of imported Bank Account Transaction (BAT)
@@ -44,30 +44,30 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_BAT_LIST                ( ofa_bat_list_get_type())
-#define OFA_BAT_LIST( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BAT_LIST, ofaBatList ))
-#define OFA_BAT_LIST_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BAT_LIST, ofaBatListClass ))
-#define OFA_IS_BAT_LIST( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BAT_LIST ))
-#define OFA_IS_BAT_LIST_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BAT_LIST ))
-#define OFA_BAT_LIST_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BAT_LIST, ofaBatListClass ))
+#define OFA_TYPE_BAT_COMMON                ( ofa_bat_common_get_type())
+#define OFA_BAT_COMMON( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BAT_COMMON, ofaBatCommon ))
+#define OFA_BAT_COMMON_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BAT_COMMON, ofaBatCommonClass ))
+#define OFA_IS_BAT_COMMON( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BAT_COMMON ))
+#define OFA_IS_BAT_COMMON_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BAT_COMMON ))
+#define OFA_BAT_COMMON_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BAT_COMMON, ofaBatCommonClass ))
 
-typedef struct _ofaBatListPrivate        ofaBatListPrivate;
+typedef struct _ofaBatCommonPrivate        ofaBatCommonPrivate;
 
 typedef struct {
 	/*< private >*/
 	GObject            parent;
-	ofaBatListPrivate *private;
+	ofaBatCommonPrivate *private;
 }
-	ofaBatList;
+	ofaBatCommon;
 
 typedef struct {
 	/*< private >*/
 	GObjectClass parent;
 }
-	ofaBatListClass;
+	ofaBatCommonClass;
 
 /**
- * ofaBatListCb:
+ * ofaBatCommonCb:
  *
  * A callback to be triggered when a new row is selected, or a row is
  * activated.
@@ -76,10 +76,10 @@ typedef struct {
  * - #ofoBat object
  * - user_data provided at init_dialog() time
  */
-typedef void ( *ofaBatListCb )( const ofoBat *, gpointer );
+typedef void ( *ofaBatCommonCb )( const ofoBat *, gpointer );
 
 /**
- * ofaBatListParms
+ * ofaBatCommonParms
  *
  * The structure passed to the init_dialog() function.
  *
@@ -99,20 +99,20 @@ typedef struct {
 	ofoDossier       *dossier;
 	gboolean          with_tree_view;
 	gboolean          editable;
-	ofaBatListCb      pfnSelection;
-	ofaBatListCb      pfnActivation;
+	ofaBatCommonCb      pfnSelection;
+	ofaBatCommonCb      pfnActivation;
 	gpointer          user_data;
 }
-	ofaBatListParms;
+	ofaBatCommonParms;
 
-GType         ofa_bat_list_get_type     ( void ) G_GNUC_CONST;
+GType         ofa_bat_common_get_type     ( void ) G_GNUC_CONST;
 
-ofaBatList   *ofa_bat_list_init_dialog  ( const ofaBatListParms *parms );
+ofaBatCommon   *ofa_bat_common_init_dialog  ( const ofaBatCommonParms *parms );
 
-void          ofa_bat_list_set_bat      ( const ofaBatList *self, const ofoBat *bat );
+void          ofa_bat_common_set_bat      ( const ofaBatCommon *self, const ofoBat *bat );
 
-const ofoBat *ofa_bat_list_get_selection( const ofaBatList *self );
+const ofoBat *ofa_bat_common_get_selection( const ofaBatCommon *self );
 
 G_END_DECLS
 
-#endif /* __OFA_BAT_LIST_H__ */
+#endif /* __OFA_BAT_COMMON_H__ */

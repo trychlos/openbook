@@ -217,21 +217,9 @@
 
  169 2014- 6- 6 rename ofaBatList to (e.g.) ofaBatCommon
 
- 170 2014- 6- 6 rename ofaAccountNotebook to (e.g.) ofaAccountCommon
-
- 171 2014- 6- 6 rename ofaDeviseCombo to (e.g.) ofaDeviseCommon
-
- 172 2014- 6- 6 rename ofaJournalCombo to (e.g.) ofaJournalCommon
-
- 173 2014- 6- 6 When importing a reference, the main page must be 
-                reloaded
-
  174 2014- 6- 6 ExportAssistant: change character set to ISO-8859-15
-
- 175 2014- 6- 6 When opening a dossier in response to 
-                OFA_SIGNAL_OPEN_DOSSIER signal, one should 
-                unconditionally close a previously already opened
-                dossier.
+     2014- 6- 7 the exported character set should be a choice of the 
+                user (default is UTF-8)
 
  176
 
@@ -613,6 +601,25 @@
 
  157 2014- 6- 4 BatList: the treeview doesn't vertically expand
      2014- 6- 4 done
+
+ 170 2014- 6- 6 rename ofaAccountNotebook to (e.g.) ofaAccountCommon
+     2014- 6- 7 cancelled
+
+ 171 2014- 6- 6 rename ofaDeviseCombo to (e.g.) ofaDeviseCommon
+     2014- 6- 7 cancelled
+
+ 172 2014- 6- 6 rename ofaJournalCombo to (e.g.) ofaJournalCommon
+     2014- 6- 7 cancelled
+
+ 173 2014- 6- 6 When importing a reference, the main page must be 
+                reloaded
+     2014- 6- 7 done with OFA_SIGNAL_RELOADED_DATASET signal handler
+
+ 175 2014- 6- 6 When opening a dossier in response to 
+                OFA_SIGNAL_OPEN_DOSSIER signal, one should 
+                unconditionally close a previously already opened
+                dossier.
+     2014- 6- 7 done - svn #3657
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

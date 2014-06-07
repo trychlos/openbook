@@ -31,14 +31,14 @@
 #include <glib/gi18n.h>
 
 #include "ui/my-utils.h"
-#include "ui/ofa-bat-list.h"
+#include "ui/ofa-bat-common.h"
 #include "ui/ofo-base.h"
 #include "ui/ofo-bat.h"
 #include "ui/ofo-dossier.h"
 
 /* private instance data
  */
-struct _ofaBatListPrivate {
+struct _ofaBatCommonPrivate {
 	gboolean         dispose_has_run;
 
 	/* input data
@@ -47,8 +47,8 @@ struct _ofaBatListPrivate {
 	ofoDossier      *dossier;
 	gboolean         with_tree_view;
 	gboolean         editable;
-	ofaBatListCb     pfnSelection;
-	ofaBatListCb     pfnActivation;
+	ofaBatCommonCb     pfnSelection;
+	ofaBatCommonCb     pfnActivation;
 	gpointer         user_data;
 
 	/* UI
@@ -79,31 +79,31 @@ enum {
 	N_COLUMNS
 };
 
-static const gchar *st_ui_xml = PKGUIDIR "/ofa-bat-list.ui";
-static const gchar *st_ui_id  = "BatListWindow";
+static const gchar *st_ui_xml = PKGUIDIR "/ofa-bat-common.ui";
+static const gchar *st_ui_id  = "BatCommonWindow";
 
-G_DEFINE_TYPE( ofaBatList, ofa_bat_list, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaBatCommon, ofa_bat_common, G_TYPE_OBJECT )
 
-static gboolean      do_move_between_containers( ofaBatList *self );
-static void          setup_treeview( ofaBatList *self );
-static void          init_treeview( ofaBatList *self );
-static void          insert_new_row( ofaBatList *self, ofoBat *bat, gboolean with_selection );
-static void          setup_first_selection( ofaBatList *self );
-static void          set_editable_widgets( ofaBatList *self );
-static void          on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaBatList *self );
-static void          on_selection_changed( GtkTreeSelection *selection, ofaBatList *self );
-static void          setup_bat_properties( const ofaBatList *self, const ofoBat *bat );
-static const ofoBat *get_selected_object( const ofaBatList *self, GtkTreeSelection *selection );
+static gboolean      do_move_between_containers( ofaBatCommon *self );
+static void          setup_treeview( ofaBatCommon *self );
+static void          init_treeview( ofaBatCommon *self );
+static void          insert_new_row( ofaBatCommon *self, ofoBat *bat, gboolean with_selection );
+static void          setup_first_selection( ofaBatCommon *self );
+static void          set_editable_widgets( ofaBatCommon *self );
+static void          on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaBatCommon *self );
+static void          on_selection_changed( GtkTreeSelection *selection, ofaBatCommon *self );
+static void          setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat );
+static const ofoBat *get_selected_object( const ofaBatCommon *self, GtkTreeSelection *selection );
 
 static void
-bat_list_finalize( GObject *instance )
+bat_common_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_bat_list_finalize";
-	ofaBatListPrivate *priv;
+	static const gchar *thisfn = "ofa_bat_common_finalize";
+	ofaBatCommonPrivate *priv;
 
-	g_return_if_fail( OFA_IS_BAT_LIST( instance ));
+	g_return_if_fail( OFA_IS_BAT_COMMON( instance ));
 
-	priv = OFA_BAT_LIST( instance )->private;
+	priv = OFA_BAT_COMMON( instance )->private;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -112,17 +112,17 @@ bat_list_finalize( GObject *instance )
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_bat_list_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_bat_common_parent_class )->finalize( instance );
 }
 
 static void
-bat_list_dispose( GObject *instance )
+bat_common_dispose( GObject *instance )
 {
-	ofaBatListPrivate *priv;
+	ofaBatCommonPrivate *priv;
 
-	g_return_if_fail( OFA_IS_BAT_LIST( instance ));
+	g_return_if_fail( OFA_IS_BAT_COMMON( instance ));
 
-	priv = ( OFA_BAT_LIST( instance ))->private;
+	priv = ( OFA_BAT_COMMON( instance ))->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -132,51 +132,51 @@ bat_list_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_bat_list_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_bat_common_parent_class )->dispose( instance );
 }
 
 static void
-ofa_bat_list_init( ofaBatList *self )
+ofa_bat_common_init( ofaBatCommon *self )
 {
-	static const gchar *thisfn = "ofa_bat_list_init";
+	static const gchar *thisfn = "ofa_bat_common_init";
 
-	g_return_if_fail( OFA_IS_BAT_LIST( self ));
+	g_return_if_fail( OFA_IS_BAT_COMMON( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaBatListPrivate, 1 );
+	self->private = g_new0( ofaBatCommonPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 }
 
 static void
-ofa_bat_list_class_init( ofaBatListClass *klass )
+ofa_bat_common_class_init( ofaBatCommonClass *klass )
 {
-	static const gchar *thisfn = "ofa_bat_list_class_init";
+	static const gchar *thisfn = "ofa_bat_common_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = bat_list_dispose;
-	G_OBJECT_CLASS( klass )->finalize = bat_list_finalize;
+	G_OBJECT_CLASS( klass )->dispose = bat_common_dispose;
+	G_OBJECT_CLASS( klass )->finalize = bat_common_finalize;
 }
 
 static void
-on_container_finalized( ofaBatList *self, gpointer this_was_the_container )
+on_container_finalized( ofaBatCommon *self, gpointer this_was_the_container )
 {
-	g_return_if_fail( self && OFA_IS_BAT_LIST( self ));
+	g_return_if_fail( self && OFA_IS_BAT_COMMON( self ));
 	g_object_unref( self );
 }
 
 /**
- * ofa_bat_list_init_dialog:
+ * ofa_bat_common_init_dialog:
  */
-ofaBatList *
-ofa_bat_list_init_dialog( const ofaBatListParms *parms )
+ofaBatCommon *
+ofa_bat_common_init_dialog( const ofaBatCommonParms *parms )
 {
-	static const gchar *thisfn = "ofa_bat_list_init_dialog";
-	ofaBatList *self;
-	ofaBatListPrivate *priv;
+	static const gchar *thisfn = "ofa_bat_common_init_dialog";
+	ofaBatCommon *self;
+	ofaBatCommonPrivate *priv;
 
 	g_return_val_if_fail( parms, NULL );
 
@@ -185,7 +185,7 @@ ofa_bat_list_init_dialog( const ofaBatListParms *parms )
 	g_return_val_if_fail( GTK_IS_CONTAINER( parms->container ), NULL );
 	g_return_val_if_fail( OFO_IS_DOSSIER( parms->dossier ), NULL );
 
-	self = g_object_new( OFA_TYPE_BAT_LIST, NULL );
+	self = g_object_new( OFA_TYPE_BAT_COMMON, NULL );
 
 	priv = self->private;
 
@@ -217,9 +217,9 @@ ofa_bat_list_init_dialog( const ofaBatListParms *parms )
 }
 
 static gboolean
-do_move_between_containers( ofaBatList *self )
+do_move_between_containers( ofaBatCommon *self )
 {
-	ofaBatListPrivate *priv;
+	ofaBatCommonPrivate *priv;
 	GtkWidget *window;
 	GtkWidget *tview;
 	GtkWidget *box;
@@ -290,9 +290,9 @@ do_move_between_containers( ofaBatList *self )
 }
 
 static void
-setup_treeview( ofaBatList *self )
+setup_treeview( ofaBatCommon *self )
 {
-	ofaBatListPrivate *priv;
+	ofaBatCommonPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
@@ -325,7 +325,7 @@ setup_treeview( ofaBatList *self )
 }
 
 static void
-init_treeview( ofaBatList *self )
+init_treeview( ofaBatCommon *self )
 {
 	GList *dataset, *iset;
 
@@ -337,7 +337,7 @@ init_treeview( ofaBatList *self )
 }
 
 static void
-insert_new_row( ofaBatList *self, ofoBat *bat, gboolean with_selection )
+insert_new_row( ofaBatCommon *self, ofoBat *bat, gboolean with_selection )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -363,7 +363,7 @@ insert_new_row( ofaBatList *self, ofoBat *bat, gboolean with_selection )
 }
 
 static void
-setup_first_selection( ofaBatList *self )
+setup_first_selection( ofaBatCommon *self )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -383,7 +383,7 @@ setup_first_selection( ofaBatList *self )
  * only notes are editable by the user
  */
 static void
-set_editable_widgets( ofaBatList *self )
+set_editable_widgets( ofaBatCommon *self )
 {
 	GtkWidget *notes;
 
@@ -394,7 +394,7 @@ set_editable_widgets( ofaBatList *self )
 
 static void
 on_row_activated( GtkTreeView *tview,
-		GtkTreePath *path, GtkTreeViewColumn *column, ofaBatList *self )
+		GtkTreePath *path, GtkTreeViewColumn *column, ofaBatCommon *self )
 {
 	GtkTreeSelection *select;
 	const ofoBat *bat;
@@ -407,7 +407,7 @@ on_row_activated( GtkTreeView *tview,
 }
 
 static void
-on_selection_changed( GtkTreeSelection *selection, ofaBatList *self )
+on_selection_changed( GtkTreeSelection *selection, ofaBatCommon *self )
 {
 	const ofoBat *bat;
 
@@ -421,9 +421,9 @@ on_selection_changed( GtkTreeSelection *selection, ofaBatList *self )
 }
 
 static void
-setup_bat_properties( const ofaBatList *self, const ofoBat *bat )
+setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 {
-	ofaBatListPrivate *priv;
+	ofaBatCommonPrivate *priv;
 	const gchar *conststr;
 	gchar *str;
 	const GDate *begin, *end;
@@ -491,7 +491,7 @@ setup_bat_properties( const ofaBatList *self, const ofoBat *bat )
 }
 
 static const ofoBat *
-get_selected_object( const ofaBatList *self, GtkTreeSelection *selection )
+get_selected_object( const ofaBatCommon *self, GtkTreeSelection *selection )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -510,12 +510,12 @@ get_selected_object( const ofaBatList *self, GtkTreeSelection *selection )
 }
 
 /**
- * ofa_bat_list_set_bat:
+ * ofa_bat_common_set_bat:
  */
 void
-ofa_bat_list_set_bat( const ofaBatList *self, const ofoBat *bat )
+ofa_bat_common_set_bat( const ofaBatCommon *self, const ofoBat *bat )
 {
-	g_return_if_fail( OFA_IS_BAT_LIST( self ));
+	g_return_if_fail( OFA_IS_BAT_COMMON( self ));
 	g_return_if_fail( OFO_IS_BAT( bat ));
 
 	if( !self->private->dispose_has_run ){
@@ -525,18 +525,18 @@ ofa_bat_list_set_bat( const ofaBatList *self, const ofoBat *bat )
 }
 
 /**
- * ofa_bat_list_get_selection:
+ * ofa_bat_common_get_selection:
  * @self:
  *
  * Returns the currently selected object.
  */
 const ofoBat *
-ofa_bat_list_get_selection( const ofaBatList *self )
+ofa_bat_common_get_selection( const ofaBatCommon *self )
 {
 	GtkTreeSelection *select;
 	const ofoBat *bat;
 
-	g_return_val_if_fail( self && OFA_IS_BAT_LIST( self ), NULL );
+	g_return_val_if_fail( self && OFA_IS_BAT_COMMON( self ), NULL );
 
 	bat = NULL;
 

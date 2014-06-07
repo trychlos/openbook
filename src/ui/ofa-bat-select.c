@@ -30,7 +30,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
-#include "ui/ofa-bat-list.h"
+#include "ui/ofa-bat-common.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofo-bat.h"
@@ -41,7 +41,7 @@ struct _ofaBatSelectPrivate {
 
 	/* runtime
 	 */
-	ofaBatList *bat_list;
+	ofaBatCommon *bat_common;
 
 	/* returned value
 	 */
@@ -157,7 +157,7 @@ static void
 v_init_dialog( ofaBaseDialog *dialog )
 {
 	ofaBatSelectPrivate *priv;
-	ofaBatListParms parms;
+	ofaBatCommonParms parms;
 	GtkWidget *container;
 
 	priv = OFA_BAT_SELECT( dialog )->private;
@@ -170,16 +170,16 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.with_tree_view = TRUE;
 	parms.editable = FALSE;
 	parms.pfnSelection = NULL;
-	parms.pfnActivation = ( ofaBatListCb ) on_row_activated;
+	parms.pfnActivation = ( ofaBatCommonCb ) on_row_activated;
 	parms.user_data = dialog;
 
-	priv->bat_list = ofa_bat_list_init_dialog( &parms );
+	priv->bat_common = ofa_bat_common_init_dialog( &parms );
 
 	check_for_enable_dlg( OFA_BAT_SELECT( dialog ));
 }
 
 /*
- * ofoBatList cb
+ * ofoBatCommon cb
  */
 static void
 on_row_activated( const ofoBat *bat, ofaBaseDialog *dialog )
@@ -193,7 +193,7 @@ check_for_enable_dlg( ofaBatSelect *self )
 	const ofoBat *bat;
 	GtkWidget *btn;
 
-	bat = ofa_bat_list_get_selection( self->private->bat_list );
+	bat = ofa_bat_common_get_selection( self->private->bat_common );
 
 	btn = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
@@ -212,7 +212,7 @@ do_update( ofaBatSelect *self )
 {
 	const ofoBat *bat;
 
-	bat = ofa_bat_list_get_selection( self->private->bat_list );
+	bat = ofa_bat_common_get_selection( self->private->bat_common );
 	if( bat ){
 		self->private->bat_id = ofo_bat_get_id( bat );
 	}

@@ -32,7 +32,7 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
-#include "ui/ofa-bat-list.h"
+#include "ui/ofa-bat-common.h"
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofo-bat.h"
@@ -47,7 +47,7 @@ struct _ofaBatPropertiesPrivate {
 	ofoBat        *bat;
 	gboolean       is_new;				/* always FALSE here */
 	gboolean       updated;
-	ofaBatList    *child_box;
+	ofaBatCommon    *child_box;
 
 	/* data
 	 */
@@ -169,7 +169,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	ofaBatProperties *self;
 	ofaBatPropertiesPrivate *priv;
 	gchar *title;
-	ofaBatListParms parms;
+	ofaBatCommonParms parms;
 	GtkWidget *container;
 
 	title = g_strdup( _( "Updating the BAT properties" ));
@@ -190,8 +190,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.pfnActivation = NULL;
 	parms.user_data = NULL;
 
-	priv->child_box = ofa_bat_list_init_dialog( &parms );
-	ofa_bat_list_set_bat( priv->child_box, priv->bat );
+	priv->child_box = ofa_bat_common_init_dialog( &parms );
+	ofa_bat_common_set_bat( priv->child_box, priv->bat );
 
 	check_for_enable_dlg( self );
 }
