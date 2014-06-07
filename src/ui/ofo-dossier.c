@@ -430,11 +430,19 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 
 	g_debug( "%s: sgbd=%p, account=%s", thisfn, ( void * ) sgbd, account );
 
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_AUDIT ("
+			"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
+			"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query actual timestamp',"
+			"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query')")){
+		return( FALSE );
+	}
+
 	/* default value for timestamp cannot be null */
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
-			"	VER_NUMBER INTEGER NOT NULL UNIQUE DEFAULT 0 COMMENT 'DB model version number',"
-			"	VER_DATE   TIMESTAMP DEFAULT 0               COMMENT 'Version application timestamp')" )){
+			"	VER_NUMBER INTEGER NOT NULL UNIQUE DEFAULT 0     COMMENT 'DB model version number',"
+			"	VER_DATE   TIMESTAMP DEFAULT 0                   COMMENT 'Version application timestamp')" )){
 		return( FALSE );
 	}
 

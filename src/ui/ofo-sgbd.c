@@ -33,6 +33,7 @@
 #include <mysql/mysql.h>
 #include <string.h>
 
+#include "ui/my-utils.h"
 #include "ui/ofo-sgbd.h"
 
 /* private instance data
@@ -53,6 +54,7 @@ G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 
 static void  error_connect( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
 static void  error_query( const ofoSgbd *sgbd, const gchar *query );
+static void  sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query );
 
 static void
 ofo_sgbd_finalize( GObject *instance )
@@ -227,23 +229,18 @@ ofo_sgbd_query( const ofoSgbd *sgbd, const gchar *query )
 {
 	static const gchar *thisfn = "ofo_sgbd_query";
 	gboolean query_ok = FALSE;
-	/*gchar *to_str;
-	glong length;*/
 
 	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
 	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
 
 	if( sgbd->private->mysql ){
-		/*length = g_utf8_strlen( query, -1 );
-		to_str = g_new0( char, 2*length+1 );
-		mysql_real_escape_string( sgbd->private->mysql, to_str, query, length );*/
 		if( mysql_query( sgbd->private->mysql, query )){
 			error_query( sgbd, query );
 		} else {
+			sgbd_audit_query( sgbd, query );
 			query_ok = TRUE;
 		}
-		/*g_free( to_str );*/
 	} else {
 		g_warning( "%s: trying to query a non-opened connection", thisfn );
 	}
@@ -295,6 +292,11 @@ ofo_sgbd_query_ex( const ofoSgbd *sgbd, const gchar *query )
 					result = g_slist_prepend( result, col );
 				}
 				result = g_slist_reverse( result );
+
+			/* do not record queries which return a result (SELECT ...)
+			 * as they are not relevant for our traces */
+			} else {
+				sgbd_audit_query( sgbd, query );
 			}
 		}
 
@@ -321,6 +323,24 @@ error_query( const ofoSgbd *sgbd, const gchar *query )
 
 	gtk_dialog_run( GTK_DIALOG( dlg ));
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
+}
+
+static void
+sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query )
+{
+	static const gchar *thisfn = "ofo_sgbd_sgbd_audit_query";
+	gchar *quoted;
+	gchar *audit;
+
+	quoted = my_utils_quote( query );
+	audit = g_strdup_printf( "INSERT INTO OFA_T_AUDIT (AUD_QUERY) VALUES ('%s')", quoted );
+
+	if( mysql_query( sgbd->private->mysql, audit )){
+		g_debug( "%s: %s", thisfn, mysql_error( sgbd->private->mysql ));
+	}
+
+	g_free( quoted );
+	g_free( audit );
 }
 
 /**

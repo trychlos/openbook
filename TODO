@@ -210,11 +210,6 @@
  167 2014- 6- 5 ExportAssistant: pre-positionning a default uri as
                 output filename doesn't work
 
- 168 2014- 6- 6 ImportAssistant: check that only one file is selected
-                when importing a reference table or entries (multiple
-                selection is in fact only allowed when importing BAT)
-                So is it worth ?
-
  174 2014- 6- 6 ExportAssistant: change character set to ISO-8859-15
      2014- 6- 7 the exported character set should be a choice of the 
                 user (default is UTF-8)
@@ -601,6 +596,12 @@
 
  157 2014- 6- 4 BatList: the treeview doesn't vertically expand
      2014- 6- 4 done
+
+ 168 2014- 6- 6 ImportAssistant: check that only one file is selected
+                when importing a reference table or entries (multiple
+                selection is in fact only allowed when importing BAT)
+                So is it worth ?
+     2014- 6- 7 done - svn #3659
 
  169 2014- 6- 6 rename ofaBatList to (e.g.) ofaBatCommon
      2014- 6- 7 done - svn #3658

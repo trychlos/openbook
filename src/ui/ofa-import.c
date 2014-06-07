@@ -897,6 +897,9 @@ import_devise_csv( ofaImport *self )
 	gboolean ok;
 
 	str = g_strdup( _( "Importing a new reference for currencies will replace the existing one.\n"
+			"This will also allocate new intern identifiers, thus invalidating all internal links"
+			"with other objects (accounts, dossier, entries, and so on).\n"
+			"You are warned that you should only do this if you know what you are doing.\n"
 			"Are you sure you want drop all the current currencies, and reset the list to these newly imported ?" ));
 
 	ok = confirm_import( self, str );
