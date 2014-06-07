@@ -102,6 +102,7 @@ static gboolean    journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd )
 static gint        journal_cmp_by_id( const ofoJournal *a, gconstpointer b );
 static gint        journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo );
 static gint        journal_cmp_by_ptr( const ofoJournal *a, const ofoJournal *b );
+static gboolean    journal_do_drop_content( const ofoSgbd *sgbd );
 
 static void
 ofo_journal_finalize( GObject *instance )
@@ -1479,4 +1480,110 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 	}
 
 	return( g_slist_reverse( lines ));
+}
+
+/**
+ * ofo_journal_set_csv:
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - journal mnemo
+ * - label
+ * - notes (opt)
+ *
+ * Replace the whole table with the provided datas.
+ */
+void
+ofo_journal_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+{
+	static const gchar *thisfn = "ofo_journal_set_csv";
+	ofoJournal *journal;
+	GSList *ili, *ico;
+	GList *new_set, *ise;
+	gint count;
+	gint errors;
+	const gchar *str;
+
+	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
+			thisfn,
+			( void * ) dossier,
+			( void * ) lines, g_slist_length( lines ),
+			with_header ? "True":"False" );
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
+
+	new_set = NULL;
+	count = 0;
+	errors = 0;
+
+	for( ili=lines ; ili ; ili=ili->next ){
+		count += 1;
+		if( !( count == 1 && with_header )){
+			journal = ofo_journal_new();
+			ico=ili->data;
+
+			/* journal mnemo */
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty mnemo", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			ofo_journal_set_mnemo( journal, str );
+
+			/* journal label */
+			ico = ico->next;
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty label", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			ofo_journal_set_label( journal, str );
+
+			/* notes
+			 * we are tolerant on the last field... */
+			ico = ico->next;
+			if( ico ){
+				str = ( const gchar * ) ico->data;
+				if( str && g_utf8_strlen( str, -1 )){
+					ofo_journal_set_notes( journal, str );
+				}
+			} else {
+				continue;
+			}
+
+			new_set = g_list_prepend( new_set, journal );
+		}
+	}
+
+	if( !errors ){
+		st_global->send_signal_new = FALSE;
+		st_global->send_signal_delete = FALSE;
+
+		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+		st_global->dataset = NULL;
+
+		journal_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+
+		for( ise=new_set ; ise ; ise=ise->next ){
+			ofo_journal_insert( OFO_JOURNAL( ise->data ), dossier );
+		}
+
+		g_list_free( new_set );
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_JOURNAL );
+
+		st_global->send_signal_new = TRUE;
+		st_global->send_signal_delete = TRUE;
+	}
+}
+
+static gboolean
+journal_do_drop_content( const ofoSgbd *sgbd )
+{
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_JOURNAUX" ) &&
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_JOURNAUX_DEV" ) &&
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_JOURNAUX_EXE" ));
 }

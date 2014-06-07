@@ -743,6 +743,12 @@ ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_heade
 	gint number;
 	const gchar *str;
 
+	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
+			thisfn,
+			( void * ) dossier,
+			( void * ) lines, g_slist_length( lines ),
+			with_header ? "True":"False" );
+
 	OFO_BASE_SET_GLOBAL( st_global, dossier, class );
 
 	new_set = NULL;
@@ -775,11 +781,16 @@ ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_heade
 			}
 			ofo_class_set_label( class, str );
 
-			/* notes */
+			/* notes
+			 * we are tolerant on the last field... */
 			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( str && g_utf8_strlen( str, -1 )){
-				ofo_class_set_notes( class, str );
+			if( ico ){
+				str = ( const gchar * ) ico->data;
+				if( str && g_utf8_strlen( str, -1 )){
+					ofo_class_set_notes( class, str );
+				}
+			} else {
+				continue;
 			}
 
 			new_set = g_list_prepend( new_set, class );
@@ -787,8 +798,12 @@ ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_heade
 	}
 
 	if( !errors ){
+		st_global->send_signal_new = FALSE;
+		st_global->send_signal_delete = FALSE;
+
 		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 		st_global->dataset = NULL;
+
 		class_do_drop_content( ofo_dossier_get_sgbd( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
@@ -799,6 +814,9 @@ ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_heade
 
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_CLASS );
+
+		st_global->send_signal_new = TRUE;
+		st_global->send_signal_delete = TRUE;
 	}
 }
 

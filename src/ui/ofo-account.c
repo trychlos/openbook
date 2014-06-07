@@ -1578,6 +1578,12 @@ ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 	gint def_dev_id, dev_id;
 	ofoDevise *devise;
 
+	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
+			thisfn,
+			( void * ) dossier,
+			( void * ) lines, g_slist_length( lines ),
+			with_header ? "True":"False" );
+
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
 	new_set = NULL;
@@ -1648,11 +1654,16 @@ ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 				ofo_account_set_devise( account, dev_id );
 			}
 
-			/* notes */
+			/* notes
+			 * we are tolerant on the last field... */
 			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( str && g_utf8_strlen( str, -1 )){
-				ofo_account_set_notes( account, str );
+			if( ico ){
+				str = ( const gchar * ) ico->data;
+				if( str && g_utf8_strlen( str, -1 )){
+					ofo_account_set_notes( account, str );
+				}
+			} else {
+				continue;
 			}
 
 			new_set = g_list_prepend( new_set, account );
@@ -1660,8 +1671,12 @@ ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 	}
 
 	if( !errors ){
+		st_global->send_signal_new = FALSE;
+		st_global->send_signal_delete = FALSE;
+
 		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 		st_global->dataset = NULL;
+
 		account_do_drop_content( ofo_dossier_get_sgbd( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
@@ -1669,6 +1684,12 @@ ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 		}
 
 		g_list_free( new_set );
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_ACCOUNT );
+
+		st_global->send_signal_new = TRUE;
+		st_global->send_signal_delete = TRUE;
 	}
 }
 

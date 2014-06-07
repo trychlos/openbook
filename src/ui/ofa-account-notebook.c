@@ -352,10 +352,7 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountNotebook *self )
 	static const gchar *thisfn = "ofa_account_notebook_on_reloaded_dataset";
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
-			thisfn,
-			( void * ) dossier,
-			type,
-			( void * ) self );
+			thisfn, ( void * ) dossier, type, ( void * ) self );
 
 	if( type == OFO_TYPE_ACCOUNT ){
 		while( gtk_notebook_get_n_pages( self->private->book )){
@@ -1201,8 +1198,9 @@ on_updated_class_label( ofaAccountNotebook *self, ofoClass *class )
 
 	class_num = ofo_class_get_number( class );
 	page_n = book_get_page_by_class( self, class_num, FALSE, NULL, NULL );
-	page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
-	if( page_w ){
+	if( page_n >= 0 ){
+		page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+		g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
 		gtk_notebook_set_tab_label_text( self->private->book, page_w, ofo_class_get_label( class ));
 	}
 }
@@ -1216,8 +1214,9 @@ on_deleted_class_label( ofaAccountNotebook *self, ofoClass *class )
 
 	class_num = ofo_class_get_number( class );
 	page_n = book_get_page_by_class( self, class_num, FALSE, NULL, NULL );
-	page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
-	if( page_w ){
+	if( page_n >= 0 ){
+		page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+		g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
 		gtk_notebook_set_tab_label_text( self->private->book, page_w, st_class_labels[class_num-1] );
 	}
 }

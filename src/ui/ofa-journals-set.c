@@ -60,8 +60,10 @@ enum {
 G_DEFINE_TYPE( ofaJournalsSet, ofa_journals_set, OFA_TYPE_MAIN_PAGE )
 
 static GtkWidget *v_setup_view( ofaMainPage *page );
+static GtkWidget *setup_tree_view( ofaMainPage *page );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
+static void       insert_dataset( ofaJournalsSet *self );
 static void       insert_new_row( ofaJournalsSet *self, ofoJournal *journal, gboolean with_selection );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaJournalsSet *self );
 static void       setup_first_selection( ofaJournalsSet *self );
@@ -72,6 +74,10 @@ static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaJournalsSet *self, ofoJournal *journal );
 static void       on_view_entries( GtkButton *button, ofaJournalsSet *self );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalsSet *self );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalsSet *self );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalsSet *self );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaJournalsSet *self );
 
 static void
 journals_set_finalize( GObject *instance )
@@ -148,6 +154,36 @@ ofa_journals_set_class_init( ofaJournalsSetClass *klass )
 
 static GtkWidget *
 v_setup_view( ofaMainPage *page )
+{
+	g_signal_connect(
+			G_OBJECT( ofa_main_page_get_dossier( page )),
+			OFA_SIGNAL_NEW_OBJECT,
+			G_CALLBACK( on_new_object ),
+			page );
+
+	g_signal_connect(
+			G_OBJECT( ofa_main_page_get_dossier( page )),
+			OFA_SIGNAL_UPDATED_OBJECT,
+			G_CALLBACK( on_updated_object ),
+			page );
+
+	g_signal_connect(
+			G_OBJECT( ofa_main_page_get_dossier( page )),
+			OFA_SIGNAL_DELETED_OBJECT,
+			G_CALLBACK( on_deleted_object ),
+			page );
+
+	g_signal_connect(
+			G_OBJECT( ofa_main_page_get_dossier( page )),
+			OFA_SIGNAL_RELOADED_DATASET,
+			G_CALLBACK( on_reloaded_dataset ),
+			page );
+
+	return( setup_tree_view( page ));
+}
+
+static GtkWidget *
+setup_tree_view( ofaMainPage *page )
 {
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
@@ -244,14 +280,18 @@ v_setup_buttons( ofaMainPage *page )
 static void
 v_init_view( ofaMainPage *page )
 {
-	ofaJournalsSet *self;
+	insert_dataset( OFA_JOURNALS_SET( page ));
+}
+
+static void
+insert_dataset( ofaJournalsSet *self )
+{
 	ofoDossier *dossier;
 	GList *dataset, *iset;
 	ofoJournal *journal;
 
-	dossier = ofa_main_page_get_dossier( page );
+	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 	dataset = ofo_journal_get_dataset( dossier );
-	self = OFA_JOURNALS_SET( page );
 	self->private->exe_id = ofo_dossier_get_current_exe_id( dossier );
 
 	for( iset=dataset ; iset ; iset=iset->next ){
@@ -488,4 +528,75 @@ on_view_entries( GtkButton *button, ofaJournalsSet *self )
 	g_return_if_fail( OFA_IS_JOURNALS_SET( self ));
 
 	g_warning( "%s: TO BE WRITTEN", thisfn );
+}
+
+/*
+ * OFA_SIGNAL_NEW_OBJECT signal handler
+ */
+static void
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalsSet *self )
+{
+	static const gchar *thisfn = "ofa_journals_set_on_new_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_JOURNAL( object )){
+	}
+}
+
+/*
+ * OFA_SIGNAL_UPDATE_OBJECT signal handler
+ */
+static void
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalsSet *self )
+{
+	static const gchar *thisfn = "ofa_journals_set_on_updated_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn, ( void * ) dossier,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
+
+	if( OFO_IS_JOURNAL( object )){
+	}
+}
+
+/*
+ * OFA_SIGNAL_DELETED_OBJECT signal handler
+ */
+static void
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalsSet *self )
+{
+	static const gchar *thisfn = "ofa_journals_set_on_deleted_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn, ( void * ) dossier,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
+
+	if( OFO_IS_JOURNAL( object )){
+	}
+}
+
+/*
+ * OFA_SIGNAL_RELOADED_DATASET signal handler
+ */
+static void
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaJournalsSet *self )
+{
+	static const gchar *thisfn = "ofa_journals_set_on_reloaded_dataset";
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+
+	g_debug( "%s: dossier=%p, type=%lu, self=%p",
+			thisfn, ( void * ) dossier, type, ( void * ) self );
+
+	if( type == OFO_TYPE_JOURNAL ){
+		tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( OFA_MAIN_PAGE( self )));
+		tmodel = gtk_tree_view_get_model( tview );
+		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
+		insert_dataset( self );
+	}
 }
