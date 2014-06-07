@@ -44,8 +44,7 @@ struct _ofaDevisesSetPrivate {
 /* column ordering in the selection listview
  */
 enum {
-	COL_ID = 0,
-	COL_CODE,
+	COL_CODE = 0,
 	COL_LABEL,
 	COL_SYMBOL,
 	COL_OBJECT,
@@ -55,7 +54,9 @@ enum {
 G_DEFINE_TYPE( ofaDevisesSet, ofa_devises_set, OFA_TYPE_MAIN_PAGE )
 
 static GtkWidget *v_setup_view( ofaMainPage *page );
+static GtkWidget *setup_tree_view( ofaDevisesSet *self );
 static void       v_init_view( ofaMainPage *page );
+static void       insert_dataset( ofaDevisesSet *self );
 static void       insert_new_row( ofaDevisesSet *self, ofoDevise *devise, gboolean with_selection );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDevisesSet *self );
 static void       setup_first_selection( ofaDevisesSet *self );
@@ -65,6 +66,10 @@ static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaDevisesSet *self, ofoDevise *devise );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaDevisesSet *self );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaDevisesSet *self );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaDevisesSet *self );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaDevisesSet *self );
 
 static void
 devises_set_finalize( GObject *instance )
@@ -141,6 +146,36 @@ ofa_devises_set_class_init( ofaDevisesSetClass *klass )
 static GtkWidget *
 v_setup_view( ofaMainPage *page )
 {
+	g_signal_connect(
+			G_OBJECT( ofa_main_page_get_dossier( page )),
+			OFA_SIGNAL_NEW_OBJECT,
+			G_CALLBACK( on_new_object ),
+			page );
+
+	g_signal_connect(
+			G_OBJECT( ofa_main_page_get_dossier( page )),
+			OFA_SIGNAL_UPDATED_OBJECT,
+			G_CALLBACK( on_updated_object ),
+			page );
+
+	g_signal_connect(
+			G_OBJECT( ofa_main_page_get_dossier( page )),
+			OFA_SIGNAL_DELETED_OBJECT,
+			G_CALLBACK( on_deleted_object ),
+			page );
+
+	g_signal_connect(
+			G_OBJECT( ofa_main_page_get_dossier( page )),
+			OFA_SIGNAL_RELOADED_DATASET,
+			G_CALLBACK( on_reloaded_dataset ),
+			page );
+
+	return( setup_tree_view( OFA_DEVISES_SET( page )));
+}
+
+static GtkWidget *
+setup_tree_view( ofaDevisesSet *self )
+{
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
@@ -164,7 +199,7 @@ v_setup_view( ofaMainPage *page )
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
@@ -196,10 +231,10 @@ v_setup_view( ofaMainPage *page )
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_devise_selected ), page );
+	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_devise_selected ), self );
 
 	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
+			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
 	gtk_tree_sortable_set_sort_column_id(
 			GTK_TREE_SORTABLE( tmodel ),
@@ -211,13 +246,17 @@ v_setup_view( ofaMainPage *page )
 static void
 v_init_view( ofaMainPage *page )
 {
-	ofaDevisesSet *self;
+	insert_dataset( OFA_DEVISES_SET( page ));
+}
+
+static void
+insert_dataset( ofaDevisesSet *self )
+{
 	ofoDossier *dossier;
 	GList *dataset, *iset;
 	ofoDevise *devise;
 
-	self = OFA_DEVISES_SET( page );
-	dossier = ofa_main_page_get_dossier( page );
+	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 	dataset = ofo_devise_get_dataset( dossier );
 
 	for( iset=dataset ; iset ; iset=iset->next ){
@@ -243,7 +282,6 @@ insert_new_row( ofaDevisesSet *self, ofoDevise *devise, gboolean with_selection 
 			GTK_LIST_STORE( tmodel ),
 			&iter,
 			-1,
-			COL_ID,     ofo_devise_get_id( devise ),
 			COL_CODE,   ofo_devise_get_code( devise ),
 			COL_LABEL,  ofo_devise_get_label( devise ),
 			COL_SYMBOL, ofo_devise_get_symbol( devise ),
@@ -428,4 +466,75 @@ delete_confirmed( ofaDevisesSet *self, ofoDevise *devise )
 	g_free( msg );
 
 	return( delete_ok );
+}
+
+/*
+ * OFA_SIGNAL_NEW_OBJECT signal handler
+ */
+static void
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaDevisesSet *self )
+{
+	static const gchar *thisfn = "ofa_devises_set_on_new_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_DEVISE( object )){
+	}
+}
+
+/*
+ * OFA_SIGNAL_UPDATE_OBJECT signal handler
+ */
+static void
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaDevisesSet *self )
+{
+	static const gchar *thisfn = "ofa_devises_set_on_updated_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn, ( void * ) dossier,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
+
+	if( OFO_IS_DEVISE( object )){
+	}
+}
+
+/*
+ * OFA_SIGNAL_DELETED_OBJECT signal handler
+ */
+static void
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaDevisesSet *self )
+{
+	static const gchar *thisfn = "ofa_devises_set_on_deleted_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn, ( void * ) dossier,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
+
+	if( OFO_IS_DEVISE( object )){
+	}
+}
+
+/*
+ * OFA_SIGNAL_RELOADED_DATASET signal handler
+ */
+static void
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaDevisesSet *self )
+{
+	static const gchar *thisfn = "ofa_devises_set_on_reloaded_dataset";
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+
+	g_debug( "%s: dossier=%p, type=%lu, self=%p",
+			thisfn, ( void * ) dossier, type, ( void * ) self );
+
+	if( type == OFO_TYPE_DEVISE ){
+		tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( OFA_MAIN_PAGE( self )));
+		tmodel = gtk_tree_view_get_model( tview );
+		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
+		insert_dataset( self );
+	}
 }

@@ -41,6 +41,7 @@
 #include "ui/ofa-plugin.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-class.h"
+#include "ui/ofo-devise.h"
 #include "ui/ofo-journal.h"
 
 static gboolean pref_quit_on_escape = TRUE;
@@ -162,6 +163,7 @@ static void       do_close( ofaImport *self );
 static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
 static gint       import_class_csv( ofaImport *self );
 static gint       import_account_csv( ofaImport *self );
+static gint       import_devise_csv( ofaImport *self );
 static gint       import_journal_csv( ofaImport *self );
 static GSList    *split_csv_content( ofaImport *self );
 static void       free_csv_fields( GSList *fields );
@@ -711,6 +713,9 @@ on_apply( GtkAssistant *assistant, ofaImport *self )
 			case IMPORTER_TYPE_ACCOUNT:
 				count = import_account_csv( self );
 				break;
+			case IMPORTER_TYPE_CURRENCY:
+				count = import_devise_csv( self );
+				break;
 			case IMPORTER_TYPE_JOURNAL:
 				count = import_journal_csv( self );
 				break;
@@ -875,6 +880,37 @@ import_account_csv( ofaImport *self )
 	}
 
 	ofo_account_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+
+	free_csv_content( lines );
+	return( 0 );
+}
+
+/*
+ * columns: iso 3a code;label;symbol;notes
+ * header : yes
+ */
+static gint
+import_devise_csv( ofaImport *self )
+{
+	GSList *lines;
+	gchar *str;
+	gboolean ok;
+
+	str = g_strdup( _( "Importing a new reference for currencies will replace the existing one.\n"
+			"Are you sure you want drop all the current currencies, and reset the list to these newly imported ?" ));
+
+	ok = confirm_import( self, str );
+	g_free( str );
+	if( !ok ){
+		return( -1 );
+	}
+
+	lines = split_csv_content( self );
+	if( g_slist_length( lines ) <= 1 ){
+		return( -1 );
+	}
+
+	ofo_devise_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );

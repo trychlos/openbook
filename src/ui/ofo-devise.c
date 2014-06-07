@@ -72,6 +72,7 @@ static gboolean   devise_do_update( ofoDevise *devise, const ofoSgbd *sgbd, cons
 static gboolean   devise_do_delete( ofoDevise *devise, const ofoSgbd *sgbd );
 static gint       devise_cmp_by_code( const ofoDevise *a, const gchar *code );
 static gint       devise_cmp_by_ptr( const ofoDevise *a, const ofoDevise *b );
+static gboolean   devise_do_drop_content( const ofoSgbd *sgbd );
 
 static void
 ofo_devise_finalize( GObject *instance )
@@ -853,4 +854,118 @@ ofo_devise_get_csv( const ofoDossier *dossier )
 	}
 
 	return( g_slist_reverse( lines ));
+}
+
+/**
+ * ofo_devise_set_csv:
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - devise mnemo
+ * - label
+ * - notes (opt)
+ *
+ * Replace the whole table with the provided datas.
+ */
+void
+ofo_devise_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+{
+	static const gchar *thisfn = "ofo_devise_set_csv";
+	ofoDevise *devise;
+	GSList *ili, *ico;
+	GList *new_set, *ise;
+	gint count;
+	gint errors;
+	const gchar *str;
+
+	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
+			thisfn,
+			( void * ) dossier,
+			( void * ) lines, g_slist_length( lines ),
+			with_header ? "True":"False" );
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
+
+	new_set = NULL;
+	count = 0;
+	errors = 0;
+
+	for( ili=lines ; ili ; ili=ili->next ){
+		count += 1;
+		if( !( count == 1 && with_header )){
+			devise = ofo_devise_new();
+			ico=ili->data;
+
+			/* devise code */
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty code", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			ofo_devise_set_code( devise, str );
+
+			/* devise label */
+			ico = ico->next;
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty label", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			ofo_devise_set_label( devise, str );
+
+			/* devise symbol */
+			ico = ico->next;
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty symbol", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			ofo_devise_set_symbol( devise, str );
+
+			/* notes
+			 * we are tolerant on the last field... */
+			ico = ico->next;
+			if( ico ){
+				str = ( const gchar * ) ico->data;
+				if( str && g_utf8_strlen( str, -1 )){
+					ofo_devise_set_notes( devise, str );
+				}
+			} else {
+				continue;
+			}
+
+			new_set = g_list_prepend( new_set, devise );
+		}
+	}
+
+	if( !errors ){
+		st_global->send_signal_new = FALSE;
+		st_global->send_signal_delete = FALSE;
+
+		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+		st_global->dataset = NULL;
+
+		devise_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+
+		for( ise=new_set ; ise ; ise=ise->next ){
+			ofo_devise_insert( OFO_DEVISE( ise->data ), dossier );
+		}
+
+		g_list_free( new_set );
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_DEVISE );
+
+		st_global->send_signal_new = TRUE;
+		st_global->send_signal_delete = TRUE;
+	}
+}
+
+static gboolean
+devise_do_drop_content( const ofoSgbd *sgbd )
+{
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_DEVISES" ));
 }
