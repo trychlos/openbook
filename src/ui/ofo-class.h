@@ -46,34 +46,36 @@
 
 G_BEGIN_DECLS
 
-GType           ofo_class_get_type     ( void ) G_GNUC_CONST;
+GType           ofo_class_get_type       ( void ) G_GNUC_CONST;
 
-GList          *ofo_class_get_dataset  ( const ofoDossier *dossier );
-ofoClass       *ofo_class_get_by_number( const ofoDossier *dossier, gint number );
+GList          *ofo_class_get_dataset    ( const ofoDossier *dossier );
+ofoClass       *ofo_class_get_by_number  ( const ofoDossier *dossier, gint number );
 
-ofoClass       *ofo_class_new          ( void );
+ofoClass       *ofo_class_new            ( void );
 
-gint            ofo_class_get_number   ( const ofoClass *class );
-const gchar    *ofo_class_get_label    ( const ofoClass *class );
-const gchar    *ofo_class_get_notes    ( const ofoClass *class );
-const gchar    *ofo_class_get_maj_user ( const ofoClass *class );
-const GTimeVal *ofo_class_get_maj_stamp( const ofoClass *class );
+gint            ofo_class_get_number     ( const ofoClass *class );
+const gchar    *ofo_class_get_label      ( const ofoClass *class );
+const gchar    *ofo_class_get_notes      ( const ofoClass *class );
+const gchar    *ofo_class_get_maj_user   ( const ofoClass *class );
+const GTimeVal *ofo_class_get_maj_stamp  ( const ofoClass *class );
 
-gboolean        ofo_class_is_valid     ( gint number, const gchar *label );
-gboolean        ofo_class_is_deletable ( const ofoClass *class );
+gboolean        ofo_class_is_valid       ( gint number, const gchar *label );
+gboolean        ofo_class_is_valid_number( gint number );
+gboolean        ofo_class_is_valid_label ( const gchar *label );
+gboolean        ofo_class_is_deletable   ( const ofoClass *class );
 
-void            ofo_class_set_number   ( ofoClass *class, gint number );
-void            ofo_class_set_label    ( ofoClass *class, const gchar *label );
-void            ofo_class_set_notes    ( ofoClass *class, const gchar *notes );
-void            ofo_class_set_maj_user ( ofoClass *class, const gchar *user );
-void            ofo_class_set_maj_stamp( ofoClass *class, const GTimeVal *stamp );
+gboolean        ofo_class_set_number     ( ofoClass *class, gint number );
+gboolean        ofo_class_set_label      ( ofoClass *class, const gchar *label );
+void            ofo_class_set_notes      ( ofoClass *class, const gchar *notes );
+void            ofo_class_set_maj_user   ( ofoClass *class, const gchar *user );
+void            ofo_class_set_maj_stamp  ( ofoClass *class, const GTimeVal *stamp );
 
-gboolean        ofo_class_insert       ( ofoClass *class, const ofoDossier *dossier );
-gboolean        ofo_class_update       ( ofoClass *class, const ofoDossier *dossier, gint prev_id );
-gboolean        ofo_class_delete       ( ofoClass *class, const ofoDossier *dossier );
+gboolean        ofo_class_insert         ( ofoClass *class, const ofoDossier *dossier );
+gboolean        ofo_class_update         ( ofoClass *class, const ofoDossier *dossier, gint prev_id );
+gboolean        ofo_class_delete         ( ofoClass *class, const ofoDossier *dossier );
 
-GSList         *ofo_class_get_csv      ( const ofoDossier *dossier );
-void            ofo_class_set_csv      ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+GSList         *ofo_class_get_csv        ( const ofoDossier *dossier );
+void            ofo_class_set_csv        ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

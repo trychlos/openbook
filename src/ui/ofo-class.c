@@ -331,8 +331,30 @@ ofo_class_get_maj_stamp( const ofoClass *class )
 gboolean
 ofo_class_is_valid( gint number, const gchar *label )
 {
-	return( number > 0 && number < 10 &&
-			label && g_utf8_strlen( label, -1 ));
+	return( ofo_class_is_valid_number( number ) &&
+			ofo_class_is_valid_label( label ));
+}
+
+/**
+ * ofo_class_is_valid_number:
+ *
+ * Returns: %TRUE if the provided number is a valid class number
+ */
+gboolean
+ofo_class_is_valid_number( gint number )
+{
+	return( number > 0 && number < 10 );
+}
+
+/**
+ * ofo_class_is_valid_label:
+ *
+ * Returns: %TRUE if the provided label is a valid class label
+ */
+gboolean
+ofo_class_is_valid_label( const gchar *label )
+{
+	return( label && g_utf8_strlen( label, -1 ) > 0 );
 }
 
 /**
@@ -353,30 +375,40 @@ ofo_class_is_deletable( const ofoClass *class )
 /**
  * ofo_class_set_number:
  */
-void
+gboolean
 ofo_class_set_number( ofoClass *class, gint number )
 {
-	g_return_if_fail( OFO_IS_CLASS( class ));
+	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		class->private->number = number;
+		if( ofo_class_is_valid_number( number )){
+			class->private->number = number;
+			return( TRUE );
+		}
 	}
+
+	return( FALSE );
 }
 
 /**
  * ofo_class_set_label:
  */
-void
+gboolean
 ofo_class_set_label( ofoClass *class, const gchar *label )
 {
-	g_return_if_fail( OFO_IS_CLASS( class ));
+	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_free( class->private->label );
-		class->private->label = g_strdup( label );
+		if( ofo_class_is_valid_label( label )){
+			g_free( class->private->label );
+			class->private->label = g_strdup( label );
+			return( TRUE );
+		}
 	}
+
+	return( FALSE );
 }
 
 /**

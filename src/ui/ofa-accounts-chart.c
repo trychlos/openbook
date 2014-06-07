@@ -54,7 +54,7 @@ static GtkWidget *v_setup_view( ofaMainPage *page );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
 static void       on_row_activated( ofoAccount *account, ofaMainPage *page );
-static void       on_account_selected( ofoAccount *account, ofaAccountsChart *self );
+static void       on_row_selected( ofoAccount *account, ofaAccountsChart *self );
 static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
 static void       do_update_with_account( ofaAccountsChart *self, ofoAccount *account );
@@ -145,11 +145,10 @@ v_setup_view( ofaMainPage *page )
 	chart_book = GTK_NOTEBOOK( gtk_notebook_new());
 	gtk_widget_set_margin_left( GTK_WIDGET( chart_book ), 4 );
 	gtk_widget_set_margin_bottom( GTK_WIDGET( chart_book ), 4 );
-	gtk_notebook_set_scrollable( chart_book, TRUE );
 
 	parms.book = chart_book;
 	parms.dossier = ofa_main_page_get_dossier( page );
-	parms.pfnSelect = ( ofaAccountNotebookCb ) on_account_selected;
+	parms.pfnSelect = ( ofaAccountNotebookCb ) on_row_selected;
 	parms.user_data_select = page;
 	parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_row_activated;
 	parms.user_data_double_clic = page;
@@ -202,23 +201,25 @@ on_row_activated( ofoAccount *account, ofaMainPage *page )
 
 /*
  * ofaAccountNotebook callback:
- * first selection occurs during initialization of the chart notebook
- * thus at a moment where the buttons where not yet created
+ * first selection occurs during view initialization of the chart
+ * notebook, thus at a moment where the buttons have been created
  */
 static void
-on_account_selected( ofoAccount *account, ofaAccountsChart *self )
+on_row_selected( ofoAccount *account, ofaAccountsChart *self )
 {
-	if( account ){
-		gtk_widget_set_sensitive(
-				ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),
-				account && OFO_IS_ACCOUNT( account ));
-		gtk_widget_set_sensitive(
-				ofa_main_page_get_delete_btn( OFA_MAIN_PAGE( self )),
-				account && OFO_IS_ACCOUNT( account ) && ofo_account_is_deletable( account ));
-		gtk_widget_set_sensitive(
-				GTK_WIDGET( self->private->consult_btn ),
-				account && OFO_IS_ACCOUNT( account ));
-	}
+	g_debug( "ofa_accounts_chart_on_row_selected" );
+
+	gtk_widget_set_sensitive(
+			ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),
+			account && OFO_IS_ACCOUNT( account ));
+
+	gtk_widget_set_sensitive(
+			ofa_main_page_get_delete_btn( OFA_MAIN_PAGE( self )),
+			account && OFO_IS_ACCOUNT( account ) && ofo_account_is_deletable( account ));
+
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->consult_btn ),
+			account && OFO_IS_ACCOUNT( account ));
 }
 
 static void
@@ -233,14 +234,9 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 
 	account = ofo_account_new();
 
-	if( ofa_account_properties_run(
+	if( !ofa_account_properties_run(
 			ofa_main_page_get_main_window( page ), account )){
 
-		/* insert the account in its right place */
-		ofa_account_notebook_insert(
-				OFA_ACCOUNTS_CHART( page )->private->chart_child, account );
-
-	} else {
 		g_object_unref( account );
 	}
 }
@@ -266,20 +262,11 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 static void
 do_update_with_account( ofaAccountsChart *self, ofoAccount *account )
 {
-	gchar *prev_number;
-
 	if( account ){
 		g_return_if_fail( OFO_IS_ACCOUNT( account ));
-		prev_number = g_strdup( ofo_account_get_number( account ));
 
-		if( ofa_account_properties_run(
-				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), account )){
-
-			ofa_account_notebook_remove( self->private->chart_child, prev_number );
-			ofa_account_notebook_insert( self->private->chart_child, account );
-		}
-
-		g_free( prev_number );
+		ofa_account_properties_run(
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), account );
 	}
 
 	ofa_account_notebook_grab_focus( self->private->chart_child );
@@ -296,6 +283,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 	ofaAccountsChart *self;
 	ofoAccount *account;
 	ofoDossier *dossier;
+	gchar *number;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( page ));
 
@@ -307,15 +295,22 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 		g_return_if_fail( ofo_account_is_deletable( account ));
 
 		dossier = ofa_main_page_get_dossier( page );
+		number = g_strdup( ofo_account_get_number( account ));
 
 		if( delete_confirmed( self, account ) &&
 				ofo_account_delete( account, dossier )){
 
-			/* remove the row from the model
-			 * this will cause an automatic new selection */
-			ofa_account_notebook_remove(
-					self->private->chart_child, ofo_account_get_number( account ));
+			/* nothing to do here, all being managed by signal handlers
+			 * just reset the selection as this is not managed by the
+			 * account notebook (and doesn't have to)
+			 * asking for selection of the just deleted account makes
+			 * almost sure that we are going to select the most close
+			 * row */
+			on_row_selected( NULL, self );
+			ofa_account_notebook_set_selected( self->private->chart_child, number );
 		}
+
+		g_free( number );
 	}
 
 	ofa_account_notebook_grab_focus( self->private->chart_child );

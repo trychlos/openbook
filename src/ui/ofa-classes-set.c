@@ -71,7 +71,7 @@ static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaClasse
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassesSet *self );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesSet *self );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesSet *self );
-static gboolean   find_row( ofaClassesSet *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static gboolean   find_row_by_id( ofaClassesSet *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
 
 static void
 classes_set_finalize( GObject *instance )
@@ -492,20 +492,16 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 		class_num = ofo_class_get_number( OFO_CLASS( object ));
 
 		if( prev_num != class_num ){
-			if( find_row( self, prev_num, &tmodel, &iter )){
+			if( find_row_by_id( self, prev_num, &tmodel, &iter )){
 				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
 				insert_new_row( self, OFO_CLASS( object ), TRUE );
-			} else {
-				g_warning( "%s: id=%d not found", thisfn, prev_num );
 			}
-		} else if( find_row( self, class_num, &tmodel, &iter )){
+		} else if( find_row_by_id( self, class_num, &tmodel, &iter )){
 			gtk_list_store_set(
 					GTK_LIST_STORE( tmodel ),
 					&iter,
 					COL_LABEL,  ofo_class_get_label( OFO_CLASS( object )),
 					-1 );
-		} else {
-			g_warning( "%s: id=%d not found", thisfn, class_num );
 		}
 	}
 }
@@ -526,14 +522,15 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesSet *self )
 
 	if( OFO_IS_CLASS( object )){
 		class_num = ofo_class_get_number( OFO_CLASS( object ));
-		if( find_row( self, class_num, &tmodel, &iter )){
+		if( find_row_by_id( self, class_num, &tmodel, &iter )){
 			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-		} else {
-			g_warning( "%s: id=%d not found", thisfn, class_num );
 		}
 	}
 }
 
+/*
+ * OFA_SIGNAL_RELOADED_DATASET signal handler
+ */
 static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesSet *self )
 {
@@ -547,15 +544,18 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesSet *self )
 			type,
 			( void * ) self );
 
-	tview = ofa_main_page_get_treeview( OFA_MAIN_PAGE( self ));
-	tmodel = gtk_tree_view_get_model( tview );
-	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
-	insert_dataset( self );
+	if( type == OFO_TYPE_CLASS ){
+		tview = ofa_main_page_get_treeview( OFA_MAIN_PAGE( self ));
+		tmodel = gtk_tree_view_get_model( tview );
+		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
+		insert_dataset( self );
+	}
 }
 
 static gboolean
-find_row( ofaClassesSet *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter )
+find_row_by_id( ofaClassesSet *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
+	static const gchar *thisfn = "ofa_classes_set_find_row_by_id";
 	GtkTreeView *tview;
 	gint num;
 
@@ -574,5 +574,6 @@ find_row( ofaClassesSet *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter
 		}
 	}
 
+	g_warning( "%s: id=%d not found", thisfn, id );
 	return( FALSE );
 }

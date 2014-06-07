@@ -115,12 +115,6 @@ void                ofa_account_notebook_set_selected( ofaAccountNotebook *self,
 
 void                ofa_account_notebook_grab_focus  ( ofaAccountNotebook *self );
 
-gboolean            ofa_account_notebook_insert      ( ofaAccountNotebook *self,
-															ofoAccount *account );
-
-gboolean            ofa_account_notebook_remove      ( ofaAccountNotebook *self,
-															const gchar *number );
-
 G_END_DECLS
 
 #endif /* __OFA_ACCOUNT_NOTEBOOK_H__ */

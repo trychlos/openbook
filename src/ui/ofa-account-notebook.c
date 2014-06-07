@@ -50,10 +50,6 @@ struct _ofaAccountNotebookPrivate {
 	gpointer             user_data_select;
 	ofaAccountNotebookCb pfnDoubleClic;
 	gpointer             user_data_double_clic;
-
-	/* runtime
-	 */
-	GtkTreeView         *view;			/* the tree view of the current page */
 };
 
 /* column ordering in the listview
@@ -91,19 +87,28 @@ static const gchar  *st_class_labels[] = {
 
 G_DEFINE_TYPE( ofaAccountNotebook, ofa_account_notebook, G_TYPE_OBJECT )
 
-static void       setup_book( ofaAccountNotebook *self );
-static GtkWidget *book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class );
-static gboolean   book_activate_page_by_class( ofaAccountNotebook *self, gint class_num );
-static gint       book_get_page_by_class( ofaAccountNotebook *self, gint class_num );
+static void       on_parent_dialog_finalized( ofaAccountNotebook *self, gpointer this_was_the_dialog );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountNotebook *self );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountNotebook *self );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountNotebook *self );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountNotebook *self );
+static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountNotebook *self );
+static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaAccountNotebook *self );
+static void       insert_dataset( ofaAccountNotebook *self );
+static void       insert_row( ofaAccountNotebook *self, ofoAccount *account, gboolean with_selection );
+static gint       book_get_page_by_class( ofaAccountNotebook *self, gint class_num, gboolean create, GtkTreeView **tview, GtkTreeModel **tmodel );
+static gint       book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class, GtkWidget **page );
+static void       on_row_selected( GtkTreeSelection *selection, ofaAccountNotebook *self );
+static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountNotebook *self );
 static void       on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountNotebook *self );
-static void       insert_new_row( ofaAccountNotebook *self, ofoAccount *account, gboolean with_selection );
-static void       setup_first_selection( ofaAccountNotebook *self, const gchar *account_number );
-static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaAccountNotebook *self );
-static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountNotebook *self );
-static void       on_account_selected( GtkTreeSelection *selection, ofaAccountNotebook *self );
-static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self );
-/*static void       on_dataset_updated( ofoDossier *dossier, gint detail, ofoBase *object, GType type, ofaAccountNotebook *self );*/
+static void       set_row_by_iter( ofaAccountNotebook *self, ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void       select_row_by_iter( ofaAccountNotebook *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void       select_row_by_number( ofaAccountNotebook *self, const gchar *number );
+static gboolean   find_row_by_number( ofaAccountNotebook *self, const gchar *number, GtkTreeModel *tmodel, GtkTreeIter *iter, gboolean *bvalid );
+static void       remove_row_by_number( ofaAccountNotebook *self, const gchar *number );
+static void       set_row( ofaAccountNotebook *self, ofoAccount *account, gboolean with_selection );
+static gboolean   book_activate_page_by_class( ofaAccountNotebook *self, gint class_num );
 
 static void
 account_notebook_finalize( GObject *instance )
@@ -171,15 +176,25 @@ ofa_account_notebook_class_init( ofaAccountNotebookClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = account_notebook_finalize;
 }
 
-static void
-on_dialog_finalized( ofaAccountNotebook *self, gpointer this_was_the_dialog )
-{
-	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
-	g_object_unref( self );
-}
-
 /**
  * ofa_account_notebook_init_dialog:
+ *
+ * Creates the structured content, i.e. one notebook with one page per
+ * account class.
+ * The notebook must be created and provided by the parent dialog.
+ *
+ * Does NOT insert the data (see: ofa_account_notebook_init_view).
+ *
+ * +-----------------------------------------------------------------------+
+ * | grid (this is the grid main page)                                     |
+ * | +-----------------------------------------------+-------------------+ |
+ * | | book                                          |                   | |
+ * | |  (provided by the parent dialog)              |                   | |
+ * | |                                               |                   | |
+ * | | each page of the book contains accounts for   |                   | |
+ * | | the corresponding class (if any)              |                   | |
+ * | +-----------------------------------------------+-------------------+ |
+ * +-----------------------------------------------------------------------+
  */
 ofaAccountNotebook *
 ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
@@ -203,64 +218,447 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 	self->private->pfnDoubleClic = parms->pfnDoubleClic;
 	self->private->user_data_double_clic = parms->user_data_double_clic;
 
-	/* connect to the dossier in order to get advertised when a new
-	 * entry occurs (and setup our balances)
+	/* connect to the dossier in order to get advertised when
+	 * modifications occur
 	 */
-#if 0
 	g_signal_connect(
 			G_OBJECT( parms->dossier),
-			OFA_SIGNAL_UPDATED_DATASET, G_CALLBACK( on_dataset_updated ), self );
-#endif
+			OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
 
-	/* setup a weak reference on the dialog to auto-unref */
-	g_object_weak_ref( G_OBJECT( self->private->book ), ( GWeakNotify ) on_dialog_finalized, self );
+	g_signal_connect(
+			G_OBJECT( parms->dossier),
+			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
 
-	setup_book( self );
+	g_signal_connect(
+			G_OBJECT( parms->dossier),
+			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+
+	g_signal_connect(
+			G_OBJECT( parms->dossier),
+			OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+
+	/* setup a weak reference on the dialog to auto-unref
+	 */
+	g_object_weak_ref( G_OBJECT( self->private->book ), ( GWeakNotify ) on_parent_dialog_finalized, self );
+
+	/* manage the notebook
+	 */
+	gtk_notebook_set_scrollable( self->private->book, TRUE );
+	gtk_notebook_set_show_tabs( self->private->book, TRUE );
+
+	g_signal_connect(
+			G_OBJECT( self->private->book ),
+			"switch-page", G_CALLBACK( on_page_switched ), self );
+
+	g_signal_connect(
+			G_OBJECT( self->private->book ),
+			"key-press-event", G_CALLBACK( on_key_pressed_event ), self );
 
 	return( self );
 }
 
+static void
+on_parent_dialog_finalized( ofaAccountNotebook *self, gpointer this_was_the_dialog )
+{
+	static const gchar *thisfn = "ofa_account_notebook_on_parent_dialog_finalized";
+
+	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
+
+	g_debug( "%s: self=%p, parent_dialog=%p",
+			thisfn, ( void * ) self, ( void * ) this_was_the_dialog );
+
+	g_object_unref( self );
+}
+
 /*
- * +-----------------------------------------------------------------------+
- * | grid1 (this is the notebook page)                                     |
- * | +-----------------------------------------------+-------------------+ |
- * | | book1                                         |                   | |
- * | | each page of the book contains accounts for   |                   | |
- * | | the corresponding class (if any)              |                   | |
- * | +-----------------------------------------------+-------------------+ |
- * +-----------------------------------------------------------------------+
+ * OFA_SIGNAL_NEW_OBJECT signal handler
  */
 static void
-setup_book( ofaAccountNotebook *self )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountNotebook *self )
 {
-	static const gchar *thisfn = "ofa_account_notebook_setup_book";
-	GList *chart, *ic;
-	gint class, prev_class;
+	static const gchar *thisfn = "ofa_account_notebook_on_new_object";
 
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn, ( void * ) dossier,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
 
-	chart = ofo_account_get_dataset( self->private->dossier );
+	if( OFO_IS_ACCOUNT( object )){
+		insert_row( self, OFO_ACCOUNT( object ), TRUE );
+	}
+}
 
-	for( ic=chart, prev_class=0 ; ic ; ic=ic->next ){
+/*
+ * OFA_SIGNAL_UPDATE_OBJECT signal handler
+ */
+static void
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountNotebook *self )
+{
+	static const gchar *thisfn = "ofa_account_notebook_on_updated_object";
+	const gchar *acc_num;
 
-		class = ofo_account_get_class( OFO_ACCOUNT( ic->data ));
-		if( class != prev_class ){
-			book_create_page( self, self->private->book, class );
-			prev_class = class;
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn, ( void * ) dossier,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
+
+	if( OFO_IS_ACCOUNT( object )){
+		acc_num = ofo_account_get_number( OFO_ACCOUNT( object ));
+		if( g_utf8_collate( prev_id, acc_num )){
+			remove_row_by_number( self, prev_id );
+			insert_row( self, OFO_ACCOUNT( object ), TRUE );
+		} else {
+			set_row( self, OFO_ACCOUNT( object ), TRUE );
+		}
+	}
+}
+
+#if 0
+static void
+on_dataset_updated( ofoDossier *dossier,
+						gint detail, ofoBase *object, GType type, ofaAccountNotebook *self )
+{
+
+	gint p_num;
+	GtkWidget *p_widget;
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	const gchar *s_number;
+	gchar *i_number;
+	gint cmp;
+	gchar *sdeb, *scre;
+	ofoAccount *account = OFO_ACCOUNT( object );
+
+	if( !ofo_account_is_root( account )){
+		p_num = book_get_page_by_class( self, ofo_account_get_class( account ));
+		if( p_num >= 0 ){
+			p_widget = gtk_notebook_get_nth_page( self->private->book, p_num );
+			if( p_widget ){
+				g_return_if_fail( GTK_IS_CONTAINER( p_widget ));
+
+				tview = ( GtkTreeView * )
+								my_utils_container_get_child_by_type(
+										GTK_CONTAINER( p_widget ), GTK_TYPE_TREE_VIEW );
+				g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+
+				tmodel = gtk_tree_view_get_model( tview );
+				s_number = ofo_account_get_number( account );
+
+				if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+					while( TRUE ){
+						gtk_tree_model_get( tmodel, &iter, COL_NUMBER, &i_number, -1 );
+						cmp = g_utf8_collate( i_number, s_number );
+						g_free( i_number );
+
+						if( cmp == 0 ){
+							sdeb = g_strdup_printf( "%.2f",
+										ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
+							scre = g_strdup_printf( "%.2f",
+										ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
+
+							gtk_list_store_set(
+									GTK_LIST_STORE( tmodel ),
+									&iter,
+									COL_DEBIT, sdeb,
+									COL_CREDIT, scre,
+									-1 );
+							break;
+
+						} else if( !gtk_tree_model_iter_next( tmodel, &iter )){
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+#endif
+
+/*
+ * OFA_SIGNAL_DELETED_OBJECT signal handler
+ */
+static void
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountNotebook *self )
+{
+	static const gchar *thisfn = "ofa_account_notebook_on_deleted_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn, ( void * ) dossier,
+					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
+
+	if( OFO_IS_ACCOUNT( object )){
+		remove_row_by_number( self, ofo_account_get_number( OFO_ACCOUNT( object )));
+	}
+}
+
+/*
+ * OFA_SIGNAL_RELOADED_DATASET signal handler
+ */
+static void
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountNotebook *self )
+{
+	static const gchar *thisfn = "ofa_account_notebook_on_reloaded_dataset";
+
+	g_debug( "%s: dossier=%p, type=%lu, self=%p",
+			thisfn,
+			( void * ) dossier,
+			type,
+			( void * ) self );
+
+	if( type == OFO_TYPE_ACCOUNT ){
+		while( gtk_notebook_get_n_pages( self->private->book )){
+			gtk_notebook_remove_page( self->private->book, 0 );
+		}
+		insert_dataset( self );
+	}
+}
+
+static void
+on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountNotebook *self )
+{
+	GtkTreeView *tview;
+	GtkTreeSelection *select;
+
+	tview = ( GtkTreeView * )
+					my_utils_container_get_child_by_type(
+							GTK_CONTAINER( wpage ), GTK_TYPE_TREE_VIEW );
+
+	if( tview ){
+		g_return_if_fail( GTK_IS_TREE_VIEW( tview ));
+		select = gtk_tree_view_get_selection( tview );
+		on_row_selected( select, self );
+	}
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaAccountNotebook *self )
+{
+	gboolean stop;
+	gint class_num;
+
+	stop = FALSE;
+	class_num = -1;
+
+	if( event->state == GDK_MOD1_MASK ||
+		event->state == ( GDK_MOD1_MASK | GDK_SHIFT_MASK )){
+		switch( event->keyval ){
+			case GDK_KEY_1:
+			case GDK_KEY_ampersand:
+				class_num = 1;
+				break;
+			case GDK_KEY_2:
+			case GDK_KEY_eacute:
+				class_num = 2;
+				break;
+			case GDK_KEY_3:
+			case GDK_KEY_quotedbl:
+				class_num = 3;
+				break;
+			case GDK_KEY_4:
+			case GDK_KEY_apostrophe:
+				class_num = 4;
+				break;
+			case GDK_KEY_5:
+			case GDK_KEY_parenleft:
+				class_num = 5;
+				break;
+			case GDK_KEY_6:
+			case GDK_KEY_minus:
+				class_num = 6;
+				break;
+			case GDK_KEY_7:
+			case GDK_KEY_egrave:
+				class_num = 7;
+				break;
+			case GDK_KEY_8:
+			case GDK_KEY_underscore:
+				class_num = 8;
+				break;
+			case GDK_KEY_9:
+			case GDK_KEY_ccedilla:
+				class_num = 9;
+				break;
 		}
 	}
 
-	g_signal_connect(
-			G_OBJECT( self->private->book ), "switch-page", G_CALLBACK( on_page_switched ), self );
+	if( class_num > 0 ){
+		stop = book_activate_page_by_class( self, class_num );
+	}
 
-	g_signal_connect(
-			G_OBJECT( self->private->book ), "key-press-event", G_CALLBACK( on_key_pressed_event ), self );
+	return( stop );
 }
 
-static GtkWidget *
-book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
+/**
+ * ofa_account_notebook_init_view:
+ * @number: [allow-none]
+ *
+ * Populates the view, setting the first selection on account 'number'
+ * if specified, or on the first visible account (if any) of the first
+ * book's page.
+ */
+void
+ofa_account_notebook_init_view( ofaAccountNotebook *self, const gchar *number )
+{
+	static const gchar *thisfn = "ofa_account_notebook_init_view";
+	GtkWidget *page_w;
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
+
+	g_debug( "%s: self=%p, number=%s", thisfn, ( void * ) self, number );
+
+	if( !self->private->dispose_has_run ){
+
+		insert_dataset( self );
+
+		if( number && g_utf8_strlen( number, -1 )){
+			select_row_by_number( self, number );
+
+		} else {
+			page_w = gtk_notebook_get_nth_page( self->private->book, 0 );
+			g_return_if_fail( page_w && GTK_IS_CONTAINER( page_w ));
+			tview = ( GtkTreeView * ) my_utils_container_get_child_by_type( GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+			g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+			tmodel = gtk_tree_view_get_model( tview );
+			if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+				select_row_by_iter( self, tview, tmodel, &iter );
+			}
+		}
+	}
+}
+
+/*
+ * insert the accounts from the dataset, creating each new class page
+ * as needed
+ */
+static void
+insert_dataset( ofaAccountNotebook *self )
+{
+	GList *chart, *ic;
+
+	chart = ofo_account_get_dataset( self->private->dossier );
+
+	for( ic=chart ; ic ; ic=ic->next ){
+		insert_row( self, OFO_ACCOUNT( ic->data ), FALSE );
+	}
+}
+
+/*
+ * insert a new row in the ad-hoc page of the notebooc, creating the
+ * page as needed
+ */
+static void
+insert_row( ofaAccountNotebook *self, ofoAccount *account, gboolean with_selection )
+{
+	static const gchar *thisfn = "ofa_account_notebook_insert_row";
+	gint page_num;
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	page_num = book_get_page_by_class(
+						self, ofo_account_get_class( account ), TRUE, &tview, &tmodel );
+
+	if( page_num >= 0 ){
+		gtk_list_store_insert_with_values(
+				GTK_LIST_STORE( tmodel ),
+				&iter,
+				-1,
+				COL_NUMBER,   ofo_account_get_number( account ),
+				COL_OBJECT,   account,
+				-1 );
+
+		set_row_by_iter( self, account, tmodel, &iter );
+
+		if( with_selection ){
+			gtk_notebook_set_current_page( self->private->book, page_num );
+			select_row_by_iter( self, tview, tmodel, &iter );
+		}
+	} else {
+		g_debug( "%s: unable to get a page for insertion of account %s",
+				thisfn, ofo_account_get_number( account ));
+	}
+}
+
+/*
+ * returns the number of the notebook's page which is dedicated to the
+ * given class number
+ *
+ * if tview/tmodel pointers are provided, the values are set
+ */
+static gint
+book_get_page_by_class( ofaAccountNotebook *self,
+								gint class_num, gboolean bcreate,
+								GtkTreeView **tview, GtkTreeModel **tmodel )
+{
+	static const gchar *thisfn = "ofa_account_notebook_book_get_page_by_class";
+	gint count, i, found;
+	GtkWidget *page_widget;
+	gint page_class;
+	GtkTreeView *my_tview;
+
+	if( !ofo_class_is_valid_number( class_num )){
+		g_warning( "%s: invalid class number: %d", thisfn, class_num );
+		return( -1 );
+	}
+
+	found = -1;
+	count = gtk_notebook_get_n_pages( self->private->book );
+
+	/* search for an existing page */
+	for( i=0 ; i<count ; ++i ){
+		page_widget = gtk_notebook_get_nth_page( self->private->book, i );
+		page_class = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_CLASS ));
+		if( page_class == class_num ){
+			found = i;
+			break;
+		}
+	}
+
+	/* if not exists, create it (if allowed) */
+	if( found == -1 && bcreate ){
+		found = book_create_page( self, self->private->book, class_num, &page_widget );
+	}
+
+	/* retrieve tree informations */
+	if( found >= 0 ){
+		g_return_val_if_fail( page_widget && GTK_IS_SCROLLED_WINDOW( page_widget ), -1 );
+
+		my_tview = ( GtkTreeView * )
+						my_utils_container_get_child_by_type(
+								GTK_CONTAINER( page_widget ), GTK_TYPE_TREE_VIEW );
+		g_return_val_if_fail( my_tview && GTK_IS_TREE_VIEW( my_tview ), -1 );
+
+		if( tview ){
+			*tview = my_tview;
+		}
+		if( tmodel ){
+			*tmodel = gtk_tree_view_get_model( my_tview );
+		}
+	}
+
+	if( found < 0 ){
+		g_debug( "%s: unable to get the page for class %d", thisfn, class_num );
+	}
+	return( found );
+}
+
+/*
+ * returns the page number
+ * setting the page widget if a variable pointer is provided
+ */
+static gint
+book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class, GtkWidget **page )
 {
 	static const gchar *thisfn = "ofa_account_notebook_book_create_page";
+	gint page_num;
 	GtkScrolledWindow *scroll;
 	GtkWidget *label;
 	GtkTreeView *view;
@@ -272,8 +670,8 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 	ofoClass *obj_class;
 	const gchar *obj_label;
 
-	g_debug( "%s: self=%p, book=%p, class=%d",
-			thisfn, ( void * ) self, ( void * ) book, class );
+	g_debug( "%s: self=%p, book=%p, class=%d, page=%p",
+			thisfn, ( void * ) self, ( void * ) book, class, ( void * ) page );
 
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
 	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
@@ -288,7 +686,10 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 	str = g_strdup_printf( "Alt-%d", class );
 	gtk_widget_set_tooltip_text( label, str );
 	g_free( str );
-	gtk_notebook_insert_page( book, GTK_WIDGET( scroll ), label, -1 );
+	page_num = gtk_notebook_append_page( book, GTK_WIDGET( scroll ), label );
+	if( page_num == -1 ){
+		return( -1 );
+	}
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( scroll ), TRUE );
 	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_CLASS, GINT_TO_POINTER( class ));
 
@@ -363,7 +764,7 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 	select = gtk_tree_view_get_selection( view );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 	g_signal_connect(
-			G_OBJECT( select ), "changed", G_CALLBACK( on_account_selected ), self );
+			G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
 
 	gtk_tree_sortable_set_default_sort_func(
 			GTK_TREE_SORTABLE( model ), ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
@@ -373,44 +774,52 @@ book_create_page( ofaAccountNotebook *self, GtkNotebook *book, gint class )
 
 	gtk_widget_show_all( GTK_WIDGET( scroll ));
 
-	return( GTK_WIDGET( scroll ));
-}
-
-static gboolean
-book_activate_page_by_class( ofaAccountNotebook *self, gint class_num )
-{
-	gint page_num;
-
-	page_num = book_get_page_by_class( self, class_num );
-	if( page_num >= 0 ){
-		gtk_notebook_set_current_page( self->private->book, page_num );
-		return( TRUE );
+	if( page ){
+		*page = GTK_WIDGET( scroll );
 	}
 
-	return( FALSE );
+	return( page_num );
 }
 
-static gint
-book_get_page_by_class( ofaAccountNotebook *self, gint class_num )
+static void
+on_row_selected( GtkTreeSelection *selection, ofaAccountNotebook *self )
 {
-	static const gchar *thisfn = "ofa_account_notebook_book_get_page_by_class";
-	gint count, i;
-	GtkWidget *page_widget;
-	gint page_class;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoAccount *account;
 
-	count = gtk_notebook_get_n_pages( self->private->book );
+	if( self->private->pfnSelect ){
 
-	for( i=0 ; i<count ; ++i ){
-		page_widget = gtk_notebook_get_nth_page( self->private->book, i );
-		page_class = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_CLASS ));
-		if( page_class == class_num ){
-			return( i );
+		account = NULL;
+
+		if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
+			g_object_unref( account );
+		}
+
+		( *self->private->pfnSelect )( account, self->private->user_data_select );
+	}
+}
+
+static void
+on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self )
+{
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoAccount *account;
+
+	if( self->private->pfnDoubleClic ){
+
+		select = gtk_tree_view_get_selection( tview );
+		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+
+			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
+			g_object_unref( account );
+
+			( *self->private->pfnDoubleClic)( account, self->private->user_data_double_clic );
 		}
 	}
-
-	g_warning( "%s: unable to find the book's page for class %d accounts", thisfn, class_num );
-
-	return( -1 );
 }
 
 /*
@@ -503,372 +912,197 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	}
 }
 
-/**
- * ofa_account_notebook_init_view:
- *
- * Populates the view, setting the first selection on account 'number'
- * if specified, or on the first visible account (if any) of the first
- * book's page.
- */
-void
-ofa_account_notebook_init_view( ofaAccountNotebook *self, const gchar *number )
-{
-	GList *dataset, *iset;
-
-	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
-
-	if( !self->private->dispose_has_run ){
-
-		dataset = ofo_account_get_dataset( self->private->dossier );
-		for( iset=dataset ; iset ; iset=iset->next ){
-			insert_new_row( self, OFO_ACCOUNT( iset->data ), FALSE );
-		}
-	}
-
-	setup_first_selection( self, number );
-}
-
-/**
- * ofa_account_notebook_init_view:
- *
- * Populates the view, setting the first selection on account 'number'
- * if specified, or on the first visible account (if any) of the first
- * book's page.
+/*
+ * update the list store with the new properties of an account
+ * this functionm ust only be used if the item already exists in the
+ * list store (not a new row), and the number has not been changed
  */
 static void
-insert_new_row( ofaAccountNotebook *self, ofoAccount *account, gboolean with_selection )
+set_row_by_iter( ofaAccountNotebook *self,
+						ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	gint page_num;
-	GtkWidget *page_widget;
-	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
 	gchar *sdeb, *scre;
-	GtkTreePath *path;
 	ofoDevise *devise;
 	gchar *cdev;
 
-	page_num = book_get_page_by_class( self, ofo_account_get_class( account ));
-	if( page_num >= 0 ){
-		page_widget = gtk_notebook_get_nth_page( self->private->book, page_num );
+	if( ofo_account_is_root( account )){
+		sdeb = g_strdup( "" );
+		scre = g_strdup( "" );
+		cdev = g_strdup( "" );
 
-		tview = ( GtkTreeView * )
-						my_utils_container_get_child_by_type(
-								GTK_CONTAINER( page_widget ), GTK_TYPE_TREE_VIEW );
-		g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-
-		tmodel = gtk_tree_view_get_model( tview );
-
-		if( ofo_account_is_root( account )){
-			sdeb = g_strdup( "" );
-			scre = g_strdup( "" );
-			cdev = g_strdup( "" );
-
+	} else {
+		sdeb = g_strdup_printf( "%.2f",
+				ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
+		scre = g_strdup_printf( "%.2f",
+				ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
+		devise = ofo_devise_get_by_id( self->private->dossier, ofo_account_get_devise( account ));
+		if( devise ){
+			cdev = g_strdup( ofo_devise_get_code( devise ));
 		} else {
-			sdeb = g_strdup_printf( "%.2f",
-					ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
-			scre = g_strdup_printf( "%.2f",
-					ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
-			devise = ofo_devise_get_by_id( self->private->dossier, ofo_account_get_devise( account ));
-			if( devise ){
-				cdev = g_strdup( ofo_devise_get_code( devise ));
-			} else {
-				cdev = g_strdup( "" );
-			}
-		}
-
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				COL_NUMBER,   ofo_account_get_number( account ),
-				COL_LABEL,    ofo_account_get_label( account ),
-				COL_DEBIT,    sdeb,
-				COL_CREDIT,   scre,
-				COL_CURRENCY, cdev,
-				COL_OBJECT,   account,
-				-1 );
-
-		g_free( sdeb );
-		g_free( scre );
-		g_free( cdev );
-
-		/* select the newly added account */
-		if( with_selection ){
-			path = gtk_tree_model_get_path( tmodel, &iter );
-			gtk_tree_view_set_cursor( GTK_TREE_VIEW( tview ), path, NULL, FALSE );
-			gtk_tree_path_free( path );
-			gtk_widget_grab_focus( GTK_WIDGET( tview ));
+			cdev = g_strdup( "" );
 		}
 	}
+
+	gtk_list_store_set(
+			GTK_LIST_STORE( tmodel ),
+			iter,
+			COL_LABEL,    ofo_account_get_label( account ),
+			COL_DEBIT,    sdeb,
+			COL_CREDIT,   scre,
+			COL_CURRENCY, cdev,
+			-1 );
+
+	g_free( sdeb );
+	g_free( scre );
+	g_free( cdev );
 }
 
 static void
-setup_first_selection( ofaAccountNotebook *self, const gchar *asked_number )
+select_row_by_iter( ofaAccountNotebook *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	GtkTreePath *path;
+
+	path = gtk_tree_model_get_path( tmodel, iter );
+	gtk_tree_view_set_cursor( GTK_TREE_VIEW( tview ), path, NULL, FALSE );
+	gtk_tree_path_free( path );
+	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+}
+
+/*
+ * select the row with the given number, or the most close one
+ */
+static void
+select_row_by_number( ofaAccountNotebook *self, const gchar *number )
 {
 	gint page_num;
-	GtkWidget *page_widget;
-	GtkWidget *tview;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-	GtkTreeSelection *select;
-	gchar *model_number;
-	gint cmp;
-
-	page_num = 0;
-	if( asked_number && g_utf8_strlen( asked_number, -1 )){
-		page_num = book_get_page_by_class( self, ofo_account_get_class_from_number( asked_number ));
-		if( page_num <= 0 ){
-			page_num = 0;
-		}
-	}
-	gtk_notebook_set_current_page( self->private->book, page_num );
-
-	page_widget = gtk_notebook_get_nth_page( self->private->book, page_num );
-	tview = my_utils_container_get_child_by_type(
-							GTK_CONTAINER( page_widget ), GTK_TYPE_TREE_VIEW );
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-
-	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
-
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		while( TRUE && asked_number && g_utf8_strlen( asked_number, -1 )){
-			gtk_tree_model_get( tmodel, &iter, COL_NUMBER, &model_number, -1 );
-			cmp = g_utf8_collate( model_number, asked_number );
-			g_free( model_number );
-			if( cmp >= 0 ){
-				break;
-			}
-			if( !gtk_tree_model_iter_next( tmodel, &iter )){
-				gtk_tree_model_get_iter_first( tmodel, &iter );
-				break;
-			}
-		}
-	}
-
-	if( gtk_list_store_iter_is_valid( GTK_LIST_STORE( tmodel ), &iter )){
-		path = gtk_tree_model_get_path( tmodel, &iter );
-		gtk_tree_view_scroll_to_cell( GTK_TREE_VIEW( tview ), path, NULL, FALSE, 0, 0 );
-		gtk_tree_path_free( path );
-		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
-		gtk_tree_selection_select_iter( select, &iter );
-	}
-
-	gtk_widget_grab_focus( tview );
-}
-
-/*
- * Returns :
- * TRUE to stop other handlers from being invoked for the event.
- * FALSE to propagate the event further.
- */
-static gboolean
-on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaAccountNotebook *self )
-{
-	gboolean stop;
-	gint class_num;
-
-	stop = FALSE;
-	class_num = -1;
-
-	if( event->state == GDK_MOD1_MASK ||
-		event->state == ( GDK_MOD1_MASK | GDK_SHIFT_MASK )){
-		switch( event->keyval ){
-			case GDK_KEY_1:
-			case GDK_KEY_ampersand:
-				class_num = 1;
-				break;
-			case GDK_KEY_2:
-			case GDK_KEY_eacute:
-				class_num = 2;
-				break;
-			case GDK_KEY_3:
-			case GDK_KEY_quotedbl:
-				class_num = 3;
-				break;
-			case GDK_KEY_4:
-			case GDK_KEY_apostrophe:
-				class_num = 4;
-				break;
-			case GDK_KEY_5:
-			case GDK_KEY_parenleft:
-				class_num = 5;
-				break;
-			case GDK_KEY_6:
-			case GDK_KEY_minus:
-				class_num = 6;
-				break;
-			case GDK_KEY_7:
-			case GDK_KEY_egrave:
-				class_num = 7;
-				break;
-			case GDK_KEY_8:
-			case GDK_KEY_underscore:
-				class_num = 8;
-				break;
-			case GDK_KEY_9:
-			case GDK_KEY_ccedilla:
-				class_num = 9;
-				break;
-		}
-	}
-
-	if( class_num > 0 ){
-		stop = book_activate_page_by_class( self, class_num );
-	}
-
-	return( stop );
-}
-
-static void
-on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountNotebook *self )
-{
-	GtkTreeSelection *select;
-
-	self->private->view =
-			GTK_TREE_VIEW( my_utils_container_get_child_by_type(
-					GTK_CONTAINER( wpage ), GTK_TYPE_TREE_VIEW ));
-
-	if( self->private->view ){
-		g_return_if_fail( GTK_IS_TREE_VIEW( self->private->view ));
-		select = gtk_tree_view_get_selection( self->private->view );
-		on_account_selected( select, self );
-	}
-}
-
-static void
-on_account_selected( GtkTreeSelection *selection, ofaAccountNotebook *self )
-{
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoAccount *account;
-
-	if( self->private->pfnSelect &&
-			gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
-		g_object_unref( account );
-
-		( *self->private->pfnSelect )( account, self->private->user_data_select );
-	}
-}
-
-static void
-on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self )
-{
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoAccount *account;
-
-	if( self->private->pfnDoubleClic ){
-
-		select = gtk_tree_view_get_selection( tview );
-		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
-			g_object_unref( account );
-
-			( *self->private->pfnDoubleClic)( account, self->private->user_data_double_clic );
-		}
-	}
-}
-
-/*
- * OFA_SIGNAL_UPDATED_DATASET signal handler:
- *
- * Actions of an account from the Account main page is already taken
- * into account by the main page itself. We only consider it the
- * following situations:
- *
- * - new entry: update
- */
-#if 0
-static void
-on_dataset_updated( ofoDossier *dossier,
-						gint detail, ofoBase *object, GType type, ofaAccountNotebook *self )
-{
-	switch( detail ){
-		case SIGNAL_OBJECT_NEW:
-			if( OFO_IS_ACCOUNT( object )){
-				on_dataset_updated_do_new_account( dossier, OFO_ACCOUNT( object ), self );
-			}
-			break;
-		case SIGNAL_OBJECT_UPDATED:
-			if( OFO_IS_ACCOUNT( object )){
-				on_dataset_updated_do_updated_account( dossier, OFO_ACCOUNT( object ), self );
-			}
-			break;
-		case SIGNAL_OBJECT_DELETED:
-			if( OFO_IS_ACCOUNT( object )){
-				on_dataset_updated_do_deleted_account( dossier, OFO_ACCOUNT( object ), self );
-			}
-			break;
-		case SIGNAL_DATASET_RELOADED:
-			if( OFO_IS_ACCOUNT( object )){
-				on_dataset_updated_do_new_account( dossier, OFO_ACCOUNT( object ), self );
-			}
-			break;
-	}
-#endif
-#if 0
-	gint p_num;
-	GtkWidget *p_widget;
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	const gchar *s_number;
-	gchar *i_number;
-	gint cmp;
-	gchar *sdeb, *scre;
-	ofoAccount *account = OFO_ACCOUNT( object );
+	gboolean bvalid;
 
-	if( !ofo_account_is_root( account )){
-		p_num = book_get_page_by_class( self, ofo_account_get_class( account ));
-		if( p_num >= 0 ){
-			p_widget = gtk_notebook_get_nth_page( self->private->book, p_num );
-			if( p_widget ){
-				g_return_if_fail( GTK_IS_CONTAINER( p_widget ));
-
-				tview = ( GtkTreeView * )
-								my_utils_container_get_child_by_type(
-										GTK_CONTAINER( p_widget ), GTK_TYPE_TREE_VIEW );
-				g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-
-				tmodel = gtk_tree_view_get_model( tview );
-				s_number = ofo_account_get_number( account );
-
-				if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-					while( TRUE ){
-						gtk_tree_model_get( tmodel, &iter, COL_NUMBER, &i_number, -1 );
-						cmp = g_utf8_collate( i_number, s_number );
-						g_free( i_number );
-
-						if( cmp == 0 ){
-							sdeb = g_strdup_printf( "%.2f",
-										ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
-							scre = g_strdup_printf( "%.2f",
-										ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
-
-							gtk_list_store_set(
-									GTK_LIST_STORE( tmodel ),
-									&iter,
-									COL_DEBIT, sdeb,
-									COL_CREDIT, scre,
-									-1 );
-							break;
-
-						} else if( !gtk_tree_model_iter_next( tmodel, &iter )){
-							break;
-						}
-					}
-				}
+	if( number && g_utf8_strlen( number, -1 )){
+		page_num = book_get_page_by_class( self,
+							ofo_account_get_class_from_number( number ), FALSE, &tview, &tmodel );
+		if( page_num > 0 ){
+			gtk_notebook_set_current_page( self->private->book, page_num );
+			find_row_by_number( self, number, tmodel, &iter, &bvalid );
+			if( bvalid ){
+				select_row_by_iter( self, tview, tmodel, &iter );
 			}
 		}
 	}
 }
-#endif
+
+/*
+ * rows are sorted by account number
+ * we exit the search as soon as we get a number greater than the
+ * searched one
+ *
+ * @bvalid: [allow-none] set to TRUE if the returned iter is valid
+ *
+ * Returns TRUE if we have found an exact match
+ */
+static gboolean
+find_row_by_number( ofaAccountNotebook *self, const gchar *number,
+							GtkTreeModel *tmodel, GtkTreeIter *iter, gboolean *bvalid )
+{
+	static const gchar *thisfn = "ofa_account_notebook_find_row_by_number";
+	gchar *accnum;
+	gint cmp;
+	GtkTreeIter prev_iter;
+
+	if( bvalid ){
+		*bvalid = FALSE;
+	}
+
+	if( gtk_tree_model_get_iter_first( tmodel, iter )){
+
+		if( bvalid ){
+			*bvalid = TRUE;
+		}
+
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, iter, COL_NUMBER, &accnum, -1 );
+			cmp = g_utf8_collate( accnum, number );
+			g_free( accnum );
+			if( cmp == 0 ){
+				return( TRUE );
+			}
+			if( cmp > 0 ){
+				return( FALSE );
+			}
+			prev_iter = *iter;
+			if( !gtk_tree_model_iter_next( tmodel, iter )){
+				break;
+			}
+		}
+		*iter = prev_iter;
+	}
+
+	g_debug( "%s: account number %s not found", thisfn, number );
+
+	return( FALSE );
+}
+
+static void
+remove_row_by_number( ofaAccountNotebook *self, const gchar *number )
+{
+	gint page_num;
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	page_num = book_get_page_by_class( self,
+						ofo_account_get_class_from_number( number ), FALSE, &tview, &tmodel );
+
+	if( page_num >= 0 &&
+			find_row_by_number( self, number, tmodel, &iter, NULL )){
+
+		gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
+	}
+}
+
+/*
+ * update the list store with the new properties of an account
+ * this function must only be used if the item already exists in the
+ * list store (not a new row), and the number has not been changed
+ */
+static void
+set_row( ofaAccountNotebook *self, ofoAccount *account, gboolean with_selection )
+{
+	gint page_num;
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	page_num = book_get_page_by_class( self,
+						ofo_account_get_class( account ), FALSE, &tview, &tmodel );
+
+	if( page_num >= 0 &&
+			find_row_by_number( self,
+					ofo_account_get_number( account ), tmodel, &iter, NULL )){
+
+		set_row_by_iter( self, account, tmodel, &iter );
+
+		if( with_selection ){
+			select_row_by_iter( self, tview, tmodel, &iter );
+		}
+	}
+}
+
+static gboolean
+book_activate_page_by_class( ofaAccountNotebook *self, gint class_num )
+{
+	gint page_num;
+
+	page_num = book_get_page_by_class( self, class_num, FALSE, NULL, NULL );
+	if( page_num >= 0 ){
+		gtk_notebook_set_current_page( self->private->book, page_num );
+		return( TRUE );
+	}
+
+	return( FALSE );
+}
 
 /**
  * ofa_account_notebook_get_selected:
@@ -876,6 +1110,9 @@ on_dataset_updated( ofoDossier *dossier,
 ofoAccount *
 ofa_account_notebook_get_selected( ofaAccountNotebook *self )
 {
+	gint page_n;
+	GtkWidget *page_w;
+	GtkTreeView *tview;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -885,11 +1122,20 @@ ofa_account_notebook_get_selected( ofaAccountNotebook *self )
 
 	account = NULL;
 
-	if( !self->private->dispose_has_run && self->private->view ){
+	if( !self->private->dispose_has_run ){
 
-		g_return_val_if_fail( GTK_IS_TREE_VIEW( self->private->view ), NULL );
+		page_n = gtk_notebook_get_current_page( self->private->book );
+		g_return_val_if_fail( page_n >= 0, NULL );
 
-		select = gtk_tree_view_get_selection( self->private->view );
+		page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+		g_return_val_if_fail( page_w && GTK_IS_CONTAINER( page_w ), NULL );
+
+		tview = ( GtkTreeView * )
+						my_utils_container_get_child_by_type(
+								GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+		g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), NULL );
+
+		select = gtk_tree_view_get_selection( tview );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
 			g_object_unref( account );
@@ -908,7 +1154,12 @@ ofa_account_notebook_get_selected( ofaAccountNotebook *self )
 void
 ofa_account_notebook_set_selected( ofaAccountNotebook *self, const gchar *number )
 {
-	setup_first_selection( self, number );
+	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
+
+	if( !self->private->dispose_has_run ){
+
+		select_row_by_number( self, number );
+	}
 }
 
 /**
@@ -919,87 +1170,24 @@ ofa_account_notebook_set_selected( ofaAccountNotebook *self, const gchar *number
 void
 ofa_account_notebook_grab_focus( ofaAccountNotebook *self )
 {
+	gint page_n;
+	GtkWidget *page_w;
+	GtkWidget *tview;
+
 	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
 
-	if( !self->private->dispose_has_run && self->private->view ){
-
-		g_return_if_fail( GTK_IS_TREE_VIEW( self->private->view ));
-
-		gtk_widget_grab_focus( GTK_WIDGET( self->private->view ));
-	}
-}
-
-/**
- * ofa_account_notebook_insert:
- */
-gboolean
-ofa_account_notebook_insert( ofaAccountNotebook *self, ofoAccount *account )
-{
-	g_return_val_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ), FALSE );
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-
 	if( !self->private->dispose_has_run ){
 
-		insert_new_row( self, account, TRUE );
+		page_n = gtk_notebook_get_current_page( self->private->book );
+		g_return_if_fail( page_n >= 0 );
+
+		page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+		g_return_if_fail( page_w && GTK_IS_CONTAINER( page_w ));
+
+		tview = my_utils_container_get_child_by_type(
+								GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+		g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+
+		gtk_widget_grab_focus( tview );
 	}
-
-	return( TRUE );
-}
-
-/**
- * ofa_account_notebook_remove:
- */
-gboolean
-ofa_account_notebook_remove( ofaAccountNotebook *self, const gchar *number )
-{
-	static const gchar *thisfn = "ofa_account_notebook_remove";
-	gint page_num;
-	GtkWidget *page_widget;
-	GtkWidget *tview;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gchar *iter_num;
-	gint cmp;
-	gboolean iter_found;
-
-	g_debug( "%s: self=%p, number=%s", thisfn, ( void * ) self, number );
-
-	g_return_val_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ), FALSE );
-	g_return_val_if_fail( number && g_utf8_strlen( number, -1 ), FALSE );
-
-	if( !self->private->dispose_has_run ){
-
-		page_num = book_get_page_by_class( self, ofo_account_get_class_from_number( number ));
-		g_return_val_if_fail( page_num >= 0, FALSE );
-
-		page_widget = gtk_notebook_get_nth_page( self->private->book, page_num );
-		tview = my_utils_container_get_child_by_type( GTK_CONTAINER( page_widget ), GTK_TYPE_TREE_VIEW );
-		g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), FALSE );
-
-		iter_found = FALSE;
-		tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
-
-		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-			while( !iter_found ){
-				gtk_tree_model_get( tmodel, &iter, COL_NUMBER, &iter_num, -1 );
-				cmp = g_utf8_collate( iter_num, number );
-				g_free( iter_num );
-				if( cmp == 0 ){
-					iter_found = TRUE;
-					break;
-				}
-				if( !gtk_tree_model_iter_next( tmodel, &iter )){
-					break;
-				}
-			}
-		}
-		if( !iter_found ){
-			g_warning( "%s: number %s not found", thisfn, number );
-			return( FALSE );
-		}
-
-		gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-	}
-
-	return( TRUE );
 }
