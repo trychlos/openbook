@@ -235,6 +235,7 @@ static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path
 static const sThemeDef *get_theme_def_from_id( gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
 static void             on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void             do_close_dossier( ofaMainWindow *self );
 static void             main_activate_theme( ofaMainWindow *main, gint theme );
 static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
@@ -620,6 +621,11 @@ on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data 
 	g_debug( "%s: account=%s", thisfn, sod->account );
 	g_debug( "%s: password=%s", thisfn, sod->password );
 
+	if( window->private->dossier ){
+		g_return_if_fail( OFO_IS_DOSSIER( window->private->dossier ));
+		do_close_dossier( window );
+	}
+
 	window->private->dossier = ofo_dossier_new( sod->dossier );
 
 	if( !ofo_dossier_open(
@@ -772,7 +778,6 @@ static void
 on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_close";
-	ofaApplication *appli;
 	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
@@ -783,15 +788,26 @@ on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 
-	g_object_unref( priv->dossier );
-	priv->dossier = NULL;
+	do_close_dossier( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+do_close_dossier( ofaMainWindow *self )
+{
+	ofaApplication *appli;
+	ofaMainWindowPrivate *priv;
+
+	priv = self->private;
+
+	g_clear_object( &priv->dossier );
 
 	gtk_widget_destroy( GTK_WIDGET( priv->pane ));
 	priv->pane = NULL;
-	appli = OFA_APPLICATION( gtk_window_get_application( GTK_WINDOW( user_data )));
 
-	set_menubar( OFA_MAIN_WINDOW( user_data ), ofa_application_get_menu_model( appli ));
-	set_window_title( OFA_MAIN_WINDOW( user_data ));
+	appli = OFA_APPLICATION( gtk_window_get_application( GTK_WINDOW( self )));
+	set_menubar( self, ofa_application_get_menu_model( appli ));
+
+	set_window_title( self );
 }
 
 static void
