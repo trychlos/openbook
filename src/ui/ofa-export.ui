@@ -45,7 +45,7 @@ Press Continue.</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">0</property>
+                    <property name="top_attach">1</property>
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
@@ -53,44 +53,6 @@ Press Continue.</property>
                 <child>
                   <object class="GtkRadioButton" id="p1-account">
                     <property name="label" translatable="yes">Reference : chart of _accounts</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="active">True</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p1-class</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p1-devise">
-                    <property name="label" translatable="yes">Reference : _currencies</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="active">True</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p1-class</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">2</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p1-journal">
-                    <property name="label" translatable="yes">Reference : _journals</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
@@ -121,45 +83,7 @@ Press Continue.</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">4</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p1-rate">
-                    <property name="label" translatable="yes">Reference : _rates</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="active">True</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p1-class</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">5</property>
-                    <property name="width">1</property>
-                    <property name="height">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p1-entries">
-                    <property name="label" translatable="yes">_Entries</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="active">True</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p1-class</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">7</property>
+                    <property name="top_attach">6</property>
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
@@ -177,34 +101,82 @@ Press Continue.</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">6</property>
+                    <property name="top_attach">8</property>
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkRadioButton" id="p1-devise">
+                    <property name="label" translatable="yes">Reference : _currencies</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="use_underline">True</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <property name="group">p1-class</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                    <property name="width">1</property>
+                    <property name="height">1</property>
+                  </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkRadioButton" id="p1-journal">
+                    <property name="label" translatable="yes">Reference : _journals</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="use_underline">True</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <property name="group">p1-class</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">2</property>
+                    <property name="width">1</property>
+                    <property name="height">1</property>
+                  </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkRadioButton" id="p1-rate">
+                    <property name="label" translatable="yes">Reference : _rates</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="use_underline">True</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <property name="group">p1-class</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">4</property>
+                    <property name="width">1</property>
+                    <property name="height">1</property>
+                  </packing>
                 </child>
                 <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
+                  <object class="GtkRadioButton" id="p1-entries">
+                    <property name="label" translatable="yes">_Entries</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="use_underline">True</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <property name="group">p1-class</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">7</property>
+                    <property name="width">1</property>
+                    <property name="height">1</property>
+                  </packing>
                 </child>
                 <child>
                   <placeholder/>
@@ -221,15 +193,6 @@ Press Continue.</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
         </child>
       </object>
       <packing>
@@ -270,15 +233,6 @@ Press Continue.</property>
                     <property name="height">1</property>
                   </packing>
                 </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
               </object>
             </child>
           </object>
@@ -288,15 +242,6 @@ Press Continue.</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
         </child>
       </object>
       <packing>
@@ -319,6 +264,21 @@ Press Continue.</property>
         <child>
           <placeholder/>
         </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
       </object>
       <packing>
         <property name="title" translatable="yes">Selection of the output file</property>
@@ -328,6 +288,21 @@ Press Continue.</property>
       <object class="GtkGrid" id="p4-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
         <child>
           <placeholder/>
         </child>

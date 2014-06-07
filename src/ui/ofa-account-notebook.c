@@ -302,7 +302,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 
 	if( OFO_IS_ACCOUNT( object )){
 		acc_num = ofo_account_get_number( OFO_ACCOUNT( object ));
-		if( g_utf8_collate( prev_id, acc_num )){
+		if( prev_id && g_utf8_collate( prev_id, acc_num )){
 			remove_row_by_number( self, prev_id );
 			insert_row( self, OFO_ACCOUNT( object ), TRUE );
 		} else {

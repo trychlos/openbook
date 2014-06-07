@@ -840,6 +840,8 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 				ofo_dossier_get_sgbd( dossier ),
 				ofo_dossier_get_user( dossier ))){
 
+		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_NEW_OBJECT, g_object_ref( entry ));
+
 		ok = TRUE;
 	}
 
