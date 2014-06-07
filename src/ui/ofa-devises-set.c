@@ -44,7 +44,8 @@ struct _ofaDevisesSetPrivate {
 /* column ordering in the selection listview
  */
 enum {
-	COL_CODE = 0,
+	COL_ID = 0,
+	COL_CODE,
 	COL_LABEL,
 	COL_SYMBOL,
 	COL_OBJECT,
@@ -242,6 +243,7 @@ insert_new_row( ofaDevisesSet *self, ofoDevise *devise, gboolean with_selection 
 			GTK_LIST_STORE( tmodel ),
 			&iter,
 			-1,
+			COL_ID,     ofo_devise_get_id( devise ),
 			COL_CODE,   ofo_devise_get_code( devise ),
 			COL_LABEL,  ofo_devise_get_label( devise ),
 			COL_SYMBOL, ofo_devise_get_symbol( devise ),

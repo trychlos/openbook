@@ -109,6 +109,9 @@ static gboolean   find_row_by_number( ofaAccountNotebook *self, const gchar *num
 static void       remove_row_by_number( ofaAccountNotebook *self, const gchar *number );
 static void       set_row( ofaAccountNotebook *self, ofoAccount *account, gboolean with_selection );
 static gboolean   book_activate_page_by_class( ofaAccountNotebook *self, gint class_num );
+static void       on_updated_class_label( ofaAccountNotebook *self, ofoClass *class );
+static void       on_deleted_class_label( ofaAccountNotebook *self, ofoClass *class );
+static void       on_updated_currency_code( ofaAccountNotebook *self, ofoDevise *devise );
 
 static void
 account_notebook_finalize( GObject *instance )
@@ -284,6 +287,9 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountNotebook *self )
 
 	if( OFO_IS_ACCOUNT( object )){
 		insert_row( self, OFO_ACCOUNT( object ), TRUE );
+
+	} else if( OFO_IS_CLASS( object )){
+		on_updated_class_label( self, OFO_CLASS( object ));
 	}
 }
 
@@ -308,71 +314,14 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 		} else {
 			set_row( self, OFO_ACCOUNT( object ), TRUE );
 		}
+
+	} else if( OFO_IS_CLASS( object )){
+		on_updated_class_label( self, OFO_CLASS( object ));
+
+	} else if( OFO_IS_DEVISE( object )){
+		on_updated_currency_code( self, OFO_DEVISE( object ));
 	}
 }
-
-#if 0
-static void
-on_dataset_updated( ofoDossier *dossier,
-						gint detail, ofoBase *object, GType type, ofaAccountNotebook *self )
-{
-
-	gint p_num;
-	GtkWidget *p_widget;
-	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	const gchar *s_number;
-	gchar *i_number;
-	gint cmp;
-	gchar *sdeb, *scre;
-	ofoAccount *account = OFO_ACCOUNT( object );
-
-	if( !ofo_account_is_root( account )){
-		p_num = book_get_page_by_class( self, ofo_account_get_class( account ));
-		if( p_num >= 0 ){
-			p_widget = gtk_notebook_get_nth_page( self->private->book, p_num );
-			if( p_widget ){
-				g_return_if_fail( GTK_IS_CONTAINER( p_widget ));
-
-				tview = ( GtkTreeView * )
-								my_utils_container_get_child_by_type(
-										GTK_CONTAINER( p_widget ), GTK_TYPE_TREE_VIEW );
-				g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-
-				tmodel = gtk_tree_view_get_model( tview );
-				s_number = ofo_account_get_number( account );
-
-				if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-					while( TRUE ){
-						gtk_tree_model_get( tmodel, &iter, COL_NUMBER, &i_number, -1 );
-						cmp = g_utf8_collate( i_number, s_number );
-						g_free( i_number );
-
-						if( cmp == 0 ){
-							sdeb = g_strdup_printf( "%.2f",
-										ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
-							scre = g_strdup_printf( "%.2f",
-										ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
-
-							gtk_list_store_set(
-									GTK_LIST_STORE( tmodel ),
-									&iter,
-									COL_DEBIT, sdeb,
-									COL_CREDIT, scre,
-									-1 );
-							break;
-
-						} else if( !gtk_tree_model_iter_next( tmodel, &iter )){
-							break;
-						}
-					}
-				}
-			}
-		}
-	}
-}
-#endif
 
 /*
  * OFA_SIGNAL_DELETED_OBJECT signal handler
@@ -388,6 +337,9 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountNotebook *sel
 
 	if( OFO_IS_ACCOUNT( object )){
 		remove_row_by_number( self, ofo_account_get_number( OFO_ACCOUNT( object )));
+
+	} else if( OFO_IS_CLASS( object )){
+		on_deleted_class_label( self, OFO_CLASS( object ));
 	}
 }
 
@@ -1189,5 +1141,83 @@ ofa_account_notebook_grab_focus( ofaAccountNotebook *self )
 		g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
 
 		gtk_widget_grab_focus( tview );
+	}
+}
+
+/*
+ * the iso code 3a of a currency has changed - update the display
+ * this should be very rare
+ */
+static void
+on_updated_currency_code( ofaAccountNotebook *self, ofoDevise *devise )
+{
+	gint pages_count, i;
+	GtkWidget *page_w;
+	GtkTreeView *tview;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoAccount *account;
+	gint dev_id;
+
+	dev_id = ofo_devise_get_id( devise );
+	pages_count = gtk_notebook_get_n_pages( self->private->book );
+
+	for( i=0 ; i<pages_count ; ++i ){
+
+		page_w = gtk_notebook_get_nth_page( self->private->book, i );
+		g_return_if_fail( page_w && GTK_IS_CONTAINER( page_w ));
+
+		tview = ( GtkTreeView * )
+						my_utils_container_get_child_by_type(
+								GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+		g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+
+		tmodel = gtk_tree_view_get_model( tview );
+		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+			while( TRUE ){
+				gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
+				g_object_unref( account );
+
+				if( ofo_account_get_devise( account ) == dev_id ){
+					set_row_by_iter( self, account, tmodel, &iter );
+				}
+				if( !gtk_tree_model_iter_next( tmodel, &iter )){
+					break;
+				}
+			}
+		}
+	}
+}
+
+/*
+ * a class label has changed : update the corresponding tab label
+ */
+static void
+on_updated_class_label( ofaAccountNotebook *self, ofoClass *class )
+{
+	gint page_n;
+	GtkWidget *page_w;
+	gint class_num;
+
+	class_num = ofo_class_get_number( class );
+	page_n = book_get_page_by_class( self, class_num, FALSE, NULL, NULL );
+	page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+	if( page_w ){
+		gtk_notebook_set_tab_label_text( self->private->book, page_w, ofo_class_get_label( class ));
+	}
+}
+
+static void
+on_deleted_class_label( ofaAccountNotebook *self, ofoClass *class )
+{
+	gint page_n;
+	GtkWidget *page_w;
+	gint class_num;
+
+	class_num = ofo_class_get_number( class );
+	page_n = book_get_page_by_class( self, class_num, FALSE, NULL, NULL );
+	page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+	if( page_w ){
+		gtk_notebook_set_tab_label_text( self->private->book, page_w, st_class_labels[class_num-1] );
 	}
 }
