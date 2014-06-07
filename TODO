@@ -215,13 +215,13 @@
                 selection is in fact only allowed when importing BAT)
                 So is it worth ?
 
- 169 2014- 6- 6 rename ofaBatList to (e.g.) ofaBatCommon
-
  174 2014- 6- 6 ExportAssistant: change character set to ISO-8859-15
      2014- 6- 7 the exported character set should be a choice of the 
                 user (default is UTF-8)
 
- 176
+ 176 2014- 6- 6 ImportAssistant: let the user select the encoding
+                character set of the imported file, so that we are
+                able to convert to UTF-8
 
 -----------------------------------------------------------------------
  DONE
@@ -601,6 +601,9 @@
 
  157 2014- 6- 4 BatList: the treeview doesn't vertically expand
      2014- 6- 4 done
+
+ 169 2014- 6- 6 rename ofaBatList to (e.g.) ofaBatCommon
+     2014- 6- 7 done - svn #3658
 
  170 2014- 6- 6 rename ofaAccountNotebook to (e.g.) ofaAccountCommon
      2014- 6- 7 cancelled

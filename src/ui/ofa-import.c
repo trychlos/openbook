@@ -480,7 +480,7 @@ do_init_p1_select( ofaImport *self, GtkWidget *page )
 			GTK_FILE_CHOOSER( gtk_file_chooser_widget_new( GTK_FILE_CHOOSER_ACTION_OPEN ));
 	gtk_widget_set_hexpand( GTK_WIDGET( priv->p1_chooser ), TRUE );
 	gtk_widget_set_vexpand( GTK_WIDGET( priv->p1_chooser ), TRUE );
-	gtk_file_chooser_set_select_multiple( priv->p1_chooser, TRUE );
+	gtk_file_chooser_set_select_multiple( priv->p1_chooser, FALSE );
 	g_signal_connect( G_OBJECT( priv->p1_chooser ), "selection-changed", G_CALLBACK( on_p1_selection_changed ), self );
 	g_signal_connect( G_OBJECT( priv->p1_chooser ), "file-activated", G_CALLBACK( on_p1_file_activated ), self );
 
