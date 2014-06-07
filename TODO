@@ -204,9 +204,6 @@
 
  165 2014- 6- 5 ExportAssistant: overwrite confirmation doesn't work 
 
- 166 2014- 6- 5 Have an audit table which records _all_ sql queries
-                This may be managed by ofoSgbd class
-
  167 2014- 6- 5 ExportAssistant: pre-positionning a default uri as
                 output filename doesn't work
 
@@ -596,6 +593,10 @@
 
  157 2014- 6- 4 BatList: the treeview doesn't vertically expand
      2014- 6- 4 done
+
+ 166 2014- 6- 5 Have an audit table which records _all_ sql queries
+                This may be managed by ofoSgbd class
+     2014- 6- 7 done - svn #3660
 
  168 2014- 6- 6 ImportAssistant: check that only one file is selected
                 when importing a reference table or entries (multiple

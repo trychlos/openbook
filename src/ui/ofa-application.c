@@ -36,26 +36,31 @@
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-plugin.h"
 #include "ui/ofa-settings.h"
+#include "ui/ofo-sgbd.h"
 
 /* private instance data
  */
 struct _ofaApplicationPrivate {
-	gboolean       dispose_has_run;
+	gboolean        dispose_has_run;
 
 	/* properties
 	 */
-	GOptionEntry  *options;
-	gchar         *application_name;
-	gchar         *description;
-	gchar         *icon_name;
+	GOptionEntry   *options;
+	gchar          *application_name;
+	gchar          *description;
+	gchar          *icon_name;
+
+	/* command-line args
+	 */
+	ofaOpenDossier *sod;
 
 	/* internals
 	 */
-	int            argc;
-	GStrv          argv;
-	int            code;
-	ofaMainWindow *main_window;
-	GMenuModel    *menu;
+	int             argc;
+	GStrv           argv;
+	int             code;
+	ofaMainWindow  *main_window;
+	GMenuModel     *menu;
 };
 
 /* class properties
@@ -69,18 +74,27 @@ enum {
 
 static gboolean pref_confirm_on_quit = FALSE;
 
-static const gchar            *st_application_id    = "org.trychlos.openbook.ui";
-static const GApplicationFlags st_application_flags = G_APPLICATION_NON_UNIQUE;
+static const gchar            *st_application_id     = "org.trychlos.openbook.ui";
+static const GApplicationFlags st_application_flags  = G_APPLICATION_NON_UNIQUE;
 
-static const gchar            *st_application_name  = N_( "Open Freelance Accounting" );
-static const gchar            *st_description       = N_( "Une comptabilité en partie-double orientée vers les freelances" );
-static const gchar            *st_icon_name         = N_( "openbook" );
+static const gchar            *st_application_name   = N_( "Open Freelance Accounting" );
+static const gchar            *st_description        = N_( "Une comptabilité en partie-double orientée vers les freelances" );
+static const gchar            *st_icon_name          = N_( "openbook" );
 
-static       gboolean          st_version_opt       = FALSE;
+static       gboolean          st_version_opt        = FALSE;
+static       gchar            *st_dossier_name_opt   = NULL;
+static       gchar            *st_dossier_user_opt   = NULL;
+static       gchar            *st_dossier_passwd_opt = NULL;
 
 static       GOptionEntry      st_option_entries[]  = {
-	{ "version"   , 'v', 0, G_OPTION_ARG_NONE, &st_version_opt,
-			N_( "affiche le numéro de version [no]" ), NULL },
+	{ "dossier",  'd', 0, G_OPTION_ARG_STRING, &st_dossier_name_opt,
+			N_( "open the specified dossier []" ), NULL },
+	{ "user",     'u', 0, G_OPTION_ARG_STRING, &st_dossier_user_opt,
+			N_( "username to be used on opening the dossier []" ), NULL },
+	{ "password", 'p', 0, G_OPTION_ARG_STRING, &st_dossier_passwd_opt,
+			N_( "password to be used on opening the dossier []" ), NULL },
+	{ "version",  'v', 0, G_OPTION_ARG_NONE, &st_version_opt,
+			N_( "display the version number [no]" ), NULL },
 	{ NULL }
 };
 
@@ -93,6 +107,7 @@ static void     application_open( GApplication *application, GFile **files, gint
 static void     init_i18n( ofaApplication *application );
 static gboolean init_gtk_args( ofaApplication *application );
 static gboolean manage_options( ofaApplication *application );
+static void     do_prepare_for_open( ofaApplication *appli, const gchar *dossier, const gchar *user, const gchar *passwd );
 
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -244,6 +259,7 @@ ofa_application_init( ofaApplication *self )
 	self->private = g_new0( ofaApplicationPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+	self->private->sod = NULL;
 }
 
 static void
@@ -484,6 +500,11 @@ application_activate( GApplication *application )
 	g_debug( "%s: main window instanciated at %p", thisfn, appli->private->main_window );
 
 	gtk_window_present( GTK_WINDOW( appli->private->main_window ));
+
+	if( appli->private->sod ){
+		g_signal_emit_by_name(
+				appli->private->main_window, OFA_SIGNAL_OPEN_DOSSIER, appli->private->sod );
+	}
 }
 
 /*
@@ -607,9 +628,60 @@ manage_options( ofaApplication *application )
 	if( st_version_opt ){
 		on_version( application );
 		ret = FALSE;
+
+	} else if( st_dossier_name_opt || st_dossier_user_opt || st_dossier_passwd_opt ){
+
+		if( !g_utf8_strlen( st_dossier_name_opt, -1 ) ||
+				!g_utf8_strlen( st_dossier_user_opt, -1 ) ||
+				!g_utf8_strlen( st_dossier_passwd_opt, -1 )){
+			g_warning( "%s: unable to handle wrong arguments: dossier=%s, user=%s, password=%s",
+					thisfn, st_dossier_name_opt, st_dossier_user_opt, st_dossier_passwd_opt );
+
+		} else {
+			do_prepare_for_open( application,
+					st_dossier_name_opt, st_dossier_user_opt, st_dossier_passwd_opt );
+		}
 	}
 
 	return( ret );
+}
+
+static void
+do_prepare_for_open( ofaApplication *appli, const gchar *dossier, const gchar *user, const gchar *passwd )
+{
+	static const gchar *thisfn = "ofa_application_do_prepare_for_open";
+	ofaOpenDossier *sod;
+	ofoSgbd *sgbd;
+
+	sod = g_new0( ofaOpenDossier, 1 );
+	ofa_settings_get_dossier( dossier, &sod->host, &sod->port, &sod->socket, &sod->dbname );
+	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
+
+	if( !ofo_sgbd_connect(
+			sgbd,
+			sod->host,
+			sod->port,
+			sod->socket,
+			sod->dbname,
+			user,
+			passwd )){
+
+		g_free( sod->host );
+		g_free( sod->socket );
+		g_free( sod->dbname );
+		g_free( sod );
+		g_object_unref( sgbd );
+		return;
+	}
+
+	g_debug( "%s: connection successfully opened", thisfn );
+
+	sod->dossier = g_strdup( dossier );
+	sod->account = g_strdup( user );
+	sod->password = g_strdup( passwd );
+
+	appli->private->sod = sod;
+	g_object_unref( sgbd );
 }
 
 static void
