@@ -40,7 +40,7 @@ struct _ofaJournalComboPrivate {
 
 	/* input data
 	 */
-	GtkDialog         *dialog;
+	GtkContainer      *container;
 	ofoDossier        *dossier;
 	gchar             *combo_name;
 	gchar             *label_name;
@@ -135,19 +135,19 @@ ofa_journal_combo_class_init( ofaJournalComboClass *klass )
 }
 
 static void
-on_dialog_finalized( ofaJournalCombo *self, gpointer this_was_the_dialog )
+on_container_finalized( ofaJournalCombo *self, gpointer this_was_the_container )
 {
 	g_return_if_fail( self && OFA_IS_JOURNAL_COMBO( self ));
 	g_object_unref( self );
 }
 
 /**
- * ofa_journal_combo_init_dialog:
+ * ofa_journal_combo_init_combo:
  */
 ofaJournalCombo *
-ofa_journal_combo_init_dialog( const ofaJournalComboParms *parms )
+ofa_journal_combo_init_combo( const ofaJournalComboParms *parms )
 {
-	static const gchar *thisfn = "ofa_journal_combo_init_dialog";
+	static const gchar *thisfn = "ofa_journal_combo_init_combo";
 	ofaJournalCombo *self;
 	ofaJournalComboPrivate *priv;
 	GtkWidget *combo;
@@ -162,11 +162,11 @@ ofa_journal_combo_init_dialog( const ofaJournalComboParms *parms )
 
 	g_debug( "%s: parms=%p", thisfn, ( void * ) parms );
 
-	g_return_val_if_fail( GTK_IS_DIALOG( parms->dialog ), NULL );
+	g_return_val_if_fail( GTK_IS_CONTAINER( parms->container ), NULL );
 	g_return_val_if_fail( OFO_IS_DOSSIER( parms->dossier ), NULL );
 	g_return_val_if_fail( parms->combo_name && g_utf8_strlen( parms->combo_name, -1 ), NULL );
 
-	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( parms->dialog ), parms->combo_name );
+	combo = my_utils_container_get_child_by_name( parms->container, parms->combo_name );
 	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), NULL );
 
 	self = g_object_new( OFA_TYPE_JOURNAL_COMBO, NULL );
@@ -174,15 +174,15 @@ ofa_journal_combo_init_dialog( const ofaJournalComboParms *parms )
 	priv = self->private;
 
 	/* parms data */
-	priv->dialog = parms->dialog;
+	priv->container = parms->container;
 	priv->dossier = parms->dossier;
 	priv->combo_name = g_strdup( parms->combo_name );
 	priv->label_name = g_strdup( parms->label_name );
 	priv->pfn = parms->pfn;
 	priv->user_data = parms->user_data;
 
-	/* setup a weak reference on the dialog to auto-unref */
-	g_object_weak_ref( G_OBJECT( priv->dialog ), ( GWeakNotify ) on_dialog_finalized, self );
+	/* setup a weak reference on the container to auto-unref */
+	g_object_weak_ref( G_OBJECT( priv->container ), ( GWeakNotify ) on_container_finalized, self );
 
 	/* runtime data */
 	priv->combo = GTK_COMBO_BOX( combo );
@@ -253,7 +253,7 @@ on_journal_changed( GtkComboBox *box, ofaJournalCombo *self )
 
 		if( self->private->label_name ){
 			widget = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( self->private->dialog ), self->private->label_name );
+							self->private->container, self->private->label_name );
 			if( widget && GTK_IS_LABEL( widget )){
 				gtk_label_set_text( GTK_LABEL( widget ), label );
 			}

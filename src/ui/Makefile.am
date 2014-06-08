@@ -88,6 +88,8 @@ openbook_SOURCES = \
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
 	ofa-dossier-properties.h							\
+	ofa-guided-ex.c										\
+	ofa-guided-ex.h										\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
 	ofa-export.c										\

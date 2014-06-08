@@ -275,7 +275,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	mnemo = ofo_model_get_mnemo( priv->model );
 	priv->is_new = !mnemo || !g_utf8_strlen( mnemo, -1 );
 
-	parms.dialog = dialog->prot->dialog;
+	parms.container = GTK_CONTAINER( dialog->prot->dialog );
 	parms.dossier = ofa_base_dialog_get_dossier( dialog );
 	parms.combo_name = "p1-journal";
 	parms.label_name = "p1-jou-label";
@@ -285,7 +285,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.user_data = self;
 	parms.initial_id = priv->is_new ? priv->journal : ofo_model_get_journal( priv->model );
 
-	priv->journal_combo = ofa_journal_combo_init_dialog( &parms );
+	priv->journal_combo = ofa_journal_combo_init_combo( &parms );
 
 	init_dialog_journal_locked( self );
 

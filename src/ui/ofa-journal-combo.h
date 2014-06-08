@@ -81,7 +81,7 @@ GType            ofa_journal_combo_get_type   ( void ) G_GNUC_CONST;
  *
  * The structure passed to the init_dialog() function.
  *
- * @dialog: the parent dialog of the target combo box
+ * @window: the parent window of the target combo box
  * @dossier: the current opened ofoDossier
  * @combo_name: the name of the GtkComboBox widget
  * @label_name: [allow-none]: the name of a GtkLabel widget which will
@@ -95,7 +95,7 @@ GType            ofa_journal_combo_get_type   ( void ) G_GNUC_CONST;
  * @initial_id: the journal identifier of the initial selection, or -1
  */
 typedef struct {
-	GtkDialog        *dialog;
+	GtkContainer     *container;
 	ofoDossier       *dossier;
 	const gchar      *combo_name;
 	const gchar      *label_name;
@@ -107,7 +107,7 @@ typedef struct {
 }
 	ofaJournalComboParms;
 
-ofaJournalCombo *ofa_journal_combo_init_dialog  ( const ofaJournalComboParms *parms );
+ofaJournalCombo *ofa_journal_combo_init_combo   ( const ofaJournalComboParms *parms );
 
 gint             ofa_journal_combo_get_selection( ofaJournalCombo *self, gchar **mnemo, gchar **label );
 

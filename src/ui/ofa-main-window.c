@@ -38,6 +38,7 @@
 #include "ui/ofa-devises-set.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-export.h"
+#include "ui/ofa-guided-ex.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-import.h"
 #include "ui/ofa-journals-set.h"
@@ -136,7 +137,8 @@ enum {
 	THM_TAUX,
 	THM_CONCIL,
 	THM_CLASSES,
-	THM_BATFILES
+	THM_BATFILES,
+	THM_GUIDED_INPUT
 };
 
 static sThemeDef st_theme_defs[] = {
@@ -181,6 +183,11 @@ static sThemeDef st_theme_defs[] = {
 				ofa_bat_set_get_type,
 				TRUE },
 
+		{ THM_GUIDED_INPUT,
+				N_( "Guided input" ),
+				ofa_guided_ex_get_type,
+				TRUE },
+
 		{ 0 }
 };
 
@@ -202,7 +209,7 @@ enum {
 
 static sTreeDef st_tree_defs[] = {
 
-		{ N_( "Guided input" ),       THM_MODELS },
+		{ N_( "Guided input" ),       THM_GUIDED_INPUT },
 		{ N_( "Reconciliation" ),     THM_CONCIL },
 		{ N_( "Chart of accounts" ),  THM_ACCOUNTS },
 		{ N_( "Journals" ),           THM_JOURNALS },
