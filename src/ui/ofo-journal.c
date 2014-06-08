@@ -1486,9 +1486,9 @@ ofo_journal_get_csv( const ofoDossier *dossier )
  * Replace the whole table with the provided datas.
  */
 void
-ofo_journal_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+ofo_journal_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
 {
-	static const gchar *thisfn = "ofo_journal_set_csv";
+	static const gchar *thisfn = "ofo_journal_import_csv";
 	ofoJournal *journal;
 	GSList *ili, *ico;
 	GList *new_set, *ise;

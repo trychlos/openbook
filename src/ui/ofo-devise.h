@@ -72,7 +72,7 @@ gboolean        ofo_devise_update       ( ofoDevise *devise, const ofoDossier *d
 gboolean        ofo_devise_delete       ( ofoDevise *devise, const ofoDossier *dossier );
 
 GSList         *ofo_devise_get_csv      ( const ofoDossier *dossier );
-void            ofo_devise_set_csv      ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+void            ofo_devise_import_csv   ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

@@ -848,7 +848,8 @@ import_class_csv( ofaImport *self )
 		return( -1 );
 	}
 
-	ofo_class_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+	ofo_class_import_csv(
+			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -879,7 +880,8 @@ import_account_csv( ofaImport *self )
 		return( -1 );
 	}
 
-	ofo_account_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+	ofo_account_import_csv(
+			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -913,7 +915,8 @@ import_devise_csv( ofaImport *self )
 		return( -1 );
 	}
 
-	ofo_devise_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+	ofo_devise_import_csv(
+			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -944,7 +947,8 @@ import_journal_csv( ofaImport *self )
 		return( -1 );
 	}
 
-	ofo_journal_set_csv( ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+	ofo_journal_import_csv(
+			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );

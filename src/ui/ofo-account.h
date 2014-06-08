@@ -107,7 +107,7 @@ gboolean        ofo_account_update          ( ofoAccount *account, const ofoDoss
 gboolean        ofo_account_delete          ( ofoAccount *account, const ofoDossier *dossier );
 
 GSList         *ofo_account_get_csv         ( const ofoDossier *dossier );
-void            ofo_account_set_csv         ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+void            ofo_account_import_csv      ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

@@ -87,7 +87,7 @@ gboolean        ofo_journal_update       ( ofoJournal *journal, const ofoDossier
 gboolean        ofo_journal_delete       ( ofoJournal *journal, const ofoDossier *dossier );
 
 GSList         *ofo_journal_get_csv      ( const ofoDossier *dossier );
-void            ofo_journal_set_csv      ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+void            ofo_journal_import_csv   ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

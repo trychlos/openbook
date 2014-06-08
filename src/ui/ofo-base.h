@@ -73,7 +73,7 @@ typedef struct {
  * file.
  */
 #define OFO_BASE_DEFINE_GLOBAL( V,T )   static ofoBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer \
-											user_data, GObject *finalizing_dossier ){ g_debug( #T "_clear_global:" ); \
+											user_data, GObject *finalizing_dossier ){ g_debug( "ofo_" #T "_clear_global:" ); \
 											if(V){ g_list_foreach((V)->dataset, (GFunc) g_object_unref, NULL ); \
 											g_list_free((V)->dataset ); g_free(V); (V)=NULL; }}
 

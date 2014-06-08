@@ -725,9 +725,9 @@ ofo_class_get_csv( const ofoDossier *dossier )
  * Replace the whole table with the provided datas.
  */
 void
-ofo_class_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
 {
-	static const gchar *thisfn = "ofo_class_set_csv";
+	static const gchar *thisfn = "ofo_class_import_csv";
 	ofoClass *class;
 	GSList *ili, *ico;
 	GList *new_set, *ise;

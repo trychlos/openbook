@@ -1559,9 +1559,9 @@ ofo_account_get_csv( const ofoDossier *dossier )
  * All the balances are set to zero (resp. NULL).
  */
 void
-ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
 {
-	static const gchar *thisfn = "ofo_account_set_csv";
+	static const gchar *thisfn = "ofo_account_import_csv";
 	ofoAccount *account;
 	GSList *ili, *ico;
 	GList *new_set, *ise;

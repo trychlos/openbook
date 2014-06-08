@@ -75,7 +75,7 @@ gboolean        ofo_class_update         ( ofoClass *class, const ofoDossier *do
 gboolean        ofo_class_delete         ( ofoClass *class, const ofoDossier *dossier );
 
 GSList         *ofo_class_get_csv        ( const ofoDossier *dossier );
-void            ofo_class_set_csv        ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+void            ofo_class_import_csv     ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

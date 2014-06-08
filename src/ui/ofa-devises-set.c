@@ -309,7 +309,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDevisesS
 	gtk_tree_model_get( tmodel, b, COL_CODE, &bcod, -1 );
 	bfold = g_utf8_casefold( bcod, -1 );
 
-	g_debug( "on_sort_model: afold=%p, bfold=%p", afold, bfold );
+	/*g_debug( "on_sort_model: afold=%p, bfold=%p", afold, bfold );*/
 	cmp = g_utf8_collate( afold, bfold );
 
 	g_free( acod );
