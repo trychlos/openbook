@@ -51,14 +51,12 @@ struct _ofaDeviseComboPrivate {
 	/* runtime
 	 */
 	GtkComboBox     *combo;
-	gint             current_devise_id;		/* current selection */
 };
 
 /* column ordering in the devise combobox
  */
 enum {
-	COL_ID = 0,
-	COL_CODE,
+	COL_CODE = 0,
 	COL_LABEL,
 	N_COLUMNS
 };
@@ -146,9 +144,9 @@ on_dialog_finalized( ofaDeviseCombo *self, gpointer this_was_the_dialog )
  * ofa_devise_combo_init_dialog:
  */
 ofaDeviseCombo *
-ofa_devise_combo_init_dialog( const ofaDeviseComboParms *parms )
+ofa_devise_combo_init_combo( const ofaDeviseComboParms *parms )
 {
-	static const gchar *thisfn = "ofa_devise_combo_init_dialog";
+	static const gchar *thisfn = "ofa_devise_combo_init_combo";
 	ofaDeviseCombo *self;
 	ofaDeviseComboPrivate *priv;
 	GtkWidget *combo;
@@ -190,7 +188,7 @@ ofa_devise_combo_init_dialog( const ofaDeviseComboParms *parms )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING ));
+			G_TYPE_STRING, G_TYPE_STRING ));
 	gtk_combo_box_set_model( priv->combo, tmodel );
 	g_object_unref( tmodel );
 
@@ -215,11 +213,11 @@ ofa_devise_combo_init_dialog( const ofaDeviseComboParms *parms )
 				GTK_LIST_STORE( tmodel ),
 				&iter,
 				-1,
-				COL_ID,    ofo_devise_get_id( devise ),
 				COL_CODE,  ofo_devise_get_code( devise ),
 				COL_LABEL, ofo_devise_get_label( devise ),
 				-1 );
-		if( parms->initial_id == ofo_devise_get_id( devise )){
+		if( parms->initial_code &&
+				!g_utf8_collate( parms->initial_code, ofo_devise_get_code( devise ))){
 			idx = i;
 		}
 	}
@@ -248,7 +246,6 @@ on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self )
 
 		tmodel = gtk_combo_box_get_model( box );
 		gtk_tree_model_get( tmodel, &iter,
-				COL_ID, &self->private->current_devise_id,
 				COL_CODE, &code,
 				COL_LABEL, &label,
 				-1 );
@@ -263,7 +260,7 @@ on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self )
 
 		if( self->private->pfn ){
 			( *self->private->pfn )
-					( self->private->current_devise_id, code, label, self->private->user_data );
+					( code, self->private->user_data );
 		}
 
 		g_free( label );
@@ -294,21 +291,17 @@ ofa_devise_combo_get_selection( ofaDeviseCombo *self, gchar **code, gchar **labe
 	if( !self->private->dispose_has_run ){
 
 		if( gtk_combo_box_get_active_iter( self->private->combo, &iter )){
-
 			tmodel = gtk_combo_box_get_model( self->private->combo );
 			gtk_tree_model_get( tmodel, &iter,
-					COL_ID,    &id,
 					COL_CODE,  &local_code,
 					COL_LABEL, &local_label,
 					-1 );
-
 			if( code ){
 				*code = g_strdup( local_code );
 			}
 			if( label ){
 				*label = g_strdup( local_label );
 			}
-
 			g_free( local_label );
 			g_free( local_code );
 		}

@@ -61,7 +61,7 @@ struct _ofaAccountPropertiesPrivate {
 	 */
 	gchar          *number;
 	gchar          *label;
-	gint            devise;
+	gchar          *devise;
 	gchar          *type;
 	gchar          *maj_user;
 	GTimeVal        maj_stamp;
@@ -94,7 +94,7 @@ static void      set_ecr_num( ofaAccountProperties *self, gint *num, fnGetInt fn
 static void      set_ecr_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar *wname );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
-static void      on_devise_changed( gint id, const gchar *code, const gchar *label, ofaAccountProperties *self );
+static void      on_devise_changed( const gchar *code, ofaAccountProperties *self );
 static void      on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void      on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *type );
@@ -119,6 +119,7 @@ account_properties_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->number );
 	g_free( priv->label );
+	g_free( priv->devise );
 	g_free( priv->type );
 	g_free( priv->maj_user );
 	g_free( priv );
@@ -247,7 +248,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
-	priv->devise = ofo_account_get_devise( priv->account );
+	priv->devise = g_strdup( ofo_account_get_devise( priv->account ));
 
 	parms.dialog = dialog->prot->dialog;
 	parms.dossier = ofa_base_dialog_get_dossier( dialog );
@@ -257,9 +258,9 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.disp_label = TRUE;
 	parms.pfn = ( ofaDeviseComboCb ) on_devise_changed;
 	parms.user_data = self;
-	parms.initial_id = priv->devise;
+	parms.initial_code = priv->devise;
 
-	ofa_devise_combo_init_dialog( &parms );
+	ofa_devise_combo_init_combo( &parms );
 
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 
@@ -378,9 +379,10 @@ on_label_changed( GtkEntry *entry, ofaAccountProperties *self )
  * ofaDeviseComboCb
  */
 static void
-on_devise_changed( gint id, const gchar *code, const gchar *label, ofaAccountProperties *self )
+on_devise_changed( const gchar *code, ofaAccountProperties *self )
 {
-	self->private->devise = id;
+	g_free( self->private->devise );
+	self->private->devise = g_strdup( code );
 
 	check_for_enable_dlg( self );
 }

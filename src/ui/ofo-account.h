@@ -49,7 +49,7 @@ GType           ofo_account_get_type        ( void ) G_GNUC_CONST;
 
 GList          *ofo_account_get_dataset     ( const ofoDossier *dossier );
 ofoAccount     *ofo_account_get_by_number   ( const ofoDossier *dossier, const gchar *number );
-gboolean        ofo_account_use_devise      ( const ofoDossier *dossier, gint dev_id );
+gboolean        ofo_account_use_devise      ( const ofoDossier *dossier, const gchar *devise );
 
 ofoAccount     *ofo_account_new             ( void );
 
@@ -58,7 +58,7 @@ void            ofo_account_dump_chart      ( GList *chart );
 gint            ofo_account_get_class       ( const ofoAccount *account );
 const gchar    *ofo_account_get_number      ( const ofoAccount *account );
 const gchar    *ofo_account_get_label       ( const ofoAccount *account );
-gint            ofo_account_get_devise      ( const ofoAccount *account );
+const gchar    *ofo_account_get_devise      ( const ofoAccount *account );
 const gchar    *ofo_account_get_notes       ( const ofoAccount *account );
 const gchar    *ofo_account_get_type_account( const ofoAccount *account );
 const gchar    *ofo_account_get_maj_user    ( const ofoAccount *account );
@@ -78,13 +78,13 @@ gdouble         ofo_account_get_bro_cre_mnt ( const ofoAccount *account );
 
 gboolean        ofo_account_is_deletable         ( const ofoAccount *account );
 gboolean        ofo_account_is_root              ( const ofoAccount *account );
-gboolean        ofo_account_is_valid_data        ( const gchar *number, const gchar *label, gint devise, const gchar *type );
+gboolean        ofo_account_is_valid_data        ( const gchar *number, const gchar *label, const gchar *devise, const gchar *type );
 gint            ofo_account_get_class_from_number( const gchar *number );
 gint            ofo_account_get_level_from_number( const gchar *number );
 
 void            ofo_account_set_number      ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label       ( ofoAccount *account, const gchar *label );
-void            ofo_account_set_devise      ( ofoAccount *account, gint devise );
+void            ofo_account_set_devise      ( ofoAccount *account, const gchar *devise );
 void            ofo_account_set_notes       ( ofoAccount *account, const gchar *notes );
 void            ofo_account_set_type        ( ofoAccount *account, const gchar *type );
 void            ofo_account_set_maj_user    ( ofoAccount *account, const gchar *user );

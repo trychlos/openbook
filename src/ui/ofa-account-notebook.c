@@ -111,7 +111,6 @@ static void       set_row( ofaAccountNotebook *self, ofoAccount *account, gboole
 static gboolean   book_activate_page_by_class( ofaAccountNotebook *self, gint class_num );
 static void       on_updated_class_label( ofaAccountNotebook *self, ofoClass *class );
 static void       on_deleted_class_label( ofaAccountNotebook *self, ofoClass *class );
-static void       on_updated_currency_code( ofaAccountNotebook *self, ofoDevise *devise );
 
 static void
 account_notebook_finalize( GObject *instance )
@@ -317,9 +316,6 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 
 	} else if( OFO_IS_CLASS( object )){
 		on_updated_class_label( self, OFO_CLASS( object ));
-
-	} else if( OFO_IS_DEVISE( object )){
-		on_updated_currency_code( self, OFO_DEVISE( object ));
 	}
 }
 
@@ -853,7 +849,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 		}
 
 	} else {
-		devise = ofo_devise_get_by_id( self->private->dossier, ofo_account_get_devise( account ));
+		devise = ofo_devise_get_by_code( self->private->dossier, ofo_account_get_devise( account ));
 		if( !devise ){
 			gdk_rgba_parse( &color, "#800000" );
 			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
@@ -884,7 +880,7 @@ set_row_by_iter( ofaAccountNotebook *self,
 				ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
 		scre = g_strdup_printf( "%.2f",
 				ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
-		devise = ofo_devise_get_by_id( self->private->dossier, ofo_account_get_devise( account ));
+		devise = ofo_devise_get_by_code( self->private->dossier, ofo_account_get_devise( account ));
 		if( devise ){
 			cdev = g_strdup( ofo_devise_get_code( devise ));
 		} else {
@@ -1141,6 +1137,7 @@ ofa_account_notebook_grab_focus( ofaAccountNotebook *self )
 	}
 }
 
+#if 0
 /*
  * the iso code 3a of a currency has changed - update the display
  * this should be very rare
@@ -1185,6 +1182,7 @@ on_updated_currency_code( ofaAccountNotebook *self, ofoDevise *devise )
 		}
 	}
 }
+#endif
 
 /*
  * a class label has changed : update the corresponding tab label

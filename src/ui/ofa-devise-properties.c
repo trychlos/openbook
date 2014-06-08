@@ -29,6 +29,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "ui/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
@@ -52,6 +53,7 @@ struct _ofaDevisePropertiesPrivate {
 	gchar         *code;
 	gchar         *label;
 	gchar         *symbol;
+	gint           digits;
 };
 
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-devise-properties.ui";
@@ -63,6 +65,7 @@ static void      v_init_dialog( ofaBaseDialog *dialog );
 static void      on_code_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self );
+static void      on_digits_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      check_for_enable_dlg( ofaDeviseProperties *self );
 static gboolean  is_dialog_validable( ofaDeviseProperties *self );
 static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
@@ -177,6 +180,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	gchar *title;
 	const gchar *code;
 	GtkEntry *entry;
+	gchar *str;
 
 	priv = OFA_DEVISE_PROPERTIES( dialog )->private;
 
@@ -216,6 +220,15 @@ v_init_dialog( ofaBaseDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), dialog );
 
+	priv->digits = ofo_devise_get_digits( priv->devise );
+	entry = GTK_ENTRY(
+				my_utils_container_get_child_by_name(
+						GTK_CONTAINER( dialog->prot->dialog ), "p1-digits" ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_digits_changed ), dialog );
+	str = g_strdup_printf( "%d", priv->digits ? priv->digits : DEV_DEFAULT_DIGITS );
+	gtk_entry_set_text( entry, str );
+	g_free( str );
+
 	my_utils_init_notes_ex( dialog->prot->dialog, devise );
 	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, devise );
 
@@ -250,6 +263,14 @@ on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self )
 }
 
 static void
+on_digits_changed( GtkEntry *entry, ofaDeviseProperties *self )
+{
+	self->private->digits = atoi( gtk_entry_get_text( entry ));
+
+	check_for_enable_dlg( self );
+}
+
+static void
 check_for_enable_dlg( ofaDeviseProperties *self )
 {
 	GtkWidget *button;
@@ -269,12 +290,12 @@ is_dialog_validable( ofaDeviseProperties *self )
 
 	priv = self->private;
 
-	ok = ofo_devise_is_valid( priv->code, priv->label, priv->symbol );
+	ok = ofo_devise_is_valid( priv->code, priv->label, priv->symbol, priv->digits );
 	if( ok ){
 		exists = ofo_devise_get_by_code(
 				ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )), priv->code );
 		ok &= !exists ||
-				( ofo_devise_get_id( exists ) == ofo_devise_get_id( priv->devise ));
+				( !priv->is_new && !g_utf8_collate( priv->code, ofo_devise_get_code( priv->devise )));
 	}
 
 	return( ok );
@@ -291,15 +312,18 @@ do_update( ofaDeviseProperties *self )
 {
 	ofaDevisePropertiesPrivate *priv;
 	ofoDossier *dossier;
+	gchar *prev_code;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->private;
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
+	prev_code = g_strdup( ofo_devise_get_code( priv->devise ));
 
 	ofo_devise_set_code( priv->devise, priv->code );
 	ofo_devise_set_label( priv->devise, priv->label );
 	ofo_devise_set_symbol( priv->devise, priv->symbol );
+	ofo_devise_set_digits( priv->devise, priv->digits );
 	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, devise );
 
 	if( priv->is_new ){
@@ -307,7 +331,7 @@ do_update( ofaDeviseProperties *self )
 				ofo_devise_insert( priv->devise, dossier );
 	} else {
 		priv->updated =
-				ofo_devise_update( priv->devise, dossier );
+				ofo_devise_update( priv->devise, dossier, prev_code );
 	}
 
 	return( priv->updated );

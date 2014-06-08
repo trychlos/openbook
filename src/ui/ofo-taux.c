@@ -94,7 +94,6 @@ static gboolean       taux_update_main( ofoTaux *taux, const ofoSgbd *sgbd, cons
 static gboolean       taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd );
 static gint           taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo );
 static gint           taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent );
-static gint           taux_cmp_by_ptr( const ofoTaux *a, const ofoTaux *b );
 
 static void
 taux_free_validity( sTauxValid *sval )
@@ -1186,12 +1185,6 @@ taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent )
 		}
 	}
 	return( g_date_compare( &a->begin, &a->end ));
-}
-
-static gint
-taux_cmp_by_ptr( const ofoTaux *a, const ofoTaux *b )
-{
-	return( g_utf8_collate( ofo_taux_get_mnemo( a ), ofo_taux_get_mnemo( b )));
 }
 
 /**

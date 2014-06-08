@@ -90,7 +90,6 @@ static gboolean       model_do_update( ofoModel *model, const ofoSgbd *sgbd, con
 static gboolean       model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
 static gboolean       model_do_delete( ofoModel *model, const ofoSgbd *sgbd );
 static gint           model_cmp_by_mnemo( const ofoModel *a, const gchar *mnemo );
-static gint           model_cmp_by_ptr( const ofoModel *a, const ofoModel *b );
 
 static void
 details_list_free_detail( sModDetail *detail )
@@ -1333,12 +1332,6 @@ static gint
 model_cmp_by_mnemo( const ofoModel *a, const gchar *mnemo )
 {
 	return( g_utf8_collate( ofo_model_get_mnemo( a ), mnemo ));
-}
-
-static gint
-model_cmp_by_ptr( const ofoModel *a, const ofoModel *b )
-{
-	return( g_utf8_collate( ofo_model_get_mnemo( a ), ofo_model_get_mnemo( b )));
 }
 
 /**

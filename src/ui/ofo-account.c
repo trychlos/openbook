@@ -48,7 +48,7 @@ struct _ofoAccountPrivate {
 	 */
 	gchar     *number;
 	gchar     *label;
-	gint       devise;
+	gchar     *devise;
 	gchar     *notes;
 	gchar     *type;
 	gchar     *maj_user;
@@ -78,13 +78,12 @@ static void        on_new_object( ofoDossier *dossier, ofoBase *object, gpointer
 static void        on_new_object_entry( ofoDossier *dossier, ofoEntry *entry );
 static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
-static gint        account_count_for_devise( const ofoSgbd *sgbd, gint dev_id );
+static gint        account_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
 static gboolean    account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
 static gboolean    account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );
 static gboolean    account_do_delete( ofoAccount *account, const ofoSgbd *sgbd );
 static gint        account_cmp_by_number( const ofoAccount *a, const gchar *number );
-static gint        account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
 static gboolean    account_do_drop_content( const ofoSgbd *sgbd );
 
 static void
@@ -102,6 +101,7 @@ ofo_account_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->number );
 	g_free( priv->label );
+	g_free( priv->devise );
 	g_free( priv->type );
 	g_free( priv->notes );
 	g_free( priv->maj_user );
@@ -134,8 +134,6 @@ ofo_account_init( ofoAccount *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofoAccountPrivate, 1 );
-
-	self->private->devise = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -263,7 +261,7 @@ account_load_dataset( void )
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
 	result = ofo_sgbd_query_ex( sgbd,
-			"SELECT CPT_NUMBER,CPT_LABEL,CPT_DEV_ID,CPT_NOTES,CPT_TYPE,"
+			"SELECT CPT_NUMBER,CPT_LABEL,CPT_DEV_CODE,CPT_NOTES,CPT_TYPE,"
 			"	CPT_MAJ_USER,CPT_MAJ_STAMP,"
 			"	CPT_DEB_ECR,CPT_DEB_DATE,CPT_DEB_MNT,"
 			"	CPT_CRE_ECR,CPT_CRE_DATE,CPT_CRE_MNT,"
@@ -284,7 +282,7 @@ account_load_dataset( void )
 		/* devise may be left unset for root accounts, though is
 		 * mandatory for detail ones */
 		if( icol->data ){
-			ofo_account_set_devise( account, atoi(( gchar * ) icol->data ));
+			ofo_account_set_devise( account, ( gchar * ) icol->data );
 		}
 		icol = icol->next;
 		ofo_account_set_notes( account, ( gchar * ) icol->data );
@@ -391,17 +389,18 @@ account_find_by_number( GList *set, const gchar *number )
  * Returns: %TRUE if a recorded account makes use of the specified currency.
  */
 gboolean
-ofo_account_use_devise( const ofoDossier *dossier, gint dev_id )
+ofo_account_use_devise( const ofoDossier *dossier, const gchar *devise )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( devise && g_utf8_strlen( devise, -1 ), FALSE );
 
 	init_global_handlers( dossier );
 
-	return( account_count_for_devise( ofo_dossier_get_sgbd( dossier ), dev_id ) > 0 );
+	return( account_count_for_devise( ofo_dossier_get_sgbd( dossier ), devise ) > 0 );
 }
 
 static gint
-account_count_for_devise( const ofoSgbd *sgbd, gint dev_id )
+account_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
 {
 	gint count;
 	gchar *query;
@@ -410,8 +409,8 @@ account_count_for_devise( const ofoSgbd *sgbd, gint dev_id )
 	count = 0;
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_COMPTES "
-				"	WHERE CPT_DEV_ID=%d",
-					dev_id );
+				"	WHERE CPT_DEV_CODE='%s'",
+					devise );
 
 	result = ofo_sgbd_query_ex( sgbd, query );
 	g_free( query );
@@ -538,17 +537,17 @@ ofo_account_get_label( const ofoAccount *account )
 /**
  * ofo_account_get_devise:
  */
-gint
+const gchar *
 ofo_account_get_devise( const ofoAccount *account )
 {
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), OFO_BASE_UNSET_ID );
+	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->devise );
+		return(( const gchar * ) account->private->devise );
 	}
 
-	return( OFO_BASE_UNSET_ID );
+	return( NULL );
 }
 
 /**
@@ -858,7 +857,7 @@ ofo_account_is_root( const ofoAccount *account )
  * ofo_account_is_valid_data:
  */
 gboolean
-ofo_account_is_valid_data( const gchar *number, const gchar *label, gint devise, const gchar *type )
+ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar *devise, const gchar *type )
 {
 	gunichar code;
 	gint value;
@@ -886,8 +885,10 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, gint devise,
 	is_root = ( type && !g_utf8_collate( type, "R" ));
 
 	/* devise must be set for detail account */
-	if( !is_root && devise <= 0 ){
-		return( FALSE );
+	if( !is_root ){
+		if( !devise || !g_utf8_strlen( devise, -1 )){
+			return( FALSE );
+		}
 	}
 
 	return( TRUE );
@@ -927,13 +928,14 @@ ofo_account_set_label( ofoAccount *account, const gchar *label )
  * ofo_account_set_devise:
  */
 void
-ofo_account_set_devise( ofoAccount *account, gint devise )
+ofo_account_set_devise( ofoAccount *account, const gchar *devise )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		account->private->devise = devise;
+		g_free( account->private->devise );
+		account->private->devise = g_strdup( devise );
 	}
 }
 
@@ -1220,7 +1222,7 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_COMPTES" );
 
 	g_string_append_printf( query,
-			"	(CPT_NUMBER,CPT_LABEL,CPT_DEV_ID,CPT_NOTES,CPT_TYPE,"
+			"	(CPT_NUMBER,CPT_LABEL,CPT_DEV_CODE,CPT_NOTES,CPT_TYPE,"
 			"	CPT_MAJ_USER, CPT_MAJ_STAMP)"
 			"	VALUES ('%s','%s',",
 					ofo_account_get_number( account ),
@@ -1229,7 +1231,7 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 	if( ofo_account_is_root( account )){
 		query = g_string_append( query, "NULL," );
 	} else {
-		g_string_append_printf( query, "%d,", ofo_account_get_devise( account ));
+		g_string_append_printf( query, "'%s',", ofo_account_get_devise( account ));
 	}
 
 	if( notes && g_utf8_strlen( notes, -1 )){
@@ -1319,9 +1321,9 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 	g_string_append_printf( query, "CPT_LABEL='%s',", label );
 
 	if( ofo_account_is_root( account )){
-		query = g_string_append( query, "CPT_DEV_ID=NULL," );
+		query = g_string_append( query, "CPT_DEV_CODE=NULL," );
 	} else {
-		g_string_append_printf( query, "CPT_DEV_ID=%d,", ofo_account_get_devise( account ));
+		g_string_append_printf( query, "CPT_DEV_CODE='%s',", ofo_account_get_devise( account ));
 	}
 
 	if( notes && g_utf8_strlen( notes, -1 )){
@@ -1452,12 +1454,6 @@ account_cmp_by_number( const ofoAccount *a, const gchar *number )
 	return( g_utf8_collate( ofo_account_get_number( a ), number ));
 }
 
-static gint
-account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b )
-{
-	return( g_utf8_collate( ofo_account_get_number( a ), ofo_account_get_number( b )));
-}
-
 /**
  * ofo_account_get_csv:
  */
@@ -1468,9 +1464,8 @@ ofo_account_get_csv( const ofoDossier *dossier )
 	GSList *lines;
 	gchar *str, *stamp;
 	ofoAccount *account;
-	ofoDevise *devise;
 	gchar *sdeb, *scre, *sbrodeb, *sbrocre;
-	const gchar *atype, *notes, *muser;
+	const gchar *devise, *atype, *notes, *muser;
 	const GDate *date;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
@@ -1485,7 +1480,7 @@ ofo_account_get_csv( const ofoDossier *dossier )
 	for( set=st_global->dataset ; set ; set=set->next ){
 		account = OFO_ACCOUNT( set->data );
 
-		devise = ofo_devise_get_by_id( dossier, ofo_account_get_devise( account ));
+		devise = ofo_account_get_devise( account );
 		atype = ofo_account_get_type_account( account );
 		notes = ofo_account_get_notes( account );
 		muser = ofo_account_get_maj_user( account );
@@ -1518,7 +1513,7 @@ ofo_account_get_csv( const ofoDossier *dossier )
 		str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%s;%d;%s;%.2lf;%d;%s;%.2lf;%d;%s;%.2lf;%d;%s;%.2lf",
 				ofo_account_get_number( account ),
 				ofo_account_get_label( account ),
-				devise ? ofo_devise_get_code( devise ) : "",
+				devise ? devise : "",
 				atype ? atype : "",
 				notes ? notes : "",
 				muser ? muser : "",
@@ -1573,9 +1568,8 @@ ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 	gint count;
 	gint errors;
 	gint class;
-	const gchar *str, *dev_code;
+	const gchar *str, *dev_code, *def_dev_code;
 	gchar *type;
-	gint def_dev_id, dev_id;
 	ofoDevise *devise;
 
 	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
@@ -1589,7 +1583,7 @@ ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 	new_set = NULL;
 	count = 0;
 	errors = 0;
-	def_dev_id = ofo_dossier_get_default_devise( dossier );
+	def_dev_code = ofo_dossier_get_default_devise( dossier );
 
 	for( ili=lines ; ili ; ili=ili->next ){
 		count += 1;
@@ -1637,21 +1631,16 @@ ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 			ofo_account_set_type( account, type );
 
 			if( !strcmp( type, "D" )){
-				dev_id = OFO_BASE_UNSET_ID;
 				if( !dev_code || !g_utf8_strlen( str, -1 )){
-					dev_id = def_dev_id;
-				} else {
-					devise = ofo_devise_get_by_code( dossier, dev_code );
-					if( devise ){
-						dev_id = ofo_devise_get_id( devise );
-					}
+					dev_code = def_dev_code;
 				}
-				if( dev_id <= 0 ){
+				devise = ofo_devise_get_by_code( dossier, dev_code );
+				if( !devise ){
 					g_warning( "%s: (line %d) invalid currency: '%s'", thisfn, count, dev_code );
 					errors += 1;
 					continue;
 				}
-				ofo_account_set_devise( account, dev_id );
+				ofo_account_set_devise( account, dev_code );
 			}
 
 			/* notes
@@ -1672,7 +1661,6 @@ ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 
 	if( !errors ){
 		st_global->send_signal_new = FALSE;
-		st_global->send_signal_delete = FALSE;
 
 		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 		st_global->dataset = NULL;
@@ -1689,7 +1677,6 @@ ofo_account_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_ACCOUNT );
 
 		st_global->send_signal_new = TRUE;
-		st_global->send_signal_delete = TRUE;
 	}
 }
 

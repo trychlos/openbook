@@ -62,6 +62,10 @@ typedef struct {
 }
 	ofoDevise;
 
+/* default count of digits on display
+ */
+#define DEV_DEFAULT_DIGITS             2
+
 G_END_DECLS
 
 #endif /* __OFO_DEVISE_DEF_H__ */

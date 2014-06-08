@@ -57,12 +57,13 @@ struct _ofoDossierPrivate {
 	 */
 	gchar      *label;					/* raison sociale */
 	gint        duree_exe;				/* exercice length (in month) */
-	gint        devise;
+	gchar      *devise;
 	gchar      *notes;					/* notes */
 	gchar      *maj_user;
 	GTimeVal    maj_stamp;
 
 	/* all found exercices are loaded on opening
+	 * as a GList * of sDetailExe structures
 	 */
 	GList      *exes;
 
@@ -572,7 +573,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
 			"	CPT_NUMBER       VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
 			"	CPT_LABEL        VARCHAR(80)   NOT NULL        COMMENT 'Account label',"
-			"	CPT_DEV_ID       INTEGER                       COMMENT 'Identifier of the currency of the account',"
+			"	CPT_DEV_CODE     VARCHAR(3)                    COMMENT 'ISO 3A identifier of the currency of the account',"
 			"	CPT_NOTES        VARCHAR(512)                  COMMENT 'Account notes',"
 			"	CPT_TYPE         CHAR(1)                       COMMENT 'Account type, values R/D',"
 			"	CPT_MAJ_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
@@ -595,10 +596,10 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
-			"	DEV_ID        INTEGER NOT NULL AUTO_INCREMENT UNIQUE COMMENT 'Internal identifier of the currency',"
 			"	DEV_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
 			"	DEV_LABEL     VARCHAR(80) NOT NULL                   COMMENT 'Currency label',"
 			"	DEV_SYMBOL    VARCHAR(3)  NOT NULL                   COMMENT 'Label of the currency',"
+			"	DEV_DIGITS    INTEGER     DEFAULT 2                  COMMENT 'Decimal digits on display',"
 			"	DEV_NOTES     VARCHAR(512)                           COMMENT 'Currency notes',"
 			"	DEV_MAJ_USER  VARCHAR(20)                            COMMENT 'User responsible of properties last update',"
 			"	DEV_MAJ_STAMP TIMESTAMP                              COMMENT 'Properties last update timestamp'"
@@ -618,7 +619,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
 			"	DOS_NOTES        VARCHAR(512)                 COMMENT 'Notes',"
 			"	DOS_DUREE_EXE    INTEGER                      COMMENT 'Exercice length in month',"
-			"	DOS_DEV_ID       INTEGER                      COMMENT 'Default currency identifier',"
+			"	DOS_DEV_CODE     VARCHAR(3)                   COMMENT 'Default currency identifier',"
 			"	DOS_MAJ_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
 			"	DOS_MAJ_STAMP    TIMESTAMP NOT NULL           COMMENT 'Properties last update timestamp'"
 			")" )){
@@ -657,10 +658,10 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	ECR_LABEL     VARCHAR(80)                 COMMENT 'Entry label',"
 			"	ECR_REF       VARCHAR(20)                 COMMENT 'Piece reference',"
 			"	ECR_COMPTE    VARCHAR(20)                 COMMENT 'Account number',"
-			"	ECR_DEV_ID    INTEGER                     COMMENT 'Internal identifier of the currency',"
+			"	ECR_DEV_CODE  VARCHAR(3)                  COMMENT 'ISO 3A identifier of the currency',"
 			"	ECR_MONTANT   DECIMAL(15,5)               COMMENT 'Entry amount',"
 			"	ECR_SENS      INTEGER                     COMMENT 'Sens of the entry \\'DB\\' or \\'CR\\'',"
-			"	ECR_JOU_ID    INTEGER                     COMMENT 'Internal identifier of the journal',"
+			"	ECR_JOU_MNEMO VARCHAR(6)                  COMMENT 'Mnemonic identifier of the journal',"
 			"	ECR_STATUS    INTEGER                     COMMENT 'Is the entry validated or deleted ?',"
 			"	ECR_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
 			"	ECR_MAJ_STAMP TIMESTAMP                   COMMENT 'Last update timestamp',"
@@ -673,12 +674,35 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX ("
-			"	JOU_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern journal identifier',"
-			"	JOU_MNEMO     VARCHAR(3) BINARY  NOT NULL UNIQUE COMMENT 'Journal mnemonic',"
+			"	JOU_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Mnemonic identifier of the journal',"
 			"	JOU_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Journal label',"
 			"	JOU_NOTES     VARCHAR(512)                COMMENT 'Journal notes',"
 			"	JOU_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	JOU_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_DEV ("
+			"	JOU_MNEMO       VARCHAR(6) NOT NULL       COMMENT 'Internal journal identifier',"
+			"	JOU_EXE_ID      INTEGER    NOT NULL       COMMENT 'Internal exercice identifier',"
+			"	JOU_DEV_CODE    VARCHAR(3) NOT NULL       COMMENT 'Internal currency identifier',"
+			"	JOU_DEV_CLO_DEB DECIMAL(15,5)             COMMENT 'Debit balance at last closing',"
+			"	JOU_DEV_CLO_CRE DECIMAL(15,5)             COMMENT 'Credit balance at last closing',"
+			"	JOU_DEV_DEB     DECIMAL(15,5)             COMMENT 'Current debit balance',"
+			"	JOU_DEV_CRE     DECIMAL(15,5)             COMMENT 'Current credit balance',"
+			"	CONSTRAINT PRIMARY KEY (JOU_MNEMO,JOU_EXE_ID,JOU_DEV_CODE)"
+			")" )){
+		return( FALSE );
+	}
+
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_EXE ("
+			"	JOU_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal journal identifier',"
+			"	JOU_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
+			"	JOU_EXE_LAST_CLO DATE                     COMMENT 'Last closing date of the exercice',"
+			"	CONSTRAINT PRIMARY KEY (JOU_MNEMO,JOU_EXE_ID)"
 			")" )){
 		return( FALSE );
 	}
@@ -714,35 +738,10 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_DEV ("
-			"	JOU_ID          INTEGER  NOT NULL         COMMENT 'Internal journal identifier',"
-			"	JOU_EXE_ID      INTEGER  NOT NULL         COMMENT 'Internal exercice identifier',"
-			"	JOU_DEV_ID      INTEGER  NOT NULL         COMMENT 'Internal currency identifier',"
-			"	JOU_DEV_CLO_DEB DECIMAL(15,5)             COMMENT 'Debit balance at last closing',"
-			"	JOU_DEV_CLO_CRE DECIMAL(15,5)             COMMENT 'Credit balance at last closing',"
-			"	JOU_DEV_DEB     DECIMAL(15,5)             COMMENT 'Current debit balance',"
-			"	JOU_DEV_CRE     DECIMAL(15,5)             COMMENT 'Current credit balance',"
-			"	CONSTRAINT PRIMARY KEY (JOU_ID,JOU_EXE_ID,JOU_DEV_ID)"
-			")" )){
-		return( FALSE );
-	}
-
-	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_EXE ("
-			"	JOU_ID           INTEGER  NOT NULL        COMMENT 'Internal journal identifier',"
-			"	JOU_EXE_ID       INTEGER  NOT NULL        COMMENT 'Internal exercice identifier',"
-			"	JOU_EXE_LAST_CLO DATE                     COMMENT 'Last closing date of the exercice',"
-			"	CONSTRAINT PRIMARY KEY (JOU_ID,JOU_EXE_ID)"
-			")" )){
-		return( FALSE );
-	}
-
-	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES ("
-			"	MOD_ID        INTEGER NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'Internal model identifier',"
 			"	MOD_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Model mnemonic',"
 			"	MOD_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Model label',"
-			"	MOD_JOU_ID    INTEGER                     COMMENT 'Model journal',"
+			"	MOD_JOU_MNEMO VARCHAR(6)                  COMMENT 'Model journal',"
 			"	MOD_JOU_VER   INTEGER                     COMMENT 'Journal is locked',"
 			"	MOD_NOTES     VARCHAR(512)                COMMENT 'Model notes',"
 			"	MOD_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
@@ -753,8 +752,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES_DET ("
-			"	MOD_ID              INTEGER NOT NULL        COMMENT 'Internal model identifier',"
-			"	MOD_DET_RANG        INTEGER NOT NULL        COMMENT 'Entry number',"
+			"	MOD_MNEMO           VARCHAR(6) NOT NULL     COMMENT 'Internal model identifier',"
+			"	MOD_DET_RANG        INTEGER    NOT NULL     COMMENT 'Entry number',"
 			"	MOD_DET_COMMENT     VARCHAR(80)             COMMENT 'Entry label',"
 			"	MOD_DET_ACCOUNT     VARCHAR(20)             COMMENT 'Account number',"
 			"	MOD_DET_ACCOUNT_VER INTEGER                 COMMENT 'Account number is locked',"
@@ -764,17 +763,16 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	MOD_DET_DEBIT_VER   INTEGER                 COMMENT 'Debit amount is locked',"
 			"	MOD_DET_CREDIT      VARCHAR(80)             COMMENT 'Credit amount',"
 			"	MOD_DET_CREDIT_VER  INTEGER                 COMMENT 'Credit amount is locked',"
-			"	CONSTRAINT PRIMARY KEY (MOD_ID, MOD_DET_RANG)"
+			"	CONSTRAINT PRIMARY KEY (MOD_MNEMO, MOD_DET_RANG)"
 			")" )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX ("
-			"	TAX_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern taux identifier',"
-			"	TAX_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Taux mnemonic',"
-			"	TAX_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Taux label',"
-			"	TAX_NOTES     VARCHAR(512)                COMMENT 'Taux notes',"
+			"	TAX_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Mnemonic identifier of the rate',"
+			"	TAX_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Rate label',"
+			"	TAX_NOTES     VARCHAR(512)                COMMENT 'Rate notes',"
 			"	TAX_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	TAX_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
 			")" )){
@@ -783,11 +781,11 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX_VAL ("
-			"	TAX_ID            INTEGER     NOT NULL    COMMENT 'Intern taux identifier',"
+			"	TAX_MNEMO         VARCHAR(6)  NOT NULL    COMMENT 'Mnemonic identifier of the rate',"
 			"	TAX_VAL_DEB       DATE                    COMMENT 'Validity begin date',"
 			"	TAX_VAL_FIN       DATE                    COMMENT 'Validity end date',"
 			"	TAX_VAL_TAUX      DECIMAL(15,5)           COMMENT 'Taux value',"
-			"	CONSTRAINT PRIMARY KEY (TAX_ID,TAX_VAL_DEB,TAX_VAL_FIN)"
+			"	CONSTRAINT PRIMARY KEY (TAX_MNEMO,TAX_VAL_DEB,TAX_VAL_FIN)"
 			")" )){
 		return( FALSE );
 	}
@@ -864,13 +862,19 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
  * preventing its deletion.
  */
 gboolean
-ofo_dossier_use_devise( const ofoDossier *dossier, gint devise )
+ofo_dossier_use_devise( const ofoDossier *dossier, const gchar *devise )
 {
+	const gchar *default_dev;
+
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( ofo_dossier_get_default_devise( dossier ) == devise );
+		default_dev = ofo_dossier_get_default_devise( dossier );
+
+		if( default_dev && g_utf8_strlen( default_dev, -1 )){
+			return( g_utf8_collate( default_dev, devise ) == 0 );
+		}
 	}
 
 	return( FALSE );
@@ -917,17 +921,17 @@ ofo_dossier_get_exercice_length( const ofoDossier *dossier )
  *
  * Returns: the default currency of the dossier.
  */
-gint
+const gchar *
 ofo_dossier_get_default_devise( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), OFO_BASE_UNSET_ID );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( dossier->private->devise );
+		return(( const gchar * ) dossier->private->devise );
 	}
 
-	return( OFO_BASE_UNSET_ID );
+	return( NULL );
 }
 
 /**
@@ -1210,11 +1214,11 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
  * ofo_dossier_is_valid:
  */
 gboolean
-ofo_dossier_is_valid( const gchar *label, gint duree, gint devise )
+ofo_dossier_is_valid( const gchar *label, gint duree, const gchar *devise )
 {
 	return( label && g_utf8_strlen( label, -1 ) &&
 				duree > 0 &&
-				devise > 0 );
+				devise && g_utf8_strlen( devise, -1 ));
 }
 
 /**
@@ -1252,13 +1256,14 @@ ofo_dossier_set_exercice_length( ofoDossier *dossier, gint duree )
  * ofo_dossier_set_default_devise:
  */
 void
-ofo_dossier_set_default_devise( ofoDossier *dossier, gint dev )
+ofo_dossier_set_default_devise( ofoDossier *dossier, const gchar *devise )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		dossier->private->devise = dev;
+		g_free( dossier->private->devise );
+		dossier->private->devise = g_strdup( devise );
 	}
 }
 
@@ -1446,11 +1451,12 @@ dossier_read_properties( ofoDossier *dossier )
 	gchar *query;
 	GSList *result, *icol;
 	gboolean ok;
+	const gchar *str;
 
 	ok = FALSE;
 
 	query = g_strdup_printf(
-			"SELECT DOS_LABEL,DOS_DUREE_EXE,DOS_NOTES,DOS_DEV_ID,"
+			"SELECT DOS_LABEL,DOS_DUREE_EXE,DOS_NOTES,DOS_DEV_CODE,"
 			"	DOS_MAJ_USER,DOS_MAJ_STAMP "
 			"	FROM OFA_T_DOSSIER "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
@@ -1461,21 +1467,35 @@ dossier_read_properties( ofoDossier *dossier )
 
 	if( result ){
 		icol = ( GSList * ) result->data;
-		ofo_dossier_set_label( dossier, ( gchar * ) icol->data );
-		icol = icol->next;
-		if( icol->data ){
-			ofo_dossier_set_exercice_length( dossier, atoi(( gchar * ) icol->data ));
+		str = icol->data;
+		if( str && g_utf8_strlen( str, -1 )){
+			ofo_dossier_set_label( dossier, str );
 		}
 		icol = icol->next;
-		ofo_dossier_set_notes( dossier, ( gchar * ) icol->data );
-		icol = icol->next;
-		if( icol->data ){
-			ofo_dossier_set_default_devise( dossier, atoi(( gchar * ) icol->data ));
+		str = icol->data;
+		if( str && g_utf8_strlen( str, -1 )){
+			ofo_dossier_set_exercice_length( dossier, atoi( str ));
 		}
 		icol = icol->next;
-		ofo_dossier_set_maj_user( dossier, ( gchar * ) icol->data );
+		str = icol->data;
+		if( str && g_utf8_strlen( str, -1 )){
+			ofo_dossier_set_notes( dossier, str );
+		}
 		icol = icol->next;
-		ofo_dossier_set_maj_stamp( dossier, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		str = icol->data;
+		if( str && g_utf8_strlen( str, -1 )){
+			ofo_dossier_set_default_devise( dossier, str );
+		}
+		icol = icol->next;
+		str = icol->data;
+		if( str && g_utf8_strlen( str, -1 )){
+			ofo_dossier_set_maj_user( dossier, str );
+		}
+		icol = icol->next;
+		str = icol->data;
+		if( str && g_utf8_strlen( str, -1 )){
+			ofo_dossier_set_maj_stamp( dossier, my_utils_stamp_from_str( str ));
+		}
 
 		ok = TRUE;
 		ofo_sgbd_free_result( result );
@@ -1556,6 +1576,7 @@ dossier_do_update( ofoDossier *dossier, ofoSgbd *sgbd, const gchar *user )
 	GString *query;
 	gchar *label, *notes, *stamp;
 	gboolean ok;
+	const gchar *devise;
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_dossier_get_label( dossier ));
@@ -1565,10 +1586,16 @@ dossier_do_update( ofoDossier *dossier, ofoSgbd *sgbd, const gchar *user )
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
 
 	g_string_append_printf( query,
-			"	DOS_LABEL='%s',DOS_DUREE_EXE=%d,DOS_DEV_ID=%d,",
+			"	DOS_LABEL='%s',DOS_DUREE_EXE=%d,",
 					label,
-					ofo_dossier_get_exercice_length( dossier ),
-					ofo_dossier_get_default_devise( dossier ));
+					ofo_dossier_get_exercice_length( dossier ));
+
+	devise = ofo_dossier_get_default_devise( dossier );
+	if( devise && g_utf8_strlen( devise, -1 )){
+		g_string_append_printf( query, "DOS_DEV_CODE='%s',", devise );
+	} else {
+		query = g_string_append( query, "DOS_DEV_CODE=NULL," );
+	}
 
 	if( notes && g_utf8_strlen( notes, -1 )){
 		g_string_append_printf( query, "DOS_NOTES='%s',", notes );
@@ -1603,8 +1630,7 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 {
 	GSList *lines;
 	gchar *str, *stamp;
-	const gchar *notes, *muser;
-	ofoDevise *devise;
+	const gchar *devise, *notes, *muser;
 	GList *exe;
 	sDetailExe *sexe;
 	gchar *sbegin, *send;
@@ -1621,8 +1647,7 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	g_debug( "notes=%s", notes );
 	muser = ofo_dossier_get_maj_user( dossier );
 	stamp = my_utils_str_from_stamp( ofo_dossier_get_maj_stamp( dossier ));
-	devise = ofo_devise_get_by_id( dossier, ofo_dossier_get_default_devise( dossier ));
-	g_debug( "default devise=%d - %s", ofo_dossier_get_default_devise( dossier ), ofo_devise_get_code( devise ));
+	devise = ofo_dossier_get_default_devise( dossier );
 
 	str = g_strdup_printf( "1;%s;%s;%s;%s;%d;%s",
 			ofo_dossier_get_label( dossier ),
@@ -1630,7 +1655,7 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 			muser ? muser : "",
 			muser ? stamp : "",
 			ofo_dossier_get_exercice_length( dossier ),
-			devise ? ofo_devise_get_code( devise ) : "" );
+			devise ? devise : "" );
 
 	g_free( stamp );
 

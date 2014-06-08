@@ -71,11 +71,11 @@ const gchar    *ofo_dossier_get_name                ( const ofoDossier *dossier 
 const gchar    *ofo_dossier_get_user                ( const ofoDossier *dossier );
 const ofoSgbd  *ofo_dossier_get_sgbd                ( const ofoDossier *dossier );
 
-gboolean        ofo_dossier_use_devise              ( const ofoDossier *dossier, gint devise );
+gboolean        ofo_dossier_use_devise              ( const ofoDossier *dossier, const gchar *devise );
 
 const gchar    *ofo_dossier_get_label               ( const ofoDossier *dossier );
 gint            ofo_dossier_get_exercice_length     ( const ofoDossier *dossier );
-gint            ofo_dossier_get_default_devise      ( const ofoDossier *dossier );
+const gchar    *ofo_dossier_get_default_devise      ( const ofoDossier *dossier );
 const gchar    *ofo_dossier_get_notes               ( const ofoDossier *dossier );
 const gchar    *ofo_dossier_get_maj_user            ( const ofoDossier *dossier );
 const GTimeVal *ofo_dossier_get_maj_stamp           ( const ofoDossier *dossier );
@@ -90,11 +90,11 @@ const GDate    *ofo_dossier_get_exe_fin             ( const ofoDossier *dossier,
 const GDate    *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );
 gint            ofo_dossier_get_next_entry_number   ( const ofoDossier *dossier );
 
-gboolean        ofo_dossier_is_valid                ( const gchar *label, gint duree, gint devise );
+gboolean        ofo_dossier_is_valid                ( const gchar *label, gint duree, const gchar *devise );
 
 void            ofo_dossier_set_label               ( ofoDossier *dossier, const gchar *label );
 void            ofo_dossier_set_exercice_length     ( ofoDossier *dossier, gint duree );
-void            ofo_dossier_set_default_devise      ( ofoDossier *dossier, gint id );
+void            ofo_dossier_set_default_devise      ( ofoDossier *dossier, const gchar *devise );
 void            ofo_dossier_set_notes               ( ofoDossier *dossier, const gchar *notes );
 void            ofo_dossier_set_maj_user            ( ofoDossier *dossier, const gchar *user );
 void            ofo_dossier_set_maj_stamp           ( ofoDossier *dossier, const GTimeVal *stamp );

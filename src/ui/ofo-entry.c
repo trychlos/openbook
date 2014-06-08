@@ -54,7 +54,7 @@ struct _ofoEntryPrivate {
 	gchar         *label;
 	gchar         *ref;
 	gchar         *account;
-	gint           dev_id;
+	gchar         *devise;
 	gint           jou_id;
 	gdouble        amount;
 	ofaEntrySens   sens;
@@ -67,14 +67,14 @@ struct _ofoEntryPrivate {
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
 static GList   *entry_load_dataset( const ofoSgbd *sgbd, const gchar *account, ofaEntryConcil mode );
-static gint     entry_count_for_devise( const ofoSgbd *sgbd, gint dev_id );
+static gint     entry_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
 static gint     entry_count_for_journal( const ofoSgbd *sgbd, gint jou_id );
 static gboolean entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 static void     error_journal( gint jou_id );
-static void     error_currency( gint dev_id );
+static void     error_currency( const gchar *devise );
 static void     error_acc_number( void );
 static void     error_account( const gchar *number );
-static void     error_acc_currency( const ofoDossier *dossier, gint dev_id, ofoAccount *account );
+static void     error_acc_currency( const ofoDossier *dossier, const gchar *devise, ofoAccount *account );
 static void     error_entry( const gchar *message );
 static gboolean do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd );
 
@@ -92,6 +92,7 @@ ofo_entry_finalize( GObject *instance )
 
 	/* free data members here */
 	g_free( priv->label );
+	g_free( priv->devise );
 	g_free( priv->ref );
 	g_free( priv->maj_user );
 	g_free( priv );
@@ -123,7 +124,6 @@ ofo_entry_init( ofoEntry *self )
 	self->private = g_new0( ofoEntryPrivate, 1 );
 
 	self->private->number = OFO_BASE_UNSET_ID;
-	self->private->dev_id = OFO_BASE_UNSET_ID;
 	self->private->jou_id = OFO_BASE_UNSET_ID;
 	g_date_clear( &self->private->effect, 1 );
 	g_date_clear( &self->private->operation, 1 );
@@ -173,7 +173,7 @@ entry_load_dataset( const ofoSgbd *sgbd, const gchar *account, ofaEntryConcil mo
 	query = g_string_new( "" );
 	g_string_printf( query,
 				"SELECT ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
-				"	ECR_DEV_ID,ECR_JOU_ID,ECR_MONTANT,ECR_SENS,"
+				"	ECR_DEV_CODE,ECR_JOU_ID,ECR_MONTANT,ECR_SENS,"
 				"	ECR_STATUS,ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_RAPPRO "
 				"	FROM OFA_T_ECRITURES "
 				"	WHERE ECR_COMPTE='%s' AND ECR_STATUS!=2 ",
@@ -211,7 +211,7 @@ entry_load_dataset( const ofoSgbd *sgbd, const gchar *account, ofaEntryConcil mo
 				ofo_entry_set_ref( entry, ( gchar * ) icol->data );
 			}
 			icol = icol->next;
-			ofo_entry_set_devise( entry, atoi(( gchar * ) icol->data ));
+			ofo_entry_set_devise( entry, ( gchar * ) icol->data );
 			icol = icol->next;
 			ofo_entry_set_journal( entry, atoi(( gchar * ) icol->data ));
 			icol = icol->next;
@@ -253,15 +253,15 @@ ofo_entry_free_dataset( GList *dataset )
  * Returns: %TRUE if a recorded entry makes use of the specified currency.
  */
 gboolean
-ofo_entry_use_devise( const ofoDossier *dossier, gint dev_id )
+ofo_entry_use_devise( const ofoDossier *dossier, const gchar *devise )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( entry_count_for_devise( ofo_dossier_get_sgbd( dossier ), dev_id ) > 0 );
+	return( entry_count_for_devise( ofo_dossier_get_sgbd( dossier ), devise ) > 0 );
 }
 
 static gint
-entry_count_for_devise( const ofoSgbd *sgbd, gint dev_id )
+entry_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
 {
 	gint count;
 	gchar *query;
@@ -269,8 +269,8 @@ entry_count_for_devise( const ofoSgbd *sgbd, gint dev_id )
 
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_ECRITURES "
-				"	WHERE ECR_DEV_ID=%d",
-					dev_id );
+				"	WHERE ECR_DEV_CODE='%s'",
+					devise );
 
 	count = 0;
 	result = ofo_sgbd_query_ex( sgbd, query );
@@ -422,17 +422,17 @@ ofo_entry_get_account( const ofoEntry *entry )
 /**
  * ofo_entry_get_devise:
  */
-gint
+const gchar *
 ofo_entry_get_devise( const ofoEntry *entry )
 {
-	g_return_val_if_fail( OFO_IS_ENTRY( entry ), OFO_BASE_UNSET_ID );
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->private->dev_id );
+		return(( const gchar * ) entry->private->devise );
 	}
 
-	return( OFO_BASE_UNSET_ID );
+	return( NULL );
 }
 
 /**
@@ -645,14 +645,15 @@ ofo_entry_set_account( ofoEntry *entry, const gchar *account )
  * ofo_entry_set_devise:
  */
 void
-ofo_entry_set_devise( ofoEntry *entry, gint devise )
+ofo_entry_set_devise( ofoEntry *entry, const gchar *devise )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 	g_return_if_fail( devise > 0 );
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->private->dev_id = devise;
+		g_free( entry->private->devise );
+		entry->private->devise = g_strdup( devise );
 	}
 }
 
@@ -779,7 +780,7 @@ ofoEntry *
 ofo_entry_new_with_data( const ofoDossier *dossier,
 							const GDate *effet, const GDate *ope, const gchar *label,
 							const gchar *ref, const gchar *acc_number,
-							gint dev_id, gint jou_id, gdouble amount, ofaEntrySens sens )
+							const gchar *devise, gint jou_id, gdouble amount, ofaEntrySens sens )
 {
 	ofoEntry *entry;
 	ofoAccount *account;
@@ -788,8 +789,8 @@ ofo_entry_new_with_data( const ofoDossier *dossier,
 		error_journal( jou_id );
 		return( NULL );
 	}
-	if( dev_id <= 0 || !ofo_devise_get_by_id( dossier, dev_id )){
-		error_currency( dev_id );
+	if( !devise || !g_utf8_strlen( devise, -1 ) || !ofo_devise_get_by_code( dossier, devise )){
+		error_currency( devise );
 		return( NULL );
 	}
 	if( !acc_number || !g_utf8_strlen( acc_number, -1 )){
@@ -801,8 +802,8 @@ ofo_entry_new_with_data( const ofoDossier *dossier,
 		error_account( acc_number );
 		return( NULL );
 	}
-	if( dev_id != ofo_account_get_devise( account )){
-		error_acc_currency( dossier, dev_id, account );
+	if( g_utf8_collate( devise, ofo_account_get_devise( account ))){
+		error_acc_currency( dossier, devise, account );
 		return( NULL );
 	}
 
@@ -813,7 +814,7 @@ ofo_entry_new_with_data( const ofoDossier *dossier,
 	entry->private->label = g_strdup( label );
 	entry->private->ref = g_strdup( ref );
 	entry->private->account = g_strdup( acc_number );
-	entry->private->dev_id = dev_id;
+	entry->private->devise = g_strdup( devise );
 	entry->private->jou_id = jou_id;
 	entry->private->amount = amount;
 	entry->private->sens = sens;
@@ -871,7 +872,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	(ECR_DEFFET,ECR_NUMBER,ECR_DOPE,ECR_LABEL,ECR_REF,ECR_COMPTE,"
-			"	ECR_DEV_ID,ECR_JOU_ID,ECR_MONTANT,ECR_SENS,ECR_STATUS,"
+			"	ECR_DEV_CODE,ECR_JOU_ID,ECR_MONTANT,ECR_SENS,ECR_STATUS,"
 			"	ECR_MAJ_USER, ECR_MAJ_STAMP) "
 			"	VALUES ('%s',%d,'%s','%s',",
 			deff,
@@ -887,7 +888,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 				"'%s',"
-				"%d,%d,%s,%d,%d,"
+				"'%s',%d,%s,%d,%d,"
 				"'%s','%s')",
 				ofo_entry_get_account( entry ),
 				ofo_entry_get_devise( entry ),
@@ -928,11 +929,11 @@ error_journal( gint jou_id )
 }
 
 static void
-error_currency( gint dev_id )
+error_currency( const gchar *devise )
 {
 	gchar *str;
 
-	str = g_strdup_printf( _( "Invalid currency identifier: %d" ), dev_id );
+	str = g_strdup_printf( _( "Invalid currency ISO 3A code: %s" ), devise );
 	error_entry( str );
 
 	g_free( str );
@@ -961,26 +962,27 @@ error_account( const gchar *number )
 }
 
 static void
-error_acc_currency( const ofoDossier *dossier, gint dev_id, ofoAccount *account )
+error_acc_currency( const ofoDossier *dossier, const gchar *devise, ofoAccount *account )
 {
 	gchar *str;
-	gint ai_dev;
-	ofoDevise *a_dev, *e_dev;
+	const gchar *acc_dev_code;
+	ofoDevise *acc_dev, *ent_dev;
 
-	ai_dev = ofo_account_get_devise( account );
-	a_dev = ofo_devise_get_by_id( dossier, ai_dev );
-	e_dev = ofo_devise_get_by_id( dossier, dev_id );
+	acc_dev_code = ofo_account_get_devise( account );
+	acc_dev = ofo_devise_get_by_code( dossier, acc_dev_code );
+	ent_dev = ofo_devise_get_by_code( dossier, devise );
 
-	if( !a_dev ){
-		str = g_strdup_printf( "Invalid currency for the account: %d", ai_dev );
-	} else if( !e_dev ){
-		str = g_strdup_printf( "Candidate entry makes use of invalid currency: %d", dev_id );
+	if( !acc_dev ){
+		str = g_strdup_printf( "Invalid currency '%s' for the account '%s'",
+					acc_dev_code, ofo_account_get_number( account ));
+	} else if( !ent_dev ){
+		str = g_strdup_printf( "Candidate entry makes use of invalid '%s' currency", devise );
 	} else {
 		str = g_strdup_printf( _( "Account %s is configured for accepting %s currency. "
 				"But the candidate entry makes use of %s" ),
 					ofo_account_get_number( account ),
-					ofo_devise_get_code( a_dev ),
-					ofo_devise_get_code( e_dev ));
+					acc_dev_code,
+					devise );
 	}
 	error_entry( str );
 
@@ -1089,13 +1091,12 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 	gchar *str;
 	gchar *sdope, *sdeffet, *sdrappro, *stamp;
 	const gchar *sref, *muser;
-	ofoDevise *devise;
 	ofoJournal *journal;
 	const GDate *date;
 
 	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ),
 					"SELECT ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
-					"	ECR_DEV_ID,ECR_JOU_ID,ECR_COMPTE,ECR_MONTANT,ECR_SENS,"
+					"	ECR_DEV_CODE,ECR_JOU_ID,ECR_COMPTE,ECR_MONTANT,ECR_SENS,"
 					"	ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_STATUS,ECR_RAPPRO "
 					"	FROM OFA_T_ECRITURES "
 					"	ORDER BY ECR_NUMBER ASC" );
@@ -1119,7 +1120,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		icol = icol->next;
 		ofo_entry_set_ref( entry, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_entry_set_devise( entry, atoi(( gchar * ) icol->data ));
+		ofo_entry_set_devise( entry, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_entry_set_journal( entry, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
@@ -1140,7 +1141,6 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		sdope = my_utils_sql_from_date( ofo_entry_get_dope( entry ));
 		sdeffet = my_utils_sql_from_date( ofo_entry_get_deffect( entry ));
 		sref = ofo_entry_get_ref( entry );
-		devise = ofo_devise_get_by_id( dossier, ofo_entry_get_devise( entry ));
 		journal = ofo_journal_get_by_id( dossier, ofo_entry_get_journal( entry ));
 		muser = ofo_entry_get_maj_user( entry );
 		stamp = my_utils_str_from_stamp( ofo_entry_get_maj_stamp( entry ));
@@ -1158,7 +1158,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 				ofo_entry_get_number( entry ),
 				ofo_entry_get_label( entry ),
 				sref ? sref : "",
-				devise ? ofo_devise_get_code( devise ) : "",
+				ofo_entry_get_devise( entry ),
 				journal ? ofo_journal_get_mnemo( journal ) : "",
 				ofo_entry_get_account( entry ),
 				ofo_entry_get_amount( entry ),

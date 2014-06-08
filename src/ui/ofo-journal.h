@@ -49,7 +49,7 @@ GType           ofo_journal_get_type     ( void ) G_GNUC_CONST;
 GList          *ofo_journal_get_dataset  ( const ofoDossier *dossier );
 ofoJournal     *ofo_journal_get_by_id    ( const ofoDossier *dossier, gint id );
 ofoJournal     *ofo_journal_get_by_mnemo ( const ofoDossier *dossier, const gchar *mnemo );
-gboolean        ofo_journal_use_devise   ( const ofoDossier *dossier, gint dev_id );
+gboolean        ofo_journal_use_devise   ( const ofoDossier *dossier, const gchar *devise );
 
 ofoJournal     *ofo_journal_new          ( void );
 
@@ -60,10 +60,10 @@ const gchar    *ofo_journal_get_notes    ( const ofoJournal *journal );
 const gchar    *ofo_journal_get_maj_user ( const ofoJournal *journal );
 const GTimeVal *ofo_journal_get_maj_stamp( const ofoJournal *journal );
 
-gdouble         ofo_journal_get_clo_deb  ( const ofoJournal *journal, gint exe_id, gint dev_id );
-gdouble         ofo_journal_get_clo_cre  ( const ofoJournal *journal, gint exe_id, gint dev_id );
-gdouble         ofo_journal_get_deb      ( const ofoJournal *journal, gint exe_id, gint dev_id );
-gdouble         ofo_journal_get_cre      ( const ofoJournal *journal, gint exe_id, gint dev_id );
+gdouble         ofo_journal_get_clo_deb  ( const ofoJournal *journal, gint exe_id, const gchar *devise );
+gdouble         ofo_journal_get_clo_cre  ( const ofoJournal *journal, gint exe_id, const gchar *devise );
+gdouble         ofo_journal_get_deb      ( const ofoJournal *journal, gint exe_id, const gchar *devise );
+gdouble         ofo_journal_get_cre      ( const ofoJournal *journal, gint exe_id, const gchar *devise );
 
 const GDate    *ofo_journal_get_cloture  ( const ofoJournal *journal, gint exe_id );
 
@@ -77,10 +77,10 @@ void            ofo_journal_set_notes    ( ofoJournal *journal, const gchar *not
 void            ofo_journal_set_maj_user ( ofoJournal *journal, const gchar *user );
 void            ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *stamp );
 
-void            ofo_journal_set_clo_deb  ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
-void            ofo_journal_set_clo_cre  ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
-void            ofo_journal_set_deb      ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
-void            ofo_journal_set_cre      ( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount );
+void            ofo_journal_set_clo_deb  ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
+void            ofo_journal_set_clo_cre  ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
+void            ofo_journal_set_deb      ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
+void            ofo_journal_set_cre      ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
 
 gboolean        ofo_journal_insert       ( ofoJournal *journal, const ofoDossier *dossier );
 gboolean        ofo_journal_update       ( ofoJournal *journal, const ofoDossier *dossier );

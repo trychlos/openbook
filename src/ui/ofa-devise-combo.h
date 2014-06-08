@@ -67,12 +67,10 @@ typedef struct {
  * A callback to be triggered when a new currency is selected.
  *
  * Passed parameters are:
- * - intern identifier
  * - ISO 3A code
- * - label
  * - user_data provided at init_dialog() time
  */
-typedef void ( *ofaDeviseComboCb )( gint, const gchar *, const gchar *, gpointer );
+typedef void ( *ofaDeviseComboCb )( const gchar *, gpointer );
 
 /**
  * ofaDeviseComboParms
@@ -90,7 +88,8 @@ typedef void ( *ofaDeviseComboCb )( gint, const gchar *, const gchar *, gpointer
  * @pfn: [allow-none]: a user-provided callback which will be triggered
  *  on each selection change
  * @user_data: user-data passed to the callback
- * @initial_id: the devise identifier of the initial selection, or -1
+ * @initial_code: the ISO 3A identifier of the initially selected
+ *  currency, or NULL
  */
 typedef struct {
 	GtkDialog        *dialog;
@@ -101,13 +100,13 @@ typedef struct {
 	gboolean          disp_label;
 	ofaDeviseComboCb  pfn;
 	gpointer          user_data;
-	gint              initial_id;
+	const gchar      *initial_code;
 }
 	ofaDeviseComboParms;
 
 GType           ofa_devise_combo_get_type     ( void ) G_GNUC_CONST;
 
-ofaDeviseCombo *ofa_devise_combo_init_dialog  ( const ofaDeviseComboParms *parms );
+ofaDeviseCombo *ofa_devise_combo_init_combo   ( const ofaDeviseComboParms *parms );
 
 gint            ofa_devise_combo_get_selection( ofaDeviseCombo *self, gchar **code, gchar **label );
 

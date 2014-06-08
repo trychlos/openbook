@@ -54,7 +54,6 @@ typedef struct {
 	GList    *dataset;
 	ofoBase  *dossier;
 	gboolean  send_signal_new;
-	gboolean  send_signal_delete;
 }
 	ofoBaseGlobal;
 
@@ -73,9 +72,10 @@ typedef struct {
  * This macro is to be invoked at the toplevel, once in each source
  * file.
  */
-#define OFO_BASE_DEFINE_GLOBAL( V,T )       static ofoBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer user_data, GObject *finalizing_dossier ) \
-												{ g_debug( #T "_clear_global:" ); if(V){ g_list_foreach((V)->dataset, (GFunc) g_object_unref, NULL ); \
-												g_list_free((V)->dataset ); g_free(V); (V)=NULL; }}
+#define OFO_BASE_DEFINE_GLOBAL( V,T )   static ofoBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer \
+											user_data, GObject *finalizing_dossier ){ g_debug( #T "_clear_global:" ); \
+											if(V){ g_list_foreach((V)->dataset, (GFunc) g_object_unref, NULL ); \
+											g_list_free((V)->dataset ); g_free(V); (V)=NULL; }}
 
 /**
  * OFO_BASE_SET_GLOBAL:
@@ -101,8 +101,8 @@ typedef struct {
  * order to be sure the global structure is available.
  * It is safe to invoke it many times, as it is auto-protected.
  */
-#define OFO_BASE_SET_GLOBAL( P,D,T )        ({ (P)=ofo_base_get_global((P),OFO_BASE(D),(GWeakNotify)(T ## _clear_global),NULL); \
-												if(!(P)->dataset){ (P)->dataset=(T ## _load_dataset)();} })
+#define OFO_BASE_SET_GLOBAL( P,D,T )    ({ (P)=ofo_base_get_global((P),OFO_BASE(D),(GWeakNotify)(T ## _clear_global), \
+											NULL); if(!(P)->dataset){ (P)->dataset=(T ## _load_dataset)();} })
 
 /**
  * OFO_BASE_ADD_TO_DATASET:
@@ -114,15 +114,14 @@ typedef struct {
  * ex: OFO_BASE_ADD_TO_DATASET( st_global, class )
  *
  * a) insert the 'T' object (named <T> and of type OFO_TYPE_<T>) in the
- *    global dataset, keeping it sorted by calling the <T>_cmp_by_ptr()
- *    method
+ *    global dataset
  *
  * b) send a OFA_SIGNAL_NEW_OBJECT signal to the opened dossier,
  *    associated to the <T> object
  */
-#define OFO_BASE_ADD_TO_DATASET( P,T )      ({ (P)->dataset=g_list_insert_sorted((P)->dataset,(T),(GCompareFunc)(T ## _cmp_by_ptr)); \
-												if((P)->send_signal_new){ g_signal_emit_by_name( G_OBJECT((P)->dossier), \
-												OFA_SIGNAL_NEW_OBJECT, g_object_ref(T)); }})
+#define OFO_BASE_ADD_TO_DATASET( P,T )  ({ (P)->dataset=g_list_prepend((P)->dataset,(T)); if((P)->send_signal_new) \
+											{ g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_NEW_OBJECT, \
+											g_object_ref(T)); }})
 
 /**
  * OFO_BASE_REMOVE_FROM_DATASET:
@@ -140,9 +139,8 @@ typedef struct {
  * b) send a OFA_SIGNAL_DELETED_OBJECT signal to the opened dossier,
  *    associated to the <T> object
  */
-#define OFO_BASE_REMOVE_FROM_DATASET( P,T ) ({ (P)->dataset=g_list_remove((P)->dataset,(T)); \
-												if((P)->send_signal_delete){ g_signal_emit_by_name( G_OBJECT((P)->dossier), \
-												OFA_SIGNAL_DELETED_OBJECT, (T)); }})
+#define OFO_BASE_REMOVE_FROM_DATASET( P,T ) ({ (P)->dataset=g_list_remove((P)->dataset,(T)); g_signal_emit_by_name( \
+											G_OBJECT((P)->dossier), OFA_SIGNAL_DELETED_OBJECT, (T)); })
 
 /**
  * OFO_BASE_UPDATE_DATASET:
@@ -154,23 +152,18 @@ typedef struct {
  *
  * ex: OFO_BASE_UPDATE_DATASET( st_global, class, prev_number )
  *
- * a) remove the <T> object and reinsert it in the global dataset,
- *    keeping this later sorted by calling the <T>_cmp_by_ptr() method
- *
- * b) send a OFA_SIGNAL_UPDATED_OBJECT signal to the opened dossier,
+ * a) send a OFA_SIGNAL_UPDATED_OBJECT signal to the opened dossier,
  *    associated to the <T> object; the previous identifier is passed
  *    as an argument for tree views updates
  */
-#define OFO_BASE_UPDATE_DATASET( P,T,I )    ({ (P)->send_signal_new=FALSE; (P)->send_signal_delete=FALSE; g_object_ref(T); \
-												OFO_BASE_REMOVE_FROM_DATASET((P),(T)); OFO_BASE_ADD_TO_DATASET((P),T); \
-												g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_UPDATED_OBJECT, \
-												g_object_ref(T),(I)); (P)->send_signal_new=TRUE; (P)->send_signal_delete=TRUE; })
+#define OFO_BASE_UPDATE_DATASET( P,T,I )    ({ g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_UPDATED_OBJECT, \
+												g_object_ref(T),(I)); })
 
 #define OFO_BASE_UNSET_ID                   -1
 
-GType          ofo_base_get_type    ( void ) G_GNUC_CONST;
+GType          ofo_base_get_type  ( void ) G_GNUC_CONST;
 
-ofoBaseGlobal *ofo_base_get_global  ( ofoBaseGlobal *ptr,
+ofoBaseGlobal *ofo_base_get_global( ofoBaseGlobal *ptr,
 										ofoBase *dossier, GWeakNotify fn, gpointer user_data );
 
 G_END_DECLS

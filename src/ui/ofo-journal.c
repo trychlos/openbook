@@ -60,7 +60,7 @@ struct _ofoJournalPrivate {
 typedef struct {
 	gboolean is_new;					/* will be recorded by INSERT instead of UPDATE */
 	gint     exe_id;
-	gint     dev_id;
+	gchar   *devise;
 	gdouble  clo_deb;
 	gdouble  clo_cre;
 	gdouble  deb;
@@ -82,27 +82,28 @@ OFO_BASE_DEFINE_GLOBAL( st_global, journal )
 static gboolean st_connected = FALSE;
 
 static void        init_global_handlers( const ofoDossier *dossier );
-/*static void        on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data );*/
 static GList      *journal_load_dataset( void );
 static ofoJournal *journal_find_by_id( GList *set, gint id );
 static ofoJournal *journal_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint        journal_count_for_devise( const ofoSgbd *sgbd, gint dev_id );
-static sDetailDev *journal_find_dev_by_id( const ofoJournal *journal, gint exe_id, gint dev_id );
+static gint        journal_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
+static sDetailDev *journal_find_dev_by_id( const ofoJournal *journal, gint exe_id, const gchar *devise );
 static sDetailExe *journal_find_exe_by_id( const ofoJournal *journal, gint exe_id );
-static sDetailDev *journal_new_dev_with_id( ofoJournal *journal, gint exe_id, gint dev_id );
-/*static gboolean    journal_dev_is_new( ofoJournal *journal, gint exe_id, gint dev_id );
-static void        journal_dev_set_new( ofoJournal *journal, gint exe_id, gint dev_id, gboolean is_new );*/
+static sDetailDev *journal_new_dev_with_id( ofoJournal *journal, gint exe_id, const gchar *devise );
 static gboolean    journal_do_insert( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    journal_get_back_id( ofoJournal *journal, const ofoSgbd *sgbd );
-/*static gboolean       journal_insert_details( ofoJournal *journal, ofoSgbd *sgbd );*/
 static gboolean    journal_do_update( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
-/*static gboolean    journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofoSgbd *sgbd );*/
 static gboolean    journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd );
 static gint        journal_cmp_by_id( const ofoJournal *a, gconstpointer b );
 static gint        journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo );
-static gint        journal_cmp_by_ptr( const ofoJournal *a, const ofoJournal *b );
 static gboolean    journal_do_drop_content( const ofoSgbd *sgbd );
+
+static void
+free_detail_dev( sDetailDev *detail )
+{
+	g_free( detail->devise );
+	g_free( detail );
+}
 
 static void
 ofo_journal_finalize( GObject *instance )
@@ -121,7 +122,7 @@ ofo_journal_finalize( GObject *instance )
 	g_free( priv->label );
 	g_free( priv->notes );
 	g_free( priv->maj_user );
-	g_list_free_full( priv->amounts, ( GDestroyNotify ) g_free );
+	g_list_free_full( priv->amounts, ( GDestroyNotify ) free_detail_dev );
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -293,7 +294,7 @@ journal_load_dataset( void )
 		journal = OFO_JOURNAL( iset->data );
 
 		query = g_strdup_printf(
-				"SELECT JOU_EXE_ID,JOU_DEV_ID,"
+				"SELECT JOU_EXE_ID,JOU_DEV_CODE,"
 				"	JOU_DEV_CLO_DEB,JOU_DEV_CLO_CRE,JOU_DEV_DEB,JOU_DEV_CRE "
 				"	FROM OFA_T_JOURNAUX_DEV "
 				"	WHERE JOU_ID=%d "
@@ -308,7 +309,7 @@ journal_load_dataset( void )
 			balance = g_new0( sDetailDev, 1 );
 			balance->exe_id = atoi(( gchar * ) icol->data );
 			icol = icol->next;
-			balance->dev_id = atoi(( gchar * ) icol->data );
+			balance->devise = g_strdup(( gchar * ) icol->data );
 			icol = icol->next;
 			balance->clo_deb = g_ascii_strtod(( gchar * ) icol->data, NULL );
 			icol = icol->next;
@@ -424,15 +425,15 @@ journal_find_by_mnemo( GList *set, const gchar *mnemo )
  * currency.
  */
 gboolean
-ofo_journal_use_devise( const ofoDossier *dossier, gint dev_id )
+ofo_journal_use_devise( const ofoDossier *dossier, const gchar *devise )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( journal_count_for_devise( ofo_dossier_get_sgbd( dossier ), dev_id ) > 0 );
+	return( journal_count_for_devise( ofo_dossier_get_sgbd( dossier ), devise ) > 0 );
 }
 
 static gint
-journal_count_for_devise( const ofoSgbd *sgbd, gint dev_id )
+journal_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
 {
 	gint count;
 	gchar *query;
@@ -440,8 +441,8 @@ journal_count_for_devise( const ofoSgbd *sgbd, gint dev_id )
 
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_JOURNAUX_DEV "
-				"	WHERE JOU_DEV_ID=%d",
-					dev_id );
+				"	WHERE JOU_DEV_CODE='%s'",
+					devise );
 
 	count = 0;
 	result = ofo_sgbd_query_ex( sgbd, query );
@@ -581,7 +582,7 @@ ofo_journal_get_maj_stamp( const ofoJournal *journal )
  * the currency specified, or zero if not found.
  */
 gdouble
-ofo_journal_get_clo_deb( const ofoJournal *journal, gint exe_id, gint dev_id )
+ofo_journal_get_clo_deb( const ofoJournal *journal, gint exe_id, const gchar *devise )
 {
 	sDetailDev *sdev;
 
@@ -589,7 +590,7 @@ ofo_journal_get_clo_deb( const ofoJournal *journal, gint exe_id, gint dev_id )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		sdev = journal_find_dev_by_id( journal, exe_id, dev_id );
+		sdev = journal_find_dev_by_id( journal, exe_id, devise );
 		if( sdev ){
 			return( sdev->clo_deb );
 		}
@@ -608,7 +609,7 @@ ofo_journal_get_clo_deb( const ofoJournal *journal, gint exe_id, gint dev_id )
  * the currency specified, or zero if not found.
  */
 gdouble
-ofo_journal_get_clo_cre( const ofoJournal *journal, gint exe_id, gint dev_id )
+ofo_journal_get_clo_cre( const ofoJournal *journal, gint exe_id, const gchar *devise )
 {
 	sDetailDev *sdev;
 
@@ -616,7 +617,7 @@ ofo_journal_get_clo_cre( const ofoJournal *journal, gint exe_id, gint dev_id )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		sdev = journal_find_dev_by_id( journal, exe_id, dev_id );
+		sdev = journal_find_dev_by_id( journal, exe_id, devise );
 		if( sdev ){
 			return( sdev->clo_cre );
 		}
@@ -635,7 +636,7 @@ ofo_journal_get_clo_cre( const ofoJournal *journal, gint exe_id, gint dev_id )
  * the currency specified, or zero if not found.
  */
 gdouble
-ofo_journal_get_deb( const ofoJournal *journal, gint exe_id, gint dev_id )
+ofo_journal_get_deb( const ofoJournal *journal, gint exe_id, const gchar *devise )
 {
 	sDetailDev *sdev;
 
@@ -643,7 +644,7 @@ ofo_journal_get_deb( const ofoJournal *journal, gint exe_id, gint dev_id )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		sdev = journal_find_dev_by_id( journal, exe_id, dev_id );
+		sdev = journal_find_dev_by_id( journal, exe_id, devise );
 		if( sdev ){
 			return( sdev->deb );
 		}
@@ -662,7 +663,7 @@ ofo_journal_get_deb( const ofoJournal *journal, gint exe_id, gint dev_id )
  * the currency specified, or zero if not found.
  */
 gdouble
-ofo_journal_get_cre( const ofoJournal *journal, gint exe_id, gint dev_id )
+ofo_journal_get_cre( const ofoJournal *journal, gint exe_id, const gchar *devise )
 {
 	sDetailDev *sdev;
 
@@ -670,7 +671,7 @@ ofo_journal_get_cre( const ofoJournal *journal, gint exe_id, gint dev_id )
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		sdev = journal_find_dev_by_id( journal, exe_id, dev_id );
+		sdev = journal_find_dev_by_id( journal, exe_id, devise );
 		if( sdev ){
 			return( sdev->cre );
 		}
@@ -701,14 +702,14 @@ ofo_journal_get_cloture( const ofoJournal *journal, gint exe_id )
 }
 
 static sDetailDev *
-journal_find_dev_by_id( const ofoJournal *journal, gint exe_id, gint dev_id )
+journal_find_dev_by_id( const ofoJournal *journal, gint exe_id, const gchar *devise )
 {
 	GList *idet;
 	sDetailDev *sdet;
 
 	for( idet=journal->private->amounts ; idet ; idet=idet->next ){
 		sdet = ( sDetailDev * ) idet->data;
-		if( sdet->exe_id == exe_id && sdet->dev_id == dev_id ){
+		if( sdet->exe_id == exe_id && !g_utf8_collate( sdet->devise, devise )){
 			return( sdet );
 		}
 	}
@@ -896,7 +897,7 @@ ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *maj_stamp )
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_journal_set_clo_deb( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount )
+ofo_journal_set_clo_deb( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount )
 {
 	sDetailDev *sdev;
 
@@ -904,7 +905,7 @@ ofo_journal_set_clo_deb( ofoJournal *journal, gint exe_id, gint dev_id, gdouble 
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		sdev = journal_new_dev_with_id( journal, exe_id, dev_id );
+		sdev = journal_new_dev_with_id( journal, exe_id, devise );
 		g_return_if_fail( sdev );
 
 		sdev->clo_deb += amount;
@@ -923,7 +924,7 @@ ofo_journal_set_clo_deb( ofoJournal *journal, gint exe_id, gint dev_id, gdouble 
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_journal_set_clo_cre( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount )
+ofo_journal_set_clo_cre( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount )
 {
 	sDetailDev *sdev;
 
@@ -931,7 +932,7 @@ ofo_journal_set_clo_cre( ofoJournal *journal, gint exe_id, gint dev_id, gdouble 
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		sdev = journal_new_dev_with_id( journal, exe_id, dev_id );
+		sdev = journal_new_dev_with_id( journal, exe_id, devise );
 		g_return_if_fail( sdev );
 
 		sdev->clo_cre += amount;
@@ -950,7 +951,7 @@ ofo_journal_set_clo_cre( ofoJournal *journal, gint exe_id, gint dev_id, gdouble 
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_journal_set_deb( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount )
+ofo_journal_set_deb( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount )
 {
 	sDetailDev *sdev;
 
@@ -958,7 +959,7 @@ ofo_journal_set_deb( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amou
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		sdev = journal_new_dev_with_id( journal, exe_id, dev_id );
+		sdev = journal_new_dev_with_id( journal, exe_id, devise );
 		g_return_if_fail( sdev );
 
 		sdev->deb += amount;
@@ -977,7 +978,7 @@ ofo_journal_set_deb( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amou
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_journal_set_cre( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amount )
+ofo_journal_set_cre( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount )
 {
 	sDetailDev *sdev;
 
@@ -985,7 +986,7 @@ ofo_journal_set_cre( ofoJournal *journal, gint exe_id, gint dev_id, gdouble amou
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
 
-		sdev = journal_new_dev_with_id( journal, exe_id, dev_id );
+		sdev = journal_new_dev_with_id( journal, exe_id, devise );
 		g_return_if_fail( sdev );
 
 		sdev->cre += amount;
@@ -1008,11 +1009,11 @@ ofo_journal_set_cloture( ofoJournal *journal, const GDate *date )
 }*/
 
 static sDetailDev *
-journal_new_dev_with_id( ofoJournal *journal, gint exe_id, gint dev_id )
+journal_new_dev_with_id( ofoJournal *journal, gint exe_id, const gchar *devise )
 {
 	sDetailDev *sdet;
 
-	sdet = journal_find_dev_by_id( journal, exe_id, dev_id );
+	sdet = journal_find_dev_by_id( journal, exe_id, devise );
 
 	if( !sdet ){
 		sdet = g_new0( sDetailDev, 1 );
@@ -1022,7 +1023,7 @@ journal_new_dev_with_id( ofoJournal *journal, gint exe_id, gint dev_id )
 		sdet->deb = 0.0;
 		sdet->cre = 0.0;
 		sdet->exe_id = exe_id;
-		sdet->dev_id = dev_id;
+		sdet->devise = g_strdup( devise );
 
 		sdet->is_new = TRUE;
 		journal->private->amounts = g_list_prepend( journal->private->amounts, sdet );
@@ -1372,12 +1373,6 @@ journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo )
 	return( g_utf8_collate( ofo_journal_get_mnemo( a ), mnemo ));
 }
 
-static gint
-journal_cmp_by_ptr( const ofoJournal *a, const ofoJournal *b )
-{
-	return( g_utf8_collate( ofo_journal_get_mnemo( a ), ofo_journal_get_mnemo( b )));
-}
-
 /**
  * ofo_journal_get_csv:
  */
@@ -1391,7 +1386,6 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 	sDetailExe *sexe;
 	sDetailDev *sdev;
 	const GDate *date;
-	ofoDevise *devise;
 	const gchar *notes, *muser;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
@@ -1462,16 +1456,14 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 				sdfin = g_strdup( "" );
 			}
 
-			devise = ofo_devise_get_by_id( dossier, sdev->dev_id );
-
 			str = g_strdup_printf( "3;%s;%s;%s;%.2lf;%.2lf;%.2lf;%.2lf",
 					ofo_journal_get_mnemo( journal ),
 					sdfin,
-					devise ? ofo_devise_get_code( devise ) : "",
-					ofo_journal_get_clo_deb( journal, sdev->exe_id, sdev->dev_id ),
-					ofo_journal_get_clo_cre( journal, sdev->exe_id, sdev->dev_id ),
-					ofo_journal_get_deb( journal, sdev->exe_id, sdev->dev_id ),
-					ofo_journal_get_cre( journal, sdev->exe_id, sdev->dev_id ));
+					sdev->devise,
+					ofo_journal_get_clo_deb( journal, sdev->exe_id, sdev->devise ),
+					ofo_journal_get_clo_cre( journal, sdev->exe_id, sdev->devise ),
+					ofo_journal_get_deb( journal, sdev->exe_id, sdev->devise ),
+					ofo_journal_get_cre( journal, sdev->exe_id, sdev->devise ));
 
 			g_free( sdfin );
 
@@ -1559,7 +1551,6 @@ ofo_journal_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 
 	if( !errors ){
 		st_global->send_signal_new = FALSE;
-		st_global->send_signal_delete = FALSE;
 
 		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 		st_global->dataset = NULL;
@@ -1576,7 +1567,6 @@ ofo_journal_set_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_JOURNAL );
 
 		st_global->send_signal_new = TRUE;
-		st_global->send_signal_delete = TRUE;
 	}
 }
 

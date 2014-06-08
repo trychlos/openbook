@@ -52,7 +52,7 @@ struct _ofaDossierPropertiesPrivate {
 	 */
 	gchar         *label;
 	gint           duree;
-	gint           devise;
+	gchar         *devise;
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-dossier-properties.ui";
@@ -63,7 +63,7 @@ G_DEFINE_TYPE( ofaDossierProperties, ofa_dossier_properties, OFA_TYPE_BASE_DIALO
 static void      v_init_dialog( ofaBaseDialog *dialog );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
-static void      on_devise_changed( gint id, const gchar *code, const gchar *label, ofaDossierProperties *self );
+static void      on_devise_changed( const gchar *code, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
 static gboolean  do_update( ofaDossierProperties *self );
@@ -83,6 +83,7 @@ dossier_properties_finalize( GObject *instance )
 
 	/* free data members here */
 	g_free( priv->label );
+	g_free( priv->devise );
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -183,24 +184,23 @@ v_init_dialog( ofaBaseDialog *dialog )
 					GTK_CONTAINER( dialog->prot->dialog ), "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
-	} else {
-		priv->is_new = TRUE;
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
 	priv->duree = ofo_dossier_get_exercice_length( priv->dossier );
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( dialog->prot->dialog ), "p1-exe-length" ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_duree_changed ), dialog );
 	if( priv->duree > 0 ){
 		str = g_strdup_printf( "%d", priv->duree );
 	} else {
-		str = g_strdup( "" );
+		str = g_strdup_printf( "%d", DOS_DEFAULT_LENGTH );
 	}
 	gtk_entry_set_text( entry, str );
 	g_free( str );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_duree_changed ), dialog );
 
-	priv->devise = ofo_dossier_get_default_devise( priv->dossier );
+	priv->devise = g_strdup( ofo_dossier_get_default_devise( priv->dossier ));
 
 	parms.dialog = dialog->prot->dialog;
 	parms.dossier = priv->dossier;
@@ -210,9 +210,9 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.disp_label = TRUE;
 	parms.pfn = ( ofaDeviseComboCb ) on_devise_changed;
 	parms.user_data = dialog;
-	parms.initial_id = priv->devise;
+	parms.initial_code = priv->devise;
 
-	ofa_devise_combo_init_dialog( &parms );
+	ofa_devise_combo_init_combo( &parms );
 
 	my_utils_init_notes_ex( dialog->prot->dialog, dossier );
 	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, dossier );
@@ -246,9 +246,10 @@ on_duree_changed( GtkEntry *entry, ofaDossierProperties *self )
  * ofaDeviseComboCb
  */
 static void
-on_devise_changed( gint id, const gchar *code, const gchar *label, ofaDossierProperties *self )
+on_devise_changed( const gchar *code, ofaDossierProperties *self )
 {
-	self->private->devise = id;
+	g_free( self->private->devise );
+	self->private->devise = g_strdup( code );
 
 	check_for_enable_dlg( self );
 }

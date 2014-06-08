@@ -120,7 +120,6 @@ ofo_base_get_global( ofoBaseGlobal *ptr, ofoBase *dossier, GWeakNotify fn, gpoin
 		new_ptr = g_new0( ofoBaseGlobal, 1 );
 		new_ptr->dossier = dossier;
 		new_ptr->send_signal_new = TRUE;
-		new_ptr->send_signal_delete = TRUE;
 
 		/* be advertise when the main object disappears */
 		g_object_weak_ref( G_OBJECT( dossier ), fn, user_data );

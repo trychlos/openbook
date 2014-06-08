@@ -66,6 +66,10 @@ typedef struct {
 }
 	ofoDossier;
 
+/* default length of exercice in months
+ */
+#define DOS_DEFAULT_LENGTH              12
+
 G_END_DECLS
 
 #endif /* __OFO_DOSSIER_DEF_H__ */
