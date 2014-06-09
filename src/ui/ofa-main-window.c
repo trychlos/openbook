@@ -761,6 +761,8 @@ add_empty_notebook_to_pane_right( ofaMainWindow *window )
 	gtk_widget_set_margin_right( GTK_WIDGET( book ), 4 );
 	gtk_widget_set_margin_bottom( GTK_WIDGET( book ), 4 );
 	gtk_notebook_set_scrollable( book, TRUE );
+	gtk_notebook_popup_enable( book );
+
 	gtk_paned_pack2( window->private->pane, GTK_WIDGET( book ), TRUE, FALSE );
 }
 
