@@ -257,7 +257,7 @@ is_dialog_validable( ofaJournalProperties *self )
 		exists = ofo_journal_get_by_mnemo(
 				ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )), priv->mnemo );
 		ok &= !exists ||
-				( ofo_journal_get_id( exists ) == ofo_journal_get_id( priv->journal ));
+				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_journal_get_mnemo( priv->journal )));
 	}
 
 	return( ok );
@@ -281,11 +281,13 @@ do_update( ofaJournalProperties *self )
 {
 	ofaJournalPropertiesPrivate *priv;
 	ofoDossier *dossier;
+	gchar *prev_mnemo;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->private;
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
+	prev_mnemo = g_strdup( ofo_journal_get_mnemo( priv->journal ));
 
 	/* le nouveau mnemo n'est pas encore utilisé,
 	 * ou bien il est déjà utilisé par ce même journal (n'a pas été modifié)
@@ -299,8 +301,10 @@ do_update( ofaJournalProperties *self )
 				ofo_journal_insert( priv->journal, dossier );
 	} else {
 		priv->updated =
-				ofo_journal_update( priv->journal, dossier );
+				ofo_journal_update( priv->journal, dossier, prev_mnemo );
 	}
+
+	g_free( prev_mnemo );
 
 	return( priv->updated );
 }

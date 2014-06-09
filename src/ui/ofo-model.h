@@ -44,7 +44,7 @@ GType           ofo_model_get_type          ( void ) G_GNUC_CONST;
 
 GList          *ofo_model_get_dataset       ( const ofoDossier *dossier );
 ofoModel       *ofo_model_get_by_mnemo      ( const ofoDossier *dossier, const gchar *mnemo );
-gboolean        ofo_model_use_journal       ( const ofoDossier *dossier, gint jou_id );
+gboolean        ofo_model_use_journal       ( const ofoDossier *dossier, const gchar *journal );
 gboolean        ofo_model_use_taux          ( const ofoDossier *dossier, const gchar *mnemo );
 
 ofoModel       *ofo_model_new               ( void );
@@ -52,19 +52,19 @@ ofoModel       *ofo_model_new               ( void );
 gint            ofo_model_get_id            ( const ofoModel *model );
 const gchar    *ofo_model_get_mnemo         ( const ofoModel *model );
 const gchar    *ofo_model_get_label         ( const ofoModel *model );
-gint            ofo_model_get_journal       ( const ofoModel *model );
+const gchar    *ofo_model_get_journal       ( const ofoModel *model );
 gboolean        ofo_model_get_journal_locked( const ofoModel *model );
 const gchar    *ofo_model_get_notes         ( const ofoModel *model );
 const gchar    *ofo_model_get_maj_user      ( const ofoModel *model );
 const GTimeVal *ofo_model_get_maj_stamp     ( const ofoModel *model );
 
 gboolean        ofo_model_is_deletable      ( const ofoModel *model );
-gboolean        ofo_model_is_valid          ( const gchar *mnemo, const gchar *label, gint journal_id );
+gboolean        ofo_model_is_valid          ( const gchar *mnemo, const gchar *label, const gchar *journal );
 
 void            ofo_model_set_id            ( ofoModel *model, gint id );
 void            ofo_model_set_mnemo         ( ofoModel *model, const gchar *mnemo );
 void            ofo_model_set_label         ( ofoModel *model, const gchar *label );
-void            ofo_model_set_journal       ( ofoModel *model, gint journal );
+void            ofo_model_set_journal       ( ofoModel *model, const gchar *journal );
 void            ofo_model_set_journal_locked( ofoModel *model, gboolean journal_locked );
 void            ofo_model_set_notes         ( ofoModel *model, const gchar *notes );
 void            ofo_model_set_maj_user      ( ofoModel *model, const gchar *user );

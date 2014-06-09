@@ -59,7 +59,7 @@ struct _ofaGuidedInputPrivate {
 
 	/* data
 	 */
-	gint            journal_id;
+	gchar          *journal;
 	GDate           dope;
 	GDate           deff;
 	gdouble         total_debits;
@@ -148,7 +148,7 @@ static void      add_row_entry_set( ofaGuidedInput *self, gint col_id, gint row 
 static void      add_button( ofaGuidedInput *self, const gchar *stock_id, gint column, gint row );
 static const sColumnDef *find_column_def_from_col_id( ofaGuidedInput *self, gint col_id );
 static const sColumnDef *find_column_def_from_letter( ofaGuidedInput *self, gchar letter );
-static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self );
+static void      on_journal_changed( const gchar *mnemo, ofaGuidedInput *self );
 static void      on_dope_changed( GtkEntry *entry, ofaGuidedInput *self );
 static gboolean  on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
 static gboolean  on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInput *self );
@@ -192,6 +192,7 @@ guided_input_finalize( GObject *instance )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
+	g_free( priv->journal );
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -224,7 +225,6 @@ ofa_guided_input_init( ofaGuidedInput *self )
 
 	self->private = g_new0( ofaGuidedInputPrivate, 1 );
 
-	self->private->journal_id = -1;
 	g_date_clear( &self->private->dope, 1 );
 	g_date_clear( &self->private->deff, 1 );
 }
@@ -324,10 +324,13 @@ v_init_dialog( ofaBaseDialog *dialog )
 static void
 init_dialog_journal( ofaGuidedInput *self )
 {
+	ofaGuidedInputPrivate *priv;
 	GtkWidget *combo;
 	ofaJournalComboParms parms;
 
-	self->private->journal_id = ofo_model_get_journal( self->private->model );
+	priv = self->private;
+
+	priv->journal = g_strdup( ofo_model_get_journal( priv->model ));
 
 	parms.container = GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog );
 	parms.dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
@@ -337,14 +340,14 @@ init_dialog_journal( ofaGuidedInput *self )
 	parms.disp_label = TRUE;
 	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
 	parms.user_data = self;
-	parms.initial_id = self->private->journal_id;
+	parms.initial_mnemo = priv->journal;
 
 	ofa_journal_combo_init_combo( &parms );
 
 	combo = my_utils_container_get_child_by_name( parms.container, "p1-journal" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 
-	gtk_widget_set_sensitive( combo, !ofo_model_get_journal_locked( self->private->model ));
+	gtk_widget_set_sensitive( combo, !ofo_model_get_journal_locked( priv->model ));
 }
 
 static void
@@ -518,29 +521,33 @@ find_column_def_from_letter( ofaGuidedInput *self, gchar letter )
  * this last closing date is the lower limit of the effect dates
  */
 static void
-on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedInput *self )
+on_journal_changed( const gchar *mnemo, ofaGuidedInput *self )
 {
+	ofaGuidedInputPrivate *priv;
 	ofoDossier *dossier;
 	ofoJournal *journal;
 	gint exe_id;
 	const GDate *date;
 
-	self->private->journal_id = id;
+	priv = self->private;
+
+	g_free( priv->journal );
+	priv->journal = g_strdup( mnemo );
 
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
-	journal = ofo_journal_get_by_id( dossier, id );
-	memcpy( &self->private->last_closing, &self->private->last_closed_exe, sizeof( GDate ));
+	journal = ofo_journal_get_by_mnemo( dossier, mnemo );
+	memcpy( &priv->last_closing, &priv->last_closed_exe, sizeof( GDate ));
 
 	if( journal ){
 		exe_id = ofo_dossier_get_current_exe_id( dossier );
 		date = ofo_journal_get_cloture( journal, exe_id );
 		if( date && g_date_valid( date )){
-			if( g_date_valid( &self->private->last_closed_exe )){
-				if( g_date_compare( date, &self->private->last_closed_exe ) > 0 ){
-					memcpy( &self->private->last_closing, date, sizeof( GDate ));
+			if( g_date_valid( &priv->last_closed_exe )){
+				if( g_date_compare( date, &priv->last_closed_exe ) > 0 ){
+					memcpy( &priv->last_closing, date, sizeof( GDate ));
 				}
 			} else {
-				memcpy( &self->private->last_closing, date, sizeof( GDate ));
+				memcpy( &priv->last_closing, date, sizeof( GDate ));
 			}
 		}
 	}
@@ -1067,9 +1074,9 @@ check_for_journal( ofaGuidedInput *self )
 	static const gchar *thisfn = "ofa_guided_input_check_for_journal";
 	gboolean ok;
 
-	ok = self->private->journal_id > 0;
+	ok = self->private->journal && g_utf8_strlen( self->private->journal, -1 );
 	if( !ok ){
-		g_debug( "%s: journal_id=%d", thisfn, self->private->journal_id );
+		g_debug( "%s: journal=%s", thisfn, self->private->journal );
 	}
 
 	return( ok );
@@ -1298,6 +1305,7 @@ do_update( ofaGuidedInput *self )
 static ofoEntry *
 entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 {
+	ofaGuidedInputPrivate *priv;
 	GtkWidget *entry;
 	const gchar *account_number;
 	ofoAccount *account;
@@ -1305,7 +1313,9 @@ entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 	gdouble deb, cre, amount;
 	ofaEntrySens sens;
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
+	priv = self->private;
+
+	entry = gtk_grid_get_child_at( priv->view, COL_ACCOUNT, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	account_number = gtk_entry_get_text( GTK_ENTRY( entry ));
 	account = ofo_account_get_by_number(
@@ -1313,7 +1323,7 @@ entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 						account_number );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_LABEL, row );
+	entry = gtk_grid_get_child_at( priv->view, COL_LABEL, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	label = gtk_entry_get_text( GTK_ENTRY( entry ));
 	g_return_val_if_fail( label && g_utf8_strlen( label, -1 ), FALSE );
@@ -1330,9 +1340,9 @@ entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 
 	return( ofo_entry_new_with_data(
 					ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
-							&self->private->deff, &self->private->dope, label,
+							&priv->deff, &priv->dope, label,
 							piece, account_number,
 							ofo_account_get_devise( account ),
-							self->private->journal_id,
+							priv->journal,
 							amount, sens ));
 }

@@ -77,7 +77,7 @@ typedef void ( *ofaDeviseComboCb )( const gchar *, gpointer );
  *
  * The structure passed to the init_dialog() function.
  *
- * @dialog: the parent dialog of the target combo box
+ * @container: the parent container of the target combo box
  * @dossier: the currently opened ofoDossier
  * @combo_name: the name of the GtkComboBox widget
  * @label_name: [allow-none]: the name of a GtkLabel widget which will
@@ -92,7 +92,7 @@ typedef void ( *ofaDeviseComboCb )( const gchar *, gpointer );
  *  currency, or NULL
  */
 typedef struct {
-	GtkDialog        *dialog;
+	GtkContainer     *container;
 	ofoDossier       *dossier;
 	const gchar      *combo_name;
 	const gchar      *label_name;

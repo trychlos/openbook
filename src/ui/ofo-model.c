@@ -48,7 +48,7 @@ struct _ofoModelPrivate {
 	gint       id;
 	gchar     *mnemo;
 	gchar     *label;
-	gint       journal;
+	gchar     *journal;
 	gboolean   journal_locked;
 	gchar     *notes;
 	gchar     *maj_user;
@@ -78,7 +78,7 @@ OFO_BASE_DEFINE_GLOBAL( st_global, model )
 
 static GList         *model_load_dataset( void );
 static ofoModel      *model_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint           model_count_for_journal( const ofoSgbd *sgbd, gint jou_id );
+static gint           model_count_for_journal( const ofoSgbd *sgbd, const gchar *journal );
 static gint           model_count_for_taux( const ofoSgbd *sgbd, const gchar *mnemo );
 static gboolean       model_do_insert( ofoModel *model, const ofoSgbd *sgbd, const gchar *user );
 static gboolean       model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user );
@@ -127,6 +127,7 @@ ofo_model_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->mnemo );
 	g_free( priv->label );
+	g_free( priv->journal );
 	g_free( priv->notes );
 	g_free( priv->maj_user );
 
@@ -164,7 +165,6 @@ ofo_model_init( ofoModel *self )
 	self->private = g_new0( ofoModelPrivate, 1 );
 
 	self->private->id = OFO_BASE_UNSET_ID;
-	self->private->journal = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -216,10 +216,9 @@ model_load_dataset( void )
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
 	result = ofo_sgbd_query_ex( sgbd,
-			"SELECT MOD_ID,MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_JOU_VER,MOD_NOTES,"
+			"SELECT MOD_ID,MOD_MNEMO,MOD_LABEL,MOD_JOU_MNEMO,MOD_JOU_VER,MOD_NOTES,"
 			"	MOD_MAJ_USER,MOD_MAJ_STAMP "
-			"	FROM OFA_T_MODELES "
-			"	ORDER BY MOD_MNEMO ASC" );
+			"	FROM OFA_T_MODELES" );
 
 	dataset = NULL;
 
@@ -233,7 +232,7 @@ model_load_dataset( void )
 		ofo_model_set_label( model, ( gchar * ) icol->data );
 		icol = icol->next;
 		if( icol->data ){
-			ofo_model_set_journal( model, atoi(( gchar * ) icol->data ));
+			ofo_model_set_journal( model, ( gchar * ) icol->data );
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -349,15 +348,16 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
  * Returns: %TRUE if a recorded entry makes use of the specified currency.
  */
 gboolean
-ofo_model_use_journal( const ofoDossier *dossier, gint jou_id )
+ofo_model_use_journal( const ofoDossier *dossier, const gchar *journal )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( journal && g_utf8_strlen( journal, -1 ), FALSE );
 
-	return( model_count_for_journal( ofo_dossier_get_sgbd( dossier ), jou_id ) > 0 );
+	return( model_count_for_journal( ofo_dossier_get_sgbd( dossier ), journal ) > 0 );
 }
 
 static gint
-model_count_for_journal( const ofoSgbd *sgbd, gint jou_id )
+model_count_for_journal( const ofoSgbd *sgbd, const gchar *journal )
 {
 	gint count;
 	gchar *query;
@@ -365,8 +365,8 @@ model_count_for_journal( const ofoSgbd *sgbd, gint jou_id )
 
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_MODELES "
-				"	WHERE MOD_JOU_ID=%d",
-					jou_id );
+				"	WHERE MOD_JOU_MNEMO='%s'",
+					journal );
 
 	count = 0;
 	result = ofo_sgbd_query_ex( sgbd, query );
@@ -483,17 +483,17 @@ ofo_model_get_label( const ofoModel *model )
 /**
  * ofo_model_get_journal:
  */
-gint
+const gchar *
 ofo_model_get_journal( const ofoModel *model )
 {
-	g_return_val_if_fail( OFO_IS_MODEL( model ), OFO_BASE_UNSET_ID );
+	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( model->private->journal );
+		return(( const gchar * ) model->private->journal );
 	}
 
-	return( OFO_BASE_UNSET_ID );
+	return( NULL );
 }
 
 /**
@@ -582,14 +582,14 @@ ofo_model_is_deletable( const ofoModel *model )
  * ofo_model_is_valid:
  */
 gboolean
-ofo_model_is_valid( const gchar *mnemo, const gchar *label, gint journal_id )
+ofo_model_is_valid( const gchar *mnemo, const gchar *label, const gchar *journal )
 {
 	g_return_val_if_fail( st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 
 	return( mnemo && g_utf8_strlen( mnemo, -1 ) &&
 			label && g_utf8_strlen( label, -1 ) &&
-			journal_id > 0 &&
-			ofo_journal_get_by_id( OFO_DOSSIER( st_global->dossier ), journal_id ) != NULL );
+			journal && g_utf8_strlen( journal, -1 ) &&
+			ofo_journal_get_by_mnemo( OFO_DOSSIER( st_global->dossier ), journal ));
 }
 
 /**
@@ -640,13 +640,14 @@ ofo_model_set_label( ofoModel *model, const gchar *label )
  * ofo_model_set_journal:
  */
 void
-ofo_model_set_journal( ofoModel *model, gint journal )
+ofo_model_set_journal( ofoModel *model, const gchar *journal )
 {
 	g_return_if_fail( OFO_IS_MODEL( model ));
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		model->private->journal = journal;
+		g_free( model->private->journal );
+		model->private->journal = g_strdup( journal );
 	}
 }
 
@@ -1031,8 +1032,8 @@ model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_MODELES" );
 
 	g_string_append_printf( query,
-			"	(MOD_MNEMO,MOD_LABEL,MOD_JOU_ID,MOD_JOU_VER,MOD_NOTES,"
-			"	MOD_MAJ_USER, MOD_MAJ_STAMP) VALUES ('%s','%s',%d,%d,",
+			"	(MOD_MNEMO,MOD_LABEL,MOD_JOU_MNEMO,MOD_JOU_VER,MOD_NOTES,"
+			"	MOD_MAJ_USER, MOD_MAJ_STAMP) VALUES ('%s','%s','%s',%d,",
 			ofo_model_get_mnemo( model ),
 			label,
 			ofo_model_get_journal( model ),
@@ -1249,7 +1250,7 @@ model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, cons
 	}
 
 	g_string_append_printf( query, "MOD_LABEL='%s',", label );
-	g_string_append_printf( query, "MOD_JOU_ID=%d,", ofo_model_get_journal( model ));
+	g_string_append_printf( query, "MOD_JOU_MNEMO='%s',", ofo_model_get_journal( model ));
 	g_string_append_printf( query, "MOD_JOU_VER=%d,", ofo_model_get_journal_locked( model ) ? 1:0 );
 
 	if( notes && g_utf8_strlen( notes, -1 )){
@@ -1344,7 +1345,6 @@ ofo_model_get_csv( const ofoDossier *dossier )
 	GSList *lines;
 	gchar *str, *stamp;
 	ofoModel *model;
-	ofoJournal *journal;
 	const gchar *notes, *muser;
 	sModDetail *sdet;
 
@@ -1361,7 +1361,6 @@ ofo_model_get_csv( const ofoDossier *dossier )
 	for( set=st_global->dataset ; set ; set=set->next ){
 		model = OFO_MODEL( set->data );
 
-		journal = ofo_journal_get_by_id( dossier, ofo_model_get_journal( model ));
 		notes = ofo_model_get_notes( model );
 		muser = ofo_model_get_maj_user( model );
 		stamp = my_utils_str_from_stamp( ofo_model_get_maj_stamp( model ));
@@ -1369,7 +1368,7 @@ ofo_model_get_csv( const ofoDossier *dossier )
 		str = g_strdup_printf( "1;%s;%s;%s;%s;%s;%s;%s",
 				ofo_model_get_mnemo( model ),
 				ofo_model_get_label( model ),
-				journal ? ofo_journal_get_mnemo( journal ) : "",
+				ofo_model_get_journal( model ),
 				ofo_model_get_journal_locked( model ) ? "True" : "False",
 				notes ? notes : "",
 				muser ? muser : "",

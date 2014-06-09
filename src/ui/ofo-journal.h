@@ -47,13 +47,11 @@ G_BEGIN_DECLS
 GType           ofo_journal_get_type     ( void ) G_GNUC_CONST;
 
 GList          *ofo_journal_get_dataset  ( const ofoDossier *dossier );
-ofoJournal     *ofo_journal_get_by_id    ( const ofoDossier *dossier, gint id );
 ofoJournal     *ofo_journal_get_by_mnemo ( const ofoDossier *dossier, const gchar *mnemo );
 gboolean        ofo_journal_use_devise   ( const ofoDossier *dossier, const gchar *devise );
 
 ofoJournal     *ofo_journal_new          ( void );
 
-gint            ofo_journal_get_id       ( const ofoJournal *journal );
 const gchar    *ofo_journal_get_mnemo    ( const ofoJournal *journal );
 const gchar    *ofo_journal_get_label    ( const ofoJournal *journal );
 const gchar    *ofo_journal_get_notes    ( const ofoJournal *journal );
@@ -70,7 +68,6 @@ const GDate    *ofo_journal_get_cloture  ( const ofoJournal *journal, gint exe_i
 gboolean        ofo_journal_is_deletable ( const ofoJournal *journal, const ofoDossier *dossier );
 gboolean        ofo_journal_is_valid     ( const gchar *mnemo, const gchar *label );
 
-void            ofo_journal_set_id       ( ofoJournal *journal, gint id );
 void            ofo_journal_set_mnemo    ( ofoJournal *journal, const gchar *number );
 void            ofo_journal_set_label    ( ofoJournal *journal, const gchar *label );
 void            ofo_journal_set_notes    ( ofoJournal *journal, const gchar *notes );
@@ -83,7 +80,7 @@ void            ofo_journal_set_deb      ( ofoJournal *journal, gint exe_id, con
 void            ofo_journal_set_cre      ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
 
 gboolean        ofo_journal_insert       ( ofoJournal *journal, const ofoDossier *dossier );
-gboolean        ofo_journal_update       ( ofoJournal *journal, const ofoDossier *dossier );
+gboolean        ofo_journal_update       ( ofoJournal *journal, const ofoDossier *dossier, const gchar *prev_mnemo );
 gboolean        ofo_journal_delete       ( ofoJournal *journal, const ofoDossier *dossier );
 
 GSList         *ofo_journal_get_csv      ( const ofoDossier *dossier );

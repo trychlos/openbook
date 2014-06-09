@@ -67,12 +67,10 @@ typedef struct {
  * A callback to be triggered when a new journal is selected.
  *
  * Passed parameters are:
- * - intern identifier
  * - mnemo
- * - label
  * - user_data provided at init_dialog() time
  */
-typedef void ( *ofaJournalComboCb )( gint, const gchar *, const gchar *, gpointer );
+typedef void ( *ofaJournalComboCb )( const gchar *, gpointer );
 
 GType            ofa_journal_combo_get_type   ( void ) G_GNUC_CONST;
 
@@ -81,7 +79,7 @@ GType            ofa_journal_combo_get_type   ( void ) G_GNUC_CONST;
  *
  * The structure passed to the init_dialog() function.
  *
- * @window: the parent window of the target combo box
+ * @container: the parent container of the target combo box
  * @dossier: the current opened ofoDossier
  * @combo_name: the name of the GtkComboBox widget
  * @label_name: [allow-none]: the name of a GtkLabel widget which will
@@ -92,7 +90,8 @@ GType            ofa_journal_combo_get_type   ( void ) G_GNUC_CONST;
  * @pfn: [allow-none]: a user-provided callback which will be triggered
  *  on each selection change
  * @user_data: user-data passed to the callback
- * @initial_id: the journal identifier of the initial selection, or -1
+ * @initial_mnemo: the journal identifier of the initial selection, or
+ *  NULL
  */
 typedef struct {
 	GtkContainer     *container;
@@ -103,7 +102,7 @@ typedef struct {
 	gboolean          disp_label;
 	ofaJournalComboCb pfn;
 	gpointer          user_data;
-	gint              initial_id;
+	const gchar      *initial_mnemo;
 }
 	ofaJournalComboParms;
 

@@ -41,7 +41,7 @@ struct _ofaDeviseComboPrivate {
 
 	/* input data
 	 */
-	GtkDialog       *dialog;
+	GtkContainer    *container;
 	ofoDossier      *dossier;
 	gchar           *combo_name;
 	gchar           *label_name;
@@ -161,11 +161,11 @@ ofa_devise_combo_init_combo( const ofaDeviseComboParms *parms )
 
 	g_debug( "%s: parms=%p", thisfn, ( void * ) parms );
 
-	g_return_val_if_fail( GTK_IS_DIALOG( parms->dialog ), NULL );
+	g_return_val_if_fail( GTK_IS_CONTAINER( parms->container ), NULL );
 	g_return_val_if_fail( OFO_IS_DOSSIER( parms->dossier ), NULL );
 	g_return_val_if_fail( parms->combo_name && g_utf8_strlen( parms->combo_name, -1 ), NULL );
 
-	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( parms->dialog ), parms->combo_name );
+	combo = my_utils_container_get_child_by_name( parms->container, parms->combo_name );
 	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), NULL );
 
 	self = g_object_new( OFA_TYPE_DEVISE_COMBO, NULL );
@@ -173,7 +173,7 @@ ofa_devise_combo_init_combo( const ofaDeviseComboParms *parms )
 	priv = self->private;
 
 	/* parms data */
-	priv->dialog = parms->dialog;
+	priv->container = parms->container;
 	priv->dossier = parms->dossier;
 	priv->combo_name = g_strdup( parms->combo_name );
 	priv->label_name = g_strdup( parms->label_name );
@@ -181,7 +181,7 @@ ofa_devise_combo_init_combo( const ofaDeviseComboParms *parms )
 	priv->user_data = parms->user_data;
 
 	/* setup a weak reference on the dialog to auto-unref */
-	g_object_weak_ref( G_OBJECT( priv->dialog ), ( GWeakNotify ) on_dialog_finalized, self );
+	g_object_weak_ref( G_OBJECT( priv->container ), ( GWeakNotify ) on_dialog_finalized, self );
 
 	/* runtime data */
 	priv->combo = GTK_COMBO_BOX( combo );
@@ -234,6 +234,7 @@ ofa_devise_combo_init_combo( const ofaDeviseComboParms *parms )
 static void
 on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self )
 {
+	ofaDeviseComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkWidget *widget;
@@ -241,6 +242,8 @@ on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self )
 
 	/*g_debug( "ofa_devise_combo_on_devise_changed: dialog=%p (%s)",
 			( void * ) self->private->dialog, G_OBJECT_TYPE_NAME( self->private->dialog ));*/
+
+	priv = self->private;
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 
@@ -250,17 +253,16 @@ on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self )
 				COL_LABEL, &label,
 				-1 );
 
-		if( self->private->label_name ){
-			widget = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( self->private->dialog ), self->private->label_name );
+		if( priv->label_name ){
+			widget = my_utils_container_get_child_by_name( priv->container, priv->label_name );
 			if( widget && GTK_IS_LABEL( widget )){
 				gtk_label_set_text( GTK_LABEL( widget ), label );
 			}
 		}
 
-		if( self->private->pfn ){
-			( *self->private->pfn )
-					( code, self->private->user_data );
+		if( priv->pfn ){
+			( *priv->pfn )
+					( code, priv->user_data );
 		}
 
 		g_free( label );

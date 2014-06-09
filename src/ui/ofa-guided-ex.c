@@ -69,7 +69,7 @@ struct _ofaGuidedExPrivate {
 
 	/* data
 	 */
-	gint            journal_id;
+	gchar          *journal;
 	GDate           dope;
 	GDate           deff;
 	gdouble         total_debits;
@@ -171,14 +171,14 @@ static void       v_init_view( ofaMainPage *page );
 static void       init_left_view( ofaGuidedEx *self, GtkWidget *child );
 static void       insert_left_journal_row( ofaGuidedEx *self, ofoJournal *journal );
 static void       insert_left_model_row( ofaGuidedEx *self, ofoModel *model );
-static gboolean   find_left_journal_by_id( ofaGuidedEx *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static gboolean   find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
 
 static void      add_row_entry( ofaGuidedEx *self, gint i );
 static void      add_row_entry_set( ofaGuidedEx *self, gint col_id, gint row );
 static void      add_button( ofaGuidedEx *self, const gchar *stock_id, gint column, gint row );
 static const sColumnDef *find_column_def_from_col_id( ofaGuidedEx *self, gint col_id );
 static const sColumnDef *find_column_def_from_letter( ofaGuidedEx *self, gchar letter );
-static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedEx *self );
+static void      on_journal_changed( const gchar *mnemo, ofaGuidedEx *self );
 static void      on_dope_changed( GtkEntry *entry, ofaGuidedEx *self );
 static gboolean  on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
 static gboolean  on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
@@ -222,6 +222,7 @@ guided_ex_finalize( GObject *instance )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
+	g_free( priv->journal );
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -258,7 +259,6 @@ ofa_guided_ex_init( ofaGuidedEx *self )
 
 	self->private = g_new0( ofaGuidedExPrivate, 1 );
 
-	self->private->journal_id = OFO_BASE_UNSET_ID;
 	g_date_clear( &self->private->dope, 1 );
 	g_date_clear( &self->private->deff, 1 );
 }
@@ -451,7 +451,7 @@ init_journal_combo( ofaGuidedEx *self )
 
 	priv = self->private;
 
-	priv->journal_id = ofo_model_get_journal( self->private->model );
+	priv->journal = g_strdup( ofo_model_get_journal( self->private->model ));
 
 	parms.container = priv->box;
 	parms.dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
@@ -461,7 +461,7 @@ init_journal_combo( ofaGuidedEx *self )
 	parms.disp_label = TRUE;
 	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
 	parms.user_data = self;
-	parms.initial_id = priv->journal_id;
+	parms.initial_mnemo = priv->journal;
 
 	ofa_journal_combo_init_combo( &parms );
 
@@ -584,9 +584,9 @@ insert_left_model_row( ofaGuidedEx *self, ofoModel *model )
 	GtkTreeIter parent_iter, iter;
 	gboolean found;
 
-	found = find_left_journal_by_id( self, ofo_model_get_journal( model ), &tmodel, &parent_iter );
+	found = find_left_journal_by_mnemo( self, ofo_model_get_journal( model ), &tmodel, &parent_iter );
 	if( !found ){
-		g_debug( "%s: unable to find journal %d for %s model",
+		g_debug( "%s: unable to find journal %s for model %s",
 				thisfn,
 				ofo_model_get_journal( model ),
 				ofo_model_get_mnemo( model ));
@@ -608,11 +608,11 @@ insert_left_model_row( ofaGuidedEx *self, ofoModel *model )
  * returns TRUE if found
  */
 static gboolean
-find_left_journal_by_id( ofaGuidedEx *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter )
+find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
 	GtkTreeModel *my_tmodel;
 	GtkTreeIter my_iter;
-	ofoJournal *journal;
+	gchar *journal;
 
 	my_tmodel = gtk_tree_view_get_model( self->private->left_tview );
 	if( tmodel ){
@@ -620,9 +620,8 @@ find_left_journal_by_id( ofaGuidedEx *self, gint id, GtkTreeModel **tmodel, GtkT
 	}
 	if( gtk_tree_model_get_iter_first( my_tmodel, &my_iter )){
 		while( TRUE ){
-			gtk_tree_model_get( my_tmodel, &my_iter, LEFT_COL_OBJECT, &journal, -1 );
-			g_object_unref( journal );
-			if( ofo_journal_get_id( journal ) == id ){
+			gtk_tree_model_get( my_tmodel, &my_iter, LEFT_COL_MNEMO, &journal, -1 );
+			if( !g_utf8_collate( mnemo, journal )){
 				if( iter ){
 					*iter = my_iter;
 				}
@@ -752,17 +751,17 @@ find_column_def_from_letter( ofaGuidedEx *self, gchar letter )
  * this last closing date is the lower limit of the effect dates
  */
 static void
-on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaGuidedEx *self )
+on_journal_changed( const gchar *mnemo, ofaGuidedEx *self )
 {
 	ofoDossier *dossier;
 	ofoJournal *journal;
 	gint exe_id;
 	const GDate *date;
 
-	self->private->journal_id = id;
+	self->private->journal = g_strdup( mnemo );
 
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-	journal = ofo_journal_get_by_id( dossier, id );
+	journal = ofo_journal_get_by_mnemo( dossier, mnemo );
 	memcpy( &self->private->last_closing, &self->private->last_closed_exe, sizeof( GDate ));
 
 	if( journal ){
@@ -1303,9 +1302,9 @@ check_for_journal( ofaGuidedEx *self )
 	static const gchar *thisfn = "ofa_guided_ex_check_for_journal";
 	gboolean ok;
 
-	ok = self->private->journal_id > 0;
+	ok = self->private->journal && g_utf8_strlen( self->private->journal, -1 );
 	if( !ok ){
-		g_debug( "%s: journal_id=%d", thisfn, self->private->journal_id );
+		g_debug( "%s: journal=%s", thisfn, self->private->journal );
 	}
 
 	return( ok );

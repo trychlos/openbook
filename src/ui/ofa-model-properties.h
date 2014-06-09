@@ -97,7 +97,7 @@ typedef struct {
 
 GType    ofa_model_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_model_properties_run     ( ofaMainWindow *parent, ofoModel *model, gint journal_id );
+gboolean ofa_model_properties_run     ( ofaMainWindow *parent, ofoModel *model, const gchar *journal );
 
 G_END_DECLS
 

@@ -608,8 +608,8 @@ ofo_devise_update( ofoDevise *devise, const ofoDossier *dossier, const gchar *pr
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		g_debug( "%s: devise=%p, dossier=%p",
-				thisfn, ( void * ) devise, ( void * ) dossier );
+		g_debug( "%s: devise=%p, dossier=%p, prev_code=%s",
+				thisfn, ( void * ) devise, ( void * ) dossier, prev_code );
 
 		OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
 

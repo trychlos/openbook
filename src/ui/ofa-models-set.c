@@ -75,9 +75,9 @@ G_DEFINE_TYPE( ofaModelsSet, ofa_models_set, OFA_TYPE_MAIN_PAGE )
 static GtkWidget *v_setup_view( ofaMainPage *page );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
-static GtkWidget *book_create_page( ofaModelsSet *self, GtkNotebook *book, gint journal_id, const gchar *journal_label );
-static gboolean   book_activate_page_by_journal_id( ofaModelsSet *self, gint journal_id );
-static gint       book_get_page_by_journal_id( ofaModelsSet *self, gint jou_id );
+static GtkWidget *book_create_page( ofaModelsSet *self, GtkNotebook *book, const gchar *journal, const gchar *journal_label );
+static gboolean   book_activate_page_by_journal( ofaModelsSet *self, const gchar *journal );
+static gint       book_get_page_by_journal( ofaModelsSet *self, const gchar *journal );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaModelsSet *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
 static void       insert_new_row( ofaModelsSet *self, ofoModel *model, gboolean with_selection );
@@ -185,7 +185,7 @@ v_setup_view( ofaMainPage *page )
 
 	for( iset=dataset ; iset ; iset=iset->next ){
 		journal = OFO_JOURNAL( iset->data );
-		book_create_page( self, book, ofo_journal_get_id( journal ), ofo_journal_get_label( journal ));
+		book_create_page( self, book, ofo_journal_get_mnemo( journal ), ofo_journal_get_label( journal ));
 	}
 
 	/* connect after the pages have been created */
@@ -234,7 +234,7 @@ v_init_view( ofaMainPage *page )
 }
 
 static GtkWidget *
-book_create_page( ofaModelsSet *self, GtkNotebook *book, gint journal_id, const gchar *journal_label )
+book_create_page( ofaModelsSet *self, GtkNotebook *book, const gchar *journal, const gchar *journal_label )
 {
 	GtkScrolledWindow *scroll;
 	GtkLabel *label;
@@ -250,7 +250,7 @@ book_create_page( ofaModelsSet *self, GtkNotebook *book, gint journal_id, const 
 	label = GTK_LABEL( gtk_label_new_with_mnemonic( journal_label ));
 	gtk_notebook_insert_page( book, GTK_WIDGET( scroll ), GTK_WIDGET( label ), -1 );
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( scroll ), TRUE );
-	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_JOURNAL, GINT_TO_POINTER( journal_id ));
+	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_JOURNAL, g_strdup( journal ));
 
 	tview = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
@@ -297,16 +297,16 @@ book_create_page( ofaModelsSet *self, GtkNotebook *book, gint journal_id, const 
 }
 
 static gboolean
-book_activate_page_by_journal_id( ofaModelsSet *self, gint journal_id )
+book_activate_page_by_journal( ofaModelsSet *self, const gchar *mnemo )
 {
 	gint page_num;
 
-	page_num = book_get_page_by_journal_id( self, journal_id );
+	page_num = book_get_page_by_journal( self, mnemo );
 	if( page_num < 0 ){
-		page_num = book_get_page_by_journal_id( self, OFO_BASE_UNSET_ID );
+		page_num = book_get_page_by_journal( self, "__XX__" );
 		if( page_num < 0 ){
-				book_create_page( self, self->private->book, OFO_BASE_UNSET_ID, _( "Unclassed" ));
-				page_num = book_get_page_by_journal_id( self, OFO_BASE_UNSET_ID );
+				book_create_page( self, self->private->book, "__XX__", _( "Unclassed" ));
+				page_num = book_get_page_by_journal( self, "__XX__" );
 		}
 	}
 	g_return_val_if_fail( page_num >= 0, FALSE );
@@ -316,18 +316,18 @@ book_activate_page_by_journal_id( ofaModelsSet *self, gint journal_id )
 }
 
 static gint
-book_get_page_by_journal_id( ofaModelsSet *self, gint jou_id )
+book_get_page_by_journal( ofaModelsSet *self, const gchar *mnemo )
 {
 	gint count, i;
 	GtkWidget *page_widget;
-	gint page_journal;
+	const gchar *journal;
 
 	count = gtk_notebook_get_n_pages( self->private->book );
 
 	for( i=0 ; i<count ; ++i ){
 		page_widget = gtk_notebook_get_nth_page( self->private->book, i );
-		page_journal = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_JOURNAL ));
-		if( page_journal == jou_id ){
+		journal = ( const gchar * ) g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_JOURNAL );
+		if( !g_utf8_collate( journal, mnemo )){
 			return( i );
 		}
 	}
@@ -376,7 +376,7 @@ insert_new_row( ofaModelsSet *self, ofoModel *model, gboolean with_selection )
 
 	/* find the page for this journal and activates it
 	 * creating a new page if the journal has not been found */
-	if( book_activate_page_by_journal_id( self, ofo_model_get_journal( model ))){
+	if( book_activate_page_by_journal( self, ofo_model_get_journal( model ))){
 
 		tview = ofa_main_page_get_treeview( OFA_MAIN_PAGE( self ));
 		g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
@@ -516,7 +516,7 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 	ofoModel *model;
 	gint page_n;
 	GtkWidget *page_w;
-	gint journal_id;
+	const gchar *mnemo;
 
 	g_return_if_fail( OFA_IS_MODELS_SET( page ));
 
@@ -525,10 +525,10 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 	model = ofo_model_new();
 	page_n = gtk_notebook_get_current_page( OFA_MODELS_SET( page )->private->book );
 	page_w = gtk_notebook_get_nth_page( OFA_MODELS_SET( page )->private->book, page_n );
-	journal_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page_w ), DATA_PAGE_JOURNAL ));
+	mnemo = ( const gchar * ) g_object_get_data( G_OBJECT( page_w ), DATA_PAGE_JOURNAL );
 
 	if( ofa_model_properties_run(
-			ofa_main_page_get_main_window( page ), model, journal_id )){
+			ofa_main_page_get_main_window( page ), model, mnemo )){
 
 		insert_new_row( OFA_MODELS_SET( page ), model, TRUE );
 
@@ -567,7 +567,9 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 		prev_mnemo = g_strdup( ofo_model_get_mnemo( model ));
 
 		if( ofa_model_properties_run(
-				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), model, OFO_BASE_UNSET_ID )){
+				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+				model,
+				NULL )){
 
 			new_mnemo = ofo_model_get_mnemo( model );
 			if( g_utf8_collate( prev_mnemo, new_mnemo )){

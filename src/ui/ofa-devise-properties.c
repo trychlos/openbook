@@ -334,5 +334,7 @@ do_update( ofaDeviseProperties *self )
 				ofo_devise_update( priv->devise, dossier, prev_code );
 	}
 
+	g_free( prev_code );
+
 	return( priv->updated );
 }

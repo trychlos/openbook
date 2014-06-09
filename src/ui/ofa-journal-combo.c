@@ -50,14 +50,12 @@ struct _ofaJournalComboPrivate {
 	/* runtime
 	 */
 	GtkComboBox       *combo;
-	gint               current_journal_id;		/* current selection */
 };
 
 /* column ordering in the journal combobox
  */
 enum {
-	JOU_COL_ID = 0,
-	JOU_COL_MNEMO,
+	JOU_COL_MNEMO = 0,
 	JOU_COL_LABEL,
 	JOU_N_COLUMNS
 };
@@ -189,7 +187,7 @@ ofa_journal_combo_init_combo( const ofaJournalComboParms *parms )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			JOU_N_COLUMNS,
-			G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING ));
+			G_TYPE_STRING, G_TYPE_STRING ));
 	gtk_combo_box_set_model( priv->combo, tmodel );
 	g_object_unref( tmodel );
 
@@ -213,11 +211,11 @@ ofa_journal_combo_init_combo( const ofaJournalComboParms *parms )
 		gtk_list_store_set(
 				GTK_LIST_STORE( tmodel ),
 				&iter,
-				JOU_COL_ID,    ofo_journal_get_id( journal ),
 				JOU_COL_MNEMO, ofo_journal_get_mnemo( journal ),
 				JOU_COL_LABEL, ofo_journal_get_label( journal ),
 				-1 );
-		if( parms->initial_id == ofo_journal_get_id( journal )){
+		if( parms->initial_mnemo &&
+				!g_utf8_collate( parms->initial_mnemo, ofo_journal_get_mnemo( journal ))){
 			idx = i;
 		}
 	}
@@ -246,7 +244,6 @@ on_journal_changed( GtkComboBox *box, ofaJournalCombo *self )
 
 		tmodel = gtk_combo_box_get_model( box );
 		gtk_tree_model_get( tmodel, &iter,
-				JOU_COL_ID, &self->private->current_journal_id,
 				JOU_COL_MNEMO, &mnemo,
 				JOU_COL_LABEL, &label,
 				-1 );
@@ -260,8 +257,7 @@ on_journal_changed( GtkComboBox *box, ofaJournalCombo *self )
 		}
 
 		if( self->private->pfn ){
-			( *self->private->pfn )
-					( self->private->current_journal_id, mnemo, label, self->private->user_data );
+			( *self->private->pfn )( mnemo, self->private->user_data );
 		}
 
 		g_free( label );
@@ -295,7 +291,6 @@ ofa_journal_combo_get_selection( ofaJournalCombo *self, gchar **mnemo, gchar **l
 
 			tmodel = gtk_combo_box_get_model( self->private->combo );
 			gtk_tree_model_get( tmodel, &iter,
-					JOU_COL_ID, &id,
 					JOU_COL_MNEMO, &local_mnemo,
 					JOU_COL_LABEL, &local_label,
 					-1 );

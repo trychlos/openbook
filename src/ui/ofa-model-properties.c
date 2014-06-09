@@ -75,7 +75,7 @@ struct _ofaModelPropertiesPrivate {
 	 */
 	gchar           *mnemo;
 	gchar           *label;
-	gint             journal;			/* journal id */
+	gchar           *journal;			/* journal mnemo */
 	gboolean         journal_locked;
 	gchar           *maj_user;
 	GTimeVal         maj_stamp;
@@ -139,7 +139,7 @@ static void      signal_row_added( ofaModelProperties *self );
 static void      signal_row_removed( ofaModelProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaModelProperties *self );
-static void      on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaModelProperties *self );
+static void      on_journal_changed( const gchar *mnemo, ofaModelProperties *self );
 static void      on_journal_locked_toggled( GtkToggleButton *toggle, ofaModelProperties *self );
 static void      on_account_selection( ofaModelProperties *self, gint row );
 static void      on_button_clicked( GtkButton *button, ofaModelProperties *self );
@@ -166,6 +166,7 @@ model_properties_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->mnemo );
 	g_free( priv->label );
+	g_free( priv->mnemo );
 	g_free( priv->maj_user );
 	g_free( priv );
 
@@ -227,7 +228,7 @@ ofa_model_properties_class_init( ofaModelPropertiesClass *klass )
  * Update the properties of an model
  */
 gboolean
-ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model, gint journal_id )
+ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model, const gchar *journal )
 {
 	static const gchar *thisfn = "ofa_model_properties_run";
 	ofaModelProperties *self;
@@ -246,7 +247,7 @@ ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model, gint jour
 					NULL );
 
 	self->private->model = model;
-	self->private->journal = journal_id;
+	self->private->journal = g_strdup( journal );
 
 	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
 
@@ -283,7 +284,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.disp_label = FALSE;
 	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
 	parms.user_data = self;
-	parms.initial_id = priv->is_new ? priv->journal : ofo_model_get_journal( priv->model );
+	parms.initial_mnemo = priv->is_new ? priv->journal : ofo_model_get_journal( priv->model );
 
 	priv->journal_combo = ofa_journal_combo_init_combo( &parms );
 
@@ -604,11 +605,12 @@ on_label_changed( GtkEntry *entry, ofaModelProperties *self )
 }
 
 static void
-on_journal_changed( gint id, const gchar *mnemo, const gchar *label, ofaModelProperties *self )
+on_journal_changed( const gchar *mnemo, ofaModelProperties *self )
 {
 	g_return_if_fail( self && OFA_IS_MODEL_PROPERTIES( self ));
 
-	self->private->journal = id;
+	g_free( self->private->journal );
+	self->private->journal = g_strdup( mnemo );
 
 	check_for_enable_dlg( self );
 }

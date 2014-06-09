@@ -250,7 +250,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	priv->devise = g_strdup( ofo_account_get_devise( priv->account ));
 
-	parms.dialog = dialog->prot->dialog;
+	parms.container = GTK_CONTAINER( dialog->prot->dialog );
 	parms.dossier = ofa_base_dialog_get_dossier( dialog );
 	parms.combo_name = "p1-devise";
 	parms.label_name = NULL;
