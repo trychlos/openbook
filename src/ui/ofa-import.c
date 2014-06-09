@@ -43,6 +43,7 @@
 #include "ui/ofo-class.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-journal.h"
+#include "ui/ofo-taux.h"
 
 static gboolean pref_quit_on_escape = TRUE;
 static gboolean pref_confirm_on_cancel = FALSE;
@@ -165,6 +166,7 @@ static gint       import_class_csv( ofaImport *self );
 static gint       import_account_csv( ofaImport *self );
 static gint       import_devise_csv( ofaImport *self );
 static gint       import_journal_csv( ofaImport *self );
+static gint       import_taux_csv( ofaImport *self );
 static GSList    *split_csv_content( ofaImport *self );
 static void       free_csv_fields( GSList *fields );
 static void       free_csv_content( GSList *lines );
@@ -719,6 +721,9 @@ on_apply( GtkAssistant *assistant, ofaImport *self )
 			case IMPORTER_TYPE_JOURNAL:
 				count = import_journal_csv( self );
 				break;
+			case IMPORTER_TYPE_RATE:
+				count = import_taux_csv( self );
+				break;
 		}
 
 		for( i=0 ; i<count ; ++i ){
@@ -899,9 +904,6 @@ import_devise_csv( ofaImport *self )
 	gboolean ok;
 
 	str = g_strdup( _( "Importing a new reference for currencies will replace the existing one.\n"
-			"This will also allocate new intern identifiers, thus invalidating all internal links"
-			"with other objects (accounts, dossier, entries, and so on).\n"
-			"You are warned that you should only do this if you know what you are doing.\n"
 			"Are you sure you want drop all the current currencies, and reset the list to these newly imported ?" ));
 
 	ok = confirm_import( self, str );
@@ -948,6 +950,41 @@ import_journal_csv( ofaImport *self )
 	}
 
 	ofo_journal_import_csv(
+			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+
+	free_csv_content( lines );
+	return( 0 );
+}
+
+/*
+ * columns:
+ * - 1:mnemo;label;notes
+ * - 2:mnemo;begin;end;rate
+ *
+ * header : yes
+ */
+static gint
+import_taux_csv( ofaImport *self )
+{
+	GSList *lines;
+	gchar *str;
+	gboolean ok;
+
+	str = g_strdup( _( "Importing a new reference for rates will replace the existing list.\n"
+			"Are you sure you want drop all the current rates, and reset the list to these new ones ?" ));
+
+	ok = confirm_import( self, str );
+	g_free( str );
+	if( !ok ){
+		return( -1 );
+	}
+
+	lines = split_csv_content( self );
+	if( g_slist_length( lines ) <= 1 ){
+		return( -1 );
+	}
+
+	ofo_taux_import_csv(
 			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );

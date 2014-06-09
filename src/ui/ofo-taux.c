@@ -82,6 +82,7 @@ static void           taux_set_val_begin( sTauxValid *tv, const GDate *date );
 static void           taux_set_val_end( sTauxValid *tv, const GDate *date );
 static void           taux_set_val_taux( sTauxValid *tv, gdouble rate );
 static ofoTaux       *taux_find_by_mnemo( GList *set, const gchar *mnemo );
+static void           taux_add_val_detail( ofoTaux *taux, sTauxValid *detail );
 static gboolean       taux_do_insert( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
 static gboolean       taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
 static gboolean       taux_delete_validities( ofoTaux *taux, const ofoSgbd *sgbd );
@@ -92,6 +93,9 @@ static gboolean       taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, 
 static gboolean       taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd );
 static gint           taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo );
 static gint           taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent );
+static ofoTaux        *taux_import_csv_taux( GSList *fields, gint count, gint *errors );
+static sTauxValid     *taux_import_csv_valid( GSList *fields, gint count, gint *errors, gchar **mnemo );
+static gboolean       taux_do_drop_content( const ofoSgbd *sgbd );
 
 static void
 taux_free_validity( sTauxValid *sval )
@@ -467,8 +471,14 @@ ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const cha
 		g_date_set_parse( &sval->begin, begin );
 		g_date_set_parse( &sval->end, end );
 		sval->rate = g_ascii_strtod( rate, NULL );
-		taux->private->valids = g_list_append( taux->private->valids, sval );
+		taux_add_val_detail( taux, sval );
 	}
+}
+
+static void
+taux_add_val_detail( ofoTaux *taux, sTauxValid *detail )
+{
+	taux->private->valids = g_list_append( taux->private->valids, detail );
 }
 
 /**
@@ -734,7 +744,7 @@ taux_set_val_taux( sTauxValid *tv, gdouble value )
  * ofo_taux_insert:
  *
  * First creation of a new rate. This may contain zéro to n validity
- * datail rows. But, if it doesn't, the we take care of removing all
+ * datail rows. But, if it doesn't, then we take care of removing all
  * previously existing old validity rows.
  */
 gboolean
@@ -1199,4 +1209,200 @@ ofo_taux_get_csv( const ofoDossier *dossier )
 	}
 
 	return( g_slist_reverse( lines ));
+}
+
+/**
+ * ofo_taux_set_csv:
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - 1:
+ * - taux mnemo
+ * - label
+ * - notes (opt)
+ *
+ * - 2:
+ * - taux mnemo
+ * - begin validity (opt)
+ * - end validity (opt)
+ * - rate
+ *
+ * It is not required that the input csv files be sorted by mnemo. We
+ * may have all 'taux' records, then all 'validity' records...
+ *
+ * Replace the whole table with the provided datas.
+ */
+void
+ofo_taux_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+{
+	static const gchar *thisfn = "ofo_taux_import_csv";
+	gint type;
+	GSList *ili, *ico;
+	ofoTaux *taux;
+	sTauxValid *sdet;
+	GList *new_set, *ise;
+	gint count;
+	gint errors;
+	const gchar *str;
+	gchar *mnemo;
+
+	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
+			thisfn,
+			( void * ) dossier,
+			( void * ) lines, g_slist_length( lines ),
+			with_header ? "True":"False" );
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
+
+	new_set = NULL;
+	count = 0;
+	errors = 0;
+
+	for( ili=lines ; ili ; ili=ili->next ){
+		count += 1;
+		if( !( count == 1 && with_header )){
+			ico=ili->data;
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty line type", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			type = atoi( str );
+			switch( type ){
+				case 1:
+					taux = taux_import_csv_taux( ico, count, &errors );
+					if( taux ){
+						new_set = g_list_prepend( new_set, taux );
+					}
+					break;
+				case 2:
+					mnemo = NULL;
+					sdet = taux_import_csv_valid( ico, count, &errors, &mnemo );
+					if( sdet ){
+						taux = taux_find_by_mnemo( new_set, mnemo );
+						if( taux ){
+							taux_add_val_detail( taux, sdet );
+						}
+						g_free( mnemo );
+					}
+					break;
+				default:
+					g_warning( "%s: (line %d) invalid line type: %d", thisfn, count, type );
+					errors += 1;
+					continue;
+			}
+		}
+	}
+
+	if( !errors ){
+		st_global->send_signal_new = FALSE;
+
+		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+		st_global->dataset = NULL;
+
+		taux_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+
+		for( ise=new_set ; ise ; ise=ise->next ){
+			ofo_taux_insert( OFO_TAUX( ise->data ), dossier );
+		}
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_TAUX );
+
+		g_list_free( new_set );
+
+		st_global->send_signal_new = TRUE;
+	}
+}
+
+ofoTaux *
+taux_import_csv_taux( GSList *fields, gint count, gint *errors )
+{
+	static const gchar *thisfn = "ofo_taux_import_csv_taux";
+	ofoTaux *taux;
+	const gchar *str;
+	GSList *ico;
+
+	taux = ofo_taux_new();
+
+	/* taux mnemo */
+	ico = fields->next;
+	str = ( const gchar * ) ico->data;
+	if( !str || !g_utf8_strlen( str, -1 )){
+		g_warning( "%s: (line %d) empty mnemo", thisfn, count );
+		*errors += 1;
+		g_object_unref( taux );
+		return( NULL );
+	}
+	ofo_taux_set_mnemo( taux, str );
+
+	/* taux label */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( !str || !g_utf8_strlen( str, -1 )){
+		g_warning( "%s: (line %d) empty label", thisfn, count );
+		*errors += 1;
+		g_object_unref( taux );
+		return( NULL );
+	}
+	ofo_taux_set_label( taux, str );
+
+	/* notes
+	 * we are tolerant on the last field... */
+	ico = ico->next;
+	if( ico ){
+		str = ( const gchar * ) ico->data;
+		if( str && g_utf8_strlen( str, -1 )){
+			ofo_taux_set_notes( taux, str );
+		}
+	}
+
+	return( taux );
+}
+
+sTauxValid *
+taux_import_csv_valid( GSList *fields, gint count, gint *errors, gchar **mnemo )
+{
+	static const gchar *thisfn = "ofo_taux_import_csv_valid";
+	sTauxValid *detail;
+	const gchar *str;
+	GSList *ico;
+
+	detail = g_new0( sTauxValid, 1 );
+
+	/* taux mnemo */
+	ico = fields->next;
+	str = ( const gchar * ) ico->data;
+	if( !str || !g_utf8_strlen( str, -1 )){
+		g_warning( "%s: (line %d) empty mnemo", thisfn, count );
+		*errors += 1;
+		g_free( detail );
+		return( NULL );
+	}
+	*mnemo = g_strdup( str );
+
+	/* taux begin validity */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	g_date_set_parse( &detail->begin, str );
+
+	/* taux end validity */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	g_date_set_parse( &detail->end, str );
+
+	/* taux rate */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	detail->rate = g_ascii_strtod( str, NULL );
+
+	return( detail );
+}
+
+static gboolean
+taux_do_drop_content( const ofoSgbd *sgbd )
+{
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_TAUX" ) &&
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_TAUX_VAL" ));
 }
