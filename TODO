@@ -147,8 +147,6 @@
 
  121 2014- 5-28 import entry models
 
- 124 2014- 5-28 import standard rates
-
  126 2014- 5-28 have several demo dossiers
 
  129 2014- 5-28 Account: archive balances after closing in ACCOUNT_EXE
@@ -205,6 +203,10 @@
  176 2014- 6- 6 ImportAssistant: let the user select the encoding
                 character set of the imported file, so that we are
                 able to convert to UTF-8
+
+ 177 2014- 6- 9 there is no sens to manage a GtkTreeView in ofaMainPage
+
+ 178
 
 -----------------------------------------------------------------------
  DONE
@@ -524,6 +526,9 @@
 
  123 2014- 5-28 import currencies
      2014- 6- 7 done
+
+ 124 2014- 5-28 import standard rates
+     2014- 6- 9 done - svn #3674
 
  125 2014- 5-28 import accounts
      2014- 6- 7 done

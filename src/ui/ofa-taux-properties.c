@@ -640,7 +640,7 @@ do_update( ofaTauxProperties *self )
 
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 
-	if( priv->is_new == -1 ){
+	if( priv->is_new ){
 		priv->updated =
 				ofo_taux_insert( priv->taux, dossier );
 	} else {
