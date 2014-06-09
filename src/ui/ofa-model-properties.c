@@ -157,7 +157,7 @@ model_properties_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->mnemo );
 	g_free( priv->label );
-	g_free( priv->mnemo );
+	g_free( priv->journal );
 	g_free( priv->maj_user );
 	g_free( priv );
 

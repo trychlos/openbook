@@ -179,6 +179,8 @@ v_setup_view( ofaMainPage *page )
 	gtk_widget_set_margin_bottom( GTK_WIDGET( book ), 4 );
 	gtk_widget_set_hexpand( GTK_WIDGET( book ), TRUE );
 	gtk_notebook_set_scrollable( book, TRUE );
+	gtk_notebook_popup_enable( book );
+
 	self->private->book = GTK_NOTEBOOK( book );
 
 	dataset = ofo_journal_get_dataset( ofa_main_page_get_dossier( page ));

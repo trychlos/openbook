@@ -60,6 +60,7 @@
             <property name="margin_left">4</property>
             <property name="margin_bottom">4</property>
             <property name="scrollable">True</property>
+            <property name="enable_popup">True</property>
             <child>
               <placeholder/>
             </child>
