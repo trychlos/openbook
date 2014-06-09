@@ -56,7 +56,6 @@ struct _ofaTauxPropertiesPrivate {
 
 	/* data
 	 */
-	gint           id;
 	gchar         *mnemo;
 	gchar         *label;
 };
@@ -151,7 +150,6 @@ ofa_taux_properties_init( ofaTauxProperties *self )
 	self->private->is_new = FALSE;
 	self->private->updated = FALSE;
 
-	self->private->id = OFO_BASE_UNSET_ID;
 	self->private->count = 0;
 }
 
@@ -224,7 +222,6 @@ v_init_dialog( ofaBaseDialog *dialog )
 		title = g_strdup( _( "Defining a new rate" ));
 	} else {
 		title = g_strdup_printf( _( "Updating « %s » rate" ), mnemo );
-		self->private->id = ofo_taux_get_id( priv->taux );
 	}
 	gtk_window_set_title( GTK_WINDOW( dialog->prot->dialog ), title );
 
@@ -584,7 +581,7 @@ is_dialog_validable( ofaTauxProperties *self )
 				ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
 				self->private->mnemo );
 		ok &= !exists ||
-				ofo_taux_get_id( exists ) == ofo_taux_get_id( self->private->taux );
+				( !priv->is_new && !g_utf8_collate( self->private->mnemo, ofo_taux_get_mnemo( self->private->taux )));
 	}
 
 	return( ok );
@@ -612,10 +609,13 @@ do_update( ofaTauxProperties *self )
 	gint i;
 	GtkEntry *entry;
 	const gchar *sbegin, *send, *srate;
+	gchar *prev_mnemo;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->private;
+
+	prev_mnemo = g_strdup( ofo_taux_get_mnemo( priv->taux ));
 
 	ofo_taux_set_mnemo( priv->taux, priv->mnemo );
 	ofo_taux_set_label( priv->taux, priv->label );
@@ -640,13 +640,15 @@ do_update( ofaTauxProperties *self )
 
 	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 
-	if( priv->id == -1 ){
+	if( priv->is_new == -1 ){
 		priv->updated =
 				ofo_taux_insert( priv->taux, dossier );
 	} else {
 		priv->updated =
-				ofo_taux_update( priv->taux, dossier );
+				ofo_taux_update( priv->taux, dossier, prev_mnemo );
 	}
+
+	g_free( prev_mnemo );
 
 	return( priv->updated );
 }

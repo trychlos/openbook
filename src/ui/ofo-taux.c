@@ -45,7 +45,6 @@ struct _ofoTauxPrivate {
 
 	/* sgbd data
 	 */
-	gint       id;
 	gchar     *mnemo;
 	gchar     *label;
 	gchar     *notes;
@@ -85,12 +84,11 @@ static void           taux_set_val_taux( sTauxValid *tv, gdouble rate );
 static ofoTaux       *taux_find_by_mnemo( GList *set, const gchar *mnemo );
 static gboolean       taux_do_insert( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
 static gboolean       taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_get_back_id( ofoTaux *taux, const ofoSgbd *sgbd );
 static gboolean       taux_delete_validities( ofoTaux *taux, const ofoSgbd *sgbd );
 static gboolean       taux_insert_validities( ofoTaux *taux, const ofoSgbd *sgbd );
 static gboolean       taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd );
-static gboolean       taux_do_update( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_update_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
+static gboolean       taux_do_update( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
+static gboolean       taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
 static gboolean       taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd );
 static gint           taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo );
 static gint           taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent );
@@ -157,8 +155,6 @@ ofo_taux_init( ofoTaux *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofoTauxPrivate, 1 );
-
-	self->private->id = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -208,16 +204,13 @@ taux_load_dataset( void )
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
 	result = ofo_sgbd_query_ex( sgbd,
-			"SELECT TAX_ID,TAX_MNEMO,TAX_LABEL,TAX_NOTES,"
+			"SELECT TAX_MNEMO,TAX_LABEL,TAX_NOTES,"
 			"	TAX_MAJ_USER,TAX_MAJ_STAMP"
-			"	FROM OFA_T_TAUX "
-			"	ORDER BY TAX_MNEMO ASC" );
+			"	FROM OFA_T_TAUX" );
 
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
 		taux = ofo_taux_new();
-		ofo_taux_set_id( taux, atoi(( gchar * ) icol->data ));
-		icol = icol->next;
 		ofo_taux_set_mnemo( taux, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_taux_set_label( taux, ( gchar * ) icol->data );
@@ -241,8 +234,8 @@ taux_load_dataset( void )
 		query = g_strdup_printf(
 					"SELECT TAX_VAL_DEB,TAX_VAL_FIN,TAX_VAL_TAUX"
 					"	FROM OFA_T_TAUX_VAL "
-					"	WHERE TAX_ID=%d",
-					ofo_taux_get_id( taux ));
+					"	WHERE TAX_MNEMO='%s'",
+					ofo_taux_get_mnemo( taux ));
 
 		result = ofo_sgbd_query_ex( sgbd, query );
 
@@ -311,23 +304,6 @@ ofo_taux_new( void )
 	taux = g_object_new( OFO_TYPE_TAUX, NULL );
 
 	return( taux );
-}
-
-/**
- * ofo_taux_get_id:
- */
-gint
-ofo_taux_get_id( const ofoTaux *taux )
-{
-	g_return_val_if_fail( OFO_IS_TAUX( taux ), OFO_BASE_UNSET_ID );
-
-	if( !OFO_BASE( taux )->prot->dispose_has_run ){
-
-		return( taux->private->id );
-	}
-
-	g_assert_not_reached();
-	return( OFO_BASE_UNSET_ID );
 }
 
 /**
@@ -621,9 +597,6 @@ ofo_taux_is_deletable( const ofoTaux *taux )
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
-	/* a rate whose internal identifier is not set is deletable,
-	 * but this should never appear */
-	g_return_val_if_fail( ofo_taux_get_id( taux ) > 0, TRUE );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
@@ -663,20 +636,6 @@ ofo_taux_is_valid( const gchar *mnemo, const gchar *label, GList *validities )
 	ok &= consistent;
 
 	return( ok );
-}
-
-/**
- * ofo_taux_set_id:
- */
-void
-ofo_taux_set_id( ofoTaux *taux, gint id )
-{
-	g_return_if_fail( OFO_IS_TAUX( taux ));
-
-	if( !OFO_BASE( taux )->prot->dispose_has_run ){
-
-		taux->private->id = id;
-	}
 }
 
 /**
@@ -810,7 +769,6 @@ static gboolean
 taux_do_insert( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 {
 	return( taux_insert_main( taux, sgbd, user ) &&
-			taux_get_back_id( taux, sgbd ) &&
 			taux_delete_validities( taux, sgbd ) &&
 			taux_insert_validities( taux, sgbd ));
 }
@@ -863,33 +821,14 @@ taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-taux_get_back_id( ofoTaux *taux, const ofoSgbd *sgbd )
-{
-	gboolean ok;
-	GSList *result, *icol;
-
-	ok = FALSE;
-	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		ofo_taux_set_id( taux, atoi(( gchar * ) icol->data ));
-		ofo_sgbd_free_result( result );
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-static gboolean
 taux_delete_validities( ofoTaux *taux, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	gchar *query;
 
 	query = g_strdup_printf(
-			"DELETE FROM OFA_T_TAUX_VAL WHERE TAX_ID=%d",
-					ofo_taux_get_id( taux ));
+			"DELETE FROM OFA_T_TAUX_VAL WHERE TAX_MNEMO='%s'",
+					ofo_taux_get_mnemo( taux ));
 
 	ok = ofo_sgbd_query( sgbd, query );
 
@@ -928,10 +867,10 @@ taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
 	query = g_string_new( "INSERT INTO OFA_T_TAUX_VAL " );
 
 	g_string_append_printf( query,
-			"	(TAX_ID,"
+			"	(TAX_MNEMO,"
 			"	TAX_VAL_DEB,TAX_VAL_FIN,TAX_VAL_TAUX) "
-			"	VALUES (%d,",
-					ofo_taux_get_id( taux ));
+			"	VALUES ('%s',",
+					ofo_taux_get_mnemo( taux ));
 
 	if( dbegin && g_utf8_strlen( dbegin, -1 )){
 		g_string_append_printf( query, "'%s',", dbegin );
@@ -963,7 +902,7 @@ taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
  * Only update here the main properties.
  */
 gboolean
-ofo_taux_update( ofoTaux *taux, const ofoDossier *dossier )
+ofo_taux_update( ofoTaux *taux, const ofoDossier *dossier, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_taux_update";
 
@@ -979,10 +918,11 @@ ofo_taux_update( ofoTaux *taux, const ofoDossier *dossier )
 
 		if( taux_do_update(
 					taux,
+					prev_mnemo,
 					ofo_dossier_get_sgbd( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_UPDATE_DATASET( st_global, taux, NULL );
+			OFO_BASE_UPDATE_DATASET( st_global, taux, prev_mnemo );
 			return( TRUE );
 		}
 	}
@@ -991,15 +931,15 @@ ofo_taux_update( ofoTaux *taux, const ofoDossier *dossier )
 }
 
 static gboolean
-taux_do_update( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
+taux_do_update( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user )
 {
-	return( taux_update_main( taux, sgbd, user ) &&
+	return( taux_update_main( taux, prev_mnemo, sgbd, user ) &&
 			taux_delete_validities( taux, sgbd ) &&
 			taux_insert_validities( taux, sgbd ));
 }
 
 static gboolean
-taux_update_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
+taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -1027,8 +967,8 @@ taux_update_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	TAX_MAJ_USER='%s',TAX_MAJ_STAMP='%s'"
-			"	WHERE TAX_ID=%d",
-					user, stamp, ofo_taux_get_id( taux ));
+			"	WHERE TAX_MNEMO='%s'",
+					user, stamp, prev_mnemo );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
@@ -1082,16 +1022,16 @@ taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd )
 	gchar *query;
 
 	query = g_strdup_printf(
-			"DELETE FROM OFA_T_TAUX WHERE TAX_ID=%d",
-					ofo_taux_get_id( taux ));
+			"DELETE FROM OFA_T_TAUX WHERE TAX_MNEMO='%s'",
+					ofo_taux_get_mnemo( taux ));
 
 	ok = ofo_sgbd_query( sgbd, query );
 
 	g_free( query );
 
 	query = g_strdup_printf(
-			"DELETE FROM OFA_T_TAUX_VAL WHERE TAX_ID=%d",
-					ofo_taux_get_id( taux ));
+			"DELETE FROM OFA_T_TAUX_VAL WHERE TAX_MNEMO='%s'",
+					ofo_taux_get_mnemo( taux ));
 
 	ok &= ofo_sgbd_query( sgbd, query );
 
