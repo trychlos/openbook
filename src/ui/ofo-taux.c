@@ -908,11 +908,12 @@ ofo_taux_update( ofoTaux *taux, const ofoDossier *dossier, const gchar *prev_mne
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		g_debug( "%s: taux=%p, dossier=%p",
-				thisfn, ( void * ) taux, ( void * ) dossier );
+		g_debug( "%s: taux=%p, dossier=%p, prev_mnemo=%s",
+				thisfn, ( void * ) taux, ( void * ) dossier, prev_mnemo );
 
 		OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
 

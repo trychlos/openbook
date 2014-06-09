@@ -81,15 +81,6 @@ struct _ofaModelPropertiesPrivate {
 	GTimeVal         maj_stamp;
 };
 
-/* column ordering in the journal combobox
- */
-enum {
-	JOU_COL_ID = 0,
-	JOU_COL_MNEMO,
-	JOU_COL_LABEL,
-	JOU_N_COLUMNS
-};
-
 /* columns in the detail treeview
  */
 enum {
@@ -771,9 +762,9 @@ is_dialog_validable( ofaModelProperties *self )
 	if( ok ){
 		exists = ofo_model_get_by_mnemo(
 						ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
-						self->private->mnemo );
+						priv->mnemo );
 		ok &= !exists ||
-				ofo_model_get_id( exists ) == ofo_model_get_id( self->private->model );
+				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_model_get_mnemo( priv->model )));
 	}
 
 	return( ok );

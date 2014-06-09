@@ -49,7 +49,6 @@ gboolean        ofo_model_use_taux          ( const ofoDossier *dossier, const g
 
 ofoModel       *ofo_model_new               ( void );
 
-gint            ofo_model_get_id            ( const ofoModel *model );
 const gchar    *ofo_model_get_mnemo         ( const ofoModel *model );
 const gchar    *ofo_model_get_label         ( const ofoModel *model );
 const gchar    *ofo_model_get_journal       ( const ofoModel *model );
@@ -61,7 +60,6 @@ const GTimeVal *ofo_model_get_maj_stamp     ( const ofoModel *model );
 gboolean        ofo_model_is_deletable      ( const ofoModel *model );
 gboolean        ofo_model_is_valid          ( const gchar *mnemo, const gchar *label, const gchar *journal );
 
-void            ofo_model_set_id            ( ofoModel *model, gint id );
 void            ofo_model_set_mnemo         ( ofoModel *model, const gchar *mnemo );
 void            ofo_model_set_label         ( ofoModel *model, const gchar *label );
 void            ofo_model_set_journal       ( ofoModel *model, const gchar *journal );

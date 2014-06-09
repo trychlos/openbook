@@ -45,7 +45,6 @@ struct _ofoModelPrivate {
 
 	/* sgbd data
 	 */
-	gint       id;
 	gchar     *mnemo;
 	gchar     *label;
 	gchar     *journal;
@@ -82,7 +81,6 @@ static gint           model_count_for_journal( const ofoSgbd *sgbd, const gchar 
 static gint           model_count_for_taux( const ofoSgbd *sgbd, const gchar *mnemo );
 static gboolean       model_do_insert( ofoModel *model, const ofoSgbd *sgbd, const gchar *user );
 static gboolean       model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user );
-static gboolean       model_get_back_id( ofoModel *model, const ofoSgbd *sgbd );
 static gboolean       model_delete_details( ofoModel *model, const ofoSgbd *sgbd );
 static gboolean       model_insert_details_ex( ofoModel *model, const ofoSgbd *sgbd );
 static gboolean       model_insert_details( ofoModel *model, const ofoSgbd *sgbd, gint rang, sModDetail *detail );
@@ -163,8 +161,6 @@ ofo_model_init( ofoModel *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofoModelPrivate, 1 );
-
-	self->private->id = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -216,7 +212,7 @@ model_load_dataset( void )
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
 	result = ofo_sgbd_query_ex( sgbd,
-			"SELECT MOD_ID,MOD_MNEMO,MOD_LABEL,MOD_JOU_MNEMO,MOD_JOU_VER,MOD_NOTES,"
+			"SELECT MOD_MNEMO,MOD_LABEL,MOD_JOU_MNEMO,MOD_JOU_VER,MOD_NOTES,"
 			"	MOD_MAJ_USER,MOD_MAJ_STAMP "
 			"	FROM OFA_T_MODELES" );
 
@@ -225,8 +221,6 @@ model_load_dataset( void )
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
 		model = ofo_model_new();
-		ofo_model_set_id( model, atoi(( gchar * ) icol->data ));
-		icol = icol->next;
 		ofo_model_set_mnemo( model, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_model_set_label( model, ( gchar * ) icol->data );
@@ -261,7 +255,8 @@ model_load_dataset( void )
 				"	MOD_DET_DEBIT,MOD_DET_DEBIT_VER,"
 				"	MOD_DET_CREDIT,MOD_DET_CREDIT_VER "
 				"	FROM OFA_T_MODELES_DET "
-				"	WHERE MOD_ID=%d ORDER BY MOD_DET_RANG ASC", ofo_model_get_id( model ));
+				"	WHERE MOD_MNEMO='%s' ORDER BY MOD_DET_RANG ASC",
+						ofo_model_get_mnemo( model ));
 
 		result = ofo_sgbd_query_ex( sgbd, query );
 		details = NULL;
@@ -433,22 +428,6 @@ ofo_model_new( void )
 }
 
 /**
- * ofo_model_get_id:
- */
-gint
-ofo_model_get_id( const ofoModel *model )
-{
-	g_return_val_if_fail( OFO_IS_MODEL( model ), OFO_BASE_UNSET_ID );
-
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
-
-		return( model->private->id );
-	}
-
-	return( OFO_BASE_UNSET_ID );
-}
-
-/**
  * ofo_model_get_mnemo:
  */
 const gchar *
@@ -590,20 +569,6 @@ ofo_model_is_valid( const gchar *mnemo, const gchar *label, const gchar *journal
 			label && g_utf8_strlen( label, -1 ) &&
 			journal && g_utf8_strlen( journal, -1 ) &&
 			ofo_journal_get_by_mnemo( OFO_DOSSIER( st_global->dossier ), journal ));
-}
-
-/**
- * ofo_model_set_id:
- */
-void
-ofo_model_set_id( ofoModel *model, gint id )
-{
-	g_return_if_fail( OFO_IS_MODEL( model ));
-
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
-
-		model->private->id = id;
-	}
 }
 
 /**
@@ -1012,7 +977,6 @@ static gboolean
 model_do_insert( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 {
 	return( model_insert_main( model, sgbd, user ) &&
-			model_get_back_id( model, sgbd ) &&
 			model_delete_details( model, sgbd ) &&
 			model_insert_details_ex( model, sgbd ));
 }
@@ -1062,33 +1026,14 @@ model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-model_get_back_id( ofoModel *model, const ofoSgbd *sgbd )
-{
-	gboolean ok;
-	GSList *result, *icol;
-
-	ok = FALSE;
-	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		ofo_model_set_id( model, atoi(( gchar * ) icol->data ));
-		ofo_sgbd_free_result( result );
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-static gboolean
 model_delete_details( ofoModel *model, const ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;
 
 	query = g_strdup_printf(
-			"DELETE FROM OFA_T_MODELES_DET WHERE MOD_ID=%d",
-			ofo_model_get_id( model ));
+			"DELETE FROM OFA_T_MODELES_DET WHERE MOD_MNEMO='%s'",
+			ofo_model_get_mnemo( model ));
 
 	ok = ofo_sgbd_query( sgbd, query );
 
@@ -1130,13 +1075,13 @@ model_insert_details( ofoModel *model, const ofoSgbd *sgbd, gint rang, sModDetai
 	query = g_string_new( "INSERT INTO OFA_T_MODELES_DET " );
 
 	g_string_append_printf( query,
-			"	(MOD_ID,MOD_DET_RANG,MOD_DET_COMMENT,"
+			"	(MOD_MNEMO,MOD_DET_RANG,MOD_DET_COMMENT,"
 			"	MOD_DET_ACCOUNT,MOD_DET_ACCOUNT_VER,"
 			"	MOD_DET_LABEL,MOD_DET_LABEL_VER,"
 			"	MOD_DET_DEBIT,MOD_DET_DEBIT_VER,"
 			"	MOD_DET_CREDIT,MOD_DET_CREDIT_VER) "
-			"	VALUES(%d,%d,",
-			ofo_model_get_id( model ), rang );
+			"	VALUES('%s',%d,",
+			ofo_model_get_mnemo( model ), rang );
 
 	if( detail->comment && g_utf8_strlen( detail->comment, -1 )){
 		g_string_append_printf( query, "'%s',", detail->comment );
@@ -1213,7 +1158,7 @@ ofo_model_update( ofoModel *model, const ofoDossier *dossier, const gchar *prev_
 					ofo_dossier_get_user( dossier ),
 					prev_mnemo )){
 
-			OFO_BASE_UPDATE_DATASET( st_global, model, NULL );
+			OFO_BASE_UPDATE_DATASET( st_global, model, prev_mnemo );
 			return( TRUE );
 		}
 	}
@@ -1261,10 +1206,10 @@ model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, cons
 
 	g_string_append_printf( query,
 			"	MOD_MAJ_USER='%s',MOD_MAJ_STAMP='%s'"
-			"	WHERE MOD_ID=%d",
+			"	WHERE MOD_MNEMO='%s'",
 					user,
 					stamp,
-					ofo_model_get_id( model ));
+					prev_mnemo );
 
 	ok = ofo_sgbd_query( sgbd, query->str );
 
@@ -1317,8 +1262,8 @@ model_do_delete( ofoModel *model, const ofoSgbd *sgbd )
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_MODELES"
-			"	WHERE MOD_ID=%d",
-					ofo_model_get_id( model ));
+			"	WHERE MOD_MNEMO='%s'",
+					ofo_model_get_mnemo( model ));
 
 	ok = ofo_sgbd_query( sgbd, query );
 
