@@ -39,11 +39,12 @@
 /* private instance data
  */
 struct _ofaTauxSetPrivate {
-	gboolean     dispose_has_run;
+	gboolean      dispose_has_run;
 
 	/* UI
 	 */
-	GtkTreeView *tview;
+	GtkTreeView  *tview;
+	GtkTreeModel *tmodel;
 };
 
 /* column ordering in the selection listview
@@ -66,6 +67,7 @@ static void       v_init_view( ofaMainPage *page );
 static void       insert_dataset( ofaTauxSet *self );
 static void       insert_new_row( ofaTauxSet *self, ofoTaux *taux, gboolean with_selection );
 static void       set_row_by_iter( ofaTauxSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoTaux *taux );
+static gboolean   find_row_by_mnemo( ofaTauxSet *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static gchar     *get_min_val_date( ofoTaux *taux );
 static gchar     *get_max_val_date( ofoTaux *taux );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTauxSet *self );
@@ -73,13 +75,12 @@ static void       setup_first_selection( ofaTauxSet *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaTauxSet *self );
 static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaTauxSet *self );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaTauxSet *self, ofoTaux *taux );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaTauxSet *self );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self );
-static gboolean   find_row_by_mnemo( ofaTauxSet *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaTauxSet *self );
 
 static void
@@ -220,6 +221,7 @@ setup_tree_view( ofaTauxSet *self )
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( tview, tmodel );
 	g_object_unref( tmodel );
+	self->private->tmodel = tmodel;
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -298,30 +300,28 @@ insert_dataset( ofaTauxSet *self )
 static void
 insert_new_row( ofaTauxSet *self, ofoTaux *taux, gboolean with_selection )
 {
-	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
+	ofaTauxSetPrivate *priv;
 	GtkTreeIter iter;
 	GtkTreePath *path;
 
-	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( OFA_MAIN_PAGE( self )));
-	tmodel = gtk_tree_view_get_model( tview );
+	priv = self->private;
 
 	gtk_list_store_insert_with_values(
-			GTK_LIST_STORE( tmodel ),
+			GTK_LIST_STORE( priv->tmodel ),
 			&iter,
 			-1,
 			COL_MNEMO,  ofo_taux_get_mnemo( taux ),
 			COL_OBJECT, taux,
 			-1 );
 
-	set_row_by_iter( self, tmodel, &iter, taux );
+	set_row_by_iter( self, priv->tmodel, &iter, taux );
 
 	/* select the newly added taux */
 	if( with_selection ){
-		path = gtk_tree_model_get_path( tmodel, &iter );
-		gtk_tree_view_set_cursor( tview, path, NULL, FALSE );
+		path = gtk_tree_model_get_path( priv->tmodel, &iter );
+		gtk_tree_view_set_cursor( priv->tview, path, NULL, FALSE );
 		gtk_tree_path_free( path );
-		gtk_widget_grab_focus( GTK_WIDGET( tview ));
+		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 	}
 }
 
@@ -349,6 +349,31 @@ set_row_by_iter( ofaTauxSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoT
 
 	g_free( sbegin );
 	g_free( send );
+}
+
+static gboolean
+find_row_by_mnemo( ofaTauxSet *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+{
+	gchar *row_mnemo;
+	gint cmp;
+
+	*tmodel = gtk_tree_view_get_model( self->private->tview );
+
+	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
+		while( TRUE ){
+			gtk_tree_model_get( *tmodel, iter, COL_MNEMO, &row_mnemo, -1 );
+			cmp = g_utf8_collate( row_mnemo, mnemo );
+			g_free( row_mnemo );
+			if( cmp == 0 ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( *tmodel, iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
 }
 
 static gchar *
@@ -417,19 +442,18 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTauxSet 
 static void
 setup_first_selection( ofaTauxSet *self )
 {
-	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
+	ofaTauxSetPrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( OFA_MAIN_PAGE( self )));
-	tmodel = gtk_tree_view_get_model( tview );
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		select = gtk_tree_view_get_selection( tview );
+	priv = self->private;
+
+	if( gtk_tree_model_get_iter_first( priv->tmodel, &iter )){
+		select = gtk_tree_view_get_selection( priv->tview );
 		gtk_tree_selection_select_iter( select, &iter );
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
 /*
@@ -444,12 +468,14 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 static void
 on_row_selected( GtkTreeSelection *selection, ofaTauxSet *self )
 {
-	GtkTreeModel *tmodel;
+	ofaTauxSetPrivate *priv;
 	GtkTreeIter iter;
 	ofoTaux *taux;
 
-	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &taux, -1 );
+	priv = self->private;
+
+	if( gtk_tree_selection_get_selected( selection, NULL, &iter )){
+		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &taux, -1 );
 		g_object_unref( taux );
 	}
 
@@ -483,96 +509,6 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 static void
-v_on_update_clicked( GtkButton *button, ofaMainPage *page )
-{
-	GtkTreeView *tview;
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTaux *taux;
-	gchar *sbegin, *send;
-
-	g_return_if_fail( page && OFA_IS_TAUX_SET( page ));
-
-	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( page ));
-	select = gtk_tree_view_get_selection( tview );
-
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &taux, -1 );
-		g_object_unref( taux );
-
-		if( ofa_taux_properties_run(
-				ofa_main_page_get_main_window( page ), taux )){
-
-			sbegin = get_min_val_date( taux );
-			send = get_max_val_date( taux );
-
-			gtk_list_store_set(
-					GTK_LIST_STORE( tmodel ),
-					&iter,
-					COL_MNEMO, ofo_taux_get_mnemo( taux ),
-					COL_LABEL, ofo_taux_get_label( taux ),
-					COL_BEGIN, sbegin,
-					COL_END,   send,
-					-1 );
-
-			g_free( sbegin );
-			g_free( send );
-		}
-	}
-
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
-}
-
-static void
-v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
-{
-	GtkTreeView *tview;
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoTaux *taux;
-
-	g_return_if_fail( page && OFA_IS_TAUX_SET( page ));
-
-	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( page ));
-	select = gtk_tree_view_get_selection( tview );
-
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &taux, -1 );
-		g_object_unref( taux );
-
-		if( delete_confirmed( OFA_TAUX_SET( page ), taux ) &&
-				ofo_taux_delete( taux, ofa_main_page_get_dossier( page ))){
-
-			/* nothing to do here as all is managed by dossier signaling
-			 * system */
-		}
-	}
-
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
-}
-
-static gboolean
-delete_confirmed( ofaTauxSet *self, ofoTaux *taux )
-{
-	gchar *msg;
-	gboolean delete_ok;
-
-	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' rate ?" ),
-			ofo_taux_get_mnemo( taux ),
-			ofo_taux_get_label( taux ));
-
-	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
-
-	g_free( msg );
-
-	return( delete_ok );
-}
-
-static void
 on_new_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self )
 {
 	static const gchar *thisfn = "ofa_taux_set_on_new_object";
@@ -586,6 +522,36 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self )
 	if( OFO_IS_TAUX( object )){
 		insert_new_row( self, OFO_TAUX( object ), TRUE );
 	}
+}
+
+static void
+v_on_update_clicked( GtkButton *button, ofaMainPage *page )
+{
+	ofaTauxSetPrivate *priv;
+	GtkTreeSelection *select;
+	GtkTreeIter iter;
+	ofoTaux *taux;
+
+	g_return_if_fail( page && OFA_IS_TAUX_SET( page ));
+
+	priv = OFA_TAUX_SET( page )->private;
+
+	select = gtk_tree_view_get_selection( priv->tview );
+
+	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
+
+		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &taux, -1 );
+		g_object_unref( taux );
+
+		if( ofa_taux_properties_run(
+				ofa_main_page_get_main_window( page ), taux )){
+
+			/* nothing to do here as all is managed by dossier
+			 * signaling system */
+		}
+	}
+
+	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
 static void
@@ -612,6 +578,53 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 }
 
 static void
+v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
+{
+	ofaTauxSetPrivate *priv;
+	GtkTreeSelection *select;
+	GtkTreeIter iter;
+	ofoTaux *taux;
+
+	g_return_if_fail( page && OFA_IS_TAUX_SET( page ));
+
+	priv = OFA_TAUX_SET( page )->private;
+
+	select = gtk_tree_view_get_selection( priv->tview );
+
+	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
+
+		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &taux, -1 );
+		g_object_unref( taux );
+
+		if( delete_confirmed( OFA_TAUX_SET( page ), taux ) &&
+				ofo_taux_delete( taux, ofa_main_page_get_dossier( page ))){
+
+			/* nothing to do here as all is managed by dossier signaling
+			 * system */
+		}
+	}
+
+	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
+}
+
+static gboolean
+delete_confirmed( ofaTauxSet *self, ofoTaux *taux )
+{
+	gchar *msg;
+	gboolean delete_ok;
+
+	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' rate ?" ),
+			ofo_taux_get_mnemo( taux ),
+			ofo_taux_get_label( taux ));
+
+	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
+
+	g_free( msg );
+
+	return( delete_ok );
+}
+
+static void
 on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self )
 {
 	static const gchar *thisfn = "ofa_taux_set_on_deleted_object";
@@ -633,31 +646,6 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self )
 			g_warning( "%s: unable to find '%s' rate", thisfn, mnemo );
 		}
 	}
-}
-
-static gboolean
-find_row_by_mnemo( ofaTauxSet *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
-{
-	gchar *row_mnemo;
-	gint cmp;
-
-	*tmodel = gtk_tree_view_get_model( self->private->tview );
-
-	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
-		while( TRUE ){
-			gtk_tree_model_get( *tmodel, iter, COL_MNEMO, &row_mnemo, -1 );
-			cmp = g_utf8_collate( row_mnemo, mnemo );
-			g_free( row_mnemo );
-			if( cmp == 0 ){
-				return( TRUE );
-			}
-			if( !gtk_tree_model_iter_next( *tmodel, iter )){
-				break;
-			}
-		}
-	}
-
-	return( FALSE );
 }
 
 static void
