@@ -1291,7 +1291,6 @@ ofo_entry_get_csv( const ofoDossier *dossier )
  * - label
  * - piece's reference
  * - iso 3a code of the currency, default to those of the account
- * - mnemonic journal, default='OD'
  * - account number, must exist
  * - debit
  * - credit (only one of the twos must be set)
@@ -1313,6 +1312,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 	gchar *dev_code;
 	ofoAccount *account;
 	gdouble debit, credit;
+	gdouble tot_debits, tot_credits;
 
 	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
 			thisfn,
@@ -1323,6 +1323,8 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 	new_set = NULL;
 	count = 0;
 	errors = 0;
+	tot_debits = 0;
+	tot_credits = 0;
 
 	for( ili=lines ; ili ; ili=ili->next ){
 		count += 1;
@@ -1382,14 +1384,6 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 			str = ( const gchar * ) ico->data;
 			dev_code = g_strdup( str );
 
-			/* entry journal - default to 'OD' */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				str = "OD";
-			}
-			ofo_entry_set_journal( entry, str );
-
 			/* entry account */
 			ico = ico->next;
 			str = ( const gchar * ) ico->data;
@@ -1422,6 +1416,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				continue;
 			}
 			debit = g_ascii_strtod( str, NULL );
+			tot_debits += debit;
 
 			/* credit */
 			ico = ico->next;
@@ -1432,6 +1427,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				continue;
 			}
 			credit = g_ascii_strtod( str, NULL );
+			tot_credits += credit;
 
 			g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );
 			if(( debit && !credit ) || ( !debit && credit )){
@@ -1443,15 +1439,23 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				continue;
 			}
 
+			ofo_entry_set_journal( entry, "IMPORT" );
 			ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
+
 			new_set = g_list_prepend( new_set, entry );
 		}
+	}
+
+	if( tot_debits != tot_credits ){
+		g_warning( "%s: tot_debits=%.2lf, tot_credits=%.2lf", thisfn, tot_debits, tot_credits );
+		errors += 1;
 	}
 
 	if( !errors ){
 		for( ise=new_set ; ise ; ise=ise->next ){
 			ofo_entry_insert( OFO_ENTRY( ise->data ), dossier );
 		}
-		g_list_free_full( new_set, ( GDestroyNotify ) g_object_unref );
 	}
+
+	g_list_free_full( new_set, ( GDestroyNotify ) g_object_unref );
 }

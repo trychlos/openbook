@@ -214,12 +214,13 @@
 
  181 2014- 6- 9 ofoModel: manage change journal mnemo
 
- 182 2014- 6-10 configure at the dossier level the default journal when
+ 182 2014- 6-10 configure at the dossier level the import journal when
                 we are importing entries
+                for now, this is harcoded with 'IMPORT' mnemo
 
- 183 2014- 6-10 check that we do not have entries on unexistant account
-                (this is the case on EBP export which has kept entries
-                on closed accounts
+ 183 2014- 6-10 consistency check: check that we do not have entries on 
+                unexistant account (this is the case on EBP export which
+                 has kept entries on closed accounts
 
  184 2014- 6-10 use the count of decimal digits of the currency when 
                 displaying all amounts
