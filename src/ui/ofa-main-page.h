@@ -33,10 +33,56 @@
  * @include: ui/ofa-main-page.h
  *
  * The main window is organized with a treeview of the left pane, and a
- * notebook on the right one.
+ * notebook on the right one. The main child of the pages of this said
+ * 'main' (because owned by the main window) notebook is always a
+ * GtkGrid which is itself created by the main window.
+ *
  * All datas of the applications are displayed in pages of this 'main'
  * notebook. These datas are handled by ofaMainPage-derived classes
- * (this class).
+ * (this class). Each ofaMainPage-derived class begins so with an empty
+ * GtkGrid.
+ *
+ * Most of them, though this is far from being mandatory, have a
+ * similar display:
+ *
+ * +------------------------------------------------------------------+
+ * | GtkGrid created by the main window,                              |
+ * |  top child of the 'main' notebook's page for this theme          |
+ * |+------------------------------------------------+---------------+|
+ * || left=0, top=0                                  | left=1        ||
+ * ||                                                |               ||
+ * ||  the view for this theme                       |  buttons box  ||
+ * ||                                                |               ||
+ * |+------------------------------------------------+---------------+|
+ * +------------------------------------------------------------------+
+ *
+ * Class        Description                               Buttons box
+ * -----------  ----------------------------------------  -----------
+ * Account      a notebook with one page per account          Yes
+ *               class number, each page having its own
+ *               tree view on a list store
+ *
+ * BAT files    a tree view on a list store                   Yes
+ *
+ * Classes      a tree view on a list store                   Yes
+ *
+ * Currencies   a tree view on a list store                   Yes
+ *
+ * Entries      (none)
+ *
+ * Entry Model  a notebook with one page per journal          Yes
+ *               each page having its own tree view
+ *               on a list store
+ *
+ * GuidedInputEx  a paned which embeds a tree view on a        ?
+ *                tree store on the left where entry
+ *                models are stored 'under' the journal;
+ *                the entry model with its characteristics
+ *                and its entry grid on the right
+ *
+ * Journals     a tree view on a list store                   Yes
+ *
+ * Rate         a tree view on a list store                   Yes
  */
 
 #include "ui/ofa-main-page-def.h"

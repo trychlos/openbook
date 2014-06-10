@@ -53,6 +53,8 @@ struct _ofaModelsSetPrivate {
 	/* UI
 	 */
 	GtkNotebook   *book;				/* one page per journal d'imputation */
+	GtkTreeView   *tview;				/* the treeview of the current page */
+	GtkTreeModel  *tmodel;
 	GtkButton     *guided_input_btn;
 };
 
@@ -65,6 +67,11 @@ enum {
 	N_COLUMNS
 };
 
+/* an antry model not attached to any journal
+ */
+#define UNKNOWN_JOURNAL_MNEMO            "__xx__"
+#define UNKNOWN_JOURNAL_LABEL            _( "Unclassed" )
+
 /* data attached to each page of the model category notebook
  */
 #define DATA_PAGE_JOURNAL                "data-page-journal-id"
@@ -73,23 +80,30 @@ enum {
 G_DEFINE_TYPE( ofaModelsSet, ofa_models_set, OFA_TYPE_MAIN_PAGE )
 
 static GtkWidget *v_setup_view( ofaMainPage *page );
+static void       setup_dossier_signaling( ofaModelsSet *self );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
+static void       insert_dataset( ofaModelsSet *self );
 static GtkWidget *book_create_page( ofaModelsSet *self, GtkNotebook *book, const gchar *journal, const gchar *journal_label );
 static gboolean   book_activate_page_by_journal( ofaModelsSet *self, const gchar *journal );
 static gint       book_get_page_by_journal( ofaModelsSet *self, const gchar *journal );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaModelsSet *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
 static void       insert_new_row( ofaModelsSet *self, ofoModel *model, gboolean with_selection );
+static void       set_row_by_iter( ofaModelsSet *self, ofoModel *model, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void       setup_first_selection( ofaModelsSet *self );
 static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self );
 static void       on_model_selected( GtkTreeSelection *selection, ofaModelsSet *self );
 static void       enable_buttons( ofaModelsSet *self, GtkTreeSelection *selection );
 static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaModelsSet *self );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaModelsSet *self );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaModelsSet *self, ofoModel *model );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaModelsSet *self );
 static void       on_guided_input( GtkButton *button, ofaModelsSet *self );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaModelsSet *self );
 
 static void
 models_set_finalize( GObject *instance )
@@ -174,6 +188,8 @@ v_setup_view( ofaMainPage *page )
 
 	self = OFA_MODELS_SET( page );
 
+	setup_dossier_signaling( self );
+
 	book = GTK_NOTEBOOK( gtk_notebook_new());
 	gtk_widget_set_margin_left( GTK_WIDGET( book ), 4 );
 	gtk_widget_set_margin_bottom( GTK_WIDGET( book ), 4 );
@@ -194,6 +210,30 @@ v_setup_view( ofaMainPage *page )
 	g_signal_connect( G_OBJECT( book ), "switch-page", G_CALLBACK( on_page_switched ), self );
 
 	return( GTK_WIDGET( book ));
+}
+
+static void
+setup_dossier_signaling( ofaModelsSet *self )
+{
+	ofoDossier *dossier;
+
+	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+
+	g_signal_connect(
+			G_OBJECT( dossier ),
+			OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+
+	g_signal_connect(
+			G_OBJECT( dossier ),
+			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+
+	g_signal_connect(
+			G_OBJECT( dossier ),
+			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+
+	g_signal_connect(
+			G_OBJECT( dossier ),
+			OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
 }
 
 static GtkWidget *
@@ -223,16 +263,21 @@ v_setup_buttons( ofaMainPage *page )
 static void
 v_init_view( ofaMainPage *page )
 {
+	insert_dataset( OFA_MODELS_SET( page ));
+}
+
+static void
+insert_dataset( ofaModelsSet *self )
+{
 	GList *dataset, *iset;
 
-	dataset = ofo_model_get_dataset( ofa_main_page_get_dossier( page ));
+	dataset = ofo_model_get_dataset( ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )));
 
 	for( iset=dataset ; iset ; iset=iset->next ){
-
-		insert_new_row( OFA_MODELS_SET( page ), OFO_MODEL( iset->data ), FALSE );
+		insert_new_row( self, OFO_MODEL( iset->data ), FALSE );
 	}
 
-	setup_first_selection( OFA_MODELS_SET( page ));
+	setup_first_selection( self );
 }
 
 static GtkWidget *
@@ -305,10 +350,10 @@ book_activate_page_by_journal( ofaModelsSet *self, const gchar *mnemo )
 
 	page_num = book_get_page_by_journal( self, mnemo );
 	if( page_num < 0 ){
-		page_num = book_get_page_by_journal( self, "__XX__" );
+		page_num = book_get_page_by_journal( self, UNKNOWN_JOURNAL_MNEMO );
 		if( page_num < 0 ){
-				book_create_page( self, self->private->book, "__XX__", _( "Unclassed" ));
-				page_num = book_get_page_by_journal( self, "__XX__" );
+				book_create_page( self, self->private->book, UNKNOWN_JOURNAL_MNEMO, UNKNOWN_JOURNAL_LABEL );
+				page_num = book_get_page_by_journal( self, UNKNOWN_JOURNAL_MNEMO );
 		}
 	}
 	g_return_val_if_fail( page_num >= 0, FALSE );
@@ -371,8 +416,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 static void
 insert_new_row( ofaModelsSet *self, ofoModel *model, gboolean with_selection )
 {
-	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
+	ofaModelsSetPrivate *priv;
 	GtkTreeIter iter;
 	GtkTreePath *path;
 
@@ -380,56 +424,69 @@ insert_new_row( ofaModelsSet *self, ofoModel *model, gboolean with_selection )
 	 * creating a new page if the journal has not been found */
 	if( book_activate_page_by_journal( self, ofo_model_get_journal( model ))){
 
-		tview = ofa_main_page_get_treeview( OFA_MAIN_PAGE( self ));
-		g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+		priv = self->private;
 
-		tmodel = gtk_tree_view_get_model( tview );
+		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
+		g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
 
 		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
+				GTK_LIST_STORE( priv->tmodel ),
 				&iter,
 				-1,
 				COL_MNEMO,  ofo_model_get_mnemo( model ),
-				COL_LABEL,  ofo_model_get_label( model ),
 				COL_OBJECT, model,
 				-1 );
 
+		set_row_by_iter( self, model, priv->tmodel, &iter );
+
 		/* select the newly added row */
 		if( with_selection ){
-			path = gtk_tree_model_get_path( tmodel, &iter );
-			gtk_tree_view_set_cursor( tview, path, NULL, FALSE );
+			path = gtk_tree_model_get_path( priv->tmodel, &iter );
+			gtk_tree_view_set_cursor( priv->tview, path, NULL, FALSE );
 			gtk_tree_path_free( path );
-			gtk_widget_grab_focus( GTK_WIDGET( tview ));
+			gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 		}
 	}
 }
 
 static void
+set_row_by_iter( ofaModelsSet *self, ofoModel *model, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	gtk_list_store_set(
+			GTK_LIST_STORE( tmodel ),
+			iter,
+			COL_MNEMO,  ofo_model_get_mnemo( model ),
+			COL_LABEL,  ofo_model_get_label( model ),
+			-1 );
+}
+
+static void
 setup_first_selection( ofaModelsSet *self )
 {
+	ofaModelsSetPrivate *priv;
 	GtkWidget *first_tab;
-	GtkTreeView *first_treeview;
-	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
+
+	priv = self->private;
 
 	first_tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( self->private->book ), 0 );
 
 	if( first_tab ){
 		gtk_notebook_set_current_page( GTK_NOTEBOOK( self->private->book ), 0 );
-		first_treeview =
+		priv->tview =
 				( GtkTreeView * ) my_utils_container_get_child_by_type(
 												GTK_CONTAINER( first_tab ),
 												GTK_TYPE_TREE_VIEW );
-		g_return_if_fail( first_treeview && GTK_IS_TREE_VIEW( first_treeview ));
+		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 
-		tmodel = gtk_tree_view_get_model( first_treeview );
-		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-			select = gtk_tree_view_get_selection( first_treeview );
+		priv->tmodel = gtk_tree_view_get_model( priv->tview );
+		if( gtk_tree_model_get_iter_first( priv->tmodel, &iter )){
+			select = gtk_tree_view_get_selection( priv->tview );
 			gtk_tree_selection_select_iter( select, &iter );
 		}
 
-		gtk_widget_grab_focus( GTK_WIDGET( first_treeview ));
+		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 	}
 }
 
@@ -449,18 +506,21 @@ static void
 on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self )
 {
 	static const gchar *thisfn = "ofa_models_set_on_page_switched";
-	GtkTreeView *tview;
+	ofaModelsSetPrivate *priv;
 
 	g_debug( "%s: book=%p, wpage=%p, npage=%d, page=%p",
 			thisfn, ( void * ) book, ( void * ) wpage, npage, ( void * ) self );
 
-	tview = ( GtkTreeView * )
-					my_utils_container_get_child_by_type(
-							GTK_CONTAINER( wpage ), GTK_TYPE_TREE_VIEW );
-	if( tview ){
-		g_return_if_fail( GTK_IS_TREE_VIEW( tview ));
-		enable_buttons( self, gtk_tree_view_get_selection( tview ));
-	}
+	priv = self->private;
+
+	priv->tview = ( GtkTreeView * )
+							my_utils_container_get_child_by_type(
+									GTK_CONTAINER( wpage ), GTK_TYPE_TREE_VIEW );
+
+	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
+	priv->tmodel = gtk_tree_view_get_model( priv->tview );
+
+	enable_buttons( self, gtk_tree_view_get_selection(priv-> tview ));
 }
 
 static void
@@ -532,7 +592,7 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 	if( ofa_model_properties_run(
 			ofa_main_page_get_main_window( page ), model, mnemo )){
 
-		insert_new_row( OFA_MODELS_SET( page ), model, TRUE );
+		/* managed by dossier signaling system */
 
 	} else {
 		g_object_unref( model );
@@ -540,55 +600,95 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 static void
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaModelsSet *self )
+{
+	static const gchar *thisfn = "ofa_models_set_on_new_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_MODEL( object )){
+		insert_new_row( self, OFO_MODEL( object ), TRUE );
+	}
+}
+
+/*
+ * We cannot rely here on the standard dossier signaling system.
+ * This is due because we display the entry models in a notebook per
+ * journal - So managing a journal change implies having both the
+ * previous identifier and the previous journal.
+ * As this is the only use case, we consider upgrading the dossier
+ * signaling system of no worth..
+ */
+static void
 v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 {
 	static const gchar *thisfn = "ofa_models_set_v_on_update_clicked";
-	ofaModelsSet *self;
-	GtkTreeView *tview;
+	ofaModelsSetPrivate *priv;
 	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	gchar *prev_mnemo;
-	const gchar *new_mnemo;
+	gchar *prev_journal;
+	const gchar *new_journal;
 	ofoModel *model;
 
 	g_return_if_fail( OFA_IS_MODELS_SET( page ));
-	self = OFA_MODELS_SET( page );
+
+	priv = OFA_MODELS_SET( page )->private;
+
+	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
+	g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
 
 	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
 
-	tview = ofa_main_page_get_treeview( page );
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+	select = gtk_tree_view_get_selection( priv->tview );
+	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
 
-	select = gtk_tree_view_get_selection( tview );
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
+		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &model, -1 );
 		g_object_unref( model );
 
-		prev_mnemo = g_strdup( ofo_model_get_mnemo( model ));
+		prev_journal = g_strdup( ofo_model_get_journal( model ));
 
 		if( ofa_model_properties_run(
-				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+				ofa_main_page_get_main_window( page ),
 				model,
 				NULL )){
 
-			new_mnemo = ofo_model_get_mnemo( model );
-			if( g_utf8_collate( prev_mnemo, new_mnemo )){
-				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-				insert_new_row( self, model, TRUE );
+			new_journal = ofo_model_get_journal( model );
+
+			if( g_utf8_collate( prev_journal, new_journal )){
+				gtk_list_store_remove( GTK_LIST_STORE( priv->tmodel ), &iter );
+				insert_new_row( OFA_MODELS_SET( page ), model, TRUE );
 
 			} else {
-				gtk_list_store_set(
-						GTK_LIST_STORE( tmodel ),
-						&iter,
-						COL_MNEMO,  ofo_model_get_mnemo( model ),
-						COL_LABEL,  ofo_model_get_label( model ),
-						-1 );
+				set_row_by_iter( OFA_MODELS_SET( page ), model, priv->tmodel, &iter );
 			}
 		}
 
-		g_free( prev_mnemo );
+		g_free( prev_journal );
+	}
+}
+
+static void
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaModelsSet *self )
+{
+	static const gchar *thisfn = "ofa_models_set_on_updated_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_MODEL( object )){
+		/* managed by the button clic handle */
+
+	} else if( OFO_IS_JOURNAL( object )){
+		/* a journal has changed */
+
 	}
 }
 
@@ -600,33 +700,32 @@ static void
 v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 {
 	static const gchar *thisfn = "ofa_models_set_v_on_delete_clicked";
-	ofaModelsSet *self;
-	GtkTreeView *tview;
+	ofaModelsSetPrivate *priv;
 	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoModel *model;
 
 	g_return_if_fail( OFA_IS_MODELS_SET( page ));
-	self = OFA_MODELS_SET( page );
+
+	priv = OFA_MODELS_SET( page )->private;
+
+	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
+	g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
 
 	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
 
-	tview = ofa_main_page_get_treeview( page );
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+	select = gtk_tree_view_get_selection( priv->tview );
+	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
 
-	select = gtk_tree_view_get_selection( tview );
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
+		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &model, -1 );
 		g_object_unref( model );
 
-		if( delete_confirmed( self, model ) &&
+		if( delete_confirmed( OFA_MODELS_SET( page ), model ) &&
 				ofo_model_delete( model, ofa_main_page_get_dossier( page ))){
 
 			/* remove the row from the model
 			 * this will cause an automatic new selection */
-			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
+			gtk_list_store_remove( GTK_LIST_STORE( priv->tmodel ), &iter );
 		}
 	}
 }
@@ -649,12 +748,30 @@ delete_confirmed( ofaModelsSet *self, ofoModel *model )
 }
 
 static void
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaModelsSet *self )
+{
+	static const gchar *thisfn = "ofa_models_set_on_deleted_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_MODEL( object )){
+		/* manage by the button clic handle */
+
+	} else if( OFO_IS_JOURNAL( object )){
+		/* a journal has been deleted */
+	}
+}
+
+static void
 on_guided_input( GtkButton *button, ofaModelsSet *self )
 {
 	static const gchar *thisfn = "ofa_models_set_on_guided_input";
-	GtkTreeView *tview;
+	ofaModelsSetPrivate *priv;
 	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoModel *model;
 
@@ -662,16 +779,38 @@ on_guided_input( GtkButton *button, ofaModelsSet *self )
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	tview = ofa_main_page_get_treeview( OFA_MAIN_PAGE( self ));
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+	priv = self->private;
 
-	select = gtk_tree_view_get_selection( tview );
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
+	g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
 
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
+	select = gtk_tree_view_get_selection( priv->tview );
+	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
+
+		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &model, -1 );
 		g_object_unref( model );
 
 		ofa_guided_input_run(
 				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), model );
+	}
+}
+
+/*
+ * all pages are rebuilt not only if the entry models is reloaded, but
+ * also when the journals are reloaded
+ */
+static void
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaModelsSet *self )
+{
+	static const gchar *thisfn = "ofa_models_set_on_reloaded_dataset";
+
+	g_debug( "%s: dossier=%p, type=%lu, self=%p",
+			thisfn, ( void * ) dossier, type, ( void * ) self );
+
+	if( type == OFO_TYPE_MODEL || type == OFO_TYPE_JOURNAL ){
+		while( gtk_notebook_get_n_pages( self->private->book )){
+			gtk_notebook_remove_page( self->private->book, 0 );
+		}
+		insert_dataset( self );
 	}
 }

@@ -45,6 +45,10 @@
           <attribute name="label" translatable="yes">_Guided input...</attribute>
           <attribute name="action">win.guided</attribute>
         </item>
+        <item>
+          <attribute name="label" translatable="yes">_View entries...</attribute>
+          <attribute name="action">win.entries</attribute>
+        </item>
       </section>
       <section>
         <item>

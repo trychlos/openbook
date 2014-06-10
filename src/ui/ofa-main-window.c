@@ -47,6 +47,7 @@
 #include "ui/ofa-taux-set.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-view-entries.h"
 #include "ui/ofo-dossier.h"
 
 static gboolean pref_confirm_on_altf4 = FALSE;
@@ -82,6 +83,7 @@ enum {
 static void on_properties      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_close           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_guided      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_view_entries( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_concil      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -97,6 +99,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "properties",   on_properties,       NULL, NULL, NULL },
 		{ "close",        on_close,            NULL, NULL, NULL },
 		{ "guided",       on_ope_guided,       NULL, NULL, NULL },
+		{ "entries",      on_ope_view_entries, NULL, NULL, NULL },
 		{ "concil",       on_ope_concil,       NULL, NULL, NULL },
 		{ "import",       on_ope_import,       NULL, NULL, NULL },
 		{ "export",       on_ope_export,       NULL, NULL, NULL },
@@ -112,14 +115,15 @@ static const GActionEntry st_dos_entries[] = {
 /* This structure handles the functions which manage the pages of the
  * main notebook:
  * - the label which is displayed in the tab of the page of the main book
- * - the GObject get_type() function
+ * - the GObject get_type() function of the ofaMainPage-derived class
+ *   which handles the page
  *
  * There must be here one theme per type of main notebook's page.
  *
  * Each main notebook's page may be reached either from a menubar action,
  * or from an activation of an item in the left treeview (though several
  * menubar actions and/or several items in the left treeview may lead
- * to a same theme)
+ * to a same theme, or do not appear at all)
  */
 typedef struct {
 	gint         theme_id;
@@ -138,7 +142,8 @@ enum {
 	THM_CONCIL,
 	THM_CLASSES,
 	THM_BATFILES,
-	THM_GUIDED_INPUT
+	THM_GUIDED_INPUT,
+	THM_VIEW_ENTRIES
 };
 
 static sThemeDef st_theme_defs[] = {
@@ -186,6 +191,11 @@ static sThemeDef st_theme_defs[] = {
 		{ THM_GUIDED_INPUT,
 				N_( "Guided input" ),
 				ofa_guided_ex_get_type,
+				TRUE },
+
+		{ THM_VIEW_ENTRIES,
+				N_( "View entries" ),
+				ofa_view_entries_get_type,
 				TRUE },
 
 		{ 0 }
@@ -845,6 +855,19 @@ on_ope_guided( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MODELS );
+}
+
+static void
+on_ope_view_entries( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_guided";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_VIEW_ENTRIES );
 }
 
 static void

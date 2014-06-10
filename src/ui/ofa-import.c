@@ -42,6 +42,7 @@
 #include "ui/ofo-account.h"
 #include "ui/ofo-class.h"
 #include "ui/ofo-devise.h"
+#include "ui/ofo-entry.h"
 #include "ui/ofo-journal.h"
 #include "ui/ofo-taux.h"
 
@@ -165,6 +166,7 @@ static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *pa
 static gint       import_class_csv( ofaImport *self );
 static gint       import_account_csv( ofaImport *self );
 static gint       import_devise_csv( ofaImport *self );
+static gint       import_entry_csv( ofaImport *self );
 static gint       import_journal_csv( ofaImport *self );
 static gint       import_taux_csv( ofaImport *self );
 static GSList    *split_csv_content( ofaImport *self );
@@ -718,6 +720,9 @@ on_apply( GtkAssistant *assistant, ofaImport *self )
 			case IMPORTER_TYPE_CURRENCY:
 				count = import_devise_csv( self );
 				break;
+			case IMPORTER_TYPE_ENTRY:
+				count = import_entry_csv( self );
+				break;
 			case IMPORTER_TYPE_JOURNAL:
 				count = import_journal_csv( self );
 				break;
@@ -918,6 +923,41 @@ import_devise_csv( ofaImport *self )
 	}
 
 	ofo_devise_import_csv(
+			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+
+	free_csv_content( lines );
+	return( 0 );
+}
+
+/*
+ * columns:
+ *  - Dope;Deffect;Label;Ref;Currency;Journal;Account;Amount
+ *    amount is negative for a credit, positive for a debit
+ * header : yes
+ */
+static gint
+import_entry_csv( ofaImport *self )
+{
+	GSList *lines;
+	gchar *str;
+	gboolean ok;
+
+	str = g_strdup( _( "Importing new entries will impact the balances of the accounts.\n"
+			"New entries will be added to already existing one.\n"
+			"Are you sure you want to import these new entries, imputing them of your accounts ?" ));
+
+	ok = confirm_import( self, str );
+	g_free( str );
+	if( !ok ){
+		return( -1 );
+	}
+
+	lines = split_csv_content( self );
+	if( g_slist_length( lines ) <= 1 ){
+		return( -1 );
+	}
+
+	ofo_entry_import_csv(
 			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );

@@ -110,6 +110,8 @@ ofaJournalCombo *ofa_journal_combo_init_combo   ( const ofaJournalComboParms *pa
 
 gint             ofa_journal_combo_get_selection( ofaJournalCombo *self, gchar **mnemo, gchar **label );
 
+void             ofa_journal_combo_set_selection( ofaJournalCombo *self, const gchar *mnemo );
+
 G_END_DECLS
 
 #endif /* __OFA_JOURNAL_COMBO_H__ */

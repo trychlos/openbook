@@ -996,7 +996,6 @@ on_fetch_button_clicked( GtkButton *button, ofaRappro *self )
 static void
 do_fetch( ofaRappro *self )
 {
-	static  const gchar *thisfn = "ofa_rappro_do_fetch";
 	gboolean enableable;
 	ofoAccount *account;
 	gint mode;
@@ -1005,7 +1004,6 @@ do_fetch( ofaRappro *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *sdope, *sdeb, *scre, *sdrap;
-	ofaEntrySens sens;
 	const GDate *drappro;
 
 	enableable = is_fetch_enableable( self, &account, &mode );
@@ -1016,7 +1014,7 @@ do_fetch( ofaRappro *self )
 	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
 	gtk_tree_store_clear( GTK_TREE_STORE( tmodel ));
 
-	entries = ofo_entry_get_dataset(
+	entries = ofo_entry_get_dataset_by_concil(
 					ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )),
 					ofo_account_get_number( account ),
 					mode );
@@ -1026,23 +1024,8 @@ do_fetch( ofaRappro *self )
 		entry = OFO_ENTRY( it->data );
 
 		sdope = my_utils_display_from_date( ofo_entry_get_dope( entry ), MY_UTILS_DATE_DDMM );
-		sens = ofo_entry_get_sens( entry );
-		switch( sens ){
-			case ENT_SENS_DEBIT:
-				sdeb = g_strdup_printf( "%.2lf", ofo_entry_get_amount( entry ));
-				scre = g_strdup( "" );
-				break;
-			case ENT_SENS_CREDIT:
-				sdeb = g_strdup( "" );
-				scre = g_strdup_printf( "%.2lf", ofo_entry_get_amount( entry ));
-				break;
-			default:
-				g_warning( "%s: invalid entry sens: %d", thisfn, ofo_entry_get_sens( entry ));
-				sdeb = g_strdup( "" );
-				scre = g_strdup( "" );
-				break;
-		}
-
+		sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
+		scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
 		drappro = ofo_entry_get_rappro( entry );
 		sdrap = my_utils_display_from_date( drappro, MY_UTILS_DATE_DDMM );
 
@@ -1215,11 +1198,11 @@ display_bat_lines( ofaRappro *self )
 
 		bat_amount = ofo_bat_line_get_montant( batline );
 		if( bat_amount < 0 ){
-			sbat_deb = g_strdup_printf( "%.2lf", -bat_amount );
+			sbat_deb = g_strdup_printf( "%'.2lf", -bat_amount );
 			sbat_cre = g_strdup( "" );
 		} else {
 			sbat_deb = g_strdup( "" );
-			sbat_cre = g_strdup_printf( "%.2lf", bat_amount );
+			sbat_cre = g_strdup_printf( "%'.2lf", bat_amount );
 		}
 
 		bat_ecr = ofo_bat_line_get_ecr( batline );
@@ -1681,12 +1664,8 @@ set_reconciliated_balance( ofaRappro *self )
 
 			if( !bvalid ){
 				if( OFO_IS_ENTRY( object )){
-					amount = ofo_entry_get_amount( OFO_ENTRY( object ));
-					if( ofo_entry_get_sens( OFO_ENTRY( object )) == ENT_SENS_DEBIT ){
-						debit -= amount;
-					} else {
-						credit -= amount;
-					}
+					debit -= ofo_entry_get_debit( OFO_ENTRY( object ));
+					credit -= ofo_entry_get_credit( OFO_ENTRY( object ));
 				} else {
 					amount = ofo_bat_line_get_montant( OFO_BAT_LINE( object ));
 					if( amount < 0 ){

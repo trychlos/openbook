@@ -52,28 +52,47 @@ struct _ofaGuidedExPrivate {
 
 	/* internals
 	 */
-	const ofoModel *model;
-	gboolean        deffet_has_focus;
-	gboolean        deffet_changed_while_focus;
-	GDate           last_closed_exe;
-	GDate           last_closing;		/* max of closed exercice and closed journal */
+	ofoDossier      *dossier;			/* dossier */
+	GDate            last_closed_exe;	/* 	- last closed exercice */
+
+	const ofoModel  *model;				/* model */
+
+	gchar           *journal;			/* journal */
+	GDate            last_closed_jou;	/*	- last periodic closing date */
+
+	gboolean         deffet_has_focus;
+	gboolean         deffet_changed_while_focus;
+	GDate            last_closing;		/* max of closing exercice and closing journal dates */
+
+	/* UI - the pane
+	 */
+	GtkPaned        *pane;
 
 	/* UI - left part treeview selection of the entry model
 	 */
-	GtkTreeView    *left_tview;
+	GtkTreeView     *left_tview;
+	GtkButton       *left_select;
 
 	/* UI - right part guided input
+	 *      most if not all elements are taken from ofa-guided-input.ui
+	 *      dialog box definition
 	 */
-	GtkContainer   *box;				/* the reparented container from dialog */
-	GtkGrid        *view;				/* entries view container */
+	GtkContainer    *right_box;				/* the reparented container from dialog */
+	GtkLabel        *right_model_label;
+	ofaJournalCombo *right_journal_combo;
+	GtkEntry        *right_dope;
+	GtkEntry        *right_deffet;
+	GtkGrid         *right_entries_grid;	/* entries view container */
+	gint             right_entries_count;	/* count of rows added to this grid */
+	GtkEntry        *right_comment;
+	GtkButton       *right_ok;
 
 	/* data
 	 */
-	gchar          *journal;
-	GDate           dope;
-	GDate           deff;
-	gdouble         total_debits;
-	gdouble         total_credits;
+	GDate            dope;
+	GDate            deff;
+	gdouble          total_debits;
+	gdouble          total_credits;
 };
 
 /* columns in the left tree view which handles the entry models
@@ -159,54 +178,69 @@ static GDate         st_last_deff = { 0 };
 G_DEFINE_TYPE( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_MAIN_PAGE )
 
 static GtkWidget *v_setup_view( ofaMainPage *page );
+static void       setup_from_dossier( ofaGuidedEx *self );
 static GtkWidget *setup_view_left( ofaGuidedEx *self );
+static GtkWidget *setup_left_treeview( ofaGuidedEx *self );
 static void       on_left_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self );
 static void       on_left_row_selected( GtkTreeSelection *selection, ofaGuidedEx *self );
 static gint       on_left_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self );
+static gboolean   on_left_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self );
+static void       left_collapse_node( ofaGuidedEx *self, GtkWidget *widget );
+static void       left_expand_node( ofaGuidedEx *self, GtkWidget *widget );
+static void       on_left_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedEx *self );
+static void       enable_left_select( ofaGuidedEx *self );
+static gboolean   is_left_select_enableable( ofaGuidedEx *self );
+static void       on_left_select_clicked( GtkButton *button, ofaGuidedEx *self );
+static void       select_model( ofaGuidedEx *self );
 static GtkWidget *setup_view_right( ofaGuidedEx *self );
-static void       reparent_from_dialog( ofaGuidedEx *self, GtkFrame *frame );
+static void       reparent_from_dialog( ofaGuidedEx *self, GtkContainer *parent );
+static void       setup_journal_combo( ofaGuidedEx *self );
+static void       setup_right_dates( ofaGuidedEx *self );
 static void       init_journal_combo( ofaGuidedEx *self );
 static void       init_view_entries( ofaGuidedEx *self );
+static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
 static void       init_left_view( ofaGuidedEx *self, GtkWidget *child );
 static void       insert_left_journal_row( ofaGuidedEx *self, ofoJournal *journal );
 static void       insert_left_model_row( ofaGuidedEx *self, ofoModel *model );
 static gboolean   find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
-
-static void      add_row_entry( ofaGuidedEx *self, gint i );
-static void      add_row_entry_set( ofaGuidedEx *self, gint col_id, gint row );
-static void      add_button( ofaGuidedEx *self, const gchar *stock_id, gint column, gint row );
+static void       add_row_entry( ofaGuidedEx *self, gint i );
+static void       add_row_entry_set( ofaGuidedEx *self, gint col_id, gint row );
+static void       add_button( ofaGuidedEx *self, const gchar *stock_id, gint column, gint row );
+static void       remove_row_entry( ofaGuidedEx *self, gint row );
 static const sColumnDef *find_column_def_from_col_id( ofaGuidedEx *self, gint col_id );
 static const sColumnDef *find_column_def_from_letter( ofaGuidedEx *self, gchar letter );
-static void      on_journal_changed( const gchar *mnemo, ofaGuidedEx *self );
-static void      on_dope_changed( GtkEntry *entry, ofaGuidedEx *self );
-static gboolean  on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
-static gboolean  on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
-static void      on_deffet_changed( GtkEntry *entry, ofaGuidedEx *self );
-static gboolean  on_deffet_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
-static gboolean  on_deffet_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
-static void      on_account_selection( ofaGuidedEx *self, gint row );
-static void      on_button_clicked( GtkButton *button, ofaGuidedEx *self );
-static void      on_entry_changed( GtkEntry *entry, ofaGuidedEx *self );
-static gboolean  on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
-static gboolean  on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
-static gboolean  on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self );
-static void      check_for_account( ofaGuidedEx *self, GtkEntry *entry  );
-static void      check_for_enable_dlg( ofaGuidedEx *self );
-static gboolean  is_dialog_validable( ofaGuidedEx *self );
-static void      update_all_formulas( ofaGuidedEx *self );
-static void      update_formula( ofaGuidedEx *self, const gchar *formula, GtkEntry *entry );
-static gdouble   compute_formula_solde( ofaGuidedEx *self, gint column_id, gint row );
-static void      update_all_totals( ofaGuidedEx *self );
-static gdouble   get_amount( ofaGuidedEx *self, gint col_id, gint row );
-static gboolean  check_for_journal( ofaGuidedEx *self );
-static gboolean  check_for_dates( ofaGuidedEx *self );
-static gboolean  check_for_all_entries( ofaGuidedEx *self );
-static gboolean  check_for_entry( ofaGuidedEx *self, gint row );
-static void      set_comment( ofaGuidedEx *self, const gchar *comment );
-/*static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );*/
-/*static gboolean  do_update( ofaGuidedEx *self );*/
-/*static ofoEntry *entry_from_detail( ofaGuidedEx *self, gint row, const gchar *piece );*/
+static void       on_journal_changed( const gchar *mnemo, ofaGuidedEx *self );
+static void       on_dope_changed( GtkEntry *entry, ofaGuidedEx *self );
+static gboolean   on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
+static gboolean   on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
+static void       on_deffet_changed( GtkEntry *entry, ofaGuidedEx *self );
+static gboolean   on_deffet_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
+static gboolean   on_deffet_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
+static void       on_account_selection( ofaGuidedEx *self, gint row );
+static void       on_button_clicked( GtkButton *button, ofaGuidedEx *self );
+static void       on_entry_changed( GtkEntry *entry, ofaGuidedEx *self );
+static gboolean   on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
+static gboolean   on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedEx *self );
+static gboolean   on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self );
+static void       check_for_account( ofaGuidedEx *self, GtkEntry *entry  );
+static void       check_for_enable_dlg( ofaGuidedEx *self );
+static gboolean   is_dialog_validable( ofaGuidedEx *self );
+static void       update_all_formulas( ofaGuidedEx *self );
+static void       update_formula( ofaGuidedEx *self, const gchar *formula, GtkEntry *entry );
+static gdouble    compute_formula_solde( ofaGuidedEx *self, gint column_id, gint row );
+static void       update_all_totals( ofaGuidedEx *self );
+static gdouble    get_amount( ofaGuidedEx *self, gint col_id, gint row );
+static gboolean   check_for_journal( ofaGuidedEx *self );
+static gboolean   check_for_dates( ofaGuidedEx *self );
+static gboolean   check_for_all_entries( ofaGuidedEx *self );
+static gboolean   check_for_entry( ofaGuidedEx *self, gint row );
+static void       set_comment( ofaGuidedEx *self, const gchar *comment );
+static void       on_right_ok( GtkButton *button, ofaGuidedEx *self );
+static gboolean   do_update( ofaGuidedEx *self );
+static void       reset_entries_amounts( ofaGuidedEx *self );
+static ofoEntry  *entry_from_detail( ofaGuidedEx *self, gint row, const gchar *piece );
+static void       display_ok_message( ofaGuidedEx *self, gint count );
 
 static void
 guided_ex_finalize( GObject *instance )
@@ -275,6 +309,7 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 
 	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 }
 
 static GtkWidget *
@@ -282,11 +317,33 @@ v_setup_view( ofaMainPage *page )
 {
 	GtkPaned *child;
 
+	setup_from_dossier( OFA_GUIDED_EX( page ));
+
 	child = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
 	gtk_paned_add1( child, setup_view_left( OFA_GUIDED_EX( page )));
 	gtk_paned_add2( child, setup_view_right( OFA_GUIDED_EX( page )));
+	OFA_GUIDED_EX( page )->private->pane = child;
 
 	return( GTK_WIDGET( child ));
+}
+
+static void
+setup_from_dossier( ofaGuidedEx *self )
+{
+	ofaGuidedExPrivate *priv;
+	const GDate *date;
+
+	priv = self->private;
+
+	priv->dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
+
+	date = ofo_dossier_get_last_closed_exercice( priv->dossier );
+	if( date && g_date_valid( date )){
+		memcpy( &priv->last_closed_exe, date, sizeof( GDate ));
+	} else {
+		g_date_clear( &priv->last_closed_exe, 1 );
+	}
+
 }
 
 /*
@@ -297,6 +354,40 @@ static GtkWidget *
 setup_view_left( ofaGuidedEx *self )
 {
 	GtkFrame *frame;
+	GtkWidget *tview;
+	GtkBox *box, *box2;
+	GtkButton *button;
+
+	frame = GTK_FRAME( gtk_frame_new( NULL ));
+	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
+
+	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 ));
+	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( box ));
+
+	tview = setup_left_treeview( self );
+	gtk_box_pack_start( box, tview, TRUE, TRUE, 0 );
+
+	box2 = GTK_BOX( gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 ));
+	gtk_box_pack_end( box, GTK_WIDGET( box2 ), FALSE, FALSE, 0 );
+
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Select" )));
+	gtk_widget_set_margin_bottom( GTK_WIDGET( button ), 4 );
+	gtk_widget_set_margin_right( GTK_WIDGET( button ), 4 );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_left_select_clicked ), self );
+	gtk_box_pack_end( box2, GTK_WIDGET( button ), FALSE, FALSE, 0 );
+	self->private->left_select = button;
+	enable_left_select( self );
+
+	return( GTK_WIDGET( frame ));
+}
+
+/*
+ * the left pane is a treeview whose level 0 are the journals, and
+ * level 1 the entry models defined on the corresponding journal
+ */
+static GtkWidget *
+setup_left_treeview( ofaGuidedEx *self )
+{
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
@@ -304,19 +395,16 @@ setup_view_left( ofaGuidedEx *self )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
-
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
 	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 4 );
-	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( scroll ));
+	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
 
 	tview = GTK_TREE_VIEW( gtk_tree_view_new());
-	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
+	/*gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );*/
 	gtk_tree_view_set_headers_visible( tview, FALSE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
 	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_left_row_activated ), self );
+	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_left_key_pressed ), self );
 	self->private->left_tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_tree_store_new(
@@ -331,6 +419,8 @@ setup_view_left( ofaGuidedEx *self )
 			text_cell, "text", LEFT_COL_MNEMO,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_cell_data_func(
+			column, text_cell, ( GtkTreeCellDataFunc ) on_left_cell_data_func, self, NULL );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -339,6 +429,8 @@ setup_view_left( ofaGuidedEx *self )
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_cell_data_func(
+			column, text_cell, ( GtkTreeCellDataFunc ) on_left_cell_data_func, self, NULL );
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
@@ -351,17 +443,21 @@ setup_view_left( ofaGuidedEx *self )
 			GTK_TREE_SORTABLE( tmodel ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-	return( GTK_WIDGET( frame ));
+	return( GTK_WIDGET( scroll ));
 }
 
 static void
 on_left_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self )
 {
+	if( is_left_select_enableable( self )){
+		select_model( self );
+	}
 }
 
 static void
 on_left_row_selected( GtkTreeSelection *selection, ofaGuidedEx *self )
 {
+	enable_left_select( self );
 }
 
 static gint
@@ -370,54 +466,220 @@ on_left_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGui
 	return( 0 );
 }
 
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ *
+ * Handles left and right arrows to expand/collapse nodes
+ */
+static gboolean
+on_left_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self )
+{
+	if( event->state == 0 ){
+		if( event->keyval == GDK_KEY_Left ){
+			left_collapse_node( self, widget );
+		} else if( event->keyval == GDK_KEY_Right ){
+			left_expand_node( self, widget );
+		}
+	}
+
+	return( FALSE );
+}
+
+static void
+left_collapse_node( ofaGuidedEx *self, GtkWidget *widget )
+{
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter, parent;
+	GtkTreePath *path;
+
+	if( GTK_IS_TREE_VIEW( widget )){
+		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( widget ));
+		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+
+			if( gtk_tree_model_iter_has_child( tmodel, &iter )){
+				path = gtk_tree_model_get_path( tmodel, &iter );
+				gtk_tree_view_collapse_row( GTK_TREE_VIEW( widget ), path );
+				gtk_tree_path_free( path );
+
+			} else if( gtk_tree_model_iter_parent( tmodel, &parent, &iter )){
+				path = gtk_tree_model_get_path( tmodel, &parent );
+				gtk_tree_view_collapse_row( GTK_TREE_VIEW( widget ), path );
+				gtk_tree_path_free( path );
+			}
+		}
+	}
+}
+
+static void
+left_expand_node( ofaGuidedEx *self, GtkWidget *widget )
+{
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+
+	if( GTK_IS_TREE_VIEW( widget )){
+		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( widget ));
+		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+
+			if( gtk_tree_model_iter_has_child( tmodel, &iter )){
+				path = gtk_tree_model_get_path( tmodel, &iter );
+				gtk_tree_view_expand_row( GTK_TREE_VIEW( widget ), path, FALSE );
+				gtk_tree_path_free( path );
+			}
+		}
+	}
+}
+
+/*
+ * display yellow background the journal rows
+ */
+static void
+on_left_cell_data_func( GtkTreeViewColumn *tcolumn,
+							GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+							ofaGuidedEx *self )
+{
+	GObject *object;
+	GdkRGBA color;
+
+	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
+
+	gtk_tree_model_get( tmodel, iter,
+			LEFT_COL_OBJECT, &object,
+			-1 );
+	g_object_unref( object );
+
+	g_object_set( G_OBJECT( cell ),
+						"style-set", FALSE,
+						"background-set", FALSE,
+						NULL );
+
+	g_return_if_fail( OFO_IS_JOURNAL( object ) || OFO_IS_MODEL( object ));
+
+	if( OFO_IS_JOURNAL( object )){
+		gdk_rgba_parse( &color, "#ffffb0" );
+		g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+	}
+}
+
+static void
+enable_left_select( ofaGuidedEx *self )
+{
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->left_select ), is_left_select_enableable( self ));
+}
+
+static gboolean
+is_left_select_enableable( ofaGuidedEx *self )
+{
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoBase *object;
+	gboolean ok;
+
+	ok = FALSE;
+
+	select = gtk_tree_view_get_selection( self->private->left_tview );
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
+		g_object_unref( object );
+		ok = OFO_IS_MODEL( object );
+	}
+
+	return( ok );
+}
+
+static void
+on_left_select_clicked( GtkButton *button, ofaGuidedEx *self )
+{
+	select_model( self );
+}
+
+static void
+select_model( ofaGuidedEx *self )
+{
+	ofaGuidedExPrivate *priv;
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoBase *object;
+	gint i;
+
+	priv = self->private;
+
+	object = NULL;
+	select = gtk_tree_view_get_selection( priv->left_tview );
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
+		g_object_unref( object );
+	}
+	g_return_if_fail( object && OFO_IS_MODEL( object ));
+
+	/* clear the previous model */
+	for( i=1 ; i<=priv->right_entries_count ; ++i ){
+		remove_row_entry( self, i );
+	}
+
+	priv->model = OFO_MODEL( object );
+
+	gtk_label_set_text(
+				priv->right_model_label,
+				ofo_model_get_label( priv->model ));
+
+	init_journal_combo( self );
+	init_view_entries( self );
+
+	gtk_widget_show_all( gtk_paned_get_child2( priv->pane ));
+}
+
+/*
+ * note that we may have no current ofoModel at this time
+ */
 static GtkWidget *
 setup_view_right( ofaGuidedEx *self )
 {
 	GtkFrame *frame;
 	ofaGuidedExPrivate *priv;
-	GtkWidget *entry;
-	gchar *str;
-	const GDate *date;
+	GtkScrolledWindow *scroll;
+	GtkWidget *widget;
 
 	priv = self->private;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 
+	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
+	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 0 );
+	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
+	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( scroll ));
+
 	/* setup the box from the ofaGuidedInput dialog */
-	reparent_from_dialog( self, frame );
+	reparent_from_dialog( self, GTK_CONTAINER( scroll ));
 
-	init_journal_combo( self );
+	widget = my_utils_container_get_child_by_name( priv->right_box, "p1-model-label" );
+	g_return_val_if_fail( widget && GTK_IS_LABEL( widget ), NULL );
+	priv->right_model_label = GTK_LABEL( widget );
 
-	date = ofo_dossier_get_last_closed_exercice(
-						ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )));
-	if( date ){
-		memcpy( &priv->last_closed_exe, date, sizeof( GDate ));
-	}
+	setup_journal_combo( self );
+	setup_right_dates( self );
 
-	memcpy( &priv->last_closing, &priv->last_closed_exe, sizeof( GDate ));
+	widget = my_utils_container_get_child_by_name( priv->right_box, "p1-entries" );
+	g_return_val_if_fail( widget && GTK_IS_GRID( widget ), NULL );
+	priv->right_entries_grid = GTK_GRID( widget );
 
-	memcpy( &priv->dope, &st_last_dope, sizeof( GDate ));
-	str = my_utils_display_from_date( &priv->dope, MY_UTILS_DATE_DDMM );
-	entry = my_utils_container_get_child_by_name( priv->box, "p1-dope" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
-	gtk_entry_set_text( GTK_ENTRY( entry ), str );
-	g_free( str );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_dope_changed ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
+	widget = my_utils_container_get_child_by_name( priv->right_box, "p1-comment" );
+	g_return_val_if_fail( widget && GTK_IS_ENTRY( widget ), NULL );
+	priv->right_comment = GTK_ENTRY( widget );
 
-	memcpy( &priv->deff, &st_last_deff, sizeof( GDate ));
-	str = my_utils_display_from_date( &priv->deff, MY_UTILS_DATE_DDMM );
-	entry = my_utils_container_get_child_by_name( priv->box, "p1-deffet" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
-	gtk_entry_set_text( GTK_ENTRY( entry ), str );
-	g_free( str );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_deffet_changed ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_deffet_focus_in ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_deffet_focus_out ), self );
-
-	init_view_entries( self );
+	widget = my_utils_container_get_child_by_name( priv->right_box, "box-ok" );
+	g_return_val_if_fail( widget && GTK_IS_BUTTON( widget ), NULL );
+	priv->right_ok = GTK_BUTTON( widget );
+	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_right_ok ), self );
 
 	check_for_enable_dlg( self );
 
@@ -425,7 +687,7 @@ setup_view_right( ofaGuidedEx *self )
 }
 
 static void
-reparent_from_dialog( ofaGuidedEx *self, GtkFrame *frame )
+reparent_from_dialog( ofaGuidedEx *self, GtkContainer *parent )
 {
 	GtkWidget *dialog;
 	GtkWidget *box;
@@ -436,10 +698,68 @@ reparent_from_dialog( ofaGuidedEx *self, GtkFrame *frame )
 
 	box = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "px-box" );
 	g_return_if_fail( box && GTK_IS_BOX( box ));
-	self->private->box = GTK_CONTAINER( box );
+	self->private->right_box = GTK_CONTAINER( box );
 
 	/* attach our box to the parent's frame */
-	gtk_widget_reparent( box, GTK_WIDGET( frame ));
+	gtk_widget_reparent( box, GTK_WIDGET( parent ));
+}
+
+static void
+setup_journal_combo( ofaGuidedEx *self )
+{
+	ofaGuidedExPrivate *priv;
+	ofaJournalComboParms parms;
+	GtkWidget *combo;
+
+	priv = self->private;
+
+	parms.container = priv->right_box;
+	parms.dossier = priv->dossier;
+	parms.combo_name = "p1-journal";
+	parms.label_name = NULL;
+	parms.disp_mnemo = FALSE;
+	parms.disp_label = TRUE;
+	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
+	parms.user_data = self;
+	parms.initial_mnemo = NULL;
+
+	priv->right_journal_combo = ofa_journal_combo_init_combo( &parms );
+
+	combo = my_utils_container_get_child_by_name( priv->right_box, "p1-journal" );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	gtk_widget_set_sensitive( combo, priv->model && !ofo_model_get_journal_locked( priv->model ));
+}
+
+static void
+setup_right_dates( ofaGuidedEx *self )
+{
+	ofaGuidedExPrivate *priv;
+	GtkWidget *entry;
+	gchar *str;
+
+	priv = self->private;
+
+	memcpy( &priv->dope, &st_last_dope, sizeof( GDate ));
+	str = my_utils_display_from_date( &priv->dope, MY_UTILS_DATE_DDMM );
+	entry = my_utils_container_get_child_by_name( priv->right_box, "p1-dope" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
+	g_free( str );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_dope_changed ), self );
+	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), self );
+	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
+	priv->right_dope = GTK_ENTRY( entry );
+
+	memcpy( &priv->deff, &st_last_deff, sizeof( GDate ));
+	str = my_utils_display_from_date( &priv->deff, MY_UTILS_DATE_DDMM );
+	entry = my_utils_container_get_child_by_name( priv->right_box, "p1-deffet" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
+	g_free( str );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_deffet_changed ), self );
+	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_deffet_focus_in ), self );
+	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_deffet_focus_out ), self );
+	priv->right_deffet = GTK_ENTRY( entry );
 }
 
 static void
@@ -447,44 +767,26 @@ init_journal_combo( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
 	GtkWidget *combo;
-	ofaJournalComboParms parms;
 
 	priv = self->private;
 
-	priv->journal = g_strdup( ofo_model_get_journal( self->private->model ));
+	ofa_journal_combo_set_selection( priv->right_journal_combo, ofo_model_get_journal( priv->model ));
 
-	parms.container = priv->box;
-	parms.dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-	parms.combo_name = "p1-journal";
-	parms.label_name = NULL;
-	parms.disp_mnemo = FALSE;
-	parms.disp_label = TRUE;
-	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
-	parms.user_data = self;
-	parms.initial_mnemo = priv->journal;
-
-	ofa_journal_combo_init_combo( &parms );
-
-	combo = my_utils_container_get_child_by_name( priv->box, "p1-journal" );
+	combo = my_utils_container_get_child_by_name( priv->right_box, "p1-journal" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 
-	gtk_widget_set_sensitive( combo, !ofo_model_get_journal_locked( priv->model ));
+	gtk_widget_set_sensitive( combo, priv->model && !ofo_model_get_journal_locked( priv->model ));
 }
 
 static void
 init_view_entries( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
-	GtkWidget *view;
 	gint count,i;
 	GtkLabel *label;
 	GtkEntry *entry;
 
 	priv = self->private;
-
-	view = my_utils_container_get_child_by_name( priv->box, "p1-entries" );
-	g_return_if_fail( view && GTK_IS_GRID( view ));
-	priv->view = GTK_GRID( view );
 
 	count = ofo_model_get_detail_count( priv->model );
 	for( i=0 ; i<count ; ++i ){
@@ -495,51 +797,53 @@ init_view_entries( ofaGuidedEx *self )
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	gtk_widget_set_margin_top( GTK_WIDGET( label ), TOTAUX_TOP_MARGIN );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-	gtk_grid_attach( priv->view, GTK_WIDGET( label ), COL_LABEL, count+1, 1, 1 );
+	gtk_grid_attach( priv->right_entries_grid, GTK_WIDGET( label ), COL_LABEL, count+1, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
 	gtk_widget_set_margin_top( GTK_WIDGET( entry ), TOTAUX_TOP_MARGIN );
 	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
-	gtk_grid_attach( priv->view, GTK_WIDGET( entry ), COL_DEBIT, count+1, 1, 1 );
+	gtk_grid_attach( priv->right_entries_grid, GTK_WIDGET( entry ), COL_DEBIT, count+1, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
 	gtk_widget_set_margin_top( GTK_WIDGET( entry ), TOTAUX_TOP_MARGIN );
 	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
-	gtk_grid_attach( priv->view, GTK_WIDGET( entry ), COL_CREDIT, count+1, 1, 1 );
+	gtk_grid_attach( priv->right_entries_grid, GTK_WIDGET( entry ), COL_CREDIT, count+1, 1, 1 );
 
 	label = GTK_LABEL( gtk_label_new( _( "Diff :" )));
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-	gtk_grid_attach( priv->view, GTK_WIDGET( label ), COL_LABEL, count+2, 1, 1 );
+	gtk_grid_attach( priv->right_entries_grid, GTK_WIDGET( label ), COL_LABEL, count+2, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
 	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
-	gtk_grid_attach( priv->view, GTK_WIDGET( entry ), COL_DEBIT, count+2, 1, 1 );
+	gtk_grid_attach( priv->right_entries_grid, GTK_WIDGET( entry ), COL_DEBIT, count+2, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
 	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
-	gtk_grid_attach( priv->view, GTK_WIDGET( entry ), COL_CREDIT, count+2, 1, 1 );
+	gtk_grid_attach( priv->right_entries_grid, GTK_WIDGET( entry ), COL_CREDIT, count+2, 1, 1 );
+
+	priv->right_entries_count = count+2;
+}
+
+static GtkWidget *
+v_setup_buttons( ofaMainPage *page )
+{
+	return( NULL );
 }
 
 static void
 v_init_view( ofaMainPage *page )
 {
-	GtkPaned *pane;
-
-	pane = ( GtkPaned * )
-					my_utils_container_get_child_by_type(
-							GTK_CONTAINER( ofa_main_page_get_grid( page )), GTK_TYPE_PANED );
-	g_return_if_fail( pane && GTK_IS_PANED( pane ));
-
-	init_left_view( OFA_GUIDED_EX( page ), gtk_paned_get_child1( pane ));
+	init_left_view( OFA_GUIDED_EX( page ),
+						gtk_paned_get_child1( OFA_GUIDED_EX( page )->private->pane ));
 }
 
 static void
@@ -547,12 +851,12 @@ init_left_view( ofaGuidedEx *self, GtkWidget *child )
 {
 	GList *dataset, *ise;
 
-	dataset = ofo_journal_get_dataset( ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )));
+	dataset = ofo_journal_get_dataset( self->private->dossier );
 	for( ise=dataset ; ise ; ise=ise->next ){
 		insert_left_journal_row( self, OFO_JOURNAL( ise->data ));
 	}
 
-	dataset = ofo_model_get_dataset( ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )));
+	dataset = ofo_model_get_dataset( self->private->dossier );
 	for( ise=dataset ; ise ; ise=ise->next ){
 		insert_left_model_row( self, OFO_MODEL( ise->data ));
 	}
@@ -649,7 +953,7 @@ add_row_entry( ofaGuidedEx *self, gint i )
 	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_text( entry, str );
 	gtk_entry_set_width_chars( entry, RANG_WIDTH );
-	gtk_grid_attach( self->private->view, GTK_WIDGET( entry ), COL_RANG, i+1, 1, 1 );
+	gtk_grid_attach( self->private->right_entries_grid, GTK_WIDGET( entry ), COL_RANG, i+1, 1, 1 );
 	g_free( str );
 
 	/* other columns starting with COL_ACCOUNT=1 */
@@ -695,7 +999,21 @@ add_row_entry_set( ofaGuidedEx *self, gint col_id, gint row )
 		g_signal_connect( G_OBJECT( entry ), "key-press-event", G_CALLBACK( on_key_pressed ), self );
 	}
 
-	gtk_grid_attach( self->private->view, GTK_WIDGET( entry ), col_id, row, 1, 1 );
+	gtk_grid_attach( self->private->right_entries_grid, GTK_WIDGET( entry ), col_id, row, 1, 1 );
+}
+
+static void
+remove_row_entry( ofaGuidedEx *self, gint row )
+{
+	gint i;
+	GtkWidget *widget;
+
+	for( i=0 ; i<N_COLUMNS ; ++i ){
+		widget = gtk_grid_get_child_at( self->private->right_entries_grid, i, row );
+		if( widget ){
+			gtk_widget_destroy( widget );
+		}
+	}
 }
 
 static void
@@ -710,7 +1028,7 @@ add_button( ofaGuidedEx *self, const gchar *stock_id, gint column, gint row )
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_button_set_image( button, image );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
-	gtk_grid_attach( self->private->view, GTK_WIDGET( button ), column, row, 1, 1 );
+	gtk_grid_attach( self->private->right_entries_grid, GTK_WIDGET( button ), column, row, 1, 1 );
 }
 
 static const sColumnDef *
@@ -753,27 +1071,33 @@ find_column_def_from_letter( ofaGuidedEx *self, gchar letter )
 static void
 on_journal_changed( const gchar *mnemo, ofaGuidedEx *self )
 {
-	ofoDossier *dossier;
+	ofaGuidedExPrivate *priv;
 	ofoJournal *journal;
 	gint exe_id;
 	const GDate *date;
 
-	self->private->journal = g_strdup( mnemo );
+	priv = self->private;
 
-	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
-	journal = ofo_journal_get_by_mnemo( dossier, mnemo );
-	memcpy( &self->private->last_closing, &self->private->last_closed_exe, sizeof( GDate ));
+	g_free( priv->journal );
+	priv->journal = g_strdup( mnemo );
+	journal = ofo_journal_get_by_mnemo( priv->dossier, mnemo );
+	g_date_clear( &priv->last_closed_jou, 1 );
+
+	memcpy( &priv->last_closing, &priv->last_closed_exe, sizeof( GDate ));
 
 	if( journal ){
-		exe_id = ofo_dossier_get_current_exe_id( dossier );
+		exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
 		date = ofo_journal_get_cloture( journal, exe_id );
+
 		if( date && g_date_valid( date )){
-			if( g_date_valid( &self->private->last_closed_exe )){
-				if( g_date_compare( date, &self->private->last_closed_exe ) > 0 ){
-					memcpy( &self->private->last_closing, date, sizeof( GDate ));
+			memcpy( &priv->last_closed_jou, date, sizeof( GDate ));
+
+			if( g_date_valid( &priv->last_closed_exe )){
+				if( g_date_compare( date, &priv->last_closed_exe ) > 0 ){
+					memcpy( &priv->last_closing, date, sizeof( GDate ));
 				}
 			} else {
-				memcpy( &self->private->last_closing, date, sizeof( GDate ));
+				memcpy( &priv->last_closing, date, sizeof( GDate ));
 			}
 		}
 	}
@@ -810,7 +1134,6 @@ on_dope_changed( GtkEntry *entry, ofaGuidedEx *self )
 {
 	/*static const gchar *thisfn = "ofa_guided_ex_on_dope_changed";*/
 	ofaGuidedExPrivate *priv;
-	GtkWidget *wdeff;
 	gchar *str;
 
 	/*g_debug( "%s: entry=%p, self=%p", thisfn, ( void * ) entry, ( void * ) self );*/
@@ -836,10 +1159,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedEx *self )
 		}
 
 		str = my_utils_display_from_date( &priv->deff, MY_UTILS_DATE_DDMM );
-		wdeff = my_utils_container_get_child_by_name( priv->box, "p1-deffet" );
-		if( entry && GTK_IS_WIDGET( wdeff )){
-			gtk_entry_set_text( GTK_ENTRY( wdeff ), str );
-		}
+		gtk_entry_set_text( priv->right_deffet, str );
 		g_free( str );
 	}
 
@@ -926,10 +1246,10 @@ on_account_selection( ofaGuidedEx *self, gint row )
 	GtkEntry *entry;
 	gchar *number;
 
-	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row ));
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->right_entries_grid, COL_ACCOUNT, row ));
 
 	number = ofa_account_select_run(
-						ofa_base_dialog_get_main_window( OFA_BASE_DIALOG( self )),
+						ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
 						gtk_entry_get_text( entry ));
 
 	if( number && g_utf8_strlen( number, -1 )){
@@ -1025,17 +1345,15 @@ on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self )
 static void
 check_for_account( ofaGuidedEx *self, GtkEntry *entry  )
 {
-	ofoDossier *dossier;
 	ofoAccount *account;
 	const gchar *asked_account;
 	gchar *number;
 
-	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 	asked_account = gtk_entry_get_text( entry );
-	account = ofo_account_get_by_number( dossier, asked_account );
+	account = ofo_account_get_by_number( self->private->dossier, asked_account );
 	if( !account || ofo_account_is_root( account )){
 		number = ofa_account_select_run(
-							ofa_base_dialog_get_main_window( OFA_BASE_DIALOG( self )),
+							ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
 							asked_account );
 		if( number ){
 			gtk_entry_set_text( entry, number );
@@ -1054,20 +1372,8 @@ check_for_account( ofaGuidedEx *self, GtkEntry *entry  )
 static void
 check_for_enable_dlg( ofaGuidedEx *self )
 {
-	/*gboolean ok;*/
-	/*GtkWidget *btn;*/
-
-	if( self->private->view ){
-		g_return_if_fail( GTK_IS_GRID( self->private->view ));
-
-		/*ok = */is_dialog_validable( self );
-
-		/*btn = my_utils_container_get_child_by_name(
-							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
-		g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-
-		gtk_widget_set_sensitive( btn, ok );*/
-	}
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->right_ok ), is_dialog_validable( self ));
 }
 
 static gboolean
@@ -1075,13 +1381,18 @@ is_dialog_validable( ofaGuidedEx *self )
 {
 	gboolean ok;
 
-	update_all_formulas( self );
-	update_all_totals( self );
+	ok = FALSE;
 
-	ok = TRUE;
-	ok &= check_for_journal( self );
-	ok &= check_for_dates( self );
-	ok &= check_for_all_entries( self );
+	if( self->private->model ){
+
+		update_all_formulas( self );
+		update_all_totals( self );
+
+		ok = TRUE;
+		ok &= check_for_journal( self );
+		ok &= check_for_dates( self );
+		ok &= check_for_all_entries( self );
+	}
 
 	return( ok );
 }
@@ -1101,7 +1412,7 @@ update_all_formulas( ofaGuidedEx *self )
 			if( col_def && col_def->get_label ){
 				str = ( *col_def->get_label )( self->private->model, idx );
 				if( ofo_model_detail_is_formula( str )){
-					entry = gtk_grid_get_child_at( self->private->view, col_id, idx+1 );
+					entry = gtk_grid_get_child_at( self->private->right_entries_grid, col_id, idx+1 );
 					if( entry && GTK_IS_ENTRY( entry )){
 						update_formula( self, str, GTK_ENTRY( entry ));
 					}
@@ -1154,7 +1465,7 @@ update_formula( ofaGuidedEx *self, const gchar *formula, GtkEntry *entry )
 		} else if( !g_utf8_collate( *iter, "IDEM" )){
 			row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
 			col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
-			widget = gtk_grid_get_child_at( self->private->view, col, row-1 );
+			widget = gtk_grid_get_child_at( self->private->right_entries_grid, col, row-1 );
 			if( widget && GTK_IS_ENTRY( widget )){
 				gtk_entry_set_text( entry, gtk_entry_get_text( GTK_ENTRY( widget )));
 			}
@@ -1166,7 +1477,7 @@ update_formula( ofaGuidedEx *self, const gchar *formula, GtkEntry *entry )
 			if( row > 0 && row <= ofo_model_get_detail_count( self->private->model )){
 				col_def = find_column_def_from_letter( self, init );
 				if( col_def ){
-					widget = gtk_grid_get_child_at( self->private->view, col_def->column_id, row );
+					widget = gtk_grid_get_child_at( self->private->right_entries_grid, col_def->column_id, row );
 					if( widget && GTK_IS_ENTRY( widget )){
 						gtk_entry_set_text( entry, gtk_entry_get_text( GTK_ENTRY( widget )));
 					} else {
@@ -1178,9 +1489,7 @@ update_formula( ofaGuidedEx *self, const gchar *formula, GtkEntry *entry )
 
 			} else {
 				g_debug( "%s: searching for taux %s", thisfn, *iter );
-				rate = ofo_taux_get_by_mnemo(
-								ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
-								*iter );
+				rate = ofo_taux_get_by_mnemo( self->private->dossier, *iter );
 				if( rate && OFO_IS_TAUX( rate )){
 					g_warning( "%s: TODO", thisfn );
 				} else {
@@ -1237,14 +1546,14 @@ update_all_totals( ofaGuidedEx *self )
 	self->private->total_debits = dsold;
 	self->private->total_credits = csold;
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_DEBIT, count+1 );
+	entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_DEBIT, count+1 );
 	if( entry && GTK_IS_ENTRY( entry )){
 		str = g_strdup_printf( "%.2lf", dsold );
 		gtk_entry_set_text( GTK_ENTRY( entry ), str );
 		g_free( str );
 	}
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_CREDIT, count+1 );
+	entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_CREDIT, count+1 );
 	if( entry && GTK_IS_ENTRY( entry )){
 		str = g_strdup_printf( "%.2lf", csold );
 		gtk_entry_set_text( GTK_ENTRY( entry ), str );
@@ -1262,12 +1571,12 @@ update_all_totals( ofaGuidedEx *self )
 		str2 = g_strdup( "" );
 	}
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_DEBIT, count+2 );
+	entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_DEBIT, count+2 );
 	if( entry && GTK_IS_ENTRY( entry )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), str2 );
 	}
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_CREDIT, count+2 );
+	entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_CREDIT, count+2 );
 	if( entry && GTK_IS_ENTRY( entry )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	}
@@ -1284,7 +1593,7 @@ get_amount( ofaGuidedEx *self, gint col_id, gint row )
 
 	col_def = find_column_def_from_col_id( self, col_id );
 	if( col_def ){
-		entry = gtk_grid_get_child_at( self->private->view, col_def->column_id, row );
+		entry = gtk_grid_get_child_at( self->private->right_entries_grid, col_def->column_id, row );
 		if( entry && GTK_IS_ENTRY( entry )){
 			return( g_strtod( gtk_entry_get_text( GTK_ENTRY( entry )), NULL ));
 		}
@@ -1323,24 +1632,19 @@ check_for_dates( ofaGuidedEx *self )
 	static const gchar *thisfn = "ofa_guided_ex_check_for_dates";
 	ofaGuidedExPrivate *priv;
 	gboolean ok, oki;
-	GtkWidget *entry;
 
 	ok = TRUE;
 	priv = self->private;
 
-	entry = my_utils_container_get_child_by_name( priv->box, "p1-dope" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	oki = g_date_valid( &priv->dope );
-	my_utils_entry_set_valid( GTK_ENTRY( entry ), oki );
+	my_utils_entry_set_valid( priv->right_dope, oki );
 	ok &= oki;
 	if( !oki ){
 		g_debug( "%s: operation date is invalid", thisfn );
 	}
 
-	entry = my_utils_container_get_child_by_name( priv->box, "p1-deffet" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	oki = g_date_valid( &priv->deff );
-	my_utils_entry_set_valid( GTK_ENTRY( entry ), oki );
+	my_utils_entry_set_valid( priv->right_deffet, oki );
 	ok &= oki;
 	if( !oki ){
 		g_debug( "%s: effect date is invalid", thisfn );
@@ -1416,11 +1720,11 @@ check_for_entry( ofaGuidedEx *self, gint row )
 
 	ok = TRUE;
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
+	entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_ACCOUNT, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 
 	account = ofo_account_get_by_number(
-						ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
+						self->private->dossier,
 						gtk_entry_get_text( GTK_ENTRY( entry )));
 	oki = ( account && OFO_IS_ACCOUNT( account ));
 	ok &= oki;
@@ -1428,7 +1732,7 @@ check_for_entry( ofaGuidedEx *self, gint row )
 		g_debug( "%s: account number=%s", thisfn, gtk_entry_get_text( GTK_ENTRY( entry )));
 	}
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_LABEL, row );
+	entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_LABEL, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	str = gtk_entry_get_text( GTK_ENTRY( entry ));
 	oki = ( str && g_utf8_strlen( str, -1 ));
@@ -1443,54 +1747,63 @@ check_for_entry( ofaGuidedEx *self, gint row )
 static void
 set_comment( ofaGuidedEx *self, const gchar *comment )
 {
-	GtkWidget *widget;
-
-	widget = my_utils_container_get_child_by_name( self->private->box, "p1-comment" );
-	if( widget && GTK_IS_ENTRY( widget )){
-		gtk_entry_set_text( GTK_ENTRY( widget ), comment );
-	}
+	gtk_entry_set_text( self->private->right_comment, comment );
 }
 
 /*
- * return %TRUE to allow quitting the dialog
+ * the right bottom "OK" has been clicked:
+ *  try to validate and generate the entries
  */
-#if 0
-static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
+static void
+on_right_ok( GtkButton *button, ofaGuidedEx *self )
 {
-	return( do_update( OFA_GUIDED_EX( dialog )));
+	if( do_update( self )){
+		reset_entries_amounts( self );
+	}
 }
-#endif
+
+static void
+reset_entries_amounts( ofaGuidedEx *self )
+{
+	gint i;
+	GtkWidget *entry;
+
+	for( i=1 ; i<=self->private->right_entries_count ; ++i ){
+		entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_DEBIT, i );
+		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_CREDIT, i );
+		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+	}
+}
 
 /*
  * generate the entries
  * all the entries are created in memory and checked before being
  * serialized. Only after that, journal and accounts are updated.
  */
-#if 0
 static gboolean
 do_update( ofaGuidedEx *self )
 {
+	ofaGuidedExPrivate *priv;
 	gboolean ok;
 	GtkWidget *entry;
 	gint count, idx;
 	gdouble deb, cred;
 	const gchar *piece;
-	ofoDossier *dossier;
 	GList *entries, *it;
 	ofoEntry *record;
 	gint errors;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	piece = NULL;
-	entry = my_utils_container_get_child_by_name(
-							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-piece" );
-	if( entry && GTK_IS_ENTRY( entry )){
-		piece = gtk_entry_get_text( GTK_ENTRY( entry ));
-	}
+	priv = self->private;
 
-	count = ofo_model_get_detail_count( self->private->model );
+	piece = NULL;
+	entry = my_utils_container_get_child_by_name( priv->right_box, "p1-piece" );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	piece = gtk_entry_get_text( GTK_ENTRY( entry ));
+
+	count = ofo_model_get_detail_count( priv->model );
 	entries = NULL;
 	errors = 0;
 	ok = FALSE;
@@ -1510,14 +1823,16 @@ do_update( ofaGuidedEx *self )
 
 	if( !errors ){
 		ok = TRUE;
-		dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 		for( it=entries ; it ; it=it->next ){
-			ok &= ofo_entry_insert( OFO_ENTRY( it->data ), dossier );
+			ok &= ofo_entry_insert( OFO_ENTRY( it->data ), priv->dossier );
 			/* TODO:
 			 * in case of an error, remove the already recorded entries
 			 * of the list, decrementing the journals and the accounts
 			 * then restore the last ecr number of the dossier
 			 */
+		}
+		if( ok ){
+			display_ok_message( self, g_list_length( entries ));
 		}
 	}
 
@@ -1539,38 +1854,49 @@ entry_from_detail( ofaGuidedEx *self, gint row, const gchar *piece )
 	const gchar *account_number;
 	ofoAccount *account;
 	const gchar *label;
-	gdouble deb, cre, amount;
-	ofaEntrySens sens;
+	gdouble deb, cre;
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_ACCOUNT, row );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_ACCOUNT, row );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
 	account_number = gtk_entry_get_text( GTK_ENTRY( entry ));
 	account = ofo_account_get_by_number(
-						ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
+						self->private->dossier,
 						account_number );
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
-	entry = gtk_grid_get_child_at( self->private->view, COL_LABEL, row );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+	entry = gtk_grid_get_child_at( self->private->right_entries_grid, COL_LABEL, row );
+	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
 	label = gtk_entry_get_text( GTK_ENTRY( entry ));
-	g_return_val_if_fail( label && g_utf8_strlen( label, -1 ), FALSE );
+	g_return_val_if_fail( label && g_utf8_strlen( label, -1 ), NULL );
 
 	deb = get_amount( self, COL_DEBIT, row );
 	cre = get_amount( self, COL_CREDIT, row );
-	if( deb > cre ){
-		amount = deb - cre;
-		sens = ENT_SENS_DEBIT;
-	} else {
-		amount = cre - deb;
-		sens = ENT_SENS_CREDIT;
-	}
 
 	return( ofo_entry_new_with_data(
-					ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
+							self->private->dossier,
 							&self->private->deff, &self->private->dope, label,
 							piece, account_number,
 							ofo_account_get_devise( account ),
-							self->private->journal_id,
-							amount, sens ));
+							self->private->journal,
+							deb, cre ));
 }
-#endif
+
+static void
+display_ok_message( ofaGuidedEx *self, gint count )
+{
+	GtkWidget *dialog;
+	gchar *message;
+
+	message = g_strdup_printf( _( "%d entries have been succesffully created" ), count );
+
+	dialog = gtk_message_dialog_new(
+			GTK_WINDOW( ofa_main_page_get_main_window( OFA_MAIN_PAGE( self ))),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_INFO,
+			GTK_BUTTONS_OK,
+			"%s", message );
+
+	gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+}

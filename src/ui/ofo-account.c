@@ -180,8 +180,7 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 {
 	static const gchar *thisfn = "ofo_account_on_new_object_entry";
 	ofoAccount *account;
-	ofaEntrySens sens;
-	gdouble amount;
+	gdouble debit, credit;
 	gint number;
 	const GDate *deffect;
 	gdouble prev;
@@ -191,24 +190,21 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 		account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
 		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
-		sens = ofo_entry_get_sens( entry );
-		amount = ofo_entry_get_amount( entry );
+		debit = ofo_entry_get_debit( entry );
+		credit = ofo_entry_get_credit( entry );
 		number = ofo_entry_get_number( entry );
 		deffect = ofo_entry_get_deffect( entry );
 
-		switch( sens ){
-			case ENT_SENS_DEBIT:
-				prev = ofo_account_get_bro_deb_mnt( account );
-				ofo_account_set_bro_deb_ecr( account, number );
-				ofo_account_set_bro_deb_date( account, deffect );
-				ofo_account_set_bro_deb_mnt( account, prev+amount );
-				break;
-			case ENT_SENS_CREDIT:
-				prev = ofo_account_get_bro_cre_mnt( account );
-				ofo_account_set_bro_cre_ecr( account, number );
-				ofo_account_set_bro_cre_date( account, deffect );
-				ofo_account_set_bro_cre_mnt( account, prev+amount );
-				break;
+		if( debit ){
+			prev = ofo_account_get_bro_deb_mnt( account );
+			ofo_account_set_bro_deb_ecr( account, number );
+			ofo_account_set_bro_deb_date( account, deffect );
+			ofo_account_set_bro_deb_mnt( account, prev+debit );
+		} else {
+			prev = ofo_account_get_bro_cre_mnt( account );
+			ofo_account_set_bro_cre_ecr( account, number );
+			ofo_account_set_bro_cre_date( account, deffect );
+			ofo_account_set_bro_cre_mnt( account, prev+credit );
 		}
 
 		if( account_update_amounts( account, ofo_dossier_get_sgbd( dossier ))){
@@ -1544,7 +1540,7 @@ ofo_account_get_csv( const ofoDossier *dossier )
 }
 
 /**
- * ofo_account_set_csv:
+ * ofo_account_import_csv:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:

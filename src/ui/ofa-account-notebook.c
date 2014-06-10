@@ -876,9 +876,9 @@ set_row_by_iter( ofaAccountNotebook *self,
 		cdev = g_strdup( "" );
 
 	} else {
-		sdeb = g_strdup_printf( "%.2f",
+		sdeb = g_strdup_printf( "%'.2f",
 				ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
-		scre = g_strdup_printf( "%.2f",
+		scre = g_strdup_printf( "%'.2f",
 				ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
 		devise = ofo_devise_get_by_code( self->private->dossier, ofo_account_get_devise( account ));
 		if( devise ){

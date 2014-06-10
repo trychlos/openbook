@@ -52,10 +52,9 @@
  * | | | | |             | | |  which is handled by an        | | | | |
  * | | | | |             | | |  ofaMainPage                   | | | | |
  * | | | | |             | | |                                | | | | |
- * | | | | |             | | | The GtkGrid is supposed to     | | | | |
- * | | | | |             | | |  embed a GtkTreeView, either   | | | | |
- * | | | | |             | | |  directly of via a GtkNotebook | | | | |
- * | | | | |             | | |                                | | | | |
+ * | | | | |             | | | see ofa-main-page.h for a more | | | | |
+ * | | | | |             | | |  complete description of the   | | | | |
+ * | | | | |             | | |  ofaMainPage class behavior    | | | | |
  * | | | | |             | | |                                | | | | |
  * | | | | +-------------+ | +--------------------------------+ | | | |
  * | | | +-----------------+------------------------------------+ | | |

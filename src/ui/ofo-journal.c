@@ -1377,7 +1377,7 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 }
 
 /**
- * ofo_journal_set_csv:
+ * ofo_journal_import_csv:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:

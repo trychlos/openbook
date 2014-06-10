@@ -206,7 +206,29 @@
 
  177 2014- 6- 9 there is no sens to manage a GtkTreeView in ofaMainPage
 
- 178
+ 178 2014- 6- 9 ofaModelsSet: manage update journal
+
+ 179 2014- 6- 9 ofaModelsSet: manage delete journal
+
+ 180 2014- 6- 9 ofoEntry: manage change journal mnemo
+
+ 181 2014- 6- 9 ofoModel: manage change journal mnemo
+
+ 182 2014- 6-10 configure at the dossier level the default journal when
+                we are importing entries
+
+ 183 2014- 6-10 check that we do not have entries on unexistant account
+                (this is the case on EBP export which has kept entries
+                on closed accounts
+
+ 184 2014- 6-10 use the count of decimal digits of the currency when 
+                displaying all amounts
+
+ 185 2014- 6-10 imported entries must be balanced
+
+ 186 2014- 6-10 journal must stay balanced, even after imported entries
+
+ 187
 
 -----------------------------------------------------------------------
  DONE

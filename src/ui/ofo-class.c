@@ -714,7 +714,7 @@ ofo_class_get_csv( const ofoDossier *dossier )
 }
 
 /**
- * ofo_class_set_csv:
+ * ofo_class_import_csv:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:

@@ -184,6 +184,7 @@ ofa_journal_combo_init_combo( const ofaJournalComboParms *parms )
 
 	/* runtime data */
 	priv->combo = GTK_COMBO_BOX( combo );
+	gtk_combo_box_set_id_column ( priv->combo, JOU_COL_MNEMO );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			JOU_N_COLUMNS,
@@ -308,4 +309,18 @@ ofa_journal_combo_get_selection( ofaJournalCombo *self, gchar **mnemo, gchar **l
 	}
 
 	return( id );
+}
+
+/**
+ * ofa_journal_combo_set_selection:
+ */
+void
+ofa_journal_combo_set_selection( ofaJournalCombo *self, const gchar *mnemo )
+{
+	g_return_if_fail( self && OFA_IS_JOURNAL_COMBO( self ));
+
+	if( !self->private->dispose_has_run ){
+
+		gtk_combo_box_set_active_id( self->private->combo, mnemo );
+	}
 }

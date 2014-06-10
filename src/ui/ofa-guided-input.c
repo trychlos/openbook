@@ -1310,8 +1310,7 @@ entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 	const gchar *account_number;
 	ofoAccount *account;
 	const gchar *label;
-	gdouble deb, cre, amount;
-	ofaEntrySens sens;
+	gdouble deb, cre;
 
 	priv = self->private;
 
@@ -1330,13 +1329,6 @@ entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 
 	deb = get_amount( self, COL_DEBIT, row );
 	cre = get_amount( self, COL_CREDIT, row );
-	if( deb > cre ){
-		amount = deb - cre;
-		sens = ENT_SENS_DEBIT;
-	} else {
-		amount = cre - deb;
-		sens = ENT_SENS_CREDIT;
-	}
 
 	return( ofo_entry_new_with_data(
 					ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
@@ -1344,5 +1336,5 @@ entry_from_detail( ofaGuidedInput *self, gint row, const gchar *piece )
 							piece, account_number,
 							ofo_account_get_devise( account ),
 							priv->journal,
-							amount, sens ));
+							deb, cre ));
 }

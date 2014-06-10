@@ -774,7 +774,7 @@ ofo_devise_get_csv( const ofoDossier *dossier )
 }
 
 /**
- * ofo_devise_set_csv:
+ * ofo_devise_import_csv:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:

@@ -659,10 +659,10 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	ECR_REF       VARCHAR(20)                 COMMENT 'Piece reference',"
 			"	ECR_COMPTE    VARCHAR(20)                 COMMENT 'Account number',"
 			"	ECR_DEV_CODE  VARCHAR(3)                  COMMENT 'ISO 3A identifier of the currency',"
-			"	ECR_MONTANT   DECIMAL(15,5)               COMMENT 'Entry amount',"
-			"	ECR_SENS      INTEGER                     COMMENT 'Sens of the entry \\'DB\\' or \\'CR\\'',"
+			"	ECR_DEBIT     DECIMAL(15,5) DEFAULT 0     COMMENT 'Debiting amount',"
+			"	ECR_CREDIT    DECIMAL(15,5) DEFAULT 0     COMMENT 'Crediting amount',"
 			"	ECR_JOU_MNEMO VARCHAR(6)                  COMMENT 'Mnemonic identifier of the journal',"
-			"	ECR_STATUS    INTEGER                     COMMENT 'Is the entry validated or deleted ?',"
+			"	ECR_STATUS    INTEGER       DEFAULT 1     COMMENT 'Is the entry validated or deleted ?',"
 			"	ECR_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
 			"	ECR_MAJ_STAMP TIMESTAMP                   COMMENT 'Last update timestamp',"
 			"	ECR_RAPPRO    DATE NOT NULL DEFAULT 0     COMMENT 'Reconciliation date',"
@@ -1185,6 +1185,7 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 gint
 ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 {
+	sDetailExe *current;
 	gint next_number;
 	gchar *query;
 
@@ -1194,8 +1195,9 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		dossier->private->current->last_ecr += 1;
-		next_number = dossier->private->current->last_ecr;
+		current = get_current_exe( dossier );
+		current->last_ecr += 1;
+		next_number = current->last_ecr;
 
 		query = g_strdup_printf(
 				"UPDATE OFA_T_DOSSIER_EXE "

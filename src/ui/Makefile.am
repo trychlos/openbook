@@ -125,6 +125,8 @@ openbook_SOURCES = \
 	ofa-taux-properties.h								\
 	ofa-taux-set.c										\
 	ofa-taux-set.h										\
+	ofa-view-entries.c									\
+	ofa-view-entries.h									\
 	ofo-account.c										\
 	ofo-account.h										\
 	ofo-account-def.h									\
@@ -186,7 +188,7 @@ rc_files = \
 ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
-	ofa-bat-common.ui										\
+	ofa-bat-common.ui									\
 	ofa-bat-properties.ui								\
 	ofa-bat-select.ui									\
 	ofa-class-properties.ui								\
@@ -200,6 +202,7 @@ ui_files = \
 	ofa-journal-properties.ui							\
 	ofa-model-properties.ui								\
 	ofa-taux-properties.ui								\
+	ofa-view-entries.ui									\
 	$(NULL)
 
 images_files = \
