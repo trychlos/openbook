@@ -1295,6 +1295,9 @@ ofo_entry_get_csv( const ofoDossier *dossier )
  * - debit
  * - credit (only one of the twos must be set)
  *
+ * Note that the decimal separator must be a dot '.' and not a command,
+ * with LANG=C as well as LANG=fr_FR
+ *
  * Add the imported entries to the content of OFA_T_ECRITURES, while
  * keeping already existing entries.
  */
@@ -1429,7 +1432,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 			credit = g_ascii_strtod( str, NULL );
 			tot_credits += credit;
 
-			g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );
+			/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/
 			if(( debit && !credit ) || ( !debit && credit )){
 				ofo_entry_set_debit( entry, debit );
 				ofo_entry_set_credit( entry, credit );
@@ -1446,8 +1449,12 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 		}
 	}
 
-	if( tot_debits != tot_credits ){
-		g_warning( "%s: tot_debits=%.2lf, tot_credits=%.2lf", thisfn, tot_debits, tot_credits );
+	if( !ofo_journal_get_by_mnemo( dossier, "IMPORT" )){
+		g_warning( "%s: import journal not found: IMPORT", thisfn );
+	}
+
+	if( abs( tot_debits - tot_credits ) > 0.000001 ){
+		g_warning( "%s: entries are not balanced: tot_debits=%lf, tot_credits=%lf", thisfn, tot_debits, tot_credits );
 		errors += 1;
 	}
 

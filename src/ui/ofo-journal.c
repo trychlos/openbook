@@ -57,20 +57,18 @@ struct _ofoJournalPrivate {
 };
 
 typedef struct {
-	gboolean is_new;					/* will be recorded by INSERT instead of UPDATE */
-	gint     exe_id;
-	gchar   *devise;
-	gdouble  clo_deb;
-	gdouble  clo_cre;
-	gdouble  deb;
-	gdouble  cre;
+	gint       exe_id;
+	gchar     *devise;
+	gdouble    clo_deb;
+	gdouble    clo_cre;
+	gdouble    deb;
+	gdouble    cre;
 }
 	sDetailDev;
 
 typedef struct {
-	gboolean is_new;					/* will be recorded by INSERT instead of UPDATE */
-	gint     exe_id;
-	GDate    last_clo;
+	gint       exe_id;
+	GDate      last_clo;
 }
 	sDetailExe;
 
@@ -81,6 +79,8 @@ OFO_BASE_DEFINE_GLOBAL( st_global, journal )
 static gboolean st_connected = FALSE;
 
 static void        init_global_handlers( const ofoDossier *dossier );
+static void        on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data );
+static void        on_new_journal_entry( ofoDossier *dossier, ofoEntry *entry );
 static GList      *journal_load_dataset( void );
 static ofoJournal *journal_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint        journal_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
@@ -90,6 +90,7 @@ static sDetailDev *journal_new_dev_with_code( ofoJournal *journal, gint exe_id, 
 static gboolean    journal_do_insert( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    journal_do_update( ofoJournal *journal, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, const ofoSgbd *sgbd );
 static gboolean    journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd );
 static gint        journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo );
 static gboolean    journal_do_drop_content( const ofoSgbd *sgbd );
@@ -169,11 +170,57 @@ init_global_handlers( const ofoDossier *dossier )
 	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 	if( !st_connected ){
-		/*g_signal_connect( G_OBJECT( dossier ),
-					OFA_SIGNAL_UPDATED_DATASET, G_CALLBACK( on_dataset_updated ), NULL );
-					*/
+		g_signal_connect( G_OBJECT( dossier ),
+					OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), NULL );
 		st_connected = TRUE;
 	}
+}
+
+static void
+on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data )
+{
+	if( OFO_IS_ENTRY( object )){
+		on_new_journal_entry( dossier, OFO_ENTRY( object ));
+	}
+}
+
+/*
+ * recording a new entry is necessarily on the current exercice
+ */
+static void
+on_new_journal_entry( ofoDossier *dossier, ofoEntry *entry )
+{
+	static const gchar *thisfn = "ofo_journal_on_new_journal_entry";
+	gint current;
+	const gchar *mnemo, *currency;
+	ofoJournal *journal;
+	sDetailDev *detail;
+
+	current = ofo_dossier_get_current_exe_id( dossier );
+	mnemo = ofo_entry_get_journal( entry );
+	journal = ofo_journal_get_by_mnemo( dossier, mnemo );
+
+	if( journal ){
+		currency = ofo_entry_get_devise( entry );
+		detail = journal_find_dev_by_code( journal, current, currency );
+		if( !detail ){
+			detail = g_new0( sDetailDev, 1 );
+			detail->exe_id = current;
+			detail->devise = g_strdup( currency );
+			detail->deb = 0.0;
+			detail->cre = 0.0;
+			detail->clo_deb = 0.0;
+			detail->clo_cre = 0.0;
+			journal->private->amounts = g_list_prepend( journal->private->amounts, detail );
+		}
+		detail->deb += ofo_entry_get_debit( entry );
+		detail->cre += ofo_entry_get_credit( entry );
+		journal_do_update_detail_dev( journal, detail, ofo_dossier_get_sgbd( dossier ));
+
+	} else {
+		g_warning( "%s: journal not found: %s", thisfn, mnemo );
+	}
+
 }
 
 #if 0
@@ -221,10 +268,10 @@ on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, 
  * mnemonic. The returned list is owned by the #ofoJournal class, and
  * should not be freed by the caller.
  *
- * Note: The list is returned (and maintained) sorted for debug
- * facility only. Any way, the display treeview (#ofoJournalsSet class)
- * makes use of a sortable model which doesn't care of the order of the
- * provided dataset.
+ * Notes:
+ * - the list is not sorted
+ * - we are loading all the content of the entity, i.e. the list of
+ *   journals plus all the list of detail rows
  */
 GList *
 ofo_journal_get_dataset( const ofoDossier *dossier )
@@ -288,8 +335,7 @@ journal_load_dataset( void )
 				"SELECT JOU_EXE_ID,JOU_DEV_CODE,"
 				"	JOU_DEV_CLO_DEB,JOU_DEV_CLO_CRE,JOU_DEV_DEB,JOU_DEV_CRE "
 				"	FROM OFA_T_JOURNAUX_DEV "
-				"	WHERE JOU_MNEMO='%s' "
-				"	ORDER BY JOU_EXE_ID ASC,JOU_DEV_CODE ASC",
+				"	WHERE JOU_MNEMO='%s'",
 						ofo_journal_get_mnemo( journal ));
 
 		result = ofo_sgbd_query_ex( sgbd, query );
@@ -310,7 +356,6 @@ journal_load_dataset( void )
 			icol = icol->next;
 			balance->cre = g_ascii_strtod(( gchar * ) icol->data, NULL );
 
-			balance->is_new = FALSE;
 			journal->private->amounts = g_list_prepend( journal->private->amounts, balance );
 		}
 
@@ -319,8 +364,7 @@ journal_load_dataset( void )
 		query = g_strdup_printf(
 				"SELECT JOU_EXE_ID,JOU_EXE_LAST_CLO "
 				"	FROM OFA_T_JOURNAUX_EXE "
-				"	WHERE JOU_MNEMO='%s' "
-				"	ORDER BY JOU_EXE_ID ASC",
+				"	WHERE JOU_MNEMO='%s'",
 						ofo_journal_get_mnemo( journal ));
 
 		result = ofo_sgbd_query_ex( sgbd, query );
@@ -333,7 +377,6 @@ journal_load_dataset( void )
 			icol = icol->next;
 			memcpy( &exercice->last_clo, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
 
-			exercice->is_new = FALSE;
 			journal->private->exes = g_list_prepend( journal->private->exes, exercice );
 		}
 
@@ -952,36 +995,11 @@ journal_new_dev_with_code( ofoJournal *journal, gint exe_id, const gchar *devise
 		sdet->exe_id = exe_id;
 		sdet->devise = g_strdup( devise );
 
-		sdet->is_new = TRUE;
 		journal->private->amounts = g_list_prepend( journal->private->amounts, sdet );
 	}
 
 	return( sdet );
 }
-
-#if 0
-static gboolean
-journal_dev_is_new( ofoJournal *journal, gint exe_id, gint dev_id )
-{
-	sDetailDev *sdet;
-
-	sdet = journal_find_dev_by_code( journal, exe_id, dev_id );
-	g_return_val_if_fail( sdet, FALSE );
-
-	return( sdet->is_new );
-}
-
-static void
-journal_dev_set_new( ofoJournal *journal, gint exe_id, gint dev_id, gboolean is_new )
-{
-	sDetailDev *sdet;
-
-	sdet = journal_find_dev_by_code( journal, exe_id, dev_id );
-	g_return_if_fail( sdet );
-
-	sdet->is_new = is_new;
-}
-#endif
 
 /**
  * ofo_journal_insert:
@@ -1147,49 +1165,41 @@ journal_do_update( ofoJournal *journal, const gchar *prev_mnemo, const ofoSgbd *
 	return( ok );
 }
 
-#if 0
 static gboolean
-journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofoSgbd *sgbd )
+journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, const ofoSgbd *sgbd )
 {
 	gchar *query;
-	gboolean ok;
 	gchar *deb, *cre, *clo_deb, *clo_cre;
+	gboolean ok;
 
-	deb = my_utils_sql_from_double( ofo_journal_get_deb( journal, exe_id, dev_id ));
-	cre = my_utils_sql_from_double( ofo_journal_get_cre( journal, exe_id, dev_id ));
-	clo_deb = my_utils_sql_from_double( ofo_journal_get_clo_deb( journal, exe_id, dev_id ));
-	clo_cre = my_utils_sql_from_double( ofo_journal_get_clo_cre( journal, exe_id, dev_id ));
+	query = g_strdup_printf(
+			"DELETE FROM OFA_T_JOURNAUX_DEV "
+			"	WHERE JOU_MNEMO='%s' AND JOU_EXE_ID=%d AND JOU_DEV_CODE='%s'",
+					ofo_journal_get_mnemo( journal ),
+					detail->exe_id,
+					detail->devise );
 
-	if( journal_dev_is_new( journal, exe_id, dev_id )){
-		query = g_strdup_printf(
+	ofo_sgbd_query_ignore( sgbd, query );
+	g_free( query );
+
+	deb = my_utils_sql_from_double( ofo_journal_get_deb( journal, detail->exe_id, detail->devise ));
+	cre = my_utils_sql_from_double( ofo_journal_get_cre( journal, detail->exe_id, detail->devise ));
+	clo_deb = my_utils_sql_from_double( ofo_journal_get_clo_deb( journal, detail->exe_id, detail->devise ));
+	clo_cre = my_utils_sql_from_double( ofo_journal_get_clo_cre( journal, detail->exe_id, detail->devise ));
+
+	query = g_strdup_printf(
 					"INSERT INTO OFA_T_JOURNAUX_DEV "
-					"	(JOU_ID,JOU_EXE_ID,JOU_DEV_ID,"
+					"	(JOU_MNEMO,JOU_EXE_ID,JOU_DEV_CODE,"
 					"	JOU_DEV_CLO_DEB,JOU_DEV_CLO_CRE,"
 					"	JOU_DEV_DEB,JOU_DEV_CRE) VALUES "
-					"	(%d,%d,%d,%s,%s,%s,%s)",
-							ofo_journal_get_id( journal ),
-							exe_id,
-							dev_id,
+					"	('%s',%d,'%s',%s,%s,%s,%s)",
+							ofo_journal_get_mnemo( journal ),
+							detail->exe_id,
+							detail->devise,
 							clo_deb,
 							clo_cre,
 							deb,
 							cre );
-		journal_dev_set_new( journal, exe_id, dev_id, FALSE );
-
-	} else {
-		query = g_strdup_printf(
-					"UPDATE OFA_T_JOURNAUX_DEV SET "
-					"	JOU_DEV_CLO_DEB=%s, JOU_DEV_CLO_CRE=%s,"
-					"	JOU_DEV_DEB=%s,JOU_DEV_CRE=%s "
-					"	WHERE JOU_ID=%d AND JOU_EXE_ID=%d AND JOU_DEV_ID=%d",
-							clo_deb,
-							clo_cre,
-							deb,
-							cre,
-							ofo_journal_get_id( journal ),
-							exe_id,
-							dev_id );
-	}
 
 	ok = ofo_sgbd_query( sgbd, query );
 
@@ -1197,7 +1207,6 @@ journal_update_amounts( ofoJournal *journal, gint exe_id, gint dev_id, const ofo
 
 	return( ok );
 }
-#endif
 
 /**
  * ofo_journal_delete:

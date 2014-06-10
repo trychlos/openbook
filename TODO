@@ -225,11 +225,10 @@
  184 2014- 6-10 use the count of decimal digits of the currency when 
                 displaying all amounts
 
- 185 2014- 6-10 imported entries must be balanced
+ 186 2014- 6-10 check that the IMPORT journal exists before trying to
+                import the entries
 
- 186 2014- 6-10 journal must stay balanced, even after imported entries
-
- 187
+ 187 2014- 
 
 -----------------------------------------------------------------------
  DONE
@@ -657,6 +656,9 @@
                 unconditionally close a previously already opened
                 dossier.
      2014- 6- 7 done - svn #3657
+
+ 185 2014- 6-10 imported entries must be balanced
+     2014- 6-10 done - svn #3681
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

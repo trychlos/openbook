@@ -222,7 +222,7 @@ error_connect( const ofoSgbd *sgbd,
 }
 
 /**
- * ofo_sgbd_exec_query:
+ * ofo_sgbd_query:
  */
 gboolean
 ofo_sgbd_query( const ofoSgbd *sgbd, const gchar *query )
@@ -249,7 +249,32 @@ ofo_sgbd_query( const ofoSgbd *sgbd, const gchar *query )
 }
 
 /**
- * ofo_sgbd_exec_query_ex:
+ * ofo_sgbd_query_ignore:
+ */
+gboolean
+ofo_sgbd_query_ignore( const ofoSgbd *sgbd, const gchar *query )
+{
+	static const gchar *thisfn = "ofo_sgbd_query";
+	gboolean query_ok = FALSE;
+
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
+
+	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
+
+	if( sgbd->private->mysql ){
+		if( !mysql_query( sgbd->private->mysql, query )){
+			sgbd_audit_query( sgbd, query );
+			query_ok = TRUE;
+		}
+	} else {
+		g_warning( "%s: trying to query a non-opened connection", thisfn );
+	}
+
+	return( query_ok );
+}
+
+/**
+ * ofo_sgbd_query_ex:
  *
  * @parent: if NULL, do not display error message
  *

@@ -40,22 +40,24 @@ G_BEGIN_DECLS
 /**
  * Known SGBD providers
  */
-#define SGBD_PROVIDER_MYSQL  "MySQL"
+#define SGBD_PROVIDER_MYSQL   "MySQL"
 
-GType    ofo_sgbd_get_type   ( void ) G_GNUC_CONST;
+GType    ofo_sgbd_get_type    ( void ) G_GNUC_CONST;
 
-ofoSgbd *ofo_sgbd_new        ( const gchar *provider );
+ofoSgbd *ofo_sgbd_new         ( const gchar *provider );
 
-gboolean ofo_sgbd_connect    ( ofoSgbd *sgbd,
-								const gchar *host, gint port, const gchar *socket,
-								const gchar *dbname,
-								const gchar *account, const gchar *password );
+gboolean ofo_sgbd_connect     ( ofoSgbd *sgbd,
+									const gchar *host, gint port, const gchar *socket,
+									const gchar *dbname,
+									const gchar *account, const gchar *password );
 
-gboolean ofo_sgbd_query      ( const ofoSgbd *sgbd, const gchar *query );
+gboolean ofo_sgbd_query       ( const ofoSgbd *sgbd, const gchar *query );
 
-GSList  *ofo_sgbd_query_ex   ( const ofoSgbd *sgbd, const gchar *query );
+gboolean ofo_sgbd_query_ignore( const ofoSgbd *sgbd, const gchar *query );
 
-void     ofo_sgbd_free_result( GSList *result );
+GSList  *ofo_sgbd_query_ex    ( const ofoSgbd *sgbd, const gchar *query );
+
+void     ofo_sgbd_free_result ( GSList *result );
 
 G_END_DECLS
 
