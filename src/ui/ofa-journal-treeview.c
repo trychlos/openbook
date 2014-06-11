@@ -45,6 +45,7 @@ struct _ofaJournalTreeviewPrivate {
 	ofaMainWindow    *main_window;
 	ofoDossier       *dossier;
 	GtkContainer     *parent;
+	gboolean          allow_multiple_selection;
 	JournalTreeviewCb pfnSelection;
 	JournalTreeviewCb pfnActivation;
 	void             *user_data;
@@ -166,6 +167,7 @@ ofa_journal_treeview_new( const JournalTreeviewParms *parms )
 	view->private->main_window = parms->main_window;
 	view->private->dossier = ofa_main_window_get_dossier( parms->main_window );
 	view->private->parent = parms->parent;
+	view->private->allow_multiple_selection = parms->allow_multiple_selection;
 	view->private->pfnSelection = parms->pfnSelection;
 	view->private->pfnActivation = parms->pfnActivation;
 	view->private->user_data = parms->user_data;
@@ -247,7 +249,10 @@ setup_treeview( ofaJournalTreeview *self )
 	gtk_tree_view_append_column( tview, column );
 
 	select = gtk_tree_view_get_selection( tview );
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
+	gtk_tree_selection_set_mode(
+			select,
+			self->private->allow_multiple_selection ?
+					GTK_SELECTION_MULTIPLE : GTK_SELECTION_BROWSE );
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
 
 	gtk_tree_sortable_set_default_sort_func(
