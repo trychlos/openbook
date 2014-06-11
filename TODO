@@ -138,8 +138,6 @@
  107 2014- 5-24 have a message when current exercice changes
                 so that e.g. the journals set may adapt its display
 
- 108 2014- 5-24 ofaJournalsSet: implement on_view_entries
-
  111 2014- 5-26 ofo_taux_get_val_rate_by_date
 
  114 2014- 5-26 dispose_has_run should be a protected data of the
@@ -533,6 +531,9 @@
  106 2014- 5-24 check how and when is set the ofaMainPage 'theme' 
                 property ?
      2014- 5-24 done svn #3491
+
+ 108 2014- 5-24 ofaJournalsSet: implement on_view_entries
+     2014- 6-11 done - svn #3685
 
  109 2014- 5-25 Devises: add notes, maj_user and maj_stamp
      2014- 5-25 done - svn #3501
