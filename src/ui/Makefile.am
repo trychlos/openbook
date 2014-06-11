@@ -64,8 +64,8 @@ openbook_SOURCES = \
 	ofa-base-dialog.c									\
 	ofa-base-dialog.h									\
 	ofa-base-dialog-prot.h								\
-	ofa-bat-common.c										\
-	ofa-bat-common.h										\
+	ofa-bat-common.c									\
+	ofa-bat-common.h									\
 	ofa-bat-properties.c								\
 	ofa-bat-properties.h								\
 	ofa-bat-select.c									\
@@ -99,12 +99,16 @@ openbook_SOURCES = \
 	ofa-import.h										\
 	ofa-importer.c										\
 	ofa-importer.h										\
+	ofa-int-closing.c									\
+	ofa-int-closing.h									\
 	ofa-journal-combo.c									\
 	ofa-journal-combo.h									\
 	ofa-journal-properties.c							\
 	ofa-journal-properties.h							\
 	ofa-journals-set.c									\
 	ofa-journals-set.h									\
+	ofa-journal-treeview.c								\
+	ofa-journal-treeview.h								\
 	ofa-main-page.c										\
 	ofa-main-page.h										\
 	ofa-main-page-def.h									\
@@ -199,6 +203,7 @@ ui_files = \
 	ofa-export.ui										\
 	ofa-guided-input.ui									\
 	ofa-import.ui										\
+	ofa-int-closing.ui									\
 	ofa-journal-properties.ui							\
 	ofa-model-properties.ui								\
 	ofa-taux-properties.ui								\

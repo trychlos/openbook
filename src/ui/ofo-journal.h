@@ -58,6 +58,9 @@ const gchar    *ofo_journal_get_notes    ( const ofoJournal *journal );
 const gchar    *ofo_journal_get_maj_user ( const ofoJournal *journal );
 const GTimeVal *ofo_journal_get_maj_stamp( const ofoJournal *journal );
 
+const GDate    *ofo_journal_get_last_entry  ( const ofoJournal *journal );
+const GDate    *ofo_journal_get_last_closing( const ofoJournal *journal );
+
 gdouble         ofo_journal_get_clo_deb  ( const ofoJournal *journal, gint exe_id, const gchar *devise );
 gdouble         ofo_journal_get_clo_cre  ( const ofoJournal *journal, gint exe_id, const gchar *devise );
 gdouble         ofo_journal_get_deb      ( const ofoJournal *journal, gint exe_id, const gchar *devise );

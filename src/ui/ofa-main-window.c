@@ -85,6 +85,7 @@ static void on_close           ( GSimpleAction *action, GVariant *parameter, gpo
 static void on_ope_guided      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_view_entries( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_concil      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_int_closing ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -101,6 +102,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "guided",       on_ope_guided,       NULL, NULL, NULL },
 		{ "entries",      on_ope_view_entries, NULL, NULL, NULL },
 		{ "concil",       on_ope_concil,       NULL, NULL, NULL },
+		{ "iclosing",     on_ope_int_closing,  NULL, NULL, NULL },
 		{ "import",       on_ope_import,       NULL, NULL, NULL },
 		{ "export",       on_ope_export,       NULL, NULL, NULL },
 		{ "accounts",     on_ref_accounts,     NULL, NULL, NULL },
@@ -867,6 +869,19 @@ on_ope_concil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CONCIL );
+}
+
+static void
+on_ope_int_closing( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_concil";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	/*ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CONCIL );*/
 }
 
 static void

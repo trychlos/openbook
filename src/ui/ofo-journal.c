@@ -557,6 +557,80 @@ ofo_journal_get_maj_stamp( const ofoJournal *journal )
 }
 
 /**
+ * ofo_journal_get_last_entry:
+ *
+ * Returns the effect date of the most recent entry written in this
+ * journal, or NULL.
+ */
+const GDate *
+ofo_journal_get_last_entry( const ofoJournal *journal )
+{
+	static GDate deffet;
+	gchar *query;
+	GSList *result, *icol;
+
+	g_return_val_if_fail( journal && OFO_IS_JOURNAL( journal ), NULL );
+
+	g_date_clear( &deffet, 1 );
+
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
+
+		query = g_strdup_printf(
+				"SELECT MAX(ECR_DEFFET) FROM OFA_T_ECRITURES "
+				"	WHERE ECR_JOU_MNEMO='%s'", ofo_journal_get_mnemo( journal ));
+
+		result = ofo_sgbd_query_ex(
+						ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query );
+		g_free( query );
+
+		if( result ){
+			icol = ( GSList * ) result->data;
+			memcpy( &deffet, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+			ofo_sgbd_free_result( result );
+		}
+	}
+
+	return( &deffet );
+}
+
+/**
+ * ofo_journal_get_last_closing:
+ *
+ * Returns the last closing date, all exercices considered, for this
+ * journal, or NULL
+ */
+const GDate *
+ofo_journal_get_last_closing( const ofoJournal *journal )
+{
+	static GDate dclosing;
+	gchar *query;
+	GSList *result, *icol;
+
+	g_return_val_if_fail( journal && OFO_IS_JOURNAL( journal ), NULL );
+
+	g_date_clear( &dclosing, 1 );
+
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
+
+		query = g_strdup_printf(
+				"SELECT MAX(JOU_EXE_LAST_CLO) FROM OFA_T_JOURNAUX_EXE "
+				"	WHERE JOU_MNEMO='%s'", ofo_journal_get_mnemo( journal ));
+
+		result = ofo_sgbd_query_ex(
+						ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query );
+		g_free( query );
+
+		if( result ){
+			icol = ( GSList * ) result->data;
+			memcpy( &dclosing, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+			ofo_sgbd_free_result( result );
+		}
+	}
+
+	return( &dclosing );
+}
+
+/**
  * ofo_journal_get_clo_deb:
  * @journal:
  * @exe_id:

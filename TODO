@@ -239,8 +239,6 @@
 
  188 2014- 6-10 ImportAssistant: doesn't know import multi-lines notes
 
- 189 2014- 6-10 AccountProperties: Balance date: Entry -> Last entry
-
  190 2014- 6-10 Have a display of journal balances
 
  191 2014- 6-11 Note that a multi-currency journal is not balanced per
@@ -250,7 +248,17 @@
                 mysqldump pwi_consultants -uwieser -pwieser | gzip -c 
                  >/tmp/pwi_consultants-20140611.gz
 
- 193
+ 193 2014- 6-11 record the entry last effect date in the journal_exe_dev
+                detail
+
+ 194 2014- 6-11 ofo_journal_get_cloture() should be replaced with
+                ofo_journal_get_last_closing()
+
+ 195 2014- 6-11 optimizate the usage of SELECT COUNT(*) FROM 
+                OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
+                 times on a journal selection in journal_treeview)
+
+ 196
 
 -----------------------------------------------------------------------
  DONE
@@ -684,6 +692,9 @@
 
  185 2014- 6-10 imported entries must be balanced
      2014- 6-10 done - svn #3681
+
+ 189 2014- 6-10 AccountProperties: Balance date: Entry -> Last entry
+     2014- 6-11 done - svn #3686
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
