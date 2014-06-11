@@ -32,6 +32,8 @@
 
 #include "ui/my-utils.h"
 #include "ui/ofa-main-page.h"
+#include "ui/ofa-main-window.h"
+#include "ui/ofa-view-entries.h"
 #include "ui/ofa-journal-properties.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofo-dossier.h"
@@ -40,11 +42,15 @@
 /* private instance data
  */
 struct _ofaJournalsSetPrivate {
-	gboolean dispose_has_run;
+	gboolean   dispose_has_run;
 
 	/* internals
 	 */
-	gint     exe_id;					/* internal identifier of the current exercice */
+	gint       exe_id;					/* internal identifier of the current exercice */
+
+	/* UI
+	 */
+	GtkButton *entries_btn;
 };
 
 /* column ordering in the selection listview
@@ -273,6 +279,7 @@ v_setup_buttons( ofaMainPage *page )
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), page );
 	gtk_box_pack_start( GTK_BOX( buttons_box ), GTK_WIDGET( button ), FALSE, FALSE, 0 );
+	OFA_JOURNALS_SET( page )->private->entries_btn = button;
 
 	return( buttons_box );
 }
@@ -409,6 +416,10 @@ on_journal_selected( GtkTreeSelection *selection, ofaJournalsSet *self )
 					OFO_IS_JOURNAL( journal ) &&
 					ofo_journal_is_deletable( journal,
 							ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ))));
+
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->entries_btn ),
+			journal && OFO_IS_JOURNAL( journal ) && ofo_journal_has_entries( journal ));
 }
 
 static void
@@ -523,11 +534,35 @@ delete_confirmed( ofaJournalsSet *self, ofoJournal *journal )
 static void
 on_view_entries( GtkButton *button, ofaJournalsSet *self )
 {
-	static const gchar *thisfn = "ofa_journals_set_on_view_entries";
+	ofaMainPage *page;
+	ofoJournal *journal;
+	GtkTreeView *tview;
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
 
 	g_return_if_fail( OFA_IS_JOURNALS_SET( self ));
 
-	g_warning( "%s: TO BE WRITTEN", thisfn );
+	tview = GTK_TREE_VIEW( ofa_main_page_get_treeview( OFA_MAIN_PAGE( self )));
+	select = gtk_tree_view_get_selection( tview );
+
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &journal, -1 );
+		g_object_unref( journal );
+
+		page = ofa_main_window_activate_theme(
+						ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+						THM_VIEW_ENTRIES );
+		if( page ){
+			ofa_view_entries_display_entries(
+							OFA_VIEW_ENTRIES( page ),
+							OFO_TYPE_JOURNAL,
+							ofo_journal_get_mnemo( journal ),
+							NULL,
+							NULL );
+		}
+	}
 }
 
 /*

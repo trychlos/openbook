@@ -412,7 +412,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			text_cell, "text", ENT_COL_DEBIT,
 			NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_set_min_width( column, 90 );
+	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( tview, column );
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -422,7 +422,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			text_cell, "text", ENT_COL_CREDIT,
 			NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_set_min_width( column, 90 );
+	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( tview, column );
 
 	text_cell = gtk_cell_renderer_text_new();

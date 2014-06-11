@@ -718,6 +718,29 @@ journal_find_exe_by_id( const ofoJournal *journal, gint exe_id )
 }
 
 /**
+ * ofo_journal_has_entries:
+ */
+gboolean
+ofo_journal_has_entries( const ofoJournal *journal )
+{
+	gboolean ok;
+	const gchar *mnemo;
+
+	g_return_val_if_fail( OFO_IS_JOURNAL( journal ), FALSE );
+
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
+
+		mnemo = ofo_journal_get_mnemo( journal );
+
+		ok = ofo_entry_use_journal( OFO_DOSSIER( st_global->dossier ), mnemo );
+
+		return( ok );
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofo_journal_is_deletable:
  *
  * A journal is considered to be deletable if no entry has been recorded

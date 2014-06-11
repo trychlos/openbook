@@ -65,6 +65,7 @@ gdouble         ofo_journal_get_cre      ( const ofoJournal *journal, gint exe_i
 
 const GDate    *ofo_journal_get_cloture  ( const ofoJournal *journal, gint exe_id );
 
+gboolean        ofo_journal_has_entries  ( const ofoJournal *journal );
 gboolean        ofo_journal_is_deletable ( const ofoJournal *journal, const ofoDossier *dossier );
 gboolean        ofo_journal_is_valid     ( const gchar *mnemo, const gchar *label );
 
