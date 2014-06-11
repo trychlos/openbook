@@ -133,19 +133,6 @@ typedef struct {
 }
 	sThemeDef;
 
-enum {
-	THM_ACCOUNTS = 1,
-	THM_DEVISES,
-	THM_JOURNALS,
-	THM_MODELS,
-	THM_TAUX,
-	THM_CONCIL,
-	THM_CLASSES,
-	THM_BATFILES,
-	THM_GUIDED_INPUT,
-	THM_VIEW_ENTRIES
-};
-
 static sThemeDef st_theme_defs[] = {
 
 		{ THM_ACCOUNTS,
@@ -253,7 +240,6 @@ static const sThemeDef *get_theme_def_from_id( gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
 static void             on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
 static void             do_close_dossier( ofaMainWindow *self );
-static void             main_activate_theme( ofaMainWindow *main, gint theme );
 static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
 static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
@@ -738,7 +724,7 @@ on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col
 	if( gtk_tree_model_get_iter( model, &iter, path )){
 		gtk_tree_model_get( model, &iter, COL_TREE_IDX, &idx, -1 );
 
-		main_activate_theme( window, st_tree_defs[idx].theme_id );
+		ofa_main_window_activate_theme( window, st_tree_defs[idx].theme_id );
 	}
 }
 
@@ -854,7 +840,7 @@ on_ope_guided( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MODELS );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MODELS );
 }
 
 static void
@@ -867,7 +853,7 @@ on_ope_view_entries( GSimpleAction *action, GVariant *parameter, gpointer user_d
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_VIEW_ENTRIES );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_VIEW_ENTRIES );
 }
 
 static void
@@ -880,7 +866,7 @@ on_ope_concil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CONCIL );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CONCIL );
 }
 
 static void
@@ -919,7 +905,7 @@ on_ref_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_ACCOUNTS );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_ACCOUNTS );
 }
 
 static void
@@ -932,7 +918,7 @@ on_ref_journals( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_JOURNALS );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_JOURNALS );
 }
 
 static void
@@ -945,7 +931,7 @@ on_ref_models( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MODELS );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MODELS );
 }
 
 static void
@@ -958,7 +944,7 @@ on_ref_devises( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_DEVISES );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_DEVISES );
 }
 
 static void
@@ -971,7 +957,7 @@ on_ref_taux( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_TAUX );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_TAUX );
 }
 
 static void
@@ -984,7 +970,7 @@ on_ref_classes( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CLASSES );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CLASSES );
 }
 
 static void
@@ -997,7 +983,7 @@ on_ref_batfiles( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	main_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_BATFILES );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_BATFILES );
 }
 
 /**
@@ -1016,34 +1002,49 @@ ofa_main_window_get_dossier( const ofaMainWindow *window )
 	return( NULL );
 }
 
-/*
+/**
+ * ofa_main_window_activate_theme:
+ *
  * if the main page doesn't exist yet, then create it
  * then make sure it is displayed, and activate it
  * last run it
  */
-static void
-main_activate_theme( ofaMainWindow *main_window, gint theme )
+ofaMainPage *
+ofa_main_window_activate_theme( ofaMainWindow *main_window, gint theme )
 {
-	static const gchar *thisfn = "ofa_main_window_main_book_activate_page";
+	static const gchar *thisfn = "ofa_main_window_activate_theme";
 	GtkNotebook *main_book;
 	GtkWidget *page;
+	ofaMainPage *handler;
 	const sThemeDef *theme_def;
 
-	g_debug( "%s: main_window=%p, theme=%d", thisfn, ( void * ) main_window, theme );
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
-	main_book = main_get_book( main_window );
-	g_return_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ));
+	handler = NULL;
 
-	theme_def = get_theme_def_from_id( theme );
-	g_return_if_fail( theme_def );
-	g_return_if_fail( theme_def->fn_get_type );
+	if( !main_window->private->dispose_has_run ){
 
-	page = main_book_get_page( main_window, main_book, theme );
-	if( !page ){
-		page = main_book_create_page( main_window, main_book, theme_def );
+		g_debug( "%s: main_window=%p, theme=%d", thisfn, ( void * ) main_window, theme );
+
+		main_book = main_get_book( main_window );
+		g_return_val_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ), NULL );
+
+		theme_def = get_theme_def_from_id( theme );
+		g_return_val_if_fail( theme_def, NULL );
+		g_return_val_if_fail( theme_def->fn_get_type, NULL );
+
+		page = main_book_get_page( main_window, main_book, theme );
+		if( !page ){
+			page = main_book_create_page( main_window, main_book, theme_def );
+		}
+		g_return_val_if_fail( page && GTK_IS_WIDGET( page ), NULL );
+		main_book_activate_page( main_window, main_book, page );
+
+		handler = ( ofaMainPage * ) g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
+		g_return_val_if_fail( handler && OFA_IS_MAIN_PAGE( handler ), NULL );
 	}
-	g_return_if_fail( page && GTK_IS_WIDGET( page ));
-	main_book_activate_page( main_window, main_book, page );
+
+	return( handler );
 }
 
 static GtkNotebook *

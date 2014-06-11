@@ -248,7 +248,11 @@
  191 2014- 6-11 Note that a multi-currency journal is not balanced per
                 currency, and so its global balance cannot be checked
 
- 192
+ 192 2014- 6-11 save database:
+                mysqldump pwi_consultants -uwieser -pwieser | gzip -c 
+                 >/tmp/pwi_consultants-20140611.gz
+
+ 193
 
 -----------------------------------------------------------------------
  DONE

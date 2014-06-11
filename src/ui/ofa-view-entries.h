@@ -59,7 +59,9 @@ typedef struct {
 }
 	ofaViewEntriesClass;
 
-GType ofa_view_entries_get_type( void ) G_GNUC_CONST;
+GType ofa_view_entries_get_type       ( void ) G_GNUC_CONST;
+
+void  ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar *id, const GDate *begin, const GDate *end );
 
 G_END_DECLS
 

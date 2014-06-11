@@ -776,3 +776,59 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 			break;
 	}
 }
+
+/**
+ * ofa_view_entries_display_entries:
+ *
+ * @begin: [allow-none]:
+ * @end: [allow-none]:
+ */
+void
+ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar *id, const GDate *begin, const GDate *end )
+{
+	static const gchar *thisfn = "ofa_view_entries_display_entries";
+	ofaViewEntriesPrivate *priv;
+	gchar *str;
+
+	g_return_if_fail( self && OFA_IS_VIEW_ENTRIES( self ));
+	g_return_if_fail( id && g_utf8_strlen( id, -1 ));
+
+	if( !self->private->dispose_has_run ){
+
+		g_debug( "%s: self=%p, type=%lu, id=%s, begin=%p, end=%p",
+				thisfn, ( void * ) self, type, id, ( void * ) begin, ( void * ) end );
+
+		priv = self->private;
+
+		/* start by setting the from/to dates as these changes do not
+		 * automatically trigger a display refresh */
+		if( begin && g_date_valid( begin )){
+			str = my_utils_display_from_date( begin, MY_UTILS_DATE_DDMM );
+			gtk_entry_set_text( priv->we_from, str );
+			g_free( str );
+		} else {
+			gtk_entry_set_text( priv->we_from, "" );
+		}
+
+		if( end && g_date_valid( end )){
+			str = my_utils_display_from_date( end, MY_UTILS_DATE_DDMM );
+			gtk_entry_set_text( priv->we_to, str );
+			g_free( str );
+		} else {
+			gtk_entry_set_text( priv->we_to, "" );
+		}
+
+		/* then setup the general selection: changes on theses entries
+		 * will automativally trigger a display refresh */
+		if( type == OFO_TYPE_ACCOUNT ){
+
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_btn ), TRUE );
+			gtk_entry_set_text( priv->account_entry, id );
+
+		} else if( type == OFO_TYPE_JOURNAL ){
+
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->journal_btn ), TRUE );
+			ofa_journal_combo_set_selection( priv->journal_combo, id );
+		}
+	}
+}

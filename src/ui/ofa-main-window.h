@@ -64,10 +64,27 @@
  */
 
 #include "ui/ofa-application.h"
+#include "ui/ofa-main-page-def.h"
 #include "ui/ofa-main-window-def.h"
 #include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
+
+/**
+ * The theme identifiers of the pages of the main notebook
+ */
+enum {
+	THM_ACCOUNTS = 1,
+	THM_DEVISES,
+	THM_JOURNALS,
+	THM_MODELS,
+	THM_TAUX,
+	THM_CONCIL,
+	THM_CLASSES,
+	THM_BATFILES,
+	THM_GUIDED_INPUT,
+	THM_VIEW_ENTRIES
+};
 
 /**
  *  Signal to be sent to the main window in order to ask for the opening
@@ -78,6 +95,8 @@ G_BEGIN_DECLS
 GType          ofa_main_window_get_type          ( void ) G_GNUC_CONST;
 
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
+
+ofaMainPage   *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );
 
 gboolean       ofa_main_window_is_willing_to_quit( ofaMainWindow *window );
 

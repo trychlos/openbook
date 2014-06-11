@@ -34,6 +34,8 @@
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-main-window.h"
+#include "ui/ofa-view-entries.h"
 #include "ui/ofo-account.h"
 #include "ui/ofo-dossier.h"
 
@@ -220,7 +222,7 @@ on_row_selected( ofoAccount *account, ofaAccountsChart *self )
 
 	gtk_widget_set_sensitive(
 			GTK_WIDGET( self->private->consult_btn ),
-			account && OFO_IS_ACCOUNT( account ));
+			account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account ));
 }
 
 static void
@@ -337,9 +339,23 @@ delete_confirmed( ofaAccountsChart *self, ofoAccount *account )
 static void
 on_view_entries( GtkButton *button, ofaAccountsChart *self )
 {
-	static const gchar *thisfn = "ofa_accounts_chart_on_view_entries";
+	ofaMainPage *page;
+	ofoAccount *account;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
 
-	g_warning( "%s: TO BE WRITTEN", thisfn );
+	account = ofa_account_notebook_get_selected( self->private->chart_child );
+	if( account ){
+		page = ofa_main_window_activate_theme(
+						ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+						THM_VIEW_ENTRIES );
+		if( page ){
+			ofa_view_entries_display_entries(
+							OFA_VIEW_ENTRIES( page ),
+							OFO_TYPE_ACCOUNT,
+							ofo_account_get_number( account ),
+							NULL,
+							NULL );
+		}
+	}
 }
