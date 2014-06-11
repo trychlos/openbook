@@ -208,7 +208,7 @@ on_row_activated( ofoAccount *account, ofaMainPage *page )
 static void
 on_row_selected( ofoAccount *account, ofaAccountsChart *self )
 {
-	g_debug( "ofa_accounts_chart_on_row_selected" );
+	/*g_debug( "ofa_accounts_chart_on_row_selected" );*/
 
 	gtk_widget_set_sensitive(
 			ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),

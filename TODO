@@ -214,9 +214,11 @@
 
  181 2014- 6- 9 ofoModel: manage change journal mnemo
 
- 182 2014- 6-10 configure at the dossier level the import journal when
-                we are importing entries
+ 182 2014- 6-10 configure at the dossier level the default import journal 
+                when we are importing entries
                 for now, this is harcoded with 'IMPORT' mnemo
+                Note that the journal should be configurable: it is ok
+                to import e.g. amortissements entries
 
  183 2014- 6-10 consistency check: check that we do not have entries on 
                 unexistant account (this is the case on EBP export which
@@ -227,8 +229,26 @@
 
  186 2014- 6-10 check that the IMPORT journal exists before trying to
                 import the entries
+     2014- 6-11 Is it really mandatory as the imported entries may do
+                not use this default import journal at all ?
 
- 187 2014- 
+ 187 2014- 6-10 TauxProperties: the validities begin and end displayed
+                in the treeview do not take into account all validity
+                records
+
+ 187 2014- 6-10 TauxProperties - Validities page: should be sorted by
+                end date desc (most recent first)
+
+ 188 2014- 6-10 ImportAssistant: doesn't know import multi-lines notes
+
+ 189 2014- 6-10 AccountProperties: Balance date: Entry -> Last entry
+
+ 190 2014- 6-10 Have a display of journal balances
+
+ 191 2014- 6-11 Note that a multi-currency journal is not balanced per
+                currency, and so its global balance cannot be checked
+
+ 192
 
 -----------------------------------------------------------------------
  DONE

@@ -1291,6 +1291,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
  * - label
  * - piece's reference
  * - iso 3a code of the currency, default to those of the account
+ * - journal
  * - account number, must exist
  * - debit
  * - credit (only one of the twos must be set)
@@ -1387,6 +1388,19 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 			str = ( const gchar * ) ico->data;
 			dev_code = g_strdup( str );
 
+			/* journal - default to IMPORT */
+			ico = ico->next;
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				ofo_entry_set_journal( entry, "IMPORT" );
+			} else if( !ofo_journal_get_by_mnemo( dossier, str )){
+				g_warning( "%s: import journal not found: %s", thisfn, str );
+				errors += 1;
+				continue;
+			} else {
+				ofo_entry_set_journal( entry, str );
+			}
+
 			/* entry account */
 			ico = ico->next;
 			str = ( const gchar * ) ico->data;
@@ -1398,6 +1412,11 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 			account = ofo_account_get_by_number( dossier, str );
 			if( !account ){
 				g_warning( "%s: (line %d) non existant account: %s", thisfn, count, str );
+				errors += 1;
+				continue;
+			}
+			if( ofo_account_is_root( account )){
+				g_warning( "%s: (line %d) not a detail account: %s", thisfn, count, str );
 				errors += 1;
 				continue;
 			}
@@ -1447,10 +1466,6 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 
 			new_set = g_list_prepend( new_set, entry );
 		}
-	}
-
-	if( !ofo_journal_get_by_mnemo( dossier, "IMPORT" )){
-		g_warning( "%s: import journal not found: IMPORT", thisfn );
 	}
 
 	if( abs( tot_debits - tot_credits ) > 0.000001 ){
