@@ -258,11 +258,6 @@
                 OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
                  times on a journal selection in journal_treeview)
 
- 196 2014- 6-11 journal closing: there is no sens to execure the same 
-                query SELECT MAX(JOU_EXE_LAST_CLO) FROM OFA_T_JOURNAUX_EXE
-              	WHERE JOU_MNEMO='AC' each time we change a char in the
-              	date entry
-
  198 2014- 6-12 go up the ofo_account_init_handlers to ofaMainWindow
                 in order to systematize the connection to signals
 
@@ -707,6 +702,12 @@
 
  189 2014- 6-10 AccountProperties: Balance date: Entry -> Last entry
      2014- 6-11 done - svn #3686
+
+ 196 2014- 6-11 journal closing: there is no sens to execure the same 
+                query SELECT MAX(JOU_EXE_LAST_CLO) FROM OFA_T_JOURNAUX_EXE
+              	WHERE JOU_MNEMO='AC' each time we change a char in the
+              	date entry
+     2014- 6-12 done - svn #3702
 
  197 2014- 6-12 g_signal_connect (e.g.) to dossier: must disconnect from
                 the instance if it stays alive and we are willing to

@@ -56,7 +56,7 @@ struct _ofaIntClosingPrivate {
 	/* during the iteration on each selected journal
 	 */
 	gint                count;
-	gint                closing_journal_greater;
+	gint                not_already_closed;
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-int-closing.ui";
@@ -286,8 +286,7 @@ check_for_enable_dlg( ofaIntClosing *self )
 
 /*
  * an intermediate cloture is allowed if the proposed closing date is
- * valid, and greater that at least previous closing dates, and greater or
- * equal
+ * valid, and greater that at least one of the previous closing dates
  */
 static gboolean
 is_dialog_validable( ofaIntClosing *self )
@@ -303,13 +302,13 @@ is_dialog_validable( ofaIntClosing *self )
 	/* check that each journal is not yet closed for this date */
 	if( ok ){
 		priv->count = 0;
-		priv->closing_journal_greater = 0;
+		priv->not_already_closed = 0;
 
 		ofa_journal_treeview_foreach_sel(
 					priv->tview, ( JournalTreeviewCb ) check_foreach_journal, self );
 
-		if( priv->closing_journal_greater > 0 ){
-			gtk_label_set_text( priv->message_label, _( "At least one journal is already closed at this date" ));
+		if( !priv->not_already_closed ){
+			gtk_label_set_text( priv->message_label, _( "No journal found to be closeable at the proposed date" ));
 			ok = FALSE;
 		}
 	}
@@ -331,8 +330,8 @@ check_foreach_journal( const gchar *mnemo, ofaIntClosing *self )
 
 	if( journal ){
 		last = ofo_journal_get_last_closing( journal );
-		if( last && g_date_valid( last ) && g_date_compare( &priv->closing, last ) < 0 ){
-			priv->closing_journal_greater += 1;
+		if( last && g_date_valid( last ) && g_date_compare( &priv->closing, last ) > 0 ){
+			priv->not_already_closed += 1;
 		}
 	}
 }
