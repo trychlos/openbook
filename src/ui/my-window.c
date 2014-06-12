@@ -28,50 +28,50 @@
 #include <config.h>
 #endif
 
-#include "ui/base-window.h"
-#include "ui/base-window-prot.h"
+#include "ui/my-utils.h"
+#include "ui/my-window.h"
+#include "ui/my-window-prot.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-settings.h"
 
-#if 0
-static gboolean pref_quit_on_escape = TRUE;
-static gboolean pref_confirm_on_cancel = FALSE;
-static gboolean pref_confirm_on_escape = FALSE;
-#endif
-
 /* private instance data
  */
-struct _BaseWindowPrivate {
+struct _myWindowPrivate {
 
 	/* properties
 	 */
-	ofaMainWindow *main_window;
 	gchar         *window_xml;
 	gchar         *window_name;
+	gboolean       manage_size_position;
+
+	/* this may be either a GtkDialog or a GtkAssistant
+	 */
+	GtkWindow     *toplevel;
 };
 
 /* class properties
  */
 enum {
 	PROP_MAIN_WINDOW_ID = 1,
+	PROP_DOSSIER_ID,
 	PROP_WINDOW_XML_ID,
-	PROP_WINDOW_NAME_ID
+	PROP_WINDOW_NAME_ID,
+	PROP_SIZE_POSITION_ID
 };
 
-G_DEFINE_TYPE( BaseWindow, base_window, G_TYPE_OBJECT )
+G_DEFINE_TYPE( myWindow, my_window, G_TYPE_OBJECT )
 
-static gboolean load_from_builder( BaseWindow *window );
 static void     restore_window_position( GtkWindow *toplevel, const gchar *name );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static void     save_window_position( GtkWindow *toplevel, const gchar *name );
 static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
 
 static void
-base_window_finalize( GObject *instance )
+my_window_finalize( GObject *instance )
 {
-	BaseWindow *self;
+	myWindow *self;
 
-	self = BASE_WINDOW( instance );
+	self = MY_WINDOW( instance );
 
 	/* free data members here */
 	g_free( self->private->window_xml );
@@ -80,73 +80,102 @@ base_window_finalize( GObject *instance )
 	g_free( self->protected );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( base_window_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( my_window_parent_class )->finalize( instance );
 }
 
 static void
-base_window_dispose( GObject *instance )
+my_window_dispose( GObject *instance )
 {
-	g_return_if_fail( IS_BASE_WINDOW( instance ));
+	myWindow *self;
 
-	if( !BASE_WINDOW( instance )->protected->dispose_has_run ){
+	g_return_if_fail( instance && MY_IS_WINDOW( instance ));
 
-		BASE_WINDOW( instance )->protected->dispose_has_run = TRUE;
+	self = MY_WINDOW( instance );
 
-		save_window_position(
-				BASE_WINDOW( instance )->protected->window,
-				BASE_WINDOW( instance )->private->window_name );
+	if( !self->protected->dispose_has_run ){
+
+		self->protected->dispose_has_run = TRUE;
+
+		if( self->private->manage_size_position ){
+
+			save_window_position(
+					self->private->toplevel,
+					self->private->window_name );
+		}
 
 		/* unref member objects here */
 
-		gtk_widget_destroy( GTK_WIDGET( BASE_WINDOW( instance )->protected->window ));
+		gtk_widget_destroy( GTK_WIDGET( MY_WINDOW( instance )->private->toplevel ));
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( base_window_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( my_window_parent_class )->dispose( instance );
 }
 
 static void
-base_window_constructed( GObject *instance )
+my_window_constructed( GObject *instance )
 {
-	g_return_if_fail( IS_BASE_WINDOW( instance ));
+	myWindow *self;
+	GtkWidget *toplevel;
 
-	if( !BASE_WINDOW( instance )->protected->dispose_has_run ){
+	g_return_if_fail( instance && MY_IS_WINDOW( instance ));
+
+	self = MY_WINDOW( instance );
+
+	if( !self->protected->dispose_has_run ){
 
 		/* first, chain up to the parent class */
-		G_OBJECT_CLASS( base_window_parent_class )->dispose( instance );
+		G_OBJECT_CLASS( my_window_parent_class )->dispose( instance );
 
 		/* then it is time to load the toplevel from builder */
-		if( load_from_builder( BASE_WINDOW( instance ))){
+		toplevel = my_utils_builder_load_from_path(
+							self->private->window_xml,
+							self->private->window_name );
 
-			restore_window_position(
-					BASE_WINDOW( instance )->protected->window,
-					BASE_WINDOW( instance )->private->window_name );
+		if( toplevel && GTK_IS_WINDOW( toplevel )){
+
+			self->private->toplevel = GTK_WINDOW( toplevel );
+
+			if( self->private->manage_size_position ){
+
+				restore_window_position(
+						self->private->toplevel,
+						self->private->window_name );
+			}
 		}
 	}
 }
 
 static void
-base_window_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
+my_window_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
 {
-	BaseWindowPrivate *priv;
+	myWindow *self;
 
-	g_return_if_fail( IS_BASE_WINDOW( object ));
+	g_return_if_fail( object && MY_IS_WINDOW( object ));
 
-	priv = BASE_WINDOW( object )->private;
+	self = MY_WINDOW( object );
 
-	if( !BASE_WINDOW( object )->protected->dispose_has_run ){
+	if( !self->protected->dispose_has_run ){
 
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
-				g_value_set_pointer( value, priv->main_window );
+				g_value_set_pointer( value, self->protected->main_window );
+				break;
+
+			case PROP_DOSSIER_ID:
+				g_value_set_pointer( value, self->protected->dossier );
 				break;
 
 			case PROP_WINDOW_XML_ID:
-				g_value_set_string( value, priv->window_xml);
+				g_value_set_string( value, self->private->window_xml);
 				break;
 
 			case PROP_WINDOW_NAME_ID:
-				g_value_set_string( value, priv->window_name );
+				g_value_set_string( value, self->private->window_name );
+				break;
+
+			case PROP_SIZE_POSITION_ID:
+				g_value_set_boolean( value, self->private->manage_size_position );
 				break;
 
 			default:
@@ -157,29 +186,37 @@ base_window_get_property( GObject *object, guint property_id, GValue *value, GPa
 }
 
 static void
-base_window_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
+my_window_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
 {
-	BaseWindowPrivate *priv;
+	myWindow *self;
 
-	g_return_if_fail( IS_BASE_WINDOW( object ));
+	g_return_if_fail( object && MY_IS_WINDOW( object ));
 
-	priv = BASE_WINDOW( object )->private;
+	self = MY_WINDOW( object );
 
-	if( !BASE_WINDOW( object )->protected->dispose_has_run ){
+	if( !self->protected->dispose_has_run ){
 
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
-				priv->main_window = g_value_get_pointer( value );
+				self->protected->main_window = g_value_get_pointer( value );
+				break;
+
+			case PROP_DOSSIER_ID:
+				self->protected->dossier = g_value_get_pointer( value );
 				break;
 
 			case PROP_WINDOW_XML_ID:
-				g_free( priv->window_xml );
-				priv->window_xml = g_value_dup_string( value );
+				g_free( self->private->window_xml );
+				self->private->window_xml = g_value_dup_string( value );
 				break;
 
 			case PROP_WINDOW_NAME_ID:
-				g_free( priv->window_name );
-				priv->window_name = g_value_dup_string( value );
+				g_free( self->private->window_name );
+				self->private->window_name = g_value_dup_string( value );
+				break;
+
+			case PROP_SIZE_POSITION_ID:
+				self->private->manage_size_position = g_value_get_boolean( value );
 				break;
 
 			default:
@@ -190,44 +227,53 @@ base_window_set_property( GObject *object, guint property_id, const GValue *valu
 }
 
 static void
-base_window_init( BaseWindow *self )
+my_window_init( myWindow *self )
 {
-	static const gchar *thisfn = "base_window_init";
+	static const gchar *thisfn = "my_window_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( BaseWindowPrivate, 1 );
-	self->protected = g_new0( BaseWindowProtected, 1 );
+	self->private = g_new0( myWindowPrivate, 1 );
+	self->protected = g_new0( myWindowProtected, 1 );
 }
 
 static void
-base_window_class_init( BaseWindowClass *klass )
+my_window_class_init( myWindowClass *klass )
 {
-	static const gchar *thisfn = "base_window_class_init";
+	static const gchar *thisfn = "my_window_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->get_property = base_window_get_property;
-	G_OBJECT_CLASS( klass )->set_property = base_window_set_property;
-	G_OBJECT_CLASS( klass )->constructed = base_window_constructed;
-	G_OBJECT_CLASS( klass )->dispose = base_window_dispose;
-	G_OBJECT_CLASS( klass )->finalize = base_window_finalize;
+	G_OBJECT_CLASS( klass )->get_property = my_window_get_property;
+	G_OBJECT_CLASS( klass )->set_property = my_window_set_property;
+	G_OBJECT_CLASS( klass )->constructed = my_window_constructed;
+	G_OBJECT_CLASS( klass )->dispose = my_window_dispose;
+	G_OBJECT_CLASS( klass )->finalize = my_window_finalize;
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
 			PROP_MAIN_WINDOW_ID,
 			g_param_spec_pointer(
-					BASE_PROP_MAIN_WINDOW,
+					MY_PROP_MAIN_WINDOW,
 					"Main window",
 					"The main window of the application",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
+			PROP_DOSSIER_ID,
+			g_param_spec_pointer(
+					MY_PROP_DOSSIER,
+					"Dossier",
+					"The currently opened dossier (if any)",
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
 			PROP_WINDOW_XML_ID,
 			g_param_spec_string(
-					BASE_PROP_WINDOW_XML,
+					MY_PROP_WINDOW_XML,
 					"UI XML pathname",
 					"The pathname to the file which contains the UI definition",
 					"",
@@ -237,48 +283,21 @@ base_window_class_init( BaseWindowClass *klass )
 			G_OBJECT_CLASS( klass ),
 			PROP_WINDOW_NAME_ID,
 			g_param_spec_string(
-					BASE_PROP_WINDOW_NAME,
+					MY_PROP_WINDOW_NAME,
 					"Window box name",
 					"The unique name of the managed window box",
 					"",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-}
 
-static gboolean
-load_from_builder( BaseWindow *window )
-{
-	static const gchar *thisfn = "base_window_load_from_builder";
-	gboolean loaded;
-	BaseWindowPrivate *priv;
-	GError *error;
-	GtkBuilder *builder;
-
-	loaded = FALSE;
-	priv = window->private;
-	error = NULL;
-	builder = gtk_builder_new();
-
-	if( gtk_builder_add_from_file( builder, priv->window_xml, &error )){
-
-		window->protected->window =
-					GTK_WINDOW( gtk_builder_get_object( builder, priv->window_name ));
-
-		if( !window->protected->window ){
-			g_warning( "%s: unable to find '%s' object in '%s' file",
-									thisfn, priv->window_name, priv->window_xml );
-
-		} else {
-			loaded = TRUE;
-		}
-
-	} else {
-		g_warning( "%s: %s", thisfn, error->message );
-		g_error_free( error );
-	}
-
-	g_object_unref( builder );
-
-	return( loaded );
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_SIZE_POSITION_ID,
+			g_param_spec_boolean(
+					MY_PROP_SIZE_POSITION,
+					"Manage size and position",
+					"Whether to manage size and position of the toplevel",
+					TRUE,
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 }
 
 /*
@@ -293,7 +312,7 @@ load_from_builder( BaseWindow *window )
 static void
 restore_window_position( GtkWindow *toplevel, const gchar *name )
 {
-	static const gchar *thisfn = "base_window_restore_window_position";
+	static const gchar *thisfn = "my_window_restore_window_position";
 	gchar *key;
 	GList *list;
 	gint x=0, y=0, width=0, height=0;
@@ -357,7 +376,7 @@ int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height )
 static void
 save_window_position( GtkWindow *toplevel, const gchar *name )
 {
-	static const gchar *thisfn = "base_window_save_window_position";
+	static const gchar *thisfn = "my_window_save_window_position";
 	gint x, y, width, height;
 	gchar *key;
 	GList *list;
@@ -392,33 +411,65 @@ position_to_int_list( gint x, gint y, gint width, gint height )
 }
 
 /**
- * base_window_get_dossier:
+ * my_window_get_dossier:
  */
 ofoDossier *
-base_window_get_dossier( const BaseWindow *window )
+my_window_get_dossier( const myWindow *self )
 {
-	g_return_val_if_fail( IS_BASE_WINDOW( window ), NULL );
+	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
 
-	if( !window->protected->dispose_has_run ){
+	if( !self->protected->dispose_has_run ){
 
-		return( ofa_main_window_get_dossier( window->private->main_window ));
+		return( self->protected->dossier );
 	}
 
 	return( NULL );
 }
 
 /**
- * base_window_get_main_window:
+ * my_window_get_main_window:
  */
 ofaMainWindow *
-base_window_get_main_window( const BaseWindow *window )
+my_window_get_main_window( const myWindow *self )
 {
-	g_return_val_if_fail( IS_BASE_WINDOW( window ), NULL );
+	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
 
-	if( !window->protected->dispose_has_run ){
+	if( !self->protected->dispose_has_run ){
 
-		return( window->private->main_window );
+		return( self->protected->main_window );
 	}
 
 	return( NULL );
+}
+
+/**
+ * my_window_get_toplevel:
+ */
+GtkWindow *
+my_window_get_toplevel( const myWindow *self )
+{
+	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
+
+	if( !self->protected->dispose_has_run ){
+
+		return( self->private->toplevel );
+	}
+
+	return( NULL );
+}
+
+/**
+ * my_window_has_valid_toplevel:
+ */
+gboolean
+my_window_has_valid_toplevel( const myWindow *self )
+{
+	g_return_val_if_fail( self && MY_IS_WINDOW( self ), FALSE );
+
+	if( !self->protected->dispose_has_run ){
+
+		return( self->private->toplevel && GTK_IS_WINDOW( self->private->toplevel ));
+	}
+
+	return( FALSE );
 }

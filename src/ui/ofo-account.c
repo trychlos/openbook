@@ -76,6 +76,7 @@ static gboolean st_connected = FALSE;
 static void        init_global_handlers( const ofoDossier *dossier );
 static void        on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data );
 static void        on_new_object_entry( ofoDossier *dossier, ofoEntry *entry );
+static void        on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
 static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
 static gint        account_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
@@ -147,14 +148,32 @@ ofo_account_class_init( ofoAccountClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_account_finalize;
 }
 
+/**
+ * ofo_account_connect_handlers:
+ */
+void
+ofo_account_connect_handlers( const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_account_connect_handlers";
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	init_global_handlers( dossier );
+}
+
 static void
 init_global_handlers( const ofoDossier *dossier )
 {
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
 	if( !st_connected ){
+
 		g_signal_connect( G_OBJECT( dossier ),
 					OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), NULL );
+
+		g_signal_connect( G_OBJECT( dossier ),
+					OFA_SIGNAL_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
+
 		st_connected = TRUE;
 	}
 }
@@ -216,6 +235,78 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 
 	} else {
 		g_warning( "%s: new entry not in rough status", thisfn );
+	}
+}
+
+/*
+ * an entry is validated, either individually or as the result of the
+ * closing of a journal
+ */
+static void
+on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
+{
+	static const gchar *thisfn = "ofo_account_on_validated_entry";
+	const gchar *acc_number;
+	ofoAccount *account;
+	gdouble debit, credit, amount;
+	const GDate *deffect, *acc_date;
+	gint number, acc_num;
+
+	acc_number = ofo_entry_get_account( entry );
+	account = ofo_account_get_by_number( dossier, acc_number );
+	if( account ){
+
+		debit = ofo_entry_get_debit( entry );
+		if( debit ){
+			amount = ofo_account_get_bro_deb_mnt( account );
+			ofo_account_set_bro_deb_mnt( account, amount-debit );
+			amount = ofo_account_get_deb_mnt( account );
+			ofo_account_set_deb_mnt( account, amount+debit );
+		}
+
+		credit = ofo_entry_get_credit( entry );
+		if( credit ){
+			amount = ofo_account_get_bro_cre_mnt( account );
+			ofo_account_set_bro_cre_mnt( account, amount-credit );
+			amount = ofo_account_get_cre_mnt( account );
+			ofo_account_set_cre_mnt( account, amount+credit );
+		}
+
+		deffect = ofo_entry_get_deffect( entry );
+		if( debit ){
+			acc_date = ofo_account_get_deb_date( account );
+			if( !acc_date || !g_date_valid( acc_date ) || g_date_compare( acc_date, deffect ) < 0 ){
+				ofo_account_set_deb_date( account, deffect );
+			}
+		} else {
+			acc_date = ofo_account_get_cre_date( account );
+			if( !acc_date || !g_date_valid( acc_date ) || g_date_compare( acc_date, deffect ) < 0 ){
+				ofo_account_set_cre_date( account, deffect );
+			}
+		}
+
+		number = ofo_entry_get_number( entry );
+		if( debit ){
+			acc_num = ofo_account_get_deb_ecr( account );
+			if( number > acc_num ){
+				ofo_account_set_deb_ecr( account, number );
+			}
+		} else {
+			acc_num = ofo_account_get_cre_ecr( account );
+			if( number > acc_num ){
+				ofo_account_set_cre_ecr( account, number );
+			}
+		}
+
+		if( account_update_amounts( account, ofo_dossier_get_sgbd( dossier ))){
+
+			g_signal_emit_by_name(
+					G_OBJECT( dossier ),
+					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( account ), NULL );
+		}
+
+	} else {
+		g_warning( "%s: account not found: %s", thisfn, acc_number );
 	}
 }
 

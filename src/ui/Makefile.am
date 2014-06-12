@@ -48,9 +48,11 @@ openbook_SOURCES = \
 	main.c												\
 	my-utils.c											\
 	my-utils.h											\
-	base-window.c										\
-	base-window.h										\
-	base-window-prot.h									\
+	my-window.c											\
+	my-window.h											\
+	my-window-prot.h									\
+	my-dialog.c											\
+	my-dialog.h											\
 	ofa-account-notebook.c								\
 	ofa-account-notebook.h								\
 	ofa-account-properties.c							\

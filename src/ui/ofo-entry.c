@@ -66,18 +66,20 @@ struct _ofoEntryPrivate {
 
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
-static GList   *entry_load_dataset( const ofoSgbd *sgbd, const gchar *where );
-static gint     entry_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
-static gint     entry_count_for_journal( const ofoSgbd *sgbd, const gchar *journal );
-static gboolean entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
-static void     error_journal( const gchar *journal );
-static void     error_currency( const gchar *devise );
-static void     error_acc_number( void );
-static void     error_account( const gchar *number );
-static void     error_acc_currency( const ofoDossier *dossier, const gchar *devise, ofoAccount *account );
-static void     error_amounts( gdouble debit, gdouble credit );
-static void     error_entry( const gchar *message );
-static gboolean do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd );
+static GList       *entry_load_dataset( const ofoSgbd *sgbd, const gchar *where );
+static const gchar *entry_list_columns( void );
+static ofoEntry    *entry_parse_result( const GSList *row );
+static gint         entry_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
+static gint         entry_count_for_journal( const ofoSgbd *sgbd, const gchar *journal );
+static gboolean     entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
+static void         error_journal( const gchar *journal );
+static void         error_currency( const gchar *devise );
+static void         error_acc_number( void );
+static void         error_account( const gchar *number );
+static void         error_acc_currency( const ofoDossier *dossier, const gchar *devise, ofoAccount *account );
+static void         error_amounts( gdouble debit, gdouble credit );
+static void         error_entry( const gchar *message );
+static gboolean     do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd );
 
 static void
 ofo_entry_finalize( GObject *instance )
@@ -260,67 +262,88 @@ entry_load_dataset( const ofoSgbd *sgbd, const gchar *where )
 {
 	GList *dataset;
 	GString *query;
-	GSList *result, *irow, *icol;
+	GSList *result, *irow;
 	ofoEntry *entry;
 
 	dataset = NULL;
 	query = g_string_new( "" );
-	g_string_printf( query,
-				"SELECT ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
-				"	ECR_COMPTE,"
-				"	ECR_DEV_CODE,ECR_JOU_MNEMO,ECR_DEBIT,ECR_CREDIT,"
-				"	ECR_STATUS,ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_RAPPRO "
-				"	FROM OFA_T_ECRITURES "
-				"	WHERE %s AND ECR_STATUS!=2",
-						where );
 
-	query = g_string_append( query, " ORDER BY ECR_DOPE ASC,ECR_DEFFET ASC,ECR_NUMBER ASC" );
+	g_string_append_printf( query,
+					"SELECT %s FROM OFA_T_ECRITURES WHERE %s AND ECR_STATUS!=2",
+							entry_list_columns(), where );
+	query = g_string_append( query,
+					"	ORDER BY ECR_DOPE ASC,ECR_DEFFET ASC,ECR_NUMBER ASC" );
+
 	result = ofo_sgbd_query_ex( sgbd, query->str );
 	g_string_free( query, TRUE );
 
 	if( result ){
 		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			entry = ofo_entry_new();
-			ofo_entry_set_dope( entry, my_utils_date_from_str(( gchar * ) icol->data ));
-			icol = icol->next;
-			ofo_entry_set_deffect( entry, my_utils_date_from_str(( gchar * ) icol->data ));
-			icol = icol->next;
-			ofo_entry_set_number( entry, atoi(( gchar * ) icol->data ));
-			icol = icol->next;
-			ofo_entry_set_label( entry, ( gchar * ) icol->data );
-			icol = icol->next;
-			if( icol->data ){
-				ofo_entry_set_ref( entry, ( gchar * ) icol->data );
+			entry = entry_parse_result( irow );
+			if( entry ){
+				dataset = g_list_prepend( dataset, entry );
 			}
-			icol = icol->next;
-			ofo_entry_set_account( entry, ( gchar * ) icol->data );
-			icol = icol->next;
-			ofo_entry_set_devise( entry, ( gchar * ) icol->data );
-			icol = icol->next;
-			ofo_entry_set_journal( entry, ( gchar * ) icol->data );
-			icol = icol->next;
-			ofo_entry_set_debit( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
-			icol = icol->next;
-			ofo_entry_set_credit( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
-			icol = icol->next;
-			ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
-			icol = icol->next;
-			ofo_entry_set_maj_user( entry, ( gchar * ) icol->data );
-			icol = icol->next;
-			ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str(( gchar * ) icol->data ));
-			icol = icol->next;
-			if( icol->data ){
-				ofo_entry_set_rappro( entry, my_utils_date_from_str(( gchar * ) icol->data ));
-			}
-
-			dataset = g_list_prepend( dataset, entry );
 		}
 
 		ofo_sgbd_free_result( result );
 	}
 
 	return( g_list_reverse( dataset ));
+}
+
+static const gchar *
+entry_list_columns( void )
+{
+	return( "ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
+			"	ECR_COMPTE,"
+			"	ECR_DEV_CODE,ECR_JOU_MNEMO,ECR_DEBIT,ECR_CREDIT,"
+			"	ECR_STATUS,ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_RAPPRO " );
+}
+
+static ofoEntry *
+entry_parse_result( const GSList *row )
+{
+	GSList *icol;
+	ofoEntry *entry;
+
+	entry = NULL;
+
+	if( row ){
+		icol = ( GSList * ) row->data;
+		entry = ofo_entry_new();
+		ofo_entry_set_dope( entry, my_utils_date_from_str(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_deffect( entry, my_utils_date_from_str(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_number( entry, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_label( entry, ( gchar * ) icol->data );
+		icol = icol->next;
+		if( icol->data ){
+			ofo_entry_set_ref( entry, ( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		ofo_entry_set_account( entry, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_entry_set_devise( entry, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_entry_set_journal( entry, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_entry_set_debit( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+		icol = icol->next;
+		ofo_entry_set_credit( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+		icol = icol->next;
+		ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
+		icol = icol->next;
+		ofo_entry_set_maj_user( entry, ( gchar * ) icol->data );
+		icol = icol->next;
+		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		icol = icol->next;
+		if( icol->data ){
+			ofo_entry_set_rappro( entry, my_utils_date_from_str(( gchar * ) icol->data ));
+		}
+	}
+	return( entry );
 }
 
 /**
@@ -1165,7 +1188,59 @@ do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd )
 gboolean
 ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
 {
+	g_warning( "ofo_entry_validate: TO BE WRITTEN" );
 	return( FALSE );
+}
+
+/**
+ * ofo_entry_validate_by_journal:
+ *
+ * Must return TRUE even if there is no entries at all, while no error
+ * is detected.
+ */
+gboolean
+ofo_entry_validate_by_journal( const ofoDossier *dossier, const gchar *mnemo, const GDate *effect )
+{
+	gchar *where;
+	gchar *query, *str;
+	GSList *result, *irow;
+	ofoEntry *entry;
+
+	str = my_utils_sql_from_date( effect );
+	where = g_strdup_printf(
+					"	WHERE ECR_JOU_MNEMO='%s' AND ECR_STATUS=%d AND ECR_DEFFET<='%s'",
+							mnemo, ENT_STATUS_ROUGH, str );
+	g_free( str );
+
+	query = g_strdup_printf(
+					"SELECT %s FROM OFA_T_ECRITURES %s", entry_list_columns(), where );
+
+	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query );
+	g_free( query );
+
+	if( result ){
+		for( irow=result ; irow ; irow=irow->next ){
+			entry = entry_parse_result( irow );
+
+			/* update data for each entry
+			 * this let each account updates itself */
+			str = my_utils_sql_from_date( ofo_entry_get_deffect( entry ));
+			query = g_strdup_printf(
+							"UPDATE OFA_T_ECRITURES "
+							"	SET ECR_STATUS=%d "
+							"	WHERE ECR_DEFFET='%s' AND ECR_NUMBER=%d",
+									ENT_STATUS_VALIDATED,
+									str,
+									ofo_entry_get_number( entry ));
+			g_free( str );
+			ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query );
+			g_free( query );
+
+			/* use the dossier signaling system to update the account */
+			g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_VALIDATED_ENTRY, entry );
+		}
+	}
+	return( TRUE );
 }
 
 /**

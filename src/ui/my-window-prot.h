@@ -24,34 +24,37 @@
  * $Id$
  */
 
-#ifndef __BASE_WINDOW_PROT_H__
-#define __BASE_WINDOW_PROT_H__
+#ifndef __MY_WINDOW_PROT_H__
+#define __MY_WINDOW_PROT_H__
 
 /**
- * SECTION: base_window
- * @short_description: #BaseWindow class definition.
- * @include: ui/ofa-base-window.h
+ * SECTION: my_window
+ * @short_description: #myWindow class definition.
+ * @include: ui/my-window.h
  *
- * Base class for application window boxes.
+ * This is a base class for application window toplevels. These may be
+ * either GtkDialog-derived or GtkAssistant-derived classes.
  *
  * This header is supposed to be included only by the child classes.
  */
 
-#include <gtk/gtk.h>
+#include "ui/ofa-main-window-def.h"
+#include "ui/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
 /* protected instance data
  * freely available to all derived classes
  */
-struct _BaseWindowProtected {
+struct _myWindowProtected {
 	gboolean       dispose_has_run;
 
-	/* this may be either a GtkDialog or a GtkAssistant
+	/* all derived classes will need these
 	 */
-	GtkWindow     *window;
+	ofaMainWindow *main_window;
+	ofoDossier    *dossier;
 };
 
 G_END_DECLS
 
-#endif /* __BASE_WINDOW_PROT_H__ */
+#endif /* __MY_WINDOW_PROT_H__ */

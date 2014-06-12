@@ -41,6 +41,7 @@
 #include "ui/ofa-guided-ex.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-import.h"
+#include "ui/ofa-int-closing.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofa-models-set.h"
 #include "ui/ofa-rappro.h"
@@ -874,14 +875,14 @@ on_ope_concil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 static void
 on_ope_int_closing( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_ope_concil";
+	static const gchar *thisfn = "ofa_main_window_on_ope_int_closing";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	/*ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CONCIL );*/
+	ofa_int_closing_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void

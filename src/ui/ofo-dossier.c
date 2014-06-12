@@ -88,6 +88,7 @@ enum {
 	UPDATED_OBJECT,
 	DELETED_OBJECT,
 	RELOADED_DATASET,
+	VALIDATED_ENTRY,
 	N_SIGNALS
 };
 
@@ -104,10 +105,12 @@ static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
 static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
+static sDetailExe *get_exe_by_date( const ofoDossier *dossier, const GDate *date );
 static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
+static void        on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
 static gboolean    dossier_read_exercices( ofoDossier *dossier );
@@ -264,6 +267,26 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_GTYPE );
+
+	/**
+	 * ofoDossier::ofa-signal-validated-entry:
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofoDossier *dossier,
+	 * 								ofoEntry *entry,
+	 * 								gpointer  user_data );
+	 */
+	st_signals[ VALIDATED_ENTRY ] = g_signal_new_class_handler(
+				OFA_SIGNAL_VALIDATED_ENTRY,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_validated_entry_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_OBJECT );
 }
 
 /**
@@ -1026,6 +1049,27 @@ get_exe_by_id( const ofoDossier *dossier, gint exe_id )
 	return( NULL );
 }
 
+static sDetailExe *
+get_exe_by_date( const ofoDossier *dossier, const GDate *date )
+{
+	GList *exe;
+	sDetailExe *sexe;
+
+	for( exe=dossier->private->exes ; exe ; exe=exe->next ){
+		sexe = ( sDetailExe * ) exe->data;
+		if( !g_date_valid( &sexe->exe_deb ) || g_date_compare( &sexe->exe_deb, date ) > 0 ){
+			continue;
+		}
+		if( !g_date_valid( &sexe->exe_fin ) || g_date_compare( &sexe->exe_fin, date ) < 0 ){
+			continue;
+		}
+		return( sexe );
+	}
+
+	/* non existant */
+	return( NULL );
+}
+
 /**
  * ofo_dossier_get_current_exe_id:
  *
@@ -1113,6 +1157,33 @@ ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier )
 		if( sexe ){
 			return( sexe->last_ecr );
 		}
+	}
+
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_exe_by_date:
+ *
+ * Returns the exercice id which contains the specified date.
+ *
+ * Default to the current exercice identifier.
+ */
+gint
+ofo_dossier_get_exe_by_date( const ofoDossier *dossier, const GDate *date )
+{
+	sDetailExe *sexe;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( date && g_date_valid( date ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sexe = get_exe_by_date( dossier, date );
+		if( !sexe ){
+			sexe = get_current_exe( dossier );
+		}
+		return( sexe->exe_id );
 	}
 
 	return( 0 );
@@ -1438,6 +1509,14 @@ on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type )
 	static const gchar *thisfn = "ofo_dossier_on_reloaded_dataset_cleanup_handler";
 
 	g_debug( "%s: dossier=%p, type=%lu", thisfn, ( void * ) dossier, type );
+}
+
+static void
+on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry )
+{
+	static const gchar *thisfn = "ofo_dossier_on_validated_entry_cleanup_handler";
+
+	g_debug( "%s: dossier=%p, entry=%p", thisfn, ( void * ) dossier, ( void * ) entry );
 }
 
 static gboolean

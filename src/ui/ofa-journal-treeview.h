@@ -100,6 +100,7 @@ ofaJournalTreeview *ofa_journal_treeview_new         ( const JournalTreeviewParm
 void                ofa_journal_treeview_init_view   ( ofaJournalTreeview *view, const gchar *initial_selection );
 
 ofoJournal         *ofa_journal_treeview_get_selected( ofaJournalTreeview *view );
+void                ofa_journal_treeview_foreach_sel ( ofaJournalTreeview *view, JournalTreeviewCb fn, void *user_data );
 
 void                ofa_journal_treeview_grab_focus  ( ofaJournalTreeview *view );
 

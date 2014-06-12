@@ -248,8 +248,8 @@
                 mysqldump pwi_consultants -uwieser -pwieser | gzip -c 
                  >/tmp/pwi_consultants-20140611.gz
 
- 193 2014- 6-11 record the entry last effect date in the journal_exe_dev
-                detail
+ 193 2014- 6-11 record the entry most recent effect date in the
+                 journal_exe_dev detail
 
  194 2014- 6-11 ofo_journal_get_cloture() should be replaced with
                 ofo_journal_get_last_closing()
@@ -258,7 +258,12 @@
                 OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
                  times on a journal selection in journal_treeview)
 
- 196
+ 196 2014- 6-11 journal closing: there is no sens to execure the same 
+                query SELECT MAX(JOU_EXE_LAST_CLO) FROM OFA_T_JOURNAUX_EXE
+              	WHERE JOU_MNEMO='AC' each time we change a char in the
+              	date entry
+
+ 197 
 
 -----------------------------------------------------------------------
  DONE

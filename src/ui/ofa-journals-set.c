@@ -227,12 +227,18 @@ insert_dataset( ofaJournalsSet *self )
 	ofa_journal_treeview_init_view( self->private->tview, NULL );
 }
 
+/*
+ * JournalTreeview callback
+ */
 static void
 on_row_activated( const gchar *mnemo, ofaJournalsSet *self )
 {
 	v_on_update_clicked( NULL, OFA_MAIN_PAGE( self ));
 }
 
+/*
+ * JournalTreeview callback
+ */
 static void
 on_row_selected( const gchar *mnemo, ofaJournalsSet *self )
 {

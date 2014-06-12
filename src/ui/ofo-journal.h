@@ -83,6 +83,8 @@ void            ofo_journal_set_clo_cre  ( ofoJournal *journal, gint exe_id, con
 void            ofo_journal_set_deb      ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
 void            ofo_journal_set_cre      ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
 
+gboolean        ofo_journal_close        ( ofoJournal *journal, const GDate *closing );
+
 gboolean        ofo_journal_insert       ( ofoJournal *journal, const ofoDossier *dossier );
 gboolean        ofo_journal_update       ( ofoJournal *journal, const ofoDossier *dossier, const gchar *prev_mnemo );
 gboolean        ofo_journal_delete       ( ofoJournal *journal, const ofoDossier *dossier );

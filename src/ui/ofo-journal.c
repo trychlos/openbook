@@ -34,6 +34,7 @@
 #include "ui/my-utils.h"
 #include "ui/ofo-base.h"
 #include "ui/ofo-base-prot.h"
+#include "ui/ofo-account.h"
 #include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
@@ -81,6 +82,7 @@ static gboolean st_connected = FALSE;
 static void        init_global_handlers( const ofoDossier *dossier );
 static void        on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data );
 static void        on_new_journal_entry( ofoDossier *dossier, ofoEntry *entry );
+static void        on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
 static GList      *journal_load_dataset( void );
 static ofoJournal *journal_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint        journal_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
@@ -91,6 +93,7 @@ static gboolean    journal_do_insert( ofoJournal *journal, const ofoSgbd *sgbd, 
 static gboolean    journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    journal_do_update( ofoJournal *journal, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, const ofoSgbd *sgbd );
+static gboolean    journal_do_update_detail_exe( const ofoJournal *journal, sDetailExe *detail, const ofoSgbd *sgbd );
 static gboolean    journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd );
 static gint        journal_cmp_by_mnemo( const ofoJournal *a, const gchar *mnemo );
 static gboolean    journal_do_drop_content( const ofoSgbd *sgbd );
@@ -172,6 +175,8 @@ init_global_handlers( const ofoDossier *dossier )
 	if( !st_connected ){
 		g_signal_connect( G_OBJECT( dossier ),
 					OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), NULL );
+		g_signal_connect( G_OBJECT( dossier ),
+					OFA_SIGNAL_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
 		st_connected = TRUE;
 	}
 }
@@ -215,7 +220,12 @@ on_new_journal_entry( ofoDossier *dossier, ofoEntry *entry )
 		}
 		detail->deb += ofo_entry_get_debit( entry );
 		detail->cre += ofo_entry_get_credit( entry );
-		journal_do_update_detail_dev( journal, detail, ofo_dossier_get_sgbd( dossier ));
+
+		if( journal_do_update_detail_dev( journal, detail, ofo_dossier_get_sgbd( dossier ))){
+			g_signal_emit_by_name(
+					G_OBJECT( dossier ),
+					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( journal ), NULL );
+		}
 
 	} else {
 		g_warning( "%s: journal not found: %s", thisfn, mnemo );
@@ -223,42 +233,48 @@ on_new_journal_entry( ofoDossier *dossier, ofoEntry *entry )
 
 }
 
-#if 0
+/*
+ * an entry is validated, either individually or as the result of the
+ * closing of a journal
+ */
 static void
-on_dataset_updated( ofoDossier *dossier, eSignalDetail detail, ofoBase *object, GType type, gpointer user_data )
+on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 {
-	static const gchar *thisfn = "ofo_journal_on_dataset_updated";
+	static const gchar *thisfn = "ofo_journal_on_validated_entry";
+	gint exe_id;
+	const gchar *currency, *mnemo;
 	ofoJournal *journal;
-	ofaEntrySens sens;
-	gint exe_id, dev_id;
-	gdouble amount;
-	gdouble prev;
+	sDetailDev *detail;
+	gdouble debit, credit;
 
-	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
-			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
+	mnemo = ofo_entry_get_journal( entry );
+	journal = ofo_journal_get_by_mnemo( dossier, mnemo );
+	if( journal ){
 
-	journal = ofo_journal_get_by_id( dossier, ofo_entry_get_journal( entry ));
-	g_return_if_fail( journal && OFO_IS_JOURNAL( journal ));
+		exe_id = ofo_dossier_get_exe_by_date( dossier, ofo_entry_get_deffect( entry ));
+		currency = ofo_entry_get_devise( entry );
+		detail = journal_find_dev_by_code( journal, exe_id, currency );
+		/* the entry has necessarily be already recorded while in rough
+		 * status */
+		g_return_if_fail( detail );
 
-	exe_id = ofo_dossier_get_current_exe_id( dossier );
-	dev_id = ofo_entry_get_devise( entry );
-	sens = ofo_entry_get_sens( entry );
-	amount = ofo_entry_get_amount( entry );
+		debit = ofo_entry_get_debit( entry );
+		detail->clo_deb += debit;
+		detail->deb -= debit;
+		credit = ofo_entry_get_credit( entry );
+		detail->clo_cre += credit;
+		detail->cre -= credit;
 
-	switch( sens ){
-		case ENT_SENS_DEBIT:
-			prev = ofo_journal_get_deb( journal, exe_id, dev_id );
-			ofo_journal_set_deb( journal, exe_id, dev_id, prev+amount );
-			break;
-		case ENT_SENS_CREDIT:
-			prev = ofo_journal_get_cre( journal, exe_id, dev_id );
-			ofo_journal_set_cre( journal, exe_id, dev_id, prev+amount );
-			break;
+		if( journal_do_update_detail_dev( journal, detail, ofo_dossier_get_sgbd( dossier ))){
+			g_signal_emit_by_name(
+					G_OBJECT( dossier ),
+					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( journal ), NULL );
+		}
+
+	} else {
+		g_warning( "%s: journal not found: %s", thisfn, mnemo );
 	}
-
-	journal_update_amounts( journal, exe_id, dev_id, ofo_dossier_get_sgbd( dossier ));
 }
-#endif
 
 /**
  * ofo_journal_get_dataset:
@@ -1099,6 +1115,67 @@ journal_new_dev_with_code( ofoJournal *journal, gint exe_id, const gchar *devise
 }
 
 /**
+ * ofo_journal_close:
+ *
+ * - all entries in rough status and whose effect date in less or equal
+ *   to the closing date and are written in this journal are validated
+ */
+gboolean
+ofo_journal_close( ofoJournal *journal, const GDate *closing )
+{
+	static const gchar *thisfn = "ofo_journal_close";
+	gboolean ok;
+	gint exe_id;
+	sDetailExe *sexe;
+
+	g_return_val_if_fail( journal && OFO_IS_JOURNAL( journal ), FALSE );
+	g_return_val_if_fail( closing && g_date_valid( closing ), FALSE );
+
+	g_debug( "%s: journal=%p, closing=%p", thisfn, ( void * ) journal, ( void * ) closing );
+
+	ok = FALSE;
+
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
+
+		/* be sure account handlers are connected */
+		ofo_account_connect_handlers( OFO_DOSSIER( st_global->dossier ));
+
+		if( ofo_entry_validate_by_journal(
+						OFO_DOSSIER( st_global->dossier ),
+						ofo_journal_get_mnemo( journal ),
+						closing )){
+
+			exe_id = ofo_dossier_get_current_exe_id( OFO_DOSSIER( st_global->dossier ));
+			sexe = journal_find_exe_by_id( journal, exe_id );
+
+			if( !sexe ){
+				sexe = g_new0( sDetailExe, 1 );
+				sexe->exe_id = exe_id;
+				journal->private->exes = g_list_prepend( journal->private->exes, sexe );
+			}
+
+			memcpy( &sexe->last_clo, closing, sizeof( GDate ));
+
+			if( journal_do_update_detail_exe(
+						journal,
+						sexe,
+						ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
+
+				g_signal_emit_by_name(
+						G_OBJECT( st_global->dossier ),
+						OFA_SIGNAL_UPDATED_OBJECT,
+						g_object_ref( journal ),
+						NULL );
+
+				ok = TRUE;
+			}
+		}
+	}
+
+	return( ok );
+}
+
+/**
  * ofo_journal_insert:
  *
  * Only insert here a new journal, so only the main properties
@@ -1300,6 +1377,45 @@ journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, con
 
 	ok = ofo_sgbd_query( sgbd, query );
 
+	g_free( deb );
+	g_free( cre );
+	g_free( clo_deb );
+	g_free( clo_cre );
+	g_free( query );
+
+	return( ok );
+}
+
+static gboolean
+journal_do_update_detail_exe( const ofoJournal *journal, sDetailExe *detail, const ofoSgbd *sgbd )
+{
+	gchar *query;
+	gchar *sdate;
+	gboolean ok;
+
+	query = g_strdup_printf(
+			"DELETE FROM OFA_T_JOURNAUX_EXE "
+			"	WHERE JOU_MNEMO='%s' AND JOU_EXE_ID=%d",
+					ofo_journal_get_mnemo( journal ),
+					detail->exe_id );
+
+	ofo_sgbd_query_ignore( sgbd, query );
+	g_free( query );
+
+	sdate = my_utils_sql_from_date( &detail->last_clo );
+
+	query = g_strdup_printf(
+					"INSERT INTO OFA_T_JOURNAUX_EXE "
+					"	(JOU_MNEMO,JOU_EXE_ID,JOU_EXE_LAST_CLO) "
+					"	VALUES "
+					"	('%s',%d,'%s')",
+							ofo_journal_get_mnemo( journal ),
+							detail->exe_id,
+							sdate );
+
+	ok = ofo_sgbd_query( sgbd, query );
+
+	g_free( sdate );
 	g_free( query );
 
 	return( ok );

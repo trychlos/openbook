@@ -52,6 +52,7 @@ struct _ofaJournalTreeviewPrivate {
 
 	/* internal datas
 	 */
+	GList            *handlers;
 	GtkTreeView      *tview;
 };
 
@@ -65,6 +66,15 @@ enum {
 	COL_OBJECT,
 	N_COLUMNS
 };
+
+/* a structure used during the iteration for each selected
+ */
+typedef struct {
+	JournalTreeviewCb   fn;
+	void               *user_data;
+	ofaJournalTreeview *self;
+}
+	ForeachTreeview;
 
 G_DEFINE_TYPE( ofaJournalTreeview, ofa_journal_treeview, G_TYPE_OBJECT )
 
@@ -82,6 +92,7 @@ static gboolean    find_row_by_mnemo( ofaJournalTreeview *self, const gchar *mne
 static void        on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaJournalTreeview *self );
 static void        on_row_selected( GtkTreeSelection *selection, ofaJournalTreeview *self );
 static ofoJournal *get_selected( ofaJournalTreeview *self );
+static void        foreach_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ForeachTreeview *parms );
 static void        on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self );
 static void        on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalTreeview *self );
 static void        on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self );
@@ -111,6 +122,8 @@ static void
 journal_treeview_dispose( GObject *instance )
 {
 	ofaJournalTreeviewPrivate *priv;
+	GList *iha;
+	gulong handler_id;
 
 	g_return_if_fail( OFA_IS_JOURNAL_TREEVIEW( instance ));
 
@@ -121,6 +134,10 @@ journal_treeview_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		for( iha=priv->handlers ; iha ; iha=iha->next ){
+			handler_id = ( gulong ) iha->data;
+			g_signal_handler_disconnect( priv->dossier, handler_id );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -140,6 +157,7 @@ ofa_journal_treeview_init( ofaJournalTreeview *self )
 	self->private = g_new0( ofaJournalTreeviewPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+	self->private->handlers = NULL;
 }
 
 static void
@@ -188,6 +206,7 @@ static void
 on_parent_container_finalized( ofaJournalTreeview *self, gpointer this_was_the_container )
 {
 	g_return_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ));
+
 	g_object_unref( self );
 }
 
@@ -268,29 +287,35 @@ setup_treeview( ofaJournalTreeview *self )
 static void
 dossier_signal_connect( ofaJournalTreeview *self )
 {
-	g_signal_connect(
-			G_OBJECT( self->private->dossier ),
-			OFA_SIGNAL_NEW_OBJECT,
-			G_CALLBACK( on_new_object ),
-			self );
+	gulong handler;
 
-	g_signal_connect(
-			G_OBJECT( self->private->dossier ),
-			OFA_SIGNAL_UPDATED_OBJECT,
-			G_CALLBACK( on_updated_object ),
-			self );
+	handler = g_signal_connect(
+						G_OBJECT( self->private->dossier ),
+						OFA_SIGNAL_NEW_OBJECT,
+						G_CALLBACK( on_new_object ),
+						self );
+	self->private->handlers = g_list_prepend( self->private->handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( self->private->dossier ),
-			OFA_SIGNAL_DELETED_OBJECT,
-			G_CALLBACK( on_deleted_object ),
-			self );
+	handler = g_signal_connect(
+						G_OBJECT( self->private->dossier ),
+						OFA_SIGNAL_UPDATED_OBJECT,
+						G_CALLBACK( on_updated_object ),
+						self );
+	self->private->handlers = g_list_prepend( self->private->handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( self->private->dossier ),
-			OFA_SIGNAL_RELOADED_DATASET,
-			G_CALLBACK( on_reloaded_dataset ),
-			self );
+	handler = g_signal_connect(
+						G_OBJECT( self->private->dossier ),
+						OFA_SIGNAL_DELETED_OBJECT,
+						G_CALLBACK( on_deleted_object ),
+						self );
+	self->private->handlers = g_list_prepend( self->private->handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+						G_OBJECT( self->private->dossier ),
+						OFA_SIGNAL_RELOADED_DATASET,
+						G_CALLBACK( on_reloaded_dataset ),
+						self );
+	self->private->handlers = g_list_prepend( self->private->handlers, ( gpointer ) handler );
 }
 
 /**
@@ -457,6 +482,7 @@ find_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo, GtkTreeModel **
 	priv = self->private;
 	found = FALSE;
 
+	g_debug( "find_row_by_mnemo: tview=%p", ( void * ) priv->tview );
 	my_tmodel = gtk_tree_view_get_model( priv->tview );
 	if( gtk_tree_model_get_iter_first( my_tmodel, &my_iter )){
 		while( TRUE ){
@@ -525,11 +551,13 @@ get_selected( ofaJournalTreeview *self )
 	journal = NULL;
 	priv = self->private;
 
-	select = gtk_tree_view_get_selection( priv->tview );
+	if( !priv->allow_multiple_selection ){
+		select = gtk_tree_view_get_selection( priv->tview );
 
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &journal, -1 );
-		g_object_unref( journal );
+		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &journal, -1 );
+			g_object_unref( journal );
+		}
 	}
 
 	return( journal );
@@ -549,6 +577,42 @@ ofa_journal_treeview_get_selected( ofaJournalTreeview *self )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_journal_treeview_foreach_sel:
+ */
+void
+ofa_journal_treeview_foreach_sel ( ofaJournalTreeview *self, JournalTreeviewCb fn, void *user_data )
+{
+	GtkTreeSelection *select;
+	ForeachTreeview parms;
+
+	g_return_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ));
+
+	if( !self->private->dispose_has_run ){
+
+		select = gtk_tree_view_get_selection( self->private->tview );
+
+		parms.fn = fn;
+		parms.user_data = user_data;
+		parms.self = self;
+
+		gtk_tree_selection_selected_foreach( select, ( GtkTreeSelectionForeachFunc ) foreach_selected, &parms );
+	}
+}
+
+
+static void
+foreach_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ForeachTreeview *parms )
+{
+	gchar *mnemo;
+
+	gtk_tree_model_get( tmodel, iter, COL_MNEMO, &mnemo, -1 );
+
+	( *parms->fn )( mnemo, parms->user_data );
+
+	g_free( mnemo );
 }
 
 /**

@@ -58,7 +58,7 @@
       </section>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Intermediate closing...</attribute>
+          <attribute name="label" translatable="yes">Intermediate _closing...</attribute>
           <attribute name="action">win.iclosing</attribute>
         </item>
       </section>

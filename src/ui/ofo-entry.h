@@ -134,13 +134,16 @@ ofoEntry      *ofo_entry_new_with_data( const ofoDossier *dossier,
 													const gchar *journal,
 													gdouble debit, gdouble credit );
 
-gboolean       ofo_entry_insert       ( ofoEntry *entry, ofoDossier *dossier );
-gboolean       ofo_entry_update_rappro( ofoEntry *entry, const ofoDossier *dossier );
-gboolean       ofo_entry_validate     ( ofoEntry *entry, const ofoDossier *dossier );
-gboolean       ofo_entry_delete       ( ofoEntry *entry, const ofoDossier *dossier );
+gboolean       ofo_entry_insert             ( ofoEntry *entry, ofoDossier *dossier );
+gboolean       ofo_entry_update_rappro      ( ofoEntry *entry, const ofoDossier *dossier );
+gboolean       ofo_entry_validate           ( ofoEntry *entry, const ofoDossier *dossier );
 
-GSList        *ofo_entry_get_csv      ( const ofoDossier *dossier );
-void           ofo_entry_import_csv   ( ofoDossier *dossier, GSList *lines, gboolean with_header );
+gboolean       ofo_entry_validate_by_journal( const ofoDossier *dossier, const gchar *mnemo, const GDate *effect );
+
+gboolean       ofo_entry_delete             ( ofoEntry *entry, const ofoDossier *dossier );
+
+GSList        *ofo_entry_get_csv            ( const ofoDossier *dossier );
+void           ofo_entry_import_csv         ( ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

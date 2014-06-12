@@ -47,6 +47,8 @@ G_BEGIN_DECLS
 
 GType           ofo_account_get_type        ( void ) G_GNUC_CONST;
 
+void            ofo_account_connect_handlers( const ofoDossier *dossier );
+
 GList          *ofo_account_get_dataset     ( const ofoDossier *dossier );
 ofoAccount     *ofo_account_get_by_number   ( const ofoDossier *dossier, const gchar *number );
 gboolean        ofo_account_use_devise      ( const ofoDossier *dossier, const gchar *devise );
