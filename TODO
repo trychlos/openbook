@@ -263,11 +263,14 @@
               	WHERE JOU_MNEMO='AC' each time we change a char in the
               	date entry
 
- 197 2014- 6-12 g_signal_connect (e.g.) to dossier: must disconnect from
-                the instance if it stays alive and we are willing to
-                reconnect a new handler later
+ 198 2014- 6-12 go up the ofo_account_init_handlers to ofaMainWindow
+                in order to systematize the connection to signals
 
- 198
+ 199 2014- 6-12 does the ofoEntry class not need a init_handlers also ?
+
+ 200 2015- 6-12 do not try to close a journal at the same date
+
+ 201
 
 -----------------------------------------------------------------------
  DONE
@@ -704,6 +707,11 @@
 
  189 2014- 6-10 AccountProperties: Balance date: Entry -> Last entry
      2014- 6-11 done - svn #3686
+
+ 197 2014- 6-12 g_signal_connect (e.g.) to dossier: must disconnect from
+                the instance if it stays alive and we are willing to
+                reconnect a new handler later
+     2014- 6-12 done - svn #3701
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
