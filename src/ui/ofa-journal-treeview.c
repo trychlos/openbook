@@ -34,6 +34,7 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-journal-treeview.h"
 #include "ui/ofo-journal.h"
+#include "ui/ofo-dossier.h"
 
 /* private instance data
  */
@@ -134,9 +135,15 @@ journal_treeview_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		for( iha=priv->handlers ; iha ; iha=iha->next ){
-			handler_id = ( gulong ) iha->data;
-			g_signal_handler_disconnect( priv->dossier, handler_id );
+
+		/* note when deconnecting the handlers that the dossier may
+		 * have been already finalized (e.g. when the application
+		 * terminates) */
+		if( OFO_IS_DOSSIER( priv->dossier )){
+			for( iha=priv->handlers ; iha ; iha=iha->next ){
+				handler_id = ( gulong ) iha->data;
+				g_signal_handler_disconnect( priv->dossier, handler_id );
+			}
 		}
 	}
 
@@ -312,7 +319,7 @@ dossier_signal_connect( ofaJournalTreeview *self )
 
 	handler = g_signal_connect(
 						G_OBJECT( self->private->dossier ),
-						OFA_SIGNAL_RELOADED_DATASET,
+						OFA_SIGNAL_RELOAD_DATASET,
 						G_CALLBACK( on_reloaded_dataset ),
 						self );
 	self->private->handlers = g_list_prepend( self->private->handlers, ( gpointer ) handler );
@@ -700,7 +707,7 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *sel
 }
 
 /*
- * OFA_SIGNAL_RELOADED_DATASET signal handler
+ * OFA_SIGNAL_RELOAD_DATASET signal handler
  */
 static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaJournalTreeview *self )

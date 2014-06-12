@@ -152,9 +152,15 @@ account_notebook_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		for( iha=priv->handlers ; iha ; iha=iha->next ){
-			handler_id = ( gulong ) iha->data;
-			g_signal_handler_disconnect( priv->dossier, handler_id );
+
+		/* note when deconnecting the handlers that the dossier may
+		 * have been already finalized (e.g. when the application
+		 * terminates) */
+		if( OFO_IS_DOSSIER( priv->dossier )){
+			for( iha=priv->handlers ; iha ; iha=iha->next ){
+				handler_id = ( gulong ) iha->data;
+				g_signal_handler_disconnect( priv->dossier, handler_id );
+			}
 		}
 	}
 
@@ -254,7 +260,7 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 
 	handler = g_signal_connect(
 						G_OBJECT( parms->dossier),
-						OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	/* setup a weak reference on the dialog to auto-unref
@@ -358,7 +364,7 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountNotebook *sel
 }
 
 /*
- * OFA_SIGNAL_RELOADED_DATASET signal handler
+ * OFA_SIGNAL_RELOAD_DATASET signal handler
  */
 static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountNotebook *self )

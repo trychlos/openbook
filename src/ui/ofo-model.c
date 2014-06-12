@@ -37,6 +37,7 @@
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-journal.h"
 #include "ui/ofo-model.h"
+#include "ui/ofo-taux.h"
 #include "ui/ofo-sgbd.h"
 
 /* priv instance data
@@ -75,6 +76,9 @@ G_DEFINE_TYPE( ofoModel, ofo_model, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, model )
 
+static void           on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
+static gboolean       do_update_journal_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
+static gboolean       do_update_taux_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
 static GList         *model_load_dataset( void );
 static ofoModel      *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint           model_count_for_journal( const ofoSgbd *sgbd, const gchar *journal );
@@ -174,6 +178,139 @@ ofo_model_class_init( ofoModelClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_model_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_model_finalize;
+}
+
+/**
+ * ofo_model_connect_handlers:
+ *
+ * As the signal connection is protected by a static variable, there is
+ * no need here to handle signal disconnection
+ */
+void
+ofo_model_connect_handlers( const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_model_connect_handlers";
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	g_signal_connect( G_OBJECT( dossier ),
+				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+}
+
+static void
+on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data )
+{
+	static const gchar *thisfn = "ofo_model_on_updated_object";
+	const gchar *mnemo;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) user_data );
+
+	if( OFO_IS_JOURNAL( object )){
+		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+			mnemo = ofo_journal_get_mnemo( OFO_JOURNAL( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				do_update_journal_mnemo( dossier, mnemo, prev_id );
+			}
+		}
+
+	} else if( OFO_IS_TAUX( object )){
+		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+			mnemo = ofo_taux_get_mnemo( OFO_TAUX( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				do_update_taux_mnemo( dossier, mnemo, prev_id );
+			}
+		}
+	}
+}
+
+static gboolean
+do_update_journal_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_model_do_update_journal_mnemo";
+	gchar *query;
+	gboolean ok;
+
+	g_debug( "%s: dossier=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) dossier, mnemo, prev_id );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_MODELES "
+					"	SET MOD_JOU_MNEMO='%s' WHERE MOD_JOU_MNEMO='%s'",
+								mnemo, prev_id );
+
+	ok = ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query );
+
+	g_free( query );
+
+	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+	st_global->dataset = NULL;
+	g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_MODEL );
+
+	return( ok );
+}
+
+static gboolean
+do_update_taux_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_model_do_update_taux_mnemo";
+	gchar *query;
+	const ofoSgbd *sgbd;
+	GSList *result, *irow, *icol;
+	gchar *mod_mnemo, *det_debit, *det_credit;
+	gint det_rang;
+
+	g_debug( "%s: dossier=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) dossier, mnemo, prev_id );
+
+	sgbd = ofo_dossier_get_sgbd( dossier );
+
+	query = g_strdup_printf(
+					"SELECT MOD_MNEMO,MOD_DET_RANG,MOD_DET_DEBIT,MOD_DET_CREDIT "
+					"	FROM OFA_T_MODELES_DET "
+					"	WHERE MOD_DET_DEBIT LIKE '%%%s%%' OR MOD_DET_CREDIT LIKE '%%%s%%'",
+							prev_id, prev_id );
+
+	result = ofo_sgbd_query_ex( sgbd, query );
+
+	g_free( query );
+
+	if( result ){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			mod_mnemo = g_strdup(( gchar * ) icol->data );
+			icol = icol->next;
+			det_rang = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			det_debit = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
+			icol = icol->next;
+			det_credit = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
+
+			query = g_strdup_printf(
+							"UPDATE OFA_T_MODELES_DET "
+							"	SET MOD_DET_DEBIT='%s', MOD_DET_CREDIT='%s' "
+							"	WHERE MOD_MNEMO='%s' AND MOD_DET_RANG=%d",
+									det_debit, det_credit,
+									mod_mnemo, det_rang );
+
+			ofo_sgbd_query( sgbd, query );
+
+			g_free( query );
+			g_free( det_credit );
+			g_free( det_debit );
+			g_free( mod_mnemo );
+		}
+	}
+
+	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+	st_global->dataset = NULL;
+	g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_MODEL );
+
+	return( TRUE );
 }
 
 /**
@@ -348,6 +485,8 @@ ofo_model_use_journal( const ofoDossier *dossier, const gchar *journal )
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( journal && g_utf8_strlen( journal, -1 ), FALSE );
 
+	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+
 	return( model_count_for_journal( ofo_dossier_get_sgbd( dossier ), journal ) > 0 );
 }
 
@@ -385,6 +524,8 @@ gboolean
 ofo_model_use_taux( const ofoDossier *dossier, const gchar *mnemo )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
 
 	return( model_count_for_taux( ofo_dossier_get_sgbd( dossier ), mnemo ) > 0 );
 }
@@ -1170,7 +1311,6 @@ static gboolean
 model_do_update( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo )
 {
 	return( model_update_main( model, sgbd, user, prev_mnemo ) &&
-			model_delete_details( model, sgbd ) &&
 			model_insert_details_ex( model, sgbd ));
 }
 

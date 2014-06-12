@@ -805,7 +805,7 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 		g_list_free( new_set );
 
 		g_signal_emit_by_name(
-				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_CLASS );
+				G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_CLASS );
 
 		st_global->send_signal_new = TRUE;
 	}

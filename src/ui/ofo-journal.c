@@ -83,11 +83,10 @@ G_DEFINE_TYPE( ofoJournal, ofo_journal, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, journal )
 
-static gboolean st_connected = FALSE;
-
-static void        init_global_handlers( const ofoDossier *dossier );
 static void        on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data );
 static void        on_new_journal_entry( ofoDossier *dossier, ofoEntry *entry );
+static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
+static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void        on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
 static GList      *journal_load_dataset( void );
 static ofoJournal *journal_find_by_mnemo( GList *set, const gchar *mnemo );
@@ -176,18 +175,28 @@ ofo_journal_class_init( ofoJournalClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ofo_journal_finalize;
 }
 
-static void
-init_global_handlers( const ofoDossier *dossier )
+/**
+ * ofo_journal_connect_handlers:
+ *
+ * This function is called once, when opening the dossier.
+ */
+void
+ofo_journal_connect_handlers( const ofoDossier *dossier )
 {
-	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
+	static const gchar *thisfn = "ofo_journal_connect_handlers";
 
-	if( !st_connected ){
-		g_signal_connect( G_OBJECT( dossier ),
-					OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), NULL );
-		g_signal_connect( G_OBJECT( dossier ),
-					OFA_SIGNAL_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
-		st_connected = TRUE;
-	}
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	g_signal_connect( G_OBJECT( dossier ),
+				OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), NULL );
+
+	g_signal_connect( G_OBJECT( dossier ),
+				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+
+	g_signal_connect( G_OBJECT( dossier ),
+				OFA_SIGNAL_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
 }
 
 static void
@@ -240,6 +249,51 @@ on_new_journal_entry( ofoDossier *dossier, ofoEntry *entry )
 		g_warning( "%s: journal not found: %s", thisfn, mnemo );
 	}
 
+}
+
+static void
+on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
+{
+	static const gchar *thisfn = "ofo_journal_on_updated_object";
+	const gchar *code;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) user_data );
+
+	if( OFO_IS_DEVISE( object )){
+		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+			code = ofo_devise_get_code( OFO_DEVISE( object ));
+			if( g_utf8_collate( code, prev_id )){
+				on_updated_object_currency_code( dossier, prev_id, code );
+			}
+		}
+	}
+}
+
+static void
+on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+	gint exe_id;
+
+	exe_id = ofo_dossier_get_current_exe_id( dossier );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_JOURNAUX "
+					"	SET JOU_DEV_CODE='%s' WHERE JOU_DEV_CODE='%s' AND JOU_EXE_ID=%d",
+						code, prev_id, exe_id );
+
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query );
+
+	g_free( query );
+
+	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+	st_global->dataset = NULL;
+	g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_JOURNAL );
 }
 
 /*
@@ -310,7 +364,7 @@ ofo_journal_get_dataset( const ofoDossier *dossier )
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	init_global_handlers( dossier );
+	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 	return( st_global->dataset );
 }
@@ -428,7 +482,7 @@ ofo_journal_get_by_mnemo( const ofoDossier *dossier, const gchar *mnemo )
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
 
-	init_global_handlers( dossier );
+	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 	return( journal_find_by_mnemo( st_global->dataset, mnemo ));
 }
@@ -457,6 +511,8 @@ gboolean
 ofo_journal_use_devise( const ofoDossier *dossier, const gchar *devise )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 	return( journal_count_for_devise( ofo_dossier_get_sgbd( dossier ), devise ) > 0 );
 }
@@ -1217,7 +1273,7 @@ ofo_journal_insert( ofoJournal *journal, const ofoDossier *dossier )
 		g_debug( "%s: journal=%p, dossier=%p",
 				thisfn, ( void * ) journal, ( void * ) dossier );
 
-		init_global_handlers( dossier );
+		OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 		if( journal_do_insert(
 					journal,
@@ -1304,7 +1360,7 @@ ofo_journal_update( ofoJournal *journal, const ofoDossier *dossier, const gchar 
 		g_debug( "%s: journal=%p, dossier=%p, prev_mnemo=%s",
 				thisfn, ( void * ) journal, ( void * ) dossier, prev_mnemo );
 
-		init_global_handlers( dossier );
+		OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 		if( journal_do_update(
 					journal,
@@ -1464,7 +1520,7 @@ ofo_journal_delete( ofoJournal *journal, const ofoDossier *dossier )
 		g_debug( "%s: journal=%p, dossier=%p",
 				thisfn, ( void * ) journal, ( void * ) dossier );
 
-		init_global_handlers( dossier );
+		OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
 
 		if( journal_do_delete(
 					journal,
@@ -1712,7 +1768,7 @@ ofo_journal_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 		g_list_free( new_set );
 
 		g_signal_emit_by_name(
-				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_JOURNAL );
+				G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_JOURNAL );
 
 		st_global->send_signal_new = TRUE;
 	}

@@ -1308,7 +1308,7 @@ ofo_taux_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 		}
 
 		g_signal_emit_by_name(
-				G_OBJECT( dossier ), OFA_SIGNAL_RELOADED_DATASET, OFO_TYPE_TAUX );
+				G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_TAUX );
 
 		g_list_free( new_set );
 

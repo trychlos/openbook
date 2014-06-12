@@ -46,6 +46,8 @@ G_BEGIN_DECLS
 
 GType           ofo_journal_get_type     ( void ) G_GNUC_CONST;
 
+void            ofo_journal_connect_handlers( const ofoDossier *dossier );
+
 GList          *ofo_journal_get_dataset  ( const ofoDossier *dossier );
 ofoJournal     *ofo_journal_get_by_mnemo ( const ofoDossier *dossier, const gchar *mnemo );
 gboolean        ofo_journal_use_devise   ( const ofoDossier *dossier, const gchar *devise );

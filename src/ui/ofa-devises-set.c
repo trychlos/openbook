@@ -34,6 +34,7 @@
 #include "ui/ofa-devise-properties.h"
 #include "ui/ofa-devises-set.h"
 #include "ui/ofo-devise.h"
+#include "ui/ofo-dossier.h"
 
 /* private instance data
  */
@@ -112,10 +113,16 @@ devises_set_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		/* note when deconnecting the handlers that the dossier may
+		 * have been already finalized (e.g. when the application
+		 * terminates) */
 		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( instance ));
-		for( iha=priv->handlers ; iha ; iha=iha->next ){
-			handler_id = ( gulong ) iha->data;
-			g_signal_handler_disconnect( dossier, handler_id );
+		if( OFO_IS_DOSSIER( dossier )){
+			for( iha=priv->handlers ; iha ; iha=iha->next ){
+				handler_id = ( gulong ) iha->data;
+				g_signal_handler_disconnect( dossier, handler_id );
+			}
 		}
 	}
 
@@ -183,7 +190,7 @@ v_setup_view( ofaMainPage *page )
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
+						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	return( setup_tree_view( OFA_DEVISES_SET( page )));
@@ -536,7 +543,7 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaDevisesSet *self )
 }
 
 /*
- * OFA_SIGNAL_RELOADED_DATASET signal handler
+ * OFA_SIGNAL_RELOAD_DATASET signal handler
  */
 static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaDevisesSet *self )

@@ -285,7 +285,6 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 	static const gchar *thisfn = "ofa_accounts_chart_on_delete_account";
 	ofaAccountsChart *self;
 	ofoAccount *account;
-	ofoDossier *dossier;
 	gchar *number;
 
 	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( page ));
@@ -297,11 +296,10 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 	if( account ){
 		g_return_if_fail( ofo_account_is_deletable( account ));
 
-		dossier = ofa_main_page_get_dossier( page );
 		number = g_strdup( ofo_account_get_number( account ));
 
 		if( delete_confirmed( self, account ) &&
-				ofo_account_delete( account, dossier )){
+				ofo_account_delete( account )){
 
 			/* nothing to do here, all being managed by signal handlers
 			 * just reset the selection as this is not managed by the

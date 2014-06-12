@@ -350,6 +350,29 @@ my_utils_str_remove_suffix( const gchar *string, const gchar *suffix )
 }
 
 /**
+ * my_utils_str_replace:
+ *
+ * Replace 'old' string with 'new' in string, returning a newly
+ * allocated string which should be g_free() by the caller.
+ */
+gchar *
+my_utils_str_replace( const gchar *string, const gchar *old, const gchar *new )
+{
+	gchar *new_str;
+	GRegex *regex;
+
+	new_str = NULL;
+
+	if( string ){
+		regex = g_regex_new( old, 0, 0, NULL );
+		new_str = g_regex_replace( regex, string, -1, 0, new, 0, NULL );
+		g_regex_unref( regex );
+	}
+
+	return( new_str );
+}
+
+/**
  * my_utils_entry_get_valid
  */
 gboolean
@@ -456,7 +479,7 @@ my_utils_container_get_child_by_type( GtkContainer *container, GType type )
 /**
  * my_utils_init_notes:
  *
- * This function is mostly used though the "my_utils_init_notes_ex()"
+ * This function is mostly used through the "my_utils_init_notes_ex()"
  * macro.
  */
 void
@@ -484,7 +507,7 @@ my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gc
 /**
  * my_utils_init_maj_user_stamp:
  *
- * This function is mostly used though the
+ * This function is mostly used through the
  * "my_utils_init_maj_user_stamp_ex()" macro.
  */
 void

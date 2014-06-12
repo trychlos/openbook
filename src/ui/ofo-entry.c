@@ -66,6 +66,9 @@ struct _ofoEntryPrivate {
 
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
+static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
+static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
+static void         on_updated_object_journal_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
 static GList       *entry_load_dataset( const ofoSgbd *sgbd, const gchar *where );
 static const gchar *entry_list_columns( void );
 static ofoEntry    *entry_parse_result( const GSList *row );
@@ -131,6 +134,114 @@ ofo_entry_init( ofoEntry *self )
 	g_date_clear( &self->private->effect, 1 );
 	g_date_clear( &self->private->operation, 1 );
 	g_date_clear( &self->private->rappro, 1 );
+}
+
+/**
+ * ofo_entry_connect_handlers:
+ *
+ * This function is called once, when opening the dossier.
+ */
+void
+ofo_entry_connect_handlers( const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_entry_connect_handlers";
+
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	g_signal_connect( G_OBJECT( dossier ),
+				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+}
+
+static void
+on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
+{
+	static const gchar *thisfn = "ofo_entry_on_updated_object";
+	const gchar *code;
+	const gchar *mnemo;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) user_data );
+
+	if( OFO_IS_DEVISE( object )){
+		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+			code = ofo_devise_get_code( OFO_DEVISE( object ));
+			if( g_utf8_collate( code, prev_id )){
+				on_updated_object_currency_code( dossier, prev_id, code );
+			}
+		}
+
+	} else if( OFO_IS_JOURNAL( object )){
+		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+			mnemo = ofo_journal_get_mnemo( OFO_JOURNAL( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				on_updated_object_journal_mnemo( dossier, prev_id, mnemo );
+			}
+		}
+	}
+}
+
+static void
+on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
+{
+	GString *query;
+	const GDate *date;
+	gchar *str;
+
+	str = NULL;
+	date = ofo_dossier_get_current_exe_deb( dossier );
+	if( date && g_date_valid( date )){
+		str = my_utils_sql_from_date( date );
+	}
+
+	query = g_string_new( "UPDATE OFA_T_ECRITURES" );
+
+	g_string_append_printf(
+			query,
+			"SET ECR_DEV_CODE='%s' WHERE ECR_DEV_CODE='%s'", code, prev_id );
+
+	if( str ){
+		g_string_append_printf( query, "WHERE ECR_DEFFET>='%s'", str );
+		g_free( str );
+	}
+
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str );
+
+	g_string_free( query, TRUE );
+}
+
+static void
+on_updated_object_journal_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
+{
+	GString *query;
+	const GDate *date;
+	gchar *str;
+
+	str = NULL;
+	date = ofo_dossier_get_current_exe_deb( dossier );
+	if( date && g_date_valid( date )){
+		str = my_utils_sql_from_date( date );
+	}
+
+	query = g_string_new( "UPDATE OFA_T_ECRITURES" );
+
+	g_string_append_printf(
+			query,
+			"SET ECR_JOU_MNEMO='%s' WHERE ECR_JOU_MNEMO='%s'", mnemo, prev_id );
+
+	if( str ){
+		g_string_append_printf( query, "WHERE ECR_DEFFET>='%s'", str );
+		g_free( str );
+	}
+
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str );
+
+	g_string_free( query, TRUE );
 }
 
 static void

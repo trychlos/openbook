@@ -493,13 +493,11 @@ do_update( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
 	gchar *prev_number;
-	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->private;
 	prev_number = g_strdup( ofo_account_get_number( self->private->account ));
-	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 
 	ofo_account_set_number( priv->account, priv->number );
 	ofo_account_set_label( priv->account, priv->label );
@@ -509,10 +507,10 @@ do_update( ofaAccountProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_account_insert( priv->account, dossier );
+				ofo_account_insert( priv->account );
 	} else {
 		priv->updated =
-				ofo_account_update( priv->account, dossier, prev_number );
+				ofo_account_update( priv->account, prev_number );
 	}
 
 	g_free( prev_number );

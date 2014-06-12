@@ -59,6 +59,7 @@ gchar         *my_utils_timestamp          ( void );
 gchar         *my_utils_sql_from_double    ( gdouble value );
 
 gchar         *my_utils_str_remove_suffix( const gchar *string, const gchar *suffix );
+gchar         *my_utils_str_replace      ( const gchar *string, const gchar *old, const gchar *new );
 
 GtkWidget     *my_utils_builder_load_from_path( const gchar *path_xml, const gchar *widget_name );
 

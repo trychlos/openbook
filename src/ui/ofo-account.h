@@ -104,9 +104,9 @@ void            ofo_account_set_bro_cre_ecr ( ofoAccount *account, gint num );
 void            ofo_account_set_bro_cre_date( ofoAccount *account, const GDate *date );
 void            ofo_account_set_bro_cre_mnt ( ofoAccount *account, gdouble mnt );
 
-gboolean        ofo_account_insert          ( ofoAccount *account, const ofoDossier *dossier );
-gboolean        ofo_account_update          ( ofoAccount *account, const ofoDossier *dossier, const gchar *prev_number );
-gboolean        ofo_account_delete          ( ofoAccount *account, const ofoDossier *dossier );
+gboolean        ofo_account_insert          ( ofoAccount *account );
+gboolean        ofo_account_update          ( ofoAccount *account, const gchar *prev_number );
+gboolean        ofo_account_delete          ( ofoAccount *account );
 
 GSList         *ofo_account_get_csv         ( const ofoDossier *dossier );
 void            ofo_account_import_csv      ( const ofoDossier *dossier, GSList *lines, gboolean with_header );

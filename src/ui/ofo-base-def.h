@@ -67,12 +67,12 @@ typedef struct {
  * OFA_SIGNAL_NEW_OBJECT:
  * OFA_SIGNAL_UPDATED_OBJECT:
  * OFA_SIGNAL_DELETED_OBJECT:
- * OFA_SIGNAL_RELOADED_DATASET:
+ * OFA_SIGNAL_RELOAD_DATASET:
  */
 #define OFA_SIGNAL_NEW_OBJECT           "ofa-signal-new-object"
 #define OFA_SIGNAL_UPDATED_OBJECT       "ofa-signal-updated-object"
 #define OFA_SIGNAL_DELETED_OBJECT       "ofa-signal-deleted-object"
-#define OFA_SIGNAL_RELOADED_DATASET     "ofa-signal-reloaded-dataset"
+#define OFA_SIGNAL_RELOAD_DATASET       "ofa-signal-reload-dataset"
 #define OFA_SIGNAL_VALIDATED_ENTRY      "ofa-signal-validated-entry"
 
 G_END_DECLS

@@ -39,6 +39,8 @@
 #include "ui/ofo-devise.h"
 #include "ui/ofo-dossier.h"
 #include "ui/ofo-entry.h"
+#include "ui/ofo-journal.h"
+#include "ui/ofo-model.h"
 #include "ui/ofo-sgbd.h"
 
 /* priv instance data
@@ -87,7 +89,7 @@ enum {
 	NEW_OBJECT = 0,
 	UPDATED_OBJECT,
 	DELETED_OBJECT,
-	RELOADED_DATASET,
+	RELOAD_DATASET,
 	VALIDATED_ENTRY,
 	N_SIGNALS
 };
@@ -102,6 +104,8 @@ G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
 #define THIS_DOS_ID                     1
 
 static void        connect_objects_handlers( const ofoDossier *dossier );
+static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
+static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
@@ -191,6 +195,10 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	/**
 	 * ofoDossier::ofa-signal-new-object:
 	 *
+	 * The signal is emitted after a new object has been successfully
+	 * inserted in the SGBD. A connected handler may take advantage of
+	 * this signal e.g. to update its own list of displayed objects.
+	 *
 	 * Handler is of type:
 	 * 		void user_handler ( ofoDossier *dossier,
 	 * 								ofoBase      *object,
@@ -210,6 +218,11 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 
 	/**
 	 * ofoDossier::ofa-signal-updated-object:
+	 *
+	 * The signal is emitted just after an object has been successfully
+	 * updated in the SGBD. A connected handler may take advantage of
+	 * this signal e.g. for updating its own list of displayed objects,
+	 * or for updating its internal links, or so.
 	 *
 	 * Handler is of type:
 	 * 		void user_handler ( ofoDossier *dossier,
@@ -232,6 +245,10 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	/**
 	 * ofoDossier::ofa-signal-deleted-object:
 	 *
+	 * The signal is emitted just after an object has been successfully
+	 * deleted from the SGBD. A connected handler may take advantage of
+	 * this signal e.g. for updating its own list of displayed objects.
+	 *
 	 * Handler is of type:
 	 * 		void user_handler ( ofoDossier *dossier,
 	 * 								ofoBase      *object,
@@ -250,15 +267,22 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_OBJECT );
 
 	/**
-	 * ofoDossier::ofa-signal-reloaded-dataset:
+	 * ofoDossier::ofa-signal-reload-dataset:
+	 *
+	 * The signal is emitted when such an update has been made in the
+	 * SGBD that it is considered easier for a connected handler just
+	 * to reload the whole dataset if this later whishes keep
+	 * synchronized with the database.
+	 *
+	 * This signal is so less an information signal that an action hint.
 	 *
 	 * Handler is of type:
 	 * 		void user_handler ( ofoDossier *dossier,
 	 * 								GType     type_class,
 	 * 								gpointer  user_data );
 	 */
-	st_signals[ RELOADED_DATASET ] = g_signal_new_class_handler(
-				OFA_SIGNAL_RELOADED_DATASET,
+	st_signals[ RELOAD_DATASET ] = g_signal_new_class_handler(
+				OFA_SIGNAL_RELOAD_DATASET,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_reloaded_dataset_cleanup_handler ),
@@ -384,11 +408,11 @@ ofo_dossier_open( ofoDossier *dossier,
 		return( FALSE );
 	}
 
-	ofo_dossier_dbmodel_update( sgbd, account );
-	connect_objects_handlers( dossier );
-
 	dossier->private->sgbd = sgbd;
 	dossier->private->userid = g_strdup( account );
+
+	ofo_dossier_dbmodel_update( sgbd, account );
+	connect_objects_handlers( dossier );
 
 	return( dossier_do_read( dossier ));
 }
@@ -405,7 +429,54 @@ ofo_dossier_open( ofoDossier *dossier,
 static void
 connect_objects_handlers( const ofoDossier *dossier )
 {
+	static const gchar *thisfn = "ofo_dossier_connect_objects_handlers";
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
 	ofo_account_connect_handlers( dossier );
+	ofo_entry_connect_handlers( dossier );
+	ofo_journal_connect_handlers( dossier );
+	ofo_model_connect_handlers( dossier );
+
+	g_signal_connect( G_OBJECT( dossier ),
+				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+}
+
+static void
+on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
+{
+	static const gchar *thisfn = "ofo_dossier_on_updated_object";
+	const gchar *code;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, user_data=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) user_data );
+
+	if( OFO_IS_DEVISE( object )){
+		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+			code = ofo_devise_get_code( OFO_DEVISE( object ));
+			if( g_utf8_collate( code, prev_id )){
+				on_updated_object_currency_code( dossier, prev_id, code );
+			}
+		}
+	}
+}
+
+static void
+on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_DOSSIER "
+					"	SET DOS_DEV_CODE='%s' WHERE DOS_DEV_CODE='%s'", code, prev_id );
+
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query );
+
+	g_free( query );
 }
 
 /**

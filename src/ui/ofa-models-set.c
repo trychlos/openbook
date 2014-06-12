@@ -36,6 +36,7 @@
 #include "ui/ofa-model-properties.h"
 #include "ui/ofa-models-set.h"
 #include "ui/ofo-base.h"
+#include "ui/ofo-dossier.h"
 #include "ui/ofo-model.h"
 #include "ui/ofo-journal.h"
 
@@ -143,10 +144,16 @@ models_set_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		/* note when deconnecting the handlers that the dossier may
+		 * have been already finalized (e.g. when the application
+		 * terminates) */
 		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( instance ));
-		for( iha=priv->handlers ; iha ; iha=iha->next ){
-			handler_id = ( gulong ) iha->data;
-			g_signal_handler_disconnect( dossier, handler_id );
+		if( OFO_IS_DOSSIER( dossier )){
+			for( iha=priv->handlers ; iha ; iha=iha->next ){
+				handler_id = ( gulong ) iha->data;
+				g_signal_handler_disconnect( dossier, handler_id );
+			}
 		}
 	}
 
@@ -248,7 +255,7 @@ setup_dossier_signaling( ofaModelsSet *self )
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
@@ -517,6 +524,9 @@ setup_first_selection( ofaModelsSet *self )
  *
  * - when coming back another time to this same page, then the selection
  *   does not change, and though no message is sent.
+ *
+ * After reloading the dataset, the notebook switches to the first page
+ * before having created the treeview
  */
 static void
 on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet *self )
@@ -532,11 +542,14 @@ on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaModelsSet
 	priv->tview = ( GtkTreeView * )
 							my_utils_container_get_child_by_type(
 									GTK_CONTAINER( wpage ), GTK_TYPE_TREE_VIEW );
+	if( priv->tview ){
+		g_return_if_fail( GTK_IS_TREE_VIEW( priv->tview ));
+		priv->tmodel = gtk_tree_view_get_model( priv->tview );
+		enable_buttons( self, gtk_tree_view_get_selection(priv-> tview ));
 
-	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
-	priv->tmodel = gtk_tree_view_get_model( priv->tview );
-
-	enable_buttons( self, gtk_tree_view_get_selection(priv-> tview ));
+	} else {
+		enable_buttons( self, NULL );
+	}
 }
 
 static void
@@ -560,9 +573,9 @@ enable_buttons( ofaModelsSet *self, GtkTreeSelection *selection )
 
 	/*g_debug( "%s: self=%p, selection=%p", thisfn, ( void * ) self, ( void * ) selection );*/
 
-	select_ok = gtk_tree_selection_get_selected( selection, &tmodel, &iter );
-
-	/*g_debug( "%s: select_ok=%s", thisfn, select_ok ? "True":"False" );*/
+	select_ok = selection
+					? gtk_tree_selection_get_selected( selection, &tmodel, &iter )
+					: FALSE;
 
 	if( select_ok ){
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
