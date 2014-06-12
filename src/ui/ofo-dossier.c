@@ -101,6 +101,7 @@ G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
 #define THIS_DBMODEL_VERSION            1
 #define THIS_DOS_ID                     1
 
+static void        connect_objects_handlers( const ofoDossier *dossier );
 static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
@@ -384,11 +385,27 @@ ofo_dossier_open( ofoDossier *dossier,
 	}
 
 	ofo_dossier_dbmodel_update( sgbd, account );
+	connect_objects_handlers( dossier );
 
 	dossier->private->sgbd = sgbd;
 	dossier->private->userid = g_strdup( account );
 
 	return( dossier_do_read( dossier ));
+}
+
+/*
+ * be sure object class handlers are connected to the dossier signaling
+ * system, as they may be needed before the class has the opportunity
+ * to initialize itself
+ *
+ * use case: the intermediate closing by journal may be run without
+ * having first loaded the accounts, but the accounts should be
+ * connected in order to update themselves.
+ */
+static void
+connect_objects_handlers( const ofoDossier *dossier )
+{
+	ofo_account_connect_handlers( dossier );
 }
 
 /**

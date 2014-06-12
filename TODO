@@ -260,10 +260,9 @@
 
  198 2014- 6-12 go up the ofo_account_init_handlers to ofaMainWindow
                 in order to systematize the connection to signals
+     2014- 6-12 actually goes to ofo_dossier_open()
 
  199 2014- 6-12 does the ofoEntry class not need a init_handlers also ?
-
- 200 2015- 6-12 do not try to close a journal at the same date
 
  201
 
@@ -713,6 +712,9 @@
                 the instance if it stays alive and we are willing to
                 reconnect a new handler later
      2014- 6-12 done - svn #3701
+
+ 200 2015- 6-12 do not try to close a journal at the same date
+     2015- 6-12 done - svn #3702
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

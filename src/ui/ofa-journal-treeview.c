@@ -482,7 +482,6 @@ find_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo, GtkTreeModel **
 	priv = self->private;
 	found = FALSE;
 
-	g_debug( "find_row_by_mnemo: tview=%p", ( void * ) priv->tview );
 	my_tmodel = gtk_tree_view_get_model( priv->tview );
 	if( gtk_tree_model_get_iter_first( my_tmodel, &my_iter )){
 		while( TRUE ){

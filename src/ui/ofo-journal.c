@@ -256,6 +256,9 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	sDetailDev *detail;
 	gdouble debit, credit;
 
+	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
+
 	mnemo = ofo_entry_get_journal( entry );
 	journal = ofo_journal_get_by_mnemo( dossier, mnemo );
 	if( journal ){
@@ -1159,9 +1162,6 @@ ofo_journal_close( ofoJournal *journal, const GDate *closing )
 	ok = FALSE;
 
 	if( !OFO_BASE( journal )->prot->dispose_has_run ){
-
-		/* be sure account handlers are connected */
-		ofo_account_connect_handlers( OFO_DOSSIER( st_global->dossier ));
 
 		if( ofo_entry_validate_by_journal(
 						OFO_DOSSIER( st_global->dossier ),

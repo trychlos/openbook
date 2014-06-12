@@ -256,6 +256,9 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	const GDate *deffect, *acc_date;
 	gint number, acc_num;
 
+	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
+
 	acc_number = ofo_entry_get_account( entry );
 	account = ofo_account_get_by_number( dossier, acc_number );
 	if( account ){
