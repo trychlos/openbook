@@ -427,6 +427,8 @@ ofa_settings_get_uint_list( const gchar *key )
 	gchar *str;
 	gchar **array, **i;
 
+	settings_new();
+
 	list = NULL;
 
 	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
@@ -457,12 +459,16 @@ ofa_settings_set_uint_list( const gchar *key, const GList *uint_list )
 	GString *string;
 	const GList *it;
 
+	settings_new();
+
 	string = g_string_new( "" );
 	for( it = uint_list ; it ; it = it->next ){
 		g_string_append_printf( string, "%u;", GPOINTER_TO_UINT( it->data ));
 	}
 	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string->str );
 	g_string_free( string, TRUE );
+
+	write_key_file( st_settings );
 }
 
 /*

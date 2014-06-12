@@ -263,7 +263,11 @@
               	WHERE JOU_MNEMO='AC' each time we change a char in the
               	date entry
 
- 197 
+ 197 2014- 6-12 g_signal_connect (e.g.) to dossier: must disconnect from
+                the instance if it stays alive and we are willing to
+                reconnect a new handler later
+
+ 198
 
 -----------------------------------------------------------------------
  DONE
