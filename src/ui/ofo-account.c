@@ -161,6 +161,10 @@ ofo_account_connect_handlers( const ofoDossier *dossier )
 	init_global_handlers( dossier );
 }
 
+/*
+ * As the signal connection is protected by a static variable, there is
+ * no need here to handle signal disconnection
+ */
 static void
 init_global_handlers( const ofoDossier *dossier )
 {

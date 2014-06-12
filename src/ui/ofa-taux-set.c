@@ -41,6 +41,9 @@
 struct _ofaTauxSetPrivate {
 	gboolean      dispose_has_run;
 
+	/* internals
+	 */
+	GList        *handlers;
 	/* UI
 	 */
 	GtkTreeView  *tview;
@@ -107,6 +110,9 @@ static void
 taux_set_dispose( GObject *instance )
 {
 	ofaTauxSetPrivate *priv;
+	gulong handler_id;
+	GList *iha;
+	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_TAUX_SET( instance ));
 
@@ -117,6 +123,11 @@ taux_set_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( instance ));
+		for( iha=priv->handlers ; iha ; iha=iha->next ){
+			handler_id = ( gulong ) iha->data;
+			g_signal_handler_disconnect( dossier, handler_id );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -136,6 +147,7 @@ ofa_taux_set_init( ofaTauxSet *self )
 	self->private = g_new0( ofaTauxSetPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+	self->private->handlers = NULL;
 }
 
 static void
@@ -166,25 +178,32 @@ v_setup_view( ofaMainPage *page )
 static void
 setup_dossier_signaling( ofaTauxSet *self )
 {
+	ofaTauxSetPrivate *priv;
 	ofoDossier *dossier;
+	gulong handler;
 
+	priv = self->private;
 	dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ));
 
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+	handler = g_signal_connect(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+	handler = g_signal_connect(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+	handler = g_signal_connect(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( dossier ),
-			OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+	handler = g_signal_connect(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
 static GtkWidget *

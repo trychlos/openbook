@@ -39,7 +39,11 @@
 /* private instance data
  */
 struct _ofaClassesSetPrivate {
-	gboolean dispose_has_run;
+	gboolean  dispose_has_run;
+
+	/* internals
+	 */
+	GList    *handlers;
 };
 
 /* column ordering in the selection listview
@@ -97,6 +101,9 @@ static void
 classes_set_dispose( GObject *instance )
 {
 	ofaClassesSetPrivate *priv;
+	gulong handler_id;
+	GList *iha;
+	ofoDossier *dossier;
 
 	g_return_if_fail( OFA_IS_CLASSES_SET( instance ));
 
@@ -107,6 +114,11 @@ classes_set_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		dossier = ofa_main_page_get_dossier( OFA_MAIN_PAGE( instance ));
+		for( iha=priv->handlers ; iha ; iha=iha->next ){
+			handler_id = ( gulong ) iha->data;
+			g_signal_handler_disconnect( dossier, handler_id );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -126,6 +138,7 @@ ofa_classes_set_init( ofaClassesSet *self )
 	self->private = g_new0( ofaClassesSetPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+	self->private->handlers = NULL;
 }
 
 static void
@@ -148,29 +161,32 @@ ofa_classes_set_class_init( ofaClassesSetClass *klass )
 static GtkWidget *
 v_setup_view( ofaMainPage *page )
 {
-	g_signal_connect(
-			G_OBJECT( ofa_main_page_get_dossier( page )),
-			OFA_SIGNAL_NEW_OBJECT,
-			G_CALLBACK( on_new_object ),
-			page );
+	ofaClassesSetPrivate *priv;
+	ofoDossier *dossier;
+	gulong handler;
 
-	g_signal_connect(
-			G_OBJECT( ofa_main_page_get_dossier( page )),
-			OFA_SIGNAL_UPDATED_OBJECT,
-			G_CALLBACK( on_updated_object ),
-			page );
+	priv = OFA_CLASSES_SET( page )->private;
+	dossier = ofa_main_page_get_dossier( page );
 
-	g_signal_connect(
-			G_OBJECT( ofa_main_page_get_dossier( page )),
-			OFA_SIGNAL_DELETED_OBJECT,
-			G_CALLBACK( on_deleted_object ),
-			page );
+	handler = g_signal_connect(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( ofa_main_page_get_dossier( page )),
-			OFA_SIGNAL_RELOADED_DATASET,
-			G_CALLBACK( on_reloaded_dataset ),
-			page );
+	handler = g_signal_connect(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	return( setup_tree_view( page ));
 }

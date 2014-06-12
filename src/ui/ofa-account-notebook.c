@@ -50,6 +50,10 @@ struct _ofaAccountNotebookPrivate {
 	gpointer             user_data_select;
 	ofaAccountNotebookCb pfnDoubleClic;
 	gpointer             user_data_double_clic;
+
+	/* internals
+	 */
+	GList               *handlers;
 };
 
 /* column ordering in the listview
@@ -136,6 +140,8 @@ static void
 account_notebook_dispose( GObject *instance )
 {
 	ofaAccountNotebookPrivate *priv;
+	gulong handler_id;
+	GList *iha;
 
 	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( instance ));
 
@@ -146,6 +152,10 @@ account_notebook_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		for( iha=priv->handlers ; iha ; iha=iha->next ){
+			handler_id = ( gulong ) iha->data;
+			g_signal_handler_disconnect( priv->dossier, handler_id );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -165,6 +175,7 @@ ofa_account_notebook_init( ofaAccountNotebook *self )
 	self->private = g_new0( ofaAccountNotebookPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+	self->private->handlers = NULL;
 }
 
 static void
@@ -203,6 +214,8 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 {
 	static const gchar *thisfn = "ofa_account_notebook_init_dialog";
 	ofaAccountNotebook *self;
+	ofaAccountNotebookPrivate *priv;
+	gulong handler;
 
 	g_return_val_if_fail( parms, NULL );
 
@@ -212,48 +225,53 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 	g_return_val_if_fail( parms->dossier && OFO_IS_DOSSIER( parms->dossier), NULL );
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_NOTEBOOK, NULL );
+	priv = self->private;
 
-	self->private->book = parms->book;
-	self->private->dossier = parms->dossier;
-	self->private->pfnSelect = parms->pfnSelect;
-	self->private->user_data_select = parms->user_data_select;
-	self->private->pfnDoubleClic = parms->pfnDoubleClic;
-	self->private->user_data_double_clic = parms->user_data_double_clic;
+	priv->book = parms->book;
+	priv->dossier = parms->dossier;
+	priv->pfnSelect = parms->pfnSelect;
+	priv->user_data_select = parms->user_data_select;
+	priv->pfnDoubleClic = parms->pfnDoubleClic;
+	priv->user_data_double_clic = parms->user_data_double_clic;
 
 	/* connect to the dossier in order to get advertised when
 	 * modifications occur
 	 */
-	g_signal_connect(
-			G_OBJECT( parms->dossier),
-			OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+	handler = g_signal_connect(
+						G_OBJECT( parms->dossier),
+						OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( parms->dossier),
-			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+	handler = g_signal_connect(
+						G_OBJECT( parms->dossier),
+						OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( parms->dossier),
-			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+	handler = g_signal_connect(
+						G_OBJECT( parms->dossier),
+						OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	g_signal_connect(
-			G_OBJECT( parms->dossier),
-			OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+	handler = g_signal_connect(
+						G_OBJECT( parms->dossier),
+						OFA_SIGNAL_RELOADED_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	/* setup a weak reference on the dialog to auto-unref
 	 */
-	g_object_weak_ref( G_OBJECT( self->private->book ), ( GWeakNotify ) on_parent_dialog_finalized, self );
+	g_object_weak_ref( G_OBJECT( priv->book ), ( GWeakNotify ) on_parent_dialog_finalized, self );
 
 	/* manage the notebook
 	 */
-	gtk_notebook_set_scrollable( self->private->book, TRUE );
-	gtk_notebook_set_show_tabs( self->private->book, TRUE );
+	gtk_notebook_set_scrollable( priv->book, TRUE );
+	gtk_notebook_set_show_tabs( priv->book, TRUE );
 
 	g_signal_connect(
-			G_OBJECT( self->private->book ),
+			G_OBJECT( priv->book ),
 			"switch-page", G_CALLBACK( on_page_switched ), self );
 
 	g_signal_connect(
-			G_OBJECT( self->private->book ),
+			G_OBJECT( priv->book ),
 			"key-press-event", G_CALLBACK( on_key_pressed_event ), self );
 
 	return( self );
