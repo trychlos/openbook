@@ -796,13 +796,15 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_DEV ("
-			"	JOU_MNEMO       VARCHAR(6) NOT NULL       COMMENT 'Internal journal identifier',"
-			"	JOU_EXE_ID      INTEGER    NOT NULL       COMMENT 'Internal exercice identifier',"
-			"	JOU_DEV_CODE    VARCHAR(3) NOT NULL       COMMENT 'Internal currency identifier',"
-			"	JOU_DEV_CLO_DEB DECIMAL(15,5)             COMMENT 'Debit balance at last closing',"
-			"	JOU_DEV_CLO_CRE DECIMAL(15,5)             COMMENT 'Credit balance at last closing',"
-			"	JOU_DEV_DEB     DECIMAL(15,5)             COMMENT 'Current debit balance',"
-			"	JOU_DEV_CRE     DECIMAL(15,5)             COMMENT 'Current credit balance',"
+			"	JOU_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal journal identifier',"
+			"	JOU_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
+			"	JOU_DEV_CODE     VARCHAR(3) NOT NULL      COMMENT 'Internal currency identifier',"
+			"	JOU_DEV_CLO_DEB  DECIMAL(15,5)            COMMENT 'Debit balance at last closing',"
+			"	JOU_DEV_CLO_CRE  DECIMAL(15,5)            COMMENT 'Credit balance at last closing',"
+			"	JOU_DEV_DEB      DECIMAL(15,5)            COMMENT 'Current debit balance',"
+			"	JOU_DEV_DEB_DATE DATE                     COMMENT 'Most recent debit entry effect date',"
+			"	JOU_DEV_CRE      DECIMAL(15,5)            COMMENT 'Current credit balance',"
+			"	JOU_DEV_CRE_DATE DATE                     COMMENT 'Most recent credit entry effect date',"
 			"	CONSTRAINT PRIMARY KEY (JOU_MNEMO,JOU_EXE_ID,JOU_DEV_CODE)"
 			")" )){
 		return( FALSE );
@@ -1275,6 +1277,29 @@ ofo_dossier_get_exe_by_date( const ofoDossier *dossier, const GDate *date )
 	}
 
 	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_exe_fin:
+ *
+ * Returns: the date of the beginning of the specified exercice.
+ */
+const GDate *
+ofo_dossier_get_exe_deb( const ofoDossier *dossier, gint exe_id )
+{
+	sDetailExe *sexe;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sexe = get_exe_by_id( dossier, exe_id );
+		if( sexe ){
+			return(( const GDate * ) &sexe->exe_deb );
+		}
+	}
+
+	return( NULL );
 }
 
 /**

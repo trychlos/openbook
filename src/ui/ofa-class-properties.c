@@ -274,14 +274,12 @@ static gboolean
 do_update( ofaClassProperties *self )
 {
 	ofaClassPropertiesPrivate *priv;
-	ofoDossier *dossier;
 	gint prev_id;
 
 	priv = self->private;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 	prev_id = ofo_class_get_number( priv->class );
 
 	ofo_class_set_number( priv->class, priv->number );
@@ -289,9 +287,9 @@ do_update( ofaClassProperties *self )
 	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, class );
 
 	if( priv->is_new ){
-		priv->updated = ofo_class_insert( priv->class, dossier );
+		priv->updated = ofo_class_insert( priv->class );
 	} else {
-		priv->updated = ofo_class_update( priv->class, dossier, prev_id );
+		priv->updated = ofo_class_update( priv->class, prev_id );
 	}
 
 	return( priv->updated );

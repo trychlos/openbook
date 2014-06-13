@@ -1696,8 +1696,6 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
-
 	new_set = NULL;
 	count = 0;
 	errors = 0;
@@ -1783,13 +1781,18 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 		account_do_drop_content( ofo_dossier_get_sgbd( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
-			ofo_account_insert( OFO_ACCOUNT( ise->data ));
+			account_do_insert(
+					OFO_ACCOUNT( ise->data ),
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ));
 		}
 
 		g_list_free( new_set );
 
-		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-		st_global->dataset = NULL;
+		if( st_global ){
+			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+			st_global->dataset = NULL;
+		}
 		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_ACCOUNT );
 
 		st_global->send_signal_new = TRUE;

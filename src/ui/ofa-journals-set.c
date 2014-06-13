@@ -328,7 +328,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 	g_return_if_fail( ofo_journal_is_deletable( journal, dossier ));
 
 	if( delete_confirmed( OFA_JOURNALS_SET( page ), journal ) &&
-			ofo_journal_delete( journal, dossier )){
+			ofo_journal_delete( journal )){
 
 		/* this is managed by the ofaJournalTreeview convenience
 		 * class, graceful to the dossier signaling system */

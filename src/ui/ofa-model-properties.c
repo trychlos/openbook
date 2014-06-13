@@ -784,7 +784,6 @@ do_update( ofaModelProperties *self )
 {
 	ofaModelPropertiesPrivate *priv;
 	gchar *prev_mnemo;
-	ofoDossier *dossier;
 	gint i;
 
 	prev_mnemo = g_strdup( ofo_model_get_mnemo( self->private->model ));
@@ -806,14 +805,12 @@ do_update( ofaModelProperties *self )
 		get_detail_list( self, i );
 	}
 
-	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
-
 	if( !prev_mnemo ){
 		priv->updated =
-				ofo_model_insert( priv->model, dossier );
+				ofo_model_insert( priv->model );
 	} else {
 		priv->updated =
-				ofo_model_update( priv->model, dossier, prev_mnemo );
+				ofo_model_update( priv->model, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

@@ -511,26 +511,24 @@ ofo_devise_set_maj_stamp( ofoDevise *devise, const GTimeVal *stamp )
  * ofo_devise_insert:
  */
 gboolean
-ofo_devise_insert( ofoDevise *devise, const ofoDossier *dossier )
+ofo_devise_insert( ofoDevise *devise )
 {
 	static const gchar *thisfn = "ofo_devise_insert";
 
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		g_debug( "%s: devise=%p, dossier=%p",
-				thisfn, ( void * ) devise, ( void * ) dossier );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
+		g_debug( "%s: devise=%p", thisfn, ( void * ) devise );
 
 		if( devise_do_insert(
 					devise,
-					ofo_dossier_get_sgbd( dossier ),
-					ofo_dossier_get_user( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, devise );
+
 			return( TRUE );
 		}
 	}
@@ -599,27 +597,25 @@ devise_insert_main( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
  * ofo_devise_update:
  */
 gboolean
-ofo_devise_update( ofoDevise *devise, const ofoDossier *dossier, const gchar *prev_code )
+ofo_devise_update( ofoDevise *devise, const gchar *prev_code )
 {
 	static const gchar *thisfn = "ofo_devise_update";
 
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		g_debug( "%s: devise=%p, dossier=%p, prev_code=%s",
-				thisfn, ( void * ) devise, ( void * ) dossier, prev_code );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
+		g_debug( "%s: devise=%p, prev_code=%s", thisfn, ( void * ) devise, prev_code );
 
 		if( devise_do_update(
 					devise,
 					prev_code,
-					ofo_dossier_get_sgbd( dossier ),
-					ofo_dossier_get_user( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_UPDATE_DATASET( st_global, devise, prev_code );
+
 			return( TRUE );
 		}
 	}
@@ -678,26 +674,24 @@ devise_do_update( ofoDevise *devise, const gchar *prev_code, const ofoSgbd *sgbd
  * ofo_devise_delete:
  */
 gboolean
-ofo_devise_delete( ofoDevise *devise, const ofoDossier *dossier )
+ofo_devise_delete( ofoDevise *devise )
 {
 	static const gchar *thisfn = "ofo_devise_delete";
 
 	g_return_val_if_fail( OFO_IS_DEVISE( devise ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 	g_return_val_if_fail( ofo_devise_is_deletable( devise ), FALSE );
 
 	if( !OFO_BASE( devise )->prot->dispose_has_run ){
 
-		g_debug( "%s: devise=%p, dossier=%p",
-				thisfn, ( void * ) devise, ( void * ) dossier );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
+		g_debug( "%s: devise=%p", thisfn, ( void * ) devise );
 
 		if( devise_do_delete(
 					devise,
-					ofo_dossier_get_sgbd( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, devise );
+
 			return( TRUE );
 		}
 	}
@@ -803,8 +797,6 @@ ofo_devise_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
-
 	new_set = NULL;
 	count = 0;
 	errors = 0;
@@ -869,19 +861,22 @@ ofo_devise_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 	if( !errors ){
 		st_global->send_signal_new = FALSE;
 
-		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-		st_global->dataset = NULL;
-
 		devise_do_drop_content( ofo_dossier_get_sgbd( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
-			ofo_devise_insert( OFO_DEVISE( ise->data ), dossier );
+			devise_do_insert(
+					OFO_DEVISE( ise->data ),
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ));
 		}
 
 		g_list_free( new_set );
 
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_DEVISE );
+		if( st_global ){
+			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+			st_global->dataset = NULL;
+		}
+		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_DEVISE );
 
 		st_global->send_signal_new = TRUE;
 	}

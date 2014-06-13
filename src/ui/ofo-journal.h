@@ -66,7 +66,11 @@ const GDate    *ofo_journal_get_last_closing( const ofoJournal *journal );
 gdouble         ofo_journal_get_clo_deb  ( const ofoJournal *journal, gint exe_id, const gchar *devise );
 gdouble         ofo_journal_get_clo_cre  ( const ofoJournal *journal, gint exe_id, const gchar *devise );
 gdouble         ofo_journal_get_deb      ( const ofoJournal *journal, gint exe_id, const gchar *devise );
+const GDate    *ofo_journal_get_deb_date ( const ofoJournal *journal, gint exe_id, const gchar *devise );
 gdouble         ofo_journal_get_cre      ( const ofoJournal *journal, gint exe_id, const gchar *devise );
+const GDate    *ofo_journal_get_cre_date ( const ofoJournal *journal, gint exe_id, const gchar *devise );
+
+GList          *ofo_journal_get_exe_list ( const ofoJournal *journal );
 
 const GDate    *ofo_journal_get_cloture  ( const ofoJournal *journal, gint exe_id );
 
@@ -83,13 +87,15 @@ void            ofo_journal_set_maj_stamp( ofoJournal *journal, const GTimeVal *
 void            ofo_journal_set_clo_deb  ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
 void            ofo_journal_set_clo_cre  ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
 void            ofo_journal_set_deb      ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
+void            ofo_journal_set_deb_date ( ofoJournal *journal, gint exe_id, const gchar *devise, const GDate *date );
 void            ofo_journal_set_cre      ( ofoJournal *journal, gint exe_id, const gchar *devise, gdouble amount );
+void            ofo_journal_set_cre_date ( ofoJournal *journal, gint exe_id, const gchar *devise, const GDate *date );
 
 gboolean        ofo_journal_close        ( ofoJournal *journal, const GDate *closing );
 
-gboolean        ofo_journal_insert       ( ofoJournal *journal, const ofoDossier *dossier );
-gboolean        ofo_journal_update       ( ofoJournal *journal, const ofoDossier *dossier, const gchar *prev_mnemo );
-gboolean        ofo_journal_delete       ( ofoJournal *journal, const ofoDossier *dossier );
+gboolean        ofo_journal_insert       ( ofoJournal *journal );
+gboolean        ofo_journal_update       ( ofoJournal *journal, const gchar *prev_mnemo );
+gboolean        ofo_journal_delete       ( ofoJournal *journal );
 
 GSList         *ofo_journal_get_csv      ( const ofoDossier *dossier );
 void            ofo_journal_import_csv   ( const ofoDossier *dossier, GSList *lines, gboolean with_header );

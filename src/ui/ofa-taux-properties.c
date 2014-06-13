@@ -32,7 +32,7 @@
 #include <stdarg.h>
 
 #include "ui/my-utils.h"
-#include "ui/ofa-base-dialog-prot.h"
+#include "ui/my-window-prot.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-taux-properties.h"
 #include "ui/ofo-base.h"
@@ -78,9 +78,9 @@ enum {
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-taux-properties.ui";
 static const gchar  *st_ui_id        = "TauxPropertiesDlg";
 
-G_DEFINE_TYPE( ofaTauxProperties, ofa_taux_properties, OFA_TYPE_BASE_DIALOG )
+G_DEFINE_TYPE( ofaTauxProperties, ofa_taux_properties, MY_TYPE_DIALOG )
 
-static void      v_init_dialog( ofaBaseDialog *dialog );
+static void      v_init_dialog( myDialog *dialog );
 static void      insert_new_row( ofaTauxProperties *self, gint idx );
 static void      add_empty_row( ofaTauxProperties *self );
 static void      add_button( ofaTauxProperties *self, const gchar *stock_id, gint column, gint row );
@@ -96,7 +96,7 @@ static void      on_button_clicked( GtkButton *button, ofaTauxProperties *self )
 static void      remove_row( ofaTauxProperties *self, gint row );
 static void      check_for_enable_dlg( ofaTauxProperties *self );
 static gboolean  is_dialog_validable( ofaTauxProperties *self );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaTauxProperties *self );
 
 static void
@@ -126,7 +126,7 @@ taux_properties_dispose( GObject *instance )
 {
 	g_return_if_fail( OFA_IS_TAUX_PROPERTIES( instance ));
 
-	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
+	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -149,7 +149,6 @@ ofa_taux_properties_init( ofaTauxProperties *self )
 
 	self->private->is_new = FALSE;
 	self->private->updated = FALSE;
-
 	self->private->count = 0;
 }
 
@@ -163,8 +162,8 @@ ofa_taux_properties_class_init( ofaTauxPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = taux_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = taux_properties_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -187,14 +186,15 @@ ofa_taux_properties_run( ofaMainWindow *main_window, ofoTaux *taux )
 
 	self = g_object_new(
 					OFA_TYPE_TAUX_PROPERTIES,
-					OFA_PROP_MAIN_WINDOW, main_window,
-					OFA_PROP_DIALOG_XML,  st_ui_xml,
-					OFA_PROP_DIALOG_NAME, st_ui_id,
+					MY_PROP_MAIN_WINDOW, main_window,
+					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
+					MY_PROP_WINDOW_XML,  st_ui_xml,
+					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
 	self->private->taux = taux;
 
-	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
+	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	updated = self->private->updated;
 
@@ -204,7 +204,7 @@ ofa_taux_properties_run( ofaMainWindow *main_window, ofoTaux *taux )
 }
 
 static void
-v_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( myDialog *dialog )
 {
 	ofaTauxProperties *self;
 	ofaTauxPropertiesPrivate *priv;
@@ -212,9 +212,11 @@ v_init_dialog( ofaBaseDialog *dialog )
 	gchar *title;
 	const gchar *mnemo;
 	GtkEntry *entry;
+	GtkContainer *container;
 
 	self = OFA_TAUX_PROPERTIES( dialog );
 	priv = self->private;
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	mnemo = ofo_taux_get_mnemo( priv->taux );
 	if( !mnemo ){
@@ -223,26 +225,23 @@ v_init_dialog( ofaBaseDialog *dialog )
 	} else {
 		title = g_strdup_printf( _( "Updating « %s » rate" ), mnemo );
 	}
-	gtk_window_set_title( GTK_WINDOW( dialog->prot->dialog ), title );
+	gtk_window_set_title( GTK_WINDOW( container ), title );
 
 	priv->mnemo = g_strdup( mnemo );
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( dialog->prot->dialog ), "p1-mnemo" ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-mnemo" ));
 	if( priv->mnemo ){
 		gtk_entry_set_text( entry, priv->mnemo );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
 
 	priv->label = g_strdup( ofo_taux_get_label( priv->taux ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( dialog->prot->dialog ), "p1-label" ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 
-	priv->grid = GTK_GRID( my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "p2-grid" ));
+	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( container, "p2-grid" ));
 	add_button( self, GTK_STOCK_ADD, COL_ADD, 1 );
 
 	count = ofo_taux_get_val_count( priv->taux );
@@ -250,8 +249,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 		insert_new_row( self, idx );
 	}
 
-	my_utils_init_notes_ex( dialog->prot->dialog, taux );
-	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, taux );
+	my_utils_init_notes_ex( container, taux );
+	my_utils_init_maj_user_stamp_ex( container, taux );
 
 	check_for_enable_dlg( self );
 }
@@ -531,7 +530,7 @@ check_for_enable_dlg( ofaTauxProperties *self )
 	ok = is_dialog_validable( self );
 
 	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 
 	gtk_widget_set_sensitive( button, ok );
 }
@@ -578,7 +577,7 @@ is_dialog_validable( ofaTauxProperties *self )
 
 	if( ok ){
 		exists = ofo_taux_get_by_mnemo(
-				ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
+				MY_WINDOW( self )->protected->dossier,
 				self->private->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( self->private->mnemo, ofo_taux_get_mnemo( self->private->taux )));
@@ -591,7 +590,7 @@ is_dialog_validable( ofaTauxProperties *self )
  * return %TRUE to allow quitting the dialog
  */
 static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( myDialog *dialog )
 {
 	return( do_update( OFA_TAUX_PROPERTIES( dialog )));
 }
@@ -605,7 +604,6 @@ static gboolean
 do_update( ofaTauxProperties *self )
 {
 	ofaTauxPropertiesPrivate *priv;
-	ofoDossier *dossier;
 	gint i;
 	GtkEntry *entry;
 	const gchar *sbegin, *send, *srate;
@@ -619,7 +617,7 @@ do_update( ofaTauxProperties *self )
 
 	ofo_taux_set_mnemo( priv->taux, priv->mnemo );
 	ofo_taux_set_label( priv->taux, priv->label );
-	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, taux );
+	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), taux );
 
 	ofo_taux_free_val_all( priv->taux );
 
@@ -638,14 +636,12 @@ do_update( ofaTauxProperties *self )
 		}
 	}
 
-	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
-
 	if( priv->is_new ){
 		priv->updated =
-				ofo_taux_insert( priv->taux, dossier );
+				ofo_taux_insert( priv->taux );
 	} else {
 		priv->updated =
-				ofo_taux_update( priv->taux, dossier, prev_mnemo );
+				ofo_taux_update( priv->taux, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

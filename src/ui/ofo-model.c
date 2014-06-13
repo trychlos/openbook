@@ -92,6 +92,9 @@ static gboolean       model_do_update( ofoModel *model, const ofoSgbd *sgbd, con
 static gboolean       model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
 static gboolean       model_do_delete( ofoModel *model, const ofoSgbd *sgbd );
 static gint           model_cmp_by_mnemo( const ofoModel *a, const gchar *mnemo );
+static ofoModel      *model_import_csv_model( GSList *fields, gint count, gint *errors );
+static sModDetail    *model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo );
+static gboolean       model_do_drop_content( const ofoSgbd *sgbd );
 
 static void
 details_list_free_detail( sModDetail *detail )
@@ -1087,26 +1090,24 @@ ofo_model_detail_is_formula( const gchar *str )
  * so it is not needed to check the date of closing
  */
 gboolean
-ofo_model_insert( ofoModel *model, const ofoDossier *dossier )
+ofo_model_insert( ofoModel *model )
 {
 	static const gchar *thisfn = "ofo_model_insert";
 
 	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		g_debug( "%s: model=%p, dossier=%p",
-				thisfn, ( void * ) model, ( void * ) dossier );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+		g_debug( "%s: model=%p", thisfn, ( void * ) model );
 
 		if( model_do_insert(
 					model,
-					ofo_dossier_get_sgbd( dossier ),
-					ofo_dossier_get_user( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, model );
+
 			return( TRUE );
 		}
 	}
@@ -1278,28 +1279,26 @@ model_insert_details( ofoModel *model, const ofoSgbd *sgbd, gint rang, sModDetai
  * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_model_update( ofoModel *model, const ofoDossier *dossier, const gchar *prev_mnemo )
+ofo_model_update( ofoModel *model, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_model_update";
 
 	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		g_debug( "%s: model=%p, dossier=%p, prev_mnemo=%s",
-				thisfn, ( void * ) model, ( void * ) dossier, prev_mnemo );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+		g_debug( "%s: model=%p, prev_mnemo=%s", thisfn, ( void * ) model, prev_mnemo );
 
 		if( model_do_update(
 					model,
-					ofo_dossier_get_sgbd( dossier ),
-					ofo_dossier_get_user( dossier ),
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )),
 					prev_mnemo )){
 
 			OFO_BASE_UPDATE_DATASET( st_global, model, prev_mnemo );
+
 			return( TRUE );
 		}
 	}
@@ -1367,26 +1366,24 @@ model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, cons
  * ofo_model_delete:
  */
 gboolean
-ofo_model_delete( ofoModel *model, const ofoDossier *dossier )
+ofo_model_delete( ofoModel *model )
 {
 	static const gchar *thisfn = "ofo_model_delete";
 
 	g_return_val_if_fail( OFO_IS_MODEL( model ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 	g_return_val_if_fail( ofo_model_is_deletable( model ), FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		g_debug( "%s: model=%p, dossier=%p",
-				thisfn, ( void * ) model, ( void * ) dossier );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+		g_debug( "%s: model=%p", thisfn, ( void * ) model );
 
 		if( model_do_delete(
 					model,
-					ofo_dossier_get_sgbd( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, model );
+
 			return( TRUE );
 		}
 	}
@@ -1483,4 +1480,269 @@ ofo_model_get_csv( const ofoDossier *dossier )
 	}
 
 	return( g_slist_reverse( lines ));
+}
+
+/**
+ * ofo_model_import_csv:
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - 1:
+ * - model mnemo
+ * - label
+ * - notes (opt)
+ *
+ * - 2:
+ * - model mnemo
+ * - begin validity (opt)
+ * - end validity (opt)
+ * - rate
+ *
+ * It is not required that the input csv files be sorted by mnemo. We
+ * may have all 'model' records, then all 'validity' records...
+ *
+ * Replace the whole table with the provided datas.
+ */
+void
+ofo_model_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+{
+	static const gchar *thisfn = "ofo_model_import_csv";
+	gint type;
+	GSList *ili, *ico;
+	ofoModel *model;
+	sModDetail *sdet;
+	GList *new_set, *ise;
+	gint count;
+	gint errors;
+	const gchar *str;
+	gchar *mnemo;
+
+	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
+			thisfn,
+			( void * ) dossier,
+			( void * ) lines, g_slist_length( lines ),
+			with_header ? "True":"False" );
+
+	new_set = NULL;
+	count = 0;
+	errors = 0;
+
+	for( ili=lines ; ili ; ili=ili->next ){
+		count += 1;
+		if( !( count == 1 && with_header )){
+			ico=ili->data;
+			str = ( const gchar * ) ico->data;
+			if( !str || !g_utf8_strlen( str, -1 )){
+				g_warning( "%s: (line %d) empty line type", thisfn, count );
+				errors += 1;
+				continue;
+			}
+			type = atoi( str );
+			switch( type ){
+				case 1:
+					model = model_import_csv_model( ico, count, &errors );
+					if( model ){
+						new_set = g_list_prepend( new_set, model );
+					}
+					break;
+				case 2:
+					mnemo = NULL;
+					sdet = model_import_csv_detail( ico, count, &errors, &mnemo );
+					if( sdet ){
+						model = model_find_by_mnemo( new_set, mnemo );
+						if( model ){
+							model->private->details =
+									g_list_append( model->private->details, sdet );
+						}
+						g_free( mnemo );
+					}
+					break;
+				default:
+					g_warning( "%s: (line %d) invalid line type: %d", thisfn, count, type );
+					errors += 1;
+					continue;
+			}
+		}
+	}
+
+	if( !errors ){
+		st_global->send_signal_new = FALSE;
+
+		model_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+
+		for( ise=new_set ; ise ; ise=ise->next ){
+			model_do_insert(
+					OFO_MODEL( ise->data ),
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ));
+		}
+
+		if( st_global ){
+			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+			st_global->dataset = NULL;
+		}
+		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_MODEL );
+
+		g_list_free( new_set );
+
+		st_global->send_signal_new = TRUE;
+	}
+}
+
+static ofoModel *
+model_import_csv_model( GSList *fields, gint count, gint *errors )
+{
+	static const gchar *thisfn = "ofo_model_import_csv_model";
+	ofoModel *model;
+	const gchar *str;
+	GSList *ico;
+	gboolean locked;
+
+	model = ofo_model_new();
+
+	/* model mnemo */
+	ico = fields->next;
+	str = ( const gchar * ) ico->data;
+	if( !str || !g_utf8_strlen( str, -1 )){
+		g_warning( "%s: (line %d) empty mnemo", thisfn, count );
+		*errors += 1;
+		g_object_unref( model );
+		return( NULL );
+	}
+	ofo_model_set_mnemo( model, str );
+
+	/* model label */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( !str || !g_utf8_strlen( str, -1 )){
+		g_warning( "%s: (line %d) empty label", thisfn, count );
+		*errors += 1;
+		g_object_unref( model );
+		return( NULL );
+	}
+	ofo_model_set_label( model, str );
+
+	/* model journal */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( !str || !g_utf8_strlen( str, -1 )){
+		g_warning( "%s: (line %d) empty journal", thisfn, count );
+		*errors += 1;
+		g_object_unref( model );
+		return( NULL );
+	}
+	ofo_model_set_journal( model, str );
+
+	/* model journal locked
+	 * default to false if not set, but must be valid if set */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( !my_utils_parse_boolean( str, &locked )){
+		g_warning( "%s: (line %d) unable to parse journal locked='%s'", thisfn, count, str );
+		*errors += 1;
+		g_object_unref( model );
+		return( NULL );
+	}
+	ofo_model_set_journal_locked( model, locked );
+
+	/* notes
+	 * we are tolerant on the last field... */
+	ico = ico->next;
+	if( ico ){
+		str = ( const gchar * ) ico->data;
+		if( str && g_utf8_strlen( str, -1 )){
+			ofo_model_set_notes( model, str );
+		}
+	}
+
+	return( model );
+}
+
+static sModDetail *
+model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo )
+{
+	static const gchar *thisfn = "ofo_model_import_csv_detail";
+	sModDetail *detail;
+	const gchar *str;
+	GSList *ico;
+
+	detail = g_new0( sModDetail, 1 );
+
+	/* model mnemo */
+	ico = fields->next;
+	str = ( const gchar * ) ico->data;
+	if( !str || !g_utf8_strlen( str, -1 )){
+		g_warning( "%s: (line %d) empty mnemo", thisfn, count );
+		*errors += 1;
+		g_free( detail );
+		return( NULL );
+	}
+	*mnemo = g_strdup( str );
+
+	/* detail comment */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( str && g_utf8_strlen( str, -1 )){
+		detail->comment = g_strdup( str );
+	}
+
+	/* detail label */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( str && g_utf8_strlen( str, -1 )){
+		detail->label = g_strdup( str );
+	}
+
+	/* detail label locked */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( !my_utils_parse_boolean( str, &detail->label_locked )){
+		g_warning( "%s: (line %d) unable to parse label locked='%s'", thisfn, count, str );
+		*errors += 1;
+		g_free( detail );
+		return( NULL );
+	}
+
+	/* detail debit */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( str && g_utf8_strlen( str, -1 )){
+		detail->debit = g_strdup( str );
+	}
+
+	/* detail debit locked */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( !my_utils_parse_boolean( str, &detail->debit_locked )){
+		g_warning( "%s: (line %d) unable to parse debit locked='%s'", thisfn, count, str );
+		*errors += 1;
+		g_free( detail );
+		return( NULL );
+	}
+
+	/* detail credit */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( str && g_utf8_strlen( str, -1 )){
+		detail->credit = g_strdup( str );
+	}
+
+	/* detail credit locked */
+	ico = ico->next;
+	str = ( const gchar * ) ico->data;
+	if( !my_utils_parse_boolean( str, &detail->debit_locked )){
+		g_warning( "%s: (line %d) unable to parse credit locked='%s'", thisfn, count, str );
+		*errors += 1;
+		g_free( detail );
+		return( NULL );
+	}
+
+	return( detail );
+}
+
+static gboolean
+model_do_drop_content( const ofoSgbd *sgbd )
+{
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODEL" ) &&
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODEL_DET" ));
 }

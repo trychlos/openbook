@@ -175,7 +175,6 @@ my_utils_sql_from_date( const GDate *date )
  *
  * Compare the two dates, returning -1, 0 or 1 if a less than, equal or
  * greater than b.
- * This supposes that the two pointers are not null.
  * An invalid date is considered infinite.
  *
  * Returns: -1, 0 or 1.
@@ -183,11 +182,8 @@ my_utils_sql_from_date( const GDate *date )
 gint
 my_utils_date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
 {
-	g_return_val_if_fail( a, 0 );
-	g_return_val_if_fail( b, 0 );
-
-	if( !g_date_valid( a )){
-		if( !g_date_valid( b)){
+	if( !a || !g_date_valid( a )){
+		if( !b || !g_date_valid( b)){
 			/* a and b are infinite: returns equal */
 			return( 0 );
 		}
@@ -195,7 +191,7 @@ my_utils_date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
 		return( infinite_is_past ? -1 : 1 );
 	}
 
-	if( !g_date_valid( b )){
+	if( !b || !g_date_valid( b )){
 		/* b is infinite, but not a */
 		return( infinite_is_past ? 1 : -1 );
 	}
@@ -261,6 +257,52 @@ my_utils_timestamp( void )
 	str = g_date_time_format( dt, "%F %T" );
 
 	return( str );
+}
+
+/**
+ * my_utils_parse_boolean:
+ *
+ * Parse a string to a boolean.
+ * If unset ou empty, the string evaluates to FALSE.
+ * Else, the string is compared to True/False/Yes/No in an insensitive
+ * manner. The value 1 and 0 are also accepted.
+ *
+ * Returns TRUE if the string has been successfully parsed, FALSE else.
+ */
+gboolean
+my_utils_parse_boolean( const gchar *str, gboolean *bvar )
+{
+	g_return_val_if_fail( bvar, FALSE );
+
+	*bvar = FALSE;
+
+	if( str && g_utf8_strlen( str, -1 )){
+		if( !g_utf8_collate( str, "1" )){
+			*bvar = TRUE;
+			return( TRUE );
+		}
+		if( !g_utf8_collate( str, "0" )){
+			*bvar = FALSE;
+			return( TRUE );
+		}
+		if( !g_ascii_strcasecmp( str, "True" )){
+			*bvar = TRUE;
+			return( TRUE );
+		}
+		if( !g_ascii_strcasecmp( str, "False" )){
+			*bvar = FALSE;
+			return( TRUE );
+		}
+		if( !g_ascii_strcasecmp( str, "Yes" )){
+			*bvar = TRUE;
+			return( TRUE );
+		}
+		if( !g_ascii_strcasecmp( str, "No" )){
+			*bvar = FALSE;
+			return( TRUE );
+		}
+	}
+	return( FALSE );
 }
 
 /**

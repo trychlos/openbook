@@ -452,7 +452,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 			/* this will remove the object from the global dataset,
 			 * and send the 'updated-dataset' message that we handle
 			 * in order to update the GtkListStore tree model */
-			ofo_class_delete( class, ofa_main_page_get_dossier( page ));
+			ofo_class_delete( class );
 		}
 	}
 

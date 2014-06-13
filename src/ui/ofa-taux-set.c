@@ -623,7 +623,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 		g_object_unref( taux );
 
 		if( delete_confirmed( OFA_TAUX_SET( page ), taux ) &&
-				ofo_taux_delete( taux, ofa_main_page_get_dossier( page ))){
+				ofo_taux_delete( taux )){
 
 			/* nothing to do here as all is managed by dossier signaling
 			 * system */

@@ -53,7 +53,7 @@
  *                     with 01/01/2014
  */
 
-#include "ui/ofa-base-dialog.h"
+#include "ui/my-dialog.h"
 #include "ui/ofo-taux-def.h"
 
 G_BEGIN_DECLS
@@ -69,14 +69,14 @@ typedef struct _ofaTauxPropertiesPrivate        ofaTauxPropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaBaseDialog             parent;
+	myDialog                  parent;
 	ofaTauxPropertiesPrivate *private;
 }
 	ofaTauxProperties;
 
 typedef struct {
 	/*< private >*/
-	ofaBaseDialogClass parent;
+	myDialogClass parent;
 }
 	ofaTauxPropertiesClass;
 

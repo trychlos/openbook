@@ -750,7 +750,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 		g_object_unref( model );
 
 		if( delete_confirmed( OFA_MODELS_SET( page ), model ) &&
-				ofo_model_delete( model, ofa_main_page_get_dossier( page ))){
+				ofo_model_delete( model )){
 
 			/* remove the row from the model
 			 * this will cause an automatic new selection */

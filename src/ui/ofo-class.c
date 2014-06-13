@@ -458,26 +458,24 @@ ofo_class_set_maj_stamp( ofoClass *class, const GTimeVal *stamp )
  * ofo_class_insert:
  */
 gboolean
-ofo_class_insert( ofoClass *class, const ofoDossier *dossier )
+ofo_class_insert( ofoClass *class )
 {
 	static const gchar *thisfn = "ofo_class_insert";
 
 	g_return_val_if_fail( OFO_IS_CLASS( class ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_debug( "%s: class=%p, dossier=%p",
-				thisfn, ( void * ) class, ( void * ) dossier );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, class );
+		g_debug( "%s: class=%p", thisfn, ( void * ) class );
 
 		if( class_do_insert(
 					class,
-					ofo_dossier_get_sgbd( dossier ),
-					ofo_dossier_get_user( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, class );
+
 			return( TRUE );
 		}
 	}
@@ -532,26 +530,23 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
  * ofo_class_update:
  */
 gboolean
-ofo_class_update( ofoClass *class, const ofoDossier *dossier, gint prev_id )
+ofo_class_update( ofoClass *class, gint prev_id )
 {
 	static const gchar *thisfn = "ofo_class_update";
 	gchar *str;
 
 	g_return_val_if_fail( OFO_IS_CLASS( class ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_debug( "%s: class=%p, dossier=%p",
-				thisfn, ( void * ) class, ( void * ) dossier );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, class );
+		g_debug( "%s: class=%p", thisfn, ( void * ) class );
 
 		if( class_do_update(
 					class,
 					prev_id,
-					ofo_dossier_get_sgbd( dossier ),
-					ofo_dossier_get_user( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			str = g_strdup_printf( "%d", prev_id );
 			OFO_BASE_UPDATE_DATASET( st_global, class, str );
@@ -610,26 +605,24 @@ class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar
  * ofo_class_delete:
  */
 gboolean
-ofo_class_delete( ofoClass *class, const ofoDossier *dossier )
+ofo_class_delete( ofoClass *class )
 {
 	static const gchar *thisfn = "ofo_class_delete";
 
 	g_return_val_if_fail( OFO_IS_CLASS( class ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 	g_return_val_if_fail( ofo_class_is_deletable( class ), FALSE );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_debug( "%s: class=%p, dossier=%p",
-				thisfn, ( void * ) class, ( void * ) dossier );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, class );
+		g_debug( "%s: class=%p", thisfn, ( void * ) class );
 
 		if( class_do_delete(
 					class,
-					ofo_dossier_get_sgbd( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, class );
+
 			return( TRUE );
 		}
 	}
@@ -742,8 +735,6 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, class );
-
 	new_set = NULL;
 	count = 0;
 	errors = 0;
@@ -793,19 +784,22 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 	if( !errors ){
 		st_global->send_signal_new = FALSE;
 
-		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-		st_global->dataset = NULL;
-
 		class_do_drop_content( ofo_dossier_get_sgbd( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
-			ofo_class_insert( OFO_CLASS( ise->data ), dossier );
+			class_do_insert(
+					OFO_CLASS( ise->data ),
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ));
 		}
 
 		g_list_free( new_set );
 
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_CLASS );
+		if( st_global ){
+			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+			st_global->dataset = NULL;
+		}
+		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_CLASS );
 
 		st_global->send_signal_new = TRUE;
 	}

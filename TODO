@@ -99,6 +99,7 @@
   57 2014- 5-19 have an entry-derived class for numbers (montants et taux)
 
   58 2014- 5-19 allow the treeviewes to be sorted
+     2014- 6-12 this is mostly needed in ViewEntries
 
   60 2014- 5-19 manage locale as a user preference (format for entering
                 date, amounts and rates)
@@ -134,6 +135,8 @@
 
  101 2014- 5-24 when updating the currency of an account, the 'delete'
                 button of the 'currencies' page should be updated
+     2014- 6-12 ofaDevisesSet should be connected to ofa_signal_updated
+                _object...
 
  107 2014- 5-24 have a message when current exercice changes
                 so that e.g. the journals set may adapt its display
@@ -204,14 +207,8 @@
 
  177 2014- 6- 9 there is no sens to manage a GtkTreeView in ofaMainPage
 
- 178 2014- 6- 9 ofaModelsSet: manage update journal
-
- 179 2014- 6- 9 ofaModelsSet: manage delete journal
-
- 180 2014- 6- 9 ofoEntry: manage change journal mnemo
-
- 181 2014- 6- 9 ofoModel: manage change journal mnemo
-     2014- 6-12 ofoModel: manage change taux mnemo
+ 179 2014- 6- 9 ofaModelsSet: manage delete journal (reclass in 
+                'Unclassed')
 
  182 2014- 6-10 configure at the dossier level the default import journal 
                 when we are importing entries
@@ -231,16 +228,12 @@
      2014- 6-11 Is it really mandatory as the imported entries may do
                 not use this default import journal at all ?
 
- 187 2014- 6-10 TauxProperties: the validities begin and end displayed
-                in the treeview do not take into account all validity
-                records
-
  187 2014- 6-10 TauxProperties - Validities page: should be sorted by
                 end date desc (most recent first)
+     2014- 6-13 no: this should be left sorted as the user entered the
+                data - so let him reorder the lines
 
  188 2014- 6-10 ImportAssistant: doesn't know import multi-lines notes
-
- 190 2014- 6-10 Have a display of journal balances
 
  191 2014- 6-11 Note that a multi-currency journal is not balanced per
                 currency, and so its global balance cannot be checked
@@ -248,9 +241,6 @@
  192 2014- 6-11 save database:
                 mysqldump pwi_consultants -uwieser -pwieser | gzip -c 
                  >/tmp/pwi_consultants-20140611.gz
-
- 193 2014- 6-11 record the entry most recent effect date in the
-                 journal_exe_dev detail
 
  194 2014- 6-11 ofo_journal_get_cloture() should be replaced with
                 ofo_journal_get_last_closing()
@@ -260,36 +250,43 @@
                  times on a journal selection in journal_treeview from
                  journals_set)
 
- 201 2014- 6-12 systematize ofo_xxx class connect handlers when opening
-                the dossier
-
- 202 2014- 6-12 check that dossier is alive when disconnecting the
-                handlers
-
- 203 2014- 6-12 DATESET_GLOBAL should not be systematic when connecting
-                the handlers. Instead they should be set back when 
-                needed
-
  204 2014- 6-12 check_for_enable_dlg/is_dialog_validable: should only
                 check the modified data => the checked data should be
                 flagged, and this flag unset when the data is modified
 
- 205 2014- 6-12 ofoClass: get rid of ofoDossier argument in insert,
-                update and delete public methods (see ofoAccount)
+ 210 2014- 6-12 move all dialogs from ofaBaseDialog to myDialog
+                - acount properties
+                - account select
+                - bat properties
+                - bat select
+                - class properties
+                - devise properties
+                - dossier properties
+                - guided input
+                - journal properties - done
+                - model properties
+                - taux properties    - done
 
- 206 2014- 6-12 ofoDevise: get rid of ofoDossier argument in insert,
-                update and delete public methods (see ofoAccount)
+ 211 2014- 6-12 move all assistants to myAssistant
+                - import
+                - export
+                - new dossier
 
- 207 2014- 6-12 ofoJournal: get rid of ofoDossier argument in insert,
-                update and delete public methods (see ofoAccount)
+ 212 2014- 6-13 when importing, accept decimal comma as well as decimal
+                dot (and this should be a configuration option of the
+                assistant, as well as the character set)
 
- 208 2014- 6-12 ofoModel: get rid of ofoDossier argument in insert,
-                update and delete public methods (see ofoAccount)
+ 213 2014- 6-13 recurrente entries
 
- 209 2014- 6-12 ofoTaux: get rid of ofoDossier argument in insert,
-                update and delete public methods (see ofoAccount)
+ 214 2014- 6-13 edit rought entries
 
- 210
+ 215 2014- 6-13 assets management
+
+ 216 2014- 6-13 exercice closing
+
+ 217 2014- 6-13 tableau de trésorerie
+
+ 218
 
 -----------------------------------------------------------------------
  DONE
@@ -721,11 +718,33 @@
                 dossier.
      2014- 6- 7 done - svn #3657
 
+ 178 2014- 6- 9 ofaModelsSet: manage update journal (tab labels)
+     2014- 6-12 same item as #52 
+
+ 180 2014- 6- 9 ofoEntry: manage change journal mnemo
+     2014- 6-12 done - svn #3706
+
+ 181 2014- 6- 9 ofoModel: manage change journal mnemo
+     2014- 6-12 ofoModel: manage change taux mnemo
+     2014- 6-12 done - svn #3706
+
  185 2014- 6-10 imported entries must be balanced
      2014- 6-10 done - svn #3681
 
+ 187 2014- 6-10 TauxProperties: the validities begin and end displayed
+                in the treeview do not take into account all validity
+                records
+     2014- 6-13 fixed
+
  189 2014- 6-10 AccountProperties: Balance date: Entry -> Last entry
      2014- 6-11 done - svn #3686
+
+ 190 2014- 6-10 Have a display of journal balances
+     2014- 6-13 done
+
+ 193 2014- 6-11 record the entry most recent effect date in the
+                 journal_exe_dev detail
+     2014- 6-13 done
 
  196 2014- 6-11 journal closing: there is no sens to execure the same 
                 query SELECT MAX(JOU_EXE_LAST_CLO) FROM OFA_T_JOURNAUX_EXE
@@ -748,6 +767,39 @@
 
  200 2015- 6-12 do not try to close a journal at the same date
      2015- 6-12 done - svn #3702
+
+ 201 2014- 6-12 systematize ofo_xxx class connect handlers when opening
+                the dossier
+     2014- 6-12 done for classes who need this - svn #3706
+
+ 202 2014- 6-12 check that dossier is alive when disconnecting the
+                handlers
+     2014- 6-12 done - svn #3706
+
+ 203 2014- 6-12 DATESET_GLOBAL should not be systematic when connecting
+                the handlers. Instead they should be set back when 
+                needed
+     2014- 6-13 done
+
+ 205 2014- 6-12 ofoClass: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
+
+ 206 2014- 6-12 ofoDevise: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
+
+ 207 2014- 6-12 ofoJournal: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
+
+ 208 2014- 6-12 ofoModel: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
+
+ 209 2014- 6-12 ofoTaux: get rid of ofoDossier argument in insert,
+                update and delete public methods (see ofoAccount)
+     2014- 6-13 done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

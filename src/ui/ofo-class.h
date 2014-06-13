@@ -70,9 +70,9 @@ void            ofo_class_set_notes      ( ofoClass *class, const gchar *notes )
 void            ofo_class_set_maj_user   ( ofoClass *class, const gchar *user );
 void            ofo_class_set_maj_stamp  ( ofoClass *class, const GTimeVal *stamp );
 
-gboolean        ofo_class_insert         ( ofoClass *class, const ofoDossier *dossier );
-gboolean        ofo_class_update         ( ofoClass *class, const ofoDossier *dossier, gint prev_id );
-gboolean        ofo_class_delete         ( ofoClass *class, const ofoDossier *dossier );
+gboolean        ofo_class_insert         ( ofoClass *class );
+gboolean        ofo_class_update         ( ofoClass *class, gint prev_id );
+gboolean        ofo_class_delete         ( ofoClass *class );
 
 GSList         *ofo_class_get_csv        ( const ofoDossier *dossier );
 void            ofo_class_import_csv     ( const ofoDossier *dossier, GSList *lines, gboolean with_header );

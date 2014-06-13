@@ -44,6 +44,7 @@
 #include "ui/ofo-devise.h"
 #include "ui/ofo-entry.h"
 #include "ui/ofo-journal.h"
+#include "ui/ofo-model.h"
 #include "ui/ofo-taux.h"
 
 static gboolean pref_quit_on_escape = TRUE;
@@ -168,6 +169,7 @@ static gint       import_account_csv( ofaImport *self );
 static gint       import_devise_csv( ofaImport *self );
 static gint       import_entry_csv( ofaImport *self );
 static gint       import_journal_csv( ofaImport *self );
+static gint       import_model_csv( ofaImport *self );
 static gint       import_taux_csv( ofaImport *self );
 static GSList    *split_csv_content( ofaImport *self );
 static void       free_csv_fields( GSList *fields );
@@ -726,6 +728,9 @@ on_apply( GtkAssistant *assistant, ofaImport *self )
 			case IMPORTER_TYPE_JOURNAL:
 				count = import_journal_csv( self );
 				break;
+			case IMPORTER_TYPE_MODEL:
+				count = import_model_csv( self );
+				break;
 			case IMPORTER_TYPE_RATE:
 				count = import_taux_csv( self );
 				break;
@@ -990,6 +995,41 @@ import_journal_csv( ofaImport *self )
 	}
 
 	ofo_journal_import_csv(
+			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+
+	free_csv_content( lines );
+	return( 0 );
+}
+
+/*
+ * columns:
+ * - 1:mnemo;label;journal;journal_locked;notes
+ * - 2:mnemo;comment;account;account_locked;label;label_locked;debit;debit_locked;credit;credit_locked
+ *
+ * header : yes
+ */
+static gint
+import_model_csv( ofaImport *self )
+{
+	GSList *lines;
+	gchar *str;
+	gboolean ok;
+
+	str = g_strdup( _( "Importing a new reference for entry models will replace the existing list.\n"
+			"Are you sure you want drop all the current models, and reset the list to these new ones ?" ));
+
+	ok = confirm_import( self, str );
+	g_free( str );
+	if( !ok ){
+		return( -1 );
+	}
+
+	lines = split_csv_content( self );
+	if( g_slist_length( lines ) <= 1 ){
+		return( -1 );
+	}
+
+	ofo_model_import_csv(
 			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );

@@ -464,7 +464,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 		g_return_if_fail( ofo_devise_is_deletable( devise ));
 
 		if( delete_confirmed( OFA_DEVISES_SET( page ), devise ) &&
-				ofo_devise_delete( devise, ofa_main_page_get_dossier( page ))){
+				ofo_devise_delete( devise )){
 
 			/* remove the row from the tmodel
 			 * this will cause an automatic new selection */

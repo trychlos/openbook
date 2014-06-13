@@ -87,9 +87,9 @@ void            ofo_taux_set_notes    ( ofoTaux *taux, const gchar *notes );
 void            ofo_taux_set_maj_user ( ofoTaux *taux, const gchar *user );
 void            ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *stamp );
 
-gboolean        ofo_taux_insert       ( ofoTaux *taux, const ofoDossier *dossier );
-gboolean        ofo_taux_update       ( ofoTaux *taux, const ofoDossier *dossier, const gchar *prev_mnemo );
-gboolean        ofo_taux_delete       ( ofoTaux *taux, const ofoDossier *dossier );
+gboolean        ofo_taux_insert       ( ofoTaux *taux );
+gboolean        ofo_taux_update       ( ofoTaux *taux, const gchar *prev_mnemo );
+gboolean        ofo_taux_delete       ( ofoTaux *taux );
 
 GSList         *ofo_taux_get_csv      ( const ofoDossier *dossier );
 void            ofo_taux_import_csv   ( const ofoDossier *dossier, GSList *lines, gboolean with_header );

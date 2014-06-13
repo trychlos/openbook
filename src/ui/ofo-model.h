@@ -91,11 +91,12 @@ gboolean        ofo_model_get_detail_credit_locked ( const ofoModel *model, gint
 
 gboolean        ofo_model_detail_is_formula        ( const gchar *str );
 
-gboolean        ofo_model_insert       ( ofoModel *model, const ofoDossier *dossier );
-gboolean        ofo_model_update       ( ofoModel *model, const ofoDossier *dossier, const gchar *prev_mnemo );
-gboolean        ofo_model_delete       ( ofoModel *model, const ofoDossier *dossier );
+gboolean        ofo_model_insert       ( ofoModel *model );
+gboolean        ofo_model_update       ( ofoModel *model, const gchar *prev_mnemo );
+gboolean        ofo_model_delete       ( ofoModel *model );
 
 GSList         *ofo_model_get_csv      ( const ofoDossier *dossier );
+void            ofo_model_import_csv   ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

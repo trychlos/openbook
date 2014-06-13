@@ -311,13 +311,11 @@ static gboolean
 do_update( ofaDeviseProperties *self )
 {
 	ofaDevisePropertiesPrivate *priv;
-	ofoDossier *dossier;
 	gchar *prev_code;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->private;
-	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
 	prev_code = g_strdup( ofo_devise_get_code( priv->devise ));
 
 	ofo_devise_set_code( priv->devise, priv->code );
@@ -328,10 +326,10 @@ do_update( ofaDeviseProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_devise_insert( priv->devise, dossier );
+				ofo_devise_insert( priv->devise );
 	} else {
 		priv->updated =
-				ofo_devise_update( priv->devise, dossier, prev_code );
+				ofo_devise_update( priv->devise, prev_code );
 	}
 
 	g_free( prev_code );

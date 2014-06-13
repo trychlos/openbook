@@ -87,6 +87,7 @@ gint            ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier 
 
 gint            ofo_dossier_get_exe_by_date         ( const ofoDossier *dossier, const GDate *date );
 
+const GDate    *ofo_dossier_get_exe_deb             ( const ofoDossier *dossier, gint exe_id );
 const GDate    *ofo_dossier_get_exe_fin             ( const ofoDossier *dossier, gint exe_id );
 
 const GDate    *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );

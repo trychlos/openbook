@@ -93,8 +93,8 @@ static gboolean       taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, 
 static gboolean       taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd );
 static gint           taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo );
 static gint           taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent );
-static ofoTaux        *taux_import_csv_taux( GSList *fields, gint count, gint *errors );
-static sTauxValid     *taux_import_csv_valid( GSList *fields, gint count, gint *errors, gchar **mnemo );
+static ofoTaux       *taux_import_csv_taux( GSList *fields, gint count, gint *errors );
+static sTauxValid    *taux_import_csv_valid( GSList *fields, gint count, gint *errors, gchar **mnemo );
 static gboolean       taux_do_drop_content( const ofoSgbd *sgbd );
 
 static void
@@ -443,7 +443,7 @@ ofo_taux_get_max_valid( const ofoTaux *taux )
 			sval = ( sTauxValid * ) iv->data;
 			if( !max ){
 				max = &sval->end;
-			} else if( my_utils_date_cmp( &sval->end, max, FALSE ) < 0 ){
+			} else if( my_utils_date_cmp( &sval->end, max, FALSE ) > 0 ){
 				max = &sval->end;
 			}
 		}
@@ -748,26 +748,24 @@ taux_set_val_taux( sTauxValid *tv, gdouble value )
  * previously existing old validity rows.
  */
 gboolean
-ofo_taux_insert( ofoTaux *taux, const ofoDossier *dossier )
+ofo_taux_insert( ofoTaux *taux )
 {
 	static const gchar *thisfn = "ofo_taux_insert";
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		g_debug( "%s: taux=%p, dossier=%p",
-				thisfn, ( void * ) taux, ( void * ) dossier );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
+		g_debug( "%s: taux=%p", thisfn, ( void * ) taux );
 
 		if( taux_do_insert(
 					taux,
-					ofo_dossier_get_sgbd( dossier ),
-					ofo_dossier_get_user( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, taux );
+
 			return( TRUE );
 		}
 	}
@@ -912,28 +910,26 @@ taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
  * Only update here the main properties.
  */
 gboolean
-ofo_taux_update( ofoTaux *taux, const ofoDossier *dossier, const gchar *prev_mnemo )
+ofo_taux_update( ofoTaux *taux, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_taux_update";
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		g_debug( "%s: taux=%p, dossier=%p, prev_mnemo=%s",
-				thisfn, ( void * ) taux, ( void * ) dossier, prev_mnemo );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
+		g_debug( "%s: taux=%p, prev_mnemo=%s", thisfn, ( void * ) taux, prev_mnemo );
 
 		if( taux_do_update(
 					taux,
 					prev_mnemo,
-					ofo_dossier_get_sgbd( dossier ),
-					ofo_dossier_get_user( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_UPDATE_DATASET( st_global, taux, prev_mnemo );
+
 			return( TRUE );
 		}
 	}
@@ -999,26 +995,24 @@ taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, c
  * ofo_taux_delete:
  */
 gboolean
-ofo_taux_delete( ofoTaux *taux, const ofoDossier *dossier )
+ofo_taux_delete( ofoTaux *taux )
 {
 	static const gchar *thisfn = "ofo_taux_delete";
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
 	g_return_val_if_fail( ofo_taux_is_deletable( taux ), FALSE );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		g_debug( "%s: taux=%p, dossier=%p",
-				thisfn, ( void * ) taux, ( void * ) dossier );
-
-		OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
+		g_debug( "%s: taux=%p", thisfn, ( void * ) taux );
 
 		if( taux_do_delete(
 					taux,
-					ofo_dossier_get_sgbd( dossier ))){
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, taux );
+
 			return( TRUE );
 		}
 	}
@@ -1252,8 +1246,6 @@ ofo_taux_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
-
 	new_set = NULL;
 	count = 0;
 	errors = 0;
@@ -1298,17 +1290,20 @@ ofo_taux_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 	if( !errors ){
 		st_global->send_signal_new = FALSE;
 
-		g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-		st_global->dataset = NULL;
-
 		taux_do_drop_content( ofo_dossier_get_sgbd( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
-			ofo_taux_insert( OFO_TAUX( ise->data ), dossier );
+			taux_do_insert(
+					OFO_TAUX( ise->data ),
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ));
 		}
 
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_TAUX );
+		if( st_global ){
+			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
+			st_global->dataset = NULL;
+		}
+		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_TAUX );
 
 		g_list_free( new_set );
 
@@ -1316,7 +1311,7 @@ ofo_taux_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 	}
 }
 
-ofoTaux *
+static ofoTaux *
 taux_import_csv_taux( GSList *fields, gint count, gint *errors )
 {
 	static const gchar *thisfn = "ofo_taux_import_csv_taux";
@@ -1361,7 +1356,7 @@ taux_import_csv_taux( GSList *fields, gint count, gint *errors )
 	return( taux );
 }
 
-sTauxValid *
+static sTauxValid *
 taux_import_csv_valid( GSList *fields, gint count, gint *errors, gchar **mnemo )
 {
 	static const gchar *thisfn = "ofo_taux_import_csv_valid";
