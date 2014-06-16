@@ -1582,8 +1582,8 @@ ofo_account_get_csv( const ofoDossier *dossier )
 	GSList *lines;
 	gchar *str, *stamp;
 	ofoAccount *account;
-	gchar *sdeb, *scre, *sbrodeb, *sbrocre;
-	const gchar *devise, *atype, *notes, *muser;
+	gchar *notes, *sdeb, *scre, *sbrodeb, *sbrocre;
+	const gchar *devise, *atype, *muser;
 	const GDate *date;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
@@ -1600,7 +1600,7 @@ ofo_account_get_csv( const ofoDossier *dossier )
 
 		devise = ofo_account_get_devise( account );
 		atype = ofo_account_get_type_account( account );
-		notes = ofo_account_get_notes( account );
+		notes = my_utils_export_multi_lines( ofo_account_get_notes( account ));
 		muser = ofo_account_get_maj_user( account );
 		stamp = my_utils_str_from_stamp( ofo_account_get_maj_stamp( account ));
 		date = ofo_account_get_deb_date( account );
@@ -1649,6 +1649,7 @@ ofo_account_get_csv( const ofoDossier *dossier )
 				sbrocre,
 				ofo_account_get_bro_cre_mnt( account ));
 
+		g_free( notes );
 		g_free( stamp );
 		g_free( sdeb );
 		g_free( scre );

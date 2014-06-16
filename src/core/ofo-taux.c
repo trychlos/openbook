@@ -1142,9 +1142,9 @@ ofo_taux_get_csv( const ofoDossier *dossier )
 	GSList *lines;
 	gchar *str, *stamp;
 	ofoTaux *taux;
-	const gchar *notes, *muser;
+	const gchar *muser;
 	sTauxValid *sdet;
-	gchar *sbegin, *send;
+	gchar *sbegin, *send, *notes;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
 
@@ -1159,7 +1159,7 @@ ofo_taux_get_csv( const ofoDossier *dossier )
 	for( set=st_global->dataset ; set ; set=set->next ){
 		taux = OFO_TAUX( set->data );
 
-		notes = ofo_taux_get_notes( taux );
+		notes = my_utils_export_multi_lines( ofo_taux_get_notes( taux ));
 		muser = ofo_taux_get_maj_user( taux );
 		stamp = my_utils_str_from_stamp( ofo_taux_get_maj_stamp( taux ));
 
@@ -1170,6 +1170,7 @@ ofo_taux_get_csv( const ofoDossier *dossier )
 				muser ? muser : "",
 				muser ? stamp : "" );
 
+		g_free( notes );
 		g_free( stamp );
 
 		lines = g_slist_prepend( lines, str );

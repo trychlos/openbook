@@ -732,9 +732,9 @@ ofo_devise_get_csv( const ofoDossier *dossier )
 {
 	GList *set;
 	GSList *lines;
-	gchar *str, *stamp;
+	gchar *str, *stamp, *notes;
 	ofoDevise *devise;
-	const gchar *notes, *muser;
+	const gchar *muser;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
 
@@ -746,7 +746,7 @@ ofo_devise_get_csv( const ofoDossier *dossier )
 	for( set=st_global->dataset ; set ; set=set->next ){
 		devise = OFO_DEVISE( set->data );
 
-		notes = ofo_devise_get_notes( devise );
+		notes = my_utils_export_multi_lines( ofo_devise_get_notes( devise ));
 		muser = ofo_devise_get_maj_user( devise );
 		stamp = my_utils_str_from_stamp( ofo_devise_get_maj_stamp( devise ));
 
@@ -759,6 +759,7 @@ ofo_devise_get_csv( const ofoDossier *dossier )
 				muser ? muser : "",
 				muser ? stamp : "" );
 
+		g_free( notes );
 		g_free( stamp );
 
 		lines = g_slist_prepend( lines, str );

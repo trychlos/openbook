@@ -1425,9 +1425,9 @@ ofo_model_get_csv( const ofoDossier *dossier )
 {
 	GList *set, *det;
 	GSList *lines;
-	gchar *str, *stamp;
+	gchar *str, *notes, *stamp;
 	ofoModel *model;
-	const gchar *notes, *muser;
+	const gchar *muser;
 	sModDetail *sdet;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
@@ -1443,7 +1443,7 @@ ofo_model_get_csv( const ofoDossier *dossier )
 	for( set=st_global->dataset ; set ; set=set->next ){
 		model = OFO_MODEL( set->data );
 
-		notes = ofo_model_get_notes( model );
+		notes = my_utils_export_multi_lines( ofo_model_get_notes( model ));
 		muser = ofo_model_get_maj_user( model );
 		stamp = my_utils_str_from_stamp( ofo_model_get_maj_stamp( model ));
 
@@ -1456,6 +1456,7 @@ ofo_model_get_csv( const ofoDossier *dossier )
 				muser ? muser : "",
 				muser ? stamp : "" );
 
+		g_free( notes );
 		g_free( stamp );
 
 		lines = g_slist_prepend( lines, str );

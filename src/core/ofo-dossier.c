@@ -1877,10 +1877,10 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 {
 	GSList *lines;
 	gchar *str, *stamp;
-	const gchar *devise, *notes, *muser;
+	const gchar *devise, *muser;
 	GList *exe;
 	sDetailExe *sexe;
-	gchar *sbegin, *send;
+	gchar *sbegin, *send, *notes;
 
 	lines = NULL;
 
@@ -1890,7 +1890,7 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	str = g_strdup_printf( "2;ExeBegin;ExeEnd;LastEntry;Status" );
 	lines = g_slist_prepend( lines, str );
 
-	notes = ofo_dossier_get_notes( dossier );
+	notes = my_utils_export_multi_lines( ofo_dossier_get_notes( dossier ));
 	g_debug( "notes=%s", notes );
 	muser = ofo_dossier_get_maj_user( dossier );
 	stamp = my_utils_str_from_stamp( ofo_dossier_get_maj_stamp( dossier ));
@@ -1904,6 +1904,7 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 			ofo_dossier_get_exercice_length( dossier ),
 			devise ? devise : "" );
 
+	g_free( notes );
 	g_free( stamp );
 
 	lines = g_slist_prepend( lines, str );

@@ -1748,12 +1748,12 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 {
 	GList *set, *exe, *amount;
 	GSList *lines;
-	gchar *str, *stamp, *sdfin, *sdclo;
+	gchar *str, *notes, *stamp, *sdfin, *sdclo;
 	ofoJournal *journal;
 	sDetailExe *sexe;
 	sDetailDev *sdev;
 	const GDate *date;
-	const gchar *notes, *muser;
+	const gchar *muser;
 	gchar *sdebd, *scred;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, journal );
@@ -1772,7 +1772,7 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 	for( set=st_global->dataset ; set ; set=set->next ){
 		journal = OFO_JOURNAL( set->data );
 
-		notes = ofo_journal_get_notes( journal );
+		notes = my_utils_export_multi_lines( ofo_journal_get_notes( journal ));
 		muser = ofo_journal_get_maj_user( journal );
 		stamp = my_utils_str_from_stamp( ofo_journal_get_maj_stamp( journal ));
 
@@ -1783,6 +1783,7 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 				muser ? muser : "",
 				muser ? stamp : "" );
 
+		g_free( notes );
 		g_free( stamp );
 
 		lines = g_slist_prepend( lines, str );

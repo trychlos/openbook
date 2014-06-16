@@ -260,6 +260,47 @@ my_utils_timestamp( void )
 }
 
 /**
+ * my_utils_export_multi_lines:
+ *
+ * Exports a multi-lines string by joining each line with a pipe '|'.
+ *
+ * Returns a newly allocated string that the caller should g_free().
+ */
+gchar *
+my_utils_export_multi_lines( const gchar *str )
+{
+	static const gchar *thisfn = "my_utils_export_multi_lines";
+	gchar *export;
+	GRegex *regex;
+	GError *error;
+
+	export = NULL;
+	error = NULL;
+
+	if( str && g_utf8_strlen( str, -1 )){
+
+		regex = g_regex_new( "\n", 0, 0, &error );
+		if( error ){
+			g_warning( "%s: g_regex_new=%s", thisfn, error->message );
+			g_error_free( error );
+			return( NULL );
+		}
+
+		export = g_regex_replace_literal( regex, str, -1, 0, "|", 0, &error );
+		if( error ){
+			g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
+			g_error_free( error );
+			g_regex_unref( regex );
+			return( NULL );
+		}
+
+		g_regex_unref( regex );
+	}
+
+	return( export );
+}
+
+/**
  * my_utils_parse_boolean:
  *
  * Parse a string to a boolean.
