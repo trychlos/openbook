@@ -1,0 +1,144 @@
+1;Mnemo;Label;Journal;JournalLocked;Notes;MajUser;MajStamp
+2;Mnemo;Comment;Account;AccountLocked;Label;LabelLocked;Debit;DebitLocked;Credit;CreditLocked
+1;TVAPEP;Reversement de TVA sur un exercice précédent;ACH;False;;ofat;16-06-2014 08:34:00
+2;TVAPEP;Montant;44582;False;;False;;False;;True
+2;TVAPEP;Montant;51241;False;=L1;True;;True;=SOLDE;True
+1;TVAPEC;Reversement de TVA sur l'exercice courant;ACH;False;;ofat;16-06-2014 08:33:08
+2;TVAPEC;Montant;44583;False;;False;;False;;True
+2;TVAPEC;Montant;51241;False;=L1;True;;True;=SOLDE;True
+1;IMMACQ;Acquisition d'immobilisation;ACH;False;;ofat;16-06-2014 08:31:51
+2;IMMACQ;Montant HT;2141;False;;False;;False;;True
+2;IMMACQ;Montant TVA (taux normal);445683;False;=L1;True;=D1*TVAN;False;;True
+2;IMMACQ;Montant TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;UFFBRS;Boursorama - Frais financiers;ACH;False;;ofat;16-06-2014 08:30:00
+2;UFFBRS;Montant;6715;False;Cotisation Boursorama Protection;False;;False;;True
+2;UFFBRS;Montant;51541;False;=L1;True;;True;=SOLDE;True
+1;UFFLCL;LCL - Frais financiers;ACH;False;Non soumis à TVA.;ofat;16-06-2014 08:28:46
+2;UFFLCL;Montant;6712;False;Abonnement formule Zen;False;15,96;False;;True
+2;UFFLCL;Montant;51241;False;=L1;True;;True;=SOLDE;True
+1;EFBAFF;Frais d'affranchissement;ACH;False;Non soumis à TVA.Le plus souvent réglé en espèces.;ofat;16-06-2014 08:26:47
+2;EFBAFF;Montant;6623;False;;False;;False;;True
+2;EFBAFF;Montant;531;False;=L1;True;;True;=SOLDE;True
+1;LATADS;Latresne - ADSL et frais de télécoms (mixte);ACH;False;;ofat;16-06-2014 08:25:25
+2;LATADS;Montant HT;6642;False;;False;;False;;True
+2;LATADS;Montant TVA (taux normal);445623;False;=L1;True;=D1*TVAN;False;;True
+2;LATADS;Montant TTC prélevé;51241;False;=L1;True;;True;=SOLDE;True
+1;TLCGSM;Abonnement mobile (GSM);ACH;False;;ofat;16-06-2014 08:23:42
+2;TLCGSM;Montant HT;6641;False;;False;;False;;True
+2;TLCGSM;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;TLCGSM;Montant TTC prélevé;51241;False;=L1;True;;True;=SOLDE;True
+1;FRR;Frais de réception et de représentation;ACH;False;;ofat;16-06-2014 08:21:56
+2;FRR;Montant HT;6611;False;;False;;False;;True
+2;FRR;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;FRR;Montant TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;EFBUR;Fournitures de bureau;ACH;False;;ofat;16-06-2014 08:20:09
+2;EFBUR;Montant HT;6621;False;;False;;False;;True
+2;EFBUR;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;EFBUR;Montant TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;EFBDOC;Documentation générale;ACH;False;;ofat;16-06-2014 08:19:12
+2;EFBDOC;Montant HT;6622;False;;False;;False;;True
+2;EFBDOC;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;EFBDOC;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;COTSP;Cotisations syndicales et professionnelles;ACH;False;;ofat;16-06-2014 08:15:41
+2;COTSP;Montant;6661;False;;False;;False;;True
+2;COTSP;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;COTSP;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;ARCTLC;Arcueil - ADSL (Club-Internet - SFR);ACH;False;;ofat;16-06-2014 08:13:54
+2;ARCTLC;Montant HT;6643;False;;False;;False;;True
+2;ARCTLC;Montant TVA (taux réduit);445672;False;=L1;True;=D1*TVAR1;False;;True
+2;ARCTLC;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;ARCTLC;Solde TTC prélevé;51241;False;=L1;True;;True;=SOLDE;True
+1;CSPURS;URSSAF - Allocations familiales;ACH;False;;ofat;16-06-2014 08:11:30
+2;CSPURS;Montant;6523;False;;False;;False;;True
+2;CSPURS;Montant;51241;False;=L1;True;;True;=SOLDE;True
+1;CSPRAM;RAM/RSI - Sécurité Sociale / Assurance maladie;ACH;False;;ofat;16-06-2014 08:10:35
+2;CSPRAM;Montant;6521;False;;False;;False;;True
+2;CSPRAM;Montant;51241;False;=L1;True;;True;=SOLDE;True
+1;CSPMOC;MGEN-Filia - Mutuelle maladie (ex-Mocen);ACH;False;;ofat;16-06-2014 08:09:29
+2;CSPMOC;Montant;6541;False;;False;;False;;True
+2;CSPMOC;Montant;51241;False;=L1;True;;True;=SOLDE;True
+1;CSPCIP;CIPAV - Caisse de retraite;ACH;False;;ofat;16-06-2014 08:07:47
+2;CSPCIP;Montant;6522;False;;False;;False;;True
+2;CSPCIP;Montant;51241;False;=L1;True;;True;=SOLDE;True
+1;VEHHFZ;Véhicule - Autres frais exceptionnels (mixte);ACH;False;;ofat;16-06-2014 08:06:19
+2;VEHHFZ;Montant HT;6413;False;;False;;False;;True
+2;VEHHFZ;Montant TVA (taux réduit);;False;=L1;True;=D1*TVAR1;False;;True
+2;VEHHFZ;Montant TVA (taux normal);;False;=L1;True;=D1*TVAN;False;;True
+2;VEHHFZ;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;VEHHFK;Véhicule - Parking, péages (mixte);ACH;False;Les frais de parking et de péage ne sont pas pris en charge par le forfait kilométrique;ofat;16-06-2014 08:03:59
+2;VEHHFK;Montant HT;6412;False;;False;;False;;True
+2;VEHHFK;Montant TVA (taux réduit);;False;=L1;True;=D1*TVAR1;False;;True
+2;VEHHFK;Montant TVA (taux normal);;False;=L1;True;=D1*TVAN;False;;True
+2;VEHHFK;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;VEHFOR;Véhicule - Entretien standard, carburant (mixte);ACH;False;L'entretien standard et le carburant sont pris en compte dans le forfait kilométrique fourni par l'administration fiscale. Si l'usager fait le choix d'utiliser ce forfait, alors ces montants sont à réintégrer dans les dépenses personnelles de l'exploitant.;ofat;16-06-2014 08:00:31
+2;VEHFOR;Montant HT;6411;False;;False;;False;;True
+2;VEHFOR;Montant TVA ( taux réduit);;False;=L1;True;=D1*TVAR1;False;;True
+2;VEHFOR;Montant TVA ( taux normal);445633;False;=L1;True;=D1*TVAN;False;;True
+2;VEHFOR;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;DEPSNC;SNCF Bordeaux-Paris;ACH;False;Inclus l'abonnement Fréquence et les billets. Non soumis à TVA;ofat;16-06-2014 07:56:10
+2;DEPSNC;Montant;6451;False;Aller-retour Bordeaux-Paris;False;96;False;;True
+2;DEPSNC;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;DEPESB;Effia Stationnement Bordeaux Le Roy;ACH;False;Abonnement place de parking;ofat;16-06-2014 07:54:24
+2;DEPESB;Montant HT;6452;False;Abonnement Effia - Stationnement Bordeaux Le Roy;False;62,71;False;;True
+2;DEPESB;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;DEPESB;Solde TTC prélevé;51241;False;=L1;True;;True;=SOLDE;True
+1;DEPZ;Autres frais de déplacements;ACH;False;;ofat;16-06-2014 07:51:44
+2;DEPZ;Montant HT;6488;False;;False;;False;;True
+2;DEPZ;Montant TVA (taux réduit);445672;False;=L1;True;=D1*TVAR1;False;;True
+2;DEPZ;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;DEPZ;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;TLCDOM;Telcos - Redevances pour les domaines Internet;ACH;False;;ofat;16-06-2014 08:22:13
+2;TLCDOM;Montant HT + liste des domaines;;False;;False;;False;;True
+2;TLCDOM;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;TLCDOM;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;PEMAOU;Petits matériels et outillages;ACH;False;;ofat;16-06-2014 07:46:23
+2;PEMAOU;Montant HT;6311;False;;False;;False;;True
+2;PEMAOU;Montant TVA (taux réduit);445672;False;=L1;True;=D1*TVAR1;False;;True
+2;PEMAOU;Montant TVA (taux normal);445673;False;=L1;True;=D1*TVAN;False;;True
+2;PEMAOU;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;VEHASS;Véhicule - Assurance (mixte);ACH;False;L'assurance du véhicule à usage mixte est prise en compte dans le forfait kilométrique fourni par l'administration fiscale. Si le choix d'utiliser ce forfait est effectué, alors ce montant devra être réintégré dans les dépenses personnelles de l'exploitant.;ofat;16-06-2014 07:41:00
+2;VEHASS;Montant;6386;False;;False;;False;;True
+2;VEHASS;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;LATASS;Latresne - Assurance (mixte);ACH;False;;ofat;16-06-2014 07:37:06
+2;LATASS;Montant;6384;False;;False;;False;;True
+2;LATASS;Solde TTC réglé;51441;False;=L1;True;;True;=SOLDE;True
+1;AVRASS;Avon - Assurance;LMNP;False;;ofat;16-06-2014 07:35:43
+2;AVRASS;Montant;;False;;False;;False;;True
+2;AVRASS;Solde TTC réglé;51541;False;=L1;True;;True;=SOLDE;True
+1;ARCASS;Arcueil - Assurance;ACH;False;;ofat;16-06-2014 07:34:16
+2;ARCASS;Montant;6385;False;;False;;False;;True
+2;ARCASS;Solde TTC réglé;51241;False;=L1;True;;True;=SOLDE;True
+1;LATENT;Latresne - Entretien et petits aménagements (mixte);ACH;False;;ofat;16-06-2014 07:32:58
+2;LATENT;Montant HT;6324;False;;False;;False;;True
+2;LATENT;Montant TVA (taux réduit);445612;False;=L1;True;=D1*TVAR1;False;;True
+2;LATENT;Montant TVA (taux normal);445613;False;=L1;True;=D1*TVAN;False;;True
+2;LATENT;Solde TTC réglé;51241;False;=L1;True;;False;=SOLDE;True
+1;LATEAU;Latresne - Syndicat des Eaux (mixte);ACH;False;;ofat;16-06-2014 07:30:31
+2;LATEAU;Montant HT;6321;False;;False;;False;;True
+2;LATEAU;Montant TVA /abonnement (taux réduit);445611;False;=L1;True;=D1*TVAR2;False;;True
+2;LATEAU;Montant TVA (taux normal);445613;False;=L1;True;=D1*TVAN;False;;True
+2;LATEAU;Solde TTC réglé;51441;False;=L1;True;;True;=SOLDE;True
+1;LATEDF;Latresne - EdF (mixte);ACH;False;;ofat;16-06-2014 07:30:42
+2;LATEDF;Montant HT;6322;False;;False;;False;;True
+2;LATEDF;Montant TVA /abonnement (taux réduit);445611;False;=L1;True;=D1*TVAR2;False;;True
+2;LATEDF;Montant  TVA (taux normal);445613;False;=L1;True;=D1*TVAN;False;;True
+2;LATEDF;Solde TTC réglé;51441;False;=L1;True;;True;=SOLDE;True
+1;ARCLOY;Arcueil - Loyers;ACH;False;;ofat;16-06-2014 07:22:21
+2;ARCLOY;Montant loyer;6338;False;;False;495,48;False;;True
+2;ARCLOY;Montant loyer;51241;False;=L1;True;;True;=SOLDE;True
+1;HOHORE;Honoraires hors rétrocessions;ACH;True;;ofat;16-06-2014 07:18:16
+2;HOHORE;Montant HT;6371;False;;False;;False;;True
+2;HOHORE;Montant TVA;445673;False;=L1;True;=D1*TVAN;False;;True
+2;HOHORE;Solde TTC;51241;False;=L1;True;;True;=SOLDE;True
+1;LATIMP;Latresne - Impôts et taxes (mixte);ACH;False;;ofat;16-06-2014 07:22:07
+2;LATIMP;Montant;6215;False;;False;;False;;True
+2;LATIMP;Montant;51241;False;=L1;True;;True;=SOLDE;True
+1;AVIMP;Avron - Impôts et taxes;LMNP;False;;ofat;16-06-2014 07:18:54
+2;AVIMP;Montant;;False;;False;;False;;True
+2;AVIMP;Montant;51541;False;=L1;True;;True;=SOLDE;True
+1;ARCIMP;Arcueil - Impôts et taxe;ACH;True;;ofat;16-06-2014 07:21:25
+2;ARCIMP;Montant;6216;False;;False;;False;;True
+2;ARCIMP;Montant;51241;False;=L1;True;;True;=SOLDE;True
+1;IMPZAU;Autres impôts et taxes;ACH;True;;ofat;16-06-2014 07:10:53
+2;IMPZAU;Montant;6219;False;;False;;False;;True
+2;IMPZAU;Montant;51241;False;=L1;True;;True;=SOLDE;True

@@ -1523,6 +1523,8 @@ ofo_model_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
 
+	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+
 	new_set = NULL;
 	count = 0;
 	errors = 0;
@@ -1744,6 +1746,6 @@ model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo
 static gboolean
 model_do_drop_content( const ofoSgbd *sgbd )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODEL" ) &&
-			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODEL_DET" ));
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODELES" ) &&
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODELES_DET" ));
 }

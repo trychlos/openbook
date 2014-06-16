@@ -1696,6 +1696,8 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
 
+	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+
 	new_set = NULL;
 	count = 0;
 	errors = 0;

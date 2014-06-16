@@ -797,6 +797,8 @@ ofo_devise_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
 
+	OFO_BASE_SET_GLOBAL( st_global, dossier, devise );
+
 	new_set = NULL;
 	count = 0;
 	errors = 0;
