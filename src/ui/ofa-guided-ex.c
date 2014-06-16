@@ -1051,7 +1051,7 @@ find_column_def_from_letter( ofaGuidedEx *self, gchar letter )
 	gint i;
 
 	for( i=0 ; st_col_defs[i].column_id ; ++i ){
-		if( st_col_defs[i].letter[0] == letter ){
+		if( st_col_defs[i].letter && st_col_defs[i].letter[0] == letter ){
 			return(( const sColumnDef * ) &st_col_defs[i] );
 		}
 	}

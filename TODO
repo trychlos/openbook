@@ -258,7 +258,7 @@
                 - class properties
                 - devise properties
                 - dossier properties
-                - guided input
+                - guided input       - done
                 - journal properties - done
                 - model properties
                 - taux properties    - done
@@ -297,8 +297,6 @@
  220 2014- 6-16 GuidedInput-Comment: replace the insensitive entry with
                 a normal label + move it to the right in order to be
                 aligned with account entry
-
- 221 2014- 6-16 GuidedInput: the dialog box has two rows Cancel-OK
 
  222 2014- 6-16 GuidedInput: Cancel should reset the fields (but not
                 the dates)
@@ -838,6 +836,9 @@
  209 2014- 6-12 ofoTaux: get rid of ofoDossier argument in insert,
                 update and delete public methods (see ofoAccount)
      2014- 6-13 done
+
+ 221 2014- 6-16 GuidedInput: the dialog box has two rows Cancel-OK
+     2014- 6-16 done - svn #3717
 
  226 2014- 6-16 Notes should be passed to 4096 chars
      2014- 6-16 done - svn #3713
