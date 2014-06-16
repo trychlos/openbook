@@ -96,6 +96,14 @@ enum {
 	ENT_N_COLUMNS
 };
 
+/* the balance per currency, mostly useful when displaying per journal
+ */
+typedef struct {
+	gdouble debits;
+	gdouble credits;
+}
+	perCurrency;
+
 /* the id of the column is set against some columns of interest */
 #define DATA_COLUMN_ID             "ofa-data-column-id"
 
@@ -126,8 +134,9 @@ static gboolean     on_d_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaView
 static void         on_date_changed( ofaViewEntries *self, GtkEntry *entry, GDate *date, GtkLabel *label );
 static gboolean     layout_dates_is_valid( ofaViewEntries *self );
 static void         refresh_display( ofaViewEntries *self );
-static void         display_entries( ofaViewEntries *self, GList *entries );
-static void         display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry );
+static void         display_entries( ofaViewEntries *self, GList *entries, gboolean display_currency );
+static void         display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry, gboolean display_currency );
+static void         display_balance( const gchar *dev_code, perCurrency *pc, ofaViewEntries *self );
 static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self );
 
 static void
@@ -412,7 +421,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			text_cell, "text", ENT_COL_DEBIT,
 			NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_set_min_width( column, 100 );
+	gtk_tree_view_column_set_min_width( column, 110 );
 	gtk_tree_view_append_column( tview, column );
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -422,7 +431,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			text_cell, "text", ENT_COL_CREDIT,
 			NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_set_min_width( column, 100 );
+	gtk_tree_view_column_set_min_width( column, 110 );
 	gtk_tree_view_append_column( tview, column );
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -430,6 +439,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			"",
 			text_cell, "text", ENT_COL_CURRENCY,
 			NULL );
+	gtk_tree_view_column_set_min_width( column, 32 );	/* "EUR" width */
 	gtk_tree_view_append_column( tview, column );
 
 	select = gtk_tree_view_get_selection( tview );
@@ -504,7 +514,7 @@ display_entries_from_journal( ofaViewEntries *self )
 	if( priv->jou_mnemo && layout_dates_is_valid( self )){
 		entries = ofo_entry_get_dataset_by_journal(
 							priv->dossier, priv->jou_mnemo, &priv->d_from, &priv->d_to );
-		display_entries( self, entries );
+		display_entries( self, entries, TRUE );
 		ofo_entry_free_dataset( entries );
 	}
 }
@@ -559,7 +569,7 @@ display_entries_from_account( ofaViewEntries *self )
 	if( priv->acc_number && layout_dates_is_valid( self )){
 		entries = ofo_entry_get_dataset_by_account(
 							priv->dossier, priv->acc_number, &priv->d_from, &priv->d_to );
-		display_entries( self, entries );
+		display_entries( self, entries, FALSE );
 		ofo_entry_free_dataset( entries );
 	}
 }
@@ -668,42 +678,50 @@ refresh_display( ofaViewEntries *self )
 	}
 }
 
+/*
+ * @display_currency: whether the currency should be displayed on each
+ *  entry line - in all cases, the footer line which displays the
+ *  journal balance also displays the currency
+ */
 static void
-display_entries( ofaViewEntries *self, GList *entries )
+display_entries( ofaViewEntries *self, GList *entries, gboolean display_currency )
 {
 	GtkTreeModel *tmodel;
 	GList *iset;
-	gdouble debits, credits;
-	GtkWidget *total;
-	gchar *str;
+	GHashTable *hash;
+	const gchar *dev_code;
+	perCurrency *pc;
 
 	tmodel = gtk_tree_view_get_model( self->private->entries_tview );
-
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
-	debits = 0;
-	credits = 0;
+	hash = g_hash_table_new_full(
+					( GHashFunc ) g_str_hash,			/* hash_func */
+					( GEqualFunc ) g_str_equal,			/* key_equal_func */
+					( GDestroyNotify ) g_free, 			/* key_destroy_func */
+					( GDestroyNotify ) g_free );		/* value_destroy_func */
 
 	for( iset=entries ; iset ; iset=iset->next ){
-		display_entry( self, tmodel, OFO_ENTRY( iset->data ));
-		debits += ofo_entry_get_debit( OFO_ENTRY( iset->data ));
-		credits += ofo_entry_get_credit( OFO_ENTRY( iset->data ));
+
+		display_entry( self, tmodel, OFO_ENTRY( iset->data ), display_currency );
+
+		dev_code = ofo_entry_get_devise( OFO_ENTRY( iset->data ));
+		pc = ( perCurrency * ) g_hash_table_lookup( hash, dev_code );
+		if( !pc ){
+			pc = g_new0( perCurrency, 1 );
+			pc->debits = 0;
+			pc->credits = 0;
+			g_hash_table_insert( hash, g_strdup( dev_code ), pc );
+		}
+		pc->debits += ofo_entry_get_debit( OFO_ENTRY( iset->data ));
+		pc->credits += ofo_entry_get_credit( OFO_ENTRY( iset->data ));
 	}
 
-	total = my_utils_container_get_child_by_name( self->private->top_box, "p1-tot-debits" );
-	g_return_if_fail( total && GTK_IS_LABEL( total ));
-	str = g_strdup_printf( "%'.2lf", debits );
-	gtk_label_set_text( GTK_LABEL( total ), str );
-	g_free( str );
-
-	total = my_utils_container_get_child_by_name( self->private->top_box, "p1-tot-credits" );
-	g_return_if_fail( total && GTK_IS_LABEL( total ));
-	str = g_strdup_printf( "%'.2lf", credits );
-	gtk_label_set_text( GTK_LABEL( total ), str );
-	g_free( str );
+	g_hash_table_foreach( hash, ( GHFunc ) display_balance, self );
+	g_hash_table_unref( hash );
 }
 
 static void
-display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
+display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry, gboolean display_currency )
 {
 	GtkTreeIter iter;
 	gchar *sdope, *sdeff, *sdeb, *scre, *srappro, *status;
@@ -734,7 +752,7 @@ display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
 				ENT_COL_ACCOUNT,  ofo_entry_get_account( entry ),
 				ENT_COL_DEBIT,    sdeb,
 				ENT_COL_CREDIT,   scre,
-				ENT_COL_CURRENCY, ofo_entry_get_devise( entry ),
+				ENT_COL_CURRENCY, display_currency ? ofo_entry_get_devise( entry ) : "",
 				ENT_COL_RAPPRO,   srappro,
 				ENT_COL_STATUS,   status,
 				ENT_COL_OBJECT,   entry,
@@ -746,6 +764,44 @@ display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
 	g_free( sdeb );
 	g_free( sdeff );
 	g_free( sdope );
+}
+
+static void
+display_balance( const gchar *dev_code, perCurrency *pc, ofaViewEntries *self )
+{
+	GtkWidget *box, *row, *label;
+	gchar *str;
+
+	box = my_utils_container_get_child_by_name( self->private->top_box, "pt-box" );
+	g_return_if_fail( box && GTK_IS_BOX( box ));
+	gtk_container_foreach( GTK_CONTAINER( box ), ( GtkCallback ) gtk_widget_destroy, NULL );
+
+	row = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
+	gtk_box_pack_start( GTK_BOX( box ), row, FALSE, FALSE, 0 );
+
+	label = gtk_label_new( dev_code );
+	gtk_widget_set_margin_right( label, 12 );
+	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	gtk_label_set_text( GTK_LABEL( label ), dev_code );
+	gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
+
+	label = gtk_label_new( NULL );
+	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
+	str = g_strdup_printf( "%'.2lf", pc->credits );
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+	gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
+
+	label = gtk_label_new( NULL );
+	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
+	str = g_strdup_printf( "%'.2lf", pc->debits );
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+	gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
+
+	gtk_widget_show_all( box );
 }
 
 /*

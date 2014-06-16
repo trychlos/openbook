@@ -311,8 +311,6 @@
  225 2014- 6-16 When selecting an account, should be able to create a
                 new account
 
- 226 2014- 6-16 Notes should be passed to 4096 chars
-
  227 2014- 6-16 Duplicate an entry model
 
  228 2014- 6-16 Entry model, after having clicked '+', set the focus
@@ -325,11 +323,10 @@
                 (only the footer balance line is useful)
 
  231 2014- 6-16 Viewing entries: take care of not adding different
-                currencies when viewing per journal
+                currencies when viewing per journal + have a balance
+                per currency
 
  232
-
- 233
 
 -----------------------------------------------------------------------
  DONE
@@ -849,6 +846,9 @@
  209 2014- 6-12 ofoTaux: get rid of ofoDossier argument in insert,
                 update and delete public methods (see ofoAccount)
      2014- 6-13 done
+
+ 226 2014- 6-16 Notes should be passed to 4096 chars
+     2014- 6-16 done - svn #3713
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
