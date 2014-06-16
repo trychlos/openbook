@@ -30,9 +30,9 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-main-page.h"
-#include "ui/ofo-base.h"
+#include "api/ofo-base.h"
 
 /* private instance data
  */

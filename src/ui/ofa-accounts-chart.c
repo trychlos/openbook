@@ -36,8 +36,8 @@
 #include "ui/ofa-accounts-chart.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-view-entries.h"
-#include "ui/ofo-account.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-account.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */

@@ -36,7 +36,7 @@
  */
 
 #include "ui/ofa-base-dialog.h"
-#include "ui/ofo-dossier-def.h"
+#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 

@@ -30,15 +30,15 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-devise-combo.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofo-base.h"
-#include "ui/ofo-account.h"
-#include "ui/ofo-devise.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-base.h"
+#include "api/ofo-account.h"
+#include "api/ofo-devise.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */

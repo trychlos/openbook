@@ -36,7 +36,7 @@
  */
 
 #include "ui/my-dialog.h"
-#include "ui/ofo-journal-def.h"
+#include "api/ofo-journal-def.h"
 
 G_BEGIN_DECLS
 

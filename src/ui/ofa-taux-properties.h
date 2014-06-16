@@ -54,7 +54,7 @@
  */
 
 #include "ui/my-dialog.h"
-#include "ui/ofo-taux-def.h"
+#include "api/ofo-taux-def.h"
 
 G_BEGIN_DECLS
 

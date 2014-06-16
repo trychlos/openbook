@@ -146,8 +146,6 @@
  114 2014- 5-26 dispose_has_run should be a protected data of the
                 ofaMainPage base class
 
- 121 2014- 5-28 import entry models
-
  126 2014- 5-28 have several demo dossiers
 
  129 2014- 5-28 Account: archive balances after closing in ACCOUNT_EXE
@@ -277,16 +275,63 @@
                 assistant, as well as the character set)
 
  213 2014- 6-13 recurrente entries
+     2014- 6-16 to be built as a plugin
 
  214 2014- 6-13 edit rought entries
 
  215 2014- 6-13 assets management
+     2014- 6-16 to be built as a plugin
 
  216 2014- 6-13 exercice closing
 
  217 2014- 6-13 tableau de trésorerie
 
- 218
+ 218 2014- 6-15 this is an error if entry number is not strictly 
+                increasing when we update the account balance
+
+ 219 2014- 6-15 one should take care of not increasing the entry number
+                until going back to zero during a same exercice (but
+                INT_MAX is a very big number)
+     2014- 6-16 maybe by prefixing the entry number with the exercice id
+                thus having a full entry identifier as '1-1234'
+     2014- 6-16 another way may be to just ignore the issue...
+
+ 220 2014- 6-16 GuidedInput-Comment: replace the insensitive entry with
+                a normal label + move it to the right in order to be
+                aligned with account entry
+
+ 221 2014- 6-16 GuidedInput: the dialog box has two rows Cancel-OK
+
+ 222 2014- 6-16 GuidedInput: Cancel should reset the fields (but not
+                the dates)
+
+ 223 2014- 6-16 DossierProperties: add a tab for the current exercice
+                enter begin and end dates, display last entry number
+
+ 224 2014- 6-16 DossierProperties: add a tab for the archived exercices
+
+ 225 2014- 6-16 When selecting an account, should be able to create a
+                new account
+
+ 226 2014- 6-16 Notes should be passed to 4096 chars
+
+ 227 2014- 6-16 Duplicate an entry model
+
+ 228 2014- 6-16 Entry model, after havinh clicked '+', set the focus
+                on the just inserted 'comment' field
+
+ 229 2014- 6-16 Entry model: duplicate a line
+
+ 230 2014- 6-16 Viewing entries: it is not worth to display the 
+                currency code on each line when displaying per account
+                (only the footer balance line is useful)
+
+ 231 2014- 6-16 Viewing entries: take care of not adding different
+                currencies when viewing per journal
+
+ 232
+
+ 233
 
 -----------------------------------------------------------------------
  DONE
@@ -603,6 +648,9 @@
 
  120 2014- 5-28 import accounts
      2014- 6- 6 done - svn #3645
+
+ 121 2014- 5-28 import entry models
+     2014- 6-14 done - svn #3708
 
  122 2014- 5-28 import journals
      2014- 6- 7 done

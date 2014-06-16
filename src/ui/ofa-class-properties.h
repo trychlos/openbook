@@ -37,7 +37,7 @@
 
 #include "ui/ofa-base-dialog.h"
 #include "ui/ofa-main-window-def.h"
-#include "ui/ofo-class-def.h"
+#include "api/ofo-class-def.h"
 
 G_BEGIN_DECLS
 

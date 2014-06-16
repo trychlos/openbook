@@ -40,8 +40,8 @@
  */
 
 #include "ui/ofa-main-window-def.h"
-#include "ui/ofo-dossier-def.h"
-#include "ui/ofo-journal-def.h"
+#include "api/ofo-dossier-def.h"
+#include "api/ofo-journal-def.h"
 
 G_BEGIN_DECLS
 

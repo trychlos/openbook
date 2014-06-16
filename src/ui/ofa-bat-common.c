@@ -30,11 +30,11 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-bat-common.h"
-#include "ui/ofo-base.h"
-#include "ui/ofo-bat.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-base.h"
+#include "api/ofo-bat.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */

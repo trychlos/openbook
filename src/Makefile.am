@@ -24,6 +24,7 @@
 
 SUBDIRS = \
 	api									\
+	core								\
 	import1								\
 	ui									\
 	$(NULL)

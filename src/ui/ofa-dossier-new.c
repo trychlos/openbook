@@ -32,12 +32,12 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-settings.h"
-#include "ui/ofo-dossier.h"
-#include "ui/ofo-sgbd.h"
+#include "api/ofo-dossier.h"
+#include "api/ofo-sgbd.h"
 
 static gboolean pref_quit_on_escape = TRUE;
 static gboolean pref_confirm_on_cancel = FALSE;

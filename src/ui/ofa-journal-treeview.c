@@ -30,11 +30,11 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-journal-treeview.h"
-#include "ui/ofo-journal.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-journal.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */
@@ -671,7 +671,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 	if( OFO_IS_JOURNAL( object )){
 		if( find_row_by_mnemo(
 					self,
-					ofo_journal_get_mnemo( OFO_JOURNAL( object )),
+					prev_id,
 					&tmodel,
 					&iter )){
 

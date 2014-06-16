@@ -28,12 +28,12 @@
 #include <config.h>
 #endif
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofo-account.h"
+#include "api/ofo-account.h"
 
 /* private instance data
  */

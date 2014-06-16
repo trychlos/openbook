@@ -31,7 +31,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-accounts-chart.h"
 #include "ui/ofa-bat-set.h"
 #include "ui/ofa-classes-set.h"
@@ -44,12 +44,13 @@
 #include "ui/ofa-int-closing.h"
 #include "ui/ofa-journals-set.h"
 #include "ui/ofa-models-set.h"
+#include "ui/ofa-print-reconcil.h"
 #include "ui/ofa-rappro.h"
 #include "ui/ofa-taux-set.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-view-entries.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-dossier.h"
 
 static gboolean pref_confirm_on_altf4 = FALSE;
 
@@ -89,6 +90,7 @@ static void on_ope_concil      ( GSimpleAction *action, GVariant *parameter, gpo
 static void on_ope_int_closing ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_print_reconcil  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -106,6 +108,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "iclosing",     on_ope_int_closing,  NULL, NULL, NULL },
 		{ "import",       on_ope_import,       NULL, NULL, NULL },
 		{ "export",       on_ope_export,       NULL, NULL, NULL },
+		{ "prt-reconcil", on_print_reconcil,   NULL, NULL, NULL },
 		{ "accounts",     on_ref_accounts,     NULL, NULL, NULL },
 		{ "journals",     on_ref_journals,     NULL, NULL, NULL },
 		{ "models",       on_ref_models,       NULL, NULL, NULL },
@@ -909,6 +912,19 @@ on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_export_run( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+on_print_reconcil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_export";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_print_reconcil_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void

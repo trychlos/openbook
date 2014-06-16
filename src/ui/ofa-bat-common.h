@@ -39,8 +39,8 @@
  *   BAT file (if with tree view), or of the provided BAT file.
  */
 
-#include "ui/ofo-bat-def.h"
-#include "ui/ofo-dossier-def.h"
+#include "api/ofo-bat-def.h"
+#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 

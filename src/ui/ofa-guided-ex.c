@@ -31,19 +31,19 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-ex.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofo-base.h"
-#include "ui/ofo-account.h"
-#include "ui/ofo-dossier.h"
-#include "ui/ofo-entry.h"
-#include "ui/ofo-journal.h"
-#include "ui/ofo-model.h"
-#include "ui/ofo-taux.h"
+#include "api/ofo-base.h"
+#include "api/ofo-account.h"
+#include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
+#include "api/ofo-journal.h"
+#include "api/ofo-model.h"
+#include "api/ofo-taux.h"
 
 /* private instance data
  */

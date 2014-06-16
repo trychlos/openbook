@@ -28,7 +28,7 @@
 #include <config.h>
 #endif
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/my-window.h"
 #include "ui/my-window-prot.h"
 #include "ui/ofa-main-window.h"
@@ -87,25 +87,27 @@ static void
 my_window_dispose( GObject *instance )
 {
 	myWindow *self;
+	myWindowPrivate *priv;
 
 	g_return_if_fail( instance && MY_IS_WINDOW( instance ));
 
 	self = MY_WINDOW( instance );
+	priv = self->private;
 
 	if( !self->protected->dispose_has_run ){
 
 		self->protected->dispose_has_run = TRUE;
 
-		if( self->private->manage_size_position ){
+		if( priv->manage_size_position && priv->toplevel && priv->window_name ){
 
-			save_window_position(
-					self->private->toplevel,
-					self->private->window_name );
+			save_window_position( priv->toplevel, priv->window_name );
 		}
 
 		/* unref member objects here */
 
-		gtk_widget_destroy( GTK_WIDGET( MY_WINDOW( instance )->private->toplevel ));
+		if( priv->toplevel ){
+			gtk_widget_destroy( GTK_WIDGET( priv->toplevel ));
+		}
 	}
 
 	/* chain up to the parent class */
@@ -115,32 +117,30 @@ my_window_dispose( GObject *instance )
 static void
 my_window_constructed( GObject *instance )
 {
-	myWindow *self;
+	myWindowPrivate *priv;
 	GtkWidget *toplevel;
 
 	g_return_if_fail( instance && MY_IS_WINDOW( instance ));
+	g_return_if_fail( !MY_WINDOW( instance )->protected->dispose_has_run );
 
-	self = MY_WINDOW( instance );
+	priv = MY_WINDOW( instance )->private;
 
-	if( !self->protected->dispose_has_run ){
+	/* first, chain up to the parent class */
+	G_OBJECT_CLASS( my_window_parent_class )->dispose( instance );
 
-		/* first, chain up to the parent class */
-		G_OBJECT_CLASS( my_window_parent_class )->dispose( instance );
+	/* then it is time to load the toplevel from builder
+	 * NB: even if properties are not set by the derived class, then
+	 *     the variables are set, though empty */
+	if( priv->window_xml && g_utf8_strlen( priv->window_xml, -1 ) &&
+		priv->window_name && g_utf8_strlen( priv->window_name, -1 )){
 
-		/* then it is time to load the toplevel from builder */
-		toplevel = my_utils_builder_load_from_path(
-							self->private->window_xml,
-							self->private->window_name );
-
+		toplevel = my_utils_builder_load_from_path( priv->window_xml, priv->window_name );
 		if( toplevel && GTK_IS_WINDOW( toplevel )){
 
-			self->private->toplevel = GTK_WINDOW( toplevel );
+			priv->toplevel = GTK_WINDOW( toplevel );
+			if( priv->manage_size_position ){
 
-			if( self->private->manage_size_position ){
-
-				restore_window_position(
-						self->private->toplevel,
-						self->private->window_name );
+				restore_window_position( priv->toplevel, priv->window_name );
 			}
 		}
 	}
@@ -236,6 +236,12 @@ my_window_init( myWindow *self )
 
 	self->private = g_new0( myWindowPrivate, 1 );
 	self->protected = g_new0( myWindowProtected, 1 );
+
+	self->private->window_xml = NULL;
+	self->private->window_name = NULL;
+	self->private->toplevel = NULL;
+
+	self->protected->dispose_has_run = FALSE;
 }
 
 static void
@@ -323,6 +329,7 @@ restore_window_position( GtkWindow *toplevel, const gchar *name )
 	key = g_strdup_printf( "%s-pos", name );
 	list = ofa_settings_get_uint_list( key );
 	g_free( key );
+	g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
 
 	if( list ){
 		int_list_to_position( list, &x, &y, &width, &height );

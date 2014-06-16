@@ -28,13 +28,13 @@
 #include <config.h>
 #endif
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-settings.h"
-#include "ui/ofo-dossier.h"
-#include "ui/ofo-sgbd.h"
+#include "api/ofo-dossier.h"
+#include "api/ofo-sgbd.h"
 
 /* private instance data
  */

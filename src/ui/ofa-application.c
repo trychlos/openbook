@@ -36,7 +36,7 @@
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-plugin.h"
 #include "ui/ofa-settings.h"
-#include "ui/ofo-sgbd.h"
+#include "api/ofo-sgbd.h"
 
 /* private instance data
  */

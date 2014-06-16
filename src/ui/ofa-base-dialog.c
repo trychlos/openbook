@@ -30,11 +30,11 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-base-dialog.h"
 #include "ui/ofa-base-dialog-prot.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-dossier.h"
 
 #if 0
 static gboolean pref_quit_on_escape = TRUE;

@@ -31,12 +31,12 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
 #include "ui/ofa-class-properties.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofo-class.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-class.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */

@@ -33,7 +33,7 @@
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-set.h"
-#include "ui/ofo-bat.h"
+#include "api/ofo-bat.h"
 
 /* private instance data
  */

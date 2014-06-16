@@ -32,17 +32,17 @@
 
 #include "api/ofa-iimporter.h"
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-importer.h"
 #include "ui/ofa-plugin.h"
 #include "ui/ofa-rappro.h"
-#include "ui/ofo-account.h"
-#include "ui/ofo-bat-line.h"
-#include "ui/ofo-dossier.h"
-#include "ui/ofo-entry.h"
+#include "api/ofo-account.h"
+#include "api/ofo-bat-line.h"
+#include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
 
 /* private instance data
  */

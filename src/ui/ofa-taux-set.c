@@ -30,12 +30,12 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-taux-properties.h"
 #include "ui/ofa-taux-set.h"
-#include "ui/ofo-taux.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-taux.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */

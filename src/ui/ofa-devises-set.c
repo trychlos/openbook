@@ -33,8 +33,8 @@
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-devise-properties.h"
 #include "ui/ofa-devises-set.h"
-#include "ui/ofo-devise.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-devise.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */

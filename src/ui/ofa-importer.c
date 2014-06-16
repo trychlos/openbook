@@ -33,9 +33,9 @@
 #include "api/ofa-iimporter.h"
 #include "ui/ofa-importer.h"
 #include "ui/ofa-plugin.h"
-#include "ui/ofo-bat.h"
-#include "ui/ofo-bat-line.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-bat.h"
+#include "api/ofo-bat-line.h"
+#include "api/ofo-dossier.h"
 
 static gint try_to_import_uri( const ofoDossier *dossier, GList *modules, ofaIImporterParms *parms );
 static gint insert_imported_bat_v1( const ofoDossier *dossier, const gchar *uri, const gchar *format, ofaIImporterBatv1 *batv1 );

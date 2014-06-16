@@ -40,14 +40,10 @@ AM_CPPFLAGS += \
 	$(NULL)
 
 BUILT_SOURCES = \
-	ofa-marshal.c										\
-	ofa-marshal.h										\
 	$(NULL)
 
 openbook_SOURCES = \
 	main.c												\
-	my-utils.c											\
-	my-utils.h											\
 	my-window.c											\
 	my-window.h											\
 	my-window-prot.h									\
@@ -123,6 +119,8 @@ openbook_SOURCES = \
 	ofa-models-set.h									\
 	ofa-plugin.c										\
 	ofa-plugin.h										\
+	ofa-print-reconcil.c								\
+	ofa-print-reconcil.h								\
 	ofa-rappro.c										\
 	ofa-rappro.h										\
 	ofa-settings.c										\
@@ -133,52 +131,10 @@ openbook_SOURCES = \
 	ofa-taux-set.h										\
 	ofa-view-entries.c									\
 	ofa-view-entries.h									\
-	ofo-account.c										\
-	ofo-account.h										\
-	ofo-account-def.h									\
-	ofo-base.c											\
-	ofo-base.h											\
-	ofo-base-def.h										\
-	ofo-base-prot.h										\
-	ofo-bat.c											\
-	ofo-bat.h											\
-	ofo-bat-def.h										\
-	ofo-bat-line.c										\
-	ofo-bat-line.h										\
-	ofo-class.c											\
-	ofo-class.h											\
-	ofo-class-def.h										\
-	ofo-devise.c										\
-	ofo-devise.h										\
-	ofo-devise-def.h									\
-	ofo-dossier.c										\
-	ofo-dossier.h										\
-	ofo-dossier-def.h									\
-	ofo-entry.c											\
-	ofo-entry.h											\
-	ofo-journal.c										\
-	ofo-journal.h										\
-	ofo-journal-def.h									\
-	ofo-sgbd.c											\
-	ofo-sgbd.h											\
-	ofo-sgbd-def.h										\
-	ofo-model.c											\
-	ofo-model.h											\
-	ofo-model-def.h										\
-	ofo-taux.c											\
-	ofo-taux.h											\
-	ofo-taux-def.h										\
-	$(BUILT_SOURCES)									\
 	$(NULL)
 
-ofa-marshal.h: ofa-marshal.def $(GLIB_GENMARSHAL)
-	$(GLIB_GENMARSHAL) $< --header --prefix=ofa_cclosure_marshal > $@
-
-ofa-marshal.c: ofa-marshal.def $(GLIB_GENMARSHAL)
-	echo "#include \"ofa-marshal.h\"" > $@ && \
-	$(GLIB_GENMARSHAL) $< --body --prefix=ofa_cclosure_marshal >> $@
-
 openbook_LDADD = \
+	$(top_builddir)/src/core/libofa-core.la				\
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
 
@@ -188,7 +144,7 @@ actions_files = \
 	$(NULL)
 
 rc_files = \
-	ofa.css
+	ofa.css												\
 	$(NULL)
 
 ui_files = \
@@ -208,6 +164,7 @@ ui_files = \
 	ofa-int-closing.ui									\
 	ofa-journal-properties.ui							\
 	ofa-model-properties.ui								\
+	ofa-print-reconcil.ui								\
 	ofa-taux-properties.ui								\
 	ofa-view-entries.ui									\
 	$(NULL)

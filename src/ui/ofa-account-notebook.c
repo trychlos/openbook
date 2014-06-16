@@ -30,12 +30,12 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-account-notebook.h"
-#include "ui/ofo-account.h"
-#include "ui/ofo-class.h"
-#include "ui/ofo-devise.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-account.h"
+#include "api/ofo-class.h"
+#include "api/ofo-devise.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */

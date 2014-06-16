@@ -25,7 +25,31 @@
 api_includedir = $(pkgincludedir)
 
 api_include_HEADERS = \
-	ofa-extension.h						\
+	ofa-extension.h										\
 	\
-	ofa-iimporter.h						\
+	ofa-iimporter.h										\
+	\
+	ofo-account.h										\
+	ofo-account-def.h									\
+	ofo-base.h											\
+	ofo-base-def.h										\
+	ofo-base-prot.h										\
+	ofo-bat.h											\
+	ofo-bat-def.h										\
+	ofo-bat-line.h										\
+	ofo-class.h											\
+	ofo-class-def.h										\
+	ofo-devise.h										\
+	ofo-devise-def.h									\
+	ofo-dossier.h										\
+	ofo-dossier-def.h									\
+	ofo-entry.h											\
+	ofo-journal.h										\
+	ofo-journal-def.h									\
+	ofo-sgbd.h											\
+	ofo-sgbd-def.h										\
+	ofo-model.h											\
+	ofo-model-def.h										\
+	ofo-taux.h											\
+	ofo-taux-def.h										\
 	$(NULL)

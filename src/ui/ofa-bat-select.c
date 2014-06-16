@@ -28,12 +28,12 @@
 #include <config.h>
 #endif
 
-#include "ui/my-utils.h"
+#include "core/my-utils.h"
 #include "ui/ofa-base-dialog-prot.h"
 #include "ui/ofa-bat-common.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofo-bat.h"
+#include "api/ofo-bat.h"
 
 /* private instance data
  */

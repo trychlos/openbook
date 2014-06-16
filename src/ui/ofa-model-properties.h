@@ -69,7 +69,7 @@
  */
 
 #include "ui/ofa-base-dialog.h"
-#include "ui/ofo-model-def.h"
+#include "api/ofo-model-def.h"
 
 G_BEGIN_DECLS
 

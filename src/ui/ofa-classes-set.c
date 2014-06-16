@@ -34,8 +34,8 @@
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-class-properties.h"
 #include "ui/ofa-classes-set.h"
-#include "ui/ofo-class.h"
-#include "ui/ofo-dossier.h"
+#include "api/ofo-class.h"
+#include "api/ofo-dossier.h"
 
 /* private instance data
  */
