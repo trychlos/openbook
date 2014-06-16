@@ -318,14 +318,6 @@
 
  229 2014- 6-16 Entry model: duplicate a line
 
- 230 2014- 6-16 Viewing entries: it is not worth to display the 
-                currency code on each line when displaying per account
-                (only the footer balance line is useful)
-
- 231 2014- 6-16 Viewing entries: take care of not adding different
-                currencies when viewing per journal + have a balance
-                per currency
-
  232
 
 -----------------------------------------------------------------------
@@ -849,6 +841,16 @@
 
  226 2014- 6-16 Notes should be passed to 4096 chars
      2014- 6-16 done - svn #3713
+
+ 230 2014- 6-16 Viewing entries: it is not worth to display the 
+                currency code on each line when displaying per account
+                (only the footer balance line is useful)
+     2014- 6-16 done - svn #3714
+
+ 231 2014- 6-16 Viewing entries: take care of not adding different
+                currencies when viewing per journal + have a balance
+                per currency
+     2014- 6-16 done - svn #3714
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

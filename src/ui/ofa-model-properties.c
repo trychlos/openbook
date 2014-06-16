@@ -286,6 +286,10 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	init_dialog_detail( self );
 	check_for_enable_dlg( self );
+
+	gtk_widget_grab_focus(
+			my_utils_container_get_child_by_name(
+						GTK_CONTAINER( dialog->prot->dialog ), "p1-mnemo" ));
 }
 
 static void
@@ -375,12 +379,10 @@ init_dialog_detail( ofaModelProperties *self )
 						GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-details" );
 	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
 
+	add_button( self, GTK_STOCK_ADD, DET_COL_ADD, 1, DETAIL_SPACE, 0 );
 	count = ofo_model_get_detail_count( self->private->model );
 	for( i=1 ; i<=count ; ++i ){
 		insert_new_row( self, i );
-	}
-	if( !count ){
-		add_button( self, GTK_STOCK_ADD, DET_COL_ADD, 1, DETAIL_SPACE, 0 );
 	}
 }
 
@@ -439,12 +441,8 @@ add_empty_row( ofaModelProperties *self )
 	row = self->private->count + 1;
 	g_return_if_fail( row >= 1 );
 
-	/* the first time we enter for updating a model, the grid is fully
-	 * empty */
 	widget = gtk_grid_get_child_at( self->private->grid, DET_COL_ADD, row );
-	if( widget ){
-		gtk_widget_destroy( widget );
-	}
+	gtk_widget_destroy( widget );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -462,6 +460,7 @@ add_empty_row( ofaModelProperties *self )
 	gtk_widget_set_margin_left( GTK_WIDGET( entry ), 2*DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_grid_attach( self->private->grid, GTK_WIDGET( entry ), DET_COL_COMMENT, row, 1, 1 );
+	gtk_widget_grab_focus( GTK_WIDGET( entry ));
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
