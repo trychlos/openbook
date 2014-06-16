@@ -57,6 +57,7 @@ gchar         *my_utils_str_from_stamp     ( const GTimeVal *stamp );
 gchar         *my_utils_timestamp          ( void );
 
 gchar         *my_utils_export_multi_lines ( const gchar *str );
+gchar         *my_utils_import_multi_lines ( const gchar *str );
 
 gboolean       my_utils_parse_boolean      ( const gchar *str, gboolean *bvar );
 

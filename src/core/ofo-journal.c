@@ -1869,6 +1869,7 @@ ofo_journal_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 	gint count;
 	gint errors;
 	const gchar *str;
+	gchar *splitted;
 
 	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
 			thisfn,
@@ -1913,7 +1914,9 @@ ofo_journal_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 			if( ico ){
 				str = ( const gchar * ) ico->data;
 				if( str && g_utf8_strlen( str, -1 )){
-					ofo_journal_set_notes( journal, str );
+					splitted = my_utils_import_multi_lines( str );
+					ofo_journal_set_notes( journal, splitted );
+					g_free( splitted );
 				}
 			} else {
 				continue;

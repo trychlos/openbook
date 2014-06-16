@@ -1601,6 +1601,7 @@ model_import_csv_model( GSList *fields, gint count, gint *errors )
 	const gchar *str;
 	GSList *ico;
 	gboolean locked;
+	gchar *splitted;
 
 	model = ofo_model_new();
 
@@ -1655,7 +1656,9 @@ model_import_csv_model( GSList *fields, gint count, gint *errors )
 	if( ico ){
 		str = ( const gchar * ) ico->data;
 		if( str && g_utf8_strlen( str, -1 )){
-			ofo_model_set_notes( model, str );
+			splitted = my_utils_import_multi_lines( str );
+			ofo_model_set_notes( model, splitted );
+			g_free( splitted );
 		}
 	}
 

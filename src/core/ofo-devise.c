@@ -791,6 +791,7 @@ ofo_devise_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 	gint count;
 	gint errors;
 	const gchar *str;
+	gchar *splitted;
 
 	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
 			thisfn,
@@ -851,7 +852,9 @@ ofo_devise_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 			if( ico ){
 				str = ( const gchar * ) ico->data;
 				if( str && g_utf8_strlen( str, -1 )){
-					ofo_devise_set_notes( devise, str );
+					splitted = my_utils_import_multi_lines( str );
+					ofo_devise_set_notes( devise, splitted );
+					g_free( splitted );
 				}
 			} else {
 				continue;

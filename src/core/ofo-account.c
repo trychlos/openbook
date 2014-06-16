@@ -1690,6 +1690,7 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 	const gchar *str, *dev_code, *def_dev_code;
 	gchar *type;
 	ofoDevise *devise;
+	gchar *splitted;
 
 	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
 			thisfn,
@@ -1768,7 +1769,9 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 			if( ico ){
 				str = ( const gchar * ) ico->data;
 				if( str && g_utf8_strlen( str, -1 )){
-					ofo_account_set_notes( account, str );
+					splitted = my_utils_import_multi_lines( str );
+					ofo_account_set_notes( account, splitted );
+					g_free( splitted );
 				}
 			} else {
 				continue;

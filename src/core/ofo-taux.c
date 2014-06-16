@@ -1321,6 +1321,7 @@ taux_import_csv_taux( GSList *fields, gint count, gint *errors )
 	ofoTaux *taux;
 	const gchar *str;
 	GSList *ico;
+	gchar *splitted;
 
 	taux = ofo_taux_new();
 
@@ -1352,7 +1353,9 @@ taux_import_csv_taux( GSList *fields, gint count, gint *errors )
 	if( ico ){
 		str = ( const gchar * ) ico->data;
 		if( str && g_utf8_strlen( str, -1 )){
-			ofo_taux_set_notes( taux, str );
+			splitted = my_utils_import_multi_lines( str );
+			ofo_taux_set_notes( taux, splitted );
+			g_free( splitted );
 		}
 	}
 

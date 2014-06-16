@@ -301,6 +301,42 @@ my_utils_export_multi_lines( const gchar *str )
 }
 
 /**
+ * my_utils_import_multi_lines:
+ *
+ * Imports a multi-lines string by splitting on a pipe '|' character.
+ *
+ * Returns a newly allocated string that the caller should g_free().
+ */
+gchar *
+my_utils_import_multi_lines( const gchar *str )
+{
+	GString *import;
+	gchar **array, **iter;
+
+	import = NULL;
+
+	if( str && g_utf8_strlen( str, -1 )){
+
+		array = g_strsplit( str, "|", -1 );
+		iter = array;
+
+		while( *iter ){
+			if( import ){
+				import = g_string_append( import, "\n" );
+			} else {
+				import = g_string_new( "" );
+			}
+			import = g_string_append( import, *iter );
+			iter++;
+		}
+
+		g_strfreev( array );
+	}
+
+	return( import ? g_string_free( import, FALSE ) : NULL );
+}
+
+/**
  * my_utils_parse_boolean:
  *
  * Parse a string to a boolean.
