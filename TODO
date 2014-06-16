@@ -231,8 +231,6 @@
      2014- 6-13 no: this should be left sorted as the user entered the
                 data - so let him reorder the lines
 
- 188 2014- 6-10 ImportAssistant: doesn't know import multi-lines notes
-
  191 2014- 6-11 Note that a multi-currency journal is not balanced per
                 currency, and so its global balance cannot be checked
 
@@ -317,7 +315,7 @@
 
  227 2014- 6-16 Duplicate an entry model
 
- 228 2014- 6-16 Entry model, after havinh clicked '+', set the focus
+ 228 2014- 6-16 Entry model, after having clicked '+', set the focus
                 on the just inserted 'comment' field
 
  229 2014- 6-16 Entry model: duplicate a line
@@ -783,6 +781,9 @@
                 in the treeview do not take into account all validity
                 records
      2014- 6-13 fixed
+
+ 188 2014- 6-10 ImportAssistant: doesn't know import multi-lines notes
+     2014- 6-16 done - svn #3712
 
  189 2014- 6-10 AccountProperties: Balance date: Entry -> Last entry
      2014- 6-11 done - svn #3686
