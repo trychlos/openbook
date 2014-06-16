@@ -428,7 +428,7 @@ v_setup_buttons( ofaMainPage *page )
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 30 );
+	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 27 );
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_New..." )));
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_new_clicked ), page );

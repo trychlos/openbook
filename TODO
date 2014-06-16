@@ -313,9 +313,6 @@
 
  227 2014- 6-16 Duplicate an entry model
 
- 228 2014- 6-16 Entry model, after having clicked '+', set the focus
-                on the just inserted 'comment' field
-
  229 2014- 6-16 Entry model: duplicate a line
 
  232
@@ -841,6 +838,10 @@
 
  226 2014- 6-16 Notes should be passed to 4096 chars
      2014- 6-16 done - svn #3713
+
+ 228 2014- 6-16 Entry model, after having clicked '+', set the focus
+                on the just inserted 'comment' field
+     2014- 6-16 done - svn #3715
 
  230 2014- 6-16 Viewing entries: it is not worth to display the 
                 currency code on each line when displaying per account

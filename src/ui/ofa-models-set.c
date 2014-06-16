@@ -57,6 +57,7 @@ struct _ofaModelsSetPrivate {
 	GtkNotebook   *book;				/* one page per journal d'imputation */
 	GtkTreeView   *tview;				/* the treeview of the current page */
 	GtkTreeModel  *tmodel;
+	GtkButton     *duplicate_btn;
 	GtkButton     *guided_input_btn;
 };
 
@@ -104,6 +105,7 @@ static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaModelsSet *self, ofoModel *model );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaModelsSet *self );
+static void       on_duplicate( GtkButton *button, ofaModelsSet *self );
 static void       on_guided_input( GtkButton *button, ofaModelsSet *self );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaModelsSet *self );
 
@@ -268,10 +270,14 @@ v_setup_buttons( ofaMainPage *page )
 
 	buttons_box = GTK_BOX(
 					OFA_MAIN_PAGE_CLASS( ofa_models_set_parent_class )->setup_buttons( page ));
-	gtk_widget_set_margin_right( GTK_WIDGET( buttons_box ), 4 );
+
+	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "Dup_licate" )));
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_duplicate ), page );
+	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
+	OFA_MODELS_SET( page )->private->duplicate_btn = button;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 25 );
+	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 12 );
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 0 );
 
@@ -597,6 +603,8 @@ enable_buttons( ofaModelsSet *self, GtkTreeSelection *selection )
 	}
 
 	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->duplicate_btn ), select_ok );
+	gtk_widget_set_sensitive(
 			GTK_WIDGET( self->private->guided_input_btn ), select_ok );
 }
 
@@ -792,6 +800,47 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaModelsSet *self )
 
 	} else if( OFO_IS_JOURNAL( object )){
 		/* a journal has been deleted */
+	}
+}
+
+static void
+on_duplicate( GtkButton *button, ofaModelsSet *self )
+{
+	static const gchar *thisfn = "ofa_models_set_on_duplicate";
+	ofaModelsSetPrivate *priv;
+	GtkTreeSelection *select;
+	GtkTreeIter iter;
+	ofoModel *model;
+	ofoModel *duplicate;
+	gchar *str;
+
+	g_return_if_fail( OFA_IS_MODELS_SET( self ));
+
+	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
+
+	priv = self->private;
+
+	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
+	g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
+
+	select = gtk_tree_view_get_selection( priv->tview );
+	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
+
+		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &model, -1 );
+		g_object_unref( model );
+
+		duplicate = ofo_model_new();
+		ofo_model_copy( model, duplicate );
+		str = ofo_model_get_mnemo_new_from( model );
+		ofo_model_set_mnemo( duplicate, str );
+		g_free( str );
+		str = g_strdup_printf( "%s (%s)", ofo_model_get_label( model ), _( "Duplicate" ));
+		ofo_model_set_label( duplicate, str );
+		g_free( str );
+
+		if( !ofo_model_insert( duplicate )){
+			g_object_unref( duplicate );
+		}
 	}
 }
 

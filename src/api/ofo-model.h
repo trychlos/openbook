@@ -50,8 +50,10 @@ gboolean        ofo_model_use_journal       ( const ofoDossier *dossier, const g
 gboolean        ofo_model_use_taux          ( const ofoDossier *dossier, const gchar *mnemo );
 
 ofoModel       *ofo_model_new               ( void );
+ofoModel       *ofo_model_copy              ( const ofoModel *src, ofoModel *dest );
 
 const gchar    *ofo_model_get_mnemo         ( const ofoModel *model );
+gchar          *ofo_model_get_mnemo_new_from( const ofoModel *model );
 const gchar    *ofo_model_get_label         ( const ofoModel *model );
 const gchar    *ofo_model_get_journal       ( const ofoModel *model );
 gboolean        ofo_model_get_journal_locked( const ofoModel *model );

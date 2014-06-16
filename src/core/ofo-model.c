@@ -72,6 +72,9 @@ typedef struct {
 }
 	sModDetail;
 
+/* mnemonic max length */
+#define MNEMO_LENGTH                    6
+
 G_DEFINE_TYPE( ofoModel, ofo_model, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, model )
@@ -572,12 +575,49 @@ ofo_model_new( void )
 }
 
 /**
+ * ofo_model_copy:
+ */
+ofoModel *
+ofo_model_copy( const ofoModel *src, ofoModel *dest )
+{
+	gint count, i;
+
+	g_return_val_if_fail( src && OFO_IS_MODEL( src ), NULL );
+	g_return_val_if_fail( dest && OFO_IS_MODEL( dest ), NULL );
+
+	if( !OFO_BASE( src )->prot->dispose_has_run ){
+
+		ofo_model_set_mnemo( dest, ofo_model_get_mnemo( src ));
+		ofo_model_set_label( dest, ofo_model_get_label( src ));
+		ofo_model_set_journal( dest, ofo_model_get_journal( src ));
+		ofo_model_set_journal_locked( dest, ofo_model_get_journal_locked( src ));
+		ofo_model_set_notes( dest, ofo_model_get_notes( src ));
+
+		count = ofo_model_get_detail_count( src );
+		for( i=0 ; i<count ; ++i ){
+			ofo_model_add_detail( dest,
+					ofo_model_get_detail_comment( src, i ),
+					ofo_model_get_detail_account( src, i ),
+					ofo_model_get_detail_account_locked( src, i ),
+					ofo_model_get_detail_label( src, i ),
+					ofo_model_get_detail_label_locked( src, i ),
+					ofo_model_get_detail_debit( src, i ),
+					ofo_model_get_detail_debit_locked( src, i ),
+					ofo_model_get_detail_credit( src, i ),
+					ofo_model_get_detail_credit_locked( src, i ));
+		}
+	}
+
+	return( dest );
+}
+
+/**
  * ofo_model_get_mnemo:
  */
 const gchar *
 ofo_model_get_mnemo( const ofoModel *model )
 {
-	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+	g_return_val_if_fail( model && OFO_IS_MODEL( model ), NULL );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
@@ -588,12 +628,55 @@ ofo_model_get_mnemo( const ofoModel *model )
 }
 
 /**
+ * ofo_model_get_mnemo_new_from:
+ *
+ * Returns a new mnemo derived from the given one, as a newly allocated
+ * string that the caller should g_free().
+ */
+gchar *
+ofo_model_get_mnemo_new_from( const ofoModel *model )
+{
+	const gchar *mnemo;
+	gint len_mnemo;
+	gchar *str;
+	gint i, maxlen;
+
+	g_return_val_if_fail( model && OFO_IS_MODEL( model ), NULL );
+	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), NULL );
+
+	str = NULL;
+
+	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		mnemo = ofo_model_get_mnemo( model );
+		len_mnemo = g_utf8_strlen( mnemo, -1 );
+		for( i=2 ; ; ++i ){
+			/* if we are greater than 9999, there is a problem... */
+			maxlen = ( i < 10 ? MNEMO_LENGTH-1 :
+						( i < 100 ? MNEMO_LENGTH-2 :
+						( i < 1000 ? MNEMO_LENGTH-3 : MNEMO_LENGTH-4 )));
+			if( maxlen < len_mnemo ){
+				str = g_strdup_printf( "%*.*s%d", maxlen, maxlen, mnemo, i );
+			} else {
+				str = g_strdup_printf( "%s%d", mnemo, i );
+			}
+			if( !ofo_model_get_by_mnemo( OFO_DOSSIER( st_global->dossier ), str )){
+				break;
+			}
+			g_free( str );
+		}
+	}
+
+	return( str );
+}
+
+/**
  * ofo_model_get_label:
  */
 const gchar *
 ofo_model_get_label( const ofoModel *model )
 {
-	g_return_val_if_fail( OFO_IS_MODEL( model ), NULL );
+	g_return_val_if_fail( model && OFO_IS_MODEL( model ), NULL );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
