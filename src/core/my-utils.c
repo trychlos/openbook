@@ -514,6 +514,7 @@ my_utils_entry_set_valid( GtkEntry *entry, gboolean valid )
 	if( !css_provider ){
 		css_provider = gtk_css_provider_new();
 		error = NULL;
+		/*g_debug( "%s: css=%s", thisfn, PKGUIDIR "/ofa.css" );*/
 		if( !gtk_css_provider_load_from_path( css_provider, PKGUIDIR "/ofa.css", &error )){
 			g_warning( "%s: %s", thisfn, error->message );
 			g_error_free( error );

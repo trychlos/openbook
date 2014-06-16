@@ -142,6 +142,20 @@ typedef struct {
 	 * The base class default implementation returns %TRUE.
 	 */
 	gboolean ( *quit_on_ok )          ( myDialog *dialog );
+
+	/**
+	 * quit_on_code:
+	 * @dialog:
+	 *
+	 * Ask whether the dialog box should quit on the specified response
+	 * code.
+	 *
+	 * The implementation should returns %TRUE in order to allow to
+	 * terminate the dialog box, %FALSE else.
+	 *
+	 * The base class default implementation returns %FALSE.
+	 */
+	gboolean ( *quit_on_code )        ( myDialog *dialog, gint code );
 }
 	myDialogClass;
 

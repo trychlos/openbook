@@ -382,9 +382,11 @@ ok_to_terminate( ofaBaseDialog *self, gint code )
 		case GTK_RESPONSE_CANCEL:
 			quit = do_quit_on_cancel( self );
 			break;
-
 		case GTK_RESPONSE_OK:
 			quit = do_quit_on_ok( self );
+			break;
+		default:
+			quit = FALSE;
 			break;
 	}
 

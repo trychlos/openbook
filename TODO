@@ -311,11 +311,14 @@
  225 2014- 6-16 When selecting an account, should be able to create a
                 new account
 
- 227 2014- 6-16 Duplicate an entry model
-
  229 2014- 6-16 Entry model: duplicate a line
 
- 232
+ 232 2014- 6-16 ofaGuidedEx: seg fault
+
+ 233 2014- 6-16 factorize the code common to ofaGuidedInput and
+                 ofaGuidedEx
+
+ 234
 
 -----------------------------------------------------------------------
  DONE
@@ -838,6 +841,9 @@
 
  226 2014- 6-16 Notes should be passed to 4096 chars
      2014- 6-16 done - svn #3713
+
+ 227 2014- 6-16 Duplicate an entry model
+     2014- 6-16 done - svn #3716
 
  228 2014- 6-16 Entry model, after having clicked '+', set the focus
                 on the just inserted 'comment' field

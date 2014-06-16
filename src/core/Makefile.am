@@ -24,6 +24,8 @@
 
 pkglib_LTLIBRARIES = libofa-core.la
 
+ui_datadir = $(pkgdatadir)/ui
+
 AM_CPPFLAGS += \
 	-I $(top_srcdir)									\
 	-I $(top_srcdir)/src								\

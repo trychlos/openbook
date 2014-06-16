@@ -60,6 +60,8 @@ static gboolean do_quit_on_close( myDialog *dialog );
 static gboolean v_quit_on_close( myDialog *dialog );
 static gboolean do_quit_on_ok( myDialog *dialog );
 static gboolean v_quit_on_ok( myDialog *dialog );
+static gboolean do_quit_on_code( myDialog *dialog, gint code );
+static gboolean v_quit_on_code( myDialog *dialog, gint code );
 
 static void
 my_dialog_finalize( GObject *instance )
@@ -117,6 +119,7 @@ my_dialog_class_init( myDialogClass *klass )
 	MY_DIALOG_CLASS( klass )->quit_on_cancel = v_quit_on_cancel;
 	MY_DIALOG_CLASS( klass )->quit_on_close = v_quit_on_close;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	MY_DIALOG_CLASS( klass )->quit_on_code = v_quit_on_code;
 }
 
 /**
@@ -240,9 +243,11 @@ ok_to_terminate( myDialog *self, gint code )
 		case GTK_RESPONSE_CANCEL:
 			quit = do_quit_on_cancel( self );
 			break;
-
 		case GTK_RESPONSE_OK:
 			quit = do_quit_on_ok( self );
+			break;
+		default:
+			quit = do_quit_on_code( self, code );
 			break;
 	}
 
@@ -339,4 +344,27 @@ static gboolean
 v_quit_on_ok( myDialog *self )
 {
 	return( TRUE );
+}
+
+static gboolean
+do_quit_on_code( myDialog *dialog, gint code )
+{
+	gboolean ok_to_quit;
+
+	g_return_val_if_fail( dialog && MY_IS_DIALOG( dialog ), FALSE );
+
+	if( MY_DIALOG_GET_CLASS( dialog )->quit_on_code ){
+		ok_to_quit = MY_DIALOG_GET_CLASS( dialog )->quit_on_code( dialog, code );
+
+	} else {
+		ok_to_quit = v_quit_on_code( dialog, code );
+	}
+
+	return( ok_to_quit );
+}
+
+static gboolean
+v_quit_on_code( myDialog *dialog, gint code )
+{
+	return( FALSE );
 }
