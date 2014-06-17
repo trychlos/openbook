@@ -311,12 +311,15 @@
 
  229 2014- 6-16 Entry model: duplicate a line
 
- 232 2014- 6-16 ofaGuidedEx: seg fault
-
  233 2014- 6-16 factorize the code common to ofaGuidedInput and
                  ofaGuidedEx
 
- 234
+ 234 2014- 6-17 the ofaMainPage derived-classes should be named
+                ofaPagexxxxx
+
+ 235 2014- 6-17 xxxx_get_type() function should be in xxxx-def.h file
+
+ 236
 
 -----------------------------------------------------------------------
  DONE
@@ -859,6 +862,9 @@
                 currencies when viewing per journal + have a balance
                 per currency
      2014- 6-16 done - svn #3714
+
+ 232 2014- 6-16 ofaGuidedEx: seg fault
+     2014- 6-16 done - svn #3718
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

@@ -42,6 +42,7 @@
 
 #include "ui/my-window-prot.h"
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-guided-common.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofa-main-window.h"
@@ -50,6 +51,7 @@
  */
 struct _ofaGuidedInputPrivate {
 
+	ofaGuidedCommon *common;
 	/* internals
 	 */
 	const ofoModel *model;
