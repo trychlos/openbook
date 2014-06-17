@@ -311,9 +311,6 @@
 
  229 2014- 6-16 Entry model: duplicate a line
 
- 233 2014- 6-16 factorize the code common to ofaGuidedInput and
-                 ofaGuidedEx
-
  234 2014- 6-17 the ofaMainPage derived-classes should be named
                 ofaPagexxxxx
 
@@ -865,6 +862,10 @@
 
  232 2014- 6-16 ofaGuidedEx: seg fault
      2014- 6-16 done - svn #3718
+
+ 233 2014- 6-16 factorize the code common to ofaGuidedInput and
+                 ofaGuidedEx
+     2014- 6-17 done - svn #3721  
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
