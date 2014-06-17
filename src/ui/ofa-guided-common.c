@@ -49,39 +49,40 @@
 /* private instance data
  */
 struct _ofaGuidedCommonPrivate {
-	gboolean        dispose_has_run;
+	gboolean         dispose_has_run;
 
 	/* input parameters at instanciation time
 	 */
-	ofaMainWindow  *main_window;
-	ofoDossier     *dossier;
-	GtkContainer   *parent;
+	ofaMainWindow   *main_window;
+	ofoDossier      *dossier;
+	GtkContainer    *parent;
 
 	/* when selecting a model
 	 */
-	const ofoModel *model;
+	const ofoModel  *model;
 
 	/* data
 	 */
-	GDate           last_closed_exe;	/* last closed exercice of the dossier */
-	gchar          *journal;
-	GDate           last_closing;		/* max of closed exercice and closed journal */
-	GDate           dope;
-	GDate           deff;
-	gdouble         total_debits;
-	gdouble         total_credits;
+	GDate            last_closed_exe;	/* last closed exercice of the dossier */
+	gchar           *journal;
+	GDate            last_closing;		/* max of closed exercice and closed journal */
+	GDate            dope;
+	GDate            deff;
+	gdouble          total_debits;
+	gdouble          total_credits;
 
 	/* UI
 	 */
-	GtkLabel       *model_label;
-	GtkEntry       *dope_entry;
-	GtkEntry       *deffet_entry;
-	gboolean        deffet_has_focus;
-	gboolean        deffet_changed_while_focus;
-	GtkGrid        *entries_grid;					/* entries view container */
-	gint            entries_count;
-	GtkEntry       *comment;
-	GtkButton      *ok_btn;
+	GtkLabel        *model_label;
+	ofaJournalCombo *journal_combo;
+	GtkEntry        *dope_entry;
+	GtkEntry        *deffet_entry;
+	gboolean         deffet_has_focus;
+	gboolean         deffet_changed_while_focus;
+	GtkGrid         *entries_grid;					/* entries view container */
+	gint             entries_count;
+	GtkEntry        *comment;
+	GtkButton       *ok_btn;
 };
 
 /*
@@ -109,6 +110,7 @@ typedef struct {
 	gint            width;
 	float           xalign;
 	gboolean        expand;
+	gboolean        is_double;
 }
 	sColumnDef;
 
@@ -127,7 +129,7 @@ static sColumnDef st_col_defs[] = {
 		{ COL_ACCOUNT,
 				"A",
 				ofo_model_get_detail_account,
-				ofo_model_get_detail_account_locked, 10, 0.0, FALSE },
+				ofo_model_get_detail_account_locked, 10,            0, FALSE, FALSE },
 		{ COL_ACCOUNT_SELECT,
 				NULL,
 				NULL,
@@ -135,16 +137,25 @@ static sColumnDef st_col_defs[] = {
 		{ COL_LABEL,
 				"L",
 				ofo_model_get_detail_label,
-				ofo_model_get_detail_label_locked,   20, 0.0, TRUE },
+				ofo_model_get_detail_label_locked,   20,            0, TRUE,  FALSE },
 		{ COL_DEBIT,
 				"D",
 				ofo_model_get_detail_debit,
-				ofo_model_get_detail_debit_locked,   AMOUNTS_WIDTH, 1.0, FALSE },
+				ofo_model_get_detail_debit_locked,   AMOUNTS_WIDTH, 1, FALSE, TRUE },
 		{ COL_CREDIT,
 				"C",
 				ofo_model_get_detail_credit,
-				ofo_model_get_detail_credit_locked,  AMOUNTS_WIDTH, 1.0, FALSE },
+				ofo_model_get_detail_credit_locked,  AMOUNTS_WIDTH, 1, FALSE, TRUE },
 		{ 0 }
+};
+
+/* operators in formula
+ */
+enum {
+	OPE_MINUS = 1,
+	OPE_PLUS,
+	OPE_PROD,
+	OPE_DIV
 };
 
 #define DATA_COLUMN				    "data-entry-left"
@@ -156,10 +167,11 @@ static GDate st_last_deff = { 0 };
 G_DEFINE_TYPE( ofaGuidedCommon, ofa_guided_common, G_TYPE_OBJECT )
 
 static void              setup_from_dossier( ofaGuidedCommon *self );
+static void              setup_journal_combo( ofaGuidedCommon *self );
 static void              setup_dates( ofaGuidedCommon *self );
 static void              setup_misc( ofaGuidedCommon *self );
+static void              init_journal_combo( ofaGuidedCommon *self );
 static void              setup_model_data( ofaGuidedCommon *self );
-static void              setup_journal_combo( ofaGuidedCommon *self );
 static void              setup_entries_grid( ofaGuidedCommon *self );
 static void              add_entry_row( ofaGuidedCommon *self, gint i );
 static void              add_entry_row_set( ofaGuidedCommon *self, gint col_id, gint row );
@@ -187,7 +199,11 @@ static void              check_for_enable_dlg( ofaGuidedCommon *self );
 static gboolean          is_dialog_validable( ofaGuidedCommon *self );
 static void              update_all_formulas( ofaGuidedCommon *self );
 static void              update_formula( ofaGuidedCommon *self, const gchar *formula, GtkEntry *entry );
-static gdouble           compute_formula_solde( ofaGuidedCommon *self, gint column_id, gint row );
+static gint              formula_parse_operator( ofaGuidedCommon *self, const gchar *formula, const gchar *token );
+static gdouble           formula_compute_solde( ofaGuidedCommon *self, GtkEntry *entry );
+static void              formula_set_entry_idem( ofaGuidedCommon *self, GtkEntry *entry );
+static gdouble           formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *token, GtkEntry *entry, gboolean *display );
+static void              formula_error( ofaGuidedCommon *self, const gchar *str );
 static void              update_all_totals( ofaGuidedCommon *self );
 static gdouble           get_amount( ofaGuidedCommon *self, gint col_id, gint row );
 static gboolean          check_for_journal( ofaGuidedCommon *self );
@@ -286,6 +302,7 @@ ofa_guided_common_new( ofaMainWindow *main_window, GtkContainer *parent )
 	self->private->dossier = ofa_main_window_get_dossier( main_window );
 
 	setup_from_dossier( self );
+	setup_journal_combo( self );
 	setup_dates( self );
 	setup_misc( self );
 
@@ -310,6 +327,27 @@ setup_from_dossier( ofaGuidedCommon *self )
 		memcpy( &priv->last_closed_exe, date, sizeof( GDate ));
 	}
 
+}
+
+static void
+setup_journal_combo( ofaGuidedCommon *self )
+{
+	ofaGuidedCommonPrivate *priv;
+	ofaJournalComboParms parms;
+
+	priv = self->private;
+
+	parms.container = priv->parent;
+	parms.dossier = priv->dossier;
+	parms.combo_name = "p1-journal";
+	parms.label_name = NULL;
+	parms.disp_mnemo = FALSE;
+	parms.disp_label = TRUE;
+	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
+	parms.user_data = self;
+	parms.initial_mnemo = priv->journal;
+
+	priv->journal_combo = ofa_journal_combo_new( &parms );
 }
 
 /*
@@ -380,7 +418,7 @@ setup_misc( ofaGuidedCommon *self )
  * ofa_guided_common_set_model:
  */
 void
-ofa_guided_common_set_model( ofaGuidedCommon *self, ofoModel *model )
+ofa_guided_common_set_model( ofaGuidedCommon *self, const ofoModel *model )
 {
 	ofaGuidedCommonPrivate *priv;
 	gint i;
@@ -399,10 +437,28 @@ ofa_guided_common_set_model( ofaGuidedCommon *self, ofoModel *model )
 		priv->model = model;
 		priv->entries_count = 0;
 
+		init_journal_combo( self );
 		setup_model_data( self );
-		setup_journal_combo( self );
 		setup_entries_grid( self );
+
+		check_for_enable_dlg( self );
 	}
+}
+
+static void
+init_journal_combo( ofaGuidedCommon *self )
+{
+	ofaGuidedCommonPrivate *priv;
+	GtkWidget *combo;
+
+	priv = self->private;
+	priv->journal = g_strdup( ofo_model_get_journal( priv->model ));
+
+	ofa_journal_combo_set_selection( priv->journal_combo, priv->journal );
+
+	combo = my_utils_container_get_child_by_name( priv->parent, "p1-journal" );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	gtk_widget_set_sensitive( combo, !ofo_model_get_journal_locked( priv->model ));
 }
 
 static void
@@ -412,34 +468,6 @@ setup_model_data( ofaGuidedCommon *self )
 
 	priv = self->private;
 	gtk_label_set_text( priv->model_label, ofo_model_get_label( priv->model ));
-}
-
-static void
-setup_journal_combo( ofaGuidedCommon *self )
-{
-	ofaGuidedCommonPrivate *priv;
-	GtkWidget *combo;
-	ofaJournalComboParms parms;
-
-	priv = self->private;
-
-	priv->journal = g_strdup( ofo_model_get_journal( priv->model ));
-
-	parms.container = priv->parent;
-	parms.dossier = priv->dossier;
-	parms.combo_name = "p1-journal";
-	parms.label_name = NULL;
-	parms.disp_mnemo = FALSE;
-	parms.disp_label = TRUE;
-	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
-	parms.user_data = self;
-	parms.initial_mnemo = priv->journal;
-
-	ofa_journal_combo_init_combo( &parms );
-
-	combo = my_utils_container_get_child_by_name( parms.container, "p1-journal" );
-	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
-	gtk_widget_set_sensitive( combo, !ofo_model_get_journal_locked( priv->model ));
 }
 
 static void
@@ -992,112 +1020,239 @@ update_all_formulas( ofaGuidedCommon *self )
 	}
 }
 
+/*
+ * a formula is something like '=[operator]<token><operator><token>...'
+ * i.e. an equal sign '=', followed by a list of pairs '<operator><token>'
+ * apart maybe the first operator which defaults to '+'
+ *
+ * operators are '-', '+', '*' and '/'
+ *
+ * tokens are:
+ * - [ALDC]<row_number>
+ *    A: account
+ *     L: label
+ *      D: debit
+ *       C: credit
+ * or:
+ * - a token:
+ *   SOLDE
+ *   IDEM (same column, previous row)
+ * or:
+ * - a rate mnemonic
+ */
 static void
 update_formula( ofaGuidedCommon *self, const gchar *formula, GtkEntry *entry )
 {
 	static const gchar *thisfn = "ofa_guided_common_update_formula";
-	ofaGuidedCommonPrivate *priv;
 	gchar **tokens, **iter;
-	gchar init;
-	ofoTaux *rate;
-	gdouble solde;
+	gdouble solde, solde_iter;
 	gchar *str;
-	gint col, row;
-	GtkWidget *widget;
-	const sColumnDef *col_def;
+	gboolean expect_operator;
+	gboolean first_iter;
+	gboolean display_solde;
+	gint operator;
 
-	priv = self->private;
-	tokens = g_regex_split_simple( "[-+*/]", formula+1, 0, 0 );
-	iter = tokens;
 	g_debug( "%s: formula='%s'", thisfn, formula );
+
+	tokens = g_regex_split_simple( "([-+*/])", formula+1, 0, 0 );
+	iter = tokens;
+	solde = 0;
+	first_iter = TRUE;
+	display_solde = TRUE;
+	expect_operator = TRUE;
+	operator = 0;
+
 	while( *iter ){
-		/*g_debug( "%s: iter='%s'", thisfn, *iter );*/
-		/*
-		 * we have:
-		 * - [ALDC]<number>
-		 *    A: account
-		 *     L: label
-		 *      D: debit
-		 *       C: credit
-		 * or:
-		 * - a token:
-		 *   SOLDE
-		 *   IDEM (same column, previous row)
-		 * or:
-		 * - a rate mnemonic
-		 */
-		if( !g_utf8_collate( *iter, "SOLDE" )){
-			col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
-			row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
-			solde = compute_formula_solde( self, col, row );
-			str = g_strdup_printf( "%'.2lf", solde );
-			gtk_entry_set_text( entry, str );
-			g_free( str );
-
-		} else if( !g_utf8_collate( *iter, "IDEM" )){
-			row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
-			col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
-			widget = gtk_grid_get_child_at( priv->entries_grid, col, row-1 );
-			if( widget && GTK_IS_ENTRY( widget )){
-				gtk_entry_set_text( entry, gtk_entry_get_text( GTK_ENTRY( widget )));
-			}
-
-		} else {
-			init = *iter[0];
-			row = atoi(( *iter )+1 );
-			g_debug( "%s: init=%c row=%d", thisfn, init, row );
-			if( row > 0 && row <= ofo_model_get_detail_count( priv->model )){
-				col_def = find_column_def_from_letter( self, init );
-				if( col_def ){
-					widget = gtk_grid_get_child_at( priv->entries_grid, col_def->column_id, row );
-					if( widget && GTK_IS_ENTRY( widget )){
-						gtk_entry_set_text( entry, gtk_entry_get_text( GTK_ENTRY( widget )));
-					} else {
-						g_warning( "%s: no entry found at col=%d, row=%d", thisfn, col_def->column_id, row );
-					}
+		if( expect_operator ){
+			operator = formula_parse_operator( self, formula, *iter );
+			if( !operator ){
+				if( first_iter ){
+					operator = OPE_PLUS;
+					expect_operator = FALSE;
 				} else {
-					g_warning( "%s: col_def not found for '%c' letter", thisfn, init );
-				}
-
-			} else {
-				g_debug( "%s: searching for taux %s", thisfn, *iter );
-				rate = ofo_taux_get_by_mnemo( priv->dossier, *iter );
-				if( rate && OFO_IS_TAUX( rate )){
-					g_warning( "%s: TODO", thisfn );
-				} else {
-					g_warning( "%s: taux %s not found", thisfn, *iter );
+					str = g_strdup_printf(
+							"invalid formula='%s': found token='%s' while operator expected",
+							formula, *iter );
+					formula_error( self, str );
+					g_free( str );
+					break;
 				}
 			}
 		}
+		if( !expect_operator ){
+			if( !g_utf8_collate( *iter, "SOLDE" )){
+				solde_iter = formula_compute_solde( self, entry );
+
+			} else if( !g_utf8_collate( *iter, "IDEM" )){
+				/* to be used only to duplicate a line - not really as a formula */
+				formula_set_entry_idem( self, entry );
+				display_solde = FALSE;
+				break;
+
+			/* have a token D1, L2 or so, or a rate mnemonic */
+			} else {
+				solde_iter = formula_parse_token( self, formula, *iter, entry, &display_solde );
+			}
+			switch( operator ){
+				case OPE_MINUS:
+					solde -= solde_iter;
+					break;
+				case OPE_PLUS:
+					solde += solde_iter;
+					break;
+				case OPE_PROD:
+					solde *= solde_iter;
+					break;
+				case OPE_DIV:
+					solde /= solde_iter;
+					break;
+			}
+			solde_iter = 0;
+		}
+		first_iter = FALSE;
+		expect_operator = !expect_operator;
 		iter++;
 	}
 
 	g_strfreev( tokens );
+
+	if( display_solde ){
+		/* do not use a funny display here as this string will be parsed later */
+		str = g_strdup_printf( "%.2lf", solde );
+		gtk_entry_set_text( entry, str );
+		g_free( str );
+	}
+}
+
+static gint
+formula_parse_operator( ofaGuidedCommon *self, const gchar *formula, const gchar *token )
+{
+	gint oper;
+
+	oper = 0;
+
+	if( !g_utf8_collate( token, "-" )){
+		oper = OPE_MINUS;
+	} else if( !g_utf8_collate( token, "+" )){
+		oper = OPE_PLUS;
+	} else if( !g_utf8_collate( token, "*" )){
+		oper = OPE_PROD;
+	} else if( !g_utf8_collate( token, "/" )){
+		oper = OPE_DIV;
+	}
+
+	return( oper );
 }
 
 static gdouble
-compute_formula_solde( ofaGuidedCommon *self, gint column_id, gint row )
+formula_compute_solde( ofaGuidedCommon *self, GtkEntry *entry )
 {
+	gint col, row;
 	gdouble dsold, csold;
 	gint count, idx;
+
+	col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
+	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
 
 	count = ofo_model_get_detail_count( self->private->model );
 	csold = 0.0;
 	dsold = 0.0;
 	for( idx=0 ; idx<count ; ++idx ){
-		if( column_id != COL_DEBIT || row != idx+1 ){
+		if( col != COL_DEBIT || row != idx+1 ){
 			dsold += get_amount( self, COL_DEBIT, idx+1 );
 		}
-		if( column_id != COL_CREDIT || row != idx+1 ){
+		if( col != COL_CREDIT || row != idx+1 ){
 			csold += get_amount( self, COL_CREDIT, idx+1 );
 		}
 	}
 
-	return( column_id == COL_DEBIT ? csold-dsold : dsold-csold );
+	return( col == COL_DEBIT ? csold-dsold : dsold-csold );
+}
+
+static void
+formula_set_entry_idem( ofaGuidedCommon *self, GtkEntry *entry )
+{
+	gint col, row;
+	GtkWidget *widget;
+
+	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
+	col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
+	widget = gtk_grid_get_child_at( self->private->entries_grid, col, row-1 );
+	if( widget && GTK_IS_ENTRY( widget )){
+		gtk_entry_set_text( entry, gtk_entry_get_text( GTK_ENTRY( widget )));
+	}
+}
+
+static gdouble
+formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *token, GtkEntry *entry, gboolean *display )
+{
+	ofaGuidedCommonPrivate *priv;
+	gchar init;
+	gint row;
+	GtkWidget *widget;
+	gdouble amount;
+	const gchar *content;
+	const sColumnDef *col_def;
+	ofoTaux *rate;
+	gchar *str;
+
+	priv = self->private;
+	init = token[0];
+	row = atoi( token+1 );
+	amount = 0;
+
+	if( row > 0 && row <= ofo_model_get_detail_count( priv->model )){
+		col_def = find_column_def_from_letter( self, init );
+		if( col_def ){
+			widget = gtk_grid_get_child_at( priv->entries_grid, col_def->column_id, row );
+			if( widget && GTK_IS_ENTRY( widget )){
+				content = gtk_entry_get_text( GTK_ENTRY( widget ));
+				/*g_debug( "token='%s' content='%s'", token, content );*/
+				if( col_def->is_double ){
+					amount = g_ascii_strtod( content, NULL );
+				} else {
+					/* we do not manage a formula on a string */
+					gtk_entry_set_text( entry, content );
+					*display = FALSE;
+					/*g_debug( "setting display to FALSE" );*/
+				}
+			} else {
+				str = g_strdup_printf( "no entry found at col=%d, row=%d",col_def->column_id, row );
+				formula_error( self, str );
+				g_free( str );
+			}
+		} else {
+			str = g_strdup_printf( "no column definition found for '%c' letter", init );
+			formula_error( self, str );
+			g_free( str );
+		}
+
+	} else {
+		/*g_debug( "%s: searching for taux %s", thisfn, *iter );*/
+		rate = ofo_taux_get_by_mnemo( priv->dossier, token );
+		if( rate && OFO_IS_TAUX( rate )){
+			if( g_date_valid( &priv->deff )){
+				amount = ofo_taux_get_rate_at_date( rate, &priv->deff )/100;
+			}
+		} else {
+			str = g_strdup_printf( "rate not found: '%s'", token );
+			formula_error( self, str );
+			g_free( str );
+		}
+	}
+
+	return( amount );
+}
+
+static void
+formula_error( ofaGuidedCommon *self, const gchar *str )
+{
+	set_comment( self, str );
+	g_warning( "ofa_guided_common_formula_error: %s", str );
 }
 
 /*
- * totals and diffs are set are rows (count+1) and (count+2) respectively
+ * totals and diffs are set at rows (count+1) and (count+2) respectively
  */
 static void
 update_all_totals( ofaGuidedCommon *self )
@@ -1110,8 +1265,8 @@ update_all_totals( ofaGuidedCommon *self )
 
 	priv = self->private;
 	count = ofo_model_get_detail_count( priv->model );
-	csold = 0.0;
 	dsold = 0.0;
+	csold = 0.0;
 	for( idx=0 ; idx<count ; ++idx ){
 		dsold += get_amount( self, COL_DEBIT, idx+1 );
 		csold += get_amount( self, COL_CREDIT, idx+1 );
@@ -1122,24 +1277,24 @@ update_all_totals( ofaGuidedCommon *self )
 
 	entry = gtk_grid_get_child_at( priv->entries_grid, COL_DEBIT, count+1 );
 	if( entry && GTK_IS_ENTRY( entry )){
-		str = g_strdup_printf( "%.2lf", dsold );
+		str = g_strdup_printf( "%'.2lf", dsold );
 		gtk_entry_set_text( GTK_ENTRY( entry ), str );
 		g_free( str );
 	}
 
 	entry = gtk_grid_get_child_at( priv->entries_grid, COL_CREDIT, count+1 );
 	if( entry && GTK_IS_ENTRY( entry )){
-		str = g_strdup_printf( "%.2lf", csold );
+		str = g_strdup_printf( "%'.2lf", csold );
 		gtk_entry_set_text( GTK_ENTRY( entry ), str );
 		g_free( str );
 	}
 
 	if( dsold > csold ){
-		str = g_strdup_printf( "%.2lf", dsold-csold );
+		str = g_strdup_printf( "%'.2lf", dsold-csold );
 		str2 = g_strdup( "" );
 	} else if( dsold < csold ){
 		str = g_strdup( "" );
-		str2 = g_strdup_printf( "%.2lf", csold-dsold );
+		str2 = g_strdup_printf( "%'.2lf", csold-dsold );
 	} else {
 		str = g_strdup( "" );
 		str2 = g_strdup( "" );
@@ -1498,6 +1653,9 @@ ofa_guided_common_reset( ofaGuidedCommon *common )
 	}
 }
 
+/*
+ * nb: entries_count = count of entries + 2 (for totals and diff)
+ */
 static void
 do_reset_entries_rows( ofaGuidedCommon *self )
 {
@@ -1506,10 +1664,16 @@ do_reset_entries_rows( ofaGuidedCommon *self )
 
 	for( i=1 ; i<=self->private->entries_count ; ++i ){
 		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_LABEL, i );
-		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		if( entry && GTK_IS_ENTRY( entry )){
+			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		}
 		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_DEBIT, i );
-		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		if( entry && GTK_IS_ENTRY( entry )){
+			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		}
 		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_CREDIT, i );
-		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		if( entry && GTK_IS_ENTRY( entry )){
+			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		}
 	}
 }

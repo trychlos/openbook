@@ -277,7 +277,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.user_data = self;
 	parms.initial_mnemo = priv->is_new ? priv->journal : ofo_model_get_journal( priv->model );
 
-	priv->journal_combo = ofa_journal_combo_init_combo( &parms );
+	priv->journal_combo = ofa_journal_combo_new( &parms );
 
 	init_dialog_journal_locked( self );
 

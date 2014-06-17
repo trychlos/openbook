@@ -290,7 +290,7 @@ setup_journal_selection( ofaViewEntries *self )
 	parms.user_data = self;
 	parms.initial_mnemo = NULL;
 
-	priv->journal_combo = ofa_journal_combo_init_combo( &parms );
+	priv->journal_combo = ofa_journal_combo_new( &parms );
 
 	priv->journal_box = ( GtkComboBox * ) my_utils_container_get_child_by_name( priv->top_box, "p1-journal" );
 	g_return_if_fail( priv->journal_box && GTK_IS_COMBO_BOX( priv->journal_box ));

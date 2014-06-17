@@ -586,12 +586,37 @@ ofo_taux_get_val_rate( const ofoTaux *taux, gint idx )
 }
 
 /**
- * ofo_taux_get_val_rate_by_date
+ * ofo_taux_get_rate_at_date:
  */
 gdouble
-ofo_taux_get_val_rate_by_date( const ofoTaux *taux, const GDate *date )
+ofo_taux_get_rate_at_date( const ofoTaux *taux, const GDate *date )
 {
-	g_warning( "ofo_taux_get_val_rate_by_date: TO BE WRITTEN" );
+	GList *iva;
+	sTauxValid *svalid;
+
+	g_return_val_if_fail( taux && OFO_IS_TAUX( taux ), 0 );
+	g_return_val_if_fail( date && g_date_valid( date ), 0 );
+
+	if( !OFO_BASE( taux )->prot->dispose_has_run ){
+
+		for( iva=taux->private->valids ; iva ; iva=iva->next ){
+			svalid = ( sTauxValid * ) iva->data;
+
+			if( g_date_valid( &svalid->begin )){
+				if( g_date_compare( &svalid->begin, date ) > 0 ){
+					continue;
+				}
+				if( !g_date_valid( &svalid->end ) || g_date_compare( &svalid->end, date ) >= 0 ){
+					return( svalid->rate );
+				}
+			} else {
+				if( !g_date_valid( &svalid->end ) || g_date_compare( &svalid->end, date ) >= 0 ){
+					return( svalid->rate );
+				}
+			}
+		}
+	}
+
 	return( 0 );
 }
 

@@ -140,12 +140,12 @@ on_container_finalized( ofaJournalCombo *self, gpointer this_was_the_container )
 }
 
 /**
- * ofa_journal_combo_init_combo:
+ * ofa_journal_combo_new:
  */
 ofaJournalCombo *
-ofa_journal_combo_init_combo( const ofaJournalComboParms *parms )
+ofa_journal_combo_new( const ofaJournalComboParms *parms )
 {
-	static const gchar *thisfn = "ofa_journal_combo_init_combo";
+	static const gchar *thisfn = "ofa_journal_combo_new";
 	ofaJournalCombo *self;
 	ofaJournalComboPrivate *priv;
 	GtkWidget *combo;

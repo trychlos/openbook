@@ -73,7 +73,7 @@ GType            ofa_guided_common_get_type ( void ) G_GNUC_CONST;
 
 ofaGuidedCommon *ofa_guided_common_new      ( ofaMainWindow *main_window, GtkContainer *parent );
 
-void             ofa_guided_common_set_model( ofaGuidedCommon *common, ofoModel *model );
+void             ofa_guided_common_set_model( ofaGuidedCommon *common, const ofoModel *model );
 
 gboolean         ofa_guided_common_validate ( ofaGuidedCommon *common );
 

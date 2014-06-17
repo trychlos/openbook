@@ -76,7 +76,7 @@ const GDate    *ofo_taux_get_val_begin( const ofoTaux *taux, gint idx );
 const GDate    *ofo_taux_get_val_end  ( const ofoTaux *taux, gint idx );
 gdouble         ofo_taux_get_val_rate ( const ofoTaux *taux, gint idx );
 
-gdouble         ofo_taux_get_val_rate_by_date( const ofoTaux *taux, const GDate *date );
+gdouble         ofo_taux_get_rate_at_date( const ofoTaux *taux, const GDate *date );
 
 gboolean        ofo_taux_is_deletable ( const ofoTaux *taux );
 gboolean        ofo_taux_is_valid     ( const gchar *mnemo, const gchar *label, GList *validities );

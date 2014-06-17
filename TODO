@@ -233,6 +233,9 @@
 
  191 2014- 6-11 Note that a multi-currency journal is not balanced per
                 currency, and so its global balance cannot be checked
+     2014- 6-18 not exactly: a multi-currency journal may be balanced
+                per currency depending of the way the operations are
+                entered (and this way should maybe be forced)
 
  192 2014- 6-11 save database:
                 mysqldump pwi_consultants -uwieser -pwieser | gzip -c 
@@ -298,9 +301,6 @@
                 a normal label + move it to the right in order to be
                 aligned with account entry
 
- 222 2014- 6-16 GuidedInput: Cancel should reset the fields (but not
-                the dates)
-
  223 2014- 6-16 DossierProperties: add a tab for the current exercice
                 enter begin and end dates, display last entry number
 
@@ -316,7 +316,11 @@
 
  235 2014- 6-17 xxxx_get_type() function should be in xxxx-def.h file
 
- 236
+ 236 2014- 6-18 when updating an entry model, the right pane of
+                ofaGuidedInputEx should be updated (if the updated
+                entry model is currently displayed)
+
+ 237
 
 -----------------------------------------------------------------------
  DONE
@@ -839,6 +843,10 @@
 
  221 2014- 6-16 GuidedInput: the dialog box has two rows Cancel-OK
      2014- 6-16 done - svn #3717
+
+ 222 2014- 6-16 GuidedInput: Cancel should reset the fields (but not
+                the dates)
+     2014- 6-18 done
 
  226 2014- 6-16 Notes should be passed to 4096 chars
      2014- 6-16 done - svn #3713
