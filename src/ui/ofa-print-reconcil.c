@@ -470,7 +470,8 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 			st_body_font_size + 2*st_body_line_spacing;
 
 	reconcil_height =
-			st_body_font_size + 2*st_body_line_spacing;
+			st_body_font_size + 2*st_body_line_spacing
+			+ 3*( st_body_font_size ) + st_body_line_spacing;
 
 	entries_count = g_list_length( self->private->entries );
 
@@ -943,9 +944,9 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	priv = self->private;
 
 	cr = gtk_print_context_get_cairo_context( context );
-	cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
 
 	y = priv->last_y + st_body_font_size + 2*st_body_line_spacing;
+	cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
 
 	str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
 	desc = pango_font_description_from_string( str );
@@ -961,6 +962,28 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	g_free( str );
 	pango_layout_get_pixel_extents( priv->body_layout, NULL, &rc );
 	cairo_move_to( cr, priv->body_solde_tab-rc.width, y );
+	pango_cairo_update_layout( cr, priv->body_layout );
+	pango_cairo_show_layout( cr, priv->body_layout );
+
+	y += st_body_font_size + 2*st_body_line_spacing;
+	cairo_set_source_rgb( cr, COLOR_BLACK );
+
+	str = g_strdup_printf( "%s %d", st_font_family, st_body_font_size );
+	desc = pango_font_description_from_string( str );
+	pango_layout_set_font_description( priv->body_layout, desc );
+	pango_font_description_free( desc );
+
+	pango_layout_set_text( priv->body_layout, _(
+			"This reconciliated solde "
+			"should be the same, though inversed, "
+			"that the one of the account extraction sent par your bank.\n"
+			"If this is note the case, then you have forgotten to reconciliate "
+			"some of the above entries, or some other entries have been recorded "
+			"by your bank, are present in your account extraction, but are not "
+			"found in your journals." ), -1 );
+	pango_layout_set_width( priv->body_layout, priv->page_width*PANGO_SCALE );
+	pango_layout_set_wrap( priv->body_layout, PANGO_WRAP_WORD );
+	cairo_move_to( cr, st_page_left_margin, y );
 	pango_cairo_update_layout( cr, priv->body_layout );
 	pango_cairo_show_layout( cr, priv->body_layout );
 }
