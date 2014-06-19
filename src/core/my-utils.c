@@ -696,3 +696,43 @@ my_utils_output_stream_new( const gchar *uri, GFile **file, GOutputStream **stre
 
 	return( TRUE );
 }
+
+/**
+ * my_utils_pango_layout_ellipsize:
+ *
+ * Cannot make the sequence:
+ *   pango_layout_set_text( priv->body_layout, ofo_entry_get_label( entry ), -1 );
+ *   pango_layout_set_width( priv->body_layout, priv->body_label_max_size );
+ *   pango_layout_set_ellipsize( priv->body_layout, PANGO_ELLIPSIZE_END );
+ * works when printing. So have decided to write this some utility :(
+ */
+void
+my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width )
+{
+	static const gchar *thisfn = "my_utils_pango_layout_ellipsize";
+	PangoRectangle rc;
+	const gchar *end;
+	gchar *strref, *newend, *newstr;
+
+	strref = g_strdup( pango_layout_get_text( layout ));
+	if( g_utf8_validate( strref, -1, &end )){
+		pango_layout_get_extents( layout, NULL, &rc );
+		/*g_debug( "%s rc.width=%u, max_size=%u", strref, rc.width, max_width );*/
+		while( rc.width > max_width ){
+			newend = g_utf8_prev_char( end );
+			/*g_debug( "newend=%p", ( void * ) newend );*/
+			newend[0] = '\0';
+			newstr = g_strdup_printf( "%s...", strref );
+			pango_layout_set_text( layout, newstr, -1 );
+			g_free( newstr );
+			pango_layout_get_extents( layout, NULL, &rc );
+			if( !g_utf8_validate( strref, -1, &end )){
+				break;
+			}
+			/*g_debug( "%s rc.width=%u, max_size=%u", strref, rc.width, max_width );*/
+		}
+	} else {
+		g_warning( "%s: not a valid UTF8 string: %s", thisfn, pango_layout_get_text( layout ));
+	}
+	g_free( strref );
+}

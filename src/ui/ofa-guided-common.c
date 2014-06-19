@@ -1655,6 +1655,7 @@ ofa_guided_common_reset( ofaGuidedCommon *common )
 
 /*
  * nb: entries_count = count of entries + 2 (for totals and diff)
+ * Only the LABEL entries may be non present on the last two lines
  */
 static void
 do_reset_entries_rows( ofaGuidedCommon *self )
@@ -1668,12 +1669,8 @@ do_reset_entries_rows( ofaGuidedCommon *self )
 			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
 		}
 		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_DEBIT, i );
-		if( entry && GTK_IS_ENTRY( entry )){
-			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
-		}
+		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
 		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_CREDIT, i );
-		if( entry && GTK_IS_ENTRY( entry )){
-			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
-		}
+		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
 	}
 }

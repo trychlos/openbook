@@ -33,9 +33,11 @@
  * @include: ui/ofa-print-reconcil.h
  *
  * Print the reconciliation summary.
+ *
+ * This is a convenience class around a GtkPrintOperation.
  */
 
-#include "ui/my-dialog.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -50,14 +52,14 @@ typedef struct _ofaPrintReconcilPrivate        ofaPrintReconcilPrivate;
 
 typedef struct {
 	/*< private >*/
-	myDialog                 parent;
+	GObject                  parent;
 	ofaPrintReconcilPrivate *private;
 }
 	ofaPrintReconcil;
 
 typedef struct {
 	/*< private >*/
-	myDialogClass parent;
+	GObjectClass parent;
 }
 	ofaPrintReconcilClass;
 

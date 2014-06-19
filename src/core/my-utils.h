@@ -97,6 +97,8 @@ void           my_utils_init_maj_user_stamp( GtkContainer *container,
 
 gboolean       my_utils_output_stream_new( const gchar *uri, GFile **file, GOutputStream **stream );
 
+void           my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width );
+
 G_END_DECLS
 
 #endif /* __MY_UTILS_H__ */

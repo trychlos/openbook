@@ -194,7 +194,7 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 	ofoAccount *account;
 	gdouble debit, credit;
 	gint number;
-	const GDate *deffect;
+	const GDate *deffect, *prev_effect;
 	gdouble prev;
 
 	if( ofo_entry_get_status( entry ) == ENT_STATUS_ROUGH ){
@@ -209,13 +209,20 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 
 		if( debit ){
 			prev = ofo_account_get_bro_deb_mnt( account );
+			/* entry number should be strictly increasing */
 			ofo_account_set_bro_deb_ecr( account, number );
-			ofo_account_set_bro_deb_date( account, deffect );
+			prev_effect = ofo_account_get_bro_deb_date( account );
+			if( g_date_compare( prev_effect, deffect ) < 0 ){
+				ofo_account_set_bro_deb_date( account, deffect );
+			}
 			ofo_account_set_bro_deb_mnt( account, prev+debit );
 		} else {
 			prev = ofo_account_get_bro_cre_mnt( account );
 			ofo_account_set_bro_cre_ecr( account, number );
-			ofo_account_set_bro_cre_date( account, deffect );
+			prev_effect = ofo_account_get_bro_cre_date( account );
+			if( g_date_compare( prev_effect, deffect ) < 0 ){
+				ofo_account_set_bro_cre_date( account, deffect );
+			}
 			ofo_account_set_bro_cre_mnt( account, prev+credit );
 		}
 
@@ -1016,6 +1023,81 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 	}
 
 	return( TRUE );
+}
+
+/**
+ * ofo_account_get_global_deffect:
+ *
+ * Returns the most recent effect date of the account
+ */
+const GDate *
+ofo_account_get_global_deffect( const ofoAccount *account )
+{
+	const GDate *date, *dd;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
+
+	date = NULL;
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		date = ofo_account_get_bro_deb_date( account );
+		dd = ofo_account_get_bro_cre_date( account );
+		if( g_date_valid( date )){
+			if( g_date_valid( dd )){
+				if( g_date_compare( date, dd ) < 0 ){
+					date = dd;
+				}
+			}
+		} else if( g_date_valid( dd )){
+			date = dd;
+		}
+		dd = ofo_account_get_deb_date( account );
+		if( g_date_valid( date )){
+			if( g_date_valid( dd )){
+				if( g_date_compare( date, dd ) < 0 ){
+					date = dd;
+				}
+			}
+		} else if( g_date_valid( dd )){
+			date = dd;
+		}
+		dd = ofo_account_get_cre_date( account );
+		if( g_date_valid( date )){
+			if( g_date_valid( dd )){
+				if( g_date_compare( date, dd ) < 0 ){
+					date = dd;
+				}
+			}
+		} else if( g_date_valid( dd )){
+			date = dd;
+		}
+	}
+
+	return( date );
+}
+
+/**
+ * ofo_account_get_global_solde:
+ */
+gdouble
+ofo_account_get_global_solde( const ofoAccount *account )
+{
+	gdouble amount;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0.0 );
+
+	amount = 0.0;
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		amount -= ofo_account_get_bro_deb_mnt( account );
+		amount += ofo_account_get_bro_cre_mnt( account );
+		amount -= ofo_account_get_deb_mnt( account );
+		amount += ofo_account_get_cre_mnt( account );
+	}
+
+	return( amount );
 }
 
 /**

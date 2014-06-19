@@ -141,8 +141,6 @@
  107 2014- 5-24 have a message when current exercice changes
                 so that e.g. the journals set may adapt its display
 
- 111 2014- 5-26 ofo_taux_get_val_rate_by_date
-
  114 2014- 5-26 dispose_has_run should be a protected data of the
                 ofaMainPage base class
 
@@ -610,6 +608,9 @@
 
  110 2014- 5-25 p1-last-update -> px-last-update
      2014- 5-25 done - svn #3500
+
+ 111 2014- 5-26 ofo_taux_get_val_rate_by_date
+     2014- 6-18 done - svn #3723
 
  112 2014- 5-26 dispose_has_run is a protected data of the ofoBase
                 base class
