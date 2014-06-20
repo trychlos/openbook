@@ -131,10 +131,11 @@ static const gdouble st_footer_part = 30/297.0;		/* env. 10% */
 70 chars = 432 => 1'X' ~ 6.17 px
 */
 
-#define COLOR_BLACK                 0,   0,      0
-#define COLOR_WHITE                 1,   1,      1
-#define COLOR_DARK_RED              0.5, 0,      0
-#define COLOR_DARK_CYAN             0,   0.5156, 0.5156
+#define COLOR_BLACK                 0,      0,      0
+#define COLOR_WHITE                 1,      1,      1
+#define COLOR_DARK_RED              0.5,    0,      0
+#define COLOR_DARK_CYAN             0,      0.5156, 0.5156
+#define COLOR_LIGHT_GRAY            0.9375, 0.9375, 0.9375
 
 
 G_DEFINE_TYPE( ofaPrintReconcil, ofa_print_reconcil, G_TYPE_OBJECT )
@@ -841,7 +842,6 @@ draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext
 	priv = self->private;
 
 	cr = gtk_print_context_get_cairo_context( context );
-	cairo_set_source_rgb( cr, COLOR_BLACK );
 
 	if( page_num == 0 ){
 		y = priv->header_height_first;
@@ -849,6 +849,17 @@ draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext
 		y = priv->header_height_other;
 	}
 	y += line_num * ( st_body_font_size + st_body_line_spacing );
+
+	/* have a rubber every other line (todo #237) */
+	if( line_num % 2 ){
+		cairo_set_source_rgb( cr, COLOR_LIGHT_GRAY );
+		cairo_rectangle( cr,
+					0, y - 0.5*st_body_line_spacing,
+					priv->context_width, st_body_font_size+st_body_line_spacing );
+		cairo_fill( cr );
+	}
+
+	cairo_set_source_rgb( cr, COLOR_BLACK );
 
 	/* 0 is not really the edge of the sheet, but includes the printer margin */
 	/* y is in context units

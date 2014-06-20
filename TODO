@@ -318,7 +318,10 @@
                 ofaGuidedInputEx should be updated (if the updated
                 entry model is currently displayed)
 
- 237
+ 237 2014- 6-20 Print reconciliation: have a light gray background
+                every other line
+
+ 238
 
 -----------------------------------------------------------------------
  DONE
