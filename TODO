@@ -318,9 +318,8 @@
                 be updated of the mnemo of the journal is modified
                 (but we have UPDATE OFA_T_ECRITURES 
                 SET ECR_JOU_MNEMO='TRESO' WHERE ECR_JOU_MNEMO='BQ')
-
- 239 2014- 6-20 DELETE FROM OFA_T_MODELES_DET WHERE MOD_MNEMO='EFBUR2'
-                is called twice
+     2014- 6-20 this was already ok (just have to set the beginning
+                of the exercice) - comment added
 
  241
 
@@ -888,6 +887,10 @@
  237 2014- 6-20 Print reconciliation: have a light gray background
                 every other line
      2014- 6-20 done - svn #3728
+
+ 239 2014- 6-20 DELETE FROM OFA_T_MODELES_DET WHERE MOD_MNEMO='EFBUR2'
+                is called twice
+     2014- 6-20 done - svn #3732
 
  240 2014- 6-20 entry model properties: the journal combo should 
                 display labels (and so the corresponding GtkLabel

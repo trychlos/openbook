@@ -154,6 +154,11 @@ ofo_entry_connect_handlers( const ofoDossier *dossier )
 				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 }
 
+/*
+ * we try to report in recorded entries the modifications which may
+ * happen on one of the externe identifiers - but only for the current
+ * exercice
+ */
 static void
 on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
 {
