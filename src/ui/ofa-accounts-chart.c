@@ -151,13 +151,12 @@ v_setup_view( ofaMainPage *page )
 
 	parms.book = chart_book;
 	parms.dossier = ofa_main_page_get_dossier( page );
-	parms.pfnSelect = ( ofaAccountNotebookCb ) on_row_selected;
-	parms.user_data_select = page;
-	parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_row_activated;
-	parms.user_data_double_clic = page;
+	parms.pfnSelected = ( ofaAccountNotebookCb ) on_row_selected;
+	parms.pfnActivated = ( ofaAccountNotebookCb ) on_row_activated;
+	parms.user_data = page;
 
 	priv = OFA_ACCOUNTS_CHART( page )->private;
-	priv->chart_child = ofa_account_notebook_init_dialog( &parms );
+	priv->chart_child = ofa_account_notebook_new( &parms );
 
 	return( GTK_WIDGET( chart_book ));
 }

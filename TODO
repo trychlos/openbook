@@ -253,7 +253,7 @@
 
  210 2014- 6-12 move all dialogs from ofaBaseDialog to myDialog
                 - acount properties
-                - account select
+                - account select     - done
                 - bat properties
                 - bat select
                 - class properties

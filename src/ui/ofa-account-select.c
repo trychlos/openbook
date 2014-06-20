@@ -194,12 +194,11 @@ v_init_dialog( myDialog *dialog )
 
 	parms.book = GTK_NOTEBOOK( book );
 	parms.dossier = MY_WINDOW( dialog )->protected->dossier,
-	parms.pfnSelect = NULL;
-	parms.user_data_select = NULL;
-	parms.pfnDoubleClic = ( ofaAccountNotebookCb ) on_account_activated;
-	parms.user_data_double_clic = dialog;
+	parms.pfnSelected = NULL;
+	parms.pfnActivated = ( ofaAccountNotebookCb ) on_account_activated;
+	parms.user_data = dialog;
 
-	priv->child = ofa_account_notebook_init_dialog( &parms );
+	priv->child = ofa_account_notebook_new( &parms );
 
 	ofa_account_notebook_init_view( st_this->private->child, NULL );
 }

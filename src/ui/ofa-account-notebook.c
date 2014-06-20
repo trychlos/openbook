@@ -46,10 +46,9 @@ struct _ofaAccountNotebookPrivate {
 	 */
 	GtkNotebook         *book;			/* with one page per account class */
 	ofoDossier          *dossier;
-	ofaAccountNotebookCb pfnSelect;
-	gpointer             user_data_select;
-	ofaAccountNotebookCb pfnDoubleClic;
-	gpointer             user_data_double_clic;
+	ofaAccountNotebookCb pfnSelected;
+	ofaAccountNotebookCb pfnActivated;
+	gpointer             user_data;
 
 	/* internals
 	 */
@@ -196,7 +195,7 @@ ofa_account_notebook_class_init( ofaAccountNotebookClass *klass )
 }
 
 /**
- * ofa_account_notebook_init_dialog:
+ * ofa_account_notebook_new:
  *
  * Creates the structured content, i.e. one notebook with one page per
  * account class.
@@ -216,9 +215,9 @@ ofa_account_notebook_class_init( ofaAccountNotebookClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaAccountNotebook *
-ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
+ofa_account_notebook_new( ofaAccountNotebookParms *parms  )
 {
-	static const gchar *thisfn = "ofa_account_notebook_init_dialog";
+	static const gchar *thisfn = "ofa_account_notebook_new";
 	ofaAccountNotebook *self;
 	ofaAccountNotebookPrivate *priv;
 	gulong handler;
@@ -235,10 +234,9 @@ ofa_account_notebook_init_dialog( ofaAccountNotebookParms *parms  )
 
 	priv->book = parms->book;
 	priv->dossier = parms->dossier;
-	priv->pfnSelect = parms->pfnSelect;
-	priv->user_data_select = parms->user_data_select;
-	priv->pfnDoubleClic = parms->pfnDoubleClic;
-	priv->user_data_double_clic = parms->user_data_double_clic;
+	priv->pfnSelected = parms->pfnSelected;
+	priv->pfnActivated = parms->pfnActivated;
+	priv->user_data = parms->user_data;
 
 	/* connect to the dossier in order to get advertised when
 	 * modifications occur
@@ -757,7 +755,7 @@ on_row_selected( GtkTreeSelection *selection, ofaAccountNotebook *self )
 	GtkTreeIter iter;
 	ofoAccount *account;
 
-	if( self->private->pfnSelect ){
+	if( self->private->pfnSelected ){
 
 		account = NULL;
 
@@ -766,7 +764,7 @@ on_row_selected( GtkTreeSelection *selection, ofaAccountNotebook *self )
 			g_object_unref( account );
 		}
 
-		( *self->private->pfnSelect )( account, self->private->user_data_select );
+		( *self->private->pfnSelected )( account, self->private->user_data );
 	}
 }
 
@@ -778,7 +776,7 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 	GtkTreeIter iter;
 	ofoAccount *account;
 
-	if( self->private->pfnDoubleClic ){
+	if( self->private->pfnActivated ){
 
 		select = gtk_tree_view_get_selection( tview );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
@@ -786,7 +784,7 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
 			g_object_unref( account );
 
-			( *self->private->pfnDoubleClic)( account, self->private->user_data_double_clic );
+			( *self->private->pfnActivated)( account, self->private->user_data );
 		}
 	}
 }

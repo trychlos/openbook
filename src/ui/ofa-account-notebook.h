@@ -86,24 +86,23 @@ GType ofa_account_notebook_get_type ( void ) G_GNUC_CONST;
  * ofaAccountNotebookParms:
  * @book: an empty notebook which must have been defined by the caller
  * @dossier: the currently opened ofoDossier
- * @pfnSelect: [allow-none]: a user-provided callback which will be
+ * @pfnSelected: [allow-none]: a user-provided callback which will be
  *  triggered each time the selection changes
- * @user_data_select:
- * @pfnDoubleClic: [allow-none]: a user-provided callback which will be
+ * @pfnActivated: [allow-none]: a user-provided callback which will be
  *  triggered each time a new row is activated (by hitting Enter or
  *  double-clicking the row)
+ * @user_data: user data passed to the above callbacks
  */
 typedef struct {
 	GtkNotebook         *book;
 	ofoDossier          *dossier;
-	ofaAccountNotebookCb pfnSelect;
-	gpointer             user_data_select;
-	ofaAccountNotebookCb pfnDoubleClic;
-	gpointer             user_data_double_clic;
+	ofaAccountNotebookCb pfnSelected;
+	ofaAccountNotebookCb pfnActivated;
+	gpointer             user_data;
 }
 	ofaAccountNotebookParms;
 
-ofaAccountNotebook *ofa_account_notebook_init_dialog ( ofaAccountNotebookParms *parms );
+ofaAccountNotebook *ofa_account_notebook_new         ( ofaAccountNotebookParms *parms );
 
 void                ofa_account_notebook_init_view   ( ofaAccountNotebook *self,
 															const gchar *number );
