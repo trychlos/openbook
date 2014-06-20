@@ -142,6 +142,9 @@ v_setup_view( ofaMainPage *page )
 
 	parms.main_window = ofa_main_page_get_main_window( page );
 	parms.parent = GTK_CONTAINER( ofa_main_page_get_grid( page ));
+	parms.has_import = FALSE;
+	parms.has_export = FALSE;
+	parms.has_view_entries = TRUE;
 	parms.pfnSelected = NULL;
 	parms.pfnActivated = ( ofaAccountNotebookCb ) on_row_activated;
 	parms.pfnViewEntries = ( ofaAccountNotebookCb ) on_view_entries;

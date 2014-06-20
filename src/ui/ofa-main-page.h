@@ -131,7 +131,7 @@ GtkWidget     *ofa_main_page_get_delete_btn     ( const ofaMainPage *page );
 GtkWidget     *ofa_main_page_get_import_btn     ( const ofaMainPage *page );
 GtkWidget     *ofa_main_page_get_export_btn     ( const ofaMainPage *page );
 
-GtkBox        *ofa_main_page_get_buttons_box_new( gboolean with_import_export );
+GtkBox        *ofa_main_page_get_buttons_box_new( gboolean has_import, gboolean has_export );
 
 gboolean       ofa_main_page_delete_confirmed   ( const ofaMainPage *page, const gchar *message );
 

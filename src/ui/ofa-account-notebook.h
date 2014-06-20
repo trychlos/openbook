@@ -98,6 +98,9 @@ GType ofa_account_notebook_get_type ( void ) G_GNUC_CONST;
 typedef struct {
 	ofaMainWindow       *main_window;
 	GtkContainer        *parent;
+	gboolean             has_import;
+	gboolean             has_export;
+	gboolean             has_view_entries;
 	ofaAccountNotebookCb pfnSelected;
 	ofaAccountNotebookCb pfnActivated;
 	ofaAccountNotebookCb pfnViewEntries;

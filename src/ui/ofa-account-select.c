@@ -194,6 +194,9 @@ v_init_dialog( myDialog *dialog )
 
 	parms.main_window = MY_WINDOW( dialog )->protected->main_window;
 	parms.parent = GTK_CONTAINER( box );
+	parms.has_import = FALSE;
+	parms.has_export = FALSE;
+	parms.has_view_entries = FALSE;
 	parms.pfnSelected = NULL;
 	parms.pfnActivated = ( ofaAccountNotebookCb ) on_account_activated;
 	parms.pfnViewEntries = NULL;

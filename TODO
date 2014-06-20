@@ -304,12 +304,6 @@
 
  224 2014- 6-16 DossierProperties: add a tab for the archived exercices
 
- 225 2014- 6-16 When selecting an account, should be able to create a
-                new account
-     2014- 6-20 + have the standard facilities of the accounts chart
-                (new, update, delete, view entries) ; this would imply
-                that view entries is able to run in a dialog box
-
  229 2014- 6-16 Entry model: duplicate a line
 
  234 2014- 6-17 the ofaMainPage derived-classes should be named
@@ -325,7 +319,11 @@
  246 2014- 6-20 ofa_devise_combo_init_combo() becomes
                  ofa_devise_combo_new()
 
- 247
+ 247 2014- 6-20 ofaAccountSelect: be able to view entries in a dialog
+                box - or disable the button
+
+ 248 2014- 6-20 ofaMainPage: has_import_export becomes has_import+
+                has_export
 
 -----------------------------------------------------------------------
  DONE
@@ -855,6 +853,13 @@
  222 2014- 6-16 GuidedInput: Cancel should reset the fields (but not
                 the dates)
      2014- 6-18 done
+
+ 225 2014- 6-16 When selecting an account, should be able to create a
+                new account
+     2014- 6-20 + have the standard facilities of the accounts chart
+                (new, update, delete, view entries) ; this would imply
+                that view entries is able to run in a dialog box
+     2014- 6-20 done - svn #3737
 
  226 2014- 6-16 Notes should be passed to 4096 chars
      2014- 6-16 done - svn #3713

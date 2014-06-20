@@ -52,6 +52,9 @@ struct _ofaAccountNotebookPrivate {
 	ofaMainWindow       *main_window;
 	ofoDossier          *dossier;
 	GtkContainer        *parent;
+	gboolean             has_import;
+	gboolean             has_export;
+	gboolean             has_view_entries;
 	ofaAccountNotebookCb pfnSelected;
 	ofaAccountNotebookCb pfnActivated;
 	ofaAccountNotebookCb pfnViewEntries;
@@ -263,6 +266,9 @@ ofa_account_notebook_new( ofaAccountNotebookParms *parms  )
 	priv->main_window = parms->main_window;
 	priv->dossier = ofa_main_window_get_dossier( parms->main_window );
 	priv->parent = parms->parent;
+	priv->has_import = parms->has_import;
+	priv->has_export = parms->has_export;
+	priv->has_view_entries = parms->has_view_entries;
 	priv->pfnSelected = parms->pfnSelected;
 	priv->pfnActivated = parms->pfnActivated;
 	priv->pfnViewEntries = parms->pfnViewEntries;
@@ -477,7 +483,7 @@ setup_buttons( ofaAccountNotebook *self )
 	priv = self->private;
 
 	/* get the standard buttons and connect our signals */
-	buttons_box = ofa_main_page_get_buttons_box_new( FALSE );
+	buttons_box = ofa_main_page_get_buttons_box_new( priv->has_import, priv->has_export );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_NEW );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_clicked ), self );
@@ -496,11 +502,13 @@ setup_buttons( ofaAccountNotebook *self )
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 0 );
 
-	button = gtk_button_new_with_mnemonic( _( "View _entries..." ));
-	gtk_widget_set_sensitive( button, FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), self );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	priv->btn_consult = GTK_BUTTON( button );
+	if( priv->has_view_entries ){
+		button = gtk_button_new_with_mnemonic( _( "View _entries..." ));
+		gtk_widget_set_sensitive( button, FALSE );
+		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), self );
+		gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
+		priv->btn_consult = GTK_BUTTON( button );
+	}
 
 	/* attach the buttons box to the parent grid */
 	gtk_grid_attach( priv->top_grid, GTK_WIDGET( buttons_box ), 1, 0, 1, 1 );
@@ -883,9 +891,12 @@ on_row_selected( GtkTreeSelection *selection, ofaAccountNotebook *self )
 
 	account = NULL;
 
-	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
-		g_object_unref( account );
+	/* selection may be null when called from on_delete_clicked() */
+	if( selection ){
+		if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
+			g_object_unref( account );
+		}
 	}
 
 	update_buttons_sensitivity( self, account );
@@ -1017,9 +1028,11 @@ update_buttons_sensitivity( ofaAccountNotebook *self, ofoAccount *account )
 			GTK_WIDGET( self->private->btn_delete ),
 			account && OFO_IS_ACCOUNT( account ) && ofo_account_is_deletable( account ));
 
-	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->btn_consult ),
-			account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account ));
+	if( self->private->btn_consult ){
+		gtk_widget_set_sensitive(
+				GTK_WIDGET( self->private->btn_consult ),
+				account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account ));
+	}
 }
 
 /*
@@ -1460,7 +1473,7 @@ delete_confirmed( ofaAccountNotebook *self, ofoAccount *account )
 			ofo_account_get_number( account ),
 			ofo_account_get_label( account ));
 
-	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
+	delete_ok = ofa_main_page_delete_confirmed( NULL, msg );
 
 	g_free( msg );
 
