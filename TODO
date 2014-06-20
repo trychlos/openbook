@@ -306,15 +306,33 @@
 
  225 2014- 6-16 When selecting an account, should be able to create a
                 new account
+     2014- 6-20 + have the standard facilities of the accounts chart
+                (new, update, delete, view entries) ; this would imply
+                that view entries is able to run in a dialog box
 
  229 2014- 6-16 Entry model: duplicate a line
 
  234 2014- 6-17 the ofaMainPage derived-classes should be named
-                ofaPagexxxxx
+                ofaPageXxxx (or maybe better ofaXxxxPage)
 
- 235 2014- 6-17 xxxx_get_type() function should be in xxxx-def.h file
+ 241 2014- 6-20 ofaJournalTreeview: pfnSelection becomes pfnSelected,
+                pfnActivation becomes pfnActivated
 
- 241
+ 242 2014- 6-20 ofaJournalCombo: pfn becomes pfnSelected
+
+ 243 2014- 6-20 ofaDeviseCombo: pfn becomes pfnSelected
+
+ 244 2014- 6-20 ofaAccountNotebook: pfnSelect becomes pfnSelected,
+                pfnDoubleClic becomes pfnActivated
+                + have a single user_data for the two callbacks
+
+ 245 2014- 6-20 ofa_account_notebook_init_dialog() becomes
+                 ofa_account_notebook_new()
+
+ 246 2014- 6-20 ofa_devise_combo_init_combo() becomes
+                 ofa_devise_combo_new()
+
+ 247
 
 -----------------------------------------------------------------------
  DONE
@@ -871,6 +889,9 @@
  233 2014- 6-16 factorize the code common to ofaGuidedInput and
                  ofaGuidedEx
      2014- 6-17 done - svn #3721  
+
+ 235 2014- 6-17 xxxx_get_type() function should be in xxxx-def.h file
+     2014- 6-20 done - svn #3734
 
  236 2014- 6-18 when updating an entry model, the right pane of
                 ofaGuidedInputEx should be updated (if the updated
