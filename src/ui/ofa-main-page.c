@@ -73,6 +73,7 @@ static void       v_setup_page( ofaMainPage *page );
 static GtkWidget *do_setup_view( ofaMainPage *page );
 static GtkWidget *do_setup_buttons( ofaMainPage *page );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
+static GtkWidget *create_buttons( gboolean with_import_export );
 static void       do_init_view( ofaMainPage *page );
 static void       do_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       do_on_update_clicked( GtkButton *button, ofaMainPage *page );
@@ -416,57 +417,103 @@ v_setup_buttons( ofaMainPage *page )
 {
 	ofaMainPagePrivate *priv;
 	GtkBox *buttons_box;
-	GtkFrame *frame;
-	GtkButton *button;
+	GtkWidget *button;
 
 	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
 
 	priv = page->private;
+	buttons_box = GTK_BOX( create_buttons( priv->has_import_export ));
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_NEW );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_new_clicked ), page );
+	priv->btn_new = GTK_BUTTON( button );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_UPDATE );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_update_clicked ), page );
+	priv->btn_update = GTK_BUTTON( button );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_DELETE );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_delete_clicked ), page );
+	priv->btn_delete = GTK_BUTTON( button );
+
+	/* pwi 2014- 6- 5
+	 * temporarily disable the import/export buttons
+	 */
+	if( 0 && priv->has_import_export ){
+
+		button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_IMPORT );
+		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_import_clicked ), page );
+		priv->btn_import = GTK_BUTTON( button );
+
+		button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_EXPORT );
+		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_export_clicked ), page );
+		priv->btn_export = GTK_BUTTON( button );
+	}
+
+	return( GTK_WIDGET( buttons_box ));
+}
+
+static GtkWidget *
+create_buttons( gboolean with_import_export )
+{
+	GtkBox *buttons_box;
+	GtkFrame *frame;
+	GtkWidget *button;
 
 	buttons_box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_VERTICAL, 4 ));
 	gtk_widget_set_margin_right( GTK_WIDGET( buttons_box ), 4 );
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 27 );
+	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 15 );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_New..." )));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_new_clicked ), page );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	priv->btn_new = button;
+	button = gtk_button_new_with_mnemonic( _( "_New..." ));
+	gtk_box_pack_start( buttons_box, button, FALSE, FALSE, 0 );
+	gtk_buildable_set_name( GTK_BUILDABLE( button ), PAGE_BUTTON_NEW );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Update..." )));
-	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_update_clicked ), page );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	priv->btn_update = button;
+	button = gtk_button_new_with_mnemonic( _( "_Update..." ));
+	gtk_widget_set_sensitive( button, FALSE );
+	gtk_box_pack_start( buttons_box, button, FALSE, FALSE, 0 );
+	gtk_buildable_set_name( GTK_BUILDABLE( button ), PAGE_BUTTON_UPDATE );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Delete..." )));
-	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_delete_clicked ), page );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	priv->btn_delete = button;
+	button = gtk_button_new_with_mnemonic( _( "_Delete..." ));
+	gtk_widget_set_sensitive( button, FALSE );
+	gtk_box_pack_start( buttons_box, button, FALSE, FALSE, 0 );
+	gtk_buildable_set_name( GTK_BUILDABLE( button ), PAGE_BUTTON_DELETE );
 
 	/* pwi 2014- 6- 5
 	 * temporarily disable the import/export buttons
 	 */
-	if( 0 && priv->has_import_export ){
+	if( 0 && with_import_export ){
 		frame = GTK_FRAME( gtk_frame_new( NULL ));
 		gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 		gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 8 );
 
-		button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Import..." )));
-		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_import_clicked ), page );
-		gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-		priv->btn_import = button;
+		button = gtk_button_new_with_mnemonic( _( "_Import..." ));
+		gtk_box_pack_start( buttons_box, button, FALSE, FALSE, 0 );
+		gtk_buildable_set_name( GTK_BUILDABLE( button ), PAGE_BUTTON_IMPORT );
 
-		button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Export..." )));
-		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_export_clicked ), page );
-		gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-		priv->btn_export = button;
+		button = gtk_button_new_with_mnemonic( _( "_Export..." ));
+		gtk_box_pack_start( buttons_box, button, FALSE, FALSE, 0 );
+		gtk_buildable_set_name( GTK_BUILDABLE( button ), PAGE_BUTTON_EXPORT );
 	}
 
 	return( GTK_WIDGET( buttons_box ));
+}
+
+/**
+ * ofa_main_page_get_buttons_box_new:
+ *
+ * This is a convenience function which provides to others the same
+ * buttons box than that of the standard main page (first used by
+ * ofaAccountNotebook)
+ *
+ * Returns a new box, with its attached buttons.
+ */
+GtkBox *
+ofa_main_page_get_buttons_box_new( gboolean with_import_export )
+{
+	return( GTK_BOX( create_buttons( with_import_export )));
 }
 
 static void

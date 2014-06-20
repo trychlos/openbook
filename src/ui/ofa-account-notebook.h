@@ -38,12 +38,14 @@
  * At creation time, this convenience class defines a Alt+1..Alt+9
  * mnemonic for each class at the GtkWindow parent level. These
  * mnemonics are removed when disposing.
+ *
+ * This convenience class also manages the update buttons (new, update,
+ * delete and view entries). So that all the AccountsChart features are
+ * also available in AccountSelect dialog.
  */
 
-#include <gtk/gtk.h>
-
 #include "api/ofo-account-def.h"
-#include "api/ofo-dossier-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -94,10 +96,11 @@ GType ofa_account_notebook_get_type ( void ) G_GNUC_CONST;
  * @user_data: user data passed to the above callbacks
  */
 typedef struct {
-	GtkNotebook         *book;
-	ofoDossier          *dossier;
+	ofaMainWindow       *main_window;
+	GtkContainer        *parent;
 	ofaAccountNotebookCb pfnSelected;
 	ofaAccountNotebookCb pfnActivated;
+	ofaAccountNotebookCb pfnViewEntries;
 	gpointer             user_data;
 }
 	ofaAccountNotebookParms;

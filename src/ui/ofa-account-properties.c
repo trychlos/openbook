@@ -319,7 +319,7 @@ set_amount( ofaAccountProperties *self, gdouble *amount, fnGetDouble fn, const g
 	*amount = ( *fn )( self->private->account );
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), wname ));
-	str = g_strdup_printf( "%.2lf €", *amount );
+	str = g_strdup_printf( "%'.2lf €", *amount );
 	gtk_label_set_text( label, str );
 	g_free( str );
 }
@@ -432,23 +432,29 @@ check_for_enable_dlg( ofaAccountProperties *self )
 
 	is_root = ( priv->type && !g_utf8_collate( priv->type, "R" ));
 
-	if( priv->type && !g_utf8_collate( priv->type, "D" )){
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->w_root ), vierge );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->w_detail ), vierge );
-	} else {
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->w_root ), TRUE );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->w_detail ), TRUE );
+	if( priv->w_root && priv->w_detail ){
+		if( priv->type && !g_utf8_collate( priv->type, "D" )){
+			gtk_widget_set_sensitive( GTK_WIDGET( priv->w_root ), vierge );
+			gtk_widget_set_sensitive( GTK_WIDGET( priv->w_detail ), vierge );
+		} else {
+			gtk_widget_set_sensitive( GTK_WIDGET( priv->w_root ), TRUE );
+			gtk_widget_set_sensitive( GTK_WIDGET( priv->w_detail ), TRUE );
+		}
 	}
 
 	combo = GTK_COMBO_BOX(
 				my_utils_container_get_child_by_name(
 						GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-devise" ));
-	gtk_widget_set_sensitive( GTK_WIDGET( combo ), vierge && !is_root );
+	if( combo ){
+		gtk_widget_set_sensitive( GTK_WIDGET( combo ), vierge && !is_root );
+	}
 
 	ok_enabled = is_dialog_validable( self );
 	button = my_utils_container_get_child_by_name(
 							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
-	gtk_widget_set_sensitive( button, ok_enabled );
+	if( button ){
+		gtk_widget_set_sensitive( button, ok_enabled );
+	}
 }
 
 static gboolean

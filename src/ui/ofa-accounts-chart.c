@@ -56,13 +56,7 @@ static GtkWidget *v_setup_view( ofaMainPage *page );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
 static void       on_row_activated( ofoAccount *account, ofaMainPage *page );
-static void       on_row_selected( ofoAccount *account, ofaAccountsChart *self );
-static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
-static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
-static void       do_update_with_account( ofaAccountsChart *self, ofoAccount *account );
-static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
-static gboolean   delete_confirmed( ofaAccountsChart *self, ofoAccount *account );
-static void       on_view_entries( GtkButton *button, ofaAccountsChart *self );
+static void       on_view_entries( ofoAccount *account, ofaAccountsChart *self );
 
 static void
 accounts_chart_finalize( GObject *instance )
@@ -132,9 +126,6 @@ ofa_accounts_chart_class_init( ofaAccountsChartClass *klass )
 	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
-	OFA_MAIN_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
-	OFA_MAIN_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
-	OFA_MAIN_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
 }
 
 static GtkWidget *
@@ -149,10 +140,11 @@ v_setup_view( ofaMainPage *page )
 	gtk_widget_set_margin_bottom( GTK_WIDGET( chart_book ), 4 );
 	gtk_notebook_popup_enable( chart_book );
 
-	parms.book = chart_book;
-	parms.dossier = ofa_main_page_get_dossier( page );
-	parms.pfnSelected = ( ofaAccountNotebookCb ) on_row_selected;
+	parms.main_window = ofa_main_page_get_main_window( page );
+	parms.parent = GTK_CONTAINER( ofa_main_page_get_grid( page ));
+	parms.pfnSelected = NULL;
 	parms.pfnActivated = ( ofaAccountNotebookCb ) on_row_activated;
+	parms.pfnViewEntries = ( ofaAccountNotebookCb ) on_view_entries;
 	parms.user_data = page;
 
 	priv = OFA_ACCOUNTS_CHART( page )->private;
@@ -164,26 +156,7 @@ v_setup_view( ofaMainPage *page )
 static GtkWidget *
 v_setup_buttons( ofaMainPage *page )
 {
-	GtkBox *buttons_box;
-	GtkFrame *frame;
-	GtkButton *button;
-
-	buttons_box = GTK_BOX(
-					OFA_MAIN_PAGE_CLASS(
-						ofa_accounts_chart_parent_class )->setup_buttons( page ));
-
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 25 );
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 0 );
-
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "View _entries..." )));
-	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), page );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	OFA_ACCOUNTS_CHART( page )->private->consult_btn = button;
-
-	return( GTK_WIDGET( buttons_box ));
+	return( NULL );
 }
 
 static void
@@ -198,150 +171,20 @@ v_init_view( ofaMainPage *page )
 static void
 on_row_activated( ofoAccount *account, ofaMainPage *page )
 {
-	do_update_with_account( OFA_ACCOUNTS_CHART( page ), account );
-}
-
-/*
- * ofaAccountNotebook callback:
- * first selection occurs during view initialization of the chart
- * notebook, thus at a moment where the buttons have been created
- */
-static void
-on_row_selected( ofoAccount *account, ofaAccountsChart *self )
-{
-	/*g_debug( "ofa_accounts_chart_on_row_selected" );*/
-
-	gtk_widget_set_sensitive(
-			ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),
-			account && OFO_IS_ACCOUNT( account ));
-
-	gtk_widget_set_sensitive(
-			ofa_main_page_get_delete_btn( OFA_MAIN_PAGE( self )),
-			account && OFO_IS_ACCOUNT( account ) && ofo_account_is_deletable( account ));
-
-	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->consult_btn ),
-			account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account ));
-}
-
-static void
-v_on_new_clicked( GtkButton *button, ofaMainPage *page )
-{
-	static const gchar *thisfn = "ofa_accounts_chart_v_on_new_clicked";
-	ofoAccount *account;
-
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( page ));
-
-	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
-
-	account = ofo_account_new();
-
-	if( !ofa_account_properties_run(
-			ofa_main_page_get_main_window( page ), account )){
-
-		g_object_unref( account );
-	}
-}
-
-static void
-v_on_update_clicked( GtkButton *button, ofaMainPage *page )
-{
-	static const gchar *thisfn = "ofa_accounts_chart_v_on_update_clicked";
-	ofaAccountsChart *self;
-	ofoAccount *account;
-
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( page ));
-
-	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
-
-	self = OFA_ACCOUNTS_CHART( page );
-	account = ofa_account_notebook_get_selected( self->private->chart_child );
-	if( account ){
-		do_update_with_account( self, account );
-	}
-}
-
-static void
-do_update_with_account( ofaAccountsChart *self, ofoAccount *account )
-{
 	if( account ){
 		g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-		ofa_account_properties_run(
-				ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), account );
+		ofa_account_properties_run( ofa_main_page_get_main_window( page ), account );
 	}
 
-	ofa_account_notebook_grab_focus( self->private->chart_child );
-}
-
-/*
- * un compte peut être supprimé si ses soldes sont nuls, et après
- * confirmation de l'utilisateur
- */
-static void
-v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
-{
-	static const gchar *thisfn = "ofa_accounts_chart_on_delete_account";
-	ofaAccountsChart *self;
-	ofoAccount *account;
-	gchar *number;
-
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( page ));
-
-	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
-
-	self = OFA_ACCOUNTS_CHART( page );
-	account = ofa_account_notebook_get_selected( self->private->chart_child );
-	if( account ){
-		g_return_if_fail( ofo_account_is_deletable( account ));
-
-		number = g_strdup( ofo_account_get_number( account ));
-
-		if( delete_confirmed( self, account ) &&
-				ofo_account_delete( account )){
-
-			/* nothing to do here, all being managed by signal handlers
-			 * just reset the selection as this is not managed by the
-			 * account notebook (and doesn't have to)
-			 * asking for selection of the just deleted account makes
-			 * almost sure that we are going to select the most close
-			 * row */
-			on_row_selected( NULL, self );
-			ofa_account_notebook_set_selected( self->private->chart_child, number );
-		}
-
-		g_free( number );
-	}
-
-	ofa_account_notebook_grab_focus( self->private->chart_child );
-}
-
-static gboolean
-delete_confirmed( ofaAccountsChart *self, ofoAccount *account )
-{
-	gchar *msg;
-	gboolean delete_ok;
-
-	msg = g_strdup_printf( _( "Are you sure you want delete the '%s - %s' account ?" ),
-			ofo_account_get_number( account ),
-			ofo_account_get_label( account ));
-
-	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
-
-	g_free( msg );
-
-	return( delete_ok );
+	ofa_account_notebook_grab_focus( OFA_ACCOUNTS_CHART( page )->private->chart_child );
 }
 
 static void
-on_view_entries( GtkButton *button, ofaAccountsChart *self )
+on_view_entries( ofoAccount *account, ofaAccountsChart *self )
 {
 	ofaMainPage *page;
-	ofoAccount *account;
 
-	g_return_if_fail( OFA_IS_ACCOUNTS_CHART( self ));
-
-	account = ofa_account_notebook_get_selected( self->private->chart_child );
 	if( account ){
 		page = ofa_main_window_activate_theme(
 						ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),

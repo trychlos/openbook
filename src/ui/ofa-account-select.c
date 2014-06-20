@@ -61,7 +61,7 @@ static void      v_init_dialog( myDialog *dialog );
 static void      on_account_activated( const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaAccountSelect *self );
+static gboolean  do_select( ofaAccountSelect *self );
 
 static void
 account_select_finalize( GObject *instance )
@@ -182,20 +182,21 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaAccountSelectPrivate *priv;
-	GtkWidget *book;
+	GtkWidget *box;
 	ofaAccountNotebookParms parms;
 
 	priv = OFA_ACCOUNT_SELECT( dialog )->private;
 
-	book = my_utils_container_get_child_by_type(
+	box = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this ))),
-					GTK_TYPE_NOTEBOOK );
-	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
+					"top-box" );
+	g_return_if_fail( box && GTK_IS_BOX( box ));
 
-	parms.book = GTK_NOTEBOOK( book );
-	parms.dossier = MY_WINDOW( dialog )->protected->dossier,
+	parms.main_window = MY_WINDOW( dialog )->protected->main_window;
+	parms.parent = GTK_CONTAINER( box );
 	parms.pfnSelected = NULL;
 	parms.pfnActivated = ( ofaAccountNotebookCb ) on_account_activated;
+	parms.pfnViewEntries = NULL;
 	parms.user_data = dialog;
 
 	priv->child = ofa_account_notebook_new( &parms );
@@ -229,11 +230,11 @@ check_for_enable_dlg( ofaAccountSelect *self )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	return( do_update( OFA_ACCOUNT_SELECT( dialog )));
+	return( do_select( OFA_ACCOUNT_SELECT( dialog )));
 }
 
 static gboolean
-do_update( ofaAccountSelect *self )
+do_select( ofaAccountSelect *self )
 {
 	ofoAccount *account;
 

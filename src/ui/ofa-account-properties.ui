@@ -396,6 +396,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                   <object class="GtkLabel" id="p2-deb-ecr">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="margin_right">14</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -409,6 +410,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                   <object class="GtkLabel" id="p2-cre-ecr">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="margin_right">14</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -422,6 +424,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                   <object class="GtkLabel" id="p2-deb-date">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="margin_right">14</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -435,6 +438,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                   <object class="GtkLabel" id="p2-cre-date">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="margin_right">14</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -579,6 +583,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                   <object class="GtkLabel" id="p2-bro-deb-ecr">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="margin_right">14</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -592,6 +597,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                   <object class="GtkLabel" id="p2-bro-cre-ecr">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="margin_right">14</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -605,6 +611,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                   <object class="GtkLabel" id="p2-bro-deb-date">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="margin_right">14</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -618,6 +625,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                   <object class="GtkLabel" id="p2-bro-cre-date">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
+                                    <property name="margin_right">14</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>

@@ -110,19 +110,30 @@ typedef enum {
 }
 	ofaMainPageUpdateType;
 
-ofaMainWindow *ofa_main_page_get_main_window( const ofaMainPage *page );
-ofoDossier    *ofa_main_page_get_dossier    ( const ofaMainPage *page );
-gint           ofa_main_page_get_theme      ( const ofaMainPage *page );
-GtkGrid       *ofa_main_page_get_grid       ( const ofaMainPage *page );
-GtkTreeView   *ofa_main_page_get_treeview   ( const ofaMainPage *page );
+/**
+ * The name of the buttons created in the buttons box
+ */
+#define PAGE_BUTTON_NEW                 "btn-new"
+#define PAGE_BUTTON_UPDATE              "btn-update"
+#define PAGE_BUTTON_DELETE              "btn-delete"
+#define PAGE_BUTTON_IMPORT              "btn-import"
+#define PAGE_BUTTON_EXPORT              "btn-export"
 
-GtkWidget     *ofa_main_page_get_new_btn    ( const ofaMainPage *page );
-GtkWidget     *ofa_main_page_get_update_btn ( const ofaMainPage *page );
-GtkWidget     *ofa_main_page_get_delete_btn ( const ofaMainPage *page );
-GtkWidget     *ofa_main_page_get_import_btn ( const ofaMainPage *page );
-GtkWidget     *ofa_main_page_get_export_btn ( const ofaMainPage *page );
+ofaMainWindow *ofa_main_page_get_main_window    ( const ofaMainPage *page );
+ofoDossier    *ofa_main_page_get_dossier        ( const ofaMainPage *page );
+gint           ofa_main_page_get_theme          ( const ofaMainPage *page );
+GtkGrid       *ofa_main_page_get_grid           ( const ofaMainPage *page );
+GtkTreeView   *ofa_main_page_get_treeview       ( const ofaMainPage *page );
 
-gboolean       ofa_main_page_delete_confirmed( const ofaMainPage *page, const gchar *message );
+GtkWidget     *ofa_main_page_get_new_btn        ( const ofaMainPage *page );
+GtkWidget     *ofa_main_page_get_update_btn     ( const ofaMainPage *page );
+GtkWidget     *ofa_main_page_get_delete_btn     ( const ofaMainPage *page );
+GtkWidget     *ofa_main_page_get_import_btn     ( const ofaMainPage *page );
+GtkWidget     *ofa_main_page_get_export_btn     ( const ofaMainPage *page );
+
+GtkBox        *ofa_main_page_get_buttons_box_new( gboolean with_import_export );
+
+gboolean       ofa_main_page_delete_confirmed   ( const ofaMainPage *page, const gchar *message );
 
 G_END_DECLS
 

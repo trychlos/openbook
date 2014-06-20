@@ -150,6 +150,7 @@ rc_files = \
 	$(NULL)
 
 ui_files = \
+	ofa-account-notebook.ui								\
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
 	ofa-bat-common.ui									\

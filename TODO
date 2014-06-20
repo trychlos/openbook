@@ -322,13 +322,6 @@
 
  243 2014- 6-20 ofaDeviseCombo: pfn becomes pfnSelected
 
- 244 2014- 6-20 ofaAccountNotebook: pfnSelect becomes pfnSelected,
-                pfnDoubleClic becomes pfnActivated
-                + have a single user_data for the two callbacks
-
- 245 2014- 6-20 ofa_account_notebook_init_dialog() becomes
-                 ofa_account_notebook_new()
-
  246 2014- 6-20 ofa_devise_combo_init_combo() becomes
                  ofa_devise_combo_new()
 
@@ -917,6 +910,15 @@
                 display labels (and so the corresponding GtkLabel
                 should be removed) 
      2014- 6-20 done - svn #3731
+
+ 244 2014- 6-20 ofaAccountNotebook: pfnSelect becomes pfnSelected,
+                pfnDoubleClic becomes pfnActivated
+                + have a single user_data for the two callbacks
+     2014- 6-20 done - svn #3736
+
+ 245 2014- 6-20 ofa_account_notebook_init_dialog() becomes
+                 ofa_account_notebook_new()
+     2014- 6-20 done - svn #3736
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

@@ -30,12 +30,17 @@
 
 #include <glib/gi18n.h>
 
-#include "core/my-utils.h"
-#include "ui/ofa-account-notebook.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
 #include "api/ofo-devise.h"
 #include "api/ofo-dossier.h"
+
+#include "core/my-utils.h"
+
+#include "ui/ofa-account-notebook.h"
+#include "ui/ofa-account-properties.h"
+#include "ui/ofa-main-page.h"
+#include "ui/ofa-main-window.h"
 
 /* private instance data
  */
@@ -44,15 +49,25 @@ struct _ofaAccountNotebookPrivate {
 
 	/* input data
 	 */
-	GtkNotebook         *book;			/* with one page per account class */
+	ofaMainWindow       *main_window;
 	ofoDossier          *dossier;
+	GtkContainer        *parent;
 	ofaAccountNotebookCb pfnSelected;
 	ofaAccountNotebookCb pfnActivated;
+	ofaAccountNotebookCb pfnViewEntries;
 	gpointer             user_data;
 
 	/* internals
 	 */
 	GList               *handlers;
+
+	/* UI
+	 */
+	GtkGrid             *top_grid;
+	GtkNotebook         *book;
+	GtkButton           *btn_update;
+	GtkButton           *btn_delete;
+	GtkButton           *btn_consult;
 };
 
 /* column ordering in the listview
@@ -88,13 +103,21 @@ static const gchar  *st_class_labels[] = {
 #define DATA_PAGE_CLASS                 "ofa-data-page-class"
 #define DATA_COLUMN_ID                  "ofa-data-column-id"
 
+static const gchar *st_ui_xml = PKGUIDIR "/ofa-account-notebook.ui";
+static const gchar *st_ui_id  = "AccountNotebookWindow";
+
 G_DEFINE_TYPE( ofaAccountNotebook, ofa_account_notebook, G_TYPE_OBJECT )
 
-static void       on_parent_dialog_finalized( ofaAccountNotebook *self, gpointer this_was_the_dialog );
+static void       on_parent_window_finalized( ofaAccountNotebook *self, gpointer this_was_the_dialog );
+static void       dossier_signals_connect( ofaAccountNotebook *self );
 static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountNotebook *self );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountNotebook *self );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountNotebook *self );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountNotebook *self );
+static void       init_ui( ofaAccountNotebook *self );
+static void       reparent_from_window( ofaAccountNotebook *self );
+static void       setup_account_book( ofaAccountNotebook *self );
+static void       setup_buttons( ofaAccountNotebook *self );
 static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountNotebook *self );
 static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaAccountNotebook *self );
 static void       insert_dataset( ofaAccountNotebook *self );
@@ -105,6 +128,7 @@ static void       on_row_selected( GtkTreeSelection *selection, ofaAccountNotebo
 static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountNotebook *self );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountNotebook *self );
 static void       on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountNotebook *self );
+static void       update_buttons_sensitivity( ofaAccountNotebook *self, ofoAccount *account );
 static void       set_row_by_iter( ofaAccountNotebook *self, ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void       select_row_by_iter( ofaAccountNotebook *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void       select_row_by_number( ofaAccountNotebook *self, const gchar *number );
@@ -114,6 +138,12 @@ static void       set_row( ofaAccountNotebook *self, ofoAccount *account, gboole
 static gboolean   book_activate_page_by_class( ofaAccountNotebook *self, gint class_num );
 static void       on_updated_class_label( ofaAccountNotebook *self, ofoClass *class );
 static void       on_deleted_class_label( ofaAccountNotebook *self, ofoClass *class );
+static void       on_new_clicked( GtkButton *button, ofaAccountNotebook *self );
+static void       on_update_clicked( GtkButton *button, ofaAccountNotebook *self );
+static void       do_update_with_account( ofaAccountNotebook *self, ofoAccount *account );
+static void       on_delete_clicked( GtkButton *button, ofaAccountNotebook *self );
+static gboolean   delete_confirmed( ofaAccountNotebook *self, ofoAccount *account );
+static void       on_view_entries( GtkButton *button, ofaAccountNotebook *self );
 
 static void
 account_notebook_finalize( GObject *instance )
@@ -220,71 +250,40 @@ ofa_account_notebook_new( ofaAccountNotebookParms *parms  )
 	static const gchar *thisfn = "ofa_account_notebook_new";
 	ofaAccountNotebook *self;
 	ofaAccountNotebookPrivate *priv;
-	gulong handler;
 
 	g_return_val_if_fail( parms, NULL );
 
 	g_debug( "%s: parms=%p", thisfn, ( void * ) parms );
 
-	g_return_val_if_fail( parms->book && GTK_IS_NOTEBOOK( parms->book ), NULL );
-	g_return_val_if_fail( parms->dossier && OFO_IS_DOSSIER( parms->dossier), NULL );
+	g_return_val_if_fail( parms->main_window && OFA_IS_MAIN_WINDOW( parms->main_window ), NULL );
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_NOTEBOOK, NULL );
 	priv = self->private;
 
-	priv->book = parms->book;
-	priv->dossier = parms->dossier;
+	priv->main_window = parms->main_window;
+	priv->dossier = ofa_main_window_get_dossier( parms->main_window );
+	priv->parent = parms->parent;
 	priv->pfnSelected = parms->pfnSelected;
 	priv->pfnActivated = parms->pfnActivated;
+	priv->pfnViewEntries = parms->pfnViewEntries;
 	priv->user_data = parms->user_data;
 
-	/* connect to the dossier in order to get advertised when
-	 * modifications occur
-	 */
-	handler = g_signal_connect(
-						G_OBJECT( parms->dossier),
-						OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	/* setup a weak reference on the dialog to auto-unref */
+	g_object_weak_ref( G_OBJECT( priv->parent ), ( GWeakNotify ) on_parent_window_finalized, self );
 
-	handler = g_signal_connect(
-						G_OBJECT( parms->dossier),
-						OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	/* connect to the dossier in order to get advertised on updates */
+	dossier_signals_connect( self );
 
-	handler = g_signal_connect(
-						G_OBJECT( parms->dossier),
-						OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect(
-						G_OBJECT( parms->dossier),
-						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-
-	/* setup a weak reference on the dialog to auto-unref
-	 */
-	g_object_weak_ref( G_OBJECT( priv->book ), ( GWeakNotify ) on_parent_dialog_finalized, self );
-
-	/* manage the notebook
-	 */
-	gtk_notebook_set_scrollable( priv->book, TRUE );
-	gtk_notebook_set_show_tabs( priv->book, TRUE );
-
-	g_signal_connect(
-			G_OBJECT( priv->book ),
-			"switch-page", G_CALLBACK( on_page_switched ), self );
-
-	g_signal_connect(
-			G_OBJECT( priv->book ),
-			"key-press-event", G_CALLBACK( on_key_pressed_event ), self );
+	/* manage the UI */
+	init_ui( self );
 
 	return( self );
 }
 
 static void
-on_parent_dialog_finalized( ofaAccountNotebook *self, gpointer this_was_the_dialog )
+on_parent_window_finalized( ofaAccountNotebook *self, gpointer this_was_the_dialog )
 {
-	static const gchar *thisfn = "ofa_account_notebook_on_parent_dialog_finalized";
+	static const gchar *thisfn = "ofa_account_notebook_on_parent_window_finalized";
 
 	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
 
@@ -292,6 +291,35 @@ on_parent_dialog_finalized( ofaAccountNotebook *self, gpointer this_was_the_dial
 			thisfn, ( void * ) self, ( void * ) this_was_the_dialog );
 
 	g_object_unref( self );
+}
+
+static void
+dossier_signals_connect( ofaAccountNotebook *self )
+{
+	ofaAccountNotebookPrivate *priv;
+	gulong handler;
+
+	priv = self->private;
+
+	handler = g_signal_connect(
+						G_OBJECT( priv->dossier),
+						OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+						G_OBJECT( priv->dossier),
+						OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+						G_OBJECT( priv->dossier),
+						OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+						G_OBJECT( priv->dossier),
+						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
 /*
@@ -378,6 +406,104 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountNotebook *self )
 		}
 		insert_dataset( self );
 	}
+}
+
+static void
+init_ui( ofaAccountNotebook *self )
+{
+	/* load our UI and attach it to the provided parent container */
+	reparent_from_window( self );
+
+	/* setup and connect the notebook */
+	setup_account_book( self );
+
+	/* setup and connect the buttons */
+	setup_buttons( self );
+}
+
+static void
+reparent_from_window( ofaAccountNotebook *self )
+{
+	GtkWidget *window;
+	GtkWidget *grid;
+
+	/* load our window */
+	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
+	g_return_if_fail( window && GTK_IS_WINDOW( window ));
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-grid" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+	self->private->top_grid = GTK_GRID( grid );
+
+	/* attach our grid to the parent's frame */
+	gtk_widget_reparent( grid, GTK_WIDGET( self->private->parent ));
+}
+
+static void
+setup_account_book( ofaAccountNotebook *self )
+{
+	ofaAccountNotebookPrivate *priv;
+	GtkWidget *book;
+
+	priv = self->private;
+
+	book = my_utils_container_get_child_by_type(
+						GTK_CONTAINER( priv->top_grid ), GTK_TYPE_NOTEBOOK );
+	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
+
+	priv->book = GTK_NOTEBOOK( book );
+
+	g_signal_connect(
+			G_OBJECT( priv->book ),
+			"switch-page", G_CALLBACK( on_page_switched ), self );
+
+	g_signal_connect(
+			G_OBJECT( priv->book ),
+			"key-press-event", G_CALLBACK( on_key_pressed_event ), self );
+}
+
+/*
+ * buttons are provided by the main page for a first part
+ * to which we add the 'View entries' button
+ */
+static void
+setup_buttons( ofaAccountNotebook *self )
+{
+	ofaAccountNotebookPrivate *priv;
+	GtkBox *buttons_box;
+	GtkWidget *button;
+	GtkFrame *frame;
+
+	priv = self->private;
+
+	/* get the standard buttons and connect our signals */
+	buttons_box = ofa_main_page_get_buttons_box_new( FALSE );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_NEW );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_clicked ), self );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_UPDATE );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_update_clicked ), self );
+	priv->btn_update = GTK_BUTTON( button );
+
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_DELETE );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_delete_clicked ), self );
+	priv->btn_delete = GTK_BUTTON( button );
+
+	/* add our account-specific buttons */
+	frame = GTK_FRAME( gtk_frame_new( NULL ));
+	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 25 );
+	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
+	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 0 );
+
+	button = gtk_button_new_with_mnemonic( _( "View _entries..." ));
+	gtk_widget_set_sensitive( button, FALSE );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), self );
+	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
+	priv->btn_consult = GTK_BUTTON( button );
+
+	/* attach the buttons box to the parent grid */
+	gtk_grid_attach( priv->top_grid, GTK_WIDGET( buttons_box ), 1, 0, 1, 1 );
 }
 
 static void
@@ -755,15 +881,16 @@ on_row_selected( GtkTreeSelection *selection, ofaAccountNotebook *self )
 	GtkTreeIter iter;
 	ofoAccount *account;
 
+	account = NULL;
+
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
+		g_object_unref( account );
+	}
+
+	update_buttons_sensitivity( self, account );
+
 	if( self->private->pfnSelected ){
-
-		account = NULL;
-
-		if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
-			g_object_unref( account );
-		}
-
 		( *self->private->pfnSelected )( account, self->private->user_data );
 	}
 }
@@ -776,16 +903,16 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 	GtkTreeIter iter;
 	ofoAccount *account;
 
+	account = NULL;
+
+	select = gtk_tree_view_get_selection( tview );
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
+		g_object_unref( account );
+	}
+
 	if( self->private->pfnActivated ){
-
-		select = gtk_tree_view_get_selection( tview );
-		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
-			g_object_unref( account );
-
-			( *self->private->pfnActivated)( account, self->private->user_data );
-		}
+		( *self->private->pfnActivated)( account, self->private->user_data );
 	}
 }
 
@@ -877,6 +1004,22 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 		}
 	}
+}
+
+static void
+update_buttons_sensitivity( ofaAccountNotebook *self, ofoAccount *account )
+{
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->btn_update ),
+			account && OFO_IS_ACCOUNT( account ));
+
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->btn_delete ),
+			account && OFO_IS_ACCOUNT( account ) && ofo_account_is_deletable( account ));
+
+	gtk_widget_set_sensitive(
+			GTK_WIDGET( self->private->btn_consult ),
+			account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account ));
 }
 
 /*
@@ -1238,5 +1381,100 @@ on_deleted_class_label( ofaAccountNotebook *self, ofoClass *class )
 		page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
 		g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
 		gtk_notebook_set_tab_label_text( self->private->book, page_w, st_class_labels[class_num-1] );
+	}
+}
+
+static void
+on_new_clicked( GtkButton *button, ofaAccountNotebook *self )
+{
+	ofoAccount *account;
+
+	account = ofo_account_new();
+
+	if( !ofa_account_properties_run( self->private->main_window, account )){
+		g_object_unref( account );
+	}
+}
+
+static void
+on_update_clicked( GtkButton *button, ofaAccountNotebook *self )
+{
+	ofoAccount *account;
+
+	account = ofa_account_notebook_get_selected( self );
+	if( account ){
+		do_update_with_account( self, account );
+	}
+}
+
+static void
+do_update_with_account( ofaAccountNotebook *self, ofoAccount *account )
+{
+	if( account ){
+		g_return_if_fail( OFO_IS_ACCOUNT( account ));
+
+		ofa_account_properties_run( self->private->main_window, account );
+	}
+
+	ofa_account_notebook_grab_focus( self );
+}
+
+static void
+on_delete_clicked( GtkButton *button, ofaAccountNotebook *self )
+{
+	ofoAccount *account;
+	gchar *number;
+
+	account = ofa_account_notebook_get_selected( self );
+	if( account ){
+		g_return_if_fail( ofo_account_is_deletable( account ));
+
+		number = g_strdup( ofo_account_get_number( account ));
+
+		if( delete_confirmed( self, account ) &&
+				ofo_account_delete( account )){
+
+			/* nothing to do here, all being managed by signal handlers
+			 * just reset the selection as this is not managed by the
+			 * account notebook (and doesn't have to)
+			 * asking for selection of the just deleted account makes
+			 * almost sure that we are going to select the most close
+			 * row */
+			on_row_selected( NULL, self );
+			ofa_account_notebook_set_selected( self, number );
+		}
+
+		g_free( number );
+	}
+
+	ofa_account_notebook_grab_focus( self );
+}
+
+static gboolean
+delete_confirmed( ofaAccountNotebook *self, ofoAccount *account )
+{
+	gchar *msg;
+	gboolean delete_ok;
+
+	msg = g_strdup_printf( _( "Are you sure you want delete the '%s - %s' account ?" ),
+			ofo_account_get_number( account ),
+			ofo_account_get_label( account ));
+
+	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
+
+	g_free( msg );
+
+	return( delete_ok );
+}
+
+static void
+on_view_entries( GtkButton *button, ofaAccountNotebook *self )
+{
+	ofoAccount *account;
+
+	account = ofa_account_notebook_get_selected( self );
+
+	if( self->private->pfnViewEntries ){
+		( *self->private->pfnViewEntries )( account, self->private->user_data );
 	}
 }
