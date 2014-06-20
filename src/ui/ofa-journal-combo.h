@@ -87,8 +87,8 @@ GType            ofa_journal_combo_get_type   ( void ) G_GNUC_CONST;
  *  changes
  * @disp_mnemo: whether the combo box should display the mnemo
  * @disp_label: whether the combo box should display the label
- * @pfn: [allow-none]: a user-provided callback which will be triggered
- *  on each selection change
+ * @pfnSelected: [allow-none]: a user-provided callback which will be
+ *  triggered on each selection change
  * @user_data: user-data passed to the callback
  * @initial_mnemo: the journal identifier of the initial selection, or
  *  NULL
@@ -100,7 +100,7 @@ typedef struct {
 	const gchar      *label_name;
 	gboolean          disp_mnemo;
 	gboolean          disp_label;
-	ofaJournalComboCb pfn;
+	ofaJournalComboCb pfnSelected;
 	gpointer          user_data;
 	const gchar      *initial_mnemo;
 }

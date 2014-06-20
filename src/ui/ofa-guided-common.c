@@ -352,7 +352,7 @@ setup_journal_combo( ofaGuidedCommon *self )
 	parms.label_name = NULL;
 	parms.disp_mnemo = FALSE;
 	parms.disp_label = TRUE;
-	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
+	parms.pfnSelected = ( ofaJournalComboCb ) on_journal_changed;
 	parms.user_data = self;
 	parms.initial_mnemo = priv->journal;
 

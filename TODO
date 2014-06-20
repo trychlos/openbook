@@ -314,8 +314,6 @@
 
  242 2014- 6-20 ofaJournalCombo: pfn becomes pfnSelected
 
- 243 2014- 6-20 ofaDeviseCombo: pfn becomes pfnSelected
-
  249
 
 -----------------------------------------------------------------------
@@ -908,6 +906,9 @@
                 display labels (and so the corresponding GtkLabel
                 should be removed) 
      2014- 6-20 done - svn #3731
+
+ 243 2014- 6-20 ofaDeviseCombo: pfn becomes pfnSelected
+     2014- 6-20 done - svn #3741
 
  244 2014- 6-20 ofaAccountNotebook: pfnSelect becomes pfnSelected,
                 pfnDoubleClic becomes pfnActivated

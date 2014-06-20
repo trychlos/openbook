@@ -273,7 +273,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.label_name = NULL;
 	parms.disp_mnemo = TRUE;
 	parms.disp_label = TRUE;
-	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
+	parms.pfnSelected = ( ofaJournalComboCb ) on_journal_changed;
 	parms.user_data = self;
 	parms.initial_mnemo = priv->is_new ? priv->journal : ofo_model_get_journal( priv->model );
 

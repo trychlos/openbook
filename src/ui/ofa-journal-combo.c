@@ -44,7 +44,7 @@ struct _ofaJournalComboPrivate {
 	ofoDossier        *dossier;
 	gchar             *combo_name;
 	gchar             *label_name;
-	ofaJournalComboCb  pfn;
+	ofaJournalComboCb  pfnSelected;
 	gpointer           user_data;
 
 	/* runtime
@@ -176,7 +176,7 @@ ofa_journal_combo_new( const ofaJournalComboParms *parms )
 	priv->dossier = parms->dossier;
 	priv->combo_name = g_strdup( parms->combo_name );
 	priv->label_name = g_strdup( parms->label_name );
-	priv->pfn = parms->pfn;
+	priv->pfnSelected = parms->pfnSelected;
 	priv->user_data = parms->user_data;
 
 	/* setup a weak reference on the container to auto-unref */
@@ -233,6 +233,7 @@ ofa_journal_combo_new( const ofaJournalComboParms *parms )
 static void
 on_journal_changed( GtkComboBox *box, ofaJournalCombo *self )
 {
+	ofaJournalComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkWidget *widget;
@@ -240,6 +241,8 @@ on_journal_changed( GtkComboBox *box, ofaJournalCombo *self )
 
 	/*g_debug( "ofa_journal_combo_on_journal_changed: dialog=%p (%s)",
 			( void * ) self->private->dialog, G_OBJECT_TYPE_NAME( self->private->dialog ));*/
+
+	priv = self->private;
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 
@@ -249,16 +252,16 @@ on_journal_changed( GtkComboBox *box, ofaJournalCombo *self )
 				JOU_COL_LABEL, &label,
 				-1 );
 
-		if( self->private->label_name ){
+		if( priv->label_name ){
 			widget = my_utils_container_get_child_by_name(
-							self->private->container, self->private->label_name );
+							priv->container, priv->label_name );
 			if( widget && GTK_IS_LABEL( widget )){
 				gtk_label_set_text( GTK_LABEL( widget ), label );
 			}
 		}
 
-		if( self->private->pfn ){
-			( *self->private->pfn )( mnemo, self->private->user_data );
+		if( priv->pfnSelected ){
+			( *priv->pfnSelected )( mnemo, priv->user_data );
 		}
 
 		g_free( label );
