@@ -87,8 +87,8 @@ typedef struct {
 	ofaMainWindow    *main_window;
 	GtkContainer     *parent;
 	gboolean          allow_multiple_selection;
-	JournalTreeviewCb pfnSelection;
-	JournalTreeviewCb pfnActivation;
+	JournalTreeviewCb pfnSelected;
+	JournalTreeviewCb pfnActivated;
 	void             *user_data;
 }
 	JournalTreeviewParms;

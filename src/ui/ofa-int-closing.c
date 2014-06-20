@@ -189,8 +189,8 @@ v_init_dialog( myDialog *dialog )
 									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
 									"px-treeview-alignement" ));
 	parms.allow_multiple_selection = TRUE;
-	parms.pfnActivation = ( JournalTreeviewCb ) on_rows_activated;
-	parms.pfnSelection = ( JournalTreeviewCb ) on_rows_selected;
+	parms.pfnActivated = ( JournalTreeviewCb ) on_rows_activated;
+	parms.pfnSelected = ( JournalTreeviewCb ) on_rows_selected;
 	parms.user_data = dialog;
 
 	priv->tview = ofa_journal_treeview_new( &parms );

@@ -47,8 +47,8 @@ struct _ofaJournalTreeviewPrivate {
 	ofoDossier       *dossier;
 	GtkContainer     *parent;
 	gboolean          allow_multiple_selection;
-	JournalTreeviewCb pfnSelection;
-	JournalTreeviewCb pfnActivation;
+	JournalTreeviewCb pfnSelected;
+	JournalTreeviewCb pfnActivated;
 	void             *user_data;
 
 	/* internal datas
@@ -193,8 +193,8 @@ ofa_journal_treeview_new( const JournalTreeviewParms *parms )
 	view->private->dossier = ofa_main_window_get_dossier( parms->main_window );
 	view->private->parent = parms->parent;
 	view->private->allow_multiple_selection = parms->allow_multiple_selection;
-	view->private->pfnSelection = parms->pfnSelection;
-	view->private->pfnActivation = parms->pfnActivation;
+	view->private->pfnSelected = parms->pfnSelected;
+	view->private->pfnActivated = parms->pfnActivated;
 	view->private->user_data = parms->user_data;
 
 	/* setup a weak reference on the container to auto-unref */
@@ -526,8 +526,8 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 	priv = self->private;
 	journal = get_selected( self );
 
-	if( journal && priv->pfnActivation ){
-		( *priv->pfnActivation )( ofo_journal_get_mnemo( journal ), priv->user_data );
+	if( journal && priv->pfnActivated ){
+		( *priv->pfnActivated )( ofo_journal_get_mnemo( journal ), priv->user_data );
 	}
 }
 
@@ -540,8 +540,8 @@ on_row_selected( GtkTreeSelection *selection, ofaJournalTreeview *self )
 	priv = self->private;
 	journal = get_selected( self );
 
-	if( journal && priv->pfnSelection ){
-		( *priv->pfnSelection )( ofo_journal_get_mnemo( journal ), priv->user_data );
+	if( journal && priv->pfnSelected ){
+		( *priv->pfnSelected )( ofo_journal_get_mnemo( journal ), priv->user_data );
 	}
 }
 

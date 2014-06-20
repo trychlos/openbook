@@ -181,8 +181,8 @@ setup_tree_view( ofaMainPage *page )
 	parms.main_window = ofa_main_page_get_main_window( page );
 	parms.parent = GTK_CONTAINER( frame );
 	parms.allow_multiple_selection = FALSE;
-	parms.pfnActivation = ( JournalTreeviewCb ) on_row_activated;
-	parms.pfnSelection = ( JournalTreeviewCb ) on_row_selected;
+	parms.pfnActivated = ( JournalTreeviewCb ) on_row_activated;
+	parms.pfnSelected = ( JournalTreeviewCb ) on_row_selected;
 	parms.user_data = page;
 
 	priv->tview = ofa_journal_treeview_new( &parms );
