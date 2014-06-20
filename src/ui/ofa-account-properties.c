@@ -260,7 +260,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.user_data = self;
 	parms.initial_code = priv->devise;
 
-	ofa_devise_combo_init_combo( &parms );
+	ofa_devise_combo_new( &parms );
 
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 

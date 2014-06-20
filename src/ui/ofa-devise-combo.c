@@ -144,9 +144,9 @@ on_dialog_finalized( ofaDeviseCombo *self, gpointer this_was_the_dialog )
  * ofa_devise_combo_init_dialog:
  */
 ofaDeviseCombo *
-ofa_devise_combo_init_combo( const ofaDeviseComboParms *parms )
+ofa_devise_combo_new( const ofaDeviseComboParms *parms )
 {
-	static const gchar *thisfn = "ofa_devise_combo_init_combo";
+	static const gchar *thisfn = "ofa_devise_combo_new";
 	ofaDeviseCombo *self;
 	ofaDeviseComboPrivate *priv;
 	GtkWidget *combo;

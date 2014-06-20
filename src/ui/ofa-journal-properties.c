@@ -267,7 +267,7 @@ init_balances_page( ofaJournalProperties *self )
 	parms.user_data = self;
 	parms.initial_code = ofo_dossier_get_default_devise( MY_WINDOW( self )->protected->dossier );
 
-	self->private->dev_combo = ofa_devise_combo_init_combo( &parms );
+	self->private->dev_combo = ofa_devise_combo_new( &parms );
 
 	exe_box = ( GtkComboBox * ) my_utils_container_get_child_by_name( container, "p2-exe-combo" );
 	g_return_if_fail( exe_box && GTK_IS_COMBO_BOX( exe_box ));

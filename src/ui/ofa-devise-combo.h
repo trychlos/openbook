@@ -106,7 +106,7 @@ typedef struct {
 
 GType           ofa_devise_combo_get_type     ( void ) G_GNUC_CONST;
 
-ofaDeviseCombo *ofa_devise_combo_init_combo   ( const ofaDeviseComboParms *parms );
+ofaDeviseCombo *ofa_devise_combo_new          ( const ofaDeviseComboParms *parms );
 
 gint            ofa_devise_combo_get_selection( ofaDeviseCombo *self, gchar **code, gchar **label );
 

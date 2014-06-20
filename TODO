@@ -319,9 +319,6 @@
  246 2014- 6-20 ofa_devise_combo_init_combo() becomes
                  ofa_devise_combo_new()
 
- 248 2014- 6-20 ofaMainPage: has_import_export becomes has_import+
-                has_export
-
  249
 
 -----------------------------------------------------------------------
@@ -927,6 +924,10 @@
  247 2014- 6-20 ofaAccountSelect: be able to view entries in a dialog
                 box - or disable the button
      2014- 6-20 done - svn #3738
+
+ 248 2014- 6-20 ofaMainPage: has_import_export becomes has_import+
+                has_export
+     2014- 6-20 done - svn #3739
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

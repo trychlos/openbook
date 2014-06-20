@@ -212,7 +212,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.user_data = dialog;
 	parms.initial_code = priv->devise;
 
-	ofa_devise_combo_init_combo( &parms );
+	ofa_devise_combo_new( &parms );
 
 	my_utils_init_notes_ex( dialog->prot->dialog, dossier );
 	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, dossier );
