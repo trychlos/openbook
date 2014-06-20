@@ -98,7 +98,8 @@ G_BEGIN_DECLS
 #define MAIN_PAGE_PROP_DOSSIER           "main-page-prop-dossier"
 #define MAIN_PAGE_PROP_GRID              "main-page-prop-grid"
 #define MAIN_PAGE_PROP_THEME             "main-page-prop-theme"
-#define MAIN_PAGE_PROP_HAS_IMPORT_EXPORT "main-page-prop-import-export"
+#define MAIN_PAGE_PROP_HAS_IMPORT        "main-page-prop-import"
+#define MAIN_PAGE_PROP_HAS_EXPORT        "main-page-prop-export"
 
 /**
  * Whether an object has been created, updated or deleted

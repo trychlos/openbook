@@ -45,7 +45,8 @@ struct _ofaMainPagePrivate {
 	ofoDossier    *dossier;
 	GtkGrid       *grid;
 	gint           theme;
-	gboolean       has_import_export;
+	gboolean       has_import;
+	gboolean       has_export;
 
 	/* UI
 	 */
@@ -63,7 +64,8 @@ enum {
 	PROP_DOSSIER_ID,
 	PROP_GRID_ID,
 	PROP_THEME_ID,
-	PROP_HAS_IMPORT_EXPORT_ID
+	PROP_HAS_IMPORT_ID,
+	PROP_HAS_EXPORT_ID
 };
 
 G_DEFINE_TYPE( ofaMainPage, ofa_main_page, G_TYPE_OBJECT )
@@ -154,8 +156,12 @@ main_page_get_property( GObject *instance, guint property_id, GValue *value, GPa
 				g_value_set_int( value, priv->theme );
 				break;
 
-			case PROP_HAS_IMPORT_EXPORT_ID:
-				g_value_set_boolean( value, priv->has_import_export );
+			case PROP_HAS_IMPORT_ID:
+				g_value_set_boolean( value, priv->has_import );
+				break;
+
+			case PROP_HAS_EXPORT_ID:
+				g_value_set_boolean( value, priv->has_export );
 				break;
 
 			default:
@@ -197,8 +203,12 @@ main_page_set_property( GObject *instance, guint property_id, const GValue *valu
 				priv->theme = g_value_get_int( value );
 				break;
 
-			case PROP_HAS_IMPORT_EXPORT_ID:
-				priv->has_import_export = g_value_get_boolean( value );
+			case PROP_HAS_IMPORT_ID:
+				priv->has_import = g_value_get_boolean( value );
+				break;
+
+			case PROP_HAS_EXPORT_ID:
+				priv->has_export = g_value_get_boolean( value );
 				break;
 
 			default:
@@ -320,11 +330,21 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
-			PROP_HAS_IMPORT_EXPORT_ID,
+			PROP_HAS_IMPORT_ID,
 			g_param_spec_boolean(
-					MAIN_PAGE_PROP_HAS_IMPORT_EXPORT,
-					"Has import/export",
-					"Whether the page will display the 'Import...'/'Export...' buttons",
+					MAIN_PAGE_PROP_HAS_IMPORT,
+					"Has import button",
+					"Whether the page will display the 'Import...' button",
+					FALSE,
+					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_HAS_EXPORT_ID,
+			g_param_spec_boolean(
+					MAIN_PAGE_PROP_HAS_EXPORT,
+					"Has export button",
+					"Whether the page will display the 'Export...' button",
 					FALSE,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
@@ -422,7 +442,7 @@ v_setup_buttons( ofaMainPage *page )
 	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
 
 	priv = page->private;
-	buttons_box = GTK_BOX( create_buttons( priv->has_import_export, FALSE ));
+	buttons_box = GTK_BOX( create_buttons( priv->has_import, priv->has_export ));
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_NEW );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_new_clicked ), page );
@@ -436,15 +456,12 @@ v_setup_buttons( ofaMainPage *page )
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_delete_clicked ), page );
 	priv->btn_delete = GTK_BUTTON( button );
 
-	/* pwi 2014- 6- 5
-	 * temporarily disable the import/export buttons
-	 */
-	if( 0 && priv->has_import_export ){
-
+	if( priv->has_import ){
 		button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_IMPORT );
 		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_import_clicked ), page );
 		priv->btn_import = GTK_BUTTON( button );
-
+	}
+	if( priv->has_export ){
 		button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_EXPORT );
 		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( do_on_export_clicked ), page );
 		priv->btn_export = GTK_BUTTON( button );
@@ -485,16 +502,13 @@ create_buttons( gboolean has_import, gboolean has_export )
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 8 );
 
-	/* pwi 2014- 6- 5
-	 * temporarily disable the import/export buttons
-	 */
-	if( 0 && has_import ){
+	if( has_import ){
 		button = gtk_button_new_with_mnemonic( _( "_Import..." ));
 		gtk_box_pack_start( buttons_box, button, FALSE, FALSE, 0 );
 		gtk_buildable_set_name( GTK_BUILDABLE( button ), PAGE_BUTTON_IMPORT );
 	}
 
-	if( 0 && has_export ){
+	if( has_export ){
 		button = gtk_button_new_with_mnemonic( _( "_Export..." ));
 		gtk_box_pack_start( buttons_box, button, FALSE, FALSE, 0 );
 		gtk_buildable_set_name( GTK_BUILDABLE( button ), PAGE_BUTTON_EXPORT );

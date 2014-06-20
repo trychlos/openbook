@@ -135,7 +135,8 @@ typedef struct {
 	gint         theme_id;
 	const gchar *label;
 	GType      (*fn_get_type)( void );
-	gboolean     has_import_export;
+	gboolean     has_import;
+	gboolean     has_export;
 }
 	sThemeDef;
 
@@ -144,52 +145,62 @@ static sThemeDef st_theme_defs[] = {
 		{ THM_ACCOUNTS,
 				N_( "Chart of accounts" ),
 				ofa_accounts_chart_get_type,
-				TRUE },
+				FALSE,
+				FALSE },
 
 		{ THM_JOURNALS,
 				N_( "Journals" ),
 				ofa_journals_set_get_type,
-				TRUE },
+				FALSE,
+				FALSE },
 
 		{ THM_MODELS,
 				N_( "Entry models" ),
 				ofa_models_set_get_type,
-				TRUE },
+				FALSE,
+				FALSE },
 
 		{ THM_DEVISES,
 				N_( "Currencies" ),
 				ofa_devises_set_get_type,
-				TRUE },
+				FALSE,
+				FALSE },
 
 		{ THM_TAUX,
 				N_( "Rates" ),
 				ofa_taux_set_get_type,
-				TRUE },
+				FALSE,
+				FALSE },
 
 		{ THM_CONCIL,
 				N_( "Reconciliation" ),
 				ofa_rappro_get_type,
+				FALSE,
 				FALSE },
 
 		{ THM_CLASSES,
 				N_( "Account classes" ),
 				ofa_classes_set_get_type,
-				TRUE },
+				FALSE,
+				FALSE },
 
 		{ THM_BATFILES,
 				N_( "Imported BAT files" ),
 				ofa_bat_set_get_type,
-				TRUE },
+				FALSE,
+				FALSE },
 
 		{ THM_GUIDED_INPUT,
 				N_( "Guided input" ),
 				ofa_guided_ex_get_type,
-				TRUE },
+				FALSE,
+				FALSE },
 
 		{ THM_VIEW_ENTRIES,
 				N_( "View entries" ),
 				ofa_view_entries_get_type,
-				TRUE },
+				FALSE,
+				FALSE },
 
 		{ 0 }
 };
@@ -1138,11 +1149,12 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 	 * ofaMainPage
 	 */
 	handler = g_object_new(( *theme_def->fn_get_type )(),
-					MAIN_PAGE_PROP_WINDOW,            main,
-					MAIN_PAGE_PROP_DOSSIER,           main->private->dossier,
-					MAIN_PAGE_PROP_GRID,              grid,
-					MAIN_PAGE_PROP_THEME,             theme_def->theme_id,
-					MAIN_PAGE_PROP_HAS_IMPORT_EXPORT, theme_def->has_import_export,
+					MAIN_PAGE_PROP_WINDOW,     main,
+					MAIN_PAGE_PROP_DOSSIER,    main->private->dossier,
+					MAIN_PAGE_PROP_GRID,       grid,
+					MAIN_PAGE_PROP_THEME,      theme_def->theme_id,
+					MAIN_PAGE_PROP_HAS_IMPORT, theme_def->has_import,
+					MAIN_PAGE_PROP_HAS_EXPORT, theme_def->has_export,
 					NULL );
 
 	g_object_set_data( G_OBJECT( grid ), OFA_DATA_HANDLER, handler );

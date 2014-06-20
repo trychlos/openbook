@@ -498,9 +498,8 @@ setup_buttons( ofaAccountNotebook *self )
 
 	/* add our account-specific buttons */
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 25 );
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 0 );
+	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 8 );
 
 	if( priv->has_view_entries ){
 		button = gtk_button_new_with_mnemonic( _( "View _entries..." ));
