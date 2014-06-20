@@ -299,9 +299,6 @@
                 a normal label + move it to the right in order to be
                 aligned with account entry
 
- 223 2014- 6-16 DossierProperties: add a tab for the current exercice
-                enter begin and end dates, display last entry number
-
  224 2014- 6-16 DossierProperties: add a tab for the archived exercices
 
  229 2014- 6-16 Entry model: duplicate a line
@@ -849,6 +846,10 @@
  222 2014- 6-16 GuidedInput: Cancel should reset the fields (but not
                 the dates)
      2014- 6-18 done
+
+ 223 2014- 6-16 DossierProperties: add a tab for the current exercice
+                enter begin and end dates, display last entry number
+     2014- 6-20 done - svn #3744
 
  225 2014- 6-16 When selecting an account, should be able to create a
                 new account

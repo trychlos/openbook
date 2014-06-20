@@ -196,6 +196,7 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 	gint number;
 	const GDate *deffect, *prev_effect;
 	gdouble prev;
+	gint prev_ecr;
 
 	if( ofo_entry_get_status( entry ) == ENT_STATUS_ROUGH ){
 
@@ -208,21 +209,26 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 		deffect = ofo_entry_get_deffect( entry );
 
 		if( debit ){
-			prev = ofo_account_get_bro_deb_mnt( account );
 			/* entry number should be strictly increasing */
+			prev_ecr = ofo_account_get_bro_deb_ecr( account );
+			g_return_if_fail( prev_ecr < number );
 			ofo_account_set_bro_deb_ecr( account, number );
 			prev_effect = ofo_account_get_bro_deb_date( account );
 			if( g_date_compare( prev_effect, deffect ) < 0 ){
 				ofo_account_set_bro_deb_date( account, deffect );
 			}
+			prev = ofo_account_get_bro_deb_mnt( account );
 			ofo_account_set_bro_deb_mnt( account, prev+debit );
+
 		} else {
-			prev = ofo_account_get_bro_cre_mnt( account );
+			prev_ecr = ofo_account_get_bro_cre_ecr( account );
+			g_return_if_fail( prev_ecr < number );
 			ofo_account_set_bro_cre_ecr( account, number );
 			prev_effect = ofo_account_get_bro_cre_date( account );
 			if( g_date_compare( prev_effect, deffect ) < 0 ){
 				ofo_account_set_bro_cre_date( account, deffect );
 			}
+			prev = ofo_account_get_bro_cre_mnt( account );
 			ofo_account_set_bro_cre_mnt( account, prev+credit );
 		}
 
