@@ -322,10 +322,6 @@
  239 2014- 6-20 DELETE FROM OFA_T_MODELES_DET WHERE MOD_MNEMO='EFBUR2'
                 is called twice
 
- 240 2014- 6-20 entry model properties: the journal combo should 
-                display labels (and so the corresponding GtkLabel
-                should be removed) 
-
  241
 
 -----------------------------------------------------------------------
@@ -892,6 +888,11 @@
  237 2014- 6-20 Print reconciliation: have a light gray background
                 every other line
      2014- 6-20 done - svn #3728
+
+ 240 2014- 6-20 entry model properties: the journal combo should 
+                display labels (and so the corresponding GtkLabel
+                should be removed) 
+     2014- 6-20 done - svn #3731
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

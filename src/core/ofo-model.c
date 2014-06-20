@@ -1202,7 +1202,6 @@ static gboolean
 model_do_insert( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 {
 	return( model_insert_main( model, sgbd, user ) &&
-			model_delete_details( model, sgbd ) &&
 			model_insert_details_ex( model, sgbd ));
 }
 
