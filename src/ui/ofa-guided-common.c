@@ -214,6 +214,8 @@ static gboolean          do_validate( ofaGuidedCommon *self );
 static ofoEntry          *entry_from_detail( ofaGuidedCommon *self, gint row, const gchar *piece );
 static void              display_ok_message( ofaGuidedCommon *self, gint count );
 static void              do_reset_entries_rows( ofaGuidedCommon *self );
+static void              on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedCommon *self );
+static void              on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedCommon *self );
 
 static void
 guided_common_finalize( GObject *instance )
@@ -327,6 +329,13 @@ setup_from_dossier( ofaGuidedCommon *self )
 		memcpy( &priv->last_closed_exe, date, sizeof( GDate ));
 	}
 
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
 }
 
 static void
@@ -441,6 +450,7 @@ ofa_guided_common_set_model( ofaGuidedCommon *self, const ofoModel *model )
 		setup_model_data( self );
 		setup_entries_grid( self );
 
+		gtk_widget_show_all( GTK_WIDGET( priv->parent ));
 		check_for_enable_dlg( self );
 	}
 }
@@ -1672,5 +1682,54 @@ do_reset_entries_rows( ofaGuidedCommon *self )
 		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
 		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_CREDIT, i );
 		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+	}
+}
+
+/*
+ * OFA_SIGNAL_UPDATED_OBJECT signal handler
+ */
+static void
+on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedCommon *self )
+{
+	static const gchar *thisfn = "ofa_guided_common_on_updated_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_MODEL( object )){
+		if( OFO_MODEL( object ) == self->private->model ){
+			ofa_guided_common_set_model( self, OFO_MODEL( object ));
+		}
+	}
+}
+
+/*
+ * OFA_SIGNAL_DELETED_OBJECT signal handler
+ */
+static void
+on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedCommon *self )
+{
+	static const gchar *thisfn = "ofa_guided_common_on_deleted_object";
+	gint i;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_MODEL( object )){
+		if( OFO_MODEL( object ) == self->private->model ){
+
+			for( i=0 ; i < self->private->entries_count ; ++i ){
+				remove_entry_row( self, i );
+			}
+			self->private->model = NULL;
+			self->private->entries_count = 0;
+		}
 	}
 }

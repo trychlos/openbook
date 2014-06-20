@@ -454,12 +454,12 @@ model_load_dataset( void )
 ofoModel *
 ofo_model_get_by_mnemo( const ofoDossier *dossier, const gchar *mnemo )
 {
-	static const gchar *thisfn = "ofo_model_get_by_mnemo";
+	/*static const gchar *thisfn = "ofo_model_get_by_mnemo";*/
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
 
-	g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );
+	/*g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );*/
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
 

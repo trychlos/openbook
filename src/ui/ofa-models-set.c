@@ -70,11 +70,6 @@ enum {
 	N_COLUMNS
 };
 
-/* an antry model not attached to any journal
- */
-#define UNKNOWN_JOURNAL_MNEMO            "__xx__"
-#define UNKNOWN_JOURNAL_LABEL            _( "Unclassed" )
-
 /* data attached to each page of the model category notebook
  */
 #define DATA_PAGE_JOURNAL                "data-page-journal-id"

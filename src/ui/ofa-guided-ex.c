@@ -104,10 +104,19 @@ static gboolean   is_left_select_enableable( ofaGuidedEx *self );
 static void       on_left_select_clicked( GtkButton *button, ofaGuidedEx *self );
 static void       select_model( ofaGuidedEx *self );
 static void       insert_left_journal_row( ofaGuidedEx *self, ofoJournal *journal );
-static void       insert_left_model_row( ofaGuidedEx *self, ofoModel *model );
+static void       update_left_journal_row( ofaGuidedEx *self, ofoJournal *journal, const gchar *prev_id );
+static void       remove_left_journal_row( ofaGuidedEx *self, ofoJournal *journal );
 static gboolean   find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void       insert_left_model_row( ofaGuidedEx *self, ofoModel *model );
+static void       update_left_model_row( ofaGuidedEx *self, ofoModel *model, const gchar *prev_id );
+static void       remove_left_model_row( ofaGuidedEx *self, ofoModel *model );
+static gboolean   find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static void       on_right_ok( GtkButton *button, ofaGuidedEx *self );
 static void       on_right_cancel( GtkButton *button, ofaGuidedEx *self );
+static void       on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
+static void       on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
+static void       on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
+static void       on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
 
 static void
 guided_ex_finalize( GObject *instance )
@@ -182,16 +191,32 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 static GtkWidget *
 v_setup_view( ofaMainPage *page )
 {
-	ofaGuidedEx *self;
+	ofaGuidedExPrivate *priv;
 	GtkPaned *child;
 
-	self = OFA_GUIDED_EX( page );
-	self->private->dossier = ofa_main_page_get_dossier( page );
+	priv = OFA_GUIDED_EX( page )->private;
+	priv->dossier = ofa_main_page_get_dossier( page );
 
 	child = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
 	gtk_paned_add1( child, setup_view_left( OFA_GUIDED_EX( page )));
 	gtk_paned_add2( child, setup_view_right( OFA_GUIDED_EX( page )));
-	self->private->pane = child;
+	priv->pane = child;
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), page );
 
 	return( GTK_WIDGET( child ));
 }
@@ -575,10 +600,118 @@ insert_left_journal_row( ofaGuidedEx *self, ofoJournal *journal )
 			&iter,
 			NULL,
 			-1,
-			LEFT_COL_MNEMO, ofo_journal_get_mnemo( journal ),
-			LEFT_COL_LABEL, ofo_journal_get_label( journal ),
+			LEFT_COL_MNEMO,  ofo_journal_get_mnemo( journal ),
+			LEFT_COL_LABEL,  ofo_journal_get_label( journal ),
 			LEFT_COL_OBJECT, journal,
 			-1 );
+}
+
+static void
+update_left_journal_row( ofaGuidedEx *self, ofoJournal *journal, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofa_guided_ex_update_left_journal_row";
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gboolean found;
+
+	found = find_left_journal_by_mnemo( self, prev_id, &tmodel, &iter );
+	if( found ){
+		gtk_tree_store_set(
+				GTK_TREE_STORE( tmodel ),
+				&iter,
+				LEFT_COL_MNEMO, ofo_journal_get_mnemo( journal ),
+				LEFT_COL_LABEL, ofo_journal_get_label( journal ),
+				-1 );
+	} else {
+		g_warning( "%s: unable to find journal %s", thisfn, prev_id );
+	}
+}
+
+/*
+ * models which were stored under the removed journal are to be
+ *  reordered under an 'Unclassed' category
+ */
+static void
+remove_left_journal_row( ofaGuidedEx *self, ofoJournal *journal )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter, child_iter;
+	gboolean found;
+	ofoModel *model;
+
+	if( !find_left_journal_by_mnemo( self, ofo_journal_get_mnemo( journal ), &tmodel, &iter )){
+		return;
+	}
+
+	while( gtk_tree_model_iter_n_children( tmodel, &iter )){
+		found = gtk_tree_model_iter_children( tmodel, &child_iter, &iter );
+		g_return_if_fail( found );
+
+		gtk_tree_model_get(
+					tmodel ,
+					&child_iter,
+					LEFT_COL_OBJECT, &model,
+					-1 );
+		g_return_if_fail( model && OFO_IS_MODEL( model ));
+
+		gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &child_iter );
+		insert_left_model_row( self, model );
+		g_object_unref( model );
+	}
+
+	found = find_left_journal_by_mnemo( self, ofo_journal_get_mnemo( journal ), NULL, &iter );
+	g_return_if_fail( found );
+
+	gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter );
+}
+
+/*
+ * returns TRUE if found
+ *
+ * we also manage the case of the 'Unclassed' catagory were we are
+ * storing models with unreferenced journals - the ofoJournal object
+ * is null
+ */
+static gboolean
+find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+{
+	GtkTreeModel *my_tmodel;
+	GtkTreeIter my_iter;
+	gchar *journal;
+	ofoBase *object;
+	gint cmp;
+
+	my_tmodel = gtk_tree_view_get_model( self->private->left_tview );
+	if( tmodel ){
+		*tmodel = my_tmodel;
+	}
+	if( gtk_tree_model_get_iter_first( my_tmodel, &my_iter )){
+		while( TRUE ){
+			gtk_tree_model_get(
+						my_tmodel, &my_iter,
+						LEFT_COL_MNEMO, &journal, LEFT_COL_OBJECT, &object, -1 );
+			if( object ){
+				g_object_unref( object );
+			}
+			g_return_val_if_fail( !object || OFO_IS_JOURNAL( object ), FALSE );
+
+			cmp = g_utf8_collate( mnemo, journal );
+			g_free( journal );
+
+			if( cmp == 0 ){
+				if( iter ){
+					*iter = my_iter;
+				}
+				return( TRUE );
+			}
+
+			if( !gtk_tree_model_iter_next( my_tmodel, &my_iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
 }
 
 static void
@@ -591,33 +724,85 @@ insert_left_model_row( ofaGuidedEx *self, ofoModel *model )
 
 	found = find_left_journal_by_mnemo( self, ofo_model_get_journal( model ), &tmodel, &parent_iter );
 	if( !found ){
-		g_debug( "%s: unable to find journal %s for model %s",
-				thisfn,
-				ofo_model_get_journal( model ),
-				ofo_model_get_mnemo( model ));
+		g_debug( "%s: journal not found: %s", thisfn, ofo_model_get_journal( model ));
+
+		found = find_left_journal_by_mnemo( self, UNKNOWN_JOURNAL_MNEMO, &tmodel, &parent_iter );
+		if( !found ){
+			g_debug( "%s: defining journal for unclassed models: %s", thisfn, UNKNOWN_JOURNAL_MNEMO );
+
+			gtk_tree_store_insert_with_values(
+					GTK_TREE_STORE( tmodel ),
+					&parent_iter,
+					NULL,
+					-1,
+					LEFT_COL_MNEMO,  UNKNOWN_JOURNAL_MNEMO,
+					LEFT_COL_LABEL,  UNKNOWN_JOURNAL_LABEL,
+					LEFT_COL_OBJECT, NULL,
+					-1 );
+		}
 	}
 
-	tmodel = gtk_tree_view_get_model( self->private->left_tview );
 	gtk_tree_store_insert_with_values(
 			GTK_TREE_STORE( tmodel ),
 			&iter,
-			found ? &parent_iter : NULL,
+			&parent_iter,
 			-1,
-			LEFT_COL_MNEMO, ofo_model_get_mnemo( model ),
-			LEFT_COL_LABEL, ofo_model_get_label( model ),
+			LEFT_COL_MNEMO,  ofo_model_get_mnemo( model ),
+			LEFT_COL_LABEL,  ofo_model_get_label( model ),
 			LEFT_COL_OBJECT, model,
 			-1 );
+}
+
+static void
+update_left_model_row( ofaGuidedEx *self, ofoModel *model, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofa_guided_ex_udpate_left_model_row";
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gboolean found;
+
+	found = find_left_model_by_mnemo( self, prev_id, &tmodel, &iter );
+
+	if( found ){
+		gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter );
+		insert_left_model_row( self, model );
+
+	} else {
+		g_warning( "%s: unable to find model %s", thisfn, prev_id );
+	}
+}
+
+static void
+remove_left_model_row( ofaGuidedEx *self, ofoModel *model )
+{
+	static const gchar *thisfn = "ofa_guided_ex_remove_left_model_row";
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gboolean found;
+	const gchar *mnemo;
+
+	mnemo = ofo_model_get_mnemo( model );
+	found = find_left_model_by_mnemo( self, mnemo, &tmodel, &iter );
+
+	if( found ){
+		gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter );
+
+	} else {
+		g_warning( "%s: unable to find model %s", thisfn, mnemo );
+	}
 }
 
 /*
  * returns TRUE if found
  */
 static gboolean
-find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
 	GtkTreeModel *my_tmodel;
-	GtkTreeIter my_iter;
-	gchar *journal;
+	GtkTreeIter my_iter, child_iter;
+	ofoBase *my_object, *child_object;
+	gchar *child_mnemo;
+	gint count, i, cmp;
 
 	my_tmodel = gtk_tree_view_get_model( self->private->left_tview );
 	if( tmodel ){
@@ -625,12 +810,31 @@ find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel 
 	}
 	if( gtk_tree_model_get_iter_first( my_tmodel, &my_iter )){
 		while( TRUE ){
-			gtk_tree_model_get( my_tmodel, &my_iter, LEFT_COL_MNEMO, &journal, -1 );
-			if( !g_utf8_collate( mnemo, journal )){
-				if( iter ){
-					*iter = my_iter;
+			gtk_tree_model_get(
+					my_tmodel, &my_iter, LEFT_COL_OBJECT, &my_object, -1 );
+			if( my_object ){
+				g_object_unref( my_object );
+			}
+			g_return_val_if_fail( !my_object || OFO_IS_JOURNAL( my_object ), FALSE );
+
+			count = gtk_tree_model_iter_n_children( my_tmodel, &my_iter );
+			for( i=0 ; i < count ; ++i ){
+				if( gtk_tree_model_iter_nth_child( my_tmodel, &child_iter, &my_iter, i )){
+					gtk_tree_model_get(
+							my_tmodel, &child_iter,
+							LEFT_COL_MNEMO, &child_mnemo, LEFT_COL_OBJECT, &child_object, -1 );
+					g_object_unref( child_object );
+					g_return_val_if_fail( child_object && OFO_IS_MODEL( child_object ), FALSE );
+
+					cmp = g_utf8_collate( mnemo, child_mnemo );
+					g_free( child_mnemo );
+					if( cmp == 0 ){
+						if( iter ){
+							*iter = child_iter;
+						}
+						return( TRUE );
+					}
 				}
-				return( TRUE );
 			}
 			if( !gtk_tree_model_iter_next( my_tmodel, &my_iter )){
 				break;
@@ -659,4 +863,90 @@ static void
 on_right_cancel( GtkButton *button, ofaGuidedEx *self )
 {
 	ofa_guided_common_reset( self->private->common );
+}
+
+/*
+ * OFA_SIGNAL_NEW_OBJECT signal handler
+ */
+static void
+on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
+{
+	static const gchar *thisfn = "ofa_guided_ex_on_new_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_MODEL( object )){
+		insert_left_model_row( self, OFO_MODEL( object ));
+
+	} else if( OFO_IS_JOURNAL( object )){
+		insert_left_journal_row( self, OFO_JOURNAL( object ));
+	}
+}
+
+/*
+ * OFA_SIGNAL_UPDATED_OBJECT signal handler
+ */
+static void
+on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self )
+{
+	static const gchar *thisfn = "ofa_guided_ex_on_updated_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_MODEL( object )){
+		update_left_model_row( self, OFO_MODEL( object ), prev_id );
+
+	} else if( OFO_IS_JOURNAL( object )){
+		update_left_journal_row( self, OFO_JOURNAL( object ), prev_id );
+	}
+}
+
+/*
+ * OFA_SIGNAL_DELETED_OBJECT signal handler
+ */
+static void
+on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
+{
+	static const gchar *thisfn = "ofa_guided_ex_on_deleted_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_MODEL( object )){
+		remove_left_model_row( self, OFO_MODEL( object ));
+
+	} else if( OFO_IS_JOURNAL( object )){
+		remove_left_journal_row( self, OFO_JOURNAL( object ));
+	}
+}
+
+/*
+ * OFA_SIGNAL_RELOAD_DATASET signal handler
+ */
+static void
+on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )
+{
+	static const gchar *thisfn = "ofa_guided_ex_on_reload_dataset";
+
+	g_debug( "%s: dossier=%p, type=%lu, self=%p",
+			thisfn, ( void * ) dossier, type, ( void * ) self );
+
+	if( type == OFO_TYPE_MODEL ){
+
+
+	} else if( type == OFO_TYPE_JOURNAL ){
+
+	}
 }

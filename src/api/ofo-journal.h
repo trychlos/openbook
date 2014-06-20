@@ -44,6 +44,12 @@
 
 G_BEGIN_DECLS
 
+/* an fake journal under which we reclass the entry models which are
+ * attached to an unfound journal
+ */
+#define UNKNOWN_JOURNAL_MNEMO            "__xx__"
+#define UNKNOWN_JOURNAL_LABEL            _( "Unclassed" )
+
 GType           ofo_journal_get_type     ( void ) G_GNUC_CONST;
 
 void            ofo_journal_connect_handlers( const ofoDossier *dossier );
