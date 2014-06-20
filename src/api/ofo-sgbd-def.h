@@ -59,6 +59,8 @@ typedef struct {
 }
 	ofoSgbd;
 
+GType ofo_sgbd_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFO_SGBD_DEF_H__ */

@@ -161,8 +161,6 @@ typedef struct {
 
 #define OFO_BASE_UNSET_ID                   -1
 
-GType          ofo_base_get_type  ( void ) G_GNUC_CONST;
-
 ofoBaseGlobal *ofo_base_get_global( ofoBaseGlobal *ptr,
 										ofoBase *dossier, GWeakNotify fn, gpointer user_data );
 

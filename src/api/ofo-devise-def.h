@@ -66,6 +66,8 @@ typedef struct {
  */
 #define DEV_DEFAULT_DIGITS             2
 
+GType ofo_devise_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFO_DEVISE_DEF_H__ */

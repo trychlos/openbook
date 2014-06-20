@@ -52,8 +52,6 @@ typedef struct {
 }
 	sTauxVData;
 
-GType           ofo_taux_get_type     ( void ) G_GNUC_CONST;
-
 GList          *ofo_taux_get_dataset  ( const ofoDossier *dossier );
 ofoTaux        *ofo_taux_get_by_mnemo ( const ofoDossier *dossier, const gchar *mnemo );
 

@@ -40,8 +40,6 @@
 
 G_BEGIN_DECLS
 
-GType           ofo_model_get_type          ( void ) G_GNUC_CONST;
-
 void            ofo_model_connect_handlers  ( const ofoDossier *dossier );
 
 GList          *ofo_model_get_dataset       ( const ofoDossier *dossier );

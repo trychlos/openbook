@@ -42,8 +42,6 @@ G_BEGIN_DECLS
  */
 #define SGBD_PROVIDER_MYSQL   "MySQL"
 
-GType    ofo_sgbd_get_type    ( void ) G_GNUC_CONST;
-
 ofoSgbd *ofo_sgbd_new         ( const gchar *provider );
 
 gboolean ofo_sgbd_connect     ( ofoSgbd *sgbd,

@@ -41,8 +41,6 @@
 
 G_BEGIN_DECLS
 
-GType           ofo_bat_get_type     ( void ) G_GNUC_CONST;
-
 ofoBat         *ofo_bat_new          ( void );
 
 GList          *ofo_bat_get_dataset  ( const ofoDossier *dossier );

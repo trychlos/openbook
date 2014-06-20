@@ -62,6 +62,8 @@ typedef struct {
 }
 	ofoJournal;
 
+GType ofo_journal_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFO_JOURNAL_DEF_H__ */

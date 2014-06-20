@@ -170,6 +170,8 @@ typedef struct {
 }
 	ofaMainPageClass;
 
+GType ofa_main_page_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFA_MAIN_PAGE_DEF_H__ */

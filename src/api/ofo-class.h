@@ -46,8 +46,6 @@
 
 G_BEGIN_DECLS
 
-GType           ofo_class_get_type       ( void ) G_GNUC_CONST;
-
 GList          *ofo_class_get_dataset    ( const ofoDossier *dossier );
 ofoClass       *ofo_class_get_by_number  ( const ofoDossier *dossier, gint number );
 

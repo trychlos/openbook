@@ -58,8 +58,6 @@ typedef enum {
 }
 	ofaDossierStatus;
 
-GType           ofo_dossier_get_type                ( void ) G_GNUC_CONST;
-
 ofoDossier     *ofo_dossier_new                     ( const gchar *name );
 
 gboolean        ofo_dossier_open                    ( ofoDossier *dossier,

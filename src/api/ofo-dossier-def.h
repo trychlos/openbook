@@ -70,6 +70,8 @@ typedef struct {
  */
 #define DOS_DEFAULT_LENGTH              12
 
+GType ofo_dossier_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFO_DOSSIER_DEF_H__ */

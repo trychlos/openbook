@@ -92,8 +92,6 @@ enum {
  */
 #define OFA_SIGNAL_OPEN_DOSSIER                  "ofa-signal-open-dossier"
 
-GType          ofa_main_window_get_type          ( void ) G_GNUC_CONST;
-
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
 
 ofaMainPage   *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );

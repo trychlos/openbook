@@ -62,6 +62,8 @@ typedef struct {
 }
 	ofoBat;
 
+GType ofo_bat_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFO_BAT_DEF_H__ */

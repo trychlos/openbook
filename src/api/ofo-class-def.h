@@ -62,6 +62,8 @@ typedef struct {
 }
 	ofoClass;
 
+GType ofo_class_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFO_CLASS_DEF_H__ */

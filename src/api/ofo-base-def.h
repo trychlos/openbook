@@ -75,6 +75,8 @@ typedef struct {
 #define OFA_SIGNAL_RELOAD_DATASET       "ofa-signal-reload-dataset"
 #define OFA_SIGNAL_VALIDATED_ENTRY      "ofa-signal-validated-entry"
 
+GType ofo_base_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFO_BASE_DEF_H__ */

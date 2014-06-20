@@ -61,6 +61,8 @@ typedef struct {
 }
 	ofoTaux;
 
+GType ofo_taux_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFO_TAUX_DEF_H__ */

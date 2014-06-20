@@ -110,8 +110,6 @@ typedef enum {
 }
 	ofaMainPageUpdateType;
 
-GType          ofa_main_page_get_type       ( void ) G_GNUC_CONST;
-
 ofaMainWindow *ofa_main_page_get_main_window( const ofaMainPage *page );
 ofoDossier    *ofa_main_page_get_dossier    ( const ofaMainPage *page );
 gint           ofa_main_page_get_theme      ( const ofaMainPage *page );

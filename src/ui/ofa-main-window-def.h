@@ -80,6 +80,8 @@ typedef struct _ofaOpenDossier {
 }
 	ofaOpenDossier;
 
+GType ofa_main_window_get_type( void ) G_GNUC_CONST;
+
 G_END_DECLS
 
 #endif /* __OFA_MAIN_WINDOW_DEF_H__ */

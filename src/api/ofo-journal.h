@@ -50,8 +50,6 @@ G_BEGIN_DECLS
 #define UNKNOWN_JOURNAL_MNEMO            "__xx__"
 #define UNKNOWN_JOURNAL_LABEL            _( "Unclassed" )
 
-GType           ofo_journal_get_type     ( void ) G_GNUC_CONST;
-
 void            ofo_journal_connect_handlers( const ofoDossier *dossier );
 
 GList          *ofo_journal_get_dataset  ( const ofoDossier *dossier );
