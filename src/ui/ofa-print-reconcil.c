@@ -850,7 +850,7 @@ draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext
 	}
 	y += line_num * ( st_body_font_size + st_body_line_spacing );
 
-	/* have a rubber every other line (todo #237) */
+	/* have a rubber every other line */
 	if( line_num % 2 ){
 		cairo_set_source_rgb( cr, COLOR_LIGHT_GRAY );
 		cairo_rectangle( cr,

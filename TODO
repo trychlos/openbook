@@ -318,9 +318,6 @@
                 ofaGuidedInputEx should be updated (if the updated
                 entry model is currently displayed)
 
- 237 2014- 6-20 Print reconciliation: have a light gray background
-                every other line
-
  238
 
 -----------------------------------------------------------------------
@@ -878,6 +875,10 @@
  233 2014- 6-16 factorize the code common to ofaGuidedInput and
                  ofaGuidedEx
      2014- 6-17 done - svn #3721  
+
+ 237 2014- 6-20 Print reconciliation: have a light gray background
+                every other line
+     2014- 6-20 done - svn #3728
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
