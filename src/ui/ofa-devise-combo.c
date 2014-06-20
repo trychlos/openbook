@@ -45,7 +45,7 @@ struct _ofaDeviseComboPrivate {
 	ofoDossier      *dossier;
 	gchar           *combo_name;
 	gchar           *label_name;
-	ofaDeviseComboCb pfn;
+	ofaDeviseComboCb pfnSelected;
 	gpointer         user_data;
 
 	/* runtime
@@ -177,7 +177,7 @@ ofa_devise_combo_new( const ofaDeviseComboParms *parms )
 	priv->dossier = parms->dossier;
 	priv->combo_name = g_strdup( parms->combo_name );
 	priv->label_name = g_strdup( parms->label_name );
-	priv->pfn = parms->pfn;
+	priv->pfnSelected = parms->pfnSelected;
 	priv->user_data = parms->user_data;
 
 	/* setup a weak reference on the dialog to auto-unref */
@@ -260,9 +260,8 @@ on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self )
 			}
 		}
 
-		if( priv->pfn ){
-			( *priv->pfn )
-					( code, priv->user_data );
+		if( priv->pfnSelected ){
+			( *priv->pfnSelected )( code, priv->user_data );
 		}
 
 		g_free( label );

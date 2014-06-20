@@ -208,7 +208,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.label_name = NULL;
 	parms.disp_code = TRUE;
 	parms.disp_label = TRUE;
-	parms.pfn = ( ofaDeviseComboCb ) on_devise_changed;
+	parms.pfnSelected = ( ofaDeviseComboCb ) on_devise_changed;
 	parms.user_data = dialog;
 	parms.initial_code = priv->devise;
 

@@ -85,8 +85,8 @@ typedef void ( *ofaDeviseComboCb )( const gchar *, gpointer );
  *  changes
  * @disp_code: whether the combo box should display the ISO 3A code
  * @disp_label: whether the combo box should display the label
- * @pfn: [allow-none]: a user-provided callback which will be triggered
- *  on each selection change
+ * @pfnSelected: [allow-none]: a user-provided callback which will be
+ *  triggered on each selection change
  * @user_data: user-data passed to the callback
  * @initial_code: the ISO 3A identifier of the initially selected
  *  currency, or NULL
@@ -98,7 +98,7 @@ typedef struct {
 	const gchar      *label_name;
 	gboolean          disp_code;
 	gboolean          disp_label;
-	ofaDeviseComboCb  pfn;
+	ofaDeviseComboCb  pfnSelected;
 	gpointer          user_data;
 	const gchar      *initial_code;
 }

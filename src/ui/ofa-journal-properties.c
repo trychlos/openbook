@@ -263,7 +263,7 @@ init_balances_page( ofaJournalProperties *self )
 	parms.label_name = NULL;
 	parms.disp_code = FALSE;
 	parms.disp_label = TRUE;
-	parms.pfn = ( ofaDeviseComboCb ) on_devise_changed;
+	parms.pfnSelected = ( ofaDeviseComboCb ) on_devise_changed;
 	parms.user_data = self;
 	parms.initial_code = ofo_dossier_get_default_devise( MY_WINDOW( self )->protected->dossier );
 
