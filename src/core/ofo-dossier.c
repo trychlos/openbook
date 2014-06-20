@@ -120,7 +120,9 @@ static void        on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoE
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
 static gboolean    dossier_read_exercices( ofoDossier *dossier );
-static gboolean    dossier_do_update( ofoDossier *dossier, ofoSgbd *sgbd, const gchar *user );
+static gboolean    dossier_do_update( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd );
 
 static void
 ofo_dossier_finalize( GObject *instance )
@@ -1379,6 +1381,28 @@ ofo_dossier_get_exe_fin( const ofoDossier *dossier, gint exe_id )
 }
 
 /**
+ * ofo_dossier_get_exe_status_label:
+ */
+const gchar *
+ofo_dossier_get_exe_status_label( ofaDossierStatus status )
+{
+	gchar *str;
+
+	switch( status ){
+		case DOS_STATUS_OPENED:
+			return( _( "Opened" ));
+			break;
+		case DOS_STATUS_CLOSED:
+			return( _( "Closed" ));
+			break;
+	}
+
+	/* memory leak, but don't know how to prevent it if I want
+	 * return the erroneous status */
+	str = g_strdup_printf( "%s: %d", _( "Unknown status" ), status );
+	return( str );
+}
+/**
  * ofo_dossier_get_last_closed_exercice:
  *
  * Returns: the last exercice closing date.
@@ -1818,7 +1842,14 @@ ofo_dossier_update( ofoDossier *dossier )
 }
 
 static gboolean
-dossier_do_update( ofoDossier *dossier, ofoSgbd *sgbd, const gchar *user )
+dossier_do_update( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user )
+{
+	return( do_update_properties( dossier, sgbd, user ) &&
+			do_update_current_exe( dossier, sgbd ));
+}
+
+static gboolean
+do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp;
@@ -1865,6 +1896,46 @@ dossier_do_update( ofoDossier *dossier, ofoSgbd *sgbd, const gchar *user )
 	g_free( label );
 	g_free( notes );
 	g_free( stamp );
+
+	return( ok );
+}
+
+static gboolean
+do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
+{
+	gchar *query;
+	gchar *sdeb, *sfin;
+	gboolean ok;
+
+	ok = FALSE;
+
+	if( g_date_valid( &dossier->private->current->exe_deb )){
+		sdeb = my_utils_sql_from_date( &dossier->private->current->exe_deb );
+	} else {
+		sdeb = g_strdup( "0000-00-00" );
+	}
+
+	if( g_date_valid( &dossier->private->current->exe_fin )){
+		sfin = my_utils_sql_from_date( &dossier->private->current->exe_fin );
+	} else {
+		sfin = g_strdup( "0000-00-00" );
+	}
+
+	query = g_strdup_printf(
+				"UPDATE OFA_T_DOSSIER_EXE SET "
+				"	DOS_EXE_DEB='%s',"
+				"	DOS_EXE_FIN='%s' WHERE "
+				"	DOS_ID=%d AND DOS_EXE_ID=%d",
+						sdeb,
+						sfin,
+						THIS_DOS_ID,
+						dossier->private->current->exe_id );
+
+	ok = ofo_sgbd_query( sgbd, query );
+
+	g_free( query );
+	g_free( sdeb );
+	g_free( sfin );
 
 	return( ok );
 }

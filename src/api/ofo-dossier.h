@@ -88,6 +88,8 @@ gint            ofo_dossier_get_exe_by_date         ( const ofoDossier *dossier,
 const GDate    *ofo_dossier_get_exe_deb             ( const ofoDossier *dossier, gint exe_id );
 const GDate    *ofo_dossier_get_exe_fin             ( const ofoDossier *dossier, gint exe_id );
 
+const gchar    *ofo_dossier_get_exe_status_label    ( ofaDossierStatus status );
+
 const GDate    *ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier );
 gint            ofo_dossier_get_next_entry_number   ( const ofoDossier *dossier );
 

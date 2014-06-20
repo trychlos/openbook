@@ -258,7 +258,7 @@
                 - bat select
                 - class properties
                 - devise properties
-                - dossier properties
+                - dossier properties - done
                 - guided input       - done
                 - journal properties - done
                 - model properties
@@ -308,9 +308,16 @@
 
  234 2014- 6-17 the ofaMainPage derived-classes should be named
                 ofaPageXxxx (or maybe better ofaXxxxPage)
-
- 241 2014- 6-20 ofaJournalTreeview: pfnSelection becomes pfnSelected,
-                pfnActivation becomes pfnActivated
+     2014- 6-20 src/ui/ofa-accounts-chart.h
+                src/ui/ofa-bat-set.h
+                src/ui/ofa-classes-set.h
+                src/ui/ofa-devises-set.h
+                src/ui/ofa-guided-ex.h
+                src/ui/ofa-journals-set.h
+                src/ui/ofa-models-set.h
+                src/ui/ofa-rappro.h
+                src/ui/ofa-taux-set.h
+                src/ui/ofa-view-entries.h
 
  249
 
@@ -904,6 +911,10 @@
                 display labels (and so the corresponding GtkLabel
                 should be removed) 
      2014- 6-20 done - svn #3731
+
+ 241 2014- 6-20 ofaJournalTreeview: pfnSelection becomes pfnSelected,
+                pfnActivation becomes pfnActivated
+     2014- 6-20 done - svn #3743
 
  242 2014- 6-20 ofaJournalCombo: pfn becomes pfnSelected
      2014- 6-20 done - svn #3742
