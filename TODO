@@ -314,10 +314,6 @@
 
  235 2014- 6-17 xxxx_get_type() function should be in xxxx-def.h file
 
- 236 2014- 6-18 when updating an entry model, the right pane of
-                ofaGuidedInputEx should be updated (if the updated
-                entry model is currently displayed)
-
  238 2014- 6-20 ofoEntry: only entries of the current exercice must
                 be updated of the mnemo of the journal is modified
                 (but we have UPDATE OFA_T_ECRITURES 
@@ -887,6 +883,11 @@
  233 2014- 6-16 factorize the code common to ofaGuidedInput and
                  ofaGuidedEx
      2014- 6-17 done - svn #3721  
+
+ 236 2014- 6-18 when updating an entry model, the right pane of
+                ofaGuidedInputEx should be updated (if the updated
+                entry model is currently displayed)
+     2014- 6-20 done - svn #3730
 
  237 2014- 6-20 Print reconciliation: have a light gray background
                 every other line

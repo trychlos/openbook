@@ -270,9 +270,9 @@ v_init_dialog( ofaBaseDialog *dialog )
 	parms.container = GTK_CONTAINER( dialog->prot->dialog );
 	parms.dossier = ofa_base_dialog_get_dossier( dialog );
 	parms.combo_name = "p1-journal";
-	parms.label_name = "p1-jou-label";
+	parms.label_name = NULL;
 	parms.disp_mnemo = TRUE;
-	parms.disp_label = FALSE;
+	parms.disp_label = TRUE;
 	parms.pfn = ( ofaJournalComboCb ) on_journal_changed;
 	parms.user_data = self;
 	parms.initial_mnemo = priv->is_new ? priv->journal : ofo_model_get_journal( priv->model );
