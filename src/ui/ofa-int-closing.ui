@@ -30,7 +30,7 @@
             </child>
             <child>
               <object class="GtkButton" id="btn-ok">
-                <property name="label" translatable="yes">Do _close</property>
+                <property name="label" translatable="yes">Do intermediate _closing</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>

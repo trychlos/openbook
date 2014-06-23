@@ -479,12 +479,16 @@ select_row_by_iter( ofaJournalTreeview *self, GtkTreeModel *tmodel, GtkTreeIter 
 static gboolean
 find_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
+	static const gchar *thisfn = "ofa_journal_treeview_find_row_by_mnemo";
 	ofaJournalTreeviewPrivate *priv;
 	GtkTreeModel *my_tmodel;
 	GtkTreeIter my_iter;
 	gchar *row_mnemo;
 	gint cmp;
 	gboolean found;
+
+	g_debug( "%s: self=%p, mnemo=%s, tmodel=%p, iter=%p",
+				thisfn, ( void * ) self, mnemo, ( void * ) tmodel, ( void * ) iter );
 
 	priv = self->private;
 	found = FALSE;

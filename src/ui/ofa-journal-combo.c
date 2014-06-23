@@ -50,6 +50,7 @@ struct _ofaJournalComboPrivate {
 	/* runtime
 	 */
 	GtkComboBox       *combo;
+	GtkTreeModel      *tmodel;
 };
 
 /* column ordering in the journal combobox
@@ -62,7 +63,15 @@ enum {
 
 G_DEFINE_TYPE( ofaJournalCombo, ofa_journal_combo, G_TYPE_OBJECT )
 
-static void  on_journal_changed( GtkComboBox *box, ofaJournalCombo *self );
+static void     load_dataset( ofaJournalCombo *self, const gchar *initial_mnemo );
+static void     insert_new_row( ofaJournalCombo *self, const ofoJournal *journal );
+static void     setup_signaling_connect( ofaJournalCombo *self );
+static void     on_journal_changed( GtkComboBox *box, ofaJournalCombo *self );
+static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self );
+static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalCombo *self );
+static gboolean find_journal_by_mnemo( ofaJournalCombo *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self );
+static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaJournalCombo *self );
 
 static void
 journal_combo_finalize( GObject *instance )
@@ -149,12 +158,7 @@ ofa_journal_combo_new( const ofaJournalComboParms *parms )
 	ofaJournalCombo *self;
 	ofaJournalComboPrivate *priv;
 	GtkWidget *combo;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
 	GtkCellRenderer *text_cell;
-	const GList *set, *elt;
-	gint idx, i;
-	ofoJournal *journal;
 
 	g_return_val_if_fail( parms, NULL );
 
@@ -186,11 +190,11 @@ ofa_journal_combo_new( const ofaJournalComboParms *parms )
 	priv->combo = GTK_COMBO_BOX( combo );
 	gtk_combo_box_set_id_column ( priv->combo, JOU_COL_MNEMO );
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+	priv->tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			JOU_N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING ));
-	gtk_combo_box_set_model( priv->combo, tmodel );
-	g_object_unref( tmodel );
+	gtk_combo_box_set_model( priv->combo, priv->tmodel );
+	g_object_unref( priv->tmodel );
 
 	if( parms->disp_mnemo ){
 		text_cell = gtk_cell_renderer_text_new();
@@ -204,30 +208,76 @@ ofa_journal_combo_new( const ofaJournalComboParms *parms )
 		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_LABEL );
 	}
 
-	set = ofo_journal_get_dataset( parms->dossier );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_journal_changed ), self );
+
+	load_dataset( self, parms->initial_mnemo );
+
+	setup_signaling_connect( self );
+
+	return( self );
+}
+
+static void
+load_dataset( ofaJournalCombo *self, const gchar *initial_mnemo )
+{
+	ofaJournalComboPrivate *priv;
+	const GList *set, *elt;
+	gint idx, i;
+	ofoJournal *journal;
+
+	priv = self->private;
+	set = ofo_journal_get_dataset( priv->dossier );
 
 	for( elt=set, i=0, idx=-1 ; elt ; elt=elt->next, ++i ){
-		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
 		journal = OFO_JOURNAL( elt->data );
-		gtk_list_store_set(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				JOU_COL_MNEMO, ofo_journal_get_mnemo( journal ),
-				JOU_COL_LABEL, ofo_journal_get_label( journal ),
-				-1 );
-		if( parms->initial_mnemo &&
-				!g_utf8_collate( parms->initial_mnemo, ofo_journal_get_mnemo( journal ))){
+		insert_new_row( self, journal );
+		if( initial_mnemo &&
+				!g_utf8_collate( initial_mnemo, ofo_journal_get_mnemo( journal ))){
 			idx = i;
 		}
 	}
 
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_journal_changed ), self );
-
 	if( idx != -1 ){
 		gtk_combo_box_set_active( priv->combo, idx );
 	}
+}
 
-	return( self );
+static void
+insert_new_row( ofaJournalCombo *self, const ofoJournal *journal )
+{
+	GtkTreeIter iter;
+
+	gtk_list_store_insert_with_values(
+			GTK_LIST_STORE( self->private->tmodel ),
+			&iter,
+			-1,
+			JOU_COL_MNEMO, ofo_journal_get_mnemo( journal ),
+			JOU_COL_LABEL, ofo_journal_get_label( journal ),
+			-1 );
+}
+
+static void
+setup_signaling_connect( ofaJournalCombo *self )
+{
+	ofaJournalComboPrivate *priv;
+
+	priv = self->private;
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), self );
 }
 
 static void
@@ -325,5 +375,114 @@ ofa_journal_combo_set_selection( ofaJournalCombo *self, const gchar *mnemo )
 	if( !self->private->dispose_has_run ){
 
 		gtk_combo_box_set_active_id( self->private->combo, mnemo );
+	}
+}
+
+static void
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self )
+{
+	static const gchar *thisfn = "ofa_journal_combo_on_new_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_JOURNAL( object )){
+		insert_new_row( self, OFO_JOURNAL( object ));
+	}
+}
+
+static void
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalCombo *self )
+{
+	static const gchar *thisfn = "ofa_journal_combo_on_updated_object";
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	if( OFO_IS_JOURNAL( object )){
+		if( find_journal_by_mnemo( self, prev_id, &tmodel, &iter )){
+			gtk_list_store_set(
+					GTK_LIST_STORE( tmodel ),
+					&iter,
+					JOU_COL_MNEMO, ofo_journal_get_mnemo( OFO_JOURNAL( object )),
+					JOU_COL_LABEL, ofo_journal_get_label( OFO_JOURNAL( object )),
+					-1 );
+		}
+	}
+}
+
+static gboolean
+find_journal_by_mnemo( ofaJournalCombo *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+{
+	ofaJournalComboPrivate *priv;
+	gchar *str;
+	gint cmp;
+
+	priv = self->private;
+	*tmodel = priv->tmodel;
+
+	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
+		while( TRUE ){
+			gtk_tree_model_get( *tmodel, iter, JOU_COL_MNEMO, &str, -1 );
+			cmp = g_utf8_collate( str, mnemo );
+			g_free( str );
+			if( cmp == 0 ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( *tmodel, iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
+}
+
+static void
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self )
+{
+	static const gchar *thisfn = "ofa_journal_combo_on_deleted_object";
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_JOURNAL( object )){
+		if( find_journal_by_mnemo(
+				self,
+				ofo_journal_get_mnemo( OFO_JOURNAL( object )), &tmodel, &iter )){
+
+			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
+		}
+	}
+}
+
+static void
+on_reload_dataset( ofoDossier *dossier, GType type, ofaJournalCombo *self )
+{
+	static const gchar *thisfn = "ofa_journal_combo_on_reload_dataset";
+	ofaJournalComboPrivate *priv;
+
+	g_debug( "%s: dossier=%p, type=%lu, self=%p",
+			thisfn, ( void * ) dossier, type, ( void * ) self );
+
+	priv = self->private;
+
+	if( type == OFO_TYPE_JOURNAL ){
+		gtk_list_store_clear( GTK_LIST_STORE( priv->tmodel ));
+		load_dataset( self, NULL );
 	}
 }

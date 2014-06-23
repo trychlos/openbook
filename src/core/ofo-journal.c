@@ -55,12 +55,6 @@ struct _ofoJournalPrivate {
 	GTimeVal   maj_stamp;
 	GList     *exes;					/* exercices */
 	GList     *amounts;					/* balances per currency */
-
-	/* dynamic datas
-	 * set on demand, then get from here
-	 */
-	GDate      last_closing;
-	gboolean   last_closing_set;
 };
 
 typedef struct {
@@ -93,7 +87,6 @@ static void        on_validated_entry( ofoDossier *dossier, ofoEntry *entry, voi
 static GList      *journal_load_dataset( void );
 static ofoJournal *journal_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint        journal_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
-static void        journal_do_get_last_closing( const ofoJournal *journal );
 static sDetailDev *journal_find_dev_by_code( const ofoJournal *journal, gint exe_id, const gchar *devise );
 static sDetailExe *journal_find_exe_by_id( const ofoJournal *journal, gint exe_id );
 static sDetailDev *journal_new_dev_with_code( ofoJournal *journal, gint exe_id, const gchar *devise );
@@ -160,8 +153,6 @@ ofo_journal_init( ofoJournal *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofoJournalPrivate, 1 );
-
-	self->private->last_closing_set = FALSE;
 }
 
 static void
@@ -345,7 +336,7 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 		if( journal_do_update_detail_dev( journal, detail, ofo_dossier_get_sgbd( dossier ))){
 			g_signal_emit_by_name(
 					G_OBJECT( dossier ),
-					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( journal ), NULL );
+					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( journal ), mnemo );
 		}
 
 	} else {
@@ -704,51 +695,36 @@ ofo_journal_get_last_entry( const ofoJournal *journal )
  * ofo_journal_get_last_closing:
  *
  * Returns the most recent closing date, all exercices considered, for
- * this journal, or NULL. The returned date may be invalid (cleared).
- *
- * The date is computed once from the sgbd, and then always returned
- * the same. The flag is reset on journal closing.
+ * this journal, or NULL if the journal has never been closed.
  */
 const GDate *
 ofo_journal_get_last_closing( const ofoJournal *journal )
 {
+	const GDate *dlast;
+	sDetailExe *sdetail;
+	GList *idet;
+
 	g_return_val_if_fail( journal && OFO_IS_JOURNAL( journal ), NULL );
 
-	if( OFO_BASE( journal )->prot->dispose_has_run ){
-		return( NULL );
+	dlast = NULL;
+
+	if( !OFO_BASE( journal )->prot->dispose_has_run ){
+
+		for( idet=journal->private->exes ; idet ; idet=idet->next ){
+			sdetail = ( sDetailExe * ) idet->data;
+			if( !dlast ){
+				if( g_date_valid( &sdetail->last_clo )){
+					dlast = &sdetail->last_clo;
+				}
+			} else if( g_date_valid( &sdetail->last_clo ) &&
+						g_date_compare( &sdetail->last_clo, dlast ) > 0 ){
+
+				dlast = &sdetail->last_clo;
+			}
+		}
 	}
 
-	if( !journal->private->last_closing_set ){
-		journal_do_get_last_closing( journal );
-	}
-
-	return(( const GDate * ) &journal->private->last_closing );
-}
-
-static void
-journal_do_get_last_closing( const ofoJournal *journal )
-{
-	gchar *query;
-	GSList *result, *icol;
-
-	g_date_clear( &journal->private->last_closing, 1 );
-
-	query = g_strdup_printf(
-			"SELECT MAX(JOU_EXE_LAST_CLO) FROM OFA_T_JOURNAUX_EXE "
-			"	WHERE JOU_MNEMO='%s'", ofo_journal_get_mnemo( journal ));
-
-	result = ofo_sgbd_query_ex(
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query );
-	g_free( query );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		memcpy( &journal->private->last_closing,
-					my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
-		ofo_sgbd_free_result( result );
-	}
-
-	journal->private->last_closing_set = TRUE;
+	return( dlast );
 }
 
 /**
@@ -1396,7 +1372,6 @@ ofo_journal_close( ofoJournal *journal, const GDate *closing )
 			}
 
 			memcpy( &sexe->last_clo, closing, sizeof( GDate ));
-			memcpy( &journal->private->last_closing, closing, sizeof( GDate ));
 
 			if( journal_do_update_detail_exe(
 						journal,

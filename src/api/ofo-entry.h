@@ -134,6 +134,13 @@ void           ofo_entry_set_maj_user ( ofoEntry *entry, const gchar *user );
 void           ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *stamp );
 void           ofo_entry_set_rappro   ( ofoEntry *entry, const GDate *date );
 
+gboolean       ofo_entry_is_valid     ( const ofoDossier *dossier,
+													const GDate *effet, const GDate *ope,
+													const gchar *label,
+													const gchar *account, const gchar *devise,
+													const gchar *journal,
+													gdouble debit, gdouble credit );
+
 ofoEntry      *ofo_entry_new_with_data( const ofoDossier *dossier,
 													const GDate *effet, const GDate *ope,
 													const gchar *label, const gchar *ref,
@@ -142,6 +149,7 @@ ofoEntry      *ofo_entry_new_with_data( const ofoDossier *dossier,
 													gdouble debit, gdouble credit );
 
 gboolean       ofo_entry_insert             ( ofoEntry *entry, ofoDossier *dossier );
+gboolean       ofo_entry_update             ( ofoEntry *entry, const ofoDossier *dossier );
 gboolean       ofo_entry_update_rappro      ( ofoEntry *entry, const ofoDossier *dossier );
 gboolean       ofo_entry_validate           ( ofoEntry *entry, const ofoDossier *dossier );
 

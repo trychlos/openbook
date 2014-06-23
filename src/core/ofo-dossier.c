@@ -1405,7 +1405,8 @@ ofo_dossier_get_exe_status_label( ofaDossierStatus status )
 /**
  * ofo_dossier_get_last_closed_exercice:
  *
- * Returns: the last exercice closing date.
+ * Returns: the last exercice closing date,
+ *  or NULL if there has not yet any closed exercice.
  */
 const GDate *
 ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
@@ -1413,7 +1414,6 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 	GList *exe;
 	sDetailExe *sexe;
 	const GDate *dmax;
-	gboolean first;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
@@ -1421,14 +1421,13 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		first = TRUE;
+		dmax = NULL;
 		for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 			sexe = ( sDetailExe * ) exe->data;
-
-			if( first ){
-				dmax = &sexe->exe_fin;
-				first = FALSE;
-
+			if( !dmax ){
+				if( g_date_valid( &sexe->exe_fin )){
+					dmax = &sexe->exe_fin;
+				}
 			} else if( g_date_valid( &sexe->exe_fin ) &&
 						g_date_compare( &sexe->exe_fin, dmax ) > 0 ){
 

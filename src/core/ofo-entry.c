@@ -67,6 +67,7 @@ struct _ofoEntryPrivate {
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
 static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
+static void         on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number );
 static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void         on_updated_object_journal_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
 static GList       *entry_load_dataset( const ofoSgbd *sgbd, const gchar *where );
@@ -82,6 +83,7 @@ static void         error_account( const gchar *number );
 static void         error_acc_currency( const ofoDossier *dossier, const gchar *devise, ofoAccount *account );
 static void         error_amounts( gdouble debit, gdouble credit );
 static void         error_entry( const gchar *message );
+static gboolean     entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 static gboolean     do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd );
 
 static void
@@ -158,11 +160,16 @@ ofo_entry_connect_handlers( const ofoDossier *dossier )
  * we try to report in recorded entries the modifications which may
  * happen on one of the externe identifiers - but only for the current
  * exercice
+ *
+ * nonetheless, this is never a good idea to modify an identifier which
+ * is publicly known, and this always should be done with the greatest
+ * attention
  */
 static void
 on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
 {
 	static const gchar *thisfn = "ofo_entry_on_updated_object";
+	const gchar *number;
 	const gchar *code;
 	const gchar *mnemo;
 
@@ -173,7 +180,15 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			prev_id,
 			( void * ) user_data );
 
-	if( OFO_IS_DEVISE( object )){
+	if( OFO_IS_ACCOUNT( object )){
+		if( prev_id && g_utf8_strlen( prev_id, -1 )){
+			number = ofo_account_get_number( OFO_ACCOUNT( object ));
+			if( g_utf8_collate( number, prev_id )){
+				on_updated_object_account_number( dossier, prev_id, number );
+			}
+		}
+
+	} else if( OFO_IS_DEVISE( object )){
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
 			code = ofo_devise_get_code( OFO_DEVISE( object ));
 			if( g_utf8_collate( code, prev_id )){
@@ -189,6 +204,35 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			}
 		}
 	}
+}
+
+static void
+on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number )
+{
+	GString *query;
+	const GDate *date;
+	gchar *str;
+
+	str = NULL;
+	date = ofo_dossier_get_current_exe_deb( dossier );
+	if( date && g_date_valid( date )){
+		str = my_utils_sql_from_date( date );
+	}
+
+	query = g_string_new( "UPDATE OFA_T_ECRITURES " );
+
+	g_string_append_printf(
+			query,
+			"SET ECR_COMPTE='%s' WHERE ECR_COMPTE='%s' ", number, prev_id );
+
+	if( str ){
+		g_string_append_printf( query, "AND ECR_DEFFET>='%s'", str );
+		g_free( str );
+	}
+
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str );
+
+	g_string_free( query, TRUE );
 }
 
 static void
@@ -208,10 +252,10 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 
 	g_string_append_printf(
 			query,
-			"SET ECR_DEV_CODE='%s' WHERE ECR_DEV_CODE='%s'", code, prev_id );
+			"SET ECR_DEV_CODE='%s' WHERE ECR_DEV_CODE='%s' ", code, prev_id );
 
 	if( str ){
-		g_string_append_printf( query, "WHERE ECR_DEFFET>='%s'", str );
+		g_string_append_printf( query, "AND ECR_DEFFET>='%s'", str );
 		g_free( str );
 	}
 
@@ -237,10 +281,10 @@ on_updated_object_journal_mnemo( const ofoDossier *dossier, const gchar *prev_id
 
 	g_string_append_printf(
 			query,
-			"SET ECR_JOU_MNEMO='%s' WHERE ECR_JOU_MNEMO='%s'", mnemo, prev_id );
+			"SET ECR_JOU_MNEMO='%s' WHERE ECR_JOU_MNEMO='%s' ", mnemo, prev_id );
 
 	if( str ){
-		g_string_append_printf( query, "WHERE ECR_DEFFET>='%s'", str );
+		g_string_append_printf( query, "AND ECR_DEFFET>='%s'", str );
 		g_free( str );
 	}
 
@@ -296,6 +340,8 @@ ofo_entry_get_dataset_by_concil( const ofoDossier *dossier, const gchar *account
 		case ENT_CONCILED_ALL:
 			break;
 	}
+
+	where = g_string_append( where, " AND ECR_STATUS!=3 " );
 
 	dataset = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), where->str );
 
@@ -396,6 +442,8 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 	g_string_append_printf( where, "AND ECR_DEFFET <= '%s'", str );
 	g_free( str );
 
+	where = g_string_append( where, " AND ECR_STATUS!=3 " );
+
 	dataset = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), where->str );
 
 	g_string_free( where, TRUE );
@@ -415,7 +463,7 @@ entry_load_dataset( const ofoSgbd *sgbd, const gchar *where )
 	query = g_string_new( "" );
 
 	g_string_append_printf( query,
-					"SELECT %s FROM OFA_T_ECRITURES WHERE %s AND ECR_STATUS!=2",
+					"SELECT %s FROM OFA_T_ECRITURES WHERE %s",
 							entry_list_columns(), where );
 	query = g_string_append( query,
 					"	ORDER BY ECR_DOPE ASC,ECR_DEFFET ASC,ECR_NUMBER ASC" );
@@ -1020,6 +1068,48 @@ ofo_entry_set_rappro( ofoEntry *entry, const GDate *drappro )
 }
 
 /**
+ * ofo_entry_is_valid:
+ */
+gboolean
+ofo_entry_is_valid( const ofoDossier *dossier,
+							const GDate *effet, const GDate *ope, const gchar *label,
+							const gchar *acc_number, const gchar *devise, const gchar *journal,
+							gdouble debit, gdouble credit )
+{
+	ofoAccount *account;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !journal || !g_utf8_strlen( journal, -1 ) || !ofo_journal_get_by_mnemo( dossier, journal )){
+		error_journal( journal );
+		return( FALSE );
+	}
+	if( !devise || !g_utf8_strlen( devise, -1 ) || !ofo_devise_get_by_code( dossier, devise )){
+		error_currency( devise );
+		return( FALSE );
+	}
+	if( !acc_number || !g_utf8_strlen( acc_number, -1 )){
+		error_acc_number();
+		return( FALSE );
+	}
+	account = ofo_account_get_by_number( dossier, acc_number );
+	if( !account ){
+		error_account( acc_number );
+		return( FALSE );
+	}
+	if( g_utf8_collate( devise, ofo_account_get_devise( account ))){
+		error_acc_currency( dossier, devise, account );
+		return( FALSE );
+	}
+	if(( debit && credit ) || ( !debit && !credit )){
+		error_amounts( debit, credit );
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/**
  * ofo_entry_new_with_data:
  *
  * Create a new entry with the provided data.
@@ -1037,31 +1127,8 @@ ofo_entry_new_with_data( const ofoDossier *dossier,
 							gdouble debit, gdouble credit )
 {
 	ofoEntry *entry;
-	ofoAccount *account;
 
-	if( !journal || !g_utf8_strlen( journal, -1 ) || !ofo_journal_get_by_mnemo( dossier, journal )){
-		error_journal( journal );
-		return( NULL );
-	}
-	if( !devise || !g_utf8_strlen( devise, -1 ) || !ofo_devise_get_by_code( dossier, devise )){
-		error_currency( devise );
-		return( NULL );
-	}
-	if( !acc_number || !g_utf8_strlen( acc_number, -1 )){
-		error_acc_number();
-		return( NULL );
-	}
-	account = ofo_account_get_by_number( dossier, acc_number );
-	if( !account ){
-		error_account( acc_number );
-		return( NULL );
-	}
-	if( g_utf8_collate( devise, ofo_account_get_devise( account ))){
-		error_acc_currency( dossier, devise, account );
-		return( NULL );
-	}
-	if(( debit && credit ) || ( !debit && !credit )){
-		error_amounts( debit, credit );
+	if( !ofo_entry_is_valid( dossier, effet, ope, label, acc_number, devise, journal, debit, credit )){
 		return( NULL );
 	}
 
@@ -1277,6 +1344,86 @@ error_entry( const gchar *message )
 	gtk_dialog_run( GTK_DIALOG( dialog ));
 
 	gtk_widget_destroy( dialog );
+}
+
+/**
+ * ofo_entry_update:
+ *
+ * Update a rought entry.
+ */
+gboolean
+ofo_entry_update( ofoEntry *entry, const ofoDossier *dossier )
+{
+	gboolean ok;
+
+	ok = FALSE;
+
+	if( entry_do_update( entry,
+				ofo_dossier_get_sgbd( dossier ),
+				ofo_dossier_get_user( dossier ))){
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ),
+				OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( entry ), NULL );
+
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static gboolean
+entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
+{
+	GString *query;
+	gchar *sdeff, *sdope, *sdeb, *scre;
+	gchar *stamp;
+	gboolean ok;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), FALSE );
+
+	sdope = my_utils_sql_from_date( ofo_entry_get_dope( entry ));
+	sdeff = my_utils_sql_from_date( ofo_entry_get_deffect( entry ));
+	sdeb = my_utils_sql_from_double( ofo_entry_get_debit( entry ));
+	scre = my_utils_sql_from_double( ofo_entry_get_credit( entry ));
+	stamp = my_utils_timestamp();
+
+	query = g_string_new( "UPDATE OFA_T_ECRITURES " );
+
+	g_string_append_printf( query,
+			"	SET ECR_DEFFET='%s',ECR_DOPE='%s',ECR_LABEL='%s',ECR_REF='%s',"
+			"	ECR_COMPTE='%s',ECR_DEV_CODE='%s',ECR_JOU_MNEMO='%s',"
+			"	ECR_DEBIT=%s,ECR_CREDIT=%s,"
+			"	ECR_MAJ_USER='%s',ECR_MAJ_STAMP='%s' "
+			"	WHERE ECR_NUMBER=%u",
+			sdeff, sdope,
+			ofo_entry_get_label( entry ),
+			ofo_entry_get_ref( entry ),
+			ofo_entry_get_account( entry ),
+			ofo_entry_get_devise( entry ),
+			ofo_entry_get_journal( entry ),
+			sdeb,
+			scre,
+			user,
+			stamp,
+			ofo_entry_get_number( entry ));
+
+	if( ofo_sgbd_query( sgbd, query->str )){
+
+		ofo_entry_set_maj_user( entry, user );
+		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str( stamp ));
+
+		ok = TRUE;
+	}
+
+	g_string_free( query, TRUE );
+	g_free( sdeff );
+	g_free( sdope );
+	g_free( sdeb );
+	g_free( scre );
+
+	return( ok );
 }
 
 /**

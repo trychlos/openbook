@@ -57,8 +57,8 @@
                 the executed SQL statements
 
   31 2014- 5- 8 Undo the actions partially done if Dossier New cannot be
-                terminated (act as a commit transaction), so that all is
-                left as this was initially if something goes wrong
+                terminated (acting as a commit transaction), so that all
+                is left as this was initially if something goes wrong
 
   35 2014- 5-10 DossierOpen should monitor the configuration, only
                 enabling the action when there is at least one defined
@@ -90,6 +90,7 @@
 
   49 2014- 5-15 All properties: monitor "notes" size so
                 that we stop the entering at 512 chars
+     2014- 6-21 at 4096 chars now...
 
   52 2014- 5-17 change the title of the pages of the models notebook
                 when the label of a journal is changed
@@ -99,7 +100,7 @@
   57 2014- 5-19 have an entry-derived class for numbers (montants et taux)
 
   58 2014- 5-19 allow the treeviewes to be sorted
-     2014- 6-12 this is mostly needed in ViewEntries
+     2014- 6-12 this is mostly needed only in ViewEntries
 
   60 2014- 5-19 manage locale as a user preference (format for entering
                 date, amounts and rates)
@@ -175,8 +176,6 @@
 
  158 2014- 6- 4 do a coherency check (sgbd constraints, account and
                 journal balances, etc.)
-
- 160 2014- 6- 4 print a reconciliation page (as a pdf)
 
  161 2014- 6- 5 Reconciliation: display the bank account balance if
                 present
@@ -276,7 +275,20 @@
  213 2014- 6-13 recurrente entries
      2014- 6-16 to be built as a plugin
 
- 214 2014- 6-13 edit rought entries
+ 214 2014- 6-13 edit rough entries
+     2014- 6-21 have a visual distinction depending of the entry status:
+                ok
+     2014- 6-21 forbid the edition and disable the edition switch when 
+                on a validated entry: ok
+     2014- 6-21 modified entries should be saved when we change the 
+                current row
+     2014- 6-21 connect to dossier signals to be advertised on 
+                intermediate closing, new entries..
+     2014- 6-23 add a button to cancel the modifications
+     2014- 6-23 add an icon to advertise that the row has been modified
+     2014- 6-23 insert a new line
+     2014- 6-23 delete a line
+     2014- 6-23 copy/paste a line
 
  215 2014- 6-13 assets management
      2014- 6-16 to be built as a plugin
@@ -284,9 +296,6 @@
  216 2014- 6-13 exercice closing
 
  217 2014- 6-13 tableau de trésorerie
-
- 218 2014- 6-15 this is an error if entry number is not strictly 
-                increasing when we update the account balance
 
  219 2014- 6-15 one should take care of not increasing the entry number
                 until going back to zero during a same exercice (but
@@ -316,7 +325,29 @@
                 src/ui/ofa-taux-set.h
                 src/ui/ofa-view-entries.h
 
- 249
+ 249 2014- 6-20 record user and stamp on entry reconciliation
+
+ 250 2014- 6-20 Print Reconciliation: display dates as dd/mm/yyyy
+
+ 251 2014- 6-21 ofaIntClosing:do_close: 
+                replace ofa_journal_treeview_foreach_sel()
+                Rationale: The model has been modified from within 
+                gtk_tree_selection_selected_foreach. This function is 
+                for observing the selections of the tree only.  If you
+                are trying to get all selected items from the tree, try 
+                using gtk_tree_selection_get_selected_rows instead.
+
+ 252 2014- 6-23 make the ofoBase objects members of a dynamic loadable
+                library (not a dynamically loadabled plugin) of same
+                version than sgbd (i.e. 1 as for now)
+
+ 253 2014- 6-24 have a 'select' button besides of the account number
+                when editing an entry
+
+ 254 2014- 6-24 have a 'select' button besides of the journal mnemo
+                when editing an entry
+
+ 255
 
 -----------------------------------------------------------------------
  DONE
@@ -722,6 +753,9 @@
                 ./_install/bin/openbook "Test OFAT v0.3" ofat ofat
      2014- 6- 7 done - svn #3662
 
+ 160 2014- 6- 4 print a reconciliation page (as a pdf)
+     2014- 6-21 done
+
  166 2014- 6- 5 Have an audit table which records _all_ sql queries
                 This may be managed by ofoSgbd class
      2014- 6- 7 done - svn #3660
@@ -839,6 +873,10 @@
  209 2014- 6-12 ofoTaux: get rid of ofoDossier argument in insert,
                 update and delete public methods (see ofoAccount)
      2014- 6-13 done
+
+ 218 2014- 6-15 this is an error if entry number is not strictly 
+                increasing when we update the account balance
+     2014- 6-20 done - svn #3745
 
  221 2014- 6-16 GuidedInput: the dialog box has two rows Cancel-OK
      2014- 6-16 done - svn #3717
