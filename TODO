@@ -275,21 +275,6 @@
  213 2014- 6-13 recurrente entries
      2014- 6-16 to be built as a plugin
 
- 214 2014- 6-13 edit rough entries
-     2014- 6-21 have a visual distinction depending of the entry status:
-                ok
-     2014- 6-21 forbid the edition and disable the edition switch when 
-                on a validated entry: ok
-     2014- 6-21 modified entries should be saved when we change the 
-                current row
-     2014- 6-21 connect to dossier signals to be advertised on 
-                intermediate closing, new entries..
-     2014- 6-23 add a button to cancel the modifications
-     2014- 6-23 add an icon to advertise that the row has been modified
-     2014- 6-23 insert a new line
-     2014- 6-23 delete a line
-     2014- 6-23 copy/paste a line
-
  215 2014- 6-13 assets management
      2014- 6-16 to be built as a plugin
 
@@ -347,7 +332,21 @@
  254 2014- 6-24 have a 'select' button besides of the journal mnemo
                 when editing an entry
 
- 255
+ 255 2014- 6-23 editing rough entries: add a button to cancel the 
+                modifications
+ 
+ 256 2014- 6-23 editing rough entries: add an icon to advertise that 
+                the row has been modified
+ 
+ 257 2014- 6-23 editing rough entries: insert a new line
+ 
+ 258 2014- 6-23 editing rough entries: delete a line
+ 
+ 259 2014- 6-23 editing rough entries: copy/paste a line
+
+ 260 2014- 6-24 editing rough entries: make the columns sortable
+
+ 261
 
 -----------------------------------------------------------------------
  DONE
@@ -873,6 +872,17 @@
  209 2014- 6-12 ofoTaux: get rid of ofoDossier argument in insert,
                 update and delete public methods (see ofoAccount)
      2014- 6-13 done
+
+ 214 2014- 6-13 edit rough entries
+     2014- 6-21 have a visual distinction depending of the entry status:
+                ok
+     2014- 6-21 forbid the edition and disable the edition switch when 
+                on a validated entry: ok
+     2014- 6-21 modified entries should be saved when we change the 
+                current row
+     2014- 6-21 connect to dossier signals to be advertised on 
+                intermediate closing, new entries..
+     2014- 6-24 done - svn #3746
 
  218 2014- 6-15 this is an error if entry number is not strictly 
                 increasing when we update the account balance

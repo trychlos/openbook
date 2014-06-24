@@ -135,7 +135,6 @@ enum {
 	ENT_COL_STATUS,
 	ENT_COL_OBJECT,
 	ENT_COL_VALID,
-	ENT_COL_BTN_REVERT,
 	ENT_N_COLUMNS
 };
 
@@ -576,8 +575,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* account, debit, credit */
 			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* currency, rappro, status */
 			G_TYPE_OBJECT,
-			G_TYPE_BOOLEAN,									/* valid */
-			GTK_TYPE_BUTTON ));
+			G_TYPE_BOOLEAN ));								/* valid */
 	priv->tfilter = gtk_tree_model_filter_new( tmodel, NULL );
 	g_object_unref( tmodel );
 	gtk_tree_view_set_model( tview, priv->tfilter );
