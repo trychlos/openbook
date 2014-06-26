@@ -144,7 +144,7 @@ static GObject     *on_create_custom_widget( GtkPrintOperation *operation, ofaPr
 static void         on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintReconcil *self );
 static void         on_account_changed( GtkEntry *entry, ofaPrintReconcil *self );
 static void         on_account_select( GtkButton *button, ofaPrintReconcil *self );
-static void         on_date_changed( GtkEntry *entry, ofaPrintReconcil *self );
+/*static void         on_date_changed( GtkEntry *entry, ofaPrintReconcil *self );*/
 static void         on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self );
 static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaPrintReconcil *self );
 static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self );
@@ -331,6 +331,7 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	static const gchar *thisfn = "ofa_print_reconcil_on_create_custom_widget";
 	GtkWidget *box, *frame;
 	GtkWidget *entry, *button, *label;
+	myDateParse parms;
 
 	g_debug( "%s: operation=%p, self=%p",
 			thisfn, ( void * ) operation, ( void * ) self );
@@ -354,13 +355,14 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
 	self->private->account_label = GTK_LABEL( label );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-entry" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-label" );
-	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
-	self->private->date_label = GTK_LABEL( label );
+	parms.entry = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-entry" );
+	parms.entry_format = MY_DATE_DDMM;
+	parms.label = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-label" );
+	parms.label_format = MY_DATE_DMMM;
+	parms.date = &self->private->date;
+	parms.on_changed_cb = NULL;
+	parms.user_data = NULL;
+	my_utils_date_parse_from_entry( &parms );
 
 	return( G_OBJECT( frame ));
 }
@@ -397,6 +399,7 @@ on_account_select( GtkButton *button, ofaPrintReconcil *self )
 	}
 }
 
+/*
 static void
 on_date_changed( GtkEntry *entry, ofaPrintReconcil *self )
 {
@@ -407,11 +410,12 @@ on_date_changed( GtkEntry *entry, ofaPrintReconcil *self )
 	str = gtk_entry_get_text( entry );
 	memcpy( &priv->date, my_utils_date_from_str( str ), sizeof( GDate ));
 	if( g_date_valid( &priv->date )){
-		gtk_label_set_text( priv->date_label, my_utils_display_from_date( &priv->date, MY_UTILS_DATE_DMMM ));
+		gtk_label_set_text( priv->date_label, my_utils_date_to_str( &priv->date, MY_DATE_DMMM ));
 	} else {
 		gtk_label_set_text( priv->date_label, "" );
 	}
 }
+*/
 
 static void
 on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintReconcil *self )
@@ -799,7 +803,7 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 		pango_layout_set_font_description( priv->header_layout, desc );
 		pango_font_description_free( desc );
 
-		sdate = my_utils_sql_from_date( ofo_account_get_global_deffect( priv->account ));
+		sdate = my_utils_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DDMM );
 		priv->account_solde = ofo_account_get_global_solde( priv->account );
 		str = g_strdup_printf(
 						"Account solde on %s is    %'.2lf",
@@ -865,7 +869,7 @@ draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext
 	/* y is in context units
 	 * add 20% to get some visual spaces between lines */
 
-	str = my_utils_display_from_date( ofo_entry_get_deffect( entry ), MY_UTILS_DATE_DDMM );
+	str = my_utils_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DDMM );
 	pango_layout_set_text( priv->body_layout, str, -1 );
 	g_free( str );
 	cairo_move_to( cr, priv->body_effect_tab, y );
@@ -964,7 +968,7 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	pango_layout_set_font_description( priv->body_layout, desc );
 	pango_font_description_free( desc );
 
-	sdate = my_utils_sql_from_date( ofo_account_get_global_deffect( priv->account ));
+	sdate = my_utils_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DDMM );
 	str = g_strdup_printf(
 					"Reconciliated account solde on %s is    %'.2lf",
 					sdate, priv->account_solde );

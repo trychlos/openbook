@@ -375,7 +375,7 @@ setup_dates( ofaGuidedCommon *self )
 	priv = self->private;
 
 	memcpy( &priv->dope, &st_last_dope, sizeof( GDate ));
-	str = my_utils_display_from_date( &priv->dope, MY_UTILS_DATE_DDMM );
+	str = my_utils_date_to_str( &priv->dope, MY_DATE_DDMM );
 	entry = my_utils_container_get_child_by_name( priv->parent, "p1-dope" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
@@ -386,7 +386,7 @@ setup_dates( ofaGuidedCommon *self )
 	priv->dope_entry = GTK_ENTRY( entry );
 
 	memcpy( &priv->deff, &st_last_deff, sizeof( GDate ));
-	str = my_utils_display_from_date( &priv->deff, MY_UTILS_DATE_DDMM );
+	str = my_utils_date_to_str( &priv->deff, MY_DATE_DDMM );
 	entry = my_utils_container_get_child_by_name( priv->parent, "p1-deffet" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
@@ -693,7 +693,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 			memcpy( &priv->deff, &priv->dope, sizeof( GDate ));
 		}
 
-		str = my_utils_display_from_date( &priv->deff, MY_UTILS_DATE_DDMM );
+		str = my_utils_date_to_str( &priv->deff, MY_DATE_DDMM );
 		gtk_entry_set_text( priv->deffet_entry, str );
 		g_free( str );
 	}
@@ -922,7 +922,7 @@ set_date_comment( ofaGuidedCommon *self, const gchar *label, const GDate *date )
 {
 	gchar *str, *comment;
 
-	str = my_utils_display_from_date( date, MY_UTILS_DATE_DMMM );
+	str = my_utils_date_to_str( date, MY_DATE_DMMM );
 	if( !g_utf8_strlen( str, -1 )){
 		g_free( str );
 		str = g_strdup( _( "invalid" ));

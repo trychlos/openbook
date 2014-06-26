@@ -442,12 +442,12 @@ journal_load_dataset( void )
 			balance->deb = g_ascii_strtod(( gchar * ) icol->data, NULL );
 			/*g_debug( "deb=%lf", balance->deb );*/
 			icol = icol->next;
-			memcpy( &balance->deb_date, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+			my_utils_date_set_from_sql( &balance->deb_date, ( const gchar * ) icol->data );
 			icol = icol->next;
 			balance->cre = g_ascii_strtod(( gchar * ) icol->data, NULL );
 			/*g_debug( "cre=%lf", balance->cre );*/
 			icol = icol->next;
-			memcpy( &balance->cre_date, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+			my_utils_date_set_from_sql( &balance->cre_date, ( const gchar * ) icol->data );
 
 			g_debug( "journal_load_dataset: adding journal=%s, exe_id=%d, devise=%s",
 					ofo_journal_get_mnemo( journal ), balance->exe_id, balance->devise );
@@ -471,7 +471,7 @@ journal_load_dataset( void )
 			exercice = g_new0( sDetailExe, 1 );
 			exercice->exe_id = atoi(( gchar * ) icol->data );
 			icol = icol->next;
-			memcpy( &exercice->last_clo, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+			my_utils_date_set_from_sql( &exercice->last_clo, ( const gchar * ) icol->data );
 
 			journal->private->exes = g_list_prepend( journal->private->exes, exercice );
 		}
@@ -683,7 +683,7 @@ ofo_journal_get_last_entry( const ofoJournal *journal )
 
 		if( result ){
 			icol = ( GSList * ) result->data;
-			memcpy( &deffet, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+			my_utils_date_set_from_sql( &deffet, ( const gchar * ) icol->data );
 			ofo_sgbd_free_result( result );
 		}
 	}
@@ -1574,8 +1574,10 @@ journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, con
 	cre = my_utils_sql_from_double( ofo_journal_get_cre( journal, detail->exe_id, detail->devise ));
 	clo_deb = my_utils_sql_from_double( ofo_journal_get_clo_deb( journal, detail->exe_id, detail->devise ));
 	clo_cre = my_utils_sql_from_double( ofo_journal_get_clo_cre( journal, detail->exe_id, detail->devise ));
-	sdebd = my_utils_sql_from_date( ofo_journal_get_deb_date( journal, detail->exe_id, detail->devise ));
-	scred = my_utils_sql_from_date( ofo_journal_get_cre_date( journal, detail->exe_id, detail->devise ));
+	sdebd = my_utils_date_to_str(
+					ofo_journal_get_deb_date( journal, detail->exe_id, detail->devise ), MY_DATE_SQL );
+	scred = my_utils_date_to_str(
+					ofo_journal_get_cre_date( journal, detail->exe_id, detail->devise ), MY_DATE_SQL );
 
 	query = g_strdup_printf(
 					"INSERT INTO OFA_T_JOURNAUX_DEV "
@@ -1622,7 +1624,7 @@ journal_do_update_detail_exe( const ofoJournal *journal, sDetailExe *detail, con
 	ofo_sgbd_query_ignore( sgbd, query );
 	g_free( query );
 
-	sdate = my_utils_sql_from_date( &detail->last_clo );
+	sdate = my_utils_date_to_str( &detail->last_clo, MY_DATE_SQL );
 
 	query = g_strdup_printf(
 					"INSERT INTO OFA_T_JOURNAUX_EXE "
@@ -1727,7 +1729,6 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 	ofoJournal *journal;
 	sDetailExe *sexe;
 	sDetailDev *sdev;
-	const GDate *date;
 	const gchar *muser;
 	gchar *sdebd, *scred;
 
@@ -1766,18 +1767,8 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 		for( exe=journal->private->exes ; exe ; exe=exe->next ){
 			sexe = ( sDetailExe * ) exe->data;
 
-			date = ofo_dossier_get_exe_fin( dossier, sexe->exe_id );
-			if( date && g_date_valid( date )){
-				sdfin = my_utils_sql_from_date( date );
-			} else {
-				sdfin = g_strdup( "" );
-			}
-
-			if( g_date_valid( &sexe->last_clo )){
-				sdclo = my_utils_sql_from_date( &sexe->last_clo );
-			} else {
-				sdclo = g_strdup( "" );
-			}
+			sdfin = my_utils_date_to_str( ofo_dossier_get_exe_fin( dossier, sexe->exe_id ), MY_DATE_SQL );
+			sdclo = my_utils_date_to_str( &sexe->last_clo, MY_DATE_SQL );
 
 			str = g_strdup_printf( "2;%s;%s;%s",
 					ofo_journal_get_mnemo( journal ),
@@ -1793,15 +1784,15 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 		for( amount=journal->private->amounts ; amount ; amount=amount->next ){
 			sdev = ( sDetailDev * ) amount->data;
 
-			date = ofo_dossier_get_exe_fin( dossier, sdev->exe_id );
-			if( date && g_date_valid( date )){
-				sdfin = my_utils_sql_from_date( date );
-			} else {
-				sdfin = g_strdup( "" );
-			}
-
-			sdebd = my_utils_sql_from_date( ofo_journal_get_deb_date( journal, sdev->exe_id, sdev->devise ));
-			scred = my_utils_sql_from_date( ofo_journal_get_cre_date( journal, sdev->exe_id, sdev->devise ));
+			sdfin = my_utils_date_to_str(
+							ofo_dossier_get_exe_fin( dossier, sdev->exe_id ),
+							MY_DATE_SQL );
+			sdebd = my_utils_date_to_str(
+							ofo_journal_get_deb_date( journal, sdev->exe_id, sdev->devise ),
+							MY_DATE_SQL );
+			scred = my_utils_date_to_str(
+							ofo_journal_get_cre_date( journal, sdev->exe_id, sdev->devise ),
+							MY_DATE_SQL );
 
 			str = g_strdup_printf( "3;%s;%s;%s;%.2lf;%.2lf;%.2lf;%s;%.2lf;%s",
 					ofo_journal_get_mnemo( journal ),

@@ -731,16 +731,16 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	CPT_MAJ_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp',"
 			"	CPT_DEB_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au débit',"
 			"	CPT_DEB_DATE     DATE                          COMMENT 'Date d\\'effet',"
-			"	CPT_DEB_MNT      DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant débiteur écritures validées',"
+			"	CPT_DEB_MNT      DECIMAL(15,5)                 COMMENT 'Montant débiteur écritures validées',"
 			"	CPT_CRE_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au crédit',"
 			"	CPT_CRE_DATE     DATE                          COMMENT 'Date d\\'effet',"
-			"	CPT_CRE_MNT      DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant créditeur écritures validées',"
+			"	CPT_CRE_MNT      DECIMAL(15,5)                 COMMENT 'Montant créditeur écritures validées',"
 			"	CPT_BRO_DEB_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture en brouillard imputée au débit',"
 			"	CPT_BRO_DEB_DATE DATE                          COMMENT 'Date d\\'effet',"
-			"	CPT_BRO_DEB_MNT  DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant débiteur écritures en brouillard',"
+			"	CPT_BRO_DEB_MNT  DECIMAL(15,5)                 COMMENT 'Montant débiteur écritures en brouillard',"
 			"	CPT_BRO_CRE_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture de brouillard imputée au crédit',"
 			"	CPT_BRO_CRE_DATE DATE                          COMMENT 'Date d\\'effet',"
-			"	CPT_BRO_CRE_MNT  DECIMAL(15,5) NOT NULL DEFAULT 0 COMMENT 'Montant créditeur écritures en brouillard'"
+			"	CPT_BRO_CRE_MNT  DECIMAL(15,5)                 COMMENT 'Montant créditeur écritures en brouillard'"
 			")" )){
 		return( FALSE );
 	}
@@ -786,10 +786,10 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_EXE ("
 			"	DOS_ID           INTEGER      NOT NULL        COMMENT 'Row identifier',"
 			"	DOS_EXE_ID       INTEGER      NOT NULL        COMMENT 'Exercice identifier',"
-			"	DOS_EXE_DEB      DATE         NOT NULL DEFAULT 0 COMMENT 'Date de début d\\'exercice',"
-			"	DOS_EXE_FIN      DATE         NOT NULL DEFAULT 0 COMMENT 'Date de fin d\\'exercice',"
-			"	DOS_EXE_LAST_ECR INTEGER      NOT NULL DEFAULT 0 COMMENT 'Last entry number used',"
-			"	DOS_EXE_STATUS   INTEGER      NOT NULL DEFAULT 0 COMMENT 'Status of this exercice',"
+			"	DOS_EXE_DEB      DATE                         COMMENT 'Date de début d\\'exercice',"
+			"	DOS_EXE_FIN      DATE                         COMMENT 'Date de fin d\\'exercice',"
+			"	DOS_EXE_LAST_ECR INTEGER                      COMMENT 'Last entry number used',"
+			"	DOS_EXE_STATUS   INTEGER      NOT NULL        COMMENT 'Status of this exercice',"
 			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_ID)"
 			")" )){
 		return( FALSE );
@@ -816,7 +816,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	ECR_STATUS    INTEGER       DEFAULT 1     COMMENT 'Is the entry validated or deleted ?',"
 			"	ECR_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
 			"	ECR_MAJ_STAMP TIMESTAMP                   COMMENT 'Last update timestamp',"
-			"	ECR_RAPPRO    DATE NOT NULL DEFAULT 0     COMMENT 'Reconciliation date',"
+			"	ECR_RAPPRO    DATE                        COMMENT 'Reconciliation date',"
 			"	CONSTRAINT PRIMARY KEY (ECR_DEFFET,ECR_NUMBER),"
 			"	INDEX (ECR_NUMBER)"
 			")" )){
@@ -1800,13 +1800,17 @@ dossier_read_exercices( ofoDossier *dossier )
 
 			sexe->exe_id = atoi(( gchar * ) icol->data );
 			icol = icol->next;
-			memcpy( &sexe->exe_deb, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+			my_utils_date_set_from_sql( &sexe->exe_deb, ( const gchar * ) icol->data );
 			icol = icol->next;
-			memcpy( &sexe->exe_fin, my_utils_date_from_str(( gchar * ) icol->data ), sizeof( GDate ));
+			my_utils_date_set_from_sql( &sexe->exe_fin, ( const gchar * ) icol->data );
 			icol = icol->next;
-			sexe->last_ecr = atoi(( gchar * ) icol->data );
+			if( icol->data ){
+				sexe->last_ecr = atoi(( gchar * ) icol->data );
+			}
 			icol = icol->next;
-			sexe->status = atoi(( gchar * ) icol->data );
+			if( icol->data ){
+				sexe->status = atoi(( gchar * ) icol->data );
+			}
 
 			dossier->private->exes = g_list_append( dossier->private->exes, sexe );
 		}
@@ -1902,39 +1906,40 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 static gboolean
 do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 {
-	gchar *query;
+	GString *query;
 	gchar *sdeb, *sfin;
 	gboolean ok;
+	const GDate *date;
 
 	ok = FALSE;
 
-	if( g_date_valid( &dossier->private->current->exe_deb )){
-		sdeb = my_utils_sql_from_date( &dossier->private->current->exe_deb );
+	query = g_string_new( "UPDATE OFA_T_DOSSIER_EXE SET " );
+
+	date = ( const GDate * ) &dossier->private->current->exe_deb;
+	if( g_date_valid( date )){
+		sdeb = my_utils_date_to_str( date, MY_DATE_SQL );
+		g_string_append_printf( query, "DOS_EXE_DEB='%s',", sdeb );
+		g_free( sdeb );
 	} else {
-		sdeb = g_strdup( "0000-00-00" );
+		query = g_string_append( query, "DOS_EXE_DEB=NULL," );
 	}
 
-	if( g_date_valid( &dossier->private->current->exe_fin )){
-		sfin = my_utils_sql_from_date( &dossier->private->current->exe_fin );
+	date = ( const GDate * ) &dossier->private->current->exe_fin;
+	if( g_date_valid( date )){
+		sfin = my_utils_date_to_str( date, MY_DATE_SQL );
+		g_string_append_printf( query, "DOS_EXE_FIN='%s' ", sfin );
+		g_free( sfin );
 	} else {
-		sfin = g_strdup( "0000-00-00" );
+		query = g_string_append( query, "DOS_EXE_FIN=NULL " );
 	}
 
-	query = g_strdup_printf(
-				"UPDATE OFA_T_DOSSIER_EXE SET "
-				"	DOS_EXE_DEB='%s',"
-				"	DOS_EXE_FIN='%s' WHERE "
-				"	DOS_ID=%d AND DOS_EXE_ID=%d",
-						sdeb,
-						sfin,
-						THIS_DOS_ID,
-						dossier->private->current->exe_id );
+	g_string_append_printf( query,
+				"WHERE DOS_ID=%d AND DOS_EXE_ID=%d",
+					THIS_DOS_ID, dossier->private->current->exe_id );
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query->str );
 
-	g_free( query );
-	g_free( sdeb );
-	g_free( sfin );
+	g_string_free( query, TRUE );
 
 	return( ok );
 }
@@ -1982,17 +1987,8 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 		sexe = ( sDetailExe * ) exe->data;
 
-		if( g_date_valid( &sexe->exe_deb )){
-			sbegin = my_utils_sql_from_date( &sexe->exe_deb );
-		} else {
-			sbegin = g_strdup( "" );
-		}
-
-		if( g_date_valid( &sexe->exe_fin )){
-			send = my_utils_sql_from_date( &sexe->exe_fin );
-		} else {
-			send = g_strdup( "" );
-		}
+		sbegin = my_utils_date_to_str( &sexe->exe_deb, MY_DATE_SQL );
+		send = my_utils_date_to_str( &sexe->exe_fin, MY_DATE_SQL );
 
 		str = g_strdup_printf( "2:%s;%s;%d;%d",
 				sbegin,

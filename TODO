@@ -326,11 +326,11 @@
                 library (not a dynamically loadabled plugin) of same
                 version than sgbd (i.e. 1 as for now)
 
- 253 2014- 6-24 have a 'select' button besides of the account number
-                when editing an entry
+ 253 2014- 6-24 editing rough entries: have a 'select' button besides 
+                of the account number when editing an entry
 
- 254 2014- 6-24 have a 'select' button besides of the journal mnemo
-                when editing an entry
+ 254 2014- 6-24 editing rough entries: have a 'select' button besides
+                of the journal mnemo when editing an entry
 
  255 2014- 6-23 editing rough entries: add a button to cancel the 
                 modifications

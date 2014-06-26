@@ -400,6 +400,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 	static const gchar *thisfn = "ofa_journal_combo_on_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
+	const gchar *mnemo, *new_mnemo;
 
 	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
@@ -409,11 +410,13 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 			( void * ) self );
 
 	if( OFO_IS_JOURNAL( object )){
-		if( find_journal_by_mnemo( self, prev_id, &tmodel, &iter )){
+		new_mnemo = ofo_journal_get_mnemo( OFO_JOURNAL( object ));
+		mnemo = prev_id ? prev_id : new_mnemo;
+		if( find_journal_by_mnemo( self, mnemo, &tmodel, &iter )){
 			gtk_list_store_set(
 					GTK_LIST_STORE( tmodel ),
 					&iter,
-					JOU_COL_MNEMO, ofo_journal_get_mnemo( OFO_JOURNAL( object )),
+					JOU_COL_MNEMO, new_mnemo,
 					JOU_COL_LABEL, ofo_journal_get_label( OFO_JOURNAL( object )),
 					-1 );
 		}

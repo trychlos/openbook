@@ -195,8 +195,7 @@ v_init_dialog( myDialog *dialog )
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	init_properties_page( self );
-
-	init_current_exe_page( OFA_DOSSIER_PROPERTIES( dialog ));
+	init_current_exe_page( self );
 
 	my_utils_init_notes_ex( container, dossier );
 	my_utils_init_maj_user_stamp_ex( container, dossier );
@@ -263,7 +262,9 @@ init_current_exe_page( ofaDossierProperties *self )
 	priv = self->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
-	memcpy( &priv->last_closed, ofo_dossier_get_last_closed_exercice( priv->dossier ), sizeof( GDate ));
+	my_utils_date_set_from_date(
+			&priv->last_closed,
+			ofo_dossier_get_last_closed_exercice( priv->dossier ));
 
 	entry = my_utils_container_get_child_by_name( container, "p2-begin" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -273,6 +274,10 @@ init_current_exe_page( ofaDossierProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->begin_label = GTK_LABEL( label );
 
+	str = my_utils_date_to_str( ofo_dossier_get_current_exe_deb( priv->dossier ), MY_DATE_DDMM );
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
+	g_free( str );
+
 	entry = my_utils_container_get_child_by_name( container, "p2-end" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_date_changed ), self );
@@ -280,6 +285,10 @@ init_current_exe_page( ofaDossierProperties *self )
 	label = my_utils_container_get_child_by_name( container, "p2-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->end_label = GTK_LABEL( label );
+
+	str = my_utils_date_to_str( ofo_dossier_get_current_exe_fin( priv->dossier ), MY_DATE_DDMM );
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
+	g_free( str );
 
 	label = my_utils_container_get_child_by_name( container, "p2-id" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -346,7 +355,7 @@ on_begin_date_changed( GtkEntry *entry, ofaDossierProperties *self )
 	if( g_date_valid( &date ) &&
 		( !g_date_valid( &priv->last_closed ) || g_date_compare( &priv->last_closed, &date ) < 0 )){
 
-			str = my_utils_display_from_date( &date, MY_UTILS_DATE_DMMM );
+			str = my_utils_date_to_str( &date, MY_DATE_DMMM );
 			memcpy( &priv->begin, &date, sizeof( GDate ));
 
 	} else {
@@ -371,7 +380,7 @@ on_end_date_changed( GtkEntry *entry, ofaDossierProperties *self )
 	if( g_date_valid( &date ) &&
 		( !g_date_valid( &priv->begin ) || g_date_compare( &priv->begin, &date ) < 0 )){
 
-		str = my_utils_display_from_date( &date, MY_UTILS_DATE_DMMM );
+		str = my_utils_date_to_str( &date, MY_DATE_DMMM );
 		memcpy( &priv->end, &date, sizeof( GDate ));
 
 	} else {

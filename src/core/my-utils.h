@@ -38,45 +38,79 @@
 G_BEGIN_DECLS
 
 /**
+ * myDateFormat:
  *
+ * @MY_DATE_DMMM: display the date as 'dd/mm/yyyy'
+ * @MY_DATE_DDMM: display the date as 'd mmm yyyy'
+ * MY_DATE_SQL:   display the date as 'yyyy-mm-dd'
  */
 typedef enum {
-	MY_UTILS_DATE_DMMM = 1,
-	MY_UTILS_DATE_DDMM
+	MY_DATE_DMMM = 1,
+	MY_DATE_DDMM,
+	MY_DATE_SQL
 }
-	myUtilsDateFormat;
+	myDateFormat;
 
-gchar         *my_utils_quote( const gchar *str );
+/**
+ * myDateParse:
+ *
+ * @entry:
+ * @entry_format:
+ * @label: [allow-none]
+ * @label_format
+ * @date
+ * @on_changed_cb: [allow-none]
+ * @user_data
+ *
+ * Manage a GtkEntry, parsing the input according to the specified
+ * format, updating the provided GDate.
+ */
+typedef struct {
+	GtkWidget   *entry;
+	myDateFormat entry_format;
+	GtkWidget   *label;
+	myDateFormat label_format;
+	GDate       *date;
+	GCallback    on_changed_cb;
+	gpointer     user_data;
+}
+	myDateParse;
 
-const GDate   *my_utils_date_from_str      ( const gchar *str );
-gchar         *my_utils_display_from_date  ( const GDate *date, myUtilsDateFormat format );
-gchar         *my_utils_sql_from_date      ( const GDate *date );
-gint           my_utils_date_cmp           ( const GDate *a, const GDate *b, gboolean infinite_is_past );
-const GTimeVal*my_utils_stamp_from_str     ( const gchar *str );
-gchar         *my_utils_str_from_stamp     ( const GTimeVal *stamp );
-gchar         *my_utils_timestamp          ( void );
+gchar         *my_utils_quote                 ( const gchar *str );
 
-gchar         *my_utils_export_multi_lines ( const gchar *str );
-gchar         *my_utils_import_multi_lines ( const gchar *str );
+const GDate   *my_utils_date_from_str         ( const gchar *str );
 
-gboolean       my_utils_parse_boolean      ( const gchar *str, gboolean *bvar );
+void           my_utils_date_set_from_sql     ( GDate *dest, const gchar *sql_string );
+void           my_utils_date_set_from_date    ( GDate *dest, const GDate *src );
+gchar         *my_utils_date_to_str           ( const GDate *date, myDateFormat format );
+gint           my_utils_date_cmp              ( const GDate *a, const GDate *b, gboolean infinite_is_past );
+void           my_utils_date_parse_from_entry ( const myDateParse *parms );
 
-gchar         *my_utils_sql_from_double    ( gdouble value );
+const GTimeVal*my_utils_stamp_from_str        ( const gchar *str );
+gchar         *my_utils_str_from_stamp        ( const GTimeVal *stamp );
+gchar         *my_utils_timestamp             ( void );
 
-gchar         *my_utils_str_remove_suffix( const gchar *string, const gchar *suffix );
-gchar         *my_utils_str_replace      ( const gchar *string, const gchar *old, const gchar *new );
+gchar         *my_utils_export_multi_lines    ( const gchar *str );
+gchar         *my_utils_import_multi_lines    ( const gchar *str );
+
+gboolean       my_utils_parse_boolean         ( const gchar *str, gboolean *bvar );
+
+gchar         *my_utils_sql_from_double       ( gdouble value );
+
+gchar         *my_utils_str_remove_suffix     ( const gchar *string, const gchar *suffix );
+gchar         *my_utils_str_replace           ( const gchar *string, const gchar *old, const gchar *new );
 
 GtkWidget     *my_utils_builder_load_from_path( const gchar *path_xml, const gchar *widget_name );
 
-gboolean       my_utils_entry_get_valid    ( GtkEntry *entry );
-void           my_utils_entry_set_valid    ( GtkEntry *entry, gboolean valid );
+gboolean       my_utils_entry_get_valid       ( GtkEntry *entry );
+void           my_utils_entry_set_valid       ( GtkEntry *entry, gboolean valid );
 
 GtkWidget     *my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name );
 GtkWidget     *my_utils_container_get_child_by_type( GtkContainer *container, GType type );
 
-void           my_utils_init_notes         ( GtkContainer *container,
-												const gchar *widget_name,
-												const gchar *notes );
+void           my_utils_init_notes            ( GtkContainer *container,
+													const gchar *widget_name,
+													const gchar *notes );
 
 #define        my_utils_init_notes_ex( C,T ) my_utils_init_notes( GTK_CONTAINER(C),"pn-notes", ofo_ ## T ## _get_notes( priv->T))
 
@@ -95,7 +129,7 @@ void           my_utils_init_maj_user_stamp( GtkContainer *container,
 														GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_maj_stamp( priv->T ), \
 														ofo_ ## T ## _get_maj_user( priv->T )); }
 
-gboolean       my_utils_output_stream_new( const gchar *uri, GFile **file, GOutputStream **stream );
+gboolean       my_utils_output_stream_new     ( const gchar *uri, GFile **file, GOutputStream **stream );
 
 void           my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width );
 

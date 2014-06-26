@@ -254,7 +254,7 @@ on_date_changed( GtkEntry *entry, ofaIntClosing *self )
 	g_date_set_parse( &priv->closing, gtk_entry_get_text( entry ));
 
 	if( g_date_valid( &priv->closing )){
-		str = my_utils_display_from_date( &priv->closing, MY_UTILS_DATE_DMMM );
+		str = my_utils_date_to_str( &priv->closing, MY_DATE_DMMM );
 		gtk_label_set_text( priv->date_label, str );
 		g_free( str );
 

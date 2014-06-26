@@ -388,8 +388,8 @@ set_row_by_iter( ofaJournalTreeview *self, ofoJournal *journal, GtkTreeModel *tm
 {
 	gchar *sent, *sclo;
 
-	sent = my_utils_display_from_date( ofo_journal_get_last_entry( journal ), MY_UTILS_DATE_DDMM );
-	sclo = my_utils_display_from_date( ofo_journal_get_last_closing( journal ), MY_UTILS_DATE_DDMM );
+	sent = my_utils_date_to_str( ofo_journal_get_last_entry( journal ), MY_DATE_DDMM );
+	sclo = my_utils_date_to_str( ofo_journal_get_last_closing( journal ), MY_DATE_DDMM );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( tmodel ),
