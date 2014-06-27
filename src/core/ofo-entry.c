@@ -85,6 +85,7 @@ static void         error_amounts( gdouble debit, gdouble credit );
 static void         error_entry( const gchar *message );
 static gboolean     entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 static gboolean     do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd );
+static gboolean     do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 
 static void
 ofo_entry_finalize( GObject *instance )
@@ -1558,7 +1559,44 @@ ofo_entry_validate_by_journal( const ofoDossier *dossier, const gchar *mnemo, co
 gboolean
 ofo_entry_delete( ofoEntry *entry, const ofoDossier *dossier )
 {
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		if( do_delete_entry(
+					entry,
+					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_user( dossier ))){
+
+			g_signal_emit_by_name(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_DELETED_OBJECT, g_object_ref( entry ));
+
+			return( TRUE );
+		}
+	}
+
 	return( FALSE );
+}
+
+static gboolean
+do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
+{
+	gchar *query;
+	gboolean ok;
+
+	query = g_strdup_printf(
+				"UPDATE OFA_T_ECRITURES SET "
+				"	ECR_STATUS=%d WHERE ECR_NUMBER=%u",
+						ENT_STATUS_DELETED, ofo_entry_get_number( entry ));
+
+	ok = ofo_sgbd_query( sgbd, query );
+
+	g_free( query );
+
+	return( ok );
+
 }
 
 /*

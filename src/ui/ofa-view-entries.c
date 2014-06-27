@@ -223,10 +223,11 @@ static void           on_dossier_updated_object( ofoDossier *dossier, ofoBase *o
 static void           do_update_account_number( ofaViewEntries *self, const gchar *prev, const gchar *number );
 static void           do_update_journal_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo );
 static void           do_update_devise_code( ofaViewEntries *self, const gchar *prev, const gchar *code );
+static void           on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
+static void           do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry );
 static void           on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
 static gboolean       on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *self );
 static ofaEntryStatus get_entry_status_from_row( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gchar         *get_entry_label_from_row( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void           insert_new_row( ofaViewEntries *self );
 static void           delete_row( ofaViewEntries *self );
 static gboolean       delete_confirmed( const ofaViewEntries *self, const gchar *message );
@@ -784,6 +785,10 @@ setup_signaling_connect( ofaViewEntries *self )
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
 			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_dossier_updated_object ), self );
+
+	g_signal_connect(
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_dossier_deleted_object ), self );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
@@ -2127,6 +2132,34 @@ do_update_devise_code( ofaViewEntries *self, const gchar *prev, const gchar *cod
 	}
 }
 
+/*
+ * a journal mnemo, an account number, a currency code or an entry may
+ *  have been deleted
+ */
+static void
+on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self )
+{
+	static const gchar *thisfn = "ofa_view_entries_on_dossier_deleted_object";
+
+	g_debug( "%s: dossier=%p, object=%p (%s), user_data=%p",
+			thisfn,
+			( void * ) dossier,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_ENTRY( object )){
+		do_on_deleted_entry( self, OFO_ENTRY( object ));
+	}
+}
+
+static void
+do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry )
+{
+	static const gchar *thisfn = "ofa_view_entries_on_deleted_entries";
+
+	g_debug( "%s: self=%p, entry=%p", thisfn, ( void * ) self, ( void * ) entry );
+}
+
 static void
 on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self )
 {
@@ -2161,14 +2194,17 @@ on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *sel
 
 	stop = FALSE;
 
-	if( event->keyval == GDK_KEY_Insert || event->keyval == GDK_KEY_KP_Insert ){
-		insert_new_row( self );
-		stop = TRUE;
-	}
+	if( gtk_switch_get_active( self->private->edit_switch )){
 
-	if( event->keyval == GDK_KEY_Delete || event->keyval == GDK_KEY_KP_Delete ){
-		delete_row( self );
-		stop = TRUE;
+		if( event->keyval == GDK_KEY_Insert || event->keyval == GDK_KEY_KP_Insert ){
+			insert_new_row( self );
+			stop = TRUE;
+		}
+
+		if( event->keyval == GDK_KEY_Delete || event->keyval == GDK_KEY_KP_Delete ){
+			delete_row( self );
+			stop = TRUE;
+		}
 	}
 
 	return( stop );
@@ -2187,16 +2223,6 @@ get_entry_status_from_row( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIt
 	return( status );
 }
 
-static gchar *
-get_entry_label_from_row( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
-{
-	gchar *str;
-
-	gtk_tree_model_get( tmodel, iter, ENT_COL_LABEL, &str, -1 );
-
-	return( str );
-}
-
 static void
 insert_new_row( ofaViewEntries *self )
 {
@@ -2207,9 +2233,10 @@ insert_new_row( ofaViewEntries *self )
 	gboolean is_empty;
 	gchar *str;
 	gint pos;
-	const gchar *journal, *account;
+	const gchar *journal, *account, *dev_code;
 	GtkTreePath *path;
 	GtkTreeViewColumn *column;
+	ofoAccount *account_object;
 
 	priv = self->private;
 	is_empty = FALSE;
@@ -2239,20 +2266,24 @@ insert_new_row( ofaViewEntries *self )
 	if( gtk_toggle_button_get_active( priv->journal_btn )){
 		journal = priv->jou_mnemo;
 		account = NULL;
+		dev_code = "";
 	} else {
 		journal = NULL;
 		account = priv->acc_number;
+		account_object = ofo_account_get_by_number( priv->dossier, account );
+		dev_code = ofo_account_get_devise( account_object );
 	}
 
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( tmodel ),
 			&new_iter,
 			pos,
-			ENT_COL_STATUS,  str,
-			ENT_COL_JOURNAL, journal,
-			ENT_COL_ACCOUNT, account,
-			ENT_COL_DEBIT,   "",
-			ENT_COL_CREDIT,  "",
+			ENT_COL_STATUS,   str,
+			ENT_COL_JOURNAL,  journal,
+			ENT_COL_ACCOUNT,  account,
+			ENT_COL_DEBIT,    "",
+			ENT_COL_CREDIT,   "",
+			ENT_COL_CURRENCY, dev_code,
 			-1 );
 
 	g_free( str );
@@ -2278,29 +2309,36 @@ delete_row( ofaViewEntries *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter, child_iter;
 	ofoEntry *entry;
-	gchar *str, *msg;
+	gchar *msg, *label;
 
 	priv = self->private;
 	select = gtk_tree_view_get_selection( priv->entries_tview );
 	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
-		gtk_tree_model_get( priv->tfilter, &iter, ENT_COL_OBJECT, &entry, -1 );
-		if( entry ){
-			g_object_unref( entry );
-		}
+		gtk_tree_model_get(
+				priv->tfilter,
+				&iter,
+				ENT_COL_LABEL,    &label,
+				ENT_COL_OBJECT,   &entry,
+				-1 );
 		if( get_entry_status_from_row( self, priv->tfilter, &iter) == ENT_STATUS_ROUGH ){
-			str = get_entry_label_from_row( self, priv->tfilter, &iter );
 			msg = g_strdup_printf(
 					_( "Are you sure you want to remove the '%s' entry" ),
-					str );
-			g_free( str );
+					label );
 			if( delete_confirmed( self, msg )){
 				gtk_tree_model_filter_convert_iter_to_child_iter(
 						GTK_TREE_MODEL_FILTER( priv->tfilter ), &child_iter, &iter );
 				tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &child_iter );
+				if( entry ){
+					ofo_entry_delete( entry, priv->dossier );
+				}
+				compute_balances( self );
 			}
-
 			g_free( msg );
+		}
+		g_free( label );
+		if( entry ){
+			g_object_unref( entry );
 		}
 	}
 }

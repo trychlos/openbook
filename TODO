@@ -339,10 +339,6 @@
  262 2014- 6-27 make g_date_set_parse locale independant (especially
                 when parsing from sql)
 
- 263 2014- 6-27 PrintReconciliation: when there is no entry, the footer
-                is displayed in the top of the page, instead of the
-                bottom 
-
  264 2014- 6-27 review MySQL data types against C data types
 
  265 2014- 6-27 review ofa_t_ecritures index: should be just ecr_number
@@ -352,7 +348,16 @@
                 system timestamp (yyyy-mm-dd hh:mi:ss) but should 
                 rather be a 'user-friendly' timestamp (dd/mm/yyyy hh:mi)
 
- 267
+ 267 2014- 6-27 PrintReconciliation: when the account is empty (no entry
+                has never been imputed), then no date is displayed on 
+                the account solde line. 
+                At least, should use the entered reconciliation date.
+
+ 268 2014- 6-27 ViewEntries: when selecting an account, set default
+                currency on the currently edited line if not already
+                set
+
+ 269
 
 -----------------------------------------------------------------------
  DONE
@@ -1015,6 +1020,11 @@
 
  257 2014- 6-23 editing rough entries: insert a new line
      2014- 6-27 done
+
+ 263 2014- 6-27 PrintReconciliation: when there is no entry, the footer
+                is displayed in the top of the page, instead of the
+                bottom
+     2014- 6-27 done - svn #3749 
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
