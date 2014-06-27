@@ -49,7 +49,7 @@
 struct _ofaRapproPrivate {
 	gboolean      dispose_has_run;
 
-	/* internals
+	/* UI
 	 */
 	GtkEntry     *account;
 	GtkLabel     *account_label;
@@ -62,6 +62,9 @@ struct _ofaRapproPrivate {
 	GtkLabel     *bal_debit;			/* balance of the account  */
 	GtkLabel     *bal_credit;			/*  ... deducting unreconciliated entries */
 
+	/* internals
+	 */
+	GDate         dconcil;
 	GList        *batlines;				/* loaded bank account transaction lines */
 };
 
@@ -371,6 +374,7 @@ setup_manual_rappro( ofaMainPage *page )
 	GtkGrid *grid;
 	GtkLabel *label;
 	gchar *markup;
+	myDateParse parms;
 
 	priv = OFA_RAPPRO( page )->private;
 
@@ -396,7 +400,15 @@ setup_manual_rappro( ofaMainPage *page )
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_grid_attach( grid, GTK_WIDGET( label ), 0, 0, 1, 1 );
 
-	priv->date_concil = GTK_ENTRY( gtk_entry_new());
+	memset( &parms, '\0', sizeof( parms ));
+	parms.entry = gtk_entry_new();
+	parms.entry_format = MY_DATE_DDMM;
+	parms.label = gtk_label_new( "" 	);
+	parms.label_format = MY_DATE_DMMM;
+	parms.date = &priv->dconcil;
+	my_utils_date_parse_from_entry( &parms );
+
+	priv->date_concil = GTK_ENTRY( parms.entry );
 	gtk_entry_set_max_length( priv->date_concil, 10 );
 	gtk_entry_set_width_chars( priv->date_concil, 10 );
 	gtk_label_set_mnemonic_widget( label, GTK_WIDGET( priv->date_concil ));
@@ -404,6 +416,10 @@ setup_manual_rappro( ofaMainPage *page )
 	gtk_widget_set_tooltip_text(
 			GTK_WIDGET( priv->date_concil ),
 			_( "The date to which the entry will be set as reconciliated if no account transaction is proposed" ));
+
+	gtk_misc_set_alignment( GTK_MISC( parms.label ), 0, 0.5 );
+	gtk_label_set_width_chars( GTK_LABEL( parms.label ), 10 );
+	gtk_grid_attach( grid, parms.label, 2, 0, 1, 1 );
 
 	return( GTK_WIDGET( frame ));
 }
@@ -703,28 +719,24 @@ v_init_view( ofaMainPage *page )
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRappro *self )
 {
-	gchar *dopea, *dopeb, *sqla, *sqlb;
+	gchar *dopea, *dopeb;
 	GDate da, db;
 	gint numa, numb;
 	gint cmp;
 
 	gtk_tree_model_get( tmodel, a, COL_DOPE, &dopea, COL_NUMBER, &numa, -1 );
-	memcpy( &da, my_utils_date_from_str( dopea ), sizeof( GDate ));
-	sqla = my_utils_date_to_str( &da, MY_DATE_SQL );
+	my_utils_date_parse_from_str( &da, dopea, MY_DATE_DDMM );
 
 	gtk_tree_model_get( tmodel, b, COL_DOPE, &dopeb, COL_NUMBER, &numb, -1 );
-	memcpy( &db, my_utils_date_from_str( dopeb ), sizeof( GDate ));
-	sqlb = my_utils_date_to_str( &db, MY_DATE_SQL );
+	my_utils_date_parse_from_str( &db, dopeb, MY_DATE_DDMM );
 
-	cmp = g_utf8_collate( sqla, sqlb );
+	cmp = my_utils_date_cmp( &da, &db, FALSE );
 	if( cmp == 0 ){
 		cmp = ( numa < numb ? -1 : ( numa > numb ? 1 : 0 ));
 	}
 
 	g_free( dopea );
-	g_free( sqla );
 	g_free( dopeb );
-	g_free( sqlb );
 
 	return( cmp );
 }
@@ -1490,7 +1502,6 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
 	gboolean bvalid;
 	GObject *object;
 	GDate date;
-	const gchar *date_concil;
 
 	if( gtk_tree_model_get_iter( self->private->tmodel, &iter, path )){
 
@@ -1518,10 +1529,9 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
 		 * BAT */
 		} else {
 			if( srappro && g_utf8_strlen( srappro, -1 )){
-				memcpy( &date, my_utils_date_from_str( srappro ), sizeof( GDate ));
+				my_utils_date_parse_from_str( &date, srappro, MY_DATE_DDMM );
 			} else {
-				date_concil = gtk_entry_get_text( self->private->date_concil );
-				memcpy( &date, my_utils_date_from_str( date_concil ), sizeof( GDate ));
+				my_utils_date_set_from_date( &date, &self->private->dconcil );
 			}
 			if( g_date_valid( &date )){
 				reconciliate_entry( self, OFO_ENTRY( object ), &date, &iter );

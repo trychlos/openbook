@@ -70,13 +70,13 @@ typedef struct {
 /**
  * JournalTreeviewCb:
  *
- * A callback to be triggered when a row is selected or activated.
+ * A callback to be triggered when a row is selected or activated,
  *
  * Passed parameters are:
- * - mnemo
+ * - a GList * of selected #ofoJournal objects
  * - user_data provided at initialization time
  */
-typedef void ( *JournalTreeviewCb )( const gchar *, gpointer );
+typedef void ( *JournalTreeviewCb )( GList *, gpointer );
 
 /**
  * JournalTreeviewParms:
@@ -99,8 +99,7 @@ ofaJournalTreeview *ofa_journal_treeview_new         ( const JournalTreeviewParm
 
 void                ofa_journal_treeview_init_view   ( ofaJournalTreeview *view, const gchar *initial_selection );
 
-ofoJournal         *ofa_journal_treeview_get_selected( ofaJournalTreeview *view );
-void                ofa_journal_treeview_foreach_sel ( ofaJournalTreeview *view, JournalTreeviewCb fn, void *user_data );
+GList              *ofa_journal_treeview_get_selected( ofaJournalTreeview *view );
 
 void                ofa_journal_treeview_grab_focus  ( ofaJournalTreeview *view );
 

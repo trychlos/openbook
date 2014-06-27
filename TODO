@@ -95,9 +95,8 @@
   52 2014- 5-17 change the title of the pages of the models notebook
                 when the label of a journal is changed
 
-  56 2014- 5-19 have an entry-derived class for date
-
-  57 2014- 5-19 have an entry-derived class for numbers (montants et taux)
+  57 2014- 5-19 have an entry-derived class for numbers (amounts and
+                rates)
 
   58 2014- 5-19 allow the treeviewes to be sorted
      2014- 6-12 this is mostly needed only in ViewEntries
@@ -312,16 +311,6 @@
 
  249 2014- 6-20 record user and stamp on entry reconciliation
 
- 250 2014- 6-20 Print Reconciliation: display dates as dd/mm/yyyy
-
- 251 2014- 6-21 ofaIntClosing:do_close: 
-                replace ofa_journal_treeview_foreach_sel()
-                Rationale: The model has been modified from within 
-                gtk_tree_selection_selected_foreach. This function is 
-                for observing the selections of the tree only.  If you
-                are trying to get all selected items from the tree, try 
-                using gtk_tree_selection_get_selected_rows instead.
-
  252 2014- 6-23 make the ofoBase objects members of a dynamic loadable
                 library (not a dynamically loadabled plugin) of same
                 version than sgbd (i.e. 1 as for now)
@@ -332,21 +321,38 @@
  254 2014- 6-24 editing rough entries: have a 'select' button besides
                 of the journal mnemo when editing an entry
 
- 255 2014- 6-23 editing rough entries: add a button to cancel the 
+ 255 2014- 6-23 editing rough entries: add a button to revert the 
                 modifications
  
  256 2014- 6-23 editing rough entries: add an icon to advertise that 
                 the row has been modified
- 
- 257 2014- 6-23 editing rough entries: insert a new line
- 
+
  258 2014- 6-23 editing rough entries: delete a line
- 
+
  259 2014- 6-23 editing rough entries: copy/paste a line
 
  260 2014- 6-24 editing rough entries: make the columns sortable
 
- 261
+ 261 2014- 6-27 TauxProperties: update ofoTaux with GDate and rate as a
+                gdouble instead of strings
+
+ 262 2014- 6-27 make g_date_set_parse locale independant (especially
+                when parsing from sql)
+
+ 263 2014- 6-27 PrintReconciliation: when there is no entry, the footer
+                is displayed in the top of the page, instead of the
+                bottom 
+
+ 264 2014- 6-27 review MySQL data types against C data types
+
+ 265 2014- 6-27 review ofa_t_ecritures index: should be just ecr_number
+                and check that ecr_number is an unsigned long
+
+ 266 2014- 6-27 PrintReconciliation: the page footer makes use of a
+                system timestamp (yyyy-mm-dd hh:mi:ss) but should 
+                rather be a 'user-friendly' timestamp (dd/mm/yyyy hh:mi)
+
+ 267
 
 -----------------------------------------------------------------------
  DONE
@@ -468,6 +474,9 @@
 
   55 2014- 5-18 ofo_dossier_insert: use ofoBase virtual function.
      2014- 5-24 definitively, no -> cancelled
+
+  56 2014- 5-19 have an entry-derived class for date
+     2014- 6-26 done - svn #3748
 
   59 2014- 5-19 reset all sentences in english
                 as the g_date_set_parse uses the current locale, the 
@@ -991,6 +1000,21 @@
  248 2014- 6-20 ofaMainPage: has_import_export becomes has_import+
                 has_export
      2014- 6-20 done - svn #3739
+
+ 250 2014- 6-20 Print Reconciliation: display dates as dd/mm/yyyy
+     2014- 6-27 done
+
+ 251 2014- 6-21 ofaIntClosing:do_close: 
+                replace ofa_journal_treeview_foreach_sel()
+                Rationale: The model has been modified from within 
+                gtk_tree_selection_selected_foreach. This function is 
+                for observing the selections of the tree only.  If you
+                are trying to get all selected items from the tree, try 
+                using gtk_tree_selection_get_selected_rows instead.
+     2014- 6-27 done
+
+ 257 2014- 6-23 editing rough entries: insert a new line
+     2014- 6-27 done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

@@ -270,6 +270,7 @@ ofa_guided_common_init( ofaGuidedCommon *self )
 
 	self->private->dispose_has_run = FALSE;
 
+	self->private->deffet_changed_while_focus = FALSE;
 	self->private->entries_count = 0;
 }
 
@@ -369,32 +370,43 @@ static void
 setup_dates( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
-	gchar *str;
-	GtkWidget *entry;
+	myDateParse parms;
 
 	priv = self->private;
 
-	memcpy( &priv->dope, &st_last_dope, sizeof( GDate ));
-	str = my_utils_date_to_str( &priv->dope, MY_DATE_DDMM );
-	entry = my_utils_container_get_child_by_name( priv->parent, "p1-dope" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	gtk_entry_set_text( GTK_ENTRY( entry ), str );
-	g_free( str );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_dope_changed ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
-	priv->dope_entry = GTK_ENTRY( entry );
+	my_utils_date_set_from_date( &priv->dope, &st_last_dope );
 
-	memcpy( &priv->deff, &st_last_deff, sizeof( GDate ));
-	str = my_utils_date_to_str( &priv->deff, MY_DATE_DDMM );
-	entry = my_utils_container_get_child_by_name( priv->parent, "p1-deffet" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	gtk_entry_set_text( GTK_ENTRY( entry ), str );
-	g_free( str );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_deffet_changed ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_deffet_focus_in ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_deffet_focus_out ), self );
-	priv->deffet_entry = GTK_ENTRY( entry );
+	memset( &parms, '\0', sizeof( parms ));
+	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-dope" );
+	parms.entry_format = MY_DATE_DDMM;
+	parms.date = &priv->dope;
+	parms.on_changed_cb = G_CALLBACK( on_dope_changed );
+	parms.user_data = self;
+	my_utils_date_parse_from_entry( &parms );
+
+	priv->dope_entry = GTK_ENTRY( parms.entry );
+
+	g_signal_connect(
+			G_OBJECT( parms.entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), self );
+	g_signal_connect(
+			G_OBJECT( parms.entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
+
+	my_utils_date_set_from_date( &priv->deff, &st_last_deff );
+
+	memset( &parms, '\0', sizeof( parms ));
+	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-deffet" );
+	parms.entry_format = MY_DATE_DDMM;
+	parms.date = &priv->deff;
+	parms.on_changed_cb = G_CALLBACK( on_deffet_changed );
+	parms.user_data = self;
+	my_utils_date_parse_from_entry( &parms );
+
+	priv->deffet_entry = GTK_ENTRY( parms.entry );
+
+	g_signal_connect(
+			G_OBJECT( parms.entry ), "focus-in-event", G_CALLBACK( on_deffet_focus_in ), self );
+	g_signal_connect(
+			G_OBJECT( parms.entry ), "focus-out-event", G_CALLBACK( on_deffet_focus_out ), self );
 }
 
 static void
@@ -677,7 +689,6 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 	priv = self->private;
 
 	/* check the operation date */
-	g_date_set_parse( &priv->dope, gtk_entry_get_text( entry ));
 	set_date_comment( self, _( "Operation date" ), &priv->dope );
 
 	/* setup the effect date if it has not been manually changed */
@@ -686,11 +697,11 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 		if( g_date_valid( &priv->last_closing ) &&
 			g_date_compare( &priv->last_closing, &priv->dope ) > 0 ){
 
-			memcpy( &priv->deff, &priv->last_closing, sizeof( GDate ));
+			my_utils_date_set_from_date( &priv->deff, &priv->last_closing );
 			g_date_add_days( &priv->deff, 1 );
 
 		} else {
-			memcpy( &priv->deff, &priv->dope, sizeof( GDate ));
+			my_utils_date_set_from_date( &priv->deff, &priv->dope );
 		}
 
 		str = my_utils_date_to_str( &priv->deff, MY_DATE_DDMM );
@@ -737,7 +748,6 @@ on_deffet_changed( GtkEntry *entry, ofaGuidedCommon *self )
 	if( priv->deffet_has_focus ){
 
 		priv->deffet_changed_while_focus = TRUE;
-		g_date_set_parse( &priv->deff, gtk_entry_get_text( entry ));
 		set_date_comment( self, _( "Effect date" ), &priv->deff );
 
 		check_for_enable_dlg( self );
@@ -1013,16 +1023,19 @@ update_all_formulas( ofaGuidedCommon *self )
 	GtkWidget *entry;
 
 	priv = self->private;
-	count = ofo_model_get_detail_count( priv->model );
-	for( idx=0 ; idx<count ; ++idx ){
-		for( col_id=FIRST_COLUMN ; col_id<N_COLUMNS ; ++col_id ){
-			col_def = find_column_def_from_col_id( self, col_id );
-			if( col_def && col_def->get_label ){
-				str = ( *col_def->get_label )( priv->model, idx );
-				if( ofo_model_detail_is_formula( str )){
-					entry = gtk_grid_get_child_at( priv->entries_grid, col_id, idx+1 );
-					if( entry && GTK_IS_ENTRY( entry )){
-						update_formula( self, str, GTK_ENTRY( entry ));
+
+	if( priv->model ){
+		count = ofo_model_get_detail_count( priv->model );
+		for( idx=0 ; idx<count ; ++idx ){
+			for( col_id=FIRST_COLUMN ; col_id<N_COLUMNS ; ++col_id ){
+				col_def = find_column_def_from_col_id( self, col_id );
+				if( col_def && col_def->get_label ){
+					str = ( *col_def->get_label )( priv->model, idx );
+					if( ofo_model_detail_is_formula( str )){
+						entry = gtk_grid_get_child_at( priv->entries_grid, col_id, idx+1 );
+						if( entry && GTK_IS_ENTRY( entry )){
+							update_formula( self, str, GTK_ENTRY( entry ));
+						}
 					}
 				}
 			}
@@ -1219,7 +1232,7 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 				content = gtk_entry_get_text( GTK_ENTRY( widget ));
 				/*g_debug( "token='%s' content='%s'", token, content );*/
 				if( col_def->is_double ){
-					amount = g_ascii_strtod( content, NULL );
+					amount = g_strtod( content, NULL );
 				} else {
 					/* we do not manage a formula on a string */
 					gtk_entry_set_text( entry, content );
@@ -1274,54 +1287,57 @@ update_all_totals( ofaGuidedCommon *self )
 	gchar *str, *str2;
 
 	priv = self->private;
-	count = ofo_model_get_detail_count( priv->model );
-	dsold = 0.0;
-	csold = 0.0;
-	for( idx=0 ; idx<count ; ++idx ){
-		dsold += get_amount( self, COL_DEBIT, idx+1 );
-		csold += get_amount( self, COL_CREDIT, idx+1 );
-	}
 
-	priv->total_debits = dsold;
-	priv->total_credits = csold;
+	if( priv->model ){
+		count = ofo_model_get_detail_count( priv->model );
+		dsold = 0.0;
+		csold = 0.0;
+		for( idx=0 ; idx<count ; ++idx ){
+			dsold += get_amount( self, COL_DEBIT, idx+1 );
+			csold += get_amount( self, COL_CREDIT, idx+1 );
+		}
 
-	entry = gtk_grid_get_child_at( priv->entries_grid, COL_DEBIT, count+1 );
-	if( entry && GTK_IS_ENTRY( entry )){
-		str = g_strdup_printf( "%'.2lf", dsold );
-		gtk_entry_set_text( GTK_ENTRY( entry ), str );
+		priv->total_debits = dsold;
+		priv->total_credits = csold;
+
+		entry = gtk_grid_get_child_at( priv->entries_grid, COL_DEBIT, count+1 );
+		if( entry && GTK_IS_ENTRY( entry )){
+			str = g_strdup_printf( "%'.2lf", dsold );
+			gtk_entry_set_text( GTK_ENTRY( entry ), str );
+			g_free( str );
+		}
+
+		entry = gtk_grid_get_child_at( priv->entries_grid, COL_CREDIT, count+1 );
+		if( entry && GTK_IS_ENTRY( entry )){
+			str = g_strdup_printf( "%'.2lf", csold );
+			gtk_entry_set_text( GTK_ENTRY( entry ), str );
+			g_free( str );
+		}
+
+		if( dsold > csold ){
+			str = g_strdup_printf( "%'.2lf", dsold-csold );
+			str2 = g_strdup( "" );
+		} else if( dsold < csold ){
+			str = g_strdup( "" );
+			str2 = g_strdup_printf( "%'.2lf", csold-dsold );
+		} else {
+			str = g_strdup( "" );
+			str2 = g_strdup( "" );
+		}
+
+		entry = gtk_grid_get_child_at( priv->entries_grid, COL_DEBIT, count+2 );
+		if( entry && GTK_IS_ENTRY( entry )){
+			gtk_entry_set_text( GTK_ENTRY( entry ), str2 );
+		}
+
+		entry = gtk_grid_get_child_at( priv->entries_grid, COL_CREDIT, count+2 );
+		if( entry && GTK_IS_ENTRY( entry )){
+			gtk_entry_set_text( GTK_ENTRY( entry ), str );
+		}
+
 		g_free( str );
+		g_free( str2 );
 	}
-
-	entry = gtk_grid_get_child_at( priv->entries_grid, COL_CREDIT, count+1 );
-	if( entry && GTK_IS_ENTRY( entry )){
-		str = g_strdup_printf( "%'.2lf", csold );
-		gtk_entry_set_text( GTK_ENTRY( entry ), str );
-		g_free( str );
-	}
-
-	if( dsold > csold ){
-		str = g_strdup_printf( "%'.2lf", dsold-csold );
-		str2 = g_strdup( "" );
-	} else if( dsold < csold ){
-		str = g_strdup( "" );
-		str2 = g_strdup_printf( "%'.2lf", csold-dsold );
-	} else {
-		str = g_strdup( "" );
-		str2 = g_strdup( "" );
-	}
-
-	entry = gtk_grid_get_child_at( priv->entries_grid, COL_DEBIT, count+2 );
-	if( entry && GTK_IS_ENTRY( entry )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), str2 );
-	}
-
-	entry = gtk_grid_get_child_at( priv->entries_grid, COL_CREDIT, count+2 );
-	if( entry && GTK_IS_ENTRY( entry )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), str );
-	}
-
-	g_free( str );
-	g_free( str2 );
 }
 
 static gdouble
@@ -1418,30 +1434,33 @@ check_for_all_entries( ofaGuidedCommon *self )
 
 	ok = TRUE;
 	priv = self->private;
-	count = ofo_model_get_detail_count( priv->model );
 
-	for( idx=0 ; idx<count ; ++idx ){
-		deb = get_amount( self, COL_DEBIT, idx+1 );
-		cred = get_amount( self, COL_CREDIT, idx+1 );
-		if( deb+cred != 0.0 ){
-			if( !check_for_entry( self, idx+1 )){
-				ok = FALSE;
+	if( priv->model ){
+		count = ofo_model_get_detail_count( priv->model );
+
+		for( idx=0 ; idx<count ; ++idx ){
+			deb = get_amount( self, COL_DEBIT, idx+1 );
+			cred = get_amount( self, COL_CREDIT, idx+1 );
+			if( deb+cred != 0.0 ){
+				if( !check_for_entry( self, idx+1 )){
+					ok = FALSE;
+				}
 			}
 		}
-	}
 
-	oki = priv->total_debits == priv->total_credits;
-	ok &= oki;
-	if( !oki ){
-		g_debug( "%s: totals are not equal: debits=%2.lf, credits=%.2lf",
-				thisfn, priv->total_debits, priv->total_credits );
-	}
+		oki = priv->total_debits == priv->total_credits;
+		ok &= oki;
+		if( !oki ){
+			g_debug( "%s: totals are not equal: debits=%2.lf, credits=%.2lf",
+					thisfn, priv->total_debits, priv->total_credits );
+		}
 
-	oki= (priv->total_debits != 0.0 || priv->total_credits != 0.0 );
-	ok &= oki;
-	if( !oki ){
-		g_debug( "%s: one total is nul: debits=%2.lf, credits=%.2lf",
-				thisfn, priv->total_debits, priv->total_credits );
+		oki= (priv->total_debits != 0.0 || priv->total_credits != 0.0 );
+		ok &= oki;
+		if( !oki ){
+			g_debug( "%s: one total is nul: debits=%2.lf, credits=%.2lf",
+					thisfn, priv->total_debits, priv->total_credits );
+		}
 	}
 
 	return( ok );

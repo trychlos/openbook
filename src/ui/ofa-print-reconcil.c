@@ -144,7 +144,6 @@ static GObject     *on_create_custom_widget( GtkPrintOperation *operation, ofaPr
 static void         on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintReconcil *self );
 static void         on_account_changed( GtkEntry *entry, ofaPrintReconcil *self );
 static void         on_account_select( GtkButton *button, ofaPrintReconcil *self );
-/*static void         on_date_changed( GtkEntry *entry, ofaPrintReconcil *self );*/
 static void         on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self );
 static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaPrintReconcil *self );
 static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self );
@@ -355,13 +354,12 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
 	self->private->account_label = GTK_LABEL( label );
 
+	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-entry" );
 	parms.entry_format = MY_DATE_DDMM;
 	parms.label = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-label" );
 	parms.label_format = MY_DATE_DMMM;
 	parms.date = &self->private->date;
-	parms.on_changed_cb = NULL;
-	parms.user_data = NULL;
 	my_utils_date_parse_from_entry( &parms );
 
 	return( G_OBJECT( frame ));
@@ -398,24 +396,6 @@ on_account_select( GtkButton *button, ofaPrintReconcil *self )
 		g_free( number );
 	}
 }
-
-/*
-static void
-on_date_changed( GtkEntry *entry, ofaPrintReconcil *self )
-{
-	ofaPrintReconcilPrivate *priv;
-	const gchar *str;
-
-	priv = self->private;
-	str = gtk_entry_get_text( entry );
-	memcpy( &priv->date, my_utils_date_from_str( str ), sizeof( GDate ));
-	if( g_date_valid( &priv->date )){
-		gtk_label_set_text( priv->date_label, my_utils_date_to_str( &priv->date, MY_DATE_DMMM ));
-	} else {
-		gtk_label_set_text( priv->date_label, "" );
-	}
-}
-*/
 
 static void
 on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintReconcil *self )
@@ -819,6 +799,8 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 		y += st_body_font_size + 2*st_body_line_spacing;
 	}
 
+	priv->last_y = y;
+
 	/*g_debug( "draw_header: final y=%lf", y ); */
 	/* w_header: final y=138,500000
 (openbook:27358): OFA-DEBUG: ofa_print_reconcil_on_draw_page: operation=0x7a9430, context=0xb55e80, self=0x8afd00
@@ -1011,7 +993,8 @@ draw_footer( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 {
 	ofaPrintReconcilPrivate *priv;
 	cairo_t *cr;
-	gchar *str, *stamp;
+	gchar *str, *stamp_str;
+	GTimeVal stamp;
 	PangoRectangle rc;
 	gdouble y;
 
@@ -1020,9 +1003,10 @@ draw_footer( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 	cr = gtk_print_context_get_cairo_context( context );
 	cairo_set_source_rgb( cr, 0.5, 0.5, 0.5 );
 
-	stamp = my_utils_timestamp();
-	str = g_strdup_printf( "Printed on %s - Page %d/%d", stamp, 1+page_num, priv->pages_count );
-	g_free( stamp );
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	str = g_strdup_printf( "Printed on %s - Page %d/%d", stamp_str, 1+page_num, priv->pages_count );
+	g_free( stamp_str );
 	pango_layout_set_text( priv->footer_layout, str, -1 );
 	g_free( str );
 	pango_layout_get_pixel_extents( priv->footer_layout, NULL, &rc );

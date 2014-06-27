@@ -171,6 +171,7 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 	GList *dataset;
 	ofoBatLine *line;
 	GDate date;
+	GTimeVal timeval;
 
 	dataset = NULL;
 
@@ -212,7 +213,8 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 				ofo_bat_line_set_currency( line, ( gchar * ) icol->data );
 			}
 			icol = icol->next;
-			ofo_bat_line_set_montant( line, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+			ofo_bat_line_set_montant( line,
+					my_utils_double_set_from_sql(( const gchar * ) icol->data ));
 			icol = icol->next;
 			if( icol->data ){
 				ofo_bat_line_set_ecr( line, atoi(( gchar * ) icol->data ));
@@ -223,7 +225,8 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 			}
 			icol = icol->next;
 			if( icol->data ){
-				ofo_bat_line_set_maj_stamp( line, my_utils_stamp_from_str(( gchar * ) icol->data ));
+				ofo_bat_line_set_maj_stamp( line,
+						my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 			}
 
 			dataset = g_list_prepend( dataset, line );
@@ -734,10 +737,13 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 {
 	gboolean ok;
 	GString *query;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 	gint ecr_number;
 
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+
 	ecr_number = ofo_bat_line_get_ecr( bat );
 
 	query = g_string_new( "UPDATE OFA_T_BAT_LINES SET " );
@@ -745,7 +751,7 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	if( ecr_number > 0 ){
 		g_string_append_printf( query,
 				"	BAT_LINE_ECR=%d,BAT_LINE_MAJ_USER='%s',BAT_LINE_MAJ_STAMP='%s' ",
-					ecr_number, user, stamp );
+					ecr_number, user, stamp_str );
 	} else {
 		query = g_string_append( query,
 				"	BAT_LINE_ECR=NULL,BAT_LINE_MAJ_USER=NULL,BAT_LINE_MAJ_STAMP=0" );
@@ -757,7 +763,7 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	ok = ofo_sgbd_query( sgbd, query->str );
 
 	g_string_free( query, TRUE );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }

@@ -37,13 +37,17 @@
 
 #include "core/my-utils.h"
 
-static GTimeVal st_timeval;
-static GDate    st_date;
+static gunichar st_thousand_sep = '\0';
+static gunichar st_decimal_sep  = '\0';
+static GRegex  *st_double_regex = NULL;
 
-static void   on_date_entry_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gpointer position, gpointer user_data );
-static gchar *date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position );
-static void   on_date_entry_changed( GtkEditable *editable, gpointer user_data );
-static void   date_entry_parse_ddmm( GDate *date, const gchar *text );
+static void    on_date_entry_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gpointer position, gpointer user_data );
+static gchar  *date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position );
+static void    on_date_entry_changed( GtkEditable *editable, gpointer user_data );
+static void    date_entry_set_label( GtkEditable *editable, const gchar *str );
+static void    date_entry_parse_ddmm( GDate *date, const gchar *text );
+static void    double_set_locale( void );
+static gdouble double_parse_str( const gchar *text, gunichar thousand_sep, gunichar decimal_sep );
 
 /**
  * my_utils_quote:
@@ -85,19 +89,6 @@ my_utils_quote( const gchar *str )
 }
 
 /**
- * my_utils_date_from_str:
- */
-const GDate *
-my_utils_date_from_str( const gchar *str )
-{
-	g_date_clear( &st_date, 1 );
-	if( str ){
-		g_date_set_parse( &st_date, str );
-	}
-	return( &st_date );
-}
-
-/**
  * my_utils_date_set_from_sql:
  * @dest: must be a pointer to the destination GDate structure.
  * @sql_string: a pointer to a SQL string 'yyyy-mm-dd', or NULL;
@@ -105,10 +96,10 @@ my_utils_date_from_str( const gchar *str )
  *
  * Parse a SQL string, putting the result in @dest.
  */
-void
+GDate *
 my_utils_date_set_from_sql( GDate *dest, const gchar *sql_string )
 {
-	g_return_if_fail( dest );
+	g_return_val_if_fail( dest, NULL );
 
 	g_date_clear( dest, 1 );
 
@@ -118,6 +109,8 @@ my_utils_date_set_from_sql( GDate *dest, const gchar *sql_string )
 
 		g_date_set_parse( dest, sql_string );
 	}
+
+	return( dest );
 }
 
 /**
@@ -127,16 +120,18 @@ my_utils_date_set_from_sql( GDate *dest, const gchar *sql_string )
  *
  * Copy one date to another.
  */
-void
+GDate *
 my_utils_date_set_from_date( GDate *dest, const GDate *src)
 {
-	g_return_if_fail( dest );
+	g_return_val_if_fail( dest, NULL );
 
 	g_date_clear( dest, 1 );
 
 	if( src && g_date_valid( src )){
 		*dest = *src;
 	}
+
+	return( dest );
 }
 
 /**
@@ -251,11 +246,14 @@ my_utils_date_parse_from_entry( const myDateParse *parms )
 
 	g_return_if_fail( parms->entry && GTK_IS_ENTRY( parms->entry ));
 	g_return_if_fail( !parms->label || GTK_IS_LABEL( parms->label ));
+	g_return_if_fail( parms->date );
 
 	g_object_set_data( G_OBJECT( parms->entry ), "date-format-entry", GINT_TO_POINTER( parms->entry_format ));
 	g_object_set_data( G_OBJECT( parms->entry ), "date-label", parms->label );
 	g_object_set_data( G_OBJECT( parms->entry ), "date-format-label", GINT_TO_POINTER( parms->label_format ));
 	g_object_set_data( G_OBJECT( parms->entry ), "date-date", parms->date );
+	g_object_set_data( G_OBJECT( parms->entry ), "date-check-cb", parms->pfnCheck );
+	g_object_set_data( G_OBJECT( parms->entry ), "date-user-data", parms->user_data );
 
 	g_signal_connect( G_OBJECT( parms->entry ), "insert-text", G_CALLBACK( on_date_entry_insert_text ), NULL );
 	g_signal_connect( G_OBJECT( parms->entry ), "changed", G_CALLBACK( on_date_entry_changed ), NULL );
@@ -264,7 +262,7 @@ my_utils_date_parse_from_entry( const myDateParse *parms )
 		g_signal_connect( G_OBJECT( parms->entry ), "changed", parms->on_changed_cb, parms->user_data );
 	}
 
-	if( parms->date && g_date_valid( parms->date )){
+	if( g_date_valid( parms->date )){
 		str = my_utils_date_to_str( parms->date, parms->entry_format );
 		gtk_entry_set_text( GTK_ENTRY( parms->entry ), str );
 		g_free( str );
@@ -310,7 +308,7 @@ date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_te
 	gunichar ichar;
 	gint ival;
 	gint pos;
-	gint vnum, month;
+	gint vnum, month, day;
 	gchar *str;
 
 	str = NULL;
@@ -321,30 +319,34 @@ date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_te
 		ichar = g_utf8_get_char( new_text );
 		if( g_unichar_isdigit( ichar )){
 			ival = g_unichar_digit_value( ichar );
-			if( pos == 0 ){
-				if( ival <= 3 ){
-					str = g_strdup( new_text );
-				} else {
-					str = g_strdup_printf( "0%d/", ival );
-				}
-			} else if( pos == 1 ){
-				vnum = 10 * atoi( gtk_editable_get_chars( editable, 0, 1 )) + ival;
-				if( vnum <= 31 ){
-					month = atoi( gtk_editable_get_chars( editable, 3, 5 ));
-					if( month <= 0 || vnum <= st_days[month-1 ]){
+			if( pos >= 0 && pos <= 1 ){
+				if( pos == 0 ){
+					if( ival <= 3 ){
 						str = g_strdup( new_text );
+					} else {
+						str = g_strdup_printf( "0%d/", ival );
+					}
+				} else if( pos == 1 ){
+					vnum = 10 * atoi( gtk_editable_get_chars( editable, 0, 1 )) + ival;
+					if( vnum <= 31 ){
+						month = atoi( gtk_editable_get_chars( editable, 3, 5 ));
+						if( month <= 0 || vnum <= st_days[month-1 ]){
+							str = g_strdup( new_text );
+						}
 					}
 				}
-			} else if( pos == 3 ){
-				if( ival <= 1 ){
-					str = g_strdup( new_text );
-				} else {
-					str = g_strdup_printf( "0%d/", ival );
-				}
-			} else if( pos == 4 ){
-				vnum = 10 * atoi( gtk_editable_get_chars( editable, 3, 4 )) + ival;
-				if( vnum <= 12 ){
-					str = g_strdup( new_text );
+			} else if( pos >= 3 && pos <= 4 ){
+				if( pos == 3 ){
+					if( ival <= 1 ){
+						str = g_strdup( new_text );
+					} else {
+						str = g_strdup_printf( "0%d/", ival );
+					}
+				} else if( pos == 4 ){
+					vnum = 10 * atoi( gtk_editable_get_chars( editable, 3, 4 )) + ival;
+					if( vnum <= 12 ){
+						str = g_strdup( new_text );
+					}
 				}
 			} else if( pos == 6 ){
 				if( ival <= 5 ){
@@ -355,9 +357,25 @@ date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_te
 			} else if( pos <= 9 ){
 				str = g_strdup( new_text );
 			}
+		} else if( pos == 1 ){
+			day = atoi( gtk_editable_get_chars( editable, 0, 1 ));
+			if( day > 0 ){
+				gtk_editable_delete_text( editable, 0, 1 );
+				str = g_strdup_printf( "%2.2u/", day );
+				*position = 0;
+			}
+		} else if( pos == 4 ){
+			month = atoi( gtk_editable_get_chars( editable, 3, 4 ));
+			if( month > 0 ){
+				gtk_editable_delete_text( editable, 3, 4 );
+				str = g_strdup_printf( "%2.2u/", month );
+				*position = 3;
+			}
 		} else if( pos == 2  || pos == 5 ){
 			str = g_strdup( "/" );
 		}
+	} else {
+		str = g_strdup( new_text );
 	}
 
 	return( str );
@@ -371,31 +389,71 @@ static void
 on_date_entry_changed( GtkEditable *editable, gpointer user_data )
 {
 	myDateFormat entry_format, label_format;
-	GtkWidget *label;
+	GDate temp_date;
 	GDate *date;
-	gchar *str, *markup;
+	gchar *str;
+	myDateCheckCb pfnCheck;
+	gpointer user_data_cb;
 
 	entry_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-entry" ));
-	date = g_object_get_data( G_OBJECT( editable ), "date-date" );
 
-	if( entry_format == MY_DATE_DDMM ){
-		date_entry_parse_ddmm( date, gtk_entry_get_text( GTK_ENTRY( editable )));
+	my_utils_date_parse_from_str(
+			&temp_date, gtk_entry_get_text( GTK_ENTRY( editable )), entry_format );
+
+	pfnCheck = g_object_get_data( G_OBJECT( editable ), "date-check-cb" );
+	user_data_cb = g_object_get_data( G_OBJECT( editable ), "date-user-data" );
+
+	if( g_date_valid( &temp_date ) &&
+			( !pfnCheck || ( *pfnCheck )( &temp_date, user_data_cb ))){
+
+		label_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-label" ));
+		str = my_utils_date_to_str( &temp_date, label_format );
+		date_entry_set_label( editable, str );
+		g_free( str );
+
+		date = g_object_get_data( G_OBJECT( editable ), "date-date" );
+		my_utils_date_set_from_date( date, &temp_date );
+
+	} else {
+		/* gi18n: invalid date */
+		str = g_strdup( _( "invalid" ));
+		date_entry_set_label( editable, str );
+		g_free( str );
 	}
+}
+
+static void
+date_entry_set_label( GtkEditable *editable, const gchar *str )
+{
+	GtkWidget *label;
+	gchar *markup;
 
 	label = g_object_get_data( G_OBJECT( editable ), "date-label" );
-	label_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-label" ));
+
 	if( label && GTK_IS_LABEL( label )){
 		gtk_widget_set_sensitive( label, FALSE );
-		if( date && g_date_valid( date )){
-			str = my_utils_date_to_str( date, label_format );
-			markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", str );
-			g_free( str );
-		} else {
-			markup = g_strdup( "" );
-		}
+
+		markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", str );
 		gtk_label_set_markup( GTK_LABEL( label ), markup );
 		g_free( markup );
 	}
+}
+
+/**
+ * my_utils_date_parse_from_str:
+ * @date: a non-NULL pointer to a GDate structure
+ * @test: [allow-none]:
+ */
+GDate *
+my_utils_date_parse_from_str( GDate *date, const gchar *text, myDateFormat format )
+{
+	g_date_clear( date, 1 );
+
+	if( format == MY_DATE_DDMM ){
+		date_entry_parse_ddmm( date, text );
+	}
+
+	return( date );
 }
 
 static void
@@ -428,17 +486,20 @@ date_entry_parse_ddmm( GDate *date, const gchar *text )
 }
 
 /**
- * my_utils_stamp_from_str:
+ * my_utils_stamp_set_from_sql:
+ * @timeval: a pointer to a GTimeVal structure
+ * @str: [allow-none]:
  *
  * SQL timestamp is returned as a string '2014-05-24 20:05:46'
  */
-const GTimeVal *
-my_utils_stamp_from_str( const gchar *str )
+GTimeVal *
+my_utils_stamp_set_from_sql( GTimeVal *timeval, const gchar *str )
 {
 	gint y, m, d, H, M, S;
 	struct tm broken;
 
 	sscanf( str, "%d-%d-%d %d:%d:%d", &y, &m, &d, &H, &M, &S );
+
 	memset( &broken, '\0', sizeof( broken ));
 	broken.tm_year = y - 1900;
 	broken.tm_mon = m-1;	/* 0 to 11 */
@@ -447,43 +508,50 @@ my_utils_stamp_from_str( const gchar *str )
 	broken.tm_min = M;
 	broken.tm_sec = S;
 	broken.tm_isdst = -1;
-	st_timeval.tv_sec = mktime( &broken );
-	st_timeval.tv_usec = 0;
-	return( &st_timeval );
+
+	timeval->tv_sec = mktime( &broken );
+	timeval->tv_usec = 0;
+
+	return( timeval );
 }
 
 /**
- * my_utils_str_from_stamp:
+ * my_utils_stamp_to_str:
  */
 gchar *
-my_utils_str_from_stamp( const GTimeVal *stamp )
+my_utils_stamp_to_str( const GTimeVal *stamp, myStampFormat format )
 {
 	GDateTime *dt;
 	gchar *str;
 
+	str = NULL;
 	dt = g_date_time_new_from_timeval_local( stamp );
-	str = g_date_time_format( dt, "%d-%m-%Y %H:%M:%S" );
+	switch( format ){
+		case MY_STAMP_YYMDHMS:
+			str = g_date_time_format( dt, "%Y-%m-%d %H:%M:%S" );
+			break;
+	}
 	g_date_time_unref( dt );
 
 	return( str );
 }
 
 /**
- * my_utils_timestamp:
+ * my_utils_stamp_get_now:
  *
  * Returns a newly allocated string 'yyyy-mm-dd hh:mi:ss' suitable for
  * inserting as a timestamp into a sgbd
  */
-gchar *
-my_utils_timestamp( void )
+GTimeVal *
+my_utils_stamp_get_now( GTimeVal *timeval )
 {
 	GDateTime *dt;
-	gchar *str;
 
 	dt = g_date_time_new_now_local();
-	str = g_date_time_format( dt, "%F %T" );
+	g_date_time_to_timeval( dt, timeval );
+	g_date_time_unref( dt );
 
-	return( str );
+	return( timeval );
 }
 
 /**
@@ -610,6 +678,38 @@ my_utils_parse_boolean( const gchar *str, gboolean *bvar )
 }
 
 /**
+ * my_utils_double_set_from_input:
+ *
+ * In v1, we only target fr locale, so with space as thousand separator
+ * and comma as decimal one on display -
+ * When parsing a string - and because we want be able to re-parse a
+ * string that we have previously displayed - we accept both
+ */
+gdouble
+my_utils_double_set_from_input( const gchar *sql_string )
+{
+	return( 0.0 );
+}
+
+/**
+ * my_utils_double_set_from_sql:
+ *
+ * SQl amount is returned as a stringified number, without thousand
+ * separator, and with dot '.' as decimal separator
+ */
+gdouble
+my_utils_double_set_from_sql( const gchar *sql_string )
+{
+	double_set_locale();
+
+	if( !sql_string || !g_utf8_strlen( sql_string, -1 )){
+		return( 0.0 );
+	}
+
+	return( double_parse_str( sql_string, '\0', '.' ));
+}
+
+/**
  * my_utils_sql_from_double:
  *
  * Returns: a newly allocated string which represents the specified
@@ -623,6 +723,67 @@ my_utils_sql_from_double( gdouble value )
 	g_ascii_dtostr( amount, G_ASCII_DTOSTR_BUF_SIZE, value );
 
 	return( g_strdup( amount ));
+}
+
+/*
+ * when run for the first time, evaluate the thousant separator and the
+ * decimal separator for the current locale
+ *
+ * they are those which will be outputed by printf(),
+ * and that g_ascii_strtod() is able to sucessfully parse.
+ */
+static void
+double_set_locale( void )
+{
+	gchar *str, *p, *srev;
+
+	if( !st_thousand_sep ){
+		str = g_strdup_printf( "%'.1lf", 1000.0 );
+		p = g_utf8_next_char( str );
+		st_thousand_sep = g_utf8_get_char( p );
+		srev = g_utf8_strreverse( str, -1 );
+		p = g_utf8_next_char( srev );
+		st_decimal_sep = g_utf8_get_char( p );
+
+		g_debug( "gdouble_set_locale: thousand_sep='%c', decimal_sep='%c'",
+					st_thousand_sep, st_decimal_sep );
+
+		str = g_strdup_printf( "%c", st_thousand_sep );
+		st_double_regex = g_regex_new( str, 0, 0, NULL );
+		g_free( str );
+	}
+}
+
+static gdouble
+double_parse_str( const gchar *text, gunichar thousand_sep, gunichar decimal_sep )
+{
+	static const gchar *thisfn = "my_utils_double_parse_str";
+	gchar *dup;
+	gchar *str_delims;
+	gdouble amount;
+	GError *error;
+
+	if( thousand_sep ){
+		error = NULL;
+		dup = g_regex_replace_literal( st_double_regex, text, -1, 0, "", 0, &error );
+		if( !dup ){
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
+		}
+	} else {
+		dup = g_strdup( text );
+	}
+
+	if( decimal_sep && decimal_sep != '.' ){
+		str_delims = g_strdup_printf( "%c", decimal_sep );
+		dup = g_strdelimit( dup, str_delims, '.' );
+		g_free( str_delims );
+	}
+
+	amount = g_ascii_strtod( dup, NULL );
+	g_free( dup );
+
+	return( amount );
 }
 
 /**
@@ -867,7 +1028,7 @@ my_utils_init_maj_user_stamp( GtkContainer *container,
 	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, label_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	str_stamp = my_utils_str_from_stamp( stamp );
+	str_stamp = my_utils_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
 	str = g_strdup_printf( "%s (%s)", str_stamp, user );
 
 	gtk_label_set_text( label, str );

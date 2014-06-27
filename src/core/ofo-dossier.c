@@ -1722,6 +1722,7 @@ dossier_read_properties( ofoDossier *dossier )
 	GSList *result, *icol;
 	gboolean ok;
 	const gchar *str;
+	GTimeVal timeval;
 
 	ok = FALSE;
 
@@ -1764,7 +1765,8 @@ dossier_read_properties( ofoDossier *dossier )
 		icol = icol->next;
 		str = icol->data;
 		if( str && g_utf8_strlen( str, -1 )){
-			ofo_dossier_set_maj_stamp( dossier, my_utils_stamp_from_str( str ));
+			ofo_dossier_set_maj_stamp( dossier,
+					my_utils_stamp_set_from_sql( &timeval, str ));
 		}
 
 		ok = TRUE;
@@ -1855,14 +1857,16 @@ static gboolean
 do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
-	gchar *label, *notes, *stamp;
+	gchar *label, *notes, *stamp_str;
+	GTimeVal stamp;
 	gboolean ok;
 	const gchar *devise;
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_dossier_get_label( dossier ));
 	notes = my_utils_quote( ofo_dossier_get_notes( dossier ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
 
@@ -1886,19 +1890,19 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 
 	g_string_append_printf( query,
 			"	DOS_MAJ_USER='%s',DOS_MAJ_STAMP='%s'"
-			"	WHERE DOS_ID=%d", user, stamp, THIS_DOS_ID );
+			"	WHERE DOS_ID=%d", user, stamp_str, THIS_DOS_ID );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_dossier_set_maj_user( dossier, user );
-		ofo_dossier_set_maj_stamp( dossier, my_utils_stamp_from_str( stamp ));
+		ofo_dossier_set_maj_stamp( dossier, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( label );
 	g_free( notes );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -1968,7 +1972,7 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	notes = my_utils_export_multi_lines( ofo_dossier_get_notes( dossier ));
 	g_debug( "notes=%s", notes );
 	muser = ofo_dossier_get_maj_user( dossier );
-	stamp = my_utils_str_from_stamp( ofo_dossier_get_maj_stamp( dossier ));
+	stamp = my_utils_stamp_to_str( ofo_dossier_get_maj_stamp( dossier ), MY_STAMP_YYMDHMS );
 	devise = ofo_dossier_get_default_devise( dossier );
 
 	str = g_strdup_printf( "1;%s;%s;%s;%s;%d;%s",

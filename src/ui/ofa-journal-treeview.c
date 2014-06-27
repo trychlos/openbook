@@ -92,8 +92,7 @@ static void        select_row_by_iter( ofaJournalTreeview *self, GtkTreeModel *t
 static gboolean    find_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static void        on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaJournalTreeview *self );
 static void        on_row_selected( GtkTreeSelection *selection, ofaJournalTreeview *self );
-static ofoJournal *get_selected( ofaJournalTreeview *self );
-static void        foreach_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ForeachTreeview *parms );
+static GList      *get_selected( ofaJournalTreeview *self );
 static void        on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self );
 static void        on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalTreeview *self );
 static void        on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self );
@@ -525,13 +524,13 @@ static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaJournalTreeview *self )
 {
 	ofaJournalTreeviewPrivate *priv;
-	ofoJournal *journal;
+	GList *sel_objects;
 
 	priv = self->private;
-	journal = get_selected( self );
+	sel_objects = get_selected( self );
 
-	if( journal && priv->pfnActivated ){
-		( *priv->pfnActivated )( ofo_journal_get_mnemo( journal ), priv->user_data );
+	if( sel_objects && priv->pfnActivated ){
+		( *priv->pfnActivated )( sel_objects, priv->user_data );
 	}
 }
 
@@ -539,44 +538,49 @@ static void
 on_row_selected( GtkTreeSelection *selection, ofaJournalTreeview *self )
 {
 	ofaJournalTreeviewPrivate *priv;
-	ofoJournal *journal;
+	GList *sel_objects;
 
 	priv = self->private;
-	journal = get_selected( self );
+	sel_objects = get_selected( self );
 
-	if( journal && priv->pfnSelected ){
-		( *priv->pfnSelected )( ofo_journal_get_mnemo( journal ), priv->user_data );
+	if( sel_objects && priv->pfnSelected ){
+		( *priv->pfnSelected )( sel_objects, priv->user_data );
 	}
 }
 
-static ofoJournal *
+static GList *
 get_selected( ofaJournalTreeview *self )
 {
 	ofaJournalTreeviewPrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
+	GList *sel_rows, *irow;
+	GList *sel_objects;
 	ofoJournal *journal;
 
-	journal = NULL;
 	priv = self->private;
+	sel_objects = NULL;
+	select = gtk_tree_view_get_selection( priv->tview );
+	sel_rows = gtk_tree_selection_get_selected_rows( select, &tmodel );
 
-	if( !priv->allow_multiple_selection ){
-		select = gtk_tree_view_get_selection( priv->tview );
-
-		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+	for( irow=sel_rows ; irow ; irow=irow->next ){
+		if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) irow->data )){
 			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &journal, -1 );
 			g_object_unref( journal );
+			sel_objects = g_list_append( sel_objects, journal );
 		}
 	}
 
-	return( journal );
+	g_list_free_full( sel_rows, ( GDestroyNotify ) gtk_tree_path_free );
+
+	return( sel_objects );
 }
 
 /**
  * ofa_journal_treeview_get_selected:
  */
-ofoJournal *
+GList *
 ofa_journal_treeview_get_selected( ofaJournalTreeview *self )
 {
 	g_return_val_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ), NULL );
@@ -587,42 +591,6 @@ ofa_journal_treeview_get_selected( ofaJournalTreeview *self )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofa_journal_treeview_foreach_sel:
- */
-void
-ofa_journal_treeview_foreach_sel ( ofaJournalTreeview *self, JournalTreeviewCb fn, void *user_data )
-{
-	GtkTreeSelection *select;
-	ForeachTreeview parms;
-
-	g_return_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ));
-
-	if( !self->private->dispose_has_run ){
-
-		select = gtk_tree_view_get_selection( self->private->tview );
-
-		parms.fn = fn;
-		parms.user_data = user_data;
-		parms.self = self;
-
-		gtk_tree_selection_selected_foreach( select, ( GtkTreeSelectionForeachFunc ) foreach_selected, &parms );
-	}
-}
-
-
-static void
-foreach_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ForeachTreeview *parms )
-{
-	gchar *mnemo;
-
-	gtk_tree_model_get( tmodel, iter, COL_MNEMO, &mnemo, -1 );
-
-	( *parms->fn )( mnemo, parms->user_data );
-
-	g_free( mnemo );
 }
 
 /**
@@ -667,15 +635,17 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 	static const gchar *thisfn = "ofa_journal_treeview_on_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
+	const gchar *mnemo;
 
 	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn, ( void * ) dossier,
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
 
 	if( OFO_IS_JOURNAL( object )){
+		mnemo = prev_id ? prev_id : ofo_journal_get_mnemo( OFO_JOURNAL( object ));
 		if( find_row_by_mnemo(
 					self,
-					prev_id,
+					mnemo,
 					&tmodel,
 					&iter )){
 

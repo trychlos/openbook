@@ -72,10 +72,11 @@ static GtkWidget *setup_tree_view( ofaMainPage *page );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
 static void       insert_dataset( ofaJournalsSet *self );
-static void       on_row_activated( const gchar *mnemo, ofaJournalsSet *self );
-static void       on_row_selected( const gchar *mnemo, ofaJournalsSet *self );
+static void       on_row_activated( GList *selected, ofaJournalsSet *self );
+static void       on_row_selected( GList *selected, ofaJournalsSet *self );
 static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
+static void       do_update( ofaJournalsSet *self, ofoJournal *journal );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
 static gboolean   delete_confirmed( ofaJournalsSet *self, ofoJournal *journal );
 static void       on_view_entries( GtkButton *button, ofaJournalsSet *self );
@@ -231,21 +232,20 @@ insert_dataset( ofaJournalsSet *self )
  * JournalTreeview callback
  */
 static void
-on_row_activated( const gchar *mnemo, ofaJournalsSet *self )
+on_row_activated( GList *selected, ofaJournalsSet *self )
 {
-	v_on_update_clicked( NULL, OFA_MAIN_PAGE( self ));
+	do_update( self, OFO_JOURNAL( selected->data ));
 }
 
 /*
  * JournalTreeview callback
  */
 static void
-on_row_selected( const gchar *mnemo, ofaJournalsSet *self )
+on_row_selected( GList *selected, ofaJournalsSet *self )
 {
 	ofoJournal *journal;
 
-	journal = ofo_journal_get_by_mnemo(
-						ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )), mnemo );
+	journal = OFO_JOURNAL( selected->data );
 
 	gtk_widget_set_sensitive(
 			ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),
@@ -288,17 +288,27 @@ static void
 v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 {
 	ofaJournalsSetPrivate *priv;
-	ofoJournal *journal;
+	GList *selected;
 
 	g_return_if_fail( page && OFA_IS_JOURNALS_SET( page ));
 
 	priv = OFA_JOURNALS_SET( page )->private;
 
-	journal = ofa_journal_treeview_get_selected( priv->tview );
+	selected = ofa_journal_treeview_get_selected( priv->tview );
+
+	do_update( OFA_JOURNALS_SET( page ), OFO_JOURNAL( selected->data ));
+}
+
+static void
+do_update( ofaJournalsSet *self, ofoJournal *journal )
+{
+	ofaJournalsSetPrivate *priv;
+
+	priv = self->private;
 
 	if( journal &&
 			ofa_journal_properties_run(
-					ofa_main_page_get_main_window( page ), journal )){
+					ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), journal )){
 
 			/* this is managed by the ofaJournalTreeview convenience
 			 * class, graceful to the dossier signaling system */
@@ -322,7 +332,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 
 	priv = OFA_JOURNALS_SET( page )->private;
 
-	journal = ofa_journal_treeview_get_selected( priv->tview );
+	journal = OFO_JOURNAL( ofa_journal_treeview_get_selected( priv->tview )->data );
 
 	dossier = ofa_main_page_get_dossier( page );
 	g_return_if_fail( ofo_journal_is_deletable( journal, dossier ));
@@ -365,7 +375,7 @@ on_view_entries( GtkButton *button, ofaJournalsSet *self )
 
 	priv = self->private;
 
-	journal = ofa_journal_treeview_get_selected( priv->tview );
+	journal = OFO_JOURNAL( ofa_journal_treeview_get_selected( priv->tview )->data );
 
 	if( journal ){
 		page = ofa_main_window_activate_theme(

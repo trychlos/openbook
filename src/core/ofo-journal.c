@@ -381,6 +381,7 @@ journal_load_dataset( void )
 	gchar *query;
 	sDetailDev *balance;
 	sDetailExe *exercice;
+	GTimeVal timeval;
 
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
@@ -402,7 +403,8 @@ journal_load_dataset( void )
 		icol = icol->next;
 		ofo_journal_set_maj_user( journal, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		ofo_journal_set_maj_stamp( journal,
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, journal );
 	}
@@ -433,18 +435,18 @@ journal_load_dataset( void )
 			icol = icol->next;
 			balance->devise = g_strdup(( gchar * ) icol->data );
 			icol = icol->next;
-			balance->clo_deb = g_ascii_strtod(( gchar * ) icol->data, NULL );
+			balance->clo_deb = my_utils_double_set_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "clo_deb=%lf", balance->clo_deb );*/
 			icol = icol->next;
-			balance->clo_cre = g_ascii_strtod(( gchar * ) icol->data, NULL );
+			balance->clo_cre = my_utils_double_set_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "clo_cre=%lf", balance->clo_cre );*/
 			icol = icol->next;
-			balance->deb = g_ascii_strtod(( gchar * ) icol->data, NULL );
+			balance->deb = my_utils_double_set_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "deb=%lf", balance->deb );*/
 			icol = icol->next;
 			my_utils_date_set_from_sql( &balance->deb_date, ( const gchar * ) icol->data );
 			icol = icol->next;
-			balance->cre = g_ascii_strtod(( gchar * ) icol->data, NULL );
+			balance->cre = my_utils_double_set_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "cre=%lf", balance->cre );*/
 			icol = icol->next;
 			my_utils_date_set_from_sql( &balance->cre_date, ( const gchar * ) icol->data );
@@ -1436,12 +1438,14 @@ journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user
 	GString *query;
 	gchar *label, *notes;
 	gboolean ok;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_journal_get_label( journal ));
 	notes = my_utils_quote( ofo_journal_get_notes( journal ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_JOURNAUX" );
 
@@ -1459,19 +1463,19 @@ journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user
 
 	g_string_append_printf( query,
 			"'%s','%s')",
-			user, stamp );
+			user, stamp_str );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_journal_set_maj_user( journal, user );
-		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str( stamp ));
+		ofo_journal_set_maj_stamp( journal, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( label );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -1516,12 +1520,14 @@ journal_do_update( ofoJournal *journal, const gchar *prev_mnemo, const ofoSgbd *
 	GString *query;
 	gchar *label, *notes;
 	gboolean ok;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_journal_get_label( journal ));
 	notes = my_utils_quote( ofo_journal_get_notes( journal ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_JOURNAUX SET " );
 
@@ -1536,18 +1542,19 @@ journal_do_update( ofoJournal *journal, const gchar *prev_mnemo, const ofoSgbd *
 
 	g_string_append_printf( query,
 			"	JOU_MAJ_USER='%s',JOU_MAJ_STAMP='%s'"
-			"	WHERE JOU_MNEMO='%s'", user, stamp, prev_mnemo );
+			"	WHERE JOU_MNEMO='%s'", user, stamp_str, prev_mnemo );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_journal_set_maj_user( journal, user );
-		ofo_journal_set_maj_stamp( journal, my_utils_stamp_from_str( stamp ));
+		ofo_journal_set_maj_stamp( journal, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( label );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -1750,7 +1757,7 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 
 		notes = my_utils_export_multi_lines( ofo_journal_get_notes( journal ));
 		muser = ofo_journal_get_maj_user( journal );
-		stamp = my_utils_str_from_stamp( ofo_journal_get_maj_stamp( journal ));
+		stamp = my_utils_stamp_to_str( ofo_journal_get_maj_stamp( journal ), MY_STAMP_YYMDHMS );
 
 		str = g_strdup_printf( "1;%s;%s;%s;%s;%s",
 				ofo_journal_get_mnemo( journal ),

@@ -158,6 +158,7 @@ devise_load_dataset( void )
 	ofoDevise *devise;
 	GList *dataset;
 	const ofoSgbd *sgbd;
+	GTimeVal timeval;
 
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
@@ -183,7 +184,8 @@ devise_load_dataset( void )
 		icol = icol->next;
 		ofo_devise_set_maj_user( devise, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_devise_set_maj_stamp( devise, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		ofo_devise_set_maj_stamp( devise,
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, devise );
 	}
@@ -547,7 +549,8 @@ static gboolean
 devise_insert_main( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
-	gchar *label, *notes, *stamp;
+	gchar *label, *notes, *stamp_str;
+	GTimeVal stamp;
 	const gchar *symbol;
 	gboolean ok;
 
@@ -555,7 +558,8 @@ devise_insert_main( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
 	label = my_utils_quote( ofo_devise_get_label( devise ));
 	symbol = ofo_devise_get_symbol( devise );
 	notes = my_utils_quote( ofo_devise_get_notes( devise ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "" );
 	g_string_append_printf( query,
@@ -576,19 +580,19 @@ devise_insert_main( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"'%s','%s')",
-			user, stamp );
+			user, stamp_str );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_devise_set_maj_user( devise, user );
-		ofo_devise_set_maj_stamp( devise, my_utils_stamp_from_str( stamp ));
+		ofo_devise_set_maj_stamp( devise, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( label );
 	g_free( notes );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -628,13 +632,15 @@ static gboolean
 devise_do_update( ofoDevise *devise, const gchar *prev_code, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
-	gchar *label, *notes, *stamp;
+	gchar *label, *notes, *stamp_str;
+	GTimeVal stamp;
 	gboolean ok;
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_devise_get_label( devise ));
 	notes = my_utils_quote( ofo_devise_get_notes( devise ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_DEVISES SET " );
 
@@ -653,19 +659,19 @@ devise_do_update( ofoDevise *devise, const gchar *prev_code, const ofoSgbd *sgbd
 
 	g_string_append_printf( query,
 			"	DEV_MAJ_USER='%s',DEV_MAJ_STAMP='%s'"
-			"	WHERE DEV_CODE='%s'", user, stamp, prev_code );
+			"	WHERE DEV_CODE='%s'", user, stamp_str, prev_code );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_devise_set_maj_user( devise, user );
-		ofo_devise_set_maj_stamp( devise, my_utils_stamp_from_str( stamp ));
+		ofo_devise_set_maj_stamp( devise, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( label );
 	g_free( notes );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -748,7 +754,7 @@ ofo_devise_get_csv( const ofoDossier *dossier )
 
 		notes = my_utils_export_multi_lines( ofo_devise_get_notes( devise ));
 		muser = ofo_devise_get_maj_user( devise );
-		stamp = my_utils_str_from_stamp( ofo_devise_get_maj_stamp( devise ));
+		stamp = my_utils_stamp_to_str( ofo_devise_get_maj_stamp( devise ), MY_STAMP_YYMDHMS );
 
 		str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s",
 				ofo_devise_get_code( devise ),

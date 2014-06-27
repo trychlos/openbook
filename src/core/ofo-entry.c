@@ -493,6 +493,7 @@ entry_parse_result( const GSList *row )
 	GSList *icol;
 	ofoEntry *entry;
 	GDate date;
+	GTimeVal timeval;
 
 	entry = NULL;
 
@@ -519,15 +520,18 @@ entry_parse_result( const GSList *row )
 		icol = icol->next;
 		ofo_entry_set_journal( entry, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_entry_set_debit( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+		ofo_entry_set_debit( entry,
+				my_utils_double_set_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
-		ofo_entry_set_credit( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+		ofo_entry_set_credit( entry,
+				my_utils_double_set_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_maj_user( entry, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		ofo_entry_set_maj_stamp( entry,
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data );
@@ -1190,7 +1194,8 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	gchar debit[1+G_ASCII_DTOSTR_BUF_SIZE];
 	gchar credit[1+G_ASCII_DTOSTR_BUF_SIZE];
 	gboolean ok;
-	gchar *stamp;
+	GTimeVal stamp;
+	gchar *stamp_str;
 
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
@@ -1199,7 +1204,8 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	ref = my_utils_quote( ofo_entry_get_ref( entry ));
 	deff = my_utils_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	dope = my_utils_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_ECRITURES " );
 
@@ -1230,12 +1236,12 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 				g_ascii_dtostr( credit, G_ASCII_DTOSTR_BUF_SIZE, ofo_entry_get_credit( entry )),
 				ofo_entry_get_status( entry ),
 				user,
-				stamp );
+				stamp_str );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_entry_set_maj_user( entry, user );
-		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str( stamp ));
+		ofo_entry_set_maj_stamp( entry, &stamp );
 
 		ok = TRUE;
 	}
@@ -1245,7 +1251,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	g_free( dope );
 	g_free( ref );
 	g_free( label );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -1384,7 +1390,8 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *sdeff, *sdope, *sdeb, *scre;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 	gboolean ok;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
@@ -1394,7 +1401,8 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	sdeff = my_utils_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdeb = my_utils_sql_from_double( ofo_entry_get_debit( entry ));
 	scre = my_utils_sql_from_double( ofo_entry_get_credit( entry ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_ECRITURES " );
 
@@ -1413,13 +1421,13 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 			sdeb,
 			scre,
 			user,
-			stamp,
+			stamp_str,
 			ofo_entry_get_number( entry ));
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_entry_set_maj_user( entry, user );
-		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str( stamp ));
+		ofo_entry_set_maj_stamp( entry, &stamp );
 
 		ok = TRUE;
 	}
@@ -1429,6 +1437,7 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	g_free( sdope );
 	g_free( sdeb );
 	g_free( scre );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -1572,6 +1581,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 	const gchar *sref, *muser;
 	const GDate *date;
 	GDate datesql;
+	GTimeVal timeval;
 
 	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ),
 					"SELECT ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
@@ -1607,13 +1617,16 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		icol = icol->next;
 		ofo_entry_set_account( entry, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_entry_set_debit( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+		ofo_entry_set_debit( entry,
+				my_utils_double_set_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
-		ofo_entry_set_credit( entry, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+		ofo_entry_set_credit( entry,
+				my_utils_double_set_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_maj_user( entry, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_entry_set_maj_stamp( entry, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		ofo_entry_set_maj_stamp( entry,
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
@@ -1624,7 +1637,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		sdeffet = my_utils_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 		sref = ofo_entry_get_ref( entry );
 		muser = ofo_entry_get_maj_user( entry );
-		stamp = my_utils_str_from_stamp( ofo_entry_get_maj_stamp( entry ));
+		stamp = my_utils_stamp_to_str( ofo_entry_get_maj_stamp( entry ), MY_STAMP_YYMDHMS );
 
 		date = ofo_entry_get_rappro( entry );
 		sdrappro = my_utils_date_to_str( date, MY_DATE_SQL );
@@ -1651,6 +1664,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		g_free( sdrappro );
 		g_free( sdeffet );
 		g_free( sdope );
+		g_free( stamp );
 	}
 
 	return( g_slist_reverse( lines ));
@@ -1671,8 +1685,8 @@ ofo_entry_get_csv( const ofoDossier *dossier )
  * - debit
  * - credit (only one of the twos must be set)
  *
- * Note that the decimal separator must be a dot '.' and not a command,
- * with LANG=C as well as LANG=fr_FR
+ * Note that the decimal separator must be a dot '.' and not a comma,
+ * without any thousand separator, with LANG=C as well as LANG=fr_FR
  *
  * Add the imported entries to the content of OFA_T_ECRITURES, while
  * keeping already existing entries.
@@ -1812,7 +1826,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				errors += 1;
 				continue;
 			}
-			debit = g_ascii_strtod( str, NULL );
+			debit = my_utils_double_set_from_sql( str );
 			tot_debits += debit;
 
 			/* credit */
@@ -1823,7 +1837,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				errors += 1;
 				continue;
 			}
-			credit = g_ascii_strtod( str, NULL );
+			credit = my_utils_double_set_from_sql( str );
 			tot_credits += credit;
 
 			/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/

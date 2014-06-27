@@ -56,7 +56,8 @@ struct _ofaIntClosingPrivate {
 	/* during the iteration on each selected journal
 	 */
 	gint                count;
-	gint                not_already_closed;
+	gint                closeable;
+	GString            *jou_list;
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-int-closing.ui";
@@ -65,15 +66,17 @@ static const gchar  *st_ui_id  = "IntClosingDlg";
 G_DEFINE_TYPE( ofaIntClosing, ofa_int_closing, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_rows_activated( const gchar *mnemo, ofaIntClosing *self );
-static void      on_rows_selected( const gchar *mnemo, ofaIntClosing *self );
+static void      on_rows_activated( GList *selected, ofaIntClosing *self );
+static void      on_rows_selected( GList *selected, ofaIntClosing *self );
+static gboolean  date_check_cb( GDate *date, ofaIntClosing *self );
 static void      on_date_changed( GtkEntry *entry, ofaIntClosing *self );
-static void      check_for_enable_dlg( ofaIntClosing *self );
-static gboolean  is_dialog_validable( ofaIntClosing *self );
-static void      check_foreach_journal( const gchar *mnemo, ofaIntClosing *self );
+static void      check_for_enable_dlg( ofaIntClosing *self, GList *selected );
+static gboolean  is_dialog_validable( ofaIntClosing *self, GList *selected );
+static void      check_foreach_journal( ofaIntClosing *self, ofoJournal *journal );
 static gboolean  v_quit_on_ok( myDialog *dialog );
-static void      do_close( ofaIntClosing *self );
-static void      close_foreach_journal( const gchar *mnemo, ofaIntClosing *self );
+static gboolean  do_close( ofaIntClosing *self );
+static gboolean  close_foreach_journal( ofaIntClosing *self, ofoJournal *journal );
+static void      do_end_close( ofaIntClosing *self );
 
 static void
 int_closing_finalize( GObject *instance )
@@ -177,17 +180,22 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaIntClosingPrivate *priv;
 	JournalTreeviewParms parms;
+	GtkContainer *container;
 	GtkButton *button;
-	GtkEntry *entry;
 	GtkLabel *label;
+	myDateParse date_parms;
 
 	priv = OFA_INT_CLOSING( dialog )->private;
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
+
+	button = ( GtkButton * )
+					my_utils_container_get_child_by_name( container, "btn-ok" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	priv->do_close_btn = button;
 
 	parms.main_window = MY_WINDOW( dialog )->protected->main_window;
 	parms.parent = GTK_CONTAINER(
-							my_utils_container_get_child_by_name(
-									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
-									"px-treeview-alignement" ));
+					my_utils_container_get_child_by_name( container, "px-treeview-alignement" ));
 	parms.allow_multiple_selection = TRUE;
 	parms.pfnActivated = ( JournalTreeviewCb ) on_rows_activated;
 	parms.pfnSelected = ( JournalTreeviewCb ) on_rows_selected;
@@ -196,92 +204,82 @@ v_init_dialog( myDialog *dialog )
 	priv->tview = ofa_journal_treeview_new( &parms );
 	ofa_journal_treeview_init_view( priv->tview, NULL );
 
-	button = ( GtkButton * ) my_utils_container_get_child_by_name(
-									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
-									"btn-ok" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	priv->do_close_btn = button;
-
-	label = ( GtkLabel * ) my_utils_container_get_child_by_name(
-									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
-									"p1-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	priv->date_label = label;
-
-	label = ( GtkLabel * ) my_utils_container_get_child_by_name(
-									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
-									"p1-message" );
+	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, "p1-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
 
-	entry = ( GtkEntry * ) my_utils_container_get_child_by_name(
-									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
-									"p1-date" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), dialog );
+	memset( &date_parms, '\0', sizeof( date_parms ));
+	date_parms.entry = my_utils_container_get_child_by_name( container, "p1-date" );
+	date_parms.entry_format = MY_DATE_DDMM;
+	date_parms.label = my_utils_container_get_child_by_name( container, "p1-label" );
+	date_parms.label_format = MY_DATE_DMMM;
+	date_parms.date = &priv->closing;
+	date_parms.pfnCheck = ( myDateCheckCb ) date_check_cb;
+	date_parms.on_changed_cb = G_CALLBACK( on_date_changed );
+	date_parms.user_data = dialog;
+	my_utils_date_parse_from_entry( &date_parms );
 
-	check_for_enable_dlg( OFA_INT_CLOSING( dialog ));
+	priv->date_label = label;
+
+	g_signal_connect( G_OBJECT( date_parms.entry ), "changed", G_CALLBACK( on_date_changed ), dialog );
+
+	check_for_enable_dlg( OFA_INT_CLOSING( dialog ), NULL );
 }
 
 /*
  * JournalTreeview callback
  */
 static void
-on_rows_activated( const gchar *mnemo, ofaIntClosing *self )
+on_rows_activated( GList *selected, ofaIntClosing *self )
 {
-	g_debug( "on_rows_activated" );
+	if( is_dialog_validable( self, selected )){
+		do_close( self );
+	}
 }
 
 /*
  * JournalTreeview callback
  */
 static void
-on_rows_selected( const gchar *mnemo, ofaIntClosing *self )
+on_rows_selected( GList *selected, ofaIntClosing *self )
 {
-	g_debug( "on_rows_selected" );
+	check_for_enable_dlg( self, selected );
 }
 
-static void
-on_date_changed( GtkEntry *entry, ofaIntClosing *self )
+static gboolean
+date_check_cb( GDate *date, ofaIntClosing *self )
 {
 	ofaIntClosingPrivate *priv;
-	gchar *str;
 	const GDate *exe_end;
 
 	priv = self->private;
 	priv->valid = FALSE;
 
-	g_date_set_parse( &priv->closing, gtk_entry_get_text( entry ));
-
-	if( g_date_valid( &priv->closing )){
-		str = my_utils_date_to_str( &priv->closing, MY_DATE_DMMM );
-		gtk_label_set_text( priv->date_label, str );
-		g_free( str );
-
-		/* the date must be less or equal that the end of exercice */
-		exe_end = ofo_dossier_get_current_exe_fin( MY_WINDOW( self )->protected->dossier );
-		if( !exe_end || !g_date_valid( exe_end ) || g_date_compare( &priv->closing, exe_end ) <= 0 ){
-			priv->valid = TRUE;
-			gtk_label_set_text( priv->message_label, "" );
-
-		} else {
-			gtk_label_set_text( priv->message_label, _( "Closing date is after the end of exercice" ));
-		}
+	/* the date must be less or equal that the end of exercice */
+	exe_end = ofo_dossier_get_current_exe_fin( MY_WINDOW( self )->protected->dossier );
+	if( !exe_end || !g_date_valid( exe_end ) || g_date_compare( date, exe_end ) <= 0 ){
+		priv->valid = TRUE;
+		gtk_label_set_text( priv->message_label, "" );
 
 	} else {
-		gtk_label_set_text( priv->date_label, "" );
-		gtk_label_set_text( priv->message_label, _( "Closing date is invalid" ));
+		gtk_label_set_text( priv->message_label, _( "Closing date is after the end of exercice" ));
 	}
 
-	check_for_enable_dlg( self );
+	return( priv->valid );
 }
 
 static void
-check_for_enable_dlg( ofaIntClosing *self )
+on_date_changed( GtkEntry *entry, ofaIntClosing *self )
+{
+	check_for_enable_dlg( self, NULL );
+}
+
+static void
+check_for_enable_dlg( ofaIntClosing *self, GList *selected )
 {
 	gtk_widget_set_sensitive(
 				GTK_WIDGET( self->private->do_close_btn ),
-				is_dialog_validable( self ));
+				is_dialog_validable( self, selected ));
 }
 
 /*
@@ -289,10 +287,11 @@ check_for_enable_dlg( ofaIntClosing *self )
  * valid, and greater that at least one of the previous closing dates
  */
 static gboolean
-is_dialog_validable( ofaIntClosing *self )
+is_dialog_validable( ofaIntClosing *self, GList *selected )
 {
-	gboolean ok;
 	ofaIntClosingPrivate *priv;
+	GList *isel;
+	gboolean ok;
 
 	priv = self->private;
 
@@ -302,84 +301,130 @@ is_dialog_validable( ofaIntClosing *self )
 	/* check that each journal is not yet closed for this date */
 	if( ok ){
 		priv->count = 0;
-		priv->not_already_closed = 0;
+		priv->closeable = 0;
 
-		ofa_journal_treeview_foreach_sel(
-					priv->tview, ( JournalTreeviewCb ) check_foreach_journal, self );
+		if( !selected ){
+			selected = ofa_journal_treeview_get_selected( priv->tview );
+		}
 
-		if( !priv->not_already_closed ){
-			gtk_label_set_text( priv->message_label, _( "No journal found to be closeable at the proposed date" ));
+		for( isel=selected ; isel ; isel=isel->next ){
+			check_foreach_journal( self, OFO_JOURNAL( isel->data ));
+		}
+
+		if( !priv->closeable ){
+			gtk_label_set_text( priv->message_label, _( "None of the selected journals is closeable at the proposed date" ));
 			ok = FALSE;
 		}
+	}
+	if( ok ){
+		gtk_label_set_text( priv->message_label, "" );
 	}
 
 	return( ok );
 }
 
 static void
-check_foreach_journal( const gchar *mnemo, ofaIntClosing *self )
+check_foreach_journal( ofaIntClosing *self, ofoJournal *journal )
 {
 	ofaIntClosingPrivate *priv;
-	ofoJournal *journal;
 	const GDate *last;
 
 	priv = self->private;
-
-	journal = ofo_journal_get_by_mnemo( MY_WINDOW( self )->protected->dossier, mnemo );
 	priv->count += 1;
 
-	if( journal ){
-		last = ofo_journal_get_last_closing( journal );
-		if( last && g_date_valid( last ) && g_date_compare( &priv->closing, last ) > 0 ){
-			priv->not_already_closed += 1;
-		}
+	last = ofo_journal_get_last_closing( journal );
+	if( !last || !g_date_valid( last ) || g_date_compare( &priv->closing, last ) > 0 ){
+		priv->closeable += 1;
 	}
 }
 
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	do_close( OFA_INT_CLOSING( dialog ));
-
-	return( FALSE );
+	return( do_close( OFA_INT_CLOSING( dialog )));
 }
 
-static void
+static gboolean
 do_close( ofaIntClosing *self )
 {
-	GtkWidget *button;
-
+	ofaIntClosingPrivate *priv;
+	GList *selected, *isel;
 	gboolean ok;
-	ok = is_dialog_validable( self );
-	g_return_if_fail( ok );
 
-	ofa_journal_treeview_foreach_sel(
-				self->private->tview, ( JournalTreeviewCb ) close_foreach_journal, self );
+	priv = self->private;
+	selected = ofa_journal_treeview_get_selected( priv->tview );
+	ok = is_dialog_validable( self, selected );
 
-	gtk_label_set_text( self->private->message_label, "" );
+	g_return_val_if_fail( ok, FALSE );
 
-	gtk_widget_hide( GTK_WIDGET( self->private->do_close_btn ));
+	priv->count = 0;
+	priv->jou_list = g_string_new( "" );
 
-	button = my_utils_container_get_child_by_name(
-									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
-									"btn-cancel" );
-	gtk_button_set_label( GTK_BUTTON( button ), _( "Close" ));
+	for( isel=selected ; isel ; isel=isel->next ){
+		close_foreach_journal( self, OFO_JOURNAL( isel->data ));
+	}
+
+	do_end_close( self );
+
+	return( TRUE );
 }
 
-static void
-close_foreach_journal( const gchar *mnemo, ofaIntClosing *self )
+static gboolean
+close_foreach_journal( ofaIntClosing *self, ofoJournal *journal )
 {
 	ofaIntClosingPrivate *priv;
-	ofoJournal *journal;
+	const gchar *mnemo;
 	gchar *str;
 
 	priv = self->private;
 
-	journal = ofo_journal_get_by_mnemo( MY_WINDOW( self )->protected->dossier, mnemo );
+	mnemo = ofo_journal_get_mnemo( journal );
 
 	str = g_strdup_printf( _( "Closing journal %s" ), mnemo );
 	gtk_label_set_text( priv->message_label, str );
 	g_free( str );
 
-	ofo_journal_close( journal, &priv->closing );
+	priv->count += 1;
+
+	if( g_utf8_strlen( priv->jou_list->str, -1 )){
+		priv->jou_list = g_string_append( priv->jou_list, ", " );
+	}
+	g_string_append_printf( priv->jou_list, "%s", mnemo );
+
+	return( ofo_journal_close( journal, &priv->closing ));
+}
+
+static void
+do_end_close( ofaIntClosing *self )
+{
+	ofaIntClosingPrivate *priv;
+	gchar *str;
+	GtkWindow *toplevel;
+	GtkWidget *button;
+	GtkWidget *dialog;
+
+	priv = self->private;
+	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
+
+	gtk_label_set_text( priv->message_label, "" );
+
+	gtk_widget_hide( GTK_WIDGET( priv->do_close_btn ));
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-cancel" );
+	gtk_button_set_label( GTK_BUTTON( button ), _( "Close" ));
+
+	str = g_strdup_printf(
+				"%d journals (%s) successfully closed", priv->count, priv->jou_list->str );
+	g_string_free( priv->jou_list, TRUE );
+
+	dialog = gtk_message_dialog_new(
+			toplevel,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_INFO,
+			GTK_BUTTONS_OK,
+			"%s", str );
+
+	g_free( str );
+
+	gtk_dialog_run( GTK_DIALOG( dialog ));
+	gtk_widget_destroy( dialog );
 }

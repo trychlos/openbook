@@ -186,6 +186,7 @@ bat_load_dataset( void )
 	ofoBat *bat;
 	GList *dataset;
 	GDate date;
+	GTimeVal timeval;
 
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
@@ -230,7 +231,8 @@ bat_load_dataset( void )
 		}
 		icol = icol->next;
 		if( icol->data ){
-			ofo_bat_set_solde( bat, g_ascii_strtod(( gchar * ) icol->data, NULL ));
+			ofo_bat_set_solde( bat,
+					my_utils_double_set_from_sql(( const gchar * ) icol->data ));
 			ofo_bat_set_solde_set( bat, TRUE );
 		} else {
 			ofo_bat_set_solde_set( bat, FALSE );
@@ -242,7 +244,8 @@ bat_load_dataset( void )
 		icol = icol->next;
 		ofo_bat_set_maj_user( bat, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_bat_set_maj_stamp( bat, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		ofo_bat_set_maj_stamp( bat,
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, bat );
 	}
@@ -735,10 +738,12 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 	gchar *str;
 	const GDate *begin, *end;
 	gboolean ok;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 
 	ok = FALSE;
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT" );
 
@@ -806,17 +811,17 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 	}
 	g_free( str );
 
-	g_string_append_printf( query, "'%s','%s')", user, stamp );
+	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_bat_set_maj_user( bat, user );
-		ofo_bat_set_maj_stamp( bat, my_utils_stamp_from_str( stamp ));
+		ofo_bat_set_maj_stamp( bat, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -879,12 +884,15 @@ static gboolean
 bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
-	gchar *notes, *stamp;
+	gchar *notes;
 	gboolean ok;
+	GTimeVal stamp;
+	gchar *stamp_str;
 
 	ok = FALSE;
 	notes = my_utils_quote( ofo_bat_get_notes( bat ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_BAT SET " );
 
@@ -896,18 +904,18 @@ bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	BAT_MAJ_USER='%s',BAT_MAJ_STAMP='%s'"
-			"	WHERE BAT_ID=%d", user, stamp, ofo_bat_get_id( bat ));
+			"	WHERE BAT_ID=%d", user, stamp_str, ofo_bat_get_id( bat ));
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_bat_set_maj_user( bat, user );
-		ofo_bat_set_maj_stamp( bat, my_utils_stamp_from_str( stamp ));
+		ofo_bat_set_maj_stamp( bat, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( notes );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }

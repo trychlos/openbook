@@ -204,6 +204,7 @@ taux_load_dataset( void )
 	sTauxValid *valid;
 	gchar *query;
 	GDate date;
+	GTimeVal timeval;
 
 	dataset = NULL;
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
@@ -224,7 +225,8 @@ taux_load_dataset( void )
 		icol = icol->next;
 		ofo_taux_set_maj_user( taux, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		ofo_taux_set_maj_stamp( taux,
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, taux );
 	}
@@ -247,15 +249,14 @@ taux_load_dataset( void )
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			valid = g_new0( sTauxValid, 1 );
-			my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data );
-			taux_set_val_begin( valid, &date );
+			taux_set_val_begin( valid,
+					my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 			icol = icol->next;
-			my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data );
-			taux_set_val_end( valid, &date );
+			taux_set_val_end( valid,
+					my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 			icol = icol->next;
-			if( icol->data ){
-				taux_set_val_taux( valid, g_ascii_strtod(( gchar * ) icol->data, NULL ));
-			}
+			taux_set_val_taux( valid,
+					my_utils_double_set_from_sql(( const gchar * ) icol->data ));
 
 			taux->private->valids = g_list_prepend( taux->private->valids, valid );
 		}
@@ -815,7 +816,8 @@ taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 	GString *query;
 	gchar *label, *notes;
 	gboolean ok;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
 	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
@@ -823,7 +825,8 @@ taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 	ok = FALSE;
 	label = my_utils_quote( ofo_taux_get_label( taux ));
 	notes = my_utils_quote( ofo_taux_get_notes( taux ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_TAUX" );
 
@@ -839,19 +842,19 @@ taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "'%s','%s')", user, stamp );
+	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_taux_set_maj_user( taux, user );
-		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
+		ofo_taux_set_maj_stamp( taux, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( label );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -911,13 +914,13 @@ taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
 	if( dbegin && g_utf8_strlen( dbegin, -1 )){
 		g_string_append_printf( query, "'%s',", dbegin );
 	} else {
-		query = g_string_append( query, "0," );
+		query = g_string_append( query, "NULL," );
 	}
 
 	if( dend && g_utf8_strlen( dend, -1 )){
 		g_string_append_printf( query, "'%s',", dend );
 	} else {
-		query = g_string_append( query, "0," );
+		query = g_string_append( query, "NULL," );
 	}
 
 	g_string_append_printf( query, "%s)", rate );
@@ -979,7 +982,8 @@ taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, c
 	GString *query;
 	gchar *label, *notes;
 	gboolean ok;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), FALSE );
 	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
@@ -987,7 +991,8 @@ taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, c
 	ok = FALSE;
 	label = my_utils_quote( ofo_taux_get_label( taux ));
 	notes = my_utils_quote( ofo_taux_get_notes( taux ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_TAUX SET " );
 
@@ -1003,18 +1008,19 @@ taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, c
 	g_string_append_printf( query,
 			"	TAX_MAJ_USER='%s',TAX_MAJ_STAMP='%s'"
 			"	WHERE TAX_MNEMO='%s'",
-					user, stamp, prev_mnemo );
+					user, stamp_str, prev_mnemo );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_taux_set_maj_user( taux, user );
-		ofo_taux_set_maj_stamp( taux, my_utils_stamp_from_str( stamp ));
+		ofo_taux_set_maj_stamp( taux, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( label );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -1189,7 +1195,7 @@ ofo_taux_get_csv( const ofoDossier *dossier )
 
 		notes = my_utils_export_multi_lines( ofo_taux_get_notes( taux ));
 		muser = ofo_taux_get_maj_user( taux );
-		stamp = my_utils_str_from_stamp( ofo_taux_get_maj_stamp( taux ));
+		stamp = my_utils_stamp_to_str( ofo_taux_get_maj_stamp( taux ), MY_STAMP_YYMDHMS );
 
 		str = g_strdup_printf( "1;%s;%s;%s;%s;%s",
 				ofo_taux_get_mnemo( taux ),

@@ -306,6 +306,7 @@ add_empty_row( ofaTauxProperties *self )
 	GtkEntry *entry;
 	GtkLabel *label;
 	gint row;
+	myDateParse parms;
 
 	priv = self->private;
 	row = self->private->count + 1;
@@ -316,19 +317,35 @@ add_empty_row( ofaTauxProperties *self )
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_date_focus_in ), self );
 	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_entry_set_max_length( entry, 10 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), COL_BEGIN, row, 1, 1 );
+
+	memset( &parms, '\0', sizeof( parms ));
+	parms.entry = GTK_WIDGET( entry );
+	parms.entry_format = MY_DATE_DDMM;
+	parms.on_changed_cb = G_CALLBACK( on_date_changed );
+	parms.user_data = self;
+	parms.date = g_new0( GDate, 1 );
+	g_object_set_data( G_OBJECT( entry ), "data-date", parms.date );
+	my_utils_date_parse_from_entry( &parms );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_date_focus_in ), self );
 	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_entry_set_max_length( entry, 10 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), COL_END, row, 1, 1 );
+
+	memset( &parms, '\0', sizeof( parms ));
+	parms.entry = GTK_WIDGET( entry );
+	parms.entry_format = MY_DATE_DDMM;
+	parms.on_changed_cb = G_CALLBACK( on_date_changed );
+	parms.user_data = self;
+	parms.date = g_new0( GDate, 1 );
+	g_object_set_data( G_OBJECT( entry ), "data-date", parms.date );
+	my_utils_date_parse_from_entry( &parms );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -437,12 +454,12 @@ on_rate_changed( GtkEntry *entry, ofaTauxProperties *self )
 	gdouble value;
 
 	content = gtk_entry_get_text( entry );
-	value = g_ascii_strtod( content, NULL );
+	value = g_strtod( content, NULL );
 
 	if( !content || !g_utf8_strlen( content, -1 )){
 		str = g_strdup( "" );
 	} else {
-		str = g_strdup_printf( "%.3lf", value );
+		str = g_strdup_printf( "%'.3lf %%", value );
 	}
 	set_grid_line_comment( self, GTK_WIDGET( entry ), str );
 	g_free( str );
@@ -607,6 +624,7 @@ do_update( ofaTauxProperties *self )
 	gint i;
 	GtkEntry *entry;
 	const gchar *sbegin, *send, *srate;
+	/*GDate *dbegin, *dend;*/
 	gchar *prev_mnemo;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
@@ -624,8 +642,10 @@ do_update( ofaTauxProperties *self )
 	for( i=1 ; i<=priv->count ; ++i ){
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, i ));
 		sbegin = gtk_entry_get_text( entry );
+		/*dbegin = ( GDate * ) g_object_get_data( G_OBJECT( entry ), "data-date" );*/
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_END, i ));
 		send = gtk_entry_get_text( entry );
+		/*dend = ( GDate * ) g_object_get_data( G_OBJECT( entry ), "data-date" );*/
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_RATE, i ));
 		srate = gtk_entry_get_text( entry );
 		if(( sbegin && g_utf8_strlen( sbegin, -1 )) ||

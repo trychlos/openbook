@@ -184,11 +184,9 @@ static void           display_entries_from_journal( ofaViewEntries *self );
 static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
 static void           display_entries_from_account( ofaViewEntries *self );
-static void           on_d_from_changed( GtkEntry *entry, ofaViewEntries *self );
 static gboolean       on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self );
-static void           on_d_to_changed( GtkEntry *entry, ofaViewEntries *self );
 static gboolean       on_d_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self );
-static void           on_date_changed( ofaViewEntries *self, GtkEntry *entry, GDate *date, GtkLabel *label );
+static gboolean       on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date );
 static gboolean       layout_dates_is_valid( ofaViewEntries *self );
 static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
@@ -428,29 +426,39 @@ static void
 setup_dates_selection( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
-	GtkWidget *widget;
+	myDateParse parms;
 
 	priv = self->private;
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f2-from" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_d_from_changed ), self );
-	g_signal_connect( G_OBJECT( widget ), "focus-out-event", G_CALLBACK( on_d_from_focus_out ), self );
-	priv->we_from = GTK_ENTRY( widget );
+	memset( &parms, '\0', sizeof( parms ));
+	parms.entry = my_utils_container_get_child_by_name( priv->top_box, "f2-from" );
+	parms.entry_format = MY_DATE_DDMM;
+	parms.label = my_utils_container_get_child_by_name( priv->top_box, "f2-from-label" );
+	parms.label_format = MY_DATE_DMMM;
+	parms.date = &priv->d_from;
+	my_utils_date_parse_from_entry( &parms );
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f2-from-label" );
-	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	priv->wl_from = GTK_LABEL( widget );
+	g_signal_connect(
+			G_OBJECT( parms.entry ),
+			"focus-out-event", G_CALLBACK( on_d_from_focus_out ), self );
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f2-to" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_d_to_changed ), self );
-	g_signal_connect( G_OBJECT( widget ), "focus-out-event", G_CALLBACK( on_d_to_focus_out ), self );
-	priv->we_to = GTK_ENTRY( widget );
+	priv->we_from = GTK_ENTRY( parms.entry );
+	priv->wl_from = GTK_LABEL( parms.label );
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f2-to-label" );
-	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	priv->wl_to = GTK_LABEL( widget );
+	memset( &parms, '\0', sizeof( parms ));
+	parms.entry = my_utils_container_get_child_by_name( priv->top_box, "f2-to" );
+	parms.entry_format = MY_DATE_DDMM;
+	parms.label = my_utils_container_get_child_by_name( priv->top_box, "f2-to-label" );
+	parms.label_format = MY_DATE_DMMM;
+	parms.date = &priv->d_to;
+	my_utils_date_parse_from_entry( &parms );
+
+	g_signal_connect(
+			G_OBJECT( parms.entry ),
+			"focus-out-event", G_CALLBACK( on_d_to_focus_out ), self );
+
+	priv->we_to = GTK_ENTRY( parms.entry );
+	priv->wl_to = GTK_LABEL( parms.label );
 }
 
 static void
@@ -924,12 +932,6 @@ display_entries_from_account( ofaViewEntries *self )
 	}
 }
 
-static void
-on_d_from_changed( GtkEntry *entry, ofaViewEntries *self )
-{
-	on_date_changed( self, entry, &self->private->d_from, self->private->wl_from );
-}
-
 /*
  * Returns :
  * TRUE to stop other handlers from being invoked for the event.
@@ -938,15 +940,7 @@ on_d_from_changed( GtkEntry *entry, ofaViewEntries *self )
 static gboolean
 on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
 {
-	refresh_display( self );
-
-	return( FALSE );
-}
-
-static void
-on_d_to_changed( GtkEntry *entry, ofaViewEntries *self )
-{
-	on_date_changed( self, entry, &self->private->d_to, self->private->wl_to );
+	return( on_date_focus_out( self, entry, &self->private->d_from ));
 }
 
 /*
@@ -957,34 +951,22 @@ on_d_to_changed( GtkEntry *entry, ofaViewEntries *self )
 static gboolean
 on_d_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
 {
+	return( on_date_focus_out( self, entry, &self->private->d_to ));
+}
+
+static gboolean
+on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date )
+{
+	const gchar *text;
+
+	text = gtk_entry_get_text( entry );
+	if( !text || !g_utf8_strlen( text, -1 )){
+		g_date_clear( date, 1 );
+	}
+
 	refresh_display( self );
 
 	return( FALSE );
-}
-
-static void
-on_date_changed( ofaViewEntries *self, GtkEntry *entry, GDate *priv_date, GtkLabel *label )
-{
-	GDate date;
-	const gchar *str;
-	gchar *display;
-
-	g_date_clear( &date, 1 );
-
-	str = gtk_entry_get_text( entry );
-	if( str && g_utf8_strlen( str, -1 )){
-		g_date_set_parse( &date, str );
-	}
-
-	if( g_date_valid( &date )){
-		display = my_utils_date_to_str( &date, MY_DATE_DMMM );
-	} else {
-		display = g_strdup( "" );
-	}
-
-	gtk_label_set_text( label, display );
-	g_free( display );
-	memcpy( priv_date, &date, sizeof( GDate ));
 }
 
 /*
@@ -1113,8 +1095,8 @@ compute_balances( ofaViewEntries *self )
 					-1 );
 
 			pc = find_balance_by_currency( self, dev_code );
-			pc->debits += g_ascii_strtod( sdeb, NULL );
-			pc->credits += g_ascii_strtod( scre, NULL );
+			pc->debits += g_strtod( sdeb, NULL );
+			pc->credits += g_strtod( scre, NULL );
 
 			g_free( sdeb );
 			g_free( scre );
@@ -1260,14 +1242,14 @@ update_balance_amounts( ofaViewEntries *self, const gchar *sdeb, const gchar *sc
 	priv = self->private;
 
 	pc = find_balance_by_currency( self, dev_code );
-	pc->debits -= g_ascii_strtod( sdeb, NULL );
-	pc->credits -= g_ascii_strtod( scre, NULL );
 	switch( column_id ){
 		case ENT_COL_DEBIT:
-			pc->debits += g_ascii_strtod( text, NULL );
+			pc->debits -= g_strtod( sdeb, NULL );
+			pc->debits += g_strtod( text, NULL );
 			break;
 		case ENT_COL_CREDIT:
-			pc->credits += g_ascii_strtod( text, NULL );
+			pc->credits -= g_strtod( scre, NULL );
+			pc->credits += g_strtod( text, NULL );
 			break;
 	}
 
@@ -1285,8 +1267,8 @@ update_balance_currency( ofaViewEntries *self, const gchar *sdeb, const gchar *s
 	gdouble debit, credit;
 
 	priv = self->private;
-	debit = sdeb ? g_ascii_strtod( sdeb, NULL ) : 0.0;
-	credit = scre ? g_ascii_strtod( scre, NULL ) : 0.0;
+	debit = sdeb ? g_strtod( sdeb, NULL ) : 0.0;
+	credit = scre ? g_strtod( scre, NULL ) : 0.0;
 
 	pc = find_balance_by_currency( self, dev_code );
 	pc->debits -= debit;
@@ -1576,8 +1558,8 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 
 			/* reformat amounts */
 			if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){
-				amount = g_ascii_strtod( text, NULL );
-				str = g_strdup_printf( "%.2lf", amount );
+				amount = g_strtod( text, NULL );
+				str = g_strdup_printf( "%'.2lf", amount );
 				g_debug( "on_cell_edited: text='%s', amount=%lf, str='%s'", text, amount, str );
 			} else {
 				str = g_strdup( text );
@@ -1895,8 +1877,8 @@ check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 	is_valid = FALSE;
 	gtk_tree_model_get( tmodel, iter, ENT_COL_DEBIT, &sdeb, ENT_COL_CREDIT, &scre, -1 );
 	if(( sdeb && g_utf8_strlen( sdeb, -1 )) || ( scre && g_utf8_strlen( scre, -1 ))){
-		debit = sdeb ? g_ascii_strtod( sdeb, NULL ) : 0.0;
-		credit = scre ? g_ascii_strtod( scre, NULL ) : 0.0;
+		debit = sdeb ? g_strtod( sdeb, NULL ) : 0.0;
+		credit = scre ? g_strtod( scre, NULL ) : 0.0;
 		if(( debit && !credit ) || ( !debit && credit )){
 			is_valid = TRUE;
 		} else {
@@ -1953,8 +1935,8 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	g_date_set_parse( &deff, sdeff );
 	g_return_val_if_fail( g_date_valid( &deff ), FALSE );
 
-	debit = g_ascii_strtod( sdeb, NULL );
-	credit = g_ascii_strtod( scre, NULL );
+	debit = g_strtod( sdeb, NULL );
+	credit = g_strtod( scre, NULL );
 	g_debug( "save_entry: sdeb='%s', debit=%lf, scre='%s', credit=%lf", sdeb, debit, scre, credit );
 
 	if( entry ){

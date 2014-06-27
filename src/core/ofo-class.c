@@ -170,6 +170,7 @@ class_load_dataset( void )
 	ofoClass *class;
 	GList *dataset;
 	const ofoSgbd *sgbd;
+	GTimeVal timeval;
 
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
@@ -192,7 +193,8 @@ class_load_dataset( void )
 		icol = icol->next;
 		ofo_class_set_maj_user( class, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_class_set_maj_stamp( class, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		ofo_class_set_maj_stamp( class,
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, class );
 	}
@@ -490,7 +492,8 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 	const gchar *notes;
 	gchar *label;
 	gboolean ok;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 
 	query = g_string_new( "INSERT INTO OFA_T_CLASSES " );
 
@@ -510,18 +513,19 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	stamp = my_utils_timestamp();
-	g_string_append_printf( query, "'%s','%s')", user, stamp );
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
 	ok = ofo_sgbd_query( sgbd, query->str );
 
 	if( ok ){
 		ofo_class_set_maj_user( class, user );
-		ofo_class_set_maj_stamp( class, my_utils_stamp_from_str( stamp ));
+		ofo_class_set_maj_stamp( class, &stamp );
 	}
 
 	g_free( label );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -563,13 +567,15 @@ static gboolean
 class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
-	gchar *label, *notes, *stamp;
+	gchar *label, *notes, *stamp_str;
+	GTimeVal stamp;
 	gboolean ok;
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_class_get_label( class ));
 	notes = my_utils_quote( ofo_class_get_notes( class ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_CLASSES SET " );
 
@@ -584,19 +590,19 @@ class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar
 
 	g_string_append_printf( query,
 			"	CLA_MAJ_USER='%s',CLA_MAJ_STAMP='%s'"
-			"	WHERE CLA_NUMBER=%d", user, stamp, prev_id );
+			"	WHERE CLA_NUMBER=%d", user, stamp_str, prev_id );
 
 	if( ofo_sgbd_query( sgbd, query->str )){
 
 		ofo_class_set_maj_user( class, user );
-		ofo_class_set_maj_stamp( class, my_utils_stamp_from_str( stamp ));
+		ofo_class_set_maj_stamp( class, &stamp );
 		ok = TRUE;
 	}
 
 	g_string_free( query, TRUE );
 	g_free( label );
 	g_free( notes );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -687,7 +693,7 @@ ofo_class_get_csv( const ofoDossier *dossier )
 	for( set=st_global->dataset ; set ; set=set->next ){
 		class = OFO_CLASS( set->data );
 
-		stamp = my_utils_str_from_stamp( ofo_class_get_maj_stamp( class ));
+		stamp = my_utils_stamp_to_str( ofo_class_get_maj_stamp( class ), MY_STAMP_YYMDHMS );
 		notes = my_utils_export_multi_lines( ofo_class_get_notes( class ));
 		muser = ofo_class_get_maj_user( class );
 

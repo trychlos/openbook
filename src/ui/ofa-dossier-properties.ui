@@ -335,7 +335,6 @@
                     <child>
                       <object class="GtkLabel" id="p2-begin-label">
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
                       </object>
@@ -349,7 +348,6 @@
                     <child>
                       <object class="GtkLabel" id="p2-end-label">
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
                       </object>
@@ -387,15 +385,6 @@
                         <property name="width">1</property>
                         <property name="height">1</property>
                       </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
                     </child>
                     <child>
                       <placeholder/>

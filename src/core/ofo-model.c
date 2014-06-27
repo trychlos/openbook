@@ -351,6 +351,7 @@ model_load_dataset( void )
 	gchar *query;
 	sModDetail *detail;
 	GList *details;
+	GTimeVal timeval;
 
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
@@ -380,7 +381,8 @@ model_load_dataset( void )
 		icol = icol->next;
 		ofo_model_set_maj_user( model, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_model_set_maj_stamp( model, my_utils_stamp_from_str(( gchar * ) icol->data ));
+		ofo_model_set_maj_stamp( model,
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, model );
 	}
@@ -1211,11 +1213,13 @@ model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 	gboolean ok;
 	GString *query;
 	gchar *label, *notes;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 
 	label = my_utils_quote( ofo_model_get_label( model ));
 	notes = my_utils_quote( ofo_model_get_notes( model ));
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_MODELES" );
 
@@ -1234,17 +1238,17 @@ model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 	}
 
 	g_string_append_printf( query,
-			"'%s','%s')", user, stamp );
+			"'%s','%s')", user, stamp_str );
 
 	ok = ofo_sgbd_query( sgbd, query->str );
 
 	ofo_model_set_maj_user( model, user );
-	ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
+	ofo_model_set_maj_stamp( model, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
 	g_free( label );
-	g_free( stamp );
+	g_free( stamp_str );
 
 	return( ok );
 }
@@ -1402,12 +1406,14 @@ model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, cons
 	GString *query;
 	gchar *label, *notes;
 	const gchar *new_mnemo;
-	gchar *stamp;
+	gchar *stamp_str;
+	GTimeVal stamp;
 
 	label = my_utils_quote( ofo_model_get_label( model ));
 	notes = my_utils_quote( ofo_model_get_notes( model ));
 	new_mnemo = ofo_model_get_mnemo( model );
-	stamp = my_utils_timestamp();
+	my_utils_stamp_get_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_MODELES SET " );
 
@@ -1429,16 +1435,17 @@ model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, cons
 			"	MOD_MAJ_USER='%s',MOD_MAJ_STAMP='%s'"
 			"	WHERE MOD_MNEMO='%s'",
 					user,
-					stamp,
+					stamp_str,
 					prev_mnemo );
 
 	ok = ofo_sgbd_query( sgbd, query->str );
 
 	ofo_model_set_maj_user( model, user );
-	ofo_model_set_maj_stamp( model, my_utils_stamp_from_str( stamp ));
+	ofo_model_set_maj_stamp( model, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( notes );
+	g_free( stamp_str );
 	g_free( label );
 
 	return( ok );
@@ -1527,7 +1534,7 @@ ofo_model_get_csv( const ofoDossier *dossier )
 
 		notes = my_utils_export_multi_lines( ofo_model_get_notes( model ));
 		muser = ofo_model_get_maj_user( model );
-		stamp = my_utils_str_from_stamp( ofo_model_get_maj_stamp( model ));
+		stamp = my_utils_stamp_to_str( ofo_model_get_maj_stamp( model ), MY_STAMP_YYMDHMS );
 
 		str = g_strdup_printf( "1;%s;%s;%s;%s;%s;%s;%s",
 				ofo_model_get_mnemo( model ),

@@ -76,8 +76,8 @@ static void      init_current_exe_page( ofaDossierProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_devise_changed( const gchar *code, ofaDossierProperties *self );
-static void      on_begin_date_changed( GtkEntry *entry, ofaDossierProperties *self );
-static void      on_end_date_changed( GtkEntry *entry, ofaDossierProperties *self );
+static gboolean  begin_date_check_cb( GDate *date, ofaDossierProperties *self );
+static gboolean  end_date_check_cb( GDate *date, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaDossierProperties *self );
@@ -255,40 +255,45 @@ init_current_exe_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkContainer *container;
-	GtkWidget *entry;
 	GtkWidget *label;
 	gchar *str;
+	myDateParse parms;
 
 	priv = self->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+	g_debug( "init_current_exe_page" );
 
 	my_utils_date_set_from_date(
 			&priv->last_closed,
 			ofo_dossier_get_last_closed_exercice( priv->dossier ));
 
-	entry = my_utils_container_get_child_by_name( container, "p2-begin" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_date_changed ), self );
+	my_utils_date_set_from_date( &priv->begin, ofo_dossier_get_current_exe_deb( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "p2-begin-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	priv->begin_label = GTK_LABEL( label );
+	memset( &parms, '\0', sizeof( parms ));
+	parms.entry =my_utils_container_get_child_by_name( container, "p2-begin" );
+	parms.entry_format = MY_DATE_DDMM;
+	parms.label = my_utils_container_get_child_by_name( container, "p2-begin-label" );
+	parms.label_format = MY_DATE_DMMM;
+	parms.date = &priv->begin;
+	parms.pfnCheck = ( myDateCheckCb ) begin_date_check_cb;
+	parms.user_data = self;
+	my_utils_date_parse_from_entry( &parms );
 
-	str = my_utils_date_to_str( ofo_dossier_get_current_exe_deb( priv->dossier ), MY_DATE_DDMM );
-	gtk_entry_set_text( GTK_ENTRY( entry ), str );
-	g_free( str );
+	priv->begin_label = GTK_LABEL( parms.label );
 
-	entry = my_utils_container_get_child_by_name( container, "p2-end" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_date_changed ), self );
+	my_utils_date_set_from_date( &priv->end, ofo_dossier_get_current_exe_fin( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( container, "p2-end-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	priv->end_label = GTK_LABEL( label );
+	memset( &parms, '\0', sizeof( parms ));
+	parms.entry =my_utils_container_get_child_by_name( container, "p2-end" );
+	parms.entry_format = MY_DATE_DDMM;
+	parms.label = my_utils_container_get_child_by_name( container, "p2-end-label" );
+	parms.label_format = MY_DATE_DMMM;
+	parms.date = &priv->end;
+	parms.pfnCheck = ( myDateCheckCb ) end_date_check_cb;
+	parms.user_data = self;
+	my_utils_date_parse_from_entry( &parms );
 
-	str = my_utils_date_to_str( ofo_dossier_get_current_exe_fin( priv->dossier ), MY_DATE_DDMM );
-	gtk_entry_set_text( GTK_ENTRY( entry ), str );
-	g_free( str );
+	priv->end_label = GTK_LABEL( parms.label );
 
 	label = my_utils_container_get_child_by_name( container, "p2-id" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -341,54 +346,32 @@ on_devise_changed( const gchar *code, ofaDossierProperties *self )
 	check_for_enable_dlg( self );
 }
 
-static void
-on_begin_date_changed( GtkEntry *entry, ofaDossierProperties *self )
+static gboolean
+begin_date_check_cb( GDate *date, ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GDate date;
-	gchar *str;
+	gboolean ok;
 
 	priv = self->private;
 
-	g_date_set_parse( &date, gtk_entry_get_text( entry ));
+	ok = !g_date_valid( &priv->last_closed ) ||
+			g_date_compare( &priv->last_closed, date ) < 0;
 
-	if( g_date_valid( &date ) &&
-		( !g_date_valid( &priv->last_closed ) || g_date_compare( &priv->last_closed, &date ) < 0 )){
-
-			str = my_utils_date_to_str( &date, MY_DATE_DMMM );
-			memcpy( &priv->begin, &date, sizeof( GDate ));
-
-	} else {
-		str = g_strdup( "" );
-	}
-
-	gtk_label_set_text( priv->begin_label, str );
-	g_free( str );
+	return( ok );
 }
 
-static void
-on_end_date_changed( GtkEntry *entry, ofaDossierProperties *self )
+static gboolean
+end_date_check_cb( GDate *date, ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GDate date;
-	gchar *str;
+	gboolean ok;
 
 	priv = self->private;
 
-	g_date_set_parse( &date, gtk_entry_get_text( entry ));
+	ok = !g_date_valid( &priv->begin ) ||
+			g_date_compare( &priv->begin, date ) < 0;
 
-	if( g_date_valid( &date ) &&
-		( !g_date_valid( &priv->begin ) || g_date_compare( &priv->begin, &date ) < 0 )){
-
-		str = my_utils_date_to_str( &date, MY_DATE_DMMM );
-		memcpy( &priv->end, &date, sizeof( GDate ));
-
-	} else {
-		str = g_strdup( "" );
-	}
-
-	gtk_label_set_text( priv->end_label, str );
-	g_free( str );
+	return( ok );
 }
 
 static void

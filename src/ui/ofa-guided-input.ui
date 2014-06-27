@@ -75,7 +75,7 @@
                             <property name="can_focus">True</property>
                             <property name="max_length">10</property>
                             <property name="invisible_char">●</property>
-                            <property name="width_chars">9</property>
+                            <property name="width_chars">10</property>
                             <property name="invisible_char_set">True</property>
                           </object>
                           <packing>
@@ -106,7 +106,7 @@
                             <property name="can_focus">True</property>
                             <property name="max_length">10</property>
                             <property name="invisible_char">●</property>
-                            <property name="width_chars">9</property>
+                            <property name="width_chars">10</property>
                             <property name="invisible_char_set">True</property>
                           </object>
                           <packing>
