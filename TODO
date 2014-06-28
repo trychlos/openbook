@@ -369,6 +369,7 @@
  272 2014- 6-27 Have a myDate class or family of functions and take an
                 inventory of use (single case vs. couple case - e.g.
                 dope/deff, dfrom/dto, etc.)
+     2014- 6-28 svn #3754: introduce myDate class 
 
 -----------------------------------------------------------------------
  DONE
