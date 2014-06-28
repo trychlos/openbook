@@ -30,11 +30,14 @@
 
 #include <glib/gi18n.h>
 
-#include "core/my-utils.h"
-#include "ui/ofa-bat-common.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
+
+#include "core/my-date.h"
+#include "core/my-utils.h"
+
+#include "ui/ofa-bat-common.h"
 
 /* private instance data
  */
@@ -47,8 +50,8 @@ struct _ofaBatCommonPrivate {
 	ofoDossier      *dossier;
 	gboolean         with_tree_view;
 	gboolean         editable;
-	ofaBatCommonCb     pfnSelection;
-	ofaBatCommonCb     pfnActivation;
+	ofaBatCommonCb   pfnSelection;
+	ofaBatCommonCb   pfnActivation;
 	gpointer         user_data;
 
 	/* UI

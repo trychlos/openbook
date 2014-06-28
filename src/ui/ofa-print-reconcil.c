@@ -34,6 +34,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
+#include "core/my-date.h"
 #include "core/my-utils.h"
 
 #include "ui/ofa-main-window.h"

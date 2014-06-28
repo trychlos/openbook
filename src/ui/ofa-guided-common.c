@@ -38,6 +38,7 @@
 #include "api/ofo-model.h"
 #include "api/ofo-taux.h"
 
+#include "core/my-date.h"
 #include "core/my-utils.h"
 
 #include "ui/my-window-prot.h"

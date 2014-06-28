@@ -359,19 +359,16 @@
                   but this value of ULONG_MAX is only available in
                   64 bits compilers 
 
- 267 2014- 6-27 PrintReconciliation: when the account is empty (no entry
-                has never been imputed), then no date is displayed on 
-                the account solde line. 
-                At least, should use the entered reconciliation date.
-
  269 2014- 6-27 lettrage des comptes de tiers
 
  270 2014- 6-27 ViewEntries: compute_balances() doesn't know how to
-                parse an amount with a space thousant separator
+                parse an amount with a space thousand separator
 
  271 2014- 6-27 ViewEntries: set a default effect date with the ope date
 
- 272
+ 272 2014- 6-27 Have a myDate class or family of functions and take an
+                inventory of use (single case vs. couple case - e.g.
+                dope/deff, dfrom/dto, etc.)
 
 -----------------------------------------------------------------------
  DONE
@@ -1047,6 +1044,12 @@
                 system timestamp (yyyy-mm-dd hh:mi:ss) but should 
                 rather be a 'user-friendly' timestamp (dd/mm/yyyy hh:mi)
      2014- 6-27 done - svn #3751
+
+ 267 2014- 6-27 PrintReconciliation: when the account is empty (no entry
+                has never been imputed), then no date is displayed on 
+                the account solde line. 
+                At least, should use the entered reconciliation date.
+     2014- 6-27 done - svn #3753
 
  268 2014- 6-27 ViewEntries: when selecting an account, set default
                 currency on the currently edited line if not already

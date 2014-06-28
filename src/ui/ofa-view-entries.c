@@ -38,6 +38,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
 
+#include "core/my-date.h"
 #include "core/my-utils.h"
 
 #include "ui/ofa-account-select.h"

@@ -38,20 +38,6 @@
 G_BEGIN_DECLS
 
 /**
- * myDateFormat:
- *
- * @MY_DATE_DMMM: display the date as 'dd/mm/yyyy'
- * @MY_DATE_DDMM: display the date as 'd mmm yyyy'
- * MY_DATE_SQL:   display the date as 'yyyy-mm-dd'
- */
-typedef enum {
-	MY_DATE_DMMM = 1,
-	MY_DATE_DDMM,
-	MY_DATE_SQL
-}
-	myDateFormat;
-
-/**
  * myStampFormat:
  *
  * @MY_STAMP_YYMDHMS: display the timestamp as 'yyyy-mm-dd hh:mi:ss'
@@ -62,50 +48,7 @@ typedef enum {
 }
 	myStampFormat;
 
-/**
- * myDateCheckCb:
- *
- * A function which is called to test the validity of the entered date.
- * Only called if the date is already g_date_valid().
- */
-typedef gboolean ( *myDateCheckCb )( GDate *, gpointer );
-
-/**
- * myDateParse:
- *
- * @entry:
- * @entry_format:
- * @label: [allow-none]
- * @label_format
- * @date: the destination date is only set when the entered text is a
- *  valid date, and
- * @pfnCheck: [allow-none]
- * @on_changed_cb: [allow-none]
- * @user_data
- *
- * Manage a GtkEntry, parsing the input according to the specified
- * format, updating the provided GDate.
- */
-typedef struct {
-	GtkWidget    *entry;
-	myDateFormat  entry_format;
-	GtkWidget    *label;
-	myDateFormat  label_format;
-	GDate        *date;
-	myDateCheckCb pfnCheck;
-	GCallback     on_changed_cb;
-	gpointer      user_data;
-}
-	myDateParse;
-
 gchar     *my_utils_quote                 ( const gchar *str );
-
-GDate     *my_utils_date_set_from_sql     ( GDate *dest, const gchar *sql_string );
-GDate     *my_utils_date_set_from_date    ( GDate *dest, const GDate *src );
-gchar     *my_utils_date_to_str           ( const GDate *date, myDateFormat format );
-gint       my_utils_date_cmp              ( const GDate *a, const GDate *b, gboolean infinite_is_past );
-void       my_utils_date_parse_from_entry ( const myDateParse *parms );
-GDate     *my_utils_date_parse_from_str   ( GDate *date, const gchar *text, myDateFormat format );
 
 GTimeVal  *my_utils_stamp_set_from_sql    ( GTimeVal *timeval, const gchar *str );
 gchar     *my_utils_stamp_to_str          ( const GTimeVal *stamp, myStampFormat format );

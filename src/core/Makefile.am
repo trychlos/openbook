@@ -44,6 +44,8 @@ BUILT_SOURCES = \
 
 libofa_core_la_SOURCES = \
 	$(BUILT_SOURCES)									\
+	my-date.c											\
+	my-date.h											\
 	my-utils.c											\
 	my-utils.h											\
 	ofo-account.c										\

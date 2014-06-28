@@ -38,6 +38,7 @@
 
 #include "api/ofa-iimporter.h"
 #include "api/ofo-bat-def.h"
+#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 

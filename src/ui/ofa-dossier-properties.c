@@ -33,6 +33,7 @@
 
 #include "api/ofo-dossier.h"
 
+#include "core/my-date.h"
 #include "core/my-utils.h"
 
 #include "ui/my-window-prot.h"

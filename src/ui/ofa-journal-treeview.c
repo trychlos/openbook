@@ -30,11 +30,14 @@
 
 #include <glib/gi18n.h>
 
-#include "core/my-utils.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-journal-treeview.h"
 #include "api/ofo-journal.h"
 #include "api/ofo-dossier.h"
+
+#include "core/my-date.h"
+#include "core/my-utils.h"
+
+#include "ui/ofa-main-window.h"
+#include "ui/ofa-journal-treeview.h"
 
 /* private instance data
  */
