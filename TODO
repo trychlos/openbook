@@ -109,6 +109,9 @@
                 a configuration information than actually a user pref..
 
   79 2014- 5-21 replace memcpy with g_memdup when possible
+     2014- 6-27 all memcpy are used for copying GDate of timestamp, so
+                are to be replaced with my_utils_date_set_from_date()
+                or my_utils_stamp_set_from_???()
 
   80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
 
@@ -327,8 +330,6 @@
  256 2014- 6-23 editing rough entries: add an icon to advertise that 
                 the row has been modified
 
- 258 2014- 6-23 editing rough entries: delete a line
-
  259 2014- 6-23 editing rough entries: copy/paste a line
 
  260 2014- 6-24 editing rough entries: make the columns sortable
@@ -338,11 +339,25 @@
 
  262 2014- 6-27 make g_date_set_parse locale independant (especially
                 when parsing from sql)
+     2014- 6-27 this seems good, but treeview cells are not connected
+                to my_date, and this interprets the date along the
+                locale
 
  264 2014- 6-27 review MySQL data types against C data types
 
  265 2014- 6-27 review ofa_t_ecritures index: should be just ecr_number
                 and check that ecr_number is an unsigned long
+                http://dev.mysql.com/doc/refman/5.0/en/integer-types.html
+                http://en.wikibooks.org/wiki/C_Programming/C_Reference/limits.h
+                descrive the limits.
+                Has to choose between
+                - Mysql unsigned int 4 294 967 295
+                  C UINT_MAX        +4,294,967,295
+                - Mysql unsigned bigint 18 446 744 073 709 551 615
+                  but BIGINT in a specific MySQL extension
+                  C ULONG_MAX          +18,446,744,073,709,551,615
+                  but this value of ULONG_MAX is only available in
+                  64 bits compilers 
 
  266 2014- 6-27 PrintReconciliation: the page footer makes use of a
                 system timestamp (yyyy-mm-dd hh:mi:ss) but should 
@@ -357,7 +372,7 @@
                 currency on the currently edited line if not already
                 set
 
- 269
+ 269 2014- 6-27 lettrage des comptes de tiers
 
 -----------------------------------------------------------------------
  DONE
@@ -1020,6 +1035,9 @@
 
  257 2014- 6-23 editing rough entries: insert a new line
      2014- 6-27 done
+
+ 258 2014- 6-23 editing rough entries: delete a line
+     2014- 6-27 done - svn #3750
 
  263 2014- 6-27 PrintReconciliation: when there is no entry, the footer
                 is displayed in the top of the page, instead of the

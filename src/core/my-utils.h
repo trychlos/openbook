@@ -58,6 +58,7 @@ typedef enum {
  */
 typedef enum {
 	MY_STAMP_YYMDHMS = 1,
+	MY_STAMP_DMYYHM
 }
 	myStampFormat;
 

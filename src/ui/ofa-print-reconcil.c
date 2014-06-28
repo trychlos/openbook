@@ -1004,7 +1004,7 @@ draw_footer( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 	cairo_set_source_rgb( cr, 0.5, 0.5, 0.5 );
 
 	my_utils_stamp_get_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_DMYYHM );
 	str = g_strdup_printf( "Printed on %s - Page %d/%d", stamp_str, 1+page_num, priv->pages_count );
 	g_free( stamp_str );
 	pango_layout_set_text( priv->footer_layout, str, -1 );
