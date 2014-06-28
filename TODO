@@ -359,10 +359,6 @@
                   but this value of ULONG_MAX is only available in
                   64 bits compilers 
 
- 266 2014- 6-27 PrintReconciliation: the page footer makes use of a
-                system timestamp (yyyy-mm-dd hh:mi:ss) but should 
-                rather be a 'user-friendly' timestamp (dd/mm/yyyy hh:mi)
-
  267 2014- 6-27 PrintReconciliation: when the account is empty (no entry
                 has never been imputed), then no date is displayed on 
                 the account solde line. 
@@ -373,6 +369,11 @@
                 set
 
  269 2014- 6-27 lettrage des comptes de tiers
+
+ 270 2014- 6-27 ViewEntries: compute_balances() doesn't know how to
+                parse an amount with a space thousant separator
+
+ 271
 
 -----------------------------------------------------------------------
  DONE
@@ -1043,6 +1044,11 @@
                 is displayed in the top of the page, instead of the
                 bottom
      2014- 6-27 done - svn #3749 
+
+ 266 2014- 6-27 PrintReconciliation: the page footer makes use of a
+                system timestamp (yyyy-mm-dd hh:mi:ss) but should 
+                rather be a 'user-friendly' timestamp (dd/mm/yyyy hh:mi)
+     2014- 6-27 done - svn #3751
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

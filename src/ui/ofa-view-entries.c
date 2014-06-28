@@ -1650,11 +1650,11 @@ check_row_for_valid( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *it
 
 	is_valid = check_row_for_valid_dope( self, tmodel, iter ) &&
 				check_row_for_valid_deffect( self, tmodel, iter ) &&
-				check_row_for_valid_label( self, tmodel, iter ) &&
 				check_row_for_valid_journal( self, tmodel, iter ) &&
 				check_row_for_valid_account( self, tmodel, iter ) &&
-				check_row_for_valid_currency( self, tmodel, iter ) &&
-				check_row_for_valid_amounts( self, tmodel, iter );
+				check_row_for_valid_label( self, tmodel, iter ) &&
+				check_row_for_valid_amounts( self, tmodel, iter ) &&
+				check_row_for_valid_currency( self, tmodel, iter );
 
 	return( is_valid );
 }
@@ -1832,26 +1832,38 @@ check_row_for_valid_currency( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTre
 	gboolean is_valid;
 	const gchar *account_currency;
 	ofoAccount *account;
+	GtkTreeModel *child_tmodel;
+	GtkTreeIter child_iter;
 
 	is_valid = FALSE;
 	gtk_tree_model_get( tmodel, iter, ENT_COL_ACCOUNT, &number, ENT_COL_CURRENCY, &code, -1 );
-	if( number && g_utf8_strlen( number, -1 ) && code && g_utf8_strlen( code, -1 )){
+	if( number && g_utf8_strlen( number, -1 )){
 		account = ofo_account_get_by_number( self->private->dossier, number );
 		if( account ){
 			if( !ofo_account_is_root( account )){
 				account_currency = ofo_account_get_devise( account );
-				if( !g_utf8_collate( account_currency, code )){
-					if( ofo_devise_get_by_code( self->private->dossier, code )){
-						is_valid = TRUE;
+				if( code && g_utf8_strlen( code, -1 )){
+					if( !g_utf8_collate( account_currency, code )){
+						if( ofo_devise_get_by_code( self->private->dossier, code )){
+							is_valid = TRUE;
+						} else {
+							msg = g_strdup_printf( _( "Unknown currency: %s" ), code );
+							set_comment( self, msg );
+							g_free( msg );
+						}
 					} else {
-						msg = g_strdup_printf( _( "Unknown currency: %s" ), code );
+						msg = g_strdup_printf( _( "Account expects %s currency while entry has %s" ), account_currency, code );
 						set_comment( self, msg );
 						g_free( msg );
 					}
 				} else {
-					msg = g_strdup_printf( _( "Account expects %s currency while entry has %s" ), account_currency, code );
-					set_comment( self, msg );
-					g_free( msg );
+					child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( tmodel ));
+					gtk_tree_model_filter_convert_iter_to_child_iter( GTK_TREE_MODEL_FILTER( tmodel ), &child_iter, iter );
+					gtk_list_store_set(
+							GTK_LIST_STORE( child_tmodel ),
+							&child_iter,
+							ENT_COL_CURRENCY, account_currency,
+							-1 );
 				}
 			} else {
 				msg = g_strdup_printf( _( "Account %s is a root account" ), number );
@@ -1864,7 +1876,7 @@ check_row_for_valid_currency( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTre
 			g_free( msg );
 		}
 	} else {
-		set_comment( self, _( "Account number or currency code are empty" ));
+		set_comment( self, _( "Account number is empty" ));
 	}
 	g_free( number );
 	g_free( code );
