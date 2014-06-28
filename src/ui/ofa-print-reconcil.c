@@ -784,9 +784,13 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 		pango_font_description_free( desc );
 
 		sdate = my_utils_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DDMM );
+		if( !sdate || !g_utf8_strlen( sdate, -1 )){
+			g_free( sdate );
+			sdate = my_utils_date_to_str( &priv->date, MY_DATE_DDMM );
+		}
 		priv->account_solde = ofo_account_get_global_solde( priv->account );
 		str = g_strdup_printf(
-						"Account solde on %s is    %'.2lf",
+						"Account solde on %s is %+'.2lf",
 						sdate, priv->account_solde );
 		g_free( sdate );
 		pango_layout_set_text( priv->header_layout, str, -1 );
@@ -951,8 +955,12 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	pango_font_description_free( desc );
 
 	sdate = my_utils_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DDMM );
+	if( !sdate || !g_utf8_strlen( sdate, -1 )){
+		g_free( sdate );
+		sdate = my_utils_date_to_str( &priv->date, MY_DATE_DDMM );
+	}
 	str = g_strdup_printf(
-					"Reconciliated account solde on %s is    %'.2lf",
+					"Reconciliated account solde on %s is %+'.2lf",
 					sdate, priv->account_solde );
 	g_free( sdate );
 	pango_layout_set_text( priv->body_layout, str, -1 );

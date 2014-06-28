@@ -364,16 +364,14 @@
                 the account solde line. 
                 At least, should use the entered reconciliation date.
 
- 268 2014- 6-27 ViewEntries: when selecting an account, set default
-                currency on the currently edited line if not already
-                set
-
  269 2014- 6-27 lettrage des comptes de tiers
 
  270 2014- 6-27 ViewEntries: compute_balances() doesn't know how to
                 parse an amount with a space thousant separator
 
- 271
+ 271 2014- 6-27 ViewEntries: set a default effect date with the ope date
+
+ 272
 
 -----------------------------------------------------------------------
  DONE
@@ -1049,6 +1047,11 @@
                 system timestamp (yyyy-mm-dd hh:mi:ss) but should 
                 rather be a 'user-friendly' timestamp (dd/mm/yyyy hh:mi)
      2014- 6-27 done - svn #3751
+
+ 268 2014- 6-27 ViewEntries: when selecting an account, set default
+                currency on the currently edited line if not already
+                set
+     2014- 6-27 done - svn #3752
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
