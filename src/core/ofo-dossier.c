@@ -1803,9 +1803,9 @@ dossier_read_exercices( ofoDossier *dossier )
 
 			sexe->exe_id = atoi(( gchar * ) icol->data );
 			icol = icol->next;
-			my_utils_date_set_from_sql( &sexe->exe_deb, ( const gchar * ) icol->data );
+			my_date_set_from_sql( &sexe->exe_deb, ( const gchar * ) icol->data );
 			icol = icol->next;
-			my_utils_date_set_from_sql( &sexe->exe_fin, ( const gchar * ) icol->data );
+			my_date_set_from_sql( &sexe->exe_fin, ( const gchar * ) icol->data );
 			icol = icol->next;
 			if( icol->data ){
 				sexe->last_ecr = atoi(( gchar * ) icol->data );
@@ -1922,7 +1922,7 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 
 	date = ( const GDate * ) &dossier->private->current->exe_deb;
 	if( g_date_valid( date )){
-		sdeb = my_utils_date_to_str( date, MY_DATE_SQL );
+		sdeb = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "DOS_EXE_DEB='%s',", sdeb );
 		g_free( sdeb );
 	} else {
@@ -1931,7 +1931,7 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 
 	date = ( const GDate * ) &dossier->private->current->exe_fin;
 	if( g_date_valid( date )){
-		sfin = my_utils_date_to_str( date, MY_DATE_SQL );
+		sfin = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "DOS_EXE_FIN='%s' ", sfin );
 		g_free( sfin );
 	} else {
@@ -1992,8 +1992,8 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 		sexe = ( sDetailExe * ) exe->data;
 
-		sbegin = my_utils_date_to_str( &sexe->exe_deb, MY_DATE_SQL );
-		send = my_utils_date_to_str( &sexe->exe_fin, MY_DATE_SQL );
+		sbegin = my_date_to_str( &sexe->exe_deb, MY_DATE_SQL );
+		send = my_date_to_str( &sexe->exe_fin, MY_DATE_SQL );
 
 		str = g_strdup_printf( "2:%s;%s;%d;%d",
 				sbegin,

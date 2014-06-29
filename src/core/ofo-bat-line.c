@@ -197,11 +197,11 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 			line = ofo_bat_line_new( bat_id );
 			ofo_bat_line_set_id( line, atoi(( gchar * ) icol->data ));
 			icol = icol->next;
-			my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data );
+			my_date_set_from_sql( &date, ( const gchar * ) icol->data );
 			ofo_bat_line_set_valeur( line, &date );
 			icol = icol->next;
 			if( icol->data ){
-				my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data );
+				my_date_set_from_sql( &date, ( const gchar * ) icol->data );
 				ofo_bat_line_set_ope( line, &date );
 			}
 			icol = icol->next;
@@ -630,7 +630,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT_LINES" );
 
-	str = my_utils_date_to_str( ofo_bat_line_get_valeur( bat ), MY_DATE_SQL );
+	str = my_date_to_str( ofo_bat_line_get_valeur( bat ), MY_DATE_SQL );
 
 	g_string_append_printf( query,
 			"	(BAT_ID,BAT_LINE_VALEUR,BAT_LINE_OPE,BAT_LINE_REF,"
@@ -642,7 +642,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	ope = ofo_bat_line_get_ope( bat );
 	if( g_date_valid( ope )){
-		str = my_utils_date_to_str( ope, MY_DATE_SQL );
+		str = my_date_to_str( ope, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
 		g_free( str );
 	} else {

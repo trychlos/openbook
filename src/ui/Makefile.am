@@ -127,6 +127,8 @@ openbook_SOURCES = \
 	ofa-rappro.h										\
 	ofa-settings.c										\
 	ofa-settings.h										\
+	ofa-tab-label.c										\
+	ofa-tab-label.h										\
 	ofa-taux-properties.c								\
 	ofa-taux-properties.h								\
 	ofa-taux-set.c										\

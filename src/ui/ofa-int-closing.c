@@ -220,7 +220,7 @@ v_init_dialog( myDialog *dialog )
 	date_parms.pfnCheck = ( myDateCheckCb ) date_check_cb;
 	date_parms.on_changed_cb = G_CALLBACK( on_date_changed );
 	date_parms.user_data = dialog;
-	my_utils_date_parse_from_entry( &date_parms );
+	my_date_parse_from_entry( &date_parms );
 
 	priv->date_label = label;
 

@@ -371,6 +371,10 @@
                 dope/deff, dfrom/dto, etc.)
      2014- 6-28 svn #3754: introduce myDate class 
 
+ 273 2014- 6-29 hack ofaTabel/GtkGrid/GtkButton/GtkImage styles
+
+ 274 2014- 6-29 put back the main GtkNotebook popup menu
+
 -----------------------------------------------------------------------
  DONE
  ====

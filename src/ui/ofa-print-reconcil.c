@@ -361,7 +361,7 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	parms.label = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-label" );
 	parms.label_format = MY_DATE_DMMM;
 	parms.date = &self->private->date;
-	my_utils_date_parse_from_entry( &parms );
+	my_date_parse_from_entry( &parms );
 
 	return( G_OBJECT( frame ));
 }
@@ -784,10 +784,10 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 		pango_layout_set_font_description( priv->header_layout, desc );
 		pango_font_description_free( desc );
 
-		sdate = my_utils_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DDMM );
+		sdate = my_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DDMM );
 		if( !sdate || !g_utf8_strlen( sdate, -1 )){
 			g_free( sdate );
-			sdate = my_utils_date_to_str( &priv->date, MY_DATE_DDMM );
+			sdate = my_date_to_str( &priv->date, MY_DATE_DDMM );
 		}
 		priv->account_solde = ofo_account_get_global_solde( priv->account );
 		str = g_strdup_printf(
@@ -856,7 +856,7 @@ draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext
 	/* y is in context units
 	 * add 20% to get some visual spaces between lines */
 
-	str = my_utils_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DDMM );
+	str = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DDMM );
 	pango_layout_set_text( priv->body_layout, str, -1 );
 	g_free( str );
 	cairo_move_to( cr, priv->body_effect_tab, y );
@@ -955,10 +955,10 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	pango_layout_set_font_description( priv->body_layout, desc );
 	pango_font_description_free( desc );
 
-	sdate = my_utils_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DDMM );
+	sdate = my_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DDMM );
 	if( !sdate || !g_utf8_strlen( sdate, -1 )){
 		g_free( sdate );
-		sdate = my_utils_date_to_str( &priv->date, MY_DATE_DDMM );
+		sdate = my_date_to_str( &priv->date, MY_DATE_DDMM );
 	}
 	str = g_strdup_printf(
 					"Reconciliated account solde on %s is %+'.2lf",

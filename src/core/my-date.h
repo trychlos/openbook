@@ -38,27 +38,6 @@
  * - be independant of the locale
  * - make sure all the hard stuff is centralized
  * - manage GtkEntry as well as GtkCellRenderer
- *
- * Is used by:
- * - ofoAccount
- * - ofoBat
- * - ofoBatLine
- * - ofoDossier
- * - ofoEntry
- * - ofoJournal
- * - ofoTaux
- * - ofaAccountProperties
- * - ofaBatCommon
- * - ofaDossierProperties
- * - ofaGuidedCommon
- * - ofaIntClosing
- * - ofaJournalProperties
- * - ofaJournalTreeView
- * - ofaPrintReconcil
- * - ofaRappro
- * - ofaTauxProperties
- * - ofaTauxSet
- * - ofaViewEntries
  */
 
 #include <gtk/gtk.h>
@@ -139,12 +118,12 @@ typedef struct {
 
 GType      my_date_get_type               ( void ) G_GNUC_CONST;
 
-GDate     *my_utils_date_set_from_sql     ( GDate *dest, const gchar *sql_string );
-GDate     *my_utils_date_set_from_date    ( GDate *dest, const GDate *src );
-gchar     *my_utils_date_to_str           ( const GDate *date, myDateFormat format );
-gint       my_utils_date_cmp              ( const GDate *a, const GDate *b, gboolean infinite_is_past );
-void       my_utils_date_parse_from_entry ( const myDateParse *parms );
-GDate     *my_utils_date_parse_from_str   ( GDate *date, const gchar *text, myDateFormat format );
+GDate     *my_date_set_from_sql     ( GDate *dest, const gchar *sql_string );
+GDate     *my_date_set_from_date    ( GDate *dest, const GDate *src );
+gchar     *my_date_to_str           ( const GDate *date, myDateFormat format );
+gint       my_date_cmp              ( const GDate *a, const GDate *b, gboolean infinite_is_past );
+void       my_date_parse_from_entry ( const myDateParse *parms );
+GDate     *my_date_parse_from_str   ( GDate *date, const gchar *text, myDateFormat format );
 
 G_END_DECLS
 

@@ -252,10 +252,10 @@ taux_load_dataset( void )
 			icol = ( GSList * ) irow->data;
 			valid = g_new0( sTauxValid, 1 );
 			taux_set_val_begin( valid,
-					my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data ));
+					my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 			icol = icol->next;
 			taux_set_val_end( valid,
-					my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data ));
+					my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 			icol = icol->next;
 			taux_set_val_taux( valid,
 					my_utils_double_set_from_sql(( const gchar * ) icol->data ));
@@ -419,7 +419,7 @@ ofo_taux_get_min_valid( const ofoTaux *taux )
 			sval = ( sTauxValid * ) iv->data;
 			if( !min ){
 				min = &sval->begin;
-			} else if( my_utils_date_cmp( &sval->begin, min, TRUE ) < 0 ){
+			} else if( my_date_cmp( &sval->begin, min, TRUE ) < 0 ){
 				min = &sval->begin;
 			}
 		}
@@ -449,7 +449,7 @@ ofo_taux_get_max_valid( const ofoTaux *taux )
 			sval = ( sTauxValid * ) iv->data;
 			if( !max ){
 				max = &sval->end;
-			} else if( my_utils_date_cmp( &sval->end, max, FALSE ) > 0 ){
+			} else if( my_date_cmp( &sval->end, max, FALSE ) > 0 ){
 				max = &sval->end;
 			}
 		}
@@ -901,8 +901,8 @@ taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
 	GString *query;
 	gchar *dbegin, *dend, *rate;
 
-	dbegin = my_utils_date_to_str( &sdet->begin, MY_DATE_SQL );
-	dend = my_utils_date_to_str( &sdet->end, MY_DATE_SQL );
+	dbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
+	dend = my_date_to_str( &sdet->end, MY_DATE_SQL );
 	rate = my_utils_sql_from_double( sdet->rate );
 
 	query = g_string_new( "INSERT INTO OFA_T_TAUX_VAL " );
@@ -1214,8 +1214,8 @@ ofo_taux_get_csv( const ofoDossier *dossier )
 		for( det=taux->private->valids ; det ; det=det->next ){
 			sdet = ( sTauxValid * ) det->data;
 
-			sbegin = my_utils_date_to_str( &sdet->begin, MY_DATE_SQL );
-			send = my_utils_date_to_str( &sdet->end, MY_DATE_SQL );
+			sbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
+			send = my_date_to_str( &sdet->end, MY_DATE_SQL );
 
 			str = g_strdup_printf( "2;%s;%s;%s;%.2lf",
 					ofo_taux_get_mnemo( taux ),

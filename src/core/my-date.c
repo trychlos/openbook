@@ -108,15 +108,17 @@ my_date_class_init( myDateClass *klass )
 }
 
 /**
- * my_utils_date_set_from_sql:
+ * my_date_set_from_sql:
  * @dest: must be a pointer to the destination GDate structure.
  * @sql_string: a pointer to a SQL string 'yyyy-mm-dd', or NULL;
  *  the SQL string may be zero '0000-00-00' or a valid date.
  *
  * Parse a SQL string, putting the result in @dest.
+ *
+ * NB: parsing a 'yyyy-mm-dd' is not locale-sensitive.
  */
 GDate *
-my_utils_date_set_from_sql( GDate *dest, const gchar *sql_string )
+my_date_set_from_sql( GDate *dest, const gchar *sql_string )
 {
 	g_return_val_if_fail( dest, NULL );
 
@@ -127,20 +129,22 @@ my_utils_date_set_from_sql( GDate *dest, const gchar *sql_string )
 			g_utf8_collate( sql_string, "0000-00-00" )){
 
 		g_date_set_parse( dest, sql_string );
+		/*g_debug( "my_date_set_from_sql: dd=%u, mm=%u, yyyy=%u",
+					g_date_get_day( dest ), g_date_get_month( dest ), g_date_get_year( dest ));*/
 	}
 
 	return( dest );
 }
 
 /**
- * my_utils_date_set_from_date:
+ * my_date_set_from_date:
  * @dest: must be a pointer to the destination GDate structure.
  * @src: a pointer to a source GDate structure, or NULL.
  *
  * Copy one date to another.
  */
 GDate *
-my_utils_date_set_from_date( GDate *dest, const GDate *src)
+my_date_set_from_date( GDate *dest, const GDate *src)
 {
 	g_return_val_if_fail( dest, NULL );
 
@@ -154,14 +158,14 @@ my_utils_date_set_from_date( GDate *dest, const GDate *src)
 }
 
 /**
- * my_utils_date_to_str:
+ * my_date_to_str:
  *
  * Returns the date with the requested format, suitable for display or
  * SQL insertion, in a newly allocated string that the user must
  * g_free(), or a new empty string if the date is invalid.
  */
 gchar *
-my_utils_date_to_str( const GDate *date, myDateFormat format )
+my_date_to_str( const GDate *date, myDateFormat format )
 {
 	static const gchar *st_month[] = {
 			N_( "jan." ),
@@ -218,7 +222,7 @@ my_utils_date_to_str( const GDate *date, myDateFormat format )
 }
 
 /**
- * my_utils_date_cmp:
+ * my_date_cmp:
  * @infinite_is_past: if %TRUE, then an infinite value (i.e. an invalid
  *  date) is considered lesser than anything, but another infinite value.
  *  Else, an invalid value is considered infinite in the future.
@@ -230,7 +234,7 @@ my_utils_date_to_str( const GDate *date, myDateFormat format )
  * Returns: -1, 0 or 1.
  */
 gint
-my_utils_date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
+my_date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
 {
 	if( !a || !g_date_valid( a )){
 		if( !b || !g_date_valid( b)){
@@ -251,7 +255,7 @@ my_utils_date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
 }
 
 /**
- * my_utils_date_parse_from_entry:
+ * my_date_parse_from_entry:
  * @entry:
  * @format_entry: ignored for now, only considering input as dd/mm/yyyy
  * @label: [allow-none]:
@@ -259,7 +263,7 @@ my_utils_date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
  * date:
  */
 void
-my_utils_date_parse_from_entry( const myDateParse *parms )
+my_date_parse_from_entry( const myDateParse *parms )
 {
 	gchar *str;
 
@@ -282,7 +286,7 @@ my_utils_date_parse_from_entry( const myDateParse *parms )
 	}
 
 	if( g_date_valid( parms->date )){
-		str = my_utils_date_to_str( parms->date, parms->entry_format );
+		str = my_date_to_str( parms->date, parms->entry_format );
 		gtk_entry_set_text( GTK_ENTRY( parms->entry ), str );
 		g_free( str );
 	}
@@ -416,7 +420,7 @@ on_date_entry_changed( GtkEditable *editable, gpointer user_data )
 
 	entry_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-entry" ));
 
-	my_utils_date_parse_from_str(
+	my_date_parse_from_str(
 			&temp_date, gtk_entry_get_text( GTK_ENTRY( editable )), entry_format );
 
 	pfnCheck = g_object_get_data( G_OBJECT( editable ), "date-check-cb" );
@@ -426,12 +430,12 @@ on_date_entry_changed( GtkEditable *editable, gpointer user_data )
 			( !pfnCheck || ( *pfnCheck )( &temp_date, user_data_cb ))){
 
 		label_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-label" ));
-		str = my_utils_date_to_str( &temp_date, label_format );
+		str = my_date_to_str( &temp_date, label_format );
 		date_entry_set_label( editable, str );
 		g_free( str );
 
 		date = g_object_get_data( G_OBJECT( editable ), "date-date" );
-		my_utils_date_set_from_date( date, &temp_date );
+		my_date_set_from_date( date, &temp_date );
 
 	} else {
 		/* gi18n: invalid date */
@@ -459,12 +463,12 @@ date_entry_set_label( GtkEditable *editable, const gchar *str )
 }
 
 /**
- * my_utils_date_parse_from_str:
+ * my_date_parse_from_str:
  * @date: a non-NULL pointer to a GDate structure
  * @test: [allow-none]:
  */
 GDate *
-my_utils_date_parse_from_str( GDate *date, const gchar *text, myDateFormat format )
+my_date_parse_from_str( GDate *date, const gchar *text, myDateFormat format )
 {
 	g_date_clear( date, 1 );
 

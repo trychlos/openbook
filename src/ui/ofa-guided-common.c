@@ -375,7 +375,7 @@ setup_dates( ofaGuidedCommon *self )
 
 	priv = self->private;
 
-	my_utils_date_set_from_date( &priv->dope, &st_last_dope );
+	my_date_set_from_date( &priv->dope, &st_last_dope );
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-dope" );
@@ -383,7 +383,7 @@ setup_dates( ofaGuidedCommon *self )
 	parms.date = &priv->dope;
 	parms.on_changed_cb = G_CALLBACK( on_dope_changed );
 	parms.user_data = self;
-	my_utils_date_parse_from_entry( &parms );
+	my_date_parse_from_entry( &parms );
 
 	priv->dope_entry = GTK_ENTRY( parms.entry );
 
@@ -392,7 +392,7 @@ setup_dates( ofaGuidedCommon *self )
 	g_signal_connect(
 			G_OBJECT( parms.entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
 
-	my_utils_date_set_from_date( &priv->deff, &st_last_deff );
+	my_date_set_from_date( &priv->deff, &st_last_deff );
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-deffet" );
@@ -400,7 +400,7 @@ setup_dates( ofaGuidedCommon *self )
 	parms.date = &priv->deff;
 	parms.on_changed_cb = G_CALLBACK( on_deffet_changed );
 	parms.user_data = self;
-	my_utils_date_parse_from_entry( &parms );
+	my_date_parse_from_entry( &parms );
 
 	priv->deffet_entry = GTK_ENTRY( parms.entry );
 
@@ -698,14 +698,14 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 		if( g_date_valid( &priv->last_closing ) &&
 			g_date_compare( &priv->last_closing, &priv->dope ) > 0 ){
 
-			my_utils_date_set_from_date( &priv->deff, &priv->last_closing );
+			my_date_set_from_date( &priv->deff, &priv->last_closing );
 			g_date_add_days( &priv->deff, 1 );
 
 		} else {
-			my_utils_date_set_from_date( &priv->deff, &priv->dope );
+			my_date_set_from_date( &priv->deff, &priv->dope );
 		}
 
-		str = my_utils_date_to_str( &priv->deff, MY_DATE_DDMM );
+		str = my_date_to_str( &priv->deff, MY_DATE_DDMM );
 		gtk_entry_set_text( priv->deffet_entry, str );
 		g_free( str );
 	}
@@ -933,7 +933,7 @@ set_date_comment( ofaGuidedCommon *self, const gchar *label, const GDate *date )
 {
 	gchar *str, *comment;
 
-	str = my_utils_date_to_str( date, MY_DATE_DMMM );
+	str = my_date_to_str( date, MY_DATE_DMMM );
 	if( !g_utf8_strlen( str, -1 )){
 		g_free( str );
 		str = g_strdup( _( "invalid" ));

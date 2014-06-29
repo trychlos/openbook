@@ -31,7 +31,10 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/ofo-dossier.h"
+
 #include "core/my-utils.h"
+
 #include "ui/ofa-accounts-chart.h"
 #include "ui/ofa-bat-set.h"
 #include "ui/ofa-classes-set.h"
@@ -49,8 +52,8 @@
 #include "ui/ofa-taux-set.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-tab-label.h"
 #include "ui/ofa-view-entries.h"
-#include "api/ofo-dossier.h"
 
 static gboolean pref_confirm_on_altf4 = FALSE;
 
@@ -261,6 +264,7 @@ static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
 static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
+static void             on_tab_close_clicked( ofaTabLabel *tab, GtkGrid *grid );
 
 static void
 main_window_finalize( GObject *instance )
@@ -1132,17 +1136,20 @@ static GtkWidget *
 main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def )
 {
 	GtkGrid *grid;
-	GtkLabel *label;
 	ofaMainPage *handler;
+	ofaTabLabel *tab;
 
 	/* all pages of the main notebook begin with a GtkGrid
 	 */
 	grid = GTK_GRID( gtk_grid_new());
 	gtk_grid_set_column_spacing( grid, 4 );
 
-	label = GTK_LABEL( gtk_label_new_with_mnemonic( gettext( theme_def->label )));
+	tab = ofa_tab_label_new( NULL, gettext( theme_def->label ));
+	g_signal_connect(
+			G_OBJECT( tab),
+			OFA_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), grid );
 
-	gtk_notebook_append_page( book, GTK_WIDGET( grid ), GTK_WIDGET( label ));
+	gtk_notebook_append_page( book, GTK_WIDGET( grid ), GTK_WIDGET( tab ));
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( grid ), TRUE );
 
 	/* then instanciates the handling object which happens to be an
@@ -1191,4 +1198,29 @@ main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidg
 	if( tview ){
 		gtk_widget_grab_focus( GTK_WIDGET( tview ));
 	}
+}
+
+static void
+on_tab_close_clicked( ofaTabLabel *tab, GtkGrid *grid )
+{
+	ofaMainPage *handler;
+	ofaMainWindow *main_window;
+	GtkNotebook *book;
+	gint page_num;
+
+	g_debug( "ofa_main_window_on_tab_close_clicked: tab=%p", ( void * ) tab );
+
+	handler = ( ofaMainPage * ) g_object_get_data( G_OBJECT( grid ), OFA_DATA_HANDLER );
+	g_return_if_fail( handler && OFA_IS_MAIN_PAGE( handler ));
+
+	main_window = ofa_main_page_get_main_window( handler );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	book = main_get_book( main_window );
+	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
+
+	page_num = gtk_notebook_page_num( book, GTK_WIDGET( grid ));
+	g_return_if_fail( page_num >= 0 );
+
+	gtk_notebook_remove_page( book, page_num );
 }

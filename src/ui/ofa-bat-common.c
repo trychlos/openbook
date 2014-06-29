@@ -450,7 +450,7 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 
 	begin = ofo_bat_get_begin( bat );
 	if( g_date_valid( begin )){
-		str = my_utils_date_to_str( begin, MY_DATE_DDMM );
+		str = my_date_to_str( begin, MY_DATE_DDMM );
 		gtk_entry_set_text( priv->begin, str );
 		g_free( str );
 	} else {
@@ -459,7 +459,7 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 
 	end = ofo_bat_get_end( bat );
 	if( g_date_valid( end )){
-		str = my_utils_date_to_str( end, MY_DATE_DDMM );
+		str = my_date_to_str( end, MY_DATE_DDMM );
 		gtk_entry_set_text( priv->end, str );
 		g_free( str );
 	} else {

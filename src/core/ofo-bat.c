@@ -215,12 +215,12 @@ bat_load_dataset( void )
 		ofo_bat_set_count( bat, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
-			my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data );
+			my_date_set_from_sql( &date, ( const gchar * ) icol->data );
 			ofo_bat_set_begin( bat, &date );
 		}
 		icol = icol->next;
 		if( icol->data ){
-			my_utils_date_set_from_sql( &date, ( const gchar * ) icol->data );
+			my_date_set_from_sql( &date, ( const gchar * ) icol->data );
 			ofo_bat_set_end( bat, &date );
 		}
 		icol = icol->next;
@@ -767,7 +767,7 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	begin = ofo_bat_get_begin( bat );
 	if( g_date_valid( begin )){
-		str = my_utils_date_to_str( begin, MY_DATE_SQL );
+		str = my_date_to_str( begin, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
 		g_free( str );
 	} else {
@@ -776,7 +776,7 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	end = ofo_bat_get_end( bat );
 	if( g_date_valid( end )){
-		str = my_utils_date_to_str( end, MY_DATE_SQL );
+		str = my_date_to_str( end, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
 		g_free( str );
 	} else {

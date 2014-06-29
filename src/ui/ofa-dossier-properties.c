@@ -264,11 +264,11 @@ init_current_exe_page( ofaDossierProperties *self )
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 	g_debug( "init_current_exe_page" );
 
-	my_utils_date_set_from_date(
+	my_date_set_from_date(
 			&priv->last_closed,
 			ofo_dossier_get_last_closed_exercice( priv->dossier ));
 
-	my_utils_date_set_from_date( &priv->begin, ofo_dossier_get_current_exe_deb( priv->dossier ));
+	my_date_set_from_date( &priv->begin, ofo_dossier_get_current_exe_deb( priv->dossier ));
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry =my_utils_container_get_child_by_name( container, "p2-begin" );
@@ -278,11 +278,11 @@ init_current_exe_page( ofaDossierProperties *self )
 	parms.date = &priv->begin;
 	parms.pfnCheck = ( myDateCheckCb ) begin_date_check_cb;
 	parms.user_data = self;
-	my_utils_date_parse_from_entry( &parms );
+	my_date_parse_from_entry( &parms );
 
 	priv->begin_label = GTK_LABEL( parms.label );
 
-	my_utils_date_set_from_date( &priv->end, ofo_dossier_get_current_exe_fin( priv->dossier ));
+	my_date_set_from_date( &priv->end, ofo_dossier_get_current_exe_fin( priv->dossier ));
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry =my_utils_container_get_child_by_name( container, "p2-end" );
@@ -292,7 +292,7 @@ init_current_exe_page( ofaDossierProperties *self )
 	parms.date = &priv->end;
 	parms.pfnCheck = ( myDateCheckCb ) end_date_check_cb;
 	parms.user_data = self;
-	my_utils_date_parse_from_entry( &parms );
+	my_date_parse_from_entry( &parms );
 
 	priv->end_label = GTK_LABEL( parms.label );
 

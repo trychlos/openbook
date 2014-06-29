@@ -414,7 +414,7 @@ get_min_val_date( ofoTaux *taux )
 	dmin = ofo_taux_get_min_valid( taux );
 
 	if( dmin && g_date_valid( dmin )){
-		str = my_utils_date_to_str( dmin, MY_DATE_DMMM );
+		str = my_date_to_str( dmin, MY_DATE_DMMM );
 		sbegin = g_strdup_printf( _( "from %s" ), str );
 		g_free( str );
 	} else {
@@ -433,7 +433,7 @@ get_max_val_date( ofoTaux *taux )
 	dmax = ofo_taux_get_max_valid( taux );
 
 	if( dmax && g_date_valid( dmax )){
-		str = my_utils_date_to_str( dmax, MY_DATE_DMMM );
+		str = my_date_to_str( dmax, MY_DATE_DMMM );
 		send = g_strdup_printf( _( "to %s" ), str );
 		g_free( str );
 	} else {
