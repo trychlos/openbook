@@ -369,7 +369,13 @@
  275 2014- 6-30 DossierNew: should be able to use the same db account
                 than another database (so ignore duplicate account)
 
- 276
+ 276 2014- 7-13 ofoSgbd: move error management to caller (as GError)
+                so that caller may decide what to do instead of 
+                displaying an error message
+
+ 277 2014- 7-13 DossierNew is not an assistant, but a dialog box
+
+ 278
 
 -----------------------------------------------------------------------
  DONE
