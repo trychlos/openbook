@@ -35,6 +35,7 @@
 #include <time.h>
 
 #include "core/my-utils.h"
+#include "core/ofa-settings.h"
 
 static gunichar st_thousand_sep = '\0';
 static gunichar st_decimal_sep  = '\0';
@@ -42,6 +43,8 @@ static GRegex  *st_double_regex = NULL;
 
 static void    double_set_locale( void );
 static gdouble double_parse_str( const gchar *text, gunichar thousand_sep, gunichar decimal_sep );
+static void    int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
+static GList  *position_to_int_list( gint x, gint y, gint width, gint height );
 
 /**
  * my_utils_quote:
@@ -232,7 +235,7 @@ my_utils_import_multi_lines( const gchar *str )
 }
 
 /**
- * my_utils_parse_boolean:
+ * my_utils_boolean_set_from_str:
  *
  * Parse a string to a boolean.
  * If unset ou empty, the string evaluates to FALSE.
@@ -242,7 +245,7 @@ my_utils_import_multi_lines( const gchar *str )
  * Returns TRUE if the string has been successfully parsed, FALSE else.
  */
 gboolean
-my_utils_parse_boolean( const gchar *str, gboolean *bvar )
+my_utils_boolean_set_from_str( const gchar *str, gboolean *bvar )
 {
 	g_return_val_if_fail( bvar, FALSE );
 
@@ -723,4 +726,105 @@ my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width )
 		g_warning( "%s: not a valid UTF8 string: %s", thisfn, pango_layout_get_text( layout ));
 	}
 	g_free( strref );
+}
+
+/**
+ * my_utils_window_restore_position:
+ */
+void
+my_utils_window_restore_position( GtkWindow *toplevel, const gchar *name )
+{
+	static const gchar *thisfn = "my_utils_window_restore_position";
+	gchar *key;
+	GList *list;
+	gint x=0, y=0, width=0, height=0;
+
+	g_debug( "%s: toplevel=%p (%s), name=%s",
+			thisfn, ( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ), name );
+
+	key = g_strdup_printf( "%s-pos", name );
+	list = ofa_settings_get_uint_list( key );
+	g_free( key );
+	g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
+
+	if( list ){
+		int_list_to_position( list, &x, &y, &width, &height );
+		g_debug( "%s: name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
+		g_list_free( list );
+
+		gtk_window_move( toplevel, x, y );
+		gtk_window_resize( toplevel, width, height );
+	}
+}
+
+/*
+ * extract the position of the window from the list of unsigned integers
+ */
+static void
+int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height )
+{
+	GList *it;
+	int i;
+
+	g_assert( x );
+	g_assert( y );
+	g_assert( width );
+	g_assert( height );
+
+	for( it=list, i=0 ; it ; it=it->next, i+=1 ){
+		switch( i ){
+			case 0:
+				*x = GPOINTER_TO_UINT( it->data );
+				break;
+			case 1:
+				*y = GPOINTER_TO_UINT( it->data );
+				break;
+			case 2:
+				*width = GPOINTER_TO_UINT( it->data );
+				break;
+			case 3:
+				*height = GPOINTER_TO_UINT( it->data );
+				break;
+		}
+	}
+}
+
+/**
+ * my_utils_window_save_position:
+ */
+void
+my_utils_window_save_position( GtkWindow *toplevel, const gchar *name )
+{
+	static const gchar *thisfn = "my_utils_window_save_position";
+	gint x, y, width, height;
+	gchar *key;
+	GList *list;
+
+	gtk_window_get_position( toplevel, &x, &y );
+	gtk_window_get_size( toplevel, &width, &height );
+	g_debug( "%s: wsp_name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
+
+	list = position_to_int_list( x, y, width, height );
+
+	key = g_strdup_printf( "%s-pos", name );
+	ofa_settings_set_uint_list( key, list );
+
+	g_free( key );
+	g_list_free( list );
+}
+
+/*
+ * the returned list should be g_list_free() by the caller
+ */
+static GList *
+position_to_int_list( gint x, gint y, gint width, gint height )
+{
+	GList *list = NULL;
+
+	list = g_list_append( list, GUINT_TO_POINTER( x ));
+	list = g_list_append( list, GUINT_TO_POINTER( y ));
+	list = g_list_append( list, GUINT_TO_POINTER( width ));
+	list = g_list_append( list, GUINT_TO_POINTER( height ));
+
+	return( list );
 }

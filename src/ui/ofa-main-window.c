@@ -34,6 +34,7 @@
 #include "api/ofo-dossier.h"
 
 #include "core/my-utils.h"
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-accounts-chart.h"
 #include "ui/ofa-bat-set.h"
@@ -241,19 +242,22 @@ static sTreeDef st_tree_defs[] = {
 /* A pointer to the handling ofaMainPage object is set against each page
  * ( the GtkGrid) of the main notebook
  */
-#define OFA_DATA_HANDLER             "ofa-data-handler"
+#define OFA_DATA_HANDLER                  "ofa-data-handler"
 
-static const gchar *st_dosmenu_xml = PKGUIDIR "/ofa-dos-menubar.ui";
-static const gchar *st_dosmenu_id  = "dos-menu";
+static const gchar *st_main_window_name = "MainWindow";
+static const gchar *st_dosmenu_xml      = PKGUIDIR "/ofa-dos-menubar.ui";
+static const gchar *st_dosmenu_id       = "dos-menu";
 
 static gint         st_signals[ N_SIGNALS ] = { 0 };
 
 G_DEFINE_TYPE( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW )
 
+static void             pane_save_position( GtkPaned *pane );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void             pane_restore_position( GtkPaned *pane );
 static void             add_treeview_to_pane_left( ofaMainWindow *window );
 static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static const sThemeDef *get_theme_def_from_id( gint theme_id );
@@ -299,6 +303,8 @@ main_window_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
+		my_utils_window_save_position( GTK_WINDOW( instance ), st_main_window_name );
+		pane_save_position( priv->pane );
 
 		/* unref object members here */
 
@@ -313,6 +319,16 @@ main_window_dispose( GObject *instance )
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_main_window_parent_class )->dispose( instance );
+}
+
+static void
+pane_save_position( GtkPaned *pane )
+{
+	gchar *key;
+
+	key = g_strdup_printf( "%s-pane", st_main_window_name );
+	ofa_settings_set_uint( key, gtk_paned_get_position( pane ));
+	g_free( key );
 }
 
 static void
@@ -383,7 +399,7 @@ main_window_constructed( GObject *instance )
 		gtk_grid_set_row_homogeneous( priv->grid, FALSE );
 		gtk_container_add( GTK_CONTAINER( instance ), GTK_WIDGET( priv->grid ));
 
-		gtk_window_set_default_size( GTK_WINDOW( instance ), 600, 400 );
+		my_utils_window_restore_position( GTK_WINDOW( instance), st_main_window_name );
 
 		/* connect some signals
 		 */
@@ -663,11 +679,22 @@ on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data 
 
 	window->private->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
 	gtk_grid_attach( window->private->grid, GTK_WIDGET( window->private->pane ), 0, 1, 1, 1 );
+	pane_restore_position( window->private->pane );
 	add_treeview_to_pane_left( window );
 	add_empty_notebook_to_pane_right( window );
 
 	set_menubar( window, window->private->menu );
 	set_window_title( window );
+}
+
+static void
+pane_restore_position( GtkPaned *pane )
+{
+	gchar *key;
+
+	key = g_strdup_printf( "%s-pane", st_main_window_name );
+	gtk_paned_set_position( pane, ofa_settings_get_uint( key ));
+	g_free( key );
 }
 
 static void

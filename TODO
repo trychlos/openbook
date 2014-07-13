@@ -29,17 +29,6 @@
 
    8 2014- 5- 2 ofa_application_on_about: to be written
 
-  14 2014- 5- 4 have a preference: assistant cancel on escape
-     2014- 5- 5 ofa-dossier-new.c: variable 'pref_quit_on_escape'
-
-  16 2014- 5- 4 preference: ask confirmation when clicking cancel in
-                an assistant
-     2014- 5- 5 ofa-dossier-new.c: variable 'pref_confirm_on_cancel'
-
-  17 2014- 5- 4 preference: ask confirmation when hitting escape in
-                an assistant
-     2014- 5- 5 ofa-dossier-new.c: variable 'pref_confirm_on_escape'
-
   18 2014- 5- 4 preference: ask confirmation when quitting the
                  application
      2014- 5- 5 ofa-application.c: variable 'pref_confirm_on_quit'
@@ -75,6 +64,7 @@
 
   39 2014- 5-11 DossierNew: add fields needed to complete the
                 OFA_T_DOSSIER table to p1 page
+     2014- 6-30 same fields than DossierProperties
 
   40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
 
@@ -371,9 +361,15 @@
                 dope/deff, dfrom/dto, etc.)
      2014- 6-28 svn #3754: introduce myDate class 
 
- 273 2014- 6-29 hack ofaTabel/GtkGrid/GtkButton/GtkImage styles
+ 273 2014- 6-29 ofa.css: hack ofaTabLabel/GtkGrid/GtkButton/GtkImage 
+                styles
 
  274 2014- 6-29 put back the main GtkNotebook popup menu
+
+ 275 2014- 6-30 DossierNew: should be able to use the same db account
+                than another database (so ignore duplicate account)
+
+ 276
 
 -----------------------------------------------------------------------
  DONE
@@ -397,9 +393,23 @@
   13 2014- 5- 4 cancel on escape in dossier_new assistant
      2014- 5- 5 Done
 
+  14 2014- 5- 4 have a preference: assistant cancel on escape
+     2014- 5- 5 ofa-dossier-new.c: variable 'pref_quit_on_escape'
+     2014- 6-30 done
+
   15 2014- 5- 4 take into account cancel on escape preference in
                 dossier_new assistant
      2014- 5- 5 Done
+
+  16 2014- 5- 4 preference: ask confirmation when clicking cancel in
+                an assistant
+     2014- 5- 5 ofa-dossier-new.c: variable 'pref_confirm_on_cancel'
+     2014- 6-30 done
+
+  17 2014- 5- 4 preference: ask confirmation when hitting escape in
+                an assistant
+     2014- 5- 5 ofa-dossier-new.c: variable 'pref_confirm_on_escape'
+     2014- 6-30 done
 
   19 2014- 5- 4 Dossier/New - page p1: provider selection: fix the order
                 of the focus of the fields (provider selector is the first

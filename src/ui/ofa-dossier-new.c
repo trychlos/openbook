@@ -32,16 +32,15 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
-#include "core/my-utils.h"
-#include "ui/ofa-dossier-new.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-sgbd.h"
 
-static gboolean pref_quit_on_escape = TRUE;
-static gboolean pref_confirm_on_cancel = FALSE;
-static gboolean pref_confirm_on_escape = FALSE;
+#include "core/my-utils.h"
+#include "core/ofa-settings.h"
+
+#include "ui/my-window-prot.h"
+#include "ui/ofa-dossier-new.h"
+#include "ui/ofa-main-window.h"
 
 /* Export Assistant
  *
@@ -67,16 +66,6 @@ enum {
 /* private instance data
  */
 struct _ofaDossierNewPrivate {
-	gboolean       dispose_has_run;
-
-	/* properties
-	 */
-	ofaMainWindow *main_window;
-
-	/* internals
-	 */
-	GtkAssistant  *assistant;
-	gboolean       escape_key_pressed;
 
 	/* p1: enter dossier name and description
 	 */
@@ -102,23 +91,13 @@ struct _ofaDossierNewPrivate {
 	gchar         *p3_bis;
 };
 
-/* class properties
- */
-enum {
-	OFA_PROP_TOPLEVEL_ID = 1,
-};
+static const gchar *st_ui_xml = PKGUIDIR "/ofa-dossier-new.ui";
+static const gchar *st_ui_id  = "DossierNewAssistant";
 
-#define PROP_TOPLEVEL              "dossier-new-prop-toplevel"
-
-static const gchar    *st_ui_xml = PKGUIDIR "/ofa-dossier-new.ui";
-static const gchar    *st_ui_id  = "DossierNewAssistant";
-
-G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, MY_TYPE_ASSISTANT )
 
 static ofaOpenDossier *st_ood;
 
-static void       do_initialize_assistant( ofaDossierNew *self );
-static gboolean   on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaDossierNew *self );
 static void       on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self );
 static void       do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page );
 static void       do_prepare_p1_dossier( ofaDossierNew *self, GtkWidget *page );
@@ -144,14 +123,9 @@ static void       do_init_p4_confirm( ofaDossierNew *self, GtkWidget *page );
 static void       display_p4_param( GtkWidget *page, const gchar *field_name, const gchar *value, gboolean display );
 static void       check_for_p4_complete( ofaDossierNew *self );
 static void       on_apply( GtkAssistant *assistant, ofaDossierNew *self );
-static gboolean   make_db_global( ofaDossierNew *self );
+static gboolean   make_db_global( ofaDossierNew *self, GtkAssistant *assistant );
 static gboolean   setup_new_dossier( ofaDossierNew *self );
-static gboolean   create_db_model( ofaDossierNew *self );
-static void       on_cancel( GtkAssistant *assistant, ofaDossierNew *self );
-static gboolean   is_willing_to_quit( ofaDossierNew *self );
-static void       on_close( GtkAssistant *assistant, ofaDossierNew *self );
-static void       do_close( ofaDossierNew *self );
-static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
+static gboolean   create_db_model( ofaDossierNew *self, GtkAssistant *assistant );
 
 static void
 dossier_new_finalize( GObject *instance )
@@ -159,7 +133,7 @@ dossier_new_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_dossier_new_finalize";
 	ofaDossierNewPrivate *priv;
 
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
+	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
 
 	priv = OFA_DOSSIER_NEW( instance )->private;
 
@@ -189,109 +163,15 @@ dossier_new_finalize( GObject *instance )
 static void
 dossier_new_dispose( GObject *instance )
 {
-	ofaDossierNewPrivate *priv;
+	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
 
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
-
-	priv = ( OFA_DOSSIER_NEW( instance ))->private;
-
-	if( !priv->dispose_has_run ){
-
-		priv->dispose_has_run = TRUE;
+	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
 		/* unref object members here */
-		gtk_main_quit();
-		gtk_widget_destroy( GTK_WIDGET( priv->assistant ));
 	}
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_new_parent_class )->dispose( instance );
-}
-
-static void
-dossier_new_constructed( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_dossier_new_constructed";
-	ofaDossierNewPrivate *priv;
-	GtkBuilder *builder;
-	GError *error;
-
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
-
-	priv = OFA_DOSSIER_NEW( instance )->private;
-
-	if( !priv->dispose_has_run ){
-
-		g_debug( "%s: instance=%p (%s)",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-		/* chain up to the parent class */
-		if( G_OBJECT_CLASS( ofa_dossier_new_parent_class )->constructed ){
-			G_OBJECT_CLASS( ofa_dossier_new_parent_class )->constructed( instance );
-		}
-
-		/* create the GtkAssistant */
-		error = NULL;
-		builder = gtk_builder_new();
-		if( gtk_builder_add_from_file( builder, st_ui_xml, &error )){
-			priv->assistant = GTK_ASSISTANT( gtk_builder_get_object( builder, st_ui_id ));
-			if( priv->assistant ){
-				do_initialize_assistant( OFA_DOSSIER_NEW( instance ));
-			} else {
-				g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_ui_id, st_ui_xml );
-			}
-		} else {
-			g_warning( "%s: %s", thisfn, error->message );
-			g_error_free( error );
-		}
-		g_object_unref( builder );
-	}
-}
-
-static void
-dossier_new_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
-{
-	ofaDossierNewPrivate *priv;
-
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
-
-	priv = OFA_DOSSIER_NEW( instance )->private;
-
-	if( !priv->dispose_has_run ){
-
-		switch( property_id ){
-			case OFA_PROP_TOPLEVEL_ID:
-				g_value_set_pointer( value, priv->main_window );
-				break;
-
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
-				break;
-		}
-	}
-}
-
-static void
-dossier_new_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
-{
-	ofaDossierNewPrivate *priv;
-
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( instance ));
-
-	priv = OFA_DOSSIER_NEW( instance )->private;
-
-	if( !priv->dispose_has_run ){
-
-		switch( property_id ){
-			case OFA_PROP_TOPLEVEL_ID:
-				priv->main_window = g_value_get_pointer( value );
-				break;
-
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
-				break;
-		}
-	}
 }
 
 static void
@@ -306,8 +186,6 @@ ofa_dossier_new_init( ofaDossierNew *self )
 
 	self->private = g_new0( ofaDossierNewPrivate, 1 );
 
-	self->private->dispose_has_run = FALSE;
-
 	/* be sure to initialize this static data each time we run the
 	 * assistant */
 	st_ood = NULL;
@@ -320,87 +198,43 @@ ofa_dossier_new_class_init( ofaDossierNewClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->get_property = dossier_new_get_property;
-	G_OBJECT_CLASS( klass )->set_property = dossier_new_set_property;
-	G_OBJECT_CLASS( klass )->constructed = dossier_new_constructed;
 	G_OBJECT_CLASS( klass )->dispose = dossier_new_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_new_finalize;
-
-	g_object_class_install_property(
-			G_OBJECT_CLASS( klass ),
-			OFA_PROP_TOPLEVEL_ID,
-			g_param_spec_pointer(
-					PROP_TOPLEVEL,
-					"Main window",
-					"A pointer (not a ref) to the toplevel parent main window",
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 }
 
 /**
  * Run the assistant.
  *
  * @main: the main window of the application.
+ *
+ * Rationale: the
  */
 ofaOpenDossier *
 ofa_dossier_new_run( ofaMainWindow *main_window )
 {
-	static const gchar *thisfn = "ofa_dossier_new_run";
+	static const gchar *thisfn = "ofa_dossier_new_new";
+	ofaDossierNew *self;
+	GtkAssistant *assistant;
 
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
 	g_debug( "%s: main_window=%p", thisfn, main_window );
 
-	g_object_new( OFA_TYPE_DOSSIER_NEW,
-			PROP_TOPLEVEL, main_window,
-			NULL );
+	self = g_object_new( OFA_TYPE_DOSSIER_NEW,
+				MY_PROP_MAIN_WINDOW, main_window,
+				MY_PROP_WINDOW_XML,  st_ui_xml,
+				MY_PROP_WINDOW_NAME, st_ui_id,
+				NULL );
 
-	gtk_main();
+	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
+	g_return_val_if_fail( assistant && GTK_IS_ASSISTANT( assistant ), NULL );
+
+	g_signal_connect( G_OBJECT( assistant ), "prepare", G_CALLBACK( on_prepare ), self );
+	g_signal_connect( G_OBJECT( assistant ), "apply", G_CALLBACK( on_apply ), self );
+
+	my_assistant_run( MY_ASSISTANT( self ));
 
 	return( st_ood );
-}
-
-static void
-do_initialize_assistant( ofaDossierNew *self )
-{
-	static const gchar *thisfn = "ofa_dossier_new_do_initialize_assistant";
-	GtkAssistant *assistant;
-
-	g_debug( "%s: self=%p (%s)",
-			thisfn,
-			( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	assistant = self->private->assistant;
-
-	/* deals with 'Esc' key */
-	g_signal_connect( assistant,
-			"key-press-event", G_CALLBACK( on_key_pressed_event ), self );
-
-	g_signal_connect( assistant, "prepare", G_CALLBACK( on_prepare ), self );
-	g_signal_connect( assistant, "apply",   G_CALLBACK( on_apply ),   self );
-	g_signal_connect( assistant, "cancel",  G_CALLBACK( on_cancel ),  self );
-	g_signal_connect( assistant, "close",   G_CALLBACK( on_close ),   self );
-
-	gtk_widget_show_all( GTK_WIDGET( assistant ));
-}
-
-static gboolean
-on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaDossierNew *self )
-{
-	gboolean stop = FALSE;
-
-	g_return_val_if_fail( OFA_IS_DOSSIER_NEW( self ), FALSE );
-
-	if( !self->private->dispose_has_run ){
-
-		if( event->keyval == GDK_KEY_Escape && pref_quit_on_escape ){
-
-				self->private->escape_key_pressed = TRUE;
-				g_signal_emit_by_name( self->private->assistant, "cancel", self );
-				stop = TRUE;
-		}
-	}
-
-	return( stop );
 }
 
 /*
@@ -412,16 +246,16 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self )
 	static const gchar *thisfn = "ofa_dossier_new_on_prepare";
 	gint page_num;
 
-	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
-	g_return_if_fail( GTK_IS_WIDGET( page ));
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));
+	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+	g_return_if_fail( page && GTK_IS_WIDGET( page ));
+	g_return_if_fail( self && OFA_IS_DOSSIER_NEW( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !MY_WINDOW( self )->protected->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, page=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) page, ( void * ) self );
 
-		page_num = assistant_get_page_num( assistant, page );
+		page_num = my_assistant_get_page_num( MY_ASSISTANT( self ), page );
 		switch( page_num ){
 			case ASSIST_PAGE_INTRO:
 				do_prepare_p0_intro( self, page );
@@ -505,10 +339,15 @@ check_for_p1_complete( ofaDossierNew *self )
 {
 	GtkWidget *page;
 	ofaDossierNewPrivate *priv;
+	GtkAssistant *assistant;
 
 	priv = self->private;
-	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_DOSSIER );
-	gtk_assistant_set_page_complete( priv->assistant, page,
+
+	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
+	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+
+	page = gtk_assistant_get_nth_page( assistant, ASSIST_PAGE_DOSSIER );
+	gtk_assistant_set_page_complete( assistant, page,
 			priv->p1_name && g_utf8_strlen( priv->p1_name, -1 ));
 }
 
@@ -620,10 +459,15 @@ check_for_p2_complete( ofaDossierNew *self )
 {
 	GtkWidget *page;
 	ofaDossierNewPrivate *priv;
+	GtkAssistant *assistant;
 
 	priv = self->private;
-	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_DBINFOS );
-	gtk_assistant_set_page_complete( priv->assistant, page,
+
+	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
+	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+
+	page = gtk_assistant_get_nth_page( assistant, ASSIST_PAGE_DBINFOS );
+	gtk_assistant_set_page_complete( assistant, page,
 			priv->p2_dbname && g_utf8_strlen( priv->p2_dbname, -1 ) &&
 			priv->p2_account && g_utf8_strlen( priv->p2_account, -1 ) &&
 			priv->p2_password && g_utf8_strlen( priv->p2_password, -1 ));
@@ -723,9 +567,14 @@ check_for_p3_complete( ofaDossierNew *self )
 	GtkLabel *label;
 	gchar *content;
 	GdkRGBA color;
+	GtkAssistant *assistant;
 
 	priv = self->private;
-	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_ACCOUNT );
+
+	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
+	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+
+	page = gtk_assistant_get_nth_page( assistant, ASSIST_PAGE_ACCOUNT );
 
 	are_equals = (( !priv->p3_password && !priv->p3_bis ) ||
 			( priv->p3_password && g_utf8_strlen( priv->p3_password, -1 ) &&
@@ -746,7 +595,7 @@ check_for_p3_complete( ofaDossierNew *self )
 		gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
 	}
 
-	gtk_assistant_set_page_complete( priv->assistant, page,
+	gtk_assistant_set_page_complete( assistant, page,
 			priv->p3_account && g_utf8_strlen( priv->p3_account, -1 ) &&
 			priv->p3_password &&
 			priv->p3_bis &&
@@ -822,12 +671,14 @@ display_p4_param( GtkWidget *page, const gchar *field_name, const gchar *value, 
 static void
 check_for_p4_complete( ofaDossierNew *self )
 {
-	ofaDossierNewPrivate *priv;
 	GtkWidget *page;
+	GtkAssistant *assistant;
 
-	priv = self->private;
-	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_CONFIRM );
-	gtk_assistant_set_page_complete( priv->assistant, page, TRUE );
+	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
+	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+
+	page = gtk_assistant_get_nth_page( assistant, ASSIST_PAGE_CONFIRM );
+	gtk_assistant_set_page_complete( assistant, page, TRUE );
 }
 
 static void
@@ -838,7 +689,7 @@ on_apply( GtkAssistant *assistant, ofaDossierNew *self )
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !MY_WINDOW( self )->protected->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
@@ -848,9 +699,11 @@ on_apply( GtkAssistant *assistant, ofaDossierNew *self )
 			self->private->p2_port_num = atoi( self->private->p2_port );
 		}
 
-		if( make_db_global( self )){
+		if( make_db_global( self, assistant )){
+
 			setup_new_dossier( self );
-			create_db_model( self );
+
+			create_db_model( self,assistant );
 
 			st_ood = g_new0( ofaOpenDossier, 1 );
 			st_ood->dossier = g_strdup( self->private->p1_name );
@@ -860,6 +713,10 @@ on_apply( GtkAssistant *assistant, ofaDossierNew *self )
 			st_ood->dbname = g_strdup( self->private->p2_dbname );
 			st_ood->account = g_strdup( self->private->p3_account );
 			st_ood->password = g_strdup( self->private->p3_password );
+
+			g_signal_emit_by_name(
+					MY_WINDOW( self )->protected->main_window,
+					OFA_SIGNAL_OPEN_DOSSIER, &st_ood );
 		}
 	}
 }
@@ -871,7 +728,7 @@ on_apply( GtkAssistant *assistant, ofaDossierNew *self )
  * - grant admin user
  */
 static gboolean
-make_db_global( ofaDossierNew *self )
+make_db_global( ofaDossierNew *self, GtkAssistant *assistant )
 {
 	static const gchar *thisfn = "ofa_dossier_new_make_db_global";
 	ofoSgbd *sgbd;
@@ -891,7 +748,7 @@ make_db_global( ofaDossierNew *self )
 			self->private->p2_account,
 			self->private->p2_password )){
 
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
 		return( FALSE );
 	}
 
@@ -901,7 +758,17 @@ make_db_global( ofaDossierNew *self )
 			"CREATE DATABASE %s",
 			self->private->p2_dbname );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
+		goto free_stmt;
+	}
+
+	g_string_printf( stmt,
+			"CREATE TABLE IF NOT EXISTS OFA_T_AUDIT ("
+			"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
+			"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query actual timestamp',"
+			"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query')" );
+	if( !ofo_sgbd_query( sgbd, stmt->str )){
+		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -909,7 +776,7 @@ make_db_global( ofaDossierNew *self )
 			"CREATE USER '%s' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -917,7 +784,7 @@ make_db_global( ofaDossierNew *self )
 			"CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -926,7 +793,7 @@ make_db_global( ofaDossierNew *self )
 			self->private->p2_dbname,
 			self->private->p3_account );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -935,7 +802,7 @@ make_db_global( ofaDossierNew *self )
 			self->private->p2_dbname,
 			self->private->p3_account );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -943,7 +810,7 @@ make_db_global( ofaDossierNew *self )
 			"GRANT CREATE USER, FILE ON *.* TO '%s'",
 			self->private->p3_account );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -951,7 +818,7 @@ make_db_global( ofaDossierNew *self )
 			"GRANT CREATE USER, FILE ON *.* TO '%s'@'localhost'",
 			self->private->p3_account );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -985,7 +852,7 @@ setup_new_dossier( ofaDossierNew *self )
 }
 
 static gboolean
-create_db_model( ofaDossierNew *self )
+create_db_model( ofaDossierNew *self, GtkAssistant *assistant )
 {
 	ofoSgbd *sgbd;
 	gboolean model_created;
@@ -1001,12 +868,12 @@ create_db_model( ofaDossierNew *self )
 			self->private->p2_account,
 			self->private->p2_password )){
 
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
 		goto free_sgbd;
 	}
 
 	if( !ofo_dossier_dbmodel_update( sgbd, self->private->p3_account )){
-		gtk_assistant_previous_page( self->private->assistant );
+		gtk_assistant_previous_page( assistant );
 		goto free_sgbd;
 	}
 
@@ -1016,100 +883,4 @@ free_sgbd:
 	g_object_unref( sgbd );
 
 	return( model_created );
-}
-
-/*
- * the "cancel" message is sent when the user click on the "Cancel"
- * button, or if he hits the 'Escape' key and the 'Quit on escape'
- * preference is set
- */
-static void
-on_cancel( GtkAssistant *assistant, ofaDossierNew *self )
-{
-	static const gchar *thisfn = "ofa_dossier_new_on_cancel";
-
-	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));
-
-	if( !self->private->dispose_has_run ){
-
-		g_debug( "%s: assistant=%p, self=%p",
-				thisfn, ( void * ) assistant, ( void * ) self );
-
-		if(( self->private->escape_key_pressed && ( !pref_confirm_on_escape || is_willing_to_quit( self ))) ||
-				!pref_confirm_on_cancel ||
-				is_willing_to_quit( self )){
-
-			do_close( self );
-		}
-	}
-}
-
-static gboolean
-is_willing_to_quit( ofaDossierNew *self )
-{
-	GtkWidget *dialog;
-	gint response;
-
-	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( self->private->assistant ),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			_( "Are you sure you want to quit this assistant ?" ));
-
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_QUIT, GTK_RESPONSE_OK,
-			NULL );
-
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
-}
-
-static void
-on_close( GtkAssistant *assistant, ofaDossierNew *self )
-{
-	static const gchar *thisfn = "ofa_dossier_new_on_close";
-
-	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));
-
-	if( !self->private->dispose_has_run ){
-
-		g_debug( "%s: assistant=%p, self=%p",
-				thisfn, ( void * ) assistant, ( void * ) self );
-
-		do_close( self );
-	}
-}
-
-static void
-do_close( ofaDossierNew *self )
-{
-	g_object_unref( self );
-}
-
-/*
- * Returns: the index of the given page, or -1 if not found
- */
-static gint
-assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page )
-{
-	gint count, i;
-	GtkWidget *page_n;
-
-	count = gtk_assistant_get_n_pages( assistant );
-	page_n = NULL;
-	for( i=0 ; i<count ; ++i ){
-		page_n = gtk_assistant_get_nth_page( assistant, i );
-		if( page_n == page ){
-			return( i );
-		}
-	}
-
-	return( -1 );
 }

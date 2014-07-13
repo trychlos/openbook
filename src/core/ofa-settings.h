@@ -29,7 +29,7 @@
 
 /* @title: ofaSettings
  * @short_description: The Settings Class Definition
- * @include: ui/ofa-settings.h
+ * @include: core/ofa-settings.h
  *
  * The #ofaSettings class manages user preferences.
  *
@@ -59,6 +59,12 @@ gboolean ofa_settings_set_dossier  ( const gchar *name, ... );
 
 GList   *ofa_settings_get_uint_list( const gchar *key );
 void     ofa_settings_set_uint_list( const gchar *key, const GList *uint_list );
+
+gint     ofa_settings_get_uint     ( const gchar *key );
+void     ofa_settings_set_uint     ( const gchar *key, guint value );
+
+gboolean ofa_settings_get_boolean  ( const gchar *key );
+void     ofa_settings_set_boolean  ( const gchar *key, gboolean value );
 
 G_END_DECLS
 

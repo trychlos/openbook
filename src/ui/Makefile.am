@@ -44,11 +44,13 @@ BUILT_SOURCES = \
 
 openbook_SOURCES = \
 	main.c												\
+	my-assistant.c										\
+	my-assistant.h										\
+	my-dialog.c											\
+	my-dialog.h											\
 	my-window.c											\
 	my-window.h											\
 	my-window-prot.h									\
-	my-dialog.c											\
-	my-dialog.h											\
 	ofa-account-notebook.c								\
 	ofa-account-notebook.h								\
 	ofa-account-properties.c							\
@@ -121,12 +123,12 @@ openbook_SOURCES = \
 	ofa-models-set.h									\
 	ofa-plugin.c										\
 	ofa-plugin.h										\
+	ofa-preferences.c									\
+	ofa-preferences.h									\
 	ofa-print-reconcil.c								\
 	ofa-print-reconcil.h								\
 	ofa-rappro.c										\
 	ofa-rappro.h										\
-	ofa-settings.c										\
-	ofa-settings.h										\
 	ofa-tab-label.c										\
 	ofa-tab-label.h										\
 	ofa-taux-properties.c								\
@@ -169,6 +171,7 @@ ui_files = \
 	ofa-int-closing.ui									\
 	ofa-journal-properties.ui							\
 	ofa-model-properties.ui								\
+	ofa-preferences.ui									\
 	ofa-print-reconcil.ui								\
 	ofa-taux-properties.ui								\
 	ofa-view-entries.ui									\

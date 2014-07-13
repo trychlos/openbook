@@ -48,6 +48,10 @@ libofa_core_la_SOURCES = \
 	my-date.h											\
 	my-utils.c											\
 	my-utils.h											\
+	\
+	ofa-settings.c										\
+	ofa-settings.h										\
+	\
 	ofo-account.c										\
 	ofo-base.c											\
 	ofo-bat.c											\

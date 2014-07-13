@@ -522,7 +522,7 @@ dbmodel_get_version( ofoSgbd *sgbd )
 	GSList *res;
 	gint vmax = 0;
 
-	res = ofo_sgbd_query_ex( sgbd,
+	res = ofo_sgbd_query_ex_ignore( sgbd,
 			"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0" );
 	if( res ){
 		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
@@ -545,14 +545,6 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 	gchar *query;
 
 	g_debug( "%s: sgbd=%p, account=%s", thisfn, ( void * ) sgbd, account );
-
-	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_AUDIT ("
-			"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
-			"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query actual timestamp',"
-			"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query')")){
-		return( FALSE );
-	}
 
 	/* default value for timestamp cannot be null */
 	if( !ofo_sgbd_query( sgbd,
@@ -594,9 +586,9 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	ASS_IMMO      DECIMAL(15,5)               COMMENT 'Montant immobilisé',"
 			"	ASS_IMMO_FISC INTEGER                     COMMENT 'Montant fiscal immobilisé (à amortir)',"
 			"	ASS_DUREE     INTEGER                     COMMENT 'Durée d\\'amortissement',"
-			"	ASS_TYPE      VARCHAR(1)                  COMMENT 'Type d\\'ammortissement,"
-			"	ASS_COEF_DEG  DECIMAL(15,5)               COMMENT 'Coefficient dégressif',"
-			"	ASS_TAUX      DECIMAL(15,5)               COMMENT 'Taux d\\'amortissement',"
+			"	ASS_TYPE      VARCHAR(1)                  COMMENT 'Type d\\'amortissement',"
+			"	ASS_COEF_DEG  DECIMAL(15,5)               COMMENT 'Coefficient degressif',"
+			"	ASS_RATE      DECIMAL(15,5)               COMMENT 'Taux d\\'amortissement',"
 			"	ASS_DATE_OUT  DATE                        COMMENT 'Out date',"
 			"	ASS_NOTES     VARCHAR(4096)               COMMENT 'Notes',"
 			"	ASS_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
@@ -615,7 +607,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	ASS_EXE_TAUX_LIN DECIMAL(15,5)            COMMENT 'Taux lineaire',"
 			"	ASS_EXE_TAUX_DEG DECIMAL(15,5)            COMMENT 'Taux degressif',"
 			"	ASS_EXE_AMORT    INTEGER                  COMMENT 'Montant de l\\'annuite',"
-			"	ASS_EXE_REST     INTEGER                  COMMENT 'Valeur residuelle'"
+			"	ASS_EXE_REST     INTEGER                  COMMENT 'Valeur residuelle',"
 			"	CONSTRAINT PRIMARY KEY (ASS_ID,ASS_EXE_NUM)"
 			")" )){
 		return( FALSE );
@@ -932,7 +924,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 			"	REC_NOTES     VARCHAR(4096)               COMMENT 'Notes',"
 			"	REC_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	REC_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
-			"	REC_LAST      DATE                        COMMENT 'Effect date of the last generation"
+			"	REC_LAST      DATE                        COMMENT 'Effect date of the last generation'"
 			")" )){
 		return( FALSE );
 	}

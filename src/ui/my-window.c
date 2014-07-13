@@ -29,10 +29,10 @@
 #endif
 
 #include "core/my-utils.h"
+
 #include "ui/my-window.h"
 #include "ui/my-window-prot.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-settings.h"
 
 /* private instance data
  */
@@ -60,11 +60,6 @@ enum {
 };
 
 G_DEFINE_TYPE( myWindow, my_window, G_TYPE_OBJECT )
-
-static void     restore_window_position( GtkWindow *toplevel, const gchar *name );
-static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
-static void     save_window_position( GtkWindow *toplevel, const gchar *name );
-static GList   *position_to_int_list( gint x, gint y, gint width, gint height );
 
 static void
 my_window_finalize( GObject *instance )
@@ -100,7 +95,7 @@ my_window_dispose( GObject *instance )
 
 		if( priv->manage_size_position && priv->toplevel && priv->window_name ){
 
-			save_window_position( priv->toplevel, priv->window_name );
+			my_utils_window_save_position( priv->toplevel, priv->window_name );
 		}
 
 		/* unref member objects here */
@@ -140,7 +135,7 @@ my_window_constructed( GObject *instance )
 			priv->toplevel = GTK_WINDOW( toplevel );
 			if( priv->manage_size_position ){
 
-				restore_window_position( priv->toplevel, priv->window_name );
+				my_utils_window_restore_position( priv->toplevel, priv->window_name );
 			}
 		}
 	}
@@ -304,117 +299,6 @@ my_window_class_init( myWindowClass *klass )
 					"Whether to manage size and position of the toplevel",
 					TRUE,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-}
-
-/*
- * na_gtk_utils_restore_position_window:
- * @toplevel: the #GtkWindow window.
- * @wsp_name: the string which handles the window size and position in user preferences.
- *
- * Position the specified window on the screen.
- *
- * A window position is stored as a list of integers "x,y,width,height".
- */
-static void
-restore_window_position( GtkWindow *toplevel, const gchar *name )
-{
-	static const gchar *thisfn = "my_window_restore_window_position";
-	gchar *key;
-	GList *list;
-	gint x=0, y=0, width=0, height=0;
-
-	g_debug( "%s: toplevel=%p (%s), name=%s",
-			thisfn, ( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ), name );
-
-	key = g_strdup_printf( "%s-pos", name );
-	list = ofa_settings_get_uint_list( key );
-	g_free( key );
-	g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
-
-	if( list ){
-		int_list_to_position( list, &x, &y, &width, &height );
-		g_debug( "%s: name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
-		g_list_free( list );
-
-		gtk_window_move( toplevel, x, y );
-		gtk_window_resize( toplevel, width, height );
-	}
-}
-
-/*
- * extract the position of the window from the list of unsigned integers
- */
-static void
-int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height )
-{
-	GList *it;
-	int i;
-
-	g_assert( x );
-	g_assert( y );
-	g_assert( width );
-	g_assert( height );
-
-	for( it=list, i=0 ; it ; it=it->next, i+=1 ){
-		switch( i ){
-			case 0:
-				*x = GPOINTER_TO_UINT( it->data );
-				break;
-			case 1:
-				*y = GPOINTER_TO_UINT( it->data );
-				break;
-			case 2:
-				*width = GPOINTER_TO_UINT( it->data );
-				break;
-			case 3:
-				*height = GPOINTER_TO_UINT( it->data );
-				break;
-		}
-	}
-}
-
-/*
- * na_gtk_utils_save_window_position:
- * @toplevel: the #GtkWindow window.
- * @wsp_name: the string which handles the window size and position in user preferences.
- *
- * Save the size and position of the specified window.
- */
-static void
-save_window_position( GtkWindow *toplevel, const gchar *name )
-{
-	static const gchar *thisfn = "my_window_save_window_position";
-	gint x, y, width, height;
-	gchar *key;
-	GList *list;
-
-	gtk_window_get_position( toplevel, &x, &y );
-	gtk_window_get_size( toplevel, &width, &height );
-	g_debug( "%s: wsp_name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
-
-	list = position_to_int_list( x, y, width, height );
-
-	key = g_strdup_printf( "%s-pos", name );
-	ofa_settings_set_uint_list( key, list );
-
-	g_free( key );
-	g_list_free( list );
-}
-
-/*
- * the returned list should be g_list_free() by the caller
- */
-static GList *
-position_to_int_list( gint x, gint y, gint width, gint height )
-{
-	GList *list = NULL;
-
-	list = g_list_append( list, GUINT_TO_POINTER( x ));
-	list = g_list_append( list, GUINT_TO_POINTER( y ));
-	list = g_list_append( list, GUINT_TO_POINTER( width ));
-	list = g_list_append( list, GUINT_TO_POINTER( height ));
-
-	return( list );
 }
 
 /**

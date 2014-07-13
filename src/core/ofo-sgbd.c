@@ -52,9 +52,10 @@ struct _ofoSgbdPrivate {
 
 G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 
-static void  error_connect( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
-static void  error_query( const ofoSgbd *sgbd, const gchar *query );
-static void  sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query );
+static void    error_connect( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
+static void    error_query( const ofoSgbd *sgbd, const gchar *query );
+static void    sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query );
+static GSList *sgbd_query_get_result( const ofoSgbd *sgbd, const gchar *query );
 
 static void
 ofo_sgbd_finalize( GObject *instance )
@@ -292,9 +293,6 @@ ofo_sgbd_query_ex( const ofoSgbd *sgbd, const gchar *query )
 {
 	static const gchar *thisfn = "ofo_sgbd_query_ex";
 	GSList *result = NULL;
-	MYSQL_RES *res;
-	MYSQL_ROW row;
-	gint fields_count, i;
 
 	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
 
@@ -305,28 +303,77 @@ ofo_sgbd_query_ex( const ofoSgbd *sgbd, const gchar *query )
 			error_query( sgbd, query );
 
 		} else {
-			res = mysql_store_result( sgbd->private->mysql );
-			if( res ){
-				fields_count = mysql_num_fields( res );
-				while(( row = mysql_fetch_row( res ))){
-					GSList *col = NULL;
-					for( i=0 ; i<fields_count ; ++i ){
-						col = g_slist_prepend( col, row[i] ? g_strdup( row[i] ) : NULL );
-					}
-					col = g_slist_reverse( col );
-					result = g_slist_prepend( result, col );
-				}
-				result = g_slist_reverse( result );
-
-			/* do not record queries which return a result (SELECT ...)
-			 * as they are not relevant for our traces */
-			} else {
-				sgbd_audit_query( sgbd, query );
-			}
+			result = sgbd_query_get_result( sgbd, query );
 		}
 
 	} else {
 		g_warning( "%s: trying to query a non-opened connection", thisfn );
+	}
+
+	return( result );
+}
+
+/**
+ * ofo_sgbd_query_ex_ignore:
+ *
+ * @parent: if NULL, do not display error message
+ *
+ * Returns a GSList or ordered rows of the result set.
+ * Each GSList->data is a pointer to a GSList of ordered columns
+ * A field is so the GSList[column] data, is always allocated
+ * (but maybe of a zero length), or NULL (SQL-NULL translation).
+ *
+ * Returns NULL is case of an error.
+ *
+ * The returned GSList should be freed with ofo_sgbd_free_result().
+ */
+GSList *
+ofo_sgbd_query_ex_ignore( const ofoSgbd *sgbd, const gchar *query )
+{
+	static const gchar *thisfn = "ofo_sgbd_query_ex_ignore";
+	GSList *result = NULL;
+
+	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
+
+	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
+
+	if( sgbd->private->mysql ){
+		if( !mysql_query( sgbd->private->mysql, query )){
+			result = sgbd_query_get_result( sgbd, query );
+		}
+
+	} else {
+		g_warning( "%s: trying to query a non-opened connection", thisfn );
+	}
+
+	return( result );
+}
+
+static GSList *
+sgbd_query_get_result( const ofoSgbd *sgbd, const gchar *query )
+{
+	GSList *result = NULL;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	gint fields_count, i;
+
+	res = mysql_store_result( sgbd->private->mysql );
+	if( res ){
+		fields_count = mysql_num_fields( res );
+		while(( row = mysql_fetch_row( res ))){
+			GSList *col = NULL;
+			for( i=0 ; i<fields_count ; ++i ){
+				col = g_slist_prepend( col, row[i] ? g_strdup( row[i] ) : NULL );
+			}
+			col = g_slist_reverse( col );
+			result = g_slist_prepend( result, col );
+		}
+		result = g_slist_reverse( result );
+
+	/* do not record queries which return a result (SELECT ...)
+	 * as they are not relevant for our traces */
+	} else {
+		sgbd_audit_query( sgbd, query );
 	}
 
 	return( result );

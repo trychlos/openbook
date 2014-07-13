@@ -48,33 +48,33 @@ typedef enum {
 }
 	myStampFormat;
 
-gchar     *my_utils_quote                 ( const gchar *str );
+gchar     *my_utils_quote                  ( const gchar *str );
 
-GTimeVal  *my_utils_stamp_set_from_sql    ( GTimeVal *timeval, const gchar *str );
-gchar     *my_utils_stamp_to_str          ( const GTimeVal *stamp, myStampFormat format );
-GTimeVal  *my_utils_stamp_get_now         ( GTimeVal *stamp );
+GTimeVal  *my_utils_stamp_set_from_sql     ( GTimeVal *timeval, const gchar *str );
+gchar     *my_utils_stamp_to_str           ( const GTimeVal *stamp, myStampFormat format );
+GTimeVal  *my_utils_stamp_get_now          ( GTimeVal *stamp );
 
-gchar     *my_utils_export_multi_lines    ( const gchar *str );
-gchar     *my_utils_import_multi_lines    ( const gchar *str );
+gchar     *my_utils_export_multi_lines     ( const gchar *str );
+gchar     *my_utils_import_multi_lines     ( const gchar *str );
 
-gboolean   my_utils_parse_boolean         ( const gchar *str, gboolean *bvar );
+gboolean   my_utils_boolean_set_from_str   ( const gchar *str, gboolean *bvar );
 
-gdouble    my_utils_double_set_from_input ( const gchar *sql_string );
-gdouble    my_utils_double_set_from_sql   ( const gchar *sql_string );
-gchar     *my_utils_sql_from_double       ( gdouble value );
+gdouble    my_utils_double_set_from_input  ( const gchar *sql_string );
+gdouble    my_utils_double_set_from_sql    ( const gchar *sql_string );
+gchar     *my_utils_sql_from_double        ( gdouble value );
 
-gchar     *my_utils_str_remove_suffix     ( const gchar *string, const gchar *suffix );
-gchar     *my_utils_str_replace           ( const gchar *string, const gchar *old, const gchar *new );
+gchar     *my_utils_str_remove_suffix      ( const gchar *string, const gchar *suffix );
+gchar     *my_utils_str_replace            ( const gchar *string, const gchar *old, const gchar *new );
 
-GtkWidget *my_utils_builder_load_from_path( const gchar *path_xml, const gchar *widget_name );
+GtkWidget *my_utils_builder_load_from_path ( const gchar *path_xml, const gchar *widget_name );
 
-gboolean   my_utils_entry_get_valid       ( GtkEntry *entry );
-void       my_utils_entry_set_valid       ( GtkEntry *entry, gboolean valid );
+gboolean   my_utils_entry_get_valid        ( GtkEntry *entry );
+void       my_utils_entry_set_valid        ( GtkEntry *entry, gboolean valid );
 
 GtkWidget *my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name );
 GtkWidget *my_utils_container_get_child_by_type( GtkContainer *container, GType type );
 
-void       my_utils_init_notes            ( GtkContainer *container,
+void       my_utils_init_notes             ( GtkContainer *container,
 													const gchar *widget_name,
 													const gchar *notes );
 
@@ -86,7 +86,7 @@ void       my_utils_init_notes            ( GtkContainer *container,
 												gtk_text_buffer_get_end_iter( buffer, &end ); gchar *notes = gtk_text_buffer_get_text( \
 												buffer, &start, &end, TRUE ); ofo_ ## T ## _set_notes( priv->T, notes ); g_free( notes );
 
-void       my_utils_init_maj_user_stamp( GtkContainer *container,
+void       my_utils_init_maj_user_stamp    ( GtkContainer *container,
 												const gchar *label_name,
 												const GTimeVal *stamp,
 												const gchar *user );
@@ -95,9 +95,12 @@ void       my_utils_init_maj_user_stamp( GtkContainer *container,
 														GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_maj_stamp( priv->T ), \
 														ofo_ ## T ## _get_maj_user( priv->T )); }
 
-gboolean   my_utils_output_stream_new     ( const gchar *uri, GFile **file, GOutputStream **stream );
+gboolean   my_utils_output_stream_new      ( const gchar *uri, GFile **file, GOutputStream **stream );
 
-void       my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width );
+void       my_utils_pango_layout_ellipsize ( PangoLayout *layout, gint max_width );
+
+void       my_utils_window_restore_position( GtkWindow *window, const gchar *name );
+void       my_utils_window_save_position   ( GtkWindow *window, const gchar *name );
 
 G_END_DECLS
 

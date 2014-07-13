@@ -18,6 +18,12 @@
       </section>
       <section>
         <item>
+          <attribute name="label" translatable="yes">_User preferences</attribute>
+          <attribute name="action">app.user_prefs</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
           <attribute name="label" translatable="yes">_Quit</attribute>
           <attribute name="action">app.quit</attribute>
           <attribute name="accel">&lt;Control&gt;q</attribute>

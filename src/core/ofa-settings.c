@@ -34,7 +34,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ui/ofa-settings.h"
+#include "core/my-utils.h"
+#include "core/ofa-settings.h"
 
 #define OFA_TYPE_SETTINGS                ( ofa_settings_get_type())
 #define OFA_SETTINGS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_SETTINGS, ofaSettings ))
@@ -510,4 +511,88 @@ string_to_array( const gchar *string )
 	}
 
 	return( array );
+}
+
+/**
+ * ofa_settings_get_uint:
+ *
+ * Returns the specified integer value.
+ */
+gint
+ofa_settings_get_uint( const gchar *key )
+{
+	gint result;
+	gchar *str;
+
+	settings_new();
+
+	result = -1;
+	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
+
+	if( str && g_utf8_strlen( str, -1 )){
+		result = atoi( str );
+	}
+
+	g_free( str );
+
+	return( result );
+}
+
+/**
+ * ofa_settings_set_uint:
+ */
+void
+ofa_settings_set_uint( const gchar *key, guint value )
+{
+	gchar *string;
+
+	settings_new();
+
+	string = g_strdup_printf( "%u", value );
+	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string );
+	g_free( string );
+
+	write_key_file( st_settings );
+}
+
+/**
+ * ofa_settings_get_boolean:
+ *
+ * Returns the specified boolean value.
+ */
+gboolean
+ofa_settings_get_boolean( const gchar *key )
+{
+	gboolean result;
+	gchar *str;
+
+	settings_new();
+
+	result = FALSE;
+	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
+
+	if( str && g_utf8_strlen( str, -1 )){
+		my_utils_boolean_set_from_str( str, &result );
+	}
+
+	g_free( str );
+
+	return( result );
+}
+
+/**
+ * ofa_settings_set_boolean:
+ */
+void
+ofa_settings_set_boolean( const gchar *key, gboolean value )
+{
+	gchar *string;
+
+	settings_new();
+
+	string = g_strdup_printf( "%s", value ? "True":"False" );
+	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string );
+	g_free( string );
+
+	write_key_file( st_settings );
 }

@@ -31,12 +31,15 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
+#include "api/ofo-sgbd.h"
+
+#include "core/ofa-settings.h"
+
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-plugin.h"
-#include "ui/ofa-settings.h"
-#include "api/ofo-sgbd.h"
+#include "ui/ofa-preferences.h"
 
 /* private instance data
  */
@@ -111,15 +114,17 @@ static void     do_prepare_for_open( ofaApplication *appli, const gchar *dossier
 
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_version( ofaApplication *application );
 
 static const GActionEntry st_app_entries[] = {
-		{ "new",   on_new,   NULL, NULL, NULL },
-		{ "open",  on_open,  NULL, NULL, NULL },
-		{ "quit",  on_quit,  NULL, NULL, NULL },
-		{ "about", on_about, NULL, NULL, NULL },
+		{ "new",        on_new,        NULL, NULL, NULL },
+		{ "open",       on_open,       NULL, NULL, NULL },
+		{ "user_prefs", on_user_prefs, NULL, NULL, NULL },
+		{ "quit",       on_quit,       NULL, NULL, NULL },
+		{ "about",      on_about,      NULL, NULL, NULL },
 };
 
 static const gchar  *st_appmenu_xml = PKGUIDIR "/ofa-app-menubar.ui";
@@ -696,12 +701,11 @@ on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
 	priv = OFA_APPLICATION( user_data )->private;
-
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
 	ood = ofa_dossier_new_run( priv->main_window );
 	if( ood ){
-		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, ood );
+		/*g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, ood );*/
 	}
 }
 
@@ -724,6 +728,22 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	if( ood ){
 		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, ood );
 	}
+}
+
+static void
+on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_application_on_user_prefs";
+	ofaApplicationPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+	priv = OFA_APPLICATION( user_data )->private;
+	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+
+	ofa_preferences_run( priv->main_window );
 }
 
 /*
