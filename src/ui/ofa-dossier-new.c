@@ -840,31 +840,39 @@ static gboolean
 make_db_global( ofaDossierNew *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_make_db_global";
+	ofaDossierNewPrivate *priv;
 	ofoSgbd *sgbd;
 	GString *stmt;
 	gboolean db_created;
+	gchar *hostname;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	db_created = FALSE;
+	priv = self->private;
 	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
 
 	if( !ofo_sgbd_connect( sgbd,
-			self->private->p2_host,
-			self->private->p2_port,
-			self->private->p2_socket,
+			priv->p2_host,
+			priv->p2_port,
+			priv->p2_socket,
 			"mysql",
-			self->private->p2_account,
-			self->private->p2_password )){
+			priv->p2_account,
+			priv->p2_password )){
 
 		return( FALSE );
 	}
 
 	stmt = g_string_new( "" );
+	hostname = g_strdup( priv->p2_host );
+	if( !hostname || !g_utf8_strlen( hostname, -1 )){
+		g_free( hostname );
+		hostname = g_strdup( "localhost" );
+	}
 
 	g_string_printf( stmt,
 			"CREATE DATABASE %s",
-			self->private->p3_dbname );
+				priv->p3_dbname );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		goto free_stmt;
 	}
@@ -874,51 +882,33 @@ make_db_global( ofaDossierNew *self )
 			"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
 			"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query actual timestamp',"
 			"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query')",
-					self->private->p3_dbname );
+					priv->p3_dbname );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		goto free_stmt;
 	}
 
 	g_string_printf( stmt,
-			"CREATE USER '%s' IDENTIFIED BY '%s'",
-			self->private->p3_account, self->private->p3_password );
+			"CREATE USER '%s'@'%s' IDENTIFIED BY '%s'",
+				priv->p3_account,
+				hostname,
+				priv->p3_password );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		goto free_stmt;
 	}
 
 	g_string_printf( stmt,
-			"CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'",
-			self->private->p3_account, self->private->p3_password );
+			"GRANT ALL ON %s.* TO '%s'@'%s' WITH GRANT OPTION",
+				priv->p3_dbname,
+				priv->p3_account,
+				hostname );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		goto free_stmt;
 	}
 
 	g_string_printf( stmt,
-			"GRANT ALL ON %s.* TO '%s' WITH GRANT OPTION",
-			self->private->p3_dbname,
-			self->private->p3_account );
-	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		goto free_stmt;
-	}
-
-	g_string_printf( stmt,
-			"GRANT ALL ON %s.* TO '%s'@'localhost' WITH GRANT OPTION",
-			self->private->p3_dbname,
-			self->private->p3_account );
-	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		goto free_stmt;
-	}
-
-	g_string_printf( stmt,
-			"GRANT CREATE USER, FILE ON *.* TO '%s'",
-			self->private->p3_account );
-	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		goto free_stmt;
-	}
-
-	g_string_printf( stmt,
-			"GRANT CREATE USER, FILE ON *.* TO '%s'@'localhost'",
-			self->private->p3_account );
+			"GRANT CREATE USER, FILE ON *.* TO '%s'@'%s'",
+				priv->p3_account,
+				hostname );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		goto free_stmt;
 	}
@@ -926,6 +916,7 @@ make_db_global( ofaDossierNew *self )
 	db_created = TRUE;
 
 free_stmt:
+	g_free( hostname );
 	g_string_free( stmt, TRUE );
 	g_object_unref( sgbd );
 
@@ -935,38 +926,44 @@ free_stmt:
 static gboolean
 setup_new_dossier( ofaDossierNew *self )
 {
+	ofaDossierNewPrivate *priv;
+
+	priv = self->private;
+
 	return(
 		ofa_settings_set_dossier(
-			self->private->p3_label,
+			priv->p3_label,
 			"Provider",    SETTINGS_TYPE_STRING, "MySQL",
-			"Host",        SETTINGS_TYPE_STRING, self->private->p2_host,
-			"Port",        SETTINGS_TYPE_INT,    self->private->p2_port,
-			"Socket",      SETTINGS_TYPE_STRING, self->private->p2_socket,
-			"Database",    SETTINGS_TYPE_STRING, self->private->p3_dbname,
+			"Host",        SETTINGS_TYPE_STRING, priv->p2_host,
+			"Port",        SETTINGS_TYPE_INT,    priv->p2_port,
+			"Socket",      SETTINGS_TYPE_STRING, priv->p2_socket,
+			"Database",    SETTINGS_TYPE_STRING, priv->p3_dbname,
 			NULL ));
 }
 
 static gboolean
 create_db_model( ofaDossierNew *self )
 {
+	ofaDossierNewPrivate *priv;
 	ofoSgbd *sgbd;
 	gboolean model_created;
 
 	model_created = FALSE;
+	priv = self->private;
 	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
 
 	if( !ofo_sgbd_connect( sgbd,
-			self->private->p2_host,
-			self->private->p2_port,
-			self->private->p2_socket,
-			self->private->p3_dbname,
-			self->private->p3_account,
-			self->private->p3_password )){
+			priv->p2_host,
+			priv->p2_port,
+			priv->p2_socket,
+			priv->p3_dbname,
+			priv->p3_account,
+			priv->p3_password )){
 
 		goto free_sgbd;
 	}
 
-	if( !ofo_dossier_dbmodel_update( sgbd, self->private->p3_label, self->private->p3_account )){
+	if( !ofo_dossier_dbmodel_update( sgbd, priv->p3_label, priv->p3_account )){
 		goto free_sgbd;
 	}
 
