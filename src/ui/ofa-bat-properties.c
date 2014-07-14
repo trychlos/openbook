@@ -30,13 +30,15 @@
 
 #include <glib/gi18n.h>
 
+#include "api/ofo-bat.h"
+#include "api/ofo-dossier.h"
+
 #include "core/my-utils.h"
-#include "ui/ofa-base-dialog-prot.h"
+
+#include "ui/my-window-prot.h"
 #include "ui/ofa-bat-common.h"
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-main-window.h"
-#include "api/ofo-bat.h"
-#include "api/ofo-dossier.h"
 
 /* private instance data
  */
@@ -47,21 +49,21 @@ struct _ofaBatPropertiesPrivate {
 	ofoBat        *bat;
 	gboolean       is_new;				/* always FALSE here */
 	gboolean       updated;
-	ofaBatCommon    *child_box;
+	ofaBatCommon  *child_box;
 
 	/* data
 	 */
 };
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-bat-properties.ui";
-static const gchar  *st_ui_id        = "BatPropertiesDlg";
+static const gchar  *st_ui_xml = PKGUIDIR "/ofa-bat-properties.ui";
+static const gchar  *st_ui_id  = "BatPropertiesDlg";
 
-G_DEFINE_TYPE( ofaBatProperties, ofa_bat_properties, OFA_TYPE_BASE_DIALOG )
+G_DEFINE_TYPE( ofaBatProperties, ofa_bat_properties, MY_TYPE_DIALOG )
 
-static void      v_init_dialog( ofaBaseDialog *dialog );
+static void      v_init_dialog( myDialog *dialog );
 static void      check_for_enable_dlg( ofaBatProperties *self );
 static gboolean  is_dialog_validable( ofaBatProperties *self );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaBatProperties *self );
 
 static void
@@ -70,12 +72,12 @@ bat_properties_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_bat_properties_finalize";
 	ofaBatPropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_BAT_PROPERTIES( instance ));
-
-	priv = OFA_BAT_PROPERTIES( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_BAT_PROPERTIES( instance ));
+
+	priv = OFA_BAT_PROPERTIES( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -87,9 +89,9 @@ bat_properties_finalize( GObject *instance )
 static void
 bat_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_BAT_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_BAT_PROPERTIES( instance ));
 
-	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
+	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -103,10 +105,10 @@ ofa_bat_properties_init( ofaBatProperties *self )
 {
 	static const gchar *thisfn = "ofa_bat_properties_init";
 
-	g_return_if_fail( OFA_IS_BAT_PROPERTIES( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_BAT_PROPERTIES( self ));
 
 	self->private = g_new0( ofaBatPropertiesPrivate, 1 );
 
@@ -124,8 +126,8 @@ ofa_bat_properties_class_init( ofaBatPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = bat_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = bat_properties_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -148,14 +150,15 @@ ofa_bat_properties_run( ofaMainWindow *main_window, ofoBat *bat )
 
 	self = g_object_new(
 				OFA_TYPE_BAT_PROPERTIES,
-				OFA_PROP_MAIN_WINDOW, main_window,
-				OFA_PROP_DIALOG_XML,  st_ui_xml,
-				OFA_PROP_DIALOG_NAME, st_ui_id,
+				MY_PROP_MAIN_WINDOW, main_window,
+				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
+				MY_PROP_WINDOW_XML,  st_ui_xml,
+				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
 	self->private->bat = bat;
 
-	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
+	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	updated = self->private->updated;
 	g_object_unref( self );
@@ -164,26 +167,29 @@ ofa_bat_properties_run( ofaMainWindow *main_window, ofoBat *bat )
 }
 
 static void
-v_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( myDialog *dialog )
 {
 	ofaBatProperties *self;
 	ofaBatPropertiesPrivate *priv;
 	gchar *title;
 	ofaBatCommonParms parms;
+	GtkWindow *toplevel;
 	GtkWidget *container;
 
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+
 	title = g_strdup( _( "Updating the BAT properties" ));
-	gtk_window_set_title( GTK_WINDOW( dialog->prot->dialog ), title );
+	gtk_window_set_title( toplevel, title );
 
 	self = OFA_BAT_PROPERTIES( dialog );
 	priv = self->private;
 
 	container = my_utils_container_get_child_by_name(
-								GTK_CONTAINER( dialog->prot->dialog ), "containing-frame" );
+								GTK_CONTAINER( toplevel ), "containing-frame" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	parms.container = GTK_CONTAINER( container );
-	parms.dossier = ofa_base_dialog_get_dossier( dialog );
+	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
 	parms.with_tree_view = FALSE;
 	parms.editable = TRUE;
 	parms.pfnSelection = NULL;
@@ -202,7 +208,7 @@ check_for_enable_dlg( ofaBatProperties *self )
 	GtkWidget *button;
 
 	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 
 	gtk_widget_set_sensitive( button, is_dialog_validable( self ));
 }
@@ -210,12 +216,11 @@ check_for_enable_dlg( ofaBatProperties *self )
 static gboolean
 is_dialog_validable( ofaBatProperties *self )
 {
-
 	return( TRUE );
 }
 
 static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( myDialog *dialog )
 {
 	return( do_update( OFA_BAT_PROPERTIES( dialog )));
 }
@@ -230,9 +235,9 @@ do_update( ofaBatProperties *self )
 	g_return_val_if_fail( !self->private->is_new, FALSE );
 
 	priv = self->private;
-	dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
+	dossier = MY_WINDOW( self )->protected->dossier;
 
-	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, bat );
+	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), bat );
 
 	priv->updated = ofo_bat_update( priv->bat, dossier );
 

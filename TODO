@@ -235,7 +235,7 @@
                 flagged, and this flag unset when the data is modified
 
  210 2014- 6-12 move all dialogs from ofaBaseDialog to myDialog
-                - acount properties
+                - acount properties  - done
                 - account select     - done
                 - bat properties
                 - bat select

@@ -196,6 +196,7 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 	self = g_object_new(
 				OFA_TYPE_ACCOUNT_PROPERTIES,
 				MY_PROP_MAIN_WINDOW, main_window,
+				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
