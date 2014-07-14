@@ -212,31 +212,31 @@ init_properties_page( ofaDossierProperties *self )
 	GtkWidget *entry;
 	gchar *str;
 	ofaDeviseComboParms parms;
+	const gchar *costr;
+	gint ivalue;
 
 	priv = self->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
-	priv->label = g_strdup( ofo_dossier_get_label( priv->dossier ));
 	entry = my_utils_container_get_child_by_name( container, "p1-label" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	if( priv->label ){
-		gtk_entry_set_text( GTK_ENTRY( entry ), priv->label );
-	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
+	costr = ofo_dossier_get_label( priv->dossier );
+	if( costr ){
+		gtk_entry_set_text( GTK_ENTRY( entry ), costr );
+	}
 
-	priv->duree = ofo_dossier_get_exercice_length( priv->dossier );
 	entry = my_utils_container_get_child_by_name( container, "p1-exe-length" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	if( priv->duree > 0 ){
-		str = g_strdup_printf( "%d", priv->duree );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_duree_changed ), self );
+	ivalue = ofo_dossier_get_exercice_length( priv->dossier );
+	if( ivalue > 0 ){
+		str = g_strdup_printf( "%d", ivalue );
 	} else {
 		str = g_strdup_printf( "%d", DOS_DEFAULT_LENGTH );
 	}
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_duree_changed ), self );
-
-	priv->devise = g_strdup( ofo_dossier_get_default_devise( priv->dossier ));
 
 	parms.container = container;
 	parms.dossier = priv->dossier;
@@ -246,7 +246,7 @@ init_properties_page( ofaDossierProperties *self )
 	parms.disp_label = TRUE;
 	parms.pfnSelected = ( ofaDeviseComboCb ) on_devise_changed;
 	parms.user_data = self;
-	parms.initial_code = priv->devise;
+	parms.initial_code = ofo_dossier_get_default_devise( priv->dossier );
 
 	ofa_devise_combo_new( &parms );
 }
@@ -262,7 +262,6 @@ init_current_exe_page( ofaDossierProperties *self )
 
 	priv = self->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
-	g_debug( "init_current_exe_page" );
 
 	my_date_set_from_date(
 			&priv->last_closed,
@@ -387,6 +386,7 @@ check_for_enable_dlg( ofaDossierProperties *self )
 	button = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 
+	/*g_debug( "label=%s, duree=%u, devise=%s", priv->label, priv->duree, priv->devise );*/
 	ok = ofo_dossier_is_valid( priv->label, priv->duree, priv->devise );
 
 	gtk_widget_set_sensitive( button, ok );

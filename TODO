@@ -364,9 +364,6 @@
 
  279 2014- 7-14 Manage dossiers, manage databases (delete, reconciliate)
 
- 280 2014- 7-14 DossierNew: update properties right after having opened
-                the dossier
-
  281 2014- 7-14 move import to myAssistant
 
  282 2014- 7-14 move export to myAssistant
@@ -1098,6 +1095,10 @@
 
  277 2014- 7-13 DossierNew is not an assistant, but a dialog box
      2014- 7-14 done - svn #3769
+
+ 280 2014- 7-14 DossierNew: update properties right after having opened
+                the dossier
+     2014- 7-14 done - svn #3770
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
