@@ -589,7 +589,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ASS_TYPE      VARCHAR(1)                  COMMENT 'Type d\\'amortissement',"
 			"	ASS_COEF_DEG  DECIMAL(15,5)               COMMENT 'Coefficient degressif',"
 			"	ASS_RATE      DECIMAL(15,5)               COMMENT 'Taux d\\'amortissement',"
-			"	ASS_DATE_OUT  DATE                        COMMENT 'Out date',"
+			"	ASS_DATE_OUT  DATE                        COMMENT 'Outgoing date',"
 			"	ASS_NOTES     VARCHAR(4096)               COMMENT 'Notes',"
 			"	ASS_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
 			"	ASS_MAJ_STAMP TIMESTAMP                   COMMENT 'Last update timestamp'"

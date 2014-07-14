@@ -870,10 +870,11 @@ make_db_global( ofaDossierNew *self )
 	}
 
 	g_string_printf( stmt,
-			"CREATE TABLE IF NOT EXISTS OFA_T_AUDIT ("
+			"CREATE TABLE IF NOT EXISTS %s.OFA_T_AUDIT ("
 			"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
 			"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query actual timestamp',"
-			"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query')" );
+			"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query')",
+					self->private->p3_dbname );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		goto free_stmt;
 	}
