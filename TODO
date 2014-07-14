@@ -237,7 +237,7 @@
  210 2014- 6-12 move all dialogs from ofaBaseDialog to myDialog
                 - acount properties  - done
                 - account select     - done
-                - bat properties
+                - bat properties     - done
                 - bat select
                 - class properties
                 - devise properties

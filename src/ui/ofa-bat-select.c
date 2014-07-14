@@ -29,7 +29,7 @@
 #endif
 
 #include "core/my-utils.h"
-#include "ui/ofa-base-dialog-prot.h"
+#include "ui/my-window-prot.h"
 #include "ui/ofa-bat-common.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-main-window.h"
@@ -45,18 +45,18 @@ struct _ofaBatSelectPrivate {
 
 	/* returned value
 	 */
-	gint        bat_id;
+	gint          bat_id;
 };
 
 static const gchar *st_ui_xml = PKGUIDIR "/ofa-bat-select.ui";
 static const gchar *st_ui_id  = "BatSelectDlg";
 
-G_DEFINE_TYPE( ofaBatSelect, ofa_bat_select, OFA_TYPE_BASE_DIALOG )
+G_DEFINE_TYPE( ofaBatSelect, ofa_bat_select, MY_TYPE_DIALOG )
 
-static void      v_init_dialog( ofaBaseDialog *dialog );
-static void      on_row_activated( const ofoBat *bat, ofaBaseDialog *dialog );
+static void      v_init_dialog( myDialog *dialog );
+static void      on_row_activated( const ofoBat *bat, ofaBatSelect *self );
 static void      check_for_enable_dlg( ofaBatSelect *self );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaBatSelect *self );
 
 static void
@@ -65,12 +65,12 @@ bat_select_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_bat_select_finalize";
 	ofaBatSelectPrivate *priv;
 
-	g_return_if_fail( OFA_IS_BAT_SELECT( instance ));
-
-	priv = OFA_BAT_SELECT( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_BAT_SELECT( instance ));
+
+	priv = OFA_BAT_SELECT( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -82,9 +82,9 @@ bat_select_finalize( GObject *instance )
 static void
 bat_select_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_BAT_SELECT( instance ));
+	g_return_if_fail( instance && OFA_IS_BAT_SELECT( instance ));
 
-	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
+	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -98,10 +98,10 @@ ofa_bat_select_init( ofaBatSelect *self )
 {
 	static const gchar *thisfn = "ofa_bat_select_init";
 
-	g_return_if_fail( OFA_IS_BAT_SELECT( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_BAT_SELECT( self ));
 
 	self->private = g_new0( ofaBatSelectPrivate, 1 );
 }
@@ -116,8 +116,8 @@ ofa_bat_select_class_init( ofaBatSelectClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = bat_select_dispose;
 	G_OBJECT_CLASS( klass )->finalize = bat_select_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -139,12 +139,13 @@ ofa_bat_select_run( ofaMainWindow *main_window )
 
 	self = g_object_new(
 			OFA_TYPE_BAT_SELECT,
-			OFA_PROP_MAIN_WINDOW, main_window,
-			OFA_PROP_DIALOG_XML,  st_ui_xml,
-			OFA_PROP_DIALOG_NAME, st_ui_id,
+			MY_PROP_MAIN_WINDOW, main_window,
+			MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
+			MY_PROP_WINDOW_XML,  st_ui_xml,
+			MY_PROP_WINDOW_NAME, st_ui_id,
 			NULL );
 
-	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
+	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	bat_id = self->private->bat_id;
 
@@ -154,7 +155,7 @@ ofa_bat_select_run( ofaMainWindow *main_window )
 }
 
 static void
-v_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( myDialog *dialog )
 {
 	ofaBatSelectPrivate *priv;
 	ofaBatCommonParms parms;
@@ -162,11 +163,13 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	priv = OFA_BAT_SELECT( dialog )->private;
 
-	container = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog->prot->dialog ), "containing-frame" );
+	container = my_utils_container_get_child_by_name(
+						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
+						"containing-frame" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	parms.container = GTK_CONTAINER( container );
-	parms.dossier = ofa_base_dialog_get_dossier( dialog );
+	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
 	parms.with_tree_view = TRUE;
 	parms.editable = FALSE;
 	parms.pfnSelection = NULL;
@@ -182,9 +185,11 @@ v_init_dialog( ofaBaseDialog *dialog )
  * ofoBatCommon cb
  */
 static void
-on_row_activated( const ofoBat *bat, ofaBaseDialog *dialog )
+on_row_activated( const ofoBat *bat, ofaBatSelect *self )
 {
-	gtk_dialog_response( dialog->prot->dialog, GTK_RESPONSE_OK );
+	gtk_dialog_response(
+			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
+			GTK_RESPONSE_OK );
 }
 
 static void
@@ -196,13 +201,13 @@ check_for_enable_dlg( ofaBatSelect *self )
 	bat = ofa_bat_common_get_selection( self->private->bat_common );
 
 	btn = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 
 	gtk_widget_set_sensitive( btn, bat && OFO_IS_BAT( bat ));
 }
 
 static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( myDialog *dialog )
 {
 	return( do_update( OFA_BAT_SELECT( dialog )));
 }
