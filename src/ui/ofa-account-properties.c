@@ -38,7 +38,7 @@
 #include "core/my-date.h"
 #include "core/my-utils.h"
 
-#include "ui/ofa-base-dialog-prot.h"
+#include "ui/my-window-prot.h"
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-devise-combo.h"
 #include "ui/ofa-main-window.h"
@@ -89,9 +89,9 @@ typedef const GDate * ( *fnGetDate )  ( const ofoAccount * );
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-account-properties.ui";
 static const gchar  *st_ui_id  = "AccountPropertiesDlg";
 
-G_DEFINE_TYPE( ofaAccountProperties, ofa_account_properties, OFA_TYPE_BASE_DIALOG )
+G_DEFINE_TYPE( ofaAccountProperties, ofa_account_properties, MY_TYPE_DIALOG )
 
-static void      v_init_dialog( ofaBaseDialog *dialog );
+static void      v_init_dialog( myDialog *dialog );
 static void      set_amount( ofaAccountProperties *self, gdouble *amount, fnGetDouble fn, const gchar *wname );
 static void      set_ecr_num( ofaAccountProperties *self, gint *num, fnGetInt fn, const gchar *wname );
 static void      set_ecr_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar *wname );
@@ -103,7 +103,7 @@ static void      on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *s
 static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *type );
 static void      check_for_enable_dlg( ofaAccountProperties *self );
 static gboolean  is_dialog_validable( ofaAccountProperties *self );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaAccountProperties *self );
 
 static void
@@ -112,12 +112,12 @@ account_properties_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_account_properties_finalize";
 	ofaAccountPropertiesPrivate *priv;
 
-	priv = OFA_ACCOUNT_PROPERTIES( instance )->private;
-
-	g_return_if_fail( OFA_IS_ACCOUNT_PROPERTIES( instance ));
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_PROPERTIES( instance ));
+
+	priv = OFA_ACCOUNT_PROPERTIES( instance )->private;
 
 	/* free data members here */
 	g_free( priv->number );
@@ -134,9 +134,9 @@ account_properties_finalize( GObject *instance )
 static void
 account_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_ACCOUNT_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_PROPERTIES( instance ));
 
-	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
+	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -170,8 +170,8 @@ ofa_account_properties_class_init( ofaAccountPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = account_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_properties_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -195,14 +195,14 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 
 	self = g_object_new(
 				OFA_TYPE_ACCOUNT_PROPERTIES,
-				OFA_PROP_MAIN_WINDOW, main_window,
-				OFA_PROP_DIALOG_XML,  st_ui_xml,
-				OFA_PROP_DIALOG_NAME, st_ui_id,
+				MY_PROP_MAIN_WINDOW, main_window,
+				MY_PROP_WINDOW_XML,  st_ui_xml,
+				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
 	self->private->account = account;
 
-	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
+	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	updated = self->private->updated;
 	g_object_unref( self );
@@ -211,7 +211,7 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 }
 
 static void
-v_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( myDialog *dialog )
 {
 	static const gchar *thisfn = "ofa_account_properties_v_init_dialog";
 	ofaAccountProperties *self;
@@ -220,9 +220,13 @@ v_init_dialog( ofaBaseDialog *dialog )
 	const gchar *acc_number;
 	GtkEntry *entry;
 	ofaDeviseComboParms parms;
+	GtkContainer *container;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
 	priv = self->private;
+
+	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	acc_number = ofo_account_get_number( priv->account );
 	if( !acc_number ){
@@ -231,11 +235,10 @@ v_init_dialog( ofaBaseDialog *dialog )
 	} else {
 		title = g_strdup_printf( _( "Updating account %s" ), acc_number );
 	}
-	gtk_window_set_title( GTK_WINDOW( dialog->prot->dialog ), title );
+	gtk_window_set_title( GTK_WINDOW( container ), title );
 
 	priv->number = g_strdup( acc_number );
-	priv->w_number = GTK_ENTRY( my_utils_container_get_child_by_name(
-							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-number" ));
+	priv->w_number = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-number" ));
 	if( priv->number ){
 		gtk_entry_set_text( priv->w_number, priv->number );
 	}
@@ -243,8 +246,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 			G_OBJECT( priv->w_number ), "changed", G_CALLBACK( on_number_changed ), dialog );
 
 	priv->label = g_strdup( ofo_account_get_label( priv->account ));
-	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( dialog->prot->dialog ), "p1-label" ));
+	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
@@ -253,8 +255,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	priv->devise = g_strdup( ofo_account_get_devise( priv->account ));
 
-	parms.container = GTK_CONTAINER( dialog->prot->dialog );
-	parms.dossier = ofa_base_dialog_get_dossier( dialog );
+	parms.container = container;
+	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
 	parms.combo_name = "p1-devise";
 	parms.label_name = NULL;
 	parms.disp_code = TRUE;
@@ -267,10 +269,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 
-	priv->w_root = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name(
-							GTK_CONTAINER( dialog->prot->dialog ), "p1-root-account" ));
-	priv->w_detail = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name(
-							GTK_CONTAINER( dialog->prot->dialog ), "p1-detail-account" ));
+	priv->w_root = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name( container, "p1-root-account" ));
+	priv->w_detail = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name( container, "p1-detail-account" ));
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->w_root ), FALSE );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->w_detail ), FALSE );
 
@@ -307,8 +307,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 	set_ecr_num( self, &priv->bro_cre_ecr, ofo_account_get_bro_cre_ecr, "p2-bro-cre-ecr" );
 	set_ecr_date( self, &priv->bro_cre_date, ofo_account_get_bro_cre_date, "p2-bro-cre-date" );
 
-	my_utils_init_notes_ex( dialog->prot->dialog, account );
-	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, account );
+	my_utils_init_notes_ex( container, account );
+	my_utils_init_maj_user_stamp_ex( container, account );
 
 	check_for_enable_dlg( OFA_ACCOUNT_PROPERTIES( dialog ));
 }
@@ -321,7 +321,7 @@ set_amount( ofaAccountProperties *self, gdouble *amount, fnGetDouble fn, const g
 
 	*amount = ( *fn )( self->private->account );
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), wname ));
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
 	str = g_strdup_printf( "%'.2lf €", *amount );
 	gtk_label_set_text( label, str );
 	g_free( str );
@@ -335,7 +335,7 @@ set_ecr_num( ofaAccountProperties *self, gint *num, fnGetInt fn, const gchar *wn
 
 	*num = ( *fn )( self->private->account );
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
-				GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), wname ));
+				GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
 	if( *num ){
 		str = g_strdup_printf( "%u", *num );
 	} else {
@@ -353,7 +353,7 @@ set_ecr_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar
 
 	memcpy( date, ( *fn )( self->private->account ), sizeof( GDate ));
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), wname ));
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
 	str = my_date_to_str( date, MY_DATE_DMMM );
 	gtk_label_set_text( label, str );
 	g_free( str );
@@ -447,14 +447,14 @@ check_for_enable_dlg( ofaAccountProperties *self )
 
 	combo = GTK_COMBO_BOX(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-devise" ));
+						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-devise" ));
 	if( combo ){
 		gtk_widget_set_sensitive( GTK_WIDGET( combo ), vierge && !is_root );
 	}
 
 	ok_enabled = is_dialog_validable( self );
 	button = my_utils_container_get_child_by_name(
-							GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
+							GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 	if( button ){
 		gtk_widget_set_sensitive( button, ok_enabled );
 	}
@@ -481,7 +481,7 @@ is_dialog_validable( ofaAccountProperties *self )
 	 */
 	if( ok && !self->private->number_ok ){
 
-		dossier = ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self ));
+		dossier = MY_WINDOW( self )->protected->dossier;
 		exists = ofo_account_get_by_number( dossier, self->private->number );
 		prev = ofo_account_get_number( priv->account );
 		self->private->number_ok = !exists || !g_utf8_collate( prev, priv->number );
@@ -492,7 +492,7 @@ is_dialog_validable( ofaAccountProperties *self )
 }
 
 static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( myDialog *dialog )
 {
 	return( do_update( OFA_ACCOUNT_PROPERTIES( dialog )));
 }
@@ -512,7 +512,7 @@ do_update( ofaAccountProperties *self )
 	ofo_account_set_label( priv->account, priv->label );
 	ofo_account_set_type( priv->account, priv->type );
 	ofo_account_set_devise( priv->account, priv->devise );
-	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, account );
+	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), account );
 
 	if( priv->is_new ){
 		priv->updated =
