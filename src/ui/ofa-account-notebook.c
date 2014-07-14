@@ -623,12 +623,13 @@ ofa_account_notebook_init_view( ofaAccountNotebook *self, const gchar *number )
 
 		} else {
 			page_w = gtk_notebook_get_nth_page( self->private->book, 0 );
-			g_return_if_fail( page_w && GTK_IS_CONTAINER( page_w ));
-			tview = ( GtkTreeView * ) my_utils_container_get_child_by_type( GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
-			g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-			tmodel = gtk_tree_view_get_model( tview );
-			if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-				select_row_by_iter( self, tview, tmodel, &iter );
+			if( page_w ){
+				tview = ( GtkTreeView * ) my_utils_container_get_child_by_type( GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+				g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+				tmodel = gtk_tree_view_get_model( tview );
+				if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+					select_row_by_iter( self, tview, tmodel, &iter );
+				}
 			}
 		}
 	}
