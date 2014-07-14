@@ -753,8 +753,8 @@ check_for_enable_dlg( ofaDossierNew *self )
 
 	priv = self->private;
 
-	enabled = priv->p2_successful &&
-				priv->p3_account && g_utf8_strlen( priv->p3_account, -1 ) &&
+	/* #288: enable dlg should not depend of connection check */
+	enabled = priv->p3_account && g_utf8_strlen( priv->p3_account, -1 ) &&
 				priv->p3_password &&
 				priv->p3_bis &&
 				priv->p3_are_equals;

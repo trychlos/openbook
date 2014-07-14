@@ -358,9 +358,6 @@
  288 2014- 7-14 DossierNew: enable dlg should not depend of connection
                 check
 
- 289 2014- 7-14 DossierNew: there is no error message when passwords 
-                are not equals
-
  290
 
 -----------------------------------------------------------------------
@@ -1124,6 +1121,10 @@
                 assertion `page_w && GTK_IS_CONTAINER( page_w )' failed
                 (when there is no account ?)
      2014- 7-14 done - svn #3784
+
+ 289 2014- 7-14 DossierNew: there is no error message when passwords 
+                are not equals
+     2014- 7-14 done - svn #3786
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
