@@ -230,11 +230,7 @@ init_properties_page( ofaDossierProperties *self )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_duree_changed ), self );
 	ivalue = ofo_dossier_get_exercice_length( priv->dossier );
-	if( ivalue > 0 ){
-		str = g_strdup_printf( "%d", ivalue );
-	} else {
-		str = g_strdup_printf( "%d", DOS_DEFAULT_LENGTH );
-	}
+	str = g_strdup_printf( "%d", ivalue );
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
 

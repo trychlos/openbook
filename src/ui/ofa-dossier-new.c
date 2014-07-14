@@ -232,8 +232,8 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
-	init_p1_sgdb_provider( OFA_DOSSIER_NEW( dialog ));
 	init_p3_dossier_properties( OFA_DOSSIER_NEW( dialog ));
+	init_p1_sgdb_provider( OFA_DOSSIER_NEW( dialog ));
 }
 
 static void
@@ -304,6 +304,7 @@ setup_mysql_provider( ofaDossierNew *self )
 	GtkWidget *entry, *button;
 	gchar *value;
 	gint ivalue;
+	GtkSizeGroup *group;
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 	parent = my_utils_container_get_child_by_name( container, "sgdb-container" );
@@ -315,14 +316,21 @@ setup_mysql_provider( ofaDossierNew *self )
 		gtk_container_remove( GTK_CONTAINER( parent ), child );
 	}
 
+	/* have a size group */
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	grid = my_utils_container_get_child_by_name( container, "p1-provider-grid" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+	gtk_size_group_add_widget( group, grid );
+
 	/* attach our sgdb provider grid */
 	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_mysql );
 	g_return_if_fail( window && GTK_IS_WINDOW( window ));
-
 	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "mysql-properties" );
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));
 
 	gtk_widget_reparent( grid, parent );
+	gtk_size_group_add_widget( group, grid );
+	g_object_unref( group );
 
 	/* init the grid */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "p2-check" );
@@ -400,6 +408,8 @@ on_mysql_port_changed( GtkEntry *entry, ofaDossierNew *self )
 	port = gtk_entry_get_text( entry );
 	if( port && g_utf8_strlen( port, -1 )){
 		priv->p2_port = atoi( port );
+	} else {
+		priv->p2_port = 0;
 	}
 
 	priv->p2_successful = FALSE;
@@ -541,6 +551,10 @@ init_p3_dossier_properties( ofaDossierNew *self )
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
+	widget = my_utils_container_get_child_by_name( container, "p3-label" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_label_changed ), self );
+
 	widget = my_utils_container_get_child_by_name( container, "p3-name" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_name_changed ), self );
@@ -549,10 +563,6 @@ init_p3_dossier_properties( ofaDossierNew *self )
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_db_find_clicked ), self );
 	self->private->p3_browse_btn = widget;
-
-	widget = my_utils_container_get_child_by_name( container, "p3-label" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_label_changed ), self );
 
 	widget = my_utils_container_get_child_by_name( container, "p3-account" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
@@ -949,13 +959,13 @@ create_db_model( ofaDossierNew *self )
 			self->private->p2_port,
 			self->private->p2_socket,
 			self->private->p3_dbname,
-			self->private->p2_account,
-			self->private->p2_password )){
+			self->private->p3_account,
+			self->private->p3_password )){
 
 		goto free_sgbd;
 	}
 
-	if( !ofo_dossier_dbmodel_update( sgbd, self->private->p3_account )){
+	if( !ofo_dossier_dbmodel_update( sgbd, self->private->p3_label, self->private->p3_account )){
 		goto free_sgbd;
 	}
 

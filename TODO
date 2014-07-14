@@ -368,11 +368,15 @@
 
  282 2014- 7-14 move export to myAssistant
 
- 283 2014- 7-14 Dossier long label should default to dossier short label
+ 283 2014- 7-14 DossierNew: set the default values:
+                - long label should default to dossier short label
+                - exercice length
 
- 284 2014- 7-14 Dossier Properties : ok is not enabled
+ 285 2014- 7-14 DossierNew: there is an error in a SQL sentence
 
- 285
+ 286 2014- 7-14 DossierNew: audit table doesn't exist
+
+ 287
 
 -----------------------------------------------------------------------
  DONE
@@ -1099,6 +1103,9 @@
  280 2014- 7-14 DossierNew: update properties right after having opened
                 the dossier
      2014- 7-14 done - svn #3770
+
+ 284 2014- 7-14 Dossier Properties : ok is not enabled
+     2014- 7-14 done - svn #3771
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

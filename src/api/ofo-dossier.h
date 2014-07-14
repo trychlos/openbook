@@ -107,7 +107,7 @@ void            ofo_dossier_set_current_exe_deb     ( const ofoDossier *dossier,
 void            ofo_dossier_set_current_exe_fin     ( const ofoDossier *dossier, const GDate *date );
 void            ofo_dossier_set_current_exe_last_ecr( const ofoDossier *dossier, gint number );
 
-gboolean        ofo_dossier_dbmodel_update          ( ofoSgbd *sgbd, const gchar *account );
+gboolean        ofo_dossier_dbmodel_update          ( ofoSgbd *sgbd, const gchar *name, const gchar *account );
 
 gboolean        ofo_dossier_update                  ( ofoDossier *dossier );
 

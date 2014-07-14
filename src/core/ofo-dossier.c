@@ -109,7 +109,7 @@ static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static gint        dbmodel_get_version( ofoSgbd *sgbd );
-static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account );
+static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account );
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
 static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
 static sDetailExe *get_exe_by_date( const ofoDossier *dossier, const GDate *date );
@@ -415,7 +415,7 @@ ofo_dossier_open( ofoDossier *dossier,
 	dossier->private->sgbd = sgbd;
 	dossier->private->userid = g_strdup( account );
 
-	ofo_dossier_dbmodel_update( sgbd, account );
+	ofo_dossier_dbmodel_update( sgbd, dossier->private->name, account );
 	connect_objects_handlers( dossier );
 
 	return( dossier_do_read( dossier ));
@@ -486,26 +486,26 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 /**
  * ofo_dossier_dbmodel_update:
  * @sgbd: an already opened connection
- * @parent: the GtkWindow which will be the parent of the error dialog, if any
+ * @name: the name of the dossier
  * @account: the account which has opened this connection; it will be checked
  *  against its permissions when trying to update the data model
  *
  * Update the DB model in the SGBD
  */
 gboolean
-ofo_dossier_dbmodel_update( ofoSgbd *sgbd, const gchar *account )
+ofo_dossier_dbmodel_update( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_update";
 	gint cur_version;
 
-	g_debug( "%s: sgbd=%p, account=%s", thisfn, ( void * ) sgbd, account );
+	g_debug( "%s: sgbd=%p, name=%s, account=%s", thisfn, ( void * ) sgbd, name, account );
 
 	cur_version = dbmodel_get_version( sgbd );
 	g_debug( "%s: cur_version=%d, THIS_DBMODEL_VERSION=%d", thisfn, cur_version, THIS_DBMODEL_VERSION );
 
 	if( cur_version < THIS_DBMODEL_VERSION ){
 		if( cur_version < 1 ){
-			dbmodel_to_v1( sgbd, account );
+			dbmodel_to_v1( sgbd, name, account );
 		}
 	}
 
@@ -539,7 +539,7 @@ dbmodel_get_version( ofoSgbd *sgbd )
  * ofo_dossier_dbmodel_to_v1:
  */
 static gboolean
-dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
+dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v1";
 	gchar *query;
@@ -770,10 +770,15 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
-			"INSERT IGNORE INTO OFA_T_DOSSIER (DOS_ID) VALUE (1)" )){
+	query = g_strdup_printf(
+			"INSERT IGNORE INTO OFA_T_DOSSIER "
+			"	(DOS_ID,DOS_LABEL,DOS_DUREE_EXE,DOS_DEV_CODE) "
+			"	VALUES (1,'%s',%u,'%s')", name, DOS_DEFAULT_LENGTH, "EUR" );
+	if( !ofo_sgbd_query( sgbd, query )){
+		g_free( query );
 		return( FALSE );
 	}
+	g_free( query );
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_EXE ("
@@ -965,7 +970,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *account )
 /**
  * ofo_dossier_get_name:
  *
- * Returns: the searched account.
+ * Returns: the name (short label) of the dossier.
  */
 const gchar *
 ofo_dossier_get_name( const ofoDossier *dossier )
