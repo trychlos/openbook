@@ -34,7 +34,7 @@
 #include "core/my-utils.h"
 #include "core/ofa-settings.h"
 
-#include "ui/ofa-base-dialog-prot.h"
+#include "ui/my-window-prot.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-main-window.h"
 
@@ -55,8 +55,8 @@ struct _ofaDossierOpenPrivate {
 	ofaOpenDossier *ood;
 };
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-dossier-open.ui";
-static const gchar  *st_ui_id        = "DossierOpenDlg";
+static const gchar  *st_ui_xml = PKGUIDIR "/ofa-dossier-open.ui";
+static const gchar  *st_ui_id  = "DossierOpenDlg";
 
 /* column ordering in the selection listview
  */
@@ -65,14 +65,15 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, OFA_TYPE_BASE_DIALOG )
+G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, MY_TYPE_DIALOG )
 
-static void      v_init_dialog( ofaBaseDialog *dialog );
+static void      v_init_dialog( myDialog *dialog );
+static gint      on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
 static void      on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self );
 static void      on_account_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      on_password_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_open( ofaDossierOpen *self );
 
 static void
@@ -81,7 +82,7 @@ dossier_open_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_dossier_open_finalize";
 	ofaDossierOpenPrivate *priv;
 
-	g_return_if_fail( OFA_IS_DOSSIER_OPEN( instance ));
+	g_return_if_fail( instance && OFA_IS_DOSSIER_OPEN( instance ));
 
 	priv = OFA_DOSSIER_OPEN( instance )->private;
 
@@ -101,9 +102,9 @@ dossier_open_finalize( GObject *instance )
 static void
 dossier_open_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_DOSSIER_OPEN( instance ));
+	g_return_if_fail( instance && OFA_IS_DOSSIER_OPEN( instance ));
 
-	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
+	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -117,7 +118,7 @@ ofa_dossier_open_init( ofaDossierOpen *self )
 {
 	static const gchar *thisfn = "ofa_dossier_open_init";
 
-	g_return_if_fail( OFA_IS_DOSSIER_OPEN( self ));
+	g_return_if_fail( self && OFA_IS_DOSSIER_OPEN( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
@@ -135,8 +136,8 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dossier_open_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_open_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -158,12 +159,12 @@ ofa_dossier_open_run( ofaMainWindow *main_window )
 
 	self = g_object_new(
 				OFA_TYPE_DOSSIER_OPEN,
-				OFA_PROP_MAIN_WINDOW, main_window,
-				OFA_PROP_DIALOG_XML,  st_ui_xml,
-				OFA_PROP_DIALOG_NAME, st_ui_id,
+				MY_PROP_MAIN_WINDOW, main_window,
+				MY_PROP_WINDOW_XML,  st_ui_xml,
+				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
-	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
+	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	ood = self->private->ood;
 	g_object_unref( self );
@@ -171,31 +172,10 @@ ofa_dossier_open_run( ofaMainWindow *main_window )
 	return( ood );
 }
 
-#if 0
-static gboolean
-on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaDossierOpen *self )
-{
-	gboolean stop = FALSE;
-
-	g_return_val_if_fail( OFA_IS_DOSSIER_OPEN( self ), FALSE );
-
-	if( !self->private->dispose_has_run ){
-
-		if( event->keyval == GDK_KEY_Escape && pref_quit_on_escape ){
-
-				self->private->escape_key_pressed = TRUE;
-				g_signal_emit_by_name( self->private->dialog, "cancel", self );
-				stop = TRUE;
-		}
-	}
-
-	return( stop );
-}
-#endif
-
 static void
-v_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( myDialog *dialog )
 {
+	GtkContainer *container;
 	GtkTreeView *listview;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *text_cell;
@@ -208,21 +188,25 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	focus = NULL;
 
-#if 0
-	/* deals with 'Esc' key */
-	g_signal_connect( assistant,
-			"key-press-event", G_CALLBACK( on_key_pressed_event ), self );
-#endif
+	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	dossiers = ofa_settings_get_dossiers();
 
 	listview = GTK_TREE_VIEW(
-					my_utils_container_get_child_by_name(
-							GTK_CONTAINER( dialog->prot->dialog ), "treeview" ));
+					my_utils_container_get_child_by_name( container, "treeview" ));
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new( N_COLUMNS, G_TYPE_STRING ));
 	gtk_tree_view_set_model( listview, tmodel );
 	g_object_unref( tmodel );
 	focus = g_list_append( focus, listview );
+
+	gtk_tree_sortable_set_default_sort_func(
+			GTK_TREE_SORTABLE( tmodel ),
+			( GtkTreeIterCompareFunc ) on_sort_model, NULL, NULL );
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( tmodel ),
+			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
+			GTK_SORT_ASCENDING );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -247,18 +231,17 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	g_slist_free_full( dossiers, ( GDestroyNotify ) g_free );
 
-	gtk_tree_model_get_iter_first( tmodel, &iter );
-	gtk_tree_selection_select_iter( select, &iter );
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		gtk_tree_selection_select_iter( select, &iter );
+	}
 
 	entry = GTK_ENTRY(
-				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "account" ));
+				my_utils_container_get_child_by_name( container, "account" ));
 	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
 	focus = g_list_append( focus, entry );
 
 	entry = GTK_ENTRY(
-				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "password" ));
+				my_utils_container_get_child_by_name( container, "password" ));
 	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
 	focus = g_list_append( focus, entry );
 
@@ -271,6 +254,23 @@ v_init_dialog( ofaBaseDialog *dialog )
 	gtk_container_set_focus_chain( GTK_CONTAINER( dialog ), focus );*/
 
 	check_for_enable_dlg( OFA_DOSSIER_OPEN( dialog ));
+}
+
+static gint
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data )
+{
+	gchar *aname, *bname;
+	gint cmp;
+
+	gtk_tree_model_get( tmodel, a, COL_NAME, &aname, -1 );
+	gtk_tree_model_get( tmodel, b, COL_NAME, &bname, -1 );
+
+	cmp = g_utf8_collate( aname, bname );
+
+	g_free( aname );
+	g_free( bname );
+
+	return( cmp );
 }
 
 static void
@@ -318,12 +318,12 @@ check_for_enable_dlg( ofaDossierOpen *self )
 	ok_enable = self->private->name && self->private->account && self->private->password;
 
 	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-open" );
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-open" );
 	gtk_widget_set_sensitive( button, ok_enable );
 }
 
 static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( myDialog *dialog )
 {
 	return( do_open( OFA_DOSSIER_OPEN( dialog )));
 }
