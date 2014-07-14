@@ -81,6 +81,7 @@ struct _ofaMainWindowPrivate {
  */
 enum {
 	OPEN_DOSSIER,
+	UPDATE_PROPERTIES,
 	N_SIGNALS
 };
 
@@ -257,12 +258,14 @@ static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, g
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void             on_update_properties( ofaMainWindow *window, gpointer user_data );
 static void             pane_restore_position( GtkPaned *pane );
 static void             add_treeview_to_pane_left( ofaMainWindow *window );
 static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static const sThemeDef *get_theme_def_from_id( gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
 static void             on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void             on_update_properties_cleanup_handler( ofaMainWindow *window, gpointer user_data );
 static void             do_close_dossier( ofaMainWindow *self );
 static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
@@ -408,6 +411,7 @@ main_window_constructed( GObject *instance )
 		g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), NULL );
 
 		g_signal_connect( instance, OFA_SIGNAL_OPEN_DOSSIER, G_CALLBACK( on_open_dossier ), NULL );
+		g_signal_connect( instance, OFA_SIGNAL_UPDATE_PROPERTIES, G_CALLBACK( on_update_properties ), NULL );
 	}
 }
 
@@ -466,6 +470,27 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_POINTER );
+
+	/*
+	 * ofaMainWindow::ofa-signal-update-properties:
+	 *
+	 * This signal is to be sent to the main window for updating the
+	 * dossier properties (as an alternative to the menu item).
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMainWindow *window,
+	 * 						gpointer user_data );
+	 */
+	st_signals[ UPDATE_PROPERTIES ] = g_signal_new_class_handler(
+				OFA_SIGNAL_UPDATE_PROPERTIES,
+				OFA_TYPE_MAIN_WINDOW,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_update_properties_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0 );
 }
 
 /**
@@ -827,6 +852,28 @@ on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpo
 	g_free( sod->account );
 	g_free( sod->password );
 	g_free( sod );
+}
+
+static void
+on_update_properties( ofaMainWindow *window, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_update_properties";
+
+	g_debug( "%s: window=%p, user_data=%p",
+			thisfn, ( void * ) window, ( void * ) user_data );
+
+	if( window->private->dossier ){
+		ofa_dossier_properties_run( window, window->private->dossier );
+	}
+}
+
+static void
+on_update_properties_cleanup_handler( ofaMainWindow *window, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_update_properties_cleanup_handler";
+
+	g_debug( "%s: window=%p, user_data=%p",
+			thisfn, ( void * ) window, ( void * ) user_data );
 }
 
 static void

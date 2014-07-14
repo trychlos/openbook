@@ -34,15 +34,17 @@
      2014- 5- 5 ofa-application.c: variable 'pref_confirm_on_quit'
                 ofa-main-window.c: variable 'pref_confirm_on_altf4'
 
-  20 2014- 5- 5 Assistant Dossier/New: display the asterisks (mandatory)
+  20 2014- 5- 5 DossierNew: display the asterisks (mandatory)
                 in another color (grey ? red ? blue ?)
      2014- 5-22 see also Todo #85
 
-  21 2014- 5- 6 Assistant DossierNew: let the user be able to choose to
+  21 2014- 5- 6 DossierNew: let the user be able to choose to
                 create a new database (if the data provider allows it)
                 or to use an existing one
+     2014- 7-14 when using an existing database, have an option to
+                reinitialize it, or to use it as is
 
-  23 2014- 5- 8 Add a progress page to DossierNew assistant, displaying
+  23 2014- 5- 8 Add a progress page to DossierNew dialog, displaying
                 the executed SQL statements
 
   31 2014- 5- 8 Undo the actions partially done if Dossier New cannot be
@@ -58,14 +60,6 @@
                 is opened
      2014- 5-22 see also TODO #42
 
-  37 2014- 5-11 DossierNew: fix the order of the focus on pages p2 and
-                p3 (a try with gtk_container_set_focus_chain is not
-                successfull)
-
-  39 2014- 5-11 DossierNew: add fields needed to complete the
-                OFA_T_DOSSIER table to p1 page
-     2014- 6-30 same fields than DossierProperties
-
   40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
 
   41 2014- 5-12 ofaMainWindow: set menu tooltips
@@ -75,8 +69,6 @@
 
   43 2014- 5-12 ofaMainWindow left pane: should display a big icon and
                 a label instead of only a text
-
-  45 2014- 5-13 ofaMainWindow left pane: set the width of the tree
 
   49 2014- 5-15 All properties: monitor "notes" size so
                 that we stop the entering at 512 chars
@@ -255,11 +247,6 @@
                 - model properties
                 - taux properties    - done
 
- 211 2014- 6-12 move all assistants to myAssistant
-                - import
-                - export
-                - new dossier
-
  212 2014- 6-13 when importing, accept decimal comma as well as decimal
                 dot (and this should be a configuration option of the
                 assistant, as well as the character set)
@@ -373,8 +360,6 @@
                 so that caller may decide what to do instead of 
                 displaying an error message
 
- 277 2014- 7-13 DossierNew is not an assistant, but a dialog box
-
  278 2014- 7-13 extend to other sgdb providers (PostgreSQL, etc.)
 
  279 2014- 7-14 Manage dossiers, manage databases (delete, reconciliate)
@@ -382,7 +367,15 @@
  280 2014- 7-14 DossierNew: update properties right after having opened
                 the dossier
 
- 281
+ 281 2014- 7-14 move import to myAssistant
+
+ 282 2014- 7-14 move export to myAssistant
+
+ 283 2014- 7-14 Dossier long label should default to dossier short label
+
+ 284 2014- 7-14 Dossier Properties : ok is not enabled
+
+ 285
 
 -----------------------------------------------------------------------
  DONE
@@ -471,13 +464,26 @@
                 (as ofa_settings_get_dossier)
      2014- 5-10 Done
 
+  37 2014- 5-11 DossierNew: fix the order of the focus on pages p2 and
+                p3 (a try with gtk_container_set_focus_chain is not
+                successfull)
+     2014- 7-14 closed - cf. #277
+
   38 2014- 5-11 DossierOpen: fix the order of the focus
      2014- 5-22 done
+
+  39 2014- 5-11 DossierNew: add fields needed to complete the
+                OFA_T_DOSSIER table to p1 page
+     2014- 6-30 same fields than DossierProperties
+     2014- 7-14 closed - cf. #280
 
   44 2014- 5-13 ofaAccountsChart: set an accelerator for each page of
                 the classes book (e.g. Alt+1, etc.); set the label of
                 this accel as a tooltip of the notebook's page
      2014- 5-22 done svn #3474
+
+  45 2014- 5-13 ofaMainWindow left pane: set the width of the tree
+     2014- 7-14 done (pane position is saved)
 
   46 2014- 5-13 chart of accounts: this is a user preference whether
                 a double clic enter in 'Update' or in 'Consult entries'
@@ -926,6 +932,12 @@
                 update and delete public methods (see ofoAccount)
      2014- 6-13 done
 
+ 211 2014- 6-12 move all assistants to myAssistant
+                - import
+                - export
+                - new dossier
+     2014- 7-14 closed - cf. #281 and #282
+
  214 2014- 6-13 edit rough entries
      2014- 6-21 have a visual distinction depending of the entry status:
                 ok
@@ -1083,6 +1095,9 @@
                 currency on the currently edited line if not already
                 set
      2014- 6-27 done - svn #3752
+
+ 277 2014- 7-13 DossierNew is not an assistant, but a dialog box
+     2014- 7-14 done - svn #3769
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

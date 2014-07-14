@@ -68,6 +68,7 @@ struct _ofaDossierNewPrivate {
 	gchar         *p3_password;
 	gchar         *p3_bis;
 	gboolean       p3_open_dossier;
+	gboolean       p3_update_properties;
 
 	gboolean       p3_are_equals;
 
@@ -75,6 +76,7 @@ struct _ofaDossierNewPrivate {
 	 */
 	GtkWidget     *p2_check_btn;
 	GtkWidget     *p3_browse_btn;
+	GtkWidget     *p3_properties_btn;
 	GtkLabel      *msg_label;
 	GtkWidget     *apply_btn;
 };
@@ -114,6 +116,7 @@ static void      on_db_password_changed( GtkEntry *entry, ofaDossierNew *self );
 static void      on_db_bis_changed( GtkEntry *entry, ofaDossierNew *self );
 static gboolean  db_passwords_are_equals( ofaDossierNew *self );
 static void      on_db_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
+static void      on_db_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
 static void      set_message( ofaDossierNew *self, const gchar *msg );
 static void      check_for_enable_dlg( ofaDossierNew *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -563,9 +566,20 @@ init_p3_dossier_properties( ofaDossierNew *self )
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_bis_changed ), self );
 
+	/* before p3-open so that the later may update the former */
+	widget = my_utils_container_get_child_by_name( container, "p3-properties" );
+	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
+	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_db_properties_toggled ), self );
+	value = ofa_settings_get_boolean( "DossierNewDlg-properties" );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), value );
+	self->private->p3_properties_btn = widget;
+
 	widget = my_utils_container_get_child_by_name( container, "p3-open" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_db_open_toggled ), self );
+	/* force a signal to be triggered */
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), TRUE );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), FALSE );
 	value = ofa_settings_get_boolean( "DossierNewDlg-opendossier" );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), value );
 }
@@ -672,7 +686,20 @@ db_passwords_are_equals( ofaDossierNew *self )
 static void
 on_db_open_toggled( GtkToggleButton *button, ofaDossierNew *self )
 {
-	self->private->p3_open_dossier = gtk_toggle_button_get_active( button );
+	ofaDossierNewPrivate *priv;
+
+	priv = self->private;
+
+	priv->p3_open_dossier = gtk_toggle_button_get_active( button );
+
+	g_return_if_fail( priv->p3_properties_btn && GTK_IS_CHECK_BUTTON( priv->p3_properties_btn ));
+	gtk_widget_set_sensitive( priv->p3_properties_btn, priv->p3_open_dossier );
+}
+
+static void
+on_db_properties_toggled( GtkToggleButton *button, ofaDossierNew *self )
+{
+	self->private->p3_update_properties = gtk_toggle_button_get_active( button );
 }
 
 static void
@@ -750,6 +777,7 @@ v_quit_on_ok( myDialog *dialog )
 			ofa_settings_set_string( "DossierNewDlg-MySQL-account", priv->p2_account );
 		}
 		ofa_settings_set_boolean( "DossierNewDlg-opendossier", priv->p3_open_dossier );
+		ofa_settings_set_boolean( "DossierNewDlg-properties", priv->p3_update_properties );
 	}
 
 	return( ok );
@@ -780,6 +808,12 @@ do_apply( ofaDossierNew *self )
 			g_signal_emit_by_name(
 					MY_WINDOW( self )->protected->main_window,
 					OFA_SIGNAL_OPEN_DOSSIER, ood );
+
+			if( self->private->p3_update_properties ){
+				g_signal_emit_by_name(
+						MY_WINDOW( self )->protected->main_window,
+						OFA_SIGNAL_UPDATE_PROPERTIES );
+			}
 		}
 	}
 

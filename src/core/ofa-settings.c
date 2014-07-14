@@ -399,7 +399,7 @@ ofa_settings_set_dossier( const gchar *name, ... )
 
 			case SETTINGS_TYPE_INT:
 				icontent = va_arg( ap, gint );
-				if( icontent != INT_MIN ){
+				if( icontent > 0 ){
 					g_debug( "%s: setting key group=%s, key=%s, content=%d", thisfn, group, key, icontent );
 					g_key_file_set_integer( st_settings->private->keyfile, group, key, icontent );
 				} else {
