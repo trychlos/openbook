@@ -35,6 +35,7 @@
 #include "api/ofo-model.h"
 
 #include "core/my-utils.h"
+#include "core/ofa-settings.h"
 
 #include "ui/ofa-guided-common.h"
 #include "ui/ofa-guided-ex.h"
@@ -84,7 +85,9 @@ static const gchar  *st_ui_id     = "GuidedInputDlg";
 
 G_DEFINE_TYPE( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_MAIN_PAGE )
 
+static void       pane_save_position( GtkPaned *pane );
 static GtkWidget *v_setup_view( ofaMainPage *page );
+static void       pane_restore_position( GtkPaned *pane );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
 static GtkWidget *setup_view_left( ofaGuidedEx *self );
@@ -149,6 +152,10 @@ guided_ex_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
+		if( priv->pane ){
+			pane_save_position( priv->pane );
+		}
+
 		/* unref object members here */
 
 		if( priv->common ){
@@ -158,6 +165,12 @@ guided_ex_dispose( GObject *instance )
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_guided_ex_parent_class )->dispose( instance );
+}
+
+static void
+pane_save_position( GtkPaned *pane )
+{
+	ofa_settings_set_uint( "GuidedInputDlgEx-pane", gtk_paned_get_position( pane ));
 }
 
 static void
@@ -201,6 +214,7 @@ v_setup_view( ofaMainPage *page )
 	gtk_paned_add1( child, setup_view_left( OFA_GUIDED_EX( page )));
 	gtk_paned_add2( child, setup_view_right( OFA_GUIDED_EX( page )));
 	priv->pane = child;
+	pane_restore_position( child );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
@@ -219,6 +233,12 @@ v_setup_view( ofaMainPage *page )
 			OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), page );
 
 	return( GTK_WIDGET( child ));
+}
+
+static void
+pane_restore_position( GtkPaned *pane )
+{
+	gtk_paned_set_position( pane, ofa_settings_get_uint( "GuidedInputDlgEx-pane" ));
 }
 
 static GtkWidget *

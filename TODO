@@ -234,20 +234,6 @@
                 check the modified data => the checked data should be
                 flagged, and this flag unset when the data is modified
 
- 210 2014- 6-12 move all dialogs from ofaBaseDialog to myDialog
-                - acount properties  - done
-                - account select     - done
-                - bat properties     - done
-                - bat select         - done
-                - class properties   - done
-                - devise properties  - done
-                - dossier open       - done
-                - dossier properties - done
-                - guided input       - done
-                - journal properties - done
-                - model properties   - done
-                - taux properties    - done
-
  212 2014- 6-13 when importing, accept decimal comma as well as decimal
                 dot (and this should be a configuration option of the
                 assistant, as well as the character set)
@@ -933,6 +919,21 @@
  209 2014- 6-12 ofoTaux: get rid of ofoDossier argument in insert,
                 update and delete public methods (see ofoAccount)
      2014- 6-13 done
+
+ 210 2014- 6-12 move all dialogs from ofaBaseDialog to myDialog
+                - acount properties  - done
+                - account select     - done
+                - bat properties     - done
+                - bat select         - done
+                - class properties   - done
+                - devise properties  - done
+                - dossier open       - done
+                - dossier properties - done
+                - guided input       - done
+                - journal properties - done
+                - model properties   - done
+                - taux properties    - done
+     2014- 7-14 done - svn #3782 
 
  211 2014- 6-12 move all assistants to myAssistant
                 - import
