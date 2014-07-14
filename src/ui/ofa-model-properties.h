@@ -68,7 +68,7 @@
  *   value than those of the previous row, same column.
  */
 
-#include "ui/ofa-base-dialog.h"
+#include "ui/my-dialog.h"
 #include "api/ofo-model-def.h"
 
 G_BEGIN_DECLS
@@ -84,14 +84,14 @@ typedef struct _ofaModelPropertiesPrivate        ofaModelPropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaBaseDialog              parent;
+	myDialog                   parent;
 	ofaModelPropertiesPrivate *private;
 }
 	ofaModelProperties;
 
 typedef struct {
 	/*< private >*/
-	ofaBaseDialogClass parent;
+	myDialogClass parent;
 }
 	ofaModelPropertiesClass;
 

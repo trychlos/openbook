@@ -30,14 +30,16 @@
 
 #include <glib/gi18n.h>
 
+#include "api/ofo-dossier.h"
+#include "api/ofo-model.h"
+
 #include "core/my-utils.h"
+
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-base-dialog-prot.h"
+#include "ui/my-window-prot.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofa-model-properties.h"
 #include "ui/ofa-main-window.h"
-#include "api/ofo-dossier.h"
-#include "api/ofo-model.h"
 
 /* private instance data
  *
@@ -115,9 +117,9 @@ enum {
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-model-properties.ui";
 static const gchar  *st_ui_id        = "ModelPropertiesDlg";
 
-G_DEFINE_TYPE( ofaModelProperties, ofa_model_properties, OFA_TYPE_BASE_DIALOG )
+G_DEFINE_TYPE( ofaModelProperties, ofa_model_properties, MY_TYPE_DIALOG )
 
-static void      v_init_dialog( ofaBaseDialog *dialog );
+static void      v_init_dialog( myDialog *dialog );
 static void      init_dialog_title( ofaModelProperties *self );
 static void      init_dialog_mnemo( ofaModelProperties *self );
 static void      init_dialog_label( ofaModelProperties *self );
@@ -137,7 +139,7 @@ static void      on_button_clicked( GtkButton *button, ofaModelProperties *self 
 static void      remove_row( ofaModelProperties *self, gint row );
 static void      check_for_enable_dlg( ofaModelProperties *self );
 static gboolean  is_dialog_validable( ofaModelProperties *self );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaModelProperties *self );
 static void      get_detail_list( ofaModelProperties *self, gint row );
 
@@ -147,12 +149,12 @@ model_properties_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_model_properties_finalize";
 	ofaModelPropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MODEL_PROPERTIES( instance ));
-
-	priv = OFA_MODEL_PROPERTIES( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_MODEL_PROPERTIES( instance ));
+
+	priv = OFA_MODEL_PROPERTIES( instance )->private;
 
 	/* free data members here */
 	g_free( priv->mnemo );
@@ -168,9 +170,9 @@ model_properties_finalize( GObject *instance )
 static void
 model_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_MODEL_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_MODEL_PROPERTIES( instance ));
 
-	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
+	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -184,10 +186,10 @@ ofa_model_properties_init( ofaModelProperties *self )
 {
 	static const gchar *thisfn = "ofa_model_properties_init";
 
-	g_return_if_fail( OFA_IS_MODEL_PROPERTIES( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_MODEL_PROPERTIES( self ));
 
 	self->private = g_new0( ofaModelPropertiesPrivate, 1 );
 
@@ -205,8 +207,8 @@ ofa_model_properties_class_init( ofaModelPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = model_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = model_properties_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -232,15 +234,16 @@ ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model, const gch
 
 	self = g_object_new(
 					OFA_TYPE_MODEL_PROPERTIES,
-					OFA_PROP_MAIN_WINDOW, main_window,
-					OFA_PROP_DIALOG_XML,  st_ui_xml,
-					OFA_PROP_DIALOG_NAME, st_ui_id,
+					MY_PROP_MAIN_WINDOW, main_window,
+					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
+					MY_PROP_WINDOW_XML,  st_ui_xml,
+					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
 	self->private->model = model;
 	self->private->journal = g_strdup( journal );
 
-	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
+	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	updated = self->private->updated;
 
@@ -250,15 +253,17 @@ ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model, const gch
 }
 
 static void
-v_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( myDialog *dialog )
 {
 	ofaModelProperties *self;
 	ofaModelPropertiesPrivate *priv;
 	ofaJournalComboParms parms;
 	const gchar *mnemo;
+	GtkWindow *toplevel;
 
 	self = OFA_MODEL_PROPERTIES( dialog );
 	priv = self->private;
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
 	init_dialog_title( self );
 	init_dialog_mnemo( self );
@@ -267,8 +272,8 @@ v_init_dialog( ofaBaseDialog *dialog )
 	mnemo = ofo_model_get_mnemo( priv->model );
 	priv->is_new = !mnemo || !g_utf8_strlen( mnemo, -1 );
 
-	parms.container = GTK_CONTAINER( dialog->prot->dialog );
-	parms.dossier = ofa_base_dialog_get_dossier( dialog );
+	parms.container = GTK_CONTAINER( toplevel );
+	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
 	parms.combo_name = "p1-journal";
 	parms.label_name = NULL;
 	parms.disp_mnemo = TRUE;
@@ -281,15 +286,15 @@ v_init_dialog( ofaBaseDialog *dialog )
 
 	init_dialog_journal_locked( self );
 
-	my_utils_init_notes_ex( dialog->prot->dialog, model );
-	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, model );
+	my_utils_init_notes_ex( toplevel, model );
+	my_utils_init_maj_user_stamp_ex( toplevel, model );
 
 	init_dialog_detail( self );
 	check_for_enable_dlg( self );
 
 	gtk_widget_grab_focus(
 			my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "p1-mnemo" ));
+						GTK_CONTAINER( toplevel ), "p1-mnemo" ));
 }
 
 static void
@@ -308,7 +313,7 @@ init_dialog_title( ofaModelProperties *self )
 		title = g_strdup_printf( _( "Updating « %s » entry model" ), mnemo );
 	}
 
-	gtk_window_set_title( GTK_WINDOW( OFA_BASE_DIALOG( self )->prot->dialog ), title );
+	gtk_window_set_title( my_window_get_toplevel( MY_WINDOW( self )), title );
 	g_free( title );
 }
 
@@ -322,7 +327,7 @@ init_dialog_mnemo( ofaModelProperties *self )
 
 	priv->mnemo = g_strdup( ofo_model_get_mnemo( priv->model ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-mnemo" ));
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-mnemo" ));
 	if( priv->mnemo ){
 		gtk_entry_set_text( entry, priv->mnemo );
 	}
@@ -340,7 +345,7 @@ init_dialog_label( ofaModelProperties *self )
 
 	priv->label = g_strdup( ofo_model_get_label( priv->model ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-label" ));
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
@@ -358,7 +363,7 @@ init_dialog_journal_locked( ofaModelProperties *self )
 
 	priv->journal_locked = ofo_model_get_journal_locked( priv->model );
 	btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-jou-locked" ));
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-jou-locked" ));
 	gtk_toggle_button_set_active( btn, priv->journal_locked );
 
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_journal_locked_toggled ), self );
@@ -376,7 +381,7 @@ init_dialog_detail( ofaModelProperties *self )
 	priv = self->private;
 
 	priv->grid = ( GtkGrid * ) my_utils_container_get_child_by_name(
-						GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "p1-details" );
+						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-details" );
 	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
 
 	add_button( self, GTK_STOCK_ADD, DET_COL_ADD, 1, DETAIL_SPACE, 0 );
@@ -620,7 +625,7 @@ on_account_selection( ofaModelProperties *self, gint row )
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT, row ));
 	number = ofa_account_select_run(
-					ofa_base_dialog_get_main_window( OFA_BASE_DIALOG( self )),
+					MY_WINDOW( self )->protected->main_window,
 					gtk_entry_get_text( entry ));
 	if( number && g_utf8_strlen( number, -1 )){
 		gtk_entry_set_text( entry, number );
@@ -737,7 +742,7 @@ check_for_enable_dlg( ofaModelProperties *self )
 	gboolean ok;
 
 	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 
 	ok = is_dialog_validable( self );
 
@@ -760,7 +765,7 @@ is_dialog_validable( ofaModelProperties *self )
 
 	if( ok ){
 		exists = ofo_model_get_by_mnemo(
-						ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )),
+						MY_WINDOW( self )->protected->dossier,
 						priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_model_get_mnemo( priv->model )));
@@ -773,7 +778,7 @@ is_dialog_validable( ofaModelProperties *self )
  * return %TRUE to allow quitting the dialog
  */
 static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( myDialog *dialog )
 {
 	return( do_update( OFA_MODEL_PROPERTIES( dialog )));
 }
@@ -797,7 +802,7 @@ do_update( ofaModelProperties *self )
 	ofo_model_set_label( priv->model, priv->label );
 	ofo_model_set_journal( priv->model, priv->journal );
 	ofo_model_set_journal_locked( priv->model, priv->journal_locked );
-	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, model );
+	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), model );
 
 	ofo_model_free_detail_all( priv->model );
 	for( i=1 ; i<=priv->count ; ++i ){
