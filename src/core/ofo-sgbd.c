@@ -55,6 +55,7 @@ G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 static void    error_connect( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
 static void    error_query( const ofoSgbd *sgbd, const gchar *query );
 static void    sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query );
+static gchar  *quote_query( const gchar *query );
 static GSList *sgbd_query_get_result( const ofoSgbd *sgbd, const gchar *query );
 
 static void
@@ -412,7 +413,7 @@ sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query )
 	gchar *quoted;
 	gchar *audit;
 
-	quoted = my_utils_quote( query );
+	quoted = quote_query( query );
 	audit = g_strdup_printf( "INSERT INTO OFA_T_AUDIT (AUD_QUERY) VALUES ('%s')", quoted );
 
 	if( mysql_query( sgbd->private->mysql, audit )){
@@ -421,6 +422,28 @@ sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query )
 
 	g_free( quoted );
 	g_free( audit );
+}
+
+static gchar *
+quote_query( const gchar *query )
+{
+	gchar *quoted;
+	GRegex *regex;
+	gchar *new_str;
+
+	new_str = g_strdup( query );
+
+	regex = g_regex_new( "\\\\", 0, 0, NULL );
+	if( regex ){
+		g_free( new_str );
+		new_str = g_regex_replace_literal( regex, query, -1, 0, "", 0, NULL );
+		g_regex_unref( regex );
+	}
+
+	quoted = my_utils_quote( new_str );
+	g_free( new_str );
+
+	return( quoted );
 }
 
 /**

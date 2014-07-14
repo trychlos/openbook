@@ -359,11 +359,13 @@
      2014- 7-14 the error appears because of a bad quoting when 
                 inserting into ofa_t_audit
 
- 287 2014- 7-14 ofa_account_notebook_init_view: 
-                assertion `page_w && GTK_IS_CONTAINER( page_w )' failed
-                (when there is no account ?)
+ 288 2014- 7-14 DossierNew: enable dlg should not depend of connection
+                check
 
- 288
+ 289 2014- 7-14 DossierNew: there is no error message when passwords 
+                are not equals
+
+ 290
 
 -----------------------------------------------------------------------
  DONE
@@ -1116,6 +1118,11 @@
 
  286 2014- 7-14 DossierNew: audit table doesn't exist
      2014- 7-14 done - svn #3773
+
+ 287 2014- 7-14 ofa_account_notebook_init_view: 
+                assertion `page_w && GTK_IS_CONTAINER( page_w )' failed
+                (when there is no account ?)
+     2014- 7-14 done - svn #3784
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
