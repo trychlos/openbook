@@ -31,12 +31,14 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "core/my-utils.h"
-#include "ui/ofa-base-dialog-prot.h"
-#include "ui/ofa-devise-properties.h"
-#include "ui/ofa-main-window.h"
 #include "api/ofo-devise.h"
 #include "api/ofo-dossier.h"
+
+#include "core/my-utils.h"
+
+#include "ui/my-window-prot.h"
+#include "ui/ofa-devise-properties.h"
+#include "ui/ofa-main-window.h"
 
 /* private instance data
  */
@@ -56,19 +58,19 @@ struct _ofaDevisePropertiesPrivate {
 	gint           digits;
 };
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-devise-properties.ui";
-static const gchar  *st_ui_id        = "DevisePropertiesDlg";
+static const gchar  *st_ui_xml = PKGUIDIR "/ofa-devise-properties.ui";
+static const gchar  *st_ui_id  = "DevisePropertiesDlg";
 
-G_DEFINE_TYPE( ofaDeviseProperties, ofa_devise_properties, OFA_TYPE_BASE_DIALOG )
+G_DEFINE_TYPE( ofaDeviseProperties, ofa_devise_properties, MY_TYPE_DIALOG )
 
-static void      v_init_dialog( ofaBaseDialog *dialog );
+static void      v_init_dialog( myDialog *dialog );
 static void      on_code_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      on_digits_changed( GtkEntry *entry, ofaDeviseProperties *self );
 static void      check_for_enable_dlg( ofaDeviseProperties *self );
 static gboolean  is_dialog_validable( ofaDeviseProperties *self );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaDeviseProperties *self );
 
 static void
@@ -77,12 +79,12 @@ devise_properties_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_devise_properties_finalize";
 	ofaDevisePropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( instance ));
-
-	priv = OFA_DEVISE_PROPERTIES( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_DEVISE_PROPERTIES( instance ));
+
+	priv = OFA_DEVISE_PROPERTIES( instance )->private;
 
 	/* free data members here */
 	g_free( priv->code );
@@ -97,9 +99,9 @@ devise_properties_finalize( GObject *instance )
 static void
 devise_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_DEVISE_PROPERTIES( instance ));
 
-	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
+	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -113,10 +115,10 @@ ofa_devise_properties_init( ofaDeviseProperties *self )
 {
 	static const gchar *thisfn = "ofa_devise_properties_init";
 
-	g_return_if_fail( OFA_IS_DEVISE_PROPERTIES( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_DEVISE_PROPERTIES( self ));
 
 	self->private = g_new0( ofaDevisePropertiesPrivate, 1 );
 
@@ -134,8 +136,8 @@ ofa_devise_properties_class_init( ofaDevisePropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = devise_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = devise_properties_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -158,14 +160,15 @@ ofa_devise_properties_run( ofaMainWindow *main_window, ofoDevise *devise )
 
 	self = g_object_new(
 				OFA_TYPE_DEVISE_PROPERTIES,
-				OFA_PROP_MAIN_WINDOW, main_window,
-				OFA_PROP_DIALOG_XML,  st_ui_xml,
-				OFA_PROP_DIALOG_NAME, st_ui_id,
+				MY_PROP_MAIN_WINDOW, main_window,
+				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
+				MY_PROP_WINDOW_XML,  st_ui_xml,
+				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
 	self->private->devise = devise;
 
-	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
+	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	updated = self->private->updated;
 	g_object_unref( self );
@@ -174,15 +177,17 @@ ofa_devise_properties_run( ofaMainWindow *main_window, ofoDevise *devise )
 }
 
 static void
-v_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( myDialog *dialog )
 {
 	ofaDevisePropertiesPrivate *priv;
 	gchar *title;
 	const gchar *code;
 	GtkEntry *entry;
 	gchar *str;
+	GtkWindow *toplevel;
 
 	priv = OFA_DEVISE_PROPERTIES( dialog )->private;
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
 	code = ofo_devise_get_code( priv->devise );
 	if( !code ){
@@ -191,12 +196,12 @@ v_init_dialog( ofaBaseDialog *dialog )
 	} else {
 		title = g_strdup_printf( _( "Updating « %s » devise" ), code );
 	}
-	gtk_window_set_title( GTK_WINDOW( dialog->prot->dialog ), title );
+	gtk_window_set_title( toplevel, title );
 
 	priv->code = g_strdup( code );
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "p1-code" ));
+						GTK_CONTAINER( toplevel ), "p1-code" ));
 	if( priv->code ){
 		gtk_entry_set_text( entry, priv->code );
 	}
@@ -205,7 +210,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	priv->label = g_strdup( ofo_devise_get_label( priv->devise ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "p1-label" ));
+						GTK_CONTAINER( toplevel ), "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
@@ -214,7 +219,7 @@ v_init_dialog( ofaBaseDialog *dialog )
 	priv->symbol = g_strdup( ofo_devise_get_symbol( priv->devise ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "p1-symbol" ));
+						GTK_CONTAINER( toplevel ), "p1-symbol" ));
 	if( priv->symbol ){
 		gtk_entry_set_text( entry, priv->symbol );
 	}
@@ -223,14 +228,14 @@ v_init_dialog( ofaBaseDialog *dialog )
 	priv->digits = ofo_devise_get_digits( priv->devise );
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "p1-digits" ));
+						GTK_CONTAINER( toplevel ), "p1-digits" ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_digits_changed ), dialog );
 	str = g_strdup_printf( "%d", priv->digits ? priv->digits : DEV_DEFAULT_DIGITS );
 	gtk_entry_set_text( entry, str );
 	g_free( str );
 
-	my_utils_init_notes_ex( dialog->prot->dialog, devise );
-	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, devise );
+	my_utils_init_notes_ex( toplevel, devise );
+	my_utils_init_maj_user_stamp_ex( toplevel, devise );
 
 	check_for_enable_dlg( OFA_DEVISE_PROPERTIES( dialog ));
 }
@@ -276,7 +281,7 @@ check_for_enable_dlg( ofaDeviseProperties *self )
 	GtkWidget *button;
 
 	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 
 	gtk_widget_set_sensitive( button, is_dialog_validable( self ));
 }
@@ -293,7 +298,7 @@ is_dialog_validable( ofaDeviseProperties *self )
 	ok = ofo_devise_is_valid( priv->code, priv->label, priv->symbol, priv->digits );
 	if( ok ){
 		exists = ofo_devise_get_by_code(
-				ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )), priv->code );
+					MY_WINDOW( self )->protected->dossier, priv->code );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->code, ofo_devise_get_code( priv->devise )));
 	}
@@ -302,7 +307,7 @@ is_dialog_validable( ofaDeviseProperties *self )
 }
 
 static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( myDialog *dialog )
 {
 	return( do_update( OFA_DEVISE_PROPERTIES( dialog )));
 }
@@ -322,7 +327,7 @@ do_update( ofaDeviseProperties *self )
 	ofo_devise_set_label( priv->devise, priv->label );
 	ofo_devise_set_symbol( priv->devise, priv->symbol );
 	ofo_devise_set_digits( priv->devise, priv->digits );
-	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, devise );
+	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), devise );
 
 	if( priv->is_new ){
 		priv->updated =
