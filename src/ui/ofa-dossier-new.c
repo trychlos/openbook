@@ -690,6 +690,12 @@ db_passwords_are_equals( ofaDossierNew *self )
 					priv->p3_bis && g_utf8_strlen( priv->p3_bis, -1 ) &&
 					!g_utf8_collate( priv->p3_password, priv->p3_bis )));
 
+	if( are_equals ){
+		set_message( self, "" );
+	} else {
+		set_message( self, _( "Dossier administrative passwords are not equal" ));
+	}
+
 	return( are_equals );
 }
 

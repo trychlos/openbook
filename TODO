@@ -355,10 +355,6 @@
 
  282 2014- 7-14 move export to myAssistant
 
- 285 2014- 7-14 DossierNew: there is an error in a SQL sentence
-     2014- 7-14 the error appears because of a bad quoting when 
-                inserting into ofa_t_audit
-
  288 2014- 7-14 DossierNew: enable dlg should not depend of connection
                 check
 
@@ -1115,6 +1111,11 @@
 
  284 2014- 7-14 Dossier Properties : ok is not enabled
      2014- 7-14 done - svn #3771
+
+ 285 2014- 7-14 DossierNew: there is an error in a SQL sentence
+     2014- 7-14 the error appears because of a bad quoting when 
+                inserting into ofa_t_audit
+     2014- 7-14 done - svn #3785
 
  286 2014- 7-14 DossierNew: audit table doesn't exist
      2014- 7-14 done - svn #3773
