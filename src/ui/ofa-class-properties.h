@@ -35,7 +35,7 @@
  * Update the devise properties.
  */
 
-#include "ui/ofa-base-dialog.h"
+#include "ui/my-dialog.h"
 #include "ui/ofa-main-window-def.h"
 #include "api/ofo-class-def.h"
 
@@ -52,14 +52,14 @@ typedef struct _ofaClassPropertiesPrivate        ofaClassPropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaBaseDialog              parent;
+	myDialog                   parent;
 	ofaClassPropertiesPrivate *private;
 }
 	ofaClassProperties;
 
 typedef struct {
 	/*< private >*/
-	ofaBaseDialogClass parent;
+	myDialogClass parent;
 }
 	ofaClassPropertiesClass;
 

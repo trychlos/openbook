@@ -31,12 +31,14 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "core/my-utils.h"
-#include "ui/ofa-base-dialog-prot.h"
-#include "ui/ofa-class-properties.h"
-#include "ui/ofa-main-window.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
+
+#include "core/my-utils.h"
+
+#include "ui/my-window-prot.h"
+#include "ui/ofa-class-properties.h"
+#include "ui/ofa-main-window.h"
 
 /* private instance data
  */
@@ -57,14 +59,14 @@ struct _ofaClassPropertiesPrivate {
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-class-properties.ui";
 static const gchar  *st_ui_id  = "ClassPropertiesDlg";
 
-G_DEFINE_TYPE( ofaClassProperties, ofa_class_properties, OFA_TYPE_BASE_DIALOG )
+G_DEFINE_TYPE( ofaClassProperties, ofa_class_properties, MY_TYPE_DIALOG )
 
-static void      v_init_dialog( ofaBaseDialog *dialog );
+static void      v_init_dialog( myDialog *dialog );
 static void      on_number_changed( GtkEntry *entry, ofaClassProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaClassProperties *self );
 static void      check_for_enable_dlg( ofaClassProperties *self );
 static gboolean  is_dialog_validable( ofaClassProperties *self );
-static gboolean  v_quit_on_ok( ofaBaseDialog *dialog );
+static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaClassProperties *self );
 
 static void
@@ -73,12 +75,12 @@ class_properties_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_class_properties_finalize";
 	ofaClassPropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_CLASS_PROPERTIES( instance ));
-
-	priv = OFA_CLASS_PROPERTIES( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_CLASS_PROPERTIES( instance ));
+
+	priv = OFA_CLASS_PROPERTIES( instance )->private;
 
 	/* free data members here */
 	g_free( priv->label );
@@ -91,9 +93,9 @@ class_properties_finalize( GObject *instance )
 static void
 class_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_CLASS_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_CLASS_PROPERTIES( instance ));
 
-	if( !OFA_BASE_DIALOG( instance )->prot->dispose_has_run ){
+	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -107,10 +109,10 @@ ofa_class_properties_init( ofaClassProperties *self )
 {
 	static const gchar *thisfn = "ofa_class_properties_init";
 
-	g_return_if_fail( OFA_IS_CLASS_PROPERTIES( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_CLASS_PROPERTIES( self ));
 
 	self->private = g_new0( ofaClassPropertiesPrivate, 1 );
 
@@ -128,8 +130,8 @@ ofa_class_properties_class_init( ofaClassPropertiesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = class_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = class_properties_finalize;
 
-	OFA_BASE_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	OFA_BASE_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
@@ -152,14 +154,15 @@ ofa_class_properties_run( ofaMainWindow *main_window, ofoClass *class )
 
 	self = g_object_new(
 				OFA_TYPE_CLASS_PROPERTIES,
-				OFA_PROP_MAIN_WINDOW, main_window,
-				OFA_PROP_DIALOG_XML,  st_ui_xml,
-				OFA_PROP_DIALOG_NAME, st_ui_id,
+				MY_PROP_MAIN_WINDOW, main_window,
+				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
+				MY_PROP_WINDOW_XML,  st_ui_xml,
+				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
 	self->private->class = class;
 
-	ofa_base_dialog_run_dialog( OFA_BASE_DIALOG( self ));
+	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	updated = self->private->updated;
 
@@ -169,15 +172,17 @@ ofa_class_properties_run( ofaMainWindow *main_window, ofoClass *class )
 }
 
 static void
-v_init_dialog( ofaBaseDialog *dialog )
+v_init_dialog( myDialog *dialog )
 {
 	ofaClassPropertiesPrivate *priv;
 	gchar *title;
 	gint number;
 	GtkEntry *entry;
 	gchar *str;
+	GtkWindow *toplevel;
 
 	priv = OFA_CLASS_PROPERTIES( dialog )->private;
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
 	number = ofo_class_get_number( priv->class );
 	if( number < 1 ){
@@ -186,12 +191,12 @@ v_init_dialog( ofaBaseDialog *dialog )
 	} else {
 		title = g_strdup_printf( _( "Updating class « %d »" ), number );
 	}
-	gtk_window_set_title( GTK_WINDOW( dialog->prot->dialog ), title );
+	gtk_window_set_title( toplevel, title );
 
 	priv->number = number;
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "p1-number" ));
+						GTK_CONTAINER( toplevel ), "p1-number" ));
 	if( priv->is_new ){
 		str = g_strdup( "" );
 	} else {
@@ -204,14 +209,14 @@ v_init_dialog( ofaBaseDialog *dialog )
 	priv->label = g_strdup( ofo_class_get_label( priv->class ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( dialog->prot->dialog ), "p1-label" ));
+						GTK_CONTAINER( toplevel ), "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
-	my_utils_init_notes_ex( dialog->prot->dialog, class );
-	my_utils_init_maj_user_stamp_ex( dialog->prot->dialog, class );
+	my_utils_init_notes_ex( toplevel, class );
+	my_utils_init_maj_user_stamp_ex( toplevel, class );
 
 	check_for_enable_dlg( OFA_CLASS_PROPERTIES( dialog ));
 }
@@ -239,7 +244,7 @@ check_for_enable_dlg( ofaClassProperties *self )
 	GtkWidget *button;
 
 	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( OFA_BASE_DIALOG( self )->prot->dialog ), "btn-ok" );
+					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 
 	gtk_widget_set_sensitive( button, is_dialog_validable( self ));
 }
@@ -256,7 +261,7 @@ is_dialog_validable( ofaClassProperties *self )
 	ok = ofo_class_is_valid( priv->number, priv->label );
 	if( ok ){
 		exists = ofo_class_get_by_number(
-				ofa_base_dialog_get_dossier( OFA_BASE_DIALOG( self )), priv->number );
+				MY_WINDOW( self )->protected->dossier, priv->number );
 		ok &= !exists ||
 				( ofo_class_get_number( exists ) == ofo_class_get_number( priv->class ));
 	}
@@ -265,7 +270,7 @@ is_dialog_validable( ofaClassProperties *self )
 }
 
 static gboolean
-v_quit_on_ok( ofaBaseDialog *dialog )
+v_quit_on_ok( myDialog *dialog )
 {
 	return( do_update( OFA_CLASS_PROPERTIES( dialog )));
 }
@@ -275,8 +280,10 @@ do_update( ofaClassProperties *self )
 {
 	ofaClassPropertiesPrivate *priv;
 	gint prev_id;
+	GtkWindow *toplevel;
 
 	priv = self->private;
+	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -284,7 +291,7 @@ do_update( ofaClassProperties *self )
 
 	ofo_class_set_number( priv->class, priv->number );
 	ofo_class_set_label( priv->class, priv->label );
-	my_utils_getback_notes_ex( OFA_BASE_DIALOG( self )->prot->dialog, class );
+	my_utils_getback_notes_ex( toplevel, class );
 
 	if( priv->is_new ){
 		priv->updated = ofo_class_insert( priv->class );
