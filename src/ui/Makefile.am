@@ -61,9 +61,6 @@ openbook_SOURCES = \
 	ofa-account-select.h								\
 	ofa-application.c									\
 	ofa-application.h									\
-	ofa-base-dialog.c									\
-	ofa-base-dialog.h									\
-	ofa-base-dialog-prot.h								\
 	ofa-bat-common.c									\
 	ofa-bat-common.h									\
 	ofa-bat-properties.c								\
