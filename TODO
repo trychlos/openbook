@@ -375,7 +375,14 @@
 
  277 2014- 7-13 DossierNew is not an assistant, but a dialog box
 
- 278
+ 278 2014- 7-13 extend to other sgdb providers (PostgreSQL, etc.)
+
+ 279 2014- 7-14 Manage dossiers, manage databases (delete, reconciliate)
+
+ 280 2014- 7-14 DossierNew: update properties right after having opened
+                the dossier
+
+ 281
 
 -----------------------------------------------------------------------
  DONE

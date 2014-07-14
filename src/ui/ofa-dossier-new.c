@@ -42,90 +42,85 @@
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-main-window.h"
 
-/* Export Assistant
- *
- * pos.  type     title
- * ---   -------  -----------------------------------------------
- *   0   Intro    Introduction
- *   1   Content  Define the dossier
- *   2   Content  Provide connection informations
- *   3   Content  Define first administrative account
- *   4   Confirm  Summary of the operations to be done
- *   5   Summary  After creation: OK
- */
-
-enum {
-	ASSIST_PAGE_INTRO = 0,
-	ASSIST_PAGE_DOSSIER,
-	ASSIST_PAGE_DBINFOS,
-	ASSIST_PAGE_ACCOUNT,
-	ASSIST_PAGE_CONFIRM,
-	ASSIST_PAGE_DONE
-};
-
 /* private instance data
  */
 struct _ofaDossierNewPrivate {
 
-	/* p1: enter dossier name and description
+	/* p1: SGDB Provider
 	 */
-	gboolean       p1_page_initialized;
-	gchar         *p1_name;
+	gchar         *p1_sgdb_provider;
 
-	/* p2: enter connection and authentification parameters
+	/* p2: MySQL as SGBD provider
 	 */
-	gboolean       p2_page_initialized;
-	gchar         *p2_dbname;
 	gchar         *p2_host;
-	gchar         *p2_port;
-	gint           p2_port_num;
+	guint          p2_port;
 	gchar         *p2_socket;
 	gchar         *p2_account;
 	gchar         *p2_password;
 
-	/* p3: enter administrative account and password
+	gboolean       p2_successful;
+
+	/* p3: dossier properties
 	 */
-	gboolean       p3_page_initialized;
+	gchar         *p3_dbname;
+	gchar         *p3_label;
 	gchar         *p3_account;
 	gchar         *p3_password;
 	gchar         *p3_bis;
+	gboolean       p3_open_dossier;
+
+	gboolean       p3_are_equals;
+
+	/* UI
+	 */
+	GtkWidget     *p2_check_btn;
+	GtkWidget     *p3_browse_btn;
+	GtkLabel      *msg_label;
+	GtkWidget     *apply_btn;
 };
 
-static const gchar *st_ui_xml = PKGUIDIR "/ofa-dossier-new.ui";
-static const gchar *st_ui_id  = "DossierNewAssistant";
+/* columns in SGDB provider combo box
+ */
+enum {
+	SGDB_COL_PROVIDER = 0,
+	SGDB_N_COLUMNS
+};
 
-G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, MY_TYPE_ASSISTANT )
+static const gchar *st_ui_xml   = PKGUIDIR "/ofa-dossier-new.ui";
+static const gchar *st_ui_id    = "DossierNewDlg";
+static const gchar *st_ui_mysql = "MySQLWindow";
 
-static ofaOpenDossier *st_ood;
+G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, MY_TYPE_DIALOG )
 
-static void       on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self );
-static void       do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page );
-static void       do_prepare_p1_dossier( ofaDossierNew *self, GtkWidget *page );
-static void       do_init_p1_dossier( ofaDossierNew *self, GtkWidget *page );
-static void       on_p1_name_changed( GtkEntry *widget, ofaDossierNew *self );
-static void       check_for_p1_complete( ofaDossierNew *self );
-static void       do_prepare_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
-static void       do_init_p2_dbinfos( ofaDossierNew *self, GtkWidget *page );
-static void       do_init_p2_item( ofaDossierNew *self, GtkWidget *page, const gchar *field_name, gchar **var, GCallback fn, GList **focus );
-static void       on_p2_dbname_changed( GtkEntry *widget, ofaDossierNew *self );
-static void       on_p2_var_changed( GtkEntry *widget, gchar **var );
-static void       on_p2_account_changed( GtkEntry *widget, ofaDossierNew *self );
-static void       on_p2_password_changed( GtkEntry *widget, ofaDossierNew *self );
-static void       check_for_p2_complete( ofaDossierNew *self );
-static void       do_prepare_p3_account( ofaDossierNew *self, GtkWidget *page );
-static void       do_init_p3_account( ofaDossierNew *self, GtkWidget *page );
-static void       on_p3_account_changed( GtkEntry *entry, ofaDossierNew *self );
-static void       on_p3_password_changed( GtkEntry *entry, ofaDossierNew *self );
-static void       on_p3_bis_changed( GtkEntry *entry, ofaDossierNew *self );
-static void       check_for_p3_complete( ofaDossierNew *self );
-static void       do_prepare_p4_confirm( ofaDossierNew *self, GtkWidget *page );
-static void       do_init_p4_confirm( ofaDossierNew *self, GtkWidget *page );
-static void       display_p4_param( GtkWidget *page, const gchar *field_name, const gchar *value, gboolean display );
-static void       check_for_p4_complete( ofaDossierNew *self );
-static void       on_apply( GtkAssistant *assistant, ofaDossierNew *self );
-static gboolean   make_db_global( ofaDossierNew *self, GtkAssistant *assistant );
-static gboolean   setup_new_dossier( ofaDossierNew *self );
-static gboolean   create_db_model( ofaDossierNew *self, GtkAssistant *assistant );
+static void      v_init_dialog( myDialog *dialog );
+static void      init_p1_sgdb_provider( ofaDossierNew *self );
+static void      on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self );
+static void      setup_mysql_provider( ofaDossierNew *self );
+static void      on_mysql_host_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      on_mysql_port_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      on_mysql_socket_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      on_mysql_admin_account_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      on_mysql_admin_password_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      on_mysql_check_clicked( GtkButton *button, ofaDossierNew *self );
+static gboolean  do_mysql_check( ofaDossierNew *self );
+static gboolean  check_for_mysql_provider( ofaDossierNew *self );
+static void      check_for_enable_connectivity_check( ofaDossierNew *self );
+static void      init_p3_dossier_properties( ofaDossierNew *self );
+static void      on_db_name_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      on_db_find_clicked( GtkButton *button, ofaDossierNew *self );
+static void      on_db_label_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      on_db_account_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      on_db_password_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      on_db_bis_changed( GtkEntry *entry, ofaDossierNew *self );
+static gboolean  db_passwords_are_equals( ofaDossierNew *self );
+static void      on_db_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
+static void      set_message( ofaDossierNew *self, const gchar *msg );
+static void      check_for_enable_dlg( ofaDossierNew *self );
+static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  do_apply( ofaDossierNew *self );
+static gboolean  make_db_global( ofaDossierNew *self );
+static gboolean  setup_new_dossier( ofaDossierNew *self );
+static gboolean  create_db_model( ofaDossierNew *self );
 
 static void
 dossier_new_finalize( GObject *instance )
@@ -141,15 +136,15 @@ dossier_new_finalize( GObject *instance )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
-	g_free( priv->p1_name );
+	g_free( priv->p1_sgdb_provider );
 
-	g_free( priv->p2_dbname );
 	g_free( priv->p2_host );
-	g_free( priv->p2_port );
 	g_free( priv->p2_socket );
 	g_free( priv->p2_account );
 	g_free( priv->p2_password );
 
+	g_free( priv->p3_dbname );
+	g_free( priv->p3_label );
 	g_free( priv->p3_account );
 	g_free( priv->p3_password );
 	g_free( priv->p3_bis );
@@ -185,10 +180,6 @@ ofa_dossier_new_init( ofaDossierNew *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofaDossierNewPrivate, 1 );
-
-	/* be sure to initialize this static data each time we run the
-	 * assistant */
-	st_ood = NULL;
 }
 
 static void
@@ -200,21 +191,20 @@ ofa_dossier_new_class_init( ofaDossierNewClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_new_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_new_finalize;
+
+	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
- * Run the assistant.
- *
+ * ofa_dossier_new_run:
  * @main: the main window of the application.
- *
- * Rationale: the
  */
 ofaOpenDossier *
 ofa_dossier_new_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_new_new";
 	ofaDossierNew *self;
-	GtkAssistant *assistant;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -226,499 +216,574 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
-	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_val_if_fail( assistant && GTK_IS_ASSISTANT( assistant ), NULL );
+	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	g_signal_connect( G_OBJECT( assistant ), "prepare", G_CALLBACK( on_prepare ), self );
-	g_signal_connect( G_OBJECT( assistant ), "apply", G_CALLBACK( on_apply ), self );
+	g_object_unref( self );
 
-	my_assistant_run( MY_ASSISTANT( self ));
-
-	return( st_ood );
+	return( NULL );
 }
 
 /*
  * the provided 'page' is the toplevel widget of the asistant's page
  */
 static void
-on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaDossierNew *self )
+v_init_dialog( myDialog *dialog )
 {
-	static const gchar *thisfn = "ofa_dossier_new_on_prepare";
-	gint page_num;
+	init_p1_sgdb_provider( OFA_DOSSIER_NEW( dialog ));
+	init_p3_dossier_properties( OFA_DOSSIER_NEW( dialog ));
+}
 
-	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
-	g_return_if_fail( page && GTK_IS_WIDGET( page ));
-	g_return_if_fail( self && OFA_IS_DOSSIER_NEW( self ));
+static void
+init_p1_sgdb_provider( ofaDossierNew *self )
+{
+	GtkContainer *container;
+	GtkComboBox *combo;
+	GtkTreeModel *tmodel;
+	GtkCellRenderer *cell;
+	GtkTreeIter iter;
 
-	if( !MY_WINDOW( self )->protected->dispose_has_run ){
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+	combo = ( GtkComboBox * ) my_utils_container_get_child_by_name( container, "p1-provider" );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 
-		g_debug( "%s: assistant=%p, page=%p, self=%p",
-				thisfn, ( void * ) assistant, ( void * ) page, ( void * ) self );
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+			SGDB_N_COLUMNS,
+			G_TYPE_STRING ));
+	gtk_combo_box_set_model( combo, tmodel );
+	g_object_unref( tmodel );
 
-		page_num = my_assistant_get_page_num( MY_ASSISTANT( self ), page );
-		switch( page_num ){
-			case ASSIST_PAGE_INTRO:
-				do_prepare_p0_intro( self, page );
-				break;
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", SGDB_COL_PROVIDER );
 
-			case ASSIST_PAGE_DOSSIER:
-				do_prepare_p1_dossier( self, page );
-				break;
+	gtk_list_store_insert_with_values(
+			GTK_LIST_STORE( tmodel ),
+			&iter,
+			-1,
+			SGDB_COL_PROVIDER, SGBD_PROVIDER_MYSQL,
+			-1 );
 
-			case ASSIST_PAGE_DBINFOS:
-				do_prepare_p2_dbinfos( self, page );
-				break;
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_sgdb_provider_changed ), self );
 
-			case ASSIST_PAGE_ACCOUNT:
-				do_prepare_p3_account( self, page );
-				break;
+	gtk_combo_box_set_active( combo, 0 );
+}
 
-			case ASSIST_PAGE_CONFIRM:
-				do_prepare_p4_confirm( self, page );
-				break;
+static void
+on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self )
+{
+	static const gchar *thisfn = "ofa_dossier_new_on_sgdb_provider_changed";
+	GtkTreeIter iter;
+	GtkTreeModel *tmodel;
+	gchar *provider;
+
+	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) self );
+
+	if( gtk_combo_box_get_active_iter( combo, &iter )){
+		tmodel = gtk_combo_box_get_model( combo );
+		gtk_tree_model_get( tmodel, &iter,
+				SGDB_COL_PROVIDER, &provider,
+				-1 );
+		if( !g_utf8_collate( provider, SGBD_PROVIDER_MYSQL )){
+			setup_mysql_provider( self );
+		}
+		g_free( provider );
+	}
+}
+
+static void
+setup_mysql_provider( ofaDossierNew *self )
+{
+	GtkContainer *container;
+	GtkWidget *parent;
+	GtkWidget *child;
+	GtkWidget *window;
+	GtkWidget *grid;
+	GtkWidget *entry, *button;
+	gchar *value;
+	gint ivalue;
+
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+	parent = my_utils_container_get_child_by_name( container, "sgdb-container" );
+	g_return_if_fail( parent && GTK_IS_BIN( parent ));
+
+	/* remove previous child (if any) */
+	child = gtk_bin_get_child( GTK_BIN( parent ));
+	if( child ){
+		gtk_container_remove( GTK_CONTAINER( parent ), child );
+	}
+
+	/* attach our sgdb provider grid */
+	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_mysql );
+	g_return_if_fail( window && GTK_IS_WINDOW( window ));
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "mysql-properties" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+
+	gtk_widget_reparent( grid, parent );
+
+	/* init the grid */
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "p2-check" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_mysql_check_clicked ), self );
+	self->private->p2_check_btn = button;
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "p2-host" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mysql_host_changed ), self );
+	value = ofa_settings_get_string( "DossierNewDlg-MySQL-host" );
+	if( value && g_utf8_strlen( value, -1 )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), value );
+	}
+	g_free( value );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "p2-port" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mysql_port_changed ), self );
+	ivalue = ofa_settings_get_uint( "DossierNewDlg-MySQL-port" );
+	if( ivalue > 0 ){
+		value = g_strdup_printf( "%u", ivalue );
+		gtk_entry_set_text( GTK_ENTRY( entry ), value );
+		g_free( value );
+	}
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "p2-socket" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mysql_socket_changed ), self );
+	value = ofa_settings_get_string( "DossierNewDlg-MySQL-socket" );
+	if( value && g_utf8_strlen( value, -1 )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), value );
+	}
+	g_free( value );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "p2-account" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mysql_admin_account_changed ), self );
+	value = ofa_settings_get_string( "DossierNewDlg-MySQL-account" );
+	if( value && g_utf8_strlen( value, -1 )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), value );
+	}
+	g_free( value );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "p2-password" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mysql_admin_password_changed ), self );
+}
+
+static void
+on_mysql_host_changed( GtkEntry *entry, ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	const gchar *host;
+
+	priv = self->private;
+
+	host = gtk_entry_get_text( entry );
+	g_free( priv->p2_host );
+	priv->p2_host = g_strdup( host );
+
+	priv->p2_successful = FALSE;
+	check_for_enable_connectivity_check( self );
+	check_for_enable_dlg( self );
+}
+
+static void
+on_mysql_port_changed( GtkEntry *entry, ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	const gchar *port;
+
+	priv = self->private;
+
+	port = gtk_entry_get_text( entry );
+	if( port && g_utf8_strlen( port, -1 )){
+		priv->p2_port = atoi( port );
+	}
+
+	priv->p2_successful = FALSE;
+	check_for_enable_connectivity_check( self );
+	check_for_enable_dlg( self );
+}
+
+static void
+on_mysql_socket_changed( GtkEntry *entry, ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	const gchar *socket;
+
+	priv = self->private;
+
+	socket = gtk_entry_get_text( entry );
+	g_free( priv->p2_socket );
+	priv->p2_socket = g_strdup( socket );
+
+	priv->p2_successful = FALSE;
+	check_for_enable_connectivity_check( self );
+	check_for_enable_dlg( self );
+}
+
+static void
+on_mysql_admin_account_changed( GtkEntry *entry, ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	const gchar *account;
+
+	priv = self->private;
+
+	account = gtk_entry_get_text( entry );
+	g_free( priv->p2_account );
+	priv->p2_account = g_strdup( account );
+
+	priv->p2_successful = FALSE;
+	check_for_enable_connectivity_check( self );
+	check_for_enable_dlg( self );
+}
+
+static void
+on_mysql_admin_password_changed( GtkEntry *entry, ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	const gchar *password;
+
+	priv = self->private;
+
+	password = gtk_entry_get_text( entry );
+	g_free( priv->p2_password );
+	priv->p2_password = g_strdup( password );
+
+	priv->p2_successful = FALSE;
+	check_for_enable_connectivity_check( self );
+	check_for_enable_dlg( self );
+}
+
+static void
+on_mysql_check_clicked( GtkButton *button, ofaDossierNew *self )
+{
+	check_for_mysql_provider( self );
+	check_for_enable_connectivity_check( self );
+}
+
+static gboolean
+do_mysql_check( ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	gboolean connect_ok;
+	ofoSgbd *sgbd;
+
+	priv = self->private;
+	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
+
+	connect_ok = ofo_sgbd_connect(
+					sgbd,
+					priv->p2_host,
+					priv->p2_port,
+					priv->p2_socket,
+					NULL,
+					priv->p2_account,
+					priv->p2_password );
+
+	g_object_unref( sgbd );
+
+	return( connect_ok );
+}
+
+/*
+ * MySQL provides a suitable default value for all fields,
+ * so all combinations are valid here
+ */
+static gboolean
+check_for_mysql_provider( ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+
+	priv = self->private;
+
+	if( !priv->p2_successful ){
+		priv->p2_successful = do_mysql_check( self );
+		if( !priv->p2_successful ){
+			set_message( self, _( "Unsuccessful connect to DB server" ));
+		} else {
+			set_message( self, NULL );
 		}
 	}
+
+	return( priv->p2_successful );
 }
 
 static void
-do_prepare_p0_intro( ofaDossierNew *self, GtkWidget *page )
+check_for_enable_connectivity_check( ofaDossierNew *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p0_intro";
-
-	g_debug( "%s: self=%p, page=%p (%s)",
-			thisfn,
-			( void * ) self,
-			( void * ) page, G_OBJECT_TYPE_NAME( page ));
-}
-
-static void
-do_prepare_p1_dossier( ofaDossierNew *self, GtkWidget *page )
-{
-	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p1_dossier";
-
-	g_debug( "%s: self=%p, page=%p (%s)",
-			thisfn,
-			( void * ) self,
-			( void * ) page, G_OBJECT_TYPE_NAME( page ));
-
-	if( !self->private->p1_page_initialized ){
-		do_init_p1_dossier( self, page );
-		self->private->p1_page_initialized = TRUE;
-	}
-
-	check_for_p1_complete( self );
-}
-
-static void
-do_init_p1_dossier( ofaDossierNew *self, GtkWidget *page )
-{
-	static const gchar *thisfn = "ofa_dossier_new_do_init_p1_dossier";
-	GtkWidget *entry;
-
-	g_debug( "%s: self=%p, page=%p",
-			thisfn, ( void * ) self, ( void * ) page );
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p1-name" );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_p1_name_changed ), self );
-}
-
-static void
-on_p1_name_changed( GtkEntry *widget, ofaDossierNew *self )
-{
-	const gchar *label;
-
-	label = gtk_entry_get_text( widget );
-	g_free( self->private->p1_name );
-	self->private->p1_name = g_strdup( label );
-
-	check_for_p1_complete( self );
-}
-
-static void
-check_for_p1_complete( ofaDossierNew *self )
-{
-	GtkWidget *page;
 	ofaDossierNewPrivate *priv;
-	GtkAssistant *assistant;
 
 	priv = self->private;
 
-	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+	g_return_if_fail( priv->p2_check_btn && GTK_IS_BUTTON( priv->p2_check_btn ));
+	gtk_widget_set_sensitive( priv->p2_check_btn, !priv->p2_successful );
 
-	page = gtk_assistant_get_nth_page( assistant, ASSIST_PAGE_DOSSIER );
-	gtk_assistant_set_page_complete( assistant, page,
-			priv->p1_name && g_utf8_strlen( priv->p1_name, -1 ));
-}
-
-/*
- * p2: informations required for the connection to the sgbd
- */
-static void
-do_prepare_p2_dbinfos( ofaDossierNew *self, GtkWidget *page )
-{
-	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p2_dbinfos";
-
-	g_debug( "%s: self=%p, page=%p (%s)",
-			thisfn,
-			( void * ) self,
-			( void * ) page, G_OBJECT_TYPE_NAME( page ));
-
-	if( !self->private->p2_page_initialized ){
-		do_init_p2_dbinfos( self, page );
-		self->private->p2_page_initialized = TRUE;
+	if( priv->p2_successful ){
+		gtk_button_set_label( GTK_BUTTON( priv->p2_check_btn ), _( "Connection is OK" ));
+	} else {
+		gtk_button_set_label( GTK_BUTTON( priv->p2_check_btn ), _( "_Connectivity check" ));
 	}
 
-	check_for_p2_complete( self );
+	g_return_if_fail( priv->p3_browse_btn && GTK_IS_BUTTON( priv->p3_browse_btn ));
+	gtk_widget_set_sensitive( priv->p3_browse_btn, priv->p2_successful );
 }
 
 static void
-do_init_p2_dbinfos( ofaDossierNew *self, GtkWidget *page )
+init_p3_dossier_properties( ofaDossierNew *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_do_init_p2_dbinfos";
-	GList *focus;
-	/*GtkWidget *grid;*/
+	GtkContainer *container;
+	GtkWidget *widget;
+	gboolean value;
 
-	g_debug( "%s: self=%p, page=%p",
-			thisfn, ( void * ) self, ( void * ) page );
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
-	g_return_if_fail( GTK_IS_BOX( page ));
+	widget = my_utils_container_get_child_by_name( container, "p3-name" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_name_changed ), self );
 
-	focus = NULL;
-	do_init_p2_item( self, page, "p2-dbname",   NULL,                      G_CALLBACK( on_p2_dbname_changed ),   &focus );
-	do_init_p2_item( self, page, "p2-host",     &self->private->p2_host,   G_CALLBACK( on_p2_var_changed ),      &focus );
-	do_init_p2_item( self, page, "p2-port",     &self->private->p2_port,   G_CALLBACK( on_p2_var_changed ),      &focus );
-	do_init_p2_item( self, page, "p2-socket",   &self->private->p2_socket, G_CALLBACK( on_p2_var_changed ),      &focus );
-	do_init_p2_item( self, page, "p2-account",  NULL,                      G_CALLBACK( on_p2_account_changed ),  &focus );
-	do_init_p2_item( self, page, "p2-password", NULL,                      G_CALLBACK( on_p2_password_changed ), &focus );
+	widget = my_utils_container_get_child_by_name( container, "p3-find" );
+	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
+	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_db_find_clicked ), self );
+	self->private->p3_browse_btn = widget;
 
-	/*grid = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-grid1" );
-	gtk_container_set_focus_chain( GTK_CONTAINER( grid ), g_list_reverse( focus ));*/
+	widget = my_utils_container_get_child_by_name( container, "p3-label" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_label_changed ), self );
+
+	widget = my_utils_container_get_child_by_name( container, "p3-account" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_account_changed ), self );
+
+	widget = my_utils_container_get_child_by_name( container, "p3-password" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_password_changed ), self );
+
+	widget = my_utils_container_get_child_by_name( container, "p3-bis" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_bis_changed ), self );
+
+	widget = my_utils_container_get_child_by_name( container, "p3-open" );
+	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
+	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_db_open_toggled ), self );
+	value = ofa_settings_get_boolean( "DossierNewDlg-opendossier" );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), value );
 }
 
 static void
-do_init_p2_item( ofaDossierNew *self,
-		GtkWidget *page, const gchar *field_name, gchar **var, GCallback fn, GList **focus )
+on_db_name_changed( GtkEntry *entry, ofaDossierNew *self )
 {
-	GtkWidget *entry;
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), field_name );
-	*focus = g_list_prepend( *focus, entry );
-	g_signal_connect( entry, "changed", fn, ( var ? ( gpointer ) var : ( gpointer ) self ));
-}
-
-static void
-on_p2_dbname_changed( GtkEntry *widget, ofaDossierNew *self )
-{
-	const gchar *label;
-
-	label = gtk_entry_get_text( widget );
-	g_free( self->private->p2_dbname );
-	self->private->p2_dbname = g_strdup( label );
-
-	check_for_p2_complete( self );
-}
-
-static void
-on_p2_var_changed( GtkEntry *widget, gchar **var )
-{
-	g_free( *var );
-	*var = g_strdup( gtk_entry_get_text( widget ));
-}
-
-static void
-on_p2_account_changed( GtkEntry *widget, ofaDossierNew *self )
-{
-	const gchar *label;
-
-	label = gtk_entry_get_text( widget );
-	g_free( self->private->p2_account );
-	self->private->p2_account = g_strdup( label );
-
-	check_for_p2_complete( self );
-}
-
-static void
-on_p2_password_changed( GtkEntry *widget, ofaDossierNew *self )
-{
-	const gchar *label;
-
-	label = gtk_entry_get_text( widget );
-	g_free( self->private->p2_password );
-	self->private->p2_password = g_strdup( label );
-
-	check_for_p2_complete( self );
-}
-
-/*
- * The p2 page gathers informations required to connect to the server
- * check that mandatory items are not empty
- */
-static void
-check_for_p2_complete( ofaDossierNew *self )
-{
-	GtkWidget *page;
 	ofaDossierNewPrivate *priv;
-	GtkAssistant *assistant;
+	const gchar *name;
 
 	priv = self->private;
 
-	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+	name = gtk_entry_get_text( entry );
+	g_free( priv->p3_dbname );
+	priv->p3_dbname = g_strdup( name );
 
-	page = gtk_assistant_get_nth_page( assistant, ASSIST_PAGE_DBINFOS );
-	gtk_assistant_set_page_complete( assistant, page,
-			priv->p2_dbname && g_utf8_strlen( priv->p2_dbname, -1 ) &&
-			priv->p2_account && g_utf8_strlen( priv->p2_account, -1 ) &&
-			priv->p2_password && g_utf8_strlen( priv->p2_password, -1 ));
+	check_for_enable_dlg( self );
 }
 
 static void
-do_prepare_p3_account( ofaDossierNew *self, GtkWidget *page )
+on_db_find_clicked( GtkButton *button, ofaDossierNew *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p3_account";
 
-	g_debug( "%s: self=%p, page=%p (%s)",
-			thisfn,
-			( void * ) self,
-			( void * ) page, G_OBJECT_TYPE_NAME( page ));
-
-	if( !self->private->p3_page_initialized ){
-		do_init_p3_account( self, page );
-		self->private->p3_page_initialized = TRUE;
-	}
-
-	check_for_p3_complete( self );
 }
 
 static void
-do_init_p3_account( ofaDossierNew *self, GtkWidget *page )
+on_db_label_changed( GtkEntry *entry, ofaDossierNew *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_do_init_p3_account";
-	GtkWidget *entry;
-	GList *focus;
+	ofaDossierNewPrivate *priv;
+	const gchar *label;
 
-	g_debug( "%s: self=%p, page=%p",
-			thisfn, ( void * ) self, ( void * ) page );
+	priv = self->private;
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-account" );
-	focus = g_list_prepend( NULL, entry );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_p3_account_changed ), self );
+	label = gtk_entry_get_text( entry );
+	g_free( priv->p3_label );
+	priv->p3_label = g_strdup( label );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-password" );
-	focus = g_list_prepend( focus, entry );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_p3_password_changed ), self );
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-bis" );
-	focus = g_list_prepend( focus, entry );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_p3_bis_changed ), self );
-
-	gtk_container_set_focus_chain( GTK_CONTAINER( page ), g_list_reverse( focus ));
-	g_list_free( focus );
+	check_for_enable_dlg( self );
 }
 
 static void
-on_p3_account_changed( GtkEntry *entry, ofaDossierNew *self )
+on_db_account_changed( GtkEntry *entry, ofaDossierNew *self )
 {
-	const gchar *content;
+	ofaDossierNewPrivate *priv;
+	const gchar *account;
 
-	content = gtk_entry_get_text( entry );
-	g_free( self->private->p3_account );
-	self->private->p3_account = g_strdup( content );
+	priv = self->private;
 
-	check_for_p3_complete( self );
+	account = gtk_entry_get_text( entry );
+	g_free( priv->p3_account );
+	priv->p3_account = g_strdup( account );
+
+	check_for_enable_dlg( self );
 }
 
 static void
-on_p3_password_changed( GtkEntry *entry, ofaDossierNew *self )
+on_db_password_changed( GtkEntry *entry, ofaDossierNew *self )
 {
-	const gchar *content;
+	ofaDossierNewPrivate *priv;
+	const gchar *password;
 
-	content = gtk_entry_get_text( entry );
-	g_free( self->private->p3_password );
-	self->private->p3_password = g_strdup( content );
+	priv = self->private;
 
-	check_for_p3_complete( self );
+	password = gtk_entry_get_text( entry );
+	g_free( priv->p3_password );
+	priv->p3_password = g_strdup( password );
+
+	priv->p3_are_equals = db_passwords_are_equals( self );
+	check_for_enable_dlg( self );
 }
 
 static void
-on_p3_bis_changed( GtkEntry *entry, ofaDossierNew *self )
+on_db_bis_changed( GtkEntry *entry, ofaDossierNew *self )
 {
-	const gchar *content;
+	ofaDossierNewPrivate *priv;
+	const gchar *bis;
 
-	content = gtk_entry_get_text( entry );
-	g_free( self->private->p3_bis );
-	self->private->p3_bis = g_strdup( content );
+	priv = self->private;
 
-	check_for_p3_complete( self );
+	bis = gtk_entry_get_text( entry );
+	g_free( priv->p3_bis );
+	priv->p3_bis = g_strdup( bis );
+
+	priv->p3_are_equals = db_passwords_are_equals( self );
+	check_for_enable_dlg( self );
 }
 
-/*
- * the page is supposed complete if the three fields are set
- * and the two entered passwords are equal
- */
-static void
-check_for_p3_complete( ofaDossierNew *self )
+static gboolean
+db_passwords_are_equals( ofaDossierNew *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_check_for_p3_complete";
-	GtkWidget *page;
 	ofaDossierNewPrivate *priv;
 	gboolean are_equals;
-	GtkLabel *label;
-	gchar *content;
-	GdkRGBA color;
-	GtkAssistant *assistant;
 
 	priv = self->private;
-
-	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
-
-	page = gtk_assistant_get_nth_page( assistant, ASSIST_PAGE_ACCOUNT );
 
 	are_equals = (( !priv->p3_password && !priv->p3_bis ) ||
-			( priv->p3_password && g_utf8_strlen( priv->p3_password, -1 ) &&
-				priv->p3_bis && g_utf8_strlen( priv->p3_bis, -1 ) &&
-				!g_utf8_collate( priv->p3_password, priv->p3_bis )));
+				( priv->p3_password && g_utf8_strlen( priv->p3_password, -1 ) &&
+					priv->p3_bis && g_utf8_strlen( priv->p3_bis, -1 ) &&
+					!g_utf8_collate( priv->p3_password, priv->p3_bis )));
 
-	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" ));
-	if( are_equals ){
-		gtk_label_set_text( label, "" );
-	} else {
-		content = g_strdup_printf( "%s",
-				_( "The two entered passwords are different each others" ));
-		gtk_label_set_text( label, content );
-		g_free( content );
-		if( !gdk_rgba_parse( &color, "#FF0000" )){
-			g_warning( "%s: unable to parse color", thisfn );
-		}
-		gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
-	}
-
-	gtk_assistant_set_page_complete( assistant, page,
-			priv->p3_account && g_utf8_strlen( priv->p3_account, -1 ) &&
-			priv->p3_password &&
-			priv->p3_bis &&
-			are_equals );
+	return( are_equals );
 }
 
-/*
- * ask the user to confirm the creation of the new dossier
- *
- * when preparing this page, we first check that the two passwords
- * entered in the previous page are equal ; if this is not the case,
- * then we display an error message and force a go back to the previous
- * page
- */
 static void
-do_prepare_p4_confirm( ofaDossierNew *self, GtkWidget *page )
+on_db_open_toggled( GtkToggleButton *button, ofaDossierNew *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_do_prepare_p4_confirm";
-	ofaDossierNewPrivate *priv;
+	self->private->p3_open_dossier = gtk_toggle_button_get_active( button );
+}
 
-	g_debug( "%s: self=%p, page=%p (%s)",
-			thisfn,
-			( void * ) self,
-			( void * ) page, G_OBJECT_TYPE_NAME( page ));
+static void
+set_message( ofaDossierNew *self, const gchar *msg )
+{
+	ofaDossierNewPrivate *priv;
+	GdkRGBA color;
 
 	priv = self->private;
 
-	g_return_if_fail( priv->p3_password && g_utf8_strlen( priv->p3_password, -1 ));
-	g_return_if_fail( priv->p3_bis && g_utf8_strlen( priv->p3_bis, -1 ));
+	if( !priv->msg_label ){
+		priv->msg_label = ( GtkLabel * )
+								my_utils_container_get_child_by_name(
+										GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
+										"px-msg" );
+	}
 
-	do_init_p4_confirm( self, page );
-	check_for_p4_complete( self );
-}
+	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
 
-static void
-do_init_p4_confirm( ofaDossierNew *self, GtkWidget *page )
-{
-	static const gchar *thisfn = "ofa_dossier_new_do_init_p4_confirm";
-
-	g_debug( "%s: self=%p, page=%p",
-			thisfn, ( void * ) self, ( void * ) page );
-
-	display_p4_param( page, "p4-dos-name",        self->private->p1_name,        TRUE );
-	display_p4_param( page, "p4-db-name",         self->private->p2_dbname,      TRUE );
-	display_p4_param( page, "p4-db-host",         self->private->p2_host,        TRUE );
-	display_p4_param( page, "p4-db-port",         self->private->p2_port,        TRUE );
-	display_p4_param( page, "p4-db-socket",       self->private->p2_socket,      TRUE );
-	display_p4_param( page, "p4-db-account",      self->private->p2_account,     TRUE );
-	display_p4_param( page, "p4-db-password",     self->private->p2_password,    FALSE );
-	display_p4_param( page, "p4-adm-account",     self->private->p3_account,     TRUE );
-	display_p4_param( page, "p4-adm-password",    self->private->p3_password,    FALSE );
-}
-
-static void
-display_p4_param( GtkWidget *page, const gchar *field_name, const gchar *value, gboolean display )
-{
-	static const gchar *thisfn = "ofa_dossier_new_display_p4_param";
-	GtkWidget *label;
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), field_name );
-	if( label ){
-		if( display ){
-			gtk_label_set_text( GTK_LABEL( label ), value );
-		} else {
-			/* i18n: 'Set' here means the password has been set */
-			gtk_label_set_text( GTK_LABEL( label ), _( "Set" ));
+	if( msg && g_utf8_strlen( msg, -1 )){
+		gtk_label_set_text( priv->msg_label, msg );
+		if( gdk_rgba_parse( &color, "#FF0000" )){
+			gtk_widget_override_color( GTK_WIDGET( priv->msg_label ), GTK_STATE_FLAG_NORMAL, &color );
 		}
 	} else {
-		g_warning( "%s: unable to find '%s' field", thisfn, field_name );
+		gtk_label_set_text( priv->msg_label, "" );
 	}
 }
 
 static void
-check_for_p4_complete( ofaDossierNew *self )
+check_for_enable_dlg( ofaDossierNew *self )
 {
-	GtkWidget *page;
-	GtkAssistant *assistant;
+	ofaDossierNewPrivate *priv;
+	gboolean enabled;
 
-	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+	priv = self->private;
 
-	page = gtk_assistant_get_nth_page( assistant, ASSIST_PAGE_CONFIRM );
-	gtk_assistant_set_page_complete( assistant, page, TRUE );
+	enabled = priv->p2_successful &&
+				priv->p3_account && g_utf8_strlen( priv->p3_account, -1 ) &&
+				priv->p3_password &&
+				priv->p3_bis &&
+				priv->p3_are_equals;
+
+	if( !priv->apply_btn ){
+		priv->apply_btn = my_utils_container_get_child_by_name(
+									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
+									"btn-ok" );
+	}
+
+	g_return_if_fail( priv->apply_btn && GTK_IS_BUTTON( priv->apply_btn ));
+
+	gtk_widget_set_sensitive( priv->apply_btn, enabled );
 }
 
-static void
-on_apply( GtkAssistant *assistant, ofaDossierNew *self )
+static gboolean
+v_quit_on_ok( myDialog *dialog )
 {
-	static const gchar *thisfn = "ofa_dossier_new_on_apply";
+	ofaDossierNewPrivate *priv;
+	gboolean ok;
 
-	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));
+	ok = do_apply( OFA_DOSSIER_NEW( dialog ));
 
-	if( !MY_WINDOW( self )->protected->dispose_has_run ){
-
-		g_debug( "%s: assistant=%p, self=%p",
-				thisfn, ( void * ) assistant, ( void * ) self );
-
-		self->private->p2_port_num = 0;
-		if( self->private->p2_port && g_utf8_strlen( self->private->p2_port, 1 )){
-			self->private->p2_port_num = atoi( self->private->p2_port );
+	if( ok ){
+		priv = OFA_DOSSIER_NEW( dialog )->private;
+		if( priv->p2_host && g_utf8_strlen( priv->p2_host, -1 )){
+			ofa_settings_set_string( "DossierNewDlg-MySQL-host", priv->p2_host );
 		}
+		if( priv->p2_port > 0 ){
+			ofa_settings_set_uint( "DossierNewDlg-MySQL-port", priv->p2_port );
+		}
+		if( priv->p2_socket && g_utf8_strlen( priv->p2_socket, -1 )){
+			ofa_settings_set_string( "DossierNewDlg-MySQL-socket", priv->p2_socket );
+		}
+		if( priv->p2_account && g_utf8_strlen( priv->p2_account, -1 )){
+			ofa_settings_set_string( "DossierNewDlg-MySQL-account", priv->p2_account );
+		}
+		ofa_settings_set_boolean( "DossierNewDlg-opendossier", priv->p3_open_dossier );
+	}
 
-		if( make_db_global( self, assistant )){
+	return( ok );
+}
 
-			setup_new_dossier( self );
+static gboolean
+do_apply( ofaDossierNew *self )
+{
+	gboolean apply_ok;
+	ofaOpenDossier *ood;
 
-			create_db_model( self,assistant );
+	apply_ok = make_db_global( self ) &&
+				setup_new_dossier( self ) &&
+				create_db_model( self );
 
-			st_ood = g_new0( ofaOpenDossier, 1 );
-			st_ood->dossier = g_strdup( self->private->p1_name );
-			st_ood->host = g_strdup( self->private->p2_host );
-			st_ood->port = self->private->p2_port_num;
-			st_ood->socket = g_strdup( self->private->p2_socket );
-			st_ood->dbname = g_strdup( self->private->p2_dbname );
-			st_ood->account = g_strdup( self->private->p3_account );
-			st_ood->password = g_strdup( self->private->p3_password );
+	if( apply_ok ){
+		if( self->private->p3_open_dossier ){
+
+			ood = g_new0( ofaOpenDossier, 1 );
+			ood->dossier = g_strdup( self->private->p3_label );
+			ood->host = g_strdup( self->private->p2_host );
+			ood->port = self->private->p2_port;
+			ood->socket = g_strdup( self->private->p2_socket );
+			ood->dbname = g_strdup( self->private->p3_dbname );
+			ood->account = g_strdup( self->private->p3_account );
+			ood->password = g_strdup( self->private->p3_password );
 
 			g_signal_emit_by_name(
 					MY_WINDOW( self )->protected->main_window,
-					OFA_SIGNAL_OPEN_DOSSIER, &st_ood );
+					OFA_SIGNAL_OPEN_DOSSIER, ood );
 		}
 	}
+
+	return( apply_ok );
 }
 
 /*
@@ -728,7 +793,7 @@ on_apply( GtkAssistant *assistant, ofaDossierNew *self )
  * - grant admin user
  */
 static gboolean
-make_db_global( ofaDossierNew *self, GtkAssistant *assistant )
+make_db_global( ofaDossierNew *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_make_db_global";
 	ofoSgbd *sgbd;
@@ -742,13 +807,12 @@ make_db_global( ofaDossierNew *self, GtkAssistant *assistant )
 
 	if( !ofo_sgbd_connect( sgbd,
 			self->private->p2_host,
-			self->private->p2_port_num,
+			self->private->p2_port,
 			self->private->p2_socket,
 			"mysql",
 			self->private->p2_account,
 			self->private->p2_password )){
 
-		gtk_assistant_previous_page( assistant );
 		return( FALSE );
 	}
 
@@ -756,9 +820,8 @@ make_db_global( ofaDossierNew *self, GtkAssistant *assistant )
 
 	g_string_printf( stmt,
 			"CREATE DATABASE %s",
-			self->private->p2_dbname );
+			self->private->p3_dbname );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -768,7 +831,6 @@ make_db_global( ofaDossierNew *self, GtkAssistant *assistant )
 			"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query actual timestamp',"
 			"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query')" );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -776,7 +838,6 @@ make_db_global( ofaDossierNew *self, GtkAssistant *assistant )
 			"CREATE USER '%s' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -784,25 +845,22 @@ make_db_global( ofaDossierNew *self, GtkAssistant *assistant )
 			"CREATE USER '%s'@'localhost' IDENTIFIED BY '%s'",
 			self->private->p3_account, self->private->p3_password );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
 	g_string_printf( stmt,
 			"GRANT ALL ON %s.* TO '%s' WITH GRANT OPTION",
-			self->private->p2_dbname,
+			self->private->p3_dbname,
 			self->private->p3_account );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
 	g_string_printf( stmt,
 			"GRANT ALL ON %s.* TO '%s'@'localhost' WITH GRANT OPTION",
-			self->private->p2_dbname,
+			self->private->p3_dbname,
 			self->private->p3_account );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -810,7 +868,6 @@ make_db_global( ofaDossierNew *self, GtkAssistant *assistant )
 			"GRANT CREATE USER, FILE ON *.* TO '%s'",
 			self->private->p3_account );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -818,7 +875,6 @@ make_db_global( ofaDossierNew *self, GtkAssistant *assistant )
 			"GRANT CREATE USER, FILE ON *.* TO '%s'@'localhost'",
 			self->private->p3_account );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
-		gtk_assistant_previous_page( assistant );
 		goto free_stmt;
 	}
 
@@ -834,25 +890,19 @@ free_stmt:
 static gboolean
 setup_new_dossier( ofaDossierNew *self )
 {
-	gint port = INT_MIN;
-
-	if( self->private->p2_port_num > 0 ){
-		port = self->private->p2_port_num;
-	}
-
 	return(
 		ofa_settings_set_dossier(
-			self->private->p1_name,
+			self->private->p3_label,
 			"Provider",    SETTINGS_TYPE_STRING, "MySQL",
 			"Host",        SETTINGS_TYPE_STRING, self->private->p2_host,
-			"Port",        SETTINGS_TYPE_INT,    port,
+			"Port",        SETTINGS_TYPE_INT,    self->private->p2_port,
 			"Socket",      SETTINGS_TYPE_STRING, self->private->p2_socket,
-			"Database",    SETTINGS_TYPE_STRING, self->private->p2_dbname,
+			"Database",    SETTINGS_TYPE_STRING, self->private->p3_dbname,
 			NULL ));
 }
 
 static gboolean
-create_db_model( ofaDossierNew *self, GtkAssistant *assistant )
+create_db_model( ofaDossierNew *self )
 {
 	ofoSgbd *sgbd;
 	gboolean model_created;
@@ -862,18 +912,16 @@ create_db_model( ofaDossierNew *self, GtkAssistant *assistant )
 
 	if( !ofo_sgbd_connect( sgbd,
 			self->private->p2_host,
-			self->private->p2_port_num,
+			self->private->p2_port,
 			self->private->p2_socket,
-			self->private->p2_dbname,
+			self->private->p3_dbname,
 			self->private->p2_account,
 			self->private->p2_password )){
 
-		gtk_assistant_previous_page( assistant );
 		goto free_sgbd;
 	}
 
 	if( !ofo_dossier_dbmodel_update( sgbd, self->private->p3_account )){
-		gtk_assistant_previous_page( assistant );
 		goto free_sgbd;
 	}
 

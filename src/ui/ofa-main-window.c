@@ -304,7 +304,9 @@ main_window_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 		my_utils_window_save_position( GTK_WINDOW( instance ), st_main_window_name );
-		pane_save_position( priv->pane );
+		if( priv->pane ){
+			pane_save_position( priv->pane );
+		}
 
 		/* unref object members here */
 

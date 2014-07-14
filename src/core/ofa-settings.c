@@ -556,6 +556,37 @@ ofa_settings_set_uint( const gchar *key, guint value )
 }
 
 /**
+ * ofa_settings_get_string:
+ *
+ * Returns the specified string value as a newly allocated string which
+ * must be g_free() by the caller.
+ */
+gchar *
+ofa_settings_get_string( const gchar *key )
+{
+	gchar *str;
+
+	settings_new();
+
+	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
+
+	return( str );
+}
+
+/**
+ * ofa_settings_set_string:
+ */
+void
+ofa_settings_set_string( const gchar *key, const gchar *value )
+{
+	settings_new();
+
+	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, value );
+
+	write_key_file( st_settings );
+}
+
+/**
  * ofa_settings_get_boolean:
  *
  * Returns the specified boolean value.

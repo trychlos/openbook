@@ -45,7 +45,7 @@ G_BEGIN_DECLS
 ofoSgbd *ofo_sgbd_new            ( const gchar *provider );
 
 gboolean ofo_sgbd_connect        ( ofoSgbd *sgbd,
-									const gchar *host, gint port, const gchar *socket,
+									const gchar *host, guint port, const gchar *socket,
 									const gchar *dbname,
 									const gchar *account, const gchar *password );
 

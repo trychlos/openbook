@@ -63,6 +63,9 @@ void     ofa_settings_set_uint_list( const gchar *key, const GList *uint_list );
 gint     ofa_settings_get_uint     ( const gchar *key );
 void     ofa_settings_set_uint     ( const gchar *key, guint value );
 
+gchar   *ofa_settings_get_string   ( const gchar *key );
+void     ofa_settings_set_string   ( const gchar *key, const gchar *value );
+
 gboolean ofa_settings_get_boolean  ( const gchar *key );
 void     ofa_settings_set_boolean  ( const gchar *key, gboolean value );
 

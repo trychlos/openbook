@@ -147,12 +147,20 @@ ofo_sgbd_new( const gchar *provider )
 
 /**
  * ofo_sgbd_connect:
+ * @sgbd:
+ * @host: [allow-none]: may be a host name or an IP address
+ * @port: the port number if greater than zero
+ * @socket: [allow-none]: the socket or named pipe to be used
+ * @dbname: [allow-none]: the default database
+ * @account: [allow-none]: the account to be used, default to unix login
+ *  name
+ * @password: [allow-none]: the password
  *
  * The connection will be automatically closed when unreffing the object.
  */
 gboolean
 ofo_sgbd_connect( ofoSgbd *sgbd,
-		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
+		const gchar *host, guint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofo_sgbd_connect";
 	MYSQL *mysql;

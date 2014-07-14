@@ -32,10 +32,10 @@
  * @short_description: #ofaDossierNew class definition.
  * @include: ui/ofa-dossier-new.h
  *
- * Guide the user through the process of creating a new dossier.
+ * Create a new dossier.
  */
 
-#include "ui/my-assistant.h"
+#include "ui/my-dialog.h"
 #include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -51,14 +51,14 @@ typedef struct _ofaDossierNewPrivate        ofaDossierNewPrivate;
 
 typedef struct {
 	/*< private >*/
-	myAssistant           parent;
+	myDialog              parent;
 	ofaDossierNewPrivate *private;
 }
 	ofaDossierNew;
 
 typedef struct {
 	/*< private >*/
-	myAssistantClass parent;
+	myDialogClass parent;
 }
 	ofaDossierNewClass;
 
