@@ -338,12 +338,13 @@ do_open( ofaDossierOpen *self )
 	static const gchar *thisfn = "ofa_dossier_open_do_open";
 	gboolean opened;
 	ofaOpenDossier *sod;
+	gchar *provider;
 	ofoSgbd *sgbd;
 
 	opened = FALSE;
 	sod = g_new0( ofaOpenDossier, 1 );
-	ofa_settings_get_dossier( self->private->name, &sod->host, &sod->port, &sod->socket, &sod->dbname );
-	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
+	ofa_settings_get_dossier( self->private->name, &provider, &sod->host, &sod->port, &sod->socket, &sod->dbname );
+	sgbd = ofo_sgbd_new( provider );
 
 	if( !ofo_sgbd_connect(
 			sgbd,
@@ -363,6 +364,7 @@ do_open( ofaDossierOpen *self )
 
 	opened = TRUE;
 	g_debug( "%s: connection successfully opened", thisfn );
+	g_free( provider );
 
 	sod->dossier = g_strdup( self->private->name );
 	sod->account = g_strdup( self->private->account );

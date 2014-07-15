@@ -355,9 +355,6 @@
 
  282 2014- 7-14 move export to myAssistant
 
- 288 2014- 7-14 DossierNew: enable dlg should not depend of connection
-                check
-
  290
 
 -----------------------------------------------------------------------
@@ -1121,6 +1118,10 @@
                 assertion `page_w && GTK_IS_CONTAINER( page_w )' failed
                 (when there is no account ?)
      2014- 7-14 done - svn #3784
+
+ 288 2014- 7-14 DossierNew: enable dlg should not depend of connection
+                check
+     2014- 7-14 done - svn #3787
 
  289 2014- 7-14 DossierNew: there is no error message when passwords 
                 are not equals

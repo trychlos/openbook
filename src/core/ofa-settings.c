@@ -286,59 +286,23 @@ ofa_settings_free( void )
 }
 
 /**
- * ofa_settings_get_dossiers:
- *
- * Returns the list of all defined dossiers as a newly allocated #GSList
- * list of newly allocated strings. The returned list should be
- * #g_slist_free_full() by the caller.
- */
-GSList *
-ofa_settings_get_dossiers( void )
-{
-	static const gchar *thisfn = "ofa_settings_get_dossiers";
-	GSList *slist;
-	gchar *prefix;
-	gint spfx;
-	gchar **array, **idx;
-
-	g_debug( "%s", thisfn );
-
-	settings_new();
-
-	prefix = g_strdup_printf( "%s ", GROUP_DOSSIER );
-	spfx = g_utf8_strlen( prefix, -1 );
-	array = g_key_file_get_groups( st_settings->private->keyfile, NULL );
-	slist = NULL;
-	idx = array;
-
-	while( *idx ){
-		if( g_str_has_prefix( *idx, prefix )){
-			slist = g_slist_prepend( slist, g_strstrip( g_strdup( *idx+spfx )));
-		}
-		idx++;
-	}
-
-	g_strfreev( array );
-	g_free( prefix );
-
-	return( slist );
-}
-
-/**
  * ofa_settings_get_dossier:
  */
 void
-ofa_settings_get_dossier( const gchar *name, gchar **host, gint *port, gchar **socket, gchar **dbname )
+ofa_settings_get_dossier( const gchar *name, gchar **provider, gchar **host, gint *port, gchar **socket, gchar **dbname )
 {
 	static const gchar *thisfn = "ofa_settings_get_dossier";
 	gchar *group;
 
-	g_debug( "%s: name=%s, host=%p, port=%p, socket=%p, dbname=%p",
-			thisfn, name, ( void * ) host, ( void * ) port, ( void * ) socket, ( void * ) dbname );
+	g_debug( "%s: name=%s, provider=%p, host=%p, port=%p, socket=%p, dbname=%p",
+			thisfn, name, ( void * ) provider, ( void * ) host, ( void * ) port, ( void * ) socket, ( void * ) dbname );
 
 	settings_new();
 
 	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
+	if( provider ){
+		*provider = g_key_file_get_string( st_settings->private->keyfile, group, "Provider", NULL );
+	}
 	if( host ){
 		*host = g_key_file_get_string( st_settings->private->keyfile, group, "Host", NULL );
 	}
@@ -413,6 +377,63 @@ ofa_settings_set_dossier( const gchar *name, ... )
 	g_free( group );
 
 	return( write_key_file( st_settings ));
+}
+
+/**
+ * ofa_settings_remove_dossier:
+ */
+void
+ofa_settings_remove_dossier( const gchar *name )
+{
+	static const gchar *thisfn = "ofa_settings_remove_dossier";
+	gchar *group;
+
+	g_debug( "%s: name=%s", thisfn, name );
+
+	settings_new();
+
+	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
+	g_key_file_remove_group( st_settings->private->keyfile, group, NULL );
+	g_free( group );
+}
+
+/**
+ * ofa_settings_get_dossiers:
+ *
+ * Returns the list of all defined dossiers as a newly allocated #GSList
+ * list of newly allocated strings. The returned list should be
+ * #g_slist_free_full() by the caller.
+ */
+GSList *
+ofa_settings_get_dossiers( void )
+{
+	static const gchar *thisfn = "ofa_settings_get_dossiers";
+	GSList *slist;
+	gchar *prefix;
+	gint spfx;
+	gchar **array, **idx;
+
+	g_debug( "%s", thisfn );
+
+	settings_new();
+
+	prefix = g_strdup_printf( "%s ", GROUP_DOSSIER );
+	spfx = g_utf8_strlen( prefix, -1 );
+	array = g_key_file_get_groups( st_settings->private->keyfile, NULL );
+	slist = NULL;
+	idx = array;
+
+	while( *idx ){
+		if( g_str_has_prefix( *idx, prefix )){
+			slist = g_slist_prepend( slist, g_strstrip( g_strdup( *idx+spfx )));
+		}
+		idx++;
+	}
+
+	g_strfreev( array );
+	g_free( prefix );
+
+	return( slist );
 }
 
 /**

@@ -73,12 +73,16 @@ openbook_SOURCES = \
 	ofa-class-properties.h								\
 	ofa-classes-set.c									\
 	ofa-classes-set.h									\
+	ofa-dbserver-login.c								\
+	ofa-dbserver-login.h								\
 	ofa-devise-combo.c									\
 	ofa-devise-combo.h									\
 	ofa-devise-properties.c								\
 	ofa-devise-properties.h								\
 	ofa-devises-set.c									\
 	ofa-devises-set.h									\
+	ofa-dossier-manager.c								\
+	ofa-dossier-manager.h								\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-dossier-open.c									\
@@ -159,6 +163,8 @@ ui_files = \
 	ofa-bat-select.ui									\
 	ofa-class-properties.ui								\
 	ofa-devise-properties.ui							\
+	ofa-dbserver-login.ui								\
+	ofa-dossier-manager.ui								\
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\

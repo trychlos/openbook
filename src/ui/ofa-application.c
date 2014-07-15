@@ -36,6 +36,7 @@
 #include "core/ofa-settings.h"
 
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-plugin.h"
@@ -112,6 +113,7 @@ static gboolean init_gtk_args( ofaApplication *application );
 static gboolean manage_options( ofaApplication *application );
 static void     do_prepare_for_open( ofaApplication *appli, const gchar *dossier, const gchar *user, const gchar *passwd );
 
+static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -120,6 +122,7 @@ static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer u
 static void     on_version( ofaApplication *application );
 
 static const GActionEntry st_app_entries[] = {
+		{ "manage",     on_manage,     NULL, NULL, NULL },
 		{ "new",        on_new,        NULL, NULL, NULL },
 		{ "open",       on_open,       NULL, NULL, NULL },
 		{ "user_prefs", on_user_prefs, NULL, NULL, NULL },
@@ -656,11 +659,12 @@ do_prepare_for_open( ofaApplication *appli, const gchar *dossier, const gchar *u
 {
 	static const gchar *thisfn = "ofa_application_do_prepare_for_open";
 	ofaOpenDossier *sod;
+	gchar *provider;
 	ofoSgbd *sgbd;
 
 	sod = g_new0( ofaOpenDossier, 1 );
-	ofa_settings_get_dossier( dossier, &sod->host, &sod->port, &sod->socket, &sod->dbname );
-	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
+	ofa_settings_get_dossier( dossier, &provider, &sod->host, &sod->port, &sod->socket, &sod->dbname );
+	sgbd = ofo_sgbd_new( provider );
 
 	if( !ofo_sgbd_connect(
 			sgbd,
@@ -680,6 +684,7 @@ do_prepare_for_open( ofaApplication *appli, const gchar *dossier, const gchar *u
 	}
 
 	g_debug( "%s: connection successfully opened", thisfn );
+	g_free( provider );
 
 	sod->dossier = g_strdup( dossier );
 	sod->account = g_strdup( user );
@@ -690,11 +695,10 @@ do_prepare_for_open( ofaApplication *appli, const gchar *dossier, const gchar *u
 }
 
 static void
-on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_application_on_new";
+	static const gchar *thisfn = "ofa_application_on_manage";
 	ofaApplicationPrivate *priv;
-	ofaOpenDossier *ood;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -703,10 +707,23 @@ on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	priv = OFA_APPLICATION( user_data )->private;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ood = ofa_dossier_new_run( priv->main_window );
-	if( ood ){
-		/*g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, ood );*/
-	}
+	ofa_dossier_manager_run( priv->main_window );
+}
+
+static void
+on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_application_on_new";
+	ofaApplicationPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+	priv = OFA_APPLICATION( user_data )->private;
+	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+
+	ofa_dossier_new_run( priv->main_window );
 }
 
 static void

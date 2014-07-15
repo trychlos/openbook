@@ -15,6 +15,10 @@
           <attribute name="action">app.open</attribute>
           <attribute name="accel">&lt;Control&gt;o</attribute>
         </item>
+        <item>
+          <attribute name="label" translatable="yes">_Manage...</attribute>
+          <attribute name="action">app.manage</attribute>
+        </item>
       </section>
       <section>
         <item>

@@ -131,12 +131,12 @@ dossier_new_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_dossier_new_finalize";
 	ofaDossierNewPrivate *priv;
 
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
 
 	priv = OFA_DOSSIER_NEW( instance )->private;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
 	g_free( priv->p1_sgdb_provider );
@@ -177,10 +177,10 @@ ofa_dossier_new_init( ofaDossierNew *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_init";
 
-	g_return_if_fail( OFA_IS_DOSSIER_NEW( self ));
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_DOSSIER_NEW( self ));
 
 	self->private = g_new0( ofaDossierNewPrivate, 1 );
 }
@@ -203,13 +203,13 @@ ofa_dossier_new_class_init( ofaDossierNewClass *klass )
  * ofa_dossier_new_run:
  * @main: the main window of the application.
  */
-ofaOpenDossier *
+void
 ofa_dossier_new_run( ofaMainWindow *main_window )
 {
-	static const gchar *thisfn = "ofa_dossier_new_new";
+	static const gchar *thisfn = "ofa_dossier_new_run";
 	ofaDossierNew *self;
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p", thisfn, main_window );
 
@@ -222,8 +222,6 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	g_object_unref( self );
-
-	return( NULL );
 }
 
 /*
@@ -588,9 +586,8 @@ init_p3_dossier_properties( ofaDossierNew *self )
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_db_open_toggled ), self );
 	/* force a signal to be triggered */
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), TRUE );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), FALSE );
 	value = ofa_settings_get_boolean( "DossierNewDlg-opendossier" );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), !value );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), value );
 }
 
@@ -939,7 +936,7 @@ setup_new_dossier( ofaDossierNew *self )
 	return(
 		ofa_settings_set_dossier(
 			priv->p3_label,
-			"Provider",    SETTINGS_TYPE_STRING, "MySQL",
+			"Provider",    SETTINGS_TYPE_STRING, SGBD_PROVIDER_MYSQL,
 			"Host",        SETTINGS_TYPE_STRING, priv->p2_host,
 			"Port",        SETTINGS_TYPE_INT,    priv->p2_port,
 			"Socket",      SETTINGS_TYPE_STRING, priv->p2_socket,

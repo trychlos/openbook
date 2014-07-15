@@ -50,24 +50,24 @@ typedef enum {
 }
 	SettingsType;
 
-void     ofa_settings_free         ( void );
+void     ofa_settings_free          ( void );
 
-GSList  *ofa_settings_get_dossiers ( void );
+void     ofa_settings_get_dossier   ( const gchar *name, gchar **provider, gchar **host, gint *port, gchar **socket, gchar **dbname );
+gboolean ofa_settings_set_dossier   ( const gchar *name, ... );
+void     ofa_settings_remove_dossier( const gchar *name );
+GSList  *ofa_settings_get_dossiers  ( void );
 
-void     ofa_settings_get_dossier  ( const gchar *name, gchar **host, gint *port, gchar **socket, gchar **dbname );
-gboolean ofa_settings_set_dossier  ( const gchar *name, ... );
+GList   *ofa_settings_get_uint_list ( const gchar *key );
+void     ofa_settings_set_uint_list ( const gchar *key, const GList *uint_list );
 
-GList   *ofa_settings_get_uint_list( const gchar *key );
-void     ofa_settings_set_uint_list( const gchar *key, const GList *uint_list );
+gint     ofa_settings_get_uint      ( const gchar *key );
+void     ofa_settings_set_uint      ( const gchar *key, guint value );
 
-gint     ofa_settings_get_uint     ( const gchar *key );
-void     ofa_settings_set_uint     ( const gchar *key, guint value );
+gchar   *ofa_settings_get_string    ( const gchar *key );
+void     ofa_settings_set_string    ( const gchar *key, const gchar *value );
 
-gchar   *ofa_settings_get_string   ( const gchar *key );
-void     ofa_settings_set_string   ( const gchar *key, const gchar *value );
-
-gboolean ofa_settings_get_boolean  ( const gchar *key );
-void     ofa_settings_set_boolean  ( const gchar *key, gboolean value );
+gboolean ofa_settings_get_boolean   ( const gchar *key );
+void     ofa_settings_set_boolean   ( const gchar *key, gboolean value );
 
 G_END_DECLS
 
