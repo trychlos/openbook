@@ -43,16 +43,6 @@
   23 2014- 5- 8 Add a progress page to DossierNew dialog, displaying
                 the executed SQL statements
 
-  31 2014- 5- 8 Undo the actions partially done if Dossier New cannot be
-                terminated (acting as a commit transaction), so that all
-                is left as this was initially if something goes wrong
-     2014- 7-19 when undoing, let the user choose if database and user
-                should be dropped
-     2014- 7-19 properly deleting a user:
-                delete from user...
-                + drop user
-                + flush privileges
-
   35 2014- 5-10 DossierOpen should monitor the configuration, only
                 enabling the action when there is at least one defined
                 dossier
@@ -454,6 +444,17 @@
 
   30 2014- 5- 8 Define a G_TYPE_INT_LIST GType to be used as a GValue
      2014- 5- 9 cancelled
+
+  31 2014- 5- 8 Undo the actions partially done if Dossier New cannot be
+                terminated (acting as a commit transaction), so that all
+                is left as this was initially if something goes wrong
+     2014- 7-19 when undoing, let the user choose if database and user
+                should be dropped
+     2014- 7-19 properly deleting a user:
+                delete from user...
+                + drop user
+                + flush privileges
+     2014- 7-19 done - svn #3795
 
   32 2014- 5- 9 settings_gvalue_compare to be written
      2014- 5- 9 cancelled
