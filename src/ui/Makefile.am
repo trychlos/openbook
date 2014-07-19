@@ -83,6 +83,8 @@ openbook_SOURCES = \
 	ofa-devises-set.h									\
 	ofa-dossier-manager.c								\
 	ofa-dossier-manager.h								\
+	ofa-dossier-delete.c								\
+	ofa-dossier-delete.h								\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-dossier-open.c									\
@@ -165,6 +167,7 @@ ui_files = \
 	ofa-devise-properties.ui							\
 	ofa-dbserver-login.ui								\
 	ofa-dossier-manager.ui								\
+	ofa-dossier-delete.ui								\
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\

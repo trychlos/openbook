@@ -43,11 +43,11 @@ struct _ofaAccountSelectPrivate {
 
 	/* runtime
 	 */
-	ofaAccountNotebook *child;
+	ofaAccountNotebook  *child;
 
 	/* returned value
 	 */
-	gchar              *account_number;
+	gchar               *account_number;
 };
 
 static const gchar      *st_ui_xml = PKGUIDIR "/ofa-account-select.ui";
@@ -69,12 +69,12 @@ account_select_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_account_select_finalize";
 	ofaAccountSelectPrivate *priv;
 
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_SELECT( instance ));
 
 	priv = OFA_ACCOUNT_SELECT( instance )->private;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
 	g_free( priv->account_number );

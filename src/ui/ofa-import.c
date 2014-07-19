@@ -182,12 +182,12 @@ import_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_import_finalize";
 	ofaImportPrivate *priv;
 
-	g_return_if_fail( OFA_IS_IMPORT( instance ));
-
-	priv = OFA_IMPORT( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_IMPORT( instance ));
+
+	priv = OFA_IMPORT( instance )->private;
 
 	/* free data members here */
 	g_slist_free_full( priv->p1_fnames, ( GDestroyNotify ) g_free );
@@ -202,7 +202,7 @@ import_dispose( GObject *instance )
 {
 	ofaImportPrivate *priv;
 
-	g_return_if_fail( OFA_IS_IMPORT( instance ));
+	g_return_if_fail( instance && OFA_IS_IMPORT( instance ));
 
 	priv = ( OFA_IMPORT( instance ))->private;
 
@@ -227,7 +227,7 @@ import_constructed( GObject *instance )
 	GtkBuilder *builder;
 	GError *error;
 
-	g_return_if_fail( OFA_IS_IMPORT( instance ));
+	g_return_if_fail( instance && OFA_IS_IMPORT( instance ));
 
 	priv = OFA_IMPORT( instance )->private;
 
@@ -310,10 +310,10 @@ ofa_import_init( ofaImport *self )
 {
 	static const gchar *thisfn = "ofa_import_init";
 
-	g_return_if_fail( OFA_IS_IMPORT( self ));
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_IMPORT( self ));
 
 	self->private = g_new0( ofaImportPrivate, 1 );
 

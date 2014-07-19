@@ -139,12 +139,12 @@ application_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_application_finalize";
 	ofaApplicationPrivate *priv;
 
-	g_return_if_fail( OFA_IS_APPLICATION( instance ));
-
-	priv = OFA_APPLICATION( instance )->private;
-
 	g_debug( "%s: application=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_APPLICATION( instance ));
+
+	priv = OFA_APPLICATION( instance )->private;
 
 	/* free data members here */
 	g_strfreev( priv->argv );
@@ -159,7 +159,7 @@ application_dispose( GObject *instance )
 {
 	ofaApplicationPrivate *priv;
 
-	g_return_if_fail( OFA_IS_APPLICATION( instance ));
+	g_return_if_fail( instance && OFA_IS_APPLICATION( instance ));
 
 	priv = OFA_APPLICATION( instance )->private;
 
@@ -186,7 +186,7 @@ application_get_property( GObject *object, guint property_id, GValue *value, GPa
 {
 	ofaApplicationPrivate *priv;
 
-	g_return_if_fail( OFA_IS_APPLICATION( object ));
+	g_return_if_fail( object && OFA_IS_APPLICATION( object ));
 
 	priv = OFA_APPLICATION( object )->private;
 

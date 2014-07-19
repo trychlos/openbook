@@ -51,7 +51,12 @@ static void    date_entry_parse_ddmm( GDate *date, const gchar *text );
 static void
 my_date_finalize( GObject *instance )
 {
+	static const gchar *thisfn = "my_date_finalize";
 	myDate *self;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_if_fail( instance && MY_IS_DATE( instance ));
 
 	self = MY_DATE( instance );
 

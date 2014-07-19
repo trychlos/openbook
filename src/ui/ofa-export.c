@@ -225,12 +225,12 @@ export_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_export_finalize";
 	ofaExportPrivate *priv;
 
-	g_return_if_fail( OFA_IS_EXPORT( instance ));
-
-	priv = OFA_EXPORT( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_EXPORT( instance ));
+
+	priv = OFA_EXPORT( instance )->private;
 
 	/* free data members here */
 	g_free( priv->p3_uri );
@@ -245,7 +245,7 @@ export_dispose( GObject *instance )
 {
 	ofaExportPrivate *priv;
 
-	g_return_if_fail( OFA_IS_EXPORT( instance ));
+	g_return_if_fail( instance && OFA_IS_EXPORT( instance ));
 
 	priv = ( OFA_EXPORT( instance ))->private;
 
@@ -270,7 +270,7 @@ export_constructed( GObject *instance )
 	GtkBuilder *builder;
 	GError *error;
 
-	g_return_if_fail( OFA_IS_EXPORT( instance ));
+	g_return_if_fail( instance && OFA_IS_EXPORT( instance ));
 
 	priv = OFA_EXPORT( instance )->private;
 
@@ -353,10 +353,10 @@ ofa_export_init( ofaExport *self )
 {
 	static const gchar *thisfn = "ofa_export_init";
 
-	g_return_if_fail( OFA_IS_EXPORT( self ));
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_EXPORT( self ));
 
 	self->private = g_new0( ofaExportPrivate, 1 );
 

@@ -127,12 +127,12 @@ guided_ex_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_guided_ex_finalize";
 	ofaGuidedExPrivate *priv;
 
-	g_return_if_fail( OFA_IS_GUIDED_EX( instance ));
-
-	priv = OFA_GUIDED_EX( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_GUIDED_EX( instance ));
+
+	priv = OFA_GUIDED_EX( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -146,7 +146,7 @@ guided_ex_dispose( GObject *instance )
 {
 	ofaGuidedExPrivate *priv;
 
-	g_return_if_fail( OFA_IS_GUIDED_EX( instance ));
+	g_return_if_fail( instance && OFA_IS_GUIDED_EX( instance ));
 
 	priv = OFA_GUIDED_EX( instance )->private;
 
@@ -178,10 +178,10 @@ ofa_guided_ex_init( ofaGuidedEx *self )
 {
 	static const gchar *thisfn = "ofa_guided_ex_init";
 
-	g_return_if_fail( OFA_IS_GUIDED_EX( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_GUIDED_EX( self ));
 
 	self->private = g_new0( ofaGuidedExPrivate, 1 );
 }

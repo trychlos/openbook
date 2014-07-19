@@ -34,10 +34,6 @@
      2014- 5- 5 ofa-application.c: variable 'pref_confirm_on_quit'
                 ofa-main-window.c: variable 'pref_confirm_on_altf4'
 
-  20 2014- 5- 5 DossierNew: display the asterisks (mandatory)
-                in another color (grey ? red ? blue ?)
-     2014- 5-22 see also Todo #85
-
   21 2014- 5- 6 DossierNew: let the user be able to choose to
                 create a new database (if the data provider allows it)
                 or to use an existing one
@@ -50,6 +46,12 @@
   31 2014- 5- 8 Undo the actions partially done if Dossier New cannot be
                 terminated (acting as a commit transaction), so that all
                 is left as this was initially if something goes wrong
+     2014- 7-19 when undoing, let the user choose if database and user
+                should be dropped
+     2014- 7-19 properly deleting a user:
+                delete from user...
+                + drop user
+                + flush privileges
 
   35 2014- 5-10 DossierOpen should monitor the configuration, only
                 enabling the action when there is at least one defined
@@ -346,16 +348,31 @@
  276 2014- 7-13 ofoSgbd: move error management to caller (as GError)
                 so that caller may decide what to do instead of 
                 displaying an error message
+     2014- 7-18 query option: ignore error, display error
+                query option: no audit
 
  278 2014- 7-13 extend to other sgdb providers (PostgreSQL, etc.)
-
- 279 2014- 7-14 Manage dossiers, manage databases (delete, reconciliate)
 
  281 2014- 7-14 move import to myAssistant
 
  282 2014- 7-14 move export to myAssistant
 
- 290
+ 291 2014- 7-19 DossierManage: if host is empty, display 'localhost'
+                in italics
+
+ 292 2014- 7-19 DossierManage: be able to update external dossier
+                properties (those which are displayed by dossier
+                manager)
+
+ 293 2014- 7-19 isolate in a structure the MySQL connection parameters
+                and union it in a structure passed through functions
+                and able to hold other providers
+
+ 294 2014- 7-19 what to do when deleting a dossier is a preference
+
+ 295 2014- 7-19 ask confirmation when dropping an existing db
+
+ 296
 
 -----------------------------------------------------------------------
  DONE
@@ -401,6 +418,11 @@
                 of the focus of the fields (provider selector is the first
                 but should be the second)
      2014- 5- 5 Done
+
+  20 2014- 5- 5 DossierNew: display the asterisks (mandatory)
+                in another color (grey ? red ? blue ?)
+     2014- 5-22 see also Todo #85
+     2014- 7-19 cancelled
 
   22 2014- 5- 7 Assistant DossierNew: determine if an holder should be
                 hidden (the initial connection password is just entered
@@ -1094,6 +1116,9 @@
  277 2014- 7-13 DossierNew is not an assistant, but a dialog box
      2014- 7-14 done - svn #3769
 
+ 279 2014- 7-14 Manage dossiers, manage databases (delete, reconciliate)
+     2014- 7-14 done - svn #3794
+
  280 2014- 7-14 DossierNew: update properties right after having opened
                 the dossier
      2014- 7-14 done - svn #3770
@@ -1126,6 +1151,11 @@
  289 2014- 7-14 DossierNew: there is no error message when passwords 
                 are not equals
      2014- 7-14 done - svn #3786
+
+ 290 2014- 7-15 in classes (finalize, init), g_debug should appear
+                before g_return_if_fail (in order to know why something
+                fails)
+     2014- 7-18 done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

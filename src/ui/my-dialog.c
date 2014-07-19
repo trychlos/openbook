@@ -31,12 +31,6 @@
 #include "ui/my-dialog.h"
 #include "ui/my-window-prot.h"
 
-#if 0
-static gboolean pref_quit_on_escape = TRUE;
-static gboolean pref_confirm_on_cancel = FALSE;
-static gboolean pref_confirm_on_escape = FALSE;
-#endif
-
 /* private instance data
  */
 struct _myDialogPrivate {
@@ -80,7 +74,7 @@ my_dialog_finalize( GObject *instance )
 static void
 my_dialog_dispose( GObject *instance )
 {
-	g_return_if_fail( MY_IS_DIALOG( instance ));
+	g_return_if_fail( instance && MY_IS_DIALOG( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 

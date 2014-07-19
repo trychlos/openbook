@@ -159,12 +159,12 @@ rappro_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_rappro_finalize";
 	ofaRapproPrivate *priv;
 
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( OFA_IS_RAPPRO( instance ));
 
 	priv = OFA_RAPPRO( instance )->private;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
 	g_free( priv );
@@ -199,10 +199,10 @@ ofa_rappro_init( ofaRappro *self )
 {
 	static const gchar *thisfn = "ofa_rappro_init";
 
-	g_return_if_fail( OFA_IS_RAPPRO( self ));
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( OFA_IS_RAPPRO( self ));
 
 	self->private = g_new0( ofaRapproPrivate, 1 );
 

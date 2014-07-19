@@ -101,6 +101,8 @@ ofo_entry_finalize( GObject *instance )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			priv->label );
 
+	g_return_if_fail( instance && OFO_IS_ENTRY( instance ));
+
 	/* free data members here */
 	g_free( priv->label );
 	g_free( priv->devise );

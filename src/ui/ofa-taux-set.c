@@ -96,12 +96,12 @@ taux_set_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_taux_set_finalize";
 	ofaTauxSetPrivate *priv;
 
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( OFA_IS_TAUX_SET( instance ));
 
 	priv = OFA_TAUX_SET( instance )->private;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
 	g_free( priv );

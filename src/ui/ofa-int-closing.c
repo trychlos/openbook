@@ -87,12 +87,12 @@ int_closing_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_int_closing_finalize";
 	ofaIntClosingPrivate *priv;
 
-	g_return_if_fail( OFA_IS_INT_CLOSING( instance ));
-
-	priv = OFA_INT_CLOSING( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_INT_CLOSING( instance ));
+
+	priv = OFA_INT_CLOSING( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -104,7 +104,7 @@ int_closing_finalize( GObject *instance )
 static void
 int_closing_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_INT_CLOSING( instance ));
+	g_return_if_fail( instance && OFA_IS_INT_CLOSING( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
@@ -120,10 +120,10 @@ ofa_int_closing_init( ofaIntClosing *self )
 {
 	static const gchar *thisfn = "ofa_int_closing_instance_init";
 
-	g_return_if_fail( OFA_IS_INT_CLOSING( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_INT_CLOSING( self ));
 
 	self->private = g_new0( ofaIntClosingPrivate, 1 );
 

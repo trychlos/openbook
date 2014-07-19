@@ -82,12 +82,12 @@ dossier_open_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_dossier_open_finalize";
 	ofaDossierOpenPrivate *priv;
 
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( instance && OFA_IS_DOSSIER_OPEN( instance ));
 
 	priv = OFA_DOSSIER_OPEN( instance )->private;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
 	g_free( priv->name );
@@ -118,10 +118,10 @@ ofa_dossier_open_init( ofaDossierOpen *self )
 {
 	static const gchar *thisfn = "ofa_dossier_open_init";
 
-	g_return_if_fail( self && OFA_IS_DOSSIER_OPEN( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_DOSSIER_OPEN( self ));
 
 	self->private = g_new0( ofaDossierOpenPrivate, 1 );
 }

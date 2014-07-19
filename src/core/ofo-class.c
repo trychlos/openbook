@@ -76,6 +76,8 @@ ofo_class_finalize( GObject *instance )
 			priv->number,
 			priv->label );
 
+	g_return_if_fail( instance && OFO_IS_CLASS( instance ));
+
 	/* free data members here */
 	g_free( priv->label );
 	g_free( priv->notes );
@@ -88,7 +90,7 @@ ofo_class_finalize( GObject *instance )
 static void
 ofo_class_dispose( GObject *instance )
 {
-	g_return_if_fail( OFO_IS_CLASS( instance ));
+	g_return_if_fail( instance && OFO_IS_CLASS( instance ));
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 

@@ -100,6 +100,8 @@ ofo_account_finalize( GObject *instance )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			priv->number, priv->label );
 
+	g_return_if_fail( instance && OFO_IS_ACCOUNT( instance ));
+
 	/* free data members here */
 	g_free( priv->number );
 	g_free( priv->label );
@@ -116,7 +118,7 @@ ofo_account_finalize( GObject *instance )
 static void
 ofo_account_dispose( GObject *instance )
 {
-	g_return_if_fail( OFO_IS_ACCOUNT( instance ));
+	g_return_if_fail( instance && OFO_IS_ACCOUNT( instance ));
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 

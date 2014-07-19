@@ -120,6 +120,8 @@ ofo_journal_finalize( GObject *instance )
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			priv->mnemo, priv->label );
 
+	g_return_if_fail( instance && OFO_IS_JOURNAL( instance ));
+
 	/* free data members here */
 	g_free( priv->mnemo );
 	g_free( priv->label );
@@ -135,7 +137,7 @@ ofo_journal_finalize( GObject *instance )
 static void
 ofo_journal_dispose( GObject *instance )
 {
-	g_return_if_fail( OFO_IS_JOURNAL( instance ));
+	g_return_if_fail( instance && OFO_IS_JOURNAL( instance ));
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 

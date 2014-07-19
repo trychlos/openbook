@@ -73,12 +73,12 @@ preferences_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_preferences_finalize";
 	ofaPreferencesPrivate *priv;
 
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( instance && OFA_IS_PREFERENCES( instance ));
 
 	priv = OFA_PREFERENCES( instance )->private;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
 	g_free( priv );
@@ -106,10 +106,10 @@ ofa_preferences_init( ofaPreferences *self )
 {
 	static const gchar *thisfn = "ofa_preferences_init";
 
-	g_return_if_fail( self && OFA_IS_PREFERENCES( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_PREFERENCES( self ));
 
 	self->private = g_new0( ofaPreferencesPrivate, 1 );
 }

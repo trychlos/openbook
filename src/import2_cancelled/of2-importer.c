@@ -148,10 +148,10 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	static const gchar *thisfn = "of2_importer_instance_init";
 	of2Importer *self;
 
-	g_return_if_fail( OF2_IS_IMPORTER( instance ));
-
 	g_debug( "%s: instance=%p (%s), klass=%p",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
+
+	g_return_if_fail( instance && OF2_IS_IMPORTER( instance ));
 
 	self = OF2_IMPORTER( instance );
 
@@ -165,7 +165,7 @@ instance_dispose( GObject *object )
 {
 	of2Importer *self;
 
-	g_return_if_fail( OF2_IS_IMPORTER( object ));
+	g_return_if_fail( object && OF2_IS_IMPORTER( object ));
 
 	self = OF2_IMPORTER( object );
 
@@ -186,12 +186,12 @@ instance_finalize( GObject *object )
 	static const gchar *thisfn = "of2_importer_instance_finalize";
 	of2ImporterPrivate *priv;
 
-	g_return_if_fail( OF2_IS_IMPORTER( object ));
-
-	priv = OF2_IMPORTER( object )->private;
-
 	g_debug( "%s: object=%p (%s)",
 			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+
+	g_return_if_fail( object && OF2_IS_IMPORTER( object ));
+
+	priv = OF2_IMPORTER( object )->private;
 
 	/* free data members here */
 	g_slist_free_full( priv->content, ( GDestroyNotify ) g_free );

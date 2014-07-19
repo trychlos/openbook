@@ -39,6 +39,7 @@
 #include "core/ofa-settings.h"
 
 #include "ui/my-window-prot.h"
+#include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-main-window.h"
 
@@ -62,19 +63,24 @@ struct _ofaDossierNewPrivate {
 
 	/* p3: dossier properties
 	 */
-	gchar         *p3_dbname;
 	gchar         *p3_label;
+	gchar         *p3_dbname;
+	gint           p3_db_exists_mode;
 	gchar         *p3_account;
 	gchar         *p3_password;
 	gchar         *p3_bis;
 	gboolean       p3_open_dossier;
 	gboolean       p3_update_properties;
 
-	gboolean       p3_are_equals;
+	gboolean       p3_label_is_ok;
+	gboolean       p3_db_exists;
+	gboolean       p3_db_is_ok;
+	gboolean       p3_account_is_ok;
+	gboolean       p3_passwd_are_equals;
 
 	/* UI
 	 */
-	GtkWidget     *p2_check_btn;
+	GtkLabel      *p1_message;
 	GtkWidget     *p3_browse_btn;
 	GtkWidget     *p3_properties_btn;
 	GtkLabel      *msg_label;
@@ -86,6 +92,32 @@ struct _ofaDossierNewPrivate {
 enum {
 	SGDB_COL_PROVIDER = 0,
 	SGDB_N_COLUMNS
+};
+
+/* columns in DB exists mode combo box
+ */
+enum {
+	DB_COL_MODE = 0,
+	DB_COL_LABEL,
+	DB_N_COLUMNS
+};
+
+enum {
+	DB_MODE_EMPTY = 1,
+	DB_MODE_REINIT,
+	DB_MODE_AS_IS
+};
+
+typedef struct {
+	gint         mode;
+	const gchar *label;
+}
+	DBMode;
+
+static DBMode st_db_mode[] = {
+		{ DB_MODE_REINIT, N_( "Reinitialize the existing DB" )},
+		{ DB_MODE_AS_IS,  N_( "Keep the existing DB as is" )},
+		{ 0 },
 };
 
 static const gchar *st_ui_xml   = PKGUIDIR "/ofa-dossier-new.ui";
@@ -103,15 +135,18 @@ static void      on_mysql_port_changed( GtkEntry *entry, ofaDossierNew *self );
 static void      on_mysql_socket_changed( GtkEntry *entry, ofaDossierNew *self );
 static void      on_mysql_admin_account_changed( GtkEntry *entry, ofaDossierNew *self );
 static void      on_mysql_admin_password_changed( GtkEntry *entry, ofaDossierNew *self );
-static void      on_mysql_check_clicked( GtkButton *button, ofaDossierNew *self );
-static gboolean  do_mysql_check( ofaDossierNew *self );
-static gboolean  check_for_mysql_provider( ofaDossierNew *self );
-static void      check_for_enable_connectivity_check( ofaDossierNew *self );
+static void      check_for_dbserver_connection( ofaDossierNew *self );
+static gboolean  is_dbserver_connect_ok( ofaDossierNew *self );
 static void      init_p3_dossier_properties( ofaDossierNew *self );
+static void      init_p3_db_combo( ofaDossierNew *self );
+static void      on_db_label_changed( GtkEntry *entry, ofaDossierNew *self );
 static void      on_db_name_changed( GtkEntry *entry, ofaDossierNew *self );
 static void      on_db_find_clicked( GtkButton *button, ofaDossierNew *self );
-static void      on_db_label_changed( GtkEntry *entry, ofaDossierNew *self );
+static void      check_for_db( ofaDossierNew *self );
+static gboolean  is_db_exists( ofaDossierNew *self );
+static void      on_db_exists_mode_changed( GtkComboBox *combo, ofaDossierNew *self );
 static void      on_db_account_changed( GtkEntry *entry, ofaDossierNew *self );
+static gboolean  is_account_ok( ofaDossierNew *self );
 static void      on_db_password_changed( GtkEntry *entry, ofaDossierNew *self );
 static void      on_db_bis_changed( GtkEntry *entry, ofaDossierNew *self );
 static gboolean  db_passwords_are_equals( ofaDossierNew *self );
@@ -121,9 +156,10 @@ static void      set_message( ofaDossierNew *self, const gchar *msg );
 static void      check_for_enable_dlg( ofaDossierNew *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_apply( ofaDossierNew *self );
-static gboolean  make_db_global( ofaDossierNew *self );
-static gboolean  setup_new_dossier( ofaDossierNew *self );
+static gboolean  create_db_as_root( ofaDossierNew *self );
+static gboolean  create_user_as_root( ofaDossierNew *self );
 static gboolean  create_db_model( ofaDossierNew *self );
+static gboolean  setup_new_dossier( ofaDossierNew *self );
 
 static void
 dossier_new_finalize( GObject *instance )
@@ -183,6 +219,8 @@ ofa_dossier_new_init( ofaDossierNew *self )
 	g_return_if_fail( self && OFA_IS_DOSSIER_NEW( self ));
 
 	self->private = g_new0( ofaDossierNewPrivate, 1 );
+
+	self->private->p3_db_exists_mode = 0;
 }
 
 static void
@@ -242,8 +280,14 @@ init_p1_sgdb_provider( ofaDossierNew *self )
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeIter iter;
+	GtkWidget *label;
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+
+	label = my_utils_container_get_child_by_name( container, "p1-provider-msg" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	self->private->p1_message = GTK_LABEL( label );
+
 	combo = ( GtkComboBox * ) my_utils_container_get_child_by_name( container, "p1-provider" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 
@@ -273,21 +317,24 @@ static void
 on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_on_sgdb_provider_changed";
+	ofaDossierNewPrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
-	gchar *provider;
 
 	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) self );
+
+	priv = self->private;
+	g_free( priv->p1_sgdb_provider );
+	priv->p1_sgdb_provider = NULL;
 
 	if( gtk_combo_box_get_active_iter( combo, &iter )){
 		tmodel = gtk_combo_box_get_model( combo );
 		gtk_tree_model_get( tmodel, &iter,
-				SGDB_COL_PROVIDER, &provider,
+				SGDB_COL_PROVIDER, &priv->p1_sgdb_provider,
 				-1 );
-		if( !g_utf8_collate( provider, SGBD_PROVIDER_MYSQL )){
+		if( !g_utf8_collate( priv->p1_sgdb_provider, SGBD_PROVIDER_MYSQL )){
 			setup_mysql_provider( self );
 		}
-		g_free( provider );
 	}
 }
 
@@ -299,7 +346,7 @@ setup_mysql_provider( ofaDossierNew *self )
 	GtkWidget *child;
 	GtkWidget *window;
 	GtkWidget *grid;
-	GtkWidget *entry, *button;
+	GtkWidget *entry;
 	gchar *value;
 	gint ivalue;
 	GtkSizeGroup *group;
@@ -331,11 +378,6 @@ setup_mysql_provider( ofaDossierNew *self )
 	g_object_unref( group );
 
 	/* init the grid */
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "p2-check" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_mysql_check_clicked ), self );
-	self->private->p2_check_btn = button;
-
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "p2-host" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mysql_host_changed ), self );
@@ -391,7 +433,7 @@ on_mysql_host_changed( GtkEntry *entry, ofaDossierNew *self )
 	priv->p2_host = g_strdup( host );
 
 	priv->p2_successful = FALSE;
-	check_for_enable_connectivity_check( self );
+	check_for_dbserver_connection( self );
 	check_for_enable_dlg( self );
 }
 
@@ -411,7 +453,7 @@ on_mysql_port_changed( GtkEntry *entry, ofaDossierNew *self )
 	}
 
 	priv->p2_successful = FALSE;
-	check_for_enable_connectivity_check( self );
+	check_for_dbserver_connection( self );
 	check_for_enable_dlg( self );
 }
 
@@ -428,7 +470,7 @@ on_mysql_socket_changed( GtkEntry *entry, ofaDossierNew *self )
 	priv->p2_socket = g_strdup( socket );
 
 	priv->p2_successful = FALSE;
-	check_for_enable_connectivity_check( self );
+	check_for_dbserver_connection( self );
 	check_for_enable_dlg( self );
 }
 
@@ -445,7 +487,7 @@ on_mysql_admin_account_changed( GtkEntry *entry, ofaDossierNew *self )
 	priv->p2_account = g_strdup( account );
 
 	priv->p2_successful = FALSE;
-	check_for_enable_connectivity_check( self );
+	check_for_dbserver_connection( self );
 	check_for_enable_dlg( self );
 }
 
@@ -462,82 +504,56 @@ on_mysql_admin_password_changed( GtkEntry *entry, ofaDossierNew *self )
 	priv->p2_password = g_strdup( password );
 
 	priv->p2_successful = FALSE;
-	check_for_enable_connectivity_check( self );
+	check_for_dbserver_connection( self );
 	check_for_enable_dlg( self );
 }
 
 static void
-on_mysql_check_clicked( GtkButton *button, ofaDossierNew *self )
+check_for_dbserver_connection( ofaDossierNew *self )
 {
-	check_for_mysql_provider( self );
-	check_for_enable_connectivity_check( self );
+	ofaDossierNewPrivate *priv;
+	const gchar *msg;
+	GdkRGBA color;
+
+	priv = self->private;
+
+	if( !priv->p2_successful ){
+		priv->p2_successful = is_dbserver_connect_ok( self );
+		msg = priv->p2_successful ?
+				_( "DB server connection is OK" ) : _( "Unable to connect to DB server" );
+		gtk_label_set_text( priv->p1_message, msg );
+		if( gdk_rgba_parse( &color, priv->p2_successful ? "#000000" : "#FF0000" )){
+			gtk_widget_override_color( GTK_WIDGET( priv->p1_message ), GTK_STATE_FLAG_NORMAL, &color );
+		}
+	}
+
+	g_return_if_fail( priv->p3_browse_btn && GTK_IS_BUTTON( priv->p3_browse_btn ));
+	gtk_widget_set_sensitive( priv->p3_browse_btn, priv->p2_successful );
 }
 
 static gboolean
-do_mysql_check( ofaDossierNew *self )
+is_dbserver_connect_ok( ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 	gboolean connect_ok;
 	ofoSgbd *sgbd;
 
 	priv = self->private;
-	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
+	sgbd = ofo_sgbd_new( priv->p1_sgdb_provider );
 
-	connect_ok = ofo_sgbd_connect(
+	connect_ok = ofo_sgbd_connect_ex(
 					sgbd,
 					priv->p2_host,
 					priv->p2_port,
 					priv->p2_socket,
 					NULL,
 					priv->p2_account,
-					priv->p2_password );
+					priv->p2_password,
+					NULL );
 
 	g_object_unref( sgbd );
 
 	return( connect_ok );
-}
-
-/*
- * MySQL provides a suitable default value for all fields,
- * so all combinations are valid here
- */
-static gboolean
-check_for_mysql_provider( ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-
-	priv = self->private;
-
-	if( !priv->p2_successful ){
-		priv->p2_successful = do_mysql_check( self );
-		if( !priv->p2_successful ){
-			set_message( self, _( "Unsuccessful connect to DB server" ));
-		} else {
-			set_message( self, NULL );
-		}
-	}
-
-	return( priv->p2_successful );
-}
-
-static void
-check_for_enable_connectivity_check( ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-
-	priv = self->private;
-
-	g_return_if_fail( priv->p2_check_btn && GTK_IS_BUTTON( priv->p2_check_btn ));
-	gtk_widget_set_sensitive( priv->p2_check_btn, !priv->p2_successful );
-
-	if( priv->p2_successful ){
-		gtk_button_set_label( GTK_BUTTON( priv->p2_check_btn ), _( "Connection is OK" ));
-	} else {
-		gtk_button_set_label( GTK_BUTTON( priv->p2_check_btn ), _( "_Connectivity check" ));
-	}
-
-	g_return_if_fail( priv->p3_browse_btn && GTK_IS_BUTTON( priv->p3_browse_btn ));
-	gtk_widget_set_sensitive( priv->p3_browse_btn, priv->p2_successful );
 }
 
 static void
@@ -561,6 +577,8 @@ init_p3_dossier_properties( ofaDossierNew *self )
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_db_find_clicked ), self );
 	self->private->p3_browse_btn = widget;
+
+	init_p3_db_combo( self );
 
 	widget = my_utils_container_get_child_by_name( container, "p3-account" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
@@ -592,24 +610,51 @@ init_p3_dossier_properties( ofaDossierNew *self )
 }
 
 static void
-on_db_name_changed( GtkEntry *entry, ofaDossierNew *self )
+init_p3_db_combo( ofaDossierNew *self )
 {
-	ofaDossierNewPrivate *priv;
-	const gchar *name;
+	GtkContainer *container;
+	GtkComboBox *combo;
+	GtkTreeModel *tmodel;
+	GtkCellRenderer *cell;
+	GtkTreeIter iter;
+	gint i, value, idx;
 
-	priv = self->private;
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
-	name = gtk_entry_get_text( entry );
-	g_free( priv->p3_dbname );
-	priv->p3_dbname = g_strdup( name );
+	combo = ( GtkComboBox * ) my_utils_container_get_child_by_name( container, "p3-db-exists" );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 
-	check_for_enable_dlg( self );
-}
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+			DB_N_COLUMNS,
+			G_TYPE_INT, G_TYPE_STRING ));
+	gtk_combo_box_set_model( combo, tmodel );
+	g_object_unref( tmodel );
 
-static void
-on_db_find_clicked( GtkButton *button, ofaDossierNew *self )
-{
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", DB_COL_LABEL );
 
+	idx = -1;
+	value = ofa_settings_get_uint( "DossierNewDlg-dbexists_mode" );
+
+	for( i=0 ; st_db_mode[i].mode ; ++i ){
+		gtk_list_store_insert_with_values(
+				GTK_LIST_STORE( tmodel ),
+				&iter,
+				-1,
+				DB_COL_MODE,  st_db_mode[i].mode,
+				DB_COL_LABEL, gettext( st_db_mode[i].label ),
+				-1 );
+		if( value == st_db_mode[i].mode ){
+			idx = i;
+		}
+	}
+
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_db_exists_mode_changed ), self );
+
+	if( idx >= 0 ){
+		gtk_combo_box_set_active( combo, idx );
+	}
 }
 
 static void
@@ -624,6 +669,111 @@ on_db_label_changed( GtkEntry *entry, ofaDossierNew *self )
 	g_free( priv->p3_label );
 	priv->p3_label = g_strdup( label );
 
+	priv->p3_label_is_ok = ( priv->p3_label && g_utf8_strlen( priv->p3_label, -1 ));
+	check_for_enable_dlg( self );
+}
+
+static void
+on_db_name_changed( GtkEntry *entry, ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	const gchar *name;
+
+	priv = self->private;
+
+	name = gtk_entry_get_text( entry );
+	g_free( priv->p3_dbname );
+	priv->p3_dbname = g_strdup( name );
+
+	priv->p3_db_is_ok = FALSE;
+	check_for_db( self );
+	check_for_enable_dlg( self );
+}
+
+static void
+on_db_find_clicked( GtkButton *button, ofaDossierNew *self )
+{
+
+}
+
+static void
+check_for_db( ofaDossierNew *self )
+{
+	static const gchar *thisfn = "ofa_dossier_new_check_for_db";
+	ofaDossierNewPrivate *priv;
+	gboolean ok;
+
+	priv = self->private;
+
+	if( !priv->p3_db_is_ok ){
+
+		ok = priv->p3_dbname &&
+				g_utf8_strlen( priv->p3_dbname, -1 );
+
+		priv->p3_db_exists = is_db_exists( self );
+
+		ok &= !priv->p3_db_exists || priv->p3_db_exists_mode > DB_MODE_EMPTY;
+
+		priv->p3_db_is_ok = ok;
+	}
+
+	g_debug( "%s: p3_db_is_ok=%s", thisfn, priv->p3_db_is_ok ? "True":"False" );
+}
+
+/*
+ * note that FALSE may also mean 'I do not know'
+ */
+static gboolean
+is_db_exists( ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	gboolean db_exists;
+	ofoSgbd *sgbd;
+
+	priv = self->private;
+	db_exists = FALSE;
+
+	if( priv->p2_successful ){
+
+		sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
+		if( ofo_sgbd_connect_ex( sgbd,
+			priv->p2_host,
+			priv->p2_port,
+			priv->p2_socket,
+			"mysql",
+			priv->p2_account,
+			priv->p2_password,
+			NULL )){
+
+			db_exists = ofo_sgbd_get_db_exists( sgbd, priv->p3_dbname );
+		}
+	}
+
+	return( db_exists );
+}
+
+static void
+on_db_exists_mode_changed( GtkComboBox *combo, ofaDossierNew *self )
+{
+	static const gchar *thisfn = "ofa_dossier_new_on_db_exists_mode_changed";
+	ofaDossierNewPrivate *priv;
+	GtkTreeIter iter;
+	GtkTreeModel *tmodel;
+
+	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) self );
+
+	priv = self->private;
+	priv->p3_db_exists_mode = DB_MODE_EMPTY;
+
+	if( gtk_combo_box_get_active_iter( combo, &iter )){
+		tmodel = gtk_combo_box_get_model( combo );
+		gtk_tree_model_get( tmodel, &iter,
+				DB_COL_MODE, &priv->p3_db_exists_mode,
+				-1 );
+	}
+
+	g_debug( "%s: p3_db_exists_mode=%u", thisfn, priv->p3_db_exists_mode );
+	check_for_db( self );
 	check_for_enable_dlg( self );
 }
 
@@ -639,7 +789,35 @@ on_db_account_changed( GtkEntry *entry, ofaDossierNew *self )
 	g_free( priv->p3_account );
 	priv->p3_account = g_strdup( account );
 
+	priv->p3_account_is_ok = is_account_ok( self );
 	check_for_enable_dlg( self );
+}
+
+/*
+ * the dossier administrative account must be distinct of the DBserver
+ * admin account (root)
+ */
+static gboolean
+is_account_ok( ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	gboolean ok;
+
+	priv = self->private;
+	ok = FALSE;
+
+	if( !priv->p3_account || !g_utf8_strlen( priv->p3_account, -1 )){
+		set_message( self, _( "Dossier administrative account is not set" ));
+
+	} else if( g_utf8_collate( priv->p3_account, "root" ) == 0 ){
+		set_message( self, _( "Dossier administrative account must be distinct from DB server admin account" ));
+
+	} else {
+		ok = TRUE;
+		set_message( self, NULL );
+	}
+
+	return( ok );
 }
 
 static void
@@ -654,7 +832,7 @@ on_db_password_changed( GtkEntry *entry, ofaDossierNew *self )
 	g_free( priv->p3_password );
 	priv->p3_password = g_strdup( password );
 
-	priv->p3_are_equals = db_passwords_are_equals( self );
+	priv->p3_passwd_are_equals = db_passwords_are_equals( self );
 	check_for_enable_dlg( self );
 }
 
@@ -670,7 +848,7 @@ on_db_bis_changed( GtkEntry *entry, ofaDossierNew *self )
 	g_free( priv->p3_bis );
 	priv->p3_bis = g_strdup( bis );
 
-	priv->p3_are_equals = db_passwords_are_equals( self );
+	priv->p3_passwd_are_equals = db_passwords_are_equals( self );
 	check_for_enable_dlg( self );
 }
 
@@ -690,7 +868,7 @@ db_passwords_are_equals( ofaDossierNew *self )
 	if( are_equals ){
 		set_message( self, "" );
 	} else {
-		set_message( self, _( "Dossier administrative passwords are not equal" ));
+		set_message( self, _( "Dossier administrative passwords are not set or not equal" ));
 	}
 
 	return( are_equals );
@@ -742,6 +920,14 @@ set_message( ofaDossierNew *self, const gchar *msg )
 	}
 }
 
+/*
+ * enable the various dynamic buttons
+ *
+ * as each check may send an error message which will supersede the
+ * previously set, we start from the end so that the user will first
+ * see the message at the top of the stack (from the first field in
+ * the focus chain)
+ */
 static void
 check_for_enable_dlg( ofaDossierNew *self )
 {
@@ -751,10 +937,13 @@ check_for_enable_dlg( ofaDossierNew *self )
 	priv = self->private;
 
 	/* #288: enable dlg should not depend of connection check */
-	enabled = priv->p3_account && g_utf8_strlen( priv->p3_account, -1 ) &&
+	enabled = priv->p2_successful &&
+				priv->p3_label_is_ok &&
+				priv->p3_db_is_ok &&
+				priv->p3_account_is_ok &&
 				priv->p3_password &&
 				priv->p3_bis &&
-				priv->p3_are_equals;
+				priv->p3_passwd_are_equals;
 
 	if( !priv->apply_btn ){
 		priv->apply_btn = my_utils_container_get_child_by_name(
@@ -763,8 +952,11 @@ check_for_enable_dlg( ofaDossierNew *self )
 	}
 
 	g_return_if_fail( priv->apply_btn && GTK_IS_BUTTON( priv->apply_btn ));
-
 	gtk_widget_set_sensitive( priv->apply_btn, enabled );
+
+	if( enabled ){
+		set_message( self, NULL );
+	}
 }
 
 static gboolean
@@ -791,6 +983,10 @@ v_quit_on_ok( myDialog *dialog )
 		}
 		ofa_settings_set_boolean( "DossierNewDlg-opendossier", priv->p3_open_dossier );
 		ofa_settings_set_boolean( "DossierNewDlg-properties", priv->p3_update_properties );
+
+		if( priv->p3_db_exists_mode > DB_MODE_EMPTY ){
+			ofa_settings_set_uint( "DossierNewDlg-dbexists_mode", priv->p3_db_exists_mode );
+		}
 	}
 
 	return( ok );
@@ -799,35 +995,45 @@ v_quit_on_ok( myDialog *dialog )
 static gboolean
 do_apply( ofaDossierNew *self )
 {
+	ofaDossierNewPrivate *priv;
 	gboolean apply_ok;
 	ofaOpenDossier *ood;
 
-	apply_ok = make_db_global( self ) &&
-				setup_new_dossier( self ) &&
-				create_db_model( self );
+	apply_ok = create_db_as_root( self ) &&
+				create_user_as_root( self ) &&
+				create_db_model( self ) &&
+				setup_new_dossier( self );
+
+	priv = self->private;
 
 	if( apply_ok ){
-		if( self->private->p3_open_dossier ){
+		if( priv->p3_open_dossier ){
 
 			ood = g_new0( ofaOpenDossier, 1 );
-			ood->dossier = g_strdup( self->private->p3_label );
-			ood->host = g_strdup( self->private->p2_host );
-			ood->port = self->private->p2_port;
-			ood->socket = g_strdup( self->private->p2_socket );
-			ood->dbname = g_strdup( self->private->p3_dbname );
-			ood->account = g_strdup( self->private->p3_account );
-			ood->password = g_strdup( self->private->p3_password );
+			ood->dossier = g_strdup( priv->p3_label );
+			ood->host = g_strdup( priv->p2_host );
+			ood->port = priv->p2_port;
+			ood->socket = g_strdup( priv->p2_socket );
+			ood->dbname = g_strdup( priv->p3_dbname );
+			ood->account = g_strdup( priv->p3_account );
+			ood->password = g_strdup( priv->p3_password );
 
 			g_signal_emit_by_name(
 					MY_WINDOW( self )->protected->main_window,
 					OFA_SIGNAL_OPEN_DOSSIER, ood );
 
-			if( self->private->p3_update_properties ){
+			if( priv->p3_update_properties ){
 				g_signal_emit_by_name(
 						MY_WINDOW( self )->protected->main_window,
 						OFA_SIGNAL_UPDATE_PROPERTIES );
 			}
 		}
+	} else {
+		ofa_dossier_delete_run(
+				MY_WINDOW( self )->protected->main_window,
+				priv->p3_label, priv->p1_sgdb_provider,
+				priv->p2_host, priv->p2_port, priv->p2_socket, priv->p2_account, priv->p2_password,
+				priv->p3_dbname, priv->p3_account );
 	}
 
 	return( apply_ok );
@@ -836,23 +1042,25 @@ do_apply( ofaDossierNew *self )
 /*
  * Create the empty database with a global connection to dataserver
  * - create database
- * - create admin user
- * - grant admin user
  */
 static gboolean
-make_db_global( ofaDossierNew *self )
+create_db_as_root( ofaDossierNew *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_make_db_global";
+	static const gchar *thisfn = "ofa_dossier_new_create_db_as_root";
 	ofaDossierNewPrivate *priv;
 	ofoSgbd *sgbd;
 	GString *stmt;
 	gboolean db_created;
-	gchar *hostname;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	db_created = FALSE;
 	priv = self->private;
+
+	if( priv->p3_db_exists && priv->p3_db_exists_mode == DB_MODE_AS_IS ){
+		return( TRUE );
+	}
+
+	db_created = FALSE;
 	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
 
 	if( !ofo_sgbd_connect( sgbd,
@@ -863,15 +1071,11 @@ make_db_global( ofaDossierNew *self )
 			priv->p2_account,
 			priv->p2_password )){
 
+		g_object_unref( sgbd );
 		return( FALSE );
 	}
 
 	stmt = g_string_new( "" );
-	hostname = g_strdup( priv->p2_host );
-	if( !hostname || !g_utf8_strlen( hostname, -1 )){
-		g_free( hostname );
-		hostname = g_strdup( "localhost" );
-	}
 
 	g_string_printf( stmt,
 			"CREATE DATABASE %s",
@@ -888,6 +1092,57 @@ make_db_global( ofaDossierNew *self )
 					priv->p3_dbname );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		goto free_stmt;
+	}
+
+	db_created = TRUE;
+
+free_stmt:
+	g_string_free( stmt, TRUE );
+	g_object_unref( sgbd );
+
+	return( db_created );
+}
+
+/*
+ * Create the empty database with a global connection to dataserver
+ * - create admin user
+ * - grant admin user
+ */
+static gboolean
+create_user_as_root( ofaDossierNew *self )
+{
+	static const gchar *thisfn = "ofa_dossier_new_create_user_as_root";
+	ofaDossierNewPrivate *priv;
+	ofoSgbd *sgbd;
+	GString *stmt;
+	gboolean user_created;
+	gchar *hostname;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	priv = self->private;
+
+	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
+
+	if( !ofo_sgbd_connect( sgbd,
+			priv->p2_host,
+			priv->p2_port,
+			priv->p2_socket,
+			"mysql",
+			priv->p2_account,
+			priv->p2_password )){
+
+		g_object_unref( sgbd );
+		return( FALSE );
+	}
+
+	user_created = FALSE;
+	stmt = g_string_new( "" );
+
+	hostname = g_strdup( priv->p2_host );
+	if( !hostname || !g_utf8_strlen( hostname, -1 )){
+		g_free( hostname );
+		hostname = g_strdup( "localhost" );
 	}
 
 	g_string_printf( stmt,
@@ -916,32 +1171,14 @@ make_db_global( ofaDossierNew *self )
 		goto free_stmt;
 	}
 
-	db_created = TRUE;
+	user_created = TRUE;
 
 free_stmt:
 	g_free( hostname );
 	g_string_free( stmt, TRUE );
 	g_object_unref( sgbd );
 
-	return( db_created );
-}
-
-static gboolean
-setup_new_dossier( ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-
-	priv = self->private;
-
-	return(
-		ofa_settings_set_dossier(
-			priv->p3_label,
-			"Provider",    SETTINGS_TYPE_STRING, SGBD_PROVIDER_MYSQL,
-			"Host",        SETTINGS_TYPE_STRING, priv->p2_host,
-			"Port",        SETTINGS_TYPE_INT,    priv->p2_port,
-			"Socket",      SETTINGS_TYPE_STRING, priv->p2_socket,
-			"Database",    SETTINGS_TYPE_STRING, priv->p3_dbname,
-			NULL ));
+	return( user_created );
 }
 
 static gboolean
@@ -951,8 +1188,13 @@ create_db_model( ofaDossierNew *self )
 	ofoSgbd *sgbd;
 	gboolean model_created;
 
-	model_created = FALSE;
 	priv = self->private;
+	model_created = FALSE;
+
+	if( priv->p3_db_exists && priv->p3_db_exists_mode == DB_MODE_AS_IS ){
+		return( TRUE );
+	}
+
 	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
 
 	if( !ofo_sgbd_connect( sgbd,
@@ -975,5 +1217,33 @@ create_db_model( ofaDossierNew *self )
 free_sgbd:
 	g_object_unref( sgbd );
 
+	if( !model_created ){
+		ofa_dossier_delete_run(
+				MY_WINDOW( self )->protected->main_window,
+				priv->p3_label, priv->p1_sgdb_provider,
+				priv->p2_host, priv->p2_port, priv->p2_socket, priv->p2_account, priv->p2_password,
+				priv->p3_dbname, priv->p3_account );
+	}
+
 	return( model_created );
+}
+
+static gboolean
+setup_new_dossier( ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	gboolean setup_ok;
+
+	priv = self->private;
+
+	setup_ok = ofa_settings_set_dossier(
+						priv->p3_label,
+						"Provider",    SETTINGS_TYPE_STRING, SGBD_PROVIDER_MYSQL,
+						"Host",        SETTINGS_TYPE_STRING, priv->p2_host,
+						"Port",        SETTINGS_TYPE_INT,    priv->p2_port,
+						"Socket",      SETTINGS_TYPE_STRING, priv->p2_socket,
+						"Database",    SETTINGS_TYPE_STRING, priv->p3_dbname,
+						NULL );
+
+	return( setup_ok );
 }

@@ -53,6 +53,7 @@ struct _ofoSgbdPrivate {
 G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 
 static void    error_connect( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
+static gchar  *error_connect_msg( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
 static void    error_query( const ofoSgbd *sgbd, const gchar *query );
 static void    sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query );
 static gchar  *quote_query( const gchar *query );
@@ -66,6 +67,8 @@ ofo_sgbd_finalize( GObject *instance )
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFO_IS_SGBD( instance ));
 
 	priv = OFO_SGBD( instance )->private;
 
@@ -199,7 +202,7 @@ error_connect( const ofoSgbd *sgbd,
 		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account )
 {
 	GtkMessageDialog *dlg;
-	GString *str;
+	gchar *str;
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				NULL,
@@ -207,6 +210,20 @@ error_connect( const ofoSgbd *sgbd,
 				GTK_MESSAGE_WARNING,
 				GTK_BUTTONS_OK,
 				"%s", _( "Unable to connect to the database" )));
+
+	str = error_connect_msg( sgbd, host, port, socket, dbname, account );
+	gtk_message_dialog_format_secondary_text( dlg, "%s", str );
+	g_free( str );
+
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( GTK_WIDGET( dlg ));
+}
+
+static gchar *
+error_connect_msg( const ofoSgbd *sgbd,
+		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account )
+{
+	GString *str;
 
 	str = g_string_new( "" );
 	if( host ){
@@ -224,11 +241,62 @@ error_connect( const ofoSgbd *sgbd,
 	if( account ){
 		g_string_append_printf( str, "Account: %s\n", account );
 	}
-	gtk_message_dialog_format_secondary_text( dlg, "%s", str->str );
-	g_string_free( str, TRUE );
 
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( GTK_WIDGET( dlg ));
+	return( g_string_free( str, FALSE ));
+}
+
+/**
+ * ofo_sgbd_connect_ex:
+ * @sgbd:
+ * @host: [allow-none]: may be a host name or an IP address
+ * @port: the port number if greater than zero
+ * @socket: [allow-none]: the socket or named pipe to be used
+ * @dbname: [allow-none]: the default database
+ * @account: [allow-none]: the account to be used, default to unix login
+ *  name
+ * @password: [allow-none]: the password
+ * @error_msg: [allow-none]: error message as a newly allocated string
+ *  which should be g_free() by the caller
+ *
+ * The connection will be automatically closed when unreffing the object.
+ *
+ * Returns: %TRUE if the connection is successful, %FALSE else.
+ */
+gboolean
+ofo_sgbd_connect_ex( ofoSgbd *sgbd,
+		const gchar *host, guint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password,
+		gchar **error_msg )
+{
+	static const gchar *thisfn = "ofo_sgbd_connect_ex";
+	MYSQL *mysql;
+
+	g_debug( "%s: sgbd=%p, host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s, error_msg=%p",
+			thisfn, ( void * ) sgbd,
+			host, port, socket, dbname, account, password, ( void * ) error_msg );
+
+	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), FALSE );
+
+	mysql = g_new0( MYSQL, 1 );
+	mysql_init( mysql );
+
+	if( !mysql_real_connect( mysql,
+			host,
+			account,
+			password,
+			dbname,
+			port,
+			socket,
+			CLIENT_MULTI_RESULTS )){
+
+		if( error_msg ){
+			*error_msg = error_connect_msg( sgbd, host, port, socket, dbname, account );
+		}
+		g_free( mysql );
+		return( FALSE );
+	}
+
+	sgbd->private->mysql = mysql;
+	return( TRUE );
 }
 
 /**
@@ -444,6 +512,30 @@ quote_query( const gchar *query )
 	g_free( new_str );
 
 	return( quoted );
+}
+
+/**
+ * ofo_sgbd_get_db_exists:
+ */
+gboolean
+ofo_sgbd_get_db_exists( const ofoSgbd *sgbd, const gchar *dbname )
+{
+	MYSQL_RES *result;
+	gboolean db_exists;
+
+	db_exists = FALSE;
+
+	if( sgbd->private->mysql ){
+		result = mysql_list_dbs( sgbd->private->mysql, dbname );
+		if( result ){
+			if( mysql_fetch_row( result )){
+				db_exists = TRUE;
+			}
+			mysql_free_result( result );
+		}
+	}
+
+	return( db_exists );
 }
 
 /**

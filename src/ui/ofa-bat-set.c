@@ -70,12 +70,12 @@ bat_set_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_bat_set_finalize";
 	ofaBatSetPrivate *priv;
 
-	g_return_if_fail( OFA_IS_BAT_SET( instance ));
-
-	priv = OFA_BAT_SET( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_BAT_SET( instance ));
+
+	priv = OFA_BAT_SET( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -89,7 +89,7 @@ bat_set_dispose( GObject *instance )
 {
 	ofaBatSetPrivate *priv;
 
-	g_return_if_fail( OFA_IS_BAT_SET( instance ));
+	g_return_if_fail( instance && OFA_IS_BAT_SET( instance ));
 
 	priv = ( OFA_BAT_SET( instance ))->private;
 

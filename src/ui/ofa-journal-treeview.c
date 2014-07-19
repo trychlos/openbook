@@ -107,12 +107,12 @@ journal_treeview_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_journal_treeview_finalize";
 	ofaJournalTreeviewPrivate *priv;
 
-	g_return_if_fail( OFA_IS_JOURNAL_TREEVIEW( instance ));
-
-	priv = OFA_JOURNAL_TREEVIEW( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_JOURNAL_TREEVIEW( instance ));
+
+	priv = OFA_JOURNAL_TREEVIEW( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -128,7 +128,7 @@ journal_treeview_dispose( GObject *instance )
 	GList *iha;
 	gulong handler_id;
 
-	g_return_if_fail( OFA_IS_JOURNAL_TREEVIEW( instance ));
+	g_return_if_fail( instance && OFA_IS_JOURNAL_TREEVIEW( instance ));
 
 	priv = ( OFA_JOURNAL_TREEVIEW( instance ))->private;
 
@@ -158,10 +158,10 @@ ofa_journal_treeview_init( ofaJournalTreeview *self )
 {
 	static const gchar *thisfn = "ofa_journal_treeview_init";
 
-	g_return_if_fail( OFA_IS_JOURNAL_TREEVIEW( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ));
 
 	self->private = g_new0( ofaJournalTreeviewPrivate, 1 );
 

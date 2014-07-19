@@ -224,12 +224,12 @@ guided_common_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_guided_common_finalize";
 	ofaGuidedCommonPrivate *priv;
 
-	g_return_if_fail( OFA_IS_GUIDED_COMMON( instance ));
-
-	priv = OFA_GUIDED_COMMON( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_GUIDED_COMMON( instance ));
+
+	priv = OFA_GUIDED_COMMON( instance )->private;
 
 	/* free data members here */
 	g_free( priv->journal );
@@ -244,7 +244,7 @@ guided_common_dispose( GObject *instance )
 {
 	ofaGuidedCommonPrivate *priv;
 
-	g_return_if_fail( OFA_IS_GUIDED_COMMON( instance ));
+	g_return_if_fail( instance && OFA_IS_GUIDED_COMMON( instance ));
 
 	priv = OFA_GUIDED_COMMON( instance )->private;
 
@@ -262,10 +262,10 @@ ofa_guided_common_init( ofaGuidedCommon *self )
 {
 	static const gchar *thisfn = "ofa_guided_common_init";
 
-	g_return_if_fail( OFA_IS_GUIDED_COMMON( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_GUIDED_COMMON( self ));
 
 	self->private = g_new0( ofaGuidedCommonPrivate, 1 );
 

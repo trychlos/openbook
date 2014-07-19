@@ -66,12 +66,12 @@ guided_input_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_guided_input_finalize";
 	ofaGuidedInputPrivate *priv;
 
-	g_return_if_fail( OFA_IS_GUIDED_INPUT( instance ));
-
-	priv = OFA_GUIDED_INPUT( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT( instance ));
+
+	priv = OFA_GUIDED_INPUT( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -83,7 +83,7 @@ guided_input_finalize( GObject *instance )
 static void
 guided_input_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_GUIDED_INPUT( instance ));
+	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
@@ -99,10 +99,10 @@ ofa_guided_input_init( ofaGuidedInput *self )
 {
 	static const gchar *thisfn = "ofa_guided_input_init";
 
-	g_return_if_fail( OFA_IS_GUIDED_INPUT( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_GUIDED_INPUT( self ));
 
 	self->private = g_new0( ofaGuidedInputPrivate, 1 );
 }

@@ -108,12 +108,12 @@ taux_properties_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_taux_properties_finalize";
 	ofaTauxPropertiesPrivate *priv;
 
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( OFA_IS_TAUX_PROPERTIES( instance ));
 
 	priv = OFA_TAUX_PROPERTIES( instance )->private;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
 	g_free( priv->mnemo );
@@ -143,10 +143,10 @@ ofa_taux_properties_init( ofaTauxProperties *self )
 {
 	static const gchar *thisfn = "ofa_taux_properties_init";
 
-	g_return_if_fail( OFA_IS_TAUX_PROPERTIES( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( OFA_IS_TAUX_PROPERTIES( self ));
 
 	self->private = g_new0( ofaTauxPropertiesPrivate, 1 );
 

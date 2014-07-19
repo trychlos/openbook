@@ -239,12 +239,12 @@ view_entries_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_view_entries_finalize";
 	ofaViewEntriesPrivate *priv;
 
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( OFA_IS_VIEW_ENTRIES( instance ));
 
 	priv = OFA_VIEW_ENTRIES( instance )->private;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
 	g_free( priv->jou_mnemo );
@@ -279,10 +279,10 @@ ofa_view_entries_init( ofaViewEntries *self )
 {
 	static const gchar *thisfn = "ofa_view_entries_init";
 
-	g_return_if_fail( OFA_IS_VIEW_ENTRIES( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( OFA_IS_VIEW_ENTRIES( self ));
 
 	self->private = g_new0( ofaViewEntriesPrivate, 1 );
 }

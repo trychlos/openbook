@@ -154,12 +154,12 @@ account_notebook_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_account_notebook_finalize";
 	ofaAccountNotebookPrivate *priv;
 
-	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( instance ));
-
-	priv = OFA_ACCOUNT_NOTEBOOK( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_NOTEBOOK( instance ));
+
+	priv = OFA_ACCOUNT_NOTEBOOK( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -175,7 +175,7 @@ account_notebook_dispose( GObject *instance )
 	gulong handler_id;
 	GList *iha;
 
-	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_NOTEBOOK( instance ));
 
 	priv = ( OFA_ACCOUNT_NOTEBOOK( instance ))->private;
 
@@ -205,7 +205,7 @@ ofa_account_notebook_init( ofaAccountNotebook *self )
 {
 	static const gchar *thisfn = "ofa_account_notebook_init";
 
-	g_return_if_fail( OFA_IS_ACCOUNT_NOTEBOOK( self ));
+	g_return_if_fail( self && OFA_IS_ACCOUNT_NOTEBOOK( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));

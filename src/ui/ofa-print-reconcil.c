@@ -162,12 +162,12 @@ print_reconcil_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_print_reconcil_finalize";
 	ofaPrintReconcilPrivate *priv;
 
-	g_return_if_fail( OFA_IS_PRINT_RECONCIL( instance ));
-
-	priv = OFA_PRINT_RECONCIL( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_PRINT_RECONCIL( instance ));
+
+	priv = OFA_PRINT_RECONCIL( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -205,10 +205,10 @@ ofa_print_reconcil_init( ofaPrintReconcil *self )
 {
 	static const gchar *thisfn = "ofa_print_reconcil_instance_init";
 
-	g_return_if_fail( OFA_IS_PRINT_RECONCIL( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_PRINT_RECONCIL( self ));
 
 	self->private = g_new0( ofaPrintReconcilPrivate, 1 );
 

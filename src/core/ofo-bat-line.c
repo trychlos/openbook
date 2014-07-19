@@ -78,6 +78,8 @@ ofo_bat_line_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s): %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), priv->label );
 
+	g_return_if_fail( instance && OFO_IS_BAT_LINE( instance ));
+
 	/* free data members here */
 	g_free( priv->ref );
 	g_free( priv->label );
@@ -92,7 +94,7 @@ ofo_bat_line_finalize( GObject *instance )
 static void
 ofo_bat_line_dispose( GObject *instance )
 {
-	g_return_if_fail( OFO_IS_BAT_LINE( instance ));
+	g_return_if_fail( instance && OFO_IS_BAT_LINE( instance ));
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 

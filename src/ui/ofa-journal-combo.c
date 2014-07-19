@@ -79,12 +79,12 @@ journal_combo_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_journal_combo_finalize";
 	ofaJournalComboPrivate *priv;
 
-	g_return_if_fail( OFA_IS_JOURNAL_COMBO( instance ));
-
-	priv = OFA_JOURNAL_COMBO( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_JOURNAL_COMBO( instance ));
+
+	priv = OFA_JOURNAL_COMBO( instance )->private;
 
 	/* free data members here */
 	g_free( priv->combo_name );
@@ -100,7 +100,7 @@ journal_combo_dispose( GObject *instance )
 {
 	ofaJournalComboPrivate *priv;
 
-	g_return_if_fail( OFA_IS_JOURNAL_COMBO( instance ));
+	g_return_if_fail( instance && OFA_IS_JOURNAL_COMBO( instance ));
 
 	priv = ( OFA_JOURNAL_COMBO( instance ))->private;
 
@@ -120,10 +120,10 @@ ofa_journal_combo_init( ofaJournalCombo *self )
 {
 	static const gchar *thisfn = "ofa_journal_combo_init";
 
-	g_return_if_fail( OFA_IS_JOURNAL_COMBO( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_JOURNAL_COMBO( self ));
 
 	self->private = g_new0( ofaJournalComboPrivate, 1 );
 

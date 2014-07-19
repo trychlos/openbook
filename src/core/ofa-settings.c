@@ -88,12 +88,12 @@ settings_finalize( GObject *object )
 	static const gchar *thisfn = "ofa_settings_finalize";
 	ofaSettingsPrivate *priv;
 
-	g_return_if_fail( OFA_IS_SETTINGS( object ));
-
-	priv = OFA_SETTINGS( object )->private;
-
 	g_debug( "%s: object=%p (%s)",
 			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+
+	g_return_if_fail( object && OFA_IS_SETTINGS( object ));
+
+	priv = OFA_SETTINGS( object )->private;
 
 	/* free data members here */
 	g_key_file_free( priv->keyfile );
@@ -109,7 +109,7 @@ settings_dispose( GObject *object )
 {
 	ofaSettingsPrivate *priv;
 
-	g_return_if_fail( OFA_IS_SETTINGS( object ));
+	g_return_if_fail( object && OFA_IS_SETTINGS( object ));
 
 	priv = OFA_SETTINGS( object )->private;
 
@@ -130,7 +130,7 @@ settings_constructed( GObject *object )
 	static const gchar *thisfn = "ofa_settings_constructed";
 	ofaSettingsPrivate *priv;
 
-	g_return_if_fail( OFA_IS_SETTINGS( object ));
+	g_return_if_fail( object && OFA_IS_SETTINGS( object ));
 
 	priv = OFA_SETTINGS( object )->private;
 
@@ -154,7 +154,7 @@ ofa_settings_init( ofaSettings *self )
 {
 	static const gchar *thisfn = "ofa_settings_init";
 
-	g_return_if_fail( OFA_IS_SETTINGS( self ));
+	g_return_if_fail( self && OFA_IS_SETTINGS( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));

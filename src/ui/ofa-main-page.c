@@ -90,12 +90,12 @@ main_page_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_main_page_finalize";
 	ofaMainPagePrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
-
-	priv = OFA_MAIN_PAGE( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_MAIN_PAGE( instance ));
+
+	priv = OFA_MAIN_PAGE( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -109,7 +109,7 @@ main_page_dispose( GObject *instance )
 {
 	ofaMainPagePrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_MAIN_PAGE( instance ));
 
 	priv = ( OFA_MAIN_PAGE( instance ))->private;
 
@@ -225,7 +225,7 @@ main_page_constructed( GObject *instance )
 	ofaMainPage *self;
 	ofaMainPagePrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_MAIN_PAGE( instance ));
 
 	self = OFA_MAIN_PAGE( instance );
 	priv = self->private;
@@ -265,10 +265,10 @@ ofa_main_page_init( ofaMainPage *self )
 {
 	static const gchar *thisfn = "ofa_main_page_init";
 
-	g_return_if_fail( OFA_IS_MAIN_PAGE( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_MAIN_PAGE( self ));
 
 	self->private = g_new0( ofaMainPagePrivate, 1 );
 

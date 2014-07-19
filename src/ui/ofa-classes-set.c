@@ -84,12 +84,12 @@ classes_set_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_classes_set_finalize";
 	ofaClassesSetPrivate *priv;
 
-	g_return_if_fail( OFA_IS_CLASSES_SET( instance ));
-
-	priv = OFA_CLASSES_SET( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_CLASSES_SET( instance ));
+
+	priv = OFA_CLASSES_SET( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -106,7 +106,7 @@ classes_set_dispose( GObject *instance )
 	GList *iha;
 	ofoDossier *dossier;
 
-	g_return_if_fail( OFA_IS_CLASSES_SET( instance ));
+	g_return_if_fail( instance && OFA_IS_CLASSES_SET( instance ));
 
 	priv = ( OFA_CLASSES_SET( instance ))->private;
 
@@ -137,7 +137,7 @@ ofa_classes_set_init( ofaClassesSet *self )
 {
 	static const gchar *thisfn = "ofa_classes_set_init";
 
-	g_return_if_fail( OFA_IS_CLASSES_SET( self ));
+	g_return_if_fail( self && OFA_IS_CLASSES_SET( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));

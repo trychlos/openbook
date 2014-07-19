@@ -104,12 +104,12 @@ bat_common_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_bat_common_finalize";
 	ofaBatCommonPrivate *priv;
 
-	g_return_if_fail( OFA_IS_BAT_COMMON( instance ));
-
-	priv = OFA_BAT_COMMON( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_BAT_COMMON( instance ));
+
+	priv = OFA_BAT_COMMON( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -123,7 +123,7 @@ bat_common_dispose( GObject *instance )
 {
 	ofaBatCommonPrivate *priv;
 
-	g_return_if_fail( OFA_IS_BAT_COMMON( instance ));
+	g_return_if_fail( instance && OFA_IS_BAT_COMMON( instance ));
 
 	priv = ( OFA_BAT_COMMON( instance ))->private;
 
@@ -143,10 +143,10 @@ ofa_bat_common_init( ofaBatCommon *self )
 {
 	static const gchar *thisfn = "ofa_bat_common_init";
 
-	g_return_if_fail( OFA_IS_BAT_COMMON( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_BAT_COMMON( self ));
 
 	self->private = g_new0( ofaBatCommonPrivate, 1 );
 

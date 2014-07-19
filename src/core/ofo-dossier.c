@@ -136,6 +136,8 @@ ofo_dossier_finalize( GObject *instance )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
+	g_return_if_fail( instance && OFO_IS_DOSSIER( instance ));
+
 	/* free data members here */
 	g_free( priv->name );
 	g_free( priv->userid );

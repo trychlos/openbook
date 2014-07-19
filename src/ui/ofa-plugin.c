@@ -71,12 +71,12 @@ plugin_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_plugin_finalize";
 	ofaPluginPrivate *priv;
 
-	g_return_if_fail( OFA_IS_PLUGIN( instance ));
-
-	priv = OFA_PLUGIN( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_PLUGIN( instance ));
+
+	priv = OFA_PLUGIN( instance )->private;
 
 	/* free data members here */
 	g_free( priv->path );
@@ -92,7 +92,7 @@ plugin_dispose( GObject *instance )
 {
 	ofaPluginPrivate *priv;
 
-	g_return_if_fail( OFA_IS_PLUGIN( instance ));
+	g_return_if_fail( instance && OFA_IS_PLUGIN( instance ));
 
 	priv = OFA_PLUGIN( instance )->private;
 
@@ -111,10 +111,10 @@ ofa_plugin_init( ofaPlugin *self )
 {
 	static const gchar *thisfn = "ofa_plugin_init";
 
-	g_return_if_fail( OFA_IS_PLUGIN( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_PLUGIN( self ));
 
 	self->private = g_new0( ofaPluginPrivate, 1 );
 

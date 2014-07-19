@@ -149,10 +149,10 @@ model_properties_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_model_properties_finalize";
 	ofaModelPropertiesPrivate *priv;
 
+	g_return_if_fail( instance && OFA_IS_MODEL_PROPERTIES( instance ));
+
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	g_return_if_fail( instance && OFA_IS_MODEL_PROPERTIES( instance ));
 
 	priv = OFA_MODEL_PROPERTIES( instance )->private;
 

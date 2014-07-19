@@ -60,12 +60,12 @@ tab_label_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_tab_label_finalize";
 	ofaTabLabelPrivate *priv;
 
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
 	g_return_if_fail( instance && OFA_IS_TAB_LABEL( instance ));
 
 	priv = OFA_TAB_LABEL( instance )->private;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
 	g_free( priv );
@@ -97,10 +97,10 @@ ofa_tab_label_init( ofaTabLabel *self )
 {
 	static const gchar *thisfn = "ofa_tab_label_init";
 
-	g_return_if_fail( OFA_IS_TAB_LABEL( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( OFA_IS_TAB_LABEL( self ));
 
 	self->private = g_new0( ofaTabLabelPrivate, 1 );
 }

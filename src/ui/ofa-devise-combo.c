@@ -71,12 +71,12 @@ devise_combo_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_devise_combo_finalize";
 	ofaDeviseComboPrivate *priv;
 
-	g_return_if_fail( OFA_IS_DEVISE_COMBO( instance ));
-
-	priv = OFA_DEVISE_COMBO( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_DEVISE_COMBO( instance ));
+
+	priv = OFA_DEVISE_COMBO( instance )->private;
 
 	/* free data members here */
 	g_free( priv->combo_name );
@@ -92,7 +92,7 @@ devise_combo_dispose( GObject *instance )
 {
 	ofaDeviseComboPrivate *priv;
 
-	g_return_if_fail( OFA_IS_DEVISE_COMBO( instance ));
+	g_return_if_fail( instance && OFA_IS_DEVISE_COMBO( instance ));
 
 	priv = ( OFA_DEVISE_COMBO( instance ))->private;
 
@@ -112,10 +112,10 @@ ofa_devise_combo_init( ofaDeviseCombo *self )
 {
 	static const gchar *thisfn = "ofa_devise_combo_init";
 
-	g_return_if_fail( OFA_IS_DEVISE_COMBO( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_DEVISE_COMBO( self ));
 
 	self->private = g_new0( ofaDeviseComboPrivate, 1 );
 

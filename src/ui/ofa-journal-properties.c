@@ -101,12 +101,12 @@ journal_properties_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_journal_properties_finalize";
 	ofaJournalPropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_JOURNAL_PROPERTIES( instance ));
-
-	priv = OFA_JOURNAL_PROPERTIES( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_JOURNAL_PROPERTIES( instance ));
+
+	priv = OFA_JOURNAL_PROPERTIES( instance )->private;
 
 	/* free data members here */
 	g_free( priv->dev_code );
@@ -122,7 +122,7 @@ journal_properties_finalize( GObject *instance )
 static void
 journal_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_JOURNAL_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_JOURNAL_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
@@ -138,10 +138,10 @@ ofa_journal_properties_init( ofaJournalProperties *self )
 {
 	static const gchar *thisfn = "ofa_journal_properties_instance_init";
 
-	g_return_if_fail( OFA_IS_JOURNAL_PROPERTIES( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_JOURNAL_PROPERTIES( self ));
 
 	self->private = g_new0( ofaJournalPropertiesPrivate, 1 );
 

@@ -87,12 +87,12 @@ journals_set_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_journals_set_finalize";
 	ofaJournalsSetPrivate *priv;
 
-	g_return_if_fail( OFA_IS_JOURNALS_SET( instance ));
-
-	priv = OFA_JOURNALS_SET( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_JOURNALS_SET( instance ));
+
+	priv = OFA_JOURNALS_SET( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
@@ -106,7 +106,7 @@ journals_set_dispose( GObject *instance )
 {
 	ofaJournalsSetPrivate *priv;
 
-	g_return_if_fail( OFA_IS_JOURNALS_SET( instance ));
+	g_return_if_fail( instance && OFA_IS_JOURNALS_SET( instance ));
 
 	priv = ( OFA_JOURNALS_SET( instance ))->private;
 
@@ -126,10 +126,10 @@ ofa_journals_set_init( ofaJournalsSet *self )
 {
 	static const gchar *thisfn = "ofa_journals_set_init";
 
-	g_return_if_fail( OFA_IS_JOURNALS_SET( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_JOURNALS_SET( self ));
 
 	self->private = g_new0( ofaJournalsSetPrivate, 1 );
 

@@ -279,12 +279,12 @@ main_window_finalize( GObject *instance )
 	static const gchar *thisfn = "ofa_main_instance_finalize";
 	ofaMainWindowPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( instance ));
-
-	priv = OFA_MAIN_WINDOW( instance )->private;
-
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
+
+	priv = OFA_MAIN_WINDOW( instance )->private;
 
 	/* free data members here */
 	g_free( priv->orig_title );
@@ -299,7 +299,7 @@ main_window_dispose( GObject *instance )
 {
 	ofaMainWindowPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( instance ));
+	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
 
 	priv = OFA_MAIN_WINDOW( instance )->private;
 
@@ -345,7 +345,7 @@ main_window_constructed( GObject *instance )
 	GtkBuilder *builder;
 	GMenuModel *menu;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( instance ));
+	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
 
 	priv = OFA_MAIN_WINDOW( instance )->private;
 
@@ -420,10 +420,10 @@ ofa_main_window_init( ofaMainWindow *self )
 {
 	static const gchar *thisfn = "ofa_main_window_init";
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_MAIN_WINDOW( self ));
 
 	self->private = g_new0( ofaMainWindowPrivate, 1 );
 
