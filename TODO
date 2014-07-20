@@ -362,7 +362,12 @@
 
  295 2014- 7-19 ask confirmation when dropping an existing db
 
- 296
+ 296 2014- 7-20 creating a new dossier with an existing database needs
+                to insert the new admin user from root account (else
+                the new user will not be able to connect for updating
+                the model)
+
+ 297
 
 -----------------------------------------------------------------------
  DONE

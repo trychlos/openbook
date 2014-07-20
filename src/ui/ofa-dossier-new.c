@@ -160,6 +160,7 @@ static gboolean  create_db_as_root( ofaDossierNew *self );
 static gboolean  create_user_as_root( ofaDossierNew *self );
 static gboolean  create_db_model( ofaDossierNew *self );
 static gboolean  setup_new_dossier( ofaDossierNew *self );
+static gboolean  drop_confirmed( ofaDossierNew *self );
 
 static void
 dossier_new_finalize( GObject *instance )
@@ -965,10 +966,17 @@ v_quit_on_ok( myDialog *dialog )
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
 
+	priv = OFA_DOSSIER_NEW( dialog )->private;
+
+	if( priv->p3_db_exists && priv->p3_db_exists_mode == DB_MODE_REINIT ){
+		if( !drop_confirmed( OFA_DOSSIER_NEW( dialog ))){
+			return( FALSE );
+		}
+	}
+
 	ok = do_apply( OFA_DOSSIER_NEW( dialog ));
 
 	if( ok ){
-		priv = OFA_DOSSIER_NEW( dialog )->private;
 		if( priv->p2_host && g_utf8_strlen( priv->p2_host, -1 )){
 			ofa_settings_set_string( "DossierNewDlg-MySQL-host", priv->p2_host );
 		}
@@ -1077,9 +1085,10 @@ create_db_as_root( ofaDossierNew *self )
 
 	stmt = g_string_new( "" );
 
-	g_string_printf( stmt,
-			"CREATE DATABASE %s",
-				priv->p3_dbname );
+	g_string_printf( stmt, "DROP DATABASE %s", priv->p3_dbname );
+	ofo_sgbd_query_ignore( sgbd, stmt->str );
+
+	g_string_printf( stmt, "CREATE DATABASE %s", priv->p3_dbname );
 	if( !ofo_sgbd_query( sgbd, stmt->str )){
 		goto free_stmt;
 	}
@@ -1246,4 +1255,36 @@ setup_new_dossier( ofaDossierNew *self )
 						NULL );
 
 	return( setup_ok );
+}
+
+static gboolean
+drop_confirmed( ofaDossierNew *self )
+{
+	GtkWidget *dialog;
+	gchar *msg;
+	gint response;
+
+	msg = g_strdup_printf( _( "You are about to delete the '%s' database.\n"
+			"This operation cannot be recovered.\n"
+			"Are you sure ?" ), self->private->p3_dbname );
+
+	dialog = gtk_message_dialog_new(
+			my_window_get_toplevel( MY_WINDOW( self )),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE,
+			"%s", msg );
+
+	g_free( msg );
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_DELETE, GTK_RESPONSE_OK,
+			NULL );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
 }
