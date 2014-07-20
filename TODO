@@ -360,8 +360,6 @@
 
  294 2014- 7-19 what to do when deleting a dossier is a preference
 
- 295 2014- 7-19 ask confirmation when dropping an existing db
-
  296 2014- 7-20 creating a new dossier with an existing database needs
                 to insert the new admin user from root account (else
                 the new user will not be able to connect for updating
@@ -1162,6 +1160,9 @@
                 before g_return_if_fail (in order to know why something
                 fails)
      2014- 7-18 done
+
+ 295 2014- 7-19 ask confirmation when dropping an existing db
+     2014- 7-20 done - svn #3799
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

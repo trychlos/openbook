@@ -378,7 +378,8 @@ confirm_delete( ofaDossierManager *self, const gchar *name, const gchar *provide
 	gchar *str;
 
 	str = g_strdup_printf(
-			_( "You are about to remove the '%s' dossier (provider=%s, dbname=%s)\n"
+			_( "You are about to remove the '%s' dossier (provider=%s, dbname=%s).\n"
+				"This operation cannot be recovered.\n"
 				"Are your sure ?" ),
 					name, provider, dbname );
 
