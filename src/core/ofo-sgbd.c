@@ -508,10 +508,14 @@ error_query( const ofoSgbd *sgbd, const gchar *query )
 				"%s", query ));
 
 	str = ofa_idbms_error( sgbd->private->module, sgbd->private->handle );
-	gtk_message_dialog_format_secondary_text( dlg, "%s", str );
-	g_free( str );
 
-	gtk_dialog_run( GTK_DIALOG( dlg ));
+	/* query_ex returns NULL if the result is empty: this is not an error */
+	if( str && g_utf8_strlen( str, -1 )){
+		gtk_message_dialog_format_secondary_text( dlg, "%s", str );
+		gtk_dialog_run( GTK_DIALOG( dlg ));
+	}
+
+	g_free( str );
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
 }
 

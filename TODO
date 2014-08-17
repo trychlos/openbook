@@ -326,8 +326,6 @@
  273 2014- 6-29 ofa.css: hack ofaTabLabel/GtkGrid/GtkButton/GtkImage 
                 styles
 
- 274 2014- 6-29 put back the main GtkNotebook popup menu
-
  281 2014- 7-14 move import to myAssistant
 
  282 2014- 7-14 move export to myAssistant
@@ -1103,6 +1101,9 @@
                 currency on the currently edited line if not already
                 set
      2014- 6-27 done - svn #3752
+
+ 274 2014- 6-29 put back the main GtkNotebook popup menu
+     2014- 8-17 done - svn #3820
 
  275 2014- 6-30 DossierNew: should be able to use the same db account
                 than another database (so ignore duplicate account)
