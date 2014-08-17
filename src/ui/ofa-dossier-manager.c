@@ -41,6 +41,7 @@
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
+#include "ui/ofa-dossier-open.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -365,6 +366,18 @@ on_new_clicked( GtkButton *button, ofaDossierManager *self )
 static void
 on_open_clicked( GtkButton *button, ofaDossierManager *self )
 {
+	ofsDossierOpen *sdo;
+
+	sdo = ofa_dossier_open_run(
+			MY_WINDOW( self )->protected->main_window );
+
+	if( sdo ){
+		g_signal_emit_by_name(
+				MY_WINDOW( self )->protected->main_window, OFA_SIGNAL_OPEN_DOSSIER, sdo );
+		gtk_dialog_response(
+				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
+				GTK_RESPONSE_CANCEL );
+	}
 }
 
 static void
