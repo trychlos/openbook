@@ -40,6 +40,7 @@
 #include "ui/my-window-prot.h"
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-manager.h"
+#include "ui/ofa-dossier-new.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -71,6 +72,7 @@ G_DEFINE_TYPE( ofaDossierManager, ofa_dossier_manager, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
 static void      setup_treeview( ofaDossierManager *self );
+static void      load_in_treeview( ofaDossierManager *self );
 static gint      on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
 static void      on_dossier_selected( GtkTreeSelection *selection, ofaDossierManager *self );
 static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
@@ -197,6 +199,7 @@ v_init_dialog( myDialog *dialog )
 	priv->delete_btn = widget;
 
 	setup_treeview( OFA_DOSSIER_MANAGER( dialog ));
+	load_in_treeview( OFA_DOSSIER_MANAGER( dialog ));
 }
 
 static void
@@ -208,11 +211,6 @@ setup_treeview( ofaDossierManager *self )
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
-	GtkTreeIter iter;
-	GSList *dossiers, *id;
-	const gchar *name;
-	gchar *provider, *host, *dbname;
-	ofaIDbms *module;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
@@ -269,6 +267,21 @@ setup_treeview( ofaDossierManager *self )
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 	g_signal_connect(G_OBJECT( select ), "changed", G_CALLBACK( on_dossier_selected ), self );
+}
+
+static void
+load_in_treeview( ofaDossierManager *self )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeSelection *select;
+	GtkTreeIter iter;
+	GSList *dossiers, *id;
+	const gchar *name;
+	gchar *provider, *host, *dbname;
+	ofaIDbms *module;
+
+	tmodel = gtk_tree_view_get_model( self->private->tview );
+	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
 	dossiers = ofa_settings_get_dossiers();
 
@@ -298,6 +311,7 @@ setup_treeview( ofaDossierManager *self )
 	g_slist_free_full( dossiers, ( GDestroyNotify ) g_free );
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		select = gtk_tree_view_get_selection( self->private->tview );
 		gtk_tree_selection_select_iter( select, &iter );
 	}
 }
@@ -334,6 +348,8 @@ on_dossier_selected( GtkTreeSelection *selection, ofaDossierManager *self )
 static void
 on_new_clicked( GtkButton *button, ofaDossierManager *self )
 {
+	ofa_dossier_new_run( MY_WINDOW( self )->protected->main_window );
+	load_in_treeview( self );
 }
 
 static void

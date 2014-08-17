@@ -73,6 +73,10 @@ struct _ofaDossierNewPrivate {
 	GtkWidget     *p3_properties_btn;
 	GtkLabel      *msg_label;
 	GtkWidget     *apply_btn;
+
+	/* result
+	 */
+	gboolean       dossier_created;
 };
 
 /* columns in SGDB provider combo box
@@ -162,6 +166,7 @@ ofa_dossier_new_init( ofaDossierNew *self )
 	g_return_if_fail( self && OFA_IS_DOSSIER_NEW( self ));
 
 	self->private = g_new0( ofaDossierNewPrivate, 1 );
+	self->private->dossier_created = FALSE;
 }
 
 static void
@@ -187,7 +192,7 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run";
 	ofaDossierNew *self;
-	gboolean open_dossier, open_properties;
+	gboolean dossier_created, open_dossier, open_properties;
 	ofsDossierOpen *sdo;
 
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -202,23 +207,27 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
+	dossier_created = self->private->dossier_created;
 	open_dossier = self->private->p3_open_dossier;
 	open_properties = self->private->p3_update_properties;
 
-	if( open_dossier ){
-		sdo = g_new0( ofsDossierOpen, 1 );
-		sdo->label = g_strdup( self->private->p3_label );
-		sdo->account = g_strdup( self->private->p3_account );
-		sdo->password = g_strdup( self->private->p3_password );
+	if( dossier_created ){
+		if( open_dossier ){
+			sdo = g_new0( ofsDossierOpen, 1 );
+			sdo->label = g_strdup( self->private->p3_label );
+			sdo->account = g_strdup( self->private->p3_account );
+			sdo->password = g_strdup( self->private->p3_password );
+		}
 	}
 
 	g_object_unref( self );
 
-	if( open_dossier ){
-		g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_OPEN_DOSSIER, sdo );
-
-		if( open_properties ){
-			g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_UPDATE_PROPERTIES );
+	if( dossier_created ){
+		if( open_dossier ){
+			g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_OPEN_DOSSIER, sdo );
+			if( open_properties ){
+				g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_UPDATE_PROPERTIES );
+			}
 		}
 	}
 }
@@ -594,6 +603,8 @@ v_quit_on_ok( myDialog *dialog )
 		ofa_settings_set_boolean( "DossierNewDlg-opendossier", priv->p3_open_dossier );
 		ofa_settings_set_boolean( "DossierNewDlg-properties", priv->p3_update_properties );
 	}
+
+	priv->dossier_created = ok;
 
 	return( ok );
 }
