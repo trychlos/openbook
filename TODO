@@ -222,10 +222,6 @@
                  times on a journal selection in journal_treeview from
                  journals_set)
 
- 204 2014- 6-12 check_for_enable_dlg/is_dialog_validable: should only
-                check the modified data => the checked data should be
-                flagged, and this flag unset when the data is modified
-
  212 2014- 6-13 when importing, accept decimal comma as well as decimal
                 dot (and this should be a configuration option of the
                 assistant, as well as the character set)
@@ -332,17 +328,6 @@
 
  274 2014- 6-29 put back the main GtkNotebook popup menu
 
- 275 2014- 6-30 DossierNew: should be able to use the same db account
-                than another database (so ignore duplicate account)
-
- 276 2014- 7-13 ofoSgbd: move error management to caller (as GError)
-                so that caller may decide what to do instead of 
-                displaying an error message
-     2014- 7-18 query option: ignore error, display error
-                query option: no audit
-
- 278 2014- 7-13 extend to other sgdb providers (PostgreSQL, etc.)
-
  281 2014- 7-14 move import to myAssistant
 
  282 2014- 7-14 move export to myAssistant
@@ -350,35 +335,18 @@
  291 2014- 7-19 DossierManage: if host is empty, display 'localhost'
                 in italics
 
- 292 2014- 7-19 DossierManage: be able to update external dossier
-                properties (those which are displayed by dossier
-                manager)
-
- 293 2014- 7-19 isolate in a structure the MySQL connection parameters
-                and union it in a structure passed through functions
-                and able to hold other providers
-
  296 2014- 7-20 creating a new dossier with an existing database needs
                 to insert the new admin user from root account (else
                 the new user will not be able to connect for updating
                 the model)
 
- 297 2014- 7-20 DossierManage: when deleting a dossier, make use of
-                ofa_dossier_delete_run_direct() method
-
- 298 2014- 7-30 ofa_sgbd: remove get_host() function
-
- 299 2014- 7-30 ofa_settings: cleanup ofa_settings_set/get_dossier
-
  300 2014- 8- 7 Dossier Manager: have an Open button
 
  301 2014- 8- 7 Dossier Manager: have a New button
 
- 302 2014- 8- 9 sgbd should be dbms
-
  303 2014- 8-15 dropping the administrative accounts when deleting a
                 dossier is not possible without first checking that
-                none of the candidate admin accounts are not used in
+                none of the candidate admin accounts are used in
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
 
@@ -935,6 +903,12 @@
                 needed
      2014- 6-13 done
 
+ 204 2014- 6-12 check_for_enable_dlg/is_dialog_validable: should only
+                check the modified data => the checked data should be
+                flagged, and this flag unset when the data is modified
+     2014- 8-17 this is done in later dialog box (e.g. ofa-dossier-new),
+                but will not be reported in already written
+
  205 2014- 6-12 ofoClass: get rid of ofoDossier argument in insert,
                 update and delete public methods (see ofoAccount)
      2014- 6-13 done
@@ -1134,8 +1108,23 @@
                 set
      2014- 6-27 done - svn #3752
 
+ 275 2014- 6-30 DossierNew: should be able to use the same db account
+                than another database (so ignore duplicate account)
+     2014- 8-17 done - svn #3810
+
+ 276 2014- 7-13 ofoSgbd: move error management to caller (as GError)
+                so that caller may decide what to do instead of 
+                displaying an error message
+     2014- 7-18 query option: ignore error, display error
+                query option: no audit
+     2014- 8-17 display error is reported in ofoSgbd, set up when calling
+                the method - cancelled
+
  277 2014- 7-13 DossierNew is not an assistant, but a dialog box
      2014- 7-14 done - svn #3769
+
+ 278 2014- 7-13 extend to other sgdb providers (PostgreSQL, etc.)
+     2014- 8-17 cancelled (see #276)
 
  279 2014- 7-14 Manage dossiers, manage databases (delete, reconciliate)
      2014- 7-14 done - svn #3794
@@ -1178,11 +1167,38 @@
                 fails)
      2014- 7-18 done
 
+ 292 2014- 7-19 DossierManage: be able to update external dossier
+                properties (those which are displayed by dossier
+                manager)
+     2014- 8-17 no obvious use case - cancelled
+
+ 293 2014- 7-19 isolate in a structure the MySQL connection parameters
+                and union it in a structure passed through functions
+                and able to hold other providers
+     2014- 8-17 obsoleted with introduction of DBMS provider plugins
+                as of svn #3810
+
  294 2014- 7-19 what to do when deleting a dossier is a preference
      2014- 7-21 done
 
  295 2014- 7-19 ask confirmation when dropping an existing db
      2014- 7-20 done - svn #3799
+
+ 297 2014- 7-20 DossierManage: when deleting a dossier, make use of
+                ofa_dossier_delete_run_direct() method
+     2014- 8-17 use now ofa_idbms_delete_dosser() interface method
+     2014- 8-17 closed
+
+ 298 2014- 7-30 ofa_sgbd: remove get_host() function
+     2014- 8-17 done - svn #3810
+
+ 299 2014- 7-30 ofa_settings: cleanup ofa_settings_set/get_dossier
+     2014- 8-17 done - svn #3810
+
+ 302 2014- 8- 9 sgbd should be dbms
+     2014- 8-17 eventually the interface is named ofaIDbms, but the
+                convenience object ofoSgbd keeps to be named like that
+     2014- 8-17 closed
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

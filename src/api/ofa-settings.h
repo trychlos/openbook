@@ -64,17 +64,17 @@ gchar   *ofa_settings_get_dossier_provider  ( const gchar *name );
 gchar   *ofa_settings_get_dossier_key_string( const gchar *name, const gchar *key );
 gint     ofa_settings_get_dossier_key_uint  ( const gchar *name, const gchar *key );
 
-GList   *ofa_settings_get_uint_list ( const gchar *key );
-void     ofa_settings_set_uint_list ( const gchar *key, const GList *uint_list );
+GList   *ofa_settings_get_uint_list         ( const gchar *key );
+void     ofa_settings_set_uint_list         ( const gchar *key, const GList *uint_list );
 
-gint     ofa_settings_get_uint      ( const gchar *key );
-void     ofa_settings_set_uint      ( const gchar *key, guint value );
+gint     ofa_settings_get_uint              ( const gchar *key );
+void     ofa_settings_set_uint              ( const gchar *key, guint value );
 
-gchar   *ofa_settings_get_string    ( const gchar *key );
-void     ofa_settings_set_string    ( const gchar *key, const gchar *value );
+gchar   *ofa_settings_get_string            ( const gchar *key );
+void     ofa_settings_set_string            ( const gchar *key, const gchar *value );
 
-gboolean ofa_settings_get_boolean   ( const gchar *key );
-void     ofa_settings_set_boolean   ( const gchar *key, gboolean value );
+gboolean ofa_settings_get_boolean           ( const gchar *key );
+void     ofa_settings_set_boolean           ( const gchar *key, gboolean value );
 
 G_END_DECLS
 
