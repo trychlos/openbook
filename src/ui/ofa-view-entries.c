@@ -158,8 +158,8 @@ typedef struct {
  * when actually displaying the columns in on_cell_data_func() */
 #define DATA_PRIV_VISIBLE               "ofa-data-priv-visible"
 
-static const gchar           *st_ui_xml                   = PKGUIDIR "/ofa-view-entries.ui";
-static const gchar           *st_ui_id                    = "ViewEntriesDlg";
+static const gchar           *st_ui_xml                   = PKGUIDIR "/ofa-view-entries.piece.ui";
+static const gchar           *st_ui_id                    = "ViewEntriesWindow";
 
 static       GtkCellRenderer *st_renderers[ENT_N_COLUMNS] = { 0 };
 

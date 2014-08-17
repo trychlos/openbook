@@ -178,7 +178,7 @@ ui_files = \
 	ofa-preferences.ui									\
 	ofa-print-reconcil.ui								\
 	ofa-taux-properties.ui								\
-	ofa-view-entries.ui									\
+	ofa-view-entries.piece.ui							\
 	$(NULL)
 
 images_files = \
