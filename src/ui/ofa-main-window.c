@@ -1201,6 +1201,7 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 	GtkGrid *grid;
 	ofaMainPage *handler;
 	ofaTabLabel *tab;
+	GtkWidget *label;
 
 	/* all pages of the main notebook begin with a GtkGrid
 	 */
@@ -1212,7 +1213,10 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 			G_OBJECT( tab),
 			OFA_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), grid );
 
-	gtk_notebook_append_page( book, GTK_WIDGET( grid ), GTK_WIDGET( tab ));
+	label = gtk_label_new( gettext( theme_def->label ));
+	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+
+	gtk_notebook_append_page_menu( book, GTK_WIDGET( grid ), GTK_WIDGET( tab ), label );
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( grid ), TRUE );
 
 	/* then instanciates the handling object which happens to be an

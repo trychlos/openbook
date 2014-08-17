@@ -340,8 +340,6 @@
                 the new user will not be able to connect for updating
                 the model)
 
- 300 2014- 8- 7 Dossier Manager: have an Open button
-
  303 2014- 8-15 dropping the administrative accounts when deleting a
                 dossier is not possible without first checking that
                 none of the candidate admin accounts are used in
@@ -1192,6 +1190,9 @@
 
  299 2014- 7-30 ofa_settings: cleanup ofa_settings_set/get_dossier
      2014- 8-17 done - svn #3810
+
+ 300 2014- 8- 7 Dossier Manager: have an Open button
+     2014- 8-17 done - svn #3818
 
  301 2014- 8- 7 Dossier Manager: have a New button
      2014- 8-17 done - svn #3815
