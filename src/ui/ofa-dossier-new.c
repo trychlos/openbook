@@ -186,16 +186,19 @@ ofa_dossier_new_class_init( ofaDossierNewClass *klass )
 /**
  * ofa_dossier_new_run:
  * @main: the main window of the application.
+ *
+ * Returns: %TRUE if a dossier has been created, and opened in the UI.
  */
-void
+gboolean
 ofa_dossier_new_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run";
 	ofaDossierNew *self;
 	gboolean dossier_created, open_dossier, open_properties;
 	ofsDossierOpen *sdo;
+	gboolean dossier_opened;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
 	g_debug( "%s: main_window=%p", thisfn, main_window );
 
@@ -207,6 +210,7 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
+	dossier_opened = FALSE;
 	dossier_created = self->private->dossier_created;
 	open_dossier = self->private->p3_open_dossier;
 	open_properties = self->private->p3_update_properties;
@@ -228,8 +232,11 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 			if( open_properties ){
 				g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_UPDATE_PROPERTIES );
 			}
+			dossier_opened = TRUE;
 		}
 	}
+
+	return( dossier_opened );
 }
 
 /*

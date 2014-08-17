@@ -348,8 +348,18 @@ on_dossier_selected( GtkTreeSelection *selection, ofaDossierManager *self )
 static void
 on_new_clicked( GtkButton *button, ofaDossierManager *self )
 {
-	ofa_dossier_new_run( MY_WINDOW( self )->protected->main_window );
-	load_in_treeview( self );
+	gboolean dossier_opened;
+
+	dossier_opened = ofa_dossier_new_run( MY_WINDOW( self )->protected->main_window );
+
+	if( dossier_opened ){
+		gtk_dialog_response(
+				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
+				GTK_RESPONSE_CANCEL );
+
+	} else {
+		load_in_treeview( self );
+	}
 }
 
 static void
