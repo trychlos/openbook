@@ -47,7 +47,7 @@
 gboolean
 ofa_extension_startup( GTypeModule *module )
 {
-	static const gchar *thisfn = "of1_module_ofa_extension_startup";
+	static const gchar *thisfn = "import1/of1_module_ofa_extension_startup";
 
 	g_debug( "%s: module=%p", thisfn, ( void * ) module );
 
@@ -64,7 +64,7 @@ ofa_extension_startup( GTypeModule *module )
 guint
 ofa_extension_get_api_version( void )
 {
-	static const gchar *thisfn = "of1_module_ofa_extension_get_api_version";
+	static const gchar *thisfn = "import1/of1_module_ofa_extension_get_api_version";
 	guint version;
 
 	version = 1;
@@ -82,7 +82,7 @@ ofa_extension_get_api_version( void )
 guint
 ofa_extension_list_types( const GType **types )
 {
-	static const gchar *thisfn = "of1_module_ofa_extension_list_types";
+	static const gchar *thisfn = "import1/of1_module_ofa_extension_list_types";
 	static GType types_list [1+OFA_TYPES_COUNT];
 
 	g_debug( "%s: types=%p", thisfn, ( void * ) types );
@@ -103,7 +103,7 @@ ofa_extension_list_types( const GType **types )
 void
 ofa_extension_shutdown( void )
 {
-	static const gchar *thisfn = "of1_module_ofa_extension_shutdown";
+	static const gchar *thisfn = "import1/of1_module_ofa_extension_shutdown";
 
 	g_debug( "%s", thisfn );
 }

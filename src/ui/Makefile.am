@@ -73,8 +73,6 @@ openbook_SOURCES = \
 	ofa-class-properties.h								\
 	ofa-classes-set.c									\
 	ofa-classes-set.h									\
-	ofa-dbserver-login.c								\
-	ofa-dbserver-login.h								\
 	ofa-devise-combo.c									\
 	ofa-devise-combo.h									\
 	ofa-devise-properties.c								\
@@ -85,6 +83,8 @@ openbook_SOURCES = \
 	ofa-dossier-manager.h								\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
+	ofa-dossier-delete-prefs.c							\
+	ofa-dossier-delete-prefs.h							\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-dossier-open.c									\
@@ -124,8 +124,6 @@ openbook_SOURCES = \
 	ofa-model-properties.h								\
 	ofa-models-set.c									\
 	ofa-models-set.h									\
-	ofa-plugin.c										\
-	ofa-plugin.h										\
 	ofa-preferences.c									\
 	ofa-preferences.h									\
 	ofa-print-reconcil.c								\
@@ -165,9 +163,9 @@ ui_files = \
 	ofa-bat-select.ui									\
 	ofa-class-properties.ui								\
 	ofa-devise-properties.ui							\
-	ofa-dbserver-login.ui								\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
+	ofa-dossier-delete-prefs.piece.ui					\
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
@@ -215,5 +213,4 @@ CLEANFILES = \
 EXTRA_DIST = \
 	$(applications_in_files)							\
 	$(ui_data_DATA)										\
-	ofa-marshal.def										\
 	$(NULL)

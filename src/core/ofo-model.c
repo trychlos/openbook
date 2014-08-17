@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "core/my-utils.h"
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -251,7 +251,7 @@ do_update_journal_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gc
 					"	SET MOD_JOU_MNEMO='%s' WHERE MOD_JOU_MNEMO='%s'",
 								mnemo, prev_id );
 
-	ok = ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query );
+	ok = ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
 
 	g_free( query );
 
@@ -283,7 +283,7 @@ do_update_taux_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar
 					"	WHERE MOD_DET_DEBIT LIKE '%%%s%%' OR MOD_DET_CREDIT LIKE '%%%s%%'",
 							prev_id, prev_id );
 
-	result = ofo_sgbd_query_ex( sgbd, query );
+	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -305,7 +305,7 @@ do_update_taux_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar
 									det_debit, det_credit,
 									mod_mnemo, det_rang );
 
-			ofo_sgbd_query( sgbd, query );
+			ofo_sgbd_query( sgbd, query, TRUE );
 
 			g_free( query );
 			g_free( det_credit );
@@ -360,7 +360,7 @@ model_load_dataset( void )
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT MOD_MNEMO,MOD_LABEL,MOD_JOU_MNEMO,MOD_JOU_VER,MOD_NOTES,"
 			"	MOD_MAJ_USER,MOD_MAJ_STAMP "
-			"	FROM OFA_T_MODELES" );
+			"	FROM OFA_T_MODELES", TRUE );
 
 	dataset = NULL;
 
@@ -405,7 +405,7 @@ model_load_dataset( void )
 				"	WHERE MOD_MNEMO='%s' ORDER BY MOD_DET_RANG ASC",
 						ofo_model_get_mnemo( model ));
 
-		result = ofo_sgbd_query_ex( sgbd, query );
+		result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 		details = NULL;
 
 		for( irow=result ; irow ; irow=irow->next ){
@@ -513,7 +513,7 @@ model_count_for_journal( const ofoSgbd *sgbd, const gchar *journal )
 					journal );
 
 	count = 0;
-	result = ofo_sgbd_query_ex( sgbd, query );
+	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 	g_free( query );
 
 	if( result ){
@@ -553,7 +553,7 @@ model_count_for_taux( const ofoSgbd *sgbd, const gchar *mnemo )
 					mnemo, mnemo );
 
 	count = 0;
-	result = ofo_sgbd_query_ex( sgbd, query );
+	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 	g_free( query );
 
 	if( result ){
@@ -1242,7 +1242,7 @@ model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"'%s','%s')", user, stamp_str );
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	ofo_model_set_maj_user( model, user );
 	ofo_model_set_maj_stamp( model, &stamp );
@@ -1265,7 +1265,7 @@ model_delete_details( ofoModel *model, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_MODELES_DET WHERE MOD_MNEMO='%s'",
 			ofo_model_get_mnemo( model ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1353,7 +1353,7 @@ model_insert_details( ofoModel *model, const ofoSgbd *sgbd, gint rang, sModDetai
 
 	query = g_string_append( query, ")" );
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -1440,7 +1440,7 @@ model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, cons
 					stamp_str,
 					prev_mnemo );
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	ofo_model_set_maj_user( model, user );
 	ofo_model_set_maj_stamp( model, &stamp );
@@ -1493,7 +1493,7 @@ model_do_delete( ofoModel *model, const ofoSgbd *sgbd )
 			"	WHERE MOD_MNEMO='%s'",
 					ofo_model_get_mnemo( model ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1841,6 +1841,6 @@ model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo
 static gboolean
 model_do_drop_content( const ofoSgbd *sgbd )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODELES" ) &&
-			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODELES_DET" ));
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODELES", TRUE ) &&
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_MODELES_DET", TRUE ));
 }

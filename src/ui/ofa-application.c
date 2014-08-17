@@ -31,15 +31,15 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
+#include "api/ofa-settings.h"
 #include "api/ofo-sgbd.h"
 
-#include "core/ofa-settings.h"
+#include "core/ofa-plugin.h"
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
-#include "ui/ofa-plugin.h"
 #include "ui/ofa-preferences.h"
 
 /* private instance data
@@ -56,7 +56,7 @@ struct _ofaApplicationPrivate {
 
 	/* command-line args
 	 */
-	ofaOpenDossier *sod;
+	ofsDossierOpen *sdo;
 
 	/* internals
 	 */
@@ -111,7 +111,6 @@ static void     application_open( GApplication *application, GFile **files, gint
 static void     init_i18n( ofaApplication *application );
 static gboolean init_gtk_args( ofaApplication *application );
 static gboolean manage_options( ofaApplication *application );
-static void     do_prepare_for_open( ofaApplication *appli, const gchar *dossier, const gchar *user, const gchar *passwd );
 
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -267,7 +266,7 @@ ofa_application_init( ofaApplication *self )
 	self->private = g_new0( ofaApplicationPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
-	self->private->sod = NULL;
+	self->private->sdo = NULL;
 }
 
 static void
@@ -497,21 +496,21 @@ static void
 application_activate( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_activate";
-	ofaApplication *appli;
+	ofaApplicationPrivate *priv;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
-	appli = OFA_APPLICATION( application );
+	priv = OFA_APPLICATION( application )->private;
 
-	appli->private->main_window = ofa_main_window_new( appli );
-	g_debug( "%s: main window instanciated at %p", thisfn, appli->private->main_window );
+	priv->main_window = ofa_main_window_new( OFA_APPLICATION( application ));
+	g_debug( "%s: main window instanciated at %p", thisfn, priv->main_window );
 
-	gtk_window_present( GTK_WINDOW( appli->private->main_window ));
+	gtk_window_present( GTK_WINDOW( priv->main_window ));
 
-	if( appli->private->sod ){
+	if( priv->sdo ){
 		g_signal_emit_by_name(
-				appli->private->main_window, OFA_SIGNAL_OPEN_DOSSIER, appli->private->sod );
+				priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, priv->sdo );
 	}
 }
 
@@ -624,11 +623,13 @@ static gboolean
 manage_options( ofaApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_manage_options";
+	ofaApplicationPrivate *priv;
 	gboolean ret;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
 	ret = TRUE;
+	priv = application->private;
 
 	/* display the program version ?
 	 * if yes, then stops here
@@ -642,56 +643,18 @@ manage_options( ofaApplication *application )
 		if( !g_utf8_strlen( st_dossier_name_opt, -1 ) ||
 				!g_utf8_strlen( st_dossier_user_opt, -1 ) ||
 				!g_utf8_strlen( st_dossier_passwd_opt, -1 )){
-			g_warning( "%s: unable to handle wrong arguments: dossier=%s, user=%s, password=%s",
+			g_warning( "%s: ioncomplete arguments: dossier=%s, user=%s, password=%s",
 					thisfn, st_dossier_name_opt, st_dossier_user_opt, st_dossier_passwd_opt );
 
 		} else {
-			do_prepare_for_open( application,
-					st_dossier_name_opt, st_dossier_user_opt, st_dossier_passwd_opt );
+			priv->sdo = g_new0( ofsDossierOpen, 1 );
+			priv->sdo->label = g_strdup( st_dossier_name_opt );
+			priv->sdo->account = g_strdup( st_dossier_user_opt );
+			priv->sdo->password = g_strdup( st_dossier_passwd_opt );
 		}
 	}
 
 	return( ret );
-}
-
-static void
-do_prepare_for_open( ofaApplication *appli, const gchar *dossier, const gchar *user, const gchar *passwd )
-{
-	static const gchar *thisfn = "ofa_application_do_prepare_for_open";
-	ofaOpenDossier *sod;
-	gchar *provider;
-	ofoSgbd *sgbd;
-
-	sod = g_new0( ofaOpenDossier, 1 );
-	ofa_settings_get_dossier( dossier, &provider, &sod->host, &sod->port, &sod->socket, &sod->dbname );
-	sgbd = ofo_sgbd_new( provider );
-
-	if( !ofo_sgbd_connect(
-			sgbd,
-			sod->host,
-			sod->port,
-			sod->socket,
-			sod->dbname,
-			user,
-			passwd )){
-
-		g_free( sod->host );
-		g_free( sod->socket );
-		g_free( sod->dbname );
-		g_free( sod );
-		g_object_unref( sgbd );
-		return;
-	}
-
-	g_debug( "%s: connection successfully opened", thisfn );
-	g_free( provider );
-
-	sod->dossier = g_strdup( dossier );
-	sod->account = g_strdup( user );
-	sod->password = g_strdup( passwd );
-
-	appli->private->sod = sod;
-	g_object_unref( sgbd );
 }
 
 static void
@@ -731,7 +694,7 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_application_on_open";
 	ofaApplicationPrivate *priv;
-	ofaOpenDossier *ood;
+	ofsDossierOpen *sdo;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -741,9 +704,9 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ood = ofa_dossier_open_run( priv->main_window );
-	if( ood ){
-		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, ood );
+	sdo = ofa_dossier_open_run( priv->main_window );
+	if( sdo ){
+		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, sdo );
 	}
 }
 

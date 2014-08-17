@@ -31,14 +31,14 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-utils.h"
+#include "api/ofa-idbms.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-sgbd.h"
 
-#include "core/my-utils.h"
-#include "core/ofa-settings.h"
-
 #include "ui/my-window-prot.h"
-#include "ui/ofa-dbserver-login.h"
+#include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-main-window.h"
 
@@ -49,6 +49,8 @@ struct _ofaDossierManagerPrivate {
 	/* UI
 	 */
 	GtkTreeView *tview;
+	GtkWidget   *open_btn;
+	GtkWidget   *update_btn;
 	GtkWidget   *delete_btn;
 };
 
@@ -61,8 +63,6 @@ enum {
 	COL_NAME = 0,
 	COL_PROVIDER,
 	COL_HOST,
-	COL_PORT,
-	COL_SOCKET,
 	COL_DBNAME,
 	N_COLUMNS
 };
@@ -73,10 +73,11 @@ static void      v_init_dialog( myDialog *dialog );
 static void      setup_treeview( ofaDossierManager *self );
 static gint      on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
 static void      on_dossier_selected( GtkTreeSelection *selection, ofaDossierManager *self );
+static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
+static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
+static void      on_update_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
 static gboolean  confirm_delete( ofaDossierManager *self, const gchar *name, const gchar *provider, const gchar *dbname );
-static gboolean  do_delete_dossier( ofaDossierManager *self, const gchar *name, const gchar *provider, const gchar *host, const gchar *port_str, const gchar *socket, const gchar *dbname );
-static void      do_remove_admin_accounts( ofaDossierManager *self, const ofoSgbd *sgbd, const gchar *dbname );
 
 static void
 dossier_manager_finalize( GObject *instance )
@@ -171,13 +172,29 @@ v_init_dialog( myDialog *dialog )
 {
 	GtkWindow *toplevel;
 	GtkWidget *widget;
+	ofaDossierManagerPrivate *priv;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	priv = OFA_DOSSIER_MANAGER( dialog )->private;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-btn" );
+	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
+	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_new_clicked ), dialog );
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "open-btn" );
+	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
+	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_open_clicked ), dialog );
+	priv->open_btn = widget;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "update-btn" );
+	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
+	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_update_clicked ), dialog );
+	priv->update_btn = widget;
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "delete-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_delete_clicked ), dialog );
-	OFA_DOSSIER_MANAGER( dialog )->private->delete_btn = widget;
+	priv->delete_btn = widget;
 
 	setup_treeview( OFA_DOSSIER_MANAGER( dialog ));
 }
@@ -194,8 +211,8 @@ setup_treeview( ofaDossierManager *self )
 	GtkTreeIter iter;
 	GSList *dossiers, *id;
 	const gchar *name;
-	gchar *provider, *host, *socket, *dbname, *port_str;
-	gint port;
+	gchar *provider, *host, *dbname;
+	ofaIDbms *module;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
@@ -205,7 +222,7 @@ setup_treeview( ofaDossierManager *self )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING ));
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING ));
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tmodel );
 	g_object_unref( tmodel );
 
@@ -241,22 +258,6 @@ setup_treeview( ofaDossierManager *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 
-	/*cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Port" ),
-			cell,
-			"text", COL_PORT,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Socket" ),
-			cell,
-			"text", COL_SOCKET,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );*/
-
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "DB name" ),
@@ -273,12 +274,11 @@ setup_treeview( ofaDossierManager *self )
 
 	for( id=dossiers ; id ; id=id->next ){
 		name = ( const gchar * ) id->data;
-		ofa_settings_get_dossier( name, &provider, &host, &port, &socket, &dbname );
-		if( port > 0 ){
-			port_str = g_strdup_printf( "%u", port );
-		} else {
-			port_str = g_strdup( "" );
-		}
+		provider = ofa_settings_get_dossier_provider( name );
+		module = ofa_idbms_get_provider_by_name( provider );
+		host = ofa_idbms_get_dossier_host( module, name );
+		dbname = ofa_idbms_get_dossier_dbname( module, name );
+		g_object_unref( module );
 
 		gtk_list_store_insert_with_values(
 				GTK_LIST_STORE( tmodel ),
@@ -287,14 +287,10 @@ setup_treeview( ofaDossierManager *self )
 				COL_NAME,     name,
 				COL_PROVIDER, provider,
 				COL_HOST,     host,
-				COL_PORT,     port_str,
-				COL_SOCKET,   socket,
 				COL_DBNAME,   dbname,
 				-1 );
 
 		g_free( dbname );
-		g_free( socket );
-		g_free( port_str );
 		g_free( host );
 		g_free( provider );
 	}
@@ -330,16 +326,35 @@ on_dossier_selected( GtkTreeSelection *selection, ofaDossierManager *self )
 
 	ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
 
+	gtk_widget_set_sensitive( self->private->open_btn, ok );
+	gtk_widget_set_sensitive( self->private->update_btn, ok );
 	gtk_widget_set_sensitive( self->private->delete_btn, ok );
+}
+
+static void
+on_new_clicked( GtkButton *button, ofaDossierManager *self )
+{
+}
+
+static void
+on_open_clicked( GtkButton *button, ofaDossierManager *self )
+{
+}
+
+static void
+on_update_clicked( GtkButton *button, ofaDossierManager *self )
+{
 }
 
 static void
 on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 {
+	static const gchar *thisfn = "ofa_dossier_manager_on_delete_clicked";
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
-	gchar *name, *provider, *host, *port_str, *socket, *dbname;
+	gchar *name, *provider, *host, *dbname;
+	gboolean deleted;
 
 	select = gtk_tree_view_get_selection( self->private->tview );
 
@@ -350,23 +365,26 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 				COL_NAME,     &name,
 				COL_PROVIDER, &provider,
 				COL_HOST,     &host,
-				COL_PORT,     &port_str,
-				COL_SOCKET,   &socket,
 				COL_DBNAME,   &dbname,
 				-1 );
 
 		if( confirm_delete( self, name, provider, dbname )){
-			if( do_delete_dossier( self, name, provider, host, port_str, socket, dbname )){
+			deleted = ofa_dossier_delete_run(
+							MY_WINDOW( self )->protected->main_window,
+							name, provider, host, dbname );
+			g_debug( "%s: deleted=%s", thisfn, deleted ? "True":"False" );
+			if( deleted ){
 				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
 			}
 		}
 
 		g_free( dbname );
-		g_free( socket );
-		g_free( port_str );
 		g_free( host );
 		g_free( provider );
 		g_free( name );
+
+	} else {
+		g_warning( "%s: no current selection", thisfn );
 	}
 }
 
@@ -379,7 +397,7 @@ confirm_delete( ofaDossierManager *self, const gchar *name, const gchar *provide
 
 	str = g_strdup_printf(
 			_( "You are about to remove the '%s' dossier (provider=%s, dbname=%s).\n"
-				"This operation cannot be recovered.\n"
+				"This operation will not be recoverable.\n"
 				"Are your sure ?" ),
 					name, provider, dbname );
 
@@ -402,71 +420,4 @@ confirm_delete( ofaDossierManager *self, const gchar *name, const gchar *provide
 	gtk_widget_destroy( dialog );
 
 	return( response == GTK_RESPONSE_OK );
-}
-
-static gboolean
-do_delete_dossier( ofaDossierManager *self, const gchar *name, const gchar *provider, const gchar *host, const gchar *port_str, const gchar *socket, const gchar *dbname )
-{
-	gboolean ok;
-	gboolean remove_account;
-	gchar *account, *password;
-	ofoSgbd *sgbd;
-	gint port;
-	gchar *query;
-
-	ok = FALSE;
-
-	if( ofa_dbserver_login_run(
-			MY_WINDOW( self )->protected->main_window,
-			name, provider, host, port_str, socket, dbname, &account, &password, &remove_account )){
-
-		sgbd = ofo_sgbd_new( provider );
-
-		port = 0;
-		if( port_str && g_utf8_strlen( port_str, -1 )){
-			port = atoi( port_str );
-		}
-
-		if( ofo_sgbd_connect( sgbd, host, port, socket, "mysql", account, password )){
-
-			if( remove_account ){
-				do_remove_admin_accounts( self, sgbd, dbname );
-			}
-
-			query = g_strdup_printf( "DROP DATABASE %s", dbname );
-			ofo_sgbd_query_ignore( sgbd, query );
-			g_free( query );
-
-			ofa_settings_remove_dossier( name );
-		}
-
-		g_object_unref( sgbd );
-		g_free( account );
-		g_free( password );
-
-		ok = TRUE;
-	}
-
-	return( ok );
-}
-
-static void
-do_remove_admin_accounts( ofaDossierManager *self, const ofoSgbd *sgbd, const gchar *dbname )
-{
-	gchar *query;
-	GSList *result, *irow, *icol;
-	const gchar *user;
-
-	query = g_strdup_printf(
-				"SELECT ROL_USER FROM %s.OFA_T_ROLES WHERE ROL_IS_ADMIN=1", dbname );
-	result = ofo_sgbd_query_ex_ignore( sgbd, query );
-	g_free( query );
-
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = ( GSList * ) irow->data;
-		user = ( const gchar * ) icol->data;
-		query = g_strdup_printf( "delete from mysql.user where user='%s'", user );
-		ofo_sgbd_query_ignore( sgbd, query );
-		g_free( query );
-	}
 }

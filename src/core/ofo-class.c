@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "core/my-utils.h"
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-class.h"
@@ -180,7 +180,7 @@ class_load_dataset( void )
 			"SELECT CLA_NUMBER,CLA_LABEL,"
 			"	CLA_NOTES,CLA_MAJ_USER,CLA_MAJ_STAMP "
 			"	FROM OFA_T_CLASSES "
-			"	ORDER BY CLA_NUMBER ASC" );
+			"	ORDER BY CLA_NUMBER ASC", TRUE );
 
 	dataset = NULL;
 
@@ -519,7 +519,7 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	if( ok ){
 		ofo_class_set_maj_user( class, user );
@@ -594,7 +594,7 @@ class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar
 			"	CLA_MAJ_USER='%s',CLA_MAJ_STAMP='%s'"
 			"	WHERE CLA_NUMBER=%d", user, stamp_str, prev_id );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_class_set_maj_user( class, user );
 		ofo_class_set_maj_stamp( class, &stamp );
@@ -649,7 +649,7 @@ class_do_delete( ofoClass *class, const ofoSgbd *sgbd )
 			"	WHERE CLA_NUMBER=%d",
 					ofo_class_get_number( class ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -822,5 +822,5 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 static gboolean
 class_do_drop_content( const ofoSgbd *sgbd )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_CLASSES" ));
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_CLASSES", TRUE ));
 }

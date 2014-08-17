@@ -28,11 +28,10 @@
 #include <config.h>
 #endif
 
+#include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-sgbd.h"
-
-#include "core/my-utils.h"
-#include "core/ofa-settings.h"
 
 #include "ui/my-window-prot.h"
 #include "ui/ofa-dossier-open.h"
@@ -52,7 +51,7 @@ struct _ofaDossierOpenPrivate {
 	 * the structure itself, along with its datas, will be freed by the
 	 * MainWindow signal final handler
 	 */
-	ofaOpenDossier *ood;
+	ofsDossierOpen *sdo;
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-dossier-open.ui";
@@ -146,12 +145,12 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
  *
  * Run the selection dialog to choose a dossier to be opened
  */
-ofaOpenDossier *
+ofsDossierOpen *
 ofa_dossier_open_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
-	ofaOpenDossier *ood;
+	ofsDossierOpen *sdo;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -166,10 +165,10 @@ ofa_dossier_open_run( ofaMainWindow *main_window )
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	ood = self->private->ood;
+	sdo = self->private->sdo;
 	g_object_unref( self );
 
-	return( ood );
+	return( sdo );
 }
 
 static void
@@ -336,43 +335,26 @@ static gboolean
 do_open( ofaDossierOpen *self )
 {
 	static const gchar *thisfn = "ofa_dossier_open_do_open";
-	gboolean opened;
-	ofaOpenDossier *sod;
-	gchar *provider;
+	ofaDossierOpenPrivate *priv;
+	ofsDossierOpen *sdo;
 	ofoSgbd *sgbd;
 
-	opened = FALSE;
-	sod = g_new0( ofaOpenDossier, 1 );
-	ofa_settings_get_dossier( self->private->name, &provider, &sod->host, &sod->port, &sod->socket, &sod->dbname );
-	sgbd = ofo_sgbd_new( provider );
+	priv = self->private;
 
-	if( !ofo_sgbd_connect(
-			sgbd,
-			sod->host,
-			sod->port,
-			sod->socket,
-			sod->dbname,
-			self->private->account,
-			self->private->password )){
-
-		g_free( sod->host );
-		g_free( sod->socket );
-		g_free( sod->dbname );
-		g_free( sod );
-		goto free_sgbd;
+	sgbd = ofo_sgbd_new( priv->name );
+	if( !ofo_sgbd_connect( sgbd, priv->account, priv->password, FALSE )){
+		g_object_unref( sgbd );
+		return( FALSE );
 	}
 
-	opened = TRUE;
 	g_debug( "%s: connection successfully opened", thisfn );
-	g_free( provider );
-
-	sod->dossier = g_strdup( self->private->name );
-	sod->account = g_strdup( self->private->account );
-	sod->password = g_strdup( self->private->password );
-	self->private->ood = sod;
-
-free_sgbd:
 	g_object_unref( sgbd );
 
-	return( opened );
+	sdo = g_new0( ofsDossierOpen, 1 );
+	sdo->label = g_strdup( self->private->name );
+	sdo->account = g_strdup( self->private->account );
+	sdo->password = g_strdup( self->private->password );
+	self->private->sdo = sdo;
+
+	return( TRUE );
 }

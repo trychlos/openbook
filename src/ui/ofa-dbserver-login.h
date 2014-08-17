@@ -66,8 +66,7 @@ GType    ofa_dbserver_login_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_dbserver_login_run     ( ofaMainWindow *parent,
 										const gchar *name,
-										const gchar *provider,
-										const gchar *host, const gchar *port, const gchar *socket, const gchar *dbname,
+										const gchar *provider, const gchar *host, const gchar *dbname,
 										gchar **account, gchar **password,
 										gboolean *remove_account );
 

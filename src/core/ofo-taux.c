@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -39,7 +40,6 @@
 #include "api/ofo-taux.h"
 
 #include "core/my-date.h"
-#include "core/my-utils.h"
 
 /* priv instance data
  */
@@ -216,7 +216,7 @@ taux_load_dataset( void )
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT TAX_MNEMO,TAX_LABEL,TAX_NOTES,"
 			"	TAX_MAJ_USER,TAX_MAJ_STAMP"
-			"	FROM OFA_T_TAUX" );
+			"	FROM OFA_T_TAUX", TRUE );
 
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
@@ -248,7 +248,7 @@ taux_load_dataset( void )
 					"	WHERE TAX_MNEMO='%s'",
 					ofo_taux_get_mnemo( taux ));
 
-		result = ofo_sgbd_query_ex( sgbd, query );
+		result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
@@ -848,7 +848,7 @@ taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_taux_set_maj_user( taux, user );
 		ofo_taux_set_maj_stamp( taux, &stamp );
@@ -873,7 +873,7 @@ taux_delete_validities( ofoTaux *taux, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_TAUX_VAL WHERE TAX_MNEMO='%s'",
 					ofo_taux_get_mnemo( taux ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -929,7 +929,7 @@ taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
 
 	g_string_append_printf( query, "%s)", rate );
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 	g_free( dbegin );
@@ -1014,7 +1014,7 @@ taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, c
 			"	WHERE TAX_MNEMO='%s'",
 					user, stamp_str, prev_mnemo );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_taux_set_maj_user( taux, user );
 		ofo_taux_set_maj_stamp( taux, &stamp );
@@ -1068,7 +1068,7 @@ taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_TAUX WHERE TAX_MNEMO='%s'",
 					ofo_taux_get_mnemo( taux ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1076,7 +1076,7 @@ taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_TAUX_VAL WHERE TAX_MNEMO='%s'",
 					ofo_taux_get_mnemo( taux ));
 
-	ok &= ofo_sgbd_query( sgbd, query );
+	ok &= ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1433,6 +1433,6 @@ taux_import_csv_valid( GSList *fields, gint count, gint *errors, gchar **mnemo )
 static gboolean
 taux_do_drop_content( const ofoSgbd *sgbd )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_TAUX" ) &&
-			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_TAUX_VAL" ));
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_TAUX", TRUE ) &&
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_TAUX_VAL", TRUE ));
 }

@@ -28,11 +28,12 @@
 #include <config.h>
 #endif
 
-#include "core/my-utils.h"
-#include "ui/ofa-devise-combo.h"
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-devise.h"
 #include "api/ofo-dossier.h"
+
+#include "ui/ofa-devise-combo.h"
 
 /* private instance data
  */

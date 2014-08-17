@@ -63,22 +63,20 @@ typedef struct {
 	ofaMainWindowClass;
 
 /**
- * ofaOpenDossier struct
+ * ofsDossierOpen:
+ * @label: the label of the dossier
+ * @account: an account authorized to the dossier
+ * @password: the password of the account
  *
- * This structure should be allocated by the emitter of the signal.
- * The final, cleanup, handler will take care of freeing the data
- * and the structure itself
+ * The structure which should be allocated and attached to the above
+ * signal. This structure will be freed in the signal cleanup handler.
  */
-typedef struct _ofaOpenDossier {
-	gchar *dossier;
-	gchar *host;
-	gint   port;
-	gchar *socket;
-	gchar *dbname;
+typedef struct {
+	gchar *label;
 	gchar *account;
 	gchar *password;
 }
-	ofaOpenDossier;
+	ofsDossierOpen;
 
 GType ofa_main_window_get_type( void ) G_GNUC_CONST;
 

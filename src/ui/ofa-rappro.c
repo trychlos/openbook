@@ -30,21 +30,21 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
 #include "api/ofa-iimporter.h"
+#include "api/ofo-account.h"
+#include "api/ofo-bat-line.h"
+#include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
 
 #include "core/my-date.h"
-#include "core/my-utils.h"
+#include "core/ofa-plugin.h"
 
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-importer.h"
-#include "ui/ofa-plugin.h"
 #include "ui/ofa-rappro.h"
-#include "api/ofo-account.h"
-#include "api/ofo-bat-line.h"
-#include "api/ofo-dossier.h"
-#include "api/ofo-entry.h"
 
 /* private instance data
  */

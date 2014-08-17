@@ -31,10 +31,11 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "core/my-utils.h"
-#include "core/ofa-settings.h"
+#include "api/my-utils.h"
+#include "api/ofa-settings.h"
 
 #include "ui/my-window-prot.h"
+#include "ui/ofa-dossier-delete-prefs.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-preferences.h"
 
@@ -44,24 +45,32 @@ struct _ofaPreferencesPrivate {
 
 	/* whether the dialog has been validated
 	 */
-	gboolean        updated;
+	gboolean               updated;
 
-	/* UI - Assistant page
+	/* UI - Quit assistant page
 	 */
-	GtkCheckButton *confirm_on_escape_btn;
+	GtkCheckButton        *confirm_on_escape_btn;
+
+	/* UI - Dossier delete page
+	 */
+	ofaDossierDeletePrefs *dd_prefs;
 };
 
 static const gchar *st_assistant_quit_on_escape    = "AssistantQuitOnEscape";
 static const gchar *st_assistant_confirm_on_escape = "AssistantConfirmOnEscape";
 static const gchar *st_assistant_confirm_on_cancel = "AssistantConfirmOnCancel";
 
-static const gchar *st_ui_xml = PKGUIDIR "/ofa-preferences.ui";
-static const gchar *st_ui_id  = "PreferencesDlg";
+static const gchar *st_ui_xml                      = PKGUIDIR "/ofa-preferences.ui";
+static const gchar *st_ui_id                       = "PreferencesDlg";
+
+static const gchar *st_delete_dossier_xml          = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
+static const gchar *st_delete_dossier_id           = "DossierDeleteWindow";
 
 G_DEFINE_TYPE( ofaPreferences, ofa_preferences, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      init_assistant_page( ofaPreferences *self );
+static void      init_quit_assistant_page( ofaPreferences *self );
+static void      init_dossier_delete_page( ofaPreferences *self );
 static void      on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaPreferences *self );
@@ -90,11 +99,16 @@ preferences_finalize( GObject *instance )
 static void
 preferences_dispose( GObject *instance )
 {
+	ofaPreferencesPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_PREFERENCES( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
+		priv = OFA_PREFERENCES( instance )->private;
+
 		/* unref object members here */
+		g_clear_object( &priv->dd_prefs );
 	}
 
 	/* chain up to the parent class */
@@ -164,15 +178,17 @@ ofa_preferences_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
-	init_assistant_page( OFA_PREFERENCES( dialog ));
+	init_quit_assistant_page( OFA_PREFERENCES( dialog ));
+	init_dossier_delete_page( OFA_PREFERENCES( dialog ));
 }
 
 static void
-init_assistant_page( ofaPreferences *self )
+init_quit_assistant_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkContainer *container;
 	GtkWidget *button;
+	gboolean bvalue;
 
 	priv = self->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
@@ -181,20 +197,46 @@ init_assistant_page( ofaPreferences *self )
 	 *  quit-on-escape button as triggered signal use the variable */
 	button = my_utils_container_get_child_by_name( container, "p1-confirm-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( button ), ofa_prefs_assistant_confirm_on_escape());
+	bvalue = ofa_prefs_assistant_confirm_on_escape();
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	priv->confirm_on_escape_btn = GTK_CHECK_BUTTON( button );
 
 	button = my_utils_container_get_child_by_name( container, "p1-quit-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_quit_on_escape_toggled ), self );
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( button ), ofa_prefs_assistant_quit_on_escape());
+	bvalue = ofa_prefs_assistant_quit_on_escape();
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 
 	button = my_utils_container_get_child_by_name( container, "p1-confirm-on-cancel" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( button ), ofa_prefs_assistant_confirm_on_cancel());
+	bvalue = ofa_prefs_assistant_confirm_on_cancel();
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+}
+
+static void
+init_dossier_delete_page( ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+	GtkContainer *container;
+	GtkWidget *window;
+	GtkWidget *grid, *parent;
+
+	priv = self->private;
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+
+	window = my_utils_builder_load_from_path( st_delete_dossier_xml, st_delete_dossier_id );
+	g_return_if_fail( window && GTK_IS_WINDOW( window ));
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "grid-container" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+
+	parent = my_utils_container_get_child_by_name( container, "alignment2-parent" );
+	gtk_widget_reparent( grid, parent );
+
+	priv->dd_prefs = ofa_dossier_delete_prefs_new();
+	ofa_dossier_delete_prefs_init_dialog( priv->dd_prefs, container );
 }
 
 static void
@@ -219,6 +261,7 @@ do_update( ofaPreferences *self )
 	priv = self->private;
 
 	do_update_assistant_page( self );
+	ofa_dossier_delete_prefs_set_settings( priv->dd_prefs );
 
 	priv->updated = TRUE;
 

@@ -27,8 +27,12 @@ api_includedir = $(pkgincludedir)
 api_include_HEADERS = \
 	ofa-extension.h										\
 	\
+	ofa-idbms.h											\
 	ofa-iimporter.h										\
 	\
+	ofa-settings.h										\
+	\
+	my-utils.h											\
 	ofo-account.h										\
 	ofo-account-def.h									\
 	ofo-base.h											\

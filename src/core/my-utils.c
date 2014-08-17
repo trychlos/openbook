@@ -34,8 +34,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "core/my-utils.h"
-#include "core/ofa-settings.h"
+#include "api/my-utils.h"
+#include "api/ofa-settings.h"
 
 static gunichar st_thousand_sep = '\0';
 static gunichar st_decimal_sep  = '\0';

@@ -64,7 +64,7 @@ typedef struct {
 
 GType           ofa_dossier_open_get_type( void ) G_GNUC_CONST;
 
-ofaOpenDossier *ofa_dossier_open_run     ( ofaMainWindow *parent );
+ofsDossierOpen *ofa_dossier_open_run     ( ofaMainWindow *parent );
 
 G_END_DECLS
 

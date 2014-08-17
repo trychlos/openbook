@@ -30,34 +30,40 @@
 
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
-#include <mysql/mysql.h>
 #include <string.h>
 
-#include "core/my-utils.h"
+#include "api/my-utils.h"
+#include "api/ofa-idbms.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-sgbd.h"
 
 /* private instance data
  */
 struct _ofoSgbdPrivate {
-	gboolean dispose_has_run;
+	gboolean  dispose_has_run;
 
 	/* properties
 	 */
+	gchar    *label;
+	gchar    *provider;
+	ofaIDbms *module;
+	gboolean  connected;
 
-	/* internals
-	 */
-	gchar   *provider;
-	MYSQL   *mysql;
+	gchar    *account;
+	gchar    *password;
+	void     *handle;
 };
 
 G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 
-static void    error_connect( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
-static gchar  *error_connect_msg( const ofoSgbd *sgbd, const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account );
-static void    error_query( const ofoSgbd *sgbd, const gchar *query );
-static void    sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query );
-static gchar  *quote_query( const gchar *query );
-static GSList *sgbd_query_get_result( const ofoSgbd *sgbd, const gchar *query );
+static void     sgbd_connect_static( ofoSgbd *sgbd, gboolean with_dbname, const gchar *dbname, const gchar *account, const gchar *password, gboolean display_error );
+static void     error_module_not_found( const gchar *provider );
+static void     error_already_connected( const ofoSgbd *sgbd );
+static void     error_provider_not_defined( const ofoSgbd *sgbd );
+static void     error_connect( const ofoSgbd *sgbd, const gchar *account );
+static void     error_query( const ofoSgbd *sgbd, const gchar *query );
+static void     sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query );
+static gchar   *quote_query( const gchar *query );
 
 static void
 ofo_sgbd_finalize( GObject *instance )
@@ -73,12 +79,11 @@ ofo_sgbd_finalize( GObject *instance )
 	priv = OFO_SGBD( instance )->private;
 
 	/* free data members here */
+	g_free( priv->label );
 	g_free( priv->provider );
 
-	if( priv->mysql ){
-		mysql_close( priv->mysql );
-		g_free( priv->mysql );
-	}
+	g_free( priv->account );
+	g_free( priv->password );
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -88,15 +93,22 @@ ofo_sgbd_finalize( GObject *instance )
 static void
 ofo_sgbd_dispose( GObject *instance )
 {
-	ofoSgbd *self;
+	ofoSgbdPrivate *priv;
 
-	self = OFO_SGBD( instance );
+	priv = OFO_SGBD( instance )->private;
 
-	if( !self->private->dispose_has_run ){
+	if( !priv->dispose_has_run ){
 
-		self->private->dispose_has_run = TRUE;
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( priv->module ){
+			if( priv->handle ){
+				ofa_idbms_close( priv->module, priv->handle );
+				priv->handle = NULL;
+			}
+			g_clear_object( &priv->module );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -131,78 +143,254 @@ ofo_sgbd_class_init( ofoSgbdClass *klass )
 
 /**
  * ofo_sgbd_new:
+ * @label: the label of the dossier.
  *
- * Allocates a new ofoSgbd object, and that's all
+ * Allocates a new #ofoSgbd object intended to connect to the specified
+ * dossier.
+ *
+ * Returns: a newly allocated #ofoSgbd object, which should be
+ * g_object_unref() by the caller.
  */
 ofoSgbd *
-ofo_sgbd_new( const gchar *provider )
+ofo_sgbd_new( const gchar *label )
 {
 	static const gchar *thisfn = "ofo_sgbd_new";
 	ofoSgbd *sgbd;
 
-	g_debug( "%s: provider=%s", thisfn, provider );
+	g_debug( "%s: label=%s", thisfn, label );
 
 	sgbd = g_object_new( OFO_TYPE_SGBD, NULL );
 
-	sgbd->private->provider = g_strdup( provider );
+	sgbd->private->label = g_strdup( label );
 
 	return( sgbd );
 }
 
-/**
- * ofo_sgbd_connect:
- * @sgbd:
- * @host: [allow-none]: may be a host name or an IP address
- * @port: the port number if greater than zero
- * @socket: [allow-none]: the socket or named pipe to be used
- * @dbname: [allow-none]: the default database
- * @account: [allow-none]: the account to be used, default to unix login
- *  name
- * @password: [allow-none]: the password
- *
- * The connection will be automatically closed when unreffing the object.
- */
-gboolean
-ofo_sgbd_connect( ofoSgbd *sgbd,
-		const gchar *host, guint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
-{
-	static const gchar *thisfn = "ofo_sgbd_connect";
-	MYSQL *mysql;
-
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
-
-	g_debug( "%s: sgbd=%p, host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s",
-			thisfn,
-			( void * ) sgbd,
-			host, port, socket, dbname, account, password );
-
-	mysql = g_new0( MYSQL, 1 );
-	mysql_init( mysql );
-
-	if( !mysql_real_connect( mysql,
-			host,
-			account,
-			password,
-			dbname,
-			port,
-			socket,
-			CLIENT_MULTI_RESULTS )){
-
-		error_connect( sgbd, host, port, socket, dbname, account );
-		g_free( mysql );
-		return( FALSE );
-	}
-
-	sgbd->private->mysql = mysql;
-	return( TRUE );
-}
-
 static void
-error_connect( const ofoSgbd *sgbd,
-		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account )
+error_module_not_found( const gchar *provider )
 {
 	GtkMessageDialog *dlg;
 	gchar *str;
+
+	str = g_strdup_printf(
+				_( "Unable to find the required '%s' DBMS module" ), provider );
+
+	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
+				NULL,
+				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_WARNING,
+				GTK_BUTTONS_OK,
+				"%s", str ));
+
+	g_free( str );
+
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( GTK_WIDGET( dlg ));
+}
+
+/**
+ * ofo_sgbd_connect:
+ * @sgbd: this #ofoSgbd object
+ * @account: the account to be used, default to unix login name
+ * @password: the password
+ * @display_error: whether to display an error dialog in case of an
+ *  unsuccessful connection.
+ *
+ * Open a connection either to the specified dossier.
+ *
+ * Returns: %TRUE if the connection is successful, %FALSE else.
+ */
+gboolean
+ofo_sgbd_connect( ofoSgbd *sgbd, const gchar *account, const gchar *password,
+				gboolean display_error )
+{
+	static const gchar *thisfn = "ofo_sgbd_connect";
+
+	g_debug( "%s: sgbd=%p, account=%s, password=%s, display_error=%s",
+			thisfn,
+			( void * ) sgbd,
+			account, password, display_error ? "True":"False" );
+
+	sgbd_connect_static( sgbd, FALSE, NULL, account, password, display_error );
+
+	return( sgbd->private->connected );
+}
+
+/**
+ * ofo_sgbd_connect_ex:
+ * @sgbd: this #ofoSgbd object
+ * @dbname: the name of the database to be used as default
+ * @account: the account to be used, default to unix login name
+ * @password: the password
+ * @display_error: whether to display an error dialog in case of an
+ *  unsuccessful connection.
+ *
+ * Open a connection either to the specified database using the
+ * connection properties described for the specified dossier.
+ *
+ * Returns: %TRUE if the connection is successful, %FALSE else.
+ */
+gboolean
+ofo_sgbd_connect_ex( ofoSgbd *sgbd, const gchar *dbname, const gchar *account, const gchar *password,
+				gboolean display_error )
+{
+	static const gchar *thisfn = "ofo_sgbd_connect_ex";
+
+	g_debug( "%s: sgbd=%p, account=%s, password=%s, display_error=%s",
+			thisfn,
+			( void * ) sgbd,
+			account, password, display_error ? "True":"False" );
+
+	sgbd_connect_static( sgbd, TRUE, dbname, account, password, display_error );
+
+	return( sgbd->private->connected );
+}
+
+/*
+ * sgbd_connect_ex:
+ * @sgbd: this #ofoSgbd object
+ * @with_dbname: whether to use the specified database name
+ * @dbname: the name of the database to be used as default
+ * @account: the account to be used, default to unix login name
+ * @password: the password
+ * @display_error: whether to display an error dialog in case of an
+ *  unsuccessful connection.
+ *
+ * Open a connection either to the specified database using the
+ * connection properties described for the specified dossier.
+ *
+ * Returns: %TRUE if the connection is successful, %FALSE else.
+ */
+static void
+sgbd_connect_static( ofoSgbd *sgbd,
+					gboolean with_dbname, const gchar *dbname,
+					const gchar *account, const gchar *password, gboolean display_error )
+{
+	static const gchar *thisfn = "ofo_sgbd_connect_static";
+	gchar *provider_name;
+	ofaIDbms *module;
+	ofoSgbdPrivate *priv;
+
+	g_return_if_fail( sgbd && OFO_IS_SGBD( sgbd ));
+
+	priv = sgbd->private;
+
+	if( priv->dispose_has_run ){
+		return;
+	}
+
+	if( priv->connected ){
+		if( display_error ){
+			error_already_connected( sgbd );
+		}
+		return;
+	}
+
+	g_return_if_fail( priv->label && g_utf8_strlen( priv->label, -1 ));
+
+	provider_name = ofa_settings_get_dossier_provider( priv->label );
+	if( !provider_name || !g_utf8_strlen( provider_name, -1 )){
+		if( display_error ){
+			error_provider_not_defined( sgbd );
+		} else {
+			g_warning( "%s: label=%s: provider not defined", thisfn, priv->label );
+		}
+		g_free( provider_name );
+		return;
+	}
+
+	module = ofa_idbms_get_provider_by_name( provider_name );
+	if( !module ){
+		if( display_error ){
+			error_module_not_found( provider_name );
+		} else {
+			g_warning( "%s: label=%s, provider=%s: module not found",
+					thisfn, priv->label, provider_name );
+		}
+		g_free( provider_name );
+		return;
+	}
+
+	priv->provider = provider_name;
+	priv->module = module;
+
+	if( with_dbname ){
+		priv->handle = ofa_idbms_connect_ex( module, priv->label, dbname, account, password );
+	} else {
+		priv->handle = ofa_idbms_connect( module, priv->label, account, password );
+	}
+
+	if( !priv->handle ){
+		if( display_error ){
+			error_connect( sgbd, account );
+		}
+		return;
+	}
+
+	priv->connected = TRUE;
+	priv->account = g_strdup( account );
+	priv->password = g_strdup( password );
+}
+
+static void
+error_already_connected( const ofoSgbd *sgbd )
+{
+	ofoSgbdPrivate *priv;
+	GtkMessageDialog *dlg;
+	GString *str;
+
+	priv = sgbd->private;
+
+	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
+				NULL,
+				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_WARNING,
+				GTK_BUTTONS_OK,
+				"%s", _( "Already connected to the database" )));
+
+	str = g_string_new( "" );
+
+	if( priv->label ){
+		g_string_append_printf( str, "Label: %s\n", priv->label );
+	}
+	g_string_append_printf( str, "Provider: %s\n", priv->provider );
+	g_string_append_printf( str, "Account: %s\n", priv->account );
+
+	gtk_message_dialog_format_secondary_text( dlg, "%s", str->str );
+	g_string_free( str, TRUE );
+
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( GTK_WIDGET( dlg ));
+}
+
+static void
+error_provider_not_defined( const ofoSgbd *sgbd )
+{
+	GtkMessageDialog *dlg;
+	gchar *str;
+
+	str = g_strdup_printf(
+				_( "No provider defined for '%s' dossier" ), sgbd->private->label );
+
+	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
+				NULL,
+				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_WARNING,
+				GTK_BUTTONS_OK,
+				"%s", str ));
+	g_free( str );
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( GTK_WIDGET( dlg ));
+}
+
+static void
+error_connect( const ofoSgbd *sgbd, const gchar *account )
+{
+	ofoSgbdPrivate *priv;
+	GtkMessageDialog *dlg;
+	GString *str;
+
+	priv = sgbd->private;
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				NULL,
@@ -211,141 +399,50 @@ error_connect( const ofoSgbd *sgbd,
 				GTK_BUTTONS_OK,
 				"%s", _( "Unable to connect to the database" )));
 
-	str = error_connect_msg( sgbd, host, port, socket, dbname, account );
-	gtk_message_dialog_format_secondary_text( dlg, "%s", str );
-	g_free( str );
+	str = g_string_new( "" );
+
+	g_string_append_printf( str, "Label: %s\n", priv->label );
+	g_string_append_printf( str, "Account: %s\n", account );
+
+	gtk_message_dialog_format_secondary_text( dlg, "%s", str->str );
+	g_string_free( str, TRUE );
 
 	gtk_dialog_run( GTK_DIALOG( dlg ));
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
-}
-
-static gchar *
-error_connect_msg( const ofoSgbd *sgbd,
-		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account )
-{
-	GString *str;
-
-	str = g_string_new( "" );
-	if( host ){
-		g_string_append_printf( str, "Host: %s\n", host );
-	}
-	if( port > 0 ){
-		g_string_append_printf( str, "Port: %d\n", port );
-	}
-	if( socket ){
-		g_string_append_printf( str, "Socket: %s\n", socket );
-	}
-	if( dbname ){
-		g_string_append_printf( str, "Database: %s\n", dbname );
-	}
-	if( account ){
-		g_string_append_printf( str, "Account: %s\n", account );
-	}
-
-	return( g_string_free( str, FALSE ));
-}
-
-/**
- * ofo_sgbd_connect_ex:
- * @sgbd:
- * @host: [allow-none]: may be a host name or an IP address
- * @port: the port number if greater than zero
- * @socket: [allow-none]: the socket or named pipe to be used
- * @dbname: [allow-none]: the default database
- * @account: [allow-none]: the account to be used, default to unix login
- *  name
- * @password: [allow-none]: the password
- * @error_msg: [allow-none]: error message as a newly allocated string
- *  which should be g_free() by the caller
- *
- * The connection will be automatically closed when unreffing the object.
- *
- * Returns: %TRUE if the connection is successful, %FALSE else.
- */
-gboolean
-ofo_sgbd_connect_ex( ofoSgbd *sgbd,
-		const gchar *host, guint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password,
-		gchar **error_msg )
-{
-	static const gchar *thisfn = "ofo_sgbd_connect_ex";
-	MYSQL *mysql;
-
-	g_debug( "%s: sgbd=%p, host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s, error_msg=%p",
-			thisfn, ( void * ) sgbd,
-			host, port, socket, dbname, account, password, ( void * ) error_msg );
-
-	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), FALSE );
-
-	mysql = g_new0( MYSQL, 1 );
-	mysql_init( mysql );
-
-	if( !mysql_real_connect( mysql,
-			host,
-			account,
-			password,
-			dbname,
-			port,
-			socket,
-			CLIENT_MULTI_RESULTS )){
-
-		if( error_msg ){
-			*error_msg = error_connect_msg( sgbd, host, port, socket, dbname, account );
-		}
-		g_free( mysql );
-		return( FALSE );
-	}
-
-	sgbd->private->mysql = mysql;
-	return( TRUE );
 }
 
 /**
  * ofo_sgbd_query:
  */
 gboolean
-ofo_sgbd_query( const ofoSgbd *sgbd, const gchar *query )
+ofo_sgbd_query( const ofoSgbd *sgbd, const gchar *query, gboolean display_error )
 {
 	static const gchar *thisfn = "ofo_sgbd_query";
-	gboolean query_ok = FALSE;
+	ofoSgbdPrivate *priv;
+	gboolean query_ok;
 
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
+	g_debug( "%s: sgbd=%p, query='%s', display_error=%s",
+			thisfn, ( void * ) sgbd, query, display_error ? "True":"False" );
 
-	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
+	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), FALSE );
 
-	if( sgbd->private->mysql ){
-		if( mysql_query( sgbd->private->mysql, query )){
-			error_query( sgbd, query );
+	priv = sgbd->private;
+	query_ok = FALSE;
+
+	g_return_val_if_fail( priv->module && OFA_IS_IDBMS( priv->module ), FALSE );
+	g_return_val_if_fail( priv->handle, FALSE );
+
+	if( !priv->dispose_has_run ){
+
+		query_ok = ofa_idbms_query( priv->module, priv->handle, query );
+
+		if( !query_ok ){
+			if( display_error ){
+				error_query( sgbd, query );
+			}
 		} else {
 			sgbd_audit_query( sgbd, query );
-			query_ok = TRUE;
 		}
-	} else {
-		g_warning( "%s: trying to query a non-opened connection", thisfn );
-	}
-
-	return( query_ok );
-}
-
-/**
- * ofo_sgbd_query_ignore:
- */
-gboolean
-ofo_sgbd_query_ignore( const ofoSgbd *sgbd, const gchar *query )
-{
-	static const gchar *thisfn = "ofo_sgbd_query";
-	gboolean query_ok = FALSE;
-
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
-
-	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
-
-	if( sgbd->private->mysql ){
-		if( !mysql_query( sgbd->private->mysql, query )){
-			sgbd_audit_query( sgbd, query );
-			query_ok = TRUE;
-		}
-	} else {
-		g_warning( "%s: trying to query a non-opened connection", thisfn );
 	}
 
 	return( query_ok );
@@ -366,91 +463,32 @@ ofo_sgbd_query_ignore( const ofoSgbd *sgbd, const gchar *query )
  * The returned GSList should be freed with ofo_sgbd_free_result().
  */
 GSList *
-ofo_sgbd_query_ex( const ofoSgbd *sgbd, const gchar *query )
+ofo_sgbd_query_ex( const ofoSgbd *sgbd, const gchar *query, gboolean display_error )
 {
 	static const gchar *thisfn = "ofo_sgbd_query_ex";
-	GSList *result = NULL;
+	ofoSgbdPrivate *priv;
+	GSList *result;
 
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
+	g_debug( "%s: sgbd=%p, query='%s', display_error=%s",
+			thisfn, ( void * ) sgbd, query, display_error ? "True":"False" );
 
-	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
+	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), NULL );
 
-	if( sgbd->private->mysql ){
-		if( mysql_query( sgbd->private->mysql, query )){
-			error_query( sgbd, query );
+	priv = sgbd->private;
+	result = NULL;
 
-		} else {
-			result = sgbd_query_get_result( sgbd, query );
-		}
+	g_return_val_if_fail( priv->module && OFA_IS_IDBMS( priv->module ), NULL );
+	g_return_val_if_fail( priv->handle, NULL );
 
-	} else {
-		g_warning( "%s: trying to query a non-opened connection", thisfn );
-	}
+	if( !priv->dispose_has_run ){
 
-	return( result );
-}
+		result = ofa_idbms_query_ex( priv->module, priv->handle, query );
 
-/**
- * ofo_sgbd_query_ex_ignore:
- *
- * @parent: if NULL, do not display error message
- *
- * Returns a GSList or ordered rows of the result set.
- * Each GSList->data is a pointer to a GSList of ordered columns
- * A field is so the GSList[column] data, is always allocated
- * (but maybe of a zero length), or NULL (SQL-NULL translation).
- *
- * Returns NULL is case of an error.
- *
- * The returned GSList should be freed with ofo_sgbd_free_result().
- */
-GSList *
-ofo_sgbd_query_ex_ignore( const ofoSgbd *sgbd, const gchar *query )
-{
-	static const gchar *thisfn = "ofo_sgbd_query_ex_ignore";
-	GSList *result = NULL;
-
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
-
-	g_debug( "%s: sgbd=%p, query='%s'", thisfn, ( void * ) sgbd, query );
-
-	if( sgbd->private->mysql ){
-		if( !mysql_query( sgbd->private->mysql, query )){
-			result = sgbd_query_get_result( sgbd, query );
-		}
-
-	} else {
-		g_warning( "%s: trying to query a non-opened connection", thisfn );
-	}
-
-	return( result );
-}
-
-static GSList *
-sgbd_query_get_result( const ofoSgbd *sgbd, const gchar *query )
-{
-	GSList *result = NULL;
-	MYSQL_RES *res;
-	MYSQL_ROW row;
-	gint fields_count, i;
-
-	res = mysql_store_result( sgbd->private->mysql );
-	if( res ){
-		fields_count = mysql_num_fields( res );
-		while(( row = mysql_fetch_row( res ))){
-			GSList *col = NULL;
-			for( i=0 ; i<fields_count ; ++i ){
-				col = g_slist_prepend( col, row[i] ? g_strdup( row[i] ) : NULL );
+		if( !result ){
+			if( display_error ){
+				error_query( sgbd, query );
 			}
-			col = g_slist_reverse( col );
-			result = g_slist_prepend( result, col );
 		}
-		result = g_slist_reverse( result );
-
-	/* do not record queries which return a result (SELECT ...)
-	 * as they are not relevant for our traces */
-	} else {
-		sgbd_audit_query( sgbd, query );
 	}
 
 	return( result );
@@ -460,6 +498,7 @@ static void
 error_query( const ofoSgbd *sgbd, const gchar *query )
 {
 	GtkMessageDialog *dlg;
+	gchar *str;
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				NULL,
@@ -468,7 +507,9 @@ error_query( const ofoSgbd *sgbd, const gchar *query )
 				GTK_BUTTONS_OK,
 				"%s", query ));
 
-	gtk_message_dialog_format_secondary_text( dlg, "%s", mysql_error( sgbd->private->mysql ));
+	str = ofa_idbms_error( sgbd->private->module, sgbd->private->handle );
+	gtk_message_dialog_format_secondary_text( dlg, "%s", str );
+	g_free( str );
 
 	gtk_dialog_run( GTK_DIALOG( dlg ));
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
@@ -477,16 +518,12 @@ error_query( const ofoSgbd *sgbd, const gchar *query )
 static void
 sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query )
 {
-	static const gchar *thisfn = "ofo_sgbd_sgbd_audit_query";
 	gchar *quoted;
 	gchar *audit;
 
 	quoted = quote_query( query );
 	audit = g_strdup_printf( "INSERT INTO OFA_T_AUDIT (AUD_QUERY) VALUES ('%s')", quoted );
-
-	if( mysql_query( sgbd->private->mysql, audit )){
-		g_debug( "%s: %s", thisfn, mysql_error( sgbd->private->mysql ));
-	}
+	ofa_idbms_query( sgbd->private->module, sgbd->private->handle, audit );
 
 	g_free( quoted );
 	g_free( audit );
@@ -512,30 +549,6 @@ quote_query( const gchar *query )
 	g_free( new_str );
 
 	return( quoted );
-}
-
-/**
- * ofo_sgbd_get_db_exists:
- */
-gboolean
-ofo_sgbd_get_db_exists( const ofoSgbd *sgbd, const gchar *dbname )
-{
-	MYSQL_RES *result;
-	gboolean db_exists;
-
-	db_exists = FALSE;
-
-	if( sgbd->private->mysql ){
-		result = mysql_list_dbs( sgbd->private->mysql, dbname );
-		if( result ){
-			if( mysql_fetch_row( result )){
-				db_exists = TRUE;
-			}
-			mysql_free_result( result );
-		}
-	}
-
-	return( db_exists );
 }
 
 /**

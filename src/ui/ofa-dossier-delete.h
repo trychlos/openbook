@@ -62,13 +62,10 @@ typedef struct {
 }
 	ofaDossierDeleteClass;
 
-GType ofa_dossier_delete_get_type( void ) G_GNUC_CONST;
+GType    ofa_dossier_delete_get_type( void ) G_GNUC_CONST;
 
-void  ofa_dossier_delete_run     ( ofaMainWindow *parent, const gchar *label,
-									const gchar *provider,
-									const gchar *host, gint port, const gchar *socket, const gchar *account, const gchar *password,
-									const gchar *dbname,
-									const gchar *dbaccount );
+gboolean ofa_dossier_delete_run     ( ofaMainWindow *parent, const gchar *label,
+										const gchar *provider, const gchar *host, const gchar *dbname );
 
 G_END_DECLS
 

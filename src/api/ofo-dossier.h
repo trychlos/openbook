@@ -61,8 +61,6 @@ typedef enum {
 ofoDossier     *ofo_dossier_new                     ( const gchar *name );
 
 gboolean        ofo_dossier_open                    ( ofoDossier *dossier,
-														const gchar *host, gint port,
-														const gchar *socket, const gchar *dbname,
 														const gchar *account, const gchar *password );
 
 const gchar    *ofo_dossier_get_name                ( const ofoDossier *dossier );

@@ -30,15 +30,16 @@
 
 #include <glib/gi18n.h>
 
-#include "core/my-utils.h"
-#include "ui/ofa-main-page.h"
-#include "ui/ofa-guided-input.h"
-#include "ui/ofa-model-properties.h"
-#include "ui/ofa-models-set.h"
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-model.h"
 #include "api/ofo-journal.h"
+
+#include "ui/ofa-main-page.h"
+#include "ui/ofa-guided-input.h"
+#include "ui/ofa-model-properties.h"
+#include "ui/ofa-models-set.h"
 
 /* private instance data
  */

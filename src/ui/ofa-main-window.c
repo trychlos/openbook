@@ -31,10 +31,9 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/my-utils.h"
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-accounts-chart.h"
 #include "ui/ofa-bat-set.h"
@@ -257,15 +256,15 @@ static void             pane_save_position( GtkPaned *pane );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
-static void             on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
+static void             on_open_dossier( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
 static void             on_update_properties( ofaMainWindow *window, gpointer user_data );
 static void             pane_restore_position( GtkPaned *pane );
 static void             add_treeview_to_pane_left( ofaMainWindow *window );
 static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static const sThemeDef *get_theme_def_from_id( gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
-static void             on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data );
-static void             on_update_properties_cleanup_handler( ofaMainWindow *window, gpointer user_data );
+static void             on_open_dossier_cleanup_handler( ofaMainWindow *window, ofsDossierOpen *sdo );
+static void             on_update_properties_cleanup_handler( ofaMainWindow *window );
 static void             do_close_dossier( ofaMainWindow *self );
 static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
@@ -456,7 +455,7 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaMainWindow *window,
-	 * 						ofaOpenDossier *struct,
+	 * 						ofsDossierOpen *sdo,
 	 * 						gpointer user_data );
 	 */
 	st_signals[ OPEN_DOSSIER ] = g_signal_new_class_handler(
@@ -674,33 +673,24 @@ set_window_title( ofaMainWindow *window )
 }
 
 static void
-on_open_dossier( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data )
+on_open_dossier( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_open_dossier";
 
-	g_debug( "%s: window=%p, sod=%p, user_data=%p",
-			thisfn, ( void * ) window, ( void * ) sod, ( void * ) user_data );
-	g_debug( "%s: name=%s", thisfn, sod->dossier );
-	g_debug( "%s: host=%s", thisfn, sod->host );
-	g_debug( "%s: port=%d", thisfn, sod->port );
-	g_debug( "%s: socket=%s", thisfn, sod->socket );
-	g_debug( "%s: dbname=%s", thisfn, sod->dbname );
-	g_debug( "%s: account=%s", thisfn, sod->account );
-	g_debug( "%s: password=%s", thisfn, sod->password );
+	g_debug( "%s: window=%p, sdo=%p, label=%s, account=%s, password=%s, user_data=%p",
+			thisfn, ( void * ) window,
+			( void * ) sdo, sdo->label, sdo->account, sdo->password,
+			( void * ) user_data );
 
 	if( window->private->dossier ){
 		g_return_if_fail( OFO_IS_DOSSIER( window->private->dossier ));
 		do_close_dossier( window );
 	}
 
-	window->private->dossier = ofo_dossier_new( sod->dossier );
+	window->private->dossier = ofo_dossier_new( sdo->label );
 
-	if( !ofo_dossier_open(
-			window->private->dossier,
-			sod->host, sod->port, sod->socket, sod->dbname, sod->account, sod->password )){
-
-		g_object_unref( window->private->dossier );
-		window->private->dossier = NULL;
+	if( !ofo_dossier_open( window->private->dossier, sdo->account, sdo->password )){
+		g_clear_object( &window->private->dossier );
 		return;
 	}
 
@@ -838,20 +828,18 @@ add_empty_notebook_to_pane_right( ofaMainWindow *window )
 }
 
 static void
-on_open_dossier_cleanup_handler( ofaMainWindow *window, ofaOpenDossier* sod, gpointer user_data )
+on_open_dossier_cleanup_handler( ofaMainWindow *window, ofsDossierOpen *sdo )
 {
 	static const gchar *thisfn = "ofa_main_window_on_open_dossier_cleanup_handler";
 
-	g_debug( "%s: window=%p, sod=%p, user_data=%p",
-			thisfn, ( void * ) window, ( void * ) sod, ( void * ) user_data );
+	g_debug( "%s: window=%p, sdo=%p, label=%s, account=%s, password=%s",
+			thisfn, ( void * ) window,
+			( void * ) sdo, sdo->label, sdo->account, sdo->password );
 
-	g_free( sod->dossier );
-	g_free( sod->host );
-	g_free( sod->socket );
-	g_free( sod->dbname );
-	g_free( sod->account );
-	g_free( sod->password );
-	g_free( sod );
+	g_free( sdo->label );
+	g_free( sdo->account );
+	g_free( sdo->password );
+	g_free( sdo );
 }
 
 static void
@@ -868,12 +856,11 @@ on_update_properties( ofaMainWindow *window, gpointer user_data )
 }
 
 static void
-on_update_properties_cleanup_handler( ofaMainWindow *window, gpointer user_data )
+on_update_properties_cleanup_handler( ofaMainWindow *window )
 {
 	static const gchar *thisfn = "ofa_main_window_on_update_properties_cleanup_handler";
 
-	g_debug( "%s: window=%p, user_data=%p",
-			thisfn, ( void * ) window, ( void * ) user_data );
+	g_debug( "%s: window=%p", thisfn, ( void * ) window );
 }
 
 static void

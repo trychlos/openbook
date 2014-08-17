@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -42,7 +43,6 @@
 #include "api/ofo-sgbd.h"
 
 #include "core/my-date.h"
-#include "core/my-utils.h"
 
 /* priv instance data
  */
@@ -293,7 +293,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 					"	SET JOU_DEV_CODE='%s' WHERE JOU_DEV_CODE='%s' AND JOU_EXE_ID=%d",
 						code, prev_id, exe_id );
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
 
 	g_free( query );
 
@@ -392,7 +392,7 @@ journal_load_dataset( void )
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT JOU_MNEMO,JOU_LABEL,JOU_NOTES,"
 			"	JOU_MAJ_USER,JOU_MAJ_STAMP "
-			"	FROM OFA_T_JOURNAUX" );
+			"	FROM OFA_T_JOURNAUX", TRUE );
 
 	dataset = NULL;
 
@@ -429,7 +429,7 @@ journal_load_dataset( void )
 				"	WHERE JOU_MNEMO='%s'",
 						ofo_journal_get_mnemo( journal ));
 
-		result = ofo_sgbd_query_ex( sgbd, query );
+		result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 		g_free( query );
 
 		for( irow=result ; irow ; irow=irow->next ){
@@ -469,7 +469,7 @@ journal_load_dataset( void )
 				"	WHERE JOU_MNEMO='%s'",
 						ofo_journal_get_mnemo( journal ));
 
-		result = ofo_sgbd_query_ex( sgbd, query );
+		result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 		g_free( query );
 
 		for( irow=result ; irow ; irow=irow->next ){
@@ -550,7 +550,7 @@ journal_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
 					devise );
 
 	count = 0;
-	result = ofo_sgbd_query_ex( sgbd, query );
+	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 	g_free( query );
 
 	if( result ){
@@ -684,7 +684,7 @@ ofo_journal_get_last_entry( const ofoJournal *journal )
 				"	WHERE ECR_JOU_MNEMO='%s'", ofo_journal_get_mnemo( journal ));
 
 		result = ofo_sgbd_query_ex(
-						ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query );
+						ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query, TRUE );
 		g_free( query );
 
 		if( result ){
@@ -1469,7 +1469,7 @@ journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user
 			"'%s','%s')",
 			user, stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_journal_set_maj_user( journal, user );
 		ofo_journal_set_maj_stamp( journal, &stamp );
@@ -1548,7 +1548,7 @@ journal_do_update( ofoJournal *journal, const gchar *prev_mnemo, const ofoSgbd *
 			"	JOU_MAJ_USER='%s',JOU_MAJ_STAMP='%s'"
 			"	WHERE JOU_MNEMO='%s'", user, stamp_str, prev_mnemo );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_journal_set_maj_user( journal, user );
 		ofo_journal_set_maj_stamp( journal, &stamp );
@@ -1578,7 +1578,7 @@ journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, con
 					detail->exe_id,
 					detail->devise );
 
-	ofo_sgbd_query_ignore( sgbd, query );
+	ofo_sgbd_query( sgbd, query, FALSE );
 	g_free( query );
 
 	deb = my_utils_sql_from_double( ofo_journal_get_deb( journal, detail->exe_id, detail->devise ));
@@ -1606,7 +1606,7 @@ journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, con
 							cre,
 							scred );
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( scred );
 	g_free( sdebd );
@@ -1632,7 +1632,7 @@ journal_do_update_detail_exe( const ofoJournal *journal, sDetailExe *detail, con
 					ofo_journal_get_mnemo( journal ),
 					detail->exe_id );
 
-	ofo_sgbd_query_ignore( sgbd, query );
+	ofo_sgbd_query( sgbd, query, FALSE );
 	g_free( query );
 
 	sdate = my_date_to_str( &detail->last_clo, MY_DATE_SQL );
@@ -1646,7 +1646,7 @@ journal_do_update_detail_exe( const ofoJournal *journal, sDetailExe *detail, con
 							detail->exe_id,
 							sdate );
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( sdate );
 	g_free( query );
@@ -1699,7 +1699,7 @@ journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_JOURNAUX WHERE JOU_MNEMO='%s'",
 					ofo_journal_get_mnemo( journal ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1707,7 +1707,7 @@ journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_JOURNAUX_DEV WHERE JOU_MNEMO='%s'",
 					ofo_journal_get_mnemo( journal ));
 
-	ok &= ofo_sgbd_query( sgbd, query );
+	ok &= ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1715,7 +1715,7 @@ journal_do_delete( ofoJournal *journal, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_JOURNAUX_EXE WHERE JOU_MNEMO='%s'",
 					ofo_journal_get_mnemo( journal ));
 
-	ok &= ofo_sgbd_query( sgbd, query );
+	ok &= ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1930,7 +1930,7 @@ ofo_journal_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 static gboolean
 journal_do_drop_content( const ofoSgbd *sgbd )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_JOURNAUX" ) &&
-			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_JOURNAUX_DEV" ) &&
-			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_JOURNAUX_EXE" ));
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_JOURNAUX", TRUE ) &&
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_JOURNAUX_DEV", TRUE ) &&
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_JOURNAUX_EXE", TRUE ));
 }

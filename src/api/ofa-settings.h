@@ -29,7 +29,7 @@
 
 /* @title: ofaSettings
  * @short_description: The Settings Class Definition
- * @include: core/ofa-settings.h
+ * @include: api/ofa-settings.h
  *
  * The #ofaSettings class manages user preferences.
  *
@@ -50,12 +50,19 @@ typedef enum {
 }
 	SettingsType;
 
-void     ofa_settings_free          ( void );
+void     ofa_settings_free                  ( void );
 
-void     ofa_settings_get_dossier   ( const gchar *name, gchar **provider, gchar **host, gint *port, gchar **socket, gchar **dbname );
-gboolean ofa_settings_set_dossier   ( const gchar *name, ... );
-void     ofa_settings_remove_dossier( const gchar *name );
-GSList  *ofa_settings_get_dossiers  ( void );
+GSList  *ofa_settings_get_dossiers          ( void );
+
+gboolean ofa_settings_set_dossier           ( const gchar *name, ... );
+
+void     ofa_settings_remove_dossier        ( const gchar *name );
+
+gchar   *ofa_settings_get_dossier_provider  ( const gchar *name );
+
+/* intended for DBMS providers */
+gchar   *ofa_settings_get_dossier_key_string( const gchar *name, const gchar *key );
+gint     ofa_settings_get_dossier_key_uint  ( const gchar *name, const gchar *key );
 
 GList   *ofa_settings_get_uint_list ( const gchar *key );
 void     ofa_settings_set_uint_list ( const gchar *key, const GList *uint_list );

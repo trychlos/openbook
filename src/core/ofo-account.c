@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -40,7 +41,6 @@
 #include "api/ofo-sgbd.h"
 
 #include "core/my-date.h"
-#include "core/my-utils.h"
 
 /* priv instance data
  */
@@ -280,12 +280,13 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 					"UPDATE OFA_T_COMPTES SET CPT_DEV_CODE='%s' WHERE CPT_DEV_CODE='%s'",
 						code, prev_id );
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
 
 	g_free( query );
 
 	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 	st_global->dataset = NULL;
+
 	g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_ACCOUNT );
 }
 
@@ -411,7 +412,7 @@ account_load_dataset( void )
 			"	CPT_BRO_DEB_ECR,CPT_BRO_DEB_DATE,CPT_BRO_DEB_MNT,"
 			"	CPT_BRO_CRE_ECR,CPT_BRO_CRE_DATE,CPT_BRO_CRE_MNT "
 			"	FROM OFA_T_COMPTES "
-			"	ORDER BY CPT_NUMBER ASC" );
+			"	ORDER BY CPT_NUMBER ASC", TRUE );
 
 	dataset = NULL;
 
@@ -556,7 +557,7 @@ account_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
 				"	WHERE CPT_DEV_CODE='%s'",
 					devise );
 
-	result = ofo_sgbd_query_ex( sgbd, query );
+	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 	g_free( query );
 
 	if( result ){
@@ -1464,7 +1465,7 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 			ofo_account_get_type_account( account ),
 			user, stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_account_set_maj_user( account, user );
 		ofo_account_set_maj_stamp( account, &stamp );
@@ -1562,7 +1563,7 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 					stamp_str,
 					prev_number );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_account_set_maj_user( account, user );
 		ofo_account_set_maj_stamp( account, &stamp );
@@ -1652,7 +1653,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 				"	WHERE CPT_NUMBER='%s'",
 						ofo_account_get_number( account ));
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -1699,7 +1700,7 @@ account_do_delete( ofoAccount *account, const ofoSgbd *sgbd )
 			"	WHERE CPT_NUMBER='%s'",
 					ofo_account_get_number( account ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1928,5 +1929,5 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 static gboolean
 account_do_drop_content( const ofoSgbd *sgbd )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_COMPTES" ));
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_COMPTES", TRUE ));
 }

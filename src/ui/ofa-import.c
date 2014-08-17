@@ -32,13 +32,14 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
+#include "api/my-utils.h"
 #include "api/ofa-iimporter.h"
 
-#include "core/my-utils.h"
+#include "core/ofa-plugin.h"
+
 #include "ui/ofa-import.h"
 #include "ui/ofa-importer.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-plugin.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
 #include "api/ofo-devise.h"

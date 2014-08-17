@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -42,7 +43,6 @@
 #include "api/ofo-sgbd.h"
 
 #include "core/my-date.h"
-#include "core/my-utils.h"
 
 /* priv instance data
  */
@@ -233,7 +233,7 @@ on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_i
 		g_free( str );
 	}
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
 
 	g_string_free( query, TRUE );
 }
@@ -260,7 +260,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 		g_free( str );
 	}
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
 
 	g_string_free( query, TRUE );
 }
@@ -286,7 +286,7 @@ on_updated_object_journal_mnemo( const ofoDossier *dossier, const gchar *prev_id
 		g_free( str );
 	}
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
 
 	g_string_free( query, TRUE );
 }
@@ -466,7 +466,7 @@ entry_load_dataset( const ofoSgbd *sgbd, const gchar *where )
 	query = g_string_append( query,
 					"	ORDER BY ECR_DOPE ASC,ECR_DEFFET ASC,ECR_NUMBER ASC" );
 
-	result = ofo_sgbd_query_ex( sgbd, query->str );
+	result = ofo_sgbd_query_ex( sgbd, query->str, TRUE );
 	g_string_free( query, TRUE );
 
 	if( result ){
@@ -581,7 +581,7 @@ entry_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
 					devise );
 
 	count = 0;
-	result = ofo_sgbd_query_ex( sgbd, query );
+	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 	g_free( query );
 
 	if( result ){
@@ -619,7 +619,7 @@ entry_count_for_journal( const ofoSgbd *sgbd, const gchar *journal )
 					journal );
 
 	count = 0;
-	result = ofo_sgbd_query_ex( sgbd, query );
+	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 	g_free( query );
 
 	if( result ){
@@ -1243,7 +1243,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 				user,
 				stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_entry_set_maj_user( entry, user );
 		ofo_entry_set_maj_stamp( entry, &stamp );
@@ -1429,7 +1429,7 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 			stamp_str,
 			ofo_entry_get_number( entry ));
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_entry_set_maj_user( entry, user );
 		ofo_entry_set_maj_stamp( entry, &stamp );
@@ -1489,7 +1489,7 @@ do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd )
 							ofo_entry_get_number( entry ));
 	}
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1529,7 +1529,7 @@ ofo_entry_validate_by_journal( const ofoDossier *dossier, const gchar *mnemo, co
 	query = g_strdup_printf(
 					"SELECT %s FROM OFA_T_ECRITURES %s", entry_list_columns(), where );
 
-	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query );
+	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query, TRUE );
 	g_free( query );
 
 	if( result ){
@@ -1547,7 +1547,7 @@ ofo_entry_validate_by_journal( const ofoDossier *dossier, const gchar *mnemo, co
 									str,
 									ofo_entry_get_number( entry ));
 			g_free( str );
-			ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query );
+			ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
 			g_free( query );
 
 			/* use the dossier signaling system to update the account */
@@ -1595,7 +1595,7 @@ do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 				"	ECR_STATUS=%d WHERE ECR_NUMBER=%u",
 						ENT_STATUS_DELETED, ofo_entry_get_number( entry ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1630,7 +1630,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 					"	ECR_DEV_CODE,ECR_JOU_MNEMO,ECR_COMPTE,ECR_DEBIT,ECR_CREDIT,"
 					"	ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_STATUS,ECR_RAPPRO "
 					"	FROM OFA_T_ECRITURES "
-					"	ORDER BY ECR_NUMBER ASC" );
+					"	ORDER BY ECR_NUMBER ASC", TRUE );
 
 	lines = NULL;
 

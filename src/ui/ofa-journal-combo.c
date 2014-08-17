@@ -28,10 +28,11 @@
 #include <config.h>
 #endif
 
-#include "core/my-utils.h"
-#include "ui/ofa-journal-combo.h"
+#include "api/my-utils.h"
 #include "api/ofo-journal.h"
 #include "api/ofo-dossier.h"
+
+#include "ui/ofa-journal-combo.h"
 
 /* private instance data
  */

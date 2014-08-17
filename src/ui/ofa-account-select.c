@@ -28,9 +28,8 @@
 #include <config.h>
 #endif
 
+#include "api/my-utils.h"
 #include "api/ofo-account.h"
-
-#include "core/my-utils.h"
 
 #include "ui/my-window-prot.h"
 #include "ui/ofa-account-notebook.h"

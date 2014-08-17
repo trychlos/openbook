@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "core/my-utils.h"
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -167,7 +167,7 @@ devise_load_dataset( void )
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT DEV_CODE,DEV_LABEL,DEV_SYMBOL,DEV_DIGITS,"
 			"	DEV_NOTES,DEV_MAJ_USER,DEV_MAJ_STAMP "
-			"	FROM OFA_T_DEVISES" );
+			"	FROM OFA_T_DEVISES", TRUE );
 
 	dataset = NULL;
 
@@ -584,7 +584,7 @@ devise_insert_main( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
 			"'%s','%s')",
 			user, stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_devise_set_maj_user( devise, user );
 		ofo_devise_set_maj_stamp( devise, &stamp );
@@ -663,7 +663,7 @@ devise_do_update( ofoDevise *devise, const gchar *prev_code, const ofoSgbd *sgbd
 			"	DEV_MAJ_USER='%s',DEV_MAJ_STAMP='%s'"
 			"	WHERE DEV_CODE='%s'", user, stamp_str, prev_code );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_devise_set_maj_user( devise, user );
 		ofo_devise_set_maj_stamp( devise, &stamp );
@@ -719,7 +719,7 @@ devise_do_delete( ofoDevise *devise, const ofoSgbd *sgbd )
 			"	WHERE DEV_CODE='%s'",
 					ofo_devise_get_code( devise ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -899,5 +899,5 @@ ofo_devise_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 static gboolean
 devise_do_drop_content( const ofoSgbd *sgbd )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_DEVISES" ));
+	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_DEVISES", TRUE ));
 }

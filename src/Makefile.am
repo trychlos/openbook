@@ -26,5 +26,7 @@ SUBDIRS = \
 	api									\
 	core								\
 	import1								\
+	mysql								\
+	postgre								\
 	ui									\
 	$(NULL)

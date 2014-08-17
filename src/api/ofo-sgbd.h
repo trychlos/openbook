@@ -29,7 +29,7 @@
 
 /**
  * SECTION: ofo_sgbd
- * @short_description: An object which handles the SGBD connexion
+ * @short_description: An object which handles the DBMS connexion
  * @include: api/ofo-sgbd.h
  */
 
@@ -37,38 +37,21 @@
 
 G_BEGIN_DECLS
 
-/**
- * Known SGBD providers
- *
- * MySQL: there is no mandatory information needed to establish a
- *        new connection to the DB server as this one is able to
- *        provide a default value for each field (whether this default
- *        value is suitable for our usage is another story)
- */
-#define SGBD_PROVIDER_MYSQL      "MySQL"
+ofoSgbd     *ofo_sgbd_new          ( const gchar *label );
 
-ofoSgbd *ofo_sgbd_new            ( const gchar *provider );
+gboolean     ofo_sgbd_connect      ( ofoSgbd *sgbd, const gchar *account, const gchar *password,
+										gboolean display_error );
 
-gboolean ofo_sgbd_connect        ( ofoSgbd *sgbd,
-									const gchar *host, guint port, const gchar *socket,
-									const gchar *dbname,
-									const gchar *account, const gchar *password );
+gboolean     ofo_sgbd_connect_ex   ( ofoSgbd *sgbd, const gchar *dbname, const gchar *account, const gchar *password,
+										gboolean display_error );
 
-gboolean ofo_sgbd_connect_ex     ( ofoSgbd *sgbd,
-									const gchar *host, guint port, const gchar *socket,
-									const gchar *dbname,
-									const gchar *account, const gchar *password,
-									gchar **error_msg );
+gboolean     ofo_sgbd_query        ( const ofoSgbd *sgbd, const gchar *query,
+										gboolean display_error );
 
-gboolean ofo_sgbd_query          ( const ofoSgbd *sgbd, const gchar *query );
-gboolean ofo_sgbd_query_ignore   ( const ofoSgbd *sgbd, const gchar *query );
+GSList      *ofo_sgbd_query_ex     ( const ofoSgbd *sgbd, const gchar *query,
+										gboolean display_error );
 
-GSList  *ofo_sgbd_query_ex       ( const ofoSgbd *sgbd, const gchar *query );
-GSList  *ofo_sgbd_query_ex_ignore( const ofoSgbd *sgbd, const gchar *query );
-
-gboolean ofo_sgbd_get_db_exists  ( const ofoSgbd *sgbd, const gchar *dbname );
-
-void     ofo_sgbd_free_result    ( GSList *result );
+void         ofo_sgbd_free_result  ( GSList *result );
 
 G_END_DECLS
 

@@ -31,11 +31,10 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-sgbd.h"
-
-#include "core/my-utils.h"
-#include "core/ofa-settings.h"
 
 #include "ui/my-window-prot.h"
 #include "ui/ofa-dbserver-login.h"
@@ -49,8 +48,6 @@ struct _ofaDBserverLoginPrivate {
 
 	const gchar *p1_provider;
 	const gchar *p1_host;
-	const gchar *p1_port;
-	const gchar *p1_socket;
 	const gchar *p1_dbname;
 
 	gchar       *p2_account;
@@ -68,8 +65,6 @@ static       gchar *st_passwd   = NULL;
 G_DEFINE_TYPE( ofaDBserverLogin, ofa_dbserver_login, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_account_changed( GtkEntry *entry, ofaDBserverLogin *self );
-static void      on_password_changed( GtkEntry *entry, ofaDBserverLogin *self );
 static void      on_remove_account_toggled( GtkToggleButton *button, ofaDBserverLogin *self );
 static void      check_for_enable_dlg( ofaDBserverLogin *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -144,7 +139,7 @@ ofa_dbserver_login_class_init( ofaDBserverLoginClass *klass )
 gboolean
 ofa_dbserver_login_run( ofaMainWindow *main_window,
 		const gchar *name, const gchar *provider,
-		const gchar *host, const gchar *port, const gchar *socket, const gchar *dbname,
+		const gchar *host, const gchar *dbname,
 		gchar **account, gchar **password,
 		gboolean *remove_account )
 {
@@ -167,8 +162,6 @@ ofa_dbserver_login_run( ofaMainWindow *main_window,
 	self->private->name = name;
 	self->private->p1_provider = provider;
 	self->private->p1_host = host;
-	self->private->p1_port = port;
-	self->private->p1_socket = socket;
 	self->private->p1_dbname = dbname;
 
 	if( my_dialog_run_dialog( MY_DIALOG( self )) == GTK_RESPONSE_OK ){
@@ -216,14 +209,6 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	gtk_label_set_text( GTK_LABEL( widget ), priv->p1_host );
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-port" );
-	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	gtk_label_set_text( GTK_LABEL( widget ), priv->p1_port );
-
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-socket" );
-	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	gtk_label_set_text( GTK_LABEL( widget ), priv->p1_socket );
-
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-dbname" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	gtk_label_set_text( GTK_LABEL( widget ), priv->p1_dbname );
@@ -254,59 +239,9 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaDBserverLogin *self )
-{
-	ofaDBserverLoginPrivate *priv;
-	const gchar *account;
-
-	priv = self->private;
-
-	account = gtk_entry_get_text( entry );
-	g_free( priv->p2_account );
-	priv->p2_account = g_strdup( account );
-
-	check_for_enable_dlg( self );
-}
-
-static void
-on_password_changed( GtkEntry *entry, ofaDBserverLogin *self )
-{
-	ofaDBserverLoginPrivate *priv;
-	const gchar *password;
-
-	priv = self->private;
-
-	password = gtk_entry_get_text( entry );
-	g_free( priv->p2_password );
-	priv->p2_password = g_strdup( password );
-
-	check_for_enable_dlg( self );
-}
-
-static void
 on_remove_account_toggled( GtkToggleButton *button, ofaDBserverLogin *self )
 {
 	self->private->p3_remove_account = gtk_toggle_button_get_active( button );
-}
-
-static void
-check_for_enable_dlg( ofaDBserverLogin *self )
-{
-	ofaDBserverLoginPrivate *priv;
-	gboolean enabled;
-	GtkWidget *btn;
-
-	priv = self->private;
-
-	/* #288: enable dlg should not depend of connection check */
-	enabled = priv->p2_account && g_utf8_strlen( priv->p2_account, -1 );
-
-	btn = my_utils_container_get_child_by_name(
-									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
-									"btn-ok" );
-	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-
-	gtk_widget_set_sensitive( btn, enabled );
 }
 
 static gboolean
@@ -315,35 +250,20 @@ v_quit_on_ok( myDialog *dialog )
 	ofaDBserverLoginPrivate *priv;
 	ofoSgbd *sgbd;
 	gboolean ok;
-	gint port;
 
 	priv = OFA_DBSERVER_LOGIN( dialog )->private;
 
 	ofa_settings_set_string( "DBServerLoginDlg-admin-account", priv->p2_account );
 	ofa_settings_set_boolean( "DBServerLoginDlg-remove-account", priv->p3_remove_account );
 
-	sgbd = ofo_sgbd_new( priv->p1_provider );
-	port = 0;
+	sgbd = ofo_sgbd_new( priv->name );
 
-	if( priv->p1_port && g_utf8_strlen( priv->p1_port, -1 )){
-		port = atoi( priv->p1_port );
-	}
-
-	if( ofo_sgbd_connect(
-					sgbd,
-					priv->p1_host,
-					port,
-					priv->p1_socket,
-					NULL,
-					priv->p2_account,
-					priv->p2_password )){
+	if( ofo_sgbd_connect( sgbd, priv->p2_account, priv->p2_password, TRUE )){
 		ok = TRUE;
-
 		g_free( st_passwd );
 		st_passwd = g_strdup( priv->p2_password );
+		g_object_unref( sgbd );
 	}
-
-	g_object_unref( sgbd );
 
 	return( ok );
 }

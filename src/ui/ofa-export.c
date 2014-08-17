@@ -32,9 +32,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "core/my-utils.h"
-#include "ui/ofa-export.h"
-#include "ui/ofa-main-window.h"
+#include "api/my-utils.h"
 #include "api/ofo-class.h"
 #include "api/ofo-account.h"
 #include "api/ofo-devise.h"
@@ -43,6 +41,9 @@
 #include "api/ofo-journal.h"
 #include "api/ofo-model.h"
 #include "api/ofo-taux.h"
+
+#include "ui/ofa-export.h"
+#include "ui/ofa-main-window.h"
 
 static gboolean pref_quit_on_escape = TRUE;
 static gboolean pref_confirm_on_cancel = FALSE;

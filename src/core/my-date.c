@@ -31,7 +31,8 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "core/my-utils.h"
+#include "api/my-utils.h"
+
 #include "core/my-date.h"
 
 /* private instance data

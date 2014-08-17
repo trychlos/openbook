@@ -30,7 +30,7 @@
 
 #include <glib/gi18n.h>
 
-#include "core/my-utils.h"
+#include "api/my-utils.h"
 
 #include "ui/my-window-prot.h"
 #include "ui/my-assistant.h"

@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
 #include "api/ofo-devise.h"
@@ -39,7 +40,6 @@
 #include "api/ofo-journal.h"
 
 #include "core/my-date.h"
-#include "core/my-utils.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-journal-combo.h"

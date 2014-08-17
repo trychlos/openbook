@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -38,7 +39,6 @@
 #include "api/ofo-sgbd.h"
 
 #include "core/my-date.h"
-#include "core/my-utils.h"
 
 /* priv instance data
  */
@@ -199,7 +199,7 @@ bat_load_dataset( void )
 			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_DEVISE,BAT_SOLDE,"
 			"	BAT_NOTES,BAT_MAJ_USER,BAT_MAJ_STAMP "
 			"	FROM OFA_T_BAT "
-			"	ORDER BY BAT_MAJ_STAMP ASC" );
+			"	ORDER BY BAT_MAJ_STAMP ASC", TRUE );
 
 	dataset = NULL;
 
@@ -817,7 +817,7 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_bat_set_maj_user( bat, user );
 		ofo_bat_set_maj_stamp( bat, &stamp );
@@ -837,7 +837,7 @@ bat_get_back_id( ofoBat *bat, const ofoSgbd *sgbd )
 	GSList *result, *icol;
 
 	ok = FALSE;
-	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
+	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()", TRUE );
 
 	if( result ){
 		icol = ( GSList * ) result->data;
@@ -910,7 +910,7 @@ bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 			"	BAT_MAJ_USER='%s',BAT_MAJ_STAMP='%s'"
 			"	WHERE BAT_ID=%d", user, stamp_str, ofo_bat_get_id( bat ));
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_bat_set_maj_user( bat, user );
 		ofo_bat_set_maj_stamp( bat, &stamp );
@@ -967,7 +967,7 @@ bat_do_delete( ofoBat *bat, const ofoSgbd *sgbd )
 			"	WHERE BAT_ID=%d",
 					ofo_bat_get_id( bat ));
 
-	ok = ofo_sgbd_query( sgbd, query );
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
 	g_free( query );
 

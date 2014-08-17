@@ -31,6 +31,8 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -42,7 +44,6 @@
 #include "api/ofo-sgbd.h"
 
 #include "core/my-date.h"
-#include "core/my-utils.h"
 #include "core/ofo-marshal.h"
 
 /* priv instance data
@@ -334,6 +335,7 @@ ofo_dossier_new( const gchar *name )
 	return( dossier );
 }
 
+#if 0
 static gboolean
 check_user_exists( ofoSgbd *sgbd, const gchar *account )
 {
@@ -377,45 +379,34 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 	gtk_dialog_run( GTK_DIALOG( dlg ));
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
 }
+#endif
 
 /**
  * ofo_dossier_open:
  */
 gboolean
-ofo_dossier_open( ofoDossier *dossier,
-		const gchar *host, gint port, const gchar *socket, const gchar *dbname, const gchar *account, const gchar *password )
+ofo_dossier_open( ofoDossier *dossier, const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofo_dossier_open";
+	ofoDossierPrivate *priv;
 	ofoSgbd *sgbd;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
-	g_debug( "%s: dossier=%p, host=%s, port=%d, socket=%s, dbname=%s, account=%s, password=%s",
+	g_debug( "%s: dossier=%p, account=%s, password=%s",
 			thisfn,
-			( void * ) dossier, host, port, socket, dbname, account, password );
+			( void * ) dossier, account, password );
 
-	sgbd = ofo_sgbd_new( SGBD_PROVIDER_MYSQL );
+	priv = dossier->private;
+	sgbd = ofo_sgbd_new( priv->name );
 
-	if( !ofo_sgbd_connect( sgbd,
-			host,
-			port,
-			socket,
-			dbname,
-			account,
-			password )){
-
+	if( !ofo_sgbd_connect( sgbd, account, password, TRUE )){
 		g_object_unref( sgbd );
 		return( FALSE );
 	}
 
-	if( !check_user_exists( sgbd, account )){
-		error_user_not_exists( dossier, account );
-		g_object_unref( sgbd );
-		return( FALSE );
-	}
-
-	dossier->private->sgbd = sgbd;
-	dossier->private->userid = g_strdup( account );
+	priv->sgbd = sgbd;
+	priv->userid = g_strdup( account );
 
 	ofo_dossier_dbmodel_update( sgbd, dossier->private->name, account );
 	connect_objects_handlers( dossier );
@@ -480,7 +471,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 					"UPDATE OFA_T_DOSSIER "
 					"	SET DOS_DEV_CODE='%s' WHERE DOS_DEV_CODE='%s'", code, prev_id );
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
 
 	g_free( query );
 }
@@ -524,8 +515,8 @@ dbmodel_get_version( ofoSgbd *sgbd )
 	GSList *res;
 	gint vmax = 0;
 
-	res = ofo_sgbd_query_ex_ignore( sgbd,
-			"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0" );
+	res = ofo_sgbd_query_ex( sgbd,
+			"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0", FALSE );
 	if( res ){
 		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
 		if( s ){
@@ -552,31 +543,17 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
 			"	VER_NUMBER INTEGER NOT NULL UNIQUE DEFAULT 0     COMMENT 'DB model version number',"
-			"	VER_DATE   TIMESTAMP DEFAULT 0                   COMMENT 'Version application timestamp')" )){
+			"	VER_DATE   TIMESTAMP DEFAULT 0                   COMMENT 'Version application timestamp')",
+			TRUE)){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_VERSION "
-			"	(VER_NUMBER, VER_DATE) VALUES (1, 0)" )){
+			"	(VER_NUMBER, VER_DATE) VALUES (1, 0)",
+			TRUE )){
 		return( FALSE );
 	}
-
-	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_ROLES ("
-				"ROL_USER     VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'User account',"
-				"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role')")){
-		return( FALSE );
-	}
-
-	query = g_strdup_printf(
-			"INSERT IGNORE INTO OFA_T_ROLES "
-			"	(ROL_USER, ROL_IS_ADMIN) VALUES ('%s',1)", account );
-	if( !ofo_sgbd_query( sgbd, query )){
-		g_free( query );
-		return( FALSE );
-	}
-	g_free( query );
 
 	/* defined post v1 */
 	if( !ofo_sgbd_query( sgbd,
@@ -595,7 +572,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ASS_NOTES     VARCHAR(4096)               COMMENT 'Notes',"
 			"	ASS_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
 			"	ASS_MAJ_STAMP TIMESTAMP                   COMMENT 'Last update timestamp'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -611,7 +588,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ASS_EXE_AMORT    INTEGER                  COMMENT 'Montant de l\\'annuite',"
 			"	ASS_EXE_REST     INTEGER                  COMMENT 'Valeur residuelle',"
 			"	CONSTRAINT PRIMARY KEY (ASS_ID,ASS_EXE_NUM)"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -629,7 +606,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	BAT_NOTES     VARCHAR(4096)               COMMENT 'Import notes',"
 			"	BAT_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of import',"
 			"	BAT_MAJ_STAMP TIMESTAMP                   COMMENT 'Import timestamp'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -646,7 +623,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	BAT_LINE_ECR       INTEGER                COMMENT 'Reciliated entry',"
 			"	BAT_LINE_MAJ_USER  VARCHAR(20)            COMMENT 'User responsible of the reconciliation',"
 			"	BAT_LINE_MAJ_STAMP TIMESTAMP              COMMENT 'Reconciliation timestamp'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -657,61 +634,61 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	CLA_NOTES        VARCHAR(4096)                 COMMENT 'Class notes',"
 			"	CLA_MAJ_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
 			"	CLA_MAJ_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (1,'Comptes de capitaux')" )){
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (1,'Comptes de capitaux')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (2,'Comptes d\\'immobilisations')" )){
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (2,'Comptes d\\'immobilisations')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (3,'Comptes de stocks et en-cours')" )){
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (3,'Comptes de stocks et en-cours')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (4,'Comptes de tiers')" )){
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (4,'Comptes de tiers')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (5,'Comptes financiers')" )){
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (5,'Comptes financiers')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (6,'Comptes de charges')" )){
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (6,'Comptes de charges')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (7,'Comptes de produits')" )){
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (7,'Comptes de produits')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (8,'Comptes spéciaux')" )){
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (8,'Comptes spéciaux')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
-			"	(CLA_NUMBER,CLA_LABEL) VALUES (9,'Comptes analytiques')" )){
+			"	(CLA_NUMBER,CLA_LABEL) VALUES (9,'Comptes analytiques')", TRUE )){
 		return( FALSE );
 	}
 
@@ -736,7 +713,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	CPT_BRO_CRE_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture de brouillard imputée au crédit',"
 			"	CPT_BRO_CRE_DATE DATE                          COMMENT 'Date d\\'effet',"
 			"	CPT_BRO_CRE_MNT  DECIMAL(15,5)                 COMMENT 'Montant créditeur écritures en brouillard'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -749,13 +726,13 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	DEV_NOTES     VARCHAR(4096)                          COMMENT 'Currency notes',"
 			"	DEV_MAJ_USER  VARCHAR(20)                            COMMENT 'User responsible of properties last update',"
 			"	DEV_MAJ_STAMP TIMESTAMP                              COMMENT 'Properties last update timestamp'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_DEVISES "
-			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES ('EUR','Euro','€')" )){
+			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES ('EUR','Euro','€')", TRUE )){
 		return( FALSE );
 	}
 
@@ -768,7 +745,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	DOS_DEV_CODE     VARCHAR(3)                   COMMENT 'Default currency identifier',"
 			"	DOS_MAJ_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
 			"	DOS_MAJ_STAMP    TIMESTAMP NOT NULL           COMMENT 'Properties last update timestamp'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -776,7 +753,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_DUREE_EXE,DOS_DEV_CODE) "
 			"	VALUES (1,'%s',%u,'%s')", name, DOS_DEFAULT_LENGTH, "EUR" );
-	if( !ofo_sgbd_query( sgbd, query )){
+	if( !ofo_sgbd_query( sgbd, query, TRUE )){
 		g_free( query );
 		return( FALSE );
 	}
@@ -791,13 +768,13 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	DOS_EXE_LAST_ECR INTEGER                      COMMENT 'Last entry number used',"
 			"	DOS_EXE_STATUS   INTEGER      NOT NULL        COMMENT 'Status of this exercice',"
 			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_ID)"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE "
-			"	(DOS_ID,DOS_EXE_ID,DOS_EXE_STATUS) VALUE (1,1,1)" )){
+			"	(DOS_ID,DOS_EXE_ID,DOS_EXE_STATUS) VALUE (1,1,1)", TRUE )){
 		return( FALSE );
 	}
 
@@ -819,7 +796,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ECR_RAPPRO    DATE                        COMMENT 'Reconciliation date',"
 			"	CONSTRAINT PRIMARY KEY (ECR_DEFFET,ECR_NUMBER),"
 			"	INDEX (ECR_NUMBER)"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -830,7 +807,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	JOU_NOTES     VARCHAR(4096)               COMMENT 'Journal notes',"
 			"	JOU_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	JOU_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -846,7 +823,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	JOU_DEV_CRE      DECIMAL(15,5)            COMMENT 'Current credit balance',"
 			"	JOU_DEV_CRE_DATE DATE                     COMMENT 'Most recent credit entry effect date',"
 			"	CONSTRAINT PRIMARY KEY (JOU_MNEMO,JOU_EXE_ID,JOU_DEV_CODE)"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -856,37 +833,37 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	JOU_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
 			"	JOU_EXE_LAST_CLO DATE                     COMMENT 'Last closing date of the exercice',"
 			"	CONSTRAINT PRIMARY KEY (JOU_MNEMO,JOU_EXE_ID)"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('ACH','Journal des achats','Default')" )){
+			"	VALUES ('ACH','Journal des achats','Default')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('VEN','Journal des ventes','Default')" )){
+			"	VALUES ('VEN','Journal des ventes','Default')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('EXP','Journal de l\\'exploitant','Default')" )){
+			"	VALUES ('EXP','Journal de l\\'exploitant','Default')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('OD','Journal des opérations diverses','Default')" )){
+			"	VALUES ('OD','Journal des opérations diverses','Default')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
-			"	VALUES ('BQ','Journal de banque','Default')" )){
+			"	VALUES ('BQ','Journal de banque','Default')", TRUE )){
 		return( FALSE );
 	}
 
@@ -899,7 +876,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	MOD_NOTES     VARCHAR(4096)               COMMENT 'Model notes',"
 			"	MOD_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	MOD_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -917,7 +894,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	MOD_DET_CREDIT      VARCHAR(80)             COMMENT 'Credit amount',"
 			"	MOD_DET_CREDIT_VER  INTEGER                 COMMENT 'Credit amount is locked',"
 			"	CONSTRAINT PRIMARY KEY (MOD_MNEMO, MOD_DET_RANG)"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -932,7 +909,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	REC_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	REC_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
 			"	REC_LAST      DATE                        COMMENT 'Effect date of the last generation'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -943,7 +920,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	TAX_NOTES     VARCHAR(4096)               COMMENT 'Rate notes',"
 			"	TAX_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	TAX_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -954,7 +931,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	TAX_VAL_FIN       DATE                    COMMENT 'Validity end date',"
 			"	TAX_VAL_TAUX      DECIMAL(15,5)           COMMENT 'Taux value',"
 			"	CONSTRAINT PRIMARY KEY (TAX_MNEMO,TAX_VAL_DEB,TAX_VAL_FIN)"
-			")" )){
+			")", TRUE )){
 		return( FALSE );
 	}
 
@@ -962,7 +939,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	 * as a mark that all has been successfully done
 	 */
 	if( !ofo_sgbd_query( sgbd,
-			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=1" )){
+			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=1", TRUE )){
 		return( FALSE );
 	}
 
@@ -1465,7 +1442,7 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 				"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
 						next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
 
-		ofo_sgbd_query( dossier->private->sgbd, query );
+		ofo_sgbd_query( dossier->private->sgbd, query, TRUE );
 		g_free( query );
 	}
 
@@ -1732,7 +1709,7 @@ dossier_read_properties( ofoDossier *dossier )
 			"	FROM OFA_T_DOSSIER "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
 
-	result = ofo_sgbd_query_ex( dossier->private->sgbd, query );
+	result = ofo_sgbd_query_ex( dossier->private->sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1791,7 +1768,7 @@ dossier_read_exercices( ofoDossier *dossier )
 			"	FROM OFA_T_DOSSIER_EXE "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
 
-	result = ofo_sgbd_query_ex( dossier->private->sgbd, query );
+	result = ofo_sgbd_query_ex( dossier->private->sgbd, query, TRUE );
 
 	g_free( query );
 
@@ -1892,7 +1869,7 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 			"	DOS_MAJ_USER='%s',DOS_MAJ_STAMP='%s'"
 			"	WHERE DOS_ID=%d", user, stamp_str, THIS_DOS_ID );
 
-	if( ofo_sgbd_query( sgbd, query->str )){
+	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 
 		ofo_dossier_set_maj_user( dossier, user );
 		ofo_dossier_set_maj_stamp( dossier, &stamp );
@@ -1941,7 +1918,7 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 				"WHERE DOS_ID=%d AND DOS_EXE_ID=%d",
 					THIS_DOS_ID, dossier->private->current->exe_id );
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 

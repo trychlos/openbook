@@ -28,7 +28,7 @@
 #include <config.h>
 #endif
 
-#include "core/my-utils.h"
+#include "api/my-utils.h"
 
 #include "ui/my-window.h"
 #include "ui/my-window-prot.h"

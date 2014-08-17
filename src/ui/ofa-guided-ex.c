@@ -30,12 +30,11 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-journal.h"
 #include "api/ofo-model.h"
-
-#include "core/my-utils.h"
-#include "core/ofa-settings.h"
 
 #include "ui/ofa-guided-common.h"
 #include "ui/ofa-guided-ex.h"

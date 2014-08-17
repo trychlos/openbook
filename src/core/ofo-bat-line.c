@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -38,7 +39,6 @@
 #include "api/ofo-sgbd.h"
 
 #include "core/my-date.h"
-#include "core/my-utils.h"
 
 /* priv instance data
  */
@@ -190,7 +190,7 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 
 	query = g_string_append( query, "ORDER BY BAT_LINE_VALEUR ASC" );
 
-	result = ofo_sgbd_query_ex( sgbd, query->str );
+	result = ofo_sgbd_query_ex( sgbd, query->str, TRUE );
 	g_string_free( query, TRUE );
 
 	if( result ){
@@ -680,7 +680,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	query = g_string_append( query, ")" );
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -694,7 +694,7 @@ bat_line_get_back_id( ofoBatLine *bat, const ofoSgbd *sgbd )
 	GSList *result, *icol;
 
 	ok = FALSE;
-	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()" );
+	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()", TRUE );
 
 	if( result ){
 		icol = ( GSList * ) result->data;
@@ -764,7 +764,7 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"	WHERE BAT_LINE_ID=%d", ofo_bat_line_get_id( bat ));
 
-	ok = ofo_sgbd_query( sgbd, query->str );
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
