@@ -878,7 +878,7 @@ confirm_database_reinit( sPrivate *priv, const gchar *dbname )
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_DELETE, GTK_RESPONSE_OK,
+			_( "_Reinitialize" ), GTK_RESPONSE_OK,
 			NULL );
 
 	response = gtk_dialog_run( GTK_DIALOG( dialog ));
