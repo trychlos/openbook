@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
@@ -43,7 +44,6 @@
 #include "api/ofo-model.h"
 #include "api/ofo-sgbd.h"
 
-#include "core/my-date.h"
 #include "core/ofo-marshal.h"
 
 /* priv instance data

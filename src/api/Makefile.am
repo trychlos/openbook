@@ -32,6 +32,7 @@ api_include_HEADERS = \
 	\
 	ofa-settings.h										\
 	\
+	my-date.h											\
 	my-utils.h											\
 	ofo-account.h										\
 	ofo-account-def.h									\

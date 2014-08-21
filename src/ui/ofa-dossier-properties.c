@@ -31,10 +31,9 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
-
-#include "core/my-date.h"
 
 #include "ui/my-window-prot.h"
 #include "ui/ofa-devise-combo.h"

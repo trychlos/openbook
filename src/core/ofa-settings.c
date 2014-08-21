@@ -482,6 +482,57 @@ ofa_settings_set_dossier( const gchar *name, ... )
 }
 
 /**
+ * ofa_settings_get_string_list:
+ *
+ * Returns a newly allocated GSList of string, which should be
+ * g_slist_free_full( GSList *, ( GDestroyNotify ) g_free ) by the
+ * caller.
+ */
+GSList *
+ofa_settings_get_string_list( const gchar *key )
+{
+	GSList *list;
+	gchar **array, **i;
+
+	settings_new();
+
+	list = NULL;
+
+	array = g_key_file_get_string_list( st_settings->private->keyfile, GROUP_GENERAL, key, NULL, NULL );
+	if( array ){
+		i = ( gchar ** ) array;
+		while( *i ){
+			list = g_slist_prepend( list, g_strdup( *i ));
+			i++;
+		}
+	}
+	g_strfreev( array );
+
+	return( g_slist_reverse( list ));
+}
+
+/**
+ * ofa_settings_set_string_list:
+ */
+void
+ofa_settings_set_string_list( const gchar *key, const GSList *str_list )
+{
+	GString *string;
+	const GSList *it;
+
+	settings_new();
+
+	string = g_string_new( "" );
+	for( it = str_list ; it ; it = it->next ){
+		g_string_append_printf( string, "%s;", ( const gchar * ) it->data );
+	}
+	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string->str );
+	g_string_free( string, TRUE );
+
+	write_key_file( st_settings );
+}
+
+/**
  * ofa_settings_get_uint_list:
  *
  * Returns a newly allocated GList of int, which should be

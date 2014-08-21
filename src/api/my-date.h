@@ -69,8 +69,8 @@ typedef struct {
 /**
  * myDateFormat:
  *
- * @MY_DATE_DMMM: display the date as 'dd/mm/yyyy'
- * @MY_DATE_DDMM: display the date as 'd mmm yyyy'
+ * @MY_DATE_DMMM: display the date as 'd mmm yyyy'
+ * @MY_DATE_DDMM: display the date as 'dd/mm/yyyy'
  * MY_DATE_SQL:   display the date as 'yyyy-mm-dd'
  */
 typedef enum {

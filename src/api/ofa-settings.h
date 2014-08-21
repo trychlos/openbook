@@ -64,6 +64,9 @@ gchar   *ofa_settings_get_dossier_provider  ( const gchar *name );
 gchar   *ofa_settings_get_dossier_key_string( const gchar *name, const gchar *key );
 gint     ofa_settings_get_dossier_key_uint  ( const gchar *name, const gchar *key );
 
+GSList  *ofa_settings_get_string_list       ( const gchar *key );
+void     ofa_settings_set_string_list       ( const gchar *key, const GSList *str_list );
+
 GList   *ofa_settings_get_uint_list         ( const gchar *key );
 void     ofa_settings_set_uint_list         ( const gchar *key, const GList *uint_list );
 

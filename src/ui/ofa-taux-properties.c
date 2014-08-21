@@ -31,12 +31,11 @@
 #include <glib/gi18n.h>
 #include <stdarg.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-taux.h"
-
-#include "core/my-date.h"
 
 #include "ui/my-window-prot.h"
 #include "ui/ofa-main-window.h"

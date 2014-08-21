@@ -30,12 +30,11 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-
-#include "core/my-date.h"
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-account-select.h"

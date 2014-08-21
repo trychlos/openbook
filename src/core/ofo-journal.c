@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -41,8 +42,6 @@
 #include "api/ofo-journal.h"
 #include "api/ofo-model.h"
 #include "api/ofo-sgbd.h"
-
-#include "core/my-date.h"
 
 /* priv instance data
  */

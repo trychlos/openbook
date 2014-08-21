@@ -30,12 +30,11 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
-
-#include "core/my-date.h"
 
 #include "ui/ofa-bat-common.h"
 

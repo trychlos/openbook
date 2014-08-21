@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
@@ -38,8 +39,6 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
-
-#include "core/my-date.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-journal-combo.h"
@@ -1520,6 +1519,11 @@ set_renderers_editable( ofaViewEntries *self, gboolean editable )
 	}
 }
 
+/*
+ * makes use of the two tree models:
+ * - [priv->tfilter, iter] is the tree model filter
+ * - [tmodel, child_iter] is the underlying list store
+ */
 static void
 on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaViewEntries *self )
 {
