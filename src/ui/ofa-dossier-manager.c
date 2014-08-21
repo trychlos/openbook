@@ -75,6 +75,7 @@ static void      v_init_dialog( myDialog *dialog );
 static void      setup_treeview( ofaDossierManager *self );
 static void      load_in_treeview( ofaDossierManager *self );
 static gint      on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
+static void      on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierManager *self );
 static void      on_dossier_selected( GtkTreeSelection *selection, ofaDossierManager *self );
 static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
@@ -256,6 +257,7 @@ setup_treeview( ofaDossierManager *self )
 			"text", COL_HOST,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_cell_data_func( column, cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -332,6 +334,36 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer us
 	g_free( bname );
 
 	return( cmp );
+}
+
+/*
+ * default to not display journal (resp. account) when selection is made
+ *  per journal (resp. account)
+ *
+ * deleted entries re italic on white background
+ * rough entries are standard (blanck on white)
+ *  - unvalid entries have red foreground
+ * validated entries are on light yellow background
+ */
+static void
+on_cell_data_func( GtkTreeViewColumn *tcolumn,
+						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+						ofaDossierManager *self )
+{
+	gchar *host;
+
+	gtk_tree_model_get( tmodel, iter,
+						COL_HOST, &host,
+						-1 );
+
+	if( !host || !g_utf8_strlen( host, -1 )){
+		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+		gtk_list_store_set( GTK_LIST_STORE( tmodel ), iter,
+							COL_HOST, "localhost",
+							-1 );
+	}
+
+	g_free( host );
 }
 
 static void
