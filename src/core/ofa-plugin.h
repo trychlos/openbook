@@ -104,6 +104,8 @@ const gchar *ofa_plugin_get_name               ( ofaPlugin *plugin );
 
 const gchar *ofa_plugin_get_version_number     ( ofaPlugin *plugin );
 
+void         ofa_plugin_preferences_run        ( ofaPlugin *plugin );
+
 G_END_DECLS
 
 #endif /* __OFA_PLUGIN_H__ */

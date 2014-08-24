@@ -54,7 +54,7 @@ G_BEGIN_DECLS
  * advantage of this call by initializing itself, registering its
  * internal #GType types, etc.
  *
- * An Openbook extension must implement this function in order
+ * An Openbook extension MUST implement this function in order
  * to be considered as a valid candidate to dynamic load.
  *
  * <example>
@@ -139,7 +139,7 @@ const gchar *ofa_extension_get_version_number( void );
  * derived object for each returned #GType type, and associate these objects
  * to this library.
  *
- * A Nautilus-Actions extension must implement this function in order
+ * An Openbook extension MUST implement this function in order
  * to be considered as a valid candidate to dynamic load.
  *
  * <example>
@@ -177,17 +177,23 @@ guint        ofa_extension_list_types        ( const GType **types );
 /**
  * ofa_extension_shutdown:
  *
- * This function is called by the plugin manager when it is about to
- * shutdown itself.
+ * If defined, this function is called by the plugin manager when it is
+ * about to shutdown itself.
  *
  * The dynamically loaded library may take advantage of this call to
  * release any resource, handle, and so on, it may have previously
  * allocated.
- *
- * A Nautilus-Actions extension must implement this function in order
- * to be considered as a valid candidate to dynamic load.
  */
 void         ofa_extension_shutdown          ( void );
+
+/**
+ * ofa_extension_preferences_run:
+ *
+ * If defined, this function should let the user configure his
+ * preferences. Preferences may be written in the user configuration
+ * file via the ofa_settings_xxx() API.
+ */
+void         ofa_extension_preferences_run   ( void );
 
 G_END_DECLS
 

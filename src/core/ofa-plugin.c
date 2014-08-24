@@ -43,7 +43,7 @@ struct _ofaPluginPrivate {
 	GModule  *library;
 	GList    *objects;
 
-	/* api                                                                v1
+	/* api                                                             v1
 	 */
 	gboolean     ( *startup )           ( GTypeModule *module );	/* mandatory */
 	guint        ( *get_api_version )   ( void );					/* opt. */
@@ -51,6 +51,7 @@ struct _ofaPluginPrivate {
 	const gchar *( *get_version_number )( void );					/* opt. */
 	gint         ( *list_types )        ( const GType **types );	/* mandatory */
 	void         ( *shutdown )          ( void );					/* opt. */
+	void         ( *preferences_run )   ( void );					/* opt. */
 };
 
 /* the list of loaded modules is statically maintained
@@ -423,12 +424,9 @@ v_plugin_unload( GTypeModule *gmodule )
 		g_module_close( plugin->private->library );
 	}
 
+	/* reinitialise the mandatory API */
 	plugin->private->startup = NULL;
-	plugin->private->get_api_version = NULL;
-	plugin->private->get_name = NULL;
-	plugin->private->get_version_number = NULL;
 	plugin->private->list_types = NULL;
-	plugin->private->shutdown = NULL;
 }
 
 /*
@@ -532,4 +530,28 @@ ofa_plugin_get_version_number( ofaPlugin *plugin )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_plugin_preferences_run:
+ */
+void
+ofa_plugin_preferences_run( ofaPlugin *plugin )
+{
+	ofaPluginPrivate *priv;
+
+	g_return_if_fail( plugin && OFA_IS_PLUGIN( plugin ));
+
+	priv = plugin->private;
+
+	if( !priv->dispose_has_run ){
+
+		if( !priv->preferences_run ){
+			plugin_check( plugin, "ofa_extension_preferences_run", ( gpointer * ) &priv->preferences_run );
+		}
+
+		if( priv->preferences_run ){
+			priv->preferences_run();
+		}
+	}
 }

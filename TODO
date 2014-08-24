@@ -346,8 +346,6 @@
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
 
- 305 2014- 8-24 have a plugin management menu item
-
  306 2014- 8-24 have a plugin preferences api
 
  307 2014- 8-24 have a plugin save command-line prefs api
@@ -1223,6 +1221,9 @@
  304 2014- 8-24 Archive account balances on intermediate closing
      2014- 8-24 this is not relevant as we are not closing accounts,
                 but journals -> cancelled
+
+ 305 2014- 8-24 have a plugin management menu item
+     2014- 8-24 done - svn #3829
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
