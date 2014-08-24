@@ -124,6 +124,8 @@ openbook_SOURCES = \
 	ofa-model-properties.h								\
 	ofa-models-set.c									\
 	ofa-models-set.h									\
+	ofa-plugin-manager.c								\
+	ofa-plugin-manager.h								\
 	ofa-preferences.c									\
 	ofa-preferences.h									\
 	ofa-print-reconcil.c								\
@@ -175,6 +177,7 @@ ui_files = \
 	ofa-int-closing.ui									\
 	ofa-journal-properties.ui							\
 	ofa-model-properties.ui								\
+	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\
 	ofa-print-reconcil.ui								\
 	ofa-taux-properties.ui								\

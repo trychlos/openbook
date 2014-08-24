@@ -94,7 +94,7 @@ G_BEGIN_DECLS
  * Returns: %TRUE if the initialization is successful, %FALSE else.
  * In this later case, the library is unloaded and no more considered.
  */
-gboolean ofa_extension_startup        ( GTypeModule *module );
+gboolean     ofa_extension_startup           ( GTypeModule *module );
 
 /**
  * ofa_extension_get_api_version:
@@ -109,7 +109,21 @@ gboolean ofa_extension_startup        ( GTypeModule *module );
  *
  * Returns: the version of this API supported by the module.
  */
-guint    ofa_extension_get_api_version( void );
+guint        ofa_extension_get_api_version   ( void );
+
+/**
+ * ofa_extension_get_name:
+ *
+ * Returns: the name of the extension, or %NULL.
+ */
+const gchar *ofa_extension_get_name          ( void );
+
+/**
+ * ofa_extension_get_version_number:
+ *
+ * Returns: the version number of the extension, or %NULL.
+ */
+const gchar *ofa_extension_get_version_number( void );
 
 /**
  * ofa_extension_list_types:
@@ -158,7 +172,7 @@ guint    ofa_extension_get_api_version( void );
  * Returns: the number of #GType types returned in the @types array, not
  * counting the terminating zero item.
  */
-guint    ofa_extension_list_types     ( const GType **types );
+guint        ofa_extension_list_types        ( const GType **types );
 
 /**
  * ofa_extension_shutdown:
@@ -173,7 +187,7 @@ guint    ofa_extension_list_types     ( const GType **types );
  * A Nautilus-Actions extension must implement this function in order
  * to be considered as a valid candidate to dynamic load.
  */
-void     ofa_extension_shutdown       ( void );
+void         ofa_extension_shutdown          ( void );
 
 G_END_DECLS
 

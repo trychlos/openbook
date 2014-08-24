@@ -43,12 +43,14 @@ struct _ofaPluginPrivate {
 	GModule  *library;
 	GList    *objects;
 
-	/* api                                                 v1
+	/* api                                                                v1
 	 */
-	gboolean ( *startup )    ( GTypeModule *module );	/* mandatory */
-	guint    ( *get_version )( void );					/* opt. */
-	gint     ( *list_types ) ( const GType **types );	/* mandatory */
-	void     ( *shutdown )   ( void );					/* opt. */
+	gboolean     ( *startup )           ( GTypeModule *module );	/* mandatory */
+	guint        ( *get_api_version )   ( void );					/* opt. */
+	const gchar *( *get_name )          ( void );					/* opt. */
+	const gchar *( *get_version_number )( void );					/* opt. */
+	gint         ( *list_types )        ( const GType **types );	/* mandatory */
+	void         ( *shutdown )          ( void );					/* opt. */
 };
 
 /* the list of loaded modules is statically maintained
@@ -311,7 +313,8 @@ v_plugin_load( GTypeModule *gmodule )
  *   implemented by the plugin
  * - ofa_extension_startup() and ofa_extension_shutdown() are optional,
  *   and will be called on plugin startup (resp. shutdown) if they exist.
- * - ofa_extension_get_version is optional, and defaults to 1.
+ * - ofa_extension_get_api_version is optional, and defaults to 1.
+ * - ofa_extension_get_version_number is optional, and defaults to NULL.
  */
 static gboolean
 is_an_ofa_plugin( ofaPlugin *plugin )
@@ -339,7 +342,7 @@ plugin_check( ofaPlugin *plugin, const gchar *symbol, gpointer *pfn )
 
 	ok = g_module_symbol( plugin->private->library, symbol, pfn );
 
-	if( !ok || !pfn ){
+	if( !ok ){
 		g_debug("%s: %s: %s: symbol not found", thisfn, plugin->private->path, symbol );
 	}
 
@@ -421,7 +424,9 @@ v_plugin_unload( GTypeModule *gmodule )
 	}
 
 	plugin->private->startup = NULL;
-	plugin->private->get_version = NULL;
+	plugin->private->get_api_version = NULL;
+	plugin->private->get_name = NULL;
+	plugin->private->get_version_number = NULL;
 	plugin->private->list_types = NULL;
 	plugin->private->shutdown = NULL;
 }
@@ -468,24 +473,63 @@ ofa_plugin_free_extensions( GList *extensions )
 	g_list_free( extensions );
 }
 
-/*
- * ofa_plugin_has_id:
- * @module: this #ofaPlugin object.
- * @id: the searched id.
- *
- * Returns: %TRUE if one of the interfaces advertised by the module has
- * the given id, %FALSE else.
+/**
+ * ofa_plugin_get_modules:
  */
-gboolean
-ofa_plugin_has_id( ofaPlugin *plugin, const gchar *id )
+const GList *
+ofa_plugin_get_modules( void )
 {
-	gboolean id_ok;
-	GList *iobj;
+	return(( const GList * ) st_modules );
+}
 
-	id_ok = FALSE;
-	for( iobj = plugin->private->objects ; iobj && !id_ok ; iobj = iobj->next ){
-		g_debug( "ofa_plugin_has_id: object=%s", G_OBJECT_TYPE_NAME( iobj->data ));
+/**
+ * ofa_plugin_get_name:
+ */
+const gchar *
+ofa_plugin_get_name( ofaPlugin *plugin )
+{
+	ofaPluginPrivate *priv;
+
+	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), NULL );
+
+	priv = plugin->private;
+
+	if( !priv->dispose_has_run ){
+
+		if( !priv->get_name ){
+			plugin_check( plugin, "ofa_extension_get_name", ( gpointer * ) &priv->get_name );
+		}
+
+		if( priv->get_name ){
+			return( priv->get_name());
+		}
 	}
 
-	return( id_ok );
+	return( NULL );
+}
+
+/**
+ * ofa_plugin_get_version_number:
+ */
+const gchar *
+ofa_plugin_get_version_number( ofaPlugin *plugin )
+{
+	ofaPluginPrivate *priv;
+
+	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), NULL );
+
+	priv = plugin->private;
+
+	if( !priv->dispose_has_run ){
+
+		if( !priv->get_version_number ){
+			plugin_check( plugin, "ofa_extension_get_version_number", ( gpointer * ) &priv->get_version_number );
+		}
+
+		if( priv->get_version_number ){
+			return( priv->get_version_number());
+		}
+	}
+
+	return( NULL );
 }

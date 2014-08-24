@@ -75,6 +75,28 @@ ofa_extension_get_api_version( void )
 }
 
 /*
+ * ofa_extension_get_name:
+ *
+ * optional, defaults to NULL.
+ */
+const gchar *
+ofa_extension_get_name( void )
+{
+	return( "Tabulated BAT Importer #1" );
+}
+
+/*
+ * ofa_extension_get_version_number:
+ *
+ * optional, defaults to NULL.
+ */
+const gchar *
+ofa_extension_get_version_number( void )
+{
+	return( PACKAGE_VERSION );
+}
+
+/*
  * ofa_extension_list_types:
  *
  * mandatory starting with v. 1.

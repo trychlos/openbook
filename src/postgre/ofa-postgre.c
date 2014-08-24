@@ -48,7 +48,6 @@ static void         instance_finalize( GObject *object );
 
 static void         idbms_iface_init( ofaIDbmsInterface *iface );
 static guint        idbms_get_interface_version( const ofaIDbms *sgbd );
-static const gchar *idbms_get_provider_name( const ofaIDbms *sgbd );
 
 GType
 ofa_postgre_get_type( void )
@@ -167,7 +166,7 @@ idbms_iface_init( ofaIDbmsInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbms_get_interface_version;
-	iface->get_provider_name = idbms_get_provider_name;
+	iface->get_provider_name = ofa_postgre_get_provider_name;
 }
 
 static guint
@@ -176,8 +175,11 @@ idbms_get_interface_version( const ofaIDbms *sgbd )
 	return( 1 );
 }
 
-static const gchar *
-idbms_get_provider_name( const ofaIDbms *sgbd )
+/**
+ * ofa_postgre_get_provider_name:
+ */
+const gchar *
+ofa_postgre_get_provider_name( const ofaIDbms *sgbd )
 {
 	return( "PostgreSQL" );
 }

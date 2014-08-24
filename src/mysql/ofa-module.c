@@ -30,7 +30,7 @@
 
 #include <api/ofa-extension.h>
 
-#include "mysql/ofa-mysql.h"
+#include "ofa-mysql.h"
 
 /* the count of GType types provided by this extension
  * each new GType type must
@@ -72,6 +72,28 @@ ofa_extension_get_api_version( void )
 	g_debug( "%s: version=%d", thisfn, version );
 
 	return( version );
+}
+
+/*
+ * ofa_extension_get_name:
+ *
+ * optional, defaults to NULL.
+ */
+const gchar *
+ofa_extension_get_name( void )
+{
+	return( ofa_mysql_get_provider_name( NULL ));
+}
+
+/*
+ * ofa_extension_get_version_number:
+ *
+ * optional, defaults to NULL.
+ */
+const gchar *
+ofa_extension_get_version_number( void )
+{
+	return( PACKAGE_VERSION );
 }
 
 /*

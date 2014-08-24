@@ -37,6 +37,8 @@
 
 #include <glib-object.h>
 
+#include <api/ofa-idbms.h>
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_POSTGRE                ( ofa_postgre_get_type())
@@ -61,8 +63,11 @@ typedef struct {
 }
 	ofaPostgreClass;
 
-GType ofa_postgre_get_type     ( void );
-void  ofa_postgre_register_type( GTypeModule *module );
+GType        ofa_postgre_get_type         ( void );
+
+void         ofa_postgre_register_type    ( GTypeModule *module );
+
+const gchar *ofa_postgre_get_provider_name( const ofaIDbms *sgbd );
 
 G_END_DECLS
 

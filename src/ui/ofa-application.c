@@ -41,6 +41,7 @@
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-preferences.h"
+#include "ui/ofa-plugin-manager.h"
 
 /* private instance data
  */
@@ -117,16 +118,18 @@ static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer use
 static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_version( ofaApplication *application );
 
 static const GActionEntry st_app_entries[] = {
-		{ "manage",     on_manage,     NULL, NULL, NULL },
-		{ "new",        on_new,        NULL, NULL, NULL },
-		{ "open",       on_open,       NULL, NULL, NULL },
-		{ "user_prefs", on_user_prefs, NULL, NULL, NULL },
-		{ "quit",       on_quit,       NULL, NULL, NULL },
-		{ "about",      on_about,      NULL, NULL, NULL },
+		{ "manage",        on_manage,        NULL, NULL, NULL },
+		{ "new",           on_new,           NULL, NULL, NULL },
+		{ "open",          on_open,          NULL, NULL, NULL },
+		{ "user_prefs",    on_user_prefs,    NULL, NULL, NULL },
+		{ "quit",          on_quit,          NULL, NULL, NULL },
+		{ "plugin_manage", on_plugin_manage, NULL, NULL, NULL },
+		{ "about",         on_about,         NULL, NULL, NULL },
 };
 
 static const gchar  *st_appmenu_xml = PKGUIDIR "/ofa-app-menubar.ui";
@@ -753,6 +756,22 @@ on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	} else {
 		g_application_quit( G_APPLICATION( application ));
 	}
+}
+
+static void
+on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_application_on_plugin_manage";
+	ofaApplicationPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+	priv = OFA_APPLICATION( user_data )->private;
+	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+
+	ofa_plugin_manager_run( priv->main_window );
 }
 
 static void

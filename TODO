@@ -346,7 +346,15 @@
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
 
- 305
+ 305 2014- 8-24 have a plugin management menu item
+
+ 306 2014- 8-24 have a plugin preferences api
+
+ 307 2014- 8-24 have a plugin save command-line prefs api
+
+ 308 2014- 8-24 have MySQL implements save command-line
+
+ 309 2014- 8-24 have a save dossier menu item
 
 -----------------------------------------------------------------------
  DONE
