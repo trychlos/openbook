@@ -1151,7 +1151,7 @@ display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DDMM );
 	sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
 	scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
-	d = ofo_entry_get_rappro( entry );
+	d = ofo_entry_get_rappro_dval( entry );
 	if( d && g_date_valid( d )){
 		srappro = my_date_to_str( d, MY_DATE_DDMM );
 	} else {

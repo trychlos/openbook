@@ -1040,7 +1040,7 @@ do_fetch( ofaRappro *self )
 		sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DDMM );
 		sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
 		scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
-		drappro = ofo_entry_get_rappro( entry );
+		drappro = ofo_entry_get_rappro_dval( entry );
 		sdrap = my_date_to_str( drappro, MY_DATE_DDMM );
 
 		gtk_tree_store_insert_with_values(
@@ -1572,7 +1572,7 @@ reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkT
 	batline = NULL;
 
 	/* set the reconciliation date in the entry */
-	ofo_entry_set_rappro( entry, is_valid_rappro ? drappro : NULL );
+	ofo_entry_set_rappro_dval( entry, is_valid_rappro ? drappro : NULL );
 
 	/* update the child bat line if it exists
 	 * we work on child model because 'gtk_tree_model_iter_has_child'

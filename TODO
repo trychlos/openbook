@@ -337,9 +337,6 @@
 
  282 2014- 7-14 move export to myAssistant
 
- 291 2014- 7-19 DossierManage: if host is empty, display 'localhost'
-                in italics
-
  296 2014- 7-20 creating a new dossier with an existing database needs
                 to insert the new admin user from root account (else
                 the new user will not be able to connect for updating
@@ -351,7 +348,9 @@
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
 
- 304
+ 304 2014- 8-24 Archive account balances on intermdiate closing
+
+ 305
 
 -----------------------------------------------------------------------
  DONE
@@ -1170,6 +1169,10 @@
                 before g_return_if_fail (in order to know why something
                 fails)
      2014- 7-18 done
+
+ 291 2014- 7-19 DossierManage: if host is empty, display 'localhost'
+                in italics
+     2014- 8-21 done - svn #3823
 
  292 2014- 7-19 DossierManage: be able to update external dossier
                 properties (those which are displayed by dossier

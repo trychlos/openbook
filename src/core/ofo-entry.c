@@ -63,6 +63,8 @@ struct _ofoEntryPrivate {
 	gchar         *maj_user;
 	GTimeVal       maj_stamp;
 	GDate          rappro;
+	gchar         *rappro_user;
+	GTimeVal       rappro_stamp;
 };
 
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
@@ -85,7 +87,7 @@ static void         error_acc_currency( const ofoDossier *dossier, const gchar *
 static void         error_amounts( gdouble debit, gdouble credit );
 static void         error_entry( const gchar *message );
 static gboolean     entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
-static gboolean     do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd );
+static gboolean     do_update_rappro( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 
 static void
@@ -328,11 +330,11 @@ ofo_entry_get_dataset_by_concil( const ofoDossier *dossier, const gchar *account
 	switch( mode ){
 		case ENT_CONCILED_YES:
 			g_string_append_printf( where,
-				"	AND ECR_RAPPRO!=0" );
+				"	AND ECR_RAPPRO_DVAL!=0" );
 			break;
 		case ENT_CONCILED_NO:
 			g_string_append_printf( where,
-				"	AND ECR_RAPPRO=0" );
+				"	AND ECR_RAPPRO_DVAL=0" );
 			break;
 		case ENT_CONCILED_ALL:
 			break;
@@ -433,7 +435,7 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 
 	where = g_string_new( "" );
 	g_string_append_printf( where, "ECR_COMPTE='%s' ", account );
-	g_string_append_printf( where, "AND ECR_RAPPRO=0 " );
+	g_string_append_printf( where, "AND ECR_RAPPRO_DVAL=0 " );
 
 	str = my_date_to_str( date, MY_DATE_SQL );
 	g_string_append_printf( where, "AND ECR_DEFFET <= '%s'", str );
@@ -488,7 +490,8 @@ entry_list_columns( void )
 	return( "ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
 			"	ECR_COMPTE,"
 			"	ECR_DEV_CODE,ECR_JOU_MNEMO,ECR_DEBIT,ECR_CREDIT,"
-			"	ECR_STATUS,ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_RAPPRO " );
+			"	ECR_STATUS,ECR_MAJ_USER,ECR_MAJ_STAMP,"
+			"	ECR_RAPPRO_DVAL,ECR_RAPPRO_USER,ECR_RAPPRO_STAMP " );
 }
 
 static ofoEntry *
@@ -539,7 +542,16 @@ entry_parse_result( const GSList *row )
 		icol = icol->next;
 		if( icol->data ){
 			my_date_set_from_sql( &date, ( const gchar * ) icol->data );
-			ofo_entry_set_rappro( entry, &date );
+			ofo_entry_set_rappro_dval( entry, &date );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			ofo_entry_set_rappro_user( entry, ( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			ofo_entry_set_rappro_stamp( entry,
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 		}
 	}
 	return( entry );
@@ -807,22 +819,6 @@ ofo_entry_get_status( const ofoEntry *entry )
 }
 
 /**
- * ofo_entry_get_rappro:
- */
-const GDate *
-ofo_entry_get_rappro( const ofoEntry *entry )
-{
-	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
-
-	if( !OFO_BASE( entry )->prot->dispose_has_run ){
-
-		return(( const GDate * ) &entry->private->rappro );
-	}
-
-	return( NULL );
-}
-
-/**
  * ofo_entry_get_maj_user:
  */
 const gchar *
@@ -850,6 +846,56 @@ ofo_entry_get_maj_stamp( const ofoEntry *entry )
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		return(( const GTimeVal * ) &entry->private->maj_stamp );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_entry_get_rappro_dval:
+ */
+const GDate *
+ofo_entry_get_rappro_dval( const ofoEntry *entry )
+{
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return(( const GDate * ) &entry->private->rappro );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_entry_get_rappro_user:
+ */
+const gchar *
+ofo_entry_get_rappro_user( const ofoEntry *entry )
+{
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return(( const gchar * ) entry->private->rappro_user );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_entry_get_rappro_stamp:
+ */
+const GTimeVal *
+ofo_entry_get_rappro_stamp( const ofoEntry *entry )
+{
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return(( const GTimeVal * ) &entry->private->rappro_stamp );
 	}
 
 	g_assert_not_reached();
@@ -1053,12 +1099,12 @@ ofo_entry_set_maj_stamp( ofoEntry *entry, const GTimeVal *maj_stamp )
 }
 
 /**
- * ofo_entry_set_rappro:
+ * ofo_entry_set_rappro_dval:
  *
  * The reconciliation may be unset by setting @drappro to %NULL.
  */
 void
-ofo_entry_set_rappro( ofoEntry *entry, const GDate *drappro )
+ofo_entry_set_rappro_dval( ofoEntry *entry, const GDate *drappro )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 
@@ -1069,6 +1115,35 @@ ofo_entry_set_rappro( ofoEntry *entry, const GDate *drappro )
 		} else {
 			g_date_clear( &entry->private->rappro, 1 );
 		}
+	}
+}
+
+/**
+ * ofo_entry_set_rappro_user:
+ */
+void
+ofo_entry_set_rappro_user( ofoEntry *entry, const gchar *rappro_user )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		g_free( entry->private->rappro_user );
+		entry->private->rappro_user = g_strdup( rappro_user );
+	}
+}
+
+/**
+ * ofo_entry_set_rappro_stamp:
+ */
+void
+ofo_entry_set_rappro_stamp( ofoEntry *entry, const GTimeVal *rappro_stamp )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		memcpy( &entry->private->rappro_stamp, rappro_stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -1457,33 +1532,44 @@ ofo_entry_update_rappro( ofoEntry *entry, const ofoDossier *dossier )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( do_update_rappro( entry, ofo_dossier_get_sgbd( dossier )));
+		return( do_update_rappro(
+						entry,
+						ofo_dossier_get_user( dossier ),
+						ofo_dossier_get_sgbd( dossier )));
 	}
 
 	return( FALSE );
 }
 
 static gboolean
-do_update_rappro( ofoEntry *entry, const ofoSgbd *sgbd )
+do_update_rappro( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd )
 {
 	gchar *query, *srappro;
 	const GDate *rappro;
 	gboolean ok;
+	GTimeVal stamp;
+	gchar *stamp_str;
 
-	rappro = ofo_entry_get_rappro( entry );
+	rappro = ofo_entry_get_rappro_dval( entry );
+
 	if( g_date_valid( rappro )){
 
 		srappro = my_date_to_str( rappro, MY_DATE_SQL );
+		my_utils_stamp_get_now( &stamp );
+		stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 		query = g_strdup_printf(
 					"UPDATE OFA_T_ECRITURES"
-					"	SET ECR_RAPPRO='%s'"
+					"	SET ECR_RAPPRO_DVAL='%s',ECR_RAPPRO_USER='%s',ECR_RAPPRO_STAMP='%s'"
 					"	WHERE ECR_NUMBER=%d",
-							srappro, ofo_entry_get_number( entry ));
+							srappro, user, stamp_str,
+							ofo_entry_get_number( entry ));
+		g_free( stamp_str );
 		g_free( srappro );
+
 	} else {
 		query = g_strdup_printf(
 					"UPDATE OFA_T_ECRITURES"
-					"	SET ECR_RAPPRO=NULL"
+					"	SET ECR_RAPPRO_DVAL=NULL,ECR_RAPPRO_USER=NULL,ECR_RAPPRO_STAMP=NULL"
 					"	WHERE ECR_NUMBER=%d",
 							ofo_entry_get_number( entry ));
 	}
@@ -1627,7 +1713,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ),
 					"SELECT ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
 					"	ECR_DEV_CODE,ECR_JOU_MNEMO,ECR_COMPTE,ECR_DEBIT,ECR_CREDIT,"
-					"	ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_STATUS,ECR_RAPPRO "
+					"	ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_STATUS,ECR_RAPPRO_DVAL "
 					"	FROM OFA_T_ECRITURES "
 					"	ORDER BY ECR_NUMBER ASC", TRUE );
 
@@ -1672,7 +1758,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
 		my_date_set_from_sql( &datesql, ( const gchar * ) icol->data );
-		ofo_entry_set_rappro( entry, &datesql );
+		ofo_entry_set_rappro_dval( entry, &datesql );
 
 		sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 		sdeffet = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
@@ -1680,7 +1766,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		muser = ofo_entry_get_maj_user( entry );
 		stamp = my_utils_stamp_to_str( ofo_entry_get_maj_stamp( entry ), MY_STAMP_YYMDHMS );
 
-		date = ofo_entry_get_rappro( entry );
+		date = ofo_entry_get_rappro_dval( entry );
 		sdrappro = my_date_to_str( date, MY_DATE_SQL );
 
 		str = g_strdup_printf( "%s;%s;%d;%s;%s;%s;%s;%s;%.2lf;%.2lf;%s;%s;%d;%s",
