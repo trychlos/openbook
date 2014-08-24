@@ -30,7 +30,7 @@
 /**
  * SECTION: ofa_int_closing
  * @short_description: #ofaIntClosing class definition.
- * @include: ui/ofa-journal-properties.h
+ * @include: ui/ofa-int-closing.h
  *
  * Run an intermediate closing on the selected journals.
  */

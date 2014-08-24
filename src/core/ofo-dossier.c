@@ -717,6 +717,20 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
+	/*
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_ACC_CLOSINGS ("
+			"	CPT_NUMBER       VARCHAR(20) BINARY NOT NULL   COMMENT 'Account number',"
+			"	CPT_CLOSING      DATE                          COMMENT 'Closing date',"
+			"	CPT_EXE_ID       INTEGER                       COMMENT 'Exercice identifier',"
+			"	CPT_DEB_MNT      DECIMAL(15,5)                 COMMENT 'Validated entries debit balance',"
+			"	CPT_CRE_MNT      DECIMAL(15,5)                 COMMENT 'Validated entries credit balance',"
+			"	CONSTRAINT PRIMARY KEY (CPT_NUMBER,CPT_CLOSING)"
+			")", TRUE )){
+		return( FALSE );
+	}
+	*/
+
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
 			"	DEV_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"

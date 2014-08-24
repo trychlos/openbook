@@ -264,8 +264,6 @@
                 src/ui/ofa-taux-set.h
                 src/ui/ofa-view-entries.h
 
- 249 2014- 6-20 record user and stamp on entry reconciliation
-
  252 2014- 6-23 make the ofoBase objects members of a dynamic loadable
                 library (not a dynamically loadabled plugin) of same
                 version than sgbd (i.e. 1 as for now)
@@ -347,8 +345,6 @@
                 none of the candidate admin accounts are used in
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
-
- 304 2014- 8-24 Archive account balances on intermdiate closing
 
  305
 
@@ -1069,6 +1065,9 @@
                 has_export
      2014- 6-20 done - svn #3739
 
+ 249 2014- 6-20 record user and stamp on entry reconciliation
+     2014- 8-24 done - svn #3824
+
  250 2014- 6-20 Print Reconciliation: display dates as dd/mm/yyyy
      2014- 6-27 done
 
@@ -1212,6 +1211,10 @@
      2014- 8-17 eventually the interface is named ofaIDbms, but the
                 convenience object ofoSgbd keeps to be named like that
      2014- 8-17 closed
+
+ 304 2014- 8-24 Archive account balances on intermediate closing
+     2014- 8-24 this is not relevant as we are not closing accounts,
+                but journals -> cancelled
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
