@@ -21,7 +21,7 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id: ofa-mysql-dossier-new.c 3816 2014-08-17 14:01:32Z  $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
