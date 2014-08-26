@@ -21,7 +21,7 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id: ofa-ipreferences.c 3639 2014-06-05 22:27:39Z  $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
