@@ -21,7 +21,7 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id: ofa-ipreferences.h 3802 2014-08-17 10:15:45Z  $
+ * $Id$
  */
 
 #ifndef __OPENBOOK_API_OFA_IPREFERENCES_H__
