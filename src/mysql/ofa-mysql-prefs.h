@@ -21,7 +21,7 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id: ofa-mysql-dossier-new.h 3807 2014-08-17 10:18:03Z  $
+ * $Id$
  */
 
 #ifndef __OFA_MYSQL_PREFS_H__
