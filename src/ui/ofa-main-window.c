@@ -36,6 +36,7 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-backup.h"
 #include "ui/ofa-bat-set.h"
 #include "ui/ofa-classes-set.h"
 #include "ui/ofa-devises-set.h"
@@ -87,6 +88,7 @@ enum {
 /* the actions handled from the menubar
  */
 static void on_properties      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_backup          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_close           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_guided      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_view_entries( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -105,6 +107,7 @@ static void on_ref_batfiles    ( GSimpleAction *action, GVariant *parameter, gpo
 
 static const GActionEntry st_dos_entries[] = {
 		{ "properties",   on_properties,       NULL, NULL, NULL },
+		{ "backup",       on_backup,           NULL, NULL, NULL },
 		{ "close",        on_close,            NULL, NULL, NULL },
 		{ "guided",       on_ope_guided,       NULL, NULL, NULL },
 		{ "entries",      on_ope_view_entries, NULL, NULL, NULL },
@@ -861,6 +864,23 @@ on_update_properties_cleanup_handler( ofaMainWindow *window )
 	static const gchar *thisfn = "ofa_main_window_on_update_properties_cleanup_handler";
 
 	g_debug( "%s: window=%p", thisfn, ( void * ) window );
+}
+
+static void
+on_backup( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_backup";
+	ofaMainWindowPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+	priv = OFA_MAIN_WINDOW( user_data )->private;
+
+	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
+
+	ofa_backup_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void

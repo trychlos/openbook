@@ -33,6 +33,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-ipreferences.h"
 #include "api/ofa-settings.h"
 
 #include "ui/my-window-prot.h"
@@ -65,6 +66,10 @@ struct _ofaPreferencesPrivate {
 	gboolean               p3_accept_comma;
 	gchar                 *p3_decimal_sep;
 	gchar                 *p3_thousand_sep;
+
+	/* UI - Plugins
+	 */
+	GList                 *plugs;
 };
 
 static const gchar *st_assistant_quit_on_escape    = "AssistantQuitOnEscape";
@@ -100,24 +105,36 @@ static const FmtDate st_fmt_date[] = {
 #define DATA_DECIMAL                        "ofa-data-decimal"
 #define DATA_SEPARATOR                      "ofa-data-separator"
 
+typedef struct {
+	ofaIPreferences *object;
+	GtkWidget       *page;
+}
+	pagePlugin;
+
+typedef void ( *pfnPlugin )( ofaPreferences *, ofaIPreferences * );
+
 G_DEFINE_TYPE( ofaPreferences, ofa_preferences, MY_TYPE_DIALOG )
 
-static void      v_init_dialog( myDialog *dialog );
-static void      init_quit_assistant_page( ofaPreferences *self );
-static void      init_dossier_delete_page( ofaPreferences *self );
-static void      init_locales_page( ofaPreferences *self );
-static void      init_locale_date( ofaPreferences *self, const gchar *wname, const gchar *pref, gint *pdata, gint def_value );
-static void      init_locale_decimal( ofaPreferences *self, const gchar *wname, GSList *slist, const gchar *sep, gboolean *pdata );
-static gint      find_str( const gchar *a, const gchar *b );
-static void      init_locale_sep( ofaPreferences *self, const gchar *wname, const gchar *pref, gchar **pdata, const gchar *def_value );
-static void      on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void      on_format_date_changed( GtkComboBox *combo, ofaPreferences *self );
-static void      on_decimal_toggled( GtkToggleButton *check, ofaPreferences *self );
-static void      on_sep_changed( GtkCellEditable *editable, ofaPreferences *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaPreferences *self );
-static void      do_update_assistant_page( ofaPreferences *self );
-static void      do_update_locales_page( ofaPreferences *self );
+static void       v_init_dialog( myDialog *dialog );
+static void       init_quit_assistant_page( ofaPreferences *self );
+static void       init_dossier_delete_page( ofaPreferences *self );
+static void       init_locales_page( ofaPreferences *self );
+static void       init_locale_date( ofaPreferences *self, const gchar *wname, const gchar *pref, gint *pdata, gint def_value );
+static void       init_locale_decimal( ofaPreferences *self, const gchar *wname, GSList *slist, const gchar *sep, gboolean *pdata );
+static gint       find_str( const gchar *a, const gchar *b );
+static void       init_locale_sep( ofaPreferences *self, const gchar *wname, const gchar *pref, gchar **pdata, const gchar *def_value );
+static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
+static void       init_plugin_page( ofaPreferences *self, ofaIPreferences *plugin );
+static void       on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void       on_format_date_changed( GtkComboBox *combo, ofaPreferences *self );
+static void       on_decimal_toggled( GtkToggleButton *check, ofaPreferences *self );
+static void       on_sep_changed( GtkCellEditable *editable, ofaPreferences *self );
+static gboolean   v_quit_on_ok( myDialog *dialog );
+static gboolean   do_update( ofaPreferences *self );
+static void       do_update_assistant_page( ofaPreferences *self );
+static void       do_update_locales_page( ofaPreferences *self );
+static void       update_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
+static GtkWidget *find_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
 
 static void
 preferences_finalize( GObject *instance )
@@ -152,6 +169,9 @@ preferences_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->dd_prefs );
+
+		g_list_free_full( priv->plugs, ( GDestroyNotify ) g_free );
+		priv->plugs = NULL;
 	}
 
 	/* chain up to the parent class */
@@ -192,7 +212,7 @@ ofa_preferences_class_init( ofaPreferencesClass *klass )
  * Update the properties of an dossier
  */
 gboolean
-ofa_preferences_run( ofaMainWindow *main_window )
+ofa_preferences_run( ofaMainWindow *main_window, ofaPlugin *plugin )
 {
 	static const gchar *thisfn = "ofa_preferences_run";
 	ofaPreferences *self;
@@ -224,6 +244,7 @@ v_init_dialog( myDialog *dialog )
 	init_quit_assistant_page( OFA_PREFERENCES( dialog ));
 	init_dossier_delete_page( OFA_PREFERENCES( dialog ));
 	init_locales_page( OFA_PREFERENCES( dialog ));
+	enumerate_prefs_plugins( OFA_PREFERENCES( dialog ), init_plugin_page );
 }
 
 static void
@@ -415,6 +436,47 @@ init_locale_sep( ofaPreferences *self, const gchar *wname, const gchar *pref, gc
 }
 
 static void
+enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn )
+{
+	GList *list, *it;
+
+	list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IPREFERENCES );
+
+	for( it=list ; it ; it=it->next ){
+		( *pfn )( self, OFA_IPREFERENCES( it->data ));
+	}
+
+	ofa_plugin_free_extensions( list );
+}
+
+/*
+ * @instance: an object maintained by a plugin, which implements our
+ *  IPreferences interface.
+ *
+ * add a page to the notebook for each plugin which implements the
+ * ofaIPreferences interface
+ */
+static void
+init_plugin_page( ofaPreferences *self, ofaIPreferences *instance )
+{
+	GtkWindow *toplevel;
+	GtkWidget *book;
+	GtkWidget *page;
+	pagePlugin *splug;
+
+	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
+	book = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "notebook" );
+
+	page = ofa_ipreferences_run_init( instance, GTK_NOTEBOOK( book ));
+
+	splug = g_new0( pagePlugin, 1 );
+	splug->object = instance;
+	splug->page = page;
+
+	self->private->plugs = g_list_append( self->private->plugs, splug );
+}
+
+static void
 on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 {
 	gtk_widget_set_sensitive(
@@ -474,6 +536,7 @@ do_update( ofaPreferences *self )
 	do_update_assistant_page( self );
 	ofa_dossier_delete_prefs_set_settings( priv->dd_prefs );
 	do_update_locales_page( self );
+	enumerate_prefs_plugins( self, update_prefs_plugin );
 
 	priv->updated = TRUE;
 
@@ -558,4 +621,31 @@ do_update_locales_page( ofaPreferences *self )
 
 	ofa_settings_set_string( "AmountDecimalSep", priv->p3_decimal_sep );
 	ofa_settings_set_string( "AmountThousandSep", priv->p3_thousand_sep );
+}
+
+static void
+update_prefs_plugin( ofaPreferences *self, ofaIPreferences *instance )
+{
+	GtkWidget *page;
+
+	page = find_prefs_plugin( self, instance );
+	g_return_if_fail( page && GTK_IS_WIDGET( page ));
+
+	ofa_ipreferences_run_done( instance, page );
+}
+
+static GtkWidget *
+find_prefs_plugin( ofaPreferences *self, ofaIPreferences *instance )
+{
+	GList *it;
+	pagePlugin *splug;
+
+	for( it=self->private->plugs ; it ; it=it->next ){
+		splug = ( pagePlugin * ) it->data;
+		if( splug->object == instance ){
+			return( splug->page );
+		}
+	}
+
+	return( NULL );
 }

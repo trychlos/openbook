@@ -42,6 +42,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql.h										\
 	ofa-mysql-dossier-new.c							\
 	ofa-mysql-dossier-new.h							\
+	ofa-mysql-prefs.c								\
+	ofa-mysql-prefs.h								\
 	ofa-module.c									\
 	$(NULL)
 
@@ -57,6 +59,7 @@ libofa_mysql_la_LDFLAGS = \
 
 ui_files = \
 	ofa-mysql-dossier-new.piece.ui					\
+	ofa-mysql-prefs.piece.ui						\
 	$(NULL)
 
 images_files = \

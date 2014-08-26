@@ -36,6 +36,8 @@
  * i.e. user preferences which are not attached to any dossier.
  */
 
+#include "core/ofa-plugin.h"
+
 #include "ui/my-dialog.h"
 #include "ui/ofa-main-window-def.h"
 
@@ -65,7 +67,7 @@ typedef struct {
 
 GType    ofa_preferences_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_preferences_run     ( ofaMainWindow *parent );
+gboolean ofa_preferences_run     ( ofaMainWindow *parent, ofaPlugin *plugin );
 
 /* these are helpers available to the rest of the application
  */

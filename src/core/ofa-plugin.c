@@ -351,7 +351,7 @@ plugin_check( ofaPlugin *plugin, const gchar *symbol, gpointer *pfn )
 }
 
 /*
- * The 'na_extension_startup' function of the plugin has been already
+ * The 'extension_startup()' function of the plugin has been already
  * called ; the GType types the plugin provides have so already been
  * registered in the GType system
  *
@@ -473,11 +473,43 @@ ofa_plugin_free_extensions( GList *extensions )
 
 /**
  * ofa_plugin_get_modules:
+ *
+ * Returns the current list of #ofaPlugin objects, which correspond to
+ * the list of dynamically loaded libraries.
+ *
+ * We're reminding that each #ofaPlugin object returned in this list
+ * itself maintains a list of GObjects which themselves implement one
+ * or more application interfaces.
  */
 const GList *
 ofa_plugin_get_modules( void )
 {
 	return(( const GList * ) st_modules );
+}
+
+/**
+ * ofa_plugin_implements_type:
+ */
+gboolean
+ofa_plugin_implements_type( const ofaPlugin *plugin, GType type )
+{
+	ofaPluginPrivate *priv;
+	GList *io;
+
+	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), FALSE );
+
+	priv = plugin->private;
+
+	if( !priv->dispose_has_run ){
+
+		for( io = priv->objects ; io ; io = io->next ){
+			if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( io->data ), type )){
+				return( TRUE );
+			}
+		}
+	}
+
+	return( FALSE );
 }
 
 /**
@@ -530,28 +562,4 @@ ofa_plugin_get_version_number( ofaPlugin *plugin )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofa_plugin_preferences_run:
- */
-void
-ofa_plugin_preferences_run( ofaPlugin *plugin )
-{
-	ofaPluginPrivate *priv;
-
-	g_return_if_fail( plugin && OFA_IS_PLUGIN( plugin ));
-
-	priv = plugin->private;
-
-	if( !priv->dispose_has_run ){
-
-		if( !priv->preferences_run ){
-			plugin_check( plugin, "ofa_extension_preferences_run", ( gpointer * ) &priv->preferences_run );
-		}
-
-		if( priv->preferences_run ){
-			priv->preferences_run();
-		}
-	}
 }

@@ -726,7 +726,7 @@ on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	priv = OFA_APPLICATION( user_data )->private;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_preferences_run( priv->main_window );
+	ofa_preferences_run( priv->main_window, NULL );
 }
 
 /*

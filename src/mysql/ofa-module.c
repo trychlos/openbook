@@ -34,7 +34,7 @@
 
 /* the count of GType types provided by this extension
  * each new GType type must
- * - be registered in ofa_extension_startup()
+ * - be registered from within ofa_extension_startup()
  * - be addressed in ofa_extension_list_types().
  */
 #define OFA_TYPES_COUNT	1
@@ -82,7 +82,7 @@ ofa_extension_get_api_version( void )
 const gchar *
 ofa_extension_get_name( void )
 {
-	return( ofa_mysql_get_provider_name( NULL ));
+	return( "MySQL Library" );
 }
 
 /*

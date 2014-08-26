@@ -61,6 +61,8 @@ openbook_SOURCES = \
 	ofa-account-select.h								\
 	ofa-application.c									\
 	ofa-application.h									\
+	ofa-backup.c										\
+	ofa-backup.h										\
 	ofa-bat-common.c									\
 	ofa-bat-common.h									\
 	ofa-bat-properties.c								\
@@ -106,6 +108,7 @@ openbook_SOURCES = \
 	ofa-importer.h										\
 	ofa-int-closing.c									\
 	ofa-int-closing.h									\
+	ofa-ipreferences.c									\
 	ofa-journal-combo.c									\
 	ofa-journal-combo.h									\
 	ofa-journal-properties.c							\

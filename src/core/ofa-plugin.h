@@ -38,24 +38,25 @@
  *  +- is derived from GTypeModule
  *      +- which itself implements GTypePlugin
  *
- * Each #ofaPlugin physically corresponds to a dynamically loadable
- * library (i.e. a plugin). An #ofaPlugin implements one or more
- * interfaces, thus providing one or more services.
- *
- * Interfaces (resp. services) are implemented (resp. provided) by
- * GObjects which are dynamically instantiated at plugin initial-load
- * time.
+ * Model view:
+ * [plugin]<-1,1->[dynamic libray]<-1,N->[internal_types]
+ *         <-1,N->[objects_of_internal_type]
  *
  * So the dynamic is as follows:
- * - #ofaApplication scans for the PKGLIBDIR directory, trying to
- *   dynamically load all found libraries
- * - to be considered as an OFA plugin, a library must implement some
- *   functions (see api/ofa-extension.h)
- * - for each found plugin, #ofaApplication calls ofa_api_list_types()
- *   which returns the list of the types of the #GObject objects
- *   implemented in the plugin
- * - #ofaApplication then dynamically instantiates a GObject for each
- *   returned GType.
+ *
+ * 1. the application (ofa_plugin_load_plugins()) scans the PKGLIBDIR
+ *    directory, trying to dynamically load all found libraries ;
+ *    in order to to be considered as a valid OFA plugin, the library
+ *    must implement some mandatory functions (see api/ofa-extension.h)
+ *
+ * 2. the library is asked for its internal types, each of these types
+ *    being supposed to implement one or more of the application
+ *    interfaces
+ *
+ * 3. for each internal type, a new object is instanciated and reffed
+ *    by the application ; this new object will so become the
+ *    'go-between' between the application and the library, because it
+ *    is knowned to implement some given interfaces.
  *
  * After that, when someone wants to access an interface, it asks each
  * module for its list of objects which implement this given interface.
@@ -92,19 +93,23 @@ GType        ofa_plugin_get_type               ( void );
 
 void         ofa_plugin_dump                   ( const ofaPlugin *plugin );
 
+/* start/end of the application */
 gint         ofa_plugin_load_modules           ( void );
 void         ofa_plugin_release_modules        ( void );
 
+/* each time we are searching for a given interface */
 GList       *ofa_plugin_get_extensions_for_type( GType type );
 void         ofa_plugin_free_extensions        ( GList *extensions );
 
+/* returning all instanciated plugins */
 const GList *ofa_plugin_get_modules            ( void );
+
+/* requesting a plugin */
+gboolean     ofa_plugin_implements_type        ( const ofaPlugin *plugin, GType type );
 
 const gchar *ofa_plugin_get_name               ( ofaPlugin *plugin );
 
 const gchar *ofa_plugin_get_version_number     ( ofaPlugin *plugin );
-
-void         ofa_plugin_preferences_run        ( ofaPlugin *plugin );
 
 G_END_DECLS
 

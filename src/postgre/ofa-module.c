@@ -82,7 +82,7 @@ ofa_extension_get_api_version( void )
 const gchar *
 ofa_extension_get_name( void )
 {
-	return( ofa_postgre_get_provider_name( NULL ));
+	return( "PostgreSQL Library" );
 }
 
 /*

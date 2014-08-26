@@ -33,6 +33,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-idbms.h"
+#include "api/ofa-ipreferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-sgbd.h"
@@ -40,8 +41,9 @@
 #include "core/ofa-plugin.h"
 
 #include "ui/my-window-prot.h"
-#include "ui/ofa-plugin-manager.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-plugin-manager.h"
+#include "ui/ofa-preferences.h"
 
 /* private instance data
  */
@@ -50,6 +52,7 @@ struct _ofaPluginManagerPrivate {
 	/* UI
 	 */
 	GtkTreeView *tview;
+	GtkWidget   *properties_btn;
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-plugin-manager.ui";
@@ -164,14 +167,18 @@ ofa_plugin_manager_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
+	ofaPluginManagerPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *button;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	priv = OFA_PLUGIN_MANAGER( dialog )->private;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "properties-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_properties_clicked ), dialog );
+	priv->properties_btn = button;
+
 
 	setup_treeview( OFA_PLUGIN_MANAGER( dialog ));
 	load_in_treeview( OFA_PLUGIN_MANAGER( dialog ));
@@ -195,7 +202,7 @@ setup_treeview( ofaPluginManager *self )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER ));
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tmodel );
 	g_object_unref( tmodel );
 
@@ -284,31 +291,39 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer us
 static void
 on_plugin_selected( GtkTreeSelection *selection, ofaPluginManager *self )
 {
+	gboolean ok;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofaPlugin *plugin;
+
+	ok = FALSE;
+
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+
+		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
+		g_object_unref( plugin );
+
+		ok = ofa_plugin_implements_type( plugin, OFA_TYPE_IPREFERENCES );
+	}
+
+	gtk_widget_set_sensitive( self->private->properties_btn, ok );
 }
 
 static void
 on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 {
-	static const gchar *thisfn = "ofa_plugin_manager_on_properties_clicked";
-	GtkTreeSelection *select;
-	GtkTreeIter iter;
+	GtkTreeSelection *selection;
 	GtkTreeModel *tmodel;
-	gchar *name;
+	GtkTreeIter iter;
 	ofaPlugin *plugin;
 
-	select = gtk_tree_view_get_selection( self->private->tview );
+	selection = gtk_tree_view_get_selection( self->private->tview );
 
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-		gtk_tree_model_get(
-				tmodel,
-				&iter,
-				COL_NAME,   &name,
-				COL_PLUGIN, &plugin,
-				-1 );
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 
-		g_free( name );
+		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
+		g_object_unref( plugin );
 
-	} else {
-		g_warning( "%s: no current selection", thisfn );
+		ofa_preferences_run( MY_WINDOW( self )->protected->main_window, plugin );
 	}
 }

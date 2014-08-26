@@ -681,13 +681,7 @@ ofa_settings_set_uint( const gchar *key, guint value )
 gchar *
 ofa_settings_get_string( const gchar *key )
 {
-	gchar *str;
-
-	settings_new();
-
-	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
-
-	return( str );
+	return( ofa_settings_get_string_ex( GROUP_GENERAL, key ));
 }
 
 /**
@@ -696,11 +690,7 @@ ofa_settings_get_string( const gchar *key )
 void
 ofa_settings_set_string( const gchar *key, const gchar *value )
 {
-	settings_new();
-
-	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, value );
-
-	write_key_file( st_settings );
+	return( ofa_settings_set_string_ex( GROUP_GENERAL, key, value ));
 }
 
 /**
@@ -741,6 +731,37 @@ ofa_settings_set_boolean( const gchar *key, gboolean value )
 	string = g_strdup_printf( "%s", value ? "True":"False" );
 	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string );
 	g_free( string );
+
+	write_key_file( st_settings );
+}
+
+/**
+ * ofa_settings_get_string_ex:
+ *
+ * Returns the specified string value as a newly allocated string which
+ * must be g_free() by the caller.
+ */
+gchar *
+ofa_settings_get_string_ex( const gchar *group, const gchar *key )
+{
+	gchar *str;
+
+	settings_new();
+
+	str = g_key_file_get_string( st_settings->private->keyfile, group, key, NULL );
+
+	return( str );
+}
+
+/**
+ * ofa_settings_set_string_ex:
+ */
+void
+ofa_settings_set_string_ex( const gchar *group, const gchar *key, const gchar *value )
+{
+	settings_new();
+
+	g_key_file_set_string( st_settings->private->keyfile, group, key, value );
 
 	write_key_file( st_settings );
 }

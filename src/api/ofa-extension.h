@@ -100,7 +100,7 @@ gboolean     ofa_extension_startup           ( GTypeModule *module );
  * ofa_extension_get_api_version:
  *
  * This function is called by the &prodname; program each time
- * it needs to know which version of this API the plugin
+ * it needs to know which version of this extension API the plugin
  * implements.
  *
  * If this function is not exported by the library,
@@ -114,14 +114,14 @@ guint        ofa_extension_get_api_version   ( void );
 /**
  * ofa_extension_get_name:
  *
- * Returns: the name of the extension, or %NULL.
+ * Returns: the name of the library, or %NULL.
  */
 const gchar *ofa_extension_get_name          ( void );
 
 /**
  * ofa_extension_get_version_number:
  *
- * Returns: the version number of the extension, or %NULL.
+ * Returns: the version number of the library, or %NULL.
  */
 const gchar *ofa_extension_get_version_number( void );
 
@@ -133,7 +133,7 @@ const gchar *ofa_extension_get_version_number( void );
  * Returned #GType types must already have been registered in the
  * #GType system (e.g. at #ofa_extension_startup() time), and the objects
  * they describe may implement one or more of the interfaces defined in
- * this Nautilus-Actions public API.
+ * the application public API.
  *
  * The  plugin manager will instantiate one #GTypeInstance-
  * derived object for each returned #GType type, and associate these objects
@@ -185,15 +185,6 @@ guint        ofa_extension_list_types        ( const GType **types );
  * allocated.
  */
 void         ofa_extension_shutdown          ( void );
-
-/**
- * ofa_extension_preferences_run:
- *
- * If defined, this function should let the user configure his
- * preferences. Preferences may be written in the user configuration
- * file via the ofa_settings_xxx() API.
- */
-void         ofa_extension_preferences_run   ( void );
 
 G_END_DECLS
 

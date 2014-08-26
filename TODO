@@ -346,13 +346,9 @@
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
 
- 306 2014- 8-24 have a plugin preferences api
+ 307
 
- 307 2014- 8-24 have a plugin save command-line prefs api
-
- 308 2014- 8-24 have MySQL implements save command-line
-
- 309 2014- 8-24 have a save dossier menu item
+ 308
 
 -----------------------------------------------------------------------
  DONE
@@ -1224,6 +1220,9 @@
 
  305 2014- 8-24 have a plugin management menu item
      2014- 8-24 done - svn #3829
+
+ 306 2014- 8-24 have a plugin preferences api
+     2014- 8-24 done - svn #3830
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

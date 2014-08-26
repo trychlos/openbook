@@ -79,6 +79,10 @@ void     ofa_settings_set_string            ( const gchar *key, const gchar *val
 gboolean ofa_settings_get_boolean           ( const gchar *key );
 void     ofa_settings_set_boolean           ( const gchar *key, gboolean value );
 
+/* extended usage */
+gchar   *ofa_settings_get_string_ex         ( const gchar *group, const gchar *key );
+void     ofa_settings_set_string_ex         ( const gchar *group, const gchar *key, const gchar *value );
+
 G_END_DECLS
 
 #endif /* __OFA_SETTINGS_H__ */

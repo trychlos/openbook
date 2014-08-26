@@ -34,6 +34,7 @@
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-dossier-new.h"
+#include "ofa-mysql-prefs.h"
 
 /* private instance data
  */
@@ -77,6 +78,9 @@ static gboolean     idbms_delete_dossier( const ofaIDbms *instance, const gchar 
 static void         idbms_drop_database( const SgbdInfos *infos );
 static gboolean     local_get_db_exists( MYSQL *mysql, const gchar *dbname );
 
+static void         ipreferences_iface_init( ofaIPreferencesInterface *iface );
+static guint        ipreferences_get_interface_version( const ofaIPreferences *instance );
+
 GType
 ofa_mysql_get_type( void )
 {
@@ -106,11 +110,19 @@ ofa_mysql_register_type( GTypeModule *module )
 		NULL
 	};
 
+	static const GInterfaceInfo ipreferences_iface_info = {
+		( GInterfaceInitFunc ) ipreferences_iface_init,
+		NULL,
+		NULL
+	};
+
 	g_debug( "%s", thisfn );
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaMysql", &info, 0 );
 
 	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IDBMS, &idbms_iface_info );
+
+	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IPREFERENCES, &ipreferences_iface_info );
 }
 
 static void
@@ -512,4 +524,23 @@ ofa_mysql_free_connect( mysqlConnect *sConnect )
 	g_free( sConnect->dbname );
 	g_free( sConnect->account );
 	g_free( sConnect->password );
+}
+
+static void
+ipreferences_iface_init( ofaIPreferencesInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_ipreferences_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ipreferences_get_interface_version;
+	iface->run_init = ofa_mysql_prefs_init;
+	iface->run_check = ofa_mysql_prefs_check;
+	iface->run_done = ofa_mysql_prefs_apply;
+}
+
+static guint
+ipreferences_get_interface_version( const ofaIPreferences *instance )
+{
+	return( 1 );
 }
