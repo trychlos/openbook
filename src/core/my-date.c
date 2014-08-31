@@ -38,6 +38,8 @@
  */
 struct _myDatePrivate {
 	gboolean dispose_has_run;
+
+	GDate    date;
 };
 
 G_DEFINE_TYPE( myDate, my_date, G_TYPE_OBJECT )
@@ -113,6 +115,59 @@ my_date_class_init( myDateClass *klass )
 }
 
 /**
+ * my_date_new:
+ */
+myDate *
+my_date_new( void )
+{
+	myDate *date;
+
+	date = g_object_new( MY_TYPE_DATE, NULL );
+
+	g_date_clear( &date->private->date, 1 );
+
+	return( date );
+}
+
+/**
+ * my_date_set_now:
+ */
+void
+my_date_set_now( myDate *date )
+{
+	GDateTime *dt;
+	gint year, month, day;
+
+	g_return_if_fail( date && MY_IS_DATE( date ));
+
+	if( !date->private->dispose_has_run ){
+
+		dt = g_date_time_new_now_local();
+		g_date_time_get_ymd( dt, &year, &month, &day );
+		g_date_time_unref( dt );
+
+		g_date_set_dmy( &date->private->date, day, month, year );
+	}
+}
+
+/**
+ * my_date_to_str:
+ */
+gchar *
+my_date_to_str( const myDate *date, myDateFormat format )
+{
+
+	g_return_val_if_fail( date && MY_IS_DATE( date ), NULL );
+
+	if( !date->private->dispose_has_run ){
+
+		return( my_date_dto_str( &date->private->date, format ));
+	}
+
+	return( NULL );
+}
+
+/**
  * my_date_set_from_sql:
  * @dest: must be a pointer to the destination GDate structure.
  * @sql_string: a pointer to a SQL string 'yyyy-mm-dd', or NULL;
@@ -163,14 +218,14 @@ my_date_set_from_date( GDate *dest, const GDate *src)
 }
 
 /**
- * my_date_to_str:
+ * my_date_dto_str:
  *
  * Returns the date with the requested format, suitable for display or
  * SQL insertion, in a newly allocated string that the user must
  * g_free(), or a new empty string if the date is invalid.
  */
 gchar *
-my_date_to_str( const GDate *date, myDateFormat format )
+my_date_dto_str( const GDate *date, myDateFormat format )
 {
 	static const gchar *st_month[] = {
 			N_( "jan." ),
@@ -216,6 +271,15 @@ my_date_to_str( const GDate *date, myDateFormat format )
 			case MY_DATE_SQL:
 				g_free( str );
 				str = g_strdup_printf( "%4.4d-%2.2d-%2.2d",
+						g_date_get_year( date ),
+						g_date_get_month( date ),
+						g_date_get_day( date ));
+				break;
+
+			/* yyyymmdd - for filenames */
+			case MY_DATE_YYMD:
+				g_free( str );
+				str = g_strdup_printf( "%4.4d%2.2d%2.2d",
 						g_date_get_year( date ),
 						g_date_get_month( date ),
 						g_date_get_day( date ));
@@ -291,7 +355,7 @@ my_date_parse_from_entry( const myDateParse *parms )
 	}
 
 	if( g_date_valid( parms->date )){
-		str = my_date_to_str( parms->date, parms->entry_format );
+		str = my_date_dto_str( parms->date, parms->entry_format );
 		gtk_entry_set_text( GTK_ENTRY( parms->entry ), str );
 		g_free( str );
 	}
@@ -435,7 +499,7 @@ on_date_entry_changed( GtkEditable *editable, gpointer user_data )
 			( !pfnCheck || ( *pfnCheck )( &temp_date, user_data_cb ))){
 
 		label_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-label" ));
-		str = my_date_to_str( &temp_date, label_format );
+		str = my_date_dto_str( &temp_date, label_format );
 		date_entry_set_label( editable, str );
 		g_free( str );
 

@@ -67,6 +67,8 @@ const gchar    *ofo_dossier_get_name                ( const ofoDossier *dossier 
 const gchar    *ofo_dossier_get_user                ( const ofoDossier *dossier );
 const ofoSgbd  *ofo_dossier_get_sgbd                ( const ofoDossier *dossier );
 
+gchar          *ofo_dossier_get_dbname              ( const ofoDossier *dossier );
+
 gboolean        ofo_dossier_use_devise              ( const ofoDossier *dossier, const gchar *devise );
 
 const gchar    *ofo_dossier_get_label               ( const ofoDossier *dossier );

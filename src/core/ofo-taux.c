@@ -902,8 +902,8 @@ taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
 	GString *query;
 	gchar *dbegin, *dend, *rate;
 
-	dbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
-	dend = my_date_to_str( &sdet->end, MY_DATE_SQL );
+	dbegin = my_date_dto_str( &sdet->begin, MY_DATE_SQL );
+	dend = my_date_dto_str( &sdet->end, MY_DATE_SQL );
 	rate = my_utils_sql_from_double( sdet->rate );
 
 	query = g_string_new( "INSERT INTO OFA_T_TAUX_VAL " );
@@ -1215,8 +1215,8 @@ ofo_taux_get_csv( const ofoDossier *dossier )
 		for( det=taux->private->valids ; det ; det=det->next ){
 			sdet = ( sTauxValid * ) det->data;
 
-			sbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
-			send = my_date_to_str( &sdet->end, MY_DATE_SQL );
+			sbegin = my_date_dto_str( &sdet->begin, MY_DATE_SQL );
+			send = my_date_dto_str( &sdet->end, MY_DATE_SQL );
 
 			str = g_strdup_printf( "2;%s;%s;%s;%.2lf",
 					ofo_taux_get_mnemo( taux ),

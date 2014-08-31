@@ -238,7 +238,7 @@ exec_command( const gchar *cmdline, backupInfos *infos )
 	error = NULL;
 	child_pid = ( GPid ) 0;
 
-	cmd = g_strdup_printf( "/bin/sh -c \"%s ; sleep 10\"", cmdline );
+	cmd = g_strdup_printf( "/bin/sh -c \"%s\"", cmdline );
 
 	if( !g_shell_parse_argv( cmd, &argc, &argv, &error )){
 		g_warning( "%s: g_shell_parse_argv: %s", thisfn, error->message );

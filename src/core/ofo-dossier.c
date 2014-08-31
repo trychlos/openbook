@@ -1017,6 +1017,31 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_dbname:
+ *
+ * Returns: the name of the database of the opened dossier.
+ */
+gchar *
+ofo_dossier_get_dbname( const ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->private;
+
+		if( priv->sgbd && OFO_IS_SGBD( priv->sgbd )){
+
+			return( ofo_sgbd_get_dbname( priv->sgbd ));
+		}
+	}
+
+	return( NULL );
+}
+
+/**
  * ofo_dossier_use_devise:
  *
  * Returns: %TRUE if the dossier makes use of this currency, thus
@@ -1916,7 +1941,7 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 
 	date = ( const GDate * ) &dossier->private->current->exe_deb;
 	if( g_date_valid( date )){
-		sdeb = my_date_to_str( date, MY_DATE_SQL );
+		sdeb = my_date_dto_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "DOS_EXE_DEB='%s',", sdeb );
 		g_free( sdeb );
 	} else {
@@ -1925,7 +1950,7 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 
 	date = ( const GDate * ) &dossier->private->current->exe_fin;
 	if( g_date_valid( date )){
-		sfin = my_date_to_str( date, MY_DATE_SQL );
+		sfin = my_date_dto_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "DOS_EXE_FIN='%s' ", sfin );
 		g_free( sfin );
 	} else {
@@ -1986,8 +2011,8 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 		sexe = ( sDetailExe * ) exe->data;
 
-		sbegin = my_date_to_str( &sexe->exe_deb, MY_DATE_SQL );
-		send = my_date_to_str( &sexe->exe_fin, MY_DATE_SQL );
+		sbegin = my_date_dto_str( &sexe->exe_deb, MY_DATE_SQL );
+		send = my_date_dto_str( &sexe->exe_fin, MY_DATE_SQL );
 
 		str = g_strdup_printf( "2:%s;%s;%d;%d",
 				sbegin,

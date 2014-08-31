@@ -32,6 +32,7 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -45,8 +46,8 @@ struct _ofaBackupPrivate {
 	gboolean       dispose_has_run;
 
 	ofaMainWindow *main_window;
-	GtkWidget     *dialog;
 	ofoDossier    *dossier;
+	GtkWidget     *dialog;
 };
 
 static const gchar *st_dialog_name   = "BackupDlg";
@@ -55,6 +56,7 @@ static const gchar *st_backup_folder = "LastBackupFolder";
 G_DEFINE_TYPE( ofaBackup, ofa_backup, G_TYPE_OBJECT )
 
 static void       init_dialog( ofaBackup *self );
+static gchar     *get_default_name( ofaBackup *self );
 static gboolean   do_backup( ofaBackup *self );
 
 static void
@@ -145,6 +147,7 @@ ofa_backup_run( ofaMainWindow *main_window )
 	self = g_object_new( OFA_TYPE_BACKUP, NULL );
 	priv = self->private;
 	priv->main_window = main_window;
+	priv->dossier = ofa_main_window_get_dossier( main_window );
 
 	init_dialog( self );
 
@@ -160,7 +163,7 @@ static void
 init_dialog( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	gchar *last_folder;
+	gchar *last_folder, *def_name;
 
 	priv = self->private;
 
@@ -175,9 +178,10 @@ init_dialog( ofaBackup *self )
 	my_utils_window_restore_position( GTK_WINDOW( priv->dialog ), st_dialog_name );
 
 	gtk_file_chooser_set_do_overwrite_confirmation( GTK_FILE_CHOOSER( priv->dialog ), TRUE );
-	gtk_file_chooser_set_current_name( GTK_FILE_CHOOSER( priv->dialog ), _( "Untitled" ));
 
-	priv->dossier = ofa_main_window_get_dossier( priv->main_window );
+	def_name = get_default_name( self );
+	gtk_file_chooser_set_current_name( GTK_FILE_CHOOSER( priv->dialog ), def_name );
+	g_free( def_name );
 
 	last_folder = ofa_settings_get_dossier_key_string(
 						ofo_dossier_get_name( priv->dossier ), st_backup_folder );
@@ -185,6 +189,32 @@ init_dialog( ofaBackup *self )
 		gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER( priv->dialog ), last_folder );
 	}
 	g_free( last_folder );
+}
+
+static gchar *
+get_default_name( ofaBackup *self )
+{
+	GRegex *regex;
+	gchar *dbname, *fname, *sdate, *result;
+	myDate *date;
+
+	/* get database name without spaces */
+	regex = g_regex_new( " ", 0, 0, NULL );
+	/*dbname = ofo_dossier_get_dbname( self->private->dossier );*/
+	dbname = g_strdup( ofo_dossier_get_name( self->private->dossier ));
+	fname = g_regex_replace_literal( regex, dbname, -1, 0, "", 0, NULL );
+	g_free( dbname );
+
+	date = my_date_new();
+	my_date_set_now( date );
+	sdate = my_date_to_str( date, MY_DATE_YYMD );
+	result = g_strdup_printf( "%s-%s.gz", fname, sdate );
+	g_free( sdate );
+	g_object_unref( date );
+
+	g_free( fname );
+
+	return( result );
 }
 
 static gboolean

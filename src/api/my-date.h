@@ -71,12 +71,14 @@ typedef struct {
  *
  * @MY_DATE_DMMM: display the date as 'd mmm yyyy'
  * @MY_DATE_DDMM: display the date as 'dd/mm/yyyy'
- * MY_DATE_SQL:   display the date as 'yyyy-mm-dd'
+ * @MY_DATE_SQL:  display the date as 'yyyy-mm-dd'
+ * @MY_DATE_YYMD: display the date as 'yyyymmdd'
  */
 typedef enum {
 	MY_DATE_DMMM = 1,
 	MY_DATE_DDMM,
-	MY_DATE_SQL
+	MY_DATE_SQL,
+	MY_DATE_YYMD
 }
 	myDateFormat;
 
@@ -116,11 +118,17 @@ typedef struct {
 }
 	myDateParse;
 
-GType      my_date_get_type               ( void ) G_GNUC_CONST;
+GType      my_date_get_type         ( void ) G_GNUC_CONST;
+
+myDate    *my_date_new              ( void );
+
+void       my_date_set_now          ( myDate *date );
+
+gchar     *my_date_to_str           ( const myDate *date, myDateFormat format );
 
 GDate     *my_date_set_from_sql     ( GDate *dest, const gchar *sql_string );
 GDate     *my_date_set_from_date    ( GDate *dest, const GDate *src );
-gchar     *my_date_to_str           ( const GDate *date, myDateFormat format );
+gchar     *my_date_dto_str          ( const GDate *date, myDateFormat format );
 gint       my_date_cmp              ( const GDate *a, const GDate *b, gboolean infinite_is_past );
 void       my_date_parse_from_entry ( const myDateParse *parms );
 GDate     *my_date_parse_from_str   ( GDate *date, const gchar *text, myDateFormat format );

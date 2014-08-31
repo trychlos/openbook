@@ -53,6 +53,8 @@ GSList      *ofo_sgbd_query_ex     ( const ofoSgbd *sgbd, const gchar *query,
 
 void         ofo_sgbd_free_result  ( GSList *result );
 
+gchar       *ofo_sgbd_get_dbname   ( const ofoSgbd *sgbd );
+
 gboolean     ofo_sgbd_backup       ( const ofoSgbd *sgbd, const gchar *fname );
 
 G_END_DECLS

@@ -565,6 +565,28 @@ ofo_sgbd_free_result( GSList *result )
 }
 
 /**
+ * ofo_sgbd_get_dbname:
+ */
+gchar *
+ofo_sgbd_get_dbname( const ofoSgbd *sgbd )
+{
+	ofoSgbdPrivate *priv;
+
+	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), NULL );
+
+	priv = sgbd->private;
+
+	if( !priv->dispose_has_run &&
+		priv->module &&
+		OFA_IS_IDBMS( priv->module )){
+
+		return( ofa_idbms_get_dossier_dbname( priv->module, priv->label ));
+	}
+
+	return( NULL );
+}
+
+/**
  * ofo_sgbd_backup:
  *
  * Backup the database behind the dossier.
