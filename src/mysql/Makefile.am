@@ -40,6 +40,8 @@ AM_CPPFLAGS += \
 libofa_mysql_la_SOURCES = \
 	ofa-mysql.c										\
 	ofa-mysql.h										\
+	ofa-mysql-backup.c								\
+	ofa-mysql-backup.h								\
 	ofa-mysql-dossier-new.c							\
 	ofa-mysql-dossier-new.h							\
 	ofa-mysql-prefs.c								\

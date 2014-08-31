@@ -283,6 +283,20 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean      ( *delete_dossier )       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
+
+	/**
+	 * backup:
+	 * @instance: the #ofaIDbms provider.
+	 * @handle: the handle returned by the connection.
+	 * @fname: the destination filename
+	 *
+	 * Backup the currently opened dossier.
+	 *
+	 * Return value: %TRUE if the dossier has been successfully saved.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *backup )               ( const ofaIDbms *instance, void *handle, const gchar *fname );
 }
 	ofaIDbmsInterface;
 
@@ -337,6 +351,8 @@ gchar       *ofa_idbms_error                ( const ofaIDbms *instance, void *ha
 
 gboolean     ofa_idbms_delete_dossier       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password,
 												gboolean drop_db, gboolean drop_accounts, gboolean with_confirm );
+
+gboolean     ofa_idbms_backup               ( const ofaIDbms *instance, void *handle, const gchar *fname );
 
 G_END_DECLS
 

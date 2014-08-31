@@ -47,9 +47,6 @@ typedef struct {
 	sPrivate;
 
 #define PREFS_DATA                "ofa-mysql-prefs-data"
-#define PREFS_GROUP               "MySQL Library"
-#define PREFS_BACKUP_CMDLINE      "BackupCommand"
-#define PREFS_RESTORE_CMDLINE     "RestoreCommand"
 
 static const gchar *st_ui_xml   = PROVIDER_DATADIR "/ofa-mysql-prefs.piece.ui";
 static const gchar *st_ui_mysql = "MySQLPrefsWindow";

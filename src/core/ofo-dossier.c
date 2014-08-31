@@ -1818,7 +1818,9 @@ dossier_read_exercices( ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_update
+ * ofo_dossier_update:
+ *
+ * Update the properties of the dossier.
  */
 gboolean
 ofo_dossier_update( ofoDossier *dossier )
@@ -2000,4 +2002,30 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	}
 
 	return( g_slist_reverse( lines ));
+}
+
+/**
+ * ofo_dossier_backup:
+ *
+ * Backup the database behind the dossier
+ */
+gboolean
+ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname )
+{
+	ofoDossierPrivate *priv;
+	gboolean ok;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( fname && g_utf8_strlen( fname, -1 ), FALSE );
+
+	ok = FALSE;
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->private;
+
+		ok = ofo_sgbd_backup( priv->sgbd, fname );
+	}
+
+	return( ok );
 }

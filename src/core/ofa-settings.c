@@ -78,6 +78,7 @@ static ofaSettings *st_settings = NULL;
 G_DEFINE_TYPE( ofaSettings, ofa_settings, G_TYPE_OBJECT )
 
 static void     settings_new( void );
+static gint     settings_get_uint( const gchar *group, const gchar *key );
 static void     load_key_file( ofaSettings *settings );
 static gboolean write_key_file( ofaSettings *settings );
 static gchar  **string_to_array( const gchar *string );
@@ -398,26 +399,41 @@ ofa_settings_get_dossier_key_string( const gchar *name, const gchar *key )
 gint
 ofa_settings_get_dossier_key_uint( const gchar *name, const gchar *key )
 {
-	static const gchar *thisfn = "ofa_settings_get_dossier_key_uint";
-	gchar *group, *value;
+	gchar *group;
 	gint result;
+
+	settings_new();
+
+	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
+
+	result = settings_get_uint( group, key );
+
+	g_free( group );
+
+	return( result );
+}
+
+/**
+ * ofa_settings_set_dossier_key_string:
+ * @name: the name of the dossier
+ * @key: the searched key
+ * @value: the value to be set
+ *
+ * Set the value for the key in the dossier group.
+ */
+void
+ofa_settings_set_dossier_key_string( const gchar *name, const gchar *key, const gchar *value )
+{
+	static const gchar *thisfn = "ofa_settings_set_dossier_key_string";
+	gchar *group;
 
 	g_debug( "%s: name=%s, key=%s", thisfn, name, key );
 
 	settings_new();
 
-	result = -1;
 	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
-	value = g_key_file_get_string( st_settings->private->keyfile, group, key, NULL );
-
-	if( value && g_utf8_strlen( value, -1 )){
-		result = atoi( value );
-	}
-
-	g_free( value );
+	ofa_settings_set_string_ex( group, key, value );
 	g_free( group );
-
-	return( result );
 }
 
 /**
@@ -638,14 +654,24 @@ string_to_array( const gchar *string )
 gint
 ofa_settings_get_uint( const gchar *key )
 {
+	settings_new();
+	return( settings_get_uint( GROUP_GENERAL, key ));
+}
+
+/**
+ * ofa_settings_get_uint:
+ *
+ * Returns the specified integer value.
+ */
+static gint
+settings_get_uint( const gchar *group, const gchar *key )
+{
 	gint result;
 	gchar *str;
 
-	settings_new();
-
 	result = -1;
-	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
 
+	str = g_key_file_get_string( st_settings->private->keyfile, group, key, NULL );
 	if( str && g_utf8_strlen( str, -1 )){
 		result = atoi( str );
 	}
@@ -690,7 +716,7 @@ ofa_settings_get_string( const gchar *key )
 void
 ofa_settings_set_string( const gchar *key, const gchar *value )
 {
-	return( ofa_settings_set_string_ex( GROUP_GENERAL, key, value ));
+	ofa_settings_set_string_ex( GROUP_GENERAL, key, value );
 }
 
 /**

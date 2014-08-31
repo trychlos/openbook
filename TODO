@@ -346,9 +346,11 @@
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
 
- 307
+ 307 2014- 8-26 label+account+password should be kept in the DBMS 
+                connection structure (and not in the ofoSgbd data)
 
- 308
+ 308 2014- 8-26 mysql: have a get_connect_parms() function to read a
+                mysqlConnect structure from the settings
 
 -----------------------------------------------------------------------
  DONE

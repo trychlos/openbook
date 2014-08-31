@@ -563,3 +563,28 @@ ofo_sgbd_free_result( GSList *result )
 {
 	g_slist_foreach( result, ( GFunc ) g_slist_free_full, g_free );
 }
+
+/**
+ * ofo_sgbd_backup:
+ *
+ * Backup the database behind the dossier.
+ */
+gboolean
+ofo_sgbd_backup( const ofoSgbd *sgbd, const gchar *fname )
+{
+	gboolean ok;
+	ofoSgbdPrivate *priv;
+
+	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( fname && g_utf8_strlen( fname, -1 ), FALSE );
+
+	ok = FALSE;
+	priv = sgbd->private;
+
+	if( !priv->dispose_has_run ){
+
+		ok = ofa_idbms_backup( priv->module, priv->handle, fname );
+	}
+
+	return( ok );
+}

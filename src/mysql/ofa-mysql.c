@@ -33,6 +33,7 @@
 #include <api/ofa-settings.h>
 
 #include "ofa-mysql.h"
+#include "ofa-mysql-backup.h"
 #include "ofa-mysql-dossier-new.h"
 #include "ofa-mysql-prefs.h"
 
@@ -41,19 +42,6 @@
 struct _ofaMysqlPrivate {
 	gboolean dispose_has_run;
 };
-
-/*
- * a structure which associates the ofoSgbd connection to its properties
- *
- * the structure is dynamically allocated on a new connection, and its
- * handle is returned to the caller.
- */
-typedef struct {
-	gchar        *label;
-	MYSQL        *mysql;
-	mysqlConnect  connect;
-}
-	SgbdInfos;
 
 static GType         st_module_type = 0;
 static GObjectClass *st_parent_class = NULL;
@@ -69,13 +57,13 @@ static gchar       *idbms_get_dossier_host( const ofaIDbms *instance, const gcha
 static gchar       *idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label );
 static void        *idbms_connect( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password );
 static void        *idbms_connect_ex( const ofaIDbms *instance, const gchar *label, const gchar *dbname, const gchar *account, const gchar *password );
-static void        *idbms_connect_conv( const ofaIDbms *instance, SgbdInfos *infos, const gchar *label, const gchar *account, const gchar *password );
+static void        *idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *label, const gchar *account, const gchar *password );
 static void         idbms_close( const ofaIDbms *instance, void *handle );
 static gboolean     idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
 static GSList      *idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query );
 static gchar       *idbms_error( const ofaIDbms *instance, void *handle );
 static gboolean     idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
-static void         idbms_drop_database( const SgbdInfos *infos );
+static void         idbms_drop_database( const mysqlInfos *infos );
 static gboolean     local_get_db_exists( MYSQL *mysql, const gchar *dbname );
 
 static void         ipreferences_iface_init( ofaIPreferencesInterface *iface );
@@ -219,6 +207,7 @@ idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->query_ex = idbms_query_ex;
 	iface->error = idbms_error;
 	iface->delete_dossier = idbms_delete_dossier;
+	iface->backup = ofa_mysql_backup;
 }
 
 static guint
@@ -256,9 +245,9 @@ idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label )
 static void *
 idbms_connect( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password )
 {
-	SgbdInfos *infos;
+	mysqlInfos *infos;
 
-	infos = g_new0( SgbdInfos, 1 );
+	infos = g_new0( mysqlInfos, 1 );
 	infos->connect.dbname = ofa_settings_get_dossier_key_string( label, "Database" );
 
 	return( idbms_connect_conv( instance, infos, label, account, password ));
@@ -267,16 +256,16 @@ idbms_connect( const ofaIDbms *instance, const gchar *label, const gchar *accoun
 static void *
 idbms_connect_ex( const ofaIDbms *instance, const gchar *label, const gchar *dbname, const gchar *account, const gchar *password )
 {
-	SgbdInfos *infos;
+	mysqlInfos *infos;
 
-	infos = g_new0( SgbdInfos, 1 );
+	infos = g_new0( mysqlInfos, 1 );
 	infos->connect.dbname = g_strdup( dbname );
 
 	return( idbms_connect_conv( instance, infos, label, account, password ));
 }
 
 static void *
-idbms_connect_conv( const ofaIDbms *instance, SgbdInfos *infos, const gchar *label, const gchar *account, const gchar *password )
+idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *label, const gchar *account, const gchar *password )
 {
 	MYSQL *mysql;
 	mysqlConnect *cnt;
@@ -308,9 +297,9 @@ idbms_connect_conv( const ofaIDbms *instance, SgbdInfos *infos, const gchar *lab
 static void
 idbms_close( const ofaIDbms *instance, void *handle )
 {
-	SgbdInfos *infos;
+	mysqlInfos *infos;
 
-	infos = ( SgbdInfos * ) handle;
+	infos = ( mysqlInfos * ) handle;
 
 	mysql_close( infos->mysql );
 	ofa_mysql_free_connect( &infos->connect );
@@ -324,10 +313,10 @@ idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_query";
 	gboolean query_ok;
-	SgbdInfos *infos;
+	mysqlInfos *infos;
 
 	query_ok = FALSE;
-	infos = ( SgbdInfos * ) handle;
+	infos = ( mysqlInfos * ) handle;
 
 	if( infos && infos->mysql ){
 		query_ok = ( mysql_query( infos->mysql, query ) == 0 );
@@ -342,7 +331,7 @@ static GSList *
 idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query )
 {
 	GSList *result;
-	SgbdInfos *infos;
+	mysqlInfos *infos;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 	gint fields_count, i;
@@ -351,7 +340,7 @@ idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query )
 
 	if( idbms_query( instance, handle, query )){
 
-		infos = ( SgbdInfos * ) handle;
+		infos = ( mysqlInfos * ) handle;
 		res = mysql_store_result( infos->mysql );
 		if( res ){
 			fields_count = mysql_num_fields( res );
@@ -375,10 +364,10 @@ idbms_error( const ofaIDbms *instance, void *handle )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_error";
 	gchar *msg;
-	SgbdInfos *infos;
+	mysqlInfos *infos;
 
 	msg = NULL;
-	infos = ( SgbdInfos * ) handle;
+	infos = ( mysqlInfos * ) handle;
 
 	if( infos && infos->mysql ){
 		msg = g_strdup( mysql_error( infos->mysql ));
@@ -468,14 +457,14 @@ static gboolean
 idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_delete_dossier";
-	SgbdInfos *infos;
+	mysqlInfos *infos;
 
 	g_debug( "%s: instance=%p, label=%s, account=%s, drop_db=%s, drop_accounts=%s",
 			thisfn,
 			( void * ) instance, label, account,
 			drop_db ? "True":"False", drop_accounts ? "True":"False" );
 
-	infos = ( SgbdInfos * ) idbms_connect_ex( instance, label, "mysql", account, password );
+	infos = ( mysqlInfos * ) idbms_connect_ex( instance, label, "mysql", account, password );
 	if( !infos ){
 		return( FALSE );
 	}
@@ -501,7 +490,7 @@ idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar 
 }
 
 static void
-idbms_drop_database( const SgbdInfos *infos )
+idbms_drop_database( const mysqlInfos *infos )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_drop_database";
 	gchar *query;

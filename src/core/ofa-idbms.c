@@ -497,3 +497,20 @@ confirm_for_deletion( const ofaIDbms *instance, const gchar *label, gboolean dro
 
 	return( response == GTK_RESPONSE_OK );
 }
+
+/**
+ * ofa_idbms_backup:
+ */
+gboolean
+ofa_idbms_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
+{
+	gboolean ok;
+
+	ok = FALSE;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->backup ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->backup( instance, handle, fname );
+	}
+
+	return( ok );
+}

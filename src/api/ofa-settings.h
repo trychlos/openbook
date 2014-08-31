@@ -60,9 +60,10 @@ void     ofa_settings_remove_dossier        ( const gchar *name );
 
 gchar   *ofa_settings_get_dossier_provider  ( const gchar *name );
 
-/* intended for DBMS providers */
 gchar   *ofa_settings_get_dossier_key_string( const gchar *name, const gchar *key );
 gint     ofa_settings_get_dossier_key_uint  ( const gchar *name, const gchar *key );
+
+void     ofa_settings_set_dossier_key_string( const gchar *name, const gchar *key, const gchar *value );
 
 GSList  *ofa_settings_get_string_list       ( const gchar *key );
 void     ofa_settings_set_string_list       ( const gchar *key, const GSList *str_list );
