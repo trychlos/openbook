@@ -210,10 +210,6 @@
                 per currency depending of the way the operations are
                 entered (and this way should maybe be forced)
 
- 192 2014- 6-11 save database:
-                mysqldump pwi_consultants -uwieser -pwieser | gzip -c 
-                 >/tmp/pwi_consultants-20140611.gz
-
  194 2014- 6-11 ofo_journal_get_cloture() should be replaced with
                 ofo_journal_get_last_closing()
 
@@ -863,6 +859,11 @@
 
  190 2014- 6-10 Have a display of journal balances
      2014- 6-13 done
+
+ 192 2014- 6-11 save database:
+                mysqldump pwi_consultants -uwieser -pwieser | gzip -c 
+                 >/tmp/pwi_consultants-20140611.gz
+     2014- 8-31 done - svn #3842
 
  193 2014- 6-11 record the entry most recent effect date in the
                  journal_exe_dev detail
