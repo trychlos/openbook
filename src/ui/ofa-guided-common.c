@@ -40,7 +40,8 @@
 #include "api/ofo-model.h"
 #include "api/ofo-taux.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-common.h"
 #include "ui/ofa-journal-combo.h"

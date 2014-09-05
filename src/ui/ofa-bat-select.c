@@ -31,7 +31,8 @@
 #include "api/my-utils.h"
 #include "api/ofo-bat.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-bat-common.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-main-window.h"

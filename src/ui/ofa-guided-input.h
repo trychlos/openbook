@@ -33,8 +33,9 @@
  * @include: ui/ofa-guided-input.h
  */
 
-#include "ui/my-dialog.h"
 #include "api/ofo-model-def.h"
+
+#include "core/my-dialog.h"
 
 G_BEGIN_DECLS
 

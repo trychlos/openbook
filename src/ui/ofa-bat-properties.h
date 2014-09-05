@@ -35,9 +35,10 @@
  * Display the BAT properties. Only the notes can be updated.
  */
 
-#include "ui/my-dialog.h"
-#include "ui/ofa-main-window-def.h"
 #include "api/ofo-bat-def.h"
+
+#include "core/my-dialog.h"
+#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

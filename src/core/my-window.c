@@ -30,9 +30,8 @@
 
 #include "api/my-utils.h"
 
-#include "ui/my-window.h"
-#include "ui/my-window-prot.h"
-#include "ui/ofa-main-window.h"
+#include "core/my-window.h"
+#include "core/my-window-prot.h"
 
 /* private instance data
  */

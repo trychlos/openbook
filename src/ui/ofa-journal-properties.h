@@ -35,8 +35,9 @@
  * Update the journal properties.
  */
 
-#include "ui/my-dialog.h"
 #include "api/ofo-journal-def.h"
+
+#include "core/my-dialog.h"
 
 G_BEGIN_DECLS
 

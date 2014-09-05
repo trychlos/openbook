@@ -35,7 +35,7 @@
  * Guide the user through the process of exporting data.
  */
 
-#include "ui/ofa-main-window-def.h"
+#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

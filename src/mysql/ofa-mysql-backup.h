@@ -38,6 +38,8 @@ G_BEGIN_DECLS
 
 gboolean ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname );
 
+gboolean ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password );
+
 G_END_DECLS
 
 #endif /* __OFA_MYSQL_BACKUP_H__ */

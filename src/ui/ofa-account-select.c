@@ -31,7 +31,8 @@
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-main-window.h"

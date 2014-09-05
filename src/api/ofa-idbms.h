@@ -179,6 +179,10 @@ typedef struct {
 	 * connect:
 	 * @instance: the #ofaIDbms provider.
 	 * @label: the label of the dossier.
+	 * @dbname: the database to be used as the default.
+	 * @with_dbname: whether to connect to the specified database (if
+	 *  %TRUE), or to connect to the dossier's default database (if
+	 *  %FALSE).
 	 * @account: the connection account.
 	 * @password: the password of the connection account.
 	 *
@@ -189,24 +193,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void        * ( *connect )              ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password );
-
-	/**
-	 * connect_ex:
-	 * @instance: the #ofaIDbms provider.
-	 * @label: the label of the dossier.
-	 * @dbname: the database to be used as the default.
-	 * @account: the connection account.
-	 * @password: the password of the connection account.
-	 *
-	 * Connect to the DBMS, using the specified database as the default.
-	 *
-	 * Return value: a non-NULL handle on the connection data provided
-	 * by the DBMS provider, or %NULL.
-	 *
-	 * Since: version 1
-	 */
-	void        * ( *connect_ex )           ( const ofaIDbms *instance, const gchar *label, const gchar *dbname, const gchar *account, const gchar *password );
+	void        * ( *connect )              ( const ofaIDbms *instance, const gchar *label, const gchar *dbname, gboolean with_dbname, const gchar *account, const gchar *password );
 
 	/**
 	 * close:
@@ -297,6 +284,44 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean      ( *backup )               ( const ofaIDbms *instance, void *handle, const gchar *fname );
+
+	/**
+	 * restore:
+	 * @instance: the #ofaIDbms provider.
+	 * @label: the label of the dossier to be restored.
+	 * @fname: the input filename
+	 *
+	 * Restore the given backup file to the named dossier.
+	 *
+	 * The destination dossier is supposed to be defined in the user's
+	 * settings, and closed.
+	 *
+	 * The DBMS interface takes care of asking for DBMS administrator
+	 * account and password, passing them to the DBMS provider.
+	 *
+	 * The DBMS provider doesn't take any caution before restoring the
+	 * database. This is up to the application to ask for a user
+	 * confirmation, and to close the dossier before restoring the
+	 * database.
+	 *
+	 * Return value: %TRUE if the dossier has been successfully restored.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *restore )              ( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password );
+
+	/**
+	 * display_connect_infos:
+	 * @instance: the #ofaIDbms provider.
+	 * @container: the widget into which the connection informations
+	 *  are to be displayed.
+	 * @label: the label of the dossier to be restored.
+	 *
+	 * Display the DBMS connection informations.
+	 *
+	 * Since: version 1
+	 */
+	void          ( *display_connect_infos )( const ofaIDbms *instance, GtkWidget *container, const gchar *label );
 }
 	ofaIDbmsInterface;
 
@@ -336,10 +361,8 @@ gchar       *ofa_idbms_get_dossier_host     ( const ofaIDbms *instance, const gc
 gchar       *ofa_idbms_get_dossier_dbname   ( const ofaIDbms *instance, const gchar *label );
 
 void        *ofa_idbms_connect              ( const ofaIDbms *instance, const gchar *label,
+												const gchar *dbname, gboolean with_dbname,
 												const gchar *account, const gchar *password );
-
-void        *ofa_idbms_connect_ex           ( const ofaIDbms *instance, const gchar *label,
-												const gchar *dbname, const gchar *account, const gchar *password );
 
 void         ofa_idbms_close                ( const ofaIDbms *instance, void *handle );
 
@@ -353,6 +376,10 @@ gboolean     ofa_idbms_delete_dossier       ( const ofaIDbms *instance, const gc
 												gboolean drop_db, gboolean drop_accounts, gboolean with_confirm );
 
 gboolean     ofa_idbms_backup               ( const ofaIDbms *instance, void *handle, const gchar *fname );
+
+gboolean     ofa_idbms_restore              ( const ofaIDbms *instance, const gchar *label, const gchar *fname );
+
+void         ofa_idbms_display_connect_infos( GtkWidget *container, const gchar *label );
 
 G_END_DECLS
 

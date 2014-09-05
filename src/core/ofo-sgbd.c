@@ -313,12 +313,8 @@ sgbd_connect_static( ofoSgbd *sgbd,
 
 	priv->provider = provider_name;
 	priv->module = module;
-
-	if( with_dbname ){
-		priv->handle = ofa_idbms_connect_ex( module, priv->label, dbname, account, password );
-	} else {
-		priv->handle = ofa_idbms_connect( module, priv->label, account, password );
-	}
+	priv->handle = ofa_idbms_connect(
+							module, priv->label, dbname, with_dbname, account, password );
 
 	if( !priv->handle ){
 		if( display_error ){

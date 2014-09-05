@@ -30,12 +30,12 @@
 /**
  * SECTION: my_dialog
  * @short_description: #myDialog class definition.
- * @include: ui/my-dialog.h
+ * @include: core/my-dialog.h
  *
  * The base class for application dialog boxes.
  */
 
-#include "ui/my-window.h"
+#include "core/my-window.h"
 
 G_BEGIN_DECLS
 

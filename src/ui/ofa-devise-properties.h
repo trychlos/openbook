@@ -35,9 +35,10 @@
  * Update the devise properties.
  */
 
-#include "ui/my-dialog.h"
-#include "ui/ofa-main-window-def.h"
 #include "api/ofo-devise-def.h"
+
+#include "core/my-dialog.h"
+#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

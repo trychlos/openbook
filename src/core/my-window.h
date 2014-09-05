@@ -30,7 +30,7 @@
 /**
  * SECTION: my_window
  * @short_description: #myWindow class definition.
- * @include: ui/my-window.h
+ * @include: core/my-window.h
  *
  * This is a base class for application window toplevels. These may be
  * either GtkDialog-derived or GtkAssistant-derived classes.
@@ -42,8 +42,9 @@
  * - disconnect signals on finalizing
  */
 
-#include "ui/ofa-main-window-def.h"
 #include "api/ofo-dossier-def.h"
+
+#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

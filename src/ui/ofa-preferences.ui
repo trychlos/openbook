@@ -149,7 +149,7 @@
               <object class="GtkLabel" id="label1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Quitting an assistant</property>
+                <property name="label" translatable="yes">Assistant</property>
               </object>
               <packing>
                 <property name="tab_fill">False</property>
@@ -591,7 +591,7 @@
               <object class="GtkLabel" id="label3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Locales</property>
+                <property name="label" translatable="yes">Locale</property>
               </object>
               <packing>
                 <property name="position">2</property>

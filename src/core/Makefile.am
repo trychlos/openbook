@@ -24,14 +24,14 @@
 
 pkglib_LTLIBRARIES = libofa-core.la
 
-ui_datadir = $(pkgdatadir)/ui
+core_datadir = $(pkgdatadir)/core
 
 AM_CPPFLAGS += \
 	-I $(top_srcdir)									\
 	-I $(top_srcdir)/src								\
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
 	-DG_LOG_DOMAIN=\"OFA\"								\
-	-DPKGUIDIR=\"$(ui_datadir)\"						\
+	-DPKGUIDIR=\"$(core_datadir)\"						\
 	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
 	-DSYSCONFDIR=\"$(sysconfdir)\"						\
 	$(OPENBOOK_CFLAGS)									\
@@ -45,9 +45,19 @@ BUILT_SOURCES = \
 libofa_core_la_SOURCES = \
 	$(BUILT_SOURCES)									\
 	my-date.c											\
+	my-dialog.c											\
+	my-dialog.h											\
 	my-utils.c											\
+	my-window.c											\
+	my-window.h											\
+	my-window-prot.h									\
 	\
+	ofa-application-def.h								\
+	ofa-dblogin.c										\
+	ofa-dblogin.h										\
 	ofa-idbms.c											\
+	ofa-main-page-def.h									\
+	ofa-main-window-def.h								\
 	ofa-plugin.c										\
 	ofa-plugin.h										\
 	ofa-settings.c										\
@@ -82,6 +92,14 @@ libofa_core_la_LDFLAGS = \
 	-avoid-version										\
 	-fPIC												\
 	$(NULL)
+
+ui_files = \
+	ofa-dblogin.ui										\
+	$(NULL)
+
+core_data_DATA = \
+	$(ui_files)											\
+	$(NULL)
 	
 CLEANFILES = \
 	$(BUILT_SOURCES)									\
@@ -89,4 +107,5 @@ CLEANFILES = \
 
 EXTRA_DIST = \
 	ofo-marshal.def										\
+	$(core_data_DATA)									\
 	$(NULL)

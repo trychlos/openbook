@@ -85,9 +85,10 @@
  * Rate         a tree view on a list store                   Yes
  */
 
-#include "ui/ofa-main-page-def.h"
 #include "api/ofo-dossier-def.h"
-#include "ui/ofa-main-window-def.h"
+
+#include "core/ofa-main-page-def.h"
+#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

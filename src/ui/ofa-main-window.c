@@ -36,10 +36,12 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-application.h"
 #include "ui/ofa-backup.h"
 #include "ui/ofa-bat-set.h"
 #include "ui/ofa-classes-set.h"
 #include "ui/ofa-devises-set.h"
+#include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-export.h"
 #include "ui/ofa-guided-ex.h"
@@ -261,6 +263,7 @@ static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             on_open_dossier( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
 static void             on_update_properties( ofaMainWindow *window, gpointer user_data );
+static gboolean         check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo );
 static void             pane_restore_position( GtkPaned *pane );
 static void             add_treeview_to_pane_left( ofaMainWindow *window );
 static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
@@ -685,6 +688,10 @@ on_open_dossier( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 			( void * ) sdo, sdo->label, sdo->account, sdo->password,
 			( void * ) user_data );
 
+	if( !check_for_account( window, sdo )){
+		return;
+	}
+
 	if( window->private->dossier ){
 		g_return_if_fail( OFO_IS_DOSSIER( window->private->dossier ));
 		do_close_dossier( window );
@@ -705,6 +712,26 @@ on_open_dossier( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 
 	set_menubar( window, window->private->menu );
 	set_window_title( window );
+}
+
+/*
+ * If account and/or user password are empty, then let the user enter
+ * a new pair of account/password.
+ */
+static gboolean
+check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo )
+{
+	if( !sdo->account || !g_utf8_strlen( sdo->account, -1 ) ||
+		! sdo->password || !g_utf8_strlen( sdo->password, -1 )){
+
+		g_free( sdo->account );
+		g_free( sdo->password );
+
+		ofa_dossier_login_run( main_window, sdo->label, &sdo->account, &sdo->password );
+	}
+
+	return( sdo->account && g_utf8_strlen( sdo->account, -1 ) &&
+			sdo->password && g_utf8_strlen( sdo->password, -1 ));
 }
 
 static void
@@ -898,6 +925,20 @@ on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
 
 	do_close_dossier( OFA_MAIN_WINDOW( user_data ));
+}
+
+/**
+ * ofa_main_window_close_dossier:
+ */
+void
+ofa_main_window_close_dossier( ofaMainWindow *main_window )
+{
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	if( !main_window->private->dispose_has_run ){
+
+		do_close_dossier( main_window );
+	}
 }
 
 static void

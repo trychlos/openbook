@@ -281,7 +281,33 @@ my_utils_boolean_set_from_str( const gchar *str, gboolean *bvar )
 }
 
 /**
- * my_utils_double_set_from_input:
+ * my_utils_double_undecorate:
+ *
+ * Remove from the given string all decoration added for the display
+ * of a double, returning so a 'brut' double, without thousand separator
+ * and with a dot as the decimal point
+ */
+gchar *
+my_utils_double_undecorate( const gchar *text )
+{
+	GRegex *regex;
+	gchar *dest1, *dest2;
+
+	regex = g_regex_new( " ", 0, 0, NULL );
+	dest1 = g_regex_replace_literal( regex, text, -1, 0, "", 0, NULL );
+	g_regex_unref( regex );
+
+	regex = g_regex_new( ",", 0, 0, NULL );
+	dest2 = g_regex_replace_literal( regex, dest1, -1, 0, ".", 0, NULL );
+	g_regex_unref( regex );
+
+	g_free( dest1 );
+
+	return( dest2 );
+}
+
+/**
+ * my_utils_double_from_string:
  *
  * In v1, we only target fr locale, so with space as thousand separator
  * and comma as decimal one on display -
@@ -289,9 +315,21 @@ my_utils_boolean_set_from_str( const gchar *str, gboolean *bvar )
  * string that we have previously displayed - we accept both
  */
 gdouble
-my_utils_double_set_from_input( const gchar *sql_string )
+my_utils_double_from_string( const gchar *string )
 {
-	return( 0.0 );
+	gchar *text;
+	gdouble d;
+
+	if( string && g_utf8_strlen( string, -1 )){
+		text = my_utils_double_undecorate( string );
+		d = g_strtod( text, NULL );
+		g_free( text );
+
+	} else {
+		d = 0.0;
+	}
+
+	return( d );
 }
 
 /**
@@ -739,13 +777,13 @@ my_utils_window_restore_position( GtkWindow *toplevel, const gchar *name )
 	GList *list;
 	gint x=0, y=0, width=0, height=0;
 
-	g_debug( "%s: toplevel=%p (%s), name=%s",
-			thisfn, ( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ), name );
+	/*g_debug( "%s: toplevel=%p (%s), name=%s",
+			thisfn, ( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ), name );*/
 
 	key = g_strdup_printf( "%s-pos", name );
 	list = ofa_settings_get_uint_list( key );
 	g_free( key );
-	g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
+	/*g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));*/
 
 	if( list ){
 		int_list_to_position( list, &x, &y, &width, &height );
@@ -754,6 +792,9 @@ my_utils_window_restore_position( GtkWindow *toplevel, const gchar *name )
 
 		gtk_window_move( toplevel, x, y );
 		gtk_window_resize( toplevel, width, height );
+
+	} else {
+		g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
 	}
 }
 

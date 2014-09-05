@@ -35,7 +35,8 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-model.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-guided-common.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-main-window.h"

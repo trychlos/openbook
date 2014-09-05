@@ -204,6 +204,7 @@ static void           on_entry_status_toggled( GtkToggleButton *button, ofaViewE
 static void           on_visible_column_toggled( GtkToggleButton *button, ofaViewEntries *self );
 static void           on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaViewEntries *self );
 static void           set_renderers_editable( ofaViewEntries *self, gboolean editable );
+static void           on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, ofaViewEntries *self );
 static void           on_cell_edited( GtkCellRendererText *cell, gchar *path, gchar *text, ofaViewEntries *self );
 static void           on_row_selected( GtkTreeSelection *select, ofaViewEntries *self );
 static gboolean       check_row_for_valid( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -684,6 +685,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	text_cell = gtk_cell_renderer_text_new();
 	st_renderers[ENT_COL_DEBIT] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_DEBIT ));
+	g_signal_connect( G_OBJECT( text_cell ), "editing-started", G_CALLBACK( on_editing_started ), self );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
@@ -698,6 +700,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	text_cell = gtk_cell_renderer_text_new();
 	st_renderers[ENT_COL_CREDIT] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_CREDIT ));
+	g_signal_connect( G_OBJECT( text_cell ), "editing-started", G_CALLBACK( on_editing_started ), self );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
@@ -1100,8 +1103,9 @@ compute_balances( ofaViewEntries *self )
 					-1 );
 
 			pc = find_balance_by_currency( self, dev_code );
-			pc->debits += g_strtod( sdeb, NULL );
-			pc->credits += g_strtod( scre, NULL );
+
+			pc->debits += my_utils_double_from_string( sdeb );
+			pc->credits += my_utils_double_from_string( scre );
 
 			g_free( sdeb );
 			g_free( scre );
@@ -1249,12 +1253,12 @@ update_balance_amounts( ofaViewEntries *self, const gchar *sdeb, const gchar *sc
 	pc = find_balance_by_currency( self, dev_code );
 	switch( column_id ){
 		case ENT_COL_DEBIT:
-			pc->debits -= g_strtod( sdeb, NULL );
-			pc->debits += g_strtod( text, NULL );
+			pc->debits -= my_utils_double_from_string( sdeb );
+			pc->debits += my_utils_double_from_string( text );
 			break;
 		case ENT_COL_CREDIT:
-			pc->credits -= g_strtod( scre, NULL );
-			pc->credits += g_strtod( text, NULL );
+			pc->credits -= my_utils_double_from_string( scre );
+			pc->credits += my_utils_double_from_string( text );
 			break;
 	}
 
@@ -1272,8 +1276,8 @@ update_balance_currency( ofaViewEntries *self, const gchar *sdeb, const gchar *s
 	gdouble debit, credit;
 
 	priv = self->private;
-	debit = sdeb ? g_strtod( sdeb, NULL ) : 0.0;
-	credit = scre ? g_strtod( scre, NULL ) : 0.0;
+	debit = my_utils_double_from_string( sdeb );
+	credit = my_utils_double_from_string( scre );
 
 	pc = find_balance_by_currency( self, dev_code );
 	pc->debits -= debit;
@@ -1520,6 +1524,25 @@ set_renderers_editable( ofaViewEntries *self, gboolean editable )
 }
 
 /*
+ * when starting to edit an amount,
+ * - remove thousand separator (space)
+ * - replace decimal comma with a dot
+ */
+static void
+on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, ofaViewEntries *self )
+{
+	GtkEntry *entry;
+	gchar *text;
+
+	if( GTK_IS_ENTRY( editable )){
+		entry = GTK_ENTRY( editable );
+		text = my_utils_double_undecorate( gtk_entry_get_text( entry ));
+		gtk_entry_set_text( entry, text );
+		g_free( text );
+	}
+}
+
+/*
  * makes use of the two tree models:
  * - [priv->tfilter, iter] is the tree model filter
  * - [tmodel, child_iter] is the underlying list store
@@ -1568,7 +1591,7 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 
 			/* reformat amounts */
 			if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){
-				amount = g_strtod( text, NULL );
+				amount = my_utils_double_from_string( text );
 				str = g_strdup_printf( "%'.2lf", amount );
 				g_debug( "on_cell_edited: text='%s', amount=%lf, str='%s'", text, amount, str );
 			} else {
@@ -1899,8 +1922,8 @@ check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 	is_valid = FALSE;
 	gtk_tree_model_get( tmodel, iter, ENT_COL_DEBIT, &sdeb, ENT_COL_CREDIT, &scre, -1 );
 	if(( sdeb && g_utf8_strlen( sdeb, -1 )) || ( scre && g_utf8_strlen( scre, -1 ))){
-		debit = sdeb ? g_strtod( sdeb, NULL ) : 0.0;
-		credit = scre ? g_strtod( scre, NULL ) : 0.0;
+		debit = my_utils_double_from_string( sdeb );
+		credit = my_utils_double_from_string( scre );
 		if(( debit && !credit ) || ( !debit && credit )){
 			is_valid = TRUE;
 		} else {
@@ -1957,8 +1980,8 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	g_date_set_parse( &deff, sdeff );
 	g_return_val_if_fail( g_date_valid( &deff ), FALSE );
 
-	debit = g_strtod( sdeb, NULL );
-	credit = g_strtod( scre, NULL );
+	debit = my_utils_double_from_string( sdeb );
+	credit = my_utils_double_from_string( scre );
 	g_debug( "save_entry: sdeb='%s', debit=%lf, scre='%s', credit=%lf", sdeb, debit, scre, credit );
 
 	if( entry ){

@@ -307,16 +307,6 @@
 
  269 2014- 6-27 lettrage des comptes de tiers
 
- 270 2014- 6-27 ViewEntries: compute_balances() doesn't know how to
-                parse an amount with a space thousand separator
-     2014- 8-18 OFA-DEBUG: on_cell_edited: text='23,45', amount=23,450000, str='23,45'
-                OFA-DEBUG: save_entry: sdeb='23,45', debit=23,450000, scre='0,00', credit=0,000000
-                OFA-DEBUG: ofo_sgbd_query: sgbd=0x10a6400, query='UPDATE OFA_T_ECRITURES 	SET ECR_DEFFET='2014-01-01',ECR_DOPE='2014-01-01',ECR_LABEL='sdfgsdfgsdfg',ECR_REF='(null)',	ECR_COMPTE='41198',ECR_DEV_CODE='EUR',ECR_JOU_MNEMO='ACH',	ECR_DEBIT=23.449999999999999,ECR_CREDIT=0,	ECR_MAJ_USER='ofat',ECR_MAJ_STAMP='2014-08-18 05:03:06' 	WHERE ECR_NUMBER=328', display_error=True
-                [...]
-                OFA-DEBUG: on_cell_edited: text='1223,45', amount=1223,450000, str='1 223,45'
-                OFA-DEBUG: save_entry: sdeb='1 223,45', debit=1,000000, scre='0,00', credit=0,000000
-                OFA-DEBUG: ofo_sgbd_query: sgbd=0x10a6400, query='UPDATE OFA_T_ECRITURES 	SET ECR_DEFFET='2014-01-01',ECR_DOPE='2014-01-01',ECR_LABEL='sdfgsdfgsdfg',ECR_REF='(null)',	ECR_COMPTE='41198',ECR_DEV_CODE='EUR',ECR_JOU_MNEMO='ACH',	ECR_DEBIT=1,ECR_CREDIT=0,	ECR_MAJ_USER='ofat',ECR_MAJ_STAMP='2014-08-18 05:03:11' 	WHERE ECR_NUMBER=328'
-
  271 2014- 6-27 ViewEntries: set a default effect date with the ope date
 
  272 2014- 6-27 Have a myDate class or family of functions and take an
@@ -341,12 +331,6 @@
                 none of the candidate admin accounts are used in
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
-
- 307 2014- 8-26 label+account+password should be kept in the DBMS 
-                connection structure (and not in the ofoSgbd data)
-
- 308 2014- 8-26 mysql: have a get_connect_parms() function to read a
-                mysqlConnect structure from the settings
 
 -----------------------------------------------------------------------
  DONE
@@ -453,7 +437,7 @@
 
   37 2014- 5-11 DossierNew: fix the order of the focus on pages p2 and
                 p3 (a try with gtk_container_set_focus_chain is not
-                successfull)
+                successful)
      2014- 7-14 closed - cf. #277
 
   38 2014- 5-11 DossierOpen: fix the order of the focus
@@ -656,7 +640,7 @@
  102 2014- 5-24 test the GtkTreeSortable interface - if not works:
                 define an interface for ofaMainPage which sorts the 
                 embedded treeview on the specified column
-     2014- 5-24 done svn #3487
+     2014- 5-24 done - svn #3487
 
  103 2014- 5-24 load OFA_T_DOSSIER data when opening
      2014- 5-28 done - svn #3535
@@ -1112,6 +1096,17 @@
                 set
      2014- 6-27 done - svn #3752
 
+ 270 2014- 6-27 ViewEntries: compute_balances() doesn't know how to
+                parse an amount with a space thousand separator
+     2014- 8-18 OFA-DEBUG: on_cell_edited: text='23,45', amount=23,450000, str='23,45'
+                OFA-DEBUG: save_entry: sdeb='23,45', debit=23,450000, scre='0,00', credit=0,000000
+                OFA-DEBUG: ofo_sgbd_query: sgbd=0x10a6400, query='UPDATE OFA_T_ECRITURES 	SET ECR_DEFFET='2014-01-01',ECR_DOPE='2014-01-01',ECR_LABEL='sdfgsdfgsdfg',ECR_REF='(null)',	ECR_COMPTE='41198',ECR_DEV_CODE='EUR',ECR_JOU_MNEMO='ACH',	ECR_DEBIT=23.449999999999999,ECR_CREDIT=0,	ECR_MAJ_USER='ofat',ECR_MAJ_STAMP='2014-08-18 05:03:06' 	WHERE ECR_NUMBER=328', display_error=True
+                [...]
+                OFA-DEBUG: on_cell_edited: text='1223,45', amount=1223,450000, str='1 223,45'
+                OFA-DEBUG: save_entry: sdeb='1 223,45', debit=1,000000, scre='0,00', credit=0,000000
+                OFA-DEBUG: ofo_sgbd_query: sgbd=0x10a6400, query='UPDATE OFA_T_ECRITURES 	SET ECR_DEFFET='2014-01-01',ECR_DOPE='2014-01-01',ECR_LABEL='sdfgsdfgsdfg',ECR_REF='(null)',	ECR_COMPTE='41198',ECR_DEV_CODE='EUR',ECR_JOU_MNEMO='ACH',	ECR_DEBIT=1,ECR_CREDIT=0,	ECR_MAJ_USER='ofat',ECR_MAJ_STAMP='2014-08-18 05:03:11' 	WHERE ECR_NUMBER=328'
+     2014- 9- 6 done
+
  274 2014- 6-29 put back the main GtkNotebook popup menu
      2014- 8-17 done - svn #3820
 
@@ -1226,6 +1221,14 @@
 
  306 2014- 8-24 have a plugin preferences api
      2014- 8-24 done - svn #3830
+
+ 307 2014- 8-26 label+account+password should be kept in the DBMS 
+                connection structure (and not in the ofoSgbd data)
+     2014- 9- 5 done
+
+ 308 2014- 8-26 mysql: have a get_connect_parms() function to read a
+                mysqlConnect structure from the settings
+     2014- 9- 5 done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

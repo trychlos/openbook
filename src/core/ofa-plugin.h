@@ -29,7 +29,7 @@
 
 /* @title: ofaPlugin
  * @short_description: The #ofaPlugin Class Definition
- * @include: ui/ofa-plugin.h
+ * @include: core/ofa-plugin.h
  *
  * The ofaPlugin class manages the application extensions as
  * dynamically loadable modules (thus 'plugins').

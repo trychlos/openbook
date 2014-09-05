@@ -38,7 +38,7 @@
  * order with insensitive case.
  */
 
-#include "ui/ofa-main-page-def.h"
+#include "core/ofa-main-page-def.h"
 
 G_BEGIN_DECLS
 

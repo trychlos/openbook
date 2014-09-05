@@ -32,7 +32,8 @@
 
 #include "api/my-utils.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/my-assistant.h"
 #include "ui/ofa-preferences.h"
 

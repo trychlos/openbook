@@ -33,7 +33,7 @@
  * @include: ui/ofa-view-entries.h
  */
 
-#include "ui/ofa-main-page-def.h"
+#include "core/ofa-main-page-def.h"
 
 G_BEGIN_DECLS
 

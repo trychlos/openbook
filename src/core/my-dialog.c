@@ -28,8 +28,8 @@
 #include <config.h>
 #endif
 
-#include "ui/my-dialog.h"
-#include "ui/my-window-prot.h"
+#include "core/my-dialog.h"
+#include "core/my-window-prot.h"
 
 /* private instance data
  */

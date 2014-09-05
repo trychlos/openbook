@@ -68,8 +68,9 @@
  *   value than those of the previous row, same column.
  */
 
-#include "ui/my-dialog.h"
 #include "api/ofo-model-def.h"
+
+#include "core/my-dialog.h"
 
 G_BEGIN_DECLS
 

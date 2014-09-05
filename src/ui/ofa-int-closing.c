@@ -35,7 +35,8 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-journal.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-journal-treeview.h"
 #include "ui/ofa-int-closing.h"
 #include "ui/ofa-main-window.h"

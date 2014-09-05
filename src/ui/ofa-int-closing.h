@@ -35,8 +35,9 @@
  * Run an intermediate closing on the selected journals.
  */
 
-#include "ui/my-dialog.h"
 #include "api/ofo-journal-def.h"
+
+#include "core/my-dialog.h"
 
 G_BEGIN_DECLS
 

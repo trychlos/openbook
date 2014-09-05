@@ -36,10 +36,9 @@
  * i.e. user preferences which are not attached to any dossier.
  */
 
+#include "core/my-dialog.h"
+#include "core/ofa-main-window-def.h"
 #include "core/ofa-plugin.h"
-
-#include "ui/my-dialog.h"
-#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

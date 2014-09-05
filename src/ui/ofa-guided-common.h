@@ -43,7 +43,8 @@
  */
 
 #include "api/ofo-model-def.h"
-#include "ui/ofa-main-window-def.h"
+
+#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

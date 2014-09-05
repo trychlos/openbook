@@ -60,6 +60,7 @@ libofa_mysql_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
+	ofa-mysql-connect-infos.piece.ui				\
 	ofa-mysql-dossier-new.piece.ui					\
 	ofa-mysql-prefs.piece.ui						\
 	$(NULL)

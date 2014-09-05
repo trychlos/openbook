@@ -59,7 +59,9 @@ gchar     *my_utils_import_multi_lines     ( const gchar *str );
 
 gboolean   my_utils_boolean_set_from_str   ( const gchar *str, gboolean *bvar );
 
-gdouble    my_utils_double_set_from_input  ( const gchar *sql_string );
+gchar     *my_utils_double_undecorate      ( const gchar *decorated );
+gdouble    my_utils_double_from_string     ( const gchar *string );
+
 gdouble    my_utils_double_set_from_sql    ( const gchar *sql_string );
 gchar     *my_utils_sql_from_double        ( gdouble value );
 

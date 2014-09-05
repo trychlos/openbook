@@ -36,7 +36,8 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-sgbd.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-delete-prefs.h"
 #include "ui/ofa-main-window.h"

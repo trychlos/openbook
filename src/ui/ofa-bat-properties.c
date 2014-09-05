@@ -34,7 +34,8 @@
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-bat-common.h"
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-main-window.h"

@@ -37,7 +37,7 @@
  * The display treeview is sorted in ascending currency class number.
  */
 
-#include "ui/ofa-main-page-def.h"
+#include "core/ofa-main-page-def.h"
 
 G_BEGIN_DECLS
 

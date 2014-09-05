@@ -35,9 +35,7 @@
  * Backup the database behind the dossier.
  */
 
-#include <glib-object.h>
-
-#include "ui/ofa-main-window-def.h"
+#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 

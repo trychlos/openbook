@@ -35,7 +35,8 @@
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-devise-combo.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-main-window.h"

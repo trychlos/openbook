@@ -36,7 +36,8 @@
 #include "api/ofa-ipreferences.h"
 #include "api/ofa-settings.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-dossier-delete-prefs.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-preferences.h"

@@ -46,11 +46,6 @@ openbook_SOURCES = \
 	main.c												\
 	my-assistant.c										\
 	my-assistant.h										\
-	my-dialog.c											\
-	my-dialog.h											\
-	my-window.c											\
-	my-window.h											\
-	my-window-prot.h									\
 	ofa-account-notebook.c								\
 	ofa-account-notebook.h								\
 	ofa-account-properties.c							\
@@ -87,6 +82,8 @@ openbook_SOURCES = \
 	ofa-dossier-delete.h								\
 	ofa-dossier-delete-prefs.c							\
 	ofa-dossier-delete-prefs.h							\
+	ofa-dossier-login.c									\
+	ofa-dossier-login.h									\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-dossier-open.c									\
@@ -119,10 +116,8 @@ openbook_SOURCES = \
 	ofa-journal-treeview.h								\
 	ofa-main-page.c										\
 	ofa-main-page.h										\
-	ofa-main-page-def.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
-	ofa-main-window-def.h								\
 	ofa-model-properties.c								\
 	ofa-model-properties.h								\
 	ofa-models-set.c									\
@@ -135,6 +130,8 @@ openbook_SOURCES = \
 	ofa-print-reconcil.h								\
 	ofa-rappro.c										\
 	ofa-rappro.h										\
+	ofa-restore.c										\
+	ofa-restore.h										\
 	ofa-tab-label.c										\
 	ofa-tab-label.h										\
 	ofa-taux-properties.c								\
@@ -171,6 +168,7 @@ ui_files = \
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-delete-prefs.piece.ui					\
+	ofa-dossier-login.ui								\
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\

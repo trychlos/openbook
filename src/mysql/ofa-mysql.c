@@ -30,7 +30,8 @@
 
 #include <string.h>
 
-#include <api/ofa-settings.h>
+#include "api/my-utils.h"
+#include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-backup.h"
@@ -43,8 +44,11 @@ struct _ofaMysqlPrivate {
 	gboolean dispose_has_run;
 };
 
-static GType         st_module_type = 0;
+static GType         st_module_type  = 0;
 static GObjectClass *st_parent_class = NULL;
+
+static const gchar *st_ui_xml        = PROVIDER_DATADIR "/ofa-mysql-connect-infos.piece.ui";
+static const gchar *st_ui_mysql      = "MySQLConnectInfosWindow";
 
 static void         class_init( ofaMysqlClass *klass );
 static void         instance_init( GTypeInstance *instance, gpointer klass );
@@ -55,8 +59,7 @@ static void         idbms_iface_init( ofaIDbmsInterface *iface );
 static guint        idbms_get_interface_version( const ofaIDbms *instance );
 static gchar       *idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label );
 static gchar       *idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label );
-static void        *idbms_connect( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password );
-static void        *idbms_connect_ex( const ofaIDbms *instance, const gchar *label, const gchar *dbname, const gchar *account, const gchar *password );
+static void        *idbms_connect( const ofaIDbms *instance, const gchar *label, const gchar *dbname, gboolean with_dbname, const gchar *account, const gchar *password );
 static void        *idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *label, const gchar *account, const gchar *password );
 static void         idbms_close( const ofaIDbms *instance, void *handle );
 static gboolean     idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
@@ -65,6 +68,7 @@ static gchar       *idbms_error( const ofaIDbms *instance, void *handle );
 static gboolean     idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
 static void         idbms_drop_database( const mysqlInfos *infos );
 static gboolean     local_get_db_exists( MYSQL *mysql, const gchar *dbname );
+static void         idbms_display_connect_infos( const ofaIDbms *instance, GtkWidget *container, const gchar *label );
 
 static void         ipreferences_iface_init( ofaIPreferencesInterface *iface );
 static guint        ipreferences_get_interface_version( const ofaIPreferences *instance );
@@ -201,13 +205,14 @@ idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->get_dossier_host = idbms_get_dossier_host;
 	iface->get_dossier_dbname = idbms_get_dossier_dbname;
 	iface->connect = idbms_connect;
-	iface->connect_ex = idbms_connect_ex;
 	iface->close = idbms_close;
 	iface->query = idbms_query;
 	iface->query_ex = idbms_query_ex;
 	iface->error = idbms_error;
 	iface->delete_dossier = idbms_delete_dossier;
 	iface->backup = ofa_mysql_backup;
+	iface->restore = ofa_mysql_restore;
+	iface->display_connect_infos = idbms_display_connect_infos;
 }
 
 static guint
@@ -243,27 +248,47 @@ idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label )
 }
 
 static void *
-idbms_connect( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password )
+idbms_connect( const ofaIDbms *instance, const gchar *label, const gchar *dbname, gboolean with_dbname, const gchar *account, const gchar *password )
 {
 	mysqlInfos *infos;
 
 	infos = g_new0( mysqlInfos, 1 );
-	infos->connect.dbname = ofa_settings_get_dossier_key_string( label, "Database" );
+	if( with_dbname ){
+		infos->connect.dbname = g_strdup( dbname );
+	} else {
+		infos->connect.dbname = ofa_settings_get_dossier_key_string( label, "Database" );
+	}
 
 	return( idbms_connect_conv( instance, infos, label, account, password ));
 }
 
-static void *
-idbms_connect_ex( const ofaIDbms *instance, const gchar *label, const gchar *dbname, const gchar *account, const gchar *password )
+/**
+ * ofa_mysql_get_connect_infos:
+ * @cnt: the connection structure to be filled.
+ * @label: the name of the dossier in user's settings
+ *
+ * Fill the connection structure with connection informations, but
+ * not the database, i.e. for Mysql: host, port and socket.
+ *
+ * Return: the connection structure itself.
+ */
+mysqlConnect *
+ofa_mysql_get_connect_infos( mysqlConnect *cnt, const gchar *label )
 {
-	mysqlInfos *infos;
+	cnt->host = ofa_settings_get_dossier_key_string( label, "Host" );
+	cnt->socket = ofa_settings_get_dossier_key_string( label, "Socket" );
+	cnt->port = ofa_settings_get_dossier_key_uint( label, "Port" );
+	if( cnt->port == -1 ){
+		cnt->port = 0;
+	}
 
-	infos = g_new0( mysqlInfos, 1 );
-	infos->connect.dbname = g_strdup( dbname );
-
-	return( idbms_connect_conv( instance, infos, label, account, password ));
+	return( cnt );
 }
 
+/*
+ * dbname is already set, whether it has been explicitely specified or
+ * it comes from the dossier
+ */
 static void *
 idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *label, const gchar *account, const gchar *password )
 {
@@ -272,12 +297,8 @@ idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *la
 
 	cnt = &infos->connect;
 
-	cnt->host = ofa_settings_get_dossier_key_string( label, "Host" );
-	cnt->socket = ofa_settings_get_dossier_key_string( label, "Socket" );
-	cnt->port = ofa_settings_get_dossier_key_uint( label, "Port" );
-	if( cnt->port == -1 ){
-		cnt->port = 0;
-	}
+	ofa_mysql_get_connect_infos( cnt, label );
+
 	cnt->account = g_strdup( account );
 	cnt->password = g_strdup( password );
 
@@ -464,7 +485,7 @@ idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar 
 			( void * ) instance, label, account,
 			drop_db ? "True":"False", drop_accounts ? "True":"False" );
 
-	infos = ( mysqlInfos * ) idbms_connect_ex( instance, label, "mysql", account, password );
+	infos = ( mysqlInfos * ) idbms_connect( instance, label, "mysql", TRUE, account, password );
 	if( !infos ){
 		return( FALSE );
 	}
@@ -499,6 +520,62 @@ idbms_drop_database( const mysqlInfos *infos )
 	g_debug( "%s: infos=%p, query=%s", thisfn, ( void * ) infos, query );
 	if( mysql_query( infos->mysql, query )){
 		g_debug( "%s: %s", thisfn, mysql_error( infos->mysql ));
+	}
+}
+
+static void
+idbms_display_connect_infos( const ofaIDbms *instance, GtkWidget *container, const gchar *label )
+{
+	GtkWidget *window;
+	GtkWidget *grid;
+	GtkWidget *wlabel;
+	gchar *text;
+	gint port_num;
+
+	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_mysql );
+	g_return_if_fail( window && GTK_IS_WINDOW( window ));
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "infos-grid" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+	gtk_widget_reparent( grid, container );
+
+	wlabel = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "provider" );
+	g_return_if_fail( wlabel && GTK_IS_LABEL( wlabel ));
+	text = ofa_settings_get_dossier_provider( label );
+	gtk_label_set_text( GTK_LABEL( wlabel ), text );
+	g_free( text );
+
+	wlabel = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "host" );
+	g_return_if_fail( wlabel && GTK_IS_LABEL( wlabel ));
+	text = ofa_settings_get_dossier_key_string( label, "Host" );
+	if( !text || !g_utf8_strlen( text, -1 )){
+		g_free( text );
+		text = g_strdup( "localhost" );
+	}
+	gtk_label_set_text( GTK_LABEL( wlabel ), text );
+	g_free( text );
+
+	wlabel = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "socket" );
+	g_return_if_fail( wlabel && GTK_IS_LABEL( wlabel ));
+	text = ofa_settings_get_dossier_key_string( label, "Socket" );
+	if( text && g_utf8_strlen( text, -1 )){
+		gtk_label_set_text( GTK_LABEL( wlabel ), text );
+	}
+	g_free( text );
+
+	wlabel = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "database" );
+	g_return_if_fail( wlabel && GTK_IS_LABEL( wlabel ));
+	text = ofa_settings_get_dossier_key_string( label, "Database" );
+	gtk_label_set_text( GTK_LABEL( wlabel ), text );
+	g_free( text );
+
+	wlabel = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "port" );
+	g_return_if_fail( wlabel && GTK_IS_LABEL( wlabel ));
+	port_num = ofa_settings_get_dossier_key_uint( label, "Port" );
+	if( port_num > 0 ){
+		text = g_strdup_printf( "%d", port_num );
+		gtk_label_set_text( GTK_LABEL( wlabel ), text );
+		g_free( text );
 	}
 }
 

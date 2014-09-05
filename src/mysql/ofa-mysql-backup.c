@@ -64,9 +64,9 @@ typedef struct {
 
 static const gchar *st_window_name = "MySQLBackupWindow";
 
-static gchar      *build_cmdline( const mysqlInfos *infos, const gchar *fname );
-static void        create_window( backupInfos *infos );
-/*static void        on_close_clicked( GtkButton *button, backupInfos *infos );*/
+static gboolean    do_backup_restore( const mysqlConnect *connect, const gchar *fname, const gchar *pref, const gchar *window_title, GChildWatchFunc pfn );
+static gchar      *build_cmdline( const mysqlConnect *connect, const gchar *fname, const gchar *pref );
+static void        create_window( backupInfos *infos, const gchar *window_title );
 static GPid        exec_command( const gchar *cmdline, backupInfos *infos );
 static GIOChannel *set_up_io_channel( gint fd, GIOCondition cond, GIOFunc func, backupInfos *infos );
 static gboolean    stdout_fn( GIOChannel *ioc, GIOCondition cond, backupInfos *infos );
@@ -74,29 +74,83 @@ static gboolean    stdout_done( GIOChannel *ioc );
 static gboolean    stderr_fn( GIOChannel *ioc, GIOCondition cond, backupInfos *infos );
 static gboolean    stderr_done( GIOChannel *ioc );
 static void        display_output( const gchar *str, backupInfos *infos );
-static void        exit_command_cb( GPid child_pid, gint status, backupInfos *infos );
+static void        exit_backup_cb( GPid child_pid, gint status, backupInfos *infos );
+static void        exit_restore_cb( GPid child_pid, gint status, backupInfos *infos );
 
 /**
  * ofa_mysql_backup:
  *
  * Backup the currently connected database.
+ *
+ * The outputed SQL file doesn't contain any CREATE DATABASE nor USE,
+ * so that we will be able to reload the data to any database name.
  */
 gboolean
 ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 {
-	static const gchar *thisfn = "ofa_mysql_backup";
+	mysqlInfos *infos;
+	const mysqlConnect *connect;
+	gboolean ok;
+
+	infos = ( mysqlInfos * ) handle;
+	connect = &infos->connect;
+
+	ok = do_backup_restore(
+				( const mysqlConnect * ) connect,
+				fname,
+				PREFS_BACKUP_CMDLINE,
+				_( "Openbook backup" ),
+				( GChildWatchFunc ) exit_backup_cb );
+
+	return( ok );
+}
+
+/**
+ * ofa_mysql_restore:
+ *
+ * Restore a backup file on a named dossier.
+ */
+gboolean
+ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password )
+{
+	mysqlConnect *connect;
+	gboolean ok;
+
+	connect = g_new0( mysqlConnect, 1 );
+	connect = ofa_mysql_get_connect_infos( connect, label );
+	connect->dbname = ofa_settings_get_dossier_key_string( label, "Database" );
+	connect->account = g_strdup( account );
+	connect->password = g_strdup( password );
+
+	ok = do_backup_restore(
+				( const mysqlConnect * ) connect,
+				fname,
+				PREFS_RESTORE_CMDLINE,
+				_( "Openbook restore" ),
+				( GChildWatchFunc ) exit_restore_cb );
+
+	ofa_mysql_free_connect( connect );
+	g_free( connect );
+
+	return( ok );
+}
+
+static gboolean
+do_backup_restore( const mysqlConnect *connect, const gchar *fname, const gchar *pref, const gchar *window_title, GChildWatchFunc pfn )
+{
+	static const gchar *thisfn = "ofa_mysql_do_backup_restore";
 	backupInfos *infos;
 	gchar *cmdline;
 	GPid child_pid;
 	gboolean ok;
 
-	cmdline = build_cmdline(( const mysqlInfos * ) handle, fname );
+	cmdline = build_cmdline( connect, fname, pref );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
 
 	infos = g_new0( backupInfos, 1 );
 	infos->backup_ok = FALSE;
 
-	create_window( infos );
+	create_window( infos, window_title );
 	g_debug( "%s: window=%p, textview=%p",
 			thisfn, ( void * ) infos->window, ( void * ) infos->textview );
 
@@ -106,7 +160,7 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 		g_debug("%s: child PID=%lu", thisfn, ( gulong ) child_pid );
 
 		/* Watch the child, so we get the exit status */
-		g_child_watch_add( child_pid, ( GChildWatchFunc ) exit_command_cb, infos );
+		g_child_watch_add( child_pid, pfn, infos );
 		g_debug( "%s: returning from g_child_watch_add", thisfn );
 		gtk_dialog_run( GTK_DIALOG( infos->window ));
 		my_utils_window_save_position( GTK_WINDOW( infos->window ), st_window_name );
@@ -121,17 +175,15 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 }
 
 static gchar *
-build_cmdline( const mysqlInfos *infos, const gchar *fname )
+build_cmdline( const mysqlConnect *connect, const gchar *fname, const gchar *pref )
 {
 	gchar *cmdline;
 	GString *options;
 	GRegex *regex;
 	gchar *newcmd;
-	const mysqlConnect *connect;
 	gchar *quoted;
 
-	connect = &infos->connect;
-	cmdline = ofa_settings_get_string_ex( PREFS_GROUP, PREFS_BACKUP_CMDLINE );
+	cmdline = ofa_settings_get_string_ex( PREFS_GROUP, pref );
 
 	regex = g_regex_new( "%B", 0, 0, NULL );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, connect->dbname, 0, NULL );
@@ -147,7 +199,7 @@ build_cmdline( const mysqlInfos *infos, const gchar *fname )
 	g_free( cmdline );
 	cmdline = newcmd;
 
-	options = g_string_new( "--add-drop-database " );
+	options = g_string_new( "" );
 	if( connect->host && g_utf8_strlen( connect->host, -1 )){
 		g_string_append_printf( options, "--host=%s ", connect->host );
 	}
@@ -180,12 +232,12 @@ build_cmdline( const mysqlInfos *infos, const gchar *fname )
 }
 
 static void
-create_window( backupInfos *infos )
+create_window( backupInfos *infos, const gchar *window_title )
 {
 	GtkWidget *content, *grid, *scrolled;
 
 	infos->window = gtk_dialog_new_with_buttons(
-							_( "Openbook backup" ),
+							window_title,
 							NULL,
 							GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 							GTK_STOCK_CLOSE, GTK_RESPONSE_ACCEPT,
@@ -212,14 +264,6 @@ create_window( backupInfos *infos )
 
 	gtk_widget_show_all( infos->window );
 }
-
-/*static void
-on_close_clicked( GtkButton *button, backupInfos *infos )
-{
-	my_utils_window_save_position( GTK_WINDOW( infos->window ), st_window_name );
-	gtk_widget_destroy( infos->window );
-	g_free( infos );
-}*/
 
 static GPid
 exec_command( const gchar *cmdline, backupInfos *infos )
@@ -432,9 +476,9 @@ display_output( const gchar *str, backupInfos *infos )
 }
 
 static void
-exit_command_cb( GPid child_pid, gint status, backupInfos *infos )
+exit_backup_cb( GPid child_pid, gint status, backupInfos *infos )
 {
-	static const gchar *thisfn = "ofa_mysql_backup_exit_command_cb";
+	static const gchar *thisfn = "ofa_mysql_backup_exit_backup_cb";
 	GtkWidget *dlg;
 	gchar *msg;
 
@@ -471,6 +515,62 @@ exit_command_cb( GPid child_pid, gint status, backupInfos *infos )
 			msg = g_strdup( _( "Dossier successfully backuped" ));
 		} else {
 			msg = g_strdup( _( "An error occured while backuping the dossier" ));
+		}
+	}
+
+	dlg = gtk_message_dialog_new(
+				NULL,
+				GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_INFO,
+				GTK_BUTTONS_CLOSE,
+				"%s", msg );
+
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( dlg );
+
+	gtk_widget_set_sensitive( infos->close_btn, TRUE );
+}
+
+static void
+exit_restore_cb( GPid child_pid, gint status, backupInfos *infos )
+{
+	static const gchar *thisfn = "ofa_mysql_backup_exit_restore_cb";
+	GtkWidget *dlg;
+	gchar *msg;
+
+	g_debug("%s: child PID=%lu, exit status=%d", thisfn, ( gulong ) child_pid, status );
+	msg = NULL;
+
+	/* Not sure how the exit status works on win32. Unix code follows */
+
+#ifdef G_OS_UNIX
+	if( WIFEXITED( status )){			/* did child terminate in a normal way? */
+
+		if( WEXITSTATUS( status ) == EXIT_SUCCESS ){
+			msg = g_strdup( _( "Restore has successfully run" ));
+			infos->backup_ok = TRUE;
+
+		} else {
+			msg = g_strdup_printf(
+								_( "Restore has exited with error code=%d" ),
+								WEXITSTATUS( status ));
+		}
+	} else if( WIFSIGNALED( status )){	/* was it terminated by a signal */
+		msg = g_strdup_printf(
+							_( "Restore has exited with signal %d" ),
+							WTERMSIG( status ));
+	} else {
+		msg = g_strdup( _( "Database was restored with unknown errors" ));
+	}
+#endif /* G_OS_UNIX */
+
+	g_spawn_close_pid( child_pid );		/* does nothing on unix, needed on win32 */
+
+	if( !msg || !g_utf8_strlen( msg, -1 )){
+		if( infos->backup_ok ){
+			msg = g_strdup( _( "Dossier successfully restored" ));
+		} else {
+			msg = g_strdup( _( "An error occured while restoring the dossier" ));
 		}
 	}
 

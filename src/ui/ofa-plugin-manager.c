@@ -38,9 +38,9 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-sgbd.h"
 
+#include "core/my-window-prot.h"
 #include "core/ofa-plugin.h"
 
-#include "ui/my-window-prot.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-plugin-manager.h"
 #include "ui/ofa-preferences.h"

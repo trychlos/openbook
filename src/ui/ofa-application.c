@@ -36,12 +36,14 @@
 
 #include "core/ofa-plugin.h"
 
+#include "ui/ofa-application.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-preferences.h"
 #include "ui/ofa-plugin-manager.h"
+#include "ui/ofa-restore.h"
 
 /* private instance data
  */
@@ -116,6 +118,7 @@ static gboolean manage_options( ofaApplication *application );
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void     on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -126,6 +129,7 @@ static const GActionEntry st_app_entries[] = {
 		{ "manage",        on_manage,        NULL, NULL, NULL },
 		{ "new",           on_new,           NULL, NULL, NULL },
 		{ "open",          on_open,          NULL, NULL, NULL },
+		{ "restore",       on_restore,       NULL, NULL, NULL },
 		{ "user_prefs",    on_user_prefs,    NULL, NULL, NULL },
 		{ "quit",          on_quit,          NULL, NULL, NULL },
 		{ "plugin_manage", on_plugin_manage, NULL, NULL, NULL },
@@ -711,6 +715,22 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	if( sdo ){
 		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, sdo );
 	}
+}
+
+static void
+on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_application_on_restore";
+	ofaApplicationPrivate *priv;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
+	priv = OFA_APPLICATION( user_data )->private;
+	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+
+	ofa_restore_run( priv->main_window );
 }
 
 static void

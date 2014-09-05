@@ -63,10 +63,11 @@
  * +------------------------------------------------------------------+
  */
 
-#include "ui/ofa-application.h"
-#include "ui/ofa-main-page-def.h"
-#include "ui/ofa-main-window-def.h"
 #include "api/ofo-dossier-def.h"
+
+#include "core/ofa-application-def.h"
+#include "core/ofa-main-page-def.h"
+#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -107,6 +108,8 @@ ofaMainPage   *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint t
 gboolean       ofa_main_window_is_willing_to_quit( ofaMainWindow *window );
 
 ofoDossier    *ofa_main_window_get_dossier       ( const ofaMainWindow *window );
+
+void           ofa_main_window_close_dossier     ( ofaMainWindow *window );
 
 G_END_DECLS
 

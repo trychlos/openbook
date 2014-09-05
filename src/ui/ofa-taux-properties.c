@@ -37,7 +37,8 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-taux.h"
 
-#include "ui/my-window-prot.h"
+#include "core/my-window-prot.h"
+
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-taux-properties.h"
 

@@ -112,17 +112,19 @@ typedef struct {
 #define PREFS_BACKUP_CMDLINE            "BackupCommand"
 #define PREFS_RESTORE_CMDLINE           "RestoreCommand"
 
-GType        ofa_mysql_get_type         ( void );
+GType         ofa_mysql_get_type         ( void );
 
-void         ofa_mysql_register_type    ( GTypeModule *module );
+void          ofa_mysql_register_type    ( GTypeModule *module );
 
-const gchar *ofa_mysql_get_provider_name( const ofaIDbms *instance );
+const gchar  *ofa_mysql_get_provider_name( const ofaIDbms *instance );
 
-MYSQL       *ofa_mysql_connect          ( mysqlConnect *sConnect );
+MYSQL        *ofa_mysql_connect          ( mysqlConnect *sConnect );
 
-gboolean     ofa_mysql_get_db_exists    ( mysqlConnect *sConnect );
+gboolean      ofa_mysql_get_db_exists    ( mysqlConnect *sConnect );
 
-void         ofa_mysql_free_connect     ( mysqlConnect *sConnect );
+mysqlConnect *ofa_mysql_get_connect_infos( mysqlConnect *sConnect, const gchar *label );
+
+void          ofa_mysql_free_connect     ( mysqlConnect *sConnect );
 
 G_END_DECLS
 

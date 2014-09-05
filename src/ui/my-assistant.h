@@ -35,7 +35,7 @@
  * This is a base class for assistants.
  */
 
-#include "ui/my-window.h"
+#include "core/my-window.h"
 
 G_BEGIN_DECLS
 
