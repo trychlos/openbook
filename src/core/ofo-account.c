@@ -447,7 +447,7 @@ account_load_dataset( void )
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_account_set_deb_mnt( account,
-				my_utils_double_set_from_sql(( const gchar * ) icol->data ));
+				my_utils_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			ofo_account_set_cre_ecr( account, atoi(( gchar * ) icol->data ));
@@ -457,7 +457,7 @@ account_load_dataset( void )
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_account_set_cre_mnt( account,
-				my_utils_double_set_from_sql(( const gchar * ) icol->data ));
+				my_utils_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			ofo_account_set_bro_deb_ecr( account, atoi(( gchar * ) icol->data ));
@@ -467,7 +467,7 @@ account_load_dataset( void )
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_account_set_bro_deb_mnt( account,
-				my_utils_double_set_from_sql(( const gchar * ) icol->data ));
+				my_utils_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			ofo_account_set_bro_cre_ecr( account, atoi(( gchar * ) icol->data ));
@@ -477,7 +477,7 @@ account_load_dataset( void )
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_account_set_bro_cre_mnt( account,
-				my_utils_double_set_from_sql(( const gchar * ) icol->data ));
+				my_utils_double_from_sql(( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, account );
 	}

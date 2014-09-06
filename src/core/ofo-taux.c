@@ -259,7 +259,7 @@ taux_load_dataset( void )
 					my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 			icol = icol->next;
 			taux_set_val_taux( valid,
-					my_utils_double_set_from_sql(( const gchar * ) icol->data ));
+					my_utils_double_from_sql(( const gchar * ) icol->data ));
 
 			taux->private->valids = g_list_prepend( taux->private->valids, valid );
 		}

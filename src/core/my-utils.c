@@ -332,13 +332,13 @@ my_utils_double_from_string( const gchar *string )
 }
 
 /**
- * my_utils_double_set_from_sql:
+ * my_utils_double_from_sql:
  *
  * SQl amount is returned as a stringified number, without thousand
  * separator, and with dot '.' as decimal separator
  */
 gdouble
-my_utils_double_set_from_sql( const gchar *sql_string )
+my_utils_double_from_sql( const gchar *sql_string )
 {
 	double_set_locale();
 

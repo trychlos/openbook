@@ -217,7 +217,7 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 			}
 			icol = icol->next;
 			ofo_bat_line_set_montant( line,
-					my_utils_double_set_from_sql(( const gchar * ) icol->data ));
+					my_utils_double_from_sql(( const gchar * ) icol->data ));
 			icol = icol->next;
 			if( icol->data ){
 				ofo_bat_line_set_ecr( line, atoi(( gchar * ) icol->data ));
