@@ -1283,7 +1283,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	ref = my_utils_quote( ofo_entry_get_ref( entry ));
 	deff = my_date_dto_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	dope = my_date_dto_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_ECRITURES " );
@@ -1480,7 +1480,7 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	sdeff = my_date_dto_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdeb = my_utils_sql_from_double( ofo_entry_get_debit( entry ));
 	scre = my_utils_sql_from_double( ofo_entry_get_credit( entry ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_ECRITURES " );
@@ -1555,7 +1555,7 @@ do_update_rappro( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd )
 	if( g_date_valid( rappro )){
 
 		srappro = my_date_dto_str( rappro, MY_DATE_SQL );
-		my_utils_stamp_get_now( &stamp );
+		my_utils_stamp_set_now( &stamp );
 		stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 		query = g_strdup_printf(
 					"UPDATE OFA_T_ECRITURES"

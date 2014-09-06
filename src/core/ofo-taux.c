@@ -828,7 +828,7 @@ taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user )
 	ok = FALSE;
 	label = my_utils_quote( ofo_taux_get_label( taux ));
 	notes = my_utils_quote( ofo_taux_get_notes( taux ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_TAUX" );
@@ -994,7 +994,7 @@ taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, c
 	ok = FALSE;
 	label = my_utils_quote( ofo_taux_get_label( taux ));
 	notes = my_utils_quote( ofo_taux_get_notes( taux ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_TAUX SET " );

@@ -515,7 +515,7 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
@@ -576,7 +576,7 @@ class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar
 	ok = FALSE;
 	label = my_utils_quote( ofo_class_get_label( class ));
 	notes = my_utils_quote( ofo_class_get_notes( class ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_CLASSES SET " );

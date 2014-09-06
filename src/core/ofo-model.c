@@ -1220,7 +1220,7 @@ model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user )
 
 	label = my_utils_quote( ofo_model_get_label( model ));
 	notes = my_utils_quote( ofo_model_get_notes( model ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_MODELES" );
@@ -1414,7 +1414,7 @@ model_update_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user, cons
 	label = my_utils_quote( ofo_model_get_label( model ));
 	notes = my_utils_quote( ofo_model_get_notes( model ));
 	new_mnemo = ofo_model_get_mnemo( model );
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_MODELES SET " );

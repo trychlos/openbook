@@ -52,7 +52,7 @@ gchar     *my_utils_quote                  ( const gchar *str );
 
 GTimeVal  *my_utils_stamp_set_from_sql     ( GTimeVal *timeval, const gchar *str );
 gchar     *my_utils_stamp_to_str           ( const GTimeVal *stamp, myStampFormat format );
-GTimeVal  *my_utils_stamp_get_now          ( GTimeVal *stamp );
+GTimeVal  *my_utils_stamp_set_now          ( GTimeVal *stamp );
 
 gchar     *my_utils_export_multi_lines     ( const gchar *str );
 gchar     *my_utils_import_multi_lines     ( const gchar *str );

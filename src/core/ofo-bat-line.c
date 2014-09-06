@@ -744,7 +744,7 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	GTimeVal stamp;
 	gint ecr_number;
 
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	ecr_number = ofo_bat_line_get_ecr( bat );

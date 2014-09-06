@@ -1435,7 +1435,7 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 
 	label = my_utils_quote( ofo_account_get_label( account ));
 	notes = my_utils_quote( ofo_account_get_notes( account ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_COMPTES" );
@@ -1528,7 +1528,7 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 	label = my_utils_quote( ofo_account_get_label( account ));
 	notes = my_utils_quote( ofo_account_get_notes( account ));
 	new_number = ofo_account_get_number( account );
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_COMPTES SET " );

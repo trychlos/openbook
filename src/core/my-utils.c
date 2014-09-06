@@ -140,13 +140,12 @@ my_utils_stamp_to_str( const GTimeVal *stamp, myStampFormat format )
 }
 
 /**
- * my_utils_stamp_get_now:
+ * my_utils_stamp_set_now:
  *
- * Returns a newly allocated string 'yyyy-mm-dd hh:mi:ss' suitable for
- * inserting as a timestamp into a sgbd
+ * Set the provided #GTimeVal to the current timestamp.
  */
 GTimeVal *
-my_utils_stamp_get_now( GTimeVal *timeval )
+my_utils_stamp_set_now( GTimeVal *timeval )
 {
 	GDateTime *dt;
 

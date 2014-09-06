@@ -1447,7 +1447,7 @@ journal_insert_main( ofoJournal *journal, const ofoSgbd *sgbd, const gchar *user
 	ok = FALSE;
 	label = my_utils_quote( ofo_journal_get_label( journal ));
 	notes = my_utils_quote( ofo_journal_get_notes( journal ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_JOURNAUX" );
@@ -1529,7 +1529,7 @@ journal_do_update( ofoJournal *journal, const gchar *prev_mnemo, const ofoSgbd *
 	ok = FALSE;
 	label = my_utils_quote( ofo_journal_get_label( journal ));
 	notes = my_utils_quote( ofo_journal_get_notes( journal ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_JOURNAUX SET " );

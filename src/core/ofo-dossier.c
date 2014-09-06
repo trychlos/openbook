@@ -1885,7 +1885,7 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 	ok = FALSE;
 	label = my_utils_quote( ofo_dossier_get_label( dossier ));
 	notes = my_utils_quote( ofo_dossier_get_notes( dossier ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );

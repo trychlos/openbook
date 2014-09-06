@@ -560,7 +560,7 @@ devise_insert_main( ofoDevise *devise, const ofoSgbd *sgbd, const gchar *user )
 	label = my_utils_quote( ofo_devise_get_label( devise ));
 	symbol = ofo_devise_get_symbol( devise );
 	notes = my_utils_quote( ofo_devise_get_notes( devise ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "" );
@@ -641,7 +641,7 @@ devise_do_update( ofoDevise *devise, const gchar *prev_code, const ofoSgbd *sgbd
 	ok = FALSE;
 	label = my_utils_quote( ofo_devise_get_label( devise ));
 	notes = my_utils_quote( ofo_devise_get_notes( devise ));
-	my_utils_stamp_get_now( &stamp );
+	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_DEVISES SET " );
