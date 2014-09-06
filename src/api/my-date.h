@@ -44,28 +44,6 @@
 
 G_BEGIN_DECLS
 
-#define MY_TYPE_DATE                ( my_date_get_type())
-#define MY_DATE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, MY_TYPE_DATE, myDate ))
-#define MY_DATE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, MY_TYPE_DATE, myDateClass ))
-#define MY_IS_DATE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, MY_TYPE_DATE ))
-#define MY_IS_DATE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_DATE ))
-#define MY_DATE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_DATE, myDateClass ))
-
-typedef struct _myDatePrivate       myDatePrivate;
-
-typedef struct {
-	/*< private >*/
-	GObject          parent;
-	myDatePrivate   *private;
-}
-	myDate;
-
-typedef struct {
-	/*< private >*/
-	GObjectClass parent;
-}
-	myDateClass;
-
 /**
  * myDateFormat:
  *
@@ -118,19 +96,18 @@ typedef struct {
 }
 	myDateParse;
 
-GType      my_date_get_type         ( void ) G_GNUC_CONST;
-
-myDate    *my_date_new              ( void );
-
-void       my_date_set_now          ( myDate *date );
-
-gchar     *my_date_to_str           ( const myDate *date, myDateFormat format );
+GDate     *my_date_set_now          ( GDate *date );
 
 GDate     *my_date_set_from_sql     ( GDate *dest, const gchar *sql_string );
+
 GDate     *my_date_set_from_date    ( GDate *dest, const GDate *src );
+
 gchar     *my_date_dto_str          ( const GDate *date, myDateFormat format );
+
 gint       my_date_cmp              ( const GDate *a, const GDate *b, gboolean infinite_is_past );
+
 void       my_date_parse_from_entry ( const myDateParse *parms );
+
 GDate     *my_date_parse_from_str   ( GDate *date, const gchar *text, myDateFormat format );
 
 G_END_DECLS

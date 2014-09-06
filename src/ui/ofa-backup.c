@@ -196,7 +196,7 @@ get_default_name( ofaBackup *self )
 {
 	GRegex *regex;
 	gchar *dbname, *fname, *sdate, *result;
-	myDate *date;
+	GDate date;
 
 	/* get database name without spaces */
 	regex = g_regex_new( " ", 0, 0, NULL );
@@ -205,12 +205,10 @@ get_default_name( ofaBackup *self )
 	fname = g_regex_replace_literal( regex, dbname, -1, 0, "", 0, NULL );
 	g_free( dbname );
 
-	date = my_date_new();
-	my_date_set_now( date );
-	sdate = my_date_to_str( date, MY_DATE_YYMD );
+	my_date_set_now( &date );
+	sdate = my_date_dto_str( &date, MY_DATE_YYMD );
 	result = g_strdup_printf( "%s-%s.gz", fname, sdate );
 	g_free( sdate );
-	g_object_unref( date );
 
 	g_free( fname );
 

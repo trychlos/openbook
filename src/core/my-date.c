@@ -34,137 +34,30 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 
-/* private instance data
- */
-struct _myDatePrivate {
-	gboolean dispose_has_run;
-
-	GDate    date;
-};
-
-G_DEFINE_TYPE( myDate, my_date, G_TYPE_OBJECT )
-
 static void    on_date_entry_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gpointer position, gpointer user_data );
 static gchar  *date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position );
 static void    on_date_entry_changed( GtkEditable *editable, gpointer user_data );
 static void    date_entry_set_label( GtkEditable *editable, const gchar *str );
 static void    date_entry_parse_ddmm( GDate *date, const gchar *text );
 
-static void
-my_date_finalize( GObject *instance )
-{
-	static const gchar *thisfn = "my_date_finalize";
-	myDate *self;
-
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-
-	g_return_if_fail( instance && MY_IS_DATE( instance ));
-
-	self = MY_DATE( instance );
-
-	/* free data members here */
-	g_free( self->private );
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( my_date_parent_class )->finalize( instance );
-}
-
-static void
-my_date_dispose( GObject *instance )
-{
-	myDate *self;
-
-	g_return_if_fail( instance && MY_IS_DATE( instance ));
-
-	self = MY_DATE( instance );
-
-	if( !self->private->dispose_has_run ){
-
-		self->private->dispose_has_run = TRUE;
-
-		/* unref member objects here */
-
-	}
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( my_date_parent_class )->dispose( instance );
-}
-
-static void
-my_date_init( myDate *self )
-{
-	static const gchar *thisfn = "my_date_init";
-
-	g_debug( "%s: self=%p (%s)",
-			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	self->private = g_new0( myDatePrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-}
-
-static void
-my_date_class_init( myDateClass *klass )
-{
-	static const gchar *thisfn = "my_date_class_init";
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	G_OBJECT_CLASS( klass )->dispose = my_date_dispose;
-	G_OBJECT_CLASS( klass )->finalize = my_date_finalize;
-}
-
-/**
- * my_date_new:
- */
-myDate *
-my_date_new( void )
-{
-	myDate *date;
-
-	date = g_object_new( MY_TYPE_DATE, NULL );
-
-	g_date_clear( &date->private->date, 1 );
-
-	return( date );
-}
-
 /**
  * my_date_set_now:
  */
-void
-my_date_set_now( myDate *date )
+GDate *
+my_date_set_now( GDate *date )
 {
 	GDateTime *dt;
 	gint year, month, day;
 
-	g_return_if_fail( date && MY_IS_DATE( date ));
+	g_return_val_if_fail( date, NULL );
 
-	if( !date->private->dispose_has_run ){
+	dt = g_date_time_new_now_local();
+	g_date_time_get_ymd( dt, &year, &month, &day );
+	g_date_time_unref( dt );
 
-		dt = g_date_time_new_now_local();
-		g_date_time_get_ymd( dt, &year, &month, &day );
-		g_date_time_unref( dt );
+	g_date_set_dmy( date, day, month, year );
 
-		g_date_set_dmy( &date->private->date, day, month, year );
-	}
-}
-
-/**
- * my_date_to_str:
- */
-gchar *
-my_date_to_str( const myDate *date, myDateFormat format )
-{
-
-	g_return_val_if_fail( date && MY_IS_DATE( date ), NULL );
-
-	if( !date->private->dispose_has_run ){
-
-		return( my_date_dto_str( &date->private->date, format ));
-	}
-
-	return( NULL );
+	return( date );
 }
 
 /**

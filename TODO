@@ -295,7 +295,7 @@
                 and check that ecr_number is an unsigned long
                 http://dev.mysql.com/doc/refman/5.0/en/integer-types.html
                 http://en.wikibooks.org/wiki/C_Programming/C_Reference/limits.h
-                descrive the limits.
+                describe the limits.
                 Has to choose between
                 - Mysql unsigned int 4 294 967 295
                   C UINT_MAX        +4,294,967,295
