@@ -350,13 +350,13 @@ my_utils_double_from_sql( const gchar *sql_string )
 }
 
 /**
- * my_utils_sql_from_double:
+ * my_utils_double_to_sql:
  *
  * Returns: a newly allocated string which represents the specified
  * value, suitable for an SQL insertion.
  */
 gchar *
-my_utils_sql_from_double( gdouble value )
+my_utils_double_to_sql( gdouble value )
 {
 	gchar amount[1+G_ASCII_DTOSTR_BUF_SIZE];
 

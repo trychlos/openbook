@@ -799,7 +799,7 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 	}
 
 	if( ofo_bat_get_solde_set( bat )){
-		str = my_utils_sql_from_double( ofo_bat_get_solde( bat ));
+		str = my_utils_double_to_sql( ofo_bat_get_solde( bat ));
 		g_string_append_printf( query, "%s,", str );
 		g_free( str );
 	} else {

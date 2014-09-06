@@ -904,7 +904,7 @@ taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
 
 	dbegin = my_date_dto_str( &sdet->begin, MY_DATE_SQL );
 	dend = my_date_dto_str( &sdet->end, MY_DATE_SQL );
-	rate = my_utils_sql_from_double( sdet->rate );
+	rate = my_utils_double_to_sql( sdet->rate );
 
 	query = g_string_new( "INSERT INTO OFA_T_TAUX_VAL " );
 

@@ -1580,10 +1580,10 @@ journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, con
 	ofo_sgbd_query( sgbd, query, FALSE );
 	g_free( query );
 
-	deb = my_utils_sql_from_double( ofo_journal_get_deb( journal, detail->exe_id, detail->devise ));
-	cre = my_utils_sql_from_double( ofo_journal_get_cre( journal, detail->exe_id, detail->devise ));
-	clo_deb = my_utils_sql_from_double( ofo_journal_get_clo_deb( journal, detail->exe_id, detail->devise ));
-	clo_cre = my_utils_sql_from_double( ofo_journal_get_clo_cre( journal, detail->exe_id, detail->devise ));
+	deb = my_utils_double_to_sql( ofo_journal_get_deb( journal, detail->exe_id, detail->devise ));
+	cre = my_utils_double_to_sql( ofo_journal_get_cre( journal, detail->exe_id, detail->devise ));
+	clo_deb = my_utils_double_to_sql( ofo_journal_get_clo_deb( journal, detail->exe_id, detail->devise ));
+	clo_cre = my_utils_double_to_sql( ofo_journal_get_clo_cre( journal, detail->exe_id, detail->devise ));
 	sdebd = my_date_dto_str(
 					ofo_journal_get_deb_date( journal, detail->exe_id, detail->devise ), MY_DATE_SQL );
 	scred = my_date_dto_str(

@@ -1478,8 +1478,8 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 
 	sdope = my_date_dto_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 	sdeff = my_date_dto_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
-	sdeb = my_utils_sql_from_double( ofo_entry_get_debit( entry ));
-	scre = my_utils_sql_from_double( ofo_entry_get_credit( entry ));
+	sdeb = my_utils_double_to_sql( ofo_entry_get_debit( entry ));
+	scre = my_utils_double_to_sql( ofo_entry_get_credit( entry ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 

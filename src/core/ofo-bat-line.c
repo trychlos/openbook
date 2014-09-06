@@ -673,7 +673,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	str = my_utils_sql_from_double( ofo_bat_line_get_montant( bat ));
+	str = my_utils_double_to_sql( ofo_bat_line_get_montant( bat ));
 	g_string_append_printf( query, "%s", str );
 	g_free( str );
 

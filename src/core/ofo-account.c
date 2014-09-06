@@ -1592,7 +1592,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	ecr_number = ofo_account_get_deb_ecr( account );
 	if( ecr_number ){
 		sdate = my_date_dto_str( ofo_account_get_deb_date( account ), MY_DATE_SQL );
-		samount = my_utils_sql_from_double( ofo_account_get_deb_mnt( account ));
+		samount = my_utils_double_to_sql( ofo_account_get_deb_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_DEB_ECR=%d,CPT_DEB_DATE='%s',CPT_DEB_MNT=%s,",
 					ecr_number, sdate, samount );
@@ -1607,7 +1607,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	ecr_number = ofo_account_get_cre_ecr( account );
 	if( ecr_number ){
 		sdate = my_date_dto_str( ofo_account_get_cre_date( account ), MY_DATE_SQL );
-		samount = my_utils_sql_from_double( ofo_account_get_cre_mnt( account ));
+		samount = my_utils_double_to_sql( ofo_account_get_cre_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_CRE_ECR=%d,CPT_CRE_DATE='%s',CPT_CRE_MNT=%s,",
 					ecr_number, sdate, samount );
@@ -1622,7 +1622,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	ecr_number = ofo_account_get_bro_deb_ecr( account );
 	if( ecr_number ){
 		sdate = my_date_dto_str( ofo_account_get_bro_deb_date( account ), MY_DATE_SQL );
-		samount = my_utils_sql_from_double( ofo_account_get_bro_deb_mnt( account ));
+		samount = my_utils_double_to_sql( ofo_account_get_bro_deb_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_BRO_DEB_ECR=%d,CPT_BRO_DEB_DATE='%s',CPT_BRO_DEB_MNT=%s,",
 					ecr_number, sdate, samount );
@@ -1637,7 +1637,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	ecr_number = ofo_account_get_bro_cre_ecr( account );
 	if( ecr_number ){
 		sdate = my_date_dto_str( ofo_account_get_bro_cre_date( account ), MY_DATE_SQL );
-		samount = my_utils_sql_from_double( ofo_account_get_bro_cre_mnt( account ));
+		samount = my_utils_double_to_sql( ofo_account_get_bro_cre_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_BRO_CRE_ECR=%d,CPT_BRO_CRE_DATE='%s',CPT_BRO_CRE_MNT=%s ",
 					ecr_number, sdate, samount );
