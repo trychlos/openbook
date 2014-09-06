@@ -111,14 +111,14 @@ my_date_set_from_date( GDate *dest, const GDate *src)
 }
 
 /**
- * my_date_dto_str:
+ * my_date_to_str:
  *
  * Returns the date with the requested format, suitable for display or
  * SQL insertion, in a newly allocated string that the user must
  * g_free(), or a new empty string if the date is invalid.
  */
 gchar *
-my_date_dto_str( const GDate *date, myDateFormat format )
+my_date_to_str( const GDate *date, myDateFormat format )
 {
 	static const gchar *st_month[] = {
 			N_( "jan." ),
@@ -248,7 +248,7 @@ my_date_parse_from_entry( const myDateParse *parms )
 	}
 
 	if( g_date_valid( parms->date )){
-		str = my_date_dto_str( parms->date, parms->entry_format );
+		str = my_date_to_str( parms->date, parms->entry_format );
 		gtk_entry_set_text( GTK_ENTRY( parms->entry ), str );
 		g_free( str );
 	}
@@ -392,7 +392,7 @@ on_date_entry_changed( GtkEditable *editable, gpointer user_data )
 			( !pfnCheck || ( *pfnCheck )( &temp_date, user_data_cb ))){
 
 		label_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-label" ));
-		str = my_date_dto_str( &temp_date, label_format );
+		str = my_date_to_str( &temp_date, label_format );
 		date_entry_set_label( editable, str );
 		g_free( str );
 

@@ -705,7 +705,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 			my_date_set_from_date( &priv->deff, &priv->dope );
 		}
 
-		str = my_date_dto_str( &priv->deff, MY_DATE_DDMM );
+		str = my_date_to_str( &priv->deff, MY_DATE_DDMM );
 		gtk_entry_set_text( priv->deffet_entry, str );
 		g_free( str );
 	}
@@ -933,7 +933,7 @@ set_date_comment( ofaGuidedCommon *self, const gchar *label, const GDate *date )
 {
 	gchar *str, *comment;
 
-	str = my_date_dto_str( date, MY_DATE_DMMM );
+	str = my_date_to_str( date, MY_DATE_DMMM );
 	if( !g_utf8_strlen( str, -1 )){
 		g_free( str );
 		str = g_strdup( _( "invalid" ));

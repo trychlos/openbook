@@ -768,7 +768,7 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	begin = ofo_bat_get_begin( bat );
 	if( g_date_valid( begin )){
-		str = my_date_dto_str( begin, MY_DATE_SQL );
+		str = my_date_to_str( begin, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
 		g_free( str );
 	} else {
@@ -777,7 +777,7 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	end = ofo_bat_get_end( bat );
 	if( g_date_valid( end )){
-		str = my_date_dto_str( end, MY_DATE_SQL );
+		str = my_date_to_str( end, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
 		g_free( str );
 	} else {

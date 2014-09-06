@@ -1591,7 +1591,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	/* validated debit */
 	ecr_number = ofo_account_get_deb_ecr( account );
 	if( ecr_number ){
-		sdate = my_date_dto_str( ofo_account_get_deb_date( account ), MY_DATE_SQL );
+		sdate = my_date_to_str( ofo_account_get_deb_date( account ), MY_DATE_SQL );
 		samount = my_utils_double_to_sql( ofo_account_get_deb_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_DEB_ECR=%d,CPT_DEB_DATE='%s',CPT_DEB_MNT=%s,",
@@ -1606,7 +1606,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	/* validated credit */
 	ecr_number = ofo_account_get_cre_ecr( account );
 	if( ecr_number ){
-		sdate = my_date_dto_str( ofo_account_get_cre_date( account ), MY_DATE_SQL );
+		sdate = my_date_to_str( ofo_account_get_cre_date( account ), MY_DATE_SQL );
 		samount = my_utils_double_to_sql( ofo_account_get_cre_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_CRE_ECR=%d,CPT_CRE_DATE='%s',CPT_CRE_MNT=%s,",
@@ -1621,7 +1621,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	/* brouillard debit */
 	ecr_number = ofo_account_get_bro_deb_ecr( account );
 	if( ecr_number ){
-		sdate = my_date_dto_str( ofo_account_get_bro_deb_date( account ), MY_DATE_SQL );
+		sdate = my_date_to_str( ofo_account_get_bro_deb_date( account ), MY_DATE_SQL );
 		samount = my_utils_double_to_sql( ofo_account_get_bro_deb_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_BRO_DEB_ECR=%d,CPT_BRO_DEB_DATE='%s',CPT_BRO_DEB_MNT=%s,",
@@ -1636,7 +1636,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	/* brouillard credit */
 	ecr_number = ofo_account_get_bro_cre_ecr( account );
 	if( ecr_number ){
-		sdate = my_date_dto_str( ofo_account_get_bro_cre_date( account ), MY_DATE_SQL );
+		sdate = my_date_to_str( ofo_account_get_bro_cre_date( account ), MY_DATE_SQL );
 		samount = my_utils_double_to_sql( ofo_account_get_bro_cre_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_BRO_CRE_ECR=%d,CPT_BRO_CRE_DATE='%s',CPT_BRO_CRE_MNT=%s ",
@@ -1743,10 +1743,10 @@ ofo_account_get_csv( const ofoDossier *dossier )
 		muser = ofo_account_get_maj_user( account );
 		stamp = my_utils_stamp_to_str( ofo_account_get_maj_stamp( account ), MY_STAMP_YYMDHMS );
 
-		sdeb = my_date_dto_str( ofo_account_get_deb_date( account ), MY_DATE_SQL );
-		scre = my_date_dto_str( ofo_account_get_cre_date( account ), MY_DATE_SQL );
-		sbrodeb = my_date_dto_str( ofo_account_get_bro_deb_date( account ), MY_DATE_SQL );
-		sbrocre = my_date_dto_str( ofo_account_get_bro_cre_date( account ), MY_DATE_SQL );
+		sdeb = my_date_to_str( ofo_account_get_deb_date( account ), MY_DATE_SQL );
+		scre = my_date_to_str( ofo_account_get_cre_date( account ), MY_DATE_SQL );
+		sbrodeb = my_date_to_str( ofo_account_get_bro_deb_date( account ), MY_DATE_SQL );
+		sbrocre = my_date_to_str( ofo_account_get_bro_cre_date( account ), MY_DATE_SQL );
 
 		str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%s;%d;%s;%.2lf;%d;%s;%.2lf;%d;%s;%.2lf;%d;%s;%.2lf",
 				ofo_account_get_number( account ),

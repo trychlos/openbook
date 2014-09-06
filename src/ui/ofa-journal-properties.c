@@ -305,14 +305,14 @@ init_balances_page( ofaJournalProperties *self )
 			if( !end || !g_date_valid( end )){
 				send = g_strdup( _( "Current exercice" ));
 			} else {
-				send = my_date_dto_str( end, MY_DATE_DMMM );
+				send = my_date_to_str( end, MY_DATE_DMMM );
 			}
 		} else {
-			sbegin = my_date_dto_str( begin, MY_DATE_DMMM );
+			sbegin = my_date_to_str( begin, MY_DATE_DMMM );
 			if( !end || !g_date_valid( end )){
 				send = g_strdup( "" );
 			} else {
-				send = my_date_dto_str( end, MY_DATE_DMMM );
+				send = my_date_to_str( end, MY_DATE_DMMM );
 			}
 		}
 
@@ -411,7 +411,7 @@ display_balances( ofaJournalProperties *self )
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-deb-date" ));
-	str = my_date_dto_str( ofo_journal_get_deb_date( priv->journal, priv->exe_id, priv->dev_code ), MY_DATE_DDMM );
+	str = my_date_to_str( ofo_journal_get_deb_date( priv->journal, priv->exe_id, priv->dev_code ), MY_DATE_DDMM );
 	gtk_label_set_text( label, str );
 	g_free( str );
 
@@ -421,7 +421,7 @@ display_balances( ofaJournalProperties *self )
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-cre-date" ));
-	str = my_date_dto_str( ofo_journal_get_cre_date( priv->journal, priv->exe_id, priv->dev_code ), MY_DATE_DDMM );
+	str = my_date_to_str( ofo_journal_get_cre_date( priv->journal, priv->exe_id, priv->dev_code ), MY_DATE_DDMM );
 	gtk_label_set_text( label, str );
 	g_free( str );
 }

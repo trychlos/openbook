@@ -229,7 +229,7 @@ on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_i
 	date = ofo_dossier_get_current_exe_deb( dossier );
 
 	if( date && g_date_valid( date )){
-		str = my_date_dto_str( date, MY_DATE_SQL );
+		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ECR_DEFFET>='%s'", str );
 		g_free( str );
 	}
@@ -256,7 +256,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 	date = ofo_dossier_get_current_exe_deb( dossier );
 
 	if( date && g_date_valid( date )){
-		str = my_date_dto_str( date, MY_DATE_SQL );
+		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ECR_DEFFET>='%s'", str );
 		g_free( str );
 	}
@@ -282,7 +282,7 @@ on_updated_object_journal_mnemo( const ofoDossier *dossier, const gchar *prev_id
 	str = NULL;
 	date = ofo_dossier_get_current_exe_deb( dossier );
 	if( date && g_date_valid( date )){
-		str = my_date_dto_str( date, MY_DATE_SQL );
+		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ECR_DEFFET>='%s'", str );
 		g_free( str );
 	}
@@ -366,13 +366,13 @@ ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *accoun
 	g_string_append_printf( where, "ECR_COMPTE='%s' ", account );
 
 	if( from && g_date_valid( from )){
-		str = my_date_dto_str( from, MY_DATE_SQL );
+		str = my_date_to_str( from, MY_DATE_SQL );
 		g_string_append_printf( where, "AND ECR_DOPE>='%s' ", str );
 		g_free( str );
 	}
 
 	if( to && g_date_valid( to )){
-		str = my_date_dto_str( to, MY_DATE_SQL );
+		str = my_date_to_str( to, MY_DATE_SQL );
 		g_string_append_printf( where, "AND ECR_DOPE<='%s' ", str );
 		g_free( str );
 	}
@@ -400,13 +400,13 @@ GList *ofo_entry_get_dataset_by_journal( const ofoDossier *dossier, const gchar 
 	g_string_append_printf( where, "ECR_JOU_MNEMO='%s' ", journal );
 
 	if( from && g_date_valid( from )){
-		str = my_date_dto_str( from, MY_DATE_SQL );
+		str = my_date_to_str( from, MY_DATE_SQL );
 		g_string_append_printf( where, "AND ECR_DOPE>='%s' ", str );
 		g_free( str );
 	}
 
 	if( to && g_date_valid( to )){
-		str = my_date_dto_str( to, MY_DATE_SQL );
+		str = my_date_to_str( to, MY_DATE_SQL );
 		g_string_append_printf( where, "AND ECR_DOPE<='%s' ", str );
 		g_free( str );
 	}
@@ -437,7 +437,7 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 	g_string_append_printf( where, "ECR_COMPTE='%s' ", account );
 	g_string_append_printf( where, "AND ECR_RAPPRO_DVAL=0 " );
 
-	str = my_date_dto_str( date, MY_DATE_SQL );
+	str = my_date_to_str( date, MY_DATE_SQL );
 	g_string_append_printf( where, "AND ECR_DEFFET <= '%s'", str );
 	g_free( str );
 
@@ -1281,8 +1281,8 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 
 	label = my_utils_quote( ofo_entry_get_label( entry ));
 	ref = my_utils_quote( ofo_entry_get_ref( entry ));
-	deff = my_date_dto_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
-	dope = my_date_dto_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
+	deff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
+	dope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -1476,8 +1476,8 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), FALSE );
 
-	sdope = my_date_dto_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
-	sdeff = my_date_dto_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdeb = my_utils_double_to_sql( ofo_entry_get_debit( entry ));
 	scre = my_utils_double_to_sql( ofo_entry_get_credit( entry ));
 	my_utils_stamp_set_now( &stamp );
@@ -1554,7 +1554,7 @@ do_update_rappro( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd )
 
 	if( g_date_valid( rappro )){
 
-		srappro = my_date_dto_str( rappro, MY_DATE_SQL );
+		srappro = my_date_to_str( rappro, MY_DATE_SQL );
 		my_utils_stamp_set_now( &stamp );
 		stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 		query = g_strdup_printf(
@@ -1605,7 +1605,7 @@ ofo_entry_validate_by_journal( const ofoDossier *dossier, const gchar *mnemo, co
 	GSList *result, *irow;
 	ofoEntry *entry;
 
-	str = my_date_dto_str( effect, MY_DATE_SQL );
+	str = my_date_to_str( effect, MY_DATE_SQL );
 	where = g_strdup_printf(
 					"	WHERE ECR_JOU_MNEMO='%s' AND ECR_STATUS=%d AND ECR_DEFFET<='%s'",
 							mnemo, ENT_STATUS_ROUGH, str );
@@ -1623,7 +1623,7 @@ ofo_entry_validate_by_journal( const ofoDossier *dossier, const gchar *mnemo, co
 
 			/* update data for each entry
 			 * this let each account updates itself */
-			str = my_date_dto_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
+			str = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 			query = g_strdup_printf(
 							"UPDATE OFA_T_ECRITURES "
 							"	SET ECR_STATUS=%d "
@@ -1760,14 +1760,14 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		my_date_set_from_sql( &datesql, ( const gchar * ) icol->data );
 		ofo_entry_set_rappro_dval( entry, &datesql );
 
-		sdope = my_date_dto_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
-		sdeffet = my_date_dto_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
+		sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
+		sdeffet = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 		sref = ofo_entry_get_ref( entry );
 		muser = ofo_entry_get_maj_user( entry );
 		stamp = my_utils_stamp_to_str( ofo_entry_get_maj_stamp( entry ), MY_STAMP_YYMDHMS );
 
 		date = ofo_entry_get_rappro_dval( entry );
-		sdrappro = my_date_dto_str( date, MY_DATE_SQL );
+		sdrappro = my_date_to_str( date, MY_DATE_SQL );
 
 		str = g_strdup_printf( "%s;%s;%d;%s;%s;%s;%s;%s;%.2lf;%.2lf;%s;%s;%d;%s",
 				sdope,

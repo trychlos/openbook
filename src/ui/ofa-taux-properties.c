@@ -275,7 +275,7 @@ insert_new_row( ofaTauxProperties *self, gint idx )
 	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, row ));
 	d = ofo_taux_get_val_begin( priv->taux, idx );
 	if( d && g_date_valid( d )){
-		str = my_date_dto_str( d, MY_DATE_DDMM );
+		str = my_date_to_str( d, MY_DATE_DDMM );
 	} else {
 		str = g_strdup( "" );
 	}
@@ -285,7 +285,7 @@ insert_new_row( ofaTauxProperties *self, gint idx )
 	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_END, row ));
 	d = ofo_taux_get_val_end( priv->taux, idx );
 	if( d && g_date_valid( d )){
-		str = my_date_dto_str( d, MY_DATE_DDMM );
+		str = my_date_to_str( d, MY_DATE_DDMM );
 	} else {
 		str = g_strdup( "" );
 	}
@@ -432,7 +432,7 @@ on_date_changed( GtkEntry *entry, ofaTauxProperties *self )
 	if( !content || !g_utf8_strlen( content, -1 )){
 		str = g_strdup( "" );
 	} else if( g_date_valid( &date )){
-		str = my_date_dto_str( &date, MY_DATE_DMMM );
+		str = my_date_to_str( &date, MY_DATE_DMMM );
 	} else {
 		str = g_strdup( _( "invalid" ));
 	}
