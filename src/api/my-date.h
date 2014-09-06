@@ -102,7 +102,7 @@ GDate     *my_date_set_from_sql     ( GDate *dest, const gchar *sql_string );
 
 GDate     *my_date_set_from_date    ( GDate *dest, const GDate *src );
 
-gchar     *my_date_to_str          ( const GDate *date, myDateFormat format );
+gchar     *my_date_to_str           ( const GDate *date, myDateFormat format );
 
 gint       my_date_cmp              ( const GDate *a, const GDate *b, gboolean infinite_is_past );
 
