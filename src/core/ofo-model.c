@@ -384,7 +384,7 @@ model_load_dataset( void )
 		ofo_model_set_maj_user( model, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_model_set_maj_stamp( model,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, model );
 	}

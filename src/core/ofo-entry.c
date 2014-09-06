@@ -538,7 +538,7 @@ entry_parse_result( const GSList *row )
 		ofo_entry_set_maj_user( entry, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_entry_set_maj_stamp( entry,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			my_date_set_from_sql( &date, ( const gchar * ) icol->data );
@@ -551,7 +551,7 @@ entry_parse_result( const GSList *row )
 		icol = icol->next;
 		if( icol->data ){
 			ofo_entry_set_rappro_stamp( entry,
-					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+					my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 		}
 	}
 	return( entry );
@@ -1753,7 +1753,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		ofo_entry_set_maj_user( entry, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_entry_set_maj_stamp( entry,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
 		icol = icol->next;

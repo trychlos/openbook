@@ -437,7 +437,7 @@ account_load_dataset( void )
 		ofo_account_set_maj_user( account, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_account_set_maj_stamp( account,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			ofo_account_set_deb_ecr( account, atoi(( gchar * ) icol->data ));

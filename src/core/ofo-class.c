@@ -196,7 +196,7 @@ class_load_dataset( void )
 		ofo_class_set_maj_user( class, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_class_set_maj_stamp( class,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, class );
 	}

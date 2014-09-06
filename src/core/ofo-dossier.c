@@ -1784,7 +1784,7 @@ dossier_read_properties( ofoDossier *dossier )
 		str = icol->data;
 		if( str && g_utf8_strlen( str, -1 )){
 			ofo_dossier_set_maj_stamp( dossier,
-					my_utils_stamp_set_from_sql( &timeval, str ));
+					my_utils_stamp_from_sql( &timeval, str ));
 		}
 
 		ok = TRUE;

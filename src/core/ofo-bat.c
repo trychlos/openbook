@@ -248,7 +248,7 @@ bat_load_dataset( void )
 		ofo_bat_set_maj_user( bat, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_bat_set_maj_stamp( bat,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, bat );
 	}

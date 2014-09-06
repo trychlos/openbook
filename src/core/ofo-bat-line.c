@@ -229,7 +229,7 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 			icol = icol->next;
 			if( icol->data ){
 				ofo_bat_line_set_maj_stamp( line,
-						my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+						my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 			}
 
 			dataset = g_list_prepend( dataset, line );

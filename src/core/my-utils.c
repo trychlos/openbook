@@ -86,14 +86,14 @@ my_utils_quote( const gchar *str )
 }
 
 /**
- * my_utils_stamp_set_from_sql:
+ * my_utils_stamp_from_sql:
  * @timeval: a pointer to a GTimeVal structure
  * @str: [allow-none]:
  *
  * SQL timestamp is returned as a string '2014-05-24 20:05:46'
  */
 GTimeVal *
-my_utils_stamp_set_from_sql( GTimeVal *timeval, const gchar *str )
+my_utils_stamp_from_sql( GTimeVal *timeval, const gchar *str )
 {
 	gint y, m, d, H, M, S;
 	struct tm broken;
