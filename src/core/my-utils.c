@@ -234,7 +234,7 @@ my_utils_import_multi_lines( const gchar *str )
 }
 
 /**
- * my_utils_boolean_set_from_str:
+ * my_utils_boolean_from_str:
  *
  * Parse a string to a boolean.
  * If unset ou empty, the string evaluates to FALSE.
@@ -244,7 +244,7 @@ my_utils_import_multi_lines( const gchar *str )
  * Returns TRUE if the string has been successfully parsed, FALSE else.
  */
 gboolean
-my_utils_boolean_set_from_str( const gchar *str, gboolean *bvar )
+my_utils_boolean_from_str( gboolean *bvar, const gchar *str )
 {
 	g_return_val_if_fail( bvar, FALSE );
 

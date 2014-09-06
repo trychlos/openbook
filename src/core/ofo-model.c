@@ -1733,7 +1733,7 @@ model_import_csv_model( GSList *fields, gint count, gint *errors )
 	 * default to false if not set, but must be valid if set */
 	ico = ico->next;
 	str = ( const gchar * ) ico->data;
-	if( !my_utils_boolean_set_from_str( str, &locked )){
+	if( !my_utils_boolean_from_str( &locked, str )){
 		g_warning( "%s: (line %d) unable to parse journal locked='%s'", thisfn, count, str );
 		*errors += 1;
 		g_object_unref( model );
@@ -1794,7 +1794,7 @@ model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo
 	/* detail label locked */
 	ico = ico->next;
 	str = ( const gchar * ) ico->data;
-	if( !my_utils_boolean_set_from_str( str, &detail->label_locked )){
+	if( !my_utils_boolean_from_str( &detail->label_locked, str )){
 		g_warning( "%s: (line %d) unable to parse label locked='%s'", thisfn, count, str );
 		*errors += 1;
 		g_free( detail );
@@ -1811,7 +1811,7 @@ model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo
 	/* detail debit locked */
 	ico = ico->next;
 	str = ( const gchar * ) ico->data;
-	if( !my_utils_boolean_set_from_str( str, &detail->debit_locked )){
+	if( !my_utils_boolean_from_str( &detail->debit_locked, str )){
 		g_warning( "%s: (line %d) unable to parse debit locked='%s'", thisfn, count, str );
 		*errors += 1;
 		g_free( detail );
@@ -1828,7 +1828,7 @@ model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo
 	/* detail credit locked */
 	ico = ico->next;
 	str = ( const gchar * ) ico->data;
-	if( !my_utils_boolean_set_from_str( str, &detail->debit_locked )){
+	if( !my_utils_boolean_from_str( &detail->debit_locked, str )){
 		g_warning( "%s: (line %d) unable to parse credit locked='%s'", thisfn, count, str );
 		*errors += 1;
 		g_free( detail );

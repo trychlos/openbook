@@ -736,7 +736,7 @@ ofa_settings_get_boolean( const gchar *key )
 	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
 
 	if( str && g_utf8_strlen( str, -1 )){
-		my_utils_boolean_set_from_str( str, &result );
+		my_utils_boolean_from_str( &result, str );
 	}
 
 	g_free( str );

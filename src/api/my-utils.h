@@ -57,7 +57,7 @@ GTimeVal  *my_utils_stamp_set_now          ( GTimeVal *stamp );
 gchar     *my_utils_export_multi_lines     ( const gchar *str );
 gchar     *my_utils_import_multi_lines     ( const gchar *str );
 
-gboolean   my_utils_boolean_set_from_str   ( const gchar *str, gboolean *bvar );
+gboolean   my_utils_boolean_from_str       ( gboolean *bvar, const gchar *str );
 
 gchar     *my_utils_double_undecorate      ( const gchar *decorated );
 gdouble    my_utils_double_from_string     ( const gchar *string );
