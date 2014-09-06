@@ -240,40 +240,28 @@ my_utils_import_multi_lines( const gchar *str )
  * If unset ou empty, the string evaluates to FALSE.
  * Else, the string is compared to True/False/Yes/No in an insensitive
  * manner. The value 1 and 0 are also accepted.
- *
- * Returns TRUE if the string has been successfully parsed, FALSE else.
  */
 gboolean
-my_utils_boolean_from_str( gboolean *bvar, const gchar *str )
+my_utils_boolean_from_str( const gchar *str )
 {
-	g_return_val_if_fail( bvar, FALSE );
-
-	*bvar = FALSE;
-
 	if( str && g_utf8_strlen( str, -1 )){
 		if( !g_utf8_collate( str, "1" )){
-			*bvar = TRUE;
 			return( TRUE );
 		}
 		if( !g_utf8_collate( str, "0" )){
-			*bvar = FALSE;
-			return( TRUE );
+			return( FALSE );
 		}
 		if( !g_ascii_strcasecmp( str, "True" )){
-			*bvar = TRUE;
 			return( TRUE );
 		}
 		if( !g_ascii_strcasecmp( str, "False" )){
-			*bvar = FALSE;
-			return( TRUE );
+			return( FALSE );
 		}
 		if( !g_ascii_strcasecmp( str, "Yes" )){
-			*bvar = TRUE;
 			return( TRUE );
 		}
 		if( !g_ascii_strcasecmp( str, "No" )){
-			*bvar = FALSE;
-			return( TRUE );
+			return( FALSE );
 		}
 	}
 	return( FALSE );
