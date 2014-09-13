@@ -332,6 +332,11 @@
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
 
+ 309 2014- 9-13 when inserting into TAUX: TAX_VAL_DEB cannot be null
+                but should be allowed to
+
+ 310
+
 -----------------------------------------------------------------------
  DONE
  ====

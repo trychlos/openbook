@@ -1233,7 +1233,7 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 				content = gtk_entry_get_text( GTK_ENTRY( widget ));
 				/*g_debug( "token='%s' content='%s'", token, content );*/
 				if( col_def->is_double ){
-					amount = g_strtod( content, NULL );
+					amount = my_utils_double_from_string( content );
 				} else {
 					/* we do not manage a formula on a string */
 					gtk_entry_set_text( entry, content );
@@ -1351,7 +1351,7 @@ get_amount( ofaGuidedCommon *self, gint col_id, gint row )
 	if( col_def ){
 		entry = gtk_grid_get_child_at( self->private->entries_grid, col_def->column_id, row );
 		if( entry && GTK_IS_ENTRY( entry )){
-			return( g_strtod( gtk_entry_get_text( GTK_ENTRY( entry )), NULL ));
+			return( my_utils_double_from_string( gtk_entry_get_text( GTK_ENTRY( entry ))));
 		}
 	}
 

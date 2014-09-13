@@ -120,7 +120,7 @@ my_window_constructed( GObject *instance )
 	priv = MY_WINDOW( instance )->private;
 
 	/* first, chain up to the parent class */
-	G_OBJECT_CLASS( my_window_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( my_window_parent_class )->constructed( instance );
 
 	/* then it is time to load the toplevel from builder
 	 * NB: even if properties are not set by the derived class, then

@@ -477,7 +477,7 @@ ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const cha
 		sval = g_new0( sTauxValid, 1 );
 		g_date_set_parse( &sval->begin, begin );
 		g_date_set_parse( &sval->end, end );
-		sval->rate = g_ascii_strtod( rate, NULL );
+		sval->rate = my_utils_double_from_string( rate );
 		taux_add_val_detail( taux, sval );
 	}
 }

@@ -40,6 +40,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
 
+#include "ui/my-cell-renderer-amount.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofa-main-page.h"
@@ -204,7 +205,6 @@ static void           on_entry_status_toggled( GtkToggleButton *button, ofaViewE
 static void           on_visible_column_toggled( GtkToggleButton *button, ofaViewEntries *self );
 static void           on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaViewEntries *self );
 static void           set_renderers_editable( ofaViewEntries *self, gboolean editable );
-static void           on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, ofaViewEntries *self );
 static void           on_cell_edited( GtkCellRendererText *cell, gchar *path, gchar *text, ofaViewEntries *self );
 static void           on_row_selected( GtkTreeSelection *select, ofaViewEntries *self );
 static gboolean       check_row_for_valid( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -685,9 +685,8 @@ setup_entries_treeview( ofaViewEntries *self )
 	text_cell = gtk_cell_renderer_text_new();
 	st_renderers[ENT_COL_DEBIT] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_DEBIT ));
-	g_signal_connect( G_OBJECT( text_cell ), "editing-started", G_CALLBACK( on_editing_started ), self );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
-	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
+	my_cell_renderer_amount_init( text_cell );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Debit" ),
 			text_cell, "text", ENT_COL_DEBIT,
@@ -700,9 +699,8 @@ setup_entries_treeview( ofaViewEntries *self )
 	text_cell = gtk_cell_renderer_text_new();
 	st_renderers[ENT_COL_CREDIT] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_CREDIT ));
-	g_signal_connect( G_OBJECT( text_cell ), "editing-started", G_CALLBACK( on_editing_started ), self );
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
-	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
+	my_cell_renderer_amount_init( text_cell );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Credit" ),
 			text_cell, "text", ENT_COL_CREDIT,
@@ -1524,25 +1522,6 @@ set_renderers_editable( ofaViewEntries *self, gboolean editable )
 }
 
 /*
- * when starting to edit an amount,
- * - remove thousand separator (space)
- * - replace decimal comma with a dot
- */
-static void
-on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, ofaViewEntries *self )
-{
-	GtkEntry *entry;
-	gchar *text;
-
-	if( GTK_IS_ENTRY( editable )){
-		entry = GTK_ENTRY( editable );
-		text = my_utils_double_undecorate( gtk_entry_get_text( entry ));
-		gtk_entry_set_text( entry, text );
-		g_free( text );
-	}
-}
-
-/*
  * makes use of the two tree models:
  * - [priv->tfilter, iter] is the tree model filter
  * - [tmodel, child_iter] is the underlying list store
@@ -1578,7 +1557,8 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 
 			/* needed to update the balances per currency */
 			if( column_id == ENT_COL_DEBIT ||
-					column_id == ENT_COL_CREDIT || column_id == ENT_COL_CURRENCY ){
+					column_id == ENT_COL_CREDIT ||
+					column_id == ENT_COL_CURRENCY ){
 
 				gtk_tree_model_get(
 						priv->tfilter,
@@ -1593,7 +1573,7 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 			if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){
 				amount = my_utils_double_from_string( text );
 				str = g_strdup_printf( "%'.2lf", amount );
-				g_debug( "on_cell_edited: text='%s', amount=%lf, str='%s'", text, amount, str );
+				/*g_debug( "on_cell_edited: text='%s', amount=%lf, str='%s'", text, amount, str );*/
 			} else {
 				str = g_strdup( text );
 			}

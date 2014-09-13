@@ -39,6 +39,7 @@
 
 #include "core/my-window-prot.h"
 
+#include "ui/my-editable-amount.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-taux-properties.h"
 
@@ -65,6 +66,7 @@ struct _ofaTauxPropertiesPrivate {
 
 #define DATA_COLUMN                  "ofa-data-column"
 #define DATA_ROW                     "ofa-data-row"
+#define DEFAULT_RATE_DECIMALS        3
 
 /* the columns in the dynamic grid
  */
@@ -93,6 +95,7 @@ static gboolean  on_date_focus_in( GtkWidget *entry, GdkEvent *event, ofaTauxPro
 static gboolean  on_focus_out( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self );
 static void      on_date_changed( GtkEntry *entry, ofaTauxProperties *self );
 static gboolean  on_rate_focus_in( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self );
+static gboolean  on_rate_focus_out( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self );
 static void      on_rate_changed( GtkEntry *entry, ofaTauxProperties *self );
 static void      set_grid_line_comment( ofaTauxProperties *self, GtkWidget *widget, const gchar *comment );
 static void      on_button_clicked( GtkButton *button, ofaTauxProperties *self );
@@ -351,9 +354,11 @@ add_empty_row( ofaTauxProperties *self )
 	my_date_parse_from_entry( &parms );
 
 	entry = GTK_ENTRY( gtk_entry_new());
+	my_editable_amount_init( GTK_EDITABLE( entry ));
+	my_editable_amount_set_decimals( GTK_EDITABLE( entry ), DEFAULT_RATE_DECIMALS );
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_rate_focus_in ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
+	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_rate_focus_out ), self );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_rate_changed ), self );
 	gtk_entry_set_max_length( entry, 10 );
 	gtk_entry_set_width_chars( entry, 10 );
@@ -445,24 +450,38 @@ on_date_changed( GtkEntry *entry, ofaTauxProperties *self )
 static gboolean
 on_rate_focus_in( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self )
 {
+	gchar *str;
+
+	str = my_utils_double_undecorate( gtk_entry_get_text( GTK_ENTRY( entry )));
+	gtk_entry_set_text( GTK_ENTRY( entry ), str );
+	g_free( str );
+
 	on_rate_changed( GTK_ENTRY( entry ), self );
 	return( FALSE );
+}
+
+static gboolean
+on_rate_focus_out( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self )
+{
+	my_editable_amount_render_string( GTK_EDITABLE( entry ));
+
+	return( on_focus_out( entry, event, self ));
 }
 
 static void
 on_rate_changed( GtkEntry *entry, ofaTauxProperties *self )
 {
 	const gchar *content;
-	gchar *str;
-	gdouble value;
+	gchar *text, *str;
 
 	content = gtk_entry_get_text( entry );
-	value = g_strtod( content, NULL );
 
 	if( !content || !g_utf8_strlen( content, -1 )){
 		str = g_strdup( "" );
 	} else {
-		str = g_strdup_printf( "%'.3lf %%", value );
+		text = my_editable_amount_get_string( GTK_EDITABLE( entry ));
+		str = g_strdup_printf( "%s %%", text );
+		g_free( text );
 	}
 	set_grid_line_comment( self, GTK_WIDGET( entry ), str );
 	g_free( str );
@@ -586,7 +605,7 @@ is_dialog_validable( ofaTauxProperties *self )
 			vdata = g_new0( sTauxVData, 1 );
 			g_date_set_parse( &vdata->begin, sbegin );
 			g_date_set_parse( &vdata->end, send );
-			vdata->rate = g_ascii_strtod( srate, NULL );
+			vdata->rate = my_utils_double_from_string( srate );
 			valids = g_list_prepend( valids, vdata );
 		}
 	}
@@ -600,7 +619,8 @@ is_dialog_validable( ofaTauxProperties *self )
 				MY_WINDOW( self )->protected->dossier,
 				self->private->mnemo );
 		ok &= !exists ||
-				( !priv->is_new && !g_utf8_collate( self->private->mnemo, ofo_taux_get_mnemo( self->private->taux )));
+				( !priv->is_new &&
+						!g_utf8_collate( self->private->mnemo, ofo_taux_get_mnemo( self->private->taux )));
 	}
 
 	return( ok );

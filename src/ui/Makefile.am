@@ -46,6 +46,10 @@ openbook_SOURCES = \
 	main.c												\
 	my-assistant.c										\
 	my-assistant.h										\
+	my-cell-renderer-amount.c							\
+	my-cell-renderer-amount.h							\
+	my-editable-amount.c								\
+	my-editable-amount.h								\
 	ofa-account-notebook.c								\
 	ofa-account-notebook.h								\
 	ofa-account-properties.c							\

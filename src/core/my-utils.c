@@ -37,12 +37,12 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
-static gunichar st_thousand_sep = '\0';
-static gunichar st_decimal_sep  = '\0';
-static GRegex  *st_double_regex = NULL;
+static gunichar st_double_thousand_sep   = '\0';
+static gunichar st_double_decimal_sep    = '\0';
+static GRegex  *st_double_thousand_regex = NULL;
+static GRegex  *st_double_decimal_regex  = NULL;
 
 static void    double_set_locale( void );
-static gdouble double_parse_str( const gchar *text, gunichar thousand_sep, gunichar decimal_sep );
 static void    int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList  *position_to_int_list( gint x, gint y, gint width, gint height );
 
@@ -271,22 +271,21 @@ my_utils_boolean_from_str( const gchar *str )
  * my_utils_double_undecorate:
  *
  * Remove from the given string all decoration added for the display
- * of a double, returning so a 'brut' double, without thousand separator
- * and with a dot as the decimal point
+ * of a double, returning so a 'brut' double string, without the locale
+ * thousand separator and with a dot as the decimal point
  */
 gchar *
 my_utils_double_undecorate( const gchar *text )
 {
-	GRegex *regex;
 	gchar *dest1, *dest2;
 
-	regex = g_regex_new( " ", 0, 0, NULL );
-	dest1 = g_regex_replace_literal( regex, text, -1, 0, "", 0, NULL );
-	g_regex_unref( regex );
+	double_set_locale();
 
-	regex = g_regex_new( ",", 0, 0, NULL );
-	dest2 = g_regex_replace_literal( regex, dest1, -1, 0, ".", 0, NULL );
-	g_regex_unref( regex );
+	/* remove locale thousand separator */
+	dest1 = g_regex_replace_literal( st_double_thousand_regex, text, -1, 0, "", 0, NULL );
+
+	/* replace locale decimal separator with a dot '.' */
+	dest2 = g_regex_replace_literal( st_double_decimal_regex, dest1, -1, 0, ".", 0, NULL );
 
 	g_free( dest1 );
 
@@ -322,19 +321,18 @@ my_utils_double_from_string( const gchar *string )
 /**
  * my_utils_double_from_sql:
  *
- * SQl amount is returned as a stringified number, without thousand
- * separator, and with dot '.' as decimal separator
+ * Returns a double from the specified SQl stringified decimal
+ *
+ * The input string is not supposed to be localized, nor decorated.
  */
 gdouble
 my_utils_double_from_sql( const gchar *sql_string )
 {
-	double_set_locale();
-
 	if( !sql_string || !g_utf8_strlen( sql_string, -1 )){
 		return( 0.0 );
 	}
 
-	return( double_parse_str( sql_string, '\0', '.' ));
+	return( g_ascii_strtod( sql_string, NULL ));
 }
 
 /**
@@ -363,55 +361,28 @@ my_utils_double_to_sql( gdouble value )
 static void
 double_set_locale( void )
 {
+	static const gchar *thisfn = "my_utils_double_set_locale";
 	gchar *str, *p, *srev;
 
-	if( !st_thousand_sep ){
+	if( !st_double_thousand_sep ){
 		str = g_strdup_printf( "%'.1lf", 1000.0 );
 		p = g_utf8_next_char( str );
-		st_thousand_sep = g_utf8_get_char( p );
+		st_double_thousand_sep = g_utf8_get_char( p );
 		srev = g_utf8_strreverse( str, -1 );
 		p = g_utf8_next_char( srev );
-		st_decimal_sep = g_utf8_get_char( p );
+		st_double_decimal_sep = g_utf8_get_char( p );
 
-		g_debug( "gdouble_set_locale: thousand_sep='%c', decimal_sep='%c'",
-					st_thousand_sep, st_decimal_sep );
+		g_debug( "%s: thousand_sep='%c', decimal_sep='%c'",
+					thisfn, st_double_thousand_sep, st_double_decimal_sep );
 
-		str = g_strdup_printf( "%c", st_thousand_sep );
-		st_double_regex = g_regex_new( str, 0, 0, NULL );
+		str = g_strdup_printf( "%c", st_double_thousand_sep );
+		st_double_thousand_regex = g_regex_new( str, 0, 0, NULL );
+		g_free( str );
+
+		str = g_strdup_printf( "%c", st_double_decimal_sep );
+		st_double_decimal_regex = g_regex_new( str, 0, 0, NULL );
 		g_free( str );
 	}
-}
-
-static gdouble
-double_parse_str( const gchar *text, gunichar thousand_sep, gunichar decimal_sep )
-{
-	static const gchar *thisfn = "my_utils_double_parse_str";
-	gchar *dup;
-	gchar *str_delims;
-	gdouble amount;
-	GError *error;
-
-	if( thousand_sep ){
-		error = NULL;
-		dup = g_regex_replace_literal( st_double_regex, text, -1, 0, "", 0, &error );
-		if( !dup ){
-			g_warning( "%s: %s", thisfn, error->message );
-			g_error_free( error );
-		}
-	} else {
-		dup = g_strdup( text );
-	}
-
-	if( decimal_sep && decimal_sep != '.' ){
-		str_delims = g_strdup_printf( "%c", decimal_sep );
-		dup = g_strdelimit( dup, str_delims, '.' );
-		g_free( str_delims );
-	}
-
-	amount = g_ascii_strtod( dup, NULL );
-	g_free( dup );
-
-	return( amount );
 }
 
 /**
