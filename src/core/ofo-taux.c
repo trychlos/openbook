@@ -457,7 +457,7 @@ ofo_taux_get_max_valid( const ofoTaux *taux )
  * ofo_taux_add_val:
  */
 void
-ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const char *rate )
+ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const gchar *rate )
 {
 	ofsRateValidity *sval;
 
