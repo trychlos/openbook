@@ -66,7 +66,7 @@ const GTimeVal *ofo_taux_get_maj_stamp( const ofoTaux *taux );
 const GDate    *ofo_taux_get_min_valid( const ofoTaux *taux );
 const GDate    *ofo_taux_get_max_valid( const ofoTaux *taux );
 
-void            ofo_taux_add_val      ( ofoTaux *taux, const gchar *begin, const gchar *end, const gchar *rate );
+void            ofo_taux_add_val      ( ofoTaux *taux, const gchar *begin, const gchar *end, gdouble rate );
 void            ofo_taux_free_val_all ( ofoTaux *taux );
 
 gint            ofo_taux_get_val_count( const ofoTaux *taux );

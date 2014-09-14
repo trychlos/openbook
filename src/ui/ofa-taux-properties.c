@@ -646,9 +646,10 @@ do_update( ofaTauxProperties *self )
 	ofaTauxPropertiesPrivate *priv;
 	gint i;
 	GtkEntry *entry;
-	const gchar *sbegin, *send, *srate;
+	const gchar *sbegin, *send;
 	/*GDate *dbegin, *dend;*/
 	gchar *prev_mnemo;
+	gdouble rate;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -670,12 +671,12 @@ do_update( ofaTauxProperties *self )
 		send = gtk_entry_get_text( entry );
 		/*dend = ( GDate * ) g_object_get_data( G_OBJECT( entry ), "data-date" );*/
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_RATE, i ));
-		srate = gtk_entry_get_text( entry );
+		rate = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
 		if(( sbegin && g_utf8_strlen( sbegin, -1 )) ||
 			( send && g_utf8_strlen( send, -1 )) ||
-			( srate && g_utf8_strlen( srate, -1 ))){
+			( rate > 0 )){
 
-			ofo_taux_add_val( priv->taux, sbegin, send, srate );
+			ofo_taux_add_val( priv->taux, sbegin, send, rate );
 		}
 	}
 

@@ -87,8 +87,6 @@
                 are to be replaced with my_utils_date_set_from_date()
                 or my_utils_stamp_set_from_???()
 
-  80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
-
   85 2014- 5-21 Color the frame of the invalid GtkEntry
                 + set data "ofa-data-entry-valid"
                 + my_utils_entry_is_valid
@@ -282,6 +280,8 @@
 
  261 2014- 6-27 TauxProperties: update ofoTaux with GDate and rate as a
                 gdouble instead of strings
+     2014- 9-14 cancelled as without added value
+     2014- 9-14 reopened -> rate as a gdouble
 
  262 2014- 6-27 make g_date_set_parse locale independant (especially
                 when parsing from sql)
@@ -579,6 +579,9 @@
 
   78 2014- 5-21 Guided Input: check that the effect date is valid
      2014- 5-28 done - svn #3516
+
+  80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
+     2014- 9-14 cancelled as without added value
 
   81 2014- 5-21 guided input: check_for_entry: also check that total
                 debit+credit balance is not nul

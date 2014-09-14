@@ -457,7 +457,7 @@ ofo_taux_get_max_valid( const ofoTaux *taux )
  * ofo_taux_add_val:
  */
 void
-ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const gchar *rate )
+ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, gdouble rate )
 {
 	ofsRateValidity *sval;
 
@@ -468,7 +468,7 @@ ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const gch
 		sval = g_new0( ofsRateValidity, 1 );
 		g_date_set_parse( &sval->begin, begin );
 		g_date_set_parse( &sval->end, end );
-		sval->rate = my_utils_double_from_string( rate );
+		sval->rate = rate;
 		taux_add_val_detail( taux, sval );
 	}
 }
