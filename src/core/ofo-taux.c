@@ -51,17 +51,8 @@ struct _ofoTauxPrivate {
 	gchar     *notes;
 	gchar     *maj_user;
 	GTimeVal   maj_stamp;
-	GList     *valids;
+	GList     *validities;
 };
-
-/* these are sgbd datas for each validitiy period
- */
-typedef struct {
-	GDate    begin;
-	GDate    end;
-	gdouble  rate;
-}
-	sTauxValid;
 
 #if 0
 /* the structure used when searching for a rate by mnemo,
@@ -78,28 +69,28 @@ G_DEFINE_TYPE( ofoTaux, ofo_taux, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, taux )
 
-static GList         *taux_load_dataset( void );
-static void           taux_set_val_begin( sTauxValid *tv, const GDate *date );
-static void           taux_set_val_end( sTauxValid *tv, const GDate *date );
-static void           taux_set_val_taux( sTauxValid *tv, gdouble rate );
-static ofoTaux       *taux_find_by_mnemo( GList *set, const gchar *mnemo );
-static void           taux_add_val_detail( ofoTaux *taux, sTauxValid *detail );
-static gboolean       taux_do_insert( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_delete_validities( ofoTaux *taux, const ofoSgbd *sgbd );
-static gboolean       taux_insert_validities( ofoTaux *taux, const ofoSgbd *sgbd );
-static gboolean       taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd );
-static gboolean       taux_do_update( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
-static gboolean       taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd );
-static gint           taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo );
-static gint           taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent );
-static ofoTaux       *taux_import_csv_taux( GSList *fields, gint count, gint *errors );
-static sTauxValid    *taux_import_csv_valid( GSList *fields, gint count, gint *errors, gchar **mnemo );
-static gboolean       taux_do_drop_content( const ofoSgbd *sgbd );
+static GList           *taux_load_dataset( void );
+static void             taux_set_val_begin( ofsRateValidity *tv, const GDate *date );
+static void             taux_set_val_end( ofsRateValidity *tv, const GDate *date );
+static void             taux_set_val_taux( ofsRateValidity *tv, gdouble rate );
+static ofoTaux         *taux_find_by_mnemo( GList *set, const gchar *mnemo );
+static void             taux_add_val_detail( ofoTaux *taux, ofsRateValidity *detail );
+static gboolean         taux_do_insert( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
+static gboolean         taux_insert_main( ofoTaux *taux, const ofoSgbd *sgbd, const gchar *user );
+static gboolean         taux_delete_validities( ofoTaux *taux, const ofoSgbd *sgbd );
+static gboolean         taux_insert_validities( ofoTaux *taux, const ofoSgbd *sgbd );
+static gboolean         taux_insert_validity( ofoTaux *taux, ofsRateValidity *sdet, const ofoSgbd *sgbd );
+static gboolean         taux_do_update( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
+static gboolean         taux_update_main( ofoTaux *taux, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
+static gboolean         taux_do_delete( ofoTaux *taux, const ofoSgbd *sgbd );
+static gint             taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo );
+static gint             taux_cmp_by_vdata( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent );
+static ofoTaux         *taux_import_csv_taux( GSList *fields, gint count, gint *errors );
+static ofsRateValidity *taux_import_csv_valid( GSList *fields, gint count, gint *errors, gchar **mnemo );
+static gboolean         taux_do_drop_content( const ofoSgbd *sgbd );
 
 static void
-taux_free_validity( sTauxValid *sval )
+taux_free_validity( ofsRateValidity *sval )
 {
 	g_free( sval );
 }
@@ -107,8 +98,8 @@ taux_free_validity( sTauxValid *sval )
 static void
 taux_free_validities( ofoTaux *taux )
 {
-	g_list_free_full( taux->private->valids, ( GDestroyNotify ) taux_free_validity );
-	taux->private->valids = NULL;
+	g_list_free_full( taux->private->validities, ( GDestroyNotify ) taux_free_validity );
+	taux->private->validities = NULL;
 }
 
 static void
@@ -204,7 +195,7 @@ taux_load_dataset( void )
 	GSList *result, *irow, *icol;
 	ofoTaux *taux;
 	GList *dataset, *it;
-	sTauxValid *valid;
+	ofsRateValidity *valid;
 	gchar *query;
 	GDate date;
 	GTimeVal timeval;
@@ -239,7 +230,7 @@ taux_load_dataset( void )
 	for( it=dataset ; it ; it=it->next ){
 
 		taux = OFO_TAUX( it->data );
-		taux->private->valids = NULL;
+		taux->private->validities = NULL;
 
 		query = g_strdup_printf(
 					"SELECT TAX_VAL_DEB,TAX_VAL_FIN,TAX_VAL_TAUX"
@@ -251,7 +242,7 @@ taux_load_dataset( void )
 
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
-			valid = g_new0( sTauxValid, 1 );
+			valid = g_new0( ofsRateValidity, 1 );
 			taux_set_val_begin( valid,
 					my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 			icol = icol->next;
@@ -261,7 +252,7 @@ taux_load_dataset( void )
 			taux_set_val_taux( valid,
 					my_utils_double_from_sql(( const gchar * ) icol->data ));
 
-			taux->private->valids = g_list_prepend( taux->private->valids, valid );
+			taux->private->validities = g_list_prepend( taux->private->validities, valid );
 		}
 
 		ofo_sgbd_free_result( result );
@@ -410,14 +401,14 @@ ofo_taux_get_min_valid( const ofoTaux *taux )
 {
 	GList *iv;
 	const GDate *min;
-	sTauxValid *sval;
+	ofsRateValidity *sval;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		for (min=NULL, iv=taux->private->valids ; iv ; iv=iv->next ){
-			sval = ( sTauxValid * ) iv->data;
+		for (min=NULL, iv=taux->private->validities ; iv ; iv=iv->next ){
+			sval = ( ofsRateValidity * ) iv->data;
 			if( !min ){
 				min = &sval->begin;
 			} else if( my_date_cmp( &sval->begin, min, TRUE ) < 0 ){
@@ -440,14 +431,14 @@ ofo_taux_get_max_valid( const ofoTaux *taux )
 {
 	GList *iv;
 	const GDate *max;
-	sTauxValid *sval;
+	ofsRateValidity *sval;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		for (max=NULL, iv=taux->private->valids ; iv ; iv=iv->next ){
-			sval = ( sTauxValid * ) iv->data;
+		for (max=NULL, iv=taux->private->validities ; iv ; iv=iv->next ){
+			sval = ( ofsRateValidity * ) iv->data;
 			if( !max ){
 				max = &sval->end;
 			} else if( my_date_cmp( &sval->end, max, FALSE ) > 0 ){
@@ -468,13 +459,13 @@ ofo_taux_get_max_valid( const ofoTaux *taux )
 void
 ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const char *rate )
 {
-	sTauxValid *sval;
+	ofsRateValidity *sval;
 
 	g_return_if_fail( taux && OFO_IS_TAUX( taux ));
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		sval = g_new0( sTauxValid, 1 );
+		sval = g_new0( ofsRateValidity, 1 );
 		g_date_set_parse( &sval->begin, begin );
 		g_date_set_parse( &sval->end, end );
 		sval->rate = my_utils_double_from_string( rate );
@@ -483,9 +474,9 @@ ofo_taux_add_val( ofoTaux *taux, const gchar *begin, const gchar *end, const cha
 }
 
 static void
-taux_add_val_detail( ofoTaux *taux, sTauxValid *detail )
+taux_add_val_detail( ofoTaux *taux, ofsRateValidity *detail )
 {
-	taux->private->valids = g_list_append( taux->private->valids, detail );
+	taux->private->validities = g_list_append( taux->private->validities, detail );
 }
 
 /**
@@ -517,7 +508,7 @@ ofo_taux_get_val_count( const ofoTaux *taux )
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		return( g_list_length( taux->private->valids ));
+		return( g_list_length( taux->private->validities ));
 	}
 
 	return( 0 );
@@ -530,15 +521,15 @@ const GDate *
 ofo_taux_get_val_begin( const ofoTaux *taux, gint idx )
 {
 	GList *nth;
-	sTauxValid *rate;
+	ofsRateValidity *rate;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		nth = g_list_nth( taux->private->valids, idx );
+		nth = g_list_nth( taux->private->validities, idx );
 		if( nth ){
-			rate = ( sTauxValid * ) nth->data;
+			rate = ( ofsRateValidity * ) nth->data;
 			return(( const GDate * ) &rate->begin );
 		}
 	}
@@ -553,15 +544,15 @@ const GDate *
 ofo_taux_get_val_end( const ofoTaux *taux, gint idx )
 {
 	GList *nth;
-	sTauxValid *rate;
+	ofsRateValidity *rate;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), NULL );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		nth = g_list_nth( taux->private->valids, idx );
+		nth = g_list_nth( taux->private->validities, idx );
 		if( nth ){
-			rate = ( sTauxValid * ) nth->data;
+			rate = ( ofsRateValidity * ) nth->data;
 			return(( const GDate * ) &rate->end );
 		}
 	}
@@ -576,15 +567,15 @@ gdouble
 ofo_taux_get_val_rate( const ofoTaux *taux, gint idx )
 {
 	GList *nth;
-	sTauxValid *rate;
+	ofsRateValidity *rate;
 
 	g_return_val_if_fail( OFO_IS_TAUX( taux ), 0 );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		nth = g_list_nth( taux->private->valids, idx );
+		nth = g_list_nth( taux->private->validities, idx );
 		if( nth ){
-			rate = ( sTauxValid * ) nth->data;
+			rate = ( ofsRateValidity * ) nth->data;
 			return( rate->rate );
 		}
 	}
@@ -599,15 +590,15 @@ gdouble
 ofo_taux_get_rate_at_date( const ofoTaux *taux, const GDate *date )
 {
 	GList *iva;
-	sTauxValid *svalid;
+	ofsRateValidity *svalid;
 
 	g_return_val_if_fail( taux && OFO_IS_TAUX( taux ), 0 );
 	g_return_val_if_fail( date && g_date_valid( date ), 0 );
 
 	if( !OFO_BASE( taux )->prot->dispose_has_run ){
 
-		for( iva=taux->private->valids ; iva ; iva=iva->next ){
-			svalid = ( sTauxValid * ) iva->data;
+		for( iva=taux->private->validities ; iva ; iva=iva->next ){
+			svalid = ( ofsRateValidity * ) iva->data;
 
 			if( g_date_valid( &svalid->begin )){
 				if( g_date_compare( &svalid->begin, date ) > 0 ){
@@ -755,19 +746,19 @@ ofo_taux_set_maj_stamp( ofoTaux *taux, const GTimeVal *maj_stamp )
 }
 
 static void
-taux_set_val_begin( sTauxValid *tv, const GDate *date )
+taux_set_val_begin( ofsRateValidity *tv, const GDate *date )
 {
 	memcpy( &tv->begin, date, sizeof( GDate ));
 }
 
 static void
-taux_set_val_end( sTauxValid *tv, const GDate *date )
+taux_set_val_end( ofsRateValidity *tv, const GDate *date )
 {
 	memcpy( &tv->end, date, sizeof( GDate ));
 }
 
 static void
-taux_set_val_taux( sTauxValid *tv, gdouble value )
+taux_set_val_taux( ofsRateValidity *tv, gdouble value )
 {
 	tv->rate = value;
 }
@@ -884,11 +875,11 @@ taux_insert_validities( ofoTaux *taux, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GList *idet;
-	sTauxValid *sdet;
+	ofsRateValidity *sdet;
 
 	ok = TRUE;
-	for( idet=taux->private->valids ; idet ; idet=idet->next ){
-		sdet = ( sTauxValid * ) idet->data;
+	for( idet=taux->private->validities ; idet ; idet=idet->next ){
+		sdet = ( ofsRateValidity * ) idet->data;
 		ok &= taux_insert_validity( taux, sdet, sgbd );
 	}
 
@@ -896,7 +887,7 @@ taux_insert_validities( ofoTaux *taux, const ofoSgbd *sgbd )
 }
 
 static gboolean
-taux_insert_validity( ofoTaux *taux, sTauxValid *sdet, const ofoSgbd *sgbd )
+taux_insert_validity( ofoTaux *taux, ofsRateValidity *sdet, const ofoSgbd *sgbd )
 {
 	gboolean ok;
 	GString *query;
@@ -1110,7 +1101,7 @@ taux_cmp_by_mnemo( const ofoTaux *a, const gchar *mnemo )
  */
 
 static gint
-taux_cmp_by_vdata( sTauxVData *a, sTauxVData *b, gboolean *consistent )
+taux_cmp_by_vdata( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent )
 {
 	/* does 'a' start from the infinite ? */
 	if( !g_date_valid( &a->begin )){
@@ -1180,7 +1171,7 @@ ofo_taux_get_csv( const ofoDossier *dossier )
 	gchar *str, *stamp;
 	ofoTaux *taux;
 	const gchar *muser;
-	sTauxValid *sdet;
+	ofsRateValidity *sdet;
 	gchar *sbegin, *send, *notes;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, taux );
@@ -1212,8 +1203,8 @@ ofo_taux_get_csv( const ofoDossier *dossier )
 
 		lines = g_slist_prepend( lines, str );
 
-		for( det=taux->private->valids ; det ; det=det->next ){
-			sdet = ( sTauxValid * ) det->data;
+		for( det=taux->private->validities ; det ; det=det->next ){
+			sdet = ( ofsRateValidity * ) det->data;
 
 			sbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
 			send = my_date_to_str( &sdet->end, MY_DATE_SQL );
@@ -1262,7 +1253,7 @@ ofo_taux_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 	gint type;
 	GSList *ili, *ico;
 	ofoTaux *taux;
-	sTauxValid *sdet;
+	ofsRateValidity *sdet;
 	GList *new_set, *ise;
 	gint count;
 	gint errors;
@@ -1390,15 +1381,15 @@ taux_import_csv_taux( GSList *fields, gint count, gint *errors )
 	return( taux );
 }
 
-static sTauxValid *
+static ofsRateValidity *
 taux_import_csv_valid( GSList *fields, gint count, gint *errors, gchar **mnemo )
 {
 	static const gchar *thisfn = "ofo_taux_import_csv_valid";
-	sTauxValid *detail;
+	ofsRateValidity *detail;
 	const gchar *str;
 	GSList *ico;
 
-	detail = g_new0( sTauxValid, 1 );
+	detail = g_new0( ofsRateValidity, 1 );
 
 	/* taux mnemo */
 	ico = fields->next;

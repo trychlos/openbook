@@ -582,7 +582,7 @@ is_dialog_validable( ofaTauxProperties *self )
 {
 	ofaTauxPropertiesPrivate *priv;
 	GList *valids;
-	sTauxVData *vdata;
+	ofsRateValidity *vdata;
 	gint i;
 	GtkEntry *entry;
 	const gchar *sbegin, *send, *srate;
@@ -602,7 +602,7 @@ is_dialog_validable( ofaTauxProperties *self )
 			( send && g_utf8_strlen( send, -1 )) ||
 			( srate && g_utf8_strlen( srate, -1 ))){
 
-			vdata = g_new0( sTauxVData, 1 );
+			vdata = g_new0( ofsRateValidity, 1 );
 			g_date_set_parse( &vdata->begin, sbegin );
 			g_date_set_parse( &vdata->end, send );
 			vdata->rate = my_utils_double_from_string( srate );

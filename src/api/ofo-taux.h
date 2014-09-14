@@ -41,7 +41,7 @@
 G_BEGIN_DECLS
 
 /**
- * sTauxVData:
+ * ofsRateValidity:
  *
  * The structure used to validate all the validities of a rate.
  */
@@ -50,7 +50,7 @@ typedef struct {
 	GDate   end;
 	gdouble rate;
 }
-	sTauxVData;
+	ofsRateValidity;
 
 GList          *ofo_taux_get_dataset  ( const ofoDossier *dossier );
 ofoTaux        *ofo_taux_get_by_mnemo ( const ofoDossier *dossier, const gchar *mnemo );
