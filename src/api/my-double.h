@@ -21,7 +21,7 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id: my-utils.h 3862 2014-09-06 10:11:20Z  $
+ * $Id$
  */
 
 #ifndef __MY_DOUBLE_H__

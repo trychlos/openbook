@@ -21,7 +21,7 @@
  * Authors:
  *   Pierre Wieser <pwieser@trychlos.org>
  *
- * $Id: my-utils.c 3865 2014-09-13 17:15:41Z  $
+ * $Id$
  */
 
 #ifdef HAVE_CONFIG_H
