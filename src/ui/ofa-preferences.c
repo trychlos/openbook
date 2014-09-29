@@ -60,13 +60,11 @@ struct _ofaPreferencesPrivate {
 
 	/* UI - Locales
 	 */
+	gchar                 *p3_decimal_sep;
+	gboolean               p3_accept_dot;
 	gint                   p3_date_enter;
 	gint                   p3_date_display;
 	gint                   p3_date_check;
-	gboolean               p3_accept_dot;
-	gboolean               p3_accept_comma;
-	gchar                 *p3_decimal_sep;
-	gchar                 *p3_thousand_sep;
 
 	/* UI - Plugins
 	 */
@@ -83,6 +81,7 @@ static const gchar *st_ui_id                       = "PreferencesDlg";
 static const gchar *st_delete_dossier_xml          = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
 static const gchar *st_delete_dossier_id           = "DossierDeleteWindow";
 
+/*
 enum {
 	DATE_COL_CODE = 0,
 	DATE_COL_LABEL,
@@ -97,10 +96,11 @@ typedef struct {
 
 static const FmtDate st_fmt_date[] = {
 		{ MY_DATE_DMMM, N_( "D MMM YYYY" )},
-		{ MY_DATE_DDMM, N_( "DD/MM/YYYY" )},
+		{ MY_DATE_DMYY, N_( "DD/MM/YYYY" )},
 		{ MY_DATE_SQL,  N_( "YYYY-MM-DD" )},
 		{ 0 }
 };
+*/
 
 #define DATA_DATE                           "ofa-data-date"
 #define DATA_DECIMAL                        "ofa-data-decimal"
@@ -120,16 +120,17 @@ static void       v_init_dialog( myDialog *dialog );
 static void       init_quit_assistant_page( ofaPreferences *self );
 static void       init_dossier_delete_page( ofaPreferences *self );
 static void       init_locales_page( ofaPreferences *self );
-static void       init_locale_date( ofaPreferences *self, const gchar *wname, const gchar *pref, gint *pdata, gint def_value );
+static void       get_locales( void );
+/*static void       init_locale_date( ofaPreferences *self, const gchar *wname, const gchar *pref, gint *pdata, gint def_value );
 static void       init_locale_decimal( ofaPreferences *self, const gchar *wname, GSList *slist, const gchar *sep, gboolean *pdata );
 static gint       find_str( const gchar *a, const gchar *b );
-static void       init_locale_sep( ofaPreferences *self, const gchar *wname, const gchar *pref, gchar **pdata, const gchar *def_value );
+static void       init_locale_sep( ofaPreferences *self, const gchar *wname, const gchar *pref, gchar **pdata, const gchar *def_value );*/
 static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
 static void       init_plugin_page( ofaPreferences *self, ofaIPreferences *plugin );
 static void       on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void       on_format_date_changed( GtkComboBox *combo, ofaPreferences *self );
+/*static void       on_format_date_changed( GtkComboBox *combo, ofaPreferences *self );
 static void       on_decimal_toggled( GtkToggleButton *check, ofaPreferences *self );
-static void       on_sep_changed( GtkCellEditable *editable, ofaPreferences *self );
+static void       on_sep_changed( GtkCellEditable *editable, ofaPreferences *self );*/
 static gboolean   v_quit_on_ok( myDialog *dialog );
 static gboolean   do_update( ofaPreferences *self );
 static void       do_update_assistant_page( ofaPreferences *self );
@@ -308,13 +309,15 @@ init_dossier_delete_page( ofaPreferences *self )
 static void
 init_locales_page( ofaPreferences *self )
 {
-	ofaPreferencesPrivate *priv;
+	/*ofaPreferencesPrivate *priv;
 	GSList *slist;
 
-	priv = self->private;
+	priv = self->private;*/
 
-	init_locale_date( self, "p3-date-enter",   "PrefDateEnter",   &priv->p3_date_enter,   MY_DATE_DDMM );
-	init_locale_date( self, "p3-date-display", "PrefDateDisplay", &priv->p3_date_display, MY_DATE_DDMM );
+	get_locales();
+
+	/*init_locale_date( self, "p3-date-enter",   "PrefDateEnter",   &priv->p3_date_enter,   MY_DATE_DMYY );
+	init_locale_date( self, "p3-date-display", "PrefDateDisplay", &priv->p3_date_display, MY_DATE_DMYY );
 	init_locale_date( self, "p3-date-check",   "PrefDateCheck",   &priv->p3_date_check,   MY_DATE_DMMM );
 
 	slist = ofa_settings_get_string_list( "AmountDecimalDots" );
@@ -322,9 +325,46 @@ init_locales_page( ofaPreferences *self )
 	init_locale_decimal( self, "p3-decimal-comma", slist, ",", &priv->p3_accept_comma );
 
 	init_locale_sep( self, "p3-decimal-sep", "AmountDecimalSep", &priv->p3_decimal_sep, "," );
-	init_locale_sep( self, "p3-thousand-sep", "AmountThousandSep", &priv->p3_thousand_sep, " " );
+	init_locale_sep( self, "p3-thousand-sep", "AmountThousandSep", &priv->p3_thousand_sep, " " );*/
 }
 
+static void
+get_locales( void )
+{
+	static const gchar *thisfn = "ofa_preferences_get_locales";
+	gchar *stdout, *stderr;
+	gint exit_status;
+	GError *error;
+	gchar **lines, **iter;
+
+	stdout = NULL;
+	stderr = NULL;
+	error = NULL;
+
+	if( !g_spawn_command_line_sync( "locale -a", &stdout, &stderr, &exit_status, &error )){
+		g_warning( "%s: %s", thisfn, error->message );
+		g_error_free( error );
+
+	} else if( stderr && g_utf8_strlen( stderr, -1 )){
+		g_warning( "%s: stderr='%s'", thisfn, stderr );
+		g_free( stderr );
+
+	} else {
+		/*g_debug( "%s: stdout='%s'", thisfn, stdout );*/
+		lines = g_strsplit( stdout, "\n", -1 );
+		g_free( stdout );
+		iter = lines;
+		while( *iter ){
+			if( g_utf8_strlen( *iter, -1 )){
+				g_debug( "%s: iter='%s'", thisfn, *iter );
+			}
+			iter++;
+		}
+		g_strfreev( lines );
+	}
+}
+
+#if 0
 static void
 init_locale_date( ofaPreferences *self, const gchar *wname, const gchar *pref, gint *pdata, gint def_value )
 {
@@ -435,6 +475,7 @@ init_locale_sep( ofaPreferences *self, const gchar *wname, const gchar *pref, gc
 
 	g_object_set_data( G_OBJECT( entry ), DATA_SEPARATOR, pdata );
 }
+#endif
 
 static void
 enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn )
@@ -485,6 +526,7 @@ on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 			gtk_toggle_button_get_active( button ));
 }
 
+#if 0
 static void
 on_format_date_changed( GtkComboBox *combo, ofaPreferences *self )
 {
@@ -520,6 +562,7 @@ on_sep_changed( GtkCellEditable *editable, ofaPreferences *self )
 	*pdata = g_strdup( text );
 
 }
+#endif
 
 static gboolean
 v_quit_on_ok( myDialog *dialog )
@@ -601,7 +644,7 @@ ofa_prefs_assistant_confirm_on_cancel( void )
 static void
 do_update_locales_page( ofaPreferences *self )
 {
-	ofaPreferencesPrivate *priv;
+	/*ofaPreferencesPrivate *priv;
 	GString *text;
 
 	priv = self->private;
@@ -621,7 +664,7 @@ do_update_locales_page( ofaPreferences *self )
 	g_string_free( text, TRUE );
 
 	ofa_settings_set_string( "AmountDecimalSep", priv->p3_decimal_sep );
-	ofa_settings_set_string( "AmountThousandSep", priv->p3_thousand_sep );
+	ofa_settings_set_string( "AmountThousandSep", priv->p3_thousand_sep );*/
 }
 
 static void

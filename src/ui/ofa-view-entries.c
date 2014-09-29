@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
@@ -434,7 +435,7 @@ setup_dates_selection( ofaViewEntries *self )
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->top_box, "f2-from" );
-	parms.entry_format = MY_DATE_DDMM;
+	parms.entry_format = MY_DATE_DMYY;
 	parms.label = my_utils_container_get_child_by_name( priv->top_box, "f2-from-label" );
 	parms.label_format = MY_DATE_DMMM;
 	parms.date = &priv->d_from;
@@ -449,7 +450,7 @@ setup_dates_selection( ofaViewEntries *self )
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->top_box, "f2-to" );
-	parms.entry_format = MY_DATE_DDMM;
+	parms.entry_format = MY_DATE_DMYY;
 	parms.label = my_utils_container_get_child_by_name( priv->top_box, "f2-to-label" );
 	parms.label_format = MY_DATE_DMMM;
 	parms.date = &priv->d_to;
@@ -1102,8 +1103,8 @@ compute_balances( ofaViewEntries *self )
 
 			pc = find_balance_by_currency( self, dev_code );
 
-			pc->debits += my_utils_double_from_string( sdeb );
-			pc->credits += my_utils_double_from_string( scre );
+			pc->debits += my_double_from_string( sdeb );
+			pc->credits += my_double_from_string( scre );
 
 			g_free( sdeb );
 			g_free( scre );
@@ -1149,13 +1150,13 @@ display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
 	gchar *sdope, *sdeff, *sdeb, *scre, *srappro, *status;
 	const GDate *d;
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DDMM );
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DDMM );
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
 	sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
 	scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
 	d = ofo_entry_get_rappro_dval( entry );
 	if( d && g_date_valid( d )){
-		srappro = my_date_to_str( d, MY_DATE_DDMM );
+		srappro = my_date_to_str( d, MY_DATE_DMYY );
 	} else {
 		srappro = g_strdup( "" );
 	}
@@ -1251,12 +1252,12 @@ update_balance_amounts( ofaViewEntries *self, const gchar *sdeb, const gchar *sc
 	pc = find_balance_by_currency( self, dev_code );
 	switch( column_id ){
 		case ENT_COL_DEBIT:
-			pc->debits -= my_utils_double_from_string( sdeb );
-			pc->debits += my_utils_double_from_string( text );
+			pc->debits -= my_double_from_string( sdeb );
+			pc->debits += my_double_from_string( text );
 			break;
 		case ENT_COL_CREDIT:
-			pc->credits -= my_utils_double_from_string( scre );
-			pc->credits += my_utils_double_from_string( text );
+			pc->credits -= my_double_from_string( scre );
+			pc->credits += my_double_from_string( text );
 			break;
 	}
 
@@ -1274,8 +1275,8 @@ update_balance_currency( ofaViewEntries *self, const gchar *sdeb, const gchar *s
 	gdouble debit, credit;
 
 	priv = self->private;
-	debit = my_utils_double_from_string( sdeb );
-	credit = my_utils_double_from_string( scre );
+	debit = my_double_from_string( sdeb );
+	credit = my_double_from_string( scre );
 
 	pc = find_balance_by_currency( self, dev_code );
 	pc->debits -= debit;
@@ -1428,7 +1429,7 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 		/* start by setting the from/to dates as these changes do not
 		 * automatically trigger a display refresh */
 		if( begin && g_date_valid( begin )){
-			str = my_date_to_str( begin, MY_DATE_DDMM );
+			str = my_date_to_str( begin, MY_DATE_DMYY );
 			gtk_entry_set_text( priv->we_from, str );
 			g_free( str );
 		} else {
@@ -1436,7 +1437,7 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 		}
 
 		if( end && g_date_valid( end )){
-			str = my_date_to_str( end, MY_DATE_DDMM );
+			str = my_date_to_str( end, MY_DATE_DMYY );
 			gtk_entry_set_text( priv->we_to, str );
 			g_free( str );
 		} else {
@@ -1571,7 +1572,7 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 
 			/* reformat amounts */
 			if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){
-				amount = my_utils_double_from_string( text );
+				amount = my_double_from_string( text );
 				str = g_strdup_printf( "%'.2lf", amount );
 				/*g_debug( "on_cell_edited: text='%s', amount=%lf, str='%s'", text, amount, str );*/
 			} else {
@@ -1730,8 +1731,8 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 					if( !last_close || g_date_compare( &deff, last_close ) > 0 ){
 						is_valid = TRUE;
 					} else {
-						msg2 = my_date_to_str( last_close, MY_DATE_DDMM );
-						msg3 = my_date_to_str( &deff, MY_DATE_DDMM );
+						msg2 = my_date_to_str( last_close, MY_DATE_DMYY );
+						msg3 = my_date_to_str( &deff, MY_DATE_DMYY );
 						msg = g_strdup_printf( _( "Effect date (%s) lesser than last closing date (%s)" ), msg3, msg2 );
 						set_comment( self, msg );
 						g_free( msg );
@@ -1902,8 +1903,8 @@ check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 	is_valid = FALSE;
 	gtk_tree_model_get( tmodel, iter, ENT_COL_DEBIT, &sdeb, ENT_COL_CREDIT, &scre, -1 );
 	if(( sdeb && g_utf8_strlen( sdeb, -1 )) || ( scre && g_utf8_strlen( scre, -1 ))){
-		debit = my_utils_double_from_string( sdeb );
-		credit = my_utils_double_from_string( scre );
+		debit = my_double_from_string( sdeb );
+		credit = my_double_from_string( scre );
 		if(( debit && !credit ) || ( !debit && credit )){
 			is_valid = TRUE;
 		} else {
@@ -1960,8 +1961,8 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	g_date_set_parse( &deff, sdeff );
 	g_return_val_if_fail( g_date_valid( &deff ), FALSE );
 
-	debit = my_utils_double_from_string( sdeb );
-	credit = my_utils_double_from_string( scre );
+	debit = my_double_from_string( sdeb );
+	credit = my_double_from_string( scre );
 	g_debug( "save_entry: sdeb='%s', debit=%lf, scre='%s', credit=%lf", sdeb, debit, scre, credit );
 
 	if( entry ){

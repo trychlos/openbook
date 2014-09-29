@@ -32,29 +32,61 @@
  * @short_description: #myDate class definition.
  * @include: ui/my-date.h
  *
- * This is a class which handles all dates.
+ * This is a class which handles dates.
+ *
+ * Note that a myDate does not have a format by itself: it is just a
+ * date. Only when we want to enter or display one myDate, we have to
+ * provide an enter or display format.
  *
  * Goals are:
  * - be independant of the locale
  * - make sure all the hard stuff is centralized
- * - manage GtkEntry as well as GtkCellRenderer
+ * - provide a base class to manage GtkEntry as well as GtkCellRenderer
+ *   (see my_editable_date_xxx and my_cell_renderer_date_xxx set of
+ *    functions).
  */
 
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
+#define MY_TYPE_DATE                ( my_date_get_type())
+#define MY_DATE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, MY_TYPE_DATE, myDate ))
+#define MY_DATE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, MY_TYPE_DATE, myDateClass ))
+#define MY_IS_DATE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, MY_TYPE_DATE ))
+#define MY_IS_DATE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_DATE ))
+#define MY_DATE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_DATE, myDateClass ))
+
+typedef struct {
+	/*< private >*/
+	GObjectClass parent;
+}
+	myDateClass;
+
+typedef struct _myDatePrivate       myDatePrivate;
+
+typedef struct {
+	/*< private >*/
+	GObject        parent;
+	myDatePrivate *private;
+}
+	myDate;
+
 /**
  * myDateFormat:
- *
- * @MY_DATE_DMMM: display the date as 'd mmm yyyy'
- * @MY_DATE_DDMM: display the date as 'dd/mm/yyyy'
- * @MY_DATE_SQL:  display the date as 'yyyy-mm-dd'
- * @MY_DATE_YYMD: display the date as 'yyyymmdd'
+ * --------------+------------+----------------------------------+
+ *               |            |               usage              |
+ *               | display as | display | entry | sql | filename |
+ * --------------+------------+---------+-------+-----+----------+
+ * @MY_DATE_DMMM | d mmm yyyy |    X    |       |     |          |
+ * @MY_DATE_DMYY | dd/mm/yyyy |    X    |   X   |     |          |
+ * @MY_DATE_SQL  | yyyy-mm-dd |         |       |  X  |          |
+ * @MY_DATE_YYMD |  yyyymmdd  |         |       |     |     X    |
+ * --------------+------------+---------+-------+-----+----------+
  */
 typedef enum {
 	MY_DATE_DMMM = 1,
-	MY_DATE_DDMM,
+	MY_DATE_DMYY,
 	MY_DATE_SQL,
 	MY_DATE_YYMD
 }
@@ -96,6 +128,14 @@ typedef struct {
 }
 	myDateParse;
 
+GType      my_date_get_type        ( void ) G_GNUC_CONST;
+
+myDate    *my_date_new             ( void );
+
+myDate    *my_date_new_from_sql    ( const gchar *sql_string );
+
+myDate    *my_date_new_from_str    ( const gchar *str, myDateFormat format );
+
 GDate     *my_date_set_now          ( GDate *date );
 
 GDate     *my_date_set_from_sql     ( GDate *dest, const gchar *sql_string );
@@ -108,7 +148,7 @@ gint       my_date_cmp              ( const GDate *a, const GDate *b, gboolean i
 
 void       my_date_parse_from_entry ( const myDateParse *parms );
 
-GDate     *my_date_parse_from_str   ( GDate *date, const gchar *text, myDateFormat format );
+gboolean   my_date_parse_from_str   ( GDate *date, const gchar *text, myDateFormat format );
 
 G_END_DECLS
 

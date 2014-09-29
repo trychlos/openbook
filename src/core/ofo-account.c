@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -447,7 +448,7 @@ account_load_dataset( void )
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_account_set_deb_mnt( account,
-				my_utils_double_from_sql(( const gchar * ) icol->data ));
+				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			ofo_account_set_cre_ecr( account, atoi(( gchar * ) icol->data ));
@@ -457,7 +458,7 @@ account_load_dataset( void )
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_account_set_cre_mnt( account,
-				my_utils_double_from_sql(( const gchar * ) icol->data ));
+				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			ofo_account_set_bro_deb_ecr( account, atoi(( gchar * ) icol->data ));
@@ -467,7 +468,7 @@ account_load_dataset( void )
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_account_set_bro_deb_mnt( account,
-				my_utils_double_from_sql(( const gchar * ) icol->data ));
+				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			ofo_account_set_bro_cre_ecr( account, atoi(( gchar * ) icol->data ));
@@ -477,7 +478,7 @@ account_load_dataset( void )
 				my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_account_set_bro_cre_mnt( account,
-				my_utils_double_from_sql(( const gchar * ) icol->data ));
+				my_double_from_sql(( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, account );
 	}
@@ -1592,7 +1593,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	ecr_number = ofo_account_get_deb_ecr( account );
 	if( ecr_number ){
 		sdate = my_date_to_str( ofo_account_get_deb_date( account ), MY_DATE_SQL );
-		samount = my_utils_double_to_sql( ofo_account_get_deb_mnt( account ));
+		samount = my_double_to_sql( ofo_account_get_deb_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_DEB_ECR=%d,CPT_DEB_DATE='%s',CPT_DEB_MNT=%s,",
 					ecr_number, sdate, samount );
@@ -1607,7 +1608,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	ecr_number = ofo_account_get_cre_ecr( account );
 	if( ecr_number ){
 		sdate = my_date_to_str( ofo_account_get_cre_date( account ), MY_DATE_SQL );
-		samount = my_utils_double_to_sql( ofo_account_get_cre_mnt( account ));
+		samount = my_double_to_sql( ofo_account_get_cre_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_CRE_ECR=%d,CPT_CRE_DATE='%s',CPT_CRE_MNT=%s,",
 					ecr_number, sdate, samount );
@@ -1622,7 +1623,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	ecr_number = ofo_account_get_bro_deb_ecr( account );
 	if( ecr_number ){
 		sdate = my_date_to_str( ofo_account_get_bro_deb_date( account ), MY_DATE_SQL );
-		samount = my_utils_double_to_sql( ofo_account_get_bro_deb_mnt( account ));
+		samount = my_double_to_sql( ofo_account_get_bro_deb_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_BRO_DEB_ECR=%d,CPT_BRO_DEB_DATE='%s',CPT_BRO_DEB_MNT=%s,",
 					ecr_number, sdate, samount );
@@ -1637,7 +1638,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 	ecr_number = ofo_account_get_bro_cre_ecr( account );
 	if( ecr_number ){
 		sdate = my_date_to_str( ofo_account_get_bro_cre_date( account ), MY_DATE_SQL );
-		samount = my_utils_double_to_sql( ofo_account_get_bro_cre_mnt( account ));
+		samount = my_double_to_sql( ofo_account_get_bro_cre_mnt( account ));
 		g_string_append_printf( query,
 				"CPT_BRO_CRE_ECR=%d,CPT_BRO_CRE_DATE='%s',CPT_BRO_CRE_MNT=%s ",
 					ecr_number, sdate, samount );

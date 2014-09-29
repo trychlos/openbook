@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -528,10 +529,10 @@ entry_parse_result( const GSList *row )
 		ofo_entry_set_journal( entry, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_entry_set_debit( entry,
-				my_utils_double_from_sql(( const gchar * ) icol->data ));
+				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_credit( entry,
-				my_utils_double_from_sql(( const gchar * ) icol->data ));
+				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
@@ -1478,8 +1479,8 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
-	sdeb = my_utils_double_to_sql( ofo_entry_get_debit( entry ));
-	scre = my_utils_double_to_sql( ofo_entry_get_credit( entry ));
+	sdeb = my_double_to_sql( ofo_entry_get_debit( entry ));
+	scre = my_double_to_sql( ofo_entry_get_credit( entry ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -1745,10 +1746,10 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		ofo_entry_set_account( entry, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_entry_set_debit( entry,
-				my_utils_double_from_sql(( const gchar * ) icol->data ));
+				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_credit( entry,
-				my_utils_double_from_sql(( const gchar * ) icol->data ));
+				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_maj_user( entry, ( gchar * ) icol->data );
 		icol = icol->next;
@@ -1953,7 +1954,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				errors += 1;
 				continue;
 			}
-			debit = my_utils_double_from_sql( str );
+			debit = my_double_from_sql( str );
 			tot_debits += debit;
 
 			/* credit */
@@ -1964,7 +1965,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				errors += 1;
 				continue;
 			}
-			credit = my_utils_double_from_sql( str );
+			credit = my_double_from_sql( str );
 			tot_credits += credit;
 
 			/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/

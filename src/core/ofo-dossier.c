@@ -943,10 +943,10 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX_VAL ("
 			"	TAX_MNEMO         VARCHAR(6)  NOT NULL    COMMENT 'Mnemonic identifier of the rate',"
-			"	TAX_VAL_DEB       DATE                    COMMENT 'Validity begin date',"
-			"	TAX_VAL_FIN       DATE                    COMMENT 'Validity end date',"
+			"	TAX_VAL_DEB       DATE    DEFAULT NULL    COMMENT 'Validity begin date',"
+			"	TAX_VAL_FIN       DATE    DEFAULT NULL    COMMENT 'Validity end date',"
 			"	TAX_VAL_TAUX      DECIMAL(15,5)           COMMENT 'Taux value',"
-			"	CONSTRAINT PRIMARY KEY (TAX_MNEMO,TAX_VAL_DEB,TAX_VAL_FIN)"
+			"	ADD UNIQUE INDEX (TAX_MNEMO,TAX_VAL_DEB,TAX_VAL_FIN)"
 			")", TRUE )){
 		return( FALSE );
 	}

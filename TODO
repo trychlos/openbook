@@ -321,7 +321,7 @@
 
  282 2014- 7-14 move export to myAssistant
 
- 296 2014- 7-20 creating a new dossier with an existing database needs
+ 296 2014- 7-20 creating a new dossier from an existing database needs
                 to insert the new admin user from root account (else
                 the new user will not be able to connect for updating
                 the model)
@@ -332,10 +332,23 @@
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
 
- 309 2014- 9-13 when inserting into TAUX: TAX_VAL_DEB cannot be null
-                but should be allowed to
+ 310 2014- 9-15 locale user preferences:
+                for amounts, whether to allow the comma as decimal point
+                when entering
+                for dates, entry as d/m/yyyy ?
 
- 310
+ 311 2014- 9-21 editing CA12 VAT declaration
+
+ 312 2014- 9-22 myEditableAmount: should limit the count of decimals
+
+ 313 2014- 9-22 myEditableAmount: should have a format string to
+                display a 'decoration' when rendering (e.g. a unit, or
+                a standard prefix, or a display format)
+
+ 314 2014- 9-26 have a preference to use millenary shortcut
+                (i.e. enter '14' give '2014')
+
+ 315
 
 -----------------------------------------------------------------------
  DONE
@@ -1237,6 +1250,10 @@
  308 2014- 8-26 mysql: have a get_connect_parms() function to read a
                 mysqlConnect structure from the settings
      2014- 9- 5 done
+
+ 309 2014- 9-13 when inserting into TAUX: TAX_VAL_DEB cannot be null
+                but should be allowed to
+     2014- 9-15 done
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

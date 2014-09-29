@@ -34,11 +34,239 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 
-static void    on_date_entry_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gpointer position, gpointer user_data );
-static gchar  *date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position );
-static void    on_date_entry_changed( GtkEditable *editable, gpointer user_data );
-static void    date_entry_set_label( GtkEditable *editable, const gchar *str );
-static void    date_entry_parse_ddmm( GDate *date, const gchar *text );
+/* priv instance data
+ */
+struct _myDatePrivate {
+	gboolean     dispose_has_run;
+	GDate        date;
+};
+
+G_DEFINE_TYPE( myDate, my_date, G_TYPE_OBJECT )
+
+static gboolean date_parse_ddmmyyyy_string( myDate *date, const gchar *str );
+static gboolean parse_ddmmyyyy_string( GDate *date, const gchar *str );
+static gboolean date_parse_sql_string( myDate *date, const gchar *sql_string );
+static gboolean parse_sql_string( GDate *date, const gchar *sql_string );
+
+static void     on_date_entry_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gpointer position, gpointer user_data );
+static gchar   *date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position );
+static void     on_date_entry_changed( GtkEditable *editable, gpointer user_data );
+static void     date_entry_set_label( GtkEditable *editable, const gchar *str );
+
+static void
+my_date_finalize( GObject *instance )
+{
+	static const gchar *thisfn = "my_date_finalize";
+	myDatePrivate *priv;
+
+	priv = MY_DATE( instance )->private;
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && MY_IS_DATE( instance ));
+
+	/* free data members here */
+	g_free( priv );
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( my_date_parent_class )->finalize( instance );
+}
+
+static void
+my_date_dispose( GObject *instance )
+{
+	myDatePrivate *priv;
+
+	g_return_if_fail( instance && MY_IS_DATE( instance ));
+
+	priv = MY_DATE( instance )->private;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( my_date_parent_class )->dispose( instance );
+}
+
+static void
+my_date_init( myDate *self )
+{
+	static const gchar *thisfn = "my_date_init";
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	self->private = g_new0( myDatePrivate, 1 );
+
+	g_date_clear( &self->private->date, 1 );
+}
+
+static void
+my_date_class_init( myDateClass *klass )
+{
+	static const gchar *thisfn = "my_date_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = my_date_dispose;
+	G_OBJECT_CLASS( klass )->finalize = my_date_finalize;
+}
+
+/**
+ * my_date_new:
+ *
+ * Returns: a newly allocated #myDate object.
+ * The date is cleared.
+ */
+GDate *
+my_date_new( void )
+{
+	myDate *date;
+
+	date = g_object_new( MY_TYPE_DATE, NULL );
+
+	return( date );
+}
+
+/**
+ * my_date_new_from_sql:
+ * @sql_string: a pointer to a SQL string 'yyyy-mm-dd', or NULL;
+ *  the SQL string may be zero '0000-00-00' or a valid date.
+ *
+ * Returns: a newly allocated #myDate object.
+ * The date is cleared if the @sql_string was NULL or the zero string
+ * ('0000-00-00').
+ * The date is set if the @sql_string can be parsed to a valid
+ *  'yyyy-mm-dd' date.
+ */
+GDate *
+my_date_new_from_sql( const gchar *sql_string )
+{
+	myDate *date;
+
+	date = my_date_new();
+
+	date_parse_sql_string( date, sql_string );
+
+	return( date );
+}
+
+/**
+ * my_date_new_from_str:
+ * @str: the string to be parsed.
+ * @format: the expected format.
+ *
+ * Returns: a newly allocated #myDate object.
+ * The date is cleared if the @str was NULL or cannot be parsed to a
+ * valid date according to the specified @format.
+ */
+GDate *
+my_date_new_from_str( const gchar *str, myDateFormat format )
+{
+	myDate *date;
+
+	date = my_date_new();
+
+	switch( format ){
+
+		case MY_DATE_DMMM:
+			break;
+
+		case MY_DATE_DMYY:
+			date_parse_ddmmyyyy_string( date, str );
+			break;
+
+		case MY_DATE_SQL:
+			date_parse_sql_string( date, str );
+			break;
+
+		case MY_DATE_YYMD:
+			break;
+	}
+
+	return( date );
+}
+
+/*
+ * Returns TRUE if the string parses to a valid 'dd/mm/yyyy' date
+ */
+static gboolean
+date_parse_ddmmyyyy_string( myDate *date, const gchar *str )
+{
+	return( parse_ddmmyyyy_string( &date->private->date, str ));
+}
+
+static gboolean
+parse_ddmmyyyy_string( GDate *date, const gchar *str )
+{
+	gboolean valid;
+	gchar **tokens, **iter;
+	gint dd, mm, yy;
+
+	dd = mm = yy = 0;
+	valid = FALSE;
+	g_date_clear( date, 1 );
+
+	if( str && g_utf8_strlen( str, -1 )){
+		tokens = g_strsplit( str, "/", -1 );
+		iter = tokens;
+		if( *iter && g_utf8_strlen( *iter, -1 )){
+			dd = atoi( *iter );
+			iter++;
+			if( *iter && g_utf8_strlen( *iter, -1 )){
+				mm = atoi( *iter );
+				iter++;
+				if( *iter && g_utf8_strlen( *iter, -1 )){
+					yy = atoi( *iter );
+				}
+			}
+		}
+		g_strfreev( tokens );
+	}
+
+	if( g_date_valid_dmy( dd, mm, yy )){
+		g_date_set_dmy( date, dd, mm, yy );
+		valid = TRUE;
+	}
+
+	return( valid );
+}
+
+/*
+ * Returns TRUE if the string parses to a valid 'yyyy-mm-dd' date
+ *
+ * It appears that g_date_set_parse() is rather locale-independant when
+ * dealing with a SQL date.
+ */
+static gboolean
+date_parse_sql_string( myDate *date, const gchar *sql_string )
+{
+	return( parse_sql_string( &date->private->date, sql_string ));
+}
+
+static gboolean
+parse_sql_string( GDate *date, const gchar *sql_string )
+{
+	gboolean valid;
+
+	valid = FALSE;
+	g_date_clear( date, 1 );
+
+	if( sql_string &&
+			g_utf8_strlen( sql_string, -1 ) &&
+			g_utf8_collate( sql_string, "0000-00-00" )){
+
+		g_date_set_parse( date, sql_string );
+		valid = g_date_valid( date );
+	}
+
+	return( valid );
+}
 
 /**
  * my_date_set_now:
@@ -152,7 +380,7 @@ my_date_to_str( const GDate *date, myDateFormat format )
 				break;
 
 			/* dd/mm/yyyy - display for entry */
-			case MY_DATE_DDMM:
+			case MY_DATE_DMYY:
 				g_free( str );
 				str = g_strdup_printf( "%2.2d/%2.2d/%4.4d",
 						g_date_get_day( date ),
@@ -272,7 +500,7 @@ on_date_entry_insert_text( GtkEditable *editable, gchar *new_text, gint new_text
 	str = NULL;
 	entry_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-entry" ));
 
-	if( entry_format == MY_DATE_DDMM ){
+	if( entry_format == MY_DATE_DMYY ){
 		str = date_entry_insert_text_ddmm( editable, new_text, new_text_length, ( gint * ) position );
 	}
 
@@ -426,46 +654,26 @@ date_entry_set_label( GtkEditable *editable, const gchar *str )
 
 /**
  * my_date_parse_from_str:
- * @date: a non-NULL pointer to a GDate structure
- * @test: [allow-none]:
+ * @date: [out]: a non-NULL pointer to a GDate structure
+ * @text: [in][allow-none]: the string to be parsed
+ * @format: the expected format of the string
+ *
+ * Parse a string which represents a date to a GDate structure.
+ * The GDate structure is left unchanged if the string doesn't represent
+ * a valid date.
+ *
+ * Returns: %TRUE if the string represents a valid date.
  */
-GDate *
+gboolean
 my_date_parse_from_str( GDate *date, const gchar *text, myDateFormat format )
 {
-	g_date_clear( date, 1 );
+	gboolean valid;
 
-	if( format == MY_DATE_DDMM ){
-		date_entry_parse_ddmm( date, text );
+	valid = FALSE;
+
+	if( format == MY_DATE_DMYY ){
+		valid = parse_ddmmyyyy_string( date, text );
 	}
 
-	return( date );
-}
-
-static void
-date_entry_parse_ddmm( GDate *date, const gchar *text )
-{
-	gchar **tokens, **iter;
-	gint dd, mm, yy;
-
-	dd = mm = yy = 0;
-	if( text && g_utf8_strlen( text, -1 )){
-		tokens = g_strsplit( text, "/", -1 );
-		iter = tokens;
-		if( *iter && g_utf8_strlen( *iter, -1 )){
-			dd = atoi( *iter );
-			iter++;
-			if( *iter && g_utf8_strlen( *iter, -1 )){
-				mm = atoi( *iter );
-				iter++;
-				if( *iter && g_utf8_strlen( *iter, -1 )){
-					yy = atoi( *iter );
-				}
-			}
-		}
-		g_strfreev( tokens );
-	}
-
-	if( g_date_valid_dmy( dd, mm, yy )){
-		g_date_set_dmy( date, dd, mm, yy );
-	}
+	return( valid );
 }

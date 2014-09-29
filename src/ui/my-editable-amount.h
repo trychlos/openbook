@@ -33,23 +33,38 @@
  * @include: ui/my-editable-amount.h
  *
  * This class lets the user enter amounts in entries.
+ *
+ * An editable amount may be entered with the following format:
+ * - any digit(s)
+ * - maybe a decimal dot
+ * - any digit(s)
+ * TODO: accept a leading sign
+ * TODO: accept other decimal separators than the dot
+ *
+ * An editable amount is rendered with the following format:
+ * - locale representation of a double
+ * - with at least one digit before the decimal separator
+ * - with the specified count of decimal digits
+ * TODO: accept a different display format
  */
 
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-void    my_editable_amount_init         ( GtkEditable *editable );
+void    my_editable_amount_init        ( GtkEditable *editable );
 
-guint   my_editable_amount_get_decimals ( GtkEditable *editable );
+void    my_editable_amount_init_ex     ( GtkEditable *editable, gint decimals );
 
-void    my_editable_amount_set_decimals ( GtkEditable *editable, gint decimals );
+void    my_editable_amount_set_decimals( GtkEditable *editable, gint decimals );
 
-gdouble my_editable_amount_get_amount   ( GtkEditable *editable );
+gdouble my_editable_amount_get_amount  ( GtkEditable *editable );
 
-gchar  *my_editable_amount_get_string   ( GtkEditable *editable );
+void    my_editable_amount_set_amount  ( GtkEditable *editable, gdouble amount );
 
-void    my_editable_amount_render_string( GtkEditable *editable );
+gchar  *my_editable_amount_get_string  ( GtkEditable *editable );
+
+void    my_editable_amount_render      ( GtkEditable *editable );
 
 G_END_DECLS
 

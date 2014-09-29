@@ -267,7 +267,7 @@ init_current_exe_page( ofaDossierProperties *self )
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry =my_utils_container_get_child_by_name( container, "p2-begin" );
-	parms.entry_format = MY_DATE_DDMM;
+	parms.entry_format = MY_DATE_DMYY;
 	parms.label = my_utils_container_get_child_by_name( container, "p2-begin-label" );
 	parms.label_format = MY_DATE_DMMM;
 	parms.date = &priv->begin;
@@ -281,7 +281,7 @@ init_current_exe_page( ofaDossierProperties *self )
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry =my_utils_container_get_child_by_name( container, "p2-end" );
-	parms.entry_format = MY_DATE_DDMM;
+	parms.entry_format = MY_DATE_DMYY;
 	parms.label = my_utils_container_get_child_by_name( container, "p2-end-label" );
 	parms.label_format = MY_DATE_DMMM;
 	parms.date = &priv->end;

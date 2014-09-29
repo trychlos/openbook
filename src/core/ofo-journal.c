@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -438,18 +439,18 @@ journal_load_dataset( void )
 			icol = icol->next;
 			balance->devise = g_strdup(( gchar * ) icol->data );
 			icol = icol->next;
-			balance->clo_deb = my_utils_double_from_sql(( const gchar * ) icol->data );
+			balance->clo_deb = my_double_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "clo_deb=%lf", balance->clo_deb );*/
 			icol = icol->next;
-			balance->clo_cre = my_utils_double_from_sql(( const gchar * ) icol->data );
+			balance->clo_cre = my_double_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "clo_cre=%lf", balance->clo_cre );*/
 			icol = icol->next;
-			balance->deb = my_utils_double_from_sql(( const gchar * ) icol->data );
+			balance->deb = my_double_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "deb=%lf", balance->deb );*/
 			icol = icol->next;
 			my_date_set_from_sql( &balance->deb_date, ( const gchar * ) icol->data );
 			icol = icol->next;
-			balance->cre = my_utils_double_from_sql(( const gchar * ) icol->data );
+			balance->cre = my_double_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "cre=%lf", balance->cre );*/
 			icol = icol->next;
 			my_date_set_from_sql( &balance->cre_date, ( const gchar * ) icol->data );
@@ -1580,10 +1581,10 @@ journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, con
 	ofo_sgbd_query( sgbd, query, FALSE );
 	g_free( query );
 
-	deb = my_utils_double_to_sql( ofo_journal_get_deb( journal, detail->exe_id, detail->devise ));
-	cre = my_utils_double_to_sql( ofo_journal_get_cre( journal, detail->exe_id, detail->devise ));
-	clo_deb = my_utils_double_to_sql( ofo_journal_get_clo_deb( journal, detail->exe_id, detail->devise ));
-	clo_cre = my_utils_double_to_sql( ofo_journal_get_clo_cre( journal, detail->exe_id, detail->devise ));
+	deb = my_double_to_sql( ofo_journal_get_deb( journal, detail->exe_id, detail->devise ));
+	cre = my_double_to_sql( ofo_journal_get_cre( journal, detail->exe_id, detail->devise ));
+	clo_deb = my_double_to_sql( ofo_journal_get_clo_deb( journal, detail->exe_id, detail->devise ));
+	clo_cre = my_double_to_sql( ofo_journal_get_clo_cre( journal, detail->exe_id, detail->devise ));
 	sdebd = my_date_to_str(
 					ofo_journal_get_deb_date( journal, detail->exe_id, detail->devise ), MY_DATE_SQL );
 	scred = my_date_to_str(

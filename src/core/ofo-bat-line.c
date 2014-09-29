@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -217,7 +218,7 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 			}
 			icol = icol->next;
 			ofo_bat_line_set_montant( line,
-					my_utils_double_from_sql(( const gchar * ) icol->data ));
+					my_double_from_sql(( const gchar * ) icol->data ));
 			icol = icol->next;
 			if( icol->data ){
 				ofo_bat_line_set_ecr( line, atoi(( gchar * ) icol->data ));
@@ -673,7 +674,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	str = my_utils_double_to_sql( ofo_bat_line_get_montant( bat ));
+	str = my_double_to_sql( ofo_bat_line_get_montant( bat ));
 	g_string_append_printf( query, "%s", str );
 	g_free( str );
 

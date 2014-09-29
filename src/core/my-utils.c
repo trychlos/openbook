@@ -30,19 +30,11 @@
 
 #include <gio/gio.h>
 #include <glib/gi18n.h>
-#include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
-static gunichar st_double_thousand_sep   = '\0';
-static gunichar st_double_decimal_sep    = '\0';
-static GRegex  *st_double_thousand_regex = NULL;
-static GRegex  *st_double_decimal_regex  = NULL;
-
-static void    double_set_locale( void );
 static void    int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList  *position_to_int_list( gint x, gint y, gint width, gint height );
 
@@ -265,124 +257,6 @@ my_utils_boolean_from_str( const gchar *str )
 		}
 	}
 	return( FALSE );
-}
-
-/**
- * my_utils_double_undecorate:
- *
- * Remove from the given string all decoration added for the display
- * of a double, returning so a 'brut' double string, without the locale
- * thousand separator and with a dot as the decimal point
- */
-gchar *
-my_utils_double_undecorate( const gchar *text )
-{
-	gchar *dest1, *dest2;
-
-	double_set_locale();
-
-	/* remove locale thousand separator */
-	dest1 = g_regex_replace_literal( st_double_thousand_regex, text, -1, 0, "", 0, NULL );
-
-	/* replace locale decimal separator with a dot '.' */
-	dest2 = g_regex_replace_literal( st_double_decimal_regex, dest1, -1, 0, ".", 0, NULL );
-
-	g_free( dest1 );
-
-	return( dest2 );
-}
-
-/**
- * my_utils_double_from_string:
- *
- * In v1, we only target fr locale, so with space as thousand separator
- * and comma as decimal one on display -
- * When parsing a string - and because we want be able to re-parse a
- * string that we have previously displayed - we accept both
- */
-gdouble
-my_utils_double_from_string( const gchar *string )
-{
-	gchar *text;
-	gdouble d;
-
-	if( string && g_utf8_strlen( string, -1 )){
-		text = my_utils_double_undecorate( string );
-		d = g_strtod( text, NULL );
-		g_free( text );
-
-	} else {
-		d = 0.0;
-	}
-
-	return( d );
-}
-
-/**
- * my_utils_double_from_sql:
- *
- * Returns a double from the specified SQl stringified decimal
- *
- * The input string is not supposed to be localized, nor decorated.
- */
-gdouble
-my_utils_double_from_sql( const gchar *sql_string )
-{
-	if( !sql_string || !g_utf8_strlen( sql_string, -1 )){
-		return( 0.0 );
-	}
-
-	return( g_ascii_strtod( sql_string, NULL ));
-}
-
-/**
- * my_utils_double_to_sql:
- *
- * Returns: a newly allocated string which represents the specified
- * value, suitable for an SQL insertion.
- */
-gchar *
-my_utils_double_to_sql( gdouble value )
-{
-	gchar amount[1+G_ASCII_DTOSTR_BUF_SIZE];
-
-	g_ascii_dtostr( amount, G_ASCII_DTOSTR_BUF_SIZE, value );
-
-	return( g_strdup( amount ));
-}
-
-/*
- * when run for the first time, evaluate the thousant separator and the
- * decimal separator for the current locale
- *
- * they are those which will be outputed by printf(),
- * and that g_ascii_strtod() is able to sucessfully parse.
- */
-static void
-double_set_locale( void )
-{
-	static const gchar *thisfn = "my_utils_double_set_locale";
-	gchar *str, *p, *srev;
-
-	if( !st_double_thousand_sep ){
-		str = g_strdup_printf( "%'.1lf", 1000.0 );
-		p = g_utf8_next_char( str );
-		st_double_thousand_sep = g_utf8_get_char( p );
-		srev = g_utf8_strreverse( str, -1 );
-		p = g_utf8_next_char( srev );
-		st_double_decimal_sep = g_utf8_get_char( p );
-
-		g_debug( "%s: thousand_sep='%c', decimal_sep='%c'",
-					thisfn, st_double_thousand_sep, st_double_decimal_sep );
-
-		str = g_strdup_printf( "%c", st_double_thousand_sep );
-		st_double_thousand_regex = g_regex_new( str, 0, 0, NULL );
-		g_free( str );
-
-		str = g_strdup_printf( "%c", st_double_decimal_sep );
-		st_double_decimal_regex = g_regex_new( str, 0, 0, NULL );
-		g_free( str );
-	}
 }
 
 /**

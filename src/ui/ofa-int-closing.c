@@ -213,7 +213,7 @@ v_init_dialog( myDialog *dialog )
 
 	memset( &date_parms, '\0', sizeof( date_parms ));
 	date_parms.entry = my_utils_container_get_child_by_name( container, "p1-date" );
-	date_parms.entry_format = MY_DATE_DDMM;
+	date_parms.entry_format = MY_DATE_DMYY;
 	date_parms.label = my_utils_container_get_child_by_name( container, "p1-label" );
 	date_parms.label_format = MY_DATE_DMMM;
 	date_parms.date = &priv->closing;

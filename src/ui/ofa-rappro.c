@@ -404,7 +404,7 @@ setup_manual_rappro( ofaMainPage *page )
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = gtk_entry_new();
-	parms.entry_format = MY_DATE_DDMM;
+	parms.entry_format = MY_DATE_DMYY;
 	parms.label = gtk_label_new( "" 	);
 	parms.label_format = MY_DATE_DMMM;
 	parms.date = &priv->dconcil;
@@ -727,10 +727,10 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRappro *
 	gint cmp;
 
 	gtk_tree_model_get( tmodel, a, COL_DOPE, &dopea, COL_NUMBER, &numa, -1 );
-	my_date_parse_from_str( &da, dopea, MY_DATE_DDMM );
+	my_date_parse_from_str( &da, dopea, MY_DATE_DMYY );
 
 	gtk_tree_model_get( tmodel, b, COL_DOPE, &dopeb, COL_NUMBER, &numb, -1 );
-	my_date_parse_from_str( &db, dopeb, MY_DATE_DDMM );
+	my_date_parse_from_str( &db, dopeb, MY_DATE_DMYY );
 
 	cmp = my_date_cmp( &da, &db, FALSE );
 	if( cmp == 0 ){
@@ -1037,11 +1037,11 @@ do_fetch( ofaRappro *self )
 
 		entry = OFO_ENTRY( it->data );
 
-		sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DDMM );
+		sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
 		sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
 		scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
 		drappro = ofo_entry_get_rappro_dval( entry );
-		sdrap = my_date_to_str( drappro, MY_DATE_DDMM );
+		sdrap = my_date_to_str( drappro, MY_DATE_DMYY );
 
 		gtk_tree_store_insert_with_values(
 				GTK_TREE_STORE( tmodel ),
@@ -1366,7 +1366,7 @@ update_candidate_entry( ofaRappro *self, ofoBatLine *batline, GtkTreeIter *entry
 	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
 
 	dvaleur = ofo_bat_line_get_valeur( batline );
-	sdvaleur = my_date_to_str( dvaleur, MY_DATE_DDMM );
+	sdvaleur = my_date_to_str( dvaleur, MY_DATE_DMYY );
 
 	/* set the proposed reconciliation date in the entry */
 	gtk_tree_store_set(
@@ -1396,7 +1396,7 @@ insert_bat_line( ofaRappro *self, ofoBatLine *batline,
 	if( !g_date_valid( dope )){
 		dope = ofo_bat_line_get_valeur( batline );
 	}
-	sdope = my_date_to_str( dope, MY_DATE_DDMM );
+	sdope = my_date_to_str( dope, MY_DATE_DMYY );
 
 	/* set the bat line as a hint */
 	gtk_tree_store_insert_with_values(
@@ -1531,7 +1531,7 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
 		 * BAT */
 		} else {
 			if( srappro && g_utf8_strlen( srappro, -1 )){
-				my_date_parse_from_str( &date, srappro, MY_DATE_DDMM );
+				my_date_parse_from_str( &date, srappro, MY_DATE_DMYY );
 			} else {
 				my_date_set_from_date( &date, &self->private->dconcil );
 			}
@@ -1607,9 +1607,9 @@ reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkT
  	 * @iter_child: an iter on the entry row in the child tree model */
 
 	if( is_valid_rappro ){
-		str = my_date_to_str( drappro, MY_DATE_DDMM );
+		str = my_date_to_str( drappro, MY_DATE_DMYY );
 	} else if( batline ){
-		str = my_date_to_str( ofo_bat_line_get_valeur( batline ), MY_DATE_DDMM );
+		str = my_date_to_str( ofo_bat_line_get_valeur( batline ), MY_DATE_DMYY );
 	} else {
 		str = g_strdup( "" );
 	}

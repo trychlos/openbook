@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -250,7 +251,7 @@ taux_load_dataset( void )
 					my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 			icol = icol->next;
 			taux_set_val_taux( valid,
-					my_utils_double_from_sql(( const gchar * ) icol->data ));
+					my_double_from_sql(( const gchar * ) icol->data ));
 
 			taux->private->validities = g_list_prepend( taux->private->validities, valid );
 		}
@@ -895,7 +896,7 @@ taux_insert_validity( ofoTaux *taux, ofsRateValidity *sdet, const ofoSgbd *sgbd 
 
 	dbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
 	dend = my_date_to_str( &sdet->end, MY_DATE_SQL );
-	rate = my_utils_double_to_sql( sdet->rate );
+	rate = my_double_to_sql( sdet->rate );
 
 	query = g_string_new( "INSERT INTO OFA_T_TAUX_VAL " );
 

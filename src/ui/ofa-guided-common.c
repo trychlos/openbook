@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -379,7 +380,7 @@ setup_dates( ofaGuidedCommon *self )
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-dope" );
-	parms.entry_format = MY_DATE_DDMM;
+	parms.entry_format = MY_DATE_DMYY;
 	parms.date = &priv->dope;
 	parms.on_changed_cb = G_CALLBACK( on_dope_changed );
 	parms.user_data = self;
@@ -396,7 +397,7 @@ setup_dates( ofaGuidedCommon *self )
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-deffet" );
-	parms.entry_format = MY_DATE_DDMM;
+	parms.entry_format = MY_DATE_DMYY;
 	parms.date = &priv->deff;
 	parms.on_changed_cb = G_CALLBACK( on_deffet_changed );
 	parms.user_data = self;
@@ -705,7 +706,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 			my_date_set_from_date( &priv->deff, &priv->dope );
 		}
 
-		str = my_date_to_str( &priv->deff, MY_DATE_DDMM );
+		str = my_date_to_str( &priv->deff, MY_DATE_DMYY );
 		gtk_entry_set_text( priv->deffet_entry, str );
 		g_free( str );
 	}
@@ -1233,7 +1234,7 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 				content = gtk_entry_get_text( GTK_ENTRY( widget ));
 				/*g_debug( "token='%s' content='%s'", token, content );*/
 				if( col_def->is_double ){
-					amount = my_utils_double_from_string( content );
+					amount = my_double_from_string( content );
 				} else {
 					/* we do not manage a formula on a string */
 					gtk_entry_set_text( entry, content );
@@ -1351,7 +1352,7 @@ get_amount( ofaGuidedCommon *self, gint col_id, gint row )
 	if( col_def ){
 		entry = gtk_grid_get_child_at( self->private->entries_grid, col_def->column_id, row );
 		if( entry && GTK_IS_ENTRY( entry )){
-			return( my_utils_double_from_string( gtk_entry_get_text( GTK_ENTRY( entry ))));
+			return( my_double_from_string( gtk_entry_get_text( GTK_ENTRY( entry ))));
 		}
 	}
 

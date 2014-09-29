@@ -59,11 +59,6 @@ gchar     *my_utils_import_multi_lines     ( const gchar *str );
 
 gboolean   my_utils_boolean_from_str       ( const gchar *str );
 
-gchar     *my_utils_double_undecorate      ( const gchar *decorated );
-gdouble    my_utils_double_from_string     ( const gchar *string );
-gdouble    my_utils_double_from_sql        ( const gchar *sql_string );
-gchar     *my_utils_double_to_sql          ( gdouble value );
-
 gchar     *my_utils_str_remove_suffix      ( const gchar *string, const gchar *suffix );
 gchar     *my_utils_str_replace            ( const gchar *string, const gchar *old, const gchar *new );
 

@@ -50,6 +50,8 @@ openbook_SOURCES = \
 	my-cell-renderer-amount.h							\
 	my-editable-amount.c								\
 	my-editable-amount.h								\
+	my-editable-date.c									\
+	my-editable-date.h									\
 	ofa-account-notebook.c								\
 	ofa-account-notebook.h								\
 	ofa-account-properties.c							\

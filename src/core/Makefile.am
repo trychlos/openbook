@@ -47,6 +47,7 @@ libofa_core_la_SOURCES = \
 	my-date.c											\
 	my-dialog.c											\
 	my-dialog.h											\
+	my-double.c											\
 	my-utils.c											\
 	my-window.c											\
 	my-window.h											\
