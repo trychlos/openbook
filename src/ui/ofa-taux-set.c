@@ -36,7 +36,7 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-main-page.h"
-#include "ui/ofa-taux-properties.h"
+#include "ui/ofa-rate-properties.h"
 #include "ui/ofa-taux-set.h"
 
 /* private instance data
@@ -525,7 +525,7 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 
 	taux = ofo_rate_new();
 
-	if( ofa_taux_properties_run(
+	if( ofa_rate_properties_run(
 			ofa_main_page_get_main_window( page ), taux )){
 
 		/* nothing to do here as all is managed by dossier signaling
@@ -571,7 +571,7 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &taux, -1 );
 		g_object_unref( taux );
 
-		if( ofa_taux_properties_run(
+		if( ofa_rate_properties_run(
 				ofa_main_page_get_main_window( page ), taux )){
 
 			/* nothing to do here as all is managed by dossier

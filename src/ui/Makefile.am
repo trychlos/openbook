@@ -136,12 +136,12 @@ openbook_SOURCES = \
 	ofa-print-reconcil.h								\
 	ofa-rappro.c										\
 	ofa-rappro.h										\
+	ofa-rate-properties.c								\
+	ofa-rate-properties.h								\
 	ofa-restore.c										\
 	ofa-restore.h										\
 	ofa-tab-label.c										\
 	ofa-tab-label.h										\
-	ofa-taux-properties.c								\
-	ofa-taux-properties.h								\
 	ofa-taux-set.c										\
 	ofa-taux-set.h										\
 	ofa-view-entries.c									\
@@ -187,7 +187,7 @@ ui_files = \
 	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\
 	ofa-print-reconcil.ui								\
-	ofa-taux-properties.ui								\
+	ofa-rate-properties.ui								\
 	ofa-view-entries.piece.ui							\
 	$(NULL)
 
