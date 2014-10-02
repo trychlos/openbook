@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
@@ -47,11 +48,13 @@ static gboolean date_parse_ddmmyyyy_string( myDate *date, const gchar *str );
 static gboolean parse_ddmmyyyy_string( GDate *date, const gchar *str );
 static gboolean date_parse_sql_string( myDate *date, const gchar *sql_string );
 static gboolean parse_sql_string( GDate *date, const gchar *sql_string );
+static gint     date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past );
+static gchar   *date_to_str( const GDate *date, myDateFormat format );
 
 static void     on_date_entry_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gpointer position, gpointer user_data );
 static gchar   *date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position );
 static void     on_date_entry_changed( GtkEditable *editable, gpointer user_data );
-static void     date_entry_set_label( GtkEditable *editable, const gchar *str );
+/*static void     date_entry_set_label( GtkEditable *editable, const gchar *str );*/
 
 static void
 my_date_finalize( GObject *instance )
@@ -123,7 +126,7 @@ my_date_class_init( myDateClass *klass )
  * Returns: a newly allocated #myDate object.
  * The date is cleared.
  */
-GDate *
+myDate *
 my_date_new( void )
 {
 	myDate *date;
@@ -134,17 +137,34 @@ my_date_new( void )
 }
 
 /**
+ * my_date_new_from_date:
+ *
+ * Returns: a newly allocated #myDate object, initialized with the
+ * specified date.
+ */
+myDate *
+my_date_new_from_date( const myDate *date )
+{
+	myDate *new_date;
+
+	new_date = g_object_new( MY_TYPE_DATE, NULL );
+	my_date_set_from_date( new_date, date );
+
+	return( new_date );
+}
+
+/**
  * my_date_new_from_sql:
  * @sql_string: a pointer to a SQL string 'yyyy-mm-dd', or NULL;
  *  the SQL string may be zero '0000-00-00' or a valid date.
  *
  * Returns: a newly allocated #myDate object.
- * The date is cleared if the @sql_string was NULL or the zero string
- * ('0000-00-00').
+ *
  * The date is set if the @sql_string can be parsed to a valid
  *  'yyyy-mm-dd' date.
+ * It is left cleared else.
  */
-GDate *
+myDate *
 my_date_new_from_sql( const gchar *sql_string )
 {
 	myDate *date;
@@ -165,7 +185,7 @@ my_date_new_from_sql( const gchar *sql_string )
  * The date is cleared if the @str was NULL or cannot be parsed to a
  * valid date according to the specified @format.
  */
-GDate *
+myDate *
 my_date_new_from_str( const gchar *str, myDateFormat format )
 {
 	myDate *date;
@@ -269,84 +289,171 @@ parse_sql_string( GDate *date, const gchar *sql_string )
 }
 
 /**
- * my_date_set_now:
+ * my_date_is_valid:
+ * @date: [not-null]: the #myDate to be evaluated
+ *
+ * Returns: %TRUE if the date is valid.
  */
-GDate *
-my_date_set_now( GDate *date )
+gboolean
+my_date_is_valid( const myDate *date )
 {
-	GDateTime *dt;
-	gint year, month, day;
+	g_return_val_if_fail( date && MY_IS_DATE( date ), FALSE );
 
-	g_return_val_if_fail( date, NULL );
+	if( date->private->dispose_has_run ){
+		return( FALSE );
+	}
 
-	dt = g_date_time_new_now_local();
-	g_date_time_get_ymd( dt, &year, &month, &day );
-	g_date_time_unref( dt );
-
-	g_date_set_dmy( date, day, month, year );
-
-	return( date );
+	return( g_date_valid( &date->private->date ));
 }
 
 /**
- * my_date_set_from_sql:
- * @dest: must be a pointer to the destination GDate structure.
- * @sql_string: a pointer to a SQL string 'yyyy-mm-dd', or NULL;
- *  the SQL string may be zero '0000-00-00' or a valid date.
+ * my_date_compare:
+ * @a: the first #myDate to be compared
+ * @b: the second #yDate to be compared to @a
+ * @infinite_is_past: if %TRUE, then an infinite value (i.e. an invalid
+ *  date) is considered lesser than anything, but another infinite value.
+ *  Else, an invalid value is considered infinite in the future.
  *
- * Parse a SQL string, putting the result in @dest.
+ * Compare the two dates, returning -1, 0 or 1 if @a less than, equal or
+ * greater than @b.
+ * An invalid date is considered infinite.
  *
- * NB: parsing a 'yyyy-mm-dd' is not locale-sensitive.
+ * Returns: -1, 0 or 1.
  */
-GDate *
-my_date_set_from_sql( GDate *dest, const gchar *sql_string )
+gint
+my_date_compare( const myDate *a, const myDate *b, gboolean infinite_is_past )
 {
-	g_return_val_if_fail( dest, NULL );
+	g_return_val_if_fail( a && MY_IS_DATE( a ), 0 );
+	g_return_val_if_fail( b && MY_IS_DATE( b ), 0 );
 
-	g_date_clear( dest, 1 );
+	if( !a->private->dispose_has_run && !b->private->dispose_has_run ){
 
-	if( sql_string &&
-			g_utf8_strlen( sql_string, -1 ) &&
-			g_utf8_collate( sql_string, "0000-00-00" )){
-
-		g_date_set_parse( dest, sql_string );
-		/*g_debug( "my_date_set_from_sql: dd=%u, mm=%u, yyyy=%u",
-					g_date_get_day( dest ), g_date_get_month( dest ), g_date_get_year( dest ));*/
+		return( date_cmp( &a->private->date, &b->private->date, infinite_is_past ));
 	}
 
-	return( dest );
+	return( 0 );
+}
+
+static gint
+date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
+{
+	if( !a || !g_date_valid( a )){
+		if( !b || !g_date_valid( b )){
+			/* a and b are unset/infinite: returns equal */
+			return( 0 );
+		}
+		/* a is infinite, but not b */
+		return( infinite_is_past ? -1 : 1 );
+	}
+
+	if( !b || !g_date_valid( b )){
+		/* b is infinite, but not a */
+		return( infinite_is_past ? 1 : -1 );
+	}
+
+	/* a and b are valid */
+	return( g_date_compare( a, b ));
 }
 
 /**
  * my_date_set_from_date:
- * @dest: must be a pointer to the destination GDate structure.
- * @src: a pointer to a source GDate structure, or NULL.
+ * @date: [out]: a non-NULL pointer to a #myDate object
+ * @orig: [in][allow-none]: the #myDate to be copied
  *
- * Copy one date to another.
+ * Set the @date to the give @orig one.
+ * The dest @date is left unchanged if the @orig one doesn't represent
+ * a valid date.
+ *
+ * Returns: %TRUE if @orig represents a valid date.
  */
-GDate *
-my_date_set_from_date( GDate *dest, const GDate *src)
+gboolean
+my_date_set_from_date( myDate *date, const myDate *orig )
 {
-	g_return_val_if_fail( dest, NULL );
+	gboolean valid;
 
-	g_date_clear( dest, 1 );
+	valid = FALSE;
 
-	if( src && g_date_valid( src )){
-		*dest = *src;
+	g_return_val_if_fail( date && MY_IS_DATE( date ), FALSE );
+	g_return_val_if_fail( orig && MY_IS_DATE( orig ), FALSE );
+
+	if( orig->private->dispose_has_run || !my_date_is_valid( orig )){
+		return( FALSE );
 	}
 
-	return( dest );
+	if( !date->private->dispose_has_run ){
+
+		memcpy( date->private, orig->private, sizeof( myDatePrivate ));
+		valid = TRUE;
+	}
+
+	return( valid );
+}
+
+/**
+ * my_date_set_from_str:
+ * @date: [out]: a non-NULL pointer to a #myDate object
+ * @text: [in][allow-none]: the string to be parsed
+ * @format: the expected format of the string
+ *
+ * Parse a string which represents a date to a #myDate object.
+ * The #myDate object is left unchanged if the string doesn't represent
+ * a valid date.
+ *
+ * Returns: %TRUE if the string represents a valid date.
+ */
+gboolean
+my_date_set_from_str( myDate *date, const gchar *text, myDateFormat format )
+{
+	gboolean valid;
+
+	valid = FALSE;
+
+	g_return_val_if_fail( date && MY_IS_DATE( date ), FALSE );
+
+	if( !date->private->dispose_has_run ){
+		switch( format ){
+			case MY_DATE_DMYY:
+				valid = parse_ddmmyyyy_string( &date->private->date, text );
+				break;
+			default:
+				break;
+		}
+	}
+
+	return( valid );
 }
 
 /**
  * my_date_to_str:
+ * @date: the date to be converted to a string
+ * @format: the required format.
  *
- * Returns the date with the requested format, suitable for display or
- * SQL insertion, in a newly allocated string that the user must
- * g_free(), or a new empty string if the date is invalid.
+ * Returns the date as a newly allocated string with the requested
+ * format, suitable for display or SQL insertion, or a new empty string
+ * if the date is invalid.
+ *
+ * It is up to the caller to g_free() the returned string.
  */
 gchar *
-my_date_to_str( const GDate *date, myDateFormat format )
+my_date_to_str( const myDate *date, myDateFormat format )
+{
+	gchar *str;
+
+	g_return_val_if_fail( date && MY_IS_DATE( date ), NULL );
+
+	str = g_strdup( "" );
+
+	if( !date->private->dispose_has_run ){
+
+		g_free( str );
+		str = date_to_str( &date->private->date, format );
+	}
+
+	return( str );
+}
+
+static gchar *
+date_to_str( const GDate *date, myDateFormat format )
 {
 	static const gchar *st_month[] = {
 			N_( "jan." ),
@@ -412,36 +519,100 @@ my_date_to_str( const GDate *date, myDateFormat format )
 }
 
 /**
- * my_date_cmp:
- * @infinite_is_past: if %TRUE, then an infinite value (i.e. an invalid
- *  date) is considered lesser than anything, but another infinite value.
- *  Else, an invalid value is considered infinite in the future.
- *
- * Compare the two dates, returning -1, 0 or 1 if a less than, equal or
- * greater than b.
- * An invalid date is considered infinite.
- *
- * Returns: -1, 0 or 1.
+ * my_date_set_now:
  */
-gint
-my_date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
+GDate *
+my_date_set_now( GDate *date )
 {
-	if( !a || !g_date_valid( a )){
-		if( !b || !g_date_valid( b)){
-			/* a and b are infinite: returns equal */
-			return( 0 );
-		}
-		/* a is infinite, but not b */
-		return( infinite_is_past ? -1 : 1 );
+	GDateTime *dt;
+	gint year, month, day;
+
+	g_return_val_if_fail( date, NULL );
+
+	dt = g_date_time_new_now_local();
+	g_date_time_get_ymd( dt, &year, &month, &day );
+	g_date_time_unref( dt );
+
+	g_date_set_dmy( date, day, month, year );
+
+	return( date );
+}
+
+/**
+ * my_date_set_from_sql:
+ * @dest: must be a pointer to the destination GDate structure.
+ * @sql_string: a pointer to a SQL string 'yyyy-mm-dd', or NULL;
+ *  the SQL string may be zero '0000-00-00' or a valid date.
+ *
+ * Parse a SQL string, putting the result in @dest.
+ *
+ * NB: parsing a 'yyyy-mm-dd' is not locale-sensitive.
+ */
+GDate *
+my_date_set_from_sql( GDate *dest, const gchar *sql_string )
+{
+	g_return_val_if_fail( dest, NULL );
+
+	g_date_clear( dest, 1 );
+
+	if( sql_string &&
+			g_utf8_strlen( sql_string, -1 ) &&
+			g_utf8_collate( sql_string, "0000-00-00" )){
+
+		g_date_set_parse( dest, sql_string );
+		/*g_debug( "my_date_set_from_sql: dd=%u, mm=%u, yyyy=%u",
+					g_date_get_day( dest ), g_date_get_month( dest ), g_date_get_year( dest ));*/
 	}
 
-	if( !b || !g_date_valid( b )){
-		/* b is infinite, but not a */
-		return( infinite_is_past ? 1 : -1 );
+	return( dest );
+}
+
+/**
+ * my_date_set_from_date:
+ * @dest: must be a pointer to the destination GDate structure.
+ * @src: a pointer to a source GDate structure, or NULL.
+ *
+ * Copy one date to another.
+ */
+GDate *
+my_date2_set_from_date( GDate *dest, const GDate *src)
+{
+	g_return_val_if_fail( dest, NULL );
+
+	g_date_clear( dest, 1 );
+
+	if( src && g_date_valid( src )){
+		*dest = *src;
 	}
 
-	/* a and b are valid */
-	return( g_date_compare( a, b ));
+	return( dest );
+}
+
+gchar *
+my_date2_to_str( const GDate *date, myDateFormat format )
+{
+	return( date_to_str( date, format ));
+}
+
+/**
+ * my_date2_from_str:
+ */
+gboolean
+my_date2_from_str( GDate *date, const gchar *text, myDateFormat format )
+{
+	gboolean valid;
+
+	valid = FALSE;
+
+	switch( format ){
+		case MY_DATE_DMYY:
+			valid = parse_ddmmyyyy_string( date, text );
+			break;
+		default:
+			break;
+	}
+
+	return( valid );
 }
 
 /**
@@ -476,7 +647,7 @@ my_date_parse_from_entry( const myDateParse *parms )
 	}
 
 	if( g_date_valid( parms->date )){
-		str = my_date_to_str( parms->date, parms->entry_format );
+		str = date_to_str( parms->date, parms->entry_format );
 		gtk_entry_set_text( GTK_ENTRY( parms->entry ), str );
 		g_free( str );
 	}
@@ -601,6 +772,7 @@ date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_te
 static void
 on_date_entry_changed( GtkEditable *editable, gpointer user_data )
 {
+#if 0
 	myDateFormat entry_format, label_format;
 	GDate temp_date;
 	GDate *date;
@@ -610,7 +782,7 @@ on_date_entry_changed( GtkEditable *editable, gpointer user_data )
 
 	entry_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-entry" ));
 
-	my_date_parse_from_str(
+	my_date_set_from_str(
 			&temp_date, gtk_entry_get_text( GTK_ENTRY( editable )), entry_format );
 
 	pfnCheck = g_object_get_data( G_OBJECT( editable ), "date-check-cb" );
@@ -620,7 +792,7 @@ on_date_entry_changed( GtkEditable *editable, gpointer user_data )
 			( !pfnCheck || ( *pfnCheck )( &temp_date, user_data_cb ))){
 
 		label_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( editable ), "date-format-label" ));
-		str = my_date_to_str( &temp_date, label_format );
+		str = date_to_str( &temp_date, label_format );
 		date_entry_set_label( editable, str );
 		g_free( str );
 
@@ -633,8 +805,10 @@ on_date_entry_changed( GtkEditable *editable, gpointer user_data )
 		date_entry_set_label( editable, str );
 		g_free( str );
 	}
+#endif
 }
 
+#if 0
 static void
 date_entry_set_label( GtkEditable *editable, const gchar *str )
 {
@@ -651,29 +825,4 @@ date_entry_set_label( GtkEditable *editable, const gchar *str )
 		g_free( markup );
 	}
 }
-
-/**
- * my_date_parse_from_str:
- * @date: [out]: a non-NULL pointer to a GDate structure
- * @text: [in][allow-none]: the string to be parsed
- * @format: the expected format of the string
- *
- * Parse a string which represents a date to a GDate structure.
- * The GDate structure is left unchanged if the string doesn't represent
- * a valid date.
- *
- * Returns: %TRUE if the string represents a valid date.
- */
-gboolean
-my_date_parse_from_str( GDate *date, const gchar *text, myDateFormat format )
-{
-	gboolean valid;
-
-	valid = FALSE;
-
-	if( format == MY_DATE_DMYY ){
-		valid = parse_ddmmyyyy_string( date, text );
-	}
-
-	return( valid );
-}
+#endif

@@ -930,23 +930,23 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX ("
-			"	TAX_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Mnemonic identifier of the rate',"
-			"	TAX_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Rate label',"
-			"	TAX_NOTES     VARCHAR(4096)               COMMENT 'Rate notes',"
-			"	TAX_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-			"	TAX_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
+			"CREATE TABLE IF NOT EXISTS OFA_T_RATES ("
+			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL UNIQUE COMMENT 'Mnemonic identifier of the rate',"
+			"	RAT_LABEL         VARCHAR(80)       NOT NULL        COMMENT 'Rate label',"
+			"	RAT_NOTES         VARCHAR(4096)                     COMMENT 'Rate notes',"
+			"	RAT_UPD_USER      VARCHAR(20)                       COMMENT 'User responsible of properties last update',"
+			"	RAT_UPD_STAMP     TIMESTAMP                         COMMENT 'Properties last update timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_TAUX_VAL ("
-			"	TAX_MNEMO         VARCHAR(6)  NOT NULL    COMMENT 'Mnemonic identifier of the rate',"
-			"	TAX_VAL_DEB       DATE    DEFAULT NULL    COMMENT 'Validity begin date',"
-			"	TAX_VAL_FIN       DATE    DEFAULT NULL    COMMENT 'Validity end date',"
-			"	TAX_VAL_TAUX      DECIMAL(15,5)           COMMENT 'Taux value',"
-			"	ADD UNIQUE INDEX (TAX_MNEMO,TAX_VAL_DEB,TAX_VAL_FIN)"
+			"CREATE TABLE IF NOT EXISTS OFA_T_RATES_VAL ("
+			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL        COMMENT 'Mnemonic identifier of the rate',"
+			"	RAT_VAL_BEG       DATE    DEFAULT NULL              COMMENT 'Validity begin date',"
+			"	RAT_VAL_END       DATE    DEFAULT NULL              COMMENT 'Validity end date',"
+			"	RAT_VAL_RATE      DECIMAL(15,5)                     COMMENT 'Rate value',"
+			"	ADD UNIQUE INDEX (RAT_MNEMO,RAT_VAL_BEG,RAT_VAL_END)"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -1941,7 +1941,7 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 
 	date = ( const GDate * ) &dossier->private->current->exe_deb;
 	if( g_date_valid( date )){
-		sdeb = my_date_to_str( date, MY_DATE_SQL );
+		sdeb = my_date2_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "DOS_EXE_DEB='%s',", sdeb );
 		g_free( sdeb );
 	} else {
@@ -1950,7 +1950,7 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 
 	date = ( const GDate * ) &dossier->private->current->exe_fin;
 	if( g_date_valid( date )){
-		sfin = my_date_to_str( date, MY_DATE_SQL );
+		sfin = my_date2_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "DOS_EXE_FIN='%s' ", sfin );
 		g_free( sfin );
 	} else {
@@ -2011,8 +2011,8 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 		sexe = ( sDetailExe * ) exe->data;
 
-		sbegin = my_date_to_str( &sexe->exe_deb, MY_DATE_SQL );
-		send = my_date_to_str( &sexe->exe_fin, MY_DATE_SQL );
+		sbegin = my_date2_to_str( &sexe->exe_deb, MY_DATE_SQL );
+		send = my_date2_to_str( &sexe->exe_fin, MY_DATE_SQL );
 
 		str = g_strdup_printf( "2:%s;%s;%d;%d",
 				sbegin,

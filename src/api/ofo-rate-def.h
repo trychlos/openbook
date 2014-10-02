@@ -24,13 +24,13 @@
  * $Id$
  */
 
-#ifndef __OFO_TAUX_DEF_H__
-#define __OFO_TAUX_DEF_H__
+#ifndef __OFO_RATE_DEF_H__
+#define __OFO_RATE_DEF_H__
 
 /**
- * SECTION: ofo_taux
- * @short_description: #ofoTaux class definition.
- * @include: api/ofo-taux.h
+ * SECTION: ofo_rate
+ * @short_description: #ofoRate class definition.
+ * @include: api/ofo-rate.h
  *
  * This class implements the Taux behavior.
  */
@@ -39,30 +39,30 @@
 
 G_BEGIN_DECLS
 
-#define OFO_TYPE_TAUX                ( ofo_taux_get_type())
-#define OFO_TAUX( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_TAUX, ofoTaux ))
-#define OFO_TAUX_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_TAUX, ofoTauxClass ))
-#define OFO_IS_TAUX( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_TAUX ))
-#define OFO_IS_TAUX_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_TAUX ))
-#define OFO_TAUX_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_TAUX, ofoTauxClass ))
+#define OFO_TYPE_RATE                ( ofo_rate_get_type())
+#define OFO_RATE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_RATE, ofoRate ))
+#define OFO_RATE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_RATE, ofoRateClass ))
+#define OFO_IS_RATE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_RATE ))
+#define OFO_IS_RATE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_RATE ))
+#define OFO_RATE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_RATE, ofoRateClass ))
 
 typedef struct {
 	/*< private >*/
 	ofoBaseClass parent;
 }
-	ofoTauxClass;
+	ofoRateClass;
 
-typedef struct _ofoTauxPrivate       ofoTauxPrivate;
+typedef struct _ofoRatePrivate       ofoRatePrivate;
 
 typedef struct {
 	/*< private >*/
 	ofoBase         parent;
-	ofoTauxPrivate *private;
+	ofoRatePrivate *private;
 }
-	ofoTaux;
+	ofoRate;
 
-GType ofo_taux_get_type( void ) G_GNUC_CONST;
+GType ofo_rate_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFO_TAUX_DEF_H__ */
+#endif /* __OFO_RATE_DEF_H__ */

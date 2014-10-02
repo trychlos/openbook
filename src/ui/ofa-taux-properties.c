@@ -36,7 +36,7 @@
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-taux.h"
+#include "api/ofo-rate.h"
 
 #include "core/my-window-prot.h"
 
@@ -51,7 +51,7 @@ struct _ofaTauxPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoTaux       *taux;
+	ofoRate       *rate;
 	gboolean       is_new;
 	gboolean       updated;
 	gint           count;				/* count of rows added to the grid */
@@ -179,7 +179,7 @@ ofa_taux_properties_class_init( ofaTauxPropertiesClass *klass )
  * Update the properties of an taux
  */
 gboolean
-ofa_taux_properties_run( ofaMainWindow *main_window, ofoTaux *taux )
+ofa_taux_properties_run( ofaMainWindow *main_window, ofoRate *taux )
 {
 	static const gchar *thisfn = "ofa_taux_properties_run";
 	ofaTauxProperties *self;
@@ -198,7 +198,7 @@ ofa_taux_properties_run( ofaMainWindow *main_window, ofoTaux *taux )
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	self->private->taux = taux;
+	self->private->rate = taux;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -224,7 +224,7 @@ v_init_dialog( myDialog *dialog )
 	priv = self->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
-	mnemo = ofo_taux_get_mnemo( priv->taux );
+	mnemo = ofo_rate_get_mnemo( priv->rate );
 	if( !mnemo ){
 		priv->is_new = TRUE;
 		title = g_strdup( _( "Defining a new rate" ));
@@ -240,7 +240,7 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), self );
 
-	priv->label = g_strdup( ofo_taux_get_label( priv->taux ));
+	priv->label = g_strdup( ofo_rate_get_label( priv->rate ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
@@ -250,13 +250,13 @@ v_init_dialog( myDialog *dialog )
 	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( container, "p2-grid" ));
 	add_button( self, GTK_STOCK_ADD, COL_ADD, 1 );
 
-	count = ofo_taux_get_val_count( priv->taux );
+	count = ofo_rate_get_val_count( priv->rate );
 	for( idx=0 ; idx<count ; ++idx ){
 		insert_new_row( self, idx );
 	}
 
-	my_utils_init_notes_ex( container, taux );
-	my_utils_init_maj_user_stamp_ex( container, taux );
+	my_utils_init_notes_ex( container, rate );
+	my_utils_init_upd_user_stamp_ex( container, rate );
 
 	check_for_enable_dlg( self );
 }
@@ -266,7 +266,7 @@ insert_new_row( ofaTauxProperties *self, gint idx )
 {
 	ofaTauxPropertiesPrivate *priv;
 	GtkEntry *entry;
-	const GDate *d;
+	const myDate *d;
 	gdouble rate;
 	gint row;
 
@@ -275,15 +275,15 @@ insert_new_row( ofaTauxProperties *self, gint idx )
 	row = self->private->count;
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, row ));
-	d = ofo_taux_get_val_begin( priv->taux, idx );
+	d = ofo_rate_get_val_begin( priv->rate, idx );
 	my_editable_date_set_date( GTK_EDITABLE( entry ), d );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_END, row ));
-	d = ofo_taux_get_val_end( priv->taux, idx );
+	d = ofo_rate_get_val_end( priv->rate, idx );
 	my_editable_date_set_date( GTK_EDITABLE( entry ), d );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_RATE, row ));
-	rate = ofo_taux_get_val_rate( priv->taux, idx );
+	rate = ofo_rate_get_val_rate( priv->rate, idx );
 	my_editable_amount_set_amount( GTK_EDITABLE( entry ), rate );
 }
 
@@ -414,7 +414,7 @@ static void
 on_date_changed( GtkEntry *entry, ofaTauxProperties *self )
 {
 	const gchar *content;
-	const GDate *date;
+	const myDate *date;
 	gboolean valid;
 	gchar *str;
 
@@ -554,45 +554,45 @@ is_dialog_validable( ofaTauxProperties *self )
 {
 	ofaTauxPropertiesPrivate *priv;
 	GList *valids;
-	ofsRateValidity *vdata;
+	ofsRateValidity *validity;
 	gint i;
 	GtkEntry *entry;
-	const gchar *sbegin, *send, *srate;
+	gdouble vrate;
 	gboolean ok;
-	ofoTaux *exists;
+	ofoRate *exists;
+	const myDate *dbegin, *dend;
 
 	priv = self->private;
 
 	for( i=1, valids=NULL ; i<=priv->count ; ++i ){
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, i ));
-		sbegin = gtk_entry_get_text( entry );
+		dbegin = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_END, i ));
-		send = gtk_entry_get_text( entry );
+		dend = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_RATE, i ));
-		srate = gtk_entry_get_text( entry );
-		if(( sbegin && g_utf8_strlen( sbegin, -1 )) ||
-			( send && g_utf8_strlen( send, -1 )) ||
-			( srate && g_utf8_strlen( srate, -1 ))){
+		vrate = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
 
-			vdata = g_new0( ofsRateValidity, 1 );
-			g_date_set_parse( &vdata->begin, sbegin );
-			g_date_set_parse( &vdata->end, send );
-			vdata->rate = my_double_from_string( srate );
-			valids = g_list_prepend( valids, vdata );
+		if( my_date_is_valid( dbegin ) || my_date_is_valid( dend ) || vrate > 0 ){
+
+			validity = g_new0( ofsRateValidity, 1 );
+			validity->begin = ( myDate * ) dbegin;
+			validity->end = ( myDate * ) dend;
+			validity->rate = vrate;
+			valids = g_list_prepend( valids, validity );
 		}
 	}
 
-	ok = ofo_taux_is_valid( priv->mnemo, priv->label, g_list_reverse( valids ));
+	ok = ofo_rate_is_valid( priv->mnemo, priv->label, g_list_reverse( valids ));
 
 	g_list_free_full( valids, ( GDestroyNotify ) g_free );
 
 	if( ok ){
-		exists = ofo_taux_get_by_mnemo(
+		exists = ofo_rate_get_by_mnemo(
 				MY_WINDOW( self )->protected->dossier,
 				self->private->mnemo );
 		ok &= !exists ||
 				( !priv->is_new &&
-						!g_utf8_collate( self->private->mnemo, ofo_taux_get_mnemo( self->private->taux )));
+						!g_utf8_collate( self->private->mnemo, ofo_rate_get_mnemo( self->private->rate )));
 	}
 
 	return( ok );
@@ -618,8 +618,7 @@ do_update( ofaTauxProperties *self )
 	ofaTauxPropertiesPrivate *priv;
 	gint i;
 	GtkEntry *entry;
-	const gchar *sbegin, *send;
-	/*GDate *dbegin, *dend;*/
+	const myDate *dbegin, *dend;
 	gchar *prev_mnemo;
 	gdouble rate;
 
@@ -627,37 +626,35 @@ do_update( ofaTauxProperties *self )
 
 	priv = self->private;
 
-	prev_mnemo = g_strdup( ofo_taux_get_mnemo( priv->taux ));
+	prev_mnemo = g_strdup( ofo_rate_get_mnemo( priv->rate ));
 
-	ofo_taux_set_mnemo( priv->taux, priv->mnemo );
-	ofo_taux_set_label( priv->taux, priv->label );
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), taux );
+	ofo_rate_set_mnemo( priv->rate, priv->mnemo );
+	ofo_rate_set_label( priv->rate, priv->label );
+	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), rate );
 
-	ofo_taux_free_val_all( priv->taux );
+	ofo_rate_free_all_val( priv->rate );
 
 	for( i=1 ; i<=priv->count ; ++i ){
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, i ));
-		sbegin = gtk_entry_get_text( entry );
-		/*dbegin = ( GDate * ) g_object_get_data( G_OBJECT( entry ), "data-date" );*/
+		dbegin = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_END, i ));
-		send = gtk_entry_get_text( entry );
-		/*dend = ( GDate * ) g_object_get_data( G_OBJECT( entry ), "data-date" );*/
+		dend = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_RATE, i ));
 		rate = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
-		if(( sbegin && g_utf8_strlen( sbegin, -1 )) ||
-			( send && g_utf8_strlen( send, -1 )) ||
+		if( my_date_is_valid( dbegin ) ||
+			my_date_is_valid( dend ) ||
 			( rate > 0 )){
 
-			ofo_taux_add_val( priv->taux, sbegin, send, rate );
+			ofo_rate_add_val( priv->rate, dbegin, dend, rate );
 		}
 	}
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_taux_insert( priv->taux );
+				ofo_rate_insert( priv->rate );
 	} else {
 		priv->updated =
-				ofo_taux_update( priv->taux, prev_mnemo );
+				ofo_rate_update( priv->rate, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

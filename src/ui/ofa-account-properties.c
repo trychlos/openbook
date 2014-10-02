@@ -355,7 +355,7 @@ set_ecr_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar
 	memcpy( date, ( *fn )( self->private->account ), sizeof( GDate ));
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
-	str = my_date_to_str( date, MY_DATE_DMMM );
+	str = my_date2_to_str( date, MY_DATE_DMMM );
 	gtk_label_set_text( label, str );
 	g_free( str );
 }

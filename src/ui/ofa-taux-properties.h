@@ -38,7 +38,7 @@
  * one. in the two cases, zero, one or more validities can be created,
  * updated, deleted.
  *
- * The content of the provided ofoTaux object is not modified until the
+ * The content of the provided ofoRate object is not modified until the
  * do_update() function. At this time, all its content is _replaced_
  * with which is found in the dialog box.
  *
@@ -53,7 +53,7 @@
  *                     with 01/01/2014
  */
 
-#include "api/ofo-taux-def.h"
+#include "api/ofo-rate-def.h"
 
 #include "core/my-dialog.h"
 
@@ -83,7 +83,7 @@ typedef struct {
 
 GType    ofa_taux_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_taux_properties_run     ( ofaMainWindow *parent, ofoTaux *taux );
+gboolean ofa_taux_properties_run     ( ofaMainWindow *parent, ofoRate *taux );
 
 G_END_DECLS
 

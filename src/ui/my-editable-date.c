@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-date.h"
+
 #include "ui/my-editable-date.h"
 
 typedef struct {
@@ -51,7 +53,7 @@ static const sDateFormat st_formats[] = {
  * data attached to each implementor object
  */
 typedef struct {
-	GDate              date;
+	myDate            *date;
 	const sDateFormat *format;
 	gboolean           valid;			/* whether the string parses to a valid date */
 	gboolean           setting_text;
@@ -101,6 +103,8 @@ on_editable_weak_notify( sEditableDate *data, GObject *was_the_editable )
 	g_debug( "%s: data=%p, the_editable_was=%p",
 			thisfn, ( void * ) data, ( void * ) was_the_editable );
 
+	g_object_unref( data->date );
+
 	g_free( data );
 }
 
@@ -115,7 +119,7 @@ get_editable_date_data( GtkEditable *editable )
 		data = g_new0( sEditableDate, 1 );
 		g_object_set_data( G_OBJECT( editable ), EDITABLE_DATE_DATA, data );
 
-		g_date_clear( &data->date, 1 );
+		data->date = my_date_new();
 		data->setting_text = FALSE;
 		my_editable_date_set_format( editable, -1 );
 
@@ -184,7 +188,7 @@ on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, 
 {
 	gchar *text;
 
-	g_debug( "my_editable_date_on_text_inserted: editable=%p, new_text=%s, position=%u",
+	g_debug( "my_editable_date_on_text_inserted: editable=%p, new_text=%s, position=%d",
 			( void * ) editable, new_text, *position );
 
 	text = NULL;
@@ -433,7 +437,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 static void
 on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditableDate *data )
 {
-	g_debug( "my_editable_date_on_text_deleted: editable=%p, start=%u, end=%u",
+	g_debug( "my_editable_date_on_text_deleted: editable=%p, start=%d, end=%d",
 			( void * ) editable, start_pos, end_pos );
 
 	g_signal_handlers_block_by_func( editable, ( gpointer ) on_text_deleted, data );
@@ -452,7 +456,7 @@ on_changed( GtkEditable *editable, sEditableDate *data )
 
 	if( !data->setting_text ){
 		text = gtk_editable_get_chars( editable, 0, -1 );
-		data->valid = my_date_parse_from_str( &data->date, text, data->format->date_format );
+		data->valid = my_date_set_from_str( data->date, text, data->format->date_format );
 		g_free( text );
 
 	} else {
@@ -490,10 +494,10 @@ on_focus_out( GtkWidget *entry, GdkEvent *event, sEditableDate *data )
  * not be cleared nor modified by the caller.
  *
  * The validity pointer is set depending of the currently displayed
- * string (not the currently stored GDate which is itself only modified
- * when the string parses to a valid date).
+ * string (not the currently stored #myDate which is itself only
+ * modified when the string parses to a valid date).
  */
-const GDate *
+const myDate *
 my_editable_date_get_date( GtkEditable *editable, gboolean *valid )
 {
 	sEditableDate *data;
@@ -506,7 +510,7 @@ my_editable_date_get_date( GtkEditable *editable, gboolean *valid )
 		*valid = data->valid;
 	}
 
-	return( &data->date );
+	return(( const myDate * ) data->date );
 }
 
 /**
@@ -517,7 +521,7 @@ my_editable_date_get_date( GtkEditable *editable, gboolean *valid )
  * Set up the current date, but only if it is a valid date.
  */
 void
-my_editable_date_set_date( GtkEditable *editable, const GDate *date )
+my_editable_date_set_date( GtkEditable *editable, const myDate *date )
 {
 	sEditableDate *data;
 
@@ -525,11 +529,7 @@ my_editable_date_set_date( GtkEditable *editable, const GDate *date )
 
 	data = get_editable_date_data( editable );
 
-	g_date_clear( &data->date, 1 );
-
-	if( date && g_date_valid( date )){
-		memcpy( &data->date, date, sizeof( GDate ));
-	}
+	my_date_set_from_date( data->date, date );
 
 	my_editable_date_render( editable );
 }
@@ -591,8 +591,8 @@ my_editable_date_render( GtkEditable *editable )
 
 	if( GTK_IS_ENTRY( editable )){
 		data = get_editable_date_data( editable );
-		text = my_date_to_str( &data->date, data->format->date_format );
-		if( text )){
+		text = my_date_to_str( data->date, data->format->date_format );
+		if( text ){
 			data->setting_text = TRUE;
 			gtk_entry_set_text( GTK_ENTRY( editable ), text );
 			g_free( text );

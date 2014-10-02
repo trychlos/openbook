@@ -1585,9 +1585,9 @@ journal_do_update_detail_dev( const ofoJournal *journal, sDetailDev *detail, con
 	cre = my_double_to_sql( ofo_journal_get_cre( journal, detail->exe_id, detail->devise ));
 	clo_deb = my_double_to_sql( ofo_journal_get_clo_deb( journal, detail->exe_id, detail->devise ));
 	clo_cre = my_double_to_sql( ofo_journal_get_clo_cre( journal, detail->exe_id, detail->devise ));
-	sdebd = my_date_to_str(
+	sdebd = my_date2_to_str(
 					ofo_journal_get_deb_date( journal, detail->exe_id, detail->devise ), MY_DATE_SQL );
-	scred = my_date_to_str(
+	scred = my_date2_to_str(
 					ofo_journal_get_cre_date( journal, detail->exe_id, detail->devise ), MY_DATE_SQL );
 
 	query = g_strdup_printf(
@@ -1635,7 +1635,7 @@ journal_do_update_detail_exe( const ofoJournal *journal, sDetailExe *detail, con
 	ofo_sgbd_query( sgbd, query, FALSE );
 	g_free( query );
 
-	sdate = my_date_to_str( &detail->last_clo, MY_DATE_SQL );
+	sdate = my_date2_to_str( &detail->last_clo, MY_DATE_SQL );
 
 	query = g_strdup_printf(
 					"INSERT INTO OFA_T_JOURNAUX_EXE "
@@ -1778,8 +1778,8 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 		for( exe=journal->private->exes ; exe ; exe=exe->next ){
 			sexe = ( sDetailExe * ) exe->data;
 
-			sdfin = my_date_to_str( ofo_dossier_get_exe_fin( dossier, sexe->exe_id ), MY_DATE_SQL );
-			sdclo = my_date_to_str( &sexe->last_clo, MY_DATE_SQL );
+			sdfin = my_date2_to_str( ofo_dossier_get_exe_fin( dossier, sexe->exe_id ), MY_DATE_SQL );
+			sdclo = my_date2_to_str( &sexe->last_clo, MY_DATE_SQL );
 
 			str = g_strdup_printf( "2;%s;%s;%s",
 					ofo_journal_get_mnemo( journal ),
@@ -1795,13 +1795,13 @@ ofo_journal_get_csv( const ofoDossier *dossier )
 		for( amount=journal->private->amounts ; amount ; amount=amount->next ){
 			sdev = ( sDetailDev * ) amount->data;
 
-			sdfin = my_date_to_str(
+			sdfin = my_date2_to_str(
 							ofo_dossier_get_exe_fin( dossier, sdev->exe_id ),
 							MY_DATE_SQL );
-			sdebd = my_date_to_str(
+			sdebd = my_date2_to_str(
 							ofo_journal_get_deb_date( journal, sdev->exe_id, sdev->devise ),
 							MY_DATE_SQL );
-			scred = my_date_to_str(
+			scred = my_date2_to_str(
 							ofo_journal_get_cre_date( journal, sdev->exe_id, sdev->devise ),
 							MY_DATE_SQL );
 

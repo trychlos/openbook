@@ -32,7 +32,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofo-taux.h"
+#include "api/ofo-rate.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-main-page.h"
@@ -71,11 +71,11 @@ static void       setup_dossier_signaling( ofaTauxSet *self );
 static GtkWidget *setup_tree_view( ofaTauxSet *self );
 static void       v_init_view( ofaMainPage *page );
 static void       insert_dataset( ofaTauxSet *self );
-static void       insert_new_row( ofaTauxSet *self, ofoTaux *taux, gboolean with_selection );
-static void       set_row_by_iter( ofaTauxSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoTaux *taux );
+static void       insert_new_row( ofaTauxSet *self, ofoRate *taux, gboolean with_selection );
+static void       set_row_by_iter( ofaTauxSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoRate *taux );
 static gboolean   find_row_by_mnemo( ofaTauxSet *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static gchar     *get_min_val_date( ofoTaux *taux );
-static gchar     *get_max_val_date( ofoTaux *taux );
+static gchar     *get_min_val_date( ofoRate *taux );
+static gchar     *get_max_val_date( ofoRate *taux );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTauxSet *self );
 static void       setup_first_selection( ofaTauxSet *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
@@ -85,7 +85,7 @@ static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaTauxSe
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaTauxSet *self );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
-static gboolean   delete_confirmed( ofaTauxSet *self, ofoTaux *taux );
+static gboolean   delete_confirmed( ofaTauxSet *self, ofoRate *taux );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaTauxSet *self );
 
@@ -308,13 +308,13 @@ static void
 insert_dataset( ofaTauxSet *self )
 {
 	GList *dataset, *it;
-	ofoTaux *taux;
+	ofoRate *taux;
 
-	dataset = ofo_taux_get_dataset( ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )));
+	dataset = ofo_rate_get_dataset( ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )));
 
 	for( it=dataset ; it ; it=it->next ){
 
-		taux = OFO_TAUX( it->data );
+		taux = OFO_RATE( it->data );
 		insert_new_row( self, taux, FALSE );
 	}
 
@@ -326,7 +326,7 @@ insert_dataset( ofaTauxSet *self )
  * on_sort_model() function does not complain about null strings
  */
 static void
-insert_new_row( ofaTauxSet *self, ofoTaux *taux, gboolean with_selection )
+insert_new_row( ofaTauxSet *self, ofoRate *taux, gboolean with_selection )
 {
 	ofaTauxSetPrivate *priv;
 	GtkTreeIter iter;
@@ -338,7 +338,7 @@ insert_new_row( ofaTauxSet *self, ofoTaux *taux, gboolean with_selection )
 			GTK_LIST_STORE( priv->tmodel ),
 			&iter,
 			-1,
-			COL_MNEMO,  ofo_taux_get_mnemo( taux ),
+			COL_MNEMO,  ofo_rate_get_mnemo( taux ),
 			COL_OBJECT, taux,
 			-1 );
 
@@ -359,7 +359,7 @@ insert_new_row( ofaTauxSet *self, ofoTaux *taux, gboolean with_selection )
  * modification
  */
 static void
-set_row_by_iter( ofaTauxSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoTaux *taux )
+set_row_by_iter( ofaTauxSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoRate *taux )
 {
 	gchar *sbegin, *send;
 
@@ -369,8 +369,8 @@ set_row_by_iter( ofaTauxSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoT
 	gtk_list_store_set(
 			GTK_LIST_STORE( tmodel ),
 			iter,
-			COL_MNEMO,  ofo_taux_get_mnemo( taux ),
-			COL_LABEL,  ofo_taux_get_label( taux ),
+			COL_MNEMO,  ofo_rate_get_mnemo( taux ),
+			COL_LABEL,  ofo_rate_get_label( taux ),
 			COL_BEGIN,  sbegin,
 			COL_END,    send,
 			-1 );
@@ -405,14 +405,14 @@ find_row_by_mnemo( ofaTauxSet *self, const gchar *mnemo, GtkTreeModel **tmodel, 
 }
 
 static gchar *
-get_min_val_date( ofoTaux *taux )
+get_min_val_date( ofoRate *taux )
 {
-	const GDate *dmin;
+	const myDate *dmin;
 	gchar *str, *sbegin;
 
-	dmin = ofo_taux_get_min_valid( taux );
+	dmin = ofo_rate_get_min_valid( taux );
 
-	if( dmin && g_date_valid( dmin )){
+	if( my_date_is_valid( dmin )){
 		str = my_date_to_str( dmin, MY_DATE_DMMM );
 		sbegin = g_strdup_printf( _( "from %s" ), str );
 		g_free( str );
@@ -424,14 +424,14 @@ get_min_val_date( ofoTaux *taux )
 }
 
 static gchar *
-get_max_val_date( ofoTaux *taux )
+get_max_val_date( ofoRate *taux )
 {
-	const GDate *dmax;
+	const myDate *dmax;
 	gchar *str, *send;
 
-	dmax = ofo_taux_get_max_valid( taux );
+	dmax = ofo_rate_get_max_valid( taux );
 
-	if( dmax && g_date_valid( dmax )){
+	if( my_date_is_valid( dmax )){
 		str = my_date_to_str( dmax, MY_DATE_DMMM );
 		send = g_strdup_printf( _( "to %s" ), str );
 		g_free( str );
@@ -498,7 +498,7 @@ on_row_selected( GtkTreeSelection *selection, ofaTauxSet *self )
 {
 	ofaTauxSetPrivate *priv;
 	GtkTreeIter iter;
-	ofoTaux *taux;
+	ofoRate *taux;
 
 	priv = self->private;
 
@@ -509,21 +509,21 @@ on_row_selected( GtkTreeSelection *selection, ofaTauxSet *self )
 
 	gtk_widget_set_sensitive(
 			ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),
-			taux && OFO_IS_TAUX( taux ));
+			taux && OFO_IS_RATE( taux ));
 
 	gtk_widget_set_sensitive(
 			ofa_main_page_get_delete_btn( OFA_MAIN_PAGE( self )),
-			taux && OFO_IS_TAUX( taux ) && ofo_taux_is_deletable( taux ));
+			taux && OFO_IS_RATE( taux ) && ofo_rate_is_deletable( taux ));
 }
 
 static void
 v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 {
-	ofoTaux *taux;
+	ofoRate *taux;
 
 	g_return_if_fail( page && OFA_IS_TAUX_SET( page ));
 
-	taux = ofo_taux_new();
+	taux = ofo_rate_new();
 
 	if( ofa_taux_properties_run(
 			ofa_main_page_get_main_window( page ), taux )){
@@ -547,8 +547,8 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_TAUX( object )){
-		insert_new_row( self, OFO_TAUX( object ), TRUE );
+	if( OFO_IS_RATE( object )){
+		insert_new_row( self, OFO_RATE( object ), TRUE );
 	}
 }
 
@@ -558,7 +558,7 @@ v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 	ofaTauxSetPrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
-	ofoTaux *taux;
+	ofoRate *taux;
 
 	g_return_if_fail( page && OFA_IS_TAUX_SET( page ));
 
@@ -596,9 +596,9 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 			prev_id,
 			( void * ) self );
 
-	if( OFO_IS_TAUX( object )){
+	if( OFO_IS_RATE( object )){
 		if( find_row_by_mnemo( self, prev_id, &tmodel, &iter )){
-			set_row_by_iter( self, tmodel, &iter, OFO_TAUX( object ));
+			set_row_by_iter( self, tmodel, &iter, OFO_RATE( object ));
 		} else {
 			g_warning( "%s: unable to find '%s' rate", thisfn, prev_id );
 		}
@@ -611,7 +611,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 	ofaTauxSetPrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
-	ofoTaux *taux;
+	ofoRate *taux;
 
 	g_return_if_fail( page && OFA_IS_TAUX_SET( page ));
 
@@ -625,7 +625,7 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 		g_object_unref( taux );
 
 		if( delete_confirmed( OFA_TAUX_SET( page ), taux ) &&
-				ofo_taux_delete( taux )){
+				ofo_rate_delete( taux )){
 
 			/* nothing to do here as all is managed by dossier signaling
 			 * system */
@@ -636,14 +636,14 @@ v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 static gboolean
-delete_confirmed( ofaTauxSet *self, ofoTaux *taux )
+delete_confirmed( ofaTauxSet *self, ofoRate *taux )
 {
 	gchar *msg;
 	gboolean delete_ok;
 
 	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' rate ?" ),
-			ofo_taux_get_mnemo( taux ),
-			ofo_taux_get_label( taux ));
+			ofo_rate_get_mnemo( taux ),
+			ofo_rate_get_label( taux ));
 
 	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
 
@@ -666,8 +666,8 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaTauxSet *self )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_TAUX( object )){
-		mnemo = ofo_taux_get_mnemo( OFO_TAUX( object ));
+	if( OFO_IS_RATE( object )){
+		mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
 		if( find_row_by_mnemo( self, mnemo, &tmodel, &iter )){
 			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
 		} else {
@@ -685,7 +685,7 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaTauxSet *self )
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
-	if( type == OFO_TYPE_TAUX ){
+	if( type == OFO_TYPE_RATE ){
 		tmodel = gtk_tree_view_get_model( self->private->tview );
 		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 		insert_dataset( self );

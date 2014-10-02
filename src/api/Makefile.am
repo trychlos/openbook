@@ -53,10 +53,10 @@ api_include_HEADERS = \
 	ofo-entry.h											\
 	ofo-journal.h										\
 	ofo-journal-def.h									\
-	ofo-sgbd.h											\
-	ofo-sgbd-def.h										\
 	ofo-model.h											\
 	ofo-model-def.h										\
-	ofo-taux.h											\
-	ofo-taux-def.h										\
+	ofo-rate.h											\
+	ofo-rate-def.h										\
+	ofo-sgbd.h											\
+	ofo-sgbd-def.h										\
 	$(NULL)

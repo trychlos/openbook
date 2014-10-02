@@ -131,24 +131,30 @@ typedef struct {
 GType      my_date_get_type        ( void ) G_GNUC_CONST;
 
 myDate    *my_date_new             ( void );
-
+myDate    *my_date_new_from_date   ( const myDate *date );
 myDate    *my_date_new_from_sql    ( const gchar *sql_string );
-
 myDate    *my_date_new_from_str    ( const gchar *str, myDateFormat format );
+
+gboolean   my_date_is_valid        ( const myDate *date );
+gint       my_date_compare         ( const myDate *a, const myDate *b, gboolean infinite_is_past );
+
+gboolean   my_date_set_from_date   ( myDate *date, const myDate *orig );
+gboolean   my_date_set_from_str    ( myDate *date, const gchar *text, myDateFormat format );
+
+gchar     *my_date_to_str          ( const myDate *date, myDateFormat format );
+
+/* to be obsoleted */
 
 GDate     *my_date_set_now          ( GDate *date );
 
 GDate     *my_date_set_from_sql     ( GDate *dest, const gchar *sql_string );
 
-GDate     *my_date_set_from_date    ( GDate *dest, const GDate *src );
+GDate     *my_date2_set_from_date   ( GDate *dest, const GDate *src );
 
-gchar     *my_date_to_str           ( const GDate *date, myDateFormat format );
-
-gint       my_date_cmp              ( const GDate *a, const GDate *b, gboolean infinite_is_past );
+gchar     *my_date2_to_str          ( const GDate *date, myDateFormat format );
+gboolean   my_date2_from_str        ( GDate *date, const gchar *str, myDateFormat format );
 
 void       my_date_parse_from_entry ( const myDateParse *parms );
-
-gboolean   my_date_parse_from_str   ( GDate *date, const gchar *text, myDateFormat format );
 
 G_END_DECLS
 

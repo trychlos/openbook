@@ -45,7 +45,7 @@ void            ofo_model_connect_handlers  ( const ofoDossier *dossier );
 GList          *ofo_model_get_dataset       ( const ofoDossier *dossier );
 ofoModel       *ofo_model_get_by_mnemo      ( const ofoDossier *dossier, const gchar *mnemo );
 gboolean        ofo_model_use_journal       ( const ofoDossier *dossier, const gchar *journal );
-gboolean        ofo_model_use_taux          ( const ofoDossier *dossier, const gchar *mnemo );
+gboolean        ofo_model_use_rate          ( const ofoDossier *dossier, const gchar *mnemo );
 
 ofoModel       *ofo_model_new               ( void );
 ofoModel       *ofo_model_copy              ( const ofoModel *src, ofoModel *dest );

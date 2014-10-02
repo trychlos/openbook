@@ -46,7 +46,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
 #include "api/ofo-model.h"
-#include "api/ofo-taux.h"
+#include "api/ofo-rate.h"
 
 static gboolean pref_quit_on_escape = TRUE;
 static gboolean pref_confirm_on_cancel = FALSE;
@@ -1065,7 +1065,7 @@ import_taux_csv( ofaImport *self )
 		return( -1 );
 	}
 
-	ofo_taux_import_csv(
+	ofo_rate_import_csv(
 			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );

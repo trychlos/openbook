@@ -1150,13 +1150,13 @@ display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
 	gchar *sdope, *sdeff, *sdeb, *scre, *srappro, *status;
 	const GDate *d;
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
+	sdope = my_date2_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
+	sdeff = my_date2_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
 	sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
 	scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
 	d = ofo_entry_get_rappro_dval( entry );
 	if( d && g_date_valid( d )){
-		srappro = my_date_to_str( d, MY_DATE_DMYY );
+		srappro = my_date2_to_str( d, MY_DATE_DMYY );
 	} else {
 		srappro = g_strdup( "" );
 	}
@@ -1429,7 +1429,7 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 		/* start by setting the from/to dates as these changes do not
 		 * automatically trigger a display refresh */
 		if( begin && g_date_valid( begin )){
-			str = my_date_to_str( begin, MY_DATE_DMYY );
+			str = my_date2_to_str( begin, MY_DATE_DMYY );
 			gtk_entry_set_text( priv->we_from, str );
 			g_free( str );
 		} else {
@@ -1437,7 +1437,7 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 		}
 
 		if( end && g_date_valid( end )){
-			str = my_date_to_str( end, MY_DATE_DMYY );
+			str = my_date2_to_str( end, MY_DATE_DMYY );
 			gtk_entry_set_text( priv->we_to, str );
 			g_free( str );
 		} else {
@@ -1731,8 +1731,8 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 					if( !last_close || g_date_compare( &deff, last_close ) > 0 ){
 						is_valid = TRUE;
 					} else {
-						msg2 = my_date_to_str( last_close, MY_DATE_DMYY );
-						msg3 = my_date_to_str( &deff, MY_DATE_DMYY );
+						msg2 = my_date2_to_str( last_close, MY_DATE_DMYY );
+						msg3 = my_date2_to_str( &deff, MY_DATE_DMYY );
 						msg = g_strdup_printf( _( "Effect date (%s) lesser than last closing date (%s)" ), msg3, msg2 );
 						set_comment( self, msg );
 						g_free( msg );

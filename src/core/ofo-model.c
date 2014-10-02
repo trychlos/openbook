@@ -37,7 +37,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-journal.h"
 #include "api/ofo-model.h"
-#include "api/ofo-taux.h"
+#include "api/ofo-rate.h"
 #include "api/ofo-sgbd.h"
 
 /* priv instance data
@@ -85,7 +85,7 @@ static gboolean       do_update_taux_mnemo( const ofoDossier *dossier, const gch
 static GList         *model_load_dataset( void );
 static ofoModel      *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint           model_count_for_journal( const ofoSgbd *sgbd, const gchar *journal );
-static gint           model_count_for_taux( const ofoSgbd *sgbd, const gchar *mnemo );
+static gint           model_count_for_rate( const ofoSgbd *sgbd, const gchar *mnemo );
 static gboolean       model_do_insert( ofoModel *model, const ofoSgbd *sgbd, const gchar *user );
 static gboolean       model_insert_main( ofoModel *model, const ofoSgbd *sgbd, const gchar *user );
 static gboolean       model_delete_details( ofoModel *model, const ofoSgbd *sgbd );
@@ -226,9 +226,9 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			}
 		}
 
-	} else if( OFO_IS_TAUX( object )){
+	} else if( OFO_IS_RATE( object )){
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
-			mnemo = ofo_taux_get_mnemo( OFO_TAUX( object ));
+			mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
 				do_update_taux_mnemo( dossier, mnemo, prev_id );
 			}
@@ -526,22 +526,22 @@ model_count_for_journal( const ofoSgbd *sgbd, const gchar *journal )
 }
 
 /**
- * ofo_model_use_taux:
+ * ofo_model_use_rate:
  *
  * Returns: %TRUE if a recorded entry makes use of the specified rate.
  */
 gboolean
-ofo_model_use_taux( const ofoDossier *dossier, const gchar *mnemo )
+ofo_model_use_rate( const ofoDossier *dossier, const gchar *mnemo )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
 
-	return( model_count_for_taux( ofo_dossier_get_sgbd( dossier ), mnemo ) > 0 );
+	return( model_count_for_rate( ofo_dossier_get_sgbd( dossier ), mnemo ) > 0 );
 }
 
 static gint
-model_count_for_taux( const ofoSgbd *sgbd, const gchar *mnemo )
+model_count_for_rate( const ofoSgbd *sgbd, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;

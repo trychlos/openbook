@@ -446,8 +446,9 @@ ofo_sgbd_query( const ofoSgbd *sgbd, const gchar *query, gboolean display_error 
 
 /**
  * ofo_sgbd_query_ex:
- *
- * @parent: if NULL, do not display error message
+ * @sgbd: this #ofoSgbd object
+ * @query: the query to be executed
+ * @display_error: if NULL, do not display error message
  *
  * Returns a GSList or ordered rows of the result set.
  * Each GSList->data is a pointer to a GSList of ordered columns

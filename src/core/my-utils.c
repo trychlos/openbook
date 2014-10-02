@@ -511,6 +511,31 @@ my_utils_init_maj_user_stamp( GtkContainer *container,
 }
 
 /**
+ * my_utils_init_upd_user_stamp:
+ *
+ * This function is mostly used through the
+ * "my_utils_init_upd_user_stamp_ex()" macro.
+ */
+void
+my_utils_init_upd_user_stamp( GtkContainer *container,
+								const gchar *label_name, const GTimeVal *stamp, const gchar *user )
+{
+	GtkLabel *label;
+	gchar *str_stamp, *str;
+
+	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, label_name );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	str_stamp = my_utils_stamp_to_str( stamp, MY_STAMP_YYMDHMS );
+	str = g_strdup_printf( "%s (%s)", str_stamp, user );
+
+	gtk_label_set_text( label, str );
+
+	g_free( str );
+	g_free( str_stamp );
+}
+
+/**
  * my_utils_output_stream_new:
  */
 gboolean

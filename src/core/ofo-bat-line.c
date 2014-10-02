@@ -632,7 +632,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT_LINES" );
 
-	str = my_date_to_str( ofo_bat_line_get_valeur( bat ), MY_DATE_SQL );
+	str = my_date2_to_str( ofo_bat_line_get_valeur( bat ), MY_DATE_SQL );
 
 	g_string_append_printf( query,
 			"	(BAT_ID,BAT_LINE_VALEUR,BAT_LINE_OPE,BAT_LINE_REF,"
@@ -644,7 +644,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	ope = ofo_bat_line_get_ope( bat );
 	if( g_date_valid( ope )){
-		str = my_date_to_str( ope, MY_DATE_SQL );
+		str = my_date2_to_str( ope, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
 		g_free( str );
 	} else {

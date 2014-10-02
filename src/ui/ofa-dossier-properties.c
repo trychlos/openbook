@@ -259,11 +259,11 @@ init_current_exe_page( ofaDossierProperties *self )
 	priv = self->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
-	my_date_set_from_date(
+	my_date2_set_from_date(
 			&priv->last_closed,
 			ofo_dossier_get_last_closed_exercice( priv->dossier ));
 
-	my_date_set_from_date( &priv->begin, ofo_dossier_get_current_exe_deb( priv->dossier ));
+	my_date2_set_from_date( &priv->begin, ofo_dossier_get_current_exe_deb( priv->dossier ));
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry =my_utils_container_get_child_by_name( container, "p2-begin" );
@@ -277,7 +277,7 @@ init_current_exe_page( ofaDossierProperties *self )
 
 	priv->begin_label = GTK_LABEL( parms.label );
 
-	my_date_set_from_date( &priv->end, ofo_dossier_get_current_exe_fin( priv->dossier ));
+	my_date2_set_from_date( &priv->end, ofo_dossier_get_current_exe_fin( priv->dossier ));
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry =my_utils_container_get_child_by_name( container, "p2-end" );

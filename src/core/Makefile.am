@@ -72,9 +72,9 @@ libofa_core_la_SOURCES = \
 	ofo-dossier.c										\
 	ofo-entry.c											\
 	ofo-journal.c										\
-	ofo-sgbd.c											\
 	ofo-model.c											\
-	ofo-taux.c											\
+	ofo-rate.c											\
+	ofo-sgbd.c											\
 	$(NULL)
 
 ofo-marshal.h: ofo-marshal.def $(GLIB_GENMARSHAL)

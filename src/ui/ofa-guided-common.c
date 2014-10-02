@@ -39,7 +39,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
 #include "api/ofo-model.h"
-#include "api/ofo-taux.h"
+#include "api/ofo-rate.h"
 
 #include "core/my-window-prot.h"
 
@@ -376,7 +376,7 @@ setup_dates( ofaGuidedCommon *self )
 
 	priv = self->private;
 
-	my_date_set_from_date( &priv->dope, &st_last_dope );
+	my_date2_set_from_date( &priv->dope, &st_last_dope );
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-dope" );
@@ -393,7 +393,7 @@ setup_dates( ofaGuidedCommon *self )
 	g_signal_connect(
 			G_OBJECT( parms.entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
 
-	my_date_set_from_date( &priv->deff, &st_last_deff );
+	my_date2_set_from_date( &priv->deff, &st_last_deff );
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-deffet" );
@@ -699,14 +699,14 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 		if( g_date_valid( &priv->last_closing ) &&
 			g_date_compare( &priv->last_closing, &priv->dope ) > 0 ){
 
-			my_date_set_from_date( &priv->deff, &priv->last_closing );
+			my_date2_set_from_date( &priv->deff, &priv->last_closing );
 			g_date_add_days( &priv->deff, 1 );
 
 		} else {
-			my_date_set_from_date( &priv->deff, &priv->dope );
+			my_date2_set_from_date( &priv->deff, &priv->dope );
 		}
 
-		str = my_date_to_str( &priv->deff, MY_DATE_DMYY );
+		str = my_date2_to_str( &priv->deff, MY_DATE_DMYY );
 		gtk_entry_set_text( priv->deffet_entry, str );
 		g_free( str );
 	}
@@ -934,7 +934,7 @@ set_date_comment( ofaGuidedCommon *self, const gchar *label, const GDate *date )
 {
 	gchar *str, *comment;
 
-	str = my_date_to_str( date, MY_DATE_DMMM );
+	str = my_date2_to_str( date, MY_DATE_DMMM );
 	if( !g_utf8_strlen( str, -1 )){
 		g_free( str );
 		str = g_strdup( _( "invalid" ));
@@ -1218,8 +1218,9 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 	gdouble amount;
 	const gchar *content;
 	const sColumnDef *col_def;
-	ofoTaux *rate;
+	ofoRate *rate;
 	gchar *str;
+	myDate *date;
 
 	priv = self->private;
 	init = token[0];
@@ -1254,10 +1255,14 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 
 	} else {
 		/*g_debug( "%s: searching for taux %s", thisfn, *iter );*/
-		rate = ofo_taux_get_by_mnemo( priv->dossier, token );
-		if( rate && OFO_IS_TAUX( rate )){
+		rate = ofo_rate_get_by_mnemo( priv->dossier, token );
+		if( rate && OFO_IS_RATE( rate )){
 			if( g_date_valid( &priv->deff )){
-				amount = ofo_taux_get_rate_at_date( rate, &priv->deff )/100;
+				str = my_date2_to_str( &priv->deff, MY_DATE_SQL );
+				date = my_date_new_from_str( str, MY_DATE_SQL );
+				g_free( str );
+				amount = ofo_rate_get_rate_at_date( rate, date )/100;
+				g_object_unref( date );
 			}
 		} else {
 			str = g_strdup_printf( "rate not found: '%s'", token );
