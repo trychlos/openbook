@@ -24,17 +24,17 @@
  * $Id$
  */
 
-#ifndef __OFA_TAUX_PROPERTIES_H__
-#define __OFA_TAUX_PROPERTIES_H__
+#ifndef __OFA_RATE_PROPERTIES_H__
+#define __OFA_RATE_PROPERTIES_H__
 
 /**
- * SECTION: ofa_taux_properties
- * @short_description: #ofaTauxProperties class definition.
+ * SECTION: ofa_rate_properties
+ * @short_description: #ofaRateProperties class definition.
  * @include: ui/ofa-taux-properties.h
  *
  * Update the taux properties.
  *
- * From the ofaTauxSet page, create a new taux, or update an existing
+ * From the ofaRateSet page, create a new taux, or update an existing
  * one. in the two cases, zero, one or more validities can be created,
  * updated, deleted.
  *
@@ -59,32 +59,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_TAUX_PROPERTIES                ( ofa_taux_properties_get_type())
-#define OFA_TAUX_PROPERTIES( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_TAUX_PROPERTIES, ofaTauxProperties ))
-#define OFA_TAUX_PROPERTIES_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_TAUX_PROPERTIES, ofaTauxPropertiesClass ))
-#define OFA_IS_TAUX_PROPERTIES( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_TAUX_PROPERTIES ))
-#define OFA_IS_TAUX_PROPERTIES_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TAUX_PROPERTIES ))
-#define OFA_TAUX_PROPERTIES_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TAUX_PROPERTIES, ofaTauxPropertiesClass ))
+#define OFA_TYPE_RATE_PROPERTIES                ( ofa_rate_properties_get_type())
+#define OFA_RATE_PROPERTIES( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RATE_PROPERTIES, ofaRateProperties ))
+#define OFA_RATE_PROPERTIES_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RATE_PROPERTIES, ofaRatePropertiesClass ))
+#define OFA_IS_RATE_PROPERTIES( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RATE_PROPERTIES ))
+#define OFA_IS_RATE_PROPERTIES_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RATE_PROPERTIES ))
+#define OFA_RATE_PROPERTIES_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RATE_PROPERTIES, ofaRatePropertiesClass ))
 
-typedef struct _ofaTauxPropertiesPrivate        ofaTauxPropertiesPrivate;
+typedef struct _ofaRatePropertiesPrivate        ofaRatePropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
 	myDialog                  parent;
-	ofaTauxPropertiesPrivate *private;
+	ofaRatePropertiesPrivate *private;
 }
-	ofaTauxProperties;
+	ofaRateProperties;
 
 typedef struct {
 	/*< private >*/
 	myDialogClass parent;
 }
-	ofaTauxPropertiesClass;
+	ofaRatePropertiesClass;
 
-GType    ofa_taux_properties_get_type( void ) G_GNUC_CONST;
+GType    ofa_rate_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_taux_properties_run     ( ofaMainWindow *parent, ofoRate *taux );
+gboolean ofa_rate_properties_run     ( ofaMainWindow *parent, ofoRate *rate );
 
 G_END_DECLS
 
-#endif /* __OFA_TAUX_PROPERTIES_H__ */
+#endif /* __OFA_RATE_PROPERTIES_H__ */

@@ -43,11 +43,11 @@
 #include "ui/my-editable-amount.h"
 #include "ui/my-editable-date.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-taux-properties.h"
+#include "ui/ofa-rate-properties.h"
 
 /* private instance data
  */
-struct _ofaTauxPropertiesPrivate {
+struct _ofaRatePropertiesPrivate {
 
 	/* internals
 	 */
@@ -85,38 +85,38 @@ enum {
 static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-taux-properties.ui";
 static const gchar  *st_ui_id        = "TauxPropertiesDlg";
 
-G_DEFINE_TYPE( ofaTauxProperties, ofa_taux_properties, MY_TYPE_DIALOG )
+G_DEFINE_TYPE( ofaRateProperties, ofa_rate_properties, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      insert_new_row( ofaTauxProperties *self, gint idx );
-static void      add_empty_row( ofaTauxProperties *self );
-static void      add_button( ofaTauxProperties *self, const gchar *stock_id, gint column, gint row );
-static void      on_mnemo_changed( GtkEntry *entry, ofaTauxProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaTauxProperties *self );
-static gboolean  on_date_focus_in( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self );
-static gboolean  on_focus_out( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self );
-static void      on_date_changed( GtkEntry *entry, ofaTauxProperties *self );
-static void      on_rate_changed( GtkEntry *entry, ofaTauxProperties *self );
-static void      set_grid_line_comment( ofaTauxProperties *self, GtkWidget *widget, const gchar *comment );
-static void      on_button_clicked( GtkButton *button, ofaTauxProperties *self );
-static void      remove_row( ofaTauxProperties *self, gint row );
-static void      check_for_enable_dlg( ofaTauxProperties *self );
-static gboolean  is_dialog_validable( ofaTauxProperties *self );
+static void      insert_new_row( ofaRateProperties *self, gint idx );
+static void      add_empty_row( ofaRateProperties *self );
+static void      add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint row );
+static void      on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self );
+static void      on_label_changed( GtkEntry *entry, ofaRateProperties *self );
+static gboolean  on_date_focus_in( GtkWidget *entry, GdkEvent *event, ofaRateProperties *self );
+static gboolean  on_focus_out( GtkWidget *entry, GdkEvent *event, ofaRateProperties *self );
+static void      on_date_changed( GtkEntry *entry, ofaRateProperties *self );
+static void      on_rate_changed( GtkEntry *entry, ofaRateProperties *self );
+static void      set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment );
+static void      on_button_clicked( GtkButton *button, ofaRateProperties *self );
+static void      remove_row( ofaRateProperties *self, gint row );
+static void      check_for_enable_dlg( ofaRateProperties *self );
+static gboolean  is_dialog_validable( ofaRateProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaTauxProperties *self );
+static gboolean  do_update( ofaRateProperties *self );
 
 static void
 taux_properties_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_taux_properties_finalize";
-	ofaTauxPropertiesPrivate *priv;
+	static const gchar *thisfn = "ofa_rate_properties_finalize";
+	ofaRatePropertiesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( OFA_IS_TAUX_PROPERTIES( instance ));
+	g_return_if_fail( OFA_IS_RATE_PROPERTIES( instance ));
 
-	priv = OFA_TAUX_PROPERTIES( instance )->private;
+	priv = OFA_RATE_PROPERTIES( instance )->private;
 
 	/* free data members here */
 	g_free( priv->mnemo );
@@ -124,13 +124,13 @@ taux_properties_finalize( GObject *instance )
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_taux_properties_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_rate_properties_parent_class )->finalize( instance );
 }
 
 static void
 taux_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( OFA_IS_TAUX_PROPERTIES( instance ));
+	g_return_if_fail( OFA_IS_RATE_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
@@ -138,20 +138,20 @@ taux_properties_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_taux_properties_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_rate_properties_parent_class )->dispose( instance );
 }
 
 static void
-ofa_taux_properties_init( ofaTauxProperties *self )
+ofa_rate_properties_init( ofaRateProperties *self )
 {
-	static const gchar *thisfn = "ofa_taux_properties_init";
+	static const gchar *thisfn = "ofa_rate_properties_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( OFA_IS_TAUX_PROPERTIES( self ));
+	g_return_if_fail( OFA_IS_RATE_PROPERTIES( self ));
 
-	self->private = g_new0( ofaTauxPropertiesPrivate, 1 );
+	self->private = g_new0( ofaRatePropertiesPrivate, 1 );
 
 	self->private->is_new = FALSE;
 	self->private->updated = FALSE;
@@ -159,9 +159,9 @@ ofa_taux_properties_init( ofaTauxProperties *self )
 }
 
 static void
-ofa_taux_properties_class_init( ofaTauxPropertiesClass *klass )
+ofa_rate_properties_class_init( ofaRatePropertiesClass *klass )
 {
-	static const gchar *thisfn = "ofa_taux_properties_class_init";
+	static const gchar *thisfn = "ofa_rate_properties_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -173,32 +173,32 @@ ofa_taux_properties_class_init( ofaTauxPropertiesClass *klass )
 }
 
 /**
- * ofa_taux_properties_run:
+ * ofa_rate_properties_run:
  * @main: the main window of the application.
  *
- * Update the properties of an taux
+ * Update the properties of a rate
  */
 gboolean
-ofa_taux_properties_run( ofaMainWindow *main_window, ofoRate *taux )
+ofa_rate_properties_run( ofaMainWindow *main_window, ofoRate *rate )
 {
-	static const gchar *thisfn = "ofa_taux_properties_run";
-	ofaTauxProperties *self;
+	static const gchar *thisfn = "ofa_rate_properties_run";
+	ofaRateProperties *self;
 	gboolean updated;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
-	g_debug( "%s: main_window=%p, taux=%p",
-			thisfn, ( void * ) main_window, ( void * ) taux );
+	g_debug( "%s: main_window=%p, rate=%p",
+			thisfn, ( void * ) main_window, ( void * ) rate );
 
 	self = g_object_new(
-					OFA_TYPE_TAUX_PROPERTIES,
+					OFA_TYPE_RATE_PROPERTIES,
 					MY_PROP_MAIN_WINDOW, main_window,
 					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 					MY_PROP_WINDOW_XML,  st_ui_xml,
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	self->private->rate = taux;
+	self->private->rate = rate;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -212,15 +212,15 @@ ofa_taux_properties_run( ofaMainWindow *main_window, ofoRate *taux )
 static void
 v_init_dialog( myDialog *dialog )
 {
-	ofaTauxProperties *self;
-	ofaTauxPropertiesPrivate *priv;
+	ofaRateProperties *self;
+	ofaRatePropertiesPrivate *priv;
 	gint count, idx;
 	gchar *title;
 	const gchar *mnemo;
 	GtkEntry *entry;
 	GtkContainer *container;
 
-	self = OFA_TAUX_PROPERTIES( dialog );
+	self = OFA_RATE_PROPERTIES( dialog );
 	priv = self->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
@@ -262,9 +262,9 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-insert_new_row( ofaTauxProperties *self, gint idx )
+insert_new_row( ofaRateProperties *self, gint idx )
 {
-	ofaTauxPropertiesPrivate *priv;
+	ofaRatePropertiesPrivate *priv;
 	GtkEntry *entry;
 	const myDate *d;
 	gdouble rate;
@@ -291,9 +291,9 @@ insert_new_row( ofaTauxProperties *self, gint idx )
  * idx is counted from zero
  */
 static void
-add_empty_row( ofaTauxProperties *self )
+add_empty_row( ofaRateProperties *self )
 {
-	ofaTauxPropertiesPrivate *priv;
+	ofaRatePropertiesPrivate *priv;
 	GtkEntry *entry;
 	GtkLabel *label;
 	gint row;
@@ -364,7 +364,7 @@ add_empty_row( ofaTauxProperties *self )
 }
 
 static void
-add_button( ofaTauxProperties *self, const gchar *stock_id, gint column, gint row )
+add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint row )
 {
 	GtkWidget *image;
 	GtkButton *button;
@@ -379,7 +379,7 @@ add_button( ofaTauxProperties *self, const gchar *stock_id, gint column, gint ro
 }
 
 static void
-on_mnemo_changed( GtkEntry *entry, ofaTauxProperties *self )
+on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self )
 {
 	g_free( self->private->mnemo );
 	self->private->mnemo = g_strdup( gtk_entry_get_text( entry ));
@@ -388,7 +388,7 @@ on_mnemo_changed( GtkEntry *entry, ofaTauxProperties *self )
 }
 
 static void
-on_label_changed( GtkEntry *entry, ofaTauxProperties *self )
+on_label_changed( GtkEntry *entry, ofaRateProperties *self )
 {
 	g_free( self->private->label );
 	self->private->label = g_strdup( gtk_entry_get_text( entry ));
@@ -397,28 +397,28 @@ on_label_changed( GtkEntry *entry, ofaTauxProperties *self )
 }
 
 static gboolean
-on_date_focus_in( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self )
+on_date_focus_in( GtkWidget *entry, GdkEvent *event, ofaRateProperties *self )
 {
 	on_date_changed( GTK_ENTRY( entry ), self );
 	return( FALSE );
 }
 
 static gboolean
-on_focus_out( GtkWidget *entry, GdkEvent *event, ofaTauxProperties *self )
+on_focus_out( GtkWidget *entry, GdkEvent *event, ofaRateProperties *self )
 {
 	set_grid_line_comment( self, entry, "" );
 	return( FALSE );
 }
 
 static void
-on_date_changed( GtkEntry *entry, ofaTauxProperties *self )
+on_date_changed( GtkEntry *entry, ofaRateProperties *self )
 {
 	const gchar *content;
 	const myDate *date;
 	gboolean valid;
 	gchar *str;
 
-	g_debug( "ofa_taux_properties_on_date_changed: entry=%p", ( void * ) entry );
+	g_debug( "ofa_rate_properties_on_date_changed: entry=%p", ( void * ) entry );
 
 	content = gtk_entry_get_text( entry );
 	if( !content || !g_utf8_strlen( content, -1 )){
@@ -440,7 +440,7 @@ on_date_changed( GtkEntry *entry, ofaTauxProperties *self )
 }
 
 static void
-on_rate_changed( GtkEntry *entry, ofaTauxProperties *self )
+on_rate_changed( GtkEntry *entry, ofaRateProperties *self )
 {
 	const gchar *content;
 	gchar *text, *str;
@@ -462,7 +462,7 @@ on_rate_changed( GtkEntry *entry, ofaTauxProperties *self )
 }
 
 static void
-set_grid_line_comment( ofaTauxProperties *self, GtkWidget *widget, const gchar *comment )
+set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment )
 {
 	gint row;
 	GtkLabel *label;
@@ -476,7 +476,7 @@ set_grid_line_comment( ofaTauxProperties *self, GtkWidget *widget, const gchar *
 }
 
 static void
-on_button_clicked( GtkButton *button, ofaTauxProperties *self )
+on_button_clicked( GtkButton *button, ofaRateProperties *self )
 {
 	gint column, row;
 
@@ -493,9 +493,9 @@ on_button_clicked( GtkButton *button, ofaTauxProperties *self )
 }
 
 static void
-remove_row( ofaTauxProperties *self, gint row )
+remove_row( ofaRateProperties *self, gint row )
 {
-	ofaTauxPropertiesPrivate *priv;
+	ofaRatePropertiesPrivate *priv;
 	gint i, line;
 	GtkWidget *widget;
 
@@ -533,7 +533,7 @@ remove_row( ofaTauxProperties *self, gint row )
  * are we able to validate this rate, and all its validities
  */
 static void
-check_for_enable_dlg( ofaTauxProperties *self )
+check_for_enable_dlg( ofaRateProperties *self )
 {
 	GtkWidget *button;
 	gboolean ok;
@@ -550,9 +550,9 @@ check_for_enable_dlg( ofaTauxProperties *self )
  * are we able to validate this rate, and all its validities
  */
 static gboolean
-is_dialog_validable( ofaTauxProperties *self )
+is_dialog_validable( ofaRateProperties *self )
 {
-	ofaTauxPropertiesPrivate *priv;
+	ofaRatePropertiesPrivate *priv;
 	GList *valids;
 	ofsRateValidity *validity;
 	gint i;
@@ -604,18 +604,18 @@ is_dialog_validable( ofaTauxProperties *self )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	return( do_update( OFA_TAUX_PROPERTIES( dialog )));
+	return( do_update( OFA_RATE_PROPERTIES( dialog )));
 }
 
 /*
- * either creating a new taux (prev_mnemo is empty)
+ * either creating a new rate (prev_mnemo is empty)
  * or updating an existing one, and prev_mnemo may have been modified
  * Please note that a record is uniquely identified by the mnemo + the date
  */
 static gboolean
-do_update( ofaTauxProperties *self )
+do_update( ofaRateProperties *self )
 {
-	ofaTauxPropertiesPrivate *priv;
+	ofaRatePropertiesPrivate *priv;
 	gint i;
 	GtkEntry *entry;
 	const myDate *dbegin, *dend;
