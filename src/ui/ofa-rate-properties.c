@@ -82,8 +82,8 @@ enum {
 	N_COLUMNS
 };
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-taux-properties.ui";
-static const gchar  *st_ui_id        = "TauxPropertiesDlg";
+static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-rate-properties.ui";
+static const gchar  *st_ui_id        = "RatePropertiesDlg";
 
 G_DEFINE_TYPE( ofaRateProperties, ofa_rate_properties, MY_TYPE_DIALOG )
 
@@ -106,7 +106,7 @@ static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaRateProperties *self );
 
 static void
-taux_properties_finalize( GObject *instance )
+rate_properties_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_rate_properties_finalize";
 	ofaRatePropertiesPrivate *priv;
@@ -128,7 +128,7 @@ taux_properties_finalize( GObject *instance )
 }
 
 static void
-taux_properties_dispose( GObject *instance )
+rate_properties_dispose( GObject *instance )
 {
 	g_return_if_fail( OFA_IS_RATE_PROPERTIES( instance ));
 
@@ -165,8 +165,8 @@ ofa_rate_properties_class_init( ofaRatePropertiesClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = taux_properties_dispose;
-	G_OBJECT_CLASS( klass )->finalize = taux_properties_finalize;
+	G_OBJECT_CLASS( klass )->dispose = rate_properties_dispose;
+	G_OBJECT_CLASS( klass )->finalize = rate_properties_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
@@ -297,7 +297,6 @@ add_empty_row( ofaRateProperties *self )
 	GtkEntry *entry;
 	GtkLabel *label;
 	gint row;
-	/*myDateParse parms;*/
 
 	priv = self->private;
 	row = self->private->count + 1;
@@ -313,40 +312,20 @@ add_empty_row( ofaRateProperties *self )
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), COL_BEGIN, row, 1, 1 );
 
-	/*memset( &parms, '\0', sizeof( parms ));
-	parms.entry = GTK_WIDGET( entry );
-	parms.entry_format = MY_DATE_DMYY;
-	parms.on_changed_cb = G_CALLBACK( on_date_changed );
-	parms.user_data = self;
-	parms.date = g_new0( GDate, 1 );
-	g_object_set_data( G_OBJECT( entry ), "data-date", parms.date );
-	my_date_parse_from_entry( &parms );*/
-
 	entry = GTK_ENTRY( gtk_entry_new());
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_date_focus_in ), self );
 	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-	gtk_entry_set_max_length( entry, 10 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), COL_END, row, 1, 1 );
-
-	/*memset( &parms, '\0', sizeof( parms ));
-	parms.entry = GTK_WIDGET( entry );
-	parms.entry_format = MY_DATE_DMYY;
-	parms.on_changed_cb = G_CALLBACK( on_date_changed );
-	parms.user_data = self;
-	parms.date = g_new0( GDate, 1 );
-	g_object_set_data( G_OBJECT( entry ), "data-date", parms.date );
-	my_date_parse_from_entry( &parms );*/
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	my_editable_amount_init_ex( GTK_EDITABLE( entry ), DEFAULT_RATE_DECIMALS );
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_rate_changed ), self );
-	gtk_entry_set_max_length( entry, 10 );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), COL_RATE, row, 1, 1 );
 
@@ -450,11 +429,13 @@ on_rate_changed( GtkEntry *entry, ofaRateProperties *self )
 
 	if( !content || !g_utf8_strlen( content, -1 )){
 		str = g_strdup( "" );
+
 	} else {
 		text = my_editable_amount_get_string( GTK_EDITABLE( entry ));
 		str = g_strdup_printf( "%s %%", text );
 		g_free( text );
 	}
+
 	set_grid_line_comment( self, GTK_WIDGET( entry ), str );
 	g_free( str );
 

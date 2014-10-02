@@ -52,9 +52,9 @@
 #include "ui/ofa-models-set.h"
 #include "ui/ofa-print-reconcil.h"
 #include "ui/ofa-rappro.h"
-#include "ui/ofa-taux-set.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-rates-set.h"
 #include "ui/ofa-tab-label.h"
 #include "ui/ofa-view-entries.h"
 
@@ -103,7 +103,7 @@ static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpo
 static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_devises     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_taux        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_rates       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_classes     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_batfiles    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
@@ -122,7 +122,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "journals",     on_ref_journals,     NULL, NULL, NULL },
 		{ "models",       on_ref_models,       NULL, NULL, NULL },
 		{ "devises",      on_ref_devises,      NULL, NULL, NULL },
-		{ "taux",         on_ref_taux,         NULL, NULL, NULL },
+		{ "rates",        on_ref_rates,        NULL, NULL, NULL },
 		{ "classes",      on_ref_classes,      NULL, NULL, NULL },
 		{ "batfiles",     on_ref_batfiles,     NULL, NULL, NULL },
 };
@@ -175,9 +175,9 @@ static sThemeDef st_theme_defs[] = {
 				FALSE,
 				FALSE },
 
-		{ THM_TAUX,
+		{ THM_RATES,
 				N_( "Rates" ),
-				ofa_taux_set_get_type,
+				ofa_rates_set_get_type,
 				FALSE,
 				FALSE },
 
@@ -238,7 +238,7 @@ static sTreeDef st_tree_defs[] = {
 		{ N_( "Journals" ),           THM_JOURNALS },
 		{ N_( "Entry models" ),       THM_MODELS },
 		{ N_( "Currencies" ),         THM_DEVISES },
-		{ N_( "Rates" ),              THM_TAUX },
+		{ N_( "Rates" ),              THM_RATES },
 		{ N_( "Account classes" ),    THM_CLASSES },
 		{ N_( "Imported BAT files" ), THM_BATFILES },
 		{ 0 }
@@ -1119,16 +1119,16 @@ on_ref_devises( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 }
 
 static void
-on_ref_taux( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_ref_rates( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_ref_taux";
+	static const gchar *thisfn = "ofa_main_window_on_ref_rates";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_TAUX );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RATES );
 }
 
 static void

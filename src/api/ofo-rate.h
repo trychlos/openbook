@@ -32,7 +32,7 @@
  * @short_description: #ofoRate class definition.
  * @include: api/ofo-rate.h
  *
- * This class implements the Taux behavior.
+ * This file implements the #ofoRate class behavior.
  */
 
 #include "api/my-date.h"

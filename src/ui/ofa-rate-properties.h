@@ -30,11 +30,11 @@
 /**
  * SECTION: ofa_rate_properties
  * @short_description: #ofaRateProperties class definition.
- * @include: ui/ofa-taux-properties.h
+ * @include: ui/ofa-rate-properties.h
  *
- * Update the taux properties.
+ * Update the rate properties.
  *
- * From the ofaRateSet page, create a new taux, or update an existing
+ * From the ofaRateSet page, create a new rate, or update an existing
  * one. in the two cases, zero, one or more validities can be created,
  * updated, deleted.
  *

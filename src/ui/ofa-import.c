@@ -171,7 +171,7 @@ static gint       import_devise_csv( ofaImport *self );
 static gint       import_entry_csv( ofaImport *self );
 static gint       import_journal_csv( ofaImport *self );
 static gint       import_model_csv( ofaImport *self );
-static gint       import_taux_csv( ofaImport *self );
+static gint       import_rate_csv( ofaImport *self );
 static GSList    *split_csv_content( ofaImport *self );
 static void       free_csv_fields( GSList *fields );
 static void       free_csv_content( GSList *lines );
@@ -733,7 +733,7 @@ on_apply( GtkAssistant *assistant, ofaImport *self )
 				count = import_model_csv( self );
 				break;
 			case IMPORTER_TYPE_RATE:
-				count = import_taux_csv( self );
+				count = import_rate_csv( self );
 				break;
 		}
 
@@ -1045,7 +1045,7 @@ import_model_csv( ofaImport *self )
  * header : yes
  */
 static gint
-import_taux_csv( ofaImport *self )
+import_rate_csv( ofaImport *self )
 {
 	GSList *lines;
 	gchar *str;

@@ -81,7 +81,7 @@ OFO_BASE_DEFINE_GLOBAL( st_global, model )
 
 static void           on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
 static gboolean       do_update_journal_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
-static gboolean       do_update_taux_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
+static gboolean       do_update_rate_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
 static GList         *model_load_dataset( void );
 static ofoModel      *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint           model_count_for_journal( const ofoSgbd *sgbd, const gchar *journal );
@@ -230,7 +230,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
 			mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				do_update_taux_mnemo( dossier, mnemo, prev_id );
+				do_update_rate_mnemo( dossier, mnemo, prev_id );
 			}
 		}
 	}
@@ -263,9 +263,9 @@ do_update_journal_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gc
 }
 
 static gboolean
-do_update_taux_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id )
+do_update_rate_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofo_model_do_update_taux_mnemo";
+	static const gchar *thisfn = "ofo_model_do_update_rate_mnemo";
 	gchar *query;
 	const ofoSgbd *sgbd;
 	GSList *result, *irow, *icol;

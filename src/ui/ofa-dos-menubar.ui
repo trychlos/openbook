@@ -119,7 +119,7 @@
         </item>
         <item>
           <attribute name="label" translatable="yes">_Rates...</attribute>
-          <attribute name="action">win.taux</attribute>
+          <attribute name="action">win.rates</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">Account c_lasses...</attribute>

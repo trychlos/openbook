@@ -24,12 +24,12 @@
  * $Id$
  */
 
-#ifndef __OFA_TAUX_SET_H__
-#define __OFA_TAUX_SET_H__
+#ifndef __OFA_RATES_SET_H__
+#define __OFA_RATES_SET_H__
 
 /**
- * SECTION: ofa_taux_set
- * @short_description: #ofaTauxSet class definition.
+ * SECTION: ofa_rates_set
+ * @short_description: #ofaRatesSet class definition.
  * @include: ui/ofa-taux-set.h
  *
  * Display the chart of accounts, letting the user edit it.
@@ -39,30 +39,30 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_TAUX_SET                ( ofa_taux_set_get_type())
-#define OFA_TAUX_SET( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_TAUX_SET, ofaTauxSet ))
-#define OFA_TAUX_SET_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_TAUX_SET, ofaTauxSetClass ))
-#define OFA_IS_TAUX_SET( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_TAUX_SET ))
-#define OFA_IS_TAUX_SET_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TAUX_SET ))
-#define OFA_TAUX_SET_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TAUX_SET, ofaTauxSetClass ))
+#define OFA_TYPE_RATES_SET                ( ofa_rates_set_get_type())
+#define OFA_RATES_SET( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RATES_SET, ofaRatesSet ))
+#define OFA_RATES_SET_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RATES_SET, ofaRatesSetClass ))
+#define OFA_IS_RATES_SET( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RATES_SET ))
+#define OFA_IS_RATES_SET_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RATES_SET ))
+#define OFA_RATES_SET_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RATES_SET, ofaRatesSetClass ))
 
-typedef struct _ofaTauxSetPrivate        ofaTauxSetPrivate;
+typedef struct _ofaRatesSetPrivate        ofaRatesSetPrivate;
 
 typedef struct {
 	/*< private >*/
 	ofaMainPage        parent;
-	ofaTauxSetPrivate *private;
+	ofaRatesSetPrivate *private;
 }
-	ofaTauxSet;
+	ofaRatesSet;
 
 typedef struct {
 	/*< private >*/
 	ofaMainPageClass parent;
 }
-	ofaTauxSetClass;
+	ofaRatesSetClass;
 
-GType ofa_taux_set_get_type( void ) G_GNUC_CONST;
+GType ofa_rates_set_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_TAUX_SET_H__ */
+#endif /* __OFA_RATES_SET_H__ */

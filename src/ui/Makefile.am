@@ -138,12 +138,12 @@ openbook_SOURCES = \
 	ofa-rappro.h										\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
+	ofa-rates-set.c										\
+	ofa-rates-set.h										\
 	ofa-restore.c										\
 	ofa-restore.h										\
 	ofa-tab-label.c										\
 	ofa-tab-label.h										\
-	ofa-taux-set.c										\
-	ofa-taux-set.h										\
 	ofa-view-entries.c									\
 	ofa-view-entries.h									\
 	$(NULL)

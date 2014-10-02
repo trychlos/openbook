@@ -1254,7 +1254,7 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 		}
 
 	} else {
-		/*g_debug( "%s: searching for taux %s", thisfn, *iter );*/
+		/*g_debug( "%s: searching for rate %s", thisfn, *iter );*/
 		rate = ofo_rate_get_by_mnemo( priv->dossier, token );
 		if( rate && OFO_IS_RATE( rate )){
 			if( g_date_valid( &priv->deff )){
