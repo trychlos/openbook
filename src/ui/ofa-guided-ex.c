@@ -34,7 +34,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-journal.h"
-#include "api/ofo-model.h"
+#include "api/ofo-ope-template.h"
 
 #include "ui/ofa-guided-common.h"
 #include "ui/ofa-guided-ex.h"
@@ -49,7 +49,7 @@ struct _ofaGuidedExPrivate {
 	/* internals
 	 */
 	ofoDossier      *dossier;			/* dossier */
-	const ofoModel  *model;				/* model */
+	const ofoOpeTemplate  *model;				/* model */
 	ofaGuidedCommon *common;
 
 	/* UI - the pane
@@ -109,9 +109,9 @@ static void       insert_left_journal_row( ofaGuidedEx *self, ofoJournal *journa
 static void       update_left_journal_row( ofaGuidedEx *self, ofoJournal *journal, const gchar *prev_id );
 static void       remove_left_journal_row( ofaGuidedEx *self, ofoJournal *journal );
 static gboolean   find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void       insert_left_model_row( ofaGuidedEx *self, ofoModel *model );
-static void       update_left_model_row( ofaGuidedEx *self, ofoModel *model, const gchar *prev_id );
-static void       remove_left_model_row( ofaGuidedEx *self, ofoModel *model );
+static void       insert_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model );
+static void       update_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id );
+static void       remove_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model );
 static gboolean   find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static void       on_right_ok( GtkButton *button, ofaGuidedEx *self );
 static void       on_right_cancel( GtkButton *button, ofaGuidedEx *self );
@@ -290,7 +290,7 @@ setup_view_left( ofaGuidedEx *self )
 }
 
 /*
- * note that we may have no current ofoModel at this time
+ * note that we may have no current ofoOpeTemplate at this time
  */
 static GtkWidget *
 setup_view_right( ofaGuidedEx *self )
@@ -424,7 +424,7 @@ on_left_cell_data_func( GtkTreeViewColumn *tcolumn,
 						"background-set", FALSE,
 						NULL );
 
-	g_return_if_fail( OFO_IS_JOURNAL( object ) || OFO_IS_MODEL( object ));
+	g_return_if_fail( OFO_IS_JOURNAL( object ) || OFO_IS_OPE_TEMPLATE( object ));
 
 	if( OFO_IS_JOURNAL( object )){
 		gdk_rgba_parse( &color, "#ffffb0" );
@@ -461,9 +461,9 @@ init_left_view( ofaGuidedEx *self, GtkWidget *child )
 		insert_left_journal_row( self, OFO_JOURNAL( ise->data ));
 	}
 
-	dataset = ofo_model_get_dataset( self->private->dossier );
+	dataset = ofo_ope_template_get_dataset( self->private->dossier );
 	for( ise=dataset ; ise ; ise=ise->next ){
-		insert_left_model_row( self, OFO_MODEL( ise->data ));
+		insert_left_model_row( self, OFO_OPE_TEMPLATE( ise->data ));
 	}
 }
 
@@ -571,7 +571,7 @@ is_left_select_enableable( ofaGuidedEx *self )
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
 		g_object_unref( object );
-		ok = OFO_IS_MODEL( object );
+		ok = OFO_IS_OPE_TEMPLATE( object );
 	}
 
 	return( ok );
@@ -600,9 +600,9 @@ select_model( ofaGuidedEx *self )
 		gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
 		g_object_unref( object );
 	}
-	g_return_if_fail( object && OFO_IS_MODEL( object ));
+	g_return_if_fail( object && OFO_IS_OPE_TEMPLATE( object ));
 
-	ofa_guided_common_set_model( priv->common, OFO_MODEL( object ));
+	ofa_guided_common_set_model( priv->common, OFO_OPE_TEMPLATE( object ));
 
 	gtk_widget_show_all( gtk_paned_get_child2( priv->pane ));
 }
@@ -656,7 +656,7 @@ remove_left_journal_row( ofaGuidedEx *self, ofoJournal *journal )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter, child_iter;
 	gboolean found;
-	ofoModel *model;
+	ofoOpeTemplate *model;
 
 	if( !find_left_journal_by_mnemo( self, ofo_journal_get_mnemo( journal ), &tmodel, &iter )){
 		return;
@@ -671,7 +671,7 @@ remove_left_journal_row( ofaGuidedEx *self, ofoJournal *journal )
 					&child_iter,
 					LEFT_COL_OBJECT, &model,
 					-1 );
-		g_return_if_fail( model && OFO_IS_MODEL( model ));
+		g_return_if_fail( model && OFO_IS_OPE_TEMPLATE( model ));
 
 		gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &child_iter );
 		insert_left_model_row( self, model );
@@ -734,16 +734,16 @@ find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel 
 }
 
 static void
-insert_left_model_row( ofaGuidedEx *self, ofoModel *model )
+insert_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model )
 {
 	static const gchar *thisfn = "ofa_guided_ex_insert_left_model_row";
 	GtkTreeModel *tmodel;
 	GtkTreeIter parent_iter, iter;
 	gboolean found;
 
-	found = find_left_journal_by_mnemo( self, ofo_model_get_journal( model ), &tmodel, &parent_iter );
+	found = find_left_journal_by_mnemo( self, ofo_ope_template_get_ledger( model ), &tmodel, &parent_iter );
 	if( !found ){
-		g_debug( "%s: journal not found: %s", thisfn, ofo_model_get_journal( model ));
+		g_debug( "%s: journal not found: %s", thisfn, ofo_ope_template_get_ledger( model ));
 
 		found = find_left_journal_by_mnemo( self, UNKNOWN_JOURNAL_MNEMO, &tmodel, &parent_iter );
 		if( !found ){
@@ -766,14 +766,14 @@ insert_left_model_row( ofaGuidedEx *self, ofoModel *model )
 			&iter,
 			&parent_iter,
 			-1,
-			LEFT_COL_MNEMO,  ofo_model_get_mnemo( model ),
-			LEFT_COL_LABEL,  ofo_model_get_label( model ),
+			LEFT_COL_MNEMO,  ofo_ope_template_get_mnemo( model ),
+			LEFT_COL_LABEL,  ofo_ope_template_get_label( model ),
 			LEFT_COL_OBJECT, model,
 			-1 );
 }
 
 static void
-update_left_model_row( ofaGuidedEx *self, ofoModel *model, const gchar *prev_id )
+update_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofa_guided_ex_udpate_left_model_row";
 	GtkTreeModel *tmodel;
@@ -792,7 +792,7 @@ update_left_model_row( ofaGuidedEx *self, ofoModel *model, const gchar *prev_id 
 }
 
 static void
-remove_left_model_row( ofaGuidedEx *self, ofoModel *model )
+remove_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model )
 {
 	static const gchar *thisfn = "ofa_guided_ex_remove_left_model_row";
 	GtkTreeModel *tmodel;
@@ -800,7 +800,7 @@ remove_left_model_row( ofaGuidedEx *self, ofoModel *model )
 	gboolean found;
 	const gchar *mnemo;
 
-	mnemo = ofo_model_get_mnemo( model );
+	mnemo = ofo_ope_template_get_mnemo( model );
 	found = find_left_model_by_mnemo( self, mnemo, &tmodel, &iter );
 
 	if( found ){
@@ -843,7 +843,7 @@ find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **
 							my_tmodel, &child_iter,
 							LEFT_COL_MNEMO, &child_mnemo, LEFT_COL_OBJECT, &child_object, -1 );
 					g_object_unref( child_object );
-					g_return_val_if_fail( child_object && OFO_IS_MODEL( child_object ), FALSE );
+					g_return_val_if_fail( child_object && OFO_IS_OPE_TEMPLATE( child_object ), FALSE );
 
 					cmp = g_utf8_collate( mnemo, child_mnemo );
 					g_free( child_mnemo );
@@ -898,8 +898,8 @@ on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *se
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_MODEL( object )){
-		insert_left_model_row( self, OFO_MODEL( object ));
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		insert_left_model_row( self, OFO_OPE_TEMPLATE( object ));
 
 	} else if( OFO_IS_JOURNAL( object )){
 		insert_left_journal_row( self, OFO_JOURNAL( object ));
@@ -921,8 +921,8 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
 			prev_id,
 			( void * ) self );
 
-	if( OFO_IS_MODEL( object )){
-		update_left_model_row( self, OFO_MODEL( object ), prev_id );
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		update_left_model_row( self, OFO_OPE_TEMPLATE( object ), prev_id );
 
 	} else if( OFO_IS_JOURNAL( object )){
 		update_left_journal_row( self, OFO_JOURNAL( object ), prev_id );
@@ -943,8 +943,8 @@ on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_MODEL( object )){
-		remove_left_model_row( self, OFO_MODEL( object ));
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		remove_left_model_row( self, OFO_OPE_TEMPLATE( object ));
 
 	} else if( OFO_IS_JOURNAL( object )){
 		remove_left_journal_row( self, OFO_JOURNAL( object ));
@@ -962,7 +962,7 @@ on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
-	if( type == OFO_TYPE_MODEL ){
+	if( type == OFO_TYPE_OPE_TEMPLATE ){
 
 
 	} else if( type == OFO_TYPE_JOURNAL ){

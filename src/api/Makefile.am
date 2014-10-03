@@ -53,8 +53,8 @@ api_include_HEADERS = \
 	ofo-entry.h											\
 	ofo-journal.h										\
 	ofo-journal-def.h									\
-	ofo-model.h											\
-	ofo-model-def.h										\
+	ofo-ope-template.h									\
+	ofo-ope-template-def.h								\
 	ofo-rate.h											\
 	ofo-rate-def.h										\
 	ofo-sgbd.h											\

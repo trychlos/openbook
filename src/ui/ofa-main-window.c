@@ -49,7 +49,7 @@
 #include "ui/ofa-import.h"
 #include "ui/ofa-int-closing.h"
 #include "ui/ofa-journals-set.h"
-#include "ui/ofa-models-set.h"
+#include "ui/ofa-ope-templates-set.h"
 #include "ui/ofa-print-reconcil.h"
 #include "ui/ofa-rappro.h"
 #include "ui/ofa-main-page.h"
@@ -89,42 +89,42 @@ enum {
 
 /* the actions handled from the menubar
  */
-static void on_properties      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_backup          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_close           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_guided      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_view_entries( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_concil      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_int_closing ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_import      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_export      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_print_reconcil  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_accounts    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_journals    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_models      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_devises     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_rates       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_classes     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_batfiles    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_properties       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_backup           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_close            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_guided       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_view_entries ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_concil       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_int_closing  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_import       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_export       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_print_reconcil   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_accounts     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_journals     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_ope_templates( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_devises      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_rates        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_classes      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_batfiles     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
-		{ "properties",   on_properties,       NULL, NULL, NULL },
-		{ "backup",       on_backup,           NULL, NULL, NULL },
-		{ "close",        on_close,            NULL, NULL, NULL },
-		{ "guided",       on_ope_guided,       NULL, NULL, NULL },
-		{ "entries",      on_ope_view_entries, NULL, NULL, NULL },
-		{ "concil",       on_ope_concil,       NULL, NULL, NULL },
-		{ "iclosing",     on_ope_int_closing,  NULL, NULL, NULL },
-		{ "import",       on_ope_import,       NULL, NULL, NULL },
-		{ "export",       on_ope_export,       NULL, NULL, NULL },
-		{ "prt-reconcil", on_print_reconcil,   NULL, NULL, NULL },
-		{ "accounts",     on_ref_accounts,     NULL, NULL, NULL },
-		{ "journals",     on_ref_journals,     NULL, NULL, NULL },
-		{ "models",       on_ref_models,       NULL, NULL, NULL },
-		{ "devises",      on_ref_devises,      NULL, NULL, NULL },
-		{ "rates",        on_ref_rates,        NULL, NULL, NULL },
-		{ "classes",      on_ref_classes,      NULL, NULL, NULL },
-		{ "batfiles",     on_ref_batfiles,     NULL, NULL, NULL },
+		{ "properties",    on_properties,        NULL, NULL, NULL },
+		{ "backup",        on_backup,            NULL, NULL, NULL },
+		{ "close",         on_close,             NULL, NULL, NULL },
+		{ "guided",        on_ope_guided,        NULL, NULL, NULL },
+		{ "entries",       on_ope_view_entries,  NULL, NULL, NULL },
+		{ "concil",        on_ope_concil,        NULL, NULL, NULL },
+		{ "iclosing",      on_ope_int_closing,   NULL, NULL, NULL },
+		{ "import",        on_ope_import,        NULL, NULL, NULL },
+		{ "export",        on_ope_export,        NULL, NULL, NULL },
+		{ "prt-reconcil",  on_print_reconcil,    NULL, NULL, NULL },
+		{ "accounts",      on_ref_accounts,      NULL, NULL, NULL },
+		{ "journals",      on_ref_journals,      NULL, NULL, NULL },
+		{ "ope-templates", on_ref_ope_templates, NULL, NULL, NULL },
+		{ "devises",       on_ref_devises,       NULL, NULL, NULL },
+		{ "rates",         on_ref_rates,         NULL, NULL, NULL },
+		{ "classes",       on_ref_classes,       NULL, NULL, NULL },
+		{ "batfiles",      on_ref_batfiles,      NULL, NULL, NULL },
 };
 
 /* This structure handles the functions which manage the pages of the
@@ -157,33 +157,9 @@ static sThemeDef st_theme_defs[] = {
 				FALSE,
 				FALSE },
 
-		{ THM_JOURNALS,
-				N_( "Journals" ),
-				ofa_journals_set_get_type,
-				FALSE,
-				FALSE },
-
-		{ THM_MODELS,
-				N_( "Entry models" ),
-				ofa_models_set_get_type,
-				FALSE,
-				FALSE },
-
-		{ THM_DEVISES,
-				N_( "Currencies" ),
-				ofa_devises_set_get_type,
-				FALSE,
-				FALSE },
-
-		{ THM_RATES,
-				N_( "Rates" ),
-				ofa_rates_set_get_type,
-				FALSE,
-				FALSE },
-
-		{ THM_CONCIL,
-				N_( "Reconciliation" ),
-				ofa_rappro_get_type,
+		{ THM_BATFILES,
+				N_( "Imported BAT files" ),
+				ofa_bat_set_get_type,
 				FALSE,
 				FALSE },
 
@@ -193,15 +169,39 @@ static sThemeDef st_theme_defs[] = {
 				FALSE,
 				FALSE },
 
-		{ THM_BATFILES,
-				N_( "Imported BAT files" ),
-				ofa_bat_set_get_type,
+		{ THM_CONCIL,
+				N_( "Reconciliation" ),
+				ofa_rappro_get_type,
+				FALSE,
+				FALSE },
+
+		{ THM_DEVISES,
+				N_( "Currencies" ),
+				ofa_devises_set_get_type,
 				FALSE,
 				FALSE },
 
 		{ THM_GUIDED_INPUT,
 				N_( "Guided input" ),
 				ofa_guided_ex_get_type,
+				FALSE,
+				FALSE },
+
+		{ THM_JOURNALS,
+				N_( "Journals" ),
+				ofa_journals_set_get_type,
+				FALSE,
+				FALSE },
+
+		{ THM_OPE_TEMPLATES,
+				N_( "Operation templates" ),
+				ofa_ope_templates_set_get_type,
+				FALSE,
+				FALSE },
+
+		{ THM_RATES,
+				N_( "Rates" ),
+				ofa_rates_set_get_type,
 				FALSE,
 				FALSE },
 
@@ -232,15 +232,15 @@ enum {
 
 static sTreeDef st_tree_defs[] = {
 
-		{ N_( "Guided input" ),       THM_GUIDED_INPUT },
-		{ N_( "Reconciliation" ),     THM_CONCIL },
-		{ N_( "Chart of accounts" ),  THM_ACCOUNTS },
-		{ N_( "Journals" ),           THM_JOURNALS },
-		{ N_( "Entry models" ),       THM_MODELS },
-		{ N_( "Currencies" ),         THM_DEVISES },
-		{ N_( "Rates" ),              THM_RATES },
-		{ N_( "Account classes" ),    THM_CLASSES },
-		{ N_( "Imported BAT files" ), THM_BATFILES },
+		{ N_( "Guided input" ),        THM_GUIDED_INPUT },
+		{ N_( "Reconciliation" ),      THM_CONCIL },
+		{ N_( "Chart of accounts" ),   THM_ACCOUNTS },
+		{ N_( "Journals" ),            THM_JOURNALS },
+		{ N_( "Operation templates" ), THM_OPE_TEMPLATES },
+		{ N_( "Currencies" ),          THM_DEVISES },
+		{ N_( "Rates" ),               THM_RATES },
+		{ N_( "Account classes" ),     THM_CLASSES },
+		{ N_( "Imported BAT files" ),  THM_BATFILES },
 		{ 0 }
 };
 
@@ -985,7 +985,7 @@ on_ope_guided( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MODELS );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_OPE_TEMPLATES );
 }
 
 static void
@@ -1093,7 +1093,7 @@ on_ref_journals( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 }
 
 static void
-on_ref_models( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_ref_ope_templates( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_ref_models";
 
@@ -1102,7 +1102,7 @@ on_ref_models( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_MODELS );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_OPE_TEMPLATES );
 }
 
 static void

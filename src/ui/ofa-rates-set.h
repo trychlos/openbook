@@ -50,7 +50,7 @@ typedef struct _ofaRatesSetPrivate        ofaRatesSetPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPage        parent;
+	ofaMainPage         parent;
 	ofaRatesSetPrivate *private;
 }
 	ofaRatesSet;

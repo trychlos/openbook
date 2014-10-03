@@ -45,7 +45,7 @@
 #include "api/ofo-devise.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
-#include "api/ofo-model.h"
+#include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
 static gboolean pref_quit_on_escape = TRUE;
@@ -1030,7 +1030,7 @@ import_model_csv( ofaImport *self )
 		return( -1 );
 	}
 
-	ofo_model_import_csv(
+	ofo_ope_template_import_csv(
 			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );

@@ -416,6 +416,7 @@ get_min_val_date( ofoRate *rate )
 		str = my_date_to_str( dmin, MY_DATE_DMMM );
 		sbegin = g_strdup_printf( _( "from %s" ), str );
 		g_free( str );
+
 	} else {
 		sbegin = g_strdup_printf( _( "from infinite" ));
 	}
@@ -435,6 +436,7 @@ get_max_val_date( ofoRate *rate )
 		str = my_date_to_str( dmax, MY_DATE_DMMM );
 		send = g_strdup_printf( _( "to %s" ), str );
 		g_free( str );
+
 	} else {
 		send = g_strdup_printf( _( "to infinite" ));
 	}

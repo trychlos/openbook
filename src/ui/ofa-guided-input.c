@@ -33,7 +33,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-model.h"
+#include "api/ofo-ope-template.h"
 
 #include "core/my-window-prot.h"
 
@@ -47,7 +47,7 @@ struct _ofaGuidedInputPrivate {
 
 	/* internals
 	 */
-	const ofoModel  *model;
+	const ofoOpeTemplate  *model;
 	ofaGuidedCommon *common;
 };
 
@@ -127,7 +127,7 @@ ofa_guided_input_class_init( ofaGuidedInputClass *klass )
  * Update the properties of an journal
  */
 void
-ofa_guided_input_run( ofaMainWindow *main_window, const ofoModel *model )
+ofa_guided_input_run( ofaMainWindow *main_window, const ofoOpeTemplate *model )
 {
 	static const gchar *thisfn = "ofa_guided_input_run";
 	ofaGuidedInput *self;

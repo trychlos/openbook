@@ -33,7 +33,7 @@
  * @include: ui/ofa-guided-input.h
  */
 
-#include "api/ofo-model-def.h"
+#include "api/ofo-ope-template-def.h"
 
 #include "core/my-dialog.h"
 
@@ -63,7 +63,7 @@ typedef struct {
 
 GType ofa_guided_input_get_type( void ) G_GNUC_CONST;
 
-void  ofa_guided_input_run     ( ofaMainWindow *parent, const ofoModel *model );
+void  ofa_guided_input_run     ( ofaMainWindow *parent, const ofoOpeTemplate *model );
 
 G_END_DECLS
 

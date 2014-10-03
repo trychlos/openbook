@@ -41,7 +41,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
-#include "api/ofo-model.h"
+#include "api/ofo-ope-template.h"
 #include "api/ofo-sgbd.h"
 
 #include "core/ofo-marshal.h"
@@ -433,7 +433,7 @@ connect_objects_handlers( const ofoDossier *dossier )
 	ofo_account_connect_handlers( dossier );
 	ofo_entry_connect_handlers( dossier );
 	ofo_journal_connect_handlers( dossier );
-	ofo_model_connect_handlers( dossier );
+	ofo_ope_template_connect_handlers( dossier );
 
 	g_signal_connect( G_OBJECT( dossier ),
 				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
@@ -884,32 +884,32 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES ("
-			"	MOD_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Model mnemonic',"
-			"	MOD_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Model label',"
-			"	MOD_JOU_MNEMO VARCHAR(6)                  COMMENT 'Model journal',"
-			"	MOD_JOU_VER   INTEGER                     COMMENT 'Journal is locked',"
-			"	MOD_NOTES     VARCHAR(4096)               COMMENT 'Model notes',"
-			"	MOD_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-			"	MOD_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
+			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
+			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE COMMENT 'Operation template mnemonic',"
+			"	OTE_LABEL      VARCHAR(80)       NOT NULL        COMMENT 'Template label',"
+			"	OTE_LED_MNEMO  VARCHAR(6)                        COMMENT 'Generated entries imputation ledger',"
+			"	OTE_LED_LOCKED INTEGER                           COMMENT 'Ledger is locked',"
+			"	OTE_NOTES      VARCHAR(4096)                     COMMENT 'Template notes',"
+			"	OTE_UPD_USER   VARCHAR(20)                       COMMENT 'User responsible of properties last update',"
+			"	OTE_UPD_STAMP  TIMESTAMP                         COMMENT 'Properties last update timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_MODELES_DET ("
-			"	MOD_MNEMO           VARCHAR(6) NOT NULL     COMMENT 'Internal model identifier',"
-			"	MOD_DET_RANG        INTEGER    NOT NULL     COMMENT 'Entry number',"
-			"	MOD_DET_COMMENT     VARCHAR(80)             COMMENT 'Entry label',"
-			"	MOD_DET_ACCOUNT     VARCHAR(20)             COMMENT 'Account number',"
-			"	MOD_DET_ACCOUNT_VER INTEGER                 COMMENT 'Account number is locked',"
-			"	MOD_DET_LABEL       VARCHAR(80)             COMMENT 'Entry label',"
-			"	MOD_DET_LABEL_VER   INTEGER                 COMMENT 'Entry label is locked',"
-			"	MOD_DET_DEBIT       VARCHAR(80)             COMMENT 'Debit amount',"
-			"	MOD_DET_DEBIT_VER   INTEGER                 COMMENT 'Debit amount is locked',"
-			"	MOD_DET_CREDIT      VARCHAR(80)             COMMENT 'Credit amount',"
-			"	MOD_DET_CREDIT_VER  INTEGER                 COMMENT 'Credit amount is locked',"
-			"	CONSTRAINT PRIMARY KEY (MOD_MNEMO, MOD_DET_RANG)"
+			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES_DET ("
+			"	OTE_MNEMO              VARCHAR(6) NOT NULL     COMMENT 'Operation template menmonic',"
+			"	OTE_DET_ROW            INTEGER    NOT NULL     COMMENT 'Detail line number',"
+			"	OTE_DET_COMMENT        VARCHAR(80)             COMMENT 'Detail line comment',"
+			"	OTE_DET_ACCOUNT        VARCHAR(20)             COMMENT 'Account number',"
+			"	OTE_DET_ACCOUNT_LOCKED INTEGER                 COMMENT 'Account number is locked',"
+			"	OTE_DET_LABEL          VARCHAR(80)             COMMENT 'Entry label',"
+			"	OTE_DET_LABEL_LOCKED   INTEGER                 COMMENT 'Entry label is locked',"
+			"	OTE_DET_DEBIT          VARCHAR(80)             COMMENT 'Debit amount',"
+			"	OTE_DET_DEBIT_LOCKED   INTEGER                 COMMENT 'Debit amount is locked',"
+			"	OTE_DET_CREDIT         VARCHAR(80)             COMMENT 'Credit amount',"
+			"	OTE_DET_CREDIT_LOCKED  INTEGER                 COMMENT 'Credit amount is locked',"
+			"	CONSTRAINT PRIMARY KEY (OTE_MNEMO, OTE_DET_ROW)"
 			")", TRUE )){
 		return( FALSE );
 	}

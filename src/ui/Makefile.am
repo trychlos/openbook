@@ -96,14 +96,14 @@ openbook_SOURCES = \
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
 	ofa-dossier-properties.h							\
+	ofa-export.c										\
+	ofa-export.h										\
 	ofa-guided-common.c									\
 	ofa-guided-common.h									\
 	ofa-guided-ex.c										\
 	ofa-guided-ex.h										\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
-	ofa-export.c										\
-	ofa-export.h										\
 	ofa-iimporter.c										\
 	ofa-import.c										\
 	ofa-import.h										\
@@ -124,10 +124,10 @@ openbook_SOURCES = \
 	ofa-main-page.h										\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
-	ofa-model-properties.c								\
-	ofa-model-properties.h								\
-	ofa-models-set.c									\
-	ofa-models-set.h									\
+	ofa-ope-template-properties.c						\
+	ofa-ope-template-properties.h						\
+	ofa-ope-templates-set.c								\
+	ofa-ope-templates-set.h								\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
 	ofa-preferences.c									\
@@ -183,7 +183,7 @@ ui_files = \
 	ofa-import.ui										\
 	ofa-int-closing.ui									\
 	ofa-journal-properties.ui							\
-	ofa-model-properties.ui								\
+	ofa-ope-template-properties.ui						\
 	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\
 	ofa-print-reconcil.ui								\

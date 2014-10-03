@@ -32,14 +32,14 @@
 
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-model.h"
+#include "api/ofo-ope-template.h"
 
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-journal-combo.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-model-properties.h"
+#include "ui/ofa-ope-template-properties.h"
 
 /* private instance data
  *
@@ -59,51 +59,51 @@
  * - button down
  * - button remove
  */
-struct _ofaModelPropertiesPrivate {
+struct _ofaOpeTemplatePropertiesPrivate {
 
 	/* internals
 	 */
-	ofoModel        *model;
-	ofaJournalCombo *journal_combo;
-	GtkGrid         *grid;				/* detail grid */
-	gint             count;				/* count of added detail lines */
+	ofoOpeTemplate   *ope_template;
+	ofaJournalCombo  *ledger_combo;
+	GtkGrid          *grid;				/* detail grid */
+	gint              count;			/* count of added detail lines */
 
 	/* result
 	 */
-	gboolean         is_new;
-	gboolean         updated;
+	gboolean          is_new;
+	gboolean          updated;
 
 	/* data
 	 */
-	gchar           *mnemo;
-	gchar           *label;
-	gchar           *journal;			/* journal mnemo */
-	gboolean         journal_locked;
-	gchar           *maj_user;
-	GTimeVal         maj_stamp;
+	gchar            *mnemo;
+	gchar            *label;
+	gchar            *ledger;			/* ledger mnemo */
+	gboolean          ledger_locked;
+	gchar            *upd_user;
+	GTimeVal          upd_stamp;
 };
 
 /* columns in the detail treeview
  */
 enum {
-	DET_COL_RANG = 0,
+	DET_COL_ROW = 0,
 	DET_COL_COMMENT,
 	DET_COL_ACCOUNT,
 	DET_COL_ACCOUNT_SELECT,
-	DET_COL_ACCOUNT_VER,
+	DET_COL_ACCOUNT_LOCKED,
 	DET_COL_LABEL,
-	DET_COL_LABEL_VER,
+	DET_COL_LABEL_LOCKED,
 	DET_COL_DEBIT,
-	DET_COL_DEBIT_VER,
+	DET_COL_DEBIT_LOCKED,
 	DET_COL_CREDIT,
-	DET_COL_CREDIT_VER,
+	DET_COL_CREDIT_LOCKED,
 	DET_COL_UP,
 	DET_COL_DOWN,
 	DET_COL_REMOVE,
 	DET_N_COLUMNS
 };
 
-#define DET_COL_ADD                  DET_COL_RANG
+#define DET_COL_ADD                  DET_COL_ROW
 
 /* each widget of the grid brings its row number */
 #define DATA_ROW                     "ofa-data-row"
@@ -114,63 +114,63 @@ enum {
 /* space between widgets in a detail line */
 #define DETAIL_SPACE                 2
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-model-properties.ui";
-static const gchar  *st_ui_id        = "ModelPropertiesDlg";
+static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-entry-template-properties.ui";
+static const gchar  *st_ui_id        = "OpeTemplatePropertiesDlg";
 
-G_DEFINE_TYPE( ofaModelProperties, ofa_model_properties, MY_TYPE_DIALOG )
+G_DEFINE_TYPE( ofaOpeTemplateProperties, ofa_ope_template_properties, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      init_dialog_title( ofaModelProperties *self );
-static void      init_dialog_mnemo( ofaModelProperties *self );
-static void      init_dialog_label( ofaModelProperties *self );
-static void      init_dialog_journal_locked( ofaModelProperties *self );
-static void      init_dialog_detail( ofaModelProperties *self );
-static void      insert_new_row( ofaModelProperties *self, gint row );
-static void      add_empty_row( ofaModelProperties *self );
-static void      add_button( ofaModelProperties *self, const gchar *stock_id, gint column, gint row, gint left_margin, gint right_margin );
-static void      signal_row_added( ofaModelProperties *self );
-static void      signal_row_removed( ofaModelProperties *self );
-static void      on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaModelProperties *self );
-static void      on_journal_changed( const gchar *mnemo, ofaModelProperties *self );
-static void      on_journal_locked_toggled( GtkToggleButton *toggle, ofaModelProperties *self );
-static void      on_account_selection( ofaModelProperties *self, gint row );
-static void      on_button_clicked( GtkButton *button, ofaModelProperties *self );
-static void      remove_row( ofaModelProperties *self, gint row );
-static void      check_for_enable_dlg( ofaModelProperties *self );
-static gboolean  is_dialog_validable( ofaModelProperties *self );
+static void      init_dialog_title( ofaOpeTemplateProperties *self );
+static void      init_dialog_mnemo( ofaOpeTemplateProperties *self );
+static void      init_dialog_label( ofaOpeTemplateProperties *self );
+static void      init_dialog_ledger_locked( ofaOpeTemplateProperties *self );
+static void      init_dialog_detail( ofaOpeTemplateProperties *self );
+static void      insert_new_row( ofaOpeTemplateProperties *self, gint row );
+static void      add_empty_row( ofaOpeTemplateProperties *self );
+static void      add_button( ofaOpeTemplateProperties *self, const gchar *stock_id, gint column, gint row, gint left_margin, gint right_margin );
+static void      signal_row_added( ofaOpeTemplateProperties *self );
+static void      signal_row_removed( ofaOpeTemplateProperties *self );
+static void      on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
+static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
+static void      on_ledger_changed( const gchar *mnemo, ofaOpeTemplateProperties *self );
+static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
+static void      on_account_selection( ofaOpeTemplateProperties *self, gint row );
+static void      on_button_clicked( GtkButton *button, ofaOpeTemplateProperties *self );
+static void      remove_row( ofaOpeTemplateProperties *self, gint row );
+static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
+static gboolean  is_dialog_validable( ofaOpeTemplateProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaModelProperties *self );
-static void      get_detail_list( ofaModelProperties *self, gint row );
+static gboolean  do_update( ofaOpeTemplateProperties *self );
+static void      get_detail_list( ofaOpeTemplateProperties *self, gint row );
 
 static void
-model_properties_finalize( GObject *instance )
+ope_template_properties_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_model_properties_finalize";
-	ofaModelPropertiesPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_properties_finalize";
+	ofaOpeTemplatePropertiesPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_MODEL_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_PROPERTIES( instance ));
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = OFA_MODEL_PROPERTIES( instance )->private;
+	priv = OFA_OPE_TEMPLATE_PROPERTIES( instance )->private;
 
 	/* free data members here */
 	g_free( priv->mnemo );
 	g_free( priv->label );
-	g_free( priv->journal );
-	g_free( priv->maj_user );
+	g_free( priv->ledger );
+	g_free( priv->upd_user );
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_model_properties_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ope_template_properties_parent_class )->finalize( instance );
 }
 
 static void
-model_properties_dispose( GObject *instance )
+ope_template_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_MODEL_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
@@ -178,53 +178,53 @@ model_properties_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_model_properties_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ope_template_properties_parent_class )->dispose( instance );
 }
 
 static void
-ofa_model_properties_init( ofaModelProperties *self )
+ofa_ope_template_properties_init( ofaOpeTemplateProperties *self )
 {
-	static const gchar *thisfn = "ofa_model_properties_init";
+	static const gchar *thisfn = "ofa_ope_template_properties_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_MODEL_PROPERTIES( self ));
+	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_PROPERTIES( self ));
 
-	self->private = g_new0( ofaModelPropertiesPrivate, 1 );
+	self->private = g_new0( ofaOpeTemplatePropertiesPrivate, 1 );
 
 	self->private->is_new = FALSE;
 	self->private->updated = FALSE;
 }
 
 static void
-ofa_model_properties_class_init( ofaModelPropertiesClass *klass )
+ofa_ope_template_properties_class_init( ofaOpeTemplatePropertiesClass *klass )
 {
-	static const gchar *thisfn = "ofa_model_properties_class_init";
+	static const gchar *thisfn = "ofa_ope_template_properties_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = model_properties_dispose;
-	G_OBJECT_CLASS( klass )->finalize = model_properties_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ope_template_properties_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ope_template_properties_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
- * ofa_model_properties_run:
+ * ofa_ope_template_properties_run:
  * @main: the main window of the application.
  * @model:
- * @journal_id: set to the current journal when creating a new model,
+ * @ledger_id: set to the current ledger when creating a new model,
  *  left to OFO_BASE_UNSET_ID when updating an existing model.
  *
  * Update the properties of an model
  */
 gboolean
-ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model, const gchar *journal )
+ofa_ope_template_properties_run( ofaMainWindow *main_window, ofoOpeTemplate *model, const gchar *ledger )
 {
-	static const gchar *thisfn = "ofa_model_properties_run";
-	ofaModelProperties *self;
+	static const gchar *thisfn = "ofa_ope_template_properties_run";
+	ofaOpeTemplateProperties *self;
 	gboolean updated;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
@@ -233,15 +233,15 @@ ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model, const gch
 			thisfn, ( void * ) main_window, ( void * ) model );
 
 	self = g_object_new(
-					OFA_TYPE_MODEL_PROPERTIES,
+					OFA_TYPE_OPE_TEMPLATE_PROPERTIES,
 					MY_PROP_MAIN_WINDOW, main_window,
 					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 					MY_PROP_WINDOW_XML,  st_ui_xml,
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	self->private->model = model;
-	self->private->journal = g_strdup( journal );
+	self->private->ope_template = model;
+	self->private->ledger = g_strdup( ledger );
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -255,13 +255,13 @@ ofa_model_properties_run( ofaMainWindow *main_window, ofoModel *model, const gch
 static void
 v_init_dialog( myDialog *dialog )
 {
-	ofaModelProperties *self;
-	ofaModelPropertiesPrivate *priv;
+	ofaOpeTemplateProperties *self;
+	ofaOpeTemplatePropertiesPrivate *priv;
 	ofaJournalComboParms parms;
 	const gchar *mnemo;
 	GtkWindow *toplevel;
 
-	self = OFA_MODEL_PROPERTIES( dialog );
+	self = OFA_OPE_TEMPLATE_PROPERTIES( dialog );
 	priv = self->private;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
@@ -269,25 +269,25 @@ v_init_dialog( myDialog *dialog )
 	init_dialog_mnemo( self );
 	init_dialog_label( self );
 
-	mnemo = ofo_model_get_mnemo( priv->model );
+	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
 	priv->is_new = !mnemo || !g_utf8_strlen( mnemo, -1 );
 
 	parms.container = GTK_CONTAINER( toplevel );
 	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
-	parms.combo_name = "p1-journal";
+	parms.combo_name = "p1-ledger";
 	parms.label_name = NULL;
 	parms.disp_mnemo = TRUE;
 	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaJournalComboCb ) on_journal_changed;
+	parms.pfnSelected = ( ofaJournalComboCb ) on_ledger_changed;
 	parms.user_data = self;
-	parms.initial_mnemo = priv->is_new ? priv->journal : ofo_model_get_journal( priv->model );
+	parms.initial_mnemo = priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template );
 
-	priv->journal_combo = ofa_journal_combo_new( &parms );
+	priv->ledger_combo = ofa_journal_combo_new( &parms );
 
-	init_dialog_journal_locked( self );
+	init_dialog_ledger_locked( self );
 
-	my_utils_init_notes_ex( toplevel, model );
-	my_utils_init_maj_user_stamp_ex( toplevel, model );
+	my_utils_init_notes_ex( toplevel, ope_template );
+	my_utils_init_upd_user_stamp_ex( toplevel, ope_template );
 
 	init_dialog_detail( self );
 	check_for_enable_dlg( self );
@@ -298,19 +298,19 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-init_dialog_title( ofaModelProperties *self )
+init_dialog_title( ofaOpeTemplateProperties *self )
 {
-	ofaModelPropertiesPrivate *priv;
+	ofaOpeTemplatePropertiesPrivate *priv;
 	const gchar *mnemo;
 	gchar *title;
 
 	priv = self->private;
-	mnemo = ofo_model_get_mnemo( priv->model );
+	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
 
 	if( !mnemo ){
-		title = g_strdup( _( "Defining a new entry model" ));
+		title = g_strdup( _( "Defining a new entry template" ));
 	} else {
-		title = g_strdup_printf( _( "Updating « %s » entry model" ), mnemo );
+		title = g_strdup_printf( _( "Updating « %s » entry template" ), mnemo );
 	}
 
 	gtk_window_set_title( my_window_get_toplevel( MY_WINDOW( self )), title );
@@ -318,14 +318,14 @@ init_dialog_title( ofaModelProperties *self )
 }
 
 static void
-init_dialog_mnemo( ofaModelProperties *self )
+init_dialog_mnemo( ofaOpeTemplateProperties *self )
 {
-	ofaModelPropertiesPrivate *priv;
+	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkEntry *entry;
 
 	priv = self->private;
 
-	priv->mnemo = g_strdup( ofo_model_get_mnemo( priv->model ));
+	priv->mnemo = g_strdup( ofo_ope_template_get_mnemo( priv->ope_template ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-mnemo" ));
 	if( priv->mnemo ){
@@ -336,14 +336,14 @@ init_dialog_mnemo( ofaModelProperties *self )
 }
 
 static void
-init_dialog_label( ofaModelProperties *self )
+init_dialog_label( ofaOpeTemplateProperties *self )
 {
-	ofaModelPropertiesPrivate *priv;
+	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkEntry *entry;
 
 	priv = self->private;
 
-	priv->label = g_strdup( ofo_model_get_label( priv->model ));
+	priv->label = g_strdup( ofo_ope_template_get_label( priv->ope_template ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-label" ));
 	if( priv->label ){
@@ -354,28 +354,28 @@ init_dialog_label( ofaModelProperties *self )
 }
 
 static void
-init_dialog_journal_locked( ofaModelProperties *self )
+init_dialog_ledger_locked( ofaOpeTemplateProperties *self )
 {
-	ofaModelPropertiesPrivate *priv;
+	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkToggleButton *btn;
 
 	priv = self->private;
 
-	priv->journal_locked = ofo_model_get_journal_locked( priv->model );
+	priv->ledger_locked = ofo_ope_template_get_ledger_locked( priv->ope_template );
 	btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-jou-locked" ));
-	gtk_toggle_button_set_active( btn, priv->journal_locked );
+	gtk_toggle_button_set_active( btn, priv->ledger_locked );
 
-	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_journal_locked_toggled ), self );
+	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ledger_locked_toggled ), self );
 }
 
 /*
  * add one line per detail record
  */
 static void
-init_dialog_detail( ofaModelProperties *self )
+init_dialog_detail( ofaOpeTemplateProperties *self )
 {
-	ofaModelPropertiesPrivate *priv;
+	ofaOpeTemplatePropertiesPrivate *priv;
 	gint count, i;
 
 	priv = self->private;
@@ -385,14 +385,14 @@ init_dialog_detail( ofaModelProperties *self )
 	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
 
 	add_button( self, GTK_STOCK_ADD, DET_COL_ADD, 1, DETAIL_SPACE, 0 );
-	count = ofo_model_get_detail_count( self->private->model );
+	count = ofo_ope_template_get_detail_count( self->private->ope_template );
 	for( i=1 ; i<=count ; ++i ){
 		insert_new_row( self, i );
 	}
 }
 
 static void
-insert_new_row( ofaModelProperties *self, gint row )
+insert_new_row( ofaOpeTemplateProperties *self, gint row )
 {
 	GtkEntry *entry;
 	GtkToggleButton *toggle;
@@ -402,40 +402,40 @@ insert_new_row( ofaModelProperties *self, gint row )
 	row = self->private->count;
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_COMMENT, row ));
-	str = ofo_model_get_detail_comment( self->private->model, row-1 );
+	str = ofo_ope_template_get_detail_comment( self->private->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT, row ));
-	str = ofo_model_get_detail_account( self->private->model, row-1 );
+	str = ofo_ope_template_get_detail_account( self->private->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT_VER, row ));
-	gtk_toggle_button_set_active( toggle, ofo_model_get_detail_account_locked( self->private->model, row-1 ));
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT_LOCKED, row ));
+	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_account_locked( self->private->ope_template, row-1 ));
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL, row ));
-	str = ofo_model_get_detail_label( self->private->model, row-1 );
+	str = ofo_ope_template_get_detail_label( self->private->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL_VER, row ));
-	gtk_toggle_button_set_active( toggle, ofo_model_get_detail_label_locked( self->private->model, row-1 ));
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL_LOCKED, row ));
+	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_label_locked( self->private->ope_template, row-1 ));
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT, row ));
-	str = ofo_model_get_detail_debit( self->private->model, row-1 );
+	str = ofo_ope_template_get_detail_debit( self->private->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT_VER, row ));
-	gtk_toggle_button_set_active( toggle, ofo_model_get_detail_debit_locked( self->private->model, row-1 ));
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT_LOCKED, row ));
+	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_debit_locked( self->private->ope_template, row-1 ));
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT, row ));
-	str = ofo_model_get_detail_credit( self->private->model, row-1 );
+	str = ofo_ope_template_get_detail_credit( self->private->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
 
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT_VER, row ));
-	gtk_toggle_button_set_active( toggle, ofo_model_get_detail_credit_locked( self->private->model, row-1 ));
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT_LOCKED, row ));
+	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_credit_locked( self->private->ope_template, row-1 ));
 }
 
 static void
-add_empty_row( ofaModelProperties *self )
+add_empty_row( ofaOpeTemplateProperties *self )
 {
 	gint row;
 	GtkWidget *widget;
@@ -455,7 +455,7 @@ add_empty_row( ofaModelProperties *self )
 	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_width_chars( entry, 3 );
-	gtk_grid_attach( self->private->grid, GTK_WIDGET( entry ), DET_COL_RANG, row, 1, 1 );
+	gtk_grid_attach( self->private->grid, GTK_WIDGET( entry ), DET_COL_ROW, row, 1, 1 );
 	str = g_strdup_printf( "%d", row );
 	gtk_entry_set_text( entry, str );
 	g_free( str );
@@ -478,7 +478,7 @@ add_empty_row( ofaModelProperties *self )
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( self->private->grid, toggle, DET_COL_ACCOUNT_VER, row, 1, 1 );
+	gtk_grid_attach( self->private->grid, toggle, DET_COL_ACCOUNT_LOCKED, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -490,7 +490,7 @@ add_empty_row( ofaModelProperties *self )
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( self->private->grid, toggle, DET_COL_LABEL_VER, row, 1, 1 );
+	gtk_grid_attach( self->private->grid, toggle, DET_COL_LABEL_LOCKED, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -501,7 +501,7 @@ add_empty_row( ofaModelProperties *self )
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( self->private->grid, toggle, DET_COL_DEBIT_VER, row, 1, 1 );
+	gtk_grid_attach( self->private->grid, toggle, DET_COL_DEBIT_LOCKED, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -512,7 +512,7 @@ add_empty_row( ofaModelProperties *self )
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( self->private->grid, toggle, DET_COL_CREDIT_VER, row, 1, 1 );
+	gtk_grid_attach( self->private->grid, toggle, DET_COL_CREDIT_LOCKED, row, 1, 1 );
 
 	add_button( self, GTK_STOCK_GO_UP, DET_COL_UP, row, DETAIL_SPACE, 0 );
 	add_button( self, GTK_STOCK_GO_DOWN, DET_COL_DOWN, row, DETAIL_SPACE, 0 );
@@ -526,7 +526,7 @@ add_empty_row( ofaModelProperties *self )
 }
 
 static void
-add_button( ofaModelProperties *self, const gchar *stock_id, gint column, gint row, gint left_margin, gint right_margin )
+add_button( ofaOpeTemplateProperties *self, const gchar *stock_id, gint column, gint row, gint left_margin, gint right_margin )
 {
 	GtkWidget *image;
 	GtkButton *button;
@@ -543,7 +543,7 @@ add_button( ofaModelProperties *self, const gchar *stock_id, gint column, gint r
 }
 
 static void
-update_detail_buttons( ofaModelProperties *self )
+update_detail_buttons( ofaOpeTemplateProperties *self )
 {
 	GtkWidget *button;
 
@@ -570,19 +570,19 @@ update_detail_buttons( ofaModelProperties *self )
 }
 
 static void
-signal_row_added( ofaModelProperties *self )
+signal_row_added( ofaOpeTemplateProperties *self )
 {
 	update_detail_buttons( self );
 }
 
 static void
-signal_row_removed( ofaModelProperties *self )
+signal_row_removed( ofaOpeTemplateProperties *self )
 {
 	update_detail_buttons( self );
 }
 
 static void
-on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self )
+on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self )
 {
 	g_free( self->private->mnemo );
 	self->private->mnemo = g_strdup( gtk_entry_get_text( entry ));
@@ -591,7 +591,7 @@ on_mnemo_changed( GtkEntry *entry, ofaModelProperties *self )
 }
 
 static void
-on_label_changed( GtkEntry *entry, ofaModelProperties *self )
+on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self )
 {
 	g_free( self->private->label );
 	self->private->label = g_strdup( gtk_entry_get_text( entry ));
@@ -600,25 +600,25 @@ on_label_changed( GtkEntry *entry, ofaModelProperties *self )
 }
 
 static void
-on_journal_changed( const gchar *mnemo, ofaModelProperties *self )
+on_ledger_changed( const gchar *mnemo, ofaOpeTemplateProperties *self )
 {
-	g_return_if_fail( self && OFA_IS_MODEL_PROPERTIES( self ));
+	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_PROPERTIES( self ));
 
-	g_free( self->private->journal );
-	self->private->journal = g_strdup( mnemo );
+	g_free( self->private->ledger );
+	self->private->ledger = g_strdup( mnemo );
 
 	check_for_enable_dlg( self );
 }
 
 static void
-on_journal_locked_toggled( GtkToggleButton *btn, ofaModelProperties *self )
+on_ledger_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 {
-	self->private->journal_locked = gtk_toggle_button_get_active( btn );
+	self->private->ledger_locked = gtk_toggle_button_get_active( btn );
 	check_for_enable_dlg( self );
 }
 
 static void
-on_account_selection( ofaModelProperties *self, gint row )
+on_account_selection( ofaOpeTemplateProperties *self, gint row )
 {
 	GtkEntry *entry;
 	gchar *number;
@@ -634,7 +634,7 @@ on_account_selection( ofaModelProperties *self, gint row )
 }
 
 static void
-exchange_rows( ofaModelProperties *self, gint row_a, gint row_b )
+exchange_rows( ofaOpeTemplateProperties *self, gint row_a, gint row_b )
 {
 	gint i;
 	GtkWidget *w_a, *w_b;
@@ -663,9 +663,9 @@ exchange_rows( ofaModelProperties *self, gint row_a, gint row_b )
 }
 
 static void
-on_button_clicked( GtkButton *button, ofaModelProperties *self )
+on_button_clicked( GtkButton *button, ofaOpeTemplateProperties *self )
 {
-	/*static const gchar *thisfn = "ofa_model_properties_on_button_clicked";*/
+	/*static const gchar *thisfn = "ofa_ope_template_properties_on_button_clicked";*/
 	gint column, row;
 
 	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_COLUMN ));
@@ -693,7 +693,7 @@ on_button_clicked( GtkButton *button, ofaModelProperties *self )
 }
 
 static void
-remove_row( ofaModelProperties *self, gint row )
+remove_row( ofaOpeTemplateProperties *self, gint row )
 {
 	gint i, line;
 	GtkWidget *widget;
@@ -719,7 +719,7 @@ remove_row( ofaModelProperties *self, gint row )
 		}
 		if( line <= self->private->count ){
 			/* update the rang number on each moved line */
-			entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_RANG, line-1 ));
+			entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_ROW, line-1 ));
 			str = g_strdup_printf( "%d", line-1 );
 			gtk_entry_set_text( entry, str );
 			g_free( str );
@@ -736,7 +736,7 @@ remove_row( ofaModelProperties *self, gint row )
  * we accept to save uncomplete detail lines
  */
 static void
-check_for_enable_dlg( ofaModelProperties *self )
+check_for_enable_dlg( ofaOpeTemplateProperties *self )
 {
 	GtkWidget *button;
 	gboolean ok;
@@ -753,22 +753,22 @@ check_for_enable_dlg( ofaModelProperties *self )
  * we accept to save uncomplete detail lines
  */
 static gboolean
-is_dialog_validable( ofaModelProperties *self )
+is_dialog_validable( ofaOpeTemplateProperties *self )
 {
-	ofaModelPropertiesPrivate *priv;
-	ofoModel *exists;
+	ofaOpeTemplatePropertiesPrivate *priv;
+	ofoOpeTemplate *exists;
 	gboolean ok;
 
 	priv = self->private;
 
-	ok = ofo_model_is_valid( priv->mnemo, priv->label, priv->journal );
+	ok = ofo_ope_template_is_valid( priv->mnemo, priv->label, priv->ledger );
 
 	if( ok ){
-		exists = ofo_model_get_by_mnemo(
+		exists = ofo_ope_template_get_by_mnemo(
 						MY_WINDOW( self )->protected->dossier,
 						priv->mnemo );
 		ok &= !exists ||
-				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_model_get_mnemo( priv->model )));
+				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ope_template_get_mnemo( priv->ope_template )));
 	}
 
 	return( ok );
@@ -780,17 +780,17 @@ is_dialog_validable( ofaModelProperties *self )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	return( do_update( OFA_MODEL_PROPERTIES( dialog )));
+	return( do_update( OFA_OPE_TEMPLATE_PROPERTIES( dialog )));
 }
 
 static gboolean
-do_update( ofaModelProperties *self )
+do_update( ofaOpeTemplateProperties *self )
 {
-	ofaModelPropertiesPrivate *priv;
+	ofaOpeTemplatePropertiesPrivate *priv;
 	gchar *prev_mnemo;
 	gint i;
 
-	prev_mnemo = g_strdup( ofo_model_get_mnemo( self->private->model ));
+	prev_mnemo = g_strdup( ofo_ope_template_get_mnemo( self->private->ope_template ));
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->private;
@@ -798,23 +798,23 @@ do_update( ofaModelProperties *self )
 	/* le nouveau mnemo n'est pas encore utilisé,
 	 * ou bien il est déjà utilisé par ce même model (n'a pas été modifié)
 	 */
-	ofo_model_set_mnemo( priv->model, priv->mnemo );
-	ofo_model_set_label( priv->model, priv->label );
-	ofo_model_set_journal( priv->model, priv->journal );
-	ofo_model_set_journal_locked( priv->model, priv->journal_locked );
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), model );
+	ofo_ope_template_set_mnemo( priv->ope_template, priv->mnemo );
+	ofo_ope_template_set_label( priv->ope_template, priv->label );
+	ofo_ope_template_set_ledger( priv->ope_template, priv->ledger );
+	ofo_ope_template_set_ledger_locked( priv->ope_template, priv->ledger_locked );
+	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), ope_template );
 
-	ofo_model_free_detail_all( priv->model );
+	ofo_ope_template_free_detail_all( priv->ope_template );
 	for( i=1 ; i<=priv->count ; ++i ){
 		get_detail_list( self, i );
 	}
 
 	if( !prev_mnemo ){
 		priv->updated =
-				ofo_model_insert( priv->model );
+				ofo_ope_template_insert( priv->ope_template );
 	} else {
 		priv->updated =
-				ofo_model_update( priv->model, prev_mnemo );
+				ofo_ope_template_update( priv->ope_template, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );
@@ -823,7 +823,7 @@ do_update( ofaModelProperties *self )
 }
 
 static void
-get_detail_list( ofaModelProperties *self, gint row )
+get_detail_list( ofaOpeTemplateProperties *self, gint row )
 {
 	GtkEntry *entry;
 	GtkToggleButton *toggle;
@@ -836,28 +836,28 @@ get_detail_list( ofaModelProperties *self, gint row )
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT, row ));
 	account = gtk_entry_get_text( entry );
 
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT_VER, row ));
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_ACCOUNT_LOCKED, row ));
 	account_locked = gtk_toggle_button_get_active( toggle );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL, row ));
 	label = gtk_entry_get_text( entry );
 
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL_VER, row ));
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_LABEL_LOCKED, row ));
 	label_locked = gtk_toggle_button_get_active( toggle );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT, row ));
 	debit = gtk_entry_get_text( entry );
 
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT_VER, row ));
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_DEBIT_LOCKED, row ));
 	debit_locked = gtk_toggle_button_get_active( toggle );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT, row ));
 	credit = gtk_entry_get_text( entry );
 
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT_VER, row ));
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->private->grid, DET_COL_CREDIT_LOCKED, row ));
 	credit_locked = gtk_toggle_button_get_active( toggle );
 
-	ofo_model_add_detail( self->private->model,
+	ofo_ope_template_add_detail( self->private->ope_template,
 				comment,
 				account, account_locked,
 				label, label_locked,

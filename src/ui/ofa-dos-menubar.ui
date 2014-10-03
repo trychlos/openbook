@@ -110,8 +110,8 @@
           <attribute name="action">win.journals</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">Entry _Models...</attribute>
-          <attribute name="action">win.models</attribute>
+          <attribute name="label" translatable="yes">Operation templates...</attribute>
+          <attribute name="action">win.ope-templates</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_Currencies...</attribute>

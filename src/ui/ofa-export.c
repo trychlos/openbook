@@ -39,7 +39,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
-#include "api/ofo-model.h"
+#include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
 #include "ui/ofa-export.h"
@@ -136,7 +136,7 @@ static const ExportDatas st_export_datas[] = {
 		{ TYPE_ACCOUNT, "/tmp/accounts.csv",   ofo_account_get_csv },
 		{ TYPE_DEVISE,  "/tmp/currencies.csv", ofo_devise_get_csv },
 		{ TYPE_JOURNAL, "/tmp/journals.csv",   ofo_journal_get_csv },
-		{ TYPE_MODEL,   "/tmp/models.csv",     ofo_model_get_csv },
+		{ TYPE_MODEL,   "/tmp/models.csv",     ofo_ope_template_get_csv },
 		{ TYPE_RATE,    "/tmp/rates.csv",      ofo_rate_get_csv },
 		{ TYPE_DOSSIER, "/tmp/dossier.csv",    ofo_dossier_get_csv },
 		{ TYPE_ENTRY,   "/tmp/entries.csv",    ofo_entry_get_csv },

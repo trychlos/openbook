@@ -38,7 +38,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
-#include "api/ofo-model.h"
+#include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
 #include "core/my-window-prot.h"
@@ -61,7 +61,7 @@ struct _ofaGuidedCommonPrivate {
 
 	/* when selecting a model
 	 */
-	const ofoModel  *model;
+	const ofoOpeTemplate  *model;
 
 	/* data
 	 */
@@ -107,8 +107,8 @@ enum {
 typedef struct {
 	gint	        column_id;
 	gchar          *letter;
-	const gchar * (*get_label)( const ofoModel *, gint );
-	gboolean      (*is_locked)( const ofoModel *, gint );
+	const gchar * (*get_label)( const ofoOpeTemplate *, gint );
+	gboolean      (*is_locked)( const ofoOpeTemplate *, gint );
 	gint            width;
 	float           xalign;
 	gboolean        expand;
@@ -130,24 +130,24 @@ typedef struct {
 static sColumnDef st_col_defs[] = {
 		{ COL_ACCOUNT,
 				"A",
-				ofo_model_get_detail_account,
-				ofo_model_get_detail_account_locked, 10,            0, FALSE, FALSE },
+				ofo_ope_template_get_detail_account,
+				ofo_ope_template_get_detail_account_locked, 10,            0, FALSE, FALSE },
 		{ COL_ACCOUNT_SELECT,
 				NULL,
 				NULL,
 				NULL, 0, 0, FALSE },
 		{ COL_LABEL,
 				"L",
-				ofo_model_get_detail_label,
-				ofo_model_get_detail_label_locked,   20,            0, TRUE,  FALSE },
+				ofo_ope_template_get_detail_label,
+				ofo_ope_template_get_detail_label_locked,   20,            0, TRUE,  FALSE },
 		{ COL_DEBIT,
 				"D",
-				ofo_model_get_detail_debit,
-				ofo_model_get_detail_debit_locked,   AMOUNTS_WIDTH, 1, FALSE, TRUE },
+				ofo_ope_template_get_detail_debit,
+				ofo_ope_template_get_detail_debit_locked,   AMOUNTS_WIDTH, 1, FALSE, TRUE },
 		{ COL_CREDIT,
 				"C",
-				ofo_model_get_detail_credit,
-				ofo_model_get_detail_credit_locked,  AMOUNTS_WIDTH, 1, FALSE, TRUE },
+				ofo_ope_template_get_detail_credit,
+				ofo_ope_template_get_detail_credit_locked,  AMOUNTS_WIDTH, 1, FALSE, TRUE },
 		{ 0 }
 };
 
@@ -441,13 +441,13 @@ setup_misc( ofaGuidedCommon *self )
  * ofa_guided_common_set_model:
  */
 void
-ofa_guided_common_set_model( ofaGuidedCommon *self, const ofoModel *model )
+ofa_guided_common_set_model( ofaGuidedCommon *self, const ofoOpeTemplate *model )
 {
 	ofaGuidedCommonPrivate *priv;
 	gint i;
 
 	g_return_if_fail( self && OFA_IS_GUIDED_COMMON( self ));
-	g_return_if_fail( model && OFO_IS_MODEL( model ));
+	g_return_if_fail( model && OFO_IS_OPE_TEMPLATE( model ));
 
 	priv = self->private;
 
@@ -476,13 +476,13 @@ init_journal_combo( ofaGuidedCommon *self )
 	GtkWidget *combo;
 
 	priv = self->private;
-	priv->journal = g_strdup( ofo_model_get_journal( priv->model ));
+	priv->journal = g_strdup( ofo_ope_template_get_ledger( priv->model ));
 
 	ofa_journal_combo_set_selection( priv->journal_combo, priv->journal );
 
 	combo = my_utils_container_get_child_by_name( priv->parent, "p1-journal" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
-	gtk_widget_set_sensitive( combo, !ofo_model_get_journal_locked( priv->model ));
+	gtk_widget_set_sensitive( combo, !ofo_ope_template_get_ledger_locked( priv->model ));
 }
 
 static void
@@ -491,7 +491,7 @@ setup_model_data( ofaGuidedCommon *self )
 	ofaGuidedCommonPrivate *priv;
 
 	priv = self->private;
-	gtk_label_set_text( priv->model_label, ofo_model_get_label( priv->model ));
+	gtk_label_set_text( priv->model_label, ofo_ope_template_get_label( priv->model ));
 }
 
 static void
@@ -504,7 +504,7 @@ setup_entries_grid( ofaGuidedCommon *self )
 
 	priv = self->private;
 
-	count = ofo_model_get_detail_count( priv->model );
+	count = ofo_ope_template_get_detail_count( priv->model );
 	for( i=0 ; i<count ; ++i ){
 		add_entry_row( self, i );
 	}
@@ -591,7 +591,7 @@ add_entry_row_set( ofaGuidedCommon *self, gint col_id, gint row )
 
 	str = (*col_def->get_label)( self->private->model, row-1 );
 
-	if( str && !ofo_model_detail_is_formula( str )){
+	if( str && !ofo_ope_template_detail_is_formula( str )){
 		gtk_entry_set_text( entry, str );
 	}
 
@@ -806,7 +806,7 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 
 	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
 	if( row > 0 ){
-		comment = ofo_model_get_detail_comment( self->private->model, row-1 );
+		comment = ofo_ope_template_get_detail_comment( self->private->model, row-1 );
 		set_comment( self, comment ? comment : "" );
 	}
 
@@ -1027,13 +1027,13 @@ update_all_formulas( ofaGuidedCommon *self )
 	priv = self->private;
 
 	if( priv->model ){
-		count = ofo_model_get_detail_count( priv->model );
+		count = ofo_ope_template_get_detail_count( priv->model );
 		for( idx=0 ; idx<count ; ++idx ){
 			for( col_id=FIRST_COLUMN ; col_id<N_COLUMNS ; ++col_id ){
 				col_def = find_column_def_from_col_id( self, col_id );
 				if( col_def && col_def->get_label ){
 					str = ( *col_def->get_label )( priv->model, idx );
-					if( ofo_model_detail_is_formula( str )){
+					if( ofo_ope_template_detail_is_formula( str )){
 						entry = gtk_grid_get_child_at( priv->entries_grid, col_id, idx+1 );
 						if( entry && GTK_IS_ENTRY( entry )){
 							update_formula( self, str, GTK_ENTRY( entry ));
@@ -1179,7 +1179,7 @@ formula_compute_solde( ofaGuidedCommon *self, GtkEntry *entry )
 	col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
 	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
 
-	count = ofo_model_get_detail_count( self->private->model );
+	count = ofo_ope_template_get_detail_count( self->private->model );
 	csold = 0.0;
 	dsold = 0.0;
 	for( idx=0 ; idx<count ; ++idx ){
@@ -1227,7 +1227,7 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 	row = atoi( token+1 );
 	amount = 0;
 
-	if( row > 0 && row <= ofo_model_get_detail_count( priv->model )){
+	if( row > 0 && row <= ofo_ope_template_get_detail_count( priv->model )){
 		col_def = find_column_def_from_letter( self, init );
 		if( col_def ){
 			widget = gtk_grid_get_child_at( priv->entries_grid, col_def->column_id, row );
@@ -1296,7 +1296,7 @@ update_all_totals( ofaGuidedCommon *self )
 	priv = self->private;
 
 	if( priv->model ){
-		count = ofo_model_get_detail_count( priv->model );
+		count = ofo_ope_template_get_detail_count( priv->model );
 		dsold = 0.0;
 		csold = 0.0;
 		for( idx=0 ; idx<count ; ++idx ){
@@ -1443,7 +1443,7 @@ check_for_all_entries( ofaGuidedCommon *self )
 	priv = self->private;
 
 	if( priv->model ){
-		count = ofo_model_get_detail_count( priv->model );
+		count = ofo_ope_template_get_detail_count( priv->model );
 
 		for( idx=0 ; idx<count ; ++idx ){
 			deb = get_amount( self, COL_DEBIT, idx+1 );
@@ -1574,7 +1574,7 @@ do_validate( ofaGuidedCommon *self )
 		piece = gtk_entry_get_text( GTK_ENTRY( entry ));
 	}
 
-	count = ofo_model_get_detail_count( priv->model );
+	count = ofo_ope_template_get_detail_count( priv->model );
 	entries = NULL;
 	errors = 0;
 	ok = FALSE;
@@ -1726,9 +1726,9 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
 			prev_id,
 			( void * ) self );
 
-	if( OFO_IS_MODEL( object )){
-		if( OFO_MODEL( object ) == self->private->model ){
-			ofa_guided_common_set_model( self, OFO_MODEL( object ));
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		if( OFO_OPE_TEMPLATE( object ) == self->private->model ){
+			ofa_guided_common_set_model( self, OFO_OPE_TEMPLATE( object ));
 		}
 	}
 }
@@ -1748,8 +1748,8 @@ on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedCo
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_MODEL( object )){
-		if( OFO_MODEL( object ) == self->private->model ){
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		if( OFO_OPE_TEMPLATE( object ) == self->private->model ){
 
 			for( i=0 ; i < self->private->entries_count ; ++i ){
 				remove_entry_row( self, i );

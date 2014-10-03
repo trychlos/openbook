@@ -37,7 +37,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-model.h"
+#include "api/ofo-ope-template.h"
 #include "api/ofo-sgbd.h"
 #include "api/ofo-rate.h"
 
@@ -574,7 +574,7 @@ ofo_rate_is_deletable( const ofoRate *rate )
 
 		dossier = OFO_DOSSIER( st_global->dossier );
 
-		return( !ofo_model_use_rate( dossier, ofo_rate_get_mnemo( rate )));
+		return( !ofo_ope_template_use_rate( dossier, ofo_rate_get_mnemo( rate )));
 	}
 
 	g_assert_not_reached();

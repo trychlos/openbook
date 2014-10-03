@@ -24,13 +24,13 @@
  * $Id$
  */
 
-#ifndef __OFA_MODEL_PROPERTIES_H__
-#define __OFA_MODEL_PROPERTIES_H__
+#ifndef __OFA_OPE_TEMPLATE_PROPERTIES_H__
+#define __OFA_OPE_TEMPLATE_PROPERTIES_H__
 
 /**
- * SECTION: ofa_model_properties
- * @short_description: #ofaModelProperties class definition.
- * @include: ui/ofa-model-properties.h
+ * SECTION: ofa_ope_template_properties
+ * @short_description: #ofaOpeTemplateProperties class definition.
+ * @include: ui/ofa-entry-template-properties.h
  *
  * Update the model properties.
  *
@@ -68,38 +68,38 @@
  *   value than those of the previous row, same column.
  */
 
-#include "api/ofo-model-def.h"
+#include "api/ofo-ope-template-def.h"
 
 #include "core/my-dialog.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_MODEL_PROPERTIES                ( ofa_model_properties_get_type())
-#define OFA_MODEL_PROPERTIES( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MODEL_PROPERTIES, ofaModelProperties ))
-#define OFA_MODEL_PROPERTIES_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MODEL_PROPERTIES, ofaModelPropertiesClass ))
-#define OFA_IS_MODEL_PROPERTIES( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MODEL_PROPERTIES ))
-#define OFA_IS_MODEL_PROPERTIES_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MODEL_PROPERTIES ))
-#define OFA_MODEL_PROPERTIES_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MODEL_PROPERTIES, ofaModelPropertiesClass ))
+#define OFA_TYPE_OPE_TEMPLATE_PROPERTIES                ( ofa_ope_template_properties_get_type())
+#define OFA_OPE_TEMPLATE_PROPERTIES( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_OPE_TEMPLATE_PROPERTIES, ofaOpeTemplateProperties ))
+#define OFA_OPE_TEMPLATE_PROPERTIES_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_OPE_TEMPLATE_PROPERTIES, ofaOpeTemplatePropertiesClass ))
+#define OFA_IS_OPE_TEMPLATE_PROPERTIES( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_OPE_TEMPLATE_PROPERTIES ))
+#define OFA_IS_OPE_TEMPLATE_PROPERTIES_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPE_TEMPLATE_PROPERTIES ))
+#define OFA_OPE_TEMPLATE_PROPERTIES_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPE_TEMPLATE_PROPERTIES, ofaOpeTemplatePropertiesClass ))
 
-typedef struct _ofaModelPropertiesPrivate        ofaModelPropertiesPrivate;
+typedef struct _ofaOpeTemplatePropertiesPrivate         ofaOpeTemplatePropertiesPrivate;
 
 typedef struct {
 	/*< private >*/
-	myDialog                   parent;
-	ofaModelPropertiesPrivate *private;
+	myDialog                         parent;
+	ofaOpeTemplatePropertiesPrivate *private;
 }
-	ofaModelProperties;
+	ofaOpeTemplateProperties;
 
 typedef struct {
 	/*< private >*/
 	myDialogClass parent;
 }
-	ofaModelPropertiesClass;
+	ofaOpeTemplatePropertiesClass;
 
-GType    ofa_model_properties_get_type( void ) G_GNUC_CONST;
+GType    ofa_ope_template_properties_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_model_properties_run     ( ofaMainWindow *parent, ofoModel *model, const gchar *journal );
+gboolean ofa_ope_template_properties_run     ( ofaMainWindow *parent, ofoOpeTemplate *model, const gchar *journal );
 
 G_END_DECLS
 
-#endif /* __OFA_MODEL_PROPERTIES_H__ */
+#endif /* __OFA_OPE_TEMPLATE_PROPERTIES_H__ */

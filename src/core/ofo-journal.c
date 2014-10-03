@@ -41,7 +41,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
-#include "api/ofo-model.h"
+#include "api/ofo-ope-template.h"
 #include "api/ofo-sgbd.h"
 
 /* priv instance data
@@ -1043,7 +1043,7 @@ ofo_journal_is_deletable( const ofoJournal *journal, const ofoDossier *dossier )
 		mnemo = ofo_journal_get_mnemo( journal );
 
 		ok &= !ofo_entry_use_journal( dossier, mnemo ) &&
-				!ofo_model_use_journal( dossier, mnemo );
+				!ofo_ope_template_use_ledger( dossier, mnemo );
 
 		return( ok );
 	}
