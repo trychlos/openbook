@@ -83,6 +83,7 @@ static ofoEntry    *entry_parse_result( const GSList *row );
 static gint         entry_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
 static gint         entry_count_for_journal( const ofoSgbd *sgbd, const gchar *journal );
 static gint         entry_count_for_ope_template( const ofoSgbd *sgbd, const gchar *model );
+static gint         entry_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
 static gboolean     entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 static void         error_journal( const gchar *journal );
 static void         error_ope_template( const gchar *model );
@@ -628,26 +629,7 @@ ofo_entry_use_devise( const ofoDossier *dossier, const gchar *devise )
 static gint
 entry_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
 {
-	gint count;
-	gchar *query;
-	GSList *result, *icol;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_ECRITURES "
-				"	WHERE ECR_DEV_CODE='%s'",
-					devise );
-
-	count = 0;
-	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
-	g_free( query );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		count = atoi(( gchar * ) icol->data );
-		ofo_sgbd_free_result( result );
-	}
-
-	return( count );
+	return( entry_count_for( sgbd, "ECR_DEV_CODE", devise ));
 }
 
 /**
@@ -666,26 +648,7 @@ ofo_entry_use_journal( const ofoDossier *dossier, const gchar *journal )
 static gint
 entry_count_for_journal( const ofoSgbd *sgbd, const gchar *journal )
 {
-	gint count;
-	gchar *query;
-	GSList *result, *icol;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_ECRITURES "
-				"	WHERE ECR_JOU_MNEMO='%s'",
-					journal );
-
-	count = 0;
-	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
-	g_free( query );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		count = atoi(( gchar * ) icol->data );
-		ofo_sgbd_free_result( result );
-	}
-
-	return( count );
+	return( entry_count_for( sgbd, "ECR_JOU_MNEMO", journal ));
 }
 
 /**
@@ -705,14 +668,19 @@ ofo_entry_use_ope_template( const ofoDossier *dossier, const gchar *model )
 static gint
 entry_count_for_ope_template( const ofoSgbd *sgbd, const gchar *model )
 {
+	return( entry_count_for( sgbd, "ECR_OTE_MNEMO", model ));
+}
+
+static gint
+entry_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo )
+{
 	gint count;
 	gchar *query;
 	GSList *result, *icol;
 
 	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_ECRITURES "
-				"	WHERE ECR_OTE_MNEMO='%s'",
-					model );
+				"SELECT COUNT(*) FROM OFA_T_ECRITURES WHERE %s='%s'",
+				field, mnemo );
 
 	count = 0;
 	result = ofo_sgbd_query_ex( sgbd, query, TRUE );

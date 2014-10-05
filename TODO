@@ -348,17 +348,6 @@
  314 2014- 9-26 have a preference to use millenary shortcut
                 (i.e. enter '14' give '2014')
 
- 315 2014-10- 3 the originating model should be kept in the generated
-                entries
-                - dossier_v1 - ok
-                - update entries when model mnemo changes - ok
-                - setter/getter - ok
-                - export entries - ok
-                - import entries - ok
-                - set model mnemos when generating entries - ok
-                - add in view_entries - postponed
-                - check ecritures before delete an ope template - ok
-
  316 2014-10- 4 ofo_entry.c: optimize entry_count_for_xxx() methods
 
  317 2014-10- 5 view_entries: let the user select an operation template
@@ -1269,6 +1258,18 @@
  309 2014- 9-13 when inserting into TAUX: TAX_VAL_DEB cannot be null
                 but should be allowed to
      2014- 9-15 done
+
+ 315 2014-10- 3 the originating model should be kept in the generated
+                entries
+                - dossier_v1 - ok
+                - update entries when model mnemo changes - ok
+                - setter/getter - ok
+                - export entries - ok
+                - import entries - ok
+                - set model mnemos when generating entries - ok
+                - add in view_entries - postponed
+                - check ecritures before delete an ope template - ok
+     2014-10- 5 done - svn #3882
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
