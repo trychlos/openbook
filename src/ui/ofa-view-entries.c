@@ -1982,7 +1982,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 
 	} else {
 		entry = ofo_entry_new_with_data( priv->dossier,
-					&dope, &deff, label, ref, account, devise, journal, debit, credit );
+					&dope, &deff, label, ref, account, devise, journal, NULL, debit, credit );
 		priv->inserted = entry;
 		ok = ofo_entry_insert( entry, priv->dossier );
 	}

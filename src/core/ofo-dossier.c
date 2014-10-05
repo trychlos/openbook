@@ -804,6 +804,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ECR_DEBIT        DECIMAL(15,5) DEFAULT 0  COMMENT 'Debiting amount',"
 			"	ECR_CREDIT       DECIMAL(15,5) DEFAULT 0  COMMENT 'Crediting amount',"
 			"	ECR_JOU_MNEMO    VARCHAR(6)               COMMENT 'Mnemonic identifier of the journal',"
+			"	ECR_OTE_MNEMO    VARCHAR(6)               COMMENT 'Mnemonic identifier of the operation template',"
 			"	ECR_STATUS       INTEGER       DEFAULT 1  COMMENT 'Is the entry validated or deleted ?',"
 			"	ECR_MAJ_USER     VARCHAR(20)              COMMENT 'User responsible of last update',"
 			"	ECR_MAJ_STAMP    TIMESTAMP                COMMENT 'Last update timestamp',"

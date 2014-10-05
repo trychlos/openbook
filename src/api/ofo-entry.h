@@ -103,6 +103,7 @@ void           ofo_entry_free_dataset    ( GList *dataset );
 
 gboolean       ofo_entry_use_devise      ( const ofoDossier *dossier, const gchar *devise );
 gboolean       ofo_entry_use_journal     ( const ofoDossier *dossier, const gchar *journal );
+gboolean       ofo_entry_use_ope_template( const ofoDossier *dossier, const gchar *model );
 
 gint           ofo_entry_get_number      ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_label       ( const ofoEntry *entry );
@@ -112,6 +113,7 @@ const gchar   *ofo_entry_get_ref         ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_account     ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_devise      ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_journal     ( const ofoEntry *entry );
+const gchar   *ofo_entry_get_ope_template( const ofoEntry *entry );
 gdouble        ofo_entry_get_debit       ( const ofoEntry *entry );
 gdouble        ofo_entry_get_credit      ( const ofoEntry *entry );
 ofaEntryStatus ofo_entry_get_status      ( const ofoEntry *entry );
@@ -129,6 +131,7 @@ void           ofo_entry_set_ref         ( ofoEntry *entry, const gchar *ref );
 void           ofo_entry_set_account     ( ofoEntry *entry, const gchar *number );
 void           ofo_entry_set_devise      ( ofoEntry *entry, const gchar *devise );
 void           ofo_entry_set_journal     ( ofoEntry *entry, const gchar *journal );
+void           ofo_entry_set_ope_template( ofoEntry *entry, const gchar *model );
 void           ofo_entry_set_debit       ( ofoEntry *entry, gdouble amount );
 void           ofo_entry_set_credit      ( ofoEntry *entry, gdouble amount );
 void           ofo_entry_set_status      ( ofoEntry *entry, ofaEntryStatus status );
@@ -142,14 +145,14 @@ gboolean       ofo_entry_is_valid        ( const ofoDossier *dossier,
 													const GDate *effet, const GDate *ope,
 													const gchar *label,
 													const gchar *account, const gchar *devise,
-													const gchar *journal,
+													const gchar *journal, const gchar *model,
 													gdouble debit, gdouble credit );
 
 ofoEntry      *ofo_entry_new_with_data   ( const ofoDossier *dossier,
 													const GDate *effet, const GDate *ope,
 													const gchar *label, const gchar *ref,
 													const gchar *account, const gchar *devise,
-													const gchar *journal,
+													const gchar *journal, const gchar *model,
 													gdouble debit, gdouble credit );
 
 gboolean       ofo_entry_insert             ( ofoEntry *entry, ofoDossier *dossier );

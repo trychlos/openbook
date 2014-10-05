@@ -350,10 +350,18 @@
 
  315 2014-10- 3 the originating model should be kept in the generated
                 entries
+                - dossier_v1 - ok
+                - update entries when model mnemo changes - ok
+                - setter/getter - ok
+                - export entries - ok
+                - import entries - ok
+                - set model mnemos when generating entries - ok
+                - add in view_entries - postponed
+                - check ecritures before delete an ope template - ok
 
- 316
+ 316 2014-10- 4 ofo_entry.c: optimize entry_count_for_xxx() methods
 
- 317 
+ 317 2014-10- 5 view_entries: let the user select an operation template
 
  318
 

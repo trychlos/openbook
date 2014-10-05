@@ -35,6 +35,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
 #include "api/ofo-journal.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
@@ -788,11 +789,15 @@ ofo_ope_template_get_upd_stamp( const ofoOpeTemplate *model )
 gboolean
 ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 {
+	ofoDossier *dossier;
+
 	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( model ), NULL );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( TRUE );
+		dossier = OFO_DOSSIER( st_global->dossier );
+
+		return( !ofo_entry_use_ope_template( dossier, ofo_ope_template_get_mnemo( model )));
 	}
 
 	return( FALSE );

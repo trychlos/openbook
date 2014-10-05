@@ -1650,6 +1650,7 @@ entry_from_detail( ofaGuidedCommon *self, gint row, const gchar *piece )
 					piece, account_number,
 					ofo_account_get_devise( account ),
 					priv->journal,
+					ofo_ope_template_get_mnemo( priv->model ),
 					deb, cre ));
 }
 
