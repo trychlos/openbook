@@ -227,8 +227,12 @@
      2014- 6-16 to be built as a plugin
 
  216 2014- 6-13 exercice closing
+     2014-10- 6 keep the account balances at the end of the exercice N
+                and at the beginning of exercice N+1
 
  217 2014- 6-13 tableau de trésorerie
+     2014-10- 6 this may require the balance be printed
+     2014-10- 6 this should be implemented as a plugin
 
  219 2014- 6-15 one should take care of not increasing the entry number
                 until going back to zero during a same exercice (but
@@ -277,11 +281,6 @@
  259 2014- 6-23 editing rough entries: copy/paste a line
 
  260 2014- 6-24 editing rough entries: make the columns sortable
-
- 261 2014- 6-27 TauxProperties: update ofoTaux with GDate and rate as a
-                gdouble instead of strings
-     2014- 9-14 cancelled as without added value
-     2014- 9-14 reopened -> rate as a gdouble
 
  262 2014- 6-27 make g_date_set_parse locale independant (especially
                 when parsing from sql)
@@ -346,13 +345,13 @@
                 a standard prefix, or a display format)
 
  314 2014- 9-26 have a preference to use millenary shortcut
-                (i.e. enter '14' give '2014')
-
- 316 2014-10- 4 ofo_entry.c: optimize entry_count_for_xxx() methods
+                (i.e. entering '14' gives '2014')
 
  317 2014-10- 5 view_entries: let the user select an operation template
 
- 318
+ 318 2014-10- 6 print the balance for a periode
+
+ 319
 
 -----------------------------------------------------------------------
  DONE
@@ -1100,6 +1099,12 @@
  258 2014- 6-23 editing rough entries: delete a line
      2014- 6-27 done - svn #3750
 
+ 261 2014- 6-27 TauxProperties: update ofoTaux with GDate and rate as a
+                gdouble instead of strings
+     2014- 9-14 cancelled as without added value
+     2014- 9-14 reopened -> rate as a gdouble
+     2014-10- 5 done
+
  263 2014- 6-27 PrintReconciliation: when there is no entry, the footer
                 is displayed in the top of the page, instead of the
                 bottom
@@ -1270,6 +1275,9 @@
                 - add in view_entries - postponed
                 - check ecritures before delete an ope template - ok
      2014-10- 5 done - svn #3882
+
+ 316 2014-10- 4 ofo_entry.c: optimize entry_count_for_xxx() methods
+     2014-10- 5 done - svn #3883
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
