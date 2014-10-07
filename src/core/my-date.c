@@ -341,6 +341,36 @@ my_date_compare_ex( const myDate *a, const myDate *b, gboolean clear_is_past_inf
 }
 
 /**
+ * my_date_clear:
+ */
+void
+my_date_clear( myDate *date )
+{
+
+	g_return_if_fail( date && MY_IS_DATE( date ));
+
+	if( !date->private->dispose_has_run ){
+
+		g_date_clear( &date->private->date, 1 );
+	}
+}
+
+/**
+ * my_date_add_days:
+ */
+void
+my_date_add_days( myDate *date, gint nbdays )
+{
+
+	g_return_if_fail( date && MY_IS_DATE( date ));
+
+	if( !date->private->dispose_has_run ){
+
+		g_date_add_days( &date->private->date, nbdays );
+	}
+}
+
+/**
  * my_date_set_from_date:
  * @date: [out]: a non-NULL pointer to a #myDate object
  * @orig: [in][allow-none]: the #myDate to be copied
@@ -604,6 +634,15 @@ my_date2_from_str( GDate *date, const gchar *text, myDateFormat format )
 	}
 
 	return( valid );
+}
+
+/**
+ * my_date2_from_date:
+ */
+GDate *
+my_date2_from_date( myDate *date )
+{
+	return( &date->private->date );
 }
 
 /**

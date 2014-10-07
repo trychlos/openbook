@@ -54,7 +54,7 @@ struct _ofaPrintReconcilPrivate {
 	/* internals
 	 */
 	ofoAccount    *account;
-	GDate          date;
+	myDate        *date;
 	GList         *entries;
 	gdouble        account_solde;
 
@@ -359,7 +359,7 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	parms.entry_format = MY_DATE_DMYY;
 	parms.label = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-label" );
 	parms.label_format = MY_DATE_DMMM;
-	parms.date = &self->private->date;
+	parms.date = my_date2_from_date( self->private->date );
 	my_date_parse_from_entry( &parms );
 
 	return( G_OBJECT( frame ));
@@ -404,13 +404,13 @@ on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrin
 
 	priv = self->private;
 
-	if( g_date_valid( &priv->date ) &&
+	if( my_date_is_valid( priv->date ) &&
 			priv->account && OFO_IS_ACCOUNT( priv->account )){
 
 		priv->entries = ofo_entry_get_dataset_for_print_reconcil(
 								priv->dossier,
 								ofo_account_get_number( priv->account ),
-								&priv->date );
+								priv->date );
 	}
 }
 
@@ -786,7 +786,7 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 		sdate = my_date2_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
 		if( !sdate || !g_utf8_strlen( sdate, -1 )){
 			g_free( sdate );
-			sdate = my_date2_to_str( &priv->date, MY_DATE_DMYY );
+			sdate = my_date_to_str( priv->date, MY_DATE_DMYY );
 		}
 		priv->account_solde = ofo_account_get_global_solde( priv->account );
 		str = g_strdup_printf(
@@ -855,7 +855,7 @@ draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext
 	/* y is in context units
 	 * add 20% to get some visual spaces between lines */
 
-	str = my_date2_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
+	str = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
 	pango_layout_set_text( priv->body_layout, str, -1 );
 	g_free( str );
 	cairo_move_to( cr, priv->body_effect_tab, y );
@@ -957,7 +957,7 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	sdate = my_date2_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
 	if( !sdate || !g_utf8_strlen( sdate, -1 )){
 		g_free( sdate );
-		sdate = my_date2_to_str( &priv->date, MY_DATE_DMYY );
+		sdate = my_date_to_str( priv->date, MY_DATE_DMYY );
 	}
 	str = g_strdup_printf(
 					"Reconciliated account solde on %s is %+'.2lf",

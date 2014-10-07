@@ -120,7 +120,7 @@ free_detail_exe( sDetailExe *detail )
 }
 
 static void
-ofo_ledger_finalize( GObject *instance )
+ledger_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_ledger_finalize";
 	ofoLedgerPrivate *priv;
@@ -147,7 +147,7 @@ ofo_ledger_finalize( GObject *instance )
 }
 
 static void
-ofo_ledger_dispose( GObject *instance )
+ledger_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFO_IS_LEDGER( instance ));
 
@@ -180,8 +180,8 @@ ofo_ledger_class_init( ofoLedgerClass *klass )
 
 	g_type_class_add_private( klass, sizeof( ofoLedgerPrivate ));
 
-	G_OBJECT_CLASS( klass )->dispose = ofo_ledger_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ofo_ledger_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ledger_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ledger_finalize;
 }
 
 /**
@@ -228,37 +228,33 @@ on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 	const gchar *mnemo, *currency;
 	ofoLedger *ledger;
 	sDetailCur *detail;
-	const GDate *deffet2;
+	const myDate *deffect;
 	gdouble debit;
-	myDate *deffet;
-	gchar *str;
 
 	current = ofo_dossier_get_current_exe_id( dossier );
 	mnemo = ofo_entry_get_ledger( entry );
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
 
 	if( ledger ){
-		currency = ofo_entry_get_devise( entry );
+		currency = ofo_entry_get_currency( entry );
 		detail = ledger_new_cur_with_code( ledger, current, currency );
 		g_return_if_fail( detail );
 
 		debit = ofo_entry_get_debit( entry );
-		deffet2 = ofo_entry_get_deffect( entry );
-		str = my_date2_to_str( deffet2, MY_DATE_SQL );
-		deffet = my_date_new_from_sql( str );
+		deffect = ofo_entry_get_deffect( entry );
 
 		if( debit ){
 			detail->deb += debit;
 			if( !my_date_is_valid( detail->deb_date ) ||
-					my_date_compare( detail->deb_date, deffet ) < 0 ){
-				ofo_ledger_set_deb_date( ledger, detail->exe_id, detail->currency, deffet );
+					my_date_compare( detail->deb_date, deffect ) < 0 ){
+				ofo_ledger_set_deb_date( ledger, detail->exe_id, detail->currency, deffect );
 			}
 
 		} else {
 			detail->cre += ofo_entry_get_credit( entry );
 			if( !my_date_is_valid( detail->cre_date ) ||
-					my_date_compare( detail->cre_date, deffet ) < 0 ){
-				ofo_ledger_set_cre_date( ledger, detail->exe_id, detail->currency, deffet );
+					my_date_compare( detail->cre_date, deffect ) < 0 ){
+				ofo_ledger_set_cre_date( ledger, detail->exe_id, detail->currency, deffect );
 			}
 		}
 
@@ -332,6 +328,9 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	ofoLedger *ledger;
 	sDetailCur *detail;
 	gdouble debit, credit;
+	gchar *str;
+	GDate deffect2;
+	const myDate *deffect;
 
 	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
 			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
@@ -340,8 +339,12 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
 	if( ledger ){
 
-		exe_id = ofo_dossier_get_exe_by_date( dossier, ofo_entry_get_deffect( entry ));
-		currency = ofo_entry_get_devise( entry );
+		deffect = ofo_entry_get_deffect( entry );
+		str = my_date_to_str( deffect, MY_DATE_SQL );
+		my_date_set_from_sql( &deffect2, str );
+		exe_id = ofo_dossier_get_exe_by_date( dossier, &deffect2 );
+		g_free( str );
+		currency = ofo_entry_get_currency( entry );
 		detail = ledger_find_cur_by_code( ledger, exe_id, currency );
 		/* the entry has necessarily be already recorded while in rough
 		 * status */

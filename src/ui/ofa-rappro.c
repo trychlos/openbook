@@ -66,7 +66,7 @@ struct _ofaRapproPrivate {
 
 	/* internals
 	 */
-	GDate         dconcil;
+	myDate       *dconcil;
 	GList        *batlines;				/* loaded bank account transaction lines */
 };
 
@@ -150,7 +150,7 @@ static void         collapse_node( ofaRappro *self, GtkWidget *widget );
 static void         expand_node( ofaRappro *self, GtkWidget *widget );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
 static gboolean     toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path );
-static void         reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter );
+static void         reconciliate_entry( ofaRappro *self, ofoEntry *entry, const myDate *drappro, GtkTreeIter *iter );
 static void         set_reconciliated_balance( ofaRappro *self );
 
 static void
@@ -407,7 +407,7 @@ setup_manual_rappro( ofaMainPage *page )
 	parms.entry_format = MY_DATE_DMYY;
 	parms.label = gtk_label_new( "" 	);
 	parms.label_format = MY_DATE_DMMM;
-	parms.date = &priv->dconcil;
+	parms.date = my_date2_from_date( priv->dconcil );
 	my_date_parse_from_entry( &parms );
 
 	priv->date_concil = GTK_ENTRY( parms.entry );
@@ -1018,7 +1018,7 @@ do_fetch( ofaRappro *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *sdope, *sdeb, *scre, *sdrap;
-	const GDate *drappro;
+	const myDate *dconcil;
 
 	enableable = is_fetch_enableable( self, &account, &mode );
 	g_return_if_fail( enableable );
@@ -1037,11 +1037,11 @@ do_fetch( ofaRappro *self )
 
 		entry = OFO_ENTRY( it->data );
 
-		sdope = my_date2_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
+		sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
 		sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
 		scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
-		drappro = ofo_entry_get_rappro_dval( entry );
-		sdrap = my_date2_to_str( drappro, MY_DATE_DMYY );
+		dconcil = ofo_entry_get_concil_dval( entry );
+		sdrap = my_date_to_str( dconcil, MY_DATE_DMYY );
 
 		gtk_tree_store_insert_with_values(
 				GTK_TREE_STORE( tmodel ),
@@ -1054,7 +1054,7 @@ do_fetch( ofaRappro *self )
 				COL_DEBIT,  sdeb,
 				COL_CREDIT, scre,
 				COL_RAPPRO, sdrap,
-				COL_VALID,  g_date_valid( drappro ),
+				COL_VALID,  my_date_is_valid( dconcil ),
 				COL_OBJECT, entry,
 				-1 );
 
@@ -1503,7 +1503,7 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
 	gchar *srappro;
 	gboolean bvalid;
 	GObject *object;
-	GDate date;
+	myDate *date;
 
 	if( gtk_tree_model_get_iter( self->private->tmodel, &iter, path )){
 
@@ -1531,13 +1531,14 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
 		 * BAT */
 		} else {
 			if( srappro && g_utf8_strlen( srappro, -1 )){
-				my_date2_from_str( &date, srappro, MY_DATE_DMYY );
+				date = my_date_new_from_str( srappro, MY_DATE_DMYY );
 			} else {
-				my_date2_set_from_date( &date, &self->private->dconcil );
+				date = my_date_new_from_date( self->private->dconcil );
 			}
-			if( g_date_valid( &date )){
-				reconciliate_entry( self, OFO_ENTRY( object ), &date, &iter );
+			if( my_date_is_valid( date )){
+				reconciliate_entry( self, OFO_ENTRY( object ), date, &iter );
 			}
+			g_object_unref( date );
 		}
 	}
 
@@ -1559,7 +1560,7 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
  *
  */
 static void
-reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter )
+reconciliate_entry( ofaRappro *self, ofoEntry *entry, const myDate *drappro, GtkTreeIter *iter )
 {
 	GtkTreeModel *child_tmodel;
 	GtkTreeIter child_iter;
@@ -1568,11 +1569,11 @@ reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkT
 	gboolean is_valid_rappro;
 	gchar *str;
 
-	is_valid_rappro = drappro && g_date_valid( drappro );
+	is_valid_rappro = my_date_is_valid( drappro );
 	batline = NULL;
 
 	/* set the reconciliation date in the entry */
-	ofo_entry_set_rappro_dval( entry, is_valid_rappro ? drappro : NULL );
+	ofo_entry_set_concil_dval( entry, is_valid_rappro ? drappro : NULL );
 
 	/* update the child bat line if it exists
 	 * we work on child model because 'gtk_tree_model_iter_has_child'
@@ -1607,7 +1608,7 @@ reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkT
  	 * @iter_child: an iter on the entry row in the child tree model */
 
 	if( is_valid_rappro ){
-		str = my_date2_to_str( drappro, MY_DATE_DMYY );
+		str = my_date_to_str( drappro, MY_DATE_DMYY );
 	} else if( batline ){
 		str = my_date2_to_str( ofo_bat_line_get_valeur( batline ), MY_DATE_DMYY );
 	} else {
@@ -1624,7 +1625,7 @@ reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkT
 	g_free( str );
 
 	/* last, update the sgbd */
-	ofo_entry_update_rappro(
+	ofo_entry_update_concil(
 			entry,
 			ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )));
 

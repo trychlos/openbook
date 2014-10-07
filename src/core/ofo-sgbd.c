@@ -66,7 +66,7 @@ static void     sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query );
 static gchar   *quote_query( const gchar *query );
 
 static void
-ofo_sgbd_finalize( GObject *instance )
+sgbd_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_sgbd_finalize";
 	ofoSgbdPrivate *priv;
@@ -91,7 +91,7 @@ ofo_sgbd_finalize( GObject *instance )
 }
 
 static void
-ofo_sgbd_dispose( GObject *instance )
+sgbd_dispose( GObject *instance )
 {
 	ofoSgbdPrivate *priv;
 
@@ -137,8 +137,8 @@ ofo_sgbd_class_init( ofoSgbdClass *klass )
 
 	g_type_class_add_private( klass, sizeof( ofoSgbdPrivate ));
 
-	G_OBJECT_CLASS( klass )->dispose = ofo_sgbd_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ofo_sgbd_finalize;
+	G_OBJECT_CLASS( klass )->dispose = sgbd_dispose;
+	G_OBJECT_CLASS( klass )->finalize = sgbd_finalize;
 }
 
 /**

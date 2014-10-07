@@ -382,7 +382,7 @@ ofo_devise_is_deletable( const ofoDevise *devise )
 		dev_code = ofo_devise_get_code( devise );
 
 		return( !ofo_dossier_use_devise( dossier, dev_code ) &&
-				!ofo_entry_use_devise( dossier, dev_code ) &&
+				!ofo_entry_use_currency( dossier, dev_code ) &&
 				!ofo_ledger_use_currency( dossier, dev_code ) &&
 				!ofo_account_use_devise( dossier, dev_code ));
 	}

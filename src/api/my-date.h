@@ -139,6 +139,9 @@ gboolean   my_date_is_valid        ( const myDate *date );
 gint       my_date_compare         ( const myDate *a, const myDate *b );
 gint       my_date_compare_ex      ( const myDate *a, const myDate *b, gboolean clear_is_past_infinite );
 
+void       my_date_clear           ( myDate *date );
+void       my_date_add_days        ( myDate *date, gint nbdays );
+
 gboolean   my_date_set_from_date   ( myDate *date, const myDate *orig );
 gboolean   my_date_set_from_str    ( myDate *date, const gchar *text, myDateFormat format );
 
@@ -154,7 +157,7 @@ GDate     *my_date2_set_from_date   ( GDate *dest, const GDate *src );
 
 gchar     *my_date2_to_str          ( const GDate *date, myDateFormat format );
 gboolean   my_date2_from_str        ( GDate *date, const gchar *str, myDateFormat format );
-
+GDate     *my_date2_from_date       ( myDate *date );
 void       my_date_parse_from_entry ( const myDateParse *parms );
 
 G_END_DECLS

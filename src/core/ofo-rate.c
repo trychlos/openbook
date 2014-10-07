@@ -94,7 +94,7 @@ rate_free_validities( ofoRate *rate )
 }
 
 static void
-ofo_rate_finalize( GObject *instance )
+rate_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_rate_finalize";
 	ofoRatePrivate *priv;
@@ -122,7 +122,7 @@ ofo_rate_finalize( GObject *instance )
 }
 
 static void
-ofo_rate_dispose( GObject *instance )
+rate_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFO_IS_RATE( instance ));
 
@@ -153,8 +153,8 @@ ofo_rate_class_init( ofoRateClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = ofo_rate_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ofo_rate_finalize;
+	G_OBJECT_CLASS( klass )->dispose = rate_dispose;
+	G_OBJECT_CLASS( klass )->finalize = rate_finalize;
 }
 
 /**

@@ -35,7 +35,7 @@
                         <property name="row_spacing">3</property>
                         <property name="column_spacing">4</property>
                         <child>
-                          <object class="GtkRadioButton" id="f1-btn-journal">
+                          <object class="GtkRadioButton" id="f1-btn-ledger">
                             <property name="label" translatable="yes">per _journal</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
@@ -95,7 +95,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkComboBox" id="f1-journal">
+                          <object class="GtkComboBox" id="f1-ledger">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                           </object>
@@ -115,7 +115,7 @@
                             <property name="use_underline">True</property>
                             <property name="xalign">0</property>
                             <property name="draw_indicator">True</property>
-                            <property name="group">f1-btn-journal</property>
+                            <property name="group">f1-btn-ledger</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -455,7 +455,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkCheckButton" id="f4-journal">
+                          <object class="GtkCheckButton" id="f4-ledger">
                             <property name="label" translatable="yes">_Journal</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>

@@ -198,9 +198,13 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 	ofoAccount *account;
 	gdouble debit, credit;
 	gint number;
-	const GDate *deffect, *prev_effect;
+	const myDate *deffect;
+	myDate *prev_effect;
+	const GDate *prev_effect2;
+	GDate deffect2;
 	gdouble prev;
 	gint prev_ecr;
+	gchar *str;
 
 	if( ofo_entry_get_status( entry ) == ENT_STATUS_ROUGH ){
 
@@ -211,16 +215,23 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 		credit = ofo_entry_get_credit( entry );
 		number = ofo_entry_get_number( entry );
 		deffect = ofo_entry_get_deffect( entry );
+		str = my_date_to_str( deffect, MY_DATE_SQL );
+		my_date_set_from_sql( &deffect2, str );
+		g_free( str );
 
 		if( debit ){
 			/* entry number should be strictly increasing */
 			prev_ecr = ofo_account_get_bro_deb_ecr( account );
 			g_return_if_fail( prev_ecr < number );
 			ofo_account_set_bro_deb_ecr( account, number );
-			prev_effect = ofo_account_get_bro_deb_date( account );
-			if( !g_date_valid( prev_effect ) || g_date_compare( prev_effect, deffect ) < 0 ){
-				ofo_account_set_bro_deb_date( account, deffect );
+			prev_effect2 = ofo_account_get_bro_deb_date( account );
+			str = my_date2_to_str( prev_effect2, MY_DATE_SQL );
+			prev_effect = my_date_new_from_sql( str );
+			if( !my_date_is_valid( prev_effect ) || my_date_compare( prev_effect, deffect ) < 0 ){
+				ofo_account_set_bro_deb_date( account, &deffect2 );
 			}
+			g_free( str );
+			g_object_unref( prev_effect );
 			prev = ofo_account_get_bro_deb_mnt( account );
 			ofo_account_set_bro_deb_mnt( account, prev+debit );
 
@@ -228,10 +239,14 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 			prev_ecr = ofo_account_get_bro_cre_ecr( account );
 			g_return_if_fail( prev_ecr < number );
 			ofo_account_set_bro_cre_ecr( account, number );
-			prev_effect = ofo_account_get_bro_cre_date( account );
-			if( !g_date_valid( prev_effect ) || g_date_compare( prev_effect, deffect ) < 0 ){
-				ofo_account_set_bro_cre_date( account, deffect );
+			prev_effect2 = ofo_account_get_bro_cre_date( account );
+			str = my_date2_to_str( prev_effect2, MY_DATE_SQL );
+			prev_effect = my_date_new_from_sql( str );
+			if( !my_date_is_valid( prev_effect ) || my_date_compare( prev_effect, deffect ) < 0 ){
+				ofo_account_set_bro_cre_date( account, &deffect2 );
 			}
+			g_free( str );
+			g_object_unref( prev_effect );
 			prev = ofo_account_get_bro_cre_mnt( account );
 			ofo_account_set_bro_cre_mnt( account, prev+credit );
 		}
@@ -301,7 +316,11 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	const gchar *acc_number;
 	ofoAccount *account;
 	gdouble debit, credit, amount;
-	const GDate *deffect, *acc_date;
+	const myDate *deffect;
+	myDate *acc_date;
+	gchar *str;
+	const GDate *acc_date2;
+	GDate deffect2;
 	gint number, acc_num;
 
 	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
@@ -328,16 +347,27 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 		}
 
 		deffect = ofo_entry_get_deffect( entry );
+		str = my_date_to_str( deffect, MY_DATE_SQL );
+		my_date_set_from_sql( &deffect2, str );
+		g_free( str );
 		if( debit ){
-			acc_date = ofo_account_get_deb_date( account );
-			if( !acc_date || !g_date_valid( acc_date ) || g_date_compare( acc_date, deffect ) < 0 ){
-				ofo_account_set_deb_date( account, deffect );
+			acc_date2 = ofo_account_get_deb_date( account );
+			str = my_date2_to_str( acc_date2, MY_DATE_SQL );
+			acc_date = my_date_new_from_sql( str );
+			if( !my_date_is_valid( acc_date ) || my_date_compare( acc_date, deffect ) < 0 ){
+				ofo_account_set_deb_date( account, &deffect2 );
 			}
+			g_free( str );
+			g_object_unref( acc_date );
 		} else {
-			acc_date = ofo_account_get_cre_date( account );
-			if( !acc_date || !g_date_valid( acc_date ) || g_date_compare( acc_date, deffect ) < 0 ){
-				ofo_account_set_cre_date( account, deffect );
+			acc_date2 = ofo_account_get_cre_date( account );
+			str = my_date2_to_str( acc_date2, MY_DATE_SQL );
+			acc_date = my_date_new_from_sql( str );
+			if( !my_date_is_valid( acc_date ) || my_date_compare( acc_date, deffect ) < 0 ){
+				ofo_account_set_cre_date( account, &deffect2 );
 			}
+			g_free( str );
+			g_object_unref( acc_date );
 		}
 
 		number = ofo_entry_get_number( entry );

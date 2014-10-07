@@ -124,7 +124,7 @@ details_list_free( ofoOpeTemplate *model )
 }
 
 static void
-ofo_ope_template_finalize( GObject *instance )
+ope_template_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_ope_template_finalize";
 	ofoOpeTemplatePrivate *priv;
@@ -154,7 +154,7 @@ ofo_ope_template_finalize( GObject *instance )
 }
 
 static void
-ofo_ope_template_dispose( GObject *instance )
+ope_template_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFO_IS_OPE_TEMPLATE( instance ));
 
@@ -187,8 +187,8 @@ ofo_ope_template_class_init( ofoOpeTemplateClass *klass )
 
 	g_type_class_add_private( klass, sizeof( ofoOpeTemplatePrivate ));
 
-	G_OBJECT_CLASS( klass )->dispose = ofo_ope_template_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ofo_ope_template_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ope_template_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ope_template_finalize;
 }
 
 /**
