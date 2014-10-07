@@ -39,11 +39,11 @@
 #include "api/ofo-devise.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 
 #include "ui/my-cell-renderer-amount.h"
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-journal-combo.h"
+#include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-view-entries.h"
@@ -65,9 +65,9 @@ struct _ofaViewEntriesPrivate {
 
 	/* frame 1: general selection
 	 */
-	GtkToggleButton *journal_btn;
-	ofaJournalCombo *journal_combo;
-	GtkComboBox     *journal_box;
+	GtkToggleButton *ledger_btn;
+	ofaLedgerCombo *ledger_combo;
+	GtkComboBox     *ledger_box;
 	gchar           *jou_mnemo;
 
 	GtkToggleButton *account_btn;
@@ -93,13 +93,13 @@ struct _ofaViewEntriesPrivate {
 	/* frame 4: visible columns
 	 */
 	GtkCheckButton  *account_checkbox;
-	GtkCheckButton  *journal_checkbox;
+	GtkCheckButton  *ledger_checkbox;
 	GtkCheckButton  *currency_checkbox;
 
 	gboolean         dope_visible;
 	gboolean         deffect_visible;
 	gboolean         ref_visible;
-	gboolean         journal_visible;
+	gboolean         ledger_visible;
 	gboolean         account_visible;
 	gboolean         rappro_visible;
 	gboolean         status_visible;
@@ -129,7 +129,7 @@ enum {
 	ENT_COL_NUMBER,
 	ENT_COL_REF,
 	ENT_COL_LABEL,
-	ENT_COL_JOURNAL,
+	ENT_COL_LEDGER,
 	ENT_COL_ACCOUNT,
 	ENT_COL_DEBIT,
 	ENT_COL_CREDIT,
@@ -141,7 +141,7 @@ enum {
 	ENT_N_COLUMNS
 };
 
-/* the balance per currency, mostly useful when displaying per journal
+/* the balance per currency, mostly useful when displaying per ledger
  */
 typedef struct {
 	gdouble debits;
@@ -169,7 +169,7 @@ G_DEFINE_TYPE( ofaViewEntries, ofa_view_entries, OFA_TYPE_MAIN_PAGE )
 static GtkWidget     *v_setup_view( ofaMainPage *page );
 static void           reparent_from_dialog( ofaViewEntries *self, GtkContainer *parent );
 static void           setup_gen_selection( ofaViewEntries *self );
-static void           setup_journal_selection( ofaViewEntries *self );
+static void           setupledger_selection( ofaViewEntries *self );
 static void           setup_account_selection( ofaViewEntries *self );
 static void           setup_dates_selection( ofaViewEntries *self );
 static void           setup_status_selection( ofaViewEntries *self );
@@ -181,8 +181,8 @@ static void           setup_signaling_connect( ofaViewEntries *self );
 static GtkWidget     *v_setup_buttons( ofaMainPage *page );
 static void           v_init_view( ofaMainPage *page );
 static void           on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self );
-static void           on_journal_changed( const gchar *mnemo, ofaViewEntries *self );
-static void           display_entries_from_journal( ofaViewEntries *self );
+static void           onledger_changed( const gchar *mnemo, ofaViewEntries *self );
+static void           display_entries_from_ledger( ofaViewEntries *self );
 static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
 static void           display_entries_from_account( ofaViewEntries *self );
@@ -212,7 +212,7 @@ static gboolean       check_row_for_valid( ofaViewEntries *self, GtkTreeModel *t
 static gboolean       check_row_for_valid_dope( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_label( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean       check_row_for_valid_journal( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean       check_row_for_valid_ledger( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_account( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_currency( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -223,7 +223,7 @@ static void           on_dossier_new_object( ofoDossier *dossier, ofoBase *objec
 static void           do_new_entry( ofaViewEntries *self, ofoEntry *entry );
 static void           on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaViewEntries *self );
 static void           do_update_account_number( ofaViewEntries *self, const gchar *prev, const gchar *number );
-static void           do_update_journal_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo );
+static void           do_updateledger_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo );
 static void           do_update_devise_code( ofaViewEntries *self, const gchar *prev, const gchar *code );
 static void           on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
 static void           do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry );
@@ -318,7 +318,7 @@ v_setup_view( ofaMainPage *page )
 	reparent_from_dialog( OFA_VIEW_ENTRIES( page ), GTK_CONTAINER( frame ));
 
 	setup_gen_selection( OFA_VIEW_ENTRIES( page ));
-	setup_journal_selection( OFA_VIEW_ENTRIES( page ));
+	setupledger_selection( OFA_VIEW_ENTRIES( page ));
 	setup_account_selection( OFA_VIEW_ENTRIES( page ));
 	setup_dates_selection( OFA_VIEW_ENTRIES( page ));
 	setup_status_selection( OFA_VIEW_ENTRIES( page ));
@@ -329,7 +329,7 @@ v_setup_view( ofaMainPage *page )
 
 	/* force a 'toggled' message on the radio button group */
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_btn ), TRUE );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->journal_btn ), TRUE );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ), TRUE );
 
 	/* connect to dossier signaling system */
 	setup_signaling_connect( OFA_VIEW_ENTRIES( page ));
@@ -363,10 +363,10 @@ setup_gen_selection( ofaViewEntries *self )
 
 	priv = self->private;
 
-	btn = ( GtkToggleButton * ) my_utils_container_get_child_by_name( priv->top_box, "f1-btn-journal" );
+	btn = ( GtkToggleButton * ) my_utils_container_get_child_by_name( priv->top_box, "f1-btn-ledger" );
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_gen_selection_toggled ), self );
-	priv->journal_btn = btn;
+	priv->ledger_btn = btn;
 
 	btn = ( GtkToggleButton * ) my_utils_container_get_child_by_name( priv->top_box, "f1-btn-account" );
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
@@ -375,27 +375,27 @@ setup_gen_selection( ofaViewEntries *self )
 }
 
 static void
-setup_journal_selection( ofaViewEntries *self )
+setupledger_selection( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
-	ofaJournalComboParms parms;
+	ofaLedgerComboParms parms;
 
 	priv = self->private;
 
 	parms.container = priv->top_box;
 	parms.dossier = priv->dossier;
-	parms.combo_name = "f1-journal";
+	parms.combo_name = "f1-ledger";
 	parms.label_name = NULL;
 	parms.disp_mnemo = FALSE;
 	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaJournalComboCb ) on_journal_changed;
+	parms.pfnSelected = ( ofaLedgerComboCb ) onledger_changed;
 	parms.user_data = self;
 	parms.initial_mnemo = NULL;
 
-	priv->journal_combo = ofa_journal_combo_new( &parms );
+	priv->ledger_combo = ofa_ledger_combo_new( &parms );
 
-	priv->journal_box = ( GtkComboBox * ) my_utils_container_get_child_by_name( priv->top_box, "f1-journal" );
-	g_return_if_fail( priv->journal_box && GTK_IS_COMBO_BOX( priv->journal_box ));
+	priv->ledger_box = ( GtkComboBox * ) my_utils_container_get_child_by_name( priv->top_box, "f1-ledger" );
+	g_return_if_fail( priv->ledger_box && GTK_IS_COMBO_BOX( priv->ledger_box ));
 }
 
 static void
@@ -516,11 +516,11 @@ setup_display_columns( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->ref_visible );
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-journal" );
+	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-ledger" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
-	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->journal_visible );
-	priv->journal_checkbox = GTK_CHECK_BUTTON( widget );
+	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->ledger_visible );
+	priv->ledger_checkbox = GTK_CHECK_BUTTON( widget );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-account" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
@@ -589,7 +589,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			ENT_N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* dope, deff, number */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ref, label, journal */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ref, label, ledger */
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* account, debit, credit */
 			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* currency, rappro, status */
 			G_TYPE_OBJECT,
@@ -644,16 +644,16 @@ setup_entries_treeview( ofaViewEntries *self )
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_JOURNAL] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_JOURNAL ));
+	st_renderers[ENT_COL_LEDGER] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_LEDGER ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Journal" ),
-			text_cell, "text", ENT_COL_JOURNAL,
+			_( "Ledger" ),
+			text_cell, "text", ENT_COL_LEDGER,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_JOURNAL ));
-	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->journal_visible );
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_LEDGER ));
+	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->ledger_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -820,18 +820,18 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 	is_active = gtk_toggle_button_get_active( button );
 	/*g_debug( "on_gen_selection_toggled: is_active=%s", is_active ? "True":"False" );*/
 
-	if( button == priv->journal_btn ){
+	if( button == priv->ledger_btn ){
 		/* make the selection frame sensitive */
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->journal_box ), is_active );
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->ledger_box ), is_active );
 
 		/* update the default visibility of the columns */
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->journal_checkbox ), !is_active );
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_checkbox ), !is_active );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_checkbox ), is_active );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->currency_checkbox ), is_active );
 
 		/* and display the entries */
 		if( is_active ){
-			display_entries_from_journal( self );
+			display_entries_from_ledger( self );
 		}
 
 	} else {
@@ -839,7 +839,7 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_select ), is_active );
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->f1_label ), is_active );
 
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->journal_checkbox ), is_active );
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_checkbox ), is_active );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_checkbox ), !is_active );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->currency_checkbox ), !is_active );
 
@@ -850,10 +850,10 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 }
 
 /*
- * ofaJournalCombo callback
+ * ofaLedgerCombo callback
  */
 static void
-on_journal_changed( const gchar *mnemo, ofaViewEntries *self )
+onledger_changed( const gchar *mnemo, ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
 
@@ -862,11 +862,11 @@ on_journal_changed( const gchar *mnemo, ofaViewEntries *self )
 	g_free( priv->jou_mnemo );
 	priv->jou_mnemo = g_strdup( mnemo );
 
-	display_entries_from_journal( self );
+	display_entries_from_ledger( self );
 }
 
 static void
-display_entries_from_journal( ofaViewEntries *self )
+display_entries_from_ledger( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
 	GList *entries;
@@ -874,7 +874,7 @@ display_entries_from_journal( ofaViewEntries *self )
 	priv = self->private;
 
 	if( priv->jou_mnemo && layout_dates_is_valid( self )){
-		entries = ofo_entry_get_dataset_by_journal(
+		entries = ofo_entry_get_dataset_by_ledger(
 							priv->dossier, priv->jou_mnemo, &priv->d_from, &priv->d_to );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
@@ -1014,8 +1014,8 @@ refresh_display( ofaViewEntries *self )
 	 * a full reload of entries - With introduction of GtkTreeModelFilter,
 	 * then we just act on the filter
 	 */
-	/*if( gtk_toggle_button_get_active( self->private->journal_btn )){
-		display_entries_from_journal( self );
+	/*if( gtk_toggle_button_get_active( self->private->ledger_btn )){
+		display_entries_from_ledger( self );
 	} else {
 		display_entries_from_account( self );
 	}*/
@@ -1171,7 +1171,7 @@ display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
 				ENT_COL_NUMBER,   ofo_entry_get_number( entry ),
 				ENT_COL_REF,      ofo_entry_get_ref( entry ),
 				ENT_COL_LABEL,    ofo_entry_get_label( entry ),
-				ENT_COL_JOURNAL,  ofo_entry_get_journal( entry ),
+				ENT_COL_LEDGER,  ofo_entry_get_ledger( entry ),
 				ENT_COL_ACCOUNT,  ofo_entry_get_account( entry ),
 				ENT_COL_DEBIT,    sdeb,
 				ENT_COL_CREDIT,   scre,
@@ -1338,8 +1338,8 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 }
 
 /*
- * default to not display journal (resp. account) when selection is made
- *  per journal (resp. account)
+ * default to not display ledger (resp. account) when selection is made
+ *  per ledger (resp. account)
  *
  * deleted entries re italic on white background
  * rough entries are standard (blanck on white)
@@ -1451,10 +1451,10 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_btn ), TRUE );
 			gtk_entry_set_text( priv->account_entry, id );
 
-		} else if( type == OFO_TYPE_JOURNAL ){
+		} else if( type == OFO_TYPE_LEDGER ){
 
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->journal_btn ), TRUE );
-			ofa_journal_combo_set_selection( priv->journal_combo, id );
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ), TRUE );
+			ofa_ledger_combo_set_selection( priv->ledger_combo, id );
 		}
 	}
 }
@@ -1659,7 +1659,7 @@ check_row_for_valid( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *it
 
 	is_valid = check_row_for_valid_dope( self, tmodel, iter ) &&
 				check_row_for_valid_deffect( self, tmodel, iter ) &&
-				check_row_for_valid_journal( self, tmodel, iter ) &&
+				check_row_for_valid_ledger( self, tmodel, iter ) &&
 				check_row_for_valid_account( self, tmodel, iter ) &&
 				check_row_for_valid_label( self, tmodel, iter ) &&
 				check_row_for_valid_amounts( self, tmodel, iter ) &&
@@ -1693,46 +1693,53 @@ check_row_for_valid_dope( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIte
 	return( is_valid );
 }
 
+/*
+ * effect date of any new entry must be:
+ * - greater than the last closing date of the exercice (if any)
+ * - greater than the last closing date of the ledger (if any)
+ */
 static gboolean
 check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *sope, *str, *mnemo, *msg, *msg2, *msg3;
-	GDate dope, deff;
-	const GDate *close_exe, *close_journal, *last_close;
-	ofoJournal *journal;
+	myDate *dope, *deff, *last_close;
+	const GDate *close_exe;
+	const myDate *close_ledger;
+	ofoLedger *ledger;
 	gboolean is_valid;
+	gchar *str2;
 
-	g_date_clear( &dope, 1 );
-	g_date_clear( &deff, 1 );
 	is_valid = FALSE;
 	gtk_tree_model_get( tmodel, iter,
-				ENT_COL_DOPE, &sope, ENT_COL_DEFF, &str, ENT_COL_JOURNAL, &mnemo, -1 );
+				ENT_COL_DOPE, &sope, ENT_COL_DEFF, &str, ENT_COL_LEDGER, &mnemo, -1 );
 	if( sope && g_utf8_strlen( sope, -1 ) &&
 			str && g_utf8_strlen( str, -1 ) && mnemo && g_utf8_strlen( mnemo, -1 )){
-		g_date_set_parse( &dope, sope );
-		if( g_date_valid( &dope )){
-			g_date_set_parse( &deff, str );
-			if( g_date_valid( &deff ) && g_date_compare( &deff, &dope ) >= 0 ){
-				last_close = NULL;
+
+		dope = my_date_new_from_str( sope, MY_DATE_DMYY );
+		if( my_date_is_valid( dope )){
+
+			deff = my_date_new_from_str( str, MY_DATE_DMYY );
+			if( my_date_is_valid( deff ) && my_date_compare( deff, dope ) >= 0 ){
+				last_close = my_date_new();
 				close_exe = ofo_dossier_get_last_closed_exercice( self->private->dossier );
-				if( close_exe ){
-					g_return_val_if_fail( g_date_valid( close_exe ), FALSE );
-					last_close = close_exe;
+				if( close_exe && g_date_valid( close_exe )){
+					str2 = my_date2_to_str( close_exe, MY_DATE_SQL );
+					my_date_set_from_str( last_close, str2, MY_DATE_SQL );
+					g_free( str2 );
 				}
-				journal = ofo_journal_get_by_mnemo( self->private->dossier, mnemo );
-				if( journal ){
-					close_journal = ofo_journal_get_last_closing( journal );
-					if( close_journal ){
-						g_return_val_if_fail( g_date_valid( close_journal ), FALSE );
-						if( !last_close || g_date_compare( close_journal, last_close ) > 0 ){
-							last_close = close_journal;
+				ledger = ofo_ledger_get_by_mnemo( self->private->dossier, mnemo );
+				if( ledger ){
+					close_ledger = ofo_ledger_get_last_closing( ledger );
+					if( my_date_is_valid( close_ledger )){
+						if( !my_date_is_valid( last_close ) || my_date_compare( close_ledger, last_close ) > 0 ){
+							my_date_set_from_date( last_close, close_ledger );
 						}
 					}
-					if( !last_close || g_date_compare( &deff, last_close ) > 0 ){
+					if( !my_date_is_valid( last_close ) || my_date_compare( deff, last_close ) > 0 ){
 						is_valid = TRUE;
 					} else {
-						msg2 = my_date2_to_str( last_close, MY_DATE_DMYY );
-						msg3 = my_date2_to_str( &deff, MY_DATE_DMYY );
+						msg2 = my_date_to_str( last_close, MY_DATE_DMYY );
+						msg3 = my_date_to_str( deff, MY_DATE_DMYY );
 						msg = g_strdup_printf( _( "Effect date (%s) lesser than last closing date (%s)" ), msg3, msg2 );
 						set_comment( self, msg );
 						g_free( msg );
@@ -1740,18 +1747,24 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 						g_free( msg3 );
 					}
 				} else {
-					msg = g_strdup_printf( _( "Unknwown journal: %s" ), mnemo );
+					msg = g_strdup_printf( _( "Unknwown ledger: %s" ), mnemo );
 					set_comment( self, msg );
 					g_free( msg );
 				}
+				g_object_unref( last_close );
+
 			} else {
 				set_comment( self, _( "Invalid effect date, or lesser than operation date" ));
 			}
+			g_object_unref( deff );
+
 		} else {
 			set_comment( self, _( "Invalid operation date" ));
 		}
+		g_object_unref( dope );
+
 	} else {
-		set_comment( self, _( "Empty operation date, effect date or journal" ));
+		set_comment( self, _( "Empty operation date, effect date or ledger" ));
 	}
 	g_free( sope );
 	g_free( str );
@@ -1779,23 +1792,23 @@ check_row_for_valid_label( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIt
 }
 
 static gboolean
-check_row_for_valid_journal( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+check_row_for_valid_ledger( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *str, *msg;
 	gboolean is_valid;
 
 	is_valid = FALSE;
-	gtk_tree_model_get( tmodel, iter, ENT_COL_JOURNAL, &str, -1 );
+	gtk_tree_model_get( tmodel, iter, ENT_COL_LEDGER, &str, -1 );
 	if( str && g_utf8_strlen( str, -1 )){
-		if( ofo_journal_get_by_mnemo( self->private->dossier, str )){
+		if( ofo_ledger_get_by_mnemo( self->private->dossier, str )){
 			is_valid = TRUE;
 		} else {
-			msg = g_strdup_printf( _( "Unknwown journal: %s" ), str );
+			msg = g_strdup_printf( _( "Unknwown ledger: %s" ), str );
 			set_comment( self, msg );
 			g_free( msg );
 		}
 	} else {
-		set_comment( self, _( "Empty journal mnemonic" ));
+		set_comment( self, _( "Empty ledger mnemonic" ));
 	}
 	g_free( str );
 
@@ -1929,7 +1942,7 @@ static gboolean
 save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
-	gchar *sdope, *sdeff, *ref, *label, *journal, *account, *sdeb, *scre, *devise;
+	gchar *sdope, *sdeff, *ref, *label, *ledger, *account, *sdeb, *scre, *devise;
 	GDate dope, deff;
 	gint number;
 	gdouble debit, credit;
@@ -1947,7 +1960,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 			ENT_COL_NUMBER,   &number,
 			ENT_COL_REF,      &ref,
 			ENT_COL_LABEL,    &label,
-			ENT_COL_JOURNAL,  &journal,
+			ENT_COL_LEDGER,  &ledger,
 			ENT_COL_ACCOUNT,  &account,
 			ENT_COL_DEBIT,    &sdeb,
 			ENT_COL_CREDIT,   &scre,
@@ -1972,7 +1985,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		ofo_entry_set_deffect( entry, &deff );
 		ofo_entry_set_ref( entry, ref );
 		ofo_entry_set_label( entry, label );
-		ofo_entry_set_journal( entry, journal );
+		ofo_entry_set_ledger( entry, ledger );
 		ofo_entry_set_account( entry, account );
 		ofo_entry_set_debit( entry, debit );
 		ofo_entry_set_credit( entry, credit );
@@ -1982,7 +1995,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 
 	} else {
 		entry = ofo_entry_new_with_data( priv->dossier,
-					&dope, &deff, label, ref, account, devise, journal, NULL, debit, credit );
+					&dope, &deff, label, ref, account, devise, ledger, NULL, debit, credit );
 		priv->inserted = entry;
 		ok = ofo_entry_insert( entry, priv->dossier );
 	}
@@ -1991,7 +2004,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	g_free( scre );
 	g_free( sdeb );
 	g_free( account );
-	g_free( journal );
+	g_free( ledger );
 	g_free( label );
 	g_free( ref );
 	g_free( sdeff );
@@ -2054,7 +2067,7 @@ do_new_entry( ofaViewEntries *self, ofoEntry *entry )
 }
 
 /*
- * a journal mnemo, an account number, a currency code may has changed
+ * a ledger mnemo, an account number, a currency code may has changed
  */
 static void
 on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaViewEntries *self )
@@ -2072,8 +2085,8 @@ on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *pr
 		if( OFO_IS_ACCOUNT( object )){
 			do_update_account_number( self, prev_id, ofo_account_get_number( OFO_ACCOUNT( object )));
 
-		} else if( OFO_IS_JOURNAL( object )){
-			do_update_journal_mnemo( self, prev_id, ofo_journal_get_mnemo( OFO_JOURNAL( object )));
+		} else if( OFO_IS_LEDGER( object )){
+			do_updateledger_mnemo( self, prev_id, ofo_ledger_get_mnemo( OFO_LEDGER( object )));
 
 		} else if( OFO_IS_DEVISE( object )){
 			do_update_devise_code( self, prev_id, ofo_devise_get_code( OFO_DEVISE( object )));
@@ -2106,7 +2119,7 @@ do_update_account_number( ofaViewEntries *self, const gchar *prev, const gchar *
 }
 
 static void
-do_update_journal_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo )
+do_updateledger_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -2116,11 +2129,11 @@ do_update_journal_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *m
 	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tfilter ));
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 		while( TRUE ){
-			gtk_tree_model_get( tmodel, &iter, ENT_COL_JOURNAL, &str, -1 );
+			gtk_tree_model_get( tmodel, &iter, ENT_COL_LEDGER, &str, -1 );
 			cmp = g_utf8_collate( str, prev );
 			g_free( str );
 			if( cmp == 0 ){
-				gtk_list_store_set( GTK_LIST_STORE( tmodel ), &iter, ENT_COL_JOURNAL, mnemo, -1 );
+				gtk_list_store_set( GTK_LIST_STORE( tmodel ), &iter, ENT_COL_LEDGER, mnemo, -1 );
 			}
 			if( !gtk_tree_model_iter_next( tmodel, &iter )){
 				break;
@@ -2154,7 +2167,7 @@ do_update_devise_code( ofaViewEntries *self, const gchar *prev, const gchar *cod
 }
 
 /*
- * a journal mnemo, an account number, a currency code or an entry may
+ * a ledger mnemo, an account number, a currency code or an entry may
  *  have been deleted
  */
 static void
@@ -2254,7 +2267,7 @@ insert_new_row( ofaViewEntries *self )
 	gboolean is_empty;
 	gchar *str;
 	gint pos;
-	const gchar *journal, *account, *dev_code;
+	const gchar *ledger, *account, *dev_code;
 	GtkTreePath *path;
 	GtkTreeViewColumn *column;
 	ofoAccount *account_object;
@@ -2284,12 +2297,12 @@ insert_new_row( ofaViewEntries *self )
 	/* set default values that we are able to guess */
 	str = g_strdup_printf( "%d", ENT_STATUS_ROUGH );
 
-	if( gtk_toggle_button_get_active( priv->journal_btn )){
-		journal = priv->jou_mnemo;
+	if( gtk_toggle_button_get_active( priv->ledger_btn )){
+		ledger = priv->jou_mnemo;
 		account = NULL;
 		dev_code = "";
 	} else {
-		journal = NULL;
+		ledger = NULL;
 		account = priv->acc_number;
 		account_object = ofo_account_get_by_number( priv->dossier, account );
 		dev_code = ofo_account_get_devise( account_object );
@@ -2300,7 +2313,7 @@ insert_new_row( ofaViewEntries *self )
 			&new_iter,
 			pos,
 			ENT_COL_STATUS,   str,
-			ENT_COL_JOURNAL,  journal,
+			ENT_COL_LEDGER,   ledger,
 			ENT_COL_ACCOUNT,  account,
 			ENT_COL_DEBIT,    "",
 			ENT_COL_CREDIT,   "",

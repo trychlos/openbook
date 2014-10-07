@@ -24,45 +24,45 @@
  * $Id$
  */
 
-#ifndef __OFA_JOURNAL_COMBO_H__
-#define __OFA_JOURNAL_COMBO_H__
+#ifndef __OFA_LEDGER_COMBO_H__
+#define __OFA_LEDGER_COMBO_H__
 
 /**
- * SECTION: ofa_journal_combo
- * @short_description: #ofaJournalCombo class definition.
- * @include: ui/ofa-journal-combo.h
+ * SECTION: ofa_ledger_combo
+ * @short_description: #ofaLedgerCombo class definition.
+ * @include: ui/ofa-ledger-combo.h
  *
- * A class to embed a Journals combobox in a dialog.
+ * A class to embed a Ledgers combobox in a dialog.
  */
 
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_JOURNAL_COMBO                ( ofa_journal_combo_get_type())
-#define OFA_JOURNAL_COMBO( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_JOURNAL_COMBO, ofaJournalCombo ))
-#define OFA_JOURNAL_COMBO_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_JOURNAL_COMBO, ofaJournalComboClass ))
-#define OFA_IS_JOURNAL_COMBO( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_JOURNAL_COMBO ))
-#define OFA_IS_JOURNAL_COMBO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_JOURNAL_COMBO ))
-#define OFA_JOURNAL_COMBO_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_JOURNAL_COMBO, ofaJournalComboClass ))
+#define OFA_TYPE_LEDGER_COMBO                ( ofa_ledger_combo_get_type())
+#define OFA_LEDGER_COMBO( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_LEDGER_COMBO, ofaLedgerCombo ))
+#define OFA_LEDGER_COMBO_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_LEDGER_COMBO, ofaLedgerComboClass ))
+#define OFA_IS_LEDGER_COMBO( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_LEDGER_COMBO ))
+#define OFA_IS_LEDGER_COMBO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_LEDGER_COMBO ))
+#define OFA_LEDGER_COMBO_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_LEDGER_COMBO, ofaLedgerComboClass ))
 
-typedef struct _ofaJournalComboPrivate        ofaJournalComboPrivate;
+typedef struct _ofaLedgerComboPrivate        ofaLedgerComboPrivate;
 
 typedef struct {
 	/*< private >*/
-	GObject                 parent;
-	ofaJournalComboPrivate *private;
+	GObject                parent;
+	ofaLedgerComboPrivate *private;
 }
-	ofaJournalCombo;
+	ofaLedgerCombo;
 
 typedef struct {
 	/*< private >*/
 	GObjectClass parent;
 }
-	ofaJournalComboClass;
+	ofaLedgerComboClass;
 
 /**
- * ofaJournalComboCb:
+ * ofaLedgerComboCb:
  *
  * A callback to be triggered when a new journal is selected.
  *
@@ -70,12 +70,12 @@ typedef struct {
  * - mnemo
  * - user_data provided at init_dialog() time
  */
-typedef void ( *ofaJournalComboCb )( const gchar *, gpointer );
+typedef void ( *ofaLedgerComboCb )            ( const gchar *, gpointer );
 
-GType            ofa_journal_combo_get_type   ( void ) G_GNUC_CONST;
+GType           ofa_ledger_combo_get_type     ( void ) G_GNUC_CONST;
 
 /**
- * ofaJournalComboParms
+ * ofaLedgerComboParms
  *
  * The structure passed to the init_dialog() function.
  *
@@ -100,18 +100,18 @@ typedef struct {
 	const gchar      *label_name;
 	gboolean          disp_mnemo;
 	gboolean          disp_label;
-	ofaJournalComboCb pfnSelected;
+	ofaLedgerComboCb pfnSelected;
 	gpointer          user_data;
 	const gchar      *initial_mnemo;
 }
-	ofaJournalComboParms;
+	ofaLedgerComboParms;
 
-ofaJournalCombo *ofa_journal_combo_new          ( const ofaJournalComboParms *parms );
+ofaLedgerCombo *ofa_ledger_combo_new          ( const ofaLedgerComboParms *parms );
 
-gint             ofa_journal_combo_get_selection( ofaJournalCombo *self, gchar **mnemo, gchar **label );
+gint            ofa_ledger_combo_get_selection( ofaLedgerCombo *self, gchar **mnemo, gchar **label );
 
-void             ofa_journal_combo_set_selection( ofaJournalCombo *self, const gchar *mnemo );
+void            ofa_ledger_combo_set_selection( ofaLedgerCombo *self, const gchar *mnemo );
 
 G_END_DECLS
 
-#endif /* __OFA_JOURNAL_COMBO_H__ */
+#endif /* __OFA_LEDGER_COMBO_H__ */

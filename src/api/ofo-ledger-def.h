@@ -24,46 +24,45 @@
  * $Id$
  */
 
-#ifndef __OFO_JOURNAL_DEF_H__
-#define __OFO_JOURNAL_DEF_H__
+#ifndef __OFO_LEDGER_DEF_H__
+#define __OFO_LEDGER_DEF_H__
 
 /**
- * SECTION: ofo_journal
- * @short_description: #ofoJournal class definition.
- * @include: api/ofo-journal.h
+ * SECTION: ofo_ledger
+ * @short_description: #ofoLedger class definition.
+ * @include: api/ofo-ledger.h
  *
- * This class implements the Journal behavior, including the general
- * DB definition.
+ * This file defines the #ofoLedger class behavior.
  */
 
 #include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
 
-#define OFO_TYPE_JOURNAL                ( ofo_journal_get_type())
-#define OFO_JOURNAL( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_JOURNAL, ofoJournal ))
-#define OFO_JOURNAL_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_JOURNAL, ofoJournalClass ))
-#define OFO_IS_JOURNAL( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_JOURNAL ))
-#define OFO_IS_JOURNAL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_JOURNAL ))
-#define OFO_JOURNAL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_JOURNAL, ofoJournalClass ))
+#define OFO_TYPE_LEDGER                ( ofo_ledger_get_type())
+#define OFO_LEDGER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFO_TYPE_LEDGER, ofoLedger ))
+#define OFO_LEDGER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFO_TYPE_LEDGER, ofoLedgerClass ))
+#define OFO_IS_LEDGER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFO_TYPE_LEDGER ))
+#define OFO_IS_LEDGER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_LEDGER ))
+#define OFO_LEDGER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_LEDGER, ofoLedgerClass ))
 
 typedef struct {
 	/*< private >*/
 	ofoBaseClass parent;
 }
-	ofoJournalClass;
+	ofoLedgerClass;
 
-typedef struct _ofoJournalPrivate       ofoJournalPrivate;
+typedef struct _ofoLedgerPrivate       ofoLedgerPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofoBase            parent;
-	ofoJournalPrivate *private;
+	ofoBase           parent;
+	ofoLedgerPrivate *private;
 }
-	ofoJournal;
+	ofoLedger;
 
-GType ofo_journal_get_type( void ) G_GNUC_CONST;
+GType ofo_ledger_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFO_JOURNAL_DEF_H__ */
+#endif /* __OFO_LEDGER_DEF_H__ */

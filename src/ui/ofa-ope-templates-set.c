@@ -34,7 +34,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-guided-input.h"
@@ -73,7 +73,7 @@ enum {
 
 /* data attached to each page of the model category notebook
  */
-#define DATA_PAGE_JOURNAL                "data-page-journal-id"
+#define DATA_PAGE_LEDGER                 "data-page-ledger-id"
 #define DATA_PAGE_VIEW                   "data-page-treeview"
 
 G_DEFINE_TYPE( ofaOpeTemplatesSet, ofa_ope_templates_set, OFA_TYPE_MAIN_PAGE )
@@ -198,7 +198,7 @@ v_setup_view( ofaMainPage *page )
 	ofaOpeTemplatesSet *self;
 	GtkNotebook *book;
 	GList *dataset, *iset;
-	ofoJournal *ledger;
+	ofoLedger *ledger;
 
 	self = OFA_OPE_TEMPLATES_SET( page );
 
@@ -213,11 +213,11 @@ v_setup_view( ofaMainPage *page )
 
 	self->private->book = GTK_NOTEBOOK( book );
 
-	dataset = ofo_journal_get_dataset( ofa_main_page_get_dossier( page ));
+	dataset = ofo_ledger_get_dataset( ofa_main_page_get_dossier( page ));
 
 	for( iset=dataset ; iset ; iset=iset->next ){
-		ledger = OFO_JOURNAL( iset->data );
-		book_create_page( self, book, ofo_journal_get_mnemo( ledger ), ofo_journal_get_label( ledger ));
+		ledger = OFO_LEDGER( iset->data );
+		book_create_page( self, book, ofo_ledger_get_mnemo( ledger ), ofo_ledger_get_label( ledger ));
 	}
 
 	/* connect after the pages have been created */
@@ -322,7 +322,7 @@ book_create_page( ofaOpeTemplatesSet *self, GtkNotebook *book, const gchar *ledg
 	label = GTK_LABEL( gtk_label_new_with_mnemonic( ledger_label ));
 	gtk_notebook_insert_page( book, GTK_WIDGET( scroll ), GTK_WIDGET( label ), -1 );
 	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( scroll ), TRUE );
-	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_JOURNAL, g_strdup( ledger ));
+	g_object_set_data( G_OBJECT( scroll ), DATA_PAGE_LEDGER, g_strdup( ledger ));
 
 	tview = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
@@ -375,10 +375,10 @@ book_activate_page_by_ledger( ofaOpeTemplatesSet *self, const gchar *mnemo )
 
 	page_num = book_get_page_by_ledger( self, mnemo );
 	if( page_num < 0 ){
-		page_num = book_get_page_by_ledger( self, UNKNOWN_JOURNAL_MNEMO );
+		page_num = book_get_page_by_ledger( self, UNKNOWN_LEDGER_MNEMO );
 		if( page_num < 0 ){
-				book_create_page( self, self->private->book, UNKNOWN_JOURNAL_MNEMO, UNKNOWN_JOURNAL_LABEL );
-				page_num = book_get_page_by_ledger( self, UNKNOWN_JOURNAL_MNEMO );
+				book_create_page( self, self->private->book, UNKNOWN_LEDGER_MNEMO, UNKNOWN_LEDGER_LABEL );
+				page_num = book_get_page_by_ledger( self, UNKNOWN_LEDGER_MNEMO );
 		}
 	}
 	g_return_val_if_fail( page_num >= 0, FALSE );
@@ -398,7 +398,7 @@ book_get_page_by_ledger( ofaOpeTemplatesSet *self, const gchar *mnemo )
 
 	for( i=0 ; i<count ; ++i ){
 		page_widget = gtk_notebook_get_nth_page( self->private->book, i );
-		ledger = ( const gchar * ) g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_JOURNAL );
+		ledger = ( const gchar * ) g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_LEDGER );
 		if( !g_utf8_collate( ledger, mnemo )){
 			return( i );
 		}
@@ -620,7 +620,7 @@ v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 	model = ofo_ope_template_new();
 	page_n = gtk_notebook_get_current_page( OFA_OPE_TEMPLATES_SET( page )->private->book );
 	page_w = gtk_notebook_get_nth_page( OFA_OPE_TEMPLATES_SET( page )->private->book, page_n );
-	mnemo = ( const gchar * ) g_object_get_data( G_OBJECT( page_w ), DATA_PAGE_JOURNAL );
+	mnemo = ( const gchar * ) g_object_get_data( G_OBJECT( page_w ), DATA_PAGE_LEDGER );
 
 	if( ofa_ope_template_properties_run(
 			ofa_main_page_get_main_window( page ), model, mnemo )){
@@ -719,7 +719,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 	if( OFO_IS_OPE_TEMPLATE( object )){
 		/* managed by the button clic handle */
 
-	} else if( OFO_IS_JOURNAL( object )){
+	} else if( OFO_IS_LEDGER( object )){
 		/* a ledger has changed */
 
 	}
@@ -794,7 +794,7 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesSet *sel
 	if( OFO_IS_OPE_TEMPLATE( object )){
 		/* manage by the button clic handle */
 
-	} else if( OFO_IS_JOURNAL( object )){
+	} else if( OFO_IS_LEDGER( object )){
 		/* a ledger has been deleted */
 	}
 }
@@ -880,7 +880,7 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplatesSet *self )
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
-	if( type == OFO_TYPE_OPE_TEMPLATE || type == OFO_TYPE_JOURNAL ){
+	if( type == OFO_TYPE_OPE_TEMPLATE || type == OFO_TYPE_LEDGER ){
 		while( gtk_notebook_get_n_pages( self->private->book )){
 			gtk_notebook_remove_page( self->private->book, 0 );
 		}

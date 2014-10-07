@@ -862,7 +862,7 @@ draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext
 	pango_cairo_update_layout( cr, priv->body_layout );
 	pango_cairo_show_layout( cr, priv->body_layout );
 
-	pango_layout_set_text( priv->body_layout, ofo_entry_get_journal( entry ), -1 );
+	pango_layout_set_text( priv->body_layout, ofo_entry_get_ledger( entry ), -1 );
 	cairo_move_to( cr, priv->body_journal_tab, y );
 	pango_cairo_update_layout( cr, priv->body_layout );
 	pango_cairo_show_layout( cr, priv->body_layout );

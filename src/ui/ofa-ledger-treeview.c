@@ -30,17 +30,16 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-journal-treeview.h"
+#include "ui/ofa-ledger-treeview.h"
 
 /* private instance data
  */
-struct _ofaJournalTreeviewPrivate {
+struct _ofaLedgerTreeviewPrivate {
 	gboolean          dispose_has_run;
 
 	/* input parameters
@@ -49,8 +48,8 @@ struct _ofaJournalTreeviewPrivate {
 	ofoDossier       *dossier;
 	GtkContainer     *parent;
 	gboolean          allow_multiple_selection;
-	JournalTreeviewCb pfnSelected;
-	JournalTreeviewCb pfnActivated;
+	ofaLedgerTreeviewCb  pfnSelected;
+	ofaLedgerTreeviewCb  pfnActivated;
 	void             *user_data;
 
 	/* internal datas
@@ -73,63 +72,63 @@ enum {
 /* a structure used during the iteration for each selected
  */
 typedef struct {
-	JournalTreeviewCb   fn;
+	ofaLedgerTreeviewCb    fn;
 	void               *user_data;
-	ofaJournalTreeview *self;
+	ofaLedgerTreeview  *self;
 }
 	ForeachTreeview;
 
-G_DEFINE_TYPE( ofaJournalTreeview, ofa_journal_treeview, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaLedgerTreeview, ofa_ledger_treeview, G_TYPE_OBJECT )
 
-static void        on_parent_container_finalized( ofaJournalTreeview *self, gpointer this_was_the_container );
-static void        setup_treeview( ofaJournalTreeview *self );
-static void        dossier_signal_connect( ofaJournalTreeview *self );
-static void        insert_dataset( ofaJournalTreeview *self, const gchar *initial_selection );
-static void        insert_new_row( ofaJournalTreeview *self, ofoJournal *journal, gboolean with_selection );
-static void        set_row_by_iter( ofaJournalTreeview *self, ofoJournal *journal, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gint        on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaJournalTreeview *self );
+static void        on_parent_container_finalized( ofaLedgerTreeview *self, gpointer this_was_the_container );
+static void        setup_treeview( ofaLedgerTreeview *self );
+static void        dossier_signal_connect( ofaLedgerTreeview *self );
+static void        insert_dataset( ofaLedgerTreeview *self, const gchar *initial_selection );
+static void        insert_new_row( ofaLedgerTreeview *self, ofoLedger *ledger, gboolean with_selection );
+static void        set_row_by_iter( ofaLedgerTreeview *self, ofoLedger *ledger, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gint        on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerTreeview *self );
 static gint        cmp_by_mnemo( const gchar *a, const gchar *b );
-static void        select_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo );
-static void        select_row_by_iter( ofaJournalTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean    find_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void        on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaJournalTreeview *self );
-static void        on_row_selected( GtkTreeSelection *selection, ofaJournalTreeview *self );
-static GList      *get_selected( ofaJournalTreeview *self );
-static void        on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self );
-static void        on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalTreeview *self );
-static void        on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self );
-static void        on_reloaded_dataset( ofoDossier *dossier, GType type, ofaJournalTreeview *self );
+static void        select_row_by_mnemo( ofaLedgerTreeview *self, const gchar *mnemo );
+static void        select_row_by_iter( ofaLedgerTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean    find_row_by_mnemo( ofaLedgerTreeview *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void        on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaLedgerTreeview *self );
+static void        on_row_selected( GtkTreeSelection *selection, ofaLedgerTreeview *self );
+static GList      *get_selected( ofaLedgerTreeview *self );
+static void        on_new_object( ofoDossier *dossier, ofoBase *object, ofaLedgerTreeview *self );
+static void        on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaLedgerTreeview *self );
+static void        on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaLedgerTreeview *self );
+static void        on_reloaded_dataset( ofoDossier *dossier, GType type, ofaLedgerTreeview *self );
 
 static void
-journal_treeview_finalize( GObject *instance )
+ledger_treeview_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_journal_treeview_finalize";
-	ofaJournalTreeviewPrivate *priv;
+	static const gchar *thisfn = "ofa_ledger_treeview_finalize";
+	ofaLedgerTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_JOURNAL_TREEVIEW( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_TREEVIEW( instance ));
 
-	priv = OFA_JOURNAL_TREEVIEW( instance )->private;
+	priv = OFA_LEDGER_TREEVIEW( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_journal_treeview_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ledger_treeview_parent_class )->finalize( instance );
 }
 
 static void
-journal_treeview_dispose( GObject *instance )
+ledger_treeview_dispose( GObject *instance )
 {
-	ofaJournalTreeviewPrivate *priv;
+	ofaLedgerTreeviewPrivate *priv;
 	GList *iha;
 	gulong handler_id;
 
-	g_return_if_fail( instance && OFA_IS_JOURNAL_TREEVIEW( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_TREEVIEW( instance ));
 
-	priv = ( OFA_JOURNAL_TREEVIEW( instance ))->private;
+	priv = ( OFA_LEDGER_TREEVIEW( instance ))->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -149,45 +148,45 @@ journal_treeview_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_journal_treeview_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ledger_treeview_parent_class )->dispose( instance );
 }
 
 static void
-ofa_journal_treeview_init( ofaJournalTreeview *self )
+ofa_ledger_treeview_init( ofaLedgerTreeview *self )
 {
-	static const gchar *thisfn = "ofa_journal_treeview_init";
+	static const gchar *thisfn = "ofa_ledger_treeview_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ));
 
-	self->private = g_new0( ofaJournalTreeviewPrivate, 1 );
+	self->private = g_new0( ofaLedgerTreeviewPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 	self->private->handlers = NULL;
 }
 
 static void
-ofa_journal_treeview_class_init( ofaJournalTreeviewClass *klass )
+ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 {
-	static const gchar *thisfn = "ofa_journal_treeview_class_init";
+	static const gchar *thisfn = "ofa_ledger_treeview_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = journal_treeview_dispose;
-	G_OBJECT_CLASS( klass )->finalize = journal_treeview_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ledger_treeview_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ledger_treeview_finalize;
 }
 
 /**
- * ofa_journal_treeview_new
+ * ofa_ledger_treeview_new
  */
-ofaJournalTreeview *
-ofa_journal_treeview_new( const JournalTreeviewParms *parms )
+ofaLedgerTreeview *
+ofa_ledger_treeview_new( const ofaLedgerTreeviewParms *parms )
 {
-	ofaJournalTreeview *view;
+	ofaLedgerTreeview *view;
 
-	view = g_object_new( OFA_TYPE_JOURNAL_TREEVIEW, NULL );
+	view = g_object_new( OFA_TYPE_LEDGER_TREEVIEW, NULL );
 
 	/* get the input parameters */
 	view->private->main_window = parms->main_window;
@@ -211,15 +210,15 @@ ofa_journal_treeview_new( const JournalTreeviewParms *parms )
 }
 
 static void
-on_parent_container_finalized( ofaJournalTreeview *self, gpointer this_was_the_container )
+on_parent_container_finalized( ofaLedgerTreeview *self, gpointer this_was_the_container )
 {
-	g_return_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ));
 
 	g_object_unref( self );
 }
 
 static void
-setup_treeview( ofaJournalTreeview *self )
+setup_treeview( ofaLedgerTreeview *self )
 {
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
@@ -293,7 +292,7 @@ setup_treeview( ofaJournalTreeview *self )
 }
 
 static void
-dossier_signal_connect( ofaJournalTreeview *self )
+dossier_signal_connect( ofaLedgerTreeview *self )
 {
 	gulong handler;
 
@@ -327,12 +326,12 @@ dossier_signal_connect( ofaJournalTreeview *self )
 }
 
 /**
- * ofa_journal_treeview_init_view( ofaJournalTreeview *view
+ * ofa_ledger_treeview_init_view( ofaLedgerTreeview *view
  */
 void
-ofa_journal_treeview_init_view( ofaJournalTreeview *self, const gchar *initial_selection )
+ofa_ledger_treeview_init_view( ofaLedgerTreeview *self, const gchar *initial_selection )
 {
-	g_return_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ));
 
 	if( !self->private->dispose_has_run ){
 
@@ -341,26 +340,26 @@ ofa_journal_treeview_init_view( ofaJournalTreeview *self, const gchar *initial_s
 }
 
 static void
-insert_dataset( ofaJournalTreeview *self, const gchar *initial_selection )
+insert_dataset( ofaLedgerTreeview *self, const gchar *initial_selection )
 {
 	GList *dataset, *iset;
-	ofoJournal *journal;
+	ofoLedger *ledger;
 
-	dataset = ofo_journal_get_dataset( self->private->dossier );
+	dataset = ofo_ledger_get_dataset( self->private->dossier );
 
 	for( iset=dataset ; iset ; iset=iset->next ){
 
-		journal = OFO_JOURNAL( iset->data );
-		insert_new_row( self, journal, FALSE );
+		ledger = OFO_LEDGER( iset->data );
+		insert_new_row( self, ledger, FALSE );
 	}
 
 	select_row_by_mnemo( self, initial_selection );
 }
 
 static void
-insert_new_row( ofaJournalTreeview *self, ofoJournal *journal, gboolean with_selection )
+insert_new_row( ofaLedgerTreeview *self, ofoLedger *ledger, gboolean with_selection )
 {
-	ofaJournalTreeviewPrivate *priv;
+	ofaLedgerTreeviewPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
@@ -371,13 +370,13 @@ insert_new_row( ofaJournalTreeview *self, ofoJournal *journal, gboolean with_sel
 			GTK_LIST_STORE( tmodel ),
 			&iter,
 			-1,
-			COL_MNEMO,        ofo_journal_get_mnemo( journal ),
-			COL_OBJECT,       journal,
+			COL_MNEMO,        ofo_ledger_get_mnemo( ledger ),
+			COL_OBJECT,       ledger,
 			-1 );
 
-	set_row_by_iter( self, journal, tmodel, &iter );
+	set_row_by_iter( self, ledger, tmodel, &iter );
 
-	/* select the newly added journal */
+	/* select the newly added ledger */
 	if( with_selection ){
 		select_row_by_iter( self, tmodel, &iter );
 		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
@@ -385,28 +384,35 @@ insert_new_row( ofaJournalTreeview *self, ofoJournal *journal, gboolean with_sel
 }
 
 static void
-set_row_by_iter( ofaJournalTreeview *self, ofoJournal *journal, GtkTreeModel *tmodel, GtkTreeIter *iter )
+set_row_by_iter( ofaLedgerTreeview *self, ofoLedger *ledger, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	gchar *sent, *sclo;
+	myDate *dlast_entry, *dlast_closing;
+	gchar *slast_entry, *slast_closing;
 
-	sent = my_date2_to_str( ofo_journal_get_last_entry( journal ), MY_DATE_DMYY );
-	sclo = my_date2_to_str( ofo_journal_get_last_closing( journal ), MY_DATE_DMYY );
+	dlast_entry = ofo_ledger_get_last_entry( ledger );
+	slast_entry = my_date_to_str( dlast_entry, MY_DATE_DMYY );
+
+	dlast_closing = ofo_ledger_get_last_closing( ledger );
+	slast_closing = my_date_to_str( dlast_closing, MY_DATE_DMYY );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( tmodel ),
 			iter,
-			COL_MNEMO,        ofo_journal_get_mnemo( journal ),
-			COL_LABEL,        ofo_journal_get_label( journal ),
-			COL_LAST_ENTRY,   sent,
-			COL_LAST_CLOSING, sclo,
+			COL_MNEMO,        ofo_ledger_get_mnemo( ledger ),
+			COL_LABEL,        ofo_ledger_get_label( ledger ),
+			COL_LAST_ENTRY,   slast_entry,
+			COL_LAST_CLOSING, slast_closing,
 			-1 );
 
-	g_free( sent );
-	g_free( sclo );
+	g_free( slast_closing );
+	g_object_unref( dlast_closing );
+
+	g_free( slast_entry );
+	g_object_unref( dlast_entry );
 }
 
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaJournalTreeview *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerTreeview *self )
 {
 	gchar *amnemo, *bmnemo;
 	gint cmp;
@@ -440,9 +446,9 @@ cmp_by_mnemo( const gchar *a, const gchar *b )
 }
 
 static void
-select_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo )
+select_row_by_mnemo( ofaLedgerTreeview *self, const gchar *mnemo )
 {
-	ofaJournalTreeviewPrivate *priv;
+	ofaLedgerTreeviewPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
@@ -462,9 +468,9 @@ select_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo )
 }
 
 static void
-select_row_by_iter( ofaJournalTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+select_row_by_iter( ofaLedgerTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	ofaJournalTreeviewPrivate *priv;
+	ofaLedgerTreeviewPrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreePath *path;
 
@@ -478,10 +484,10 @@ select_row_by_iter( ofaJournalTreeview *self, GtkTreeModel *tmodel, GtkTreeIter 
 }
 
 static gboolean
-find_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+find_row_by_mnemo( ofaLedgerTreeview *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
-	static const gchar *thisfn = "ofa_journal_treeview_find_row_by_mnemo";
-	ofaJournalTreeviewPrivate *priv;
+	static const gchar *thisfn = "ofa_ledger_treeview_find_row_by_mnemo";
+	ofaLedgerTreeviewPrivate *priv;
 	GtkTreeModel *my_tmodel;
 	GtkTreeIter my_iter;
 	gchar *row_mnemo;
@@ -523,9 +529,9 @@ find_row_by_mnemo( ofaJournalTreeview *self, const gchar *mnemo, GtkTreeModel **
 }
 
 static void
-on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaJournalTreeview *self )
+on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaLedgerTreeview *self )
 {
-	ofaJournalTreeviewPrivate *priv;
+	ofaLedgerTreeviewPrivate *priv;
 	GList *sel_objects;
 
 	priv = self->private;
@@ -537,9 +543,9 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 }
 
 static void
-on_row_selected( GtkTreeSelection *selection, ofaJournalTreeview *self )
+on_row_selected( GtkTreeSelection *selection, ofaLedgerTreeview *self )
 {
-	ofaJournalTreeviewPrivate *priv;
+	ofaLedgerTreeviewPrivate *priv;
 	GList *sel_objects;
 
 	priv = self->private;
@@ -551,15 +557,15 @@ on_row_selected( GtkTreeSelection *selection, ofaJournalTreeview *self )
 }
 
 static GList *
-get_selected( ofaJournalTreeview *self )
+get_selected( ofaLedgerTreeview *self )
 {
-	ofaJournalTreeviewPrivate *priv;
+	ofaLedgerTreeviewPrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GList *sel_rows, *irow;
 	GList *sel_objects;
-	ofoJournal *journal;
+	ofoLedger *ledger;
 
 	priv = self->private;
 	sel_objects = NULL;
@@ -568,9 +574,9 @@ get_selected( ofaJournalTreeview *self )
 
 	for( irow=sel_rows ; irow ; irow=irow->next ){
 		if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) irow->data )){
-			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &journal, -1 );
-			g_object_unref( journal );
-			sel_objects = g_list_append( sel_objects, journal );
+			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &ledger, -1 );
+			g_object_unref( ledger );
+			sel_objects = g_list_append( sel_objects, ledger );
 		}
 	}
 
@@ -580,12 +586,12 @@ get_selected( ofaJournalTreeview *self )
 }
 
 /**
- * ofa_journal_treeview_get_selected:
+ * ofa_ledger_treeview_get_selected:
  */
 GList *
-ofa_journal_treeview_get_selected( ofaJournalTreeview *self )
+ofa_ledger_treeview_get_selected( ofaLedgerTreeview *self )
 {
-	g_return_val_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ), NULL );
+	g_return_val_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ), NULL );
 
 	if( !self->private->dispose_has_run ){
 
@@ -596,12 +602,12 @@ ofa_journal_treeview_get_selected( ofaJournalTreeview *self )
 }
 
 /**
- * ofa_journal_treeview_grab_focus:
+ * ofa_ledger_treeview_grab_focus:
  */
 void
-ofa_journal_treeview_grab_focus( ofaJournalTreeview *self )
+ofa_ledger_treeview_grab_focus( ofaLedgerTreeview *self )
 {
-	g_return_if_fail( self && OFA_IS_JOURNAL_TREEVIEW( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ));
 
 	if( !self->private->dispose_has_run ){
 
@@ -613,9 +619,9 @@ ofa_journal_treeview_grab_focus( ofaJournalTreeview *self )
  * OFA_SIGNAL_NEW_OBJECT signal handler
  */
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaLedgerTreeview *self )
 {
-	static const gchar *thisfn = "ofa_journal_treeview_on_new_object";
+	static const gchar *thisfn = "ofa_ledger_treeview_on_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -623,8 +629,8 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_JOURNAL( object )){
-		insert_new_row( self, OFO_JOURNAL( object ), TRUE );
+	if( OFO_IS_LEDGER( object )){
+		insert_new_row( self, OFO_LEDGER( object ), TRUE );
 	}
 }
 
@@ -632,9 +638,9 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self )
  * OFA_SIGNAL_UPDATE_OBJECT signal handler
  */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalTreeview *self )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaLedgerTreeview *self )
 {
-	static const gchar *thisfn = "ofa_journal_treeview_on_updated_object";
+	static const gchar *thisfn = "ofa_ledger_treeview_on_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	const gchar *mnemo;
@@ -643,15 +649,15 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 			thisfn, ( void * ) dossier,
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
 
-	if( OFO_IS_JOURNAL( object )){
-		mnemo = prev_id ? prev_id : ofo_journal_get_mnemo( OFO_JOURNAL( object ));
+	if( OFO_IS_LEDGER( object )){
+		mnemo = prev_id ? prev_id : ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 		if( find_row_by_mnemo(
 					self,
 					mnemo,
 					&tmodel,
 					&iter )){
 
-			set_row_by_iter( self, OFO_JOURNAL( object ), tmodel, &iter );
+			set_row_by_iter( self, OFO_LEDGER( object ), tmodel, &iter );
 		}
 	}
 }
@@ -660,9 +666,9 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
  * OFA_SIGNAL_DELETED_OBJECT signal handler
  */
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *self )
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaLedgerTreeview *self )
 {
-	static const gchar *thisfn = "ofa_journal_treeview_on_deleted_object";
+	static const gchar *thisfn = "ofa_ledger_treeview_on_deleted_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
@@ -670,10 +676,10 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *sel
 			thisfn, ( void * ) dossier,
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
 
-	if( OFO_IS_JOURNAL( object )){
+	if( OFO_IS_LEDGER( object )){
 		if( find_row_by_mnemo(
 					self,
-					ofo_journal_get_mnemo( OFO_JOURNAL( object )),
+					ofo_ledger_get_mnemo( OFO_LEDGER( object )),
 					&tmodel,
 					&iter )){
 
@@ -686,15 +692,15 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalTreeview *sel
  * OFA_SIGNAL_RELOAD_DATASET signal handler
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaJournalTreeview *self )
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaLedgerTreeview *self )
 {
-	static const gchar *thisfn = "ofa_journal_treeview_on_reloaded_dataset";
+	static const gchar *thisfn = "ofa_ledger_treeview_on_reloaded_dataset";
 	GtkTreeModel *tmodel;
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
-	if( type == OFO_TYPE_JOURNAL ){
+	if( type == OFO_TYPE_LEDGER ){
 		tmodel = gtk_tree_view_get_model( self->private->tview );
 		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 		insert_dataset( self, NULL );

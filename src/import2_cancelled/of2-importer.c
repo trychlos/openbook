@@ -73,7 +73,7 @@ static ImportFormat st_import_formats[] = {
 		{ "Class - CSV",    IMPORTER_TYPE_CLASS,    1, import_class_csv_v1 },
 		{ "Account - CSV",  IMPORTER_TYPE_ACCOUNT,  1, import_account_csv_v1 },
 		{ "Currency - CSV", IMPORTER_TYPE_CURRENCY, 1, import_currency_csv_v1 },
-		{ "Journal - CSV",  IMPORTER_TYPE_JOURNAL,  1, import_journal_csv_v1 },
+		{ "Journal - CSV",  IMPORTER_TYPE_LEDGER,  1, import_journal_csv_v1 },
 		{ "Rate - CSV",     IMPORTER_TYPE_RATE,     1, import_rate_csv_v1 },
 		{ "Entry - CSV",    IMPORTER_TYPE_ENTRY,    1, import_entry_csv_v1 },
 		{ 0 }

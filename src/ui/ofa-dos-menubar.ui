@@ -106,8 +106,8 @@
           <attribute name="action">win.accounts</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_Journals...</attribute>
-          <attribute name="action">win.journals</attribute>
+          <attribute name="label" translatable="yes">_Ledgers...</attribute>
+          <attribute name="action">win.ledgers</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">Operation templates...</attribute>

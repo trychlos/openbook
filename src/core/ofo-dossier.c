@@ -31,7 +31,6 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
@@ -40,7 +39,7 @@
 #include "api/ofo-devise.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-sgbd.h"
 
@@ -432,7 +431,7 @@ connect_objects_handlers( const ofoDossier *dossier )
 
 	ofo_account_connect_handlers( dossier );
 	ofo_entry_connect_handlers( dossier );
-	ofo_journal_connect_handlers( dossier );
+	ofo_ledger_connect_handlers( dossier );
 	ofo_ope_template_connect_handlers( dossier );
 
 	g_signal_connect( G_OBJECT( dossier ),
@@ -803,7 +802,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ECR_DEV_CODE     VARCHAR(3)               COMMENT 'ISO 3A identifier of the currency',"
 			"	ECR_DEBIT        DECIMAL(15,5) DEFAULT 0  COMMENT 'Debiting amount',"
 			"	ECR_CREDIT       DECIMAL(15,5) DEFAULT 0  COMMENT 'Crediting amount',"
-			"	ECR_JOU_MNEMO    VARCHAR(6)               COMMENT 'Mnemonic identifier of the journal',"
+			"	ECR_LED_MNEMO    VARCHAR(6)               COMMENT 'Mnemonic identifier of the ledger',"
 			"	ECR_OTE_MNEMO    VARCHAR(6)               COMMENT 'Mnemonic identifier of the operation template',"
 			"	ECR_STATUS       INTEGER       DEFAULT 1  COMMENT 'Is the entry validated or deleted ?',"
 			"	ECR_MAJ_USER     VARCHAR(20)              COMMENT 'User responsible of last update',"
@@ -818,68 +817,68 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX ("
-			"	JOU_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Mnemonic identifier of the journal',"
-			"	JOU_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Journal label',"
-			"	JOU_NOTES     VARCHAR(4096)               COMMENT 'Journal notes',"
-			"	JOU_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-			"	JOU_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
+			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS ("
+			"	LED_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Mnemonic identifier of the ledger',"
+			"	LED_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Ledger label',"
+			"	LED_NOTES     VARCHAR(4096)               COMMENT 'Ledger notes',"
+			"	LED_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
+			"	LED_UPD_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_DEV ("
-			"	JOU_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal journal identifier',"
-			"	JOU_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
-			"	JOU_DEV_CODE     VARCHAR(3) NOT NULL      COMMENT 'Internal currency identifier',"
-			"	JOU_DEV_CLO_DEB  DECIMAL(15,5)            COMMENT 'Debit balance at last closing',"
-			"	JOU_DEV_CLO_CRE  DECIMAL(15,5)            COMMENT 'Credit balance at last closing',"
-			"	JOU_DEV_DEB      DECIMAL(15,5)            COMMENT 'Current debit balance',"
-			"	JOU_DEV_DEB_DATE DATE                     COMMENT 'Most recent debit entry effect date',"
-			"	JOU_DEV_CRE      DECIMAL(15,5)            COMMENT 'Current credit balance',"
-			"	JOU_DEV_CRE_DATE DATE                     COMMENT 'Most recent credit entry effect date',"
-			"	CONSTRAINT PRIMARY KEY (JOU_MNEMO,JOU_EXE_ID,JOU_DEV_CODE)"
+			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_CUR ("
+			"	LED_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal ledger identifier',"
+			"	LED_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
+			"	LED_CUR_CODE     VARCHAR(3) NOT NULL      COMMENT 'Internal currency identifier',"
+			"	LED_CUR_CLO_DEB  DECIMAL(15,5)            COMMENT 'Debit balance at last closing',"
+			"	LED_CUR_CLO_CRE  DECIMAL(15,5)            COMMENT 'Credit balance at last closing',"
+			"	LED_CUR_DEB      DECIMAL(15,5)            COMMENT 'Current debit balance',"
+			"	LED_CUR_DEB_DATE DATE                     COMMENT 'Most recent debit entry effect date',"
+			"	LED_CUR_CRE      DECIMAL(15,5)            COMMENT 'Current credit balance',"
+			"	LED_CUR_CRE_DATE DATE                     COMMENT 'Most recent credit entry effect date',"
+			"	CONSTRAINT PRIMARY KEY (LED_MNEMO,LED_EXE_ID,LED_CUR_CODE)"
 			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_JOURNAUX_EXE ("
-			"	JOU_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal journal identifier',"
-			"	JOU_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
-			"	JOU_EXE_LAST_CLO DATE                     COMMENT 'Last closing date of the exercice',"
-			"	CONSTRAINT PRIMARY KEY (JOU_MNEMO,JOU_EXE_ID)"
+			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_EXE ("
+			"	LED_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal ledger identifier',"
+			"	LED_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
+			"	LED_EXE_LAST_CLO DATE                     COMMENT 'Last closing date of the exercice',"
+			"	CONSTRAINT PRIMARY KEY (LED_MNEMO,LED_EXE_ID)"
 			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('ACH','Journal des achats','Default')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('VEN','Journal des ventes','Default')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('EXP','Journal de l\\'exploitant','Default')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('OD','Journal des opérations diverses','Default')", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"INSERT IGNORE INTO OFA_T_JOURNAUX (JOU_MNEMO, JOU_LABEL, JOU_MAJ_USER) "
+			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('BQ','Journal de banque','Default')", TRUE )){
 		return( FALSE );
 	}

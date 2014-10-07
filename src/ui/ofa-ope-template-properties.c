@@ -37,7 +37,7 @@
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-journal-combo.h"
+#include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-properties.h"
 
@@ -64,7 +64,7 @@ struct _ofaOpeTemplatePropertiesPrivate {
 	/* internals
 	 */
 	ofoOpeTemplate   *ope_template;
-	ofaJournalCombo  *ledger_combo;
+	ofaLedgerCombo  *ledger_combo;
 	GtkGrid          *grid;				/* detail grid */
 	gint              count;			/* count of added detail lines */
 
@@ -114,7 +114,7 @@ enum {
 /* space between widgets in a detail line */
 #define DETAIL_SPACE                 2
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-entry-template-properties.ui";
+static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-ope-template-properties.ui";
 static const gchar  *st_ui_id        = "OpeTemplatePropertiesDlg";
 
 G_DEFINE_TYPE( ofaOpeTemplateProperties, ofa_ope_template_properties, MY_TYPE_DIALOG )
@@ -257,7 +257,7 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaOpeTemplateProperties *self;
 	ofaOpeTemplatePropertiesPrivate *priv;
-	ofaJournalComboParms parms;
+	ofaLedgerComboParms parms;
 	const gchar *mnemo;
 	GtkWindow *toplevel;
 
@@ -278,11 +278,11 @@ v_init_dialog( myDialog *dialog )
 	parms.label_name = NULL;
 	parms.disp_mnemo = TRUE;
 	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaJournalComboCb ) on_ledger_changed;
+	parms.pfnSelected = ( ofaLedgerComboCb ) on_ledger_changed;
 	parms.user_data = self;
 	parms.initial_mnemo = priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template );
 
-	priv->ledger_combo = ofa_journal_combo_new( &parms );
+	priv->ledger_combo = ofa_ledger_combo_new( &parms );
 
 	init_dialog_ledger_locked( self );
 

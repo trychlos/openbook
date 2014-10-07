@@ -35,7 +35,7 @@
  * Run an intermediate closing on the selected journals.
  */
 
-#include "api/ofo-journal-def.h"
+#include "api/ofo-ledger-def.h"
 
 #include "core/my-dialog.h"
 

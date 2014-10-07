@@ -381,6 +381,10 @@ ofo_rate_get_upd_stamp( const ofoRate *rate )
 
 /**
  * ofo_rate_get_min_valid:
+ *
+ * Returns the smallest beginning date, all validities included.
+ * The returned #myDate object may be %NULL or invalid if it is
+ * infinite in the past.
  */
 const myDate *
 ofo_rate_get_min_valid( const ofoRate *rate )
@@ -397,7 +401,7 @@ ofo_rate_get_min_valid( const ofoRate *rate )
 			sval = ( ofsRateValidity * ) iv->data;
 			if( !min ){
 				min = sval->begin;
-			} else if( my_date_compare( sval->begin, min, TRUE ) < 0 ){
+			} else if( my_date_compare_ex( sval->begin, min, TRUE ) < 0 ){
 				min = sval->begin;
 			}
 		}
@@ -411,6 +415,10 @@ ofo_rate_get_min_valid( const ofoRate *rate )
 
 /**
  * ofo_rate_get_max_valid:
+ *
+ * Returns the greatest ending date, all validities included.
+ * The returned #myDate object may be %NULL or invalid if it is
+ * infinite in the future.
  */
 const myDate *
 ofo_rate_get_max_valid( const ofoRate *rate )
@@ -427,7 +435,7 @@ ofo_rate_get_max_valid( const ofoRate *rate )
 			sval = ( ofsRateValidity * ) iv->data;
 			if( !max ){
 				max = sval->end;
-			} else if( my_date_compare( sval->end, max, FALSE ) > 0 ){
+			} else if( my_date_compare_ex( sval->end, max, FALSE ) > 0 ){
 				max = sval->end;
 			}
 		}
@@ -545,10 +553,10 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const myDate *date )
 
 		for( iva=rate->private->validities ; iva ; iva=iva->next ){
 			svalid = ( ofsRateValidity * ) iva->data;
-			if( my_date_compare( svalid->begin, date, TRUE ) > 0 ){
+			if( my_date_compare_ex( svalid->begin, date, TRUE ) > 0 ){
 				continue;
 			}
-			if( my_date_compare( svalid->end, date, FALSE ) >= 0 ){
+			if( my_date_compare_ex( svalid->end, date, FALSE ) >= 0 ){
 				return( svalid->rate );
 			}
 		}
@@ -1071,7 +1079,6 @@ rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo )
  * | "a" end invalid   |           |         |  ei-es    |   ei-ei    |
  * +-----+-------------+-----------+---------+-----------+------------+
  */
-
 static gint
 rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent )
 {
@@ -1091,14 +1098,14 @@ rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consiste
 			} else if( !my_date_is_valid( b->end )){
 				return( 1 );
 			} else {
-				return( my_date_compare( a->end, b->end, FALSE ));
+				return( my_date_compare_ex( a->end, b->end, FALSE ));
 			}
 		}
 		/* 'bi-bs' case
 		 *  'a' starts from the infinite while 'b-begin' is set
 		 * for this be consistant, a must ends before b starts
 		 * whatever be the case, 'a' is said lesser than 'b' */
-		if( !my_date_is_valid( a->end ) || my_date_compare( a->end, b->begin, TRUE ) >= 0 ){
+		if( !my_date_is_valid( a->end ) || my_date_compare_ex( a->end, b->begin, TRUE ) >= 0 ){
 			if( consistent ){
 				*consistent = FALSE;
 			}
@@ -1111,7 +1118,7 @@ rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consiste
 		/* 'bs-bi' case
 		 * 'b' is said lesser than 'a'
 		 * for this be consistent, 'b' must ends before 'a' starts */
-		if( !my_date_is_valid( b->end ) || my_date_compare( b->end, a->begin, TRUE ) >= 0 ){
+		if( !my_date_is_valid( b->end ) || my_date_compare_ex( b->end, a->begin, TRUE ) >= 0 ){
 			if( consistent ){
 				*consistent = FALSE;
 			}
@@ -1121,13 +1128,13 @@ rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consiste
 
 	/* 'bs-bs' case
 	 * 'a' and 'b' both starts from a set date: b must ends before 'a' starts */
-	if( !my_date_is_valid( b->end ) || my_date_compare( b->end, a->begin, TRUE ) >= 0 ){
+	if( !my_date_is_valid( b->end ) || my_date_compare_ex( b->end, a->begin, TRUE ) >= 0 ){
 		if( consistent ){
 			*consistent = FALSE;
 		}
 	}
 
-	return( my_date_compare( a->begin, a->end, FALSE ));
+	return( my_date_compare( a->begin, a->end ));
 }
 
 /**

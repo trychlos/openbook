@@ -30,31 +30,30 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-devise-combo.h"
-#include "ui/ofa-journal-properties.h"
+#include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  */
-struct _ofaJournalPropertiesPrivate {
+struct _ofaLedgerPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoJournal     *journal;
+	ofoLedger      *ledger;
 	gboolean        is_new;
 	gboolean        updated;
 
 	/* page 2: balances display
 	 */
 	gint            exe_id;
-	gchar          *dev_code;
+	gchar          *currency;
 
 	/* UI
 	 */
@@ -64,9 +63,9 @@ struct _ofaJournalPropertiesPrivate {
 	 */
 	gchar          *mnemo;
 	gchar          *label;
-	gchar          *maj_user;
-	GTimeVal        maj_stamp;
-	GDate           cloture;
+	gchar          *upd_user;
+	GTimeVal        upd_stamp;
+	myDate         *closing;
 };
 
 /* columns displayed in the exercice combobox
@@ -78,51 +77,51 @@ enum {
 	EXE_N_COLUMNS
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-journal-properties.ui";
-static const gchar  *st_ui_id  = "JournalPropertiesDlg";
+static const gchar  *st_ui_xml = PKGUIDIR "/ofa-ledger-properties.ui";
+static const gchar  *st_ui_id  = "LedgerPropertiesDlg";
 
-G_DEFINE_TYPE( ofaJournalProperties, ofa_journal_properties, MY_TYPE_DIALOG )
+G_DEFINE_TYPE( ofaLedgerProperties, ofa_ledger_properties, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      init_balances_page( ofaJournalProperties *self );
-static void      on_mnemo_changed( GtkEntry *entry, ofaJournalProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaJournalProperties *self );
-static void      on_exe_changed( GtkComboBox *box, ofaJournalProperties *self );
-static void      on_devise_changed( const gchar *dev_code, ofaJournalProperties *self );
-static void      display_balances( ofaJournalProperties *self );
-static void      check_for_enable_dlg( ofaJournalProperties *self );
-static gboolean  is_dialog_validable( ofaJournalProperties *self );
+static void      init_balances_page( ofaLedgerProperties *self );
+static void      on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self );
+static void      on_label_changed( GtkEntry *entry, ofaLedgerProperties *self );
+static void      on_exe_changed( GtkComboBox *box, ofaLedgerProperties *self );
+static void      on_currency_changed( const gchar *currency, ofaLedgerProperties *self );
+static void      display_balances( ofaLedgerProperties *self );
+static void      check_for_enable_dlg( ofaLedgerProperties *self );
+static gboolean  is_dialog_validable( ofaLedgerProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaJournalProperties *self );
+static gboolean  do_update( ofaLedgerProperties *self );
 
 static void
-journal_properties_finalize( GObject *instance )
+ledger_properties_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_journal_properties_finalize";
-	ofaJournalPropertiesPrivate *priv;
+	static const gchar *thisfn = "ofa_ledger_properties_finalize";
+	ofaLedgerPropertiesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_JOURNAL_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_PROPERTIES( instance ));
 
-	priv = OFA_JOURNAL_PROPERTIES( instance )->private;
+	priv = OFA_LEDGER_PROPERTIES( instance )->private;
 
 	/* free data members here */
-	g_free( priv->dev_code );
+	g_free( priv->currency );
 	g_free( priv->mnemo );
 	g_free( priv->label );
-	g_free( priv->maj_user );
+	g_free( priv->upd_user );
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_journal_properties_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ledger_properties_parent_class )->finalize( instance );
 }
 
 static void
-journal_properties_dispose( GObject *instance )
+ledger_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_JOURNAL_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
@@ -130,66 +129,66 @@ journal_properties_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_journal_properties_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ledger_properties_parent_class )->dispose( instance );
 }
 
 static void
-ofa_journal_properties_init( ofaJournalProperties *self )
+ofa_ledger_properties_init( ofaLedgerProperties *self )
 {
-	static const gchar *thisfn = "ofa_journal_properties_instance_init";
+	static const gchar *thisfn = "ofa_ledger_properties_instance_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_JOURNAL_PROPERTIES( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_PROPERTIES( self ));
 
-	self->private = g_new0( ofaJournalPropertiesPrivate, 1 );
+	self->private = g_new0( ofaLedgerPropertiesPrivate, 1 );
 
 	self->private->is_new = FALSE;
 	self->private->updated = FALSE;
 }
 
 static void
-ofa_journal_properties_class_init( ofaJournalPropertiesClass *klass )
+ofa_ledger_properties_class_init( ofaLedgerPropertiesClass *klass )
 {
-	static const gchar *thisfn = "ofa_journal_properties_class_init";
+	static const gchar *thisfn = "ofa_ledger_properties_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = journal_properties_dispose;
-	G_OBJECT_CLASS( klass )->finalize = journal_properties_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ledger_properties_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ledger_properties_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
- * ofa_journal_properties_run:
+ * ofa_ledger_properties_run:
  * @main: the main window of the application.
  *
- * Update the properties of an journal
+ * Update the properties of an ledger
  */
 gboolean
-ofa_journal_properties_run( ofaMainWindow *main_window, ofoJournal *journal )
+ofa_ledger_properties_run( ofaMainWindow *main_window, ofoLedger *ledger )
 {
-	static const gchar *thisfn = "ofa_journal_properties_run";
-	ofaJournalProperties *self;
+	static const gchar *thisfn = "ofa_ledger_properties_run";
+	ofaLedgerProperties *self;
 	gboolean updated;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
-	g_debug( "%s: main_window=%p, journal=%p",
-				thisfn, ( void * ) main_window, ( void * ) journal );
+	g_debug( "%s: main_window=%p, ledger=%p",
+				thisfn, ( void * ) main_window, ( void * ) ledger );
 
 	self = g_object_new(
-					OFA_TYPE_JOURNAL_PROPERTIES,
+					OFA_TYPE_LEDGER_PROPERTIES,
 					MY_PROP_MAIN_WINDOW, main_window,
 					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 					MY_PROP_WINDOW_XML,  st_ui_xml,
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	self->private->journal = journal;
+	self->private->ledger = ledger;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -203,21 +202,21 @@ ofa_journal_properties_run( ofaMainWindow *main_window, ofoJournal *journal )
 static void
 v_init_dialog( myDialog *dialog )
 {
-	ofaJournalPropertiesPrivate *priv;
+	ofaLedgerPropertiesPrivate *priv;
 	gchar *title;
 	const gchar *jou_mnemo;
 	GtkEntry *entry;
 	GtkContainer *container;
 
-	priv = OFA_JOURNAL_PROPERTIES( dialog )->private;
+	priv = OFA_LEDGER_PROPERTIES( dialog )->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
-	jou_mnemo = ofo_journal_get_mnemo( priv->journal );
+	jou_mnemo = ofo_ledger_get_mnemo( priv->ledger );
 	if( !jou_mnemo ){
 		priv->is_new = TRUE;
-		title = g_strdup( _( "Defining a new journal" ));
+		title = g_strdup( _( "Defining a new ledger" ));
 	} else {
-		title = g_strdup_printf( _( "Updating « %s » journal" ), jou_mnemo );
+		title = g_strdup_printf( _( "Updating « %s » ledger" ), jou_mnemo );
 	}
 	gtk_window_set_title( GTK_WINDOW( container ), title );
 
@@ -228,23 +227,23 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), dialog );
 
-	priv->label = g_strdup( ofo_journal_get_label( priv->journal ));
+	priv->label = g_strdup( ofo_ledger_get_label( priv->ledger ));
 	entry = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-label" ));
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
-	init_balances_page( OFA_JOURNAL_PROPERTIES( dialog ));
+	init_balances_page( OFA_LEDGER_PROPERTIES( dialog ));
 
-	my_utils_init_notes_ex( container, journal );
-	my_utils_init_maj_user_stamp_ex( container, journal );
+	my_utils_init_notes_ex( container, ledger );
+	my_utils_init_upd_user_stamp_ex( container, ledger );
 
-	check_for_enable_dlg( OFA_JOURNAL_PROPERTIES( dialog ));
+	check_for_enable_dlg( OFA_LEDGER_PROPERTIES( dialog ));
 }
 
 static void
-init_balances_page( ofaJournalProperties *self )
+init_balances_page( ofaLedgerProperties *self )
 {
 	GtkContainer *container;
 	ofaDeviseComboParms parms;
@@ -266,7 +265,7 @@ init_balances_page( ofaJournalProperties *self )
 	parms.label_name = NULL;
 	parms.disp_code = FALSE;
 	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaDeviseComboCb ) on_devise_changed;
+	parms.pfnSelected = ( ofaDeviseComboCb ) on_currency_changed;
 	parms.user_data = self;
 	parms.initial_code = ofo_dossier_get_default_devise( MY_WINDOW( self )->protected->dossier );
 
@@ -289,7 +288,7 @@ init_balances_page( ofaJournalProperties *self )
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( exe_box ), text_cell, FALSE );
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( exe_box ), text_cell, "text", EXE_COL_END );
 
-	list = ofo_journal_get_exe_list( self->private->journal );
+	list = ofo_ledger_get_exe_list( self->private->ledger );
 	idx = -1;
 	current_exe_id = ofo_dossier_get_current_exe_id( MY_WINDOW( self )->protected->dossier );
 
@@ -337,7 +336,7 @@ init_balances_page( ofaJournalProperties *self )
 }
 
 static void
-on_mnemo_changed( GtkEntry *entry, ofaJournalProperties *self )
+on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self )
 {
 	g_free( self->private->mnemo );
 	self->private->mnemo = g_strdup( gtk_entry_get_text( entry ));
@@ -346,7 +345,7 @@ on_mnemo_changed( GtkEntry *entry, ofaJournalProperties *self )
 }
 
 static void
-on_label_changed( GtkEntry *entry, ofaJournalProperties *self )
+on_label_changed( GtkEntry *entry, ofaLedgerProperties *self )
 {
 	g_free( self->private->label );
 	self->private->label = g_strdup( gtk_entry_get_text( entry ));
@@ -355,7 +354,7 @@ on_label_changed( GtkEntry *entry, ofaJournalProperties *self )
 }
 
 static void
-on_exe_changed( GtkComboBox *box, ofaJournalProperties *self )
+on_exe_changed( GtkComboBox *box, ofaLedgerProperties *self )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -371,24 +370,24 @@ on_exe_changed( GtkComboBox *box, ofaJournalProperties *self )
  * ofaDeviseComboCb
  */
 static void
-on_devise_changed( const gchar *dev_code, ofaJournalProperties *self )
+on_currency_changed( const gchar *currency, ofaLedgerProperties *self )
 {
-	g_free( self->private->dev_code );
-	self->private->dev_code = g_strdup( dev_code );
+	g_free( self->private->currency );
+	self->private->currency = g_strdup( currency );
 	display_balances( self );
 }
 
 static void
-display_balances( ofaJournalProperties *self )
+display_balances( ofaLedgerProperties *self )
 {
-	ofaJournalPropertiesPrivate *priv;
+	ofaLedgerPropertiesPrivate *priv;
 	GtkContainer *container;
 	GtkLabel *label;
 	gchar *str;
 
 	priv = self->private;
 
-	if( priv->exe_id <= 0 || !priv->dev_code || !g_utf8_strlen( priv->dev_code, -1 )){
+	if( priv->exe_id <= 0 || !priv->currency || !g_utf8_strlen( priv->currency, -1 )){
 		return;
 	}
 
@@ -396,38 +395,38 @@ display_balances( ofaJournalProperties *self )
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-clo-deb" ));
-	str = g_strdup_printf( "%'.2lf", ofo_journal_get_clo_deb( priv->journal, priv->exe_id, priv->dev_code ));
+	str = g_strdup_printf( "%'.2lf", ofo_ledger_get_clo_deb( priv->ledger, priv->exe_id, priv->currency ));
 	gtk_label_set_text( label, str );
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-clo-cre" ));
-	str = g_strdup_printf( "%'.2lf", ofo_journal_get_clo_cre( priv->journal, priv->exe_id, priv->dev_code ));
+	str = g_strdup_printf( "%'.2lf", ofo_ledger_get_clo_cre( priv->ledger, priv->exe_id, priv->currency ));
 	gtk_label_set_text( label, str );
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-deb" ));
-	str = g_strdup_printf( "%'.2lf", ofo_journal_get_deb( priv->journal, priv->exe_id, priv->dev_code ));
+	str = g_strdup_printf( "%'.2lf", ofo_ledger_get_deb( priv->ledger, priv->exe_id, priv->currency ));
 	gtk_label_set_text( label, str );
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-deb-date" ));
-	str = my_date2_to_str( ofo_journal_get_deb_date( priv->journal, priv->exe_id, priv->dev_code ), MY_DATE_DMYY );
+	str = my_date_to_str( ofo_ledger_get_deb_date( priv->ledger, priv->exe_id, priv->currency ), MY_DATE_DMYY );
 	gtk_label_set_text( label, str );
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-cre" ));
-	str = g_strdup_printf( "%'.2lf", ofo_journal_get_cre( priv->journal, priv->exe_id, priv->dev_code ));
+	str = g_strdup_printf( "%'.2lf", ofo_ledger_get_cre( priv->ledger, priv->exe_id, priv->currency ));
 	gtk_label_set_text( label, str );
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-cre-date" ));
-	str = my_date2_to_str( ofo_journal_get_cre_date( priv->journal, priv->exe_id, priv->dev_code ), MY_DATE_DMYY );
+	str = my_date_to_str( ofo_ledger_get_cre_date( priv->ledger, priv->exe_id, priv->currency ), MY_DATE_DMYY );
 	gtk_label_set_text( label, str );
 	g_free( str );
 }
 
 static void
-check_for_enable_dlg( ofaJournalProperties *self )
+check_for_enable_dlg( ofaLedgerProperties *self )
 {
 	GtkWidget *button;
 
@@ -439,21 +438,21 @@ check_for_enable_dlg( ofaJournalProperties *self )
 }
 
 static gboolean
-is_dialog_validable( ofaJournalProperties *self )
+is_dialog_validable( ofaLedgerProperties *self )
 {
 	gboolean ok;
-	ofaJournalPropertiesPrivate *priv;
-	ofoJournal *exists;
+	ofaLedgerPropertiesPrivate *priv;
+	ofoLedger *exists;
 
 	priv = self->private;
 
-	ok = ofo_journal_is_valid( priv->mnemo, priv->label );
+	ok = ofo_ledger_is_valid( priv->mnemo, priv->label );
 
 	if( ok ){
-		exists = ofo_journal_get_by_mnemo(
+		exists = ofo_ledger_get_by_mnemo(
 				MY_WINDOW( self )->protected->dossier, priv->mnemo );
 		ok &= !exists ||
-				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_journal_get_mnemo( priv->journal )));
+				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ledger_get_mnemo( priv->ledger )));
 	}
 
 	return( ok );
@@ -465,37 +464,37 @@ is_dialog_validable( ofaJournalProperties *self )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	return( do_update( OFA_JOURNAL_PROPERTIES( dialog )));
+	return( do_update( OFA_LEDGER_PROPERTIES( dialog )));
 }
 
 /*
- * either creating a new journal (prev_mnemo is empty)
+ * either creating a new ledger (prev_mnemo is empty)
  * or updating an existing one, and prev_mnemo may have been modified
  */
 static gboolean
-do_update( ofaJournalProperties *self )
+do_update( ofaLedgerProperties *self )
 {
-	ofaJournalPropertiesPrivate *priv;
+	ofaLedgerPropertiesPrivate *priv;
 	gchar *prev_mnemo;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->private;
-	prev_mnemo = g_strdup( ofo_journal_get_mnemo( priv->journal ));
+	prev_mnemo = g_strdup( ofo_ledger_get_mnemo( priv->ledger ));
 
-	/* le nouveau mnemo n'est pas encore utilisé,
-	 * ou bien il est déjà utilisé par ce même journal (n'a pas été modifié)
+	/* the new mnemo is not yet used,
+	 * or it is used by this same ledger (does not have been modified yet)
 	 */
-	ofo_journal_set_mnemo( priv->journal, priv->mnemo );
-	ofo_journal_set_label( priv->journal, priv->label );
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), journal );
+	ofo_ledger_set_mnemo( priv->ledger, priv->mnemo );
+	ofo_ledger_set_label( priv->ledger, priv->label );
+	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), ledger );
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_journal_insert( priv->journal );
+				ofo_ledger_insert( priv->ledger );
 	} else {
 		priv->updated =
-				ofo_journal_update( priv->journal, prev_mnemo );
+				ofo_ledger_update( priv->ledger, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

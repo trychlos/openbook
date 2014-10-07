@@ -44,7 +44,7 @@
 #include "api/ofo-class.h"
 #include "api/ofo-devise.h"
 #include "api/ofo-entry.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
@@ -119,7 +119,7 @@ static const sRadios st_radios[] = {
 		{ IMPORTER_TYPE_CLASS,    "p2-class" },
 		{ IMPORTER_TYPE_ACCOUNT,  "p2-account" },
 		{ IMPORTER_TYPE_CURRENCY, "p2-currency" },
-		{ IMPORTER_TYPE_JOURNAL,  "p2-journals" },
+		{ IMPORTER_TYPE_LEDGER,  "p2-journals" },
 		{ IMPORTER_TYPE_MODEL,    "p2-model" },
 		{ IMPORTER_TYPE_RATE,     "p2-rate" },
 		{ IMPORTER_TYPE_ENTRY,    "p2-entries" },
@@ -169,7 +169,7 @@ static gint       import_class_csv( ofaImport *self );
 static gint       import_account_csv( ofaImport *self );
 static gint       import_devise_csv( ofaImport *self );
 static gint       import_entry_csv( ofaImport *self );
-static gint       import_journal_csv( ofaImport *self );
+static gint       importledger_csv( ofaImport *self );
 static gint       import_model_csv( ofaImport *self );
 static gint       import_rate_csv( ofaImport *self );
 static GSList    *split_csv_content( ofaImport *self );
@@ -726,8 +726,8 @@ on_apply( GtkAssistant *assistant, ofaImport *self )
 			case IMPORTER_TYPE_ENTRY:
 				count = import_entry_csv( self );
 				break;
-			case IMPORTER_TYPE_JOURNAL:
-				count = import_journal_csv( self );
+			case IMPORTER_TYPE_LEDGER:
+				count = importledger_csv( self );
 				break;
 			case IMPORTER_TYPE_MODEL:
 				count = import_model_csv( self );
@@ -975,7 +975,7 @@ import_entry_csv( ofaImport *self )
  * header : yes
  */
 static gint
-import_journal_csv( ofaImport *self )
+importledger_csv( ofaImport *self )
 {
 	GSList *lines;
 	gchar *str;
@@ -995,7 +995,7 @@ import_journal_csv( ofaImport *self )
 		return( -1 );
 	}
 
-	ofo_journal_import_csv(
+	ofo_ledger_import_csv(
 			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );

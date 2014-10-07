@@ -24,45 +24,45 @@
  * $Id$
  */
 
-#ifndef __OFA_RAPPRO_H__
-#define __OFA_RAPPRO_H__
+#ifndef __OFA_LEDGERS_SET_H__
+#define __OFA_LEDGERS_SET_H__
 
 /**
- * SECTION: ofa_rappro
- * @short_description: #ofaRappro class definition.
+ * SECTION: ofa_ledgers_set
+ * @short_description: #ofaLedgersSet class definition.
  * @include: ui/ofa-ledgers-set.h
  *
- * Display the chart of accounts, letting the user edit it.
+ * Display the list of ledgers.
  */
 
 #include "core/ofa-main-page-def.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_RAPPRO                ( ofa_rappro_get_type())
-#define OFA_RAPPRO( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RAPPRO, ofaRappro ))
-#define OFA_RAPPRO_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RAPPRO, ofaRapproClass ))
-#define OFA_IS_RAPPRO( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RAPPRO ))
-#define OFA_IS_RAPPRO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RAPPRO ))
-#define OFA_RAPPRO_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RAPPRO, ofaRapproClass ))
+#define OFA_TYPE_LEDGERS_SET                ( ofa_ledgers_set_get_type())
+#define OFA_LEDGERS_SET( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_LEDGERS_SET, ofaLedgersSet ))
+#define OFA_LEDGERS_SET_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_LEDGERS_SET, ofaLedgersSetClass ))
+#define OFA_IS_LEDGERS_SET( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_LEDGERS_SET ))
+#define OFA_IS_LEDGERS_SET_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_LEDGERS_SET ))
+#define OFA_LEDGERS_SET_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_LEDGERS_SET, ofaLedgersSetClass ))
 
-typedef struct _ofaRapproPrivate       ofaRapproPrivate;
+typedef struct _ofaLedgersSetPrivate        ofaLedgersSetPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPage       parent;
-	ofaRapproPrivate *private;
+	ofaMainPage           parent;
+	ofaLedgersSetPrivate *private;
 }
-	ofaRappro;
+	ofaLedgersSet;
 
 typedef struct {
 	/*< private >*/
 	ofaMainPageClass parent;
 }
-	ofaRapproClass;
+	ofaLedgersSetClass;
 
-GType ofa_rappro_get_type( void ) G_GNUC_CONST;
+GType ofa_ledgers_set_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_RAPPRO_H__ */
+#endif /* __OFA_LEDGERS_SET_H__ */

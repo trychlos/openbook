@@ -33,11 +33,11 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 
 #include "core/my-window-prot.h"
 
-#include "ui/ofa-journal-treeview.h"
+#include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-int-closing.h"
 #include "ui/ofa-main-window.h"
 
@@ -51,16 +51,16 @@ struct _ofaIntClosingPrivate {
 
 	/* UI
 	 */
-	ofaJournalTreeview *tview;
+	ofaLedgerTreeview *tview;
 	GtkButton          *do_close_btn;
 	GtkLabel           *date_label;
 	GtkLabel           *message_label;
 
-	/* during the iteration on each selected journal
+	/* during the iteration on each selected ledger
 	 */
 	gint                count;
 	gint                closeable;
-	GString            *jou_list;
+	GString            *ledgers_list;
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-int-closing.ui";
@@ -75,10 +75,10 @@ static gboolean  date_check_cb( GDate *date, ofaIntClosing *self );
 static void      on_date_changed( GtkEntry *entry, ofaIntClosing *self );
 static void      check_for_enable_dlg( ofaIntClosing *self, GList *selected );
 static gboolean  is_dialog_validable( ofaIntClosing *self, GList *selected );
-static void      check_foreach_journal( ofaIntClosing *self, ofoJournal *journal );
+static void      check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_close( ofaIntClosing *self );
-static gboolean  close_foreach_journal( ofaIntClosing *self, ofoJournal *journal );
+static gboolean  close_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger );
 static void      do_end_close( ofaIntClosing *self );
 
 static void
@@ -148,7 +148,7 @@ ofa_int_closing_class_init( ofaIntClosingClass *klass )
  * ofa_int_closing_run:
  * @main: the main window of the application.
  *
- * Run an intermediate closing on selected journals
+ * Run an intermediate closing on selected ledgers
  */
 gboolean
 ofa_int_closing_run( ofaMainWindow *main_window )
@@ -182,7 +182,7 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaIntClosingPrivate *priv;
-	JournalTreeviewParms parms;
+	ofaLedgerTreeviewParms parms;
 	GtkContainer *container;
 	GtkButton *button;
 	GtkLabel *label;
@@ -200,12 +200,12 @@ v_init_dialog( myDialog *dialog )
 	parms.parent = GTK_CONTAINER(
 					my_utils_container_get_child_by_name( container, "px-treeview-alignement" ));
 	parms.allow_multiple_selection = TRUE;
-	parms.pfnActivated = ( JournalTreeviewCb ) on_rows_activated;
-	parms.pfnSelected = ( JournalTreeviewCb ) on_rows_selected;
+	parms.pfnActivated = ( ofaLedgerTreeviewCb ) on_rows_activated;
+	parms.pfnSelected = ( ofaLedgerTreeviewCb ) on_rows_selected;
 	parms.user_data = dialog;
 
-	priv->tview = ofa_journal_treeview_new( &parms );
-	ofa_journal_treeview_init_view( priv->tview, NULL );
+	priv->tview = ofa_ledger_treeview_new( &parms );
+	ofa_ledger_treeview_init_view( priv->tview, NULL );
 
 	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, "p1-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -230,7 +230,7 @@ v_init_dialog( myDialog *dialog )
 }
 
 /*
- * JournalTreeview callback
+ * LedgerTreeview callback
  */
 static void
 on_rows_activated( GList *selected, ofaIntClosing *self )
@@ -241,7 +241,7 @@ on_rows_activated( GList *selected, ofaIntClosing *self )
 }
 
 /*
- * JournalTreeview callback
+ * LedgerTreeview callback
  */
 static void
 on_rows_selected( GList *selected, ofaIntClosing *self )
@@ -301,21 +301,21 @@ is_dialog_validable( ofaIntClosing *self, GList *selected )
 	/* do we have a intrinsically valid proposed closing date ? */
 	ok = priv->valid;
 
-	/* check that each journal is not yet closed for this date */
+	/* check that each ledger is not yet closed for this date */
 	if( ok ){
 		priv->count = 0;
 		priv->closeable = 0;
 
 		if( !selected ){
-			selected = ofa_journal_treeview_get_selected( priv->tview );
+			selected = ofa_ledger_treeview_get_selected( priv->tview );
 		}
 
 		for( isel=selected ; isel ; isel=isel->next ){
-			check_foreach_journal( self, OFO_JOURNAL( isel->data ));
+			check_foreach_ledger( self, OFO_LEDGER( isel->data ));
 		}
 
 		if( !priv->closeable ){
-			gtk_label_set_text( priv->message_label, _( "None of the selected journals is closeable at the proposed date" ));
+			gtk_label_set_text( priv->message_label, _( "None of the selected ledgers is closeable at the proposed date" ));
 			ok = FALSE;
 		}
 	}
@@ -327,17 +327,28 @@ is_dialog_validable( ofaIntClosing *self, GList *selected )
 }
 
 static void
-check_foreach_journal( ofaIntClosing *self, ofoJournal *journal )
+check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 {
 	ofaIntClosingPrivate *priv;
-	const GDate *last;
+	myDate *last;
+	myDate *priv_closing;
+	gchar *str;
 
 	priv = self->private;
 	priv->count += 1;
 
-	last = ofo_journal_get_last_closing( journal );
-	if( !last || !g_date_valid( last ) || g_date_compare( &priv->closing, last ) > 0 ){
+	last = ofo_ledger_get_last_closing( ledger );
+	str = my_date2_to_str( &priv->closing, MY_DATE_SQL );
+	priv_closing = my_date_new_from_sql( str );
+
+	if( !my_date_is_valid( last ) || my_date_compare( priv_closing, last ) > 0 ){
 		priv->closeable += 1;
+	}
+
+	g_free( str );
+	g_object_unref( priv_closing );
+	if( last ){
+		g_object_unref( last );
 	}
 }
 
@@ -355,16 +366,16 @@ do_close( ofaIntClosing *self )
 	gboolean ok;
 
 	priv = self->private;
-	selected = ofa_journal_treeview_get_selected( priv->tview );
+	selected = ofa_ledger_treeview_get_selected( priv->tview );
 	ok = is_dialog_validable( self, selected );
 
 	g_return_val_if_fail( ok, FALSE );
 
 	priv->count = 0;
-	priv->jou_list = g_string_new( "" );
+	priv->ledgers_list = g_string_new( "" );
 
 	for( isel=selected ; isel ; isel=isel->next ){
-		close_foreach_journal( self, OFO_JOURNAL( isel->data ));
+		close_foreach_ledger( self, OFO_LEDGER( isel->data ));
 	}
 
 	do_end_close( self );
@@ -373,28 +384,36 @@ do_close( ofaIntClosing *self )
 }
 
 static gboolean
-close_foreach_journal( ofaIntClosing *self, ofoJournal *journal )
+close_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 {
 	ofaIntClosingPrivate *priv;
 	const gchar *mnemo;
 	gchar *str;
+	myDate *priv_closing;
+	gboolean ok;
 
 	priv = self->private;
 
-	mnemo = ofo_journal_get_mnemo( journal );
+	mnemo = ofo_ledger_get_mnemo( ledger );
 
-	str = g_strdup_printf( _( "Closing journal %s" ), mnemo );
+	str = g_strdup_printf( _( "Closing ledger %s" ), mnemo );
 	gtk_label_set_text( priv->message_label, str );
 	g_free( str );
 
 	priv->count += 1;
 
-	if( g_utf8_strlen( priv->jou_list->str, -1 )){
-		priv->jou_list = g_string_append( priv->jou_list, ", " );
+	if( g_utf8_strlen( priv->ledgers_list->str, -1 )){
+		priv->ledgers_list = g_string_append( priv->ledgers_list, ", " );
 	}
-	g_string_append_printf( priv->jou_list, "%s", mnemo );
+	g_string_append_printf( priv->ledgers_list, "%s", mnemo );
 
-	return( ofo_journal_close( journal, &priv->closing ));
+	str = my_date2_to_str( &priv->closing, MY_DATE_SQL );
+	priv_closing = my_date_new_from_sql( str );
+	ok = ofo_ledger_close( ledger, priv_closing );
+	g_object_unref( priv_closing );
+	g_free( str );
+
+	return( ok );
 }
 
 static void
@@ -416,8 +435,8 @@ do_end_close( ofaIntClosing *self )
 	gtk_button_set_label( GTK_BUTTON( button ), _( "Close" ));
 
 	str = g_strdup_printf(
-				"%d journals (%s) successfully closed", priv->count, priv->jou_list->str );
-	g_string_free( priv->jou_list, TRUE );
+				"%d ledgers (%s) successfully closed", priv->count, priv->ledgers_list->str );
+	g_string_free( priv->ledgers_list, TRUE );
 
 	dialog = gtk_message_dialog_new(
 			toplevel,

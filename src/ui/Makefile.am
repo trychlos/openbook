@@ -112,14 +112,14 @@ openbook_SOURCES = \
 	ofa-int-closing.c									\
 	ofa-int-closing.h									\
 	ofa-ipreferences.c									\
-	ofa-journal-combo.c									\
-	ofa-journal-combo.h									\
-	ofa-journal-properties.c							\
-	ofa-journal-properties.h							\
-	ofa-journals-set.c									\
-	ofa-journals-set.h									\
-	ofa-journal-treeview.c								\
-	ofa-journal-treeview.h								\
+	ofa-ledger-combo.c									\
+	ofa-ledger-combo.h									\
+	ofa-ledger-properties.c								\
+	ofa-ledger-properties.h								\
+	ofa-ledger-treeview.c								\
+	ofa-ledger-treeview.h								\
+	ofa-ledgers-set.c									\
+	ofa-ledgers-set.h									\
 	ofa-main-page.c										\
 	ofa-main-page.h										\
 	ofa-main-window.c									\
@@ -182,7 +182,7 @@ ui_files = \
 	ofa-guided-input.ui									\
 	ofa-import.ui										\
 	ofa-int-closing.ui									\
-	ofa-journal-properties.ui							\
+	ofa-ledger-properties.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\

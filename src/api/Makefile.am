@@ -51,8 +51,8 @@ api_include_HEADERS = \
 	ofo-dossier.h										\
 	ofo-dossier-def.h									\
 	ofo-entry.h											\
-	ofo-journal.h										\
-	ofo-journal-def.h									\
+	ofo-ledger.h										\
+	ofo-ledger-def.h									\
 	ofo-ope-template.h									\
 	ofo-ope-template-def.h								\
 	ofo-rate.h											\

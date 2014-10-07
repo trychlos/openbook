@@ -41,7 +41,7 @@
 #include "api/ofo-devise.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-sgbd.h"
 
@@ -58,7 +58,7 @@ struct _ofoEntryPrivate {
 	gchar         *ref;
 	gchar         *account;
 	gchar         *devise;
-	gchar         *journal;
+	gchar         *ledger;
 	gchar         *model;
 	gdouble        debit;
 	gdouble        credit;
@@ -75,17 +75,17 @@ G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void         on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number );
 static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
-static void         on_updated_object_journal_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
+static void         on_updated_objectledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
 static void         on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
 static GList       *entry_load_dataset( const ofoSgbd *sgbd, const gchar *where );
 static const gchar *entry_list_columns( void );
 static ofoEntry    *entry_parse_result( const GSList *row );
 static gint         entry_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
-static gint         entry_count_for_journal( const ofoSgbd *sgbd, const gchar *journal );
+static gint         entry_count_for_ledger( const ofoSgbd *sgbd, const gchar *ledger );
 static gint         entry_count_for_ope_template( const ofoSgbd *sgbd, const gchar *model );
 static gint         entry_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
 static gboolean     entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
-static void         error_journal( const gchar *journal );
+static void         error_ledger( const gchar *ledger );
 static void         error_ope_template( const gchar *model );
 static void         error_currency( const gchar *devise );
 static void         error_acc_number( void );
@@ -114,7 +114,7 @@ ofo_entry_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->label );
 	g_free( priv->devise );
-	g_free( priv->journal );
+	g_free( priv->ledger );
 	g_free( priv->model );
 	g_free( priv->ref );
 	g_free( priv->maj_user );
@@ -210,11 +210,11 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			}
 		}
 
-	} else if( OFO_IS_JOURNAL( object )){
+	} else if( OFO_IS_LEDGER( object )){
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
-			mnemo = ofo_journal_get_mnemo( OFO_JOURNAL( object ));
+			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				on_updated_object_journal_mnemo( dossier, prev_id, mnemo );
+				on_updated_objectledger_mnemo( dossier, prev_id, mnemo );
 			}
 		}
 
@@ -283,7 +283,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 }
 
 static void
-on_updated_object_journal_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
+on_updated_objectledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
 {
 	GString *query;
 	const GDate *date;
@@ -293,7 +293,7 @@ on_updated_object_journal_mnemo( const ofoDossier *dossier, const gchar *prev_id
 
 	g_string_append_printf(
 			query,
-			"SET ECR_JOU_MNEMO='%s' WHERE ECR_JOU_MNEMO='%s' ", mnemo, prev_id );
+			"SET ECR_LED_MNEMO='%s' WHERE ECR_LED_MNEMO='%s' ", mnemo, prev_id );
 
 	str = NULL;
 	date = ofo_dossier_get_current_exe_deb( dossier );
@@ -427,19 +427,19 @@ ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *accoun
 }
 
 /**
- * ofo_entry_get_dataset_by_journal:
+ * ofo_entry_get_dataset_by_ledger:
  */
-GList *ofo_entry_get_dataset_by_journal( const ofoDossier *dossier, const gchar *journal, const GDate *from, const GDate *to )
+GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *ledger, const GDate *from, const GDate *to )
 {
 	GString *where;
 	gchar *str;
 	GList *dataset;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( journal && g_utf8_strlen( journal, -1 ), NULL );
+	g_return_val_if_fail( ledger && g_utf8_strlen( ledger, -1 ), NULL );
 
 	where = g_string_new( "" );
-	g_string_append_printf( where, "ECR_JOU_MNEMO='%s' ", journal );
+	g_string_append_printf( where, "ECR_LED_MNEMO='%s' ", ledger );
 
 	if( from && g_date_valid( from )){
 		str = my_date2_to_str( from, MY_DATE_SQL );
@@ -531,7 +531,7 @@ entry_list_columns( void )
 {
 	return( "ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
 			"	ECR_COMPTE,"
-			"	ECR_DEV_CODE,ECR_JOU_MNEMO,ECR_OTE_MNEMO,"
+			"	ECR_DEV_CODE,ECR_LED_MNEMO,ECR_OTE_MNEMO,"
 			"	ECR_DEBIT,ECR_CREDIT,"
 			"	ECR_STATUS,ECR_MAJ_USER,ECR_MAJ_STAMP,"
 			"	ECR_RAPPRO_DVAL,ECR_RAPPRO_USER,ECR_RAPPRO_STAMP " );
@@ -568,7 +568,7 @@ entry_parse_result( const GSList *row )
 		icol = icol->next;
 		ofo_entry_set_devise( entry, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_entry_set_journal( entry, ( gchar * ) icol->data );
+		ofo_entry_set_ledger( entry, ( gchar * ) icol->data );
 		icol = icol->next;
 		if( icol->data ){
 			ofo_entry_set_ope_template( entry, ( gchar * ) icol->data );
@@ -633,22 +633,22 @@ entry_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
 }
 
 /**
- * ofo_entry_use_journal:
+ * ofo_entry_use_ledger:
  *
- * Returns: %TRUE if a recorded entry makes use of the specified journal.
+ * Returns: %TRUE if a recorded entry makes use of the specified ledger.
  */
 gboolean
-ofo_entry_use_journal( const ofoDossier *dossier, const gchar *journal )
+ofo_entry_use_ledger( const ofoDossier *dossier, const gchar *ledger )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( entry_count_for_journal( ofo_dossier_get_sgbd( dossier ), journal ) > 0 );
+	return( entry_count_for_ledger( ofo_dossier_get_sgbd( dossier ), ledger ) > 0 );
 }
 
 static gint
-entry_count_for_journal( const ofoSgbd *sgbd, const gchar *journal )
+entry_count_for_ledger( const ofoSgbd *sgbd, const gchar *ledger )
 {
-	return( entry_count_for( sgbd, "ECR_JOU_MNEMO", journal ));
+	return( entry_count_for( sgbd, "ECR_LED_MNEMO", ledger ));
 }
 
 /**
@@ -808,16 +808,16 @@ ofo_entry_get_devise( const ofoEntry *entry )
 }
 
 /**
- * ofo_entry_get_journal:
+ * ofo_entry_get_ledger:
  */
 const gchar *
-ofo_entry_get_journal( const ofoEntry *entry )
+ofo_entry_get_ledger( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const gchar * ) entry->private->journal );
+		return(( const gchar * ) entry->private->ledger );
 	}
 
 	return( NULL );
@@ -1080,18 +1080,18 @@ ofo_entry_set_devise( ofoEntry *entry, const gchar *devise )
 }
 
 /**
- * ofo_entry_set_journal:
+ * ofo_entry_set_ledger:
  */
 void
-ofo_entry_set_journal( ofoEntry *entry, const gchar *journal )
+ofo_entry_set_ledger( ofoEntry *entry, const gchar *ledger )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
-	g_return_if_fail( journal && g_utf8_strlen( journal, -1 ));
+	g_return_if_fail( ledger && g_utf8_strlen( ledger, -1 ));
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->private->journal );
-		entry->private->journal = g_strdup( journal );
+		g_free( entry->private->ledger );
+		entry->private->ledger = g_strdup( ledger );
 	}
 }
 
@@ -1238,15 +1238,15 @@ ofo_entry_set_rappro_stamp( ofoEntry *entry, const GTimeVal *rappro_stamp )
 gboolean
 ofo_entry_is_valid( const ofoDossier *dossier,
 							const GDate *effet, const GDate *ope, const gchar *label,
-							const gchar *acc_number, const gchar *devise, const gchar *journal,
+							const gchar *acc_number, const gchar *devise, const gchar *ledger,
 							const gchar *model, gdouble debit, gdouble credit )
 {
 	ofoAccount *account;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !journal || !g_utf8_strlen( journal, -1 ) || !ofo_journal_get_by_mnemo( dossier, journal )){
-		error_journal( journal );
+	if( !ledger || !g_utf8_strlen( ledger, -1 ) || !ofo_ledger_get_by_mnemo( dossier, ledger )){
+		error_ledger( ledger );
 		return( FALSE );
 	}
 	if( !model || !g_utf8_strlen( model, -1 ) || !ofo_ope_template_get_by_mnemo( dossier, model )){
@@ -1292,12 +1292,12 @@ ofoEntry *
 ofo_entry_new_with_data( const ofoDossier *dossier,
 							const GDate *effet, const GDate *ope, const gchar *label,
 							const gchar *ref, const gchar *acc_number,
-							const gchar *devise, const gchar *journal,
+							const gchar *devise, const gchar *ledger,
 							const gchar *model, gdouble debit, gdouble credit )
 {
 	ofoEntry *entry;
 
-	if( !ofo_entry_is_valid( dossier, effet, ope, label, acc_number, devise, journal, model, debit, credit )){
+	if( !ofo_entry_is_valid( dossier, effet, ope, label, acc_number, devise, ledger, model, debit, credit )){
 		return( NULL );
 	}
 
@@ -1309,7 +1309,7 @@ ofo_entry_new_with_data( const ofoDossier *dossier,
 	entry->private->ref = g_strdup( ref );
 	entry->private->account = g_strdup( acc_number );
 	entry->private->devise = g_strdup( devise );
-	entry->private->journal = g_strdup( journal );
+	entry->private->ledger = g_strdup( ledger );
 	entry->private->model = g_strdup( model );
 	entry->private->debit = debit;
 	entry->private->credit = credit;
@@ -1381,7 +1381,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	(ECR_DEFFET,ECR_NUMBER,ECR_DOPE,ECR_LABEL,ECR_REF,ECR_COMPTE,"
-			"	ECR_DEV_CODE,ECR_JOU_MNEMO,ECR_OTE_MNEMO,"
+			"	ECR_DEV_CODE,ECR_LED_MNEMO,ECR_OTE_MNEMO,"
 			"	ECR_DEBIT,ECR_CREDIT,ECR_STATUS,"
 			"	ECR_MAJ_USER, ECR_MAJ_STAMP) "
 			"	VALUES ('%s',%d,'%s','%s',",
@@ -1400,7 +1400,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 				"'%s','%s','%s',",
 				ofo_entry_get_account( entry ),
 				ofo_entry_get_devise( entry ),
-				ofo_entry_get_journal( entry ));
+				ofo_entry_get_ledger( entry ));
 
 	model = ofo_entry_get_ope_template( entry );
 	if( model && g_utf8_strlen( model, -1 )){
@@ -1436,11 +1436,11 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 }
 
 static void
-error_journal( const gchar *journal )
+error_ledger( const gchar *ledger )
 {
 	gchar *str;
 
-	str = g_strdup_printf( _( "Invalid journal identifier: %s" ), journal );
+	str = g_strdup_printf( _( "Invalid ledger identifier: %s" ), ledger );
 	error_entry( str );
 
 	g_free( str );
@@ -1599,13 +1599,13 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	SET ECR_DEFFET='%s',ECR_DOPE='%s',ECR_LABEL='%s',ECR_REF='%s',"
-			"	ECR_COMPTE='%s',ECR_DEV_CODE='%s',ECR_JOU_MNEMO='%s',",
+			"	ECR_COMPTE='%s',ECR_DEV_CODE='%s',ECR_LED_MNEMO='%s',",
 			sdeff, sdope,
 			ofo_entry_get_label( entry ),
 			ofo_entry_get_ref( entry ),
 			ofo_entry_get_account( entry ),
 			ofo_entry_get_devise( entry ),
-			ofo_entry_get_journal( entry ));
+			ofo_entry_get_ledger( entry ));
 
 	model = ofo_entry_get_ope_template( entry );
 	if( !model || !g_utf8_strlen( model, -1 )){
@@ -1708,22 +1708,22 @@ ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
 }
 
 /**
- * ofo_entry_validate_by_journal:
+ * ofo_entry_validate_by_ledger:
  *
  * Must return TRUE even if there is no entries at all, while no error
  * is detected.
  */
 gboolean
-ofo_entry_validate_by_journal( const ofoDossier *dossier, const gchar *mnemo, const GDate *effect )
+ofo_entry_validate_by_ledger( const ofoDossier *dossier, const gchar *mnemo, const myDate *effect )
 {
 	gchar *where;
 	gchar *query, *str;
 	GSList *result, *irow;
 	ofoEntry *entry;
 
-	str = my_date2_to_str( effect, MY_DATE_SQL );
+	str = my_date_to_str( effect, MY_DATE_SQL );
 	where = g_strdup_printf(
-					"	WHERE ECR_JOU_MNEMO='%s' AND ECR_STATUS=%d AND ECR_DEFFET<='%s'",
+					"	WHERE ECR_LED_MNEMO='%s' AND ECR_STATUS=%d AND ECR_DEFFET<='%s'",
 							mnemo, ENT_STATUS_ROUGH, str );
 	g_free( str );
 
@@ -1828,7 +1828,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 
 	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ),
 					"SELECT ECR_DOPE,ECR_DEFFET,ECR_NUMBER,ECR_LABEL,ECR_REF,"
-					"	ECR_DEV_CODE,ECR_JOU_MNEMO,ECR_OTE_MNEMO,"
+					"	ECR_DEV_CODE,ECR_LED_MNEMO,ECR_OTE_MNEMO,"
 					"	ECR_COMPTE,ECR_DEBIT,ECR_CREDIT,"
 					"	ECR_MAJ_USER,ECR_MAJ_STAMP,ECR_STATUS, "
 					"	ECR_RAPPRO_DVAL,ECR_RAPPRO_USER,ECR_RAPPRO_STAMP "
@@ -1858,7 +1858,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		icol = icol->next;
 		ofo_entry_set_devise( entry, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_entry_set_journal( entry, ( gchar * ) icol->data );
+		ofo_entry_set_ledger( entry, ( gchar * ) icol->data );
 		icol = icol->next;
 		if( icol->data ){
 			ofo_entry_set_ope_template( entry, ( gchar * ) icol->data );
@@ -1910,7 +1910,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 				ofo_entry_get_label( entry ),
 				sref ? sref : "",
 				ofo_entry_get_devise( entry ),
-				ofo_entry_get_journal( entry ),
+				ofo_entry_get_ledger( entry ),
 				model ? model : "",
 				ofo_entry_get_account( entry ),
 				ofo_entry_get_debit( entry ),
@@ -1944,7 +1944,7 @@ ofo_entry_get_csv( const ofoDossier *dossier )
  * - label
  * - piece's reference
  * - iso 3a code of the currency, default to those of the account
- * - journal
+ * - ledger
  * - operation template
  * - account number, must exist
  * - debit
@@ -2042,17 +2042,17 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 			str = ( const gchar * ) ico->data;
 			dev_code = g_strdup( str );
 
-			/* journal - default to IMPORT */
+			/* ledger - default to IMPORT */
 			ico = ico->next;
 			str = ( const gchar * ) ico->data;
 			if( !str || !g_utf8_strlen( str, -1 )){
-				ofo_entry_set_journal( entry, "IMPORT" );
-			} else if( !ofo_journal_get_by_mnemo( dossier, str )){
-				g_warning( "%s: import journal not found: %s", thisfn, str );
+				ofo_entry_set_ledger( entry, "IMPORT" );
+			} else if( !ofo_ledger_get_by_mnemo( dossier, str )){
+				g_warning( "%s: import ledger not found: %s", thisfn, str );
 				errors += 1;
 				continue;
 			} else {
-				ofo_entry_set_journal( entry, str );
+				ofo_entry_set_ledger( entry, str );
 			}
 
 			/* operation template */
@@ -2122,7 +2122,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				continue;
 			}
 
-			ofo_entry_set_journal( entry, "IMPORT" );
+			ofo_entry_set_ledger( entry, "IMPORT" );
 			ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
 
 			new_set = g_list_prepend( new_set, entry );

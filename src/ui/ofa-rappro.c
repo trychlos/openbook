@@ -732,7 +732,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRappro *
 	gtk_tree_model_get( tmodel, b, COL_DOPE, &dopeb, COL_NUMBER, &numb, -1 );
 	db = my_date_new_from_str( dopeb, MY_DATE_DMYY );
 
-	cmp = my_date_compare( da, db, FALSE );
+	cmp = my_date_compare( da, db );
 	if( cmp == 0 ){
 		cmp = ( numa < numb ? -1 : ( numa > numb ? 1 : 0 ));
 	}

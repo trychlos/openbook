@@ -38,7 +38,7 @@
 #include "api/ofo-devise.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-sgbd.h"
 
 /* priv instance data
@@ -383,7 +383,7 @@ ofo_devise_is_deletable( const ofoDevise *devise )
 
 		return( !ofo_dossier_use_devise( dossier, dev_code ) &&
 				!ofo_entry_use_devise( dossier, dev_code ) &&
-				!ofo_journal_use_devise( dossier, dev_code ) &&
+				!ofo_ledger_use_currency( dossier, dev_code ) &&
 				!ofo_account_use_devise( dossier, dev_code ));
 	}
 

@@ -36,7 +36,7 @@
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 #include "api/ofo-sgbd.h"
@@ -221,9 +221,9 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			prev_id,
 			( void * ) user_data );
 
-	if( OFO_IS_JOURNAL( object )){
+	if( OFO_IS_LEDGER( object )){
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
-			mnemo = ofo_journal_get_mnemo( OFO_JOURNAL( object ));
+			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
 				do_update_ledger_mnemo( dossier, mnemo, prev_id );
 			}
@@ -814,7 +814,7 @@ ofo_ope_template_is_valid( const gchar *mnemo, const gchar *label, const gchar *
 	return( mnemo && g_utf8_strlen( mnemo, -1 ) &&
 			label && g_utf8_strlen( label, -1 ) &&
 			ledger && g_utf8_strlen( ledger, -1 ) &&
-			ofo_journal_get_by_mnemo( OFO_DOSSIER( st_global->dossier ), ledger ));
+			ofo_ledger_get_by_mnemo( OFO_DOSSIER( st_global->dossier ), ledger ));
 }
 
 /**

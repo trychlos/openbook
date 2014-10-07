@@ -38,7 +38,7 @@
 #include "api/ofo-devise.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
@@ -77,7 +77,7 @@ enum {
 	TYPE_CLASS,
 	TYPE_DEVISE,
 	TYPE_ENTRY,
-	TYPE_JOURNAL,
+	TYPE_LEDGER,
 	TYPE_MODEL,
 	TYPE_RATE,
 	TYPE_DOSSIER,
@@ -109,7 +109,7 @@ static RadioGroup st_type_group[] = {
 		{ "p1-class",   TYPE_CLASS },
 		{ "p1-account", TYPE_ACCOUNT },
 		{ "p1-devise",  TYPE_DEVISE },
-		{ "p1-journal", TYPE_JOURNAL },
+		{ "p1-journal", TYPE_LEDGER },
 		{ "p1-model",   TYPE_MODEL },
 		{ "p1-rate",    TYPE_RATE },
 		{ "p1-entries", TYPE_ENTRY },
@@ -135,7 +135,7 @@ static const ExportDatas st_export_datas[] = {
 		{ TYPE_CLASS,   "/tmp/class.csv",      ofo_class_get_csv },
 		{ TYPE_ACCOUNT, "/tmp/accounts.csv",   ofo_account_get_csv },
 		{ TYPE_DEVISE,  "/tmp/currencies.csv", ofo_devise_get_csv },
-		{ TYPE_JOURNAL, "/tmp/journals.csv",   ofo_journal_get_csv },
+		{ TYPE_LEDGER, "/tmp/journals.csv",   ofo_ledger_get_csv },
 		{ TYPE_MODEL,   "/tmp/models.csv",     ofo_ope_template_get_csv },
 		{ TYPE_RATE,    "/tmp/rates.csv",      ofo_rate_get_csv },
 		{ TYPE_DOSSIER, "/tmp/dossier.csv",    ofo_dossier_get_csv },

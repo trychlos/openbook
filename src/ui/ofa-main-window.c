@@ -48,7 +48,7 @@
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-import.h"
 #include "ui/ofa-int-closing.h"
-#include "ui/ofa-journals-set.h"
+#include "ui/ofa-ledgers-set.h"
 #include "ui/ofa-ope-templates-set.h"
 #include "ui/ofa-print-reconcil.h"
 #include "ui/ofa-rappro.h"
@@ -100,7 +100,7 @@ static void on_ope_import       ( GSimpleAction *action, GVariant *parameter, gp
 static void on_ope_export       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_print_reconcil   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_journals     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_ledgers      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_ope_templates( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_devises      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_rates        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -119,7 +119,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "export",        on_ope_export,        NULL, NULL, NULL },
 		{ "prt-reconcil",  on_print_reconcil,    NULL, NULL, NULL },
 		{ "accounts",      on_ref_accounts,      NULL, NULL, NULL },
-		{ "journals",      on_ref_journals,      NULL, NULL, NULL },
+		{ "ledgers",       on_ref_ledgers,       NULL, NULL, NULL },
 		{ "ope-templates", on_ref_ope_templates, NULL, NULL, NULL },
 		{ "devises",       on_ref_devises,       NULL, NULL, NULL },
 		{ "rates",         on_ref_rates,         NULL, NULL, NULL },
@@ -187,9 +187,9 @@ static sThemeDef st_theme_defs[] = {
 				FALSE,
 				FALSE },
 
-		{ THM_JOURNALS,
-				N_( "Journals" ),
-				ofa_journals_set_get_type,
+		{ THM_LEDGERS,
+				N_( "Ledgers" ),
+				ofa_ledgers_set_get_type,
 				FALSE,
 				FALSE },
 
@@ -235,7 +235,7 @@ static sTreeDef st_tree_defs[] = {
 		{ N_( "Guided input" ),        THM_GUIDED_INPUT },
 		{ N_( "Reconciliation" ),      THM_CONCIL },
 		{ N_( "Chart of accounts" ),   THM_ACCOUNTS },
-		{ N_( "Journals" ),            THM_JOURNALS },
+		{ N_( "Ledgers" ),             THM_LEDGERS },
 		{ N_( "Operation templates" ), THM_OPE_TEMPLATES },
 		{ N_( "Currencies" ),          THM_DEVISES },
 		{ N_( "Rates" ),               THM_RATES },
@@ -1080,16 +1080,16 @@ on_ref_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 }
 
 static void
-on_ref_journals( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_ref_ledgers( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_ref_journals";
+	static const gchar *thisfn = "ofa_main_window_on_ref_ledgers";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_JOURNALS );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_LEDGERS );
 }
 
 static void

@@ -44,16 +44,13 @@ struct _myDatePrivate {
 
 G_DEFINE_TYPE( myDate, my_date, G_TYPE_OBJECT )
 
-static gboolean date_parse_ddmmyyyy_string( myDate *date, const gchar *str );
-static gboolean parse_ddmmyyyy_string( GDate *date, const gchar *str );
-static gboolean date_parse_sql_string( myDate *date, const gchar *sql_string );
-static gboolean parse_sql_string( GDate *date, const gchar *sql_string );
-static gint     date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past );
-static gchar   *date_to_str( const GDate *date, myDateFormat format );
+static gboolean  parse_ddmmyyyy_string( GDate *date, const gchar *str );
+static gboolean  parse_sql_string( GDate *date, const gchar *sql_string );
+static gchar    *date_to_str( const GDate *date, myDateFormat format );
 
-static void     on_date_entry_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gpointer position, gpointer user_data );
-static gchar   *date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position );
-static void     on_date_entry_changed( GtkEditable *editable, gpointer user_data );
+static void      on_date_entry_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gpointer position, gpointer user_data );
+static gchar    *date_entry_insert_text_ddmm( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position );
+static void      on_date_entry_changed( GtkEditable *editable, gpointer user_data );
 /*static void     date_entry_set_label( GtkEditable *editable, const gchar *str );*/
 
 static void
@@ -158,7 +155,8 @@ my_date_new_from_date( const myDate *date )
  * @sql_string: a pointer to a SQL string 'yyyy-mm-dd', or NULL;
  *  the SQL string may be zero '0000-00-00' or a valid date.
  *
- * Returns: a newly allocated #myDate object.
+ * Returns: a newly allocated #myDate object, which may or may not be
+ * valid.
  *
  * The date is set if the @sql_string can be parsed to a valid
  *  'yyyy-mm-dd' date.
@@ -170,8 +168,7 @@ my_date_new_from_sql( const gchar *sql_string )
 	myDate *date;
 
 	date = my_date_new();
-
-	date_parse_sql_string( date, sql_string );
+	my_date_set_from_str( date, sql_string, MY_DATE_SQL );
 
 	return( date );
 }
@@ -191,23 +188,7 @@ my_date_new_from_str( const gchar *str, myDateFormat format )
 	myDate *date;
 
 	date = my_date_new();
-
-	switch( format ){
-
-		case MY_DATE_DMMM:
-			break;
-
-		case MY_DATE_DMYY:
-			date_parse_ddmmyyyy_string( date, str );
-			break;
-
-		case MY_DATE_SQL:
-			date_parse_sql_string( date, str );
-			break;
-
-		case MY_DATE_YYMD:
-			break;
-	}
+	my_date_set_from_str( date, str, format );
 
 	return( date );
 }
@@ -215,12 +196,6 @@ my_date_new_from_str( const gchar *str, myDateFormat format )
 /*
  * Returns TRUE if the string parses to a valid 'dd/mm/yyyy' date
  */
-static gboolean
-date_parse_ddmmyyyy_string( myDate *date, const gchar *str )
-{
-	return( parse_ddmmyyyy_string( &date->private->date, str ));
-}
-
 static gboolean
 parse_ddmmyyyy_string( GDate *date, const gchar *str )
 {
@@ -264,12 +239,6 @@ parse_ddmmyyyy_string( GDate *date, const gchar *str )
  * dealing with a SQL date.
  */
 static gboolean
-date_parse_sql_string( myDate *date, const gchar *sql_string )
-{
-	return( parse_sql_string( &date->private->date, sql_string ));
-}
-
-static gboolean
 parse_sql_string( GDate *date, const gchar *sql_string )
 {
 	gboolean valid;
@@ -290,17 +259,22 @@ parse_sql_string( GDate *date, const gchar *sql_string )
 
 /**
  * my_date_is_valid:
- * @date: [not-null]: the #myDate to be evaluated
+ * @date: the #myDate to be evaluated
  *
  * Returns: %TRUE if the date is valid.
  */
 gboolean
 my_date_is_valid( const myDate *date )
 {
-	g_return_val_if_fail( date && MY_IS_DATE( date ), FALSE );
+	gboolean ok;
 
-	if( date->private->dispose_has_run ){
+	if( !date ){
 		return( FALSE );
+	}
+
+	ok = MY_IS_DATE( date ) && !date->private->dispose_has_run;
+	if( !ok ){
+		g_return_val_if_reached( FALSE );
 	}
 
 	return( g_date_valid( &date->private->date ));
@@ -310,49 +284,60 @@ my_date_is_valid( const myDate *date )
  * my_date_compare:
  * @a: the first #myDate to be compared
  * @b: the second #yDate to be compared to @a
- * @infinite_is_past: if %TRUE, then an infinite value (i.e. an invalid
- *  date) is considered lesser than anything, but another infinite value.
- *  Else, an invalid value is considered infinite in the future.
  *
- * Compare the two dates, returning -1, 0 or 1 if @a less than, equal or
- * greater than @b.
- * An invalid date is considered infinite.
+ * Compare two valid dates, returning -1, 0 or 1 if @a less than, equal
+ * or greater than @b.
  *
  * Returns: -1, 0 or 1.
  */
 gint
-my_date_compare( const myDate *a, const myDate *b, gboolean infinite_is_past )
+my_date_compare( const myDate *a, const myDate *b )
 {
-	g_return_val_if_fail( a && MY_IS_DATE( a ), 0 );
-	g_return_val_if_fail( b && MY_IS_DATE( b ), 0 );
-
-	if( !a->private->dispose_has_run && !b->private->dispose_has_run ){
-
-		return( date_cmp( &a->private->date, &b->private->date, infinite_is_past ));
+	if( !my_date_is_valid( a )){
+		g_return_val_if_reached( 0 );
+	}
+	if( !my_date_is_valid( b )){
+		g_return_val_if_reached( 0 );
 	}
 
-	return( 0 );
+	return( g_date_compare( &a->private->date, &b->private->date ));
 }
 
-static gint
-date_cmp( const GDate *a, const GDate *b, gboolean infinite_is_past )
+/**
+ * my_date_compare_ex:
+ * @a: the first #myDate to be compared
+ * @b: the second #yDate to be compared to @a
+ * @clear_is_past_infinite: if %TRUE, then any cleared or invalid date
+ *  is considered as a past infinite value, and set as lesser than
+ *  anything, but another past infinite value.
+ *  Else, a cleared or invalid value is considered infinite in the
+ *  future.
+ *
+ * Compare the two dates, returning -1, 0 or 1 if @a less than, equal or
+ * greater than @b.
+ * A cleared or invalid date is considered infinite.
+ *
+ * Returns: -1, 0 or 1.
+ */
+gint
+my_date_compare_ex( const myDate *a, const myDate *b, gboolean clear_is_past_infinite )
 {
-	if( !a || !g_date_valid( a )){
-		if( !b || !g_date_valid( b )){
-			/* a and b are unset/infinite: returns equal */
+	gboolean a_ok, b_ok;
+
+	a_ok = my_date_is_valid( a );
+	b_ok = my_date_is_valid( b );
+
+	if( !a_ok ){
+		if( b_ok ){
+			return( clear_is_past_infinite ? -1 : 1 );
+		} else {
 			return( 0 );
 		}
-		/* a is infinite, but not b */
-		return( infinite_is_past ? -1 : 1 );
+	} else if( !b_ok ){
+		return( clear_is_past_infinite ? 1 : -1 );
 	}
 
-	if( !b || !g_date_valid( b )){
-		/* b is infinite, but not a */
-		return( infinite_is_past ? 1 : -1 );
-	}
-
-	/* a and b are valid */
-	return( g_date_compare( a, b ));
+	return( g_date_compare( &a->private->date, &b->private->date ));
 }
 
 /**
@@ -412,9 +397,15 @@ my_date_set_from_str( myDate *date, const gchar *text, myDateFormat format )
 
 	if( !date->private->dispose_has_run ){
 		switch( format ){
+
 			case MY_DATE_DMYY:
 				valid = parse_ddmmyyyy_string( &date->private->date, text );
 				break;
+
+			case MY_DATE_SQL:
+				valid = parse_sql_string( &date->private->date, text );
+				break;
+
 			default:
 				break;
 		}

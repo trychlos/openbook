@@ -71,7 +71,7 @@ libofa_core_la_SOURCES = \
 	ofo-devise.c										\
 	ofo-dossier.c										\
 	ofo-entry.c											\
-	ofo-journal.c										\
+	ofo-ledger.c										\
 	ofo-ope-template.c									\
 	ofo-rate.c											\
 	ofo-sgbd.c											\

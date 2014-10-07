@@ -29,14 +29,14 @@
 #endif
 
 #include "api/my-utils.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/ofa-journal-combo.h"
+#include "ui/ofa-ledger-combo.h"
 
 /* private instance data
  */
-struct _ofaJournalComboPrivate {
+struct _ofaLedgerComboPrivate {
 	gboolean           dispose_has_run;
 
 	/* input data
@@ -45,7 +45,7 @@ struct _ofaJournalComboPrivate {
 	ofoDossier        *dossier;
 	gchar             *combo_name;
 	gchar             *label_name;
-	ofaJournalComboCb  pfnSelected;
+	ofaLedgerComboCb   pfnSelected;
 	gpointer           user_data;
 
 	/* runtime
@@ -54,7 +54,7 @@ struct _ofaJournalComboPrivate {
 	GtkTreeModel      *tmodel;
 };
 
-/* column ordering in the journal combobox
+/* column ordering in the ledger combobox
  */
 enum {
 	JOU_COL_MNEMO = 0,
@@ -62,30 +62,30 @@ enum {
 	JOU_N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaJournalCombo, ofa_journal_combo, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaLedgerCombo, ofa_ledger_combo, G_TYPE_OBJECT )
 
-static void     load_dataset( ofaJournalCombo *self, const gchar *initial_mnemo );
-static void     insert_new_row( ofaJournalCombo *self, const ofoJournal *journal );
-static void     setup_signaling_connect( ofaJournalCombo *self );
-static void     on_journal_changed( GtkComboBox *box, ofaJournalCombo *self );
-static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self );
-static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalCombo *self );
-static gboolean find_journal_by_mnemo( ofaJournalCombo *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self );
-static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaJournalCombo *self );
+static void     load_dataset( ofaLedgerCombo *self, const gchar *initial_mnemo );
+static void     insert_new_row( ofaLedgerCombo *self, const ofoLedger *ledger );
+static void     setup_signaling_connect( ofaLedgerCombo *self );
+static void     on_ledger_changed( GtkComboBox *box, ofaLedgerCombo *self );
+static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaLedgerCombo *self );
+static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaLedgerCombo *self );
+static gboolean find_ledger_by_mnemo( ofaLedgerCombo *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaLedgerCombo *self );
+static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaLedgerCombo *self );
 
 static void
-journal_combo_finalize( GObject *instance )
+ledger_combo_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_journal_combo_finalize";
-	ofaJournalComboPrivate *priv;
+	static const gchar *thisfn = "ofa_ledger_combo_finalize";
+	ofaLedgerComboPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_JOURNAL_COMBO( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_COMBO( instance ));
 
-	priv = OFA_JOURNAL_COMBO( instance )->private;
+	priv = OFA_LEDGER_COMBO( instance )->private;
 
 	/* free data members here */
 	g_free( priv->combo_name );
@@ -93,17 +93,17 @@ journal_combo_finalize( GObject *instance )
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_journal_combo_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ledger_combo_parent_class )->finalize( instance );
 }
 
 static void
-journal_combo_dispose( GObject *instance )
+ledger_combo_dispose( GObject *instance )
 {
-	ofaJournalComboPrivate *priv;
+	ofaLedgerComboPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_JOURNAL_COMBO( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_COMBO( instance ));
 
-	priv = ( OFA_JOURNAL_COMBO( instance ))->private;
+	priv = ( OFA_LEDGER_COMBO( instance ))->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -113,51 +113,51 @@ journal_combo_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_journal_combo_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ledger_combo_parent_class )->dispose( instance );
 }
 
 static void
-ofa_journal_combo_init( ofaJournalCombo *self )
+ofa_ledger_combo_init( ofaLedgerCombo *self )
 {
-	static const gchar *thisfn = "ofa_journal_combo_init";
+	static const gchar *thisfn = "ofa_ledger_combo_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_JOURNAL_COMBO( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_COMBO( self ));
 
-	self->private = g_new0( ofaJournalComboPrivate, 1 );
+	self->private = g_new0( ofaLedgerComboPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 }
 
 static void
-ofa_journal_combo_class_init( ofaJournalComboClass *klass )
+ofa_ledger_combo_class_init( ofaLedgerComboClass *klass )
 {
-	static const gchar *thisfn = "ofa_journal_combo_class_init";
+	static const gchar *thisfn = "ofa_ledger_combo_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = journal_combo_dispose;
-	G_OBJECT_CLASS( klass )->finalize = journal_combo_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ledger_combo_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ledger_combo_finalize;
 }
 
 static void
-on_container_finalized( ofaJournalCombo *self, gpointer this_was_the_container )
+on_container_finalized( ofaLedgerCombo *self, gpointer this_was_the_container )
 {
-	g_return_if_fail( self && OFA_IS_JOURNAL_COMBO( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_COMBO( self ));
 	g_object_unref( self );
 }
 
 /**
- * ofa_journal_combo_new:
+ * ofa_ledger_combo_new:
  */
-ofaJournalCombo *
-ofa_journal_combo_new( const ofaJournalComboParms *parms )
+ofaLedgerCombo *
+ofa_ledger_combo_new( const ofaLedgerComboParms *parms )
 {
-	static const gchar *thisfn = "ofa_journal_combo_new";
-	ofaJournalCombo *self;
-	ofaJournalComboPrivate *priv;
+	static const gchar *thisfn = "ofa_ledger_combo_new";
+	ofaLedgerCombo *self;
+	ofaLedgerComboPrivate *priv;
 	GtkWidget *combo;
 	GtkCellRenderer *text_cell;
 
@@ -172,7 +172,7 @@ ofa_journal_combo_new( const ofaJournalComboParms *parms )
 	combo = my_utils_container_get_child_by_name( parms->container, parms->combo_name );
 	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), NULL );
 
-	self = g_object_new( OFA_TYPE_JOURNAL_COMBO, NULL );
+	self = g_object_new( OFA_TYPE_LEDGER_COMBO, NULL );
 
 	priv = self->private;
 
@@ -209,7 +209,7 @@ ofa_journal_combo_new( const ofaJournalComboParms *parms )
 		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", JOU_COL_LABEL );
 	}
 
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_journal_changed ), self );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_ledger_changed ), self );
 
 	load_dataset( self, parms->initial_mnemo );
 
@@ -219,21 +219,21 @@ ofa_journal_combo_new( const ofaJournalComboParms *parms )
 }
 
 static void
-load_dataset( ofaJournalCombo *self, const gchar *initial_mnemo )
+load_dataset( ofaLedgerCombo *self, const gchar *initial_mnemo )
 {
-	ofaJournalComboPrivate *priv;
+	ofaLedgerComboPrivate *priv;
 	const GList *set, *elt;
 	gint idx, i;
-	ofoJournal *journal;
+	ofoLedger *ledger;
 
 	priv = self->private;
-	set = ofo_journal_get_dataset( priv->dossier );
+	set = ofo_ledger_get_dataset( priv->dossier );
 
 	for( elt=set, i=0, idx=-1 ; elt ; elt=elt->next, ++i ){
-		journal = OFO_JOURNAL( elt->data );
-		insert_new_row( self, journal );
+		ledger = OFO_LEDGER( elt->data );
+		insert_new_row( self, ledger );
 		if( initial_mnemo &&
-				!g_utf8_collate( initial_mnemo, ofo_journal_get_mnemo( journal ))){
+				!g_utf8_collate( initial_mnemo, ofo_ledger_get_mnemo( ledger ))){
 			idx = i;
 		}
 	}
@@ -244,7 +244,7 @@ load_dataset( ofaJournalCombo *self, const gchar *initial_mnemo )
 }
 
 static void
-insert_new_row( ofaJournalCombo *self, const ofoJournal *journal )
+insert_new_row( ofaLedgerCombo *self, const ofoLedger *ledger )
 {
 	GtkTreeIter iter;
 
@@ -252,15 +252,15 @@ insert_new_row( ofaJournalCombo *self, const ofoJournal *journal )
 			GTK_LIST_STORE( self->private->tmodel ),
 			&iter,
 			-1,
-			JOU_COL_MNEMO, ofo_journal_get_mnemo( journal ),
-			JOU_COL_LABEL, ofo_journal_get_label( journal ),
+			JOU_COL_MNEMO, ofo_ledger_get_mnemo( ledger ),
+			JOU_COL_LABEL, ofo_ledger_get_label( ledger ),
 			-1 );
 }
 
 static void
-setup_signaling_connect( ofaJournalCombo *self )
+setup_signaling_connect( ofaLedgerCombo *self )
 {
-	ofaJournalComboPrivate *priv;
+	ofaLedgerComboPrivate *priv;
 
 	priv = self->private;
 
@@ -282,15 +282,15 @@ setup_signaling_connect( ofaJournalCombo *self )
 }
 
 static void
-on_journal_changed( GtkComboBox *box, ofaJournalCombo *self )
+on_ledger_changed( GtkComboBox *box, ofaLedgerCombo *self )
 {
-	ofaJournalComboPrivate *priv;
+	ofaLedgerComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkWidget *widget;
 	gchar *mnemo, *label;
 
-	/*g_debug( "ofa_journal_combo_on_journal_changed: dialog=%p (%s)",
+	/*g_debug( "ofa_ledger_combo_on_ledger_changed: dialog=%p (%s)",
 			( void * ) self->private->dialog, G_OBJECT_TYPE_NAME( self->private->dialog ));*/
 
 	priv = self->private;
@@ -321,22 +321,22 @@ on_journal_changed( GtkComboBox *box, ofaJournalCombo *self )
 }
 
 /**
- * ofa_journal_combo_get_selection:
+ * ofa_ledger_combo_get_selection:
  * @self:
  * @mnemo: [allow-none]:
  * @label: [allow_none]:
  *
- * Returns the intern identifier of the currently selected journal.
+ * Returns the intern identifier of the currently selected ledger.
  */
 gint
-ofa_journal_combo_get_selection( ofaJournalCombo *self, gchar **mnemo, gchar **label )
+ofa_ledger_combo_get_selection( ofaLedgerCombo *self, gchar **mnemo, gchar **label )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint id;
 	gchar *local_mnemo, *local_label;
 
-	g_return_val_if_fail( self && OFA_IS_JOURNAL_COMBO( self ), NULL );
+	g_return_val_if_fail( self && OFA_IS_LEDGER_COMBO( self ), NULL );
 
 	id = -1;
 
@@ -366,12 +366,12 @@ ofa_journal_combo_get_selection( ofaJournalCombo *self, gchar **mnemo, gchar **l
 }
 
 /**
- * ofa_journal_combo_set_selection:
+ * ofa_ledger_combo_set_selection:
  */
 void
-ofa_journal_combo_set_selection( ofaJournalCombo *self, const gchar *mnemo )
+ofa_ledger_combo_set_selection( ofaLedgerCombo *self, const gchar *mnemo )
 {
-	g_return_if_fail( self && OFA_IS_JOURNAL_COMBO( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_COMBO( self ));
 
 	if( !self->private->dispose_has_run ){
 
@@ -380,9 +380,9 @@ ofa_journal_combo_set_selection( ofaJournalCombo *self, const gchar *mnemo )
 }
 
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaLedgerCombo *self )
 {
-	static const gchar *thisfn = "ofa_journal_combo_on_new_object";
+	static const gchar *thisfn = "ofa_ledger_combo_on_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -390,15 +390,15 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_JOURNAL( object )){
-		insert_new_row( self, OFO_JOURNAL( object ));
+	if( OFO_IS_LEDGER( object )){
+		insert_new_row( self, OFO_LEDGER( object ));
 	}
 }
 
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaJournalCombo *self )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaLedgerCombo *self )
 {
-	static const gchar *thisfn = "ofa_journal_combo_on_updated_object";
+	static const gchar *thisfn = "ofa_ledger_combo_on_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	const gchar *mnemo, *new_mnemo;
@@ -410,24 +410,24 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 			prev_id,
 			( void * ) self );
 
-	if( OFO_IS_JOURNAL( object )){
-		new_mnemo = ofo_journal_get_mnemo( OFO_JOURNAL( object ));
+	if( OFO_IS_LEDGER( object )){
+		new_mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 		mnemo = prev_id ? prev_id : new_mnemo;
-		if( find_journal_by_mnemo( self, mnemo, &tmodel, &iter )){
+		if( find_ledger_by_mnemo( self, mnemo, &tmodel, &iter )){
 			gtk_list_store_set(
 					GTK_LIST_STORE( tmodel ),
 					&iter,
 					JOU_COL_MNEMO, new_mnemo,
-					JOU_COL_LABEL, ofo_journal_get_label( OFO_JOURNAL( object )),
+					JOU_COL_LABEL, ofo_ledger_get_label( OFO_LEDGER( object )),
 					-1 );
 		}
 	}
 }
 
 static gboolean
-find_journal_by_mnemo( ofaJournalCombo *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+find_ledger_by_mnemo( ofaLedgerCombo *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
-	ofaJournalComboPrivate *priv;
+	ofaLedgerComboPrivate *priv;
 	gchar *str;
 	gint cmp;
 
@@ -452,9 +452,9 @@ find_journal_by_mnemo( ofaJournalCombo *self, const gchar *mnemo, GtkTreeModel *
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self )
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaLedgerCombo *self )
 {
-	static const gchar *thisfn = "ofa_journal_combo_on_deleted_object";
+	static const gchar *thisfn = "ofa_ledger_combo_on_deleted_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
@@ -464,10 +464,10 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_JOURNAL( object )){
-		if( find_journal_by_mnemo(
+	if( OFO_IS_LEDGER( object )){
+		if( find_ledger_by_mnemo(
 				self,
-				ofo_journal_get_mnemo( OFO_JOURNAL( object )), &tmodel, &iter )){
+				ofo_ledger_get_mnemo( OFO_LEDGER( object )), &tmodel, &iter )){
 
 			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
 		}
@@ -475,17 +475,17 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaJournalCombo *self )
 }
 
 static void
-on_reload_dataset( ofoDossier *dossier, GType type, ofaJournalCombo *self )
+on_reload_dataset( ofoDossier *dossier, GType type, ofaLedgerCombo *self )
 {
-	static const gchar *thisfn = "ofa_journal_combo_on_reload_dataset";
-	ofaJournalComboPrivate *priv;
+	static const gchar *thisfn = "ofa_ledger_combo_on_reload_dataset";
+	ofaLedgerComboPrivate *priv;
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
 	priv = self->private;
 
-	if( type == OFO_TYPE_JOURNAL ){
+	if( type == OFO_TYPE_LEDGER ){
 		gtk_list_store_clear( GTK_LIST_STORE( priv->tmodel ));
 		load_dataset( self, NULL );
 	}

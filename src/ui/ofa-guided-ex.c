@@ -33,7 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
 #include "ui/ofa-guided-common.h"
@@ -49,7 +49,7 @@ struct _ofaGuidedExPrivate {
 	/* internals
 	 */
 	ofoDossier      *dossier;			/* dossier */
-	const ofoOpeTemplate  *model;				/* model */
+	const ofoOpeTemplate  *model;		/* model */
 	ofaGuidedCommon *common;
 
 	/* UI - the pane
@@ -105,10 +105,10 @@ static void       enable_left_select( ofaGuidedEx *self );
 static gboolean   is_left_select_enableable( ofaGuidedEx *self );
 static void       on_left_select_clicked( GtkButton *button, ofaGuidedEx *self );
 static void       select_model( ofaGuidedEx *self );
-static void       insert_left_journal_row( ofaGuidedEx *self, ofoJournal *journal );
-static void       update_left_journal_row( ofaGuidedEx *self, ofoJournal *journal, const gchar *prev_id );
-static void       remove_left_journal_row( ofaGuidedEx *self, ofoJournal *journal );
-static gboolean   find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void       insert_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger );
+static void       update_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_id );
+static void       remove_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger );
+static gboolean   find_left_ledger_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static void       insert_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model );
 static void       update_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id );
 static void       remove_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model );
@@ -254,8 +254,8 @@ v_init_view( ofaMainPage *page )
 }
 
 /*
- * the left pane is a treeview whose level 0 are the journals, and
- * level 1 the entry models defined on the corresponding journal
+ * the left pane is a treeview whose level 0 are the ledgers, and
+ * level 1 the entry models defined on the corresponding ledger
  */
 static GtkWidget *
 setup_view_left( ofaGuidedEx *self )
@@ -331,8 +331,8 @@ setup_view_right( ofaGuidedEx *self )
 }
 
 /*
- * the left pane is a treeview whose level 0 are the journals, and
- * level 1 the entry models defined on the corresponding journal
+ * the left pane is a treeview whose level 0 are the ledgers, and
+ * level 1 the entry models defined on the corresponding ledger
  */
 static GtkWidget *
 setup_left_treeview( ofaGuidedEx *self )
@@ -402,7 +402,7 @@ on_left_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGui
 }
 
 /*
- * display yellow background the journal rows
+ * display yellow background the ledger rows
  */
 static void
 on_left_cell_data_func( GtkTreeViewColumn *tcolumn,
@@ -424,9 +424,9 @@ on_left_cell_data_func( GtkTreeViewColumn *tcolumn,
 						"background-set", FALSE,
 						NULL );
 
-	g_return_if_fail( OFO_IS_JOURNAL( object ) || OFO_IS_OPE_TEMPLATE( object ));
+	g_return_if_fail( OFO_IS_LEDGER( object ) || OFO_IS_OPE_TEMPLATE( object ));
 
-	if( OFO_IS_JOURNAL( object )){
+	if( OFO_IS_LEDGER( object )){
 		gdk_rgba_parse( &color, "#ffffb0" );
 		g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
 		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
@@ -456,9 +456,9 @@ init_left_view( ofaGuidedEx *self, GtkWidget *child )
 {
 	GList *dataset, *ise;
 
-	dataset = ofo_journal_get_dataset( self->private->dossier );
+	dataset = ofo_ledger_get_dataset( self->private->dossier );
 	for( ise=dataset ; ise ; ise=ise->next ){
-		insert_left_journal_row( self, OFO_JOURNAL( ise->data ));
+		insert_left_ledger_row( self, OFO_LEDGER( ise->data ));
 	}
 
 	dataset = ofo_ope_template_get_dataset( self->private->dossier );
@@ -608,7 +608,7 @@ select_model( ofaGuidedEx *self )
 }
 
 static void
-insert_left_journal_row( ofaGuidedEx *self, ofoJournal *journal )
+insert_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -619,46 +619,46 @@ insert_left_journal_row( ofaGuidedEx *self, ofoJournal *journal )
 			&iter,
 			NULL,
 			-1,
-			LEFT_COL_MNEMO,  ofo_journal_get_mnemo( journal ),
-			LEFT_COL_LABEL,  ofo_journal_get_label( journal ),
-			LEFT_COL_OBJECT, journal,
+			LEFT_COL_MNEMO,  ofo_ledger_get_mnemo( ledger ),
+			LEFT_COL_LABEL,  ofo_ledger_get_label( ledger ),
+			LEFT_COL_OBJECT, ledger,
 			-1 );
 }
 
 static void
-update_left_journal_row( ofaGuidedEx *self, ofoJournal *journal, const gchar *prev_id )
+update_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofa_guided_ex_update_left_journal_row";
+	static const gchar *thisfn = "ofa_guided_ex_update_left_ledger_row";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gboolean found;
 
-	found = find_left_journal_by_mnemo( self, prev_id, &tmodel, &iter );
+	found = find_left_ledger_by_mnemo( self, prev_id, &tmodel, &iter );
 	if( found ){
 		gtk_tree_store_set(
 				GTK_TREE_STORE( tmodel ),
 				&iter,
-				LEFT_COL_MNEMO, ofo_journal_get_mnemo( journal ),
-				LEFT_COL_LABEL, ofo_journal_get_label( journal ),
+				LEFT_COL_MNEMO, ofo_ledger_get_mnemo( ledger ),
+				LEFT_COL_LABEL, ofo_ledger_get_label( ledger ),
 				-1 );
 	} else {
-		g_warning( "%s: unable to find journal %s", thisfn, prev_id );
+		g_warning( "%s: unable to find ledger %s", thisfn, prev_id );
 	}
 }
 
 /*
- * models which were stored under the removed journal are to be
+ * models which were stored under the removed ledger are to be
  *  reordered under an 'Unclassed' category
  */
 static void
-remove_left_journal_row( ofaGuidedEx *self, ofoJournal *journal )
+remove_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter, child_iter;
 	gboolean found;
 	ofoOpeTemplate *model;
 
-	if( !find_left_journal_by_mnemo( self, ofo_journal_get_mnemo( journal ), &tmodel, &iter )){
+	if( !find_left_ledger_by_mnemo( self, ofo_ledger_get_mnemo( ledger ), &tmodel, &iter )){
 		return;
 	}
 
@@ -678,7 +678,7 @@ remove_left_journal_row( ofaGuidedEx *self, ofoJournal *journal )
 		g_object_unref( model );
 	}
 
-	found = find_left_journal_by_mnemo( self, ofo_journal_get_mnemo( journal ), NULL, &iter );
+	found = find_left_ledger_by_mnemo( self, ofo_ledger_get_mnemo( ledger ), NULL, &iter );
 	g_return_if_fail( found );
 
 	gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter );
@@ -688,15 +688,15 @@ remove_left_journal_row( ofaGuidedEx *self, ofoJournal *journal )
  * returns TRUE if found
  *
  * we also manage the case of the 'Unclassed' catagory were we are
- * storing models with unreferenced journals - the ofoJournal object
+ * storing models with unreferenced ledgers - the ofoLedger object
  * is null
  */
 static gboolean
-find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+find_left_ledger_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
 	GtkTreeModel *my_tmodel;
 	GtkTreeIter my_iter;
-	gchar *journal;
+	gchar *ledger;
 	ofoBase *object;
 	gint cmp;
 
@@ -708,14 +708,14 @@ find_left_journal_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel 
 		while( TRUE ){
 			gtk_tree_model_get(
 						my_tmodel, &my_iter,
-						LEFT_COL_MNEMO, &journal, LEFT_COL_OBJECT, &object, -1 );
+						LEFT_COL_MNEMO, &ledger, LEFT_COL_OBJECT, &object, -1 );
 			if( object ){
 				g_object_unref( object );
 			}
-			g_return_val_if_fail( !object || OFO_IS_JOURNAL( object ), FALSE );
+			g_return_val_if_fail( !object || OFO_IS_LEDGER( object ), FALSE );
 
-			cmp = g_utf8_collate( mnemo, journal );
-			g_free( journal );
+			cmp = g_utf8_collate( mnemo, ledger );
+			g_free( ledger );
 
 			if( cmp == 0 ){
 				if( iter ){
@@ -741,21 +741,21 @@ insert_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model )
 	GtkTreeIter parent_iter, iter;
 	gboolean found;
 
-	found = find_left_journal_by_mnemo( self, ofo_ope_template_get_ledger( model ), &tmodel, &parent_iter );
+	found = find_left_ledger_by_mnemo( self, ofo_ope_template_get_ledger( model ), &tmodel, &parent_iter );
 	if( !found ){
-		g_debug( "%s: journal not found: %s", thisfn, ofo_ope_template_get_ledger( model ));
+		g_debug( "%s: ledger not found: %s", thisfn, ofo_ope_template_get_ledger( model ));
 
-		found = find_left_journal_by_mnemo( self, UNKNOWN_JOURNAL_MNEMO, &tmodel, &parent_iter );
+		found = find_left_ledger_by_mnemo( self, UNKNOWN_LEDGER_MNEMO, &tmodel, &parent_iter );
 		if( !found ){
-			g_debug( "%s: defining journal for unclassed models: %s", thisfn, UNKNOWN_JOURNAL_MNEMO );
+			g_debug( "%s: defining ledger for unclassed models: %s", thisfn, UNKNOWN_LEDGER_MNEMO );
 
 			gtk_tree_store_insert_with_values(
 					GTK_TREE_STORE( tmodel ),
 					&parent_iter,
 					NULL,
 					-1,
-					LEFT_COL_MNEMO,  UNKNOWN_JOURNAL_MNEMO,
-					LEFT_COL_LABEL,  UNKNOWN_JOURNAL_LABEL,
+					LEFT_COL_MNEMO,  UNKNOWN_LEDGER_MNEMO,
+					LEFT_COL_LABEL,  UNKNOWN_LEDGER_LABEL,
 					LEFT_COL_OBJECT, NULL,
 					-1 );
 		}
@@ -834,7 +834,7 @@ find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **
 			if( my_object ){
 				g_object_unref( my_object );
 			}
-			g_return_val_if_fail( !my_object || OFO_IS_JOURNAL( my_object ), FALSE );
+			g_return_val_if_fail( !my_object || OFO_IS_LEDGER( my_object ), FALSE );
 
 			count = gtk_tree_model_iter_n_children( my_tmodel, &my_iter );
 			for( i=0 ; i < count ; ++i ){
@@ -901,8 +901,8 @@ on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *se
 	if( OFO_IS_OPE_TEMPLATE( object )){
 		insert_left_model_row( self, OFO_OPE_TEMPLATE( object ));
 
-	} else if( OFO_IS_JOURNAL( object )){
-		insert_left_journal_row( self, OFO_JOURNAL( object ));
+	} else if( OFO_IS_LEDGER( object )){
+		insert_left_ledger_row( self, OFO_LEDGER( object ));
 	}
 }
 
@@ -924,8 +924,8 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
 	if( OFO_IS_OPE_TEMPLATE( object )){
 		update_left_model_row( self, OFO_OPE_TEMPLATE( object ), prev_id );
 
-	} else if( OFO_IS_JOURNAL( object )){
-		update_left_journal_row( self, OFO_JOURNAL( object ), prev_id );
+	} else if( OFO_IS_LEDGER( object )){
+		update_left_ledger_row( self, OFO_LEDGER( object ), prev_id );
 	}
 }
 
@@ -946,8 +946,8 @@ on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx
 	if( OFO_IS_OPE_TEMPLATE( object )){
 		remove_left_model_row( self, OFO_OPE_TEMPLATE( object ));
 
-	} else if( OFO_IS_JOURNAL( object )){
-		remove_left_journal_row( self, OFO_JOURNAL( object ));
+	} else if( OFO_IS_LEDGER( object )){
+		remove_left_ledger_row( self, OFO_LEDGER( object ));
 	}
 }
 
@@ -965,7 +965,7 @@ on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )
 	if( type == OFO_TYPE_OPE_TEMPLATE ){
 
 
-	} else if( type == OFO_TYPE_JOURNAL ){
+	} else if( type == OFO_TYPE_LEDGER ){
 
 	}
 }

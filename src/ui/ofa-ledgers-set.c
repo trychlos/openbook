@@ -32,18 +32,18 @@
 
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-view-entries.h"
-#include "ui/ofa-journal-properties.h"
-#include "ui/ofa-journal-treeview.h"
-#include "ui/ofa-journals-set.h"
+#include "ui/ofa-ledger-properties.h"
+#include "ui/ofa-ledger-treeview.h"
+#include "ui/ofa-ledgers-set.h"
 
 /* private instance data
  */
-struct _ofaJournalsSetPrivate {
+struct _ofaLedgersSetPrivate {
 	gboolean            dispose_has_run;
 
 	/* internals
@@ -52,7 +52,7 @@ struct _ofaJournalsSetPrivate {
 
 	/* UI
 	 */
-	ofaJournalTreeview *tview;
+	ofaLedgerTreeview  *tview;
 	GtkButton          *entries_btn;
 };
 
@@ -66,50 +66,50 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaJournalsSet, ofa_journals_set, OFA_TYPE_MAIN_PAGE )
+G_DEFINE_TYPE( ofaLedgersSet, ofa_ledgers_set, OFA_TYPE_MAIN_PAGE )
 
 static GtkWidget *v_setup_view( ofaMainPage *page );
 static GtkWidget *setup_tree_view( ofaMainPage *page );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
 static void       v_init_view( ofaMainPage *page );
-static void       insert_dataset( ofaJournalsSet *self );
-static void       on_row_activated( GList *selected, ofaJournalsSet *self );
-static void       on_row_selected( GList *selected, ofaJournalsSet *self );
+static void       insert_dataset( ofaLedgersSet *self );
+static void       on_row_activated( GList *selected, ofaLedgersSet *self );
+static void       on_row_selected( GList *selected, ofaLedgersSet *self );
 static void       v_on_new_clicked( GtkButton *button, ofaMainPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaMainPage *page );
-static void       do_update( ofaJournalsSet *self, ofoJournal *journal );
+static void       do_update( ofaLedgersSet *self, ofoLedger *ledger );
 static void       v_on_delete_clicked( GtkButton *button, ofaMainPage *page );
-static gboolean   delete_confirmed( ofaJournalsSet *self, ofoJournal *journal );
-static void       on_view_entries( GtkButton *button, ofaJournalsSet *self );
+static gboolean   delete_confirmed( ofaLedgersSet *self, ofoLedger *ledger );
+static void       on_view_entries( GtkButton *button, ofaLedgersSet *self );
 
 static void
-journals_set_finalize( GObject *instance )
+ledgers_set_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_journals_set_finalize";
-	ofaJournalsSetPrivate *priv;
+	static const gchar *thisfn = "ofa_ledgers_set_finalize";
+	ofaLedgersSetPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_JOURNALS_SET( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGERS_SET( instance ));
 
-	priv = OFA_JOURNALS_SET( instance )->private;
+	priv = OFA_LEDGERS_SET( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_journals_set_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ledgers_set_parent_class )->finalize( instance );
 }
 
 static void
-journals_set_dispose( GObject *instance )
+ledgers_set_dispose( GObject *instance )
 {
-	ofaJournalsSetPrivate *priv;
+	ofaLedgersSetPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_JOURNALS_SET( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGERS_SET( instance ));
 
-	priv = ( OFA_JOURNALS_SET( instance ))->private;
+	priv = ( OFA_LEDGERS_SET( instance ))->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -119,33 +119,33 @@ journals_set_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_journals_set_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ledgers_set_parent_class )->dispose( instance );
 }
 
 static void
-ofa_journals_set_init( ofaJournalsSet *self )
+ofa_ledgers_set_init( ofaLedgersSet *self )
 {
-	static const gchar *thisfn = "ofa_journals_set_init";
+	static const gchar *thisfn = "ofa_ledgers_set_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_JOURNALS_SET( self ));
+	g_return_if_fail( self && OFA_IS_LEDGERS_SET( self ));
 
-	self->private = g_new0( ofaJournalsSetPrivate, 1 );
+	self->private = g_new0( ofaLedgersSetPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 }
 
 static void
-ofa_journals_set_class_init( ofaJournalsSetClass *klass )
+ofa_ledgers_set_class_init( ofaLedgersSetClass *klass )
 {
-	static const gchar *thisfn = "ofa_journals_set_class_init";
+	static const gchar *thisfn = "ofa_ledgers_set_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = journals_set_dispose;
-	G_OBJECT_CLASS( klass )->finalize = journals_set_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ledgers_set_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ledgers_set_finalize;
 
 	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
@@ -168,11 +168,11 @@ v_setup_view( ofaMainPage *page )
 static GtkWidget *
 setup_tree_view( ofaMainPage *page )
 {
-	ofaJournalsSetPrivate *priv;
+	ofaLedgersSetPrivate *priv;
 	GtkFrame *frame;
-	JournalTreeviewParms parms;
+	ofaLedgerTreeviewParms parms;
 
-	priv = OFA_JOURNALS_SET( page )->private;
+	priv = OFA_LEDGERS_SET( page )->private;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
@@ -183,11 +183,11 @@ setup_tree_view( ofaMainPage *page )
 	parms.main_window = ofa_main_page_get_main_window( page );
 	parms.parent = GTK_CONTAINER( frame );
 	parms.allow_multiple_selection = FALSE;
-	parms.pfnActivated = ( JournalTreeviewCb ) on_row_activated;
-	parms.pfnSelected = ( JournalTreeviewCb ) on_row_selected;
+	parms.pfnActivated = ( ofaLedgerTreeviewCb ) on_row_activated;
+	parms.pfnSelected = ( ofaLedgerTreeviewCb ) on_row_selected;
 	parms.user_data = page;
 
-	priv->tview = ofa_journal_treeview_new( &parms );
+	priv->tview = ofa_ledger_treeview_new( &parms );
 
 	return( GTK_WIDGET( frame ));
 }
@@ -199,9 +199,9 @@ v_setup_buttons( ofaMainPage *page )
 	GtkFrame *frame;
 	GtkButton *button;
 
-	g_return_val_if_fail( OFA_IS_JOURNALS_SET( page ), NULL );
+	g_return_val_if_fail( OFA_IS_LEDGERS_SET( page ), NULL );
 
-	buttons_box = OFA_MAIN_PAGE_CLASS( ofa_journals_set_parent_class )->setup_buttons( page );
+	buttons_box = OFA_MAIN_PAGE_CLASS( ofa_ledgers_set_parent_class )->setup_buttons( page );
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 25 );
@@ -212,7 +212,7 @@ v_setup_buttons( ofaMainPage *page )
 	gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), page );
 	gtk_box_pack_start( GTK_BOX( buttons_box ), GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	OFA_JOURNALS_SET( page )->private->entries_btn = button;
+	OFA_LEDGERS_SET( page )->private->entries_btn = button;
 
 	return( buttons_box );
 }
@@ -220,143 +220,143 @@ v_setup_buttons( ofaMainPage *page )
 static void
 v_init_view( ofaMainPage *page )
 {
-	insert_dataset( OFA_JOURNALS_SET( page ));
+	insert_dataset( OFA_LEDGERS_SET( page ));
 }
 
 static void
-insert_dataset( ofaJournalsSet *self )
+insert_dataset( ofaLedgersSet *self )
 {
-	ofa_journal_treeview_init_view( self->private->tview, NULL );
-}
-
-/*
- * JournalTreeview callback
- */
-static void
-on_row_activated( GList *selected, ofaJournalsSet *self )
-{
-	do_update( self, OFO_JOURNAL( selected->data ));
+	ofa_ledger_treeview_init_view( self->private->tview, NULL );
 }
 
 /*
- * JournalTreeview callback
+ * LedgerTreeview callback
  */
 static void
-on_row_selected( GList *selected, ofaJournalsSet *self )
+on_row_activated( GList *selected, ofaLedgersSet *self )
 {
-	ofoJournal *journal;
+	do_update( self, OFO_LEDGER( selected->data ));
+}
 
-	journal = OFO_JOURNAL( selected->data );
+/*
+ * LedgerTreeview callback
+ */
+static void
+on_row_selected( GList *selected, ofaLedgersSet *self )
+{
+	ofoLedger *ledger;
+
+	ledger = OFO_LEDGER( selected->data );
 
 	gtk_widget_set_sensitive(
 			ofa_main_page_get_update_btn( OFA_MAIN_PAGE( self )),
-			journal && OFO_IS_JOURNAL( journal ));
+			ledger && OFO_IS_LEDGER( ledger ));
 
 	gtk_widget_set_sensitive(
 			ofa_main_page_get_delete_btn( OFA_MAIN_PAGE( self )),
-			journal &&
-					OFO_IS_JOURNAL( journal ) &&
-					ofo_journal_is_deletable( journal,
+			ledger &&
+					OFO_IS_LEDGER( ledger ) &&
+					ofo_ledger_is_deletable( ledger,
 							ofa_main_page_get_dossier( OFA_MAIN_PAGE( self ))));
 
 	gtk_widget_set_sensitive(
 			GTK_WIDGET( self->private->entries_btn ),
-			journal && OFO_IS_JOURNAL( journal ) && ofo_journal_has_entries( journal ));
+			ledger && OFO_IS_LEDGER( ledger ) && ofo_ledger_has_entries( ledger ));
 }
 
 static void
 v_on_new_clicked( GtkButton *button, ofaMainPage *page )
 {
-	ofoJournal *journal;
+	ofoLedger *ledger;
 
-	g_return_if_fail( page && OFA_IS_JOURNALS_SET( page ));
+	g_return_if_fail( page && OFA_IS_LEDGERS_SET( page ));
 
-	journal = ofo_journal_new();
+	ledger = ofo_ledger_new();
 
-	if( ofa_journal_properties_run(
-			ofa_main_page_get_main_window( page ), journal )){
+	if( ofa_ledger_properties_run(
+			ofa_main_page_get_main_window( page ), ledger )){
 
-		/* this is managed by ofaJournalTreeview convenience class
+		/* this is managed by ofaLedgerTreeview convenience class
 		 * graceful to dossier signaling system  */
-		/*insert_new_row( OFA_JOURNALS_SET( page ), journal, TRUE );*/
+		/*insert_new_row( OFA_LEDGERS_SET( page ), ledger, TRUE );*/
 
 	} else {
-		g_object_unref( journal );
+		g_object_unref( ledger );
 	}
 }
 
 static void
 v_on_update_clicked( GtkButton *button, ofaMainPage *page )
 {
-	ofaJournalsSetPrivate *priv;
+	ofaLedgersSetPrivate *priv;
 	GList *selected;
 
-	g_return_if_fail( page && OFA_IS_JOURNALS_SET( page ));
+	g_return_if_fail( page && OFA_IS_LEDGERS_SET( page ));
 
-	priv = OFA_JOURNALS_SET( page )->private;
+	priv = OFA_LEDGERS_SET( page )->private;
 
-	selected = ofa_journal_treeview_get_selected( priv->tview );
+	selected = ofa_ledger_treeview_get_selected( priv->tview );
 
-	do_update( OFA_JOURNALS_SET( page ), OFO_JOURNAL( selected->data ));
+	do_update( OFA_LEDGERS_SET( page ), OFO_LEDGER( selected->data ));
 }
 
 static void
-do_update( ofaJournalsSet *self, ofoJournal *journal )
+do_update( ofaLedgersSet *self, ofoLedger *ledger )
 {
-	ofaJournalsSetPrivate *priv;
+	ofaLedgersSetPrivate *priv;
 
 	priv = self->private;
 
-	if( journal &&
-			ofa_journal_properties_run(
-					ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), journal )){
+	if( ledger &&
+			ofa_ledger_properties_run(
+					ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )), ledger )){
 
-			/* this is managed by the ofaJournalTreeview convenience
+			/* this is managed by the ofaLedgerTreeview convenience
 			 * class, graceful to the dossier signaling system */
 	}
 
-	ofa_journal_treeview_grab_focus( priv->tview );
+	ofa_ledger_treeview_grab_focus( priv->tview );
 }
 
 /*
- * un journal peut être supprimé tant qu'aucune écriture n'y a été
+ * un ledger peut être supprimé tant qu'aucune écriture n'y a été
  * enregistrée, et après confirmation de l'utilisateur
  */
 static void
 v_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 {
-	ofaJournalsSetPrivate *priv;
+	ofaLedgersSetPrivate *priv;
 	ofoDossier *dossier;
-	ofoJournal *journal;
+	ofoLedger *ledger;
 
-	g_return_if_fail( page && OFA_IS_JOURNALS_SET( page ));
+	g_return_if_fail( page && OFA_IS_LEDGERS_SET( page ));
 
-	priv = OFA_JOURNALS_SET( page )->private;
+	priv = OFA_LEDGERS_SET( page )->private;
 
-	journal = OFO_JOURNAL( ofa_journal_treeview_get_selected( priv->tview )->data );
+	ledger = OFO_LEDGER( ofa_ledger_treeview_get_selected( priv->tview )->data );
 
 	dossier = ofa_main_page_get_dossier( page );
-	g_return_if_fail( ofo_journal_is_deletable( journal, dossier ));
+	g_return_if_fail( ofo_ledger_is_deletable( ledger, dossier ));
 
-	if( delete_confirmed( OFA_JOURNALS_SET( page ), journal ) &&
-			ofo_journal_delete( journal )){
+	if( delete_confirmed( OFA_LEDGERS_SET( page ), ledger ) &&
+			ofo_ledger_delete( ledger )){
 
-		/* this is managed by the ofaJournalTreeview convenience
+		/* this is managed by the ofaLedgerTreeview convenience
 		 * class, graceful to the dossier signaling system */
 	}
 
-	ofa_journal_treeview_grab_focus( priv->tview );
+	ofa_ledger_treeview_grab_focus( priv->tview );
 }
 
 static gboolean
-delete_confirmed( ofaJournalsSet *self, ofoJournal *journal )
+delete_confirmed( ofaLedgersSet *self, ofoLedger *ledger )
 {
 	gchar *msg;
 	gboolean delete_ok;
 
-	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' journal ?" ),
-			ofo_journal_get_mnemo( journal ),
-			ofo_journal_get_label( journal ));
+	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' ledger ?" ),
+			ofo_ledger_get_mnemo( ledger ),
+			ofo_ledger_get_label( ledger ));
 
 	delete_ok = ofa_main_page_delete_confirmed( OFA_MAIN_PAGE( self ), msg );
 
@@ -366,27 +366,27 @@ delete_confirmed( ofaJournalsSet *self, ofoJournal *journal )
 }
 
 static void
-on_view_entries( GtkButton *button, ofaJournalsSet *self )
+on_view_entries( GtkButton *button, ofaLedgersSet *self )
 {
-	ofaJournalsSetPrivate *priv;
+	ofaLedgersSetPrivate *priv;
 	ofaMainPage *page;
-	ofoJournal *journal;
+	ofoLedger *ledger;
 
-	g_return_if_fail( OFA_IS_JOURNALS_SET( self ));
+	g_return_if_fail( OFA_IS_LEDGERS_SET( self ));
 
 	priv = self->private;
 
-	journal = OFO_JOURNAL( ofa_journal_treeview_get_selected( priv->tview )->data );
+	ledger = OFO_LEDGER( ofa_ledger_treeview_get_selected( priv->tview )->data );
 
-	if( journal ){
+	if( ledger ){
 		page = ofa_main_window_activate_theme(
 						ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
 						THM_VIEW_ENTRIES );
 		if( page ){
 			ofa_view_entries_display_entries(
 							OFA_VIEW_ENTRIES( page ),
-							OFO_TYPE_JOURNAL,
-							ofo_journal_get_mnemo( journal ),
+							OFO_TYPE_LEDGER,
+							ofo_ledger_get_mnemo( ledger ),
 							NULL,
 							NULL );
 		}

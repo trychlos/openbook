@@ -31,13 +31,12 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-#include "api/ofo-journal.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
@@ -45,7 +44,7 @@
 
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-common.h"
-#include "ui/ofa-journal-combo.h"
+#include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -61,13 +60,13 @@ struct _ofaGuidedCommonPrivate {
 
 	/* when selecting a model
 	 */
-	const ofoOpeTemplate  *model;
+	const ofoOpeTemplate *model;
 
 	/* data
 	 */
 	GDate            last_closed_exe;	/* last closed exercice of the dossier */
-	gchar           *journal;
-	GDate            last_closing;		/* max of closed exercice and closed journal */
+	gchar           *ledger;
+	GDate            last_closing;		/* max of closed exercice and closed ledger */
 	GDate            dope;
 	GDate            deff;
 	gdouble          total_debits;
@@ -76,7 +75,7 @@ struct _ofaGuidedCommonPrivate {
 	/* UI
 	 */
 	GtkLabel        *model_label;
-	ofaJournalCombo *journal_combo;
+	ofaLedgerCombo *ledger_combo;
 	GtkEntry        *dope_entry;
 	GtkEntry        *deffet_entry;
 	gboolean         deffet_has_focus;
@@ -169,17 +168,17 @@ static GDate st_last_deff = { 0 };
 G_DEFINE_TYPE( ofaGuidedCommon, ofa_guided_common, G_TYPE_OBJECT )
 
 static void              setup_from_dossier( ofaGuidedCommon *self );
-static void              setup_journal_combo( ofaGuidedCommon *self );
+static void              setupledger_combo( ofaGuidedCommon *self );
 static void              setup_dates( ofaGuidedCommon *self );
 static void              setup_misc( ofaGuidedCommon *self );
-static void              init_journal_combo( ofaGuidedCommon *self );
+static void              initledger_combo( ofaGuidedCommon *self );
 static void              setup_model_data( ofaGuidedCommon *self );
 static void              setup_entries_grid( ofaGuidedCommon *self );
 static void              add_entry_row( ofaGuidedCommon *self, gint i );
 static void              add_entry_row_set( ofaGuidedCommon *self, gint col_id, gint row );
 static void              add_entry_row_button( ofaGuidedCommon *self, const gchar *stock_id, gint column, gint row );
 static void              remove_entry_row( ofaGuidedCommon *self, gint row );
-static void              on_journal_changed( const gchar *mnemo, ofaGuidedCommon *self );
+static void              on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self );
 static void              on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self );
 static gboolean          on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
 static gboolean          on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
@@ -208,7 +207,7 @@ static gdouble           formula_parse_token( ofaGuidedCommon *self, const gchar
 static void              formula_error( ofaGuidedCommon *self, const gchar *str );
 static void              update_all_totals( ofaGuidedCommon *self );
 static gdouble           get_amount( ofaGuidedCommon *self, gint col_id, gint row );
-static gboolean          check_for_journal( ofaGuidedCommon *self );
+static gboolean          check_for_ledger( ofaGuidedCommon *self );
 static gboolean          check_for_dates( ofaGuidedCommon *self );
 static gboolean          check_for_all_entries( ofaGuidedCommon *self );
 static gboolean          check_for_entry( ofaGuidedCommon *self, gint row );
@@ -233,7 +232,7 @@ guided_common_finalize( GObject *instance )
 	priv = OFA_GUIDED_COMMON( instance )->private;
 
 	/* free data members here */
-	g_free( priv->journal );
+	g_free( priv->ledger );
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -291,7 +290,7 @@ ofa_guided_common_class_init( ofaGuidedCommonClass *klass )
  * ofa_guided_common_new:
  * @main_window: the main window of the application.
  *
- * Update the properties of an journal
+ * Update the properties of an ledger
  */
 ofaGuidedCommon *
 ofa_guided_common_new( ofaMainWindow *main_window, GtkContainer *parent )
@@ -307,7 +306,7 @@ ofa_guided_common_new( ofaMainWindow *main_window, GtkContainer *parent )
 	self->private->dossier = ofa_main_window_get_dossier( main_window );
 
 	setup_from_dossier( self );
-	setup_journal_combo( self );
+	setupledger_combo( self );
 	setup_dates( self );
 	setup_misc( self );
 
@@ -342,24 +341,24 @@ setup_from_dossier( ofaGuidedCommon *self )
 }
 
 static void
-setup_journal_combo( ofaGuidedCommon *self )
+setupledger_combo( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
-	ofaJournalComboParms parms;
+	ofaLedgerComboParms parms;
 
 	priv = self->private;
 
 	parms.container = priv->parent;
 	parms.dossier = priv->dossier;
-	parms.combo_name = "p1-journal";
+	parms.combo_name = "p1-ledger";
 	parms.label_name = NULL;
 	parms.disp_mnemo = FALSE;
 	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaJournalComboCb ) on_journal_changed;
+	parms.pfnSelected = ( ofaLedgerComboCb ) on_ledger_changed;
 	parms.user_data = self;
-	parms.initial_mnemo = priv->journal;
+	parms.initial_mnemo = priv->ledger;
 
-	priv->journal_combo = ofa_journal_combo_new( &parms );
+	priv->ledger_combo = ofa_ledger_combo_new( &parms );
 }
 
 /*
@@ -460,7 +459,7 @@ ofa_guided_common_set_model( ofaGuidedCommon *self, const ofoOpeTemplate *model 
 		priv->model = model;
 		priv->entries_count = 0;
 
-		init_journal_combo( self );
+		initledger_combo( self );
 		setup_model_data( self );
 		setup_entries_grid( self );
 
@@ -470,17 +469,17 @@ ofa_guided_common_set_model( ofaGuidedCommon *self, const ofoOpeTemplate *model 
 }
 
 static void
-init_journal_combo( ofaGuidedCommon *self )
+initledger_combo( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 	GtkWidget *combo;
 
 	priv = self->private;
-	priv->journal = g_strdup( ofo_ope_template_get_ledger( priv->model ));
+	priv->ledger = g_strdup( ofo_ope_template_get_ledger( priv->model ));
 
-	ofa_journal_combo_set_selection( priv->journal_combo, priv->journal );
+	ofa_ledger_combo_set_selection( priv->ledger_combo, priv->ledger );
 
-	combo = my_utils_container_get_child_by_name( priv->parent, "p1-journal" );
+	combo = my_utils_container_get_child_by_name( priv->parent, "p1-ledger" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 	gtk_widget_set_sensitive( combo, !ofo_ope_template_get_ledger_locked( priv->model ));
 }
@@ -641,40 +640,45 @@ remove_entry_row( ofaGuidedCommon *self, gint row )
 }
 
 /*
- * ofaJournalCombo callback
+ * ofaLedgerCombo callback
  *
  * setup the last closing date as the maximum of :
  * - the last exercice closing date
- * - the last journal closing date
+ * - the last ledger closing date
  *
  * this last closing date is the lower limit of the effect dates
  */
 static void
-on_journal_changed( const gchar *mnemo, ofaGuidedCommon *self )
+on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
-	ofoJournal *journal;
+	ofoLedger *ledger;
 	gint exe_id;
-	const GDate *date;
+	const myDate *date;
+	GDate date2;
+	gchar *str;
 
 	priv = self->private;
 
-	g_free( priv->journal );
-	priv->journal = g_strdup( mnemo );
+	g_free( priv->ledger );
+	priv->ledger = g_strdup( mnemo );
 
-	journal = ofo_journal_get_by_mnemo( priv->dossier, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
 	memcpy( &priv->last_closing, &priv->last_closed_exe, sizeof( GDate ));
 
-	if( journal ){
+	if( ledger ){
 		exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
-		date = ofo_journal_get_cloture( journal, exe_id );
-		if( date && g_date_valid( date )){
+		date = ofo_ledger_get_exe_closing( ledger, exe_id );
+		if( my_date_is_valid( date )){
+			str = my_date_to_str( date, MY_DATE_SQL );
+			my_date2_from_str( &date2, str, MY_DATE_SQL );
+			g_free( str );
 			if( g_date_valid( &priv->last_closed_exe )){
-				if( g_date_compare( date, &priv->last_closed_exe ) > 0 ){
-					memcpy( &priv->last_closing, date, sizeof( GDate ));
+				if( g_date_compare( &date2, &priv->last_closed_exe ) > 0 ){
+					memcpy( &priv->last_closing, &date2, sizeof( GDate ));
 				}
 			} else {
-				memcpy( &priv->last_closing, date, sizeof( GDate ));
+				memcpy( &priv->last_closing, &date2, sizeof( GDate ));
 			}
 		}
 	}
@@ -1008,7 +1012,7 @@ is_dialog_validable( ofaGuidedCommon *self )
 	update_all_totals( self );
 
 	ok = TRUE;
-	ok &= check_for_journal( self );
+	ok &= check_for_ledger( self );
 	ok &= check_for_dates( self );
 	ok &= check_for_all_entries( self );
 
@@ -1365,17 +1369,17 @@ get_amount( ofaGuidedCommon *self, gint col_id, gint row )
 }
 
 /*
- * Returns TRUE if a journal is set
+ * Returns TRUE if a ledger is set
  */
 static gboolean
-check_for_journal( ofaGuidedCommon *self )
+check_for_ledger( ofaGuidedCommon *self )
 {
-	static const gchar *thisfn = "ofa_guided_common_check_for_journal";
+	static const gchar *thisfn = "ofa_guided_common_check_for_ledger";
 	gboolean ok;
 
-	ok = self->private->journal && g_utf8_strlen( self->private->journal, -1 );
+	ok = self->private->ledger && g_utf8_strlen( self->private->ledger, -1 );
 	if( !ok ){
-		g_debug( "%s: journal=%s", thisfn, self->private->journal );
+		g_debug( "%s: ledger=%s", thisfn, self->private->ledger );
 	}
 
 	return( ok );
@@ -1386,7 +1390,7 @@ check_for_journal( ofaGuidedCommon *self )
  *
  * The first valid effect date is older than:
  * - the last exercice closing date of the dossier (if set)
- * - the last closing date of the journal (if set)
+ * - the last closing date of the ledger (if set)
  */
 static gboolean
 check_for_dates( ofaGuidedCommon *self )
@@ -1516,7 +1520,7 @@ check_for_entry( ofaGuidedCommon *self, gint row )
  *
  * Generate the entries.
  * All the entries are created in memory and checked before being
- * serialized. Only after that, journal and accounts are updated.
+ * serialized. Only after that, ledger and accounts are updated.
  *
  * Returns %TRUE if ok.
  */
@@ -1548,7 +1552,7 @@ ofa_guided_common_validate( ofaGuidedCommon *self )
  *
  * Generate the entries.
  * All the entries are created in memory and checked before being
- * serialized. Only after that, journal and accounts are updated.
+ * serialized. Only after that, ledger and accounts are updated.
  *
  * Returns %TRUE if ok.
  */
@@ -1598,7 +1602,7 @@ do_validate( ofaGuidedCommon *self )
 			ok &= ofo_entry_insert( OFO_ENTRY( it->data ), priv->dossier );
 			/* TODO:
 			 * in case of an error, remove the already recorded entries
-			 * of the list, decrementing the journals and the accounts
+			 * of the list, decrementing the ledgers and the accounts
 			 * then restore the last ecr number of the dossier
 			 */
 		}
@@ -1649,7 +1653,7 @@ entry_from_detail( ofaGuidedCommon *self, gint row, const gchar *piece )
 					&priv->deff, &priv->dope, label,
 					piece, account_number,
 					ofo_account_get_devise( account ),
-					priv->journal,
+					priv->ledger,
 					ofo_ope_template_get_mnemo( priv->model ),
 					deb, cre ));
 }

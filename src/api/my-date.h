@@ -136,7 +136,8 @@ myDate    *my_date_new_from_sql    ( const gchar *sql_string );
 myDate    *my_date_new_from_str    ( const gchar *str, myDateFormat format );
 
 gboolean   my_date_is_valid        ( const myDate *date );
-gint       my_date_compare         ( const myDate *a, const myDate *b, gboolean infinite_is_past );
+gint       my_date_compare         ( const myDate *a, const myDate *b );
+gint       my_date_compare_ex      ( const myDate *a, const myDate *b, gboolean clear_is_past_infinite );
 
 gboolean   my_date_set_from_date   ( myDate *date, const myDate *orig );
 gboolean   my_date_set_from_str    ( myDate *date, const gchar *text, myDateFormat format );
