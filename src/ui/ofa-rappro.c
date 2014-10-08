@@ -187,6 +187,7 @@ rappro_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_object_unref( priv->dconcil );
 		g_list_free_full( priv->batlines, ( GDestroyNotify ) g_object_unref );
 	}
 
@@ -207,6 +208,7 @@ ofa_rappro_init( ofaRappro *self )
 	self->private = g_new0( ofaRapproPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
+	self->private->dconcil = my_date_new();
 }
 
 static void

@@ -275,6 +275,7 @@ ofa_guided_common_init( ofaGuidedCommon *self )
 
 	self->private->dispose_has_run = FALSE;
 
+	self->private->last_closing = my_date_new();
 	self->private->deffect_changed_while_focus = FALSE;
 	self->private->entries_count = 0;
 }
@@ -328,18 +329,11 @@ static void
 setup_from_dossier( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
-	const GDate *date;
-	gchar *datesql;
 
 	priv = self->private;
 
-	date = ofo_dossier_get_last_closed_exercice( priv->dossier );
-	priv->last_closed_exe = my_date_new();
-	if( date && g_date_valid( date )){
-		datesql = my_date2_to_str( date, MY_DATE_SQL );
-		my_date_set_from_str( priv->last_closed_exe, datesql, MY_DATE_SQL );
-		g_free( datesql );
-	}
+	priv->last_closed_exe = ofo_dossier_get_last_closed_exercice( priv->dossier );
+	g_debug( "ofa_guided_common_setup_from_dossier: last_closed_exe=%p", ( void * ) priv->last_closed_exe );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
@@ -385,7 +379,7 @@ setup_dates( ofaGuidedCommon *self )
 
 	priv = self->private;
 
-	my_date_set_from_date( priv->dope, st_last_dope );
+	priv->dope = my_date_new_from_date( st_last_dope );
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-dope" );
@@ -402,7 +396,7 @@ setup_dates( ofaGuidedCommon *self )
 	g_signal_connect(
 			G_OBJECT( parms.entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
 
-	my_date_set_from_date( priv->deff, st_last_deff );
+	priv->deff = my_date_new_from_date( st_last_deff );
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-deffet" );
@@ -672,7 +666,7 @@ on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
 	priv->ledger = g_strdup( mnemo );
 
 	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
-	priv->last_closing = my_date_new_from_date( priv->last_closed_exe );
+	my_date_set_from_date( priv->last_closing, priv->last_closed_exe );
 
 	if( ledger ){
 		exe_id = ofo_dossier_get_current_exe_id( priv->dossier );

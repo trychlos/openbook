@@ -167,6 +167,17 @@ typedef struct {
 	 * implement.
 	 */
 	void        ( *on_export_clicked )( GtkButton *button, ofaMainPage *page );
+
+	/**
+	 * pre_remove:
+	 * @page: this #ofaMainPage object.
+	 *
+	 * This virtual function is called by the main window when it is
+	 * about to remove the main page from the main notebook.
+	 * This is time for derived classes to handle widgets before they
+	 * are finalized.
+	 */
+	void        ( *pre_remove )       ( ofaMainPage *page );
 }
 	ofaMainPageClass;
 

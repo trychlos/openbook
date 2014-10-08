@@ -60,11 +60,11 @@ struct _ofoDossierPrivate {
 	/* row id 1
 	 */
 	gchar      *label;					/* raison sociale */
-	gint        duree_exe;				/* exercice length (in month) */
-	gchar      *devise;
+	gint        exe_length;				/* exercice length (in month) */
+	gchar      *currency;
 	gchar      *notes;					/* notes */
-	gchar      *maj_user;
-	GTimeVal    maj_stamp;
+	gchar      *upd_user;
+	GTimeVal    upd_stamp;
 
 	/* all found exercices are loaded on opening
 	 * as a GList * of sDetailExe structures
@@ -79,9 +79,9 @@ struct _ofoDossierPrivate {
 
 struct _sDetailExe {
 	gint             exe_id;
-	GDate            exe_deb;
-	GDate            exe_fin;
-	gint             last_ecr;
+	myDate          *exe_begin;
+	myDate          *exe_end;
+	gint             last_entry;
 	ofaDossierStatus status;
 };
 
@@ -112,12 +112,14 @@ static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account );
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
 static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
-static sDetailExe *get_exe_by_date( const ofoDossier *dossier, const GDate *date );
+static sDetailExe *get_exe_by_date( const ofoDossier *dossier, const myDate *date );
 static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
 static void        on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry );
+static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
+static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
 static gboolean    dossier_read_exercices( ofoDossier *dossier );
@@ -126,7 +128,15 @@ static gboolean    do_update_properties( ofoDossier *dossier, const ofoSgbd *sgb
 static gboolean    do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd );
 
 static void
-ofo_dossier_finalize( GObject *instance )
+free_detail_exe( sDetailExe *detail )
+{
+	g_object_unref( detail->exe_begin );
+	g_object_unref( detail->exe_end );
+	g_free( detail );
+}
+
+static void
+dossier_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_dossier_finalize";
 	ofoDossierPrivate *priv;
@@ -144,9 +154,9 @@ ofo_dossier_finalize( GObject *instance )
 
 	g_free( priv->label );
 	g_free( priv->notes );
-	g_free( priv->maj_user );
+	g_free( priv->upd_user );
 
-	g_list_free_full( priv->exes, ( GDestroyNotify ) g_free );
+	g_list_free_full( priv->exes, ( GDestroyNotify ) free_detail_exe );
 
 	g_free( priv );
 
@@ -155,7 +165,7 @@ ofo_dossier_finalize( GObject *instance )
 }
 
 static void
-ofo_dossier_dispose( GObject *instance )
+dossier_dispose( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_dossier_dispose";
 	ofoDossierPrivate *priv;
@@ -195,8 +205,8 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = ofo_dossier_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ofo_dossier_finalize;
+	G_OBJECT_CLASS( klass )->dispose = dossier_dispose;
+	G_OBJECT_CLASS( klass )->finalize = dossier_finalize;
 
 	/**
 	 * ofoDossier::ofa-signal-new-object:
@@ -418,7 +428,7 @@ ofo_dossier_open( ofoDossier *dossier, const gchar *account, const gchar *passwo
  * system, as they may be needed before the class has the opportunity
  * to initialize itself
  *
- * use case: the intermediate closing by journal may be run without
+ * use case: the intermediate closing by ledger may be run without
  * having first loaded the accounts, but the accounts should be
  * connected in order to update themselves.
  */
@@ -468,7 +478,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 
 	query = g_strdup_printf(
 					"UPDATE OFA_T_DOSSIER "
-					"	SET DOS_DEV_CODE='%s' WHERE DOS_DEV_CODE='%s'", code, prev_id );
+					"	SET DOS_DEF_CURRENCY='%s' WHERE DOS_DEF_CURRENCY='%s'", code, prev_id );
 
 	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
 
@@ -569,8 +579,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ASS_RATE      DECIMAL(15,5)               COMMENT 'Taux d\\'amortissement',"
 			"	ASS_DATE_OUT  DATE                        COMMENT 'Outgoing date',"
 			"	ASS_NOTES     VARCHAR(4096)               COMMENT 'Notes',"
-			"	ASS_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
-			"	ASS_MAJ_STAMP TIMESTAMP                   COMMENT 'Last update timestamp'"
+			"	ASS_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
+			"	ASS_UPD_STAMP TIMESTAMP                   COMMENT 'Last update timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -603,8 +613,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	BAT_DEVISE    VARCHAR(3)                  COMMENT 'Account currency',"
 			"	BAT_SOLDE     DECIMAL(15,5)               COMMENT 'Signed balance of the account',"
 			"	BAT_NOTES     VARCHAR(4096)               COMMENT 'Import notes',"
-			"	BAT_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of import',"
-			"	BAT_MAJ_STAMP TIMESTAMP                   COMMENT 'Import timestamp'"
+			"	BAT_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of import',"
+			"	BAT_UPD_STAMP TIMESTAMP                   COMMENT 'Import timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -620,8 +630,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	BAT_LINE_DEVISE    VARCHAR(3)             COMMENT 'Line currency',"
 			"	BAT_LINE_MONTANT   DECIMAL(15,5)          COMMENT 'Signed amount of the line',"
 			"	BAT_LINE_ECR       INTEGER                COMMENT 'Reciliated entry',"
-			"	BAT_LINE_MAJ_USER  VARCHAR(20)            COMMENT 'User responsible of the reconciliation',"
-			"	BAT_LINE_MAJ_STAMP TIMESTAMP              COMMENT 'Reconciliation timestamp'"
+			"	BAT_LINE_UPD_USER  VARCHAR(20)            COMMENT 'User responsible of the reconciliation',"
+			"	BAT_LINE_UPD_STAMP TIMESTAMP              COMMENT 'Reconciliation timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -631,8 +641,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	CLA_NUMBER       INTEGER     NOT NULL UNIQUE   COMMENT 'Class number',"
 			"	CLA_LABEL        VARCHAR(80) NOT NULL          COMMENT 'Class label',"
 			"	CLA_NOTES        VARCHAR(4096)                 COMMENT 'Class notes',"
-			"	CLA_MAJ_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
-			"	CLA_MAJ_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp'"
+			"	CLA_UPD_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
+			"	CLA_UPD_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -698,8 +708,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	CPT_DEV_CODE     VARCHAR(3)                    COMMENT 'ISO 3A identifier of the currency of the account',"
 			"	CPT_NOTES        VARCHAR(4096)                 COMMENT 'Account notes',"
 			"	CPT_TYPE         CHAR(1)                       COMMENT 'Account type, values R/D',"
-			"	CPT_MAJ_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
-			"	CPT_MAJ_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp',"
+			"	CPT_UPD_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
+			"	CPT_UPD_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp',"
 			"	CPT_DEB_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au débit',"
 			"	CPT_DEB_DATE     DATE                          COMMENT 'Date d\\'effet',"
 			"	CPT_DEB_MNT      DECIMAL(15,5)                 COMMENT 'Montant débiteur écritures validées',"
@@ -737,8 +747,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	DEV_SYMBOL    VARCHAR(3)  NOT NULL                   COMMENT 'Label of the currency',"
 			"	DEV_DIGITS    INTEGER     DEFAULT 2                  COMMENT 'Decimal digits on display',"
 			"	DEV_NOTES     VARCHAR(4096)                          COMMENT 'Currency notes',"
-			"	DEV_MAJ_USER  VARCHAR(20)                            COMMENT 'User responsible of properties last update',"
-			"	DEV_MAJ_STAMP TIMESTAMP                              COMMENT 'Properties last update timestamp'"
+			"	DEV_UPD_USER  VARCHAR(20)                            COMMENT 'User responsible of properties last update',"
+			"	DEV_UPD_STAMP TIMESTAMP                              COMMENT 'Properties last update timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -754,17 +764,17 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	DOS_ID           INTEGER   NOT NULL UNIQUE    COMMENT 'Row identifier',"
 			"	DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
 			"	DOS_NOTES        VARCHAR(4096)                COMMENT 'Notes',"
-			"	DOS_DUREE_EXE    INTEGER                      COMMENT 'Exercice length in month',"
-			"	DOS_DEV_CODE     VARCHAR(3)                   COMMENT 'Default currency identifier',"
-			"	DOS_MAJ_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
-			"	DOS_MAJ_STAMP    TIMESTAMP NOT NULL           COMMENT 'Properties last update timestamp'"
+			"	DOS_EXE_LENGTH   INTEGER                      COMMENT 'Exercice length in months',"
+			"	DOS_DEF_CURRENCY VARCHAR(3)                   COMMENT 'Default currency identifier',"
+			"	DOS_UPD_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
+			"	DOS_UPD_STAMP    TIMESTAMP NOT NULL           COMMENT 'Properties last update timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
 
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
-			"	(DOS_ID,DOS_LABEL,DOS_DUREE_EXE,DOS_DEV_CODE) "
+			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY) "
 			"	VALUES (1,'%s',%u,'%s')", name, DOS_DEFAULT_LENGTH, "EUR" );
 	if( !ofo_sgbd_query( sgbd, query, TRUE )){
 		g_free( query );
@@ -774,12 +784,12 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_EXE ("
-			"	DOS_ID           INTEGER      NOT NULL        COMMENT 'Row identifier',"
-			"	DOS_EXE_ID       INTEGER      NOT NULL        COMMENT 'Exercice identifier',"
-			"	DOS_EXE_DEB      DATE                         COMMENT 'Date de début d\\'exercice',"
-			"	DOS_EXE_FIN      DATE                         COMMENT 'Date de fin d\\'exercice',"
-			"	DOS_EXE_LAST_ECR INTEGER                      COMMENT 'Last entry number used',"
-			"	DOS_EXE_STATUS   INTEGER      NOT NULL        COMMENT 'Status of this exercice',"
+			"	DOS_ID             INTEGER      NOT NULL        COMMENT 'Row identifier',"
+			"	DOS_EXE_ID         INTEGER      NOT NULL        COMMENT 'Exercice identifier',"
+			"	DOS_EXE_BEGIN      DATE                         COMMENT 'Exercice beginning date',"
+			"	DOS_EXE_END        DATE                         COMMENT 'Exercice ending date',"
+			"	DOS_EXE_LAST_ENTRY INTEGER                      COMMENT 'Last entry number used',"
+			"	DOS_EXE_STATUS     INTEGER      NOT NULL        COMMENT 'Status of this exercice',"
 			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_ID)"
 			")", TRUE )){
 		return( FALSE );
@@ -922,8 +932,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	REC_PERIOD    VARCHAR(1)                  COMMENT 'Periodicity',"
 			"	REC_DAY       INTEGER                     COMMENT 'Day of the period',"
 			"	REC_NOTES     VARCHAR(4096)               COMMENT 'Notes',"
-			"	REC_MAJ_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-			"	REC_MAJ_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
+			"	REC_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
+			"	REC_UPD_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
 			"	REC_LAST      DATE                        COMMENT 'Effect date of the last generation'"
 			")", TRUE )){
 		return( FALSE );
@@ -1042,13 +1052,13 @@ ofo_dossier_get_dbname( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_use_devise:
+ * ofo_dossier_use_currency:
  *
  * Returns: %TRUE if the dossier makes use of this currency, thus
  * preventing its deletion.
  */
 gboolean
-ofo_dossier_use_devise( const ofoDossier *dossier, const gchar *devise )
+ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 {
 	const gchar *default_dev;
 
@@ -1056,10 +1066,10 @@ ofo_dossier_use_devise( const ofoDossier *dossier, const gchar *devise )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		default_dev = ofo_dossier_get_default_devise( dossier );
+		default_dev = ofo_dossier_get_default_currency( dossier );
 
 		if( default_dev && g_utf8_strlen( default_dev, -1 )){
-			return( g_utf8_collate( default_dev, devise ) == 0 );
+			return( g_utf8_collate( default_dev, currency ) == 0 );
 		}
 	}
 
@@ -1096,25 +1106,25 @@ ofo_dossier_get_exercice_length( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( dossier->private->duree_exe );
+		return( dossier->private->exe_length );
 	}
 
 	return( -1 );
 }
 
 /**
- * ofo_dossier_get_default_devise:
+ * ofo_dossier_get_default_currency:
  *
  * Returns: the default currency of the dossier.
  */
 const gchar *
-ofo_dossier_get_default_devise( const ofoDossier *dossier )
+ofo_dossier_get_default_currency( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const gchar * ) dossier->private->devise );
+		return(( const gchar * ) dossier->private->currency );
 	}
 
 	return( NULL );
@@ -1139,19 +1149,19 @@ ofo_dossier_get_notes( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_maj_user:
+ * ofo_dossier_get_upd_user:
  *
  * Returns: the identifier of the user who has last updated the
  * properties of the dossier.
  */
 const gchar *
-ofo_dossier_get_maj_user( const ofoDossier *dossier )
+ofo_dossier_get_upd_user( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const gchar * ) dossier->private->maj_user );
+		return(( const gchar * ) dossier->private->upd_user );
 	}
 
 	return( NULL );
@@ -1164,13 +1174,13 @@ ofo_dossier_get_maj_user( const ofoDossier *dossier )
  * of the dossier.
  */
 const GTimeVal *
-ofo_dossier_get_maj_stamp( const ofoDossier *dossier )
+ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &dossier->private->maj_stamp );
+		return(( const GTimeVal * ) &dossier->private->upd_stamp );
 	}
 
 	return( NULL );
@@ -1213,17 +1223,17 @@ get_exe_by_id( const ofoDossier *dossier, gint exe_id )
 }
 
 static sDetailExe *
-get_exe_by_date( const ofoDossier *dossier, const GDate *date )
+get_exe_by_date( const ofoDossier *dossier, const myDate *date )
 {
 	GList *exe;
 	sDetailExe *sexe;
 
 	for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 		sexe = ( sDetailExe * ) exe->data;
-		if( !g_date_valid( &sexe->exe_deb ) || g_date_compare( &sexe->exe_deb, date ) > 0 ){
+		if( !my_date_is_valid( sexe->exe_begin ) || my_date_compare( sexe->exe_begin, date ) > 0 ){
 			continue;
 		}
-		if( !g_date_valid( &sexe->exe_fin ) || g_date_compare( &sexe->exe_fin, date ) < 0 ){
+		if( !my_date_is_valid( sexe->exe_end ) || my_date_compare( sexe->exe_end, date ) < 0 ){
 			continue;
 		}
 		return( sexe );
@@ -1257,12 +1267,12 @@ ofo_dossier_get_current_exe_id( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_current_exe_deb:
+ * ofo_dossier_get_current_exe_begin:
  *
  * Returns: the beginning date of the current exercice.
  */
-const GDate *
-ofo_dossier_get_current_exe_deb( const ofoDossier *dossier )
+const myDate *
+ofo_dossier_get_current_exe_begin( const ofoDossier *dossier )
 {
 	sDetailExe *sexe;
 
@@ -1272,7 +1282,7 @@ ofo_dossier_get_current_exe_deb( const ofoDossier *dossier )
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			return(( const GDate * ) &sexe->exe_deb );
+			return(( const myDate * ) sexe->exe_begin );
 		}
 	}
 
@@ -1280,12 +1290,12 @@ ofo_dossier_get_current_exe_deb( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_current_exe_fin:
+ * ofo_dossier_get_current_exe_end:
  *
  * Returns: the ending date of the current exercice.
  */
-const GDate *
-ofo_dossier_get_current_exe_fin( const ofoDossier *dossier )
+const myDate *
+ofo_dossier_get_current_exe_end( const ofoDossier *dossier )
 {
 	sDetailExe *sexe;
 
@@ -1295,7 +1305,7 @@ ofo_dossier_get_current_exe_fin( const ofoDossier *dossier )
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			return(( const GDate * ) &sexe->exe_fin );
+			return(( const myDate * ) sexe->exe_end );
 		}
 	}
 
@@ -1303,12 +1313,12 @@ ofo_dossier_get_current_exe_fin( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_current_exe_last_ecr:
+ * ofo_dossier_get_current_exe_last_entry:
  *
  * Returns: the last entry number allocated in the current exercice.
  */
 gint
-ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier )
+ofo_dossier_get_current_exe_last_entry( const ofoDossier *dossier )
 {
 	sDetailExe *sexe;
 
@@ -1318,7 +1328,7 @@ ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier )
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			return( sexe->last_ecr );
+			return( sexe->last_entry );
 		}
 	}
 
@@ -1333,12 +1343,12 @@ ofo_dossier_get_current_exe_last_ecr( const ofoDossier *dossier )
  * Default to the current exercice identifier.
  */
 gint
-ofo_dossier_get_exe_by_date( const ofoDossier *dossier, const GDate *date )
+ofo_dossier_get_exe_by_date( const ofoDossier *dossier, const myDate *date )
 {
 	sDetailExe *sexe;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( date && g_date_valid( date ), 0 );
+	g_return_val_if_fail( my_date_is_valid( date ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
@@ -1353,12 +1363,12 @@ ofo_dossier_get_exe_by_date( const ofoDossier *dossier, const GDate *date )
 }
 
 /**
- * ofo_dossier_get_exe_fin:
+ * ofo_dossier_get_exe_end:
  *
  * Returns: the date of the beginning of the specified exercice.
  */
-const GDate *
-ofo_dossier_get_exe_deb( const ofoDossier *dossier, gint exe_id )
+const myDate *
+ofo_dossier_get_exe_begin( const ofoDossier *dossier, gint exe_id )
 {
 	sDetailExe *sexe;
 
@@ -1368,7 +1378,7 @@ ofo_dossier_get_exe_deb( const ofoDossier *dossier, gint exe_id )
 
 		sexe = get_exe_by_id( dossier, exe_id );
 		if( sexe ){
-			return(( const GDate * ) &sexe->exe_deb );
+			return(( const myDate * ) sexe->exe_begin );
 		}
 	}
 
@@ -1376,12 +1386,12 @@ ofo_dossier_get_exe_deb( const ofoDossier *dossier, gint exe_id )
 }
 
 /**
- * ofo_dossier_get_exe_fin:
+ * ofo_dossier_get_exe_end:
  *
  * Returns: the date of the end of the specified exercice.
  */
-const GDate *
-ofo_dossier_get_exe_fin( const ofoDossier *dossier, gint exe_id )
+const myDate *
+ofo_dossier_get_exe_end( const ofoDossier *dossier, gint exe_id )
 {
 	sDetailExe *sexe;
 
@@ -1391,7 +1401,7 @@ ofo_dossier_get_exe_fin( const ofoDossier *dossier, gint exe_id )
 
 		sexe = get_exe_by_id( dossier, exe_id );
 		if( sexe ){
-			return(( const GDate * ) &sexe->exe_fin );
+			return(( const myDate * ) sexe->exe_end );
 		}
 	}
 
@@ -1407,9 +1417,11 @@ ofo_dossier_get_exe_status_label( ofaDossierStatus status )
 	gchar *str;
 
 	switch( status ){
+
 		case DOS_STATUS_OPENED:
 			return( _( "Opened" ));
 			break;
+
 		case DOS_STATUS_CLOSED:
 			return( _( "Closed" ));
 			break;
@@ -1423,33 +1435,32 @@ ofo_dossier_get_exe_status_label( ofaDossierStatus status )
 /**
  * ofo_dossier_get_last_closed_exercice:
  *
- * Returns: the last exercice closing date,
- *  or NULL if there has not yet any closed exercice.
+ * Returns: the last exercice closing date, as a newly allocated
+ * #myDate object which should be g_object_unref() by the caller.
+ * If the dossier has never been closed, a cleared (thus invalid, but
+ * not null) date is returned.
  */
-const GDate *
+myDate *
 ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 {
 	GList *exe;
 	sDetailExe *sexe;
-	const GDate *dmax;
+	myDate *dmax;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
-	dmax = NULL;
+	dmax = my_date_new();
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		dmax = NULL;
 		for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 			sexe = ( sDetailExe * ) exe->data;
-			if( !dmax ){
-				if( g_date_valid( &sexe->exe_fin )){
-					dmax = &sexe->exe_fin;
-				}
-			} else if( g_date_valid( &sexe->exe_fin ) &&
-						g_date_compare( &sexe->exe_fin, dmax ) > 0 ){
+			if( my_date_is_valid( sexe->exe_end )){
+				if( !my_date_is_valid( dmax ) ||
+						my_date_compare( sexe->exe_end, dmax ) > 0 ){
 
-				dmax = &sexe->exe_fin;
+					my_date_set_from_date( dmax, sexe->exe_end );
+				}
 			}
 		}
 	}
@@ -1474,12 +1485,12 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		current = get_current_exe( dossier );
-		current->last_ecr += 1;
-		next_number = current->last_ecr;
+		current->last_entry += 1;
+		next_number = current->last_entry;
 
 		query = g_strdup_printf(
 				"UPDATE OFA_T_DOSSIER_EXE "
-				"	SET DOS_EXE_LAST_ECR=%d "
+				"	SET DOS_EXE_LAST_ENTRY=%d "
 				"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
 						next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
 
@@ -1494,11 +1505,11 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
  * ofo_dossier_is_valid:
  */
 gboolean
-ofo_dossier_is_valid( const gchar *label, gint duree, const gchar *devise )
+ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency )
 {
 	return( label && g_utf8_strlen( label, -1 ) &&
-				duree > 0 &&
-				devise && g_utf8_strlen( devise, -1 ));
+				nb_months > 0 &&
+				currency && g_utf8_strlen( currency, -1 ));
 }
 
 /**
@@ -1521,29 +1532,29 @@ ofo_dossier_set_label( ofoDossier *dossier, const gchar *label )
  * ofo_dossier_set_exercice_length:
  */
 void
-ofo_dossier_set_exercice_length( ofoDossier *dossier, gint duree )
+ofo_dossier_set_exercice_length( ofoDossier *dossier, gint nb_months )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	g_return_if_fail( duree > 0 );
+	g_return_if_fail( nb_months > 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		dossier->private->duree_exe = duree;
+		dossier->private->exe_length = nb_months;
 	}
 }
 
 /**
- * ofo_dossier_set_default_devise:
+ * ofo_dossier_set_default_currency:
  */
 void
-ofo_dossier_set_default_devise( ofoDossier *dossier, const gchar *devise )
+ofo_dossier_set_default_currency( ofoDossier *dossier, const gchar *currency )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		g_free( dossier->private->devise );
-		dossier->private->devise = g_strdup( devise );
+		g_free( dossier->private->currency );
+		dossier->private->currency = g_strdup( currency );
 	}
 }
 
@@ -1562,34 +1573,34 @@ ofo_dossier_set_notes( ofoDossier *dossier, const gchar *notes )
 	}
 }
 
-/**
- * ofo_dossier_set_maj_user:
+/*
+ * ofo_dossier_set_upd_user:
  */
-void
-ofo_dossier_set_maj_user( ofoDossier *dossier, const gchar *user )
+static void
+dossier_set_upd_user( ofoDossier *dossier, const gchar *user )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	g_return_if_fail( user && g_utf8_strlen( user, -1 ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		g_free( dossier->private->maj_user );
-		dossier->private->maj_user = g_strdup( user );
+		g_free( dossier->private->upd_user );
+		dossier->private->upd_user = g_strdup( user );
 	}
 }
 
-/**
- * ofo_dossier_set_maj_stamp:
+/*
+ * ofo_dossier_set_upd_stamp:
  */
-void
-ofo_dossier_set_maj_stamp( ofoDossier *dossier, const GTimeVal *stamp )
+static void
+dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	g_return_if_fail( stamp );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		memcpy( &dossier->private->maj_stamp, stamp, sizeof( GTimeVal ));
+		memcpy( &dossier->private->upd_stamp, stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -1614,10 +1625,10 @@ ofo_dossier_set_current_exe_id( const ofoDossier *dossier, gint exe_id )
 }
 
 /**
- * ofo_dossier_set_current_exe_deb:
+ * ofo_dossier_set_current_exe_begin:
  */
 void
-ofo_dossier_set_current_exe_deb( const ofoDossier *dossier, const GDate *date )
+ofo_dossier_set_current_exe_begin( const ofoDossier *dossier, const myDate *date )
 {
 	sDetailExe *sexe;
 
@@ -1627,16 +1638,16 @@ ofo_dossier_set_current_exe_deb( const ofoDossier *dossier, const GDate *date )
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			memcpy( &sexe->exe_deb, date, sizeof( GDate ));
+			my_date_set_from_date( sexe->exe_begin, date );
 		}
 	}
 }
 
 /**
- * ofo_dossier_set_current_exe_fin:
+ * ofo_dossier_set_current_exe_end:
  */
 void
-ofo_dossier_set_current_exe_fin( const ofoDossier *dossier, const GDate *date )
+ofo_dossier_set_current_exe_end( const ofoDossier *dossier, const myDate *date )
 {
 	sDetailExe *sexe;
 
@@ -1646,16 +1657,16 @@ ofo_dossier_set_current_exe_fin( const ofoDossier *dossier, const GDate *date )
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			memcpy( &sexe->exe_fin, date, sizeof( GDate ));
+			my_date_set_from_date( sexe->exe_end, date );
 		}
 	}
 }
 
 /**
- * ofo_dossier_set_current_exe_last_ecr:
+ * ofo_dossier_set_current_exe_last_entry:
  */
 void
-ofo_dossier_set_current_exe_last_ecr( const ofoDossier *dossier, gint number )
+ofo_dossier_set_current_exe_last_entry( const ofoDossier *dossier, gint number )
 {
 	sDetailExe *sexe;
 
@@ -1665,7 +1676,7 @@ ofo_dossier_set_current_exe_last_ecr( const ofoDossier *dossier, gint number )
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			sexe->last_ecr = number;
+			sexe->last_entry = number;
 		}
 	}
 }
@@ -1745,8 +1756,8 @@ dossier_read_properties( ofoDossier *dossier )
 	ok = FALSE;
 
 	query = g_strdup_printf(
-			"SELECT DOS_LABEL,DOS_DUREE_EXE,DOS_NOTES,DOS_DEV_CODE,"
-			"	DOS_MAJ_USER,DOS_MAJ_STAMP "
+			"SELECT DOS_LABEL,DOS_EXE_LENGTH,DOS_NOTES,DOS_DEF_CURRENCY,"
+			"	DOS_UPD_USER,DOS_UPD_STAMP "
 			"	FROM OFA_T_DOSSIER "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
 
@@ -1773,17 +1784,17 @@ dossier_read_properties( ofoDossier *dossier )
 		icol = icol->next;
 		str = icol->data;
 		if( str && g_utf8_strlen( str, -1 )){
-			ofo_dossier_set_default_devise( dossier, str );
+			ofo_dossier_set_default_currency( dossier, str );
 		}
 		icol = icol->next;
 		str = icol->data;
 		if( str && g_utf8_strlen( str, -1 )){
-			ofo_dossier_set_maj_user( dossier, str );
+			dossier_set_upd_user( dossier, str );
 		}
 		icol = icol->next;
 		str = icol->data;
 		if( str && g_utf8_strlen( str, -1 )){
-			ofo_dossier_set_maj_stamp( dossier,
+			dossier_set_upd_stamp( dossier,
 					my_utils_stamp_from_sql( &timeval, str ));
 		}
 
@@ -1805,7 +1816,7 @@ dossier_read_exercices( ofoDossier *dossier )
 	ok = FALSE;
 
 	query = g_strdup_printf(
-			"SELECT DOS_EXE_ID,DOS_EXE_DEB,DOS_EXE_FIN,DOS_EXE_LAST_ECR,DOS_EXE_STATUS "
+			"SELECT DOS_EXE_ID,DOS_EXE_BEGIN,DOS_EXE_END,DOS_EXE_LAST_ENTRY,DOS_EXE_STATUS "
 			"	FROM OFA_T_DOSSIER_EXE "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
 
@@ -1820,12 +1831,12 @@ dossier_read_exercices( ofoDossier *dossier )
 
 			sexe->exe_id = atoi(( gchar * ) icol->data );
 			icol = icol->next;
-			my_date_set_from_sql( &sexe->exe_deb, ( const gchar * ) icol->data );
+			sexe->exe_begin = my_date_new_from_sql(( const gchar * ) icol->data );
 			icol = icol->next;
-			my_date_set_from_sql( &sexe->exe_fin, ( const gchar * ) icol->data );
+			sexe->exe_end = my_date_new_from_sql(( const gchar * ) icol->data );
 			icol = icol->next;
 			if( icol->data ){
-				sexe->last_ecr = atoi(( gchar * ) icol->data );
+				sexe->last_entry = atoi(( gchar * ) icol->data );
 			}
 			icol = icol->next;
 			if( icol->data ){
@@ -1880,7 +1891,7 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 	gchar *label, *notes, *stamp_str;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *devise;
+	const gchar *currency;
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_dossier_get_label( dossier ));
@@ -1891,15 +1902,15 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
 
 	g_string_append_printf( query,
-			"	DOS_LABEL='%s',DOS_DUREE_EXE=%d,",
+			"	DOS_LABEL='%s',DOS_EXE_LENGTH=%d,",
 					label,
 					ofo_dossier_get_exercice_length( dossier ));
 
-	devise = ofo_dossier_get_default_devise( dossier );
-	if( devise && g_utf8_strlen( devise, -1 )){
-		g_string_append_printf( query, "DOS_DEV_CODE='%s',", devise );
+	currency = ofo_dossier_get_default_currency( dossier );
+	if( currency && g_utf8_strlen( currency, -1 )){
+		g_string_append_printf( query, "DOS_DEF_CURRENCY='%s',", currency );
 	} else {
-		query = g_string_append( query, "DOS_DEV_CODE=NULL," );
+		query = g_string_append( query, "DOS_DEF_CURRENCY=NULL," );
 	}
 
 	if( notes && g_utf8_strlen( notes, -1 )){
@@ -1909,13 +1920,12 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 	}
 
 	g_string_append_printf( query,
-			"	DOS_MAJ_USER='%s',DOS_MAJ_STAMP='%s'"
+			"	DOS_UPD_USER='%s',DOS_UPD_STAMP='%s'"
 			"	WHERE DOS_ID=%d", user, stamp_str, THIS_DOS_ID );
 
 	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
-
-		ofo_dossier_set_maj_user( dossier, user );
-		ofo_dossier_set_maj_stamp( dossier, &stamp );
+		dossier_set_upd_user( dossier, user );
+		dossier_set_upd_stamp( dossier, &stamp );
 		ok = TRUE;
 	}
 
@@ -1933,28 +1943,28 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 	GString *query;
 	gchar *sdeb, *sfin;
 	gboolean ok;
-	const GDate *date;
+	const myDate *date;
 
 	ok = FALSE;
 
 	query = g_string_new( "UPDATE OFA_T_DOSSIER_EXE SET " );
 
-	date = ( const GDate * ) &dossier->private->current->exe_deb;
-	if( g_date_valid( date )){
-		sdeb = my_date2_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( query, "DOS_EXE_DEB='%s',", sdeb );
+	date = ( const myDate * ) dossier->private->current->exe_begin;
+	if( my_date_is_valid( date )){
+		sdeb = my_date_to_str( date, MY_DATE_SQL );
+		g_string_append_printf( query, "DOS_EXE_BEGIN='%s',", sdeb );
 		g_free( sdeb );
 	} else {
-		query = g_string_append( query, "DOS_EXE_DEB=NULL," );
+		query = g_string_append( query, "DOS_EXE_BEGIN=NULL," );
 	}
 
-	date = ( const GDate * ) &dossier->private->current->exe_fin;
-	if( g_date_valid( date )){
-		sfin = my_date2_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( query, "DOS_EXE_FIN='%s' ", sfin );
+	date = ( const myDate * ) &dossier->private->current->exe_end;
+	if( my_date_is_valid( date )){
+		sfin = my_date_to_str( date, MY_DATE_SQL );
+		g_string_append_printf( query, "DOS_EXE_END='%s' ", sfin );
 		g_free( sfin );
 	} else {
-		query = g_string_append( query, "DOS_EXE_FIN=NULL " );
+		query = g_string_append( query, "DOS_EXE_END=NULL " );
 	}
 
 	g_string_append_printf( query,
@@ -1976,7 +1986,7 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 {
 	GSList *lines;
 	gchar *str, *stamp;
-	const gchar *devise, *muser;
+	const gchar *currency, *muser;
 	GList *exe;
 	sDetailExe *sexe;
 	gchar *sbegin, *send, *notes;
@@ -1991,9 +2001,9 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 
 	notes = my_utils_export_multi_lines( ofo_dossier_get_notes( dossier ));
 	g_debug( "notes=%s", notes );
-	muser = ofo_dossier_get_maj_user( dossier );
-	stamp = my_utils_stamp_to_str( ofo_dossier_get_maj_stamp( dossier ), MY_STAMP_YYMDHMS );
-	devise = ofo_dossier_get_default_devise( dossier );
+	muser = ofo_dossier_get_upd_user( dossier );
+	stamp = my_utils_stamp_to_str( ofo_dossier_get_upd_stamp( dossier ), MY_STAMP_YYMDHMS );
+	currency = ofo_dossier_get_default_currency( dossier );
 
 	str = g_strdup_printf( "1;%s;%s;%s;%s;%d;%s",
 			ofo_dossier_get_label( dossier ),
@@ -2001,7 +2011,7 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 			muser ? muser : "",
 			muser ? stamp : "",
 			ofo_dossier_get_exercice_length( dossier ),
-			devise ? devise : "" );
+			currency ? currency : "" );
 
 	g_free( notes );
 	g_free( stamp );
@@ -2011,13 +2021,13 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 		sexe = ( sDetailExe * ) exe->data;
 
-		sbegin = my_date2_to_str( &sexe->exe_deb, MY_DATE_SQL );
-		send = my_date2_to_str( &sexe->exe_fin, MY_DATE_SQL );
+		sbegin = my_date_to_str( sexe->exe_begin, MY_DATE_SQL );
+		send = my_date_to_str( sexe->exe_end, MY_DATE_SQL );
 
 		str = g_strdup_printf( "2:%s;%s;%d;%d",
 				sbegin,
 				send,
-				sexe->last_ecr,
+				sexe->last_entry,
 				sexe->status );
 
 		g_free( sbegin );

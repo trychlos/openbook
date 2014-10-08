@@ -253,7 +253,7 @@ init_balances_page( ofaLedgerProperties *self )
 	gint current_exe_id;
 	GList *list, *ili;
 	gint exe_id, idx, i;
-	const GDate *begin, *end;
+	const myDate *begin, *end;
 	gchar *sbegin, *send;
 	GtkTreeIter iter;
 
@@ -267,7 +267,7 @@ init_balances_page( ofaLedgerProperties *self )
 	parms.disp_label = TRUE;
 	parms.pfnSelected = ( ofaDeviseComboCb ) on_currency_changed;
 	parms.user_data = self;
-	parms.initial_code = ofo_dossier_get_default_devise( MY_WINDOW( self )->protected->dossier );
+	parms.initial_code = ofo_dossier_get_default_currency( MY_WINDOW( self )->protected->dossier );
 
 	self->private->dev_combo = ofa_devise_combo_new( &parms );
 
@@ -297,21 +297,21 @@ init_balances_page( ofaLedgerProperties *self )
 		if( exe_id == current_exe_id ){
 			idx = i;
 		}
-		begin = ofo_dossier_get_exe_deb( MY_WINDOW( self )->protected->dossier, exe_id );
-		end = ofo_dossier_get_exe_fin( MY_WINDOW( self )->protected->dossier, exe_id );
-		if( !begin || !g_date_valid( begin )){
+		begin = ofo_dossier_get_exe_begin( MY_WINDOW( self )->protected->dossier, exe_id );
+		end = ofo_dossier_get_exe_end( MY_WINDOW( self )->protected->dossier, exe_id );
+		if( !my_date_is_valid( begin )){
 			sbegin = g_strdup( "" );
-			if( !end || !g_date_valid( end )){
+			if( !my_date_is_valid( end )){
 				send = g_strdup( _( "Current exercice" ));
 			} else {
-				send = my_date2_to_str( end, MY_DATE_DMMM );
+				send = my_date_to_str( end, MY_DATE_DMMM );
 			}
 		} else {
-			sbegin = my_date2_to_str( begin, MY_DATE_DMMM );
-			if( !end || !g_date_valid( end )){
+			sbegin = my_date_to_str( begin, MY_DATE_DMMM );
+			if( !my_date_is_valid( end )){
 				send = g_strdup( "" );
 			} else {
-				send = my_date2_to_str( end, MY_DATE_DMMM );
+				send = my_date_to_str( end, MY_DATE_DMMM );
 			}
 		}
 

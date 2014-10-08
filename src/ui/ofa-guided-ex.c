@@ -84,7 +84,6 @@ static const gchar  *st_ui_id     = "GuidedInputDlg";
 
 G_DEFINE_TYPE( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_MAIN_PAGE )
 
-static void       pane_save_position( GtkPaned *pane );
 static GtkWidget *v_setup_view( ofaMainPage *page );
 static void       pane_restore_position( GtkPaned *pane );
 static GtkWidget *v_setup_buttons( ofaMainPage *page );
@@ -119,6 +118,8 @@ static void       on_new_object( const ofoDossier *dossier, const ofoBase *objec
 static void       on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
 static void       on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
+static void       v_pre_remove( ofaMainPage *page );
+static void       pane_save_position( GtkPaned *pane );
 
 static void
 guided_ex_finalize( GObject *instance )
@@ -151,12 +152,7 @@ guided_ex_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		if( priv->pane ){
-			pane_save_position( priv->pane );
-		}
-
 		/* unref object members here */
-
 		if( priv->common ){
 			g_clear_object( &priv->common );
 		}
@@ -164,12 +160,6 @@ guided_ex_dispose( GObject *instance )
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_guided_ex_parent_class )->dispose( instance );
-}
-
-static void
-pane_save_position( GtkPaned *pane )
-{
-	ofa_settings_set_uint( "GuidedInputDlgEx-pane", gtk_paned_get_position( pane ));
 }
 
 static void
@@ -198,6 +188,7 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_MAIN_PAGE_CLASS( klass )->pre_remove = v_pre_remove;
 }
 
 static GtkWidget *
@@ -968,4 +959,27 @@ on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )
 	} else if( type == OFO_TYPE_LEDGER ){
 
 	}
+}
+
+static void
+v_pre_remove( ofaMainPage *page )
+{
+	ofaGuidedExPrivate *priv;
+
+	g_return_if_fail( page && OFA_IS_GUIDED_EX( page ));
+
+	priv = OFA_GUIDED_EX( page )->private;
+
+	if( !priv->dispose_has_run ){
+
+		if( priv->pane ){
+			pane_save_position( priv->pane );
+		}
+	}
+}
+
+static void
+pane_save_position( GtkPaned *pane )
+{
+	ofa_settings_set_uint( "GuidedInputDlgEx-pane", gtk_paned_get_position( pane ));
 }

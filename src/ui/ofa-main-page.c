@@ -358,6 +358,16 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 	klass->on_delete_clicked = NULL;
 	klass->on_import_clicked = NULL;
 	klass->on_export_clicked = NULL;
+	klass->pre_remove = NULL;
+}
+
+/**
+ * ofa_main_page_pre_remove:
+ */
+void
+ofa_main_page_pre_remove( ofaMainPage *page )
+{
+
 }
 
 static void

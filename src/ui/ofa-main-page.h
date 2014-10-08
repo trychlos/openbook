@@ -121,6 +121,8 @@ typedef enum {
 #define PAGE_BUTTON_IMPORT              "btn-import"
 #define PAGE_BUTTON_EXPORT              "btn-export"
 
+void           ofa_main_page_pre_remove         ( ofaMainPage *page );
+
 ofaMainWindow *ofa_main_page_get_main_window    ( const ofaMainPage *page );
 ofoDossier    *ofa_main_page_get_dossier        ( const ofaMainPage *page );
 gint           ofa_main_page_get_theme          ( const ofaMainPage *page );

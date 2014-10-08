@@ -46,7 +46,7 @@
 struct _ofaIntClosingPrivate {
 
 	gboolean            done;			/* whether we have actually done something */
-	GDate               closing;
+	myDate             *closing;
 	gboolean            valid;			/* reset after each date change */
 
 	/* UI
@@ -104,11 +104,16 @@ int_closing_finalize( GObject *instance )
 static void
 int_closing_dispose( GObject *instance )
 {
+	ofaIntClosingPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_INT_CLOSING( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
+		priv = OFA_INT_CLOSING( instance )->private;
+
 		/* unref object members here */
+		g_object_unref( priv->closing );
 	}
 
 	/* chain up to the parent class */
@@ -127,7 +132,7 @@ ofa_int_closing_init( ofaIntClosing *self )
 
 	self->private = g_new0( ofaIntClosingPrivate, 1 );
 
-	g_date_clear( &self->private->closing, 1 );
+	self->private->closing = my_date_new();
 }
 
 static void
@@ -216,7 +221,7 @@ v_init_dialog( myDialog *dialog )
 	date_parms.entry_format = MY_DATE_DMYY;
 	date_parms.label = my_utils_container_get_child_by_name( container, "p1-label" );
 	date_parms.label_format = MY_DATE_DMMM;
-	date_parms.date = &priv->closing;
+	date_parms.date = my_date2_from_date( priv->closing );
 	date_parms.pfnCheck = ( myDateCheckCb ) date_check_cb;
 	date_parms.on_changed_cb = G_CALLBACK( on_date_changed );
 	date_parms.user_data = dialog;
@@ -253,14 +258,19 @@ static gboolean
 date_check_cb( GDate *date, ofaIntClosing *self )
 {
 	ofaIntClosingPrivate *priv;
-	const GDate *exe_end;
+	const myDate *exe_end;
+	myDate *date2;
+	gchar *str;
 
 	priv = self->private;
 	priv->valid = FALSE;
 
+	str = my_date2_to_str( date, MY_DATE_SQL );
+	date2 = my_date_new_from_sql( str );
+
 	/* the date must be less or equal that the end of exercice */
-	exe_end = ofo_dossier_get_current_exe_fin( MY_WINDOW( self )->protected->dossier );
-	if( !exe_end || !g_date_valid( exe_end ) || g_date_compare( date, exe_end ) <= 0 ){
+	exe_end = ofo_dossier_get_current_exe_end( MY_WINDOW( self )->protected->dossier );
+	if( !my_date_is_valid( exe_end ) || my_date_compare( date2, exe_end ) <= 0 ){
 		priv->valid = TRUE;
 		gtk_label_set_text( priv->message_label, "" );
 
@@ -331,25 +341,17 @@ check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 {
 	ofaIntClosingPrivate *priv;
 	myDate *last;
-	myDate *priv_closing;
-	gchar *str;
 
 	priv = self->private;
 	priv->count += 1;
 
 	last = ofo_ledger_get_last_closing( ledger );
-	str = my_date2_to_str( &priv->closing, MY_DATE_SQL );
-	priv_closing = my_date_new_from_sql( str );
 
-	if( !my_date_is_valid( last ) || my_date_compare( priv_closing, last ) > 0 ){
+	if( !my_date_is_valid( last ) || my_date_compare( priv->closing, last ) > 0 ){
 		priv->closeable += 1;
 	}
 
-	g_free( str );
-	g_object_unref( priv_closing );
-	if( last ){
-		g_object_unref( last );
-	}
+	g_object_unref( last );
 }
 
 static gboolean
@@ -389,7 +391,6 @@ close_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 	ofaIntClosingPrivate *priv;
 	const gchar *mnemo;
 	gchar *str;
-	myDate *priv_closing;
 	gboolean ok;
 
 	priv = self->private;
@@ -407,11 +408,7 @@ close_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 	}
 	g_string_append_printf( priv->ledgers_list, "%s", mnemo );
 
-	str = my_date2_to_str( &priv->closing, MY_DATE_SQL );
-	priv_closing = my_date_new_from_sql( str );
-	ok = ofo_ledger_close( ledger, priv_closing );
-	g_object_unref( priv_closing );
-	g_free( str );
+	ok = ofo_ledger_close( ledger, priv->closing );
 
 	return( ok );
 }

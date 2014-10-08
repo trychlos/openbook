@@ -1350,5 +1350,6 @@ on_tab_close_clicked( ofaTabLabel *tab, GtkGrid *grid )
 	page_num = gtk_notebook_page_num( book, GTK_WIDGET( grid ));
 	g_return_if_fail( page_num >= 0 );
 
+	ofa_main_page_pre_remove( handler );
 	gtk_notebook_remove_page( book, page_num );
 }

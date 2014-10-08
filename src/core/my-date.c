@@ -642,6 +642,7 @@ my_date2_from_str( GDate *date, const gchar *text, myDateFormat format )
 GDate *
 my_date2_from_date( myDate *date )
 {
+	g_return_val_if_fail( date && MY_IS_DATE( date ), NULL );
 	return( &date->private->date );
 }
 

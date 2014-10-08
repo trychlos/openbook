@@ -328,8 +328,6 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	ofoLedger *ledger;
 	sDetailCur *detail;
 	gdouble debit, credit;
-	gchar *str;
-	GDate deffect2;
 	const myDate *deffect;
 
 	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
@@ -340,10 +338,7 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	if( ledger ){
 
 		deffect = ofo_entry_get_deffect( entry );
-		str = my_date_to_str( deffect, MY_DATE_SQL );
-		my_date_set_from_sql( &deffect2, str );
-		exe_id = ofo_dossier_get_exe_by_date( dossier, &deffect2 );
-		g_free( str );
+		exe_id = ofo_dossier_get_exe_by_date( dossier, deffect );
 		currency = ofo_entry_get_currency( entry );
 		detail = ledger_find_cur_by_code( ledger, exe_id, currency );
 		/* the entry has necessarily be already recorded while in rough
@@ -691,9 +686,8 @@ ofo_ledger_get_upd_stamp( const ofoLedger *ledger )
  * Returns the effect date of the most recent entry written in this
  * ledger as a newly allocated #myDate object which should be
  * g_object_unref() by the caller.
- *
- * If no entry has been found for this ledger, a cleared (thus invalid)
- * date is returned (but a not-null #myDate object).
+ * If no entry has been found for this ledger, a cleared (thus invalid,
+ * but not null) date is returned.
  */
 myDate *
 ofo_ledger_get_last_entry( const ofoLedger *ledger )
@@ -709,8 +703,8 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger )
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
 		query = g_strdup_printf(
-				"SELECT MAX(ECR_DEFFET) FROM OFA_T_ECRITURES "
-				"	WHERE ECR_LED_MNEMO='%s'", ofo_ledger_get_mnemo( ledger ));
+				"SELECT MAX(ENT_DEFFECT) FROM OFA_T_ENTRIES "
+				"	WHERE ENT_LEDGER='%s'", ofo_ledger_get_mnemo( ledger ));
 
 		result = ofo_sgbd_query_ex(
 						ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query, TRUE );
@@ -732,9 +726,8 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger )
  * Returns the most recent closing date, all exercices considered, for
  * this ledger as a newly allocated #myDate object which should be
  * g_object_unref() by the caller.
- *
- * If the ledger has never been closed, a cleared (thus invalid) date
- * is returned (but a not-null #myDate object).
+ * If the ledger has never been closed, a cleared (thus invalid, but
+ * not null) date is returned.
  */
 myDate *
 ofo_ledger_get_last_closing( const ofoLedger *ledger )
@@ -1811,7 +1804,7 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 		for( exe=ledger->private->exes ; exe ; exe=exe->next ){
 			sexe = ( sDetailExe * ) exe->data;
 
-			sdfin = my_date2_to_str( ofo_dossier_get_exe_fin( dossier, sexe->exe_id ), MY_DATE_SQL );
+			sdfin = my_date_to_str( ofo_dossier_get_exe_end( dossier, sexe->exe_id ), MY_DATE_SQL );
 			sdclo = my_date_to_str( sexe->last_clo, MY_DATE_SQL );
 
 			str = g_strdup_printf( "2;%s;%s;%s",
@@ -1828,8 +1821,8 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 		for( amount=ledger->private->amounts ; amount ; amount=amount->next ){
 			sdev = ( sDetailCur * ) amount->data;
 
-			sdfin = my_date2_to_str(
-							ofo_dossier_get_exe_fin( dossier, sdev->exe_id ),
+			sdfin = my_date_to_str(
+							ofo_dossier_get_exe_end( dossier, sdev->exe_id ),
 							MY_DATE_SQL );
 			sdebd = my_date_to_str(
 							ofo_ledger_get_deb_date( ledger, sdev->exe_id, sdev->currency ),
@@ -1850,6 +1843,8 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 					scred );
 
 			g_free( sdfin );
+			g_free( sdebd );
+			g_free( scred );
 
 			lines = g_slist_prepend( lines, str );
 		}

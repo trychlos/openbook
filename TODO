@@ -353,7 +353,14 @@
 
  319 2014-10- 7 review ofo_entry_get_csv()
 
- 320
+ 320 2014-10- 8 ofaGuidedEx: there is no need to display the ledger in
+                the top right part, as the operation templates are 
+                already sorted by ledgers
+
+ 321 2014-10- 8 Ledger properties balance: should have '€' sign like
+                account properties balance
+
+ 322
 
 -----------------------------------------------------------------------
  DONE

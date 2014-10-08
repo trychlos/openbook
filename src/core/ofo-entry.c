@@ -248,7 +248,7 @@ static void
 on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number )
 {
 	GString *query;
-	const GDate *date;
+	const myDate *date;
 	gchar *str;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
@@ -258,10 +258,10 @@ on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_i
 			"SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
 
 	str = NULL;
-	date = ofo_dossier_get_current_exe_deb( dossier );
+	date = ofo_dossier_get_current_exe_begin( dossier );
 
-	if( date && g_date_valid( date )){
-		str = my_date2_to_str( date, MY_DATE_SQL );
+	if( my_date_is_valid( date )){
+		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
 		g_free( str );
 	}
@@ -275,7 +275,7 @@ static void
 on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
 {
 	GString *query;
-	const GDate *date;
+	const myDate *date;
 	gchar *str;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
@@ -285,10 +285,10 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 			"SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
 
 	str = NULL;
-	date = ofo_dossier_get_current_exe_deb( dossier );
+	date = ofo_dossier_get_current_exe_begin( dossier );
 
-	if( date && g_date_valid( date )){
-		str = my_date2_to_str( date, MY_DATE_SQL );
+	if( my_date_is_valid( date )){
+		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
 		g_free( str );
 	}
@@ -302,7 +302,7 @@ static void
 on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
 {
 	GString *query;
-	const GDate *date;
+	const myDate *date;
 	gchar *str;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
@@ -312,9 +312,9 @@ on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id,
 			"SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
 
 	str = NULL;
-	date = ofo_dossier_get_current_exe_deb( dossier );
-	if( date && g_date_valid( date )){
-		str = my_date2_to_str( date, MY_DATE_SQL );
+	date = ofo_dossier_get_current_exe_begin( dossier );
+	if( my_date_is_valid( date )){
+		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
 		g_free( str );
 	}
@@ -328,7 +328,7 @@ static void
 on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
 {
 	GString *query;
-	const GDate *date;
+	const myDate *date;
 	gchar *str;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
@@ -338,9 +338,9 @@ on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, 
 			"SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
 
 	str = NULL;
-	date = ofo_dossier_get_current_exe_deb( dossier );
-	if( date && g_date_valid( date )){
-		str = my_date2_to_str( date, MY_DATE_SQL );
+	date = ofo_dossier_get_current_exe_begin( dossier );
+	if( my_date_is_valid( date )){
+		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
 		g_free( str );
 	}

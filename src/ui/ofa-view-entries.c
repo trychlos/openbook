@@ -1707,12 +1707,10 @@ static gboolean
 check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *sope, *str, *mnemo, *msg, *msg2, *msg3;
-	myDate *dope, *deff, *last_close;
-	const GDate *close_exe;
+	myDate *dope, *deff, *last_close, *close_exe;
 	const myDate *close_ledger;
 	ofoLedger *ledger;
 	gboolean is_valid;
-	gchar *str2;
 
 	is_valid = FALSE;
 	gtk_tree_model_get( tmodel, iter,
@@ -1727,10 +1725,8 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 			if( my_date_is_valid( deff ) && my_date_compare( deff, dope ) >= 0 ){
 				last_close = my_date_new();
 				close_exe = ofo_dossier_get_last_closed_exercice( self->private->dossier );
-				if( close_exe && g_date_valid( close_exe )){
-					str2 = my_date2_to_str( close_exe, MY_DATE_SQL );
-					my_date_set_from_str( last_close, str2, MY_DATE_SQL );
-					g_free( str2 );
+				if( my_date_is_valid( close_exe )){
+					my_date_set_from_date( last_close, close_exe );
 				}
 				ledger = ofo_ledger_get_by_mnemo( self->private->dossier, mnemo );
 				if( ledger ){
@@ -1757,6 +1753,7 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 					g_free( msg );
 				}
 				g_object_unref( last_close );
+				g_object_unref( close_exe );
 
 			} else {
 				set_comment( self, _( "Invalid effect date, or lesser than operation date" ));

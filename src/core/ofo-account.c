@@ -1854,7 +1854,7 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 	new_set = NULL;
 	count = 0;
 	errors = 0;
-	def_dev_code = ofo_dossier_get_default_devise( dossier );
+	def_dev_code = ofo_dossier_get_default_currency( dossier );
 
 	for( ili=lines ; ili ; ili=ili->next ){
 		count += 1;

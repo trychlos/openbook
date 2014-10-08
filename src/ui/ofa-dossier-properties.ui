@@ -132,7 +132,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkComboBox" id="p1-devise">
+                      <object class="GtkComboBox" id="p1-currency">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">start</property>
@@ -305,7 +305,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p2-last-ecr-number">
+                      <object class="GtkLabel" id="p2-last-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">start</property>
