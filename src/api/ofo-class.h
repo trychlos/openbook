@@ -54,8 +54,8 @@ ofoClass       *ofo_class_new            ( void );
 gint            ofo_class_get_number     ( const ofoClass *class );
 const gchar    *ofo_class_get_label      ( const ofoClass *class );
 const gchar    *ofo_class_get_notes      ( const ofoClass *class );
-const gchar    *ofo_class_get_maj_user   ( const ofoClass *class );
-const GTimeVal *ofo_class_get_maj_stamp  ( const ofoClass *class );
+const gchar    *ofo_class_get_upd_user   ( const ofoClass *class );
+const GTimeVal *ofo_class_get_upd_stamp  ( const ofoClass *class );
 
 gboolean        ofo_class_is_valid       ( gint number, const gchar *label );
 gboolean        ofo_class_is_valid_number( gint number );
@@ -65,8 +65,6 @@ gboolean        ofo_class_is_deletable   ( const ofoClass *class );
 gboolean        ofo_class_set_number     ( ofoClass *class, gint number );
 gboolean        ofo_class_set_label      ( ofoClass *class, const gchar *label );
 void            ofo_class_set_notes      ( ofoClass *class, const gchar *notes );
-void            ofo_class_set_maj_user   ( ofoClass *class, const gchar *user );
-void            ofo_class_set_maj_stamp  ( ofoClass *class, const GTimeVal *stamp );
 
 gboolean        ofo_class_insert         ( ofoClass *class );
 gboolean        ofo_class_update         ( ofoClass *class, gint prev_id );

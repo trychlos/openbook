@@ -47,8 +47,8 @@ struct _ofoClassPrivate {
 	gint       number;
 	gchar     *label;
 	gchar     *notes;
-	gchar     *maj_user;
-	GTimeVal   maj_stamp;
+	gchar     *upd_user;
+	GTimeVal   upd_stamp;
 };
 
 G_DEFINE_TYPE( ofoClass, ofo_class, OFO_TYPE_BASE )
@@ -57,6 +57,8 @@ OFO_BASE_DEFINE_GLOBAL( st_global, class )
 
 static GList     *class_load_dataset( void );
 static ofoClass  *class_find_by_number( GList *set, gint number );
+static void       class_set_upd_user( ofoClass *class, const gchar *user );
+static void       class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp );
 static gboolean   class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user );
 static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar *user );
 static gboolean   class_do_delete( ofoClass *class, const ofoSgbd *sgbd );
@@ -178,7 +180,7 @@ class_load_dataset( void )
 
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT CLA_NUMBER,CLA_LABEL,"
-			"	CLA_NOTES,CLA_MAJ_USER,CLA_MAJ_STAMP "
+			"	CLA_NOTES,CLA_UPD_USER,CLA_UPD_STAMP "
 			"	FROM OFA_T_CLASSES "
 			"	ORDER BY CLA_NUMBER ASC", TRUE );
 
@@ -193,9 +195,9 @@ class_load_dataset( void )
 		icol = icol->next;
 		ofo_class_set_notes( class, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_class_set_maj_user( class, ( gchar * ) icol->data );
+		class_set_upd_user( class, ( gchar * ) icol->data );
 		icol = icol->next;
-		ofo_class_set_maj_stamp( class,
+		class_set_upd_stamp( class,
 				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, class );
@@ -290,16 +292,16 @@ ofo_class_get_notes( const ofoClass *class )
 }
 
 /**
- * ofo_class_get_maj_user:
+ * ofo_class_get_upd_user:
  */
 const gchar *
-ofo_class_get_maj_user( const ofoClass *class )
+ofo_class_get_upd_user( const ofoClass *class )
 {
 	g_return_val_if_fail( OFO_IS_CLASS( class ), NULL );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		return(( const gchar * ) class->private->maj_user );
+		return(( const gchar * ) class->private->upd_user );
 	}
 
 	g_assert_not_reached();
@@ -307,16 +309,16 @@ ofo_class_get_maj_user( const ofoClass *class )
 }
 
 /**
- * ofo_class_get_maj_stamp:
+ * ofo_class_get_upd_stamp:
  */
 const GTimeVal *
-ofo_class_get_maj_stamp( const ofoClass *class )
+ofo_class_get_upd_stamp( const ofoClass *class )
 {
 	g_return_val_if_fail( OFO_IS_CLASS( class ), NULL );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &class->private->maj_stamp );
+		return(( const GTimeVal * ) &class->private->upd_stamp );
 	}
 
 	g_assert_not_reached();
@@ -429,32 +431,32 @@ ofo_class_set_notes( ofoClass *class, const gchar *notes )
 	}
 }
 
-/**
- * ofo_class_set_maj_user:
+/*
+ * ofo_class_set_upd_user:
  */
-void
-ofo_class_set_maj_user( ofoClass *class, const gchar *user )
+static void
+class_set_upd_user( ofoClass *class, const gchar *user )
 {
 	g_return_if_fail( OFO_IS_CLASS( class ));
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_free( class->private->maj_user );
-		class->private->maj_user = g_strdup( user );
+		g_free( class->private->upd_user );
+		class->private->upd_user = g_strdup( user );
 	}
 }
 
-/**
- * ofo_class_set_maj_stamp:
+/*
+ * ofo_class_set_upd_stamp:
  */
-void
-ofo_class_set_maj_stamp( ofoClass *class, const GTimeVal *stamp )
+static void
+class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp )
 {
 	g_return_if_fail( OFO_IS_CLASS( class ));
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		memcpy( &class->private->maj_stamp, stamp, sizeof( GTimeVal ));
+		memcpy( &class->private->upd_stamp, stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -503,7 +505,7 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	(CLA_NUMBER,CLA_LABEL,CLA_NOTES,"
-			"	 CLA_MAJ_USER,CLA_MAJ_STAMP) VALUES "
+			"	 CLA_UPD_USER,CLA_UPD_STAMP) VALUES "
 			"	(%d,'%s',",
 					ofo_class_get_number( class ),
 					label );
@@ -522,8 +524,8 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	if( ok ){
-		ofo_class_set_maj_user( class, user );
-		ofo_class_set_maj_stamp( class, &stamp );
+		class_set_upd_user( class, user );
+		class_set_upd_stamp( class, &stamp );
 	}
 
 	g_free( label );
@@ -591,13 +593,12 @@ class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar
 	}
 
 	g_string_append_printf( query,
-			"	CLA_MAJ_USER='%s',CLA_MAJ_STAMP='%s'"
+			"	CLA_UPD_USER='%s',CLA_UPD_STAMP='%s'"
 			"	WHERE CLA_NUMBER=%d", user, stamp_str, prev_id );
 
 	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
-
-		ofo_class_set_maj_user( class, user );
-		ofo_class_set_maj_stamp( class, &stamp );
+		class_set_upd_user( class, user );
+		class_set_upd_stamp( class, &stamp );
 		ok = TRUE;
 	}
 
@@ -695,9 +696,9 @@ ofo_class_get_csv( const ofoDossier *dossier )
 	for( set=st_global->dataset ; set ; set=set->next ){
 		class = OFO_CLASS( set->data );
 
-		stamp = my_utils_stamp_to_str( ofo_class_get_maj_stamp( class ), MY_STAMP_YYMDHMS );
+		stamp = my_utils_stamp_to_str( ofo_class_get_upd_stamp( class ), MY_STAMP_YYMDHMS );
 		notes = my_utils_export_multi_lines( ofo_class_get_notes( class ));
-		muser = ofo_class_get_maj_user( class );
+		muser = ofo_class_get_upd_user( class );
 
 		str = g_strdup_printf( "%d;%s;%s;%s;%s",
 				ofo_class_get_number( class ),
