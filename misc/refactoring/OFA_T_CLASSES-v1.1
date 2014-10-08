@@ -1,0 +1,7 @@
+# $Id$
+
+ALTER TABLE OFA_T_CLASSES CHANGE CLA_MAJ_USER  CLA_UPD_USER  VARCHAR(20)                            COMMENT 'User responsible of properties last update';
+ALTER TABLE OFA_T_CLASSES CHANGE CLA_MAJ_STAMP CLA_UPD_STAMP TIMESTAMP                              COMMENT 'Properties last update timestamp';
+
+DESCRIBE OFA_T_CLASSES;
+
