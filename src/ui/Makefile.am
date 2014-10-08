@@ -76,12 +76,12 @@ openbook_SOURCES = \
 	ofa-class-properties.h								\
 	ofa-classes-set.c									\
 	ofa-classes-set.h									\
-	ofa-devise-combo.c									\
-	ofa-devise-combo.h									\
-	ofa-devise-properties.c								\
-	ofa-devise-properties.h								\
-	ofa-devises-set.c									\
-	ofa-devises-set.h									\
+	ofa-currencies-set.c								\
+	ofa-currencies-set.h								\
+	ofa-currency-combo.c								\
+	ofa-currency-combo.h								\
+	ofa-currency-properties.c							\
+	ofa-currency-properties.h							\
 	ofa-dossier-manager.c								\
 	ofa-dossier-manager.h								\
 	ofa-dossier-delete.c								\
@@ -170,7 +170,7 @@ ui_files = \
 	ofa-bat-properties.ui								\
 	ofa-bat-select.ui									\
 	ofa-class-properties.ui								\
-	ofa-devise-properties.ui							\
+	ofa-currency-properties.ui							\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-delete-prefs.piece.ui					\

@@ -32,21 +32,21 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
 #include "core/my-window-prot.h"
 
-#include "ui/ofa-devise-properties.h"
+#include "ui/ofa-currency-properties.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  */
-struct _ofaDevisePropertiesPrivate {
+struct _ofaCurrencyPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoDevise     *devise;
+	ofoCurrency   *currency;
 	gboolean       is_new;
 	gboolean       updated;
 
@@ -58,33 +58,33 @@ struct _ofaDevisePropertiesPrivate {
 	gint           digits;
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-devise-properties.ui";
-static const gchar  *st_ui_id  = "DevisePropertiesDlg";
+static const gchar  *st_ui_xml = PKGUIDIR "/ofa-currency-properties.ui";
+static const gchar  *st_ui_id  = "CurrencyPropertiesDlg";
 
-G_DEFINE_TYPE( ofaDeviseProperties, ofa_devise_properties, MY_TYPE_DIALOG )
+G_DEFINE_TYPE( ofaCurrencyProperties, ofa_currency_properties, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_code_changed( GtkEntry *entry, ofaDeviseProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaDeviseProperties *self );
-static void      on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self );
-static void      on_digits_changed( GtkEntry *entry, ofaDeviseProperties *self );
-static void      check_for_enable_dlg( ofaDeviseProperties *self );
-static gboolean  is_dialog_validable( ofaDeviseProperties *self );
+static void      on_code_changed( GtkEntry *entry, ofaCurrencyProperties *self );
+static void      on_label_changed( GtkEntry *entry, ofaCurrencyProperties *self );
+static void      on_symbol_changed( GtkEntry *entry, ofaCurrencyProperties *self );
+static void      on_digits_changed( GtkEntry *entry, ofaCurrencyProperties *self );
+static void      check_for_enable_dlg( ofaCurrencyProperties *self );
+static gboolean  is_dialog_validable( ofaCurrencyProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_update( ofaDeviseProperties *self );
+static gboolean  do_update( ofaCurrencyProperties *self );
 
 static void
-devise_properties_finalize( GObject *instance )
+currency_properties_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_devise_properties_finalize";
-	ofaDevisePropertiesPrivate *priv;
+	static const gchar *thisfn = "ofa_currency_properties_finalize";
+	ofaCurrencyPropertiesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_DEVISE_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_CURRENCY_PROPERTIES( instance ));
 
-	priv = OFA_DEVISE_PROPERTIES( instance )->private;
+	priv = OFA_CURRENCY_PROPERTIES( instance )->private;
 
 	/* free data members here */
 	g_free( priv->code );
@@ -93,13 +93,13 @@ devise_properties_finalize( GObject *instance )
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_devise_properties_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_currency_properties_parent_class )->finalize( instance );
 }
 
 static void
-devise_properties_dispose( GObject *instance )
+currency_properties_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_DEVISE_PROPERTIES( instance ));
+	g_return_if_fail( instance && OFA_IS_CURRENCY_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
@@ -107,66 +107,66 @@ devise_properties_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_devise_properties_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_currency_properties_parent_class )->dispose( instance );
 }
 
 static void
-ofa_devise_properties_init( ofaDeviseProperties *self )
+ofa_currency_properties_init( ofaCurrencyProperties *self )
 {
-	static const gchar *thisfn = "ofa_devise_properties_init";
+	static const gchar *thisfn = "ofa_currency_properties_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_DEVISE_PROPERTIES( self ));
+	g_return_if_fail( self && OFA_IS_CURRENCY_PROPERTIES( self ));
 
-	self->private = g_new0( ofaDevisePropertiesPrivate, 1 );
+	self->private = g_new0( ofaCurrencyPropertiesPrivate, 1 );
 
 	self->private->is_new = FALSE;
 	self->private->updated = FALSE;
 }
 
 static void
-ofa_devise_properties_class_init( ofaDevisePropertiesClass *klass )
+ofa_currency_properties_class_init( ofaCurrencyPropertiesClass *klass )
 {
-	static const gchar *thisfn = "ofa_devise_properties_class_init";
+	static const gchar *thisfn = "ofa_currency_properties_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = devise_properties_dispose;
-	G_OBJECT_CLASS( klass )->finalize = devise_properties_finalize;
+	G_OBJECT_CLASS( klass )->dispose = currency_properties_dispose;
+	G_OBJECT_CLASS( klass )->finalize = currency_properties_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 }
 
 /**
- * ofa_devise_properties_run:
+ * ofa_currency_properties_run:
  * @main: the main window of the application.
  *
- * Update the properties of an devise
+ * Update the properties of an currency
  */
 gboolean
-ofa_devise_properties_run( ofaMainWindow *main_window, ofoDevise *devise )
+ofa_currency_properties_run( ofaMainWindow *main_window, ofoCurrency *currency )
 {
-	static const gchar *thisfn = "ofa_devise_properties_run";
-	ofaDeviseProperties *self;
+	static const gchar *thisfn = "ofa_currency_properties_run";
+	ofaCurrencyProperties *self;
 	gboolean updated;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
-	g_debug( "%s: main_window=%p, devise=%p",
-			thisfn, ( void * ) main_window, ( void * ) devise );
+	g_debug( "%s: main_window=%p, currency=%p",
+			thisfn, ( void * ) main_window, ( void * ) currency );
 
 	self = g_object_new(
-				OFA_TYPE_DEVISE_PROPERTIES,
+				OFA_TYPE_CURRENCY_PROPERTIES,
 				MY_PROP_MAIN_WINDOW, main_window,
 				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
-	self->private->devise = devise;
+	self->private->currency = currency;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -179,22 +179,22 @@ ofa_devise_properties_run( ofaMainWindow *main_window, ofoDevise *devise )
 static void
 v_init_dialog( myDialog *dialog )
 {
-	ofaDevisePropertiesPrivate *priv;
+	ofaCurrencyPropertiesPrivate *priv;
 	gchar *title;
 	const gchar *code;
 	GtkEntry *entry;
 	gchar *str;
 	GtkWindow *toplevel;
 
-	priv = OFA_DEVISE_PROPERTIES( dialog )->private;
+	priv = OFA_CURRENCY_PROPERTIES( dialog )->private;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
-	code = ofo_devise_get_code( priv->devise );
+	code = ofo_currency_get_code( priv->currency );
 	if( !code ){
 		priv->is_new = TRUE;
-		title = g_strdup( _( "Defining a new devise" ));
+		title = g_strdup( _( "Defining a new currency" ));
 	} else {
-		title = g_strdup_printf( _( "Updating « %s » devise" ), code );
+		title = g_strdup_printf( _( "Updating « %s » currency" ), code );
 	}
 	gtk_window_set_title( toplevel, title );
 
@@ -207,7 +207,7 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_code_changed ), dialog );
 
-	priv->label = g_strdup( ofo_devise_get_label( priv->devise ));
+	priv->label = g_strdup( ofo_currency_get_label( priv->currency ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
 						GTK_CONTAINER( toplevel ), "p1-label" ));
@@ -216,7 +216,7 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
-	priv->symbol = g_strdup( ofo_devise_get_symbol( priv->devise ));
+	priv->symbol = g_strdup( ofo_currency_get_symbol( priv->currency ));
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
 						GTK_CONTAINER( toplevel ), "p1-symbol" ));
@@ -225,23 +225,23 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), dialog );
 
-	priv->digits = ofo_devise_get_digits( priv->devise );
+	priv->digits = ofo_currency_get_digits( priv->currency );
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
 						GTK_CONTAINER( toplevel ), "p1-digits" ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_digits_changed ), dialog );
-	str = g_strdup_printf( "%d", priv->digits ? priv->digits : DEV_DEFAULT_DIGITS );
+	str = g_strdup_printf( "%d", priv->digits ? priv->digits : CUR_DEFAULT_DIGITS );
 	gtk_entry_set_text( entry, str );
 	g_free( str );
 
-	my_utils_init_notes_ex( toplevel, devise );
-	my_utils_init_maj_user_stamp_ex( toplevel, devise );
+	my_utils_init_notes_ex( toplevel, currency );
+	my_utils_init_upd_user_stamp_ex( toplevel, currency );
 
-	check_for_enable_dlg( OFA_DEVISE_PROPERTIES( dialog ));
+	check_for_enable_dlg( OFA_CURRENCY_PROPERTIES( dialog ));
 }
 
 static void
-on_code_changed( GtkEntry *entry, ofaDeviseProperties *self )
+on_code_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
 	g_free( self->private->code );
 	self->private->code = g_strdup( gtk_entry_get_text( entry ));
@@ -250,7 +250,7 @@ on_code_changed( GtkEntry *entry, ofaDeviseProperties *self )
 }
 
 static void
-on_label_changed( GtkEntry *entry, ofaDeviseProperties *self )
+on_label_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
 	g_free( self->private->label );
 	self->private->label = g_strdup( gtk_entry_get_text( entry ));
@@ -259,7 +259,7 @@ on_label_changed( GtkEntry *entry, ofaDeviseProperties *self )
 }
 
 static void
-on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self )
+on_symbol_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
 	g_free( self->private->symbol );
 	self->private->symbol = g_strdup( gtk_entry_get_text( entry ));
@@ -268,7 +268,7 @@ on_symbol_changed( GtkEntry *entry, ofaDeviseProperties *self )
 }
 
 static void
-on_digits_changed( GtkEntry *entry, ofaDeviseProperties *self )
+on_digits_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
 	self->private->digits = atoi( gtk_entry_get_text( entry ));
 
@@ -276,7 +276,7 @@ on_digits_changed( GtkEntry *entry, ofaDeviseProperties *self )
 }
 
 static void
-check_for_enable_dlg( ofaDeviseProperties *self )
+check_for_enable_dlg( ofaCurrencyProperties *self )
 {
 	GtkWidget *button;
 
@@ -287,20 +287,20 @@ check_for_enable_dlg( ofaDeviseProperties *self )
 }
 
 static gboolean
-is_dialog_validable( ofaDeviseProperties *self )
+is_dialog_validable( ofaCurrencyProperties *self )
 {
-	ofaDevisePropertiesPrivate *priv;
+	ofaCurrencyPropertiesPrivate *priv;
 	gboolean ok;
-	ofoDevise *exists;
+	ofoCurrency *exists;
 
 	priv = self->private;
 
-	ok = ofo_devise_is_valid( priv->code, priv->label, priv->symbol, priv->digits );
+	ok = ofo_currency_is_valid( priv->code, priv->label, priv->symbol, priv->digits );
 	if( ok ){
-		exists = ofo_devise_get_by_code(
+		exists = ofo_currency_get_by_code(
 					MY_WINDOW( self )->protected->dossier, priv->code );
 		ok &= !exists ||
-				( !priv->is_new && !g_utf8_collate( priv->code, ofo_devise_get_code( priv->devise )));
+				( !priv->is_new && !g_utf8_collate( priv->code, ofo_currency_get_code( priv->currency )));
 	}
 
 	return( ok );
@@ -309,32 +309,32 @@ is_dialog_validable( ofaDeviseProperties *self )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	return( do_update( OFA_DEVISE_PROPERTIES( dialog )));
+	return( do_update( OFA_CURRENCY_PROPERTIES( dialog )));
 }
 
 static gboolean
-do_update( ofaDeviseProperties *self )
+do_update( ofaCurrencyProperties *self )
 {
-	ofaDevisePropertiesPrivate *priv;
+	ofaCurrencyPropertiesPrivate *priv;
 	gchar *prev_code;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = self->private;
-	prev_code = g_strdup( ofo_devise_get_code( priv->devise ));
+	prev_code = g_strdup( ofo_currency_get_code( priv->currency ));
 
-	ofo_devise_set_code( priv->devise, priv->code );
-	ofo_devise_set_label( priv->devise, priv->label );
-	ofo_devise_set_symbol( priv->devise, priv->symbol );
-	ofo_devise_set_digits( priv->devise, priv->digits );
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), devise );
+	ofo_currency_set_code( priv->currency, priv->code );
+	ofo_currency_set_label( priv->currency, priv->label );
+	ofo_currency_set_symbol( priv->currency, priv->symbol );
+	ofo_currency_set_digits( priv->currency, priv->digits );
+	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), currency );
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_devise_insert( priv->devise );
+				ofo_currency_insert( priv->currency );
 	} else {
 		priv->updated =
-				ofo_devise_update( priv->devise, prev_code );
+				ofo_currency_update( priv->currency, prev_code );
 	}
 
 	g_free( prev_code );

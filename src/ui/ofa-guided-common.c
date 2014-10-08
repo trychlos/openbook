@@ -1646,7 +1646,7 @@ entry_from_detail( ofaGuidedCommon *self, gint row, const gchar *piece )
 					priv->dossier,
 					priv->deff, priv->dope, label,
 					piece, account_number,
-					ofo_account_get_devise( account ),
+					ofo_account_get_currency( account ),
 					priv->ledger,
 					ofo_ope_template_get_mnemo( priv->model ),
 					deb, cre ));

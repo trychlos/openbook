@@ -37,7 +37,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-sgbd.h"
@@ -50,7 +50,7 @@ struct _ofoAccountPrivate {
 	 */
 	gchar     *number;
 	gchar     *label;
-	gchar     *devise;
+	gchar     *currency;
 	gchar     *notes;
 	gchar     *type;
 	gchar     *maj_user;
@@ -80,7 +80,7 @@ static void        on_updated_object_currency_code( const ofoDossier *dossier, c
 static void        on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
 static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
-static gint        account_count_for_devise( const ofoSgbd *sgbd, const gchar *devise );
+static gint        account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
 static gboolean    account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
 static gboolean    account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );
@@ -105,7 +105,7 @@ ofo_account_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->number );
 	g_free( priv->label );
-	g_free( priv->devise );
+	g_free( priv->currency );
 	g_free( priv->type );
 	g_free( priv->notes );
 	g_free( priv->maj_user );
@@ -276,9 +276,9 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			prev_id,
 			( void * ) user_data );
 
-	if( OFO_IS_DEVISE( object )){
+	if( OFO_IS_CURRENCY( object )){
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
-			code = ofo_devise_get_code( OFO_DEVISE( object ));
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
 				on_updated_object_currency_code( dossier, prev_id, code );
 			}
@@ -455,10 +455,10 @@ account_load_dataset( void )
 		icol = icol->next;
 		/*g_debug( "account_load_dataset: %s - %s",
 				ofo_account_get_number( account ), ofo_account_get_label( account ));*/
-		/* devise may be left unset for root accounts, though is
+		/* currency may be left unset for root accounts, though is
 		 * mandatory for detail ones */
 		if( icol->data ){
-			ofo_account_set_devise( account, ( gchar * ) icol->data );
+			ofo_account_set_currency( account, ( gchar * ) icol->data );
 		}
 		icol = icol->next;
 		ofo_account_set_notes( account, ( gchar * ) icol->data );
@@ -559,23 +559,23 @@ account_find_by_number( GList *set, const gchar *number )
 }
 
 /**
- * ofo_account_use_devise:
+ * ofo_account_use_currency:
  *
  * Returns: %TRUE if a recorded account makes use of the specified currency.
  */
 gboolean
-ofo_account_use_devise( const ofoDossier *dossier, const gchar *devise )
+ofo_account_use_currency( const ofoDossier *dossier, const gchar *currency )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( devise && g_utf8_strlen( devise, -1 ), FALSE );
+	g_return_val_if_fail( currency && g_utf8_strlen( currency, -1 ), FALSE );
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
-	return( account_count_for_devise( ofo_dossier_get_sgbd( dossier ), devise ) > 0 );
+	return( account_count_for_currency( ofo_dossier_get_sgbd( dossier ), currency ) > 0 );
 }
 
 static gint
-account_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
+account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency )
 {
 	gint count;
 	gchar *query;
@@ -585,7 +585,7 @@ account_count_for_devise( const ofoSgbd *sgbd, const gchar *devise )
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_COMPTES "
 				"	WHERE CPT_DEV_CODE='%s'",
-					devise );
+					currency );
 
 	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 	g_free( query );
@@ -710,16 +710,16 @@ ofo_account_get_label( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_devise:
+ * ofo_account_get_currency:
  */
 const gchar *
-ofo_account_get_devise( const ofoAccount *account )
+ofo_account_get_currency( const ofoAccount *account )
 {
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const gchar * ) account->private->devise );
+		return(( const gchar * ) account->private->currency );
 	}
 
 	return( NULL );
@@ -1032,7 +1032,7 @@ ofo_account_is_root( const ofoAccount *account )
  * ofo_account_is_valid_data:
  */
 gboolean
-ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar *devise, const gchar *type )
+ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar *currency, const gchar *type )
 {
 	gunichar code;
 	gint value;
@@ -1059,9 +1059,9 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 	/* is root account ? */
 	is_root = ( type && !g_utf8_collate( type, "R" ));
 
-	/* devise must be set for detail account */
+	/* currency must be set for detail account */
 	if( !is_root ){
-		if( !devise || !g_utf8_strlen( devise, -1 )){
+		if( !currency || !g_utf8_strlen( currency, -1 )){
 			return( FALSE );
 		}
 	}
@@ -1175,17 +1175,17 @@ ofo_account_set_label( ofoAccount *account, const gchar *label )
 }
 
 /**
- * ofo_account_set_devise:
+ * ofo_account_set_currency:
  */
 void
-ofo_account_set_devise( ofoAccount *account, const gchar *devise )
+ofo_account_set_currency( ofoAccount *account, const gchar *currency )
 {
 	g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_free( account->private->devise );
-		account->private->devise = g_strdup( devise );
+		g_free( account->private->currency );
+		account->private->currency = g_strdup( currency );
 	}
 }
 
@@ -1481,7 +1481,7 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 	if( ofo_account_is_root( account )){
 		query = g_string_append( query, "NULL," );
 	} else {
-		g_string_append_printf( query, "'%s',", ofo_account_get_devise( account ));
+		g_string_append_printf( query, "'%s',", ofo_account_get_currency( account ));
 	}
 
 	if( notes && g_utf8_strlen( notes, -1 )){
@@ -1573,7 +1573,7 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 	if( ofo_account_is_root( account )){
 		query = g_string_append( query, "CPT_DEV_CODE=NULL," );
 	} else {
-		g_string_append_printf( query, "CPT_DEV_CODE='%s',", ofo_account_get_devise( account ));
+		g_string_append_printf( query, "CPT_DEV_CODE='%s',", ofo_account_get_currency( account ));
 	}
 
 	if( notes && g_utf8_strlen( notes, -1 )){
@@ -1754,7 +1754,7 @@ ofo_account_get_csv( const ofoDossier *dossier )
 	gchar *str, *stamp;
 	ofoAccount *account;
 	gchar *notes, *sdeb, *scre, *sbrodeb, *sbrocre;
-	const gchar *devise, *atype, *muser;
+	const gchar *currency, *atype, *muser;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
@@ -1768,7 +1768,7 @@ ofo_account_get_csv( const ofoDossier *dossier )
 	for( set=st_global->dataset ; set ; set=set->next ){
 		account = OFO_ACCOUNT( set->data );
 
-		devise = ofo_account_get_devise( account );
+		currency = ofo_account_get_currency( account );
 		atype = ofo_account_get_type_account( account );
 		notes = my_utils_export_multi_lines( ofo_account_get_notes( account ));
 		muser = ofo_account_get_maj_user( account );
@@ -1782,7 +1782,7 @@ ofo_account_get_csv( const ofoDossier *dossier )
 		str = g_strdup_printf( "%s;%s;%s;%s;%s;%s;%s;%d;%s;%.2lf;%d;%s;%.2lf;%d;%s;%.2lf;%d;%s;%.2lf",
 				ofo_account_get_number( account ),
 				ofo_account_get_label( account ),
-				devise ? devise : "",
+				currency ? currency : "",
 				atype ? atype : "",
 				notes ? notes : "",
 				muser ? muser : "",
@@ -1840,7 +1840,7 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 	gint class;
 	const gchar *str, *dev_code, *def_dev_code;
 	gchar *type;
-	ofoDevise *devise;
+	ofoCurrency *currency;
 	gchar *splitted;
 
 	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
@@ -1905,13 +1905,13 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 				if( !dev_code || !g_utf8_strlen( str, -1 )){
 					dev_code = def_dev_code;
 				}
-				devise = ofo_devise_get_by_code( dossier, dev_code );
-				if( !devise ){
+				currency = ofo_currency_get_by_code( dossier, dev_code );
+				if( !currency ){
 					g_warning( "%s: (line %d) invalid currency: '%s'", thisfn, count, dev_code );
 					errors += 1;
 					continue;
 				}
-				ofo_account_set_devise( account, dev_code );
+				ofo_account_set_currency( account, dev_code );
 			}
 
 			/* notes

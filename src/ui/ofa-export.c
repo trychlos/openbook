@@ -35,7 +35,7 @@
 #include "api/my-utils.h"
 #include "api/ofo-class.h"
 #include "api/ofo-account.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -75,7 +75,7 @@ enum {
 enum {
 	TYPE_ACCOUNT = 1,
 	TYPE_CLASS,
-	TYPE_DEVISE,
+	TYPE_CURRENCY,
 	TYPE_ENTRY,
 	TYPE_LEDGER,
 	TYPE_MODEL,
@@ -106,14 +106,14 @@ typedef struct {
 	RadioGroup;
 
 static RadioGroup st_type_group[] = {
-		{ "p1-class",   TYPE_CLASS },
-		{ "p1-account", TYPE_ACCOUNT },
-		{ "p1-devise",  TYPE_DEVISE },
-		{ "p1-journal", TYPE_LEDGER },
-		{ "p1-model",   TYPE_MODEL },
-		{ "p1-rate",    TYPE_RATE },
-		{ "p1-entries", TYPE_ENTRY },
-		{ "p1-dossier", TYPE_DOSSIER },
+		{ "p1-class",    TYPE_CLASS },
+		{ "p1-account",  TYPE_ACCOUNT },
+		{ "p1-currency", TYPE_CURRENCY },
+		{ "p1-ledger",   TYPE_LEDGER },
+		{ "p1-model",    TYPE_MODEL },
+		{ "p1-rate",     TYPE_RATE },
+		{ "p1-entries",  TYPE_ENTRY },
+		{ "p1-dossier",  TYPE_DOSSIER },
 		{ 0 }
 };
 
@@ -132,14 +132,14 @@ typedef struct {
 	ExportDatas;
 
 static const ExportDatas st_export_datas[] = {
-		{ TYPE_CLASS,   "/tmp/class.csv",      ofo_class_get_csv },
-		{ TYPE_ACCOUNT, "/tmp/accounts.csv",   ofo_account_get_csv },
-		{ TYPE_DEVISE,  "/tmp/currencies.csv", ofo_devise_get_csv },
-		{ TYPE_LEDGER, "/tmp/journals.csv",   ofo_ledger_get_csv },
-		{ TYPE_MODEL,   "/tmp/models.csv",     ofo_ope_template_get_csv },
-		{ TYPE_RATE,    "/tmp/rates.csv",      ofo_rate_get_csv },
-		{ TYPE_DOSSIER, "/tmp/dossier.csv",    ofo_dossier_get_csv },
-		{ TYPE_ENTRY,   "/tmp/entries.csv",    ofo_entry_get_csv },
+		{ TYPE_CLASS,    "/tmp/class.csv",      ofo_class_get_csv },
+		{ TYPE_ACCOUNT,  "/tmp/accounts.csv",   ofo_account_get_csv },
+		{ TYPE_CURRENCY, "/tmp/currencies.csv", ofo_currency_get_csv },
+		{ TYPE_LEDGER,   "/tmp/journals.csv",   ofo_ledger_get_csv },
+		{ TYPE_MODEL,    "/tmp/models.csv",     ofo_ope_template_get_csv },
+		{ TYPE_RATE,     "/tmp/rates.csv",      ofo_rate_get_csv },
+		{ TYPE_DOSSIER,  "/tmp/dossier.csv",    ofo_dossier_get_csv },
+		{ TYPE_ENTRY,    "/tmp/entries.csv",    ofo_entry_get_csv },
 		{ 0 }
 };
 

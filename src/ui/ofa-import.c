@@ -42,7 +42,7 @@
 #include "ui/ofa-main-window.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
@@ -167,7 +167,7 @@ static void       do_close( ofaImport *self );
 static gint       assistant_get_page_num( GtkAssistant *assistant, GtkWidget *page );
 static gint       import_class_csv( ofaImport *self );
 static gint       import_account_csv( ofaImport *self );
-static gint       import_devise_csv( ofaImport *self );
+static gint       import_currency_csv( ofaImport *self );
 static gint       import_entry_csv( ofaImport *self );
 static gint       importledger_csv( ofaImport *self );
 static gint       import_model_csv( ofaImport *self );
@@ -721,7 +721,7 @@ on_apply( GtkAssistant *assistant, ofaImport *self )
 				count = import_account_csv( self );
 				break;
 			case IMPORTER_TYPE_CURRENCY:
-				count = import_devise_csv( self );
+				count = import_currency_csv( self );
 				break;
 			case IMPORTER_TYPE_ENTRY:
 				count = import_entry_csv( self );
@@ -908,7 +908,7 @@ import_account_csv( ofaImport *self )
  * header : yes
  */
 static gint
-import_devise_csv( ofaImport *self )
+import_currency_csv( ofaImport *self )
 {
 	GSList *lines;
 	gchar *str;
@@ -928,7 +928,7 @@ import_devise_csv( ofaImport *self )
 		return( -1 );
 	}
 
-	ofo_devise_import_csv(
+	ofo_currency_import_csv(
 			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
 
 	free_csv_content( lines );

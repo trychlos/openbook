@@ -30,14 +30,14 @@
 
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/ofa-devise-combo.h"
+#include "ui/ofa-currency-combo.h"
 
 /* private instance data
  */
-struct _ofaDeviseComboPrivate {
+struct _ofaCurrencyComboPrivate {
 	gboolean         dispose_has_run;
 
 	/* input data
@@ -46,7 +46,7 @@ struct _ofaDeviseComboPrivate {
 	ofoDossier      *dossier;
 	gchar           *combo_name;
 	gchar           *label_name;
-	ofaDeviseComboCb pfnSelected;
+	ofaCurrencyComboCb pfnSelected;
 	gpointer         user_data;
 
 	/* runtime
@@ -54,7 +54,7 @@ struct _ofaDeviseComboPrivate {
 	GtkComboBox     *combo;
 };
 
-/* column ordering in the devise combobox
+/* column ordering in the currency combobox
  */
 enum {
 	COL_CODE = 0,
@@ -62,22 +62,22 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaDeviseCombo, ofa_devise_combo, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaCurrencyCombo, ofa_currency_combo, G_TYPE_OBJECT )
 
-static void  on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self );
+static void  on_currency_changed( GtkComboBox *box, ofaCurrencyCombo *self );
 
 static void
-devise_combo_finalize( GObject *instance )
+currency_combo_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_devise_combo_finalize";
-	ofaDeviseComboPrivate *priv;
+	static const gchar *thisfn = "ofa_currency_combo_finalize";
+	ofaCurrencyComboPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_DEVISE_COMBO( instance ));
+	g_return_if_fail( instance && OFA_IS_CURRENCY_COMBO( instance ));
 
-	priv = OFA_DEVISE_COMBO( instance )->private;
+	priv = OFA_CURRENCY_COMBO( instance )->private;
 
 	/* free data members here */
 	g_free( priv->combo_name );
@@ -85,17 +85,17 @@ devise_combo_finalize( GObject *instance )
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_devise_combo_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_currency_combo_parent_class )->finalize( instance );
 }
 
 static void
-devise_combo_dispose( GObject *instance )
+currency_combo_dispose( GObject *instance )
 {
-	ofaDeviseComboPrivate *priv;
+	ofaCurrencyComboPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_DEVISE_COMBO( instance ));
+	g_return_if_fail( instance && OFA_IS_CURRENCY_COMBO( instance ));
 
-	priv = ( OFA_DEVISE_COMBO( instance ))->private;
+	priv = ( OFA_CURRENCY_COMBO( instance ))->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -105,58 +105,58 @@ devise_combo_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_devise_combo_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_currency_combo_parent_class )->dispose( instance );
 }
 
 static void
-ofa_devise_combo_init( ofaDeviseCombo *self )
+ofa_currency_combo_init( ofaCurrencyCombo *self )
 {
-	static const gchar *thisfn = "ofa_devise_combo_init";
+	static const gchar *thisfn = "ofa_currency_combo_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_DEVISE_COMBO( self ));
+	g_return_if_fail( self && OFA_IS_CURRENCY_COMBO( self ));
 
-	self->private = g_new0( ofaDeviseComboPrivate, 1 );
+	self->private = g_new0( ofaCurrencyComboPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 }
 
 static void
-ofa_devise_combo_class_init( ofaDeviseComboClass *klass )
+ofa_currency_combo_class_init( ofaCurrencyComboClass *klass )
 {
-	static const gchar *thisfn = "ofa_devise_combo_class_init";
+	static const gchar *thisfn = "ofa_currency_combo_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = devise_combo_dispose;
-	G_OBJECT_CLASS( klass )->finalize = devise_combo_finalize;
+	G_OBJECT_CLASS( klass )->dispose = currency_combo_dispose;
+	G_OBJECT_CLASS( klass )->finalize = currency_combo_finalize;
 }
 
 static void
-on_dialog_finalized( ofaDeviseCombo *self, gpointer this_was_the_dialog )
+on_dialog_finalized( ofaCurrencyCombo *self, gpointer this_was_the_dialog )
 {
-	g_return_if_fail( self && OFA_IS_DEVISE_COMBO( self ));
+	g_return_if_fail( self && OFA_IS_CURRENCY_COMBO( self ));
 	g_object_unref( self );
 }
 
 /**
- * ofa_devise_combo_init_dialog:
+ * ofa_currency_combo_init_dialog:
  */
-ofaDeviseCombo *
-ofa_devise_combo_new( const ofaDeviseComboParms *parms )
+ofaCurrencyCombo *
+ofa_currency_combo_new( const ofaCurrencyComboParms *parms )
 {
-	static const gchar *thisfn = "ofa_devise_combo_new";
-	ofaDeviseCombo *self;
-	ofaDeviseComboPrivate *priv;
+	static const gchar *thisfn = "ofa_currency_combo_new";
+	ofaCurrencyCombo *self;
+	ofaCurrencyComboPrivate *priv;
 	GtkWidget *combo;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *text_cell;
 	const GList *set, *elt;
 	gint idx, i;
-	ofoDevise *devise;
+	ofoCurrency *currency;
 
 	g_return_val_if_fail( parms, NULL );
 
@@ -169,7 +169,7 @@ ofa_devise_combo_new( const ofaDeviseComboParms *parms )
 	combo = my_utils_container_get_child_by_name( parms->container, parms->combo_name );
 	g_return_val_if_fail( combo && GTK_IS_COMBO_BOX( combo ), NULL );
 
-	self = g_object_new( OFA_TYPE_DEVISE_COMBO, NULL );
+	self = g_object_new( OFA_TYPE_CURRENCY_COMBO, NULL );
 
 	priv = self->private;
 
@@ -205,25 +205,25 @@ ofa_devise_combo_new( const ofaDeviseComboParms *parms )
 		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), text_cell, "text", COL_LABEL );
 	}
 
-	set = ofo_devise_get_dataset( parms->dossier );
+	set = ofo_currency_get_dataset( parms->dossier );
 	idx = OFO_BASE_UNSET_ID;
 
 	for( elt=set, i=0 ; elt ; elt=elt->next, ++i ){
-		devise = OFO_DEVISE( elt->data );
+		currency = OFO_CURRENCY( elt->data );
 		gtk_list_store_insert_with_values(
 				GTK_LIST_STORE( tmodel ),
 				&iter,
 				-1,
-				COL_CODE,  ofo_devise_get_code( devise ),
-				COL_LABEL, ofo_devise_get_label( devise ),
+				COL_CODE,  ofo_currency_get_code( currency ),
+				COL_LABEL, ofo_currency_get_label( currency ),
 				-1 );
 		if( parms->initial_code &&
-				!g_utf8_collate( parms->initial_code, ofo_devise_get_code( devise ))){
+				!g_utf8_collate( parms->initial_code, ofo_currency_get_code( currency ))){
 			idx = i;
 		}
 	}
 
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_devise_changed ), self );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_currency_changed ), self );
 
 	if( idx != OFO_BASE_UNSET_ID ){
 		gtk_combo_box_set_active( priv->combo, idx );
@@ -233,15 +233,15 @@ ofa_devise_combo_new( const ofaDeviseComboParms *parms )
 }
 
 static void
-on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self )
+on_currency_changed( GtkComboBox *box, ofaCurrencyCombo *self )
 {
-	ofaDeviseComboPrivate *priv;
+	ofaCurrencyComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkWidget *widget;
 	gchar *code, *label;
 
-	/*g_debug( "ofa_devise_combo_on_devise_changed: dialog=%p (%s)",
+	/*g_debug( "ofa_currency_combo_on_currency_changed: dialog=%p (%s)",
 			( void * ) self->private->dialog, G_OBJECT_TYPE_NAME( self->private->dialog ));*/
 
 	priv = self->private;
@@ -271,22 +271,22 @@ on_devise_changed( GtkComboBox *box, ofaDeviseCombo *self )
 }
 
 /**
- * ofa_devise_combo_get_selection:
+ * ofa_currency_combo_get_selection:
  * @self:
  * @mnemo: [allow-none]:
  * @label: [allow_none]:
  *
- * Returns the intern identifier of the currently selected devise.
+ * Returns the intern identifier of the currently selected currency.
  */
 gint
-ofa_devise_combo_get_selection( ofaDeviseCombo *self, gchar **code, gchar **label )
+ofa_currency_combo_get_selection( ofaCurrencyCombo *self, gchar **code, gchar **label )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint id;
 	gchar *local_code, *local_label;
 
-	g_return_val_if_fail( self && OFA_IS_DEVISE_COMBO( self ), NULL );
+	g_return_val_if_fail( self && OFA_IS_CURRENCY_COMBO( self ), NULL );
 
 	id = OFO_BASE_UNSET_ID;
 

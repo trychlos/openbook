@@ -36,7 +36,7 @@
 
 #include "core/my-window-prot.h"
 
-#include "ui/ofa-devise-combo.h"
+#include "ui/ofa-currency-combo.h"
 #include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-main-window.h"
 
@@ -57,7 +57,7 @@ struct _ofaLedgerPropertiesPrivate {
 
 	/* UI
 	 */
-	ofaDeviseCombo *dev_combo;
+	ofaCurrencyCombo *dev_combo;
 
 	/* data
 	 */
@@ -246,7 +246,7 @@ static void
 init_balances_page( ofaLedgerProperties *self )
 {
 	GtkContainer *container;
-	ofaDeviseComboParms parms;
+	ofaCurrencyComboParms parms;
 	GtkComboBox *exe_box;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *text_cell;
@@ -265,11 +265,11 @@ init_balances_page( ofaLedgerProperties *self )
 	parms.label_name = NULL;
 	parms.disp_code = FALSE;
 	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaDeviseComboCb ) on_currency_changed;
+	parms.pfnSelected = ( ofaCurrencyComboCb ) on_currency_changed;
 	parms.user_data = self;
 	parms.initial_code = ofo_dossier_get_default_currency( MY_WINDOW( self )->protected->dossier );
 
-	self->private->dev_combo = ofa_devise_combo_new( &parms );
+	self->private->dev_combo = ofa_currency_combo_new( &parms );
 
 	exe_box = ( GtkComboBox * ) my_utils_container_get_child_by_name( container, "p2-exe-combo" );
 	g_return_if_fail( exe_box && GTK_IS_COMBO_BOX( exe_box ));
@@ -367,7 +367,7 @@ on_exe_changed( GtkComboBox *box, ofaLedgerProperties *self )
 }
 
 /*
- * ofaDeviseComboCb
+ * ofaCurrencyComboCb
  */
 static void
 on_currency_changed( const gchar *currency, ofaLedgerProperties *self )

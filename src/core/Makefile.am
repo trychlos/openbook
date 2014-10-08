@@ -68,7 +68,7 @@ libofa_core_la_SOURCES = \
 	ofo-bat.c											\
 	ofo-bat-line.c										\
 	ofo-class.c											\
-	ofo-devise.c										\
+	ofo-currency.c										\
 	ofo-dossier.c										\
 	ofo-entry.c											\
 	ofo-ledger.c										\

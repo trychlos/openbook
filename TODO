@@ -360,7 +360,9 @@
  321 2014-10- 8 Ledger properties balance: should have '€' sign like
                 account properties balance
 
- 322
+ 322 2014-10- 8 GuidedInputEx: pane restore position doesn't work
+
+ 323
 
 -----------------------------------------------------------------------
  DONE

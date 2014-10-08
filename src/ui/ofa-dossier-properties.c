@@ -37,7 +37,7 @@
 
 #include "core/my-window-prot.h"
 
-#include "ui/ofa-devise-combo.h"
+#include "ui/ofa-currency-combo.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-main-window.h"
 
@@ -218,7 +218,7 @@ init_properties_page( ofaDossierProperties *self )
 	GtkContainer *container;
 	GtkWidget *entry;
 	gchar *str;
-	ofaDeviseComboParms parms;
+	ofaCurrencyComboParms parms;
 	const gchar *costr;
 	gint ivalue;
 
@@ -247,10 +247,10 @@ init_properties_page( ofaDossierProperties *self )
 	parms.label_name = NULL;
 	parms.disp_code = TRUE;
 	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaDeviseComboCb ) on_currency_changed;
+	parms.pfnSelected = ( ofaCurrencyComboCb ) on_currency_changed;
 	parms.user_data = self;
 	parms.initial_code = ofo_dossier_get_default_currency( priv->dossier );
-	ofa_devise_combo_new( &parms );
+	ofa_currency_combo_new( &parms );
 }
 
 static void
@@ -335,7 +335,7 @@ on_duree_changed( GtkEntry *entry, ofaDossierProperties *self )
 }
 
 /*
- * ofaDeviseComboCb
+ * ofaCurrencyComboCb
  */
 static void
 on_currency_changed( const gchar *code, ofaDossierProperties *self )

@@ -36,7 +36,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -461,9 +461,9 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			prev_id,
 			( void * ) user_data );
 
-	if( OFO_IS_DEVISE( object )){
+	if( OFO_IS_CURRENCY( object )){
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
-			code = ofo_devise_get_code( OFO_DEVISE( object ));
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
 				on_updated_object_currency_code( dossier, prev_id, code );
 			}
@@ -741,20 +741,20 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	*/
 
 	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_DEVISES ("
-			"	DEV_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
-			"	DEV_LABEL     VARCHAR(80) NOT NULL                   COMMENT 'Currency label',"
-			"	DEV_SYMBOL    VARCHAR(3)  NOT NULL                   COMMENT 'Label of the currency',"
-			"	DEV_DIGITS    INTEGER     DEFAULT 2                  COMMENT 'Decimal digits on display',"
-			"	DEV_NOTES     VARCHAR(4096)                          COMMENT 'Currency notes',"
-			"	DEV_UPD_USER  VARCHAR(20)                            COMMENT 'User responsible of properties last update',"
-			"	DEV_UPD_STAMP TIMESTAMP                              COMMENT 'Properties last update timestamp'"
+			"CREATE TABLE IF NOT EXISTS OFA_T_CURRENCIES ("
+			"	CUR_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
+			"	CUR_LABEL     VARCHAR(80) NOT NULL                   COMMENT 'Currency label',"
+			"	CUR_SYMBOL    VARCHAR(3)  NOT NULL                   COMMENT 'Label of the currency',"
+			"	CUR_DIGITS    INTEGER     DEFAULT 2                  COMMENT 'Decimal digits on display',"
+			"	CUR_NOTES     VARCHAR(4096)                          COMMENT 'Currency notes',"
+			"	CUR_UPD_USER  VARCHAR(20)                            COMMENT 'User responsible of properties last update',"
+			"	CUR_UPD_STAMP TIMESTAMP                              COMMENT 'Properties last update timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofo_sgbd_query( sgbd,
-			"INSERT IGNORE INTO OFA_T_DEVISES "
+			"INSERT IGNORE INTO OFA_T_CURRENCIES "
 			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES ('EUR','Euro','€')", TRUE )){
 		return( FALSE );
 	}

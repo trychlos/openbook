@@ -33,7 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-account-notebook.h"
@@ -964,7 +964,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	gint level;
 	gint column;
 	GdkRGBA color;
-	ofoDevise *devise;
+	ofoCurrency *currency;
 
 	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
 
@@ -1008,8 +1008,8 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 		}
 
 	} else {
-		devise = ofo_devise_get_by_code( self->private->dossier, ofo_account_get_devise( account ));
-		if( !devise ){
+		currency = ofo_currency_get_by_code( self->private->dossier, ofo_account_get_currency( account ));
+		if( !currency ){
 			gdk_rgba_parse( &color, "#800000" );
 			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 		}
@@ -1044,7 +1044,7 @@ set_row_by_iter( ofaAccountNotebook *self,
 						ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *sdeb, *scre;
-	ofoDevise *devise;
+	ofoCurrency *currency;
 	gchar *cdev;
 
 	if( ofo_account_is_root( account )){
@@ -1057,9 +1057,9 @@ set_row_by_iter( ofaAccountNotebook *self,
 				ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
 		scre = g_strdup_printf( "%'.2f",
 				ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
-		devise = ofo_devise_get_by_code( self->private->dossier, ofo_account_get_devise( account ));
-		if( devise ){
-			cdev = g_strdup( ofo_devise_get_code( devise ));
+		currency = ofo_currency_get_by_code( self->private->dossier, ofo_account_get_currency( account ));
+		if( currency ){
+			cdev = g_strdup( ofo_currency_get_code( currency ));
 		} else {
 			cdev = g_strdup( "" );
 		}
@@ -1320,7 +1320,7 @@ ofa_account_notebook_grab_focus( ofaAccountNotebook *self )
  * this should be very rare
  */
 static void
-on_updated_currency_code( ofaAccountNotebook *self, ofoDevise *devise )
+on_updated_currency_code( ofaAccountNotebook *self, ofoCurrency *currency )
 {
 	gint pages_count, i;
 	GtkWidget *page_w;
@@ -1330,7 +1330,7 @@ on_updated_currency_code( ofaAccountNotebook *self, ofoDevise *devise )
 	ofoAccount *account;
 	gint dev_id;
 
-	dev_id = ofo_devise_get_id( devise );
+	dev_id = ofo_currency_get_id( currency );
 	pages_count = gtk_notebook_get_n_pages( self->private->book );
 
 	for( i=0 ; i<pages_count ; ++i ){
@@ -1349,7 +1349,7 @@ on_updated_currency_code( ofaAccountNotebook *self, ofoDevise *devise )
 				gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &account, -1 );
 				g_object_unref( account );
 
-				if( ofo_account_get_devise( account ) == dev_id ){
+				if( ofo_account_get_currency( account ) == dev_id ){
 					set_row_by_iter( self, account, tmodel, &iter );
 				}
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){

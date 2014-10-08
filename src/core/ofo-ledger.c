@@ -36,7 +36,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -283,9 +283,9 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			prev_id,
 			( void * ) user_data );
 
-	if( OFO_IS_DEVISE( object )){
+	if( OFO_IS_CURRENCY( object )){
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
-			code = ofo_devise_get_code( OFO_DEVISE( object ));
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
 				on_updated_object_currency_code( dossier, prev_id, code );
 			}

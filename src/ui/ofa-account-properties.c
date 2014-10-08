@@ -34,13 +34,13 @@
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-account-properties.h"
-#include "ui/ofa-devise-combo.h"
+#include "ui/ofa-currency-combo.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -64,7 +64,7 @@ struct _ofaAccountPropertiesPrivate {
 	 */
 	gchar          *number;
 	gchar          *label;
-	gchar          *devise;
+	gchar          *currency;
 	gchar          *type;
 	gchar          *maj_user;
 	GTimeVal        maj_stamp;
@@ -97,7 +97,7 @@ static void      set_ecr_num( ofaAccountProperties *self, gint *num, fnGetInt fn
 static void      set_ecr_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar *wname );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
-static void      on_devise_changed( const gchar *code, ofaAccountProperties *self );
+static void      on_currency_changed( const gchar *code, ofaAccountProperties *self );
 static void      on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void      on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *type );
@@ -122,7 +122,7 @@ account_properties_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->number );
 	g_free( priv->label );
-	g_free( priv->devise );
+	g_free( priv->currency );
 	g_free( priv->type );
 	g_free( priv->maj_user );
 	g_free( priv );
@@ -220,7 +220,7 @@ v_init_dialog( myDialog *dialog )
 	gchar *title;
 	const gchar *acc_number;
 	GtkEntry *entry;
-	ofaDeviseComboParms parms;
+	ofaCurrencyComboParms parms;
 	GtkContainer *container;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
@@ -254,19 +254,19 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect(
 			G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
-	priv->devise = g_strdup( ofo_account_get_devise( priv->account ));
+	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
 
 	parms.container = container;
 	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
-	parms.combo_name = "p1-devise";
+	parms.combo_name = "p1-currency";
 	parms.label_name = NULL;
 	parms.disp_code = TRUE;
 	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaDeviseComboCb ) on_devise_changed;
+	parms.pfnSelected = ( ofaCurrencyComboCb ) on_currency_changed;
 	parms.user_data = self;
-	parms.initial_code = priv->devise;
+	parms.initial_code = priv->currency;
 
-	ofa_devise_combo_new( &parms );
+	ofa_currency_combo_new( &parms );
 
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 
@@ -380,13 +380,13 @@ on_label_changed( GtkEntry *entry, ofaAccountProperties *self )
 }
 
 /*
- * ofaDeviseComboCb
+ * ofaCurrencyComboCb
  */
 static void
-on_devise_changed( const gchar *code, ofaAccountProperties *self )
+on_currency_changed( const gchar *code, ofaAccountProperties *self )
 {
-	g_free( self->private->devise );
-	self->private->devise = g_strdup( code );
+	g_free( self->private->currency );
+	self->private->currency = g_strdup( code );
 
 	check_for_enable_dlg( self );
 }
@@ -448,7 +448,7 @@ check_for_enable_dlg( ofaAccountProperties *self )
 
 	combo = GTK_COMBO_BOX(
 				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-devise" ));
+						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-currency" ));
 	if( combo ){
 		gtk_widget_set_sensitive( GTK_WIDGET( combo ), vierge && !is_root );
 	}
@@ -472,7 +472,7 @@ is_dialog_validable( ofaAccountProperties *self )
 
 	priv = self->private;
 
-	ok = ofo_account_is_valid_data( priv->number, priv->label, priv->devise, priv->type );
+	ok = ofo_account_is_valid_data( priv->number, priv->label, priv->currency, priv->type );
 
 	/* intrinsec validity is ok
 	 * the number may have been modified ; the new number is acceptable
@@ -512,7 +512,7 @@ do_update( ofaAccountProperties *self )
 	ofo_account_set_number( priv->account, priv->number );
 	ofo_account_set_label( priv->account, priv->label );
 	ofo_account_set_type( priv->account, priv->type );
-	ofo_account_set_devise( priv->account, priv->devise );
+	ofo_account_set_currency( priv->account, priv->currency );
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), account );
 
 	if( priv->is_new ){

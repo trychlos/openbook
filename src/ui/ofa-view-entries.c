@@ -36,7 +36,7 @@
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -224,7 +224,7 @@ static void           do_new_entry( ofaViewEntries *self, ofoEntry *entry );
 static void           on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaViewEntries *self );
 static void           do_update_account_number( ofaViewEntries *self, const gchar *prev, const gchar *number );
 static void           do_updateledger_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo );
-static void           do_update_devise_code( ofaViewEntries *self, const gchar *prev, const gchar *code );
+static void           do_update_currency_code( ofaViewEntries *self, const gchar *prev, const gchar *code );
 static void           on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
 static void           do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry );
 static void           on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
@@ -1865,10 +1865,10 @@ check_row_for_valid_currency( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTre
 		account = ofo_account_get_by_number( self->private->dossier, number );
 		if( account ){
 			if( !ofo_account_is_root( account )){
-				account_currency = ofo_account_get_devise( account );
+				account_currency = ofo_account_get_currency( account );
 				if( code && g_utf8_strlen( code, -1 )){
 					if( !g_utf8_collate( account_currency, code )){
-						if( ofo_devise_get_by_code( self->private->dossier, code )){
+						if( ofo_currency_get_by_code( self->private->dossier, code )){
 							is_valid = TRUE;
 						} else {
 							msg = g_strdup_printf( _( "Unknown currency: %s" ), code );
@@ -1944,7 +1944,7 @@ static gboolean
 save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
-	gchar *sdope, *sdeff, *ref, *label, *ledger, *account, *sdeb, *scre, *devise;
+	gchar *sdope, *sdeff, *ref, *label, *ledger, *account, *sdeb, *scre, *currency;
 	myDate *dope, *deff;
 	gint number;
 	gdouble debit, credit;
@@ -1966,7 +1966,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 			ENT_COL_ACCOUNT,  &account,
 			ENT_COL_DEBIT,    &sdeb,
 			ENT_COL_CREDIT,   &scre,
-			ENT_COL_CURRENCY, &devise,
+			ENT_COL_CURRENCY, &currency,
 			ENT_COL_OBJECT,   &entry,
 			-1 );
 
@@ -1991,20 +1991,20 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		ofo_entry_set_account( entry, account );
 		ofo_entry_set_debit( entry, debit );
 		ofo_entry_set_credit( entry, credit );
-		ofo_entry_set_currency( entry, devise );
+		ofo_entry_set_currency( entry, currency );
 
 		ok = ofo_entry_update( entry, priv->dossier );
 
 	} else {
 		entry = ofo_entry_new_with_data( priv->dossier,
-					dope, deff, label, ref, account, devise, ledger, NULL, debit, credit );
+					dope, deff, label, ref, account, currency, ledger, NULL, debit, credit );
 		priv->inserted = entry;
 		ok = ofo_entry_insert( entry, priv->dossier );
 	}
 
 	g_object_unref( dope );
 	g_object_unref( deff );
-	g_free( devise );
+	g_free( currency );
 	g_free( scre );
 	g_free( sdeb );
 	g_free( account );
@@ -2092,8 +2092,8 @@ on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *pr
 		} else if( OFO_IS_LEDGER( object )){
 			do_updateledger_mnemo( self, prev_id, ofo_ledger_get_mnemo( OFO_LEDGER( object )));
 
-		} else if( OFO_IS_DEVISE( object )){
-			do_update_devise_code( self, prev_id, ofo_devise_get_code( OFO_DEVISE( object )));
+		} else if( OFO_IS_CURRENCY( object )){
+			do_update_currency_code( self, prev_id, ofo_currency_get_code( OFO_CURRENCY( object )));
 		}
 	}
 }
@@ -2147,7 +2147,7 @@ do_updateledger_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mne
 }
 
 static void
-do_update_devise_code( ofaViewEntries *self, const gchar *prev, const gchar *code )
+do_update_currency_code( ofaViewEntries *self, const gchar *prev, const gchar *code )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -2309,7 +2309,7 @@ insert_new_row( ofaViewEntries *self )
 		ledger = NULL;
 		account = priv->acc_number;
 		account_object = ofo_account_get_by_number( priv->dossier, account );
-		dev_code = ofo_account_get_devise( account_object );
+		dev_code = ofo_account_get_currency( account_object );
 	}
 
 	gtk_list_store_insert_with_values(

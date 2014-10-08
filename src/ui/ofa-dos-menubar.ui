@@ -115,7 +115,7 @@
         </item>
         <item>
           <attribute name="label" translatable="yes">_Currencies...</attribute>
-          <attribute name="action">win.devises</attribute>
+          <attribute name="action">win.currencies</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_Rates...</attribute>

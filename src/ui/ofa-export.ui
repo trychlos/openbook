@@ -107,7 +107,7 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkRadioButton" id="p1-devise">
+                  <object class="GtkRadioButton" id="p1-currency">
                     <property name="label" translatable="yes">Reference : _currencies</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -125,7 +125,7 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkRadioButton" id="p1-journal">
+                  <object class="GtkRadioButton" id="p1-ledger">
                     <property name="label" translatable="yes">Reference : _journals</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -177,9 +177,6 @@ Press Continue.</property>
                     <property name="width">1</property>
                     <property name="height">1</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
                 <child>
                   <placeholder/>

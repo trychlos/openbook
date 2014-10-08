@@ -46,8 +46,8 @@ api_include_HEADERS = \
 	ofo-bat-line.h										\
 	ofo-class.h											\
 	ofo-class-def.h										\
-	ofo-devise.h										\
-	ofo-devise-def.h									\
+	ofo-currency.h										\
+	ofo-currency-def.h									\
 	ofo-dossier.h										\
 	ofo-dossier-def.h									\
 	ofo-entry.h											\

@@ -49,7 +49,7 @@ void            ofo_account_connect_handlers( const ofoDossier *dossier );
 
 GList          *ofo_account_get_dataset     ( const ofoDossier *dossier );
 ofoAccount     *ofo_account_get_by_number   ( const ofoDossier *dossier, const gchar *number );
-gboolean        ofo_account_use_devise      ( const ofoDossier *dossier, const gchar *devise );
+gboolean        ofo_account_use_currency    ( const ofoDossier *dossier, const gchar *devise );
 
 ofoAccount     *ofo_account_new             ( void );
 
@@ -58,7 +58,7 @@ void            ofo_account_dump_chart      ( GList *chart );
 gint            ofo_account_get_class       ( const ofoAccount *account );
 const gchar    *ofo_account_get_number      ( const ofoAccount *account );
 const gchar    *ofo_account_get_label       ( const ofoAccount *account );
-const gchar    *ofo_account_get_devise      ( const ofoAccount *account );
+const gchar    *ofo_account_get_currency    ( const ofoAccount *account );
 const gchar    *ofo_account_get_notes       ( const ofoAccount *account );
 const gchar    *ofo_account_get_type_account( const ofoAccount *account );
 const gchar    *ofo_account_get_maj_user    ( const ofoAccount *account );
@@ -86,7 +86,7 @@ gdouble         ofo_account_get_global_solde     ( const ofoAccount *account );
 
 void            ofo_account_set_number      ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label       ( ofoAccount *account, const gchar *label );
-void            ofo_account_set_devise      ( ofoAccount *account, const gchar *devise );
+void            ofo_account_set_currency    ( ofoAccount *account, const gchar *devise );
 void            ofo_account_set_notes       ( ofoAccount *account, const gchar *notes );
 void            ofo_account_set_type        ( ofoAccount *account, const gchar *type );
 void            ofo_account_set_maj_user    ( ofoAccount *account, const gchar *user );

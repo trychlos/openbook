@@ -40,7 +40,7 @@
 #include "ui/ofa-backup.h"
 #include "ui/ofa-bat-set.h"
 #include "ui/ofa-classes-set.h"
-#include "ui/ofa-devises-set.h"
+#include "ui/ofa-currencies-set.h"
 #include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-export.h"
@@ -102,7 +102,7 @@ static void on_print_reconcil   ( GSimpleAction *action, GVariant *parameter, gp
 static void on_ref_accounts     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_ledgers      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_ope_templates( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_devises      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_currencies   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_rates        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_classes      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_batfiles     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -121,7 +121,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "accounts",      on_ref_accounts,      NULL, NULL, NULL },
 		{ "ledgers",       on_ref_ledgers,       NULL, NULL, NULL },
 		{ "ope-templates", on_ref_ope_templates, NULL, NULL, NULL },
-		{ "devises",       on_ref_devises,       NULL, NULL, NULL },
+		{ "currencies",    on_ref_currencies,    NULL, NULL, NULL },
 		{ "rates",         on_ref_rates,         NULL, NULL, NULL },
 		{ "classes",       on_ref_classes,       NULL, NULL, NULL },
 		{ "batfiles",      on_ref_batfiles,      NULL, NULL, NULL },
@@ -175,9 +175,9 @@ static sThemeDef st_theme_defs[] = {
 				FALSE,
 				FALSE },
 
-		{ THM_DEVISES,
+		{ THM_CURRENCIES,
 				N_( "Currencies" ),
-				ofa_devises_set_get_type,
+				ofa_currencies_set_get_type,
 				FALSE,
 				FALSE },
 
@@ -237,7 +237,7 @@ static sTreeDef st_tree_defs[] = {
 		{ N_( "Chart of accounts" ),   THM_ACCOUNTS },
 		{ N_( "Ledgers" ),             THM_LEDGERS },
 		{ N_( "Operation templates" ), THM_OPE_TEMPLATES },
-		{ N_( "Currencies" ),          THM_DEVISES },
+		{ N_( "Currencies" ),          THM_CURRENCIES },
 		{ N_( "Rates" ),               THM_RATES },
 		{ N_( "Account classes" ),     THM_CLASSES },
 		{ N_( "Imported BAT files" ),  THM_BATFILES },
@@ -1106,7 +1106,7 @@ on_ref_ope_templates( GSimpleAction *action, GVariant *parameter, gpointer user_
 }
 
 static void
-on_ref_devises( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_ref_currencies( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_ref_devises";
 
@@ -1115,7 +1115,7 @@ on_ref_devises( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_DEVISES );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CURRENCIES );
 }
 
 static void

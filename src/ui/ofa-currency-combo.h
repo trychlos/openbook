@@ -24,45 +24,45 @@
  * $Id$
  */
 
-#ifndef __OFA_DEVISE_COMBO_H__
-#define __OFA_DEVISE_COMBO_H__
+#ifndef __OFA_CURRENCY_COMBO_H__
+#define __OFA_CURRENCY_COMBO_H__
 
 /**
- * SECTION: ofa_devise_combo
- * @short_description: #ofaDeviseCombo class definition.
- * @include: ui/ofa-devise-combo.h
+ * SECTION: ofa_currency_combo
+ * @short_description: #ofaCurrencyCombo class definition.
+ * @include: ui/ofa-currency-combo.h
  *
- * A class to embed a Devises combobox in a dialog.
+ * A class to embed a Currencys combobox in a dialog.
  */
 
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_DEVISE_COMBO                ( ofa_devise_combo_get_type())
-#define OFA_DEVISE_COMBO( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_DEVISE_COMBO, ofaDeviseCombo ))
-#define OFA_DEVISE_COMBO_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_DEVISE_COMBO, ofaDeviseComboClass ))
-#define OFA_IS_DEVISE_COMBO( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_DEVISE_COMBO ))
-#define OFA_IS_DEVISE_COMBO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DEVISE_COMBO ))
-#define OFA_DEVISE_COMBO_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DEVISE_COMBO, ofaDeviseComboClass ))
+#define OFA_TYPE_CURRENCY_COMBO                ( ofa_currency_combo_get_type())
+#define OFA_CURRENCY_COMBO( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_CURRENCY_COMBO, ofaCurrencyCombo ))
+#define OFA_CURRENCY_COMBO_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_CURRENCY_COMBO, ofaCurrencyComboClass ))
+#define OFA_IS_CURRENCY_COMBO( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_CURRENCY_COMBO ))
+#define OFA_IS_CURRENCY_COMBO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CURRENCY_COMBO ))
+#define OFA_CURRENCY_COMBO_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CURRENCY_COMBO, ofaCurrencyComboClass ))
 
-typedef struct _ofaDeviseComboPrivate        ofaDeviseComboPrivate;
+typedef struct _ofaCurrencyComboPrivate        ofaCurrencyComboPrivate;
 
 typedef struct {
 	/*< private >*/
 	GObject                parent;
-	ofaDeviseComboPrivate *private;
+	ofaCurrencyComboPrivate *private;
 }
-	ofaDeviseCombo;
+	ofaCurrencyCombo;
 
 typedef struct {
 	/*< private >*/
 	GObjectClass parent;
 }
-	ofaDeviseComboClass;
+	ofaCurrencyComboClass;
 
 /**
- * ofaDeviseComboCb:
+ * ofaCurrencyComboCb:
  *
  * A callback to be triggered when a new currency is selected.
  *
@@ -70,10 +70,10 @@ typedef struct {
  * - ISO 3A code
  * - user_data provided at init_dialog() time
  */
-typedef void ( *ofaDeviseComboCb )( const gchar *, gpointer );
+typedef void ( *ofaCurrencyComboCb )( const gchar *, gpointer );
 
 /**
- * ofaDeviseComboParms
+ * ofaCurrencyComboParms
  *
  * The structure passed to the init_dialog() function.
  *
@@ -98,18 +98,18 @@ typedef struct {
 	const gchar      *label_name;
 	gboolean          disp_code;
 	gboolean          disp_label;
-	ofaDeviseComboCb  pfnSelected;
+	ofaCurrencyComboCb  pfnSelected;
 	gpointer          user_data;
 	const gchar      *initial_code;
 }
-	ofaDeviseComboParms;
+	ofaCurrencyComboParms;
 
-GType           ofa_devise_combo_get_type     ( void ) G_GNUC_CONST;
+GType             ofa_currency_combo_get_type     ( void ) G_GNUC_CONST;
 
-ofaDeviseCombo *ofa_devise_combo_new          ( const ofaDeviseComboParms *parms );
+ofaCurrencyCombo *ofa_currency_combo_new          ( const ofaCurrencyComboParms *parms );
 
-gint            ofa_devise_combo_get_selection( ofaDeviseCombo *self, gchar **code, gchar **label );
+gint              ofa_currency_combo_get_selection( ofaCurrencyCombo *self, gchar **code, gchar **label );
 
 G_END_DECLS
 
-#endif /* __OFA_DEVISE_COMBO_H__ */
+#endif /* __OFA_CURRENCY_COMBO_H__ */

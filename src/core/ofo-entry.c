@@ -37,7 +37,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
-#include "api/ofo-devise.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -218,9 +218,9 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 			}
 		}
 
-	} else if( OFO_IS_DEVISE( object )){
+	} else if( OFO_IS_CURRENCY( object )){
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
-			code = ofo_devise_get_code( OFO_DEVISE( object ));
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
 				on_updated_object_currency_code( dossier, prev_id, code );
 			}
@@ -1301,7 +1301,7 @@ ofo_entry_is_valid( const ofoDossier *dossier,
 		error_ope_template( model );
 		ok &= FALSE;
 	}
-	if( !currency || !g_utf8_strlen( currency, -1 ) || !ofo_devise_get_by_code( dossier, currency )){
+	if( !currency || !g_utf8_strlen( currency, -1 ) || !ofo_currency_get_by_code( dossier, currency )){
 		error_currency( currency );
 		ok &= FALSE;
 	}
@@ -1314,7 +1314,7 @@ ofo_entry_is_valid( const ofoDossier *dossier,
 			error_account( account );
 			ok &= FALSE;
 
-		} else if( g_utf8_collate( currency, ofo_account_get_devise( account_obj ))){
+		} else if( g_utf8_collate( currency, ofo_account_get_currency( account_obj ))){
 			error_acc_currency( dossier, currency, account_obj );
 			ok &= FALSE;
 		}
@@ -1547,11 +1547,11 @@ error_acc_currency( const ofoDossier *dossier, const gchar *currency, ofoAccount
 {
 	gchar *str;
 	const gchar *acc_currency;
-	ofoDevise *acc_dev, *ent_dev;
+	ofoCurrency *acc_dev, *ent_dev;
 
-	acc_currency = ofo_account_get_devise( account );
-	acc_dev = ofo_devise_get_by_code( dossier, acc_currency );
-	ent_dev = ofo_devise_get_by_code( dossier, currency );
+	acc_currency = ofo_account_get_currency( account );
+	acc_dev = ofo_currency_get_by_code( dossier, acc_currency );
+	ent_dev = ofo_currency_get_by_code( dossier, currency );
 
 	if( !acc_dev ){
 		str = g_strdup_printf( "Invalid currency '%s' for the account '%s'",
@@ -2067,7 +2067,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 
 			if( !currency || !g_utf8_strlen( currency, -1 )){
 				g_free( currency );
-				currency = g_strdup( ofo_account_get_devise( account ));
+				currency = g_strdup( ofo_account_get_currency( account ));
 			}
 			ofo_entry_set_currency( entry, currency );
 			g_free( currency );
