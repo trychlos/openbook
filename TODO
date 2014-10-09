@@ -362,7 +362,11 @@
 
  322 2014-10- 8 GuidedInputEx: pane restore position doesn't work
 
- 323
+ 323 2014-10- 9 review the setters as most probably only properties
+                setters are useful, while others may be only internally
+                used
+
+ 324
 
 -----------------------------------------------------------------------
  DONE

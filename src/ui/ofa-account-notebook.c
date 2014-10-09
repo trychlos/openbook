@@ -1054,9 +1054,9 @@ set_row_by_iter( ofaAccountNotebook *self,
 
 	} else {
 		sdeb = g_strdup_printf( "%'.2f",
-				ofo_account_get_deb_mnt( account )+ofo_account_get_bro_deb_mnt( account ));
+				ofo_account_get_deb_amount( account )+ofo_account_get_day_deb_amount( account ));
 		scre = g_strdup_printf( "%'.2f",
-				ofo_account_get_cre_mnt( account )+ofo_account_get_bro_cre_mnt( account ));
+				ofo_account_get_cre_amount( account )+ofo_account_get_day_cre_amount( account ));
 		currency = ofo_currency_get_by_code( self->private->dossier, ofo_account_get_currency( account ));
 		if( currency ){
 			cdev = g_strdup( ofo_currency_get_code( currency ));

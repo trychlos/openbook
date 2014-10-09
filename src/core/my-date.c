@@ -460,12 +460,9 @@ my_date_to_str( const myDate *date, myDateFormat format )
 {
 	gchar *str;
 
-	g_return_val_if_fail( date && MY_IS_DATE( date ), NULL );
-
 	str = g_strdup( "" );
 
-	if( !date->private->dispose_has_run ){
-
+	if( my_date_is_valid( date )){
 		g_free( str );
 		str = date_to_str( &date->private->date, format );
 	}

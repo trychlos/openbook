@@ -783,7 +783,7 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 		pango_layout_set_font_description( priv->header_layout, desc );
 		pango_font_description_free( desc );
 
-		sdate = my_date2_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
+		sdate = my_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
 		if( !sdate || !g_utf8_strlen( sdate, -1 )){
 			g_free( sdate );
 			sdate = my_date_to_str( priv->date, MY_DATE_DMYY );
@@ -954,7 +954,7 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	pango_layout_set_font_description( priv->body_layout, desc );
 	pango_font_description_free( desc );
 
-	sdate = my_date2_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
+	sdate = my_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
 	if( !sdate || !g_utf8_strlen( sdate, -1 )){
 		g_free( sdate );
 		sdate = my_date_to_str( priv->date, MY_DATE_DMYY );

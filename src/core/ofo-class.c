@@ -66,7 +66,7 @@ static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gboolean   class_do_drop_content( const ofoSgbd *sgbd );
 
 static void
-ofo_class_finalize( GObject *instance )
+class_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_class_finalize";
 	ofoClassPrivate *priv;
@@ -90,7 +90,7 @@ ofo_class_finalize( GObject *instance )
 }
 
 static void
-ofo_class_dispose( GObject *instance )
+class_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFO_IS_CLASS( instance ));
 
@@ -123,8 +123,8 @@ ofo_class_class_init( ofoClassClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = ofo_class_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ofo_class_finalize;
+	G_OBJECT_CLASS( klass )->dispose = class_dispose;
+	G_OBJECT_CLASS( klass )->finalize = class_finalize;
 }
 
 /**

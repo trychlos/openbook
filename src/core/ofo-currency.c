@@ -73,7 +73,7 @@ static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *cod
 static gboolean     currency_do_drop_content( const ofoSgbd *sgbd );
 
 static void
-ofo_currency_finalize( GObject *instance )
+currency_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_currency_finalize";
 	ofoCurrencyPrivate *priv;
@@ -98,7 +98,7 @@ ofo_currency_finalize( GObject *instance )
 }
 
 static void
-ofo_currency_dispose( GObject *instance )
+currency_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFO_IS_CURRENCY( instance ));
 
@@ -129,8 +129,8 @@ ofo_currency_class_init( ofoCurrencyClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = ofo_currency_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ofo_currency_finalize;
+	G_OBJECT_CLASS( klass )->dispose = currency_dispose;
+	G_OBJECT_CLASS( klass )->finalize = currency_finalize;
 }
 
 /**

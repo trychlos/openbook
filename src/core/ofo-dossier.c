@@ -564,6 +564,31 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
+	if( !ofo_sgbd_query( sgbd,
+			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
+			"	ACC_NUMBER         VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
+			"	ACC_LABEL          VARCHAR(80)   NOT NULL        COMMENT 'Account label',"
+			"	ACC_CURRENCY       VARCHAR(3)                    COMMENT 'ISO 3A identifier of the currency of the account',"
+			"	ACC_NOTES          VARCHAR(4096)                 COMMENT 'Account notes',"
+			"	ACC_TYPE           CHAR(1)                       COMMENT 'Account type, values R/D',"
+			"	ACC_UPD_USER       VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
+			"	ACC_UPD_STAMP      TIMESTAMP                     COMMENT 'Properties last update timestamp',"
+			"	ACC_DEB_ENTRY      INTEGER                       COMMENT 'Number of the most recent validated debit entry',"
+			"	ACC_DEB_DATE       DATE                          COMMENT 'Effect date of the most recent validated debit entry',"
+			"	ACC_DEB_AMOUNT     DECIMAL(15,5)                 COMMENT 'Debit balance of validated entries',"
+			"	ACC_CRE_ENTRY      INTEGER                       COMMENT 'Number of the most recent validated credit entry',"
+			"	ACC_CRE_DATE       DATE                          COMMENT 'Effect date of the most recent validated credit entry',"
+			"	ACC_CRE_AMOUNT     DECIMAL(15,5)                 COMMENT 'Credit balance of validated entries',"
+			"	ACC_DAY_DEB_ENTRY  INTEGER                       COMMENT 'Number of the most recent rough debit entry',"
+			"	ACC_DAY_DEB_DATE   DATE                          COMMENT 'Effect date of the most recent rough debit entry',"
+			"	ACC_DAY_DEB_AMOUNT DECIMAL(15,5)                 COMMENT 'Debit balance of rough entries',"
+			"	ACC_DAY_CRE_ENTRY  INTEGER                       COMMENT 'Number of the most recent rough credit entry',"
+			"	ACC_DAY_CRE_DATE   DATE                          COMMENT 'Effect date of the most recent rough credit entry',"
+			"	ACC_DAY_CRE_AMOUNT DECIMAL(15,5)                 COMMENT 'Credit balance of rough entries'"
+			")", TRUE )){
+		return( FALSE );
+	}
+
 	/* defined post v1 */
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ASSETS ("
@@ -698,31 +723,6 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	if( !ofo_sgbd_query( sgbd,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (9,'Comptes analytiques')", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_COMPTES ("
-			"	CPT_NUMBER       VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
-			"	CPT_LABEL        VARCHAR(80)   NOT NULL        COMMENT 'Account label',"
-			"	CPT_DEV_CODE     VARCHAR(3)                    COMMENT 'ISO 3A identifier of the currency of the account',"
-			"	CPT_NOTES        VARCHAR(4096)                 COMMENT 'Account notes',"
-			"	CPT_TYPE         CHAR(1)                       COMMENT 'Account type, values R/D',"
-			"	CPT_UPD_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
-			"	CPT_UPD_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp',"
-			"	CPT_DEB_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au débit',"
-			"	CPT_DEB_DATE     DATE                          COMMENT 'Date d\\'effet',"
-			"	CPT_DEB_MNT      DECIMAL(15,5)                 COMMENT 'Montant débiteur écritures validées',"
-			"	CPT_CRE_ECR      INTEGER                       COMMENT 'Numéro de la dernière écriture validée imputée au crédit',"
-			"	CPT_CRE_DATE     DATE                          COMMENT 'Date d\\'effet',"
-			"	CPT_CRE_MNT      DECIMAL(15,5)                 COMMENT 'Montant créditeur écritures validées',"
-			"	CPT_BRO_DEB_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture en brouillard imputée au débit',"
-			"	CPT_BRO_DEB_DATE DATE                          COMMENT 'Date d\\'effet',"
-			"	CPT_BRO_DEB_MNT  DECIMAL(15,5)                 COMMENT 'Montant débiteur écritures en brouillard',"
-			"	CPT_BRO_CRE_ECR  INTEGER                       COMMENT 'Numéro de la dernière écriture de brouillard imputée au crédit',"
-			"	CPT_BRO_CRE_DATE DATE                          COMMENT 'Date d\\'effet',"
-			"	CPT_BRO_CRE_MNT  DECIMAL(15,5)                 COMMENT 'Montant créditeur écritures en brouillard'"
-			")", TRUE )){
 		return( FALSE );
 	}
 
