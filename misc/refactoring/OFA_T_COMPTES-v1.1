@@ -1,0 +1,26 @@
+# $Id$
+
+ALTER TABLE OFA_T_COMPTES RENAME TO OFA_T_ACCOUNTS;
+
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_NUMBER       ACC_NUMBER         VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_LABEL        ACC_LABEL          VARCHAR(80)   NOT NULL        COMMENT 'Account label';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_DEV_CODE     ACC_CURRENCY       VARCHAR(3)                    COMMENT 'ISO 3A identifier of the currency of the account';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_NOTES        ACC_NOTES          VARCHAR(4096)                 COMMENT 'Account notes';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_TYPE         ACC_TYPE           CHAR(1)                       COMMENT 'Account type, values R/D';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_MAJ_USER     ACC_UPD_USER       VARCHAR(20)                   COMMENT 'User responsible of properties last update';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_MAJ_STAMP    ACC_UPD_STAMP      TIMESTAMP                     COMMENT 'Properties last update timestamp';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_DEB_ECR      ACC_DEB_ENTRY      INTEGER                       COMMENT 'Number of the most recent validated debit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_DEB_DATE     ACC_DEB_DATE       DATE                          COMMENT 'Effect date of the most recent validated debit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_DEB_MNT      ACC_DEB_AMOUNT     DECIMAL(15,5)                 COMMENT 'Debit balance of validated entries';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_CRE_ECR      ACC_CRE_ENTRY      INTEGER                       COMMENT 'Number of the most recent validated credit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_CRE_DATE     ACC_CRE_DATE       DATE                          COMMENT 'Effect date of the most recent validated credit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_CRE_MNT      ACC_CRE_AMOUNT     DECIMAL(15,5)                 COMMENT 'Credit balance of validated entries';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_BRO_DEB_ECR  ACC_DAY_DEB_ENTRY  INTEGER                       COMMENT 'Number of the most recent rough debit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_BRO_DEB_DATE ACC_DAY_DEB_DATE   DATE                          COMMENT 'Effect date of the most recent rough debit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_BRO_DEB_MNT  ACC_DAY_DEB_AMOUNT DECIMAL(15,5)                 COMMENT 'Debit balance of rough entries';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_BRO_CRE_ECR  ACC_DAY_CRE_ENTRY  INTEGER                       COMMENT 'Number of the most recent rough credit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_BRO_CRE_DATE ACC_DAY_CRE_DATE   DATE                          COMMENT 'Effect date of the most recent rough credit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE CPT_BRO_CRE_MNT  ACC_DAY_CRE_AMOUNT DECIMAL(15,5)                 COMMENT 'Credit balance of rough entries';
+
+DESCRIBE OFA_T_ACCOUNTS;
+
