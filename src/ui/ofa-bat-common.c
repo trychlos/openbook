@@ -63,7 +63,7 @@ struct _ofaBatCommonPrivate {
 	GtkEntry        *begin;
 	GtkEntry        *end;
 	GtkEntry        *rib;
-	GtkEntry        *devise;
+	GtkEntry        *currency;
 	GtkEntry        *solde;
 
 	/* just to make the my_utils_init_..._ex macros happy
@@ -270,9 +270,9 @@ do_move_between_containers( ofaBatCommon *self )
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 	priv->rib = GTK_ENTRY( entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-devise" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-currency" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	priv->devise = GTK_ENTRY( entry );
+	priv->currency = GTK_ENTRY( entry );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "p1-solde" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
@@ -412,13 +412,14 @@ static void
 on_selection_changed( GtkTreeSelection *selection, ofaBatCommon *self )
 {
 	const ofoBat *bat;
+	ofaBatCommonPrivate *priv;
 
 	bat = get_selected_object( self, selection );
-
 	setup_bat_properties( self, bat );
+	priv = self->private;
 
-	if( bat && self->private->pfnSelection ){
-			( *self->private->pfnSelection )( bat, self->private->user_data );
+	if( bat && priv->pfnSelection ){
+			( *priv->pfnSelection )( bat, priv->user_data );
 	}
 }
 
@@ -428,7 +429,6 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 	ofaBatCommonPrivate *priv;
 	const gchar *conststr;
 	gchar *str;
-	const GDate *begin, *end;
 
 	priv = self->private;
 
@@ -447,23 +447,13 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 	gtk_entry_set_text( priv->count, str );
 	g_free( str );
 
-	begin = ofo_bat_get_begin( bat );
-	if( g_date_valid( begin )){
-		str = my_date2_to_str( begin, MY_DATE_DMYY );
-		gtk_entry_set_text( priv->begin, str );
-		g_free( str );
-	} else {
-		gtk_entry_set_text( priv->begin, "" );
-	}
+	str = my_date_to_str( ofo_bat_get_begin( bat ), MY_DATE_DMYY );
+	gtk_entry_set_text( priv->begin, str );
+	g_free( str );
 
-	end = ofo_bat_get_end( bat );
-	if( g_date_valid( end )){
-		str = my_date2_to_str( end, MY_DATE_DMYY );
-		gtk_entry_set_text( priv->end, str );
-		g_free( str );
-	} else {
-		gtk_entry_set_text( priv->end, "" );
-	}
+	str = my_date_to_str( ofo_bat_get_end( bat ), MY_DATE_DMYY );
+	gtk_entry_set_text( priv->end, str );
+	g_free( str );
 
 	conststr = ofo_bat_get_rib( bat );
 	if( conststr ){
@@ -474,9 +464,9 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 
 	conststr = ofo_bat_get_currency( bat );
 	if( conststr ){
-		gtk_entry_set_text( priv->devise, conststr );
+		gtk_entry_set_text( priv->currency, conststr );
 	} else {
-		gtk_entry_set_text( priv->devise, "" );
+		gtk_entry_set_text( priv->currency, "" );
 	}
 
 	if( ofo_bat_get_solde_set( bat )){
@@ -489,7 +479,7 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 
 	priv->bat = bat;
 	my_utils_init_notes_ex( priv->box, bat );
-	my_utils_init_maj_user_stamp_ex( priv->box, bat );
+	my_utils_init_upd_user_stamp_ex( priv->box, bat );
 }
 
 static const ofoBat *

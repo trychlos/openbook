@@ -56,16 +56,16 @@ struct _ofoAccountPrivate {
 	gchar     *upd_user;
 	GTimeVal   upd_stamp;
 	gint       deb_entry;
-	myDate    *deb_date;
+	GDate      deb_date;
 	gdouble    deb_amount;
 	gint       cre_entry;
-	myDate    *cre_date;
+	GDate      cre_date;
 	gdouble    cre_amount;
 	gint       day_deb_entry;
-	myDate    *day_deb_date;
+	GDate      day_deb_date;
 	gdouble    day_deb_amount;
 	gint       day_cre_entry;
-	myDate    *day_cre_date;
+	GDate      day_cre_date;
 	gdouble    day_cre_amount;
 };
 
@@ -121,19 +121,11 @@ account_finalize( GObject *instance )
 static void
 account_dispose( GObject *instance )
 {
-	ofoAccountPrivate *priv;
-
 	g_return_if_fail( instance && OFO_IS_ACCOUNT( instance ));
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-		priv = OFO_ACCOUNT( instance )->private;
-
 		/* unref object members here */
-		g_object_unref( priv->deb_date );
-		g_object_unref( priv->cre_date );
-		g_object_unref( priv->day_deb_date );
-		g_object_unref( priv->day_cre_date );
 	}
 
 	/* chain up to the parent class */
@@ -149,6 +141,11 @@ ofo_account_init( ofoAccount *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->private = g_new0( ofoAccountPrivate, 1 );
+
+	my_date_clear( &self->private->deb_date );
+	my_date_clear( &self->private->cre_date );
+	my_date_clear( &self->private->day_deb_date );
+	my_date_clear( &self->private->day_cre_date );
 }
 
 static void
@@ -207,9 +204,10 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 {
 	static const gchar *thisfn = "ofo_account_on_new_object_entry";
 	ofoAccount *account;
+	ofoAccountPrivate *priv;
 	gdouble debit, credit;
 	gint number;
-	const myDate *deffect, *prev_deffect;
+	const GDate *deffect, *prev_deffect;
 	gdouble prev;
 	gint prev_ecr;
 
@@ -217,38 +215,52 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 
 		account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
 		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+		priv = account->private;
 
 		debit = ofo_entry_get_debit( entry );
 		credit = ofo_entry_get_credit( entry );
 		number = ofo_entry_get_number( entry );
 		deffect = ofo_entry_get_deffect( entry );
 
+		/* impute the new entry either to the debit or the credit of
+		 * daily balance
+		 * + update last entry number (this should be always needed)
+		 * + update last entry date (maybe)
+		 */
 		if( debit ){
-			/* entry number should be strictly increasing */
 			prev_ecr = ofo_account_get_day_deb_entry( account );
-			g_return_if_fail( prev_ecr < number );
-			ofo_account_set_day_deb_entry( account, number );
+			if( prev_ecr >= number ){
+				g_warning(
+						"%s: new entry (%u) has a number less or equal to last entry (%u) imputed on the account",
+						thisfn, number, prev_ecr );
+			} else {
+				priv->day_deb_entry = number;
+			}
 			prev_deffect = ofo_account_get_day_deb_date( account );
 			if( !my_date_is_valid( prev_deffect ) || my_date_compare( prev_deffect, deffect ) < 0 ){
-				ofo_account_set_day_deb_date( account, deffect );
+				my_date_set_from_date( &priv->day_deb_date, deffect );
 			}
 			prev = ofo_account_get_day_deb_amount( account );
-			ofo_account_set_day_deb_amount( account, prev+debit );
+			priv->day_deb_amount = prev+debit;
 
 		} else {
 			prev_ecr = ofo_account_get_day_cre_entry( account );
-			g_return_if_fail( prev_ecr < number );
-			ofo_account_set_day_cre_entry( account, number );
+			if( prev_ecr >= number ){
+				g_warning(
+						"%s: new entry (%u) has a number less or equal to last entry (%u) imputed on the account",
+						thisfn, number, prev_ecr );
+			} else {
+				priv->day_cre_entry = number;
+			}
 			prev_deffect = ofo_account_get_day_cre_date( account );
 			if( !my_date_is_valid( prev_deffect ) || my_date_compare( prev_deffect, deffect ) < 0 ){
-				ofo_account_set_day_cre_date( account, deffect );
+				my_date_set_from_date( &priv->day_cre_date, deffect );
 			}
 			prev = ofo_account_get_day_cre_amount( account );
-			ofo_account_set_day_cre_amount( account, prev+credit );
+			priv->day_cre_amount = prev+credit;
 		}
 
 		if( account_update_amounts( account, ofo_dossier_get_sgbd( dossier ))){
-
 			g_signal_emit_by_name(
 					G_OBJECT( dossier ),
 					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( account ), NULL );
@@ -311,8 +323,9 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	static const gchar *thisfn = "ofo_account_on_validated_entry";
 	const gchar *acc_number;
 	ofoAccount *account;
+	ofoAccountPrivate *priv;
 	gdouble debit, credit, amount;
-	const myDate *ent_deffect, *acc_date;
+	const GDate *ent_deffect, *acc_date;
 	gint number, acc_num;
 
 	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
@@ -320,59 +333,55 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 
 	acc_number = ofo_entry_get_account( entry );
 	account = ofo_account_get_by_number( dossier, acc_number );
-	if( account ){
+	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+	priv = account->private;
 
-		debit = ofo_entry_get_debit( entry );
-		if( debit ){
-			amount = ofo_account_get_day_deb_amount( account );
-			ofo_account_set_day_deb_amount( account, amount-debit );
-			amount = ofo_account_get_deb_amount( account );
-			ofo_account_set_deb_amount( account, amount+debit );
+	debit = ofo_entry_get_debit( entry );
+	if( debit ){
+		amount = ofo_account_get_day_deb_amount( account );
+		priv->day_deb_amount = amount-debit;
+		amount = ofo_account_get_deb_amount( account );
+		priv->deb_amount = amount+debit;
+	}
+
+	credit = ofo_entry_get_credit( entry );
+	if( credit ){
+		amount = ofo_account_get_day_cre_amount( account );
+		priv->day_cre_amount = amount-credit;
+		amount = ofo_account_get_cre_amount( account );
+		priv->cre_amount = amount+credit;
+	}
+
+	ent_deffect = ofo_entry_get_deffect( entry );
+	if( debit ){
+		acc_date = ofo_account_get_deb_date( account );
+		if( !my_date_is_valid( acc_date ) || my_date_compare( acc_date, ent_deffect ) < 0 ){
+			my_date_set_from_date( &priv->deb_date, ent_deffect );
 		}
-
-		credit = ofo_entry_get_credit( entry );
-		if( credit ){
-			amount = ofo_account_get_day_cre_amount( account );
-			ofo_account_set_day_cre_amount( account, amount-credit );
-			amount = ofo_account_get_cre_amount( account );
-			ofo_account_set_cre_amount( account, amount+credit );
-		}
-
-		ent_deffect = ofo_entry_get_deffect( entry );
-		if( debit ){
-			acc_date = ofo_account_get_deb_date( account );
-			if( !my_date_is_valid( acc_date ) || my_date_compare( acc_date, ent_deffect ) < 0 ){
-				ofo_account_set_deb_date( account, ent_deffect );
-			}
-		} else {
-			acc_date = ofo_account_get_cre_date( account );
-			if( !my_date_is_valid( acc_date ) || my_date_compare( acc_date, ent_deffect ) < 0 ){
-				ofo_account_set_cre_date( account, ent_deffect );
-			}
-		}
-
-		number = ofo_entry_get_number( entry );
-		if( debit ){
-			acc_num = ofo_account_get_deb_entry( account );
-			if( number > acc_num ){
-				ofo_account_set_deb_entry( account, number );
-			}
-		} else {
-			acc_num = ofo_account_get_cre_entry( account );
-			if( number > acc_num ){
-				ofo_account_set_cre_entry( account, number );
-			}
-		}
-
-		if( account_update_amounts( account, ofo_dossier_get_sgbd( dossier ))){
-
-			g_signal_emit_by_name(
-					G_OBJECT( dossier ),
-					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( account ), NULL );
-		}
-
 	} else {
-		g_warning( "%s: account not found: %s", thisfn, acc_number );
+		acc_date = ofo_account_get_cre_date( account );
+		if( !my_date_is_valid( acc_date ) || my_date_compare( acc_date, ent_deffect ) < 0 ){
+			my_date_set_from_date( &priv->cre_date, ent_deffect );
+		}
+	}
+
+	number = ofo_entry_get_number( entry );
+	if( debit ){
+		acc_num = ofo_account_get_deb_entry( account );
+		if( number > acc_num ){
+			priv->deb_entry = number;
+		}
+	} else {
+		acc_num = ofo_account_get_cre_entry( account );
+		if( number > acc_num ){
+			priv->cre_entry = number;
+		}
+	}
+
+	if( account_update_amounts( account, ofo_dossier_get_sgbd( dossier ))){
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ),
+				OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( account ), NULL );
 	}
 }
 
@@ -409,6 +418,7 @@ account_load_dataset( void )
 	const ofoSgbd *sgbd;
 	GSList *result, *irow, *icol;
 	ofoAccount *account;
+	ofoAccountPrivate *priv;
 	GList *dataset;
 	GTimeVal timeval;
 
@@ -429,6 +439,8 @@ account_load_dataset( void )
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
 		account = ofo_account_new();
+		priv = account->private;
+
 		ofo_account_set_number( account, ( gchar * ) icol->data );
 		icol = icol->next;
 		ofo_account_set_label( account, ( gchar * ) icol->data );
@@ -451,40 +463,52 @@ account_load_dataset( void )
 				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
-			ofo_account_set_deb_entry( account, atoi(( gchar * ) icol->data ));
+			priv->deb_entry = atoi(( gchar * ) icol->data );
 		}
-		icol = icol->next;
-		account->private->deb_date = my_date_new_from_sql(( const gchar * ) icol->data );
-		icol = icol->next;
-		ofo_account_set_deb_amount( account,
-				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
-			ofo_account_set_cre_entry( account, atoi(( gchar * ) icol->data ));
+			my_date_set_from_sql( &priv->deb_date, ( const gchar * ) icol->data );
 		}
-		icol = icol->next;
-		account->private->cre_date = my_date_new_from_sql(( const gchar * ) icol->data );
-		icol = icol->next;
-		ofo_account_set_cre_amount( account,
-				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
-			ofo_account_set_day_deb_entry( account, atoi(( gchar * ) icol->data ));
+			priv->deb_amount = my_double_from_sql(( const gchar * ) icol->data );
 		}
-		icol = icol->next;
-		account->private->day_deb_date = my_date_new_from_sql(( const gchar * ) icol->data );
-		icol = icol->next;
-		ofo_account_set_day_deb_amount( account,
-				my_double_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
-			ofo_account_set_day_cre_entry( account, atoi(( gchar * ) icol->data ));
+			priv->cre_entry = atoi(( gchar * ) icol->data );
 		}
 		icol = icol->next;
-		account->private->day_cre_date = my_date_new_from_sql(( const gchar * ) icol->data );
+		if( icol->data ){
+			my_date_set_from_sql( &priv->cre_date, ( const gchar * ) icol->data );
+		}
 		icol = icol->next;
-		ofo_account_set_day_cre_amount( account,
-				my_double_from_sql(( const gchar * ) icol->data ));
+		if( icol->data ){
+			priv->cre_amount = my_double_from_sql(( const gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			priv->day_deb_entry = atoi(( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			my_date_set_from_sql( &priv->day_deb_date, ( const gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			priv->day_deb_amount = my_double_from_sql(( const gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			priv->day_cre_entry = atoi(( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			my_date_set_from_sql( &priv->day_cre_date, ( const gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			priv->day_cre_amount = my_double_from_sql(( const gchar * ) icol->data );
+		}
 
 		dataset = g_list_prepend( dataset, account );
 	}
@@ -792,14 +816,14 @@ ofo_account_get_deb_entry( const ofoAccount *account )
 /**
  * ofo_account_get_deb_date:
  */
-const myDate *
+const GDate *
 ofo_account_get_deb_date( const ofoAccount *account )
 {
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const myDate * ) account->private->deb_date );
+		return(( const GDate * ) &account->private->deb_date );
 	}
 
 	return( NULL );
@@ -840,14 +864,14 @@ ofo_account_get_cre_entry( const ofoAccount *account )
 /**
  * ofo_account_get_cre_date:
  */
-const myDate *
+const GDate *
 ofo_account_get_cre_date( const ofoAccount *account )
 {
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const myDate * ) account->private->cre_date );
+		return(( const GDate * ) &account->private->cre_date );
 	}
 
 	return( NULL );
@@ -888,14 +912,14 @@ ofo_account_get_day_deb_entry( const ofoAccount *account )
 /**
  * ofo_account_get_day_deb_date:
  */
-const myDate *
+const GDate *
 ofo_account_get_day_deb_date( const ofoAccount *account )
 {
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const myDate * ) account->private->day_deb_date );
+		return(( const GDate * ) &account->private->day_deb_date );
 	}
 
 	return( NULL );
@@ -936,14 +960,14 @@ ofo_account_get_day_cre_entry( const ofoAccount *account )
 /**
  * ofo_account_get_day_cre_date:
  */
-const myDate *
+const GDate *
 ofo_account_get_day_cre_date( const ofoAccount *account )
 {
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const myDate * ) account->private->day_cre_date );
+		return(( const GDate * ) &account->private->day_cre_date );
 	}
 
 	return( NULL );
@@ -1057,10 +1081,10 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
  * Returns the most recent effect date of the account.
  * May be %NULL if no entry has never been recorded in this account.
  */
-const myDate *
+const GDate *
 ofo_account_get_global_deffect( const ofoAccount *account )
 {
-	const myDate *date, *dd;
+	const GDate *date, *dd;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
@@ -1228,174 +1252,6 @@ account_set_upd_stamp( ofoAccount *account, const GTimeVal *upd_stamp )
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
 		memcpy( &account->private->upd_stamp, upd_stamp, sizeof( GTimeVal ));
-	}
-}
-
-/**
- * ofo_account_set_deb_entry:
- */
-void
-ofo_account_set_deb_entry( ofoAccount *account, gint num )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account->private->deb_entry = num;
-	}
-}
-
-/**
- * ofo_account_set_deb_date:
- */
-void
-ofo_account_set_deb_date( ofoAccount *account, const myDate *date )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		my_date_set_from_date( account->private->deb_date, date );
-	}
-}
-
-/**
- * ofo_account_set_deb_amount:
- */
-void
-ofo_account_set_deb_amount( ofoAccount *account, gdouble mnt )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account->private->deb_amount = mnt;
-	}
-}
-
-/**
- * ofo_account_set_cre_entry:
- */
-void
-ofo_account_set_cre_entry( ofoAccount *account, gint num )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account->private->deb_entry = num;
-	}
-}
-
-/**
- * ofo_account_set_cre_date:
- */
-void
-ofo_account_set_cre_date( ofoAccount *account, const myDate *date )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		my_date_set_from_date( account->private->deb_date, date );
-	}
-}
-
-/**
- * ofo_account_set_cre_amount:
- */
-void
-ofo_account_set_cre_amount( ofoAccount *account, gdouble mnt )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account->private->cre_amount = mnt;
-	}
-}
-
-/**
- * ofo_account_set_day_deb_entry:
- */
-void
-ofo_account_set_day_deb_entry( ofoAccount *account, gint num )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account->private->day_deb_entry = num;
-	}
-}
-
-/**
- * ofo_account_set_day_deb_date:
- */
-void
-ofo_account_set_day_deb_date( ofoAccount *account, const myDate *date )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		my_date_set_from_date( account->private->day_deb_date, date );
-	}
-}
-
-/**
- * ofo_account_set_day_deb_amount:
- */
-void
-ofo_account_set_day_deb_amount( ofoAccount *account, gdouble mnt )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account->private->day_deb_amount = mnt;
-	}
-}
-
-/**
- * ofo_account_set_day_cre_entry:
- */
-void
-ofo_account_set_day_cre_entry( ofoAccount *account, gint num )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account->private->day_cre_entry = num;
-	}
-}
-
-/**
- * ofo_account_set_day_cre_date:
- */
-void
-ofo_account_set_day_cre_date( ofoAccount *account, const myDate *date )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		my_date_set_from_date( account->private->day_cre_date, date );
-	}
-}
-
-/**
- * ofo_account_set_day_cre_amount:
- */
-void
-ofo_account_set_day_cre_amount( ofoAccount *account, gdouble mnt )
-{
-	g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
-
-		account->private->day_cre_amount = mnt;
 	}
 }
 

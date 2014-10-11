@@ -69,22 +69,22 @@ struct _ofaAccountPropertiesPrivate {
 	gchar          *upd_user;
 	GTimeVal        upd_stamp;
 	gint            deb_entry;
-	myDate         *deb_date;
+	GDate           deb_date;
 	gdouble         deb_amount;
 	gint            cre_entry;
-	myDate         *cre_date;
+	GDate           cre_date;
 	gdouble         cre_amount;
 	gint            day_deb_entry;
-	myDate         *day_deb_date;
+	GDate           day_deb_date;
 	gdouble         day_deb_amount;
 	gint            day_cre_entry;
-	myDate         *day_cre_date;
+	GDate           day_cre_date;
 	gdouble         day_cre_amount;
 };
 
-typedef gdouble        ( *fnGetDouble )( const ofoAccount * );
-typedef gint           ( *fnGetInt )   ( const ofoAccount * );
-typedef const myDate * ( *fnGetDate )  ( const ofoAccount * );
+typedef gdouble       ( *fnGetDouble )( const ofoAccount * );
+typedef gint          ( *fnGetInt )   ( const ofoAccount * );
+typedef const GDate * ( *fnGetDate )  ( const ofoAccount * );
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-account-properties.ui";
 static const gchar  *st_ui_id  = "AccountPropertiesDlg";
@@ -94,7 +94,7 @@ G_DEFINE_TYPE( ofaAccountProperties, ofa_account_properties, MY_TYPE_DIALOG )
 static void      v_init_dialog( myDialog *dialog );
 static void      set_amount( ofaAccountProperties *self, gdouble *amount, fnGetDouble fn, const gchar *wname );
 static void      set_entry_number( ofaAccountProperties *self, gint *num, fnGetInt fn, const gchar *wname );
-static void      set_entry_date( ofaAccountProperties *self, myDate *date, fnGetDate fn, const gchar *wname );
+static void      set_entry_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar *wname );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_currency_changed( const gchar *code, ofaAccountProperties *self );
@@ -134,19 +134,11 @@ account_properties_finalize( GObject *instance )
 static void
 account_properties_dispose( GObject *instance )
 {
-	ofaAccountPropertiesPrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
-		priv = OFA_ACCOUNT_PROPERTIES( instance )->private;
-
 		/* unref object members here */
-		g_object_unref( priv->deb_date );
-		g_object_unref( priv->cre_date );
-		g_object_unref( priv->day_deb_date );
-		g_object_unref( priv->day_cre_date );
 	}
 
 	/* chain up to the parent class */
@@ -167,10 +159,10 @@ ofa_account_properties_init( ofaAccountProperties *self )
 	self->private->is_new = FALSE;
 	self->private->updated = FALSE;
 
-	self->private->deb_date = my_date_new();
-	self->private->cre_date = my_date_new();
-	self->private->day_deb_date = my_date_new();
-	self->private->day_cre_date = my_date_new();
+	my_date_clear( &self->private->deb_date );
+	my_date_clear( &self->private->cre_date );
+	my_date_clear( &self->private->day_deb_date );
+	my_date_clear( &self->private->day_cre_date );
 }
 
 static void
@@ -307,19 +299,19 @@ v_init_dialog( myDialog *dialog )
 
 	set_amount( self, &priv->deb_amount, ofo_account_get_deb_amount, "p2-deb-amount" );
 	set_entry_number( self, &priv->deb_entry, ofo_account_get_deb_entry, "p2-deb-entry" );
-	set_entry_date( self, priv->deb_date, ofo_account_get_deb_date, "p2-deb-date" );
+	set_entry_date( self, &priv->deb_date, ofo_account_get_deb_date, "p2-deb-date" );
 
 	set_amount( self, &priv->cre_amount, ofo_account_get_cre_amount, "p2-cre-amount" );
 	set_entry_number( self, &priv->cre_entry, ofo_account_get_cre_entry, "p2-cre-entry" );
-	set_entry_date( self, priv->cre_date, ofo_account_get_cre_date, "p2-cre-date" );
+	set_entry_date( self, &priv->cre_date, ofo_account_get_cre_date, "p2-cre-date" );
 
 	set_amount( self, &priv->day_deb_amount, ofo_account_get_day_deb_amount, "p2-day-deb-amount" );
 	set_entry_number( self, &priv->day_deb_entry, ofo_account_get_day_deb_entry, "p2-day-deb-entry" );
-	set_entry_date( self, priv->day_deb_date, ofo_account_get_day_deb_date, "p2-day-deb-date" );
+	set_entry_date( self, &priv->day_deb_date, ofo_account_get_day_deb_date, "p2-day-deb-date" );
 
 	set_amount( self, &priv->day_cre_amount, ofo_account_get_day_cre_amount, "p2-day-cre-amount" );
 	set_entry_number( self, &priv->day_cre_entry, ofo_account_get_day_cre_entry, "p2-day-cre-entry" );
-	set_entry_date( self, priv->day_cre_date, ofo_account_get_day_cre_date, "p2-day-cre-date" );
+	set_entry_date( self, &priv->day_cre_date, ofo_account_get_day_cre_date, "p2-day-cre-date" );
 
 	my_utils_init_notes_ex( container, account );
 	my_utils_init_upd_user_stamp_ex( container, account );
@@ -360,7 +352,7 @@ set_entry_number( ofaAccountProperties *self, gint *num, fnGetInt fn, const gcha
 }
 
 static void
-set_entry_date( ofaAccountProperties *self, myDate *date, fnGetDate fn, const gchar *wname )
+set_entry_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar *wname )
 {
 	GtkLabel *label;
 	gchar *str;

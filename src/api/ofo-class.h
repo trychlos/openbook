@@ -32,8 +32,7 @@
  * @short_description: #ofoClass class definition.
  * @include: api/ofo-class.h
  *
- * This class implements the ofoClass behavior, including the general
- * DB definition.
+ * This file defines the #ofoClass public API.
  *
  * Note that no method is provided for inserting or deleting a row in
  * the sgbd. The dossier comes with 9 predefined classes. The user may

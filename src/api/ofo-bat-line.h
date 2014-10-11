@@ -32,8 +32,8 @@
  * @short_description: #ofoBatLine class definition.
  * @include: api/ofo-bat-line.h
  *
- * This class implements the BatLine behavior: these are the imported
- * bank account transaction lines.
+ * This file defines the #ofoBatLine class public API: these are the
+ * imported bank account transaction lines.
  */
 
 #include "api/ofa-iimporter.h"
@@ -71,26 +71,24 @@ GList          *ofo_bat_line_get_dataset  ( const ofoDossier *dossier, gint bat_
 
 gint            ofo_bat_line_get_id       ( const ofoBatLine *batline );
 gint            ofo_bat_line_get_bat_id   ( const ofoBatLine *batline );
-const GDate    *ofo_bat_line_get_valeur   ( const ofoBatLine *batline );
-const GDate    *ofo_bat_line_get_ope      ( const ofoBatLine *batline );
+const GDate    *ofo_bat_line_get_deffect  ( const ofoBatLine *batline );
+const GDate    *ofo_bat_line_get_dope     ( const ofoBatLine *batline );
 const gchar    *ofo_bat_line_get_ref      ( const ofoBatLine *batline );
 const gchar    *ofo_bat_line_get_label    ( const ofoBatLine *batline );
 const gchar    *ofo_bat_line_get_currency ( const ofoBatLine *batline );
-gdouble         ofo_bat_line_get_montant  ( const ofoBatLine *batline );
-gint            ofo_bat_line_get_ecr      ( const ofoBatLine *batline );
-const gchar    *ofo_bat_line_get_maj_user ( const ofoBatLine *batline );
-const GTimeVal *ofo_bat_line_get_maj_stamp( const ofoBatLine *batline );
+gdouble         ofo_bat_line_get_amount   ( const ofoBatLine *batline );
+gint            ofo_bat_line_get_entry    ( const ofoBatLine *batline );
+const gchar    *ofo_bat_line_get_upd_user ( const ofoBatLine *batline );
+const GTimeVal *ofo_bat_line_get_upd_stamp( const ofoBatLine *batline );
 
 void            ofo_bat_line_set_id       ( ofoBatLine *batline, gint id );
-void            ofo_bat_line_set_valeur   ( ofoBatLine *batline, const GDate *date );
-void            ofo_bat_line_set_ope      ( ofoBatLine *batline, const GDate *date );
+void            ofo_bat_line_set_deffect  ( ofoBatLine *batline, const GDate *date );
+void            ofo_bat_line_set_dope     ( ofoBatLine *batline, const GDate *date );
 void            ofo_bat_line_set_ref      ( ofoBatLine *batline, const gchar *ref );
 void            ofo_bat_line_set_label    ( ofoBatLine *batline, const gchar *label );
 void            ofo_bat_line_set_currency ( ofoBatLine *batline, const gchar *currency );
-void            ofo_bat_line_set_montant  ( ofoBatLine *batline, gdouble montant );
-void            ofo_bat_line_set_ecr      ( ofoBatLine *batline, gint number );
-void            ofo_bat_line_set_maj_user ( ofoBatLine *batline, const gchar *user );
-void            ofo_bat_line_set_maj_stamp( ofoBatLine *batline, const GTimeVal *stamp );
+void            ofo_bat_line_set_amount   ( ofoBatLine *batline, gdouble montant );
+void            ofo_bat_line_set_entry    ( ofoBatLine *batline, gint number );
 
 gboolean        ofo_bat_line_insert       ( ofoBatLine *batline, const ofoDossier *dossier );
 gboolean        ofo_bat_line_update       ( ofoBatLine *batline, const ofoDossier *dossier );

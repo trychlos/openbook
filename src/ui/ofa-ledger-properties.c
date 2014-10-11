@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -65,7 +66,7 @@ struct _ofaLedgerPropertiesPrivate {
 	gchar          *label;
 	gchar          *upd_user;
 	GTimeVal        upd_stamp;
-	myDate         *closing;
+	GDate           closing;
 };
 
 /* columns displayed in the exercice combobox
@@ -146,6 +147,7 @@ ofa_ledger_properties_init( ofaLedgerProperties *self )
 
 	self->private->is_new = FALSE;
 	self->private->updated = FALSE;
+	my_date_clear( &self->private->closing );
 }
 
 static void
@@ -253,7 +255,7 @@ init_balances_page( ofaLedgerProperties *self )
 	gint current_exe_id;
 	GList *list, *ili;
 	gint exe_id, idx, i;
-	const myDate *begin, *end;
+	const GDate *begin, *end;
 	gchar *sbegin, *send;
 	GtkTreeIter iter;
 

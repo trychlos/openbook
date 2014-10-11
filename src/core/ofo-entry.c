@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
@@ -50,9 +51,9 @@ struct _ofoEntryPrivate {
 
 	/* sgbd data
 	 */
-	myDate        *effect;
+	GDate          deffect;
 	gint           number;
-	myDate        *operation;
+	GDate          dope;
 	gchar         *label;
 	gchar         *ref;
 	gchar         *account;
@@ -64,7 +65,7 @@ struct _ofoEntryPrivate {
 	ofaEntryStatus status;
 	gchar         *upd_user;
 	GTimeVal       upd_stamp;
-	myDate        *concil_dval;
+	GDate          concil_dval;
 	gchar         *concil_user;
 	GTimeVal       concil_stamp;
 };
@@ -128,16 +129,9 @@ entry_finalize( GObject *instance )
 static void
 entry_dispose( GObject *instance )
 {
-	ofoEntryPrivate *priv;
-
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
-		priv = OFO_ENTRY( instance )->private;
-
 		/* unref object members here */
-		g_clear_object( &priv->effect );
-		g_clear_object( &priv->operation );
-		g_clear_object( &priv->concil_dval );
 	}
 
 	/* chain up to the parent class */
@@ -155,6 +149,9 @@ ofo_entry_init( ofoEntry *self )
 	self->private = g_new0( ofoEntryPrivate, 1 );
 
 	self->private->number = OFO_BASE_UNSET_ID;
+	my_date_clear( &self->private->deffect );
+	my_date_clear( &self->private->dope );
+	my_date_clear( &self->private->concil_dval );
 }
 
 static void
@@ -248,18 +245,15 @@ static void
 on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number )
 {
 	GString *query;
-	const myDate *date;
+	const GDate *date;
 	gchar *str;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
-
 	g_string_append_printf(
 			query,
 			"SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
 
-	str = NULL;
 	date = ofo_dossier_get_current_exe_begin( dossier );
-
 	if( my_date_is_valid( date )){
 		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
@@ -275,18 +269,15 @@ static void
 on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
 {
 	GString *query;
-	const myDate *date;
+	const GDate *date;
 	gchar *str;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
-
 	g_string_append_printf(
 			query,
 			"SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
 
-	str = NULL;
 	date = ofo_dossier_get_current_exe_begin( dossier );
-
 	if( my_date_is_valid( date )){
 		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
@@ -302,16 +293,14 @@ static void
 on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
 {
 	GString *query;
-	const myDate *date;
+	const GDate *date;
 	gchar *str;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
-
 	g_string_append_printf(
 			query,
 			"SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
 
-	str = NULL;
 	date = ofo_dossier_get_current_exe_begin( dossier );
 	if( my_date_is_valid( date )){
 		str = my_date_to_str( date, MY_DATE_SQL );
@@ -328,16 +317,14 @@ static void
 on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
 {
 	GString *query;
-	const myDate *date;
+	const GDate *date;
 	gchar *str;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
-
 	g_string_append_printf(
 			query,
 			"SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
 
-	str = NULL;
 	date = ofo_dossier_get_current_exe_begin( dossier );
 	if( my_date_is_valid( date )){
 		str = my_date_to_str( date, MY_DATE_SQL );
@@ -416,7 +403,7 @@ ofo_entry_get_dataset_by_concil( const ofoDossier *dossier, const gchar *account
  * between the @from et @to specified
  */
 GList *
-ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *account, const myDate *from, const myDate *to )
+ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *account, const GDate *from, const GDate *to )
 {
 	GString *where;
 	gchar *str;
@@ -457,7 +444,7 @@ ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *accoun
  * Returns the dataset for the given ledger, with operation date between
  * @from and @to.
  */
-GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *ledger, const myDate *from, const myDate *to )
+GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *ledger, const GDate *from, const GDate *to )
 {
 	GString *where;
 	gchar *str;
@@ -501,7 +488,7 @@ GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *
  */
 GList *
 ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
-											const gchar *account, const myDate *date )
+											const gchar *account, const GDate *date )
 {
 	GList *dataset;
 	GString *where;
@@ -594,9 +581,9 @@ entry_parse_result( const GSList *row )
 	if( row ){
 		icol = ( GSList * ) row->data;
 		entry = ofo_entry_new();
-		entry->private->operation = my_date_new_from_sql(( const gchar * ) icol->data );
+		my_date_set_from_sql( &entry->private->dope, ( const gchar * ) icol->data );
 		icol = icol->next;
-		entry->private->effect = my_date_new_from_sql(( const gchar * ) icol->data );
+		my_date_set_from_sql( &entry->private->deffect, ( const gchar * ) icol->data );
 		icol = icol->next;
 		ofo_entry_set_number( entry, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
@@ -629,9 +616,8 @@ entry_parse_result( const GSList *row )
 		entry_set_upd_stamp( entry,
 				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
-		entry->private->concil_dval = my_date_new();
 		if( icol->data ){
-			my_date_set_from_str( entry->private->concil_dval, ( const gchar * ) icol->data, MY_DATE_SQL );
+			my_date_set_from_sql( &entry->private->concil_dval, ( const gchar * ) icol->data );
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -772,14 +758,14 @@ ofo_entry_get_label( const ofoEntry *entry )
 /**
  * ofo_entry_get_deffect:
  */
-const myDate *
+const GDate *
 ofo_entry_get_deffect( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const myDate * ) entry->private->effect );
+		return(( const GDate * ) &entry->private->deffect );
 	}
 
 	return( NULL );
@@ -788,14 +774,14 @@ ofo_entry_get_deffect( const ofoEntry *entry )
 /**
  * ofo_entry_get_dope:
  */
-const myDate *
+const GDate *
 ofo_entry_get_dope( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const myDate * ) entry->private->operation );
+		return(( const GDate * ) &entry->private->dope );
 	}
 
 	return( NULL );
@@ -966,16 +952,16 @@ ofo_entry_get_upd_stamp( const ofoEntry *entry )
 /**
  * ofo_entry_get_concil_dval:
  *
- * The returned #myDate object is never %NULL, but may be invalid.
+ * The returned #GDate object is never %NULL, but may be invalid.
  */
-const myDate *
+const GDate *
 ofo_entry_get_concil_dval( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const myDate * ) entry->private->concil_dval );
+		return(( const GDate * ) &entry->private->concil_dval );
 	}
 
 	return( NULL );
@@ -1050,14 +1036,14 @@ ofo_entry_set_label( ofoEntry *entry, const gchar *label )
  * ofo_entry_set_deffect:
  */
 void
-ofo_entry_set_deffect( ofoEntry *entry, const myDate *deffect )
+ofo_entry_set_deffect( ofoEntry *entry, const GDate *deffect )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 	g_return_if_fail( my_date_is_valid( deffect ));
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		my_date_set_from_date( entry->private->effect, deffect );
+		my_date_set_from_date( &entry->private->deffect, deffect );
 	}
 }
 
@@ -1065,14 +1051,14 @@ ofo_entry_set_deffect( ofoEntry *entry, const myDate *deffect )
  * ofo_entry_set_dope:
  */
 void
-ofo_entry_set_dope( ofoEntry *entry, const myDate *dope )
+ofo_entry_set_dope( ofoEntry *entry, const GDate *dope )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 	g_return_if_fail( my_date_is_valid( dope ));
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		my_date_set_from_date( entry->private->operation, dope );
+		my_date_set_from_date( &entry->private->dope, dope );
 	}
 }
 
@@ -1233,18 +1219,13 @@ entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp )
  * The reconciliation may be unset by setting @drappro to %NULL.
  */
 void
-ofo_entry_set_concil_dval( ofoEntry *entry, const myDate *drappro )
+ofo_entry_set_concil_dval( ofoEntry *entry, const GDate *drappro )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		if( my_date_is_valid( drappro )){
-			my_date_set_from_date( entry->private->concil_dval, drappro );
-
-		} else {
-			my_date_clear( entry->private->concil_dval );
-		}
+		my_date_set_from_date( &entry->private->concil_dval, drappro );
 	}
 }
 
@@ -1282,7 +1263,7 @@ ofo_entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *concil_stamp )
  */
 gboolean
 ofo_entry_is_valid( const ofoDossier *dossier,
-							const myDate *effect, const myDate *ope, const gchar *label,
+							const GDate *deffect, const GDate *dope, const gchar *label,
 							const gchar *account, const gchar *currency, const gchar *ledger,
 							const gchar *model, gdouble debit, gdouble credit )
 {
@@ -1339,21 +1320,21 @@ ofo_entry_is_valid( const ofoDossier *dossier,
  */
 ofoEntry *
 ofo_entry_new_with_data( const ofoDossier *dossier,
-							const myDate *effect, const myDate *ope, const gchar *label,
+							const GDate *deffect, const GDate *dope, const gchar *label,
 							const gchar *ref, const gchar *account,
 							const gchar *currency, const gchar *ledger,
 							const gchar *model, gdouble debit, gdouble credit )
 {
 	ofoEntry *entry;
 
-	if( !ofo_entry_is_valid( dossier, effect, ope, label, account, currency, ledger, model, debit, credit )){
+	if( !ofo_entry_is_valid( dossier, deffect, dope, label, account, currency, ledger, model, debit, credit )){
 		return( NULL );
 	}
 
 	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
 
-	entry->private->effect = my_date_new_from_date( effect );
-	entry->private->operation = my_date_new_from_date( ope );
+	my_date_set_from_date( &entry->private->deffect, deffect );
+	my_date_set_from_date( &entry->private->dope, dope );
 	entry->private->label = g_strdup( label );
 	entry->private->ref = g_strdup( ref );
 	entry->private->account = g_strdup( account );
@@ -1713,7 +1694,7 @@ do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd )
 {
 	GString *query;
 	gchar *where, *sdrappro, *stamp_str;
-	const myDate *rappro;
+	const GDate *rappro;
 	gboolean ok;
 	GTimeVal stamp;
 
@@ -1765,14 +1746,14 @@ ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
  * is detected.
  */
 gboolean
-ofo_entry_validate_by_ledger( const ofoDossier *dossier, const gchar *mnemo, const myDate *effect )
+ofo_entry_validate_by_ledger( const ofoDossier *dossier, const gchar *mnemo, const GDate *deffect )
 {
 	gchar *where;
 	gchar *query, *str;
 	GSList *result, *irow;
 	ofoEntry *entry;
 
-	str = my_date_to_str( effect, MY_DATE_SQL );
+	str = my_date_to_str( deffect, MY_DATE_SQL );
 	where = g_strdup_printf(
 					"	WHERE ENT_LEDGER='%s' AND ENT_STATUS=%d AND ENT_DEFFECT<='%s'",
 							mnemo, ENT_STATUS_ROUGH, str );
@@ -1958,7 +1939,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 	gint count;
 	gint errors;
 	const gchar *str;
-	myDate *date;
+	GDate date;
 	gchar *currency;
 	ofoAccount *account;
 	gdouble debit, credit;
@@ -1984,24 +1965,24 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 			/* operation date */
 			ico=ili->data;
 			str = ( const gchar * ) ico->data;
-			date = my_date_new_from_sql( str );
-			if( !my_date_is_valid( date )){
+			my_date_set_from_sql( &date, str );
+			if( !my_date_is_valid( &date )){
 				g_warning( "%s: (line %d) invalid operation date: %s", thisfn, count, str );
 				errors += 1;
 				continue;
 			}
-			entry->private->operation = date;
+			entry->private->dope = date;
 
 			/* effect date */
 			ico=ico->next;
 			str = ( const gchar * ) ico->data;
-			date = my_date_new_from_sql( str );
-			if( !my_date_is_valid( date )){
+			my_date_set_from_sql( &date, str );
+			if( !my_date_is_valid( &date )){
 				g_warning( "%s: (line %d) invalid effect date: %s", thisfn, count, str );
 				errors += 1;
 				continue;
 			}
-			entry->private->effect = date;
+			entry->private->deffect = date;
 
 			/* entry label */
 			ico = ico->next;

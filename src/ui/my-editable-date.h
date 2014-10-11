@@ -41,21 +41,23 @@
  * - several formats available
  */
 
-#include "api/my-date.h"
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-void          my_editable_date_init      ( GtkEditable *editable );
+void         my_editable_date_init            ( GtkEditable *editable );
 
-void          my_editable_date_set_format( GtkEditable *editable, myDateFormat format );
+void         my_editable_date_set_format      ( GtkEditable *editable, myDateFormat format );
 
-const myDate *my_editable_date_get_date  ( GtkEditable *editable, gboolean *valid );
+void         my_editable_date_set_date        ( GtkEditable *editable, const GDate *date );
 
-void          my_editable_date_set_date  ( GtkEditable *editable, const myDate *date );
+void         my_editable_date_set_label       ( GtkEditable *editable, GtkWidget *label, myDateFormat format );
+
+const GDate *my_editable_date_get_date        ( GtkEditable *editable, gboolean *valid );
 
 /*gchar       *my_editable_date_get_string( GtkEditable *editable, myDateFormat format );*/
 
-void          my_editable_date_render    ( GtkEditable *editable );
+void         my_editable_date_render          ( GtkEditable *editable );
 
 G_END_DECLS
 

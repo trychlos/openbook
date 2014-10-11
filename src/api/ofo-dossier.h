@@ -32,14 +32,10 @@
  * @short_description: #ofoDossier class definition.
  * @include: api/ofo-dossier.h
  *
- * This class implements the Dossier behavior, including the general
+ * This file defines the #ofoDossier public API, including the general
  * DB definition.
- *
- * The dossier maintains the GList * list of accounts. It loads it on
- * demand, et releases it on instance dispose.
  */
 
-#include "api/my-date.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofo-sgbd-def.h"
 
@@ -80,21 +76,23 @@ const gchar    *ofo_dossier_get_upd_user              ( const ofoDossier *dossie
 const GTimeVal *ofo_dossier_get_upd_stamp             ( const ofoDossier *dossier );
 
 gint            ofo_dossier_get_current_exe_id        ( const ofoDossier *dossier );
-const myDate   *ofo_dossier_get_current_exe_begin     ( const ofoDossier *dossier );
-const myDate   *ofo_dossier_get_current_exe_end       ( const ofoDossier *dossier );
+const GDate    *ofo_dossier_get_current_exe_begin     ( const ofoDossier *dossier );
+const GDate    *ofo_dossier_get_current_exe_end       ( const ofoDossier *dossier );
 gint            ofo_dossier_get_current_exe_last_entry( const ofoDossier *dossier );
 
-gint            ofo_dossier_get_exe_by_date           ( const ofoDossier *dossier, const myDate *date );
+gint            ofo_dossier_get_exe_by_date           ( const ofoDossier *dossier, const GDate *date );
 
-const myDate   *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier, gint exe_id );
-const myDate   *ofo_dossier_get_exe_end               ( const ofoDossier *dossier, gint exe_id );
+const GDate    *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier, gint exe_id );
+const GDate    *ofo_dossier_get_exe_end               ( const ofoDossier *dossier, gint exe_id );
 
 const gchar    *ofo_dossier_get_exe_status_label      ( ofaDossierStatus status );
 
-myDate         *ofo_dossier_get_last_closed_exercice  ( const ofoDossier *dossier );
+GDate          *ofo_dossier_get_last_closed_exercice  ( const ofoDossier *dossier );
 gint            ofo_dossier_get_next_entry_number     ( const ofoDossier *dossier );
 
-gboolean        ofo_dossier_is_valid                  ( const gchar *label, gint nb_months, const gchar *currency );
+gboolean        ofo_dossier_is_valid                  ( const gchar *label,
+															gint nb_months, const gchar *currency,
+															const GDate *begin, const GDate *end );
 
 void            ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
 void            ofo_dossier_set_exercice_length       ( ofoDossier *dossier, gint nb_months );
@@ -102,8 +100,8 @@ void            ofo_dossier_set_default_currency      ( ofoDossier *dossier, con
 void            ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
 
 void            ofo_dossier_set_current_exe_id        ( const ofoDossier *dossier, gint exe_id );
-void            ofo_dossier_set_current_exe_begin     ( const ofoDossier *dossier, const myDate *date );
-void            ofo_dossier_set_current_exe_end       ( const ofoDossier *dossier, const myDate *date );
+void            ofo_dossier_set_current_exe_begin     ( const ofoDossier *dossier, const GDate *date );
+void            ofo_dossier_set_current_exe_end       ( const ofoDossier *dossier, const GDate *date );
 void            ofo_dossier_set_current_exe_last_entry( const ofoDossier *dossier, gint number );
 
 gboolean        ofo_dossier_dbmodel_update            ( ofoSgbd *sgbd, const gchar *name, const gchar *account );

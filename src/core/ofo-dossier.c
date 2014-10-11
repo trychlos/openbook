@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
@@ -79,8 +80,8 @@ struct _ofoDossierPrivate {
 
 struct _sDetailExe {
 	gint             exe_id;
-	myDate          *exe_begin;
-	myDate          *exe_end;
+	GDate            exe_begin;
+	GDate            exe_end;
 	gint             last_entry;
 	ofaDossierStatus status;
 };
@@ -112,7 +113,7 @@ static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account );
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
 static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
-static sDetailExe *get_exe_by_date( const ofoDossier *dossier, const myDate *date );
+static sDetailExe *get_exe_by_date( const ofoDossier *dossier, const GDate *date );
 static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
@@ -126,14 +127,6 @@ static gboolean    dossier_read_exercices( ofoDossier *dossier );
 static gboolean    dossier_do_update( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd );
-
-static void
-free_detail_exe( sDetailExe *detail )
-{
-	g_object_unref( detail->exe_begin );
-	g_object_unref( detail->exe_end );
-	g_free( detail );
-}
 
 static void
 dossier_finalize( GObject *instance )
@@ -156,7 +149,7 @@ dossier_finalize( GObject *instance )
 	g_free( priv->notes );
 	g_free( priv->upd_user );
 
-	g_list_free_full( priv->exes, ( GDestroyNotify ) free_detail_exe );
+	g_list_free_full( priv->exes, ( GDestroyNotify ) g_free );
 
 	g_free( priv );
 
@@ -635,7 +628,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	BAT_BEGIN     DATE                        COMMENT 'Begin date of the transaction list',"
 			"	BAT_END       DATE                        COMMENT 'End date of the transaction list',"
 			"	BAT_RIB       VARCHAR(80)                 COMMENT 'Bank provided RIB',"
-			"	BAT_DEVISE    VARCHAR(3)                  COMMENT 'Account currency',"
+			"	BAT_CURRENCY  VARCHAR(3)                  COMMENT 'Account currency',"
 			"	BAT_SOLDE     DECIMAL(15,5)               COMMENT 'Signed balance of the account',"
 			"	BAT_NOTES     VARCHAR(4096)               COMMENT 'Import notes',"
 			"	BAT_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of import',"
@@ -648,13 +641,13 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             INTEGER  NOT NULL      COMMENT 'Intern import identifier',"
 			"	BAT_LINE_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern imported line identifier',"
-			"	BAT_LINE_VALEUR    DATE                   COMMENT 'Effect date',"
-			"	BAT_LINE_OPE       DATE                   COMMENT 'Operation date',"
+			"	BAT_LINE_DEFFECT   DATE                   COMMENT 'Effect date',"
+			"	BAT_LINE_DOPE      DATE                   COMMENT 'Operation date',"
 			"	BAT_LINE_REF       VARCHAR(80)            COMMENT 'Bank reference',"
 			"	BAT_LINE_LABEL     VARCHAR(80)            COMMENT 'Line label',"
-			"	BAT_LINE_DEVISE    VARCHAR(3)             COMMENT 'Line currency',"
-			"	BAT_LINE_MONTANT   DECIMAL(15,5)          COMMENT 'Signed amount of the line',"
-			"	BAT_LINE_ECR       INTEGER                COMMENT 'Reciliated entry',"
+			"	BAT_LINE_CURRENCY  VARCHAR(3)             COMMENT 'Line currency',"
+			"	BAT_LINE_AMOUNT    DECIMAL(15,5)          COMMENT 'Signed amount of the line',"
+			"	BAT_LINE_ENTRY     INTEGER                COMMENT 'Reciliated entry',"
 			"	BAT_LINE_UPD_USER  VARCHAR(20)            COMMENT 'User responsible of the reconciliation',"
 			"	BAT_LINE_UPD_STAMP TIMESTAMP              COMMENT 'Reconciliation timestamp'"
 			")", TRUE )){
@@ -1223,17 +1216,17 @@ get_exe_by_id( const ofoDossier *dossier, gint exe_id )
 }
 
 static sDetailExe *
-get_exe_by_date( const ofoDossier *dossier, const myDate *date )
+get_exe_by_date( const ofoDossier *dossier, const GDate *date )
 {
 	GList *exe;
 	sDetailExe *sexe;
 
 	for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 		sexe = ( sDetailExe * ) exe->data;
-		if( !my_date_is_valid( sexe->exe_begin ) || my_date_compare( sexe->exe_begin, date ) > 0 ){
+		if( !my_date_is_valid( &sexe->exe_begin ) || my_date_compare( &sexe->exe_begin, date ) > 0 ){
 			continue;
 		}
-		if( !my_date_is_valid( sexe->exe_end ) || my_date_compare( sexe->exe_end, date ) < 0 ){
+		if( !my_date_is_valid( &sexe->exe_end ) || my_date_compare( &sexe->exe_end, date ) < 0 ){
 			continue;
 		}
 		return( sexe );
@@ -1271,7 +1264,7 @@ ofo_dossier_get_current_exe_id( const ofoDossier *dossier )
  *
  * Returns: the beginning date of the current exercice.
  */
-const myDate *
+const GDate *
 ofo_dossier_get_current_exe_begin( const ofoDossier *dossier )
 {
 	sDetailExe *sexe;
@@ -1282,7 +1275,7 @@ ofo_dossier_get_current_exe_begin( const ofoDossier *dossier )
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			return(( const myDate * ) sexe->exe_begin );
+			return(( const GDate * ) &sexe->exe_begin );
 		}
 	}
 
@@ -1294,7 +1287,7 @@ ofo_dossier_get_current_exe_begin( const ofoDossier *dossier )
  *
  * Returns: the ending date of the current exercice.
  */
-const myDate *
+const GDate *
 ofo_dossier_get_current_exe_end( const ofoDossier *dossier )
 {
 	sDetailExe *sexe;
@@ -1305,7 +1298,7 @@ ofo_dossier_get_current_exe_end( const ofoDossier *dossier )
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			return(( const myDate * ) sexe->exe_end );
+			return(( const GDate * ) &sexe->exe_end );
 		}
 	}
 
@@ -1343,7 +1336,7 @@ ofo_dossier_get_current_exe_last_entry( const ofoDossier *dossier )
  * Default to the current exercice identifier.
  */
 gint
-ofo_dossier_get_exe_by_date( const ofoDossier *dossier, const myDate *date )
+ofo_dossier_get_exe_by_date( const ofoDossier *dossier, const GDate *date )
 {
 	sDetailExe *sexe;
 
@@ -1367,7 +1360,7 @@ ofo_dossier_get_exe_by_date( const ofoDossier *dossier, const myDate *date )
  *
  * Returns: the date of the beginning of the specified exercice.
  */
-const myDate *
+const GDate *
 ofo_dossier_get_exe_begin( const ofoDossier *dossier, gint exe_id )
 {
 	sDetailExe *sexe;
@@ -1378,7 +1371,7 @@ ofo_dossier_get_exe_begin( const ofoDossier *dossier, gint exe_id )
 
 		sexe = get_exe_by_id( dossier, exe_id );
 		if( sexe ){
-			return(( const myDate * ) sexe->exe_begin );
+			return(( const GDate * ) &sexe->exe_begin );
 		}
 	}
 
@@ -1390,7 +1383,7 @@ ofo_dossier_get_exe_begin( const ofoDossier *dossier, gint exe_id )
  *
  * Returns: the date of the end of the specified exercice.
  */
-const myDate *
+const GDate *
 ofo_dossier_get_exe_end( const ofoDossier *dossier, gint exe_id )
 {
 	sDetailExe *sexe;
@@ -1401,7 +1394,7 @@ ofo_dossier_get_exe_end( const ofoDossier *dossier, gint exe_id )
 
 		sexe = get_exe_by_id( dossier, exe_id );
 		if( sexe ){
-			return(( const myDate * ) sexe->exe_end );
+			return(( const GDate * ) &sexe->exe_end );
 		}
 	}
 
@@ -1436,30 +1429,32 @@ ofo_dossier_get_exe_status_label( ofaDossierStatus status )
  * ofo_dossier_get_last_closed_exercice:
  *
  * Returns: the last exercice closing date, as a newly allocated
- * #myDate object which should be g_object_unref() by the caller.
- * If the dossier has never been closed, a cleared (thus invalid, but
- * not null) date is returned.
+ * #GDate structure which should be g_free() by the caller,
+ * or %NULL if the dossier has never been closed.
  */
-myDate *
+GDate *
 ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 {
 	GList *exe;
 	sDetailExe *sexe;
-	myDate *dmax;
+	GDate *dmax;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
-	dmax = my_date_new();
+	dmax = NULL;
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 			sexe = ( sDetailExe * ) exe->data;
-			if( my_date_is_valid( sexe->exe_end )){
-				if( !my_date_is_valid( dmax ) ||
-						my_date_compare( sexe->exe_end, dmax ) > 0 ){
-
-					my_date_set_from_date( dmax, sexe->exe_end );
+			if( my_date_is_valid( &sexe->exe_end )){
+				if( dmax ){
+					if( my_date_compare( &sexe->exe_end, dmax ) > 0 ){
+						my_date_set_from_date( dmax, &sexe->exe_end );
+					}
+				} else {
+					dmax = g_new0( GDate, 1 );
+					my_date_set_from_date( dmax, &sexe->exe_end );
 				}
 			}
 		}
@@ -1505,11 +1500,19 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
  * ofo_dossier_is_valid:
  */
 gboolean
-ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency )
+ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency, const GDate *begin, const GDate *end )
 {
-	return( label && g_utf8_strlen( label, -1 ) &&
-				nb_months > 0 &&
-				currency && g_utf8_strlen( currency, -1 ));
+	gboolean valid;
+
+	valid = label && g_utf8_strlen( label, -1 );
+	valid &= nb_months > 0;
+	valid &= currency && g_utf8_strlen( currency, -1 );
+
+	if( my_date_is_valid( begin ) && my_date_is_valid( end )){
+		valid &= my_date_compare( begin, end ) < 0;
+	}
+
+	return( valid );
 }
 
 /**
@@ -1628,7 +1631,7 @@ ofo_dossier_set_current_exe_id( const ofoDossier *dossier, gint exe_id )
  * ofo_dossier_set_current_exe_begin:
  */
 void
-ofo_dossier_set_current_exe_begin( const ofoDossier *dossier, const myDate *date )
+ofo_dossier_set_current_exe_begin( const ofoDossier *dossier, const GDate *date )
 {
 	sDetailExe *sexe;
 
@@ -1638,7 +1641,7 @@ ofo_dossier_set_current_exe_begin( const ofoDossier *dossier, const myDate *date
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			my_date_set_from_date( sexe->exe_begin, date );
+			my_date_set_from_date( &sexe->exe_begin, date );
 		}
 	}
 }
@@ -1647,7 +1650,7 @@ ofo_dossier_set_current_exe_begin( const ofoDossier *dossier, const myDate *date
  * ofo_dossier_set_current_exe_end:
  */
 void
-ofo_dossier_set_current_exe_end( const ofoDossier *dossier, const myDate *date )
+ofo_dossier_set_current_exe_end( const ofoDossier *dossier, const GDate *date )
 {
 	sDetailExe *sexe;
 
@@ -1657,7 +1660,7 @@ ofo_dossier_set_current_exe_end( const ofoDossier *dossier, const myDate *date )
 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
-			my_date_set_from_date( sexe->exe_end, date );
+			my_date_set_from_date( &sexe->exe_end, date );
 		}
 	}
 }
@@ -1831,9 +1834,9 @@ dossier_read_exercices( ofoDossier *dossier )
 
 			sexe->exe_id = atoi(( gchar * ) icol->data );
 			icol = icol->next;
-			sexe->exe_begin = my_date_new_from_sql(( const gchar * ) icol->data );
+			my_date_set_from_sql( &sexe->exe_begin, ( const gchar * ) icol->data );
 			icol = icol->next;
-			sexe->exe_end = my_date_new_from_sql(( const gchar * ) icol->data );
+			my_date_set_from_sql( &sexe->exe_end, ( const gchar * ) icol->data );
 			icol = icol->next;
 			if( icol->data ){
 				sexe->last_entry = atoi(( gchar * ) icol->data );
@@ -1943,13 +1946,13 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 	GString *query;
 	gchar *sdeb, *sfin;
 	gboolean ok;
-	const myDate *date;
+	const GDate *date;
 
 	ok = FALSE;
 
 	query = g_string_new( "UPDATE OFA_T_DOSSIER_EXE SET " );
 
-	date = ( const myDate * ) dossier->private->current->exe_begin;
+	date = ( const GDate * ) &dossier->private->current->exe_begin;
 	if( my_date_is_valid( date )){
 		sdeb = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "DOS_EXE_BEGIN='%s',", sdeb );
@@ -1958,7 +1961,7 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 		query = g_string_append( query, "DOS_EXE_BEGIN=NULL," );
 	}
 
-	date = ( const myDate * ) &dossier->private->current->exe_end;
+	date = ( const GDate * ) &dossier->private->current->exe_end;
 	if( my_date_is_valid( date )){
 		sfin = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "DOS_EXE_END='%s' ", sfin );
@@ -2021,8 +2024,8 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	for( exe=dossier->private->exes ; exe ; exe=exe->next ){
 		sexe = ( sDetailExe * ) exe->data;
 
-		sbegin = my_date_to_str( sexe->exe_begin, MY_DATE_SQL );
-		send = my_date_to_str( sexe->exe_end, MY_DATE_SQL );
+		sbegin = my_date_to_str( &sexe->exe_begin, MY_DATE_SQL );
+		send = my_date_to_str( &sexe->exe_end, MY_DATE_SQL );
 
 		str = g_strdup_printf( "2:%s;%s;%d;%d",
 				sbegin,

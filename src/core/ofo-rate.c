@@ -81,8 +81,6 @@ static gboolean         rate_do_drop_content( const ofoSgbd *sgbd );
 static void
 rate_free_validity( ofsRateValidity *sval )
 {
-	g_object_unref( sval->begin );
-	g_object_unref( sval->end );
 	g_free( sval );
 }
 
@@ -233,9 +231,9 @@ rate_load_dataset( void )
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			valid = g_new0( ofsRateValidity, 1 );
-			valid->begin = my_date_new_from_sql(( const gchar * ) icol->data );
+			my_date_set_from_sql( &valid->begin, ( const gchar * ) icol->data );
 			icol = icol->next;
-			valid->end = my_date_new_from_sql(( const gchar * ) icol->data );
+			my_date_set_from_sql( &valid->end, ( const gchar * ) icol->data );
 			icol = icol->next;
 			valid->rate = my_double_from_sql(( const gchar * ) icol->data );
 			rate_val_add_detail( rate, valid );
@@ -383,14 +381,14 @@ ofo_rate_get_upd_stamp( const ofoRate *rate )
  * ofo_rate_get_min_valid:
  *
  * Returns the smallest beginning date, all validities included.
- * The returned #myDate object may be %NULL or invalid if it is
+ * The returned #GDate object may be invalid if it is
  * infinite in the past.
  */
-const myDate *
+const GDate *
 ofo_rate_get_min_valid( const ofoRate *rate )
 {
 	GList *iv;
-	const myDate *min;
+	const GDate *min;
 	ofsRateValidity *sval;
 
 	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
@@ -400,9 +398,9 @@ ofo_rate_get_min_valid( const ofoRate *rate )
 		for (min=NULL, iv=rate->private->validities ; iv ; iv=iv->next ){
 			sval = ( ofsRateValidity * ) iv->data;
 			if( !min ){
-				min = sval->begin;
-			} else if( my_date_compare_ex( sval->begin, min, TRUE ) < 0 ){
-				min = sval->begin;
+				min = &sval->begin;
+			} else if( my_date_compare_ex( &sval->begin, min, TRUE ) < 0 ){
+				min = &sval->begin;
 			}
 		}
 
@@ -417,14 +415,14 @@ ofo_rate_get_min_valid( const ofoRate *rate )
  * ofo_rate_get_max_valid:
  *
  * Returns the greatest ending date, all validities included.
- * The returned #myDate object may be %NULL or invalid if it is
+ * The returned #GDate object may be %NULL or invalid if it is
  * infinite in the future.
  */
-const myDate *
+const GDate *
 ofo_rate_get_max_valid( const ofoRate *rate )
 {
 	GList *iv;
-	const myDate *max;
+	const GDate *max;
 	ofsRateValidity *sval;
 
 	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
@@ -434,9 +432,9 @@ ofo_rate_get_max_valid( const ofoRate *rate )
 		for (max=NULL, iv=rate->private->validities ; iv ; iv=iv->next ){
 			sval = ( ofsRateValidity * ) iv->data;
 			if( !max ){
-				max = sval->end;
-			} else if( my_date_compare_ex( sval->end, max, FALSE ) > 0 ){
-				max = sval->end;
+				max = &sval->end;
+			} else if( my_date_compare_ex( &sval->end, max, FALSE ) > 0 ){
+				max = &sval->end;
 			}
 		}
 
@@ -466,7 +464,7 @@ ofo_rate_get_val_count( const ofoRate *rate )
 /**
  * ofo_rate_get_val_begin:
  */
-const myDate *
+const GDate *
 ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
 {
 	GList *nth;
@@ -479,7 +477,7 @@ ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
 		nth = g_list_nth( rate->private->validities, idx );
 		if( nth ){
 			validity = ( ofsRateValidity * ) nth->data;
-			return(( const myDate * ) validity->begin );
+			return(( const GDate * ) &validity->begin );
 		}
 	}
 
@@ -489,7 +487,7 @@ ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
 /**
  * ofo_rate_get_val_end:
  */
-const myDate *
+const GDate *
 ofo_rate_get_val_end( const ofoRate *rate, gint idx )
 {
 	GList *nth;
@@ -502,7 +500,7 @@ ofo_rate_get_val_end( const ofoRate *rate, gint idx )
 		nth = g_list_nth( rate->private->validities, idx );
 		if( nth ){
 			validity = ( ofsRateValidity * ) nth->data;
-			return(( const myDate * ) validity->end );
+			return(( const GDate * ) &validity->end );
 		}
 	}
 
@@ -541,22 +539,22 @@ ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
  * Returns the value of the rate at the given date, or zero.
  */
 gdouble
-ofo_rate_get_rate_at_date( const ofoRate *rate, const myDate *date )
+ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 {
 	GList *iva;
 	ofsRateValidity *svalid;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), 0 );
-	g_return_val_if_fail( date && MY_IS_DATE( date ), 0 );
+	g_return_val_if_fail( date, 0 );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
 		for( iva=rate->private->validities ; iva ; iva=iva->next ){
 			svalid = ( ofsRateValidity * ) iva->data;
-			if( my_date_compare_ex( svalid->begin, date, TRUE ) > 0 ){
+			if( my_date_compare_ex( &svalid->begin, date, TRUE ) > 0 ){
 				continue;
 			}
-			if( my_date_compare_ex( svalid->end, date, FALSE ) >= 0 ){
+			if( my_date_compare_ex( &svalid->end, date, FALSE ) >= 0 ){
 				return( svalid->rate );
 			}
 		}
@@ -721,7 +719,7 @@ ofo_rate_free_all_val( ofoRate *rate )
  * Add a validity record to the rate.
  */
 void
-ofo_rate_add_val( ofoRate *rate, const myDate *begin, const myDate *end, gdouble value )
+ofo_rate_add_val( ofoRate *rate, const GDate *begin, const GDate *end, gdouble value )
 {
 	ofsRateValidity *sval;
 
@@ -730,8 +728,8 @@ ofo_rate_add_val( ofoRate *rate, const myDate *begin, const myDate *end, gdouble
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
 		sval = g_new0( ofsRateValidity, 1 );
-		sval->begin = my_date_new_from_date( begin );
-		sval->end = my_date_new_from_date( end );
+		my_date_set_from_date( &sval->begin, begin );
+		my_date_set_from_date( &sval->end, end );
 		sval->rate = value;
 		rate_val_add_detail( rate, sval );
 	}
@@ -873,8 +871,8 @@ rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofoSgbd *sgbd 
 	GString *query;
 	gchar *dbegin, *dend, *amount;
 
-	dbegin = my_date_to_str( sdet->begin, MY_DATE_SQL );
-	dend = my_date_to_str( sdet->end, MY_DATE_SQL );
+	dbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
+	dend = my_date_to_str( &sdet->end, MY_DATE_SQL );
 	amount = my_double_to_sql( sdet->rate );
 
 	query = g_string_new( "INSERT INTO OFA_T_RATES_VAL " );
@@ -1083,29 +1081,29 @@ static gint
 rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent )
 {
 	/* does 'a' start from the infinite ? */
-	if( !my_date_is_valid( a->begin )){
+	if( !my_date_is_valid( &a->begin )){
 		/* 'a' starts from the infinite */
-		if( !my_date_is_valid( b->begin )){
+		if( !my_date_is_valid( &b->begin )){
 			/* 'bi-bi' case
 			 * the two dates start from the infinite: this is not
 			 * consistent - compare the end dates */
 			if( consistent ){
 				*consistent = FALSE;
 			}
-			if( !my_date_is_valid( a->end )){
-				return( my_date_is_valid( b->end ) ? -1 : 0 );
+			if( !my_date_is_valid( &a->end )){
+				return( my_date_is_valid( &b->end ) ? -1 : 0 );
 
-			} else if( !my_date_is_valid( b->end )){
+			} else if( !my_date_is_valid( &b->end )){
 				return( 1 );
 			} else {
-				return( my_date_compare_ex( a->end, b->end, FALSE ));
+				return( my_date_compare_ex( &a->end, &b->end, FALSE ));
 			}
 		}
 		/* 'bi-bs' case
 		 *  'a' starts from the infinite while 'b-begin' is set
 		 * for this be consistant, a must ends before b starts
 		 * whatever be the case, 'a' is said lesser than 'b' */
-		if( !my_date_is_valid( a->end ) || my_date_compare_ex( a->end, b->begin, TRUE ) >= 0 ){
+		if( !my_date_is_valid( &a->end ) || my_date_compare_ex( &a->end, &b->begin, TRUE ) >= 0 ){
 			if( consistent ){
 				*consistent = FALSE;
 			}
@@ -1114,11 +1112,11 @@ rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consiste
 	}
 
 	/* a starts from a fixed date */
-	if( !my_date_is_valid( b->begin )){
+	if( !my_date_is_valid( &b->begin )){
 		/* 'bs-bi' case
 		 * 'b' is said lesser than 'a'
 		 * for this be consistent, 'b' must ends before 'a' starts */
-		if( !my_date_is_valid( b->end ) || my_date_compare_ex( b->end, a->begin, TRUE ) >= 0 ){
+		if( !my_date_is_valid( &b->end ) || my_date_compare_ex( &b->end, &a->begin, TRUE ) >= 0 ){
 			if( consistent ){
 				*consistent = FALSE;
 			}
@@ -1128,13 +1126,13 @@ rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consiste
 
 	/* 'bs-bs' case
 	 * 'a' and 'b' both starts from a set date: b must ends before 'a' starts */
-	if( !my_date_is_valid( b->end ) || my_date_compare_ex( b->end, a->begin, TRUE ) >= 0 ){
+	if( !my_date_is_valid( &b->end ) || my_date_compare_ex( &b->end, &a->begin, TRUE ) >= 0 ){
 		if( consistent ){
 			*consistent = FALSE;
 		}
 	}
 
-	return( my_date_compare( a->begin, a->end ));
+	return( my_date_compare( &a->begin, &a->end ));
 }
 
 /**
@@ -1185,8 +1183,8 @@ ofo_rate_get_csv( const ofoDossier *dossier )
 		for( det=rate->private->validities ; det ; det=det->next ){
 			sdet = ( ofsRateValidity * ) det->data;
 
-			sbegin = my_date_to_str( sdet->begin, MY_DATE_SQL );
-			send = my_date_to_str( sdet->end, MY_DATE_SQL );
+			sbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
+			send = my_date_to_str( &sdet->end, MY_DATE_SQL );
 
 			str = g_strdup_printf( "2;%s;%s;%s;%.2lf",
 					ofo_rate_get_mnemo( rate ),
@@ -1384,12 +1382,12 @@ rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnem
 	/* rate begin validity */
 	ico = ico->next;
 	str = ( const gchar * ) ico->data;
-	detail->begin = my_date_new_from_sql( str );
+	my_date_set_from_sql( &detail->begin, str );
 
 	/* rate end validity */
 	ico = ico->next;
 	str = ( const gchar * ) ico->data;
-	detail->end = my_date_new_from_sql( str );
+	my_date_set_from_sql( &detail->end, str );
 
 	/* rate rate */
 	ico = ico->next;

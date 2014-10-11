@@ -36,6 +36,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
+#include "ui/my-editable-date.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-main-window.h"
@@ -54,7 +55,7 @@ struct _ofaPrintReconcilPrivate {
 	/* internals
 	 */
 	ofoAccount    *account;
-	myDate        *date;
+	GDate          date;
 	GList         *entries;
 	gdouble        account_solde;
 
@@ -62,6 +63,7 @@ struct _ofaPrintReconcilPrivate {
 	 */
 	GtkEntry      *account_entry;
 	GtkLabel      *account_label;
+	GtkWidget     *date_entry;
 	GtkLabel      *date_label;
 
 	/* other datas
@@ -214,6 +216,7 @@ ofa_print_reconcil_init( ofaPrintReconcil *self )
 	self->private->dispose_has_run = FALSE;
 
 	self->private->entries = NULL;
+	my_date_clear( &self->private->date );
 }
 
 static void
@@ -328,12 +331,14 @@ static GObject*
 on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 {
 	static const gchar *thisfn = "ofa_print_reconcil_on_create_custom_widget";
+	ofaPrintReconcilPrivate *priv;
 	GtkWidget *box, *frame;
 	GtkWidget *entry, *button, *label;
-	myDateParse parms;
 
 	g_debug( "%s: operation=%p, self=%p",
 			thisfn, ( void * ) operation, ( void * ) self );
+
+	priv = self->private;
 
 	box = my_utils_builder_load_from_path( st_ui_xml, "box-reconcil" );
 	frame = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "frame-reconcil" );
@@ -344,7 +349,7 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "account-entry" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), self );
-	self->private->account_entry = GTK_ENTRY( entry );
+	priv->account_entry = GTK_ENTRY( entry );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "account-select" );
 	g_return_val_if_fail( button && GTK_IS_BUTTON( button ), NULL );
@@ -352,15 +357,14 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "account-label" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
-	self->private->account_label = GTK_LABEL( label );
+	priv->account_label = GTK_LABEL( label );
 
-	memset( &parms, '\0', sizeof( parms ));
-	parms.entry = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-entry" );
-	parms.entry_format = MY_DATE_DMYY;
-	parms.label = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-label" );
-	parms.label_format = MY_DATE_DMMM;
-	parms.date = my_date2_from_date( self->private->date );
-	my_date_parse_from_entry( &parms );
+	priv->date_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-entry" );
+	my_editable_date_init( GTK_EDITABLE( priv->date_entry ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->date_entry ), MY_DATE_DMYY );
+	my_editable_date_set_date( GTK_EDITABLE( priv->date_entry ), &priv->date );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-label" );
+	my_editable_date_set_label( GTK_EDITABLE( priv->date_entry ), label, MY_DATE_DMMM );
 
 	return( G_OBJECT( frame ));
 }
@@ -404,13 +408,13 @@ on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrin
 
 	priv = self->private;
 
-	if( my_date_is_valid( priv->date ) &&
+	if( my_date_is_valid( &priv->date ) &&
 			priv->account && OFO_IS_ACCOUNT( priv->account )){
 
 		priv->entries = ofo_entry_get_dataset_for_print_reconcil(
 								priv->dossier,
 								ofo_account_get_number( priv->account ),
-								priv->date );
+								&priv->date );
 	}
 }
 
@@ -786,7 +790,7 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 		sdate = my_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
 		if( !sdate || !g_utf8_strlen( sdate, -1 )){
 			g_free( sdate );
-			sdate = my_date_to_str( priv->date, MY_DATE_DMYY );
+			sdate = my_date_to_str( &priv->date, MY_DATE_DMYY );
 		}
 		priv->account_solde = ofo_account_get_global_solde( priv->account );
 		str = g_strdup_printf(
@@ -957,7 +961,7 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	sdate = my_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
 	if( !sdate || !g_utf8_strlen( sdate, -1 )){
 		g_free( sdate );
-		sdate = my_date_to_str( priv->date, MY_DATE_DMYY );
+		sdate = my_date_to_str( &priv->date, MY_DATE_DMYY );
 	}
 	str = g_strdup_printf(
 					"Reconciliated account solde on %s is %+'.2lf",

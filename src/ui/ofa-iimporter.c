@@ -190,8 +190,6 @@ ofa_iimporter_free_output( ofaIImporterParms *parms )
 				g_free( parms->batv1.currency );
 				g_list_free_full( parms->batv1.results, ( GDestroyNotify ) free_output_sbatv1 );
 				memset( &parms->batv1, '\0', sizeof( ofaIImporterSBatv1 ));
-				g_date_clear( &parms->batv1.begin, 1 );
-				g_date_clear( &parms->batv1.end, 1 );
 			} else {
 				g_warning( "%s: IMPORTER_TYPE_BAT: version=%d", thisfn, parms->version );
 			}

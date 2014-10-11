@@ -29,7 +29,7 @@
 
 /**
  * SECTION: my_amount
- * @short_description: Miscellaneous utilities
+ * @short_description: Miscellaneous utilities for gdouble management
  * @include: api/my-double.h
  */
 

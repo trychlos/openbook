@@ -366,7 +366,9 @@
                 setters are useful, while others may be only internally
                 used
 
- 324
+ 324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
+
+ 325
 
 -----------------------------------------------------------------------
  DONE

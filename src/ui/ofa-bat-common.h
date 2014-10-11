@@ -99,15 +99,15 @@ typedef struct {
 	ofoDossier       *dossier;
 	gboolean          with_tree_view;
 	gboolean          editable;
-	ofaBatCommonCb      pfnSelection;
-	ofaBatCommonCb      pfnActivation;
+	ofaBatCommonCb    pfnSelection;
+	ofaBatCommonCb    pfnActivation;
 	gpointer          user_data;
 }
 	ofaBatCommonParms;
 
 GType         ofa_bat_common_get_type     ( void ) G_GNUC_CONST;
 
-ofaBatCommon   *ofa_bat_common_init_dialog  ( const ofaBatCommonParms *parms );
+ofaBatCommon *ofa_bat_common_init_dialog  ( const ofaBatCommonParms *parms );
 
 void          ofa_bat_common_set_bat      ( const ofaBatCommon *self, const ofoBat *bat );
 

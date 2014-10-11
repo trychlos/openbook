@@ -145,7 +145,7 @@ typedef struct {
 						/* bourso                 lcl */
 						/* excel95 excel2002 excel_tabulated */
 	GDate   dope;		/*   X         X */
-	GDate   dvaleur;	/*   X         X           X */
+	GDate   deffect;	/*   X         X           X */
 	gchar  *ref;		/*                         X */
 	gchar  *label;		/*   X         X           X */
 	gdouble amount;		/*   X         X           X */

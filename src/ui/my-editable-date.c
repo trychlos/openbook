@@ -53,10 +53,12 @@ static const sDateFormat st_formats[] = {
  * data attached to each implementor object
  */
 typedef struct {
-	myDate            *date;
+	GDate              date;
 	const sDateFormat *format;
 	gboolean           valid;			/* whether the string parses to a valid date */
 	gboolean           setting_text;
+	GtkWidget         *label;
+	myDateFormat       label_format;
 }
 	sEditableDate;
 
@@ -103,8 +105,6 @@ on_editable_weak_notify( sEditableDate *data, GObject *was_the_editable )
 	g_debug( "%s: data=%p, the_editable_was=%p",
 			thisfn, ( void * ) data, ( void * ) was_the_editable );
 
-	g_object_unref( data->date );
-
 	g_free( data );
 }
 
@@ -119,7 +119,6 @@ get_editable_date_data( GtkEditable *editable )
 		data = g_new0( sEditableDate, 1 );
 		g_object_set_data( G_OBJECT( editable ), EDITABLE_DATE_DATA, data );
 
-		data->date = my_date_new();
 		data->setting_text = FALSE;
 		my_editable_date_set_format( editable, -1 );
 
@@ -456,7 +455,8 @@ on_changed( GtkEditable *editable, sEditableDate *data )
 
 	if( !data->setting_text ){
 		text = gtk_editable_get_chars( editable, 0, -1 );
-		data->valid = my_date_set_from_str( data->date, text, data->format->date_format );
+		my_date_set_from_str( &data->date, text, data->format->date_format );
+		data->valid = my_date_is_valid( &data->date );
 		g_free( text );
 
 	} else {
@@ -486,6 +486,47 @@ on_focus_out( GtkWidget *entry, GdkEvent *event, sEditableDate *data )
 }
 
 /**
+ * my_editable_date_set_date:
+ * @editable: this #GtkEditable instance.
+ * @date: the date to be set
+ *
+ * Set up the current date.
+ */
+void
+my_editable_date_set_date( GtkEditable *editable, const GDate *date )
+{
+	sEditableDate *data;
+
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	data = get_editable_date_data( editable );
+
+	my_date_set_from_date( &data->date, date );
+
+	my_editable_date_render( editable );
+}
+
+/**
+ * my_editable_date_set_label:
+ * @editable: this #GtkEditable instance.
+ * @label: a #GtkWidget which will be updated with a representation of
+ *  the current date at each change.
+ * @format: the format of the representation
+ */
+void
+my_editable_date_set_label( GtkEditable *editable, GtkWidget *label, myDateFormat format )
+{
+	sEditableDate *data;
+
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	data = get_editable_date_data( editable );
+
+	data->label = label;
+	data->label_format = format;
+}
+
+/**
  * my_editable_date_get_date:
  * @editable: this #GtkEditable instance.
  * @valid: [out]: whether the current date is valid or not
@@ -494,10 +535,10 @@ on_focus_out( GtkWidget *entry, GdkEvent *event, sEditableDate *data )
  * not be cleared nor modified by the caller.
  *
  * The validity pointer is set depending of the currently displayed
- * string (not the currently stored #myDate which is itself only
+ * string (not the currently stored #GDate which is itself only
  * modified when the string parses to a valid date).
  */
-const myDate *
+const GDate *
 my_editable_date_get_date( GtkEditable *editable, gboolean *valid )
 {
 	sEditableDate *data;
@@ -510,28 +551,7 @@ my_editable_date_get_date( GtkEditable *editable, gboolean *valid )
 		*valid = data->valid;
 	}
 
-	return(( const myDate * ) data->date );
-}
-
-/**
- * my_editable_date_set_date:
- * @editable: this #GtkEditable instance.
- * @date: the date to be set
- *
- * Set up the current date, but only if it is a valid date.
- */
-void
-my_editable_date_set_date( GtkEditable *editable, const myDate *date )
-{
-	sEditableDate *data;
-
-	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
-
-	data = get_editable_date_data( editable );
-
-	my_date_set_from_date( data->date, date );
-
-	my_editable_date_render( editable );
+	return(( const GDate * ) &data->date );
 }
 
 #if 0
@@ -580,6 +600,8 @@ editable_date_get_string( GtkEditable *editable, sEditableDate **pdata )
  *
  * Displays the representation of the current date.
  * Should be called when the edition finishes.
+ *
+ * An invalid date is just rendered as an empty string.
  */
 void
 my_editable_date_render( GtkEditable *editable )
@@ -591,11 +613,9 @@ my_editable_date_render( GtkEditable *editable )
 
 	if( GTK_IS_ENTRY( editable )){
 		data = get_editable_date_data( editable );
-		text = my_date_to_str( data->date, data->format->date_format );
-		if( text ){
-			data->setting_text = TRUE;
-			gtk_entry_set_text( GTK_ENTRY( editable ), text );
-			g_free( text );
-		}
+		text = my_date_to_str( &data->date, data->format->date_format );
+		data->setting_text = TRUE;
+		gtk_entry_set_text( GTK_ENTRY( editable ), text );
+		g_free( text );
 	}
 }

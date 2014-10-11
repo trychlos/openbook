@@ -169,7 +169,7 @@
                             <property name="can_focus">False</property>
                             <property name="column_spacing">3</property>
                             <child>
-                              <object class="GtkEntry" id="p1-devise">
+                              <object class="GtkEntry" id="p1-currency">
                                 <property name="visible">True</property>
                                 <property name="sensitive">False</property>
                                 <property name="can_focus">True</property>

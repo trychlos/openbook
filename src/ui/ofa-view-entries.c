@@ -42,6 +42,7 @@
 #include "api/ofo-ledger.h"
 
 #include "ui/my-cell-renderer-amount.h"
+#include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-page.h"
@@ -56,8 +57,8 @@ struct _ofaViewEntriesPrivate {
 	/* internals
 	 */
 	ofoDossier      *dossier;			/* dossier */
-	myDate          *d_from;
-	myDate          *d_to;
+	GDate            d_from;
+	GDate            d_to;
 
 	/* UI
 	 */
@@ -188,7 +189,7 @@ static void           on_account_select( GtkButton *button, ofaViewEntries *self
 static void           display_entries_from_account( ofaViewEntries *self );
 static gboolean       on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self );
 static gboolean       on_d_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self );
-static gboolean       on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, myDate *date );
+static gboolean       on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date );
 static gboolean       layout_dates_is_valid( ofaViewEntries *self );
 static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
@@ -269,8 +270,6 @@ view_entries_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		/* unref object members here */
-		g_object_unref( priv->d_from );
-		g_object_unref( priv->d_to );
 	}
 
 	/* chain up to the parent class */
@@ -289,8 +288,8 @@ ofa_view_entries_init( ofaViewEntries *self )
 
 	self->private = g_new0( ofaViewEntriesPrivate, 1 );
 
-	self->private->d_from = my_date_new();
-	self->private->d_to = my_date_new();
+	my_date_clear( &self->private->d_from );
+	my_date_clear( &self->private->d_to );
 }
 
 static void
@@ -434,39 +433,32 @@ static void
 setup_dates_selection( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
-	myDateParse parms;
 
 	priv = self->private;
 
-	memset( &parms, '\0', sizeof( parms ));
-	parms.entry = my_utils_container_get_child_by_name( priv->top_box, "f2-from" );
-	parms.entry_format = MY_DATE_DMYY;
-	parms.label = my_utils_container_get_child_by_name( priv->top_box, "f2-from-label" );
-	parms.label_format = MY_DATE_DMMM;
-	parms.date = my_date2_from_date( priv->d_from );
-	my_date_parse_from_entry( &parms );
+	priv->we_from = GTK_ENTRY( my_utils_container_get_child_by_name( priv->top_box, "f2-from" ));
+	priv->wl_from = GTK_LABEL( my_utils_container_get_child_by_name( priv->top_box, "f2-from-label" ));
+
+	my_editable_date_init( GTK_EDITABLE( priv->we_from ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->we_from ), MY_DATE_DMYY );
+	my_editable_date_set_date( GTK_EDITABLE( priv->we_from ), &priv->d_from );
+	my_editable_date_set_label( GTK_EDITABLE( priv->we_from ), GTK_WIDGET( priv->wl_from ), MY_DATE_DMMM );
 
 	g_signal_connect(
-			G_OBJECT( parms.entry ),
+			G_OBJECT( priv->we_from ),
 			"focus-out-event", G_CALLBACK( on_d_from_focus_out ), self );
 
-	priv->we_from = GTK_ENTRY( parms.entry );
-	priv->wl_from = GTK_LABEL( parms.label );
+	priv->we_to = GTK_ENTRY( my_utils_container_get_child_by_name( priv->top_box, "f2-to" ));
+	priv->wl_to = GTK_LABEL( my_utils_container_get_child_by_name( priv->top_box, "f2-to-label" ));
 
-	memset( &parms, '\0', sizeof( parms ));
-	parms.entry = my_utils_container_get_child_by_name( priv->top_box, "f2-to" );
-	parms.entry_format = MY_DATE_DMYY;
-	parms.label = my_utils_container_get_child_by_name( priv->top_box, "f2-to-label" );
-	parms.label_format = MY_DATE_DMMM;
-	parms.date = my_date2_from_date( priv->d_to );
-	my_date_parse_from_entry( &parms );
+	my_editable_date_init( GTK_EDITABLE( priv->we_to ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->we_to ), MY_DATE_DMYY );
+	my_editable_date_set_date( GTK_EDITABLE( priv->we_to ), &priv->d_to );
+	my_editable_date_set_label( GTK_EDITABLE( priv->we_to ), GTK_WIDGET( priv->wl_to ), MY_DATE_DMMM );
 
 	g_signal_connect(
-			G_OBJECT( parms.entry ),
+			G_OBJECT( priv->we_to ),
 			"focus-out-event", G_CALLBACK( on_d_to_focus_out ), self );
-
-	priv->we_to = GTK_ENTRY( parms.entry );
-	priv->wl_to = GTK_LABEL( parms.label );
 }
 
 static void
@@ -880,7 +872,7 @@ display_entries_from_ledger( ofaViewEntries *self )
 
 	if( priv->jou_mnemo && layout_dates_is_valid( self )){
 		entries = ofo_entry_get_dataset_by_ledger(
-							priv->dossier, priv->jou_mnemo, priv->d_from, priv->d_to );
+							priv->dossier, priv->jou_mnemo, &priv->d_from, &priv->d_to );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
 	}
@@ -938,7 +930,7 @@ display_entries_from_account( ofaViewEntries *self )
 
 	if( priv->acc_number && layout_dates_is_valid( self )){
 		entries = ofo_entry_get_dataset_by_account(
-							priv->dossier, priv->acc_number, priv->d_from, priv->d_to );
+							priv->dossier, priv->acc_number, &priv->d_from, &priv->d_to );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
 	}
@@ -952,7 +944,7 @@ display_entries_from_account( ofaViewEntries *self )
 static gboolean
 on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
 {
-	return( on_date_focus_out( self, entry, self->private->d_from ));
+	return( on_date_focus_out( self, entry, &self->private->d_from ));
 }
 
 /*
@@ -963,18 +955,13 @@ on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
 static gboolean
 on_d_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
 {
-	return( on_date_focus_out( self, entry, self->private->d_to ));
+	return( on_date_focus_out( self, entry, &self->private->d_to ));
 }
 
 static gboolean
-on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, myDate *date )
+on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date )
 {
-	const gchar *text;
-
-	text = gtk_entry_get_text( entry );
-	if( !text || !g_utf8_strlen( text, -1 )){
-		my_date_clear( date );
-	}
+	my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( entry ), NULL ));
 
 	refresh_display( self );
 
@@ -994,18 +981,18 @@ layout_dates_is_valid( ofaViewEntries *self )
 	priv = self->private;
 
 	str = gtk_entry_get_text( priv->we_from );
-	if( str && g_utf8_strlen( str, -1 ) && !my_date_is_valid( priv->d_from )){
+	if( str && g_utf8_strlen( str, -1 ) && !my_date_is_valid( &priv->d_from )){
 		return( FALSE );
 	}
 
 	str = gtk_entry_get_text( priv->we_to );
-	if( str && g_utf8_strlen( str, -1 ) && !my_date_is_valid( priv->d_to )){
+	if( str && g_utf8_strlen( str, -1 ) && !my_date_is_valid( &priv->d_to )){
 		return( FALSE );
 	}
 
-	if( my_date_is_valid( priv->d_from ) &&
-			my_date_is_valid( priv->d_to ) &&
-			my_date_compare( priv->d_from, priv->d_to ) > 0 ){
+	if( my_date_is_valid( &priv->d_from ) &&
+			my_date_is_valid( &priv->d_to ) &&
+			my_date_compare( &priv->d_from, &priv->d_to ) > 0 ){
 		return( FALSE );
 	}
 
@@ -1153,18 +1140,14 @@ display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
 {
 	GtkTreeIter iter;
 	gchar *sdope, *sdeff, *sdeb, *scre, *srappro, *status;
-	const myDate *d;
+	const GDate *d;
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
 	sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
 	scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
 	d = ofo_entry_get_concil_dval( entry );
-	if( my_date_is_valid( d )){
-		srappro = my_date_to_str( d, MY_DATE_DMYY );
-	} else {
-		srappro = g_strdup( "" );
-	}
+	srappro = my_date_to_str( d, MY_DATE_DMYY );
 	status = g_strdup_printf( "%d", ofo_entry_get_status( entry ));
 
 	gtk_list_store_insert_with_values(
@@ -1308,7 +1291,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 	gboolean visible;
 	ofoEntry *entry;
 	ofaEntryStatus status;
-	const myDate *deffect;
+	const GDate *deffect;
 
 	priv = self->private;
 	visible = FALSE;
@@ -1335,8 +1318,8 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 
 	if( entry ){
 		deffect = ofo_entry_get_deffect( entry );
-		visible &= !my_date_is_valid( priv->d_from ) || my_date_compare( priv->d_from, deffect ) <= 0;
-		visible &= !my_date_is_valid( priv->d_to ) || my_date_compare( priv->d_to, deffect ) >= 0;
+		visible &= !my_date_is_valid( &priv->d_from ) || my_date_compare( &priv->d_from, deffect ) <= 0;
+		visible &= !my_date_is_valid( &priv->d_to ) || my_date_compare( &priv->d_to, deffect ) >= 0;
 	}
 
 	return( visible );
@@ -1433,21 +1416,13 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 
 		/* start by setting the from/to dates as these changes do not
 		 * automatically trigger a display refresh */
-		if( begin && g_date_valid( begin )){
-			str = my_date2_to_str( begin, MY_DATE_DMYY );
-			gtk_entry_set_text( priv->we_from, str );
-			g_free( str );
-		} else {
-			gtk_entry_set_text( priv->we_from, "" );
-		}
+		str = my_date_to_str( begin, MY_DATE_DMYY );
+		gtk_entry_set_text( priv->we_from, str );
+		g_free( str );
 
-		if( end && g_date_valid( end )){
-			str = my_date2_to_str( end, MY_DATE_DMYY );
-			gtk_entry_set_text( priv->we_to, str );
-			g_free( str );
-		} else {
-			gtk_entry_set_text( priv->we_to, "" );
-		}
+		str = my_date_to_str( end, MY_DATE_DMYY );
+		gtk_entry_set_text( priv->we_to, str );
+		g_free( str );
 
 		/* then setup the general selection: changes on theses entries
 		 * will automativally trigger a display refresh */
@@ -1707,8 +1682,7 @@ static gboolean
 check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *sope, *str, *mnemo, *msg, *msg2, *msg3;
-	myDate *dope, *deff, *last_close, *close_exe;
-	const myDate *close_ledger;
+	GDate dope, deff, last_close, *close_exe, *close_ledger;
 	ofoLedger *ledger;
 	gboolean is_valid;
 
@@ -1718,29 +1692,28 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 	if( sope && g_utf8_strlen( sope, -1 ) &&
 			str && g_utf8_strlen( str, -1 ) && mnemo && g_utf8_strlen( mnemo, -1 )){
 
-		dope = my_date_new_from_str( sope, MY_DATE_DMYY );
-		if( my_date_is_valid( dope )){
+		my_date_set_from_str( &dope, sope, MY_DATE_DMYY );
+		if( my_date_is_valid( &dope )){
 
-			deff = my_date_new_from_str( str, MY_DATE_DMYY );
-			if( my_date_is_valid( deff ) && my_date_compare( deff, dope ) >= 0 ){
-				last_close = my_date_new();
+			my_date_set_from_str( &deff, str, MY_DATE_DMYY );
+			if( my_date_is_valid( &deff ) && my_date_compare( &deff, &dope ) >= 0 ){
 				close_exe = ofo_dossier_get_last_closed_exercice( self->private->dossier );
 				if( my_date_is_valid( close_exe )){
-					my_date_set_from_date( last_close, close_exe );
+					my_date_set_from_date( &last_close, close_exe );
 				}
 				ledger = ofo_ledger_get_by_mnemo( self->private->dossier, mnemo );
 				if( ledger ){
 					close_ledger = ofo_ledger_get_last_closing( ledger );
 					if( my_date_is_valid( close_ledger )){
-						if( !my_date_is_valid( last_close ) || my_date_compare( close_ledger, last_close ) > 0 ){
-							my_date_set_from_date( last_close, close_ledger );
+						if( !my_date_is_valid( &last_close ) || my_date_compare( close_ledger, &last_close ) > 0 ){
+							my_date_set_from_date( &last_close, close_ledger );
 						}
 					}
-					if( !my_date_is_valid( last_close ) || my_date_compare( deff, last_close ) > 0 ){
+					if( !my_date_is_valid( &last_close ) || my_date_compare( &deff, &last_close ) > 0 ){
 						is_valid = TRUE;
 					} else {
-						msg2 = my_date_to_str( last_close, MY_DATE_DMYY );
-						msg3 = my_date_to_str( deff, MY_DATE_DMYY );
+						msg2 = my_date_to_str( &last_close, MY_DATE_DMYY );
+						msg3 = my_date_to_str( &deff, MY_DATE_DMYY );
 						msg = g_strdup_printf( _( "Effect date (%s) lesser than last closing date (%s)" ), msg3, msg2 );
 						set_comment( self, msg );
 						g_free( msg );
@@ -1752,18 +1725,14 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 					set_comment( self, msg );
 					g_free( msg );
 				}
-				g_object_unref( last_close );
-				g_object_unref( close_exe );
 
 			} else {
 				set_comment( self, _( "Invalid effect date, or lesser than operation date" ));
 			}
-			g_object_unref( deff );
 
 		} else {
 			set_comment( self, _( "Invalid operation date" ));
 		}
-		g_object_unref( dope );
 
 	} else {
 		set_comment( self, _( "Empty operation date, effect date or ledger" ));
@@ -1945,7 +1914,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
 	gchar *sdope, *sdeff, *ref, *label, *ledger, *account, *sdeb, *scre, *currency;
-	myDate *dope, *deff;
+	GDate dope, deff;
 	gint number;
 	gdouble debit, credit;
 	ofoEntry *entry;
@@ -1970,11 +1939,11 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 			ENT_COL_OBJECT,   &entry,
 			-1 );
 
-	dope = my_date_new_from_str( sdope, MY_DATE_DMYY );
-	g_return_val_if_fail( my_date_is_valid( dope ), FALSE );
+	my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
+	g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 
-	deff = my_date_new_from_str( sdeff, MY_DATE_DMYY );
-	g_return_val_if_fail( my_date_is_valid( deff ), FALSE );
+	my_date_set_from_str( &deff, sdeff, MY_DATE_DMYY );
+	g_return_val_if_fail( my_date_is_valid( &deff ), FALSE );
 
 	debit = my_double_from_string( sdeb );
 	credit = my_double_from_string( scre );
@@ -1983,8 +1952,8 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	if( entry ){
 		g_object_unref( entry );
 
-		ofo_entry_set_dope( entry, dope );
-		ofo_entry_set_deffect( entry, deff );
+		ofo_entry_set_dope( entry, &dope );
+		ofo_entry_set_deffect( entry, &deff );
 		ofo_entry_set_ref( entry, ref );
 		ofo_entry_set_label( entry, label );
 		ofo_entry_set_ledger( entry, ledger );
@@ -1997,13 +1966,11 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 
 	} else {
 		entry = ofo_entry_new_with_data( priv->dossier,
-					dope, deff, label, ref, account, currency, ledger, NULL, debit, credit );
+					&dope, &deff, label, ref, account, currency, ledger, NULL, debit, credit );
 		priv->inserted = entry;
 		ok = ofo_entry_insert( entry, priv->dossier );
 	}
 
-	g_object_unref( dope );
-	g_object_unref( deff );
 	g_free( currency );
 	g_free( scre );
 	g_free( sdeb );

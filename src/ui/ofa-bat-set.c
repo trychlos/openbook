@@ -263,11 +263,11 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatSet *
 
 	gtk_tree_model_get( tmodel, a, COL_OBJECT, &aobj, -1 );
 	g_object_unref( aobj );
-	astamp = ofo_bat_get_maj_stamp( aobj );
+	astamp = ofo_bat_get_upd_stamp( aobj );
 
 	gtk_tree_model_get( tmodel, b, COL_OBJECT, &bobj, -1 );
 	g_object_unref( bobj );
-	bstamp = ofo_bat_get_maj_stamp( bobj );
+	bstamp = ofo_bat_get_upd_stamp( bobj );
 
 	return( astamp->tv_sec < bstamp->tv_sec ? -1 : ( astamp->tv_sec > bstamp->tv_sec ? 1 : 0 ));
 }

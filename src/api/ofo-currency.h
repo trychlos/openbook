@@ -32,8 +32,7 @@
  * @short_description: #ofoCurrency class definition.
  * @include: api/ofo-currency.h
  *
- * This class implements the ofoCurrency behavior, including the general
- * DB definition.
+ * This file defines the #ofoCurrency public API.
  */
 
 #include "api/ofo-currency-def.h"

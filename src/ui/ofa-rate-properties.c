@@ -266,7 +266,7 @@ insert_new_row( ofaRateProperties *self, gint idx )
 {
 	ofaRatePropertiesPrivate *priv;
 	GtkEntry *entry;
-	const myDate *d;
+	const GDate *d;
 	gdouble rate;
 	gint row;
 
@@ -393,7 +393,7 @@ static void
 on_date_changed( GtkEntry *entry, ofaRateProperties *self )
 {
 	const gchar *content;
-	const myDate *date;
+	const GDate *date;
 	gboolean valid;
 	gchar *str;
 
@@ -541,7 +541,7 @@ is_dialog_validable( ofaRateProperties *self )
 	gdouble vrate;
 	gboolean ok;
 	ofoRate *exists;
-	const myDate *dbegin, *dend;
+	const GDate *dbegin, *dend;
 
 	priv = self->private;
 
@@ -556,8 +556,8 @@ is_dialog_validable( ofaRateProperties *self )
 		if( my_date_is_valid( dbegin ) || my_date_is_valid( dend ) || vrate > 0 ){
 
 			validity = g_new0( ofsRateValidity, 1 );
-			validity->begin = ( myDate * ) dbegin;
-			validity->end = ( myDate * ) dend;
+			my_date_set_from_date( &validity->begin, dbegin );
+			my_date_set_from_date( &validity->end, dend );
 			validity->rate = vrate;
 			valids = g_list_prepend( valids, validity );
 		}
@@ -599,7 +599,7 @@ do_update( ofaRateProperties *self )
 	ofaRatePropertiesPrivate *priv;
 	gint i;
 	GtkEntry *entry;
-	const myDate *dbegin, *dend;
+	const GDate *dbegin, *dend;
 	gchar *prev_mnemo;
 	gdouble rate;
 

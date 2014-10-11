@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
@@ -42,6 +43,7 @@
 
 #include "core/my-window-prot.h"
 
+#include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-common.h"
 #include "ui/ofa-ledger-combo.h"
@@ -64,11 +66,11 @@ struct _ofaGuidedCommonPrivate {
 
 	/* data
 	 */
-	myDate          *last_closed_exe;	/* last closed exercice of the dossier */
+	GDate           *last_closed_exe;	/* last closed exercice of the dossier, may be NULL */
 	gchar           *ledger;
-	myDate          *last_closing;		/* max of closed exercice and closed ledger */
-	myDate          *dope;
-	myDate          *deff;
+	GDate            last_closing;		/* max of closed exercice and closed ledger */
+	GDate            dope;
+	GDate            deff;
 	gdouble          total_debits;
 	gdouble          total_credits;
 
@@ -162,8 +164,8 @@ enum {
 #define DATA_COLUMN				    "data-entry-left"
 #define DATA_ROW				    "data-entry-top"
 
-static myDate *st_last_dope = NULL;
-static myDate *st_last_deff = NULL;
+static GDate st_last_dope = { 0 };
+static GDate st_last_deff = { 0 };
 
 G_DEFINE_TYPE( ofaGuidedCommon, ofa_guided_common, G_TYPE_OBJECT )
 
@@ -179,12 +181,12 @@ static void              add_entry_row_set( ofaGuidedCommon *self, gint col_id, 
 static void              add_entry_row_button( ofaGuidedCommon *self, const gchar *stock_id, gint column, gint row );
 static void              remove_entry_row( ofaGuidedCommon *self, gint row );
 static void              on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self );
-static void              on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self );
 static gboolean          on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
 static gboolean          on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
-static void              on_deffect_changed( GtkEntry *entry, ofaGuidedCommon *self );
+static void              on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self );
 static gboolean          on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
 static gboolean          on_deffect_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
+static void              on_deffect_changed( GtkEntry *entry, ofaGuidedCommon *self );
 static void              on_entry_changed( GtkEntry *entry, ofaGuidedCommon *self );
 static gboolean          on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
 static gboolean          on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
@@ -192,7 +194,7 @@ static gboolean          on_key_pressed( GtkWidget *widget, GdkEventKey *event, 
 static void              on_button_clicked( GtkButton *button, ofaGuidedCommon *self );
 static void              on_account_selection( ofaGuidedCommon *self, gint row );
 static void              check_for_account( ofaGuidedCommon *self, GtkEntry *entry  );
-static void              set_date_comment( ofaGuidedCommon *self, const gchar *label, const myDate *date );
+static void              set_date_comment( ofaGuidedCommon *self, const gchar *label, const GDate *date );
 static void              set_comment( ofaGuidedCommon *self, const gchar *comment );
 static const sColumnDef *find_column_def_from_col_id( ofaGuidedCommon *self, gint col_id );
 static const sColumnDef *find_column_def_from_letter( ofaGuidedCommon *self, gchar letter );
@@ -233,6 +235,7 @@ guided_common_finalize( GObject *instance )
 
 	/* free data members here */
 	g_free( priv->ledger );
+	g_free( priv->last_closed_exe );
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -251,10 +254,6 @@ guided_common_dispose( GObject *instance )
 	if( !priv->dispose_has_run ){
 
 		/* unref object members here */
-		g_object_unref( priv->last_closed_exe );
-		g_object_unref( priv->last_closing );
-		g_object_unref( priv->deff );
-		g_object_unref( priv->dope );
 	}
 
 	/* chain up to the parent class */
@@ -275,7 +274,9 @@ ofa_guided_common_init( ofaGuidedCommon *self )
 
 	self->private->dispose_has_run = FALSE;
 
-	self->private->last_closing = my_date_new();
+	my_date_clear( &self->private->last_closing );
+	my_date_clear( &self->private->deff );
+	my_date_clear( &self->private->dope );
 	self->private->deffect_changed_while_focus = FALSE;
 	self->private->entries_count = 0;
 }
@@ -290,8 +291,8 @@ ofa_guided_common_class_init( ofaGuidedCommonClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = guided_common_dispose;
 	G_OBJECT_CLASS( klass )->finalize = guided_common_finalize;
 
-	st_last_dope = my_date_new();
-	st_last_deff = my_date_new();
+	my_date_clear( &st_last_dope );
+	my_date_clear( &st_last_deff );
 }
 
 /**
@@ -375,43 +376,34 @@ static void
 setup_dates( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
-	myDateParse parms;
 
 	priv = self->private;
 
-	priv->dope = my_date_new_from_date( st_last_dope );
-
-	memset( &parms, '\0', sizeof( parms ));
-	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-dope" );
-	parms.entry_format = MY_DATE_DMYY;
-	parms.date = my_date2_from_date( priv->dope );
-	parms.on_changed_cb = G_CALLBACK( on_dope_changed );
-	parms.user_data = self;
-	my_date_parse_from_entry( &parms );
-
-	priv->dope_entry = GTK_ENTRY( parms.entry );
+	my_date_set_from_date( &priv->dope, &st_last_dope );
+	priv->dope_entry = GTK_ENTRY( my_utils_container_get_child_by_name( priv->parent, "p1-dope" ));
+	my_editable_date_init( GTK_EDITABLE( priv->dope_entry ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->dope_entry ), MY_DATE_DMYY );
+	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &priv->dope );
 
 	g_signal_connect(
-			G_OBJECT( parms.entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), self );
+			G_OBJECT( priv->dope_entry ), "focus-in-event", G_CALLBACK( on_dope_focus_in ), self );
 	g_signal_connect(
-			G_OBJECT( parms.entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
+			G_OBJECT( priv->dope_entry ), "focus-out-event", G_CALLBACK( on_dope_focus_out ), self );
+	g_signal_connect(
+			G_OBJECT( priv->dope_entry ), "changed", G_CALLBACK( on_dope_changed ), self );
 
-	priv->deff = my_date_new_from_date( st_last_deff );
-
-	memset( &parms, '\0', sizeof( parms ));
-	parms.entry = my_utils_container_get_child_by_name( priv->parent, "p1-deffet" );
-	parms.entry_format = MY_DATE_DMYY;
-	parms.date = my_date2_from_date( priv->deff );
-	parms.on_changed_cb = G_CALLBACK( on_deffect_changed );
-	parms.user_data = self;
-	my_date_parse_from_entry( &parms );
-
-	priv->deffect_entry = GTK_ENTRY( parms.entry );
+	my_date_set_from_date( &priv->deff, &st_last_deff );
+	priv->deffect_entry = GTK_ENTRY( my_utils_container_get_child_by_name( priv->parent, "p1-deffet" ));
+	my_editable_date_init( GTK_EDITABLE( priv->deffect_entry ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->deffect_entry ), MY_DATE_DMYY );
+	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &priv->deff );
 
 	g_signal_connect(
-			G_OBJECT( parms.entry ), "focus-in-event", G_CALLBACK( on_deffect_focus_in ), self );
+			G_OBJECT( priv->deffect_entry ), "focus-in-event", G_CALLBACK( on_deffect_focus_in ), self );
 	g_signal_connect(
-			G_OBJECT( parms.entry ), "focus-out-event", G_CALLBACK( on_deffect_focus_out ), self );
+			G_OBJECT( priv->deffect_entry ), "focus-out-event", G_CALLBACK( on_deffect_focus_out ), self );
+	g_signal_connect(
+			G_OBJECT( priv->deffect_entry ), "changed", G_CALLBACK( on_deffect_changed ), self );
 }
 
 static void
@@ -658,7 +650,7 @@ on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
 	ofaGuidedCommonPrivate *priv;
 	ofoLedger *ledger;
 	gint exe_id;
-	const myDate *date;
+	const GDate *date;
 
 	priv = self->private;
 
@@ -666,7 +658,7 @@ on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
 	priv->ledger = g_strdup( mnemo );
 
 	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
-	my_date_set_from_date( priv->last_closing, priv->last_closed_exe );
+	my_date_set_from_date( &priv->last_closing, priv->last_closed_exe );
 
 	if( ledger ){
 		exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
@@ -674,44 +666,12 @@ on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
 		if( my_date_is_valid( date )){
 			if( my_date_is_valid( priv->last_closed_exe )){
 				if( my_date_compare( date, priv->last_closed_exe ) > 0 ){
-					my_date_set_from_date( priv->last_closing, date );
+					my_date_set_from_date( &priv->last_closing, date );
 				}
 			} else {
-				my_date_set_from_date( priv->last_closing, date );
+				my_date_set_from_date( &priv->last_closing, date );
 			}
 		}
-	}
-
-	check_for_enable_dlg( self );
-}
-
-static void
-on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
-{
-	ofaGuidedCommonPrivate *priv;
-	gchar *str;
-
-	priv = self->private;
-
-	/* check the operation date */
-	set_date_comment( self, _( "Operation date" ), priv->dope );
-
-	/* setup the effect date if it has not been manually changed */
-	if( my_date_is_valid( priv->dope ) && !priv->deffect_changed_while_focus ){
-
-		if( my_date_is_valid( priv->last_closing ) &&
-			my_date_compare( priv->last_closing, priv->dope ) > 0 ){
-
-			my_date_set_from_date( priv->deff, priv->last_closing );
-			my_date_add_days( priv->deff, 1 );
-
-		} else {
-			my_date_set_from_date( priv->deff, priv->dope );
-		}
-
-		str = my_date_to_str( priv->deff, MY_DATE_DMYY );
-		gtk_entry_set_text( priv->deffect_entry, str );
-		g_free( str );
 	}
 
 	check_for_enable_dlg( self );
@@ -725,7 +685,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 static gboolean
 on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 {
-	set_date_comment( self, _( "Operation date" ), self->private->dope );
+	set_date_comment( self, _( "Operation date" ), &self->private->dope );
 
 	return( FALSE );
 }
@@ -744,19 +704,35 @@ on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 }
 
 static void
-on_deffect_changed( GtkEntry *entry, ofaGuidedCommon *self )
+on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 
 	priv = self->private;
 
-	if( priv->deffect_has_focus ){
+	/* check the operation date */
+	my_date_set_from_date( &priv->dope,
+			my_editable_date_get_date( GTK_EDITABLE( priv->dope_entry ), NULL ));
 
-		priv->deffect_changed_while_focus = TRUE;
-		set_date_comment( self, _( "Effect date" ), priv->deff );
+	set_date_comment( self, _( "Operation date" ), &priv->dope );
 
-		check_for_enable_dlg( self );
+	/* setup the effect date if it has not been manually changed */
+	if( my_date_is_valid( &priv->dope ) && !priv->deffect_changed_while_focus ){
+
+		if( my_date_is_valid( &priv->last_closing ) &&
+			my_date_compare( &priv->last_closing, &priv->dope ) > 0 ){
+
+			my_date_set_from_date( &priv->deff, &priv->last_closing );
+			g_date_add_days( &priv->deff, 1 );
+
+		} else {
+			my_date_set_from_date( &priv->deff, &priv->dope );
+		}
+
+		my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &priv->deff );
 	}
+
+	check_for_enable_dlg( self );
 }
 
 /*
@@ -768,7 +744,7 @@ static gboolean
 on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 {
 	self->private->deffect_has_focus = TRUE;
-	set_date_comment( self, _( "Effect date" ), self->private->deff );
+	set_date_comment( self, _( "Effect date" ), &self->private->deff );
 
 	return( FALSE );
 }
@@ -785,6 +761,25 @@ on_deffect_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 	set_comment( self, "" );
 
 	return( FALSE );
+}
+
+static void
+on_deffect_changed( GtkEntry *entry, ofaGuidedCommon *self )
+{
+	ofaGuidedCommonPrivate *priv;
+
+	priv = self->private;
+
+	if( priv->deffect_has_focus ){
+
+		my_date_set_from_date( &priv->deff,
+				my_editable_date_get_date( GTK_EDITABLE( priv->deffect_entry ), NULL ));
+
+		priv->deffect_changed_while_focus = TRUE;
+		set_date_comment( self, _( "Effect date" ), &priv->deff );
+
+		check_for_enable_dlg( self );
+	}
 }
 
 /*
@@ -933,7 +928,7 @@ check_for_account( ofaGuidedCommon *self, GtkEntry *entry  )
  * has been manually modified
  */
 static void
-set_date_comment( ofaGuidedCommon *self, const gchar *label, const myDate *date )
+set_date_comment( ofaGuidedCommon *self, const gchar *label, const GDate *date )
 {
 	gchar *str, *comment;
 
@@ -1259,8 +1254,8 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 		/*g_debug( "%s: searching for rate %s", thisfn, *iter );*/
 		rate = ofo_rate_get_by_mnemo( priv->dossier, token );
 		if( rate && OFO_IS_RATE( rate )){
-			if( my_date_is_valid( priv->deff )){
-				amount = ofo_rate_get_rate_at_date( rate, priv->deff )/100;
+			if( my_date_is_valid( &priv->deff )){
+				amount = ofo_rate_get_rate_at_date( rate, &priv->deff )/100;
 			}
 		} else {
 			str = g_strdup_printf( "rate not found: '%s'", token );
@@ -1390,25 +1385,27 @@ static gboolean
 check_for_dates( ofaGuidedCommon *self )
 {
 	static const gchar *thisfn = "ofa_guided_common_check_for_dates";
+	ofaGuidedCommonPrivate *priv;
 	gboolean ok, oki;
 
 	ok = TRUE;
+	priv = self->private;
 
-	oki = my_date_is_valid( self->private->dope );
-	my_utils_entry_set_valid( GTK_ENTRY( self->private->dope_entry ), oki );
+	oki = my_date_is_valid( &priv->dope );
+	my_utils_entry_set_valid( GTK_ENTRY( priv->dope_entry ), oki );
 	ok &= oki;
 	if( !oki ){
 		g_debug( "%s: operation date is invalid", thisfn );
 	}
 
-	oki = my_date_is_valid( self->private->deff );
-	my_utils_entry_set_valid( GTK_ENTRY( self->private->deffect_entry ), oki );
+	oki = my_date_is_valid( &priv->deff );
+	my_utils_entry_set_valid( GTK_ENTRY( priv->deffect_entry ), oki );
 	ok &= oki;
 	if( !oki ){
 		g_debug( "%s: effect date is invalid", thisfn );
 
-	} else if( my_date_is_valid( self->private->last_closing )){
-		oki = my_date_compare( self->private->last_closing, self->private->deff ) < 0;
+	} else if( my_date_is_valid( &priv->last_closing )){
+		oki = my_date_compare( &priv->last_closing, &priv->deff ) < 0;
 		ok &= oki;
 		if( !oki ){
 			g_debug( "%s: effect date less than last closing", thisfn );
@@ -1644,7 +1641,7 @@ entry_from_detail( ofaGuidedCommon *self, gint row, const gchar *piece )
 
 	return( ofo_entry_new_with_data(
 					priv->dossier,
-					priv->deff, priv->dope, label,
+					&priv->deff, &priv->dope, label,
 					piece, account_number,
 					ofo_account_get_currency( account ),
 					priv->ledger,

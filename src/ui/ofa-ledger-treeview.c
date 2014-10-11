@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-dossier.h"
@@ -386,7 +387,7 @@ insert_new_row( ofaLedgerTreeview *self, ofoLedger *ledger, gboolean with_select
 static void
 set_row_by_iter( ofaLedgerTreeview *self, ofoLedger *ledger, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	myDate *dlast_entry, *dlast_closing;
+	GDate *dlast_entry, *dlast_closing;
 	gchar *slast_entry, *slast_closing;
 
 	dlast_entry = ofo_ledger_get_last_entry( ledger );
@@ -405,10 +406,10 @@ set_row_by_iter( ofaLedgerTreeview *self, ofoLedger *ledger, GtkTreeModel *tmode
 			-1 );
 
 	g_free( slast_closing );
-	g_object_unref( dlast_closing );
+	g_free( dlast_closing );
 
 	g_free( slast_entry );
-	g_object_unref( dlast_entry );
+	g_free( dlast_entry );
 }
 
 static gint

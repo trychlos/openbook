@@ -9,7 +9,7 @@
  * published by the Free Software Foundation; either version 2 of the
  * License, or (at your option) any later version.
  *
- * Open Freelance Accounting is distributed in the hope that it will be
+ * Open Freelance Accounting is distributed in the hdope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
@@ -48,27 +48,29 @@ struct _ofoBatLinePrivate {
 	 */
 	gint       bat_id;						/* bat (imported file) id */
 	gint       id;							/* line id */
-	GDate      valeur;
-	GDate      ope;
+	GDate      deffect;
+	GDate      dope;
 	gchar     *ref;
 	gchar     *label;
 	gchar     *currency;
-	gdouble    montant;
-	gint       ecr;
-	gchar     *maj_user;
-	GTimeVal   maj_stamp;
+	gdouble    amount;
+	gint       entry;
+	gchar     *upd_user;
+	GTimeVal   upd_stamp;
 };
 
 G_DEFINE_TYPE( ofoBatLine, ofo_bat_line, OFO_TYPE_BASE )
 
 static GList      *bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd );
+static void        bat_line_set_upd_user( ofoBatLine *bat, const gchar *upd_user );
+static void        bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_line_do_insert( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    bat_line_get_back_id( ofoBatLine *bat, const ofoSgbd *sgbd );
 static gboolean    bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
 
 static void
-ofo_bat_line_finalize( GObject *instance )
+bat_line_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_bat_line_finalize";
 	ofoBatLinePrivate *priv;
@@ -84,7 +86,7 @@ ofo_bat_line_finalize( GObject *instance )
 	g_free( priv->ref );
 	g_free( priv->label );
 	g_free( priv->currency );
-	g_free( priv->maj_user );
+	g_free( priv->upd_user );
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -92,7 +94,7 @@ ofo_bat_line_finalize( GObject *instance )
 }
 
 static void
-ofo_bat_line_dispose( GObject *instance )
+bat_line_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFO_IS_BAT_LINE( instance ));
 
@@ -117,8 +119,8 @@ ofo_bat_line_init( ofoBatLine *self )
 
 	self->private->bat_id = OFO_BASE_UNSET_ID;
 	self->private->id = OFO_BASE_UNSET_ID;
-	g_date_clear( &self->private->valeur, 1 );
-	g_date_clear( &self->private->ope, 1 );
+	my_date_clear( &self->private->deffect );
+	my_date_clear( &self->private->dope );
 }
 
 static void
@@ -130,8 +132,8 @@ ofo_bat_line_class_init( ofoBatLineClass *klass )
 
 	g_type_class_add_private( klass, sizeof( ofoBatLinePrivate ));
 
-	G_OBJECT_CLASS( klass )->dispose = ofo_bat_line_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ofo_bat_line_finalize;
+	G_OBJECT_CLASS( klass )->dispose = bat_line_dispose;
+	G_OBJECT_CLASS( klass )->finalize = bat_line_finalize;
 }
 
 /**
@@ -150,7 +152,7 @@ ofo_bat_line_new( gint bat_id )
 
 /**
  * ofo_bat_line_get_dataset:
- * @dossier: the currently opened #ofoDossier dossier.
+ * @dossier: the currently dopened #ofoDossier dossier.
  *
  * Returns: the list of lines imported in the specified bank account
  * transaction list.
@@ -174,16 +176,15 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 	GSList *result, *irow, *icol;
 	GList *dataset;
 	ofoBatLine *line;
-	GDate date;
 	GTimeVal timeval;
 
 	dataset = NULL;
 
 	query = g_string_new(
-					"SELECT BAT_LINE_ID,BAT_LINE_VALEUR,BAT_LINE_OPE,"
-					"	BAT_LINE_LABEL,BAT_LINE_REF,BAT_LINE_DEVISE,"
-					"	BAT_LINE_MONTANT,"
-					"	BAT_LINE_ECR,BAT_LINE_MAJ_USER,BAT_LINE_MAJ_STAMP "
+					"SELECT BAT_LINE_ID,BAT_LINE_DEFFECT,BAT_LINE_DOPE,"
+					"	BAT_LINE_LABEL,BAT_LINE_REF,BAT_LINE_CURRENCY,"
+					"	BAT_LINE_AMOUNT,BAT_LINE_ENTRY,"
+					"	BAT_LINE_UPD_USER,BAT_LINE_UPD_STAMP "
 					"	FROM OFA_T_BAT_LINES " );
 
 	g_string_append_printf( query, "WHERE BAT_ID=%d ", bat_id );
@@ -199,12 +200,10 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 			line = ofo_bat_line_new( bat_id );
 			ofo_bat_line_set_id( line, atoi(( gchar * ) icol->data ));
 			icol = icol->next;
-			my_date_set_from_sql( &date, ( const gchar * ) icol->data );
-			ofo_bat_line_set_valeur( line, &date );
+			my_date_set_from_sql( &line->private->deffect, ( const gchar * ) icol->data );
 			icol = icol->next;
 			if( icol->data ){
-				my_date_set_from_sql( &date, ( const gchar * ) icol->data );
-				ofo_bat_line_set_ope( line, &date );
+				my_date_set_from_sql( &line->private->dope, ( const gchar * ) icol->data );
 			}
 			icol = icol->next;
 			ofo_bat_line_set_label( line, ( gchar * ) icol->data );
@@ -217,19 +216,19 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 				ofo_bat_line_set_currency( line, ( gchar * ) icol->data );
 			}
 			icol = icol->next;
-			ofo_bat_line_set_montant( line,
+			ofo_bat_line_set_amount( line,
 					my_double_from_sql(( const gchar * ) icol->data ));
 			icol = icol->next;
 			if( icol->data ){
-				ofo_bat_line_set_ecr( line, atoi(( gchar * ) icol->data ));
+				ofo_bat_line_set_entry( line, atoi(( gchar * ) icol->data ));
 			}
 			icol = icol->next;
 			if( icol->data ){
-				ofo_bat_line_set_maj_user( line, ( gchar * ) icol->data );
+				bat_line_set_upd_user( line, ( gchar * ) icol->data );
 			}
 			icol = icol->next;
 			if( icol->data ){
-				ofo_bat_line_set_maj_stamp( line,
+				bat_line_set_upd_stamp( line,
 						my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
 			}
 
@@ -277,16 +276,16 @@ ofo_bat_line_get_bat_id( const ofoBatLine *bat )
 }
 
 /**
- * ofo_bat_line_get_valeur:
+ * ofo_bat_line_get_deffect:
  */
 const GDate *
-ofo_bat_line_get_valeur( const ofoBatLine *bat )
+ofo_bat_line_get_deffect( const ofoBatLine *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &bat->private->valeur );
+		return(( const GDate * ) &bat->private->deffect );
 	}
 
 	g_assert_not_reached();
@@ -294,16 +293,16 @@ ofo_bat_line_get_valeur( const ofoBatLine *bat )
 }
 
 /**
- * ofo_bat_line_get_ope:
+ * ofo_bat_line_get_dope:
  */
 const GDate *
-ofo_bat_line_get_ope( const ofoBatLine *bat )
+ofo_bat_line_get_dope( const ofoBatLine *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &bat->private->ope );
+		return(( const GDate * ) &bat->private->dope );
 	}
 
 	g_assert_not_reached();
@@ -362,16 +361,16 @@ ofo_bat_line_get_currency( const ofoBatLine *bat )
 }
 
 /**
- * ofo_bat_line_get_montant:
+ * ofo_bat_line_get_amount:
  */
 gdouble
-ofo_bat_line_get_montant( const ofoBatLine *bat )
+ofo_bat_line_get_amount( const ofoBatLine *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), 0 );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->private->montant );
+		return( bat->private->amount );
 	}
 
 	g_assert_not_reached();
@@ -379,16 +378,16 @@ ofo_bat_line_get_montant( const ofoBatLine *bat )
 }
 
 /**
- * ofo_bat_line_get_ecr:
+ * ofo_bat_line_get_entry:
  */
 gint
-ofo_bat_line_get_ecr( const ofoBatLine *bat )
+ofo_bat_line_get_entry( const ofoBatLine *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), 0 );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->private->ecr );
+		return( bat->private->entry );
 	}
 
 	g_assert_not_reached();
@@ -396,16 +395,16 @@ ofo_bat_line_get_ecr( const ofoBatLine *bat )
 }
 
 /**
- * ofo_bat_line_get_maj_user:
+ * ofo_bat_line_get_upd_user:
  */
 const gchar *
-ofo_bat_line_get_maj_user( const ofoBatLine *bat )
+ofo_bat_line_get_upd_user( const ofoBatLine *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const gchar * ) bat->private->maj_user );
+		return(( const gchar * ) bat->private->upd_user );
 	}
 
 	g_assert_not_reached();
@@ -413,16 +412,16 @@ ofo_bat_line_get_maj_user( const ofoBatLine *bat )
 }
 
 /**
- * ofo_bat_line_get_maj_stamp:
+ * ofo_bat_line_get_upd_stamp:
  */
 const GTimeVal *
-ofo_bat_line_get_maj_stamp( const ofoBatLine *bat )
+ofo_bat_line_get_upd_stamp( const ofoBatLine *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), NULL );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &bat->private->maj_stamp );
+		return(( const GTimeVal * ) &bat->private->upd_stamp );
 	}
 
 	g_assert_not_reached();
@@ -444,40 +443,30 @@ ofo_bat_line_set_id( ofoBatLine *bat, gint id )
 }
 
 /**
- * ofo_bat_line_set_valeur:
+ * ofo_bat_line_set_deffect:
  */
 void
-ofo_bat_line_set_valeur( ofoBatLine *bat, const GDate *date )
+ofo_bat_line_set_deffect( ofoBatLine *bat, const GDate *date )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		if( !date ){
-			g_date_clear( &bat->private->valeur, 1 );
-
-		} else {
-			memcpy( &bat->private->valeur, date, sizeof( GDate ));
-		}
+		my_date_set_from_date( &bat->private->deffect, date );
 	}
 }
 
 /**
- * ofo_bat_line_set_ope:
+ * ofo_bat_line_set_dope:
  */
 void
-ofo_bat_line_set_ope( ofoBatLine *bat, const GDate *date )
+ofo_bat_line_set_dope( ofoBatLine *bat, const GDate *date )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		if( !date ){
-			g_date_clear( &bat->private->ope, 1 );
-
-		} else {
-			memcpy( &bat->private->ope, date, sizeof( GDate ));
-		}
+		my_date_set_from_date( &bat->private->dope, date );
 	}
 }
 
@@ -527,59 +516,59 @@ ofo_bat_line_set_currency( ofoBatLine *bat, const gchar *currency )
 }
 
 /**
- * ofo_bat_line_set_montant:
+ * ofo_bat_line_set_amount:
  */
 void
-ofo_bat_line_set_montant( ofoBatLine *bat, gdouble montant )
+ofo_bat_line_set_amount( ofoBatLine *bat, gdouble amount )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		bat->private->montant = montant;
+		bat->private->amount = amount;
 	}
 }
 
 /**
- * ofo_bat_line_set_ecr:
+ * ofo_bat_line_set_entry:
  */
 void
-ofo_bat_line_set_ecr( ofoBatLine *bat, gint number )
+ofo_bat_line_set_entry( ofoBatLine *bat, gint number )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		bat->private->ecr = number;
+		bat->private->entry = number;
 	}
 }
 
-/**
- * ofo_bat_line_set_maj_user:
+/*
+ * ofo_bat_line_set_upd_user:
  */
-void
-ofo_bat_line_set_maj_user( ofoBatLine *bat, const gchar *maj_user )
+static void
+bat_line_set_upd_user( ofoBatLine *bat, const gchar *upd_user )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		g_free( bat->private->maj_user );
-		bat->private->maj_user = g_strdup( maj_user );
+		g_free( bat->private->upd_user );
+		bat->private->upd_user = g_strdup( upd_user );
 	}
 }
 
-/**
- * ofo_bat_line_set_maj_stamp:
+/*
+ * ofo_bat_line_set_upd_stamp:
  */
-void
-ofo_bat_line_set_maj_stamp( ofoBatLine *bat, const GTimeVal *maj_stamp )
+static void
+bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		memcpy( &bat->private->maj_stamp, maj_stamp, sizeof( GTimeVal ));
+		memcpy( &bat->private->upd_stamp, upd_stamp, sizeof( GTimeVal ));
 	}
 }
 
@@ -627,24 +616,24 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
 	gchar *str;
-	const GDate *ope;
+	const GDate *dope;
 	gboolean ok;
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT_LINES" );
 
-	str = my_date2_to_str( ofo_bat_line_get_valeur( bat ), MY_DATE_SQL );
+	str = my_date_to_str( ofo_bat_line_get_deffect( bat ), MY_DATE_SQL );
 
 	g_string_append_printf( query,
-			"	(BAT_ID,BAT_LINE_VALEUR,BAT_LINE_OPE,BAT_LINE_REF,"
-			"	 BAT_LINE_LABEL,BAT_LINE_DEVISE,BAT_LINE_MONTANT) "
+			"	(BAT_ID,BAT_LINE_DEFFECT,BAT_LINE_DOPE,BAT_LINE_REF,"
+			"	 BAT_LINE_LABEL,BAT_LINE_CURRENCY,BAT_LINE_AMOUNT) "
 			"	VALUES (%d,'%s',",
 					ofo_bat_line_get_bat_id( bat ),
 					str );
 	g_free( str );
 
-	ope = ofo_bat_line_get_ope( bat );
-	if( g_date_valid( ope )){
-		str = my_date2_to_str( ope, MY_DATE_SQL );
+	dope = ofo_bat_line_get_dope( bat );
+	if( my_date_is_valid( dope )){
+		str = my_date_to_str( dope, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
 		g_free( str );
 	} else {
@@ -674,7 +663,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	str = my_double_to_sql( ofo_bat_line_get_montant( bat ));
+	str = my_double_to_sql( ofo_bat_line_get_amount( bat ));
 	g_string_append_printf( query, "%s", str );
 	g_free( str );
 
@@ -743,22 +732,22 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	GString *query;
 	gchar *stamp_str;
 	GTimeVal stamp;
-	gint ecr_number;
+	gint entry_number;
 
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
-	ecr_number = ofo_bat_line_get_ecr( bat );
+	entry_number = ofo_bat_line_get_entry( bat );
 
 	query = g_string_new( "UPDATE OFA_T_BAT_LINES SET " );
 
-	if( ecr_number > 0 ){
+	if( entry_number > 0 ){
 		g_string_append_printf( query,
-				"	BAT_LINE_ECR=%d,BAT_LINE_MAJ_USER='%s',BAT_LINE_MAJ_STAMP='%s' ",
-					ecr_number, user, stamp_str );
+				"	BAT_LINE_ENTRY=%d,BAT_LINE_UPD_USER='%s',BAT_LINE_UPD_STAMP='%s' ",
+					entry_number, user, stamp_str );
 	} else {
 		query = g_string_append( query,
-				"	BAT_LINE_ECR=NULL,BAT_LINE_MAJ_USER=NULL,BAT_LINE_MAJ_STAMP=0" );
+				"	BAT_LINE_ENTRY=NULL,BAT_LINE_UPD_USER=NULL,BAT_LINE_UPD_STAMP=0" );
 	}
 
 	g_string_append_printf( query,

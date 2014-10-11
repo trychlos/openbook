@@ -407,7 +407,7 @@ find_row_by_mnemo( ofaRatesSet *self, const gchar *mnemo, GtkTreeModel **tmodel,
 static gchar *
 get_min_val_date( ofoRate *rate )
 {
-	const myDate *dmin;
+	const GDate *dmin;
 	gchar *str, *sbegin;
 
 	dmin = ofo_rate_get_min_valid( rate );
@@ -427,7 +427,7 @@ get_min_val_date( ofoRate *rate )
 static gchar *
 get_max_val_date( ofoRate *rate )
 {
-	const myDate *dmax;
+	const GDate *dmax;
 	gchar *str, *send;
 
 	dmax = ofo_rate_get_max_valid( rate );

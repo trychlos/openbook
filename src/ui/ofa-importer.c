@@ -188,11 +188,11 @@ insert_imported_bat_v1( const ofoDossier *dossier,
 		str = ( ofaIImporterSBatv1 * ) line->data;
 		batline = ofo_bat_line_new( id );
 
-		ofo_bat_line_set_valeur( batline, &str->dvaleur );
-		ofo_bat_line_set_ope( batline, &str->dope );
+		ofo_bat_line_set_deffect( batline, &str->deffect );
+		ofo_bat_line_set_dope( batline, &str->dope );
 		ofo_bat_line_set_ref( batline, str->ref );
 		ofo_bat_line_set_label( batline, str->label );
-		ofo_bat_line_set_montant( batline, str->amount );
+		ofo_bat_line_set_amount( batline, str->amount );
 		ofo_bat_line_set_currency( batline, str->currency );
 
 		ofo_bat_line_insert( batline, dossier );

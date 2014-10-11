@@ -37,6 +37,7 @@
 
 #include "core/my-window-prot.h"
 
+#include "ui/my-editable-date.h"
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-int-closing.h"
 #include "ui/ofa-main-window.h"
@@ -46,7 +47,7 @@
 struct _ofaIntClosingPrivate {
 
 	gboolean            done;			/* whether we have actually done something */
-	myDate             *closing;
+	GDate               closing;
 	gboolean            valid;			/* reset after each date change */
 
 	/* UI
@@ -55,6 +56,7 @@ struct _ofaIntClosingPrivate {
 	GtkButton          *do_close_btn;
 	GtkLabel           *date_label;
 	GtkLabel           *message_label;
+	GtkWidget          *closing_entry;
 
 	/* during the iteration on each selected ledger
 	 */
@@ -71,8 +73,7 @@ G_DEFINE_TYPE( ofaIntClosing, ofa_int_closing, MY_TYPE_DIALOG )
 static void      v_init_dialog( myDialog *dialog );
 static void      on_rows_activated( GList *selected, ofaIntClosing *self );
 static void      on_rows_selected( GList *selected, ofaIntClosing *self );
-static gboolean  date_check_cb( GDate *date, ofaIntClosing *self );
-static void      on_date_changed( GtkEntry *entry, ofaIntClosing *self );
+static void      on_date_changed( GtkEditable *entry, ofaIntClosing *self );
 static void      check_for_enable_dlg( ofaIntClosing *self, GList *selected );
 static gboolean  is_dialog_validable( ofaIntClosing *self, GList *selected );
 static void      check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger );
@@ -104,16 +105,11 @@ int_closing_finalize( GObject *instance )
 static void
 int_closing_dispose( GObject *instance )
 {
-	ofaIntClosingPrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_INT_CLOSING( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
-		priv = OFA_INT_CLOSING( instance )->private;
-
 		/* unref object members here */
-		g_object_unref( priv->closing );
 	}
 
 	/* chain up to the parent class */
@@ -132,7 +128,7 @@ ofa_int_closing_init( ofaIntClosing *self )
 
 	self->private = g_new0( ofaIntClosingPrivate, 1 );
 
-	self->private->closing = my_date_new();
+	my_date_clear( &self->private->closing );
 }
 
 static void
@@ -191,7 +187,6 @@ v_init_dialog( myDialog *dialog )
 	GtkContainer *container;
 	GtkButton *button;
 	GtkLabel *label;
-	myDateParse date_parms;
 
 	priv = OFA_INT_CLOSING( dialog )->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
@@ -216,20 +211,14 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
 
-	memset( &date_parms, '\0', sizeof( date_parms ));
-	date_parms.entry = my_utils_container_get_child_by_name( container, "p1-date" );
-	date_parms.entry_format = MY_DATE_DMYY;
-	date_parms.label = my_utils_container_get_child_by_name( container, "p1-label" );
-	date_parms.label_format = MY_DATE_DMMM;
-	date_parms.date = my_date2_from_date( priv->closing );
-	date_parms.pfnCheck = ( myDateCheckCb ) date_check_cb;
-	date_parms.on_changed_cb = G_CALLBACK( on_date_changed );
-	date_parms.user_data = dialog;
-	my_date_parse_from_entry( &date_parms );
+	priv->closing_entry = my_utils_container_get_child_by_name( container, "p1-date" );
+	my_editable_date_init( GTK_EDITABLE( priv->closing_entry ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->closing_entry ), MY_DATE_DMYY );
+	my_editable_date_set_date( GTK_EDITABLE( priv->closing_entry ), &priv->closing );
+	priv->date_label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p1-label" ));
+	my_editable_date_set_label( GTK_EDITABLE( priv->closing_entry ), GTK_WIDGET( priv->date_label ), MY_DATE_DMMM );
 
-	priv->date_label = label;
-
-	g_signal_connect( G_OBJECT( date_parms.entry ), "changed", G_CALLBACK( on_date_changed ), dialog );
+	g_signal_connect( G_OBJECT( priv->closing_entry ), "changed", G_CALLBACK( on_date_changed ), dialog );
 
 	check_for_enable_dlg( OFA_INT_CLOSING( dialog ), NULL );
 }
@@ -254,23 +243,20 @@ on_rows_selected( GList *selected, ofaIntClosing *self )
 	check_for_enable_dlg( self, selected );
 }
 
-static gboolean
-date_check_cb( GDate *date, ofaIntClosing *self )
+static void
+on_date_changed( GtkEditable *entry, ofaIntClosing *self )
 {
 	ofaIntClosingPrivate *priv;
-	const myDate *exe_end;
-	myDate *date2;
-	gchar *str;
+	const GDate *exe_end;
 
 	priv = self->private;
 	priv->valid = FALSE;
-
-	str = my_date2_to_str( date, MY_DATE_SQL );
-	date2 = my_date_new_from_sql( str );
+	my_date_set_from_date( &priv->closing,
+			my_editable_date_get_date( GTK_EDITABLE( priv->closing_entry ), NULL ));
 
 	/* the date must be less or equal that the end of exercice */
 	exe_end = ofo_dossier_get_current_exe_end( MY_WINDOW( self )->protected->dossier );
-	if( !my_date_is_valid( exe_end ) || my_date_compare( date2, exe_end ) <= 0 ){
+	if( !my_date_is_valid( exe_end ) || my_date_compare( &priv->closing, exe_end ) <= 0 ){
 		priv->valid = TRUE;
 		gtk_label_set_text( priv->message_label, "" );
 
@@ -278,12 +264,6 @@ date_check_cb( GDate *date, ofaIntClosing *self )
 		gtk_label_set_text( priv->message_label, _( "Closing date is after the end of exercice" ));
 	}
 
-	return( priv->valid );
-}
-
-static void
-on_date_changed( GtkEntry *entry, ofaIntClosing *self )
-{
 	check_for_enable_dlg( self, NULL );
 }
 
@@ -340,18 +320,18 @@ static void
 check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 {
 	ofaIntClosingPrivate *priv;
-	myDate *last;
+	GDate *last;
 
 	priv = self->private;
 	priv->count += 1;
 
 	last = ofo_ledger_get_last_closing( ledger );
 
-	if( !my_date_is_valid( last ) || my_date_compare( priv->closing, last ) > 0 ){
+	if( !my_date_is_valid( last ) || my_date_compare( &priv->closing, last ) > 0 ){
 		priv->closeable += 1;
 	}
 
-	g_object_unref( last );
+	g_free( last );
 }
 
 static gboolean
@@ -408,7 +388,7 @@ close_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 	}
 	g_string_append_printf( priv->ledgers_list, "%s", mnemo );
 
-	ok = ofo_ledger_close( ledger, priv->closing );
+	ok = ofo_ledger_close( ledger, &priv->closing );
 
 	return( ok );
 }

@@ -40,6 +40,7 @@
 
 #include "core/ofa-plugin.h"
 
+#include "ui/my-editable-date.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
@@ -66,7 +67,7 @@ struct _ofaRapproPrivate {
 
 	/* internals
 	 */
-	myDate       *dconcil;
+	GDate         dconcil;
 	GList        *batlines;				/* loaded bank account transaction lines */
 };
 
@@ -150,7 +151,7 @@ static void         collapse_node( ofaRappro *self, GtkWidget *widget );
 static void         expand_node( ofaRappro *self, GtkWidget *widget );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
 static gboolean     toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path );
-static void         reconciliate_entry( ofaRappro *self, ofoEntry *entry, const myDate *drappro, GtkTreeIter *iter );
+static void         reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter );
 static void         set_reconciliated_balance( ofaRappro *self );
 
 static void
@@ -187,7 +188,6 @@ rappro_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_object_unref( priv->dconcil );
 		g_list_free_full( priv->batlines, ( GDestroyNotify ) g_object_unref );
 	}
 
@@ -208,7 +208,7 @@ ofa_rappro_init( ofaRappro *self )
 	self->private = g_new0( ofaRapproPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
-	self->private->dconcil = my_date_new();
+	my_date_clear( &self->private->dconcil );
 }
 
 static void
@@ -378,7 +378,6 @@ setup_manual_rappro( ofaMainPage *page )
 	GtkGrid *grid;
 	GtkLabel *label;
 	gchar *markup;
-	myDateParse parms;
 
 	priv = OFA_RAPPRO( page )->private;
 
@@ -404,16 +403,14 @@ setup_manual_rappro( ofaMainPage *page )
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_grid_attach( grid, GTK_WIDGET( label ), 0, 0, 1, 1 );
 
-	memset( &parms, '\0', sizeof( parms ));
-	parms.entry = gtk_entry_new();
-	parms.entry_format = MY_DATE_DMYY;
-	parms.label = gtk_label_new( "" 	);
-	parms.label_format = MY_DATE_DMMM;
-	parms.date = my_date2_from_date( priv->dconcil );
-	my_date_parse_from_entry( &parms );
+	priv->date_concil = GTK_ENTRY( gtk_entry_new());
+	label = GTK_LABEL( gtk_label_new( "" ));
 
-	priv->date_concil = GTK_ENTRY( parms.entry );
-	gtk_entry_set_max_length( priv->date_concil, 10 );
+	my_editable_date_init( GTK_EDITABLE( priv->date_concil ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->date_concil ), MY_DATE_DMYY );
+	my_editable_date_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
+	my_editable_date_set_label( GTK_EDITABLE( priv->date_concil ), GTK_WIDGET( label ), MY_DATE_DMMM );
+
 	gtk_entry_set_width_chars( priv->date_concil, 10 );
 	gtk_label_set_mnemonic_widget( label, GTK_WIDGET( priv->date_concil ));
 	gtk_grid_attach( grid, GTK_WIDGET( priv->date_concil ), 1, 0, 1, 1 );
@@ -421,9 +418,9 @@ setup_manual_rappro( ofaMainPage *page )
 			GTK_WIDGET( priv->date_concil ),
 			_( "The date to which the entry will be set as reconciliated if no account transaction is proposed" ));
 
-	gtk_misc_set_alignment( GTK_MISC( parms.label ), 0, 0.5 );
-	gtk_label_set_width_chars( GTK_LABEL( parms.label ), 10 );
-	gtk_grid_attach( grid, parms.label, 2, 0, 1, 1 );
+	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	gtk_label_set_width_chars( label, 10 );
+	gtk_grid_attach( grid, GTK_WIDGET( label ), 2, 0, 1, 1 );
 
 	return( GTK_WIDGET( frame ));
 }
@@ -724,17 +721,17 @@ static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRappro *self )
 {
 	gchar *dopea, *dopeb;
-	myDate *da, *db;
+	GDate da, db;
 	gint numa, numb;
 	gint cmp;
 
 	gtk_tree_model_get( tmodel, a, COL_DOPE, &dopea, COL_NUMBER, &numa, -1 );
-	da = my_date_new_from_str( dopea, MY_DATE_DMYY );
+	my_date_set_from_str( &da, dopea, MY_DATE_DMYY );
 
 	gtk_tree_model_get( tmodel, b, COL_DOPE, &dopeb, COL_NUMBER, &numb, -1 );
-	db = my_date_new_from_str( dopeb, MY_DATE_DMYY );
+	my_date_set_from_str( &db, dopeb, MY_DATE_DMYY );
 
-	cmp = my_date_compare( da, db );
+	cmp = my_date_compare( &da, &db );
 	if( cmp == 0 ){
 		cmp = ( numa < numb ? -1 : ( numa > numb ? 1 : 0 ));
 	}
@@ -808,7 +805,7 @@ is_visible_batline( ofaRappro *self, ofoBatLine *batline )
 {
 	gint ecr_number;
 
-	ecr_number = ofo_bat_line_get_ecr( batline );
+	ecr_number = ofo_bat_line_get_entry( batline );
 	return( ecr_number == 0 );
 }
 
@@ -1020,7 +1017,7 @@ do_fetch( ofaRappro *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *sdope, *sdeb, *scre, *sdrap;
-	const myDate *dconcil;
+	const GDate *dconcil;
 
 	enableable = is_fetch_enableable( self, &account, &mode );
 	g_return_if_fail( enableable );
@@ -1212,7 +1209,7 @@ display_bat_lines( ofaRappro *self )
 		batline = OFO_BAT_LINE( line->data );
 		done = FALSE;
 
-		bat_amount = ofo_bat_line_get_montant( batline );
+		bat_amount = ofo_bat_line_get_amount( batline );
 		if( bat_amount < 0 ){
 			sbat_deb = g_strdup_printf( "%'.2lf", -bat_amount );
 			sbat_cre = g_strdup( "" );
@@ -1221,7 +1218,7 @@ display_bat_lines( ofaRappro *self )
 			sbat_cre = g_strdup_printf( "%'.2lf", bat_amount );
 		}
 
-		bat_ecr = ofo_bat_line_get_ecr( batline );
+		bat_ecr = ofo_bat_line_get_entry( batline );
 		if( bat_ecr > 0 ){
 			entry_iter = search_for_entry_by_number( self, bat_ecr );
 			if( entry_iter ){
@@ -1360,15 +1357,13 @@ static void
 update_candidate_entry( ofaRappro *self, ofoBatLine *batline, GtkTreeIter *entry_iter )
 {
 	GtkTreeModel *child_tmodel;
-	const GDate *dvaleur;
 	gchar *sdvaleur;
 
 	g_return_if_fail( entry_iter );
 
 	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
 
-	dvaleur = ofo_bat_line_get_valeur( batline );
-	sdvaleur = my_date2_to_str( dvaleur, MY_DATE_DMYY );
+	sdvaleur = my_date_to_str( ofo_bat_line_get_deffect( batline ), MY_DATE_DMYY );
 
 	/* set the proposed reconciliation date in the entry */
 	gtk_tree_store_set(
@@ -1394,11 +1389,11 @@ insert_bat_line( ofaRappro *self, ofoBatLine *batline,
 
 	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
 
-	dope = ofo_bat_line_get_ope( batline );
-	if( !g_date_valid( dope )){
-		dope = ofo_bat_line_get_valeur( batline );
+	dope = ofo_bat_line_get_dope( batline );
+	if( !my_date_is_valid( dope )){
+		dope = ofo_bat_line_get_deffect( batline );
 	}
-	sdope = my_date2_to_str( dope, MY_DATE_DMYY );
+	sdope = my_date_to_str( dope, MY_DATE_DMYY );
 
 	/* set the bat line as a hint */
 	gtk_tree_store_insert_with_values(
@@ -1505,7 +1500,7 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
 	gchar *srappro;
 	gboolean bvalid;
 	GObject *object;
-	myDate *date;
+	GDate date;
 
 	if( gtk_tree_model_get_iter( self->private->tmodel, &iter, path )){
 
@@ -1532,16 +1527,16 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
 		 * valid or if we have a proposed reconciliation from imported
 		 * BAT */
 		} else {
+			my_date_clear( &date );
 			if( srappro && g_utf8_strlen( srappro, -1 )){
-				date = my_date_new_from_str( srappro, MY_DATE_DMYY );
+				my_date_set_from_str( &date, srappro, MY_DATE_DMYY );
 			} else {
-				date = my_date_new_from_date( self->private->dconcil );
+				my_date_set_from_date( &date, &self->private->dconcil );
 			}
-			if( my_date_is_valid( date )){
-				reconciliate_entry( self, OFO_ENTRY( object ), date, &iter );
+			if( my_date_is_valid( &date )){
+				reconciliate_entry( self, OFO_ENTRY( object ), &date, &iter );
 			}
-			g_object_unref( date );
-		}
+	}
 	}
 
 	return( TRUE );
@@ -1562,7 +1557,7 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
  *
  */
 static void
-reconciliate_entry( ofaRappro *self, ofoEntry *entry, const myDate *drappro, GtkTreeIter *iter )
+reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter )
 {
 	GtkTreeModel *child_tmodel;
 	GtkTreeIter child_iter;
@@ -1597,7 +1592,7 @@ reconciliate_entry( ofaRappro *self, ofoEntry *entry, const myDate *drappro, Gtk
 				-1 );
 		g_object_unref( batline );
 
-		ofo_bat_line_set_ecr( batline,
+		ofo_bat_line_set_entry( batline,
 				is_valid_rappro ? ofo_entry_get_number( entry ) : 0 );
 	}
 
@@ -1612,7 +1607,7 @@ reconciliate_entry( ofaRappro *self, ofoEntry *entry, const myDate *drappro, Gtk
 	if( is_valid_rappro ){
 		str = my_date_to_str( drappro, MY_DATE_DMYY );
 	} else if( batline ){
-		str = my_date2_to_str( ofo_bat_line_get_valeur( batline ), MY_DATE_DMYY );
+		str = my_date_to_str( ofo_bat_line_get_deffect( batline ), MY_DATE_DMYY );
 	} else {
 		str = g_strdup( "" );
 	}
@@ -1682,7 +1677,7 @@ set_reconciliated_balance( ofaRappro *self )
 					debit -= ofo_entry_get_debit( OFO_ENTRY( object ));
 					credit -= ofo_entry_get_credit( OFO_ENTRY( object ));
 				} else {
-					amount = ofo_bat_line_get_montant( OFO_BAT_LINE( object ));
+					amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
 					if( amount < 0 ){
 						credit += -amount;
 					} else {

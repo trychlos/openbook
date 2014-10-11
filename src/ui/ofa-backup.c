@@ -206,7 +206,7 @@ get_default_name( ofaBackup *self )
 	g_free( dbname );
 
 	my_date_set_now( &date );
-	sdate = my_date2_to_str( &date, MY_DATE_YYMD );
+	sdate = my_date_to_str( &date, MY_DATE_YYMD );
 	result = g_strdup_printf( "%s-%s.gz", fname, sdate );
 	g_free( sdate );
 

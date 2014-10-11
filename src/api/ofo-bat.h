@@ -32,7 +32,7 @@
  * @short_description: #ofoBat class definition.
  * @include: api/ofo-bat.h
  *
- * This class implements the Bat behavior: these are the tables
+ * This file defines the #ofoBat class public API: these are the tables
  * which contain the imported bank account transaction lines.
  */
 
@@ -57,8 +57,8 @@ const gchar    *ofo_bat_get_currency ( const ofoBat *bat );
 gdouble         ofo_bat_get_solde    ( const ofoBat *bat );
 gboolean        ofo_bat_get_solde_set( const ofoBat *bat );
 const gchar    *ofo_bat_get_notes    ( const ofoBat *bat );
-const gchar    *ofo_bat_get_maj_user ( const ofoBat *bat );
-const GTimeVal *ofo_bat_get_maj_stamp( const ofoBat *bat );
+const gchar    *ofo_bat_get_upd_user ( const ofoBat *bat );
+const GTimeVal *ofo_bat_get_upd_stamp( const ofoBat *bat );
 
 gboolean        ofo_bat_is_deletable ( const ofoBat *bat );
 
@@ -73,8 +73,6 @@ void            ofo_bat_set_currency ( ofoBat *bat, const gchar *currency );
 void            ofo_bat_set_solde    ( ofoBat *bat, gdouble solde );
 void            ofo_bat_set_solde_set( ofoBat *bat, gboolean set );
 void            ofo_bat_set_notes    ( ofoBat *bat, const gchar *notes );
-void            ofo_bat_set_maj_user ( ofoBat *bat, const gchar *user );
-void            ofo_bat_set_maj_stamp( ofoBat *bat, const GTimeVal *stamp );
 
 gboolean        ofo_bat_insert       ( ofoBat *bat, const ofoDossier *dossier );
 gboolean        ofo_bat_update       ( ofoBat *bat, const ofoDossier *dossier );

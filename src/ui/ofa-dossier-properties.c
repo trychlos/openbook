@@ -37,6 +37,7 @@
 
 #include "core/my-window-prot.h"
 
+#include "ui/my-editable-date.h"
 #include "ui/ofa-currency-combo.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-main-window.h"
@@ -50,20 +51,20 @@ struct _ofaDossierPropertiesPrivate {
 	ofoDossier    *dossier;
 	gboolean       is_new;
 	gboolean       updated;
-	myDate        *last_closed;
+	GDate         *last_closed;		/* may be NULL */
 
 	/* data
 	 */
 	gchar         *label;
 	gint           duree;
 	gchar         *currency;
-	myDate        *begin;
-	myDate        *end;
+	GDate          begin;
+	GDate          end;
 
 	/* UI
 	 */
-	GtkLabel      *begin_label;
-	GtkLabel      *end_label;
+	GtkWidget     *begin_entry;
+	GtkWidget     *end_entry;
 };
 
 static const gchar *st_ui_xml = PKGUIDIR "/ofa-dossier-properties.ui";
@@ -77,9 +78,8 @@ static void      init_current_exe_page( ofaDossierProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_currency_changed( const gchar *code, ofaDossierProperties *self );
-static gboolean  begin_date_check_cb( GDate *date, ofaDossierProperties *self );
-static gboolean  end_date_check_cb( GDate *date, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
+static gboolean  is_dialog_valid( ofaDossierProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaDossierProperties *self );
 
@@ -99,6 +99,7 @@ dossier_properties_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->label );
 	g_free( priv->currency );
+	g_free( priv->last_closed );
 	g_free( priv );
 
 	/* chain up to the parent class */
@@ -108,18 +109,11 @@ dossier_properties_finalize( GObject *instance )
 static void
 dossier_properties_dispose( GObject *instance )
 {
-	ofaDossierPropertiesPrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_DOSSIER_PROPERTIES( instance ));
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
-		priv = OFA_DOSSIER_PROPERTIES( instance )->private;
-
 		/* unref object members here */
-		g_object_unref( priv->last_closed );
-		g_object_unref( priv->begin );
-		g_object_unref( priv->end );
 	}
 
 	/* chain up to the parent class */
@@ -258,42 +252,31 @@ init_current_exe_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkContainer *container;
-	GtkWidget *label;
+	GtkWidget *label, *entry;
 	gchar *str;
-	myDateParse parms;
 
 	priv = self->private;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	priv->last_closed = ofo_dossier_get_last_closed_exercice( priv->dossier );
 
-	priv->begin = my_date_new_from_date( ofo_dossier_get_current_exe_begin( priv->dossier ));
+	my_date_set_from_date( &priv->begin, ofo_dossier_get_current_exe_begin( priv->dossier ));
+	entry = my_utils_container_get_child_by_name( container, "p2-begin" );
+	my_editable_date_init( GTK_EDITABLE( entry ));
+	my_editable_date_set_format( GTK_EDITABLE( entry ), MY_DATE_DMYY );
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin );
+	label = my_utils_container_get_child_by_name( container, "p2-begin-label" );
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
+	priv->begin_entry = entry;
 
-	memset( &parms, '\0', sizeof( parms ));
-	parms.entry =my_utils_container_get_child_by_name( container, "p2-begin" );
-	parms.entry_format = MY_DATE_DMYY;
-	parms.label = my_utils_container_get_child_by_name( container, "p2-begin-label" );
-	parms.label_format = MY_DATE_DMMM;
-	parms.date = my_date2_from_date( priv->begin );
-	parms.pfnCheck = ( myDateCheckCb ) begin_date_check_cb;
-	parms.user_data = self;
-	my_date_parse_from_entry( &parms );
-
-	priv->begin_label = GTK_LABEL( parms.label );
-
-	priv->end = my_date_new_from_date( ofo_dossier_get_current_exe_end( priv->dossier ));
-
-	memset( &parms, '\0', sizeof( parms ));
-	parms.entry =my_utils_container_get_child_by_name( container, "p2-end" );
-	parms.entry_format = MY_DATE_DMYY;
-	parms.label = my_utils_container_get_child_by_name( container, "p2-end-label" );
-	parms.label_format = MY_DATE_DMMM;
-	parms.date = my_date2_from_date( priv->end );
-	parms.pfnCheck = ( myDateCheckCb ) end_date_check_cb;
-	parms.user_data = self;
-	my_date_parse_from_entry( &parms );
-
-	priv->end_label = GTK_LABEL( parms.label );
+	my_date_set_from_date( &priv->end, ofo_dossier_get_current_exe_end( priv->dossier ));
+	entry = my_utils_container_get_child_by_name( container, "p2-end" );
+	my_editable_date_init( GTK_EDITABLE( entry ));
+	my_editable_date_set_format( GTK_EDITABLE( entry ), MY_DATE_DMYY );
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
+	label = my_utils_container_get_child_by_name( container, "p2-end-label" );
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
+	priv->end_entry = entry;
 
 	label = my_utils_container_get_child_by_name( container, "p2-id" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -346,50 +329,6 @@ on_currency_changed( const gchar *code, ofaDossierProperties *self )
 	check_for_enable_dlg( self );
 }
 
-static gboolean
-begin_date_check_cb( GDate *date, ofaDossierProperties *self )
-{
-	ofaDossierPropertiesPrivate *priv;
-	gboolean ok;
-	myDate *date2;
-	gchar *str;
-
-	priv = self->private;
-
-	str = my_date2_to_str( date, MY_DATE_SQL );
-	date2 = my_date_new_from_sql( str );
-
-	ok = !my_date_is_valid( priv->last_closed ) ||
-			my_date_compare( priv->last_closed, date2 ) < 0;
-
-	g_free( str );
-	g_object_unref( date2 );
-
-	return( ok );
-}
-
-static gboolean
-end_date_check_cb( GDate *date, ofaDossierProperties *self )
-{
-	ofaDossierPropertiesPrivate *priv;
-	gboolean ok;
-	myDate *date2;
-	gchar *str;
-
-	priv = self->private;
-
-	str = my_date2_to_str( date, MY_DATE_SQL );
-	date2 = my_date_new_from_sql( str );
-
-	ok = !my_date_is_valid( priv->begin ) ||
-			my_date_compare( priv->begin, date2 ) < 0;
-
-	g_free( str );
-	g_object_unref( date2 );
-
-	return( ok );
-}
-
 static void
 check_for_enable_dlg( ofaDossierProperties *self )
 {
@@ -402,10 +341,27 @@ check_for_enable_dlg( ofaDossierProperties *self )
 	button = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 
+	my_date_set_from_date( &priv->begin, my_editable_date_get_date( GTK_EDITABLE( priv->begin_entry ), NULL ));
+	my_date_set_from_date( &priv->end, my_editable_date_get_date( GTK_EDITABLE( priv->end_entry ), NULL ));
+
 	/*g_debug( "label=%s, duree=%u, currency=%s", priv->label, priv->duree, priv->currency );*/
-	ok = ofo_dossier_is_valid( priv->label, priv->duree, priv->currency );
+	ok = is_dialog_valid( self );
 
 	gtk_widget_set_sensitive( button, ok );
+}
+
+static gboolean
+is_dialog_valid( ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	gboolean ok;
+
+	priv = self->private;
+
+	ok = !my_date_is_valid( &priv->begin ) || my_date_compare( &priv->begin, priv->last_closed ) < 0;
+	ok &= ofo_dossier_is_valid( priv->label, priv->duree, priv->currency, &priv->begin, &priv->end );
+
+	return( ok );
 }
 
 static gboolean
@@ -419,9 +375,7 @@ do_update( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 
-	g_return_val_if_fail(
-			ofo_dossier_is_valid( self->private->label, self->private->duree, self->private->currency ),
-			FALSE );
+	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
 
 	priv = self->private;
 
@@ -429,11 +383,11 @@ do_update( ofaDossierProperties *self )
 	ofo_dossier_set_exercice_length( priv->dossier, priv->duree );
 	ofo_dossier_set_default_currency( priv->dossier, priv->currency );
 
-	if( my_date_is_valid( priv->begin )){
-		ofo_dossier_set_current_exe_begin( priv->dossier, priv->begin );
+	if( my_date_is_valid( &priv->begin )){
+		ofo_dossier_set_current_exe_begin( priv->dossier, &priv->begin );
 	}
-	if( my_date_is_valid( priv->end )){
-		ofo_dossier_set_current_exe_end( priv->dossier, priv->end );
+	if( my_date_is_valid( &priv->end )){
+		ofo_dossier_set_current_exe_end( priv->dossier, &priv->end );
 	}
 
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), dossier );

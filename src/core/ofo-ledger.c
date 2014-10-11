@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
@@ -64,15 +65,15 @@ typedef struct {
 	gdouble    clo_deb;
 	gdouble    clo_cre;
 	gdouble    deb;
-	myDate    *deb_date;
+	GDate      deb_date;
 	gdouble    cre;
-	myDate    *cre_date;
+	GDate      cre_date;
 }
 	sDetailCur;
 
 typedef struct {
 	gint       exe_id;
-	myDate    *last_clo;
+	GDate      last_clo;
 }
 	sDetailExe;
 
@@ -107,15 +108,12 @@ static void
 free_detail_cur( sDetailCur *detail )
 {
 	g_free( detail->currency );
-	g_object_unref( detail->deb_date );
-	g_object_unref( detail->cre_date );
 	g_free( detail );
 }
 
 static void
 free_detail_exe( sDetailExe *detail )
 {
-	g_object_unref( detail->last_clo );
 	g_free( detail );
 }
 
@@ -228,7 +226,7 @@ on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 	const gchar *mnemo, *currency;
 	ofoLedger *ledger;
 	sDetailCur *detail;
-	const myDate *deffect;
+	const GDate *deffect;
 	gdouble debit;
 
 	current = ofo_dossier_get_current_exe_id( dossier );
@@ -245,15 +243,15 @@ on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 
 		if( debit ){
 			detail->deb += debit;
-			if( !my_date_is_valid( detail->deb_date ) ||
-					my_date_compare( detail->deb_date, deffect ) < 0 ){
+			if( !my_date_is_valid( &detail->deb_date ) ||
+					my_date_compare( &detail->deb_date, deffect ) < 0 ){
 				ofo_ledger_set_deb_date( ledger, detail->exe_id, detail->currency, deffect );
 			}
 
 		} else {
 			detail->cre += ofo_entry_get_credit( entry );
-			if( !my_date_is_valid( detail->cre_date ) ||
-					my_date_compare( detail->cre_date, deffect ) < 0 ){
+			if( !my_date_is_valid( &detail->cre_date ) ||
+					my_date_compare( &detail->cre_date, deffect ) < 0 ){
 				ofo_ledger_set_cre_date( ledger, detail->exe_id, detail->currency, deffect );
 			}
 		}
@@ -328,7 +326,7 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	ofoLedger *ledger;
 	sDetailCur *detail;
 	gdouble debit, credit;
-	const myDate *deffect;
+	const GDate *deffect;
 
 	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
 			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
@@ -463,12 +461,12 @@ ledger_load_dataset( void )
 			balance->deb = my_double_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "deb=%lf", balance->deb );*/
 			icol = icol->next;
-			balance->deb_date = my_date_new_from_sql(( const gchar * ) icol->data );
+			my_date_set_from_sql( &balance->deb_date, ( const gchar * ) icol->data );
 			icol = icol->next;
 			balance->cre = my_double_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "cre=%lf", balance->cre );*/
 			icol = icol->next;
-			balance->cre_date = my_date_new_from_sql(( const gchar * ) icol->data );
+			my_date_set_from_sql( &balance->cre_date, ( const gchar * ) icol->data );
 
 			g_debug( "ledger_load_dataset: adding ledger=%s, exe_id=%d, currency=%s",
 					ofo_ledger_get_mnemo( ledger ), balance->exe_id, balance->currency );
@@ -492,7 +490,7 @@ ledger_load_dataset( void )
 			exercice = g_new0( sDetailExe, 1 );
 			exercice->exe_id = atoi(( gchar * ) icol->data );
 			icol = icol->next;
-			exercice->last_clo = my_date_new_from_sql(( const gchar * ) icol->data );
+			my_date_set_from_sql( &exercice->last_clo, ( const gchar * ) icol->data );
 
 			ledger->private->exes = g_list_prepend( ledger->private->exes, exercice );
 		}
@@ -684,21 +682,20 @@ ofo_ledger_get_upd_stamp( const ofoLedger *ledger )
  * ofo_ledger_get_last_entry:
  *
  * Returns the effect date of the most recent entry written in this
- * ledger as a newly allocated #myDate object which should be
- * g_object_unref() by the caller.
- * If no entry has been found for this ledger, a cleared (thus invalid,
- * but not null) date is returned.
+ * ledger as a newly allocated #GDate structure which should be
+ * g_free() by the caller,
+ * or %NULL if no entry has been found for this ledger.
  */
-myDate *
+GDate *
 ofo_ledger_get_last_entry( const ofoLedger *ledger )
 {
-	myDate *deffet;
+	GDate *deffect;
 	gchar *query;
 	GSList *result, *icol;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
 
-	deffet = my_date_new();
+	deffect = NULL;
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
@@ -712,46 +709,46 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger )
 
 		if( result ){
 			icol = ( GSList * ) result->data;
-			my_date_set_from_str( deffet, ( const gchar * ) icol->data, MY_DATE_SQL );
+			deffect = g_new0( GDate, 1 );
+			my_date_set_from_sql( deffect, ( const gchar * ) icol->data );
 			ofo_sgbd_free_result( result );
 		}
 	}
 
-	return( deffet );
+	return( deffect );
 }
 
 /**
  * ofo_ledger_get_last_closing:
  *
  * Returns the most recent closing date, all exercices considered, for
- * this ledger as a newly allocated #myDate object which should be
- * g_object_unref() by the caller.
- * If the ledger has never been closed, a cleared (thus invalid, but
- * not null) date is returned.
+ * this ledger, as a newly allocated #GDate structure which should be
+ * g_free() by the caller,
+ * or %NULL if the ledger has never been closed.
  */
-myDate *
+GDate *
 ofo_ledger_get_last_closing( const ofoLedger *ledger )
 {
-	myDate *dlast;
+	GDate *dlast;
 	sDetailExe *sdetail;
 	GList *idet;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
 
-	dlast = my_date_new();
+	dlast = NULL;
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
 		for( idet=ledger->private->exes ; idet ; idet=idet->next ){
 			sdetail = ( sDetailExe * ) idet->data;
-			if( !my_date_is_valid( dlast )){
-				if( my_date_is_valid( sdetail->last_clo )){
-					my_date_set_from_date( dlast, sdetail->last_clo );
+			if( dlast ){
+				if( my_date_is_valid( &sdetail->last_clo ) &&
+						my_date_compare( &sdetail->last_clo, dlast ) > 0 ){
+					my_date_set_from_date( dlast, &sdetail->last_clo );
 				}
-			} else if( my_date_is_valid( sdetail->last_clo ) &&
-						my_date_compare( sdetail->last_clo, dlast ) > 0 ){
-
-				my_date_set_from_date( dlast, sdetail->last_clo );
+			} else if( my_date_is_valid( &sdetail->last_clo )){
+				dlast = g_new0( GDate, 1 );
+				my_date_set_from_date( dlast, &sdetail->last_clo );
 			}
 		}
 	}
@@ -849,7 +846,7 @@ ofo_ledger_get_deb( const ofoLedger *ledger, gint exe_id, const gchar *currency 
  * Returns the most recent entry effect date written at the debit of
  * this ledger
  */
-const myDate *
+const GDate *
 ofo_ledger_get_deb_date( const ofoLedger *ledger, gint exe_id, const gchar *currency )
 {
 	sDetailCur *sdev;
@@ -860,7 +857,7 @@ ofo_ledger_get_deb_date( const ofoLedger *ledger, gint exe_id, const gchar *curr
 
 		sdev = ledger_find_cur_by_code( ledger, exe_id, currency );
 		if( sdev ){
-			return(( const myDate * ) sdev->deb_date );
+			return(( const GDate * ) &sdev->deb_date );
 		}
 	}
 
@@ -903,7 +900,7 @@ ofo_ledger_get_cre( const ofoLedger *ledger, gint exe_id, const gchar *currency 
  * Returns the most recent entry effect date written at the credit of
  * this ledger, or NULL.
  */
-const myDate *
+const GDate *
 ofo_ledger_get_cre_date( const ofoLedger *ledger, gint exe_id, const gchar *currency )
 {
 	sDetailCur *sdev;
@@ -914,7 +911,7 @@ ofo_ledger_get_cre_date( const ofoLedger *ledger, gint exe_id, const gchar *curr
 
 		sdev = ledger_find_cur_by_code( ledger, exe_id, currency );
 		if( sdev ){
-			return(( const myDate * ) sdev->cre_date );
+			return(( const GDate * ) &sdev->cre_date );
 		}
 	}
 
@@ -949,9 +946,12 @@ ofo_ledger_get_exe_list( const ofoLedger *ledger )
 }
 
 /**
- * ofo_ledger_get_last_closing:
+ * ofo_ledger_get_exe_closing:
+ *
+ * Returns the most recent closing date for the specified exercice.
+ * The returned date is not null, but may be invalid.
  */
-const myDate *
+const GDate *
 ofo_ledger_get_exe_closing( const ofoLedger *ledger, gint exe_id )
 {
 	sDetailExe *sexe;
@@ -962,7 +962,7 @@ ofo_ledger_get_exe_closing( const ofoLedger *ledger, gint exe_id )
 
 		sexe = ledger_find_exe_by_id( ledger, exe_id );
 		if( sexe ){
-			return(( const myDate * ) sexe->last_clo );
+			return(( const GDate * ) &sexe->last_clo );
 		}
 	}
 
@@ -1256,7 +1256,7 @@ ofo_ledger_set_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, gdoub
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_deb_date( ofoLedger *ledger, gint exe_id, const gchar *currency, const myDate *date )
+ofo_ledger_set_deb_date( ofoLedger *ledger, gint exe_id, const gchar *currency, const GDate *date )
 {
 	sDetailCur *sdev;
 
@@ -1267,7 +1267,7 @@ ofo_ledger_set_deb_date( ofoLedger *ledger, gint exe_id, const gchar *currency, 
 		sdev = ledger_new_cur_with_code( ledger, exe_id, currency );
 		g_return_if_fail( sdev );
 
-		my_date_set_from_date( sdev->deb_date, date );
+		my_date_set_from_date( &sdev->deb_date, date );
 	}
 }
 
@@ -1309,7 +1309,7 @@ ofo_ledger_set_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, gdoub
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_cre_date( ofoLedger *ledger, gint exe_id, const gchar *currency, const myDate *date )
+ofo_ledger_set_cre_date( ofoLedger *ledger, gint exe_id, const gchar *currency, const GDate *date )
 {
 	sDetailCur *sdev;
 
@@ -1320,7 +1320,7 @@ ofo_ledger_set_cre_date( ofoLedger *ledger, gint exe_id, const gchar *currency, 
 		sdev = ledger_new_cur_with_code( ledger, exe_id, currency );
 		g_return_if_fail( sdev );
 
-		my_date_set_from_date( sdev->cre_date, date );
+		my_date_set_from_date( &sdev->cre_date, date );
 	}
 }
 
@@ -1337,9 +1337,9 @@ ledger_new_cur_with_code( ofoLedger *ledger, gint exe_id, const gchar *currency 
 		sdet->clo_deb = 0.0;
 		sdet->clo_cre = 0.0;
 		sdet->deb = 0.0;
-		sdet->deb_date = my_date_new();
+		my_date_clear( &sdet->deb_date );
 		sdet->cre = 0.0;
-		sdet->cre_date = my_date_new();
+		my_date_clear( &sdet->cre_date );
 		sdet->exe_id = exe_id;
 		sdet->currency = g_strdup( currency );
 
@@ -1357,7 +1357,7 @@ ledger_new_cur_with_code( ofoLedger *ledger, gint exe_id, const gchar *currency 
  *   validated
  */
 gboolean
-ofo_ledger_close( ofoLedger *ledger, const myDate *closing )
+ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 {
 	static const gchar *thisfn = "ofo_ledger_close";
 	gboolean ok;
@@ -1384,11 +1384,11 @@ ofo_ledger_close( ofoLedger *ledger, const myDate *closing )
 			if( !sexe ){
 				sexe = g_new0( sDetailExe, 1 );
 				sexe->exe_id = exe_id;
-				sexe->last_clo = my_date_new();
+				my_date_clear( &sexe->last_clo );
 				ledger->private->exes = g_list_prepend( ledger->private->exes, sexe );
 			}
 
-			my_date_set_from_date( sexe->last_clo, closing );
+			my_date_set_from_date( &sexe->last_clo, closing );
 
 			if( ledger_do_update_detail_exe(
 						ledger,
@@ -1661,7 +1661,7 @@ ledger_do_update_detail_exe( const ofoLedger *ledger, sDetailExe *detail, const 
 	ofo_sgbd_query( sgbd, query, FALSE );
 	g_free( query );
 
-	sdate = my_date_to_str( detail->last_clo, MY_DATE_SQL );
+	sdate = my_date_to_str( &detail->last_clo, MY_DATE_SQL );
 
 	query = g_strdup_printf(
 					"INSERT INTO OFA_T_LEDGERS_EXE "
@@ -1805,7 +1805,7 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 			sexe = ( sDetailExe * ) exe->data;
 
 			sdfin = my_date_to_str( ofo_dossier_get_exe_end( dossier, sexe->exe_id ), MY_DATE_SQL );
-			sdclo = my_date_to_str( sexe->last_clo, MY_DATE_SQL );
+			sdclo = my_date_to_str( &sexe->last_clo, MY_DATE_SQL );
 
 			str = g_strdup_printf( "2;%s;%s;%s",
 					ofo_ledger_get_mnemo( ledger ),

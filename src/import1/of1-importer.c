@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <api/my-date.h>
 #include <api/ofa-iimporter.h>
 
 #include "of1-importer.h"
@@ -353,15 +354,13 @@ import_bourso_tabulated_text_v1( of1Importer *importer, const gchar *thisfn )
 		g_debug( "%s: bd=%d, bm=%d, ed=%d, em=%d", thisfn, bd, bm, ed, em );
 		return( IMPORTER_CODE_UNABLE_TO_PARSE );
 	}
-	g_date_clear( &output->begin, 1 );
 	g_date_set_dmy( &output->begin, bd, bm, by );
-	if( !g_date_valid( &output->begin )){
+	if( !my_date_is_valid( &output->begin )){
 		g_debug( "%s: invalid begin date", thisfn );
 		return( IMPORTER_CODE_UNABLE_TO_PARSE );
 	}
-	g_date_clear( &output->end, 1 );
 	g_date_set_dmy( &output->end, ed, em, ey );
-	if( !g_date_valid( &output->end )){
+	if( !my_date_is_valid( &output->end )){
 		g_debug( "%s: invalid end date", thisfn );
 		return( IMPORTER_CODE_UNABLE_TO_PARSE );
 	}
@@ -414,9 +413,8 @@ import_bourso_tabulated_text_v1( of1Importer *importer, const gchar *thisfn )
 			g_debug( "%s: bd=%d, bm=%d, by=%d", thisfn, bd, bm, by );
 			return( IMPORTER_CODE_UNABLE_TO_PARSE );
 		}
-		g_date_clear( &bat->dope, 1 );
 		g_date_set_dmy( &bat->dope, bd, bm, by );
-		if( !g_date_valid( &bat->dope )){
+		if( !my_date_is_valid( &bat->dope )){
 			g_debug( "%s: invalid ope date", thisfn );
 			return( IMPORTER_CODE_UNABLE_TO_PARSE );
 		}
@@ -430,9 +428,8 @@ import_bourso_tabulated_text_v1( of1Importer *importer, const gchar *thisfn )
 			g_debug( "%s: bd=%d, bm=%d, by=%d", thisfn, bd, bm, by );
 			return( IMPORTER_CODE_UNABLE_TO_PARSE );
 		}
-		g_date_clear( &bat->dvaleur, 1 );
-		g_date_set_dmy( &bat->dvaleur, bd, bm, by );
-		if( !g_date_valid( &bat->dvaleur )){
+		g_date_set_dmy( &bat->deffect, bd, bm, by );
+		if( !my_date_is_valid( &bat->deffect )){
 			g_debug( "%s invalid valeur date", thisfn );
 			return( IMPORTER_CODE_UNABLE_TO_PARSE );
 		}
@@ -514,7 +511,7 @@ import_lcl_tabulated_text_v1( of1Importer *importer )
 
 		if( output->count < nb ){
 			bat = g_new0( ofaIImporterSBatv1, 1 );
-			g_date_clear( &bat->dope, 1 );
+			my_date_clear( &bat->dope );
 			/*g_debug( "%s: str='%s'", thisfn, ( gchar * ) line->data );*/
 
 			sscanf( *iter, "%d/%d/%d", &bd, &bm, &by );
@@ -522,9 +519,8 @@ import_lcl_tabulated_text_v1( of1Importer *importer )
 				g_debug( "%s: bd=%d, bm=%d, by=%d", thisfn, bd, bm, by );
 				return( IMPORTER_CODE_UNABLE_TO_PARSE );
 			}
-			g_date_clear( &bat->dvaleur, 1 );
-			g_date_set_dmy( &bat->dvaleur, bd, bm, by );
-			if( !g_date_valid( &bat->dvaleur )){
+			g_date_set_dmy( &bat->deffect, bd, bm, by );
+			if( !my_date_is_valid( &bat->deffect )){
 				g_debug( "%s invalid valeur date", thisfn );
 				return( IMPORTER_CODE_UNABLE_TO_PARSE );
 			}
@@ -551,9 +547,8 @@ import_lcl_tabulated_text_v1( of1Importer *importer )
 				g_debug( "%s: bd=%d, bm=%d, by=%d", thisfn, bd, bm, by );
 				return( IMPORTER_CODE_UNABLE_TO_PARSE );
 			}
-			g_date_clear( &output->end, 1 );
 			g_date_set_dmy( &output->end, bd, bm, by );
-			if( !g_date_valid( &output->end )){
+			if( !my_date_is_valid( &output->end )){
 				g_debug( "%s invalid end date", thisfn );
 				return( IMPORTER_CODE_UNABLE_TO_PARSE );
 			}
