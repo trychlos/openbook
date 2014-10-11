@@ -1656,11 +1656,11 @@ check_row_for_valid_dope( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIte
 	gboolean is_valid;
 
 	is_valid = FALSE;
-	g_date_clear( &date, 1 );
+	my_date_clear( &date );
 	gtk_tree_model_get( tmodel, iter, ENT_COL_DOPE, &str, -1 );
 	if( str && g_utf8_strlen( str, -1 )){
-		g_date_set_parse( &date, str );
-		if( g_date_valid( &date )){
+		my_date_set_from_str( &date, str, MY_DATE_DMYY );
+		if( my_date_is_valid( &date )){
 			is_valid = TRUE;
 		} else {
 			set_comment( self, _( "Invalid operation date" ));
