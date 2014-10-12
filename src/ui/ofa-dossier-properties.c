@@ -252,7 +252,7 @@ init_current_exe_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkContainer *container;
-	GtkWidget *label, *entry;
+	GtkWidget *label;
 	gchar *str;
 
 	priv = self->private;
@@ -260,23 +260,21 @@ init_current_exe_page( ofaDossierProperties *self )
 
 	priv->last_closed = ofo_dossier_get_last_closed_exercice( priv->dossier );
 
-	my_date_set_from_date( &priv->begin, ofo_dossier_get_current_exe_begin( priv->dossier ));
-	entry = my_utils_container_get_child_by_name( container, "p2-begin" );
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_format( GTK_EDITABLE( entry ), MY_DATE_DMYY );
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin );
+	priv->begin_entry = my_utils_container_get_child_by_name( container, "p2-begin" );
+	my_editable_date_init( GTK_EDITABLE( priv->begin_entry ));
+	my_editable_date_set_mandatory( GTK_EDITABLE( priv->begin_entry ), FALSE );
 	label = my_utils_container_get_child_by_name( container, "p2-begin-label" );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
-	priv->begin_entry = entry;
+	my_editable_date_set_label( GTK_EDITABLE( priv->begin_entry ), label, MY_DATE_DMMM );
+	my_date_set_from_date( &priv->begin, ofo_dossier_get_current_exe_begin( priv->dossier ));
+	my_editable_date_set_date( GTK_EDITABLE( priv->begin_entry ), &priv->begin );
 
-	my_date_set_from_date( &priv->end, ofo_dossier_get_current_exe_end( priv->dossier ));
-	entry = my_utils_container_get_child_by_name( container, "p2-end" );
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_format( GTK_EDITABLE( entry ), MY_DATE_DMYY );
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
+	priv->end_entry = my_utils_container_get_child_by_name( container, "p2-end" );
+	my_editable_date_init( GTK_EDITABLE( priv->end_entry ));
+	my_editable_date_set_mandatory( GTK_EDITABLE( priv->end_entry ), FALSE );
 	label = my_utils_container_get_child_by_name( container, "p2-end-label" );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
-	priv->end_entry = entry;
+	my_editable_date_set_label( GTK_EDITABLE( priv->end_entry ), label, MY_DATE_DMMM );
+	my_date_set_from_date( &priv->end, ofo_dossier_get_current_exe_end( priv->dossier ));
+	my_editable_date_set_date( GTK_EDITABLE( priv->end_entry ), &priv->end );
 
 	label = my_utils_container_get_child_by_name( container, "p2-id" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -341,8 +339,14 @@ check_for_enable_dlg( ofaDossierProperties *self )
 	button = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
 
-	my_date_set_from_date( &priv->begin, my_editable_date_get_date( GTK_EDITABLE( priv->begin_entry ), NULL ));
-	my_date_set_from_date( &priv->end, my_editable_date_get_date( GTK_EDITABLE( priv->end_entry ), NULL ));
+	if( priv->begin_entry ){
+		my_date_set_from_date( &priv->begin,
+				my_editable_date_get_date( GTK_EDITABLE( priv->begin_entry ), NULL ));
+	}
+	if( priv->end_entry ){
+		my_date_set_from_date( &priv->end,
+				my_editable_date_get_date( GTK_EDITABLE( priv->end_entry ), NULL ));
+	}
 
 	/*g_debug( "label=%s, duree=%u, currency=%s", priv->label, priv->duree, priv->currency );*/
 	ok = is_dialog_valid( self );
@@ -358,7 +362,10 @@ is_dialog_valid( ofaDossierProperties *self )
 
 	priv = self->private;
 
-	ok = !my_date_is_valid( &priv->begin ) || my_date_compare( &priv->begin, priv->last_closed ) < 0;
+	ok = !my_date_is_valid( &priv->begin ) ||
+			!my_date_is_valid( priv->last_closed ) ||
+			my_date_compare( &priv->begin, priv->last_closed ) > 0;
+
 	ok &= ofo_dossier_is_valid( priv->label, priv->duree, priv->currency, &priv->begin, &priv->end );
 
 	return( ok );

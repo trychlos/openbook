@@ -53,11 +53,13 @@ void         my_editable_date_set_date        ( GtkEditable *editable, const GDa
 
 void         my_editable_date_set_label       ( GtkEditable *editable, GtkWidget *label, myDateFormat format );
 
+void         my_editable_date_set_mandatory   ( GtkEditable *editable, gboolean mandatory );
+
 const GDate *my_editable_date_get_date        ( GtkEditable *editable, gboolean *valid );
 
 /*gchar       *my_editable_date_get_string( GtkEditable *editable, myDateFormat format );*/
 
-void         my_editable_date_render          ( GtkEditable *editable );
+/*void         my_editable_date_render          ( GtkEditable *editable );*/
 
 G_END_DECLS
 

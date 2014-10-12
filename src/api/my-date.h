@@ -50,10 +50,12 @@ G_BEGIN_DECLS
  * --------------+------------+---------+-------+-----+----------+
  */
 typedef enum {
-	MY_DATE_DMMM = 1,
+	MY_DATE_FIRST = 0,
+	MY_DATE_DMMM,
 	MY_DATE_DMYY,
 	MY_DATE_SQL,
-	MY_DATE_YYMD
+	MY_DATE_YYMD,
+	MY_DATE_LAST
 }
 	myDateFormat;
 

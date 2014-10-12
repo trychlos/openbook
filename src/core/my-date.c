@@ -292,6 +292,7 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string )
 gchar *
 my_date_to_str( const GDate *date, myDateFormat format )
 {
+	static const gchar *thisfn = "my_date_to_str";
 	static const gchar *st_month[] = {
 			N_( "jan." ),
 			N_( "feb." ),
@@ -347,6 +348,10 @@ my_date_to_str( const GDate *date, myDateFormat format )
 						g_date_get_year( date ),
 						g_date_get_month( date ),
 						g_date_get_day( date ));
+				break;
+
+			default:
+				g_warning( "%s: unhandled format %u", thisfn, format );
 				break;
 		}
 	}

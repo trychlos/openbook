@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -59,10 +60,13 @@ typedef struct {
 	gboolean           setting_text;
 	GtkWidget         *label;
 	myDateFormat       label_format;
+	gboolean           mandatory;
 }
 	sEditableDate;
 
 #define DEFAULT_ENTRY_FORMAT    MY_DATE_DMYY
+#define DEFAULT_MANDATORY       TRUE
+
 #define EDITABLE_DATE_DATA      "my-editable-date-data"
 
 static void               on_editable_weak_notify( sEditableDate *data, GObject *was_the_editable );
@@ -70,11 +74,13 @@ static sEditableDate     *get_editable_date_data( GtkEditable *editable );
 static const sDateFormat *get_date_format( guint date_format );
 static void               on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditableDate *data );
 static gchar             *on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditableDate *data );
+static void               insert_char_at_pos( GtkEditable *editable, gint pos, gchar c, sEditableDate *data );
 static void               on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditableDate *data );
 static void               on_changed( GtkEditable *editable, sEditableDate *data );
 static gboolean           on_focus_in( GtkWidget *entry, GdkEvent *event, sEditableDate *data );
 static gboolean           on_focus_out( GtkWidget *entry, GdkEvent *event, sEditableDate *data );
 /*static gchar         *editable_date_get_string( GtkEditable *editable, sEditableDate **pdata );*/
+static void               editable_date_render( GtkEditable *editable );
 
 /**
  * my_editable_date_init:
@@ -121,6 +127,7 @@ get_editable_date_data( GtkEditable *editable )
 
 		data->setting_text = FALSE;
 		my_editable_date_set_format( editable, -1 );
+		data->mandatory = DEFAULT_MANDATORY;
 
 		g_signal_connect(
 				G_OBJECT( editable ), "insert-text", G_CALLBACK( on_text_inserted ), data );
@@ -168,6 +175,7 @@ my_editable_date_set_format( GtkEditable *editable, myDateFormat format )
 	sEditableDate *data;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+	g_return_if_fail( format == -1 || ( format > MY_DATE_FIRST && format < MY_DATE_LAST ));
 
 	data = get_editable_date_data( editable );
 
@@ -185,20 +193,25 @@ my_editable_date_set_format( GtkEditable *editable, myDateFormat format )
 static void
 on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditableDate *data )
 {
+	static const gchar *thisfn = "my_editable_date_on_text_inserted";
 	gchar *text;
 
-	g_debug( "my_editable_date_on_text_inserted: editable=%p, new_text=%s, position=%d",
-			( void * ) editable, new_text, *position );
+	g_debug( "%s: editable=%p, new_text=%s, new_text_length=%u, position=%d",
+			thisfn, ( void * ) editable, new_text, new_text_length, *position );
 
 	text = NULL;
 
 	if( data->setting_text ){
+		g_debug( "%s: setting_text=%s", thisfn, "True" );
 		text = g_strndup( new_text, new_text_length );
 
 	} else {
 		switch( data->format->date_format ){
 			case MY_DATE_DMYY:
 				text = on_text_inserted_dmyy( editable, new_text, new_text_length, ( gint * ) position, data );
+				break;
+			default:
+				g_warning( "%s: unhandled format %u", thisfn, data->format->date_format );
 				break;
 		}
 	}
@@ -215,222 +228,302 @@ on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, 
 
 /*
  * inserting a text at pos:
- * - each char is compared to the final result
- * - we simultaneously build the string to be inserted
+ * - we maintain in 'str_result' an image of the final result,
+ * - each char from 'new_text' is checked against its future position in the
+ *   final result
+ * - we simultaneously build in 'str_insert' the string to be inserted
  */
 static gchar *
 on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditableDate *data )
 {
+	static const gchar *thisfn = "my_editable_date_on_text_inserted_dmyy";
 	static const int st_days[] = { 31,29,31,30,31,30,31,31,30,31,30,31 };
-	gchar *str;
-	GString *strfull, *current;
-	GString *text;
-	gint i;
+	gint i, pos;
 	gchar *ithpos;
 	gunichar ithchar;
-	gint pos;
-	gint ival;
 	gboolean ok;
-	gint newnum, prevday, prevmonth;
-	gboolean havemonth, haveyear;
+	gchar *str;
+	GString *str_result, *str_insert;
 	gchar **components;
-	gboolean shortcut_millenary;
+	gint day, month, new_num, len_day;
+	gboolean have_year, shortcut_millenary, done;
+	gint ival;
 
-	/* strfull is supposed to be empty, or like 'dd/mm/yyyy' minus one
-	 * char because we must be able to insert one
-	 * it will be completed with newly inserted chars as we are checking
-	 * them from inserted new_text */
+	shortcut_millenary = TRUE;
+
+	/* 'str_result' is initialized with the initial content of the
+	 * GtkEditable, will be incremented with each validated char */
 	str = gtk_editable_get_chars( editable, 0, -1 );
-	strfull = g_string_new( str );
+	str_result = g_string_new( str );
 	g_free( str );
 
-	/* text is the returned string: this is the entered new_text, maybe
-	 * plus a trailing slash */
-	text = g_string_new( "" );
+	/* 'str_insert' is built with each validated char, plus maybe
+	 * automated chars (e;g. '/' slash separator */
+	str_insert = g_string_new( "" );
 
-	ok = TRUE;
-	shortcut_millenary = TRUE;
-	pos = *position;
+	/* each char of the inserted text is tested at its future position
+	 * we may have to insert more characters in order to have a good
+	 * representation of the date:
+	 * - a '0' as the dizain of the day or the month,
+	 * - a '/' before month or year
+	 * - the century of the year if shortcut is allowed
+	 * 'pos' is the position in 'str_full' into which the next char will
+	 * be inserted */
+	for( ok=TRUE, i=0, pos=*position ; ok && i<new_text_length ; ++i ){
 
-	for( i=0 ; ok && i<new_text_length ; ++i, ++pos ){
-		ithpos = g_utf8_offset_to_pointer( new_text, i );
-		ithchar = g_utf8_get_char( ithpos );
-		ok = FALSE;
-
+		/* split the components of the current date
+		 * at this moment, there should not be any error (but the date
+		 * may be incomplete) */
+		day = 0;
+		month = 0;
+		len_day = 0;
+		have_year = FALSE;
 		components = NULL;
-		prevday = 0;
-		prevmonth = 0;
-		havemonth = FALSE;
-		haveyear = FALSE;
-		if( g_utf8_strlen( strfull->str, -1 )){
-			components = g_strsplit( strfull->str, "/", -1 );
-			if( *components && g_utf8_strlen( *components, -1 )){
-				prevday = atoi( *components );
-				if( *( components+1 ) && g_utf8_strlen( *( components+1 ), -1 )){
-					havemonth = TRUE;
-					prevmonth = atoi( *( components+1 ));
-					if( *( components+2 ) && g_utf8_strlen( *( components+2 ), -1 )){
-						haveyear = TRUE;
+		if( g_utf8_strlen( str_result->str, -1 )){
+			components = g_strsplit( str_result->str, "/", -1 );
+			if( *components ){
+				if( g_utf8_strlen( *components, -1 )){
+					day = atoi( *components );
+					len_day = g_utf8_strlen( *components, -1 );
+				}
+				if( *( components+1 )){
+					if( g_utf8_strlen( *( components+1 ), -1 )){
+						month = atoi( *( components+1 ));
+					}
+					if( *( components+2 )){
+						if( g_utf8_strlen( *( components+2 ), -1 )){
+							have_year = TRUE;
+						}
+						if( *( components+3 )){
+							g_warning( "%s: current date has more than three components", thisfn );
+							ok = FALSE;
+							continue;
+						}
 					}
 				}
 			}
 		}
-		g_debug( "on_text_inserted_dmyy: prevday=%u, prevmonth=%u, havemonth=%s, haveyear=%s",
-				prevday, prevmonth, havemonth ? "True":"False", haveyear ? "True":"False" );
 
-		/* only allowed chars are digits and slashes */
+		ithpos = g_utf8_offset_to_pointer( new_text, i );
+		ithchar = g_utf8_get_char( ithpos );
+
+		g_debug( "%s: i=%u, char='%c', pos=%u, position=%u, day=%u, month=%u, have_year=%s",
+				thisfn, i, ithchar, pos, *position, day, month, have_year ? "True":"False" );
+
 		if( g_unichar_isdigit( ithchar )){
 			ival = g_unichar_digit_value( ithchar );
 
 			/* are we entering a day ?
-			 * we must have d to be able to insert a digit
+			 * we must have 'd' to be able to insert a digit
 			 *  (because 'dd' is automatically followed by a slash)
 			 * pos may be 0 or 1 */
 			if( pos <= 1 ){
-				if( pos == 0 && prevday > 0 ){
-					newnum = 10*ival + prevday;
+				if( pos == 0 && day > 0 ){
+					new_num = 10*ival + day;
 				} else {
-					newnum = 10*prevday + ival;
+					new_num = 10*day + ival;
 				}
-				if( newnum >= 1 && newnum <= 31 &&
-						( !havemonth ||
-								( prevmonth >= 1 && prevmonth <= 12 && newnum <= st_days[prevmonth-1] ))){
-					current = g_string_new( "" );
-					if( pos == 0 && ival >= 4 ){
-						current = g_string_append_c( current, '0' );
+				if( new_num <= 31 &&
+						( !month || ( month >= 1 && month <= 12 && new_num <= st_days[month-1] ))){
+					if( pos == 0 && new_num >= 4 && new_num < 10 ){
+						str_insert = g_string_append_c( str_insert, '0' );
+						str_result = g_string_insert_c( str_result, pos, '0' );
+						pos += 1;
+						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+								thisfn, str_insert->str, *position, str_result->str, pos );
 					}
-					current = g_string_append_c( current, ithchar );
-					if(( pos == 0 && ival >= 4 ) || ( pos == 1 && strfull->str[2] != '/' )){
-						current = g_string_append_c( current, '/' );
+					str_insert = g_string_append_c( str_insert, ithchar );
+					str_result = g_string_insert_c( str_result, pos, ithchar );
+					pos += 1;
+					g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+							thisfn, str_insert->str, *position, str_result->str, pos );
+					if( pos == 2 && str_result->str[pos] != '/' && ( i == new_text_length-1 || new_text[i+1] != '/' )){
+						str_insert = g_string_append_c( str_insert, '/' );
+						str_result = g_string_insert_c( str_result, pos, '/' );
+						pos += 1;
+						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+								thisfn, str_insert->str, *position, str_result->str, pos );
 					}
-					text = g_string_append( text, current->str );
-					strfull = g_string_assign( strfull, current->str );
-					if( havemonth ){
-						strfull = g_string_append( strfull, *( components+1 ));
-						if( haveyear ){
-							strfull = g_string_append_c( strfull, '/' );
-							strfull = g_string_append( strfull, *( components+2 ));
-						}
-					}
-					g_string_free( current, TRUE );
-					ok = TRUE;
+				} else {
+					ok = FALSE;
+					continue;
 				}
 
 			/* are we entering a month ?
-			 * we must have something like dd/m or dd/m/yyyy in order
-			 * to be able to insert a digit
-			 * pos is 3 or 4 */
-			} else if( pos == 3 || pos == 4 ){
-				if( pos == 3 && prevmonth > 0 ){
-					newnum = 10*ival + prevmonth;
-				} else {
-					newnum = 10*prevmonth + ival;
+			 * we must have something like d or dd or dd/m or dd/m/yyyy
+			 * in order to be able to insert a digit */
+			} else if( pos >= 2 && pos <= 4 ){
+				if( pos == 2 ){
+					if( str_result->str[pos] != '/' ){
+						str_insert = g_string_append_c( str_insert, '/' );
+						str_result = g_string_insert_c( str_result, pos, '/' );
+						pos += 1;
+						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+								thisfn, str_insert->str, *position, str_result->str, pos );
+					} else {
+						ok = FALSE;
+						continue;
+					}
 				}
-				if( newnum >= 1 && newnum <= 12 && prevday <= st_days[newnum-1] ){
-					current = g_string_new( "" );
-					if( pos == 3 && ival >= 2 ){
-						current = g_string_append_c( current, '0' );
+				if( pos == 3 && month > 0 ){
+					new_num = 10*ival + month;
+				} else {
+					new_num = 10*month + ival;
+				}
+				if( new_num >= 1 && new_num <= 12 && day <= st_days[new_num-1] ){
+					if( pos == 3 && new_num >= 2 && new_num < 10 ){
+						str_insert = g_string_append_c( str_insert, '0' );
+						str_result = g_string_insert_c( str_result, pos, '0' );
+						pos += 1;
+						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+								thisfn, str_insert->str, *position, str_result->str, pos );
 					}
-					current = g_string_append_c( current, ithchar );
-					if(( pos == 3 && ival >= 2 ) || ( pos == 4 && strfull->str[5] != '/' )){
-						current = g_string_append_c( current, '/' );
+					str_insert = g_string_append_c( str_insert, ithchar );
+					str_result = g_string_insert_c( str_result, pos, ithchar );
+					pos += 1;
+					g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+							thisfn, str_insert->str, *position, str_result->str, pos );
+					if( pos == 5 && str_result->str[pos] != '/' && ( i == new_text_length-1 || new_text[i+1] != '/' )){
+						str_insert = g_string_append_c( str_insert, '/' );
+						str_result = g_string_insert_c( str_result, pos, '/' );
+						pos += 1;
+						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+								thisfn, str_insert->str, *position, str_result->str, pos );
 					}
-					text = g_string_append( text, current->str );
-					g_string_printf( strfull, "%s/%s/", *components, current->str );
-					if( haveyear ){
-						strfull = g_string_append( strfull, *( components+2 ));
-					}
-					g_string_free( current, TRUE );
-					ok = TRUE;
+				} else {
+					ok = FALSE;
+					continue;
 				}
 
 			/* are we entering a year ?
 			 * we are willing to have some sort of shortcut
-			 * we have dd/mm/yyyy
-			 * pos is 6 to 9
-			 */
-			} else if( pos >= 6 && pos <= 9 ){
-				current = g_string_new( "" );
-				if( pos == 6 && !haveyear && shortcut_millenary ){
-					if( ival <= 5 ){
-						current = g_string_append( current, "20" );
+			 * we have dd/mm/yyyy */
+			} else if( pos >= 5 && pos <= 9 ){
+				if( pos == 5 ){
+					if( str_result->str[pos] != '/' ){
+						str_insert = g_string_append_c( str_insert, '/' );
+						str_result = g_string_insert_c( str_result, pos, '/' );
+						pos += 1;
+						g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+								thisfn, str_insert->str, *position, str_result->str, pos );
 					} else {
-						current = g_string_append( current, "19" );
+						ok = FALSE;
+						continue;
 					}
 				}
-				current = g_string_append_c( current, ithchar );
-				text = g_string_append( text, current->str );
-				g_string_printf( strfull, "%s/%s/%s", *components, *( components+1 ), current->str );
-				g_string_free( current, TRUE );
-				ok = TRUE;
+				if( pos == 6 && !have_year && shortcut_millenary ){
+					if( ival <= 5 ){
+						str_insert = g_string_append( str_insert, "20" );
+						str_result = g_string_insert( str_result, pos, "20" );
+					} else {
+						str_insert = g_string_append( str_insert, "19" );
+						str_result = g_string_insert( str_result, pos, "19" );
+					}
+					pos += 2;
+					g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
+							thisfn, str_insert->str, *position, str_result->str, pos );
+				}
+				str_insert = g_string_append_c( str_insert, ithchar );
+				str_result = g_string_insert_c( str_result, pos, ithchar );
+				pos += 1;
+			} else {
+				ok = FALSE;
+				continue;
 			}
 
 		/* are we entering a separator ?
-		 * only slashes are accepted */
-		} else if( ithchar == '/' ){
+		 * only slashes are accepted
+		 * unable to enter again a separator if we already have our
+		 * three components */
+		} else if( ithchar == '/' && !have_year ){
+
+			done = FALSE;
 
 			if( pos == 1 ){
-				*position -= 1;
-				current = g_string_new( "" );
-				g_string_printf( current, "%2.2d/", prevday );
-				text = g_string_assign( text, current->str );
-				strfull = g_string_assign( strfull, current->str );
-				if( havemonth ){
-					strfull = g_string_append( strfull, *( components+1 ));
-					if( haveyear ){
-						strfull = g_string_append_c( strfull, '/' );
-						strfull = g_string_append( strfull, *( components+2 ));
-					}
-				}
-				g_string_free( current, TRUE );
-				ok = TRUE;
-
-			} else if( pos == 2 ){
-				text = g_string_append_c( text, '/' );
-				g_string_printf( strfull, "%2.2d/", prevday );
-				if( havemonth ){
-					strfull = g_string_append( strfull, *( components+1 ));
-					if( haveyear ){
-						strfull = g_string_append_c( strfull, '/' );
-						strfull = g_string_append( strfull, *( components+2 ));
-					}
-				}
-				ok = TRUE;
-
-			} else if( pos == 4 ){
-				*position -= 1;
-				current = g_string_new( "" );
-				g_string_printf( current, "%2.2d/", prevmonth );
-				text = g_string_assign( text, current->str );
-				g_string_printf( strfull, "%2.2d/%2.2d/", prevday, prevmonth );
-				if( haveyear ){
-					strfull = g_string_append( strfull, *( components+2 ));
-				}
-				g_string_free( current, TRUE );
-				ok = TRUE;
-
-			} else if( pos == 5 ){
-				text = g_string_append_c( text, '/' );
-				g_string_printf( strfull, "%2.2d/", prevmonth );
-				if( haveyear ){
-					strfull = g_string_append( strfull, *( components+2 ));
-				}
-				ok = TRUE;
+				insert_char_at_pos( editable, 0, '0', data );
+				str_result = g_string_insert_c( str_result, 0, '0' );
+				pos += 1;
+				*position += 1;
 			}
+			if( pos == 2 ){
+				str_insert = g_string_append_c( str_insert, ithchar );
+				str_result = g_string_insert_c( str_result, pos, ithchar );
+				pos += 1;
+				done = TRUE;
+			}
+			if( pos == 3 && !done ){
+				if( len_day < 2 ){
+					insert_char_at_pos( editable, 0, '0', data );
+					str_result = g_string_insert_c( str_result, 0, '0' );
+					*position += 1;
+				} else {
+					str_insert = g_string_append_c( str_insert, ithchar );
+					str_result = g_string_insert_c( str_result, pos, ithchar );
+					done = TRUE;
+				}
+				pos += 1;
+			}
+			if( pos == 4 && !done ){
+				if( len_day < 2 ){
+					insert_char_at_pos( editable, 0, '0', data );
+					str_result = g_string_insert_c( str_result, 0, '0' );
+				} else {
+					insert_char_at_pos( editable, 3, '0', data );
+					str_result = g_string_insert_c( str_result, 3, '0' );
+				}
+				*position += 1;
+				pos += 1;
+			}
+			if( pos == 5 && !done ){
+				str_insert = g_string_append_c( str_insert, ithchar );
+				str_result = g_string_insert_c( str_result, pos, ithchar );
+				pos += 1;
+				done = TRUE;
+			}
+			if( !done ){
+				ok = FALSE;
+				continue;
+			}
+
+		/* neither a digit nor a separator */
+		} else {
+			ok = FALSE;
+			continue;
 		}
 
 		g_strfreev( components );
 	}
 
-	g_string_free( strfull, TRUE );
+	g_string_free( str_result, TRUE );
 
-	str = g_string_free( text, FALSE );
+	g_debug( "%s: ok=%s, str_insert=%s", thisfn, ok ? "True":"False", str_insert->str );
+	str = g_string_free( str_insert, FALSE );
 	if( !ok ){
 		g_free( str );
 		str = NULL;
 	}
 
 	return( str );
+}
+
+/*
+ * insert the given @c char in the GtkEditable at given @pos position
+ * no signal is triggered
+ */
+static void
+insert_char_at_pos( GtkEditable *editable, gint pos, gchar c, sEditableDate *data )
+{
+	gchar *text;
+
+	text = g_strdup_printf( "%c", c );
+
+	data->setting_text = TRUE;
+
+	g_signal_handlers_block_by_func( editable, ( gpointer ) on_text_inserted, data );
+	gtk_editable_insert_text( editable, text, g_utf8_strlen( text, -1 ), &pos );
+	g_signal_handlers_unblock_by_func( editable, ( gpointer ) on_text_inserted, data );
+
+	g_free( text );
 }
 
 static void
@@ -449,17 +542,36 @@ on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditableD
 static void
 on_changed( GtkEditable *editable, sEditableDate *data )
 {
-	gchar *text;
-
-	g_debug( "my_editable_date_on_changed: editable=%p", ( void * ) editable );
+	static const gchar *thisfn = "my_editable_date_on_changed";
+	gchar *text, *markup;
+	gint len_text;
 
 	if( !data->setting_text ){
+		g_debug( "%s: editable=%p, data=%p", thisfn, ( void * ) editable, ( void * ) data );
 		text = gtk_editable_get_chars( editable, 0, -1 );
+		len_text = g_utf8_strlen( text, -1 );
 		my_date_set_from_str( &data->date, text, data->format->date_format );
 		data->valid = my_date_is_valid( &data->date );
 		g_free( text );
 
+		if( data->label ){
+			g_return_if_fail( GTK_IS_LABEL( data->label ));
+			g_return_if_fail( data->label_format > MY_DATE_FIRST && data->label_format < MY_DATE_LAST );
+			if( data->valid ){
+				text = my_date_to_str( &data->date, data->label_format );
+			} else if( len_text || data->mandatory ){
+				text = g_strdup( _( "invalid date" ));
+			} else {
+				text = g_strdup( "" );
+			}
+			markup = g_markup_printf_escaped( "<span fgcolor=\"#666666\" style=\"italic\">%s</span>", text );
+			g_free( text );
+			gtk_label_set_markup( GTK_LABEL( data->label), markup );
+			g_free( markup );
+		}
+
 	} else {
+		g_debug( "%s: editable=%p, data=%p: set setting_text to False", thisfn, ( void * ) editable, ( void * ) data );
 		data->setting_text = FALSE;
 	}
 }
@@ -496,6 +608,7 @@ void
 my_editable_date_set_date( GtkEditable *editable, const GDate *date )
 {
 	sEditableDate *data;
+	gchar *text;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
 
@@ -503,7 +616,16 @@ my_editable_date_set_date( GtkEditable *editable, const GDate *date )
 
 	my_date_set_from_date( &data->date, date );
 
-	my_editable_date_render( editable );
+	/* render the date, triggering a 'changed' signal if the string is
+	 * empty
+	 */
+	editable_date_render( editable );
+
+	text = gtk_editable_get_chars( editable, 0, -1 );
+	if( !g_utf8_strlen( text, -1 )){
+		on_changed( editable, data );
+	}
+	g_free( text );
 }
 
 /**
@@ -512,6 +634,10 @@ my_editable_date_set_date( GtkEditable *editable, const GDate *date )
  * @label: a #GtkWidget which will be updated with a representation of
  *  the current date at each change.
  * @format: the format of the representation
+ *
+ * When a @label and a @format are set, then the entered date will be
+ * displayed with the specified @format into the specified @label, as
+ * the user enters the date in the main #GtkEditable.
  */
 void
 my_editable_date_set_label( GtkEditable *editable, GtkWidget *label, myDateFormat format )
@@ -519,11 +645,31 @@ my_editable_date_set_label( GtkEditable *editable, GtkWidget *label, myDateForma
 	sEditableDate *data;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+	g_return_if_fail( label && GTK_IS_LABEL ( label ));
+	g_return_if_fail( format > MY_DATE_FIRST && format < MY_DATE_LAST );
 
 	data = get_editable_date_data( editable );
 
 	data->label = label;
 	data->label_format = format;
+}
+
+/**
+ * my_editable_date_set_mandatory:
+ * @editable: this #GtkEditable instance.
+ * @mandatory: whether the date is mandatory, i.e. also invalid when
+ *  empty.
+ */
+void
+my_editable_date_set_mandatory( GtkEditable *editable, gboolean mandatory )
+{
+	sEditableDate *data;
+
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	data = get_editable_date_data( editable );
+
+	data->mandatory = mandatory;
 }
 
 /**
@@ -594,7 +740,7 @@ editable_date_get_string( GtkEditable *editable, sEditableDate **pdata )
 }
 #endif
 
-/**
+/*
  * my_editable_date_render:
  * @editable: this #GtkEditable instance.
  *
@@ -603,8 +749,8 @@ editable_date_get_string( GtkEditable *editable, sEditableDate **pdata )
  *
  * An invalid date is just rendered as an empty string.
  */
-void
-my_editable_date_render( GtkEditable *editable )
+static void
+editable_date_render( GtkEditable *editable )
 {
 	sEditableDate *data;
 	gchar *text;
@@ -616,6 +762,7 @@ my_editable_date_render( GtkEditable *editable )
 		text = my_date_to_str( &data->date, data->format->date_format );
 		data->setting_text = TRUE;
 		gtk_entry_set_text( GTK_ENTRY( editable ), text );
+		data->setting_text = FALSE;
 		g_free( text );
 	}
 }
