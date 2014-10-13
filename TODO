@@ -79,11 +79,6 @@
                 for storing date, amounts and rates) - this is rather
                 a configuration information than actually a user pref..
 
-  79 2014- 5-21 replace memcpy with g_memdup when possible
-     2014- 6-27 all memcpy are used for copying GDate of timestamp, so
-                are to be replaced with my_utils_date_set_from_date()
-                or my_utils_stamp_set_from_???()
-
   85 2014- 5-21 Color the frame of the invalid GtkEntry
                 + set data "ofa-data-entry-valid"
                 + my_utils_entry_is_valid
@@ -186,9 +181,6 @@
                 unexistant account (this is the case on EBP export which
                  has kept entries on closed accounts
 
- 184 2014- 6-10 use the count of decimal digits of the currency when 
-                displaying all amounts
-
  186 2014- 6-10 check that the IMPORT journal exists before trying to
                 import the entries
      2014- 6-11 Is it really mandatory as the imported entries may do
@@ -204,9 +196,6 @@
      2014- 6-18 not exactly: a multi-currency journal may be balanced
                 per currency depending of the way the operations are
                 entered (and this way should maybe be forced)
-
- 194 2014- 6-11 ofo_journal_get_cloture() should be replaced with
-                ofo_journal_get_last_closing()
 
  195 2014- 6-11 optimize the usage of SELECT COUNT(*) FROM 
                 OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
@@ -237,6 +226,20 @@
      2014- 6-16 maybe by prefixing the entry number with the exercice id
                 thus having a full entry identifier as '1-1234'
      2014- 6-16 another way may be to just ignore the issue...
+     2014-10-13 report duplicated #265 here:
+                review ofa_t_ecritures index: should be just ecr_number
+                and check that ecr_number is an unsigned long
+                http://dev.mysql.com/doc/refman/5.0/en/integer-types.html
+                http://en.wikibooks.org/wiki/C_Programming/C_Reference/limits.h
+                describe the limits.
+                Has to choose between
+                - Mysql unsigned int 4 294 967 295
+                  C UINT_MAX        +4,294,967,295
+                - Mysql unsigned bigint 18 446 744 073 709 551 615
+                  but BIGINT in a specific MySQL extension
+                  C ULONG_MAX          +18,446,744,073,709,551,615
+                  but this value of ULONG_MAX is only available in
+                  64 bits compilers 
 
  220 2014- 6-16 GuidedInput-Comment: replace the insensitive entry with
                 a normal label + move it to the right in order to be
@@ -279,36 +282,11 @@
 
  260 2014- 6-24 editing rough entries: make the columns sortable
 
- 262 2014- 6-27 make g_date_set_parse locale independant (especially
-                when parsing from sql)
-     2014- 6-27 this seems good, but treeview cells are not connected
-                to my_date, and this interprets the date along the
-                locale
-
  264 2014- 6-27 review MySQL data types against C data types
-
- 265 2014- 6-27 review ofa_t_ecritures index: should be just ecr_number
-                and check that ecr_number is an unsigned long
-                http://dev.mysql.com/doc/refman/5.0/en/integer-types.html
-                http://en.wikibooks.org/wiki/C_Programming/C_Reference/limits.h
-                describe the limits.
-                Has to choose between
-                - Mysql unsigned int 4 294 967 295
-                  C UINT_MAX        +4,294,967,295
-                - Mysql unsigned bigint 18 446 744 073 709 551 615
-                  but BIGINT in a specific MySQL extension
-                  C ULONG_MAX          +18,446,744,073,709,551,615
-                  but this value of ULONG_MAX is only available in
-                  64 bits compilers 
 
  269 2014- 6-27 lettrage des comptes de tiers
 
  271 2014- 6-27 ViewEntries: set a default effect date with the ope date
-
- 272 2014- 6-27 Have a myDate class or family of functions and take an
-                inventory of use (single case vs. couple case - e.g.
-                dope/deff, dfrom/dto, etc.)
-     2014- 6-28 svn #3754: introduce myDate class 
 
  273 2014- 6-29 ofa.css: hack ofaTabLabel/GtkGrid/GtkButton/GtkImage 
                 styles
@@ -350,10 +328,6 @@
 
  319 2014-10- 7 review ofo_entry_get_csv()
 
- 320 2014-10- 8 ofaGuidedEx: there is no need to display the ledger in
-                the top right part, as the operation templates are 
-                already sorted by ledgers
-
  321 2014-10- 8 Ledger properties balance: should have '€' sign like
                 account properties balance
 
@@ -362,6 +336,16 @@
  323 2014-10- 9 review the setters as most probably only properties
                 setters are useful, while others may be only internally
                 used
+                - ofoAccount
+                - ofoBat
+                - ofoBatLine
+                - ofoClass
+                - ofoCurrency
+                - ofoDossier
+                - ofoEntry
+                - ofoLedger
+                - ofoOpeTemplate
+                - ofoRate
 
  325 2014-10-12 DossierManage Properties: to be written
 
@@ -618,6 +602,12 @@
   78 2014- 5-21 Guided Input: check that the effect date is valid
      2014- 5-28 done - svn #3516
 
+  79 2014- 5-21 replace memcpy with g_memdup when possible
+     2014- 6-27 all memcpy are used for copying GDate of timestamp, so
+                are to be replaced with my_utils_date_set_from_date()
+                or my_utils_stamp_set_from_???()
+     2014-10-13 done - svn #3905
+
   80 2014- 5-21 my-utils: replace g_strdup_printf with g_date_strftime
      2014- 9-14 cancelled as without added value
 
@@ -873,6 +863,10 @@
      2014- 6-12 ofoModel: manage change taux mnemo
      2014- 6-12 done - svn #3706
 
+ 184 2014- 6-10 use the count of decimal digits of the currency when 
+                displaying all amounts
+     2014-10-13 done with myEditableAmount
+
  185 2014- 6-10 imported entries must be balanced
      2014- 6-10 done - svn #3681
 
@@ -898,6 +892,10 @@
  193 2014- 6-11 record the entry most recent effect date in the
                  journal_exe_dev detail
      2014- 6-13 done
+
+ 194 2014- 6-11 ofo_journal_get_cloture() should be replaced with
+                ofo_journal_get_last_closing()
+     2014-10-13 done
 
  196 2014- 6-11 journal closing: there is no sens to execure the same 
                 query SELECT MAX(JOU_EXE_LAST_CLO) FROM OFA_T_JOURNAUX_EXE
@@ -1127,10 +1125,33 @@
      2014- 9-14 reopened -> rate as a gdouble
      2014-10- 5 done
 
+ 262 2014- 6-27 make g_date_set_parse locale independant (especially
+                when parsing from sql)
+     2014- 6-27 this seems good, but treeview cells are not connected
+                to my_date, and this interprets the date along the
+                locale
+     2014-10-13 done: g_date_set_parse() is only used when parsing a
+                sql string, which is not sensible to the locale
+
  263 2014- 6-27 PrintReconciliation: when there is no entry, the footer
                 is displayed in the top of the page, instead of the
                 bottom
      2014- 6-27 done - svn #3749 
+
+ 265 2014- 6-27 review ofa_t_ecritures index: should be just ecr_number
+                and check that ecr_number is an unsigned long
+                http://dev.mysql.com/doc/refman/5.0/en/integer-types.html
+                http://en.wikibooks.org/wiki/C_Programming/C_Reference/limits.h
+                describe the limits.
+                Has to choose between
+                - Mysql unsigned int 4 294 967 295
+                  C UINT_MAX        +4,294,967,295
+                - Mysql unsigned bigint 18 446 744 073 709 551 615
+                  but BIGINT in a specific MySQL extension
+                  C ULONG_MAX          +18,446,744,073,709,551,615
+                  but this value of ULONG_MAX is only available in
+                  64 bits compilers 
+     2014-10-13 closed as duplicated of #219
 
  266 2014- 6-27 PrintReconciliation: the page footer makes use of a
                 system timestamp (yyyy-mm-dd hh:mi:ss) but should 
@@ -1158,6 +1179,12 @@
                 OFA-DEBUG: save_entry: sdeb='1 223,45', debit=1,000000, scre='0,00', credit=0,000000
                 OFA-DEBUG: ofo_sgbd_query: sgbd=0x10a6400, query='UPDATE OFA_T_ECRITURES 	SET ECR_DEFFET='2014-01-01',ECR_DOPE='2014-01-01',ECR_LABEL='sdfgsdfgsdfg',ECR_REF='(null)',	ECR_COMPTE='41198',ECR_DEV_CODE='EUR',ECR_JOU_MNEMO='ACH',	ECR_DEBIT=1,ECR_CREDIT=0,	ECR_MAJ_USER='ofat',ECR_MAJ_STAMP='2014-08-18 05:03:11' 	WHERE ECR_NUMBER=328'
      2014- 9- 6 done
+
+ 272 2014- 6-27 Have a myDate class or family of functions and take an
+                inventory of use (single case vs. couple case - e.g.
+                dope/deff, dfrom/dto, etc.)
+     2014- 6-28 svn #3754: introduce myDate class
+     2014-10-13 done 
 
  274 2014- 6-29 put back the main GtkNotebook popup menu
      2014- 8-17 done - svn #3820
@@ -1300,6 +1327,11 @@
 
  316 2014-10- 4 ofo_entry.c: optimize entry_count_for_xxx() methods
      2014-10- 5 done - svn #3883
+
+ 320 2014-10- 8 ofaGuidedEx: there is no need to display the ledger in
+                the top right part, as the operation templates are 
+                already sorted by ledgers
+     2014-10-13 cancelled: permit the ledger be modified by the user
 
  324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
      2014-10-13 cancelled as myDate class has been obsoleted

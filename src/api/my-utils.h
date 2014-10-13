@@ -83,19 +83,10 @@ void       my_utils_init_notes             ( GtkContainer *container,
 												gtk_text_buffer_get_end_iter( buffer, &end ); gchar *notes = gtk_text_buffer_get_text( \
 												buffer, &start, &end, TRUE ); ofo_ ## T ## _set_notes( priv->T, notes ); g_free( notes );
 
-void       my_utils_init_maj_user_stamp    ( GtkContainer *container,
-												const gchar *label_name,
-												const GTimeVal *stamp,
-												const gchar *user );
-
 void       my_utils_init_upd_user_stamp    ( GtkContainer *container,
 												const gchar *label_name,
 												const GTimeVal *stamp,
 												const gchar *user );
-
-#define    my_utils_init_maj_user_stamp_ex( C,T ) if( !priv->is_new ){ my_utils_init_maj_user_stamp( \
-														GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_maj_stamp( priv->T ), \
-														ofo_ ## T ## _get_maj_user( priv->T )); }
 
 #define    my_utils_init_upd_user_stamp_ex( C,T ) if( !priv->is_new ){ my_utils_init_upd_user_stamp( \
 														GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_upd_stamp( priv->T ), \
