@@ -604,10 +604,10 @@ entry_parse_result( const GSList *row )
 		}
 		icol = icol->next;
 		ofo_entry_set_debit( entry,
-				my_double_from_sql(( const gchar * ) icol->data ));
+				my_double_set_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_credit( entry,
-				my_double_from_sql(( const gchar * ) icol->data ));
+				my_double_set_from_sql(( const gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_status( entry, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
@@ -2061,7 +2061,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				errors += 1;
 				continue;
 			}
-			debit = my_double_from_sql( str );
+			debit = my_double_set_from_sql( str );
 			tot_debits += debit;
 
 			/* credit */
@@ -2072,7 +2072,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				errors += 1;
 				continue;
 			}
-			credit = my_double_from_sql( str );
+			credit = my_double_set_from_sql( str );
 			tot_credits += credit;
 
 			/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/

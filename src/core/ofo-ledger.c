@@ -452,18 +452,18 @@ ledger_load_dataset( void )
 			icol = icol->next;
 			balance->currency = g_strdup(( gchar * ) icol->data );
 			icol = icol->next;
-			balance->clo_deb = my_double_from_sql(( const gchar * ) icol->data );
+			balance->clo_deb = my_double_set_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "clo_deb=%lf", balance->clo_deb );*/
 			icol = icol->next;
-			balance->clo_cre = my_double_from_sql(( const gchar * ) icol->data );
+			balance->clo_cre = my_double_set_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "clo_cre=%lf", balance->clo_cre );*/
 			icol = icol->next;
-			balance->deb = my_double_from_sql(( const gchar * ) icol->data );
+			balance->deb = my_double_set_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "deb=%lf", balance->deb );*/
 			icol = icol->next;
 			my_date_set_from_sql( &balance->deb_date, ( const gchar * ) icol->data );
 			icol = icol->next;
-			balance->cre = my_double_from_sql(( const gchar * ) icol->data );
+			balance->cre = my_double_set_from_sql(( const gchar * ) icol->data );
 			/*g_debug( "cre=%lf", balance->cre );*/
 			icol = icol->next;
 			my_date_set_from_sql( &balance->cre_date, ( const gchar * ) icol->data );

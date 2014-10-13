@@ -1095,8 +1095,8 @@ compute_balances( ofaViewEntries *self )
 
 			pc = find_balance_by_currency( self, dev_code );
 
-			pc->debits += my_double_from_string( sdeb );
-			pc->credits += my_double_from_string( scre );
+			pc->debits += my_double_set_from_str( sdeb );
+			pc->credits += my_double_set_from_str( scre );
 
 			g_free( sdeb );
 			g_free( scre );
@@ -1240,12 +1240,12 @@ update_balance_amounts( ofaViewEntries *self, const gchar *sdeb, const gchar *sc
 	pc = find_balance_by_currency( self, dev_code );
 	switch( column_id ){
 		case ENT_COL_DEBIT:
-			pc->debits -= my_double_from_string( sdeb );
-			pc->debits += my_double_from_string( text );
+			pc->debits -= my_double_set_from_str( sdeb );
+			pc->debits += my_double_set_from_str( text );
 			break;
 		case ENT_COL_CREDIT:
-			pc->credits -= my_double_from_string( scre );
-			pc->credits += my_double_from_string( text );
+			pc->credits -= my_double_set_from_str( scre );
+			pc->credits += my_double_set_from_str( text );
 			break;
 	}
 
@@ -1263,8 +1263,8 @@ update_balance_currency( ofaViewEntries *self, const gchar *sdeb, const gchar *s
 	gdouble debit, credit;
 
 	priv = self->private;
-	debit = my_double_from_string( sdeb );
-	credit = my_double_from_string( scre );
+	debit = my_double_set_from_str( sdeb );
+	credit = my_double_set_from_str( scre );
 
 	pc = find_balance_by_currency( self, dev_code );
 	pc->debits -= debit;
@@ -1552,7 +1552,7 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 
 			/* reformat amounts */
 			if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){
-				amount = my_double_from_string( text );
+				amount = my_double_set_from_str( text );
 				str = g_strdup_printf( "%'.2lf", amount );
 				/*g_debug( "on_cell_edited: text='%s', amount=%lf, str='%s'", text, amount, str );*/
 			} else {
@@ -1887,8 +1887,8 @@ check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTree
 	is_valid = FALSE;
 	gtk_tree_model_get( tmodel, iter, ENT_COL_DEBIT, &sdeb, ENT_COL_CREDIT, &scre, -1 );
 	if(( sdeb && g_utf8_strlen( sdeb, -1 )) || ( scre && g_utf8_strlen( scre, -1 ))){
-		debit = my_double_from_string( sdeb );
-		credit = my_double_from_string( scre );
+		debit = my_double_set_from_str( sdeb );
+		credit = my_double_set_from_str( scre );
 		if(( debit && !credit ) || ( !debit && credit )){
 			is_valid = TRUE;
 		} else {
@@ -1945,8 +1945,8 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	my_date_set_from_str( &deff, sdeff, MY_DATE_DMYY );
 	g_return_val_if_fail( my_date_is_valid( &deff ), FALSE );
 
-	debit = my_double_from_string( sdeb );
-	credit = my_double_from_string( scre );
+	debit = my_double_set_from_str( sdeb );
+	credit = my_double_set_from_str( scre );
 	g_debug( "save_entry: sdeb='%s', debit=%lf, scre='%s', credit=%lf", sdeb, debit, scre, credit );
 
 	if( entry ){

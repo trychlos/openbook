@@ -471,7 +471,7 @@ account_load_dataset( void )
 		}
 		icol = icol->next;
 		if( icol->data ){
-			priv->deb_amount = my_double_from_sql(( const gchar * ) icol->data );
+			priv->deb_amount = my_double_set_from_sql(( const gchar * ) icol->data );
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -483,7 +483,7 @@ account_load_dataset( void )
 		}
 		icol = icol->next;
 		if( icol->data ){
-			priv->cre_amount = my_double_from_sql(( const gchar * ) icol->data );
+			priv->cre_amount = my_double_set_from_sql(( const gchar * ) icol->data );
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -495,7 +495,7 @@ account_load_dataset( void )
 		}
 		icol = icol->next;
 		if( icol->data ){
-			priv->day_deb_amount = my_double_from_sql(( const gchar * ) icol->data );
+			priv->day_deb_amount = my_double_set_from_sql(( const gchar * ) icol->data );
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -507,7 +507,7 @@ account_load_dataset( void )
 		}
 		icol = icol->next;
 		if( icol->data ){
-			priv->day_cre_amount = my_double_from_sql(( const gchar * ) icol->data );
+			priv->day_cre_amount = my_double_set_from_sql(( const gchar * ) icol->data );
 		}
 
 		dataset = g_list_prepend( dataset, account );
@@ -1492,13 +1492,13 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 		sdate = my_date_to_str( ofo_account_get_day_deb_date( account ), MY_DATE_SQL );
 		samount = my_double_to_sql( ofo_account_get_day_deb_amount( account ));
 		g_string_append_printf( query,
-				"ACC_BRO_DEB_ENTRY=%d,ACC_BRO_DEB_DATE='%s',ACC_BRO_DEB_AMOUNT=%s,",
+				"ACC_DAY_DEB_ENTRY=%d,ACC_DAY_DEB_DATE='%s',ACC_DAY_DEB_AMOUNT=%s,",
 					ecr_number, sdate, samount );
 		g_free( sdate );
 		g_free( samount );
 	} else {
 		query = g_string_append( query,
-				"ACC_BRO_DEB_ENTRY=NULL,ACC_BRO_DEB_DATE=NULL,ACC_BRO_DEB_AMOUNT=NULL," );
+				"ACC_DAY_DEB_ENTRY=NULL,ACC_DAY_DEB_DATE=NULL,ACC_DAY_DEB_AMOUNT=NULL," );
 	}
 
 	/* brouillard credit */
@@ -1507,13 +1507,13 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 		sdate = my_date_to_str( ofo_account_get_day_cre_date( account ), MY_DATE_SQL );
 		samount = my_double_to_sql( ofo_account_get_day_cre_amount( account ));
 		g_string_append_printf( query,
-				"ACC_BRO_CRE_ENTRY=%d,ACC_BRO_CRE_DATE='%s',ACC_BRO_CRE_AMOUNT=%s ",
+				"ACC_DAY_CRE_ENTRY=%d,ACC_DAY_CRE_DATE='%s',ACC_DAY_CRE_AMOUNT=%s ",
 					ecr_number, sdate, samount );
 		g_free( sdate );
 		g_free( samount );
 	} else {
 		query = g_string_append( query,
-				"ACC_BRO_CRE_ENTRY=NULL,ACC_BRO_CRE_DATE=NULL,ACC_BRO_CRE_AMOUNT=NULL " );
+				"ACC_DAY_CRE_ENTRY=NULL,ACC_DAY_CRE_DATE=NULL,ACC_DAY_CRE_AMOUNT=NULL " );
 	}
 
 	g_string_append_printf( query,

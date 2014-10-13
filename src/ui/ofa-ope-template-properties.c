@@ -276,12 +276,11 @@ v_init_dialog( myDialog *dialog )
 	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
 	parms.combo_name = "p1-ledger";
 	parms.label_name = NULL;
-	parms.disp_mnemo = TRUE;
+	parms.disp_mnemo = FALSE;
 	parms.disp_label = TRUE;
 	parms.pfnSelected = ( ofaLedgerComboCb ) on_ledger_changed;
 	parms.user_data = self;
 	parms.initial_mnemo = priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template );
-
 	priv->ledger_combo = ofa_ledger_combo_new( &parms );
 
 	init_dialog_ledger_locked( self );
@@ -308,9 +307,9 @@ init_dialog_title( ofaOpeTemplateProperties *self )
 	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
 
 	if( !mnemo ){
-		title = g_strdup( _( "Defining a new entry template" ));
+		title = g_strdup( _( "Defining a new operation template" ));
 	} else {
-		title = g_strdup_printf( _( "Updating « %s » entry template" ), mnemo );
+		title = g_strdup_printf( _( "Updating « %s » operation template" ), mnemo );
 	}
 
 	gtk_window_set_title( my_window_get_toplevel( MY_WINDOW( self )), title );

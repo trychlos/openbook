@@ -64,7 +64,9 @@ void    my_editable_amount_set_amount  ( GtkEditable *editable, gdouble amount )
 
 gchar  *my_editable_amount_get_string  ( GtkEditable *editable );
 
-void    my_editable_amount_render      ( GtkEditable *editable );
+void    my_editable_amount_set_string  ( GtkEditable *editable, const gchar *string );
+
+/*void    my_editable_amount_render      ( GtkEditable *editable );*/
 
 G_END_DECLS
 

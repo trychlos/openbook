@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -40,65 +41,6 @@ static GRegex  *st_double_thousand_regex = NULL;
 static GRegex  *st_double_decimal_regex  = NULL;
 
 static void double_set_locale( void );
-
-/**
- * my_double_from_string:
- *
- * In v1, we only target fr locale, so with space as thousand separator
- * and comma as decimal one on display -
- * When parsing a string - and because we want be able to re-parse a
- * string that we have previously displayed - we accept both
- */
-gdouble
-my_double_from_string( const gchar *string )
-{
-	gchar *text;
-	gdouble d;
-
-	if( string && g_utf8_strlen( string, -1 )){
-		text = my_double_undecorate( string );
-		d = g_strtod( text, NULL );
-		g_free( text );
-
-	} else {
-		d = 0.0;
-	}
-
-	return( d );
-}
-
-/**
- * my_double_from_sql:
- *
- * Returns a double from the specified SQl stringified decimal
- *
- * The input string is not supposed to be localized, nor decorated.
- */
-gdouble
-my_double_from_sql( const gchar *sql_string )
-{
-	if( !sql_string || !g_utf8_strlen( sql_string, -1 )){
-		return( 0.0 );
-	}
-
-	return( g_ascii_strtod( sql_string, NULL ));
-}
-
-/**
- * my_double_to_sql:
- *
- * Returns: a newly allocated string which represents the specified
- * value, suitable for an SQL insertion.
- */
-gchar *
-my_double_to_sql( gdouble value )
-{
-	gchar amount[1+G_ASCII_DTOSTR_BUF_SIZE];
-
-	g_ascii_dtostr( amount, G_ASCII_DTOSTR_BUF_SIZE, value );
-
-	return( g_strdup( amount ));
-}
 
 /**
  * my_double_undecorate:
@@ -157,4 +99,102 @@ double_set_locale( void )
 		st_double_decimal_regex = g_regex_new( str, 0, 0, NULL );
 		g_free( str );
 	}
+}
+
+/**
+ * my_double_set_from_sql:
+ *
+ * Returns a double from the specified SQl stringified decimal
+ *
+ * The input string is not supposed to be localized, nor decorated.
+ */
+gdouble
+my_double_set_from_sql( const gchar *sql_string )
+{
+	if( !sql_string || !g_utf8_strlen( sql_string, -1 )){
+		return( 0.0 );
+	}
+
+	return( g_ascii_strtod( sql_string, NULL ));
+}
+
+/**
+ * my_double_set_from_str:
+ *
+ * In v1, we only target fr locale, so with space as thousand separator
+ * and comma as decimal one on display -
+ * When parsing a string - and because we want be able to re-parse a
+ * string that we have previously displayed - we accept both
+ */
+gdouble
+my_double_set_from_str( const gchar *string )
+{
+	gchar *text;
+	gdouble d;
+
+	if( string && g_utf8_strlen( string, -1 )){
+		text = my_double_undecorate( string );
+		d = g_strtod( text, NULL );
+		g_free( text );
+
+	} else {
+		d = 0.0;
+	}
+
+	return( d );
+}
+
+/**
+ * my_double_to_sql:
+ *
+ * Returns: a newly allocated string which represents the specified
+ * value, suitable for an SQL insertion.
+ *
+ * Prefer g_ascii_formatd() to g_ascii_dtostr() as the later doesn't
+ * correctly rounds up the double (have a non-null twelth ou thirteenth
+ * decimal digit)
+ */
+gchar *
+my_double_to_sql( gdouble value )
+{
+	gchar amount[1+G_ASCII_DTOSTR_BUF_SIZE];
+	gchar *text;
+
+	/*g_ascii_dtostr( amount, G_ASCII_DTOSTR_BUF_SIZE, value );*/
+	g_ascii_formatd( amount, G_ASCII_DTOSTR_BUF_SIZE, "%15.5f", value );
+	g_strchug( amount );
+	text = g_strdup( amount );
+
+	return( text );
+}
+
+/**
+ * my_double_to_str:
+ * @value:
+ *
+ * Returns: a newly allocated string which represents the specified
+ * value, decorated for display (with thousand and decimal separators).
+ */
+gchar *
+my_double_to_str( gdouble value )
+{
+	return( my_double_to_str_ex( value, 2 ));
+}
+
+/**
+ * my_double_to_str_ex:
+ * @value:
+ * @decimals:
+ *
+ * Returns: a newly allocated string which represents the specified
+ * value, decorated for display (with thousand and decimal separators).
+ */
+gchar *
+my_double_to_str_ex( gdouble value, gint decimals )
+{
+	gchar *text;
+
+	text = g_strdup_printf( "%'.*lf", decimals, value);
+
+	return( text );
 }

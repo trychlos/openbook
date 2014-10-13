@@ -366,9 +366,13 @@
                 setters are useful, while others may be only internally
                 used
 
- 324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
+ 325 2014-10-12 DossierManage Properties: to be written
 
- 325
+ 326 2014-10-12 when entering a new operation via an operation template,
+                let the user enter only dd/mm, then automatically
+                computing the year on focus out
+
+ 327
 
 -----------------------------------------------------------------------
  DONE
@@ -1295,6 +1299,9 @@
 
  316 2014-10- 4 ofo_entry.c: optimize entry_count_for_xxx() methods
      2014-10- 5 done - svn #3883
+
+ 324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
+     2014-10-13 cancelled as myDate class has been obsoleted
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

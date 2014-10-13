@@ -547,11 +547,12 @@ on_changed( GtkEditable *editable, sEditableDate *data )
 	gint len_text;
 
 	if( !data->setting_text ){
-		g_debug( "%s: editable=%p, data=%p", thisfn, ( void * ) editable, ( void * ) data );
 		text = gtk_editable_get_chars( editable, 0, -1 );
 		len_text = g_utf8_strlen( text, -1 );
 		my_date_set_from_str( &data->date, text, data->format->date_format );
 		data->valid = my_date_is_valid( &data->date );
+		g_debug( "%s: editable=%p, data=%p, text='%s', valid=%s",
+				thisfn, ( void * ) editable, ( void * ) data, text, data->valid ? "True":"False" );
 		g_free( text );
 
 		if( data->label ){
@@ -571,7 +572,7 @@ on_changed( GtkEditable *editable, sEditableDate *data )
 		}
 
 	} else {
-		g_debug( "%s: editable=%p, data=%p: set setting_text to False", thisfn, ( void * ) editable, ( void * ) data );
+		g_debug( "%s: editable=%p, data=%p: set 'setting_text' to False", thisfn, ( void * ) editable, ( void * ) data );
 		data->setting_text = FALSE;
 	}
 }
@@ -679,10 +680,6 @@ my_editable_date_set_mandatory( GtkEditable *editable, gboolean mandatory )
  *
  * A pointer to the current date. This pointer is read-only and should
  * not be cleared nor modified by the caller.
- *
- * The validity pointer is set depending of the currently displayed
- * string (not the currently stored #GDate which is itself only
- * modified when the string parses to a valid date).
  */
 const GDate *
 my_editable_date_get_date( GtkEditable *editable, gboolean *valid )
@@ -699,46 +696,6 @@ my_editable_date_get_date( GtkEditable *editable, gboolean *valid )
 
 	return(( const GDate * ) &data->date );
 }
-
-#if 0
-/**
- * my_editable_date_get_string:
- * @editable: this #GtkEditable instance.
- *
- * Returns the localized representation of the current amount as a
- * newly allocated string which should be g_free() by the caller.
- */
-gchar *
-my_editable_date_get_string( GtkEditable *editable )
-{
-	gchar *text;
-
-	g_return_val_if_fail( editable && GTK_IS_EDITABLE( editable ), NULL );
-
-	text = editable_date_get_string( editable, NULL );
-
-	return( text );
-}
-
-static gchar *
-editable_date_get_string( GtkEditable *editable, sEditableDate **pdata )
-{
-	sEditableDate *data;
-	gchar *text;
-
-	g_return_val_if_fail( editable && GTK_IS_EDITABLE( editable ), NULL );
-
-	data = get_editable_date_data( editable );
-
-	text = g_strdup_printf( "%'.*lf", data->decimals, data->amount );
-
-	if( pdata ){
-		*pdata = data;
-	}
-
-	return( text );
-}
-#endif
 
 /*
  * my_editable_date_render:

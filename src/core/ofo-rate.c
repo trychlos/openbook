@@ -235,7 +235,7 @@ rate_load_dataset( void )
 			icol = icol->next;
 			my_date_set_from_sql( &valid->end, ( const gchar * ) icol->data );
 			icol = icol->next;
-			valid->rate = my_double_from_sql(( const gchar * ) icol->data );
+			valid->rate = my_double_set_from_sql(( const gchar * ) icol->data );
 			rate_val_add_detail( rate, valid );
 		}
 

@@ -94,11 +94,16 @@ libofa_core_la_LDFLAGS = \
 	-fPIC												\
 	$(NULL)
 
+rc_files = \
+	ofa.css												\
+	$(NULL)
+
 ui_files = \
 	ofa-dblogin.ui										\
 	$(NULL)
 
 core_data_DATA = \
+	$(rc_files)											\
 	$(ui_files)											\
 	$(NULL)
 	

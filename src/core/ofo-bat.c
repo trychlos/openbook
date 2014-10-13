@@ -235,7 +235,7 @@ bat_load_dataset( void )
 		icol = icol->next;
 		if( icol->data ){
 			ofo_bat_set_solde( bat,
-					my_double_from_sql(( const gchar * ) icol->data ));
+					my_double_set_from_sql(( const gchar * ) icol->data ));
 			ofo_bat_set_solde_set( bat, TRUE );
 		} else {
 			ofo_bat_set_solde_set( bat, FALSE );

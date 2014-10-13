@@ -330,23 +330,11 @@ on_currency_changed( const gchar *code, ofaDossierProperties *self )
 static void
 check_for_enable_dlg( ofaDossierProperties *self )
 {
-	ofaDossierPropertiesPrivate *priv;
 	GtkWidget *button;
 	gboolean ok;
 
-	priv = self->private;
-
 	button = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
-
-	if( priv->begin_entry ){
-		my_date_set_from_date( &priv->begin,
-				my_editable_date_get_date( GTK_EDITABLE( priv->begin_entry ), NULL ));
-	}
-	if( priv->end_entry ){
-		my_date_set_from_date( &priv->end,
-				my_editable_date_get_date( GTK_EDITABLE( priv->end_entry ), NULL ));
-	}
 
 	/*g_debug( "label=%s, duree=%u, currency=%s", priv->label, priv->duree, priv->currency );*/
 	ok = is_dialog_valid( self );
@@ -361,6 +349,15 @@ is_dialog_valid( ofaDossierProperties *self )
 	gboolean ok;
 
 	priv = self->private;
+
+	if( priv->begin_entry ){
+		my_date_set_from_date( &priv->begin,
+				my_editable_date_get_date( GTK_EDITABLE( priv->begin_entry ), NULL ));
+	}
+	if( priv->end_entry ){
+		my_date_set_from_date( &priv->end,
+				my_editable_date_get_date( GTK_EDITABLE( priv->end_entry ), NULL ));
+	}
 
 	ok = !my_date_is_valid( &priv->begin ) ||
 			!my_date_is_valid( priv->last_closed ) ||
@@ -390,12 +387,8 @@ do_update( ofaDossierProperties *self )
 	ofo_dossier_set_exercice_length( priv->dossier, priv->duree );
 	ofo_dossier_set_default_currency( priv->dossier, priv->currency );
 
-	if( my_date_is_valid( &priv->begin )){
-		ofo_dossier_set_current_exe_begin( priv->dossier, &priv->begin );
-	}
-	if( my_date_is_valid( &priv->end )){
-		ofo_dossier_set_current_exe_end( priv->dossier, &priv->end );
-	}
+	ofo_dossier_set_current_exe_begin( priv->dossier, &priv->begin );
+	ofo_dossier_set_current_exe_end( priv->dossier, &priv->end );
 
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), dossier );
 

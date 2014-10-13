@@ -1642,6 +1642,7 @@ ofo_dossier_set_current_exe_begin( const ofoDossier *dossier, const GDate *date 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
 			my_date_set_from_date( &sexe->exe_begin, date );
+			g_debug( "ofo_dossier_set_current_exe_begin: date is %s", my_date_is_valid( &sexe->exe_begin ) ? "valid":"invalid" );
 		}
 	}
 }

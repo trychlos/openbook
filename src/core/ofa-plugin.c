@@ -239,7 +239,11 @@ ofa_plugin_release_modules( void )
 		plugin = OFA_PLUGIN( imod->data );
 
 		for( iobj = plugin->private->objects ; iobj ; iobj = iobj->next ){
-			g_object_unref( iobj->data );
+			if( G_IS_OBJECT( iobj->data )){
+				g_object_unref( iobj->data );
+			} else {
+				g_warning( "%s: object=%p is not a GObject", thisfn, ( void * ) iobj->data );
+			}
 		}
 
 		g_type_module_unuse( G_TYPE_MODULE( plugin ));

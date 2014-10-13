@@ -43,6 +43,7 @@
 
 #include "core/my-window-prot.h"
 
+#include "ui/my-editable-amount.h"
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-common.h"
@@ -86,6 +87,14 @@ struct _ofaGuidedCommonPrivate {
 	gint             entries_count;
 	GtkEntry        *comment;
 	GtkButton       *ok_btn;
+
+	/* check that on_entry_changed is not recursively called */
+	gint             on_changed_count;
+
+	/* keep trace of current row/column so that we do not recompute
+	 * the currently modified entry (only for debit and credit) */
+	gint             focused_row;
+	gint             focused_column;
 };
 
 /*
@@ -103,7 +112,7 @@ enum {
 };
 
 /*
- * helpers
+ * definition of the columns
  */
 typedef struct {
 	gint	        column_id;
@@ -111,9 +120,9 @@ typedef struct {
 	const gchar * (*get_label)( const ofoOpeTemplate *, gint );
 	gboolean      (*is_locked)( const ofoOpeTemplate *, gint );
 	gint            width;
-	float           xalign;
+	float           xalign;					/* managed by myEditableAmout if 'is_double' */
 	gboolean        expand;
-	gboolean        is_double;
+	gboolean        is_double;				/* managed by myEditableAmount */
 }
 	sColumnDef;
 
@@ -144,11 +153,11 @@ static sColumnDef st_col_defs[] = {
 		{ COL_DEBIT,
 				"D",
 				ofo_ope_template_get_detail_debit,
-				ofo_ope_template_get_detail_debit_locked,   AMOUNTS_WIDTH, 1, FALSE, TRUE },
+				ofo_ope_template_get_detail_debit_locked,   AMOUNTS_WIDTH, 0, FALSE, TRUE },
 		{ COL_CREDIT,
 				"C",
 				ofo_ope_template_get_detail_credit,
-				ofo_ope_template_get_detail_credit_locked,  AMOUNTS_WIDTH, 1, FALSE, TRUE },
+				ofo_ope_template_get_detail_credit_locked,  AMOUNTS_WIDTH, 0, FALSE, TRUE },
 		{ 0 }
 };
 
@@ -161,8 +170,22 @@ enum {
 	OPE_DIV
 };
 
-#define DATA_COLUMN				    "data-entry-left"
-#define DATA_ROW				    "data-entry-top"
+/* a structure attached to each dynamically created entry field
+ */
+typedef struct {
+	gint              column_id;	/* counted from 1 */
+	gint              row_id;		/* counted from 1 */
+	const sColumnDef *col_def;
+	const gchar      *formula;		/* only set if this is a formula, else %NULL */
+	gboolean          locked;
+	gchar            *previous;		/* initial content when focusing in */
+	gboolean          modified;		/* whether an automatic field has been manually modified */
+}
+	sEntryData;
+
+#define DATA_ENTRY_DATA             "data-entry-data"
+#define DATA_COLUMN                 "data-column-id"
+#define DATA_ROW                    "data-row-id"
 
 static GDate st_last_dope = { 0 };
 static GDate st_last_deff = { 0 };
@@ -295,6 +318,17 @@ ofa_guided_common_class_init( ofaGuidedCommonClass *klass )
 	my_date_clear( &st_last_deff );
 }
 
+static void
+on_entry_weak_notify( sEntryData *sdata, GObject *entry_was_here )
+{
+	static const gchar *thisfn = "ofa_guided_common_on_entry_weak_notify";
+
+	g_debug( "%s: sdata=%p, entry=%p", thisfn, ( void * ) sdata, ( void * ) entry_was_here );
+
+	g_free( sdata->previous );
+	g_free( sdata );
+}
+
 /**
  * ofa_guided_common_new:
  * @main_window: the main window of the application.
@@ -379,10 +413,9 @@ setup_dates( ofaGuidedCommon *self )
 
 	priv = self->private;
 
-	my_date_set_from_date( &priv->dope, &st_last_dope );
 	priv->dope_entry = GTK_ENTRY( my_utils_container_get_child_by_name( priv->parent, "p1-dope" ));
 	my_editable_date_init( GTK_EDITABLE( priv->dope_entry ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->dope_entry ), MY_DATE_DMYY );
+	my_date_set_from_date( &priv->dope, &st_last_dope );
 	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &priv->dope );
 
 	g_signal_connect(
@@ -392,10 +425,9 @@ setup_dates( ofaGuidedCommon *self )
 	g_signal_connect(
 			G_OBJECT( priv->dope_entry ), "changed", G_CALLBACK( on_dope_changed ), self );
 
-	my_date_set_from_date( &priv->deff, &st_last_deff );
 	priv->deffect_entry = GTK_ENTRY( my_utils_container_get_child_by_name( priv->parent, "p1-deffet" ));
 	my_editable_date_init( GTK_EDITABLE( priv->deffect_entry ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->deffect_entry ), MY_DATE_DMYY );
+	my_date_set_from_date( &priv->deff, &st_last_deff );
 	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &priv->deff );
 
 	g_signal_connect(
@@ -511,16 +543,16 @@ setup_entries_grid( ofaGuidedCommon *self )
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( label ), COL_LABEL, count+1, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
+	my_editable_amount_init( GTK_EDITABLE( entry ));
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
 	gtk_widget_set_margin_top( GTK_WIDGET( entry ), TOTAUX_TOP_MARGIN );
-	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( entry ), COL_DEBIT, count+1, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
+	my_editable_amount_init( GTK_EDITABLE( entry ));
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
 	gtk_widget_set_margin_top( GTK_WIDGET( entry ), TOTAUX_TOP_MARGIN );
-	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( entry ), COL_CREDIT, count+1, 1, 1 );
 
@@ -530,14 +562,14 @@ setup_entries_grid( ofaGuidedCommon *self )
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( label ), COL_LABEL, count+2, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
+	my_editable_amount_init( GTK_EDITABLE( entry ));
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
-	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( entry ), COL_DEBIT, count+2, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
+	my_editable_amount_init( GTK_EDITABLE( entry ));
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
-	gtk_entry_set_alignment( entry, 1.0 );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( entry ), COL_CREDIT, count+2, 1, 1 );
 
@@ -575,26 +607,52 @@ add_entry_row_set( ofaGuidedCommon *self, gint col_id, gint row )
 	const sColumnDef *col_def;
 	const gchar *str;
 	gboolean locked;
+	sEntryData *sdata;
 
 	col_def = find_column_def_from_col_id( self, col_id );
 	g_return_if_fail( col_def );
 
+	str = (*col_def->get_label)( self->private->model, row-1 );
+	locked = (*col_def->is_locked)( self->private->model, row-1 );
+
+	/* only create the entry if the field is not empty or not locked
+	 * (because an empty locked field will obviously never be set)
+	 */
+	if(( !str || !g_utf8_strlen( str, -1 )) && locked ){
+		return;
+	}
+
 	entry = GTK_ENTRY( gtk_entry_new());
 	gtk_widget_set_hexpand( GTK_WIDGET( entry ), col_def->expand );
 	gtk_entry_set_width_chars( entry, col_def->width );
-	gtk_entry_set_alignment( entry, col_def->xalign );
 
-	str = (*col_def->get_label)( self->private->model, row-1 );
-
-	if( str && !ofo_ope_template_detail_is_formula( str )){
-		gtk_entry_set_text( entry, str );
+	if( col_def->is_double ){
+		my_editable_amount_init( GTK_EDITABLE( entry ));
+	} else {
+		gtk_entry_set_alignment( entry, col_def->xalign );
 	}
 
-	locked = (*col_def->is_locked)( self->private->model, row-1 );
+	if( str && !ofo_ope_template_detail_is_formula( str )){
+		if( col_def->is_double ){
+			my_editable_amount_set_string( GTK_EDITABLE( entry ), str );
+		} else {
+			gtk_entry_set_text( entry, str );
+		}
+	}
+
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), !locked );
 
-	g_object_set_data( G_OBJECT( entry ), DATA_COLUMN, GINT_TO_POINTER( col_id ));
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
+	sdata = g_new0( sEntryData, 1 );
+	sdata->column_id = col_id;
+	sdata->row_id = row;
+	sdata->col_def = col_def;
+	sdata->formula = str && ofo_ope_template_detail_is_formula( str ) ? str : NULL;
+	sdata->locked = locked;
+	sdata->previous = NULL;
+	sdata->modified = FALSE;
+
+	g_object_set_data( G_OBJECT( entry ), DATA_ENTRY_DATA, sdata );
+	g_object_weak_ref( G_OBJECT( entry ), ( GWeakNotify ) on_entry_weak_notify, sdata );
 
 	if( !locked ){
 		g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_entry_changed ), self );
@@ -784,11 +842,33 @@ on_deffect_changed( GtkEntry *entry, ofaGuidedCommon *self )
 
 /*
  * any of the GtkEntry field of an entry row has changed -> recheck all
+ * but:
+ * - do not recursively recheck all the field because we have modified
+ *   an automatic field
+ *
+ * keep trace of manual modifications of automatic fields, so that we
+ * then block all next automatic recomputes
  */
 static void
 on_entry_changed( GtkEntry *entry, ofaGuidedCommon *self )
 {
-	check_for_enable_dlg( self );
+	static const gchar *thisfn = "ofa_guided_common_on_entry_changed";
+	ofaGuidedCommonPrivate *priv;
+
+	priv = self->private;
+
+	g_debug( "%s: entry=%p, row=%u, column=%u, on_changed_count=%u",
+			thisfn, ( void * ) entry, priv->focused_row, priv->focused_column, priv->on_changed_count );
+
+	priv->on_changed_count += 1;
+
+	if( priv->on_changed_count == 1 &&
+			priv->focused_row != 0 && priv->focused_column != 0 ){
+
+		check_for_enable_dlg( self );
+	}
+
+	priv->on_changed_count -= 1;
 }
 
 /*
@@ -799,12 +879,29 @@ on_entry_changed( GtkEntry *entry, ofaGuidedCommon *self )
 static gboolean
 on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 {
-	gint row;
+	static const gchar *thisfn = "ofa_guided_common_on_entry_focus_in";
+	ofaGuidedCommonPrivate *priv;
+	sEntryData *sdata;
 	const gchar *comment;
 
-	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
-	if( row > 0 ){
-		comment = ofo_ope_template_get_detail_comment( self->private->model, row-1 );
+	priv = self->private;
+	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
+
+	priv->on_changed_count = 0;
+	priv->focused_row = sdata->row_id;
+	priv->focused_column = sdata->column_id;
+
+	g_debug( "%s: entry=%p, row=%u, column=%u",
+			thisfn, ( void * ) entry, priv->focused_row, priv->focused_column );
+
+	/* get a copy of the current content */
+	if( sdata->formula ){
+		g_free( sdata->previous );
+		sdata->previous = g_strdup( gtk_entry_get_text( entry ));
+	}
+
+	if( priv->focused_row > 0 ){
+		comment = ofo_ope_template_get_detail_comment( priv->model, priv->focused_row-1 );
 		set_comment( self, comment ? comment : "" );
 	}
 
@@ -819,6 +916,28 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 static gboolean
 on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 {
+	static const gchar *thisfn = "ofa_guided_common_on_entry_focus_out";
+	ofaGuidedCommonPrivate *priv;
+	sEntryData *sdata;
+	const gchar *current;
+
+	priv = self->private;
+	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
+
+	g_debug( "%s: entry=%p, row=%u, column=%u",
+			thisfn, ( void * ) entry, priv->focused_row, priv->focused_column );
+
+	/* compare the current content with the saved copy of the initial one */
+	if( sdata->formula ){
+		current = gtk_entry_get_text( entry );
+		sdata->modified = ( g_utf8_collate( sdata->previous, current ) != 0 );
+	}
+
+	/* reset focus and recursivity indicators */
+	priv->on_changed_count = 0;
+	priv->focused_row = 0;
+	priv->focused_column = 0;
+
 	set_comment( self, "" );
 
 	return( FALSE );
@@ -920,7 +1039,7 @@ check_for_account( ofaGuidedCommon *self, GtkEntry *entry  )
 }
 
 /*
- * setting the deffet also triggers the change signal of the deffet
+ * setting the deffect also triggers the change signal of the deffect
  * field (and so the comment)
  * => we should only react to the content while the focus is in the
  *    field
@@ -935,7 +1054,7 @@ set_date_comment( ofaGuidedCommon *self, const gchar *label, const GDate *date )
 	str = my_date_to_str( date, MY_DATE_DMMM );
 	if( !g_utf8_strlen( str, -1 )){
 		g_free( str );
-		str = g_strdup( _( "invalid" ));
+		str = g_strdup( _( "invalid date" ));
 	}
 	comment = g_strdup_printf( "%s : %s", label, str );
 	set_comment( self, comment );
@@ -997,6 +1116,12 @@ check_for_enable_dlg( ofaGuidedCommon *self )
 	}
 }
 
+/*
+ * We do not re-check nor recompute any thing while just moving from a
+ * field to another - this would be not only waste of time, but also
+ * keep the interface changing while doing anything else that moving
+ * the focus...
+ */
 static gboolean
 is_dialog_validable( ofaGuidedCommon *self )
 {
@@ -1013,10 +1138,17 @@ is_dialog_validable( ofaGuidedCommon *self )
 	return( ok );
 }
 
+/*
+ * update all formulas, but the one we are currently modifying:
+ * if we currently are on an entry, do not automatically modify
+ * this same entry
+ */
 static void
 update_all_formulas( ofaGuidedCommon *self )
 {
+	static const gchar *thisfn = "ofa_guided_common_update_all_formulas";
 	ofaGuidedCommonPrivate *priv;
+	sEntryData *sdata;
 	gint count, idx, col_id;
 	const sColumnDef *col_def;
 	const gchar *str;
@@ -1032,9 +1164,20 @@ update_all_formulas( ofaGuidedCommon *self )
 				if( col_def && col_def->get_label ){
 					str = ( *col_def->get_label )( priv->model, idx );
 					if( ofo_ope_template_detail_is_formula( str )){
-						entry = gtk_grid_get_child_at( priv->entries_grid, col_id, idx+1 );
-						if( entry && GTK_IS_ENTRY( entry )){
-							update_formula( self, str, GTK_ENTRY( entry ));
+						if( idx+1 != priv->focused_row || col_id != priv->focused_column ){
+							entry = gtk_grid_get_child_at( priv->entries_grid, col_id, idx+1 );
+							if( entry && GTK_IS_ENTRY( entry )){
+								sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
+								if( !sdata->modified ){
+									update_formula( self, str, GTK_ENTRY( entry ));
+								} else {
+									g_debug( "%s: formula='%s' ignored as entry has been manually modified",
+											thisfn, str );
+								}
+							}
+						} else {
+							g_debug( "%s: formula='%s' ignored while focus at row=%u, col_id=%u",
+									thisfn, str, idx+1, col_id );
 						}
 					}
 				}
@@ -1094,7 +1237,7 @@ update_formula( ofaGuidedCommon *self, const gchar *formula, GtkEntry *entry )
 					expect_operator = FALSE;
 				} else {
 					str = g_strdup_printf(
-							"invalid formula='%s': found token='%s' while operator expected",
+							"invalid formula='%s': found token='%s' while an operator was expected",
 							formula, *iter );
 					formula_error( self, str );
 					g_free( str );
@@ -1140,10 +1283,7 @@ update_formula( ofaGuidedCommon *self, const gchar *formula, GtkEntry *entry )
 	g_strfreev( tokens );
 
 	if( display_solde ){
-		/* do not use a funny display here as this string will be parsed later */
-		str = g_strdup_printf( "%.2lf", solde );
-		gtk_entry_set_text( entry, str );
-		g_free( str );
+		my_editable_amount_set_amount( GTK_EDITABLE( entry ), solde );
 	}
 }
 
@@ -1170,37 +1310,35 @@ formula_parse_operator( ofaGuidedCommon *self, const gchar *formula, const gchar
 static gdouble
 formula_compute_solde( ofaGuidedCommon *self, GtkEntry *entry )
 {
-	gint col, row;
+	sEntryData *sdata;
 	gdouble dsold, csold;
 	gint count, idx;
 
-	col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
-	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
+	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
 	count = ofo_ope_template_get_detail_count( self->private->model );
 	csold = 0.0;
 	dsold = 0.0;
 	for( idx=0 ; idx<count ; ++idx ){
-		if( col != COL_DEBIT || row != idx+1 ){
+		if( sdata->column_id != COL_DEBIT || sdata->row_id != idx+1 ){
 			dsold += get_amount( self, COL_DEBIT, idx+1 );
 		}
-		if( col != COL_CREDIT || row != idx+1 ){
+		if( sdata->column_id != COL_CREDIT || sdata->row_id != idx+1 ){
 			csold += get_amount( self, COL_CREDIT, idx+1 );
 		}
 	}
 
-	return( col == COL_DEBIT ? csold-dsold : dsold-csold );
+	return( sdata->column_id == COL_DEBIT ? csold-dsold : dsold-csold );
 }
 
 static void
 formula_set_entry_idem( ofaGuidedCommon *self, GtkEntry *entry )
 {
-	gint col, row;
+	sEntryData *sdata;
 	GtkWidget *widget;
 
-	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_ROW ));
-	col = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( entry ), DATA_COLUMN ));
-	widget = gtk_grid_get_child_at( self->private->entries_grid, col, row-1 );
+	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
+	widget = gtk_grid_get_child_at( self->private->entries_grid, sdata->column_id, sdata->row_id-1 );
 	if( widget && GTK_IS_ENTRY( widget )){
 		gtk_entry_set_text( entry, gtk_entry_get_text( GTK_ENTRY( widget )));
 	}
@@ -1214,7 +1352,6 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 	gint row;
 	GtkWidget *widget;
 	gdouble amount;
-	const gchar *content;
 	const sColumnDef *col_def;
 	ofoRate *rate;
 	gchar *str;
@@ -1229,13 +1366,11 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 		if( col_def ){
 			widget = gtk_grid_get_child_at( priv->entries_grid, col_def->column_id, row );
 			if( widget && GTK_IS_ENTRY( widget )){
-				content = gtk_entry_get_text( GTK_ENTRY( widget ));
-				/*g_debug( "token='%s' content='%s'", token, content );*/
 				if( col_def->is_double ){
-					amount = my_double_from_string( content );
+					amount = my_editable_amount_get_amount( GTK_EDITABLE( widget ));
 				} else {
 					/* we do not manage a formula on a string */
-					gtk_entry_set_text( entry, content );
+					gtk_entry_set_text( entry, gtk_entry_get_text( GTK_ENTRY( widget )));
 					*display = FALSE;
 					/*g_debug( "setting display to FALSE" );*/
 				}
@@ -1254,8 +1389,8 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 		/*g_debug( "%s: searching for rate %s", thisfn, *iter );*/
 		rate = ofo_rate_get_by_mnemo( priv->dossier, token );
 		if( rate && OFO_IS_RATE( rate )){
-			if( my_date_is_valid( &priv->deff )){
-				amount = ofo_rate_get_rate_at_date( rate, &priv->deff )/100;
+			if( my_date_is_valid( &priv->dope )){
+				amount = ofo_rate_get_rate_at_date( rate, &priv->dope )/100;
 			}
 		} else {
 			str = g_strdup_printf( "rate not found: '%s'", token );
@@ -1281,10 +1416,9 @@ static void
 update_all_totals( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
-	gdouble dsold, csold;
+	gdouble dsold, csold, ddiff, cdiff;
 	gint count, idx;
 	GtkWidget *entry;
-	gchar *str, *str2;
 
 	priv = self->private;
 
@@ -1302,41 +1436,34 @@ update_all_totals( ofaGuidedCommon *self )
 
 		entry = gtk_grid_get_child_at( priv->entries_grid, COL_DEBIT, count+1 );
 		if( entry && GTK_IS_ENTRY( entry )){
-			str = g_strdup_printf( "%'.2lf", dsold );
-			gtk_entry_set_text( GTK_ENTRY( entry ), str );
-			g_free( str );
+			my_editable_amount_set_amount( GTK_EDITABLE( entry ), dsold );
 		}
 
 		entry = gtk_grid_get_child_at( priv->entries_grid, COL_CREDIT, count+1 );
 		if( entry && GTK_IS_ENTRY( entry )){
-			str = g_strdup_printf( "%'.2lf", csold );
-			gtk_entry_set_text( GTK_ENTRY( entry ), str );
-			g_free( str );
+			my_editable_amount_set_amount( GTK_EDITABLE( entry ), csold );
 		}
 
 		if( dsold > csold ){
-			str = g_strdup_printf( "%'.2lf", dsold-csold );
-			str2 = g_strdup( "" );
+			ddiff = dsold - csold;
+			cdiff = 0;
 		} else if( dsold < csold ){
-			str = g_strdup( "" );
-			str2 = g_strdup_printf( "%'.2lf", csold-dsold );
+			ddiff = 0;
+			cdiff = csold - dsold;
 		} else {
-			str = g_strdup( "" );
-			str2 = g_strdup( "" );
+			ddiff = 0;
+			cdiff = 0;
 		}
 
 		entry = gtk_grid_get_child_at( priv->entries_grid, COL_DEBIT, count+2 );
 		if( entry && GTK_IS_ENTRY( entry )){
-			gtk_entry_set_text( GTK_ENTRY( entry ), str2 );
+			my_editable_amount_set_amount( GTK_EDITABLE( entry ), ddiff );
 		}
 
 		entry = gtk_grid_get_child_at( priv->entries_grid, COL_CREDIT, count+2 );
 		if( entry && GTK_IS_ENTRY( entry )){
-			gtk_entry_set_text( GTK_ENTRY( entry ), str );
+			my_editable_amount_set_amount( GTK_EDITABLE( entry ), cdiff );
 		}
-
-		g_free( str );
-		g_free( str2 );
 	}
 }
 
@@ -1350,7 +1477,7 @@ get_amount( ofaGuidedCommon *self, gint col_id, gint row )
 	if( col_def ){
 		entry = gtk_grid_get_child_at( self->private->entries_grid, col_def->column_id, row );
 		if( entry && GTK_IS_ENTRY( entry )){
-			return( my_double_from_string( gtk_entry_get_text( GTK_ENTRY( entry ))));
+			return( my_editable_amount_get_amount( GTK_EDITABLE( entry )));
 		}
 	}
 
@@ -1604,8 +1731,8 @@ do_validate( ofaGuidedCommon *self )
 
 	g_list_free_full( entries, g_object_unref );
 
-	memcpy( &st_last_dope, &priv->dope, sizeof( GDate ));
-	memcpy( &st_last_deff, &priv->deff, sizeof( GDate ));
+	my_date_set_from_date( &st_last_dope, &priv->dope );
+	my_date_set_from_date( &st_last_deff, &priv->deff );
 
 	return( ok );
 }
@@ -1701,9 +1828,13 @@ do_reset_entries_rows( ofaGuidedCommon *self )
 			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
 		}
 		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_DEBIT, i );
-		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		if( entry && GTK_IS_ENTRY( entry )){
+			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		}
 		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_CREDIT, i );
-		gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		if( entry && GTK_IS_ENTRY( entry )){
+			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+		}
 	}
 }
 

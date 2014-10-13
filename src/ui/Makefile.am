@@ -159,7 +159,6 @@ actions_files = \
 	$(NULL)
 
 rc_files = \
-	ofa.css												\
 	$(NULL)
 
 ui_files = \
