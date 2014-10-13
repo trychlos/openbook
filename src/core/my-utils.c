@@ -78,14 +78,31 @@ my_utils_quote( const gchar *str )
 }
 
 /**
- * my_utils_stamp_from_sql:
+ * my_utils_stamp_set_now:
+ *
+ * Set the provided #GTimeVal to the current timestamp.
+ */
+GTimeVal *
+my_utils_stamp_set_now( GTimeVal *timeval )
+{
+	GDateTime *dt;
+
+	dt = g_date_time_new_now_local();
+	g_date_time_to_timeval( dt, timeval );
+	g_date_time_unref( dt );
+
+	return( timeval );
+}
+
+/**
+ * my_utils_stamp_set_from_sql:
  * @timeval: a pointer to a GTimeVal structure
  * @str: [allow-none]:
  *
  * SQL timestamp is returned as a string '2014-05-24 20:05:46'
  */
 GTimeVal *
-my_utils_stamp_from_sql( GTimeVal *timeval, const gchar *str )
+my_utils_stamp_set_from_sql( GTimeVal *timeval, const gchar *str )
 {
 	gint y, m, d, H, M, S;
 	struct tm broken;
@@ -103,6 +120,21 @@ my_utils_stamp_from_sql( GTimeVal *timeval, const gchar *str )
 
 	timeval->tv_sec = mktime( &broken );
 	timeval->tv_usec = 0;
+
+	return( timeval );
+}
+
+/**
+ * my_utils_stamp_set_from_stamp:
+ * @timeval: a pointer to a GTimeVal structure
+ * @orig: [allow-none]:
+ *
+ * Returns a pointer to the destination @timeval.
+ */
+GTimeVal *
+my_utils_stamp_set_from_stamp( GTimeVal *timeval, const GTimeVal *orig )
+{
+	memcpy( timeval, orig, sizeof( GTimeVal ));
 
 	return( timeval );
 }
@@ -129,23 +161,6 @@ my_utils_stamp_to_str( const GTimeVal *stamp, myStampFormat format )
 	g_date_time_unref( dt );
 
 	return( str );
-}
-
-/**
- * my_utils_stamp_set_now:
- *
- * Set the provided #GTimeVal to the current timestamp.
- */
-GTimeVal *
-my_utils_stamp_set_now( GTimeVal *timeval )
-{
-	GDateTime *dt;
-
-	dt = g_date_time_new_now_local();
-	g_date_time_to_timeval( dt, timeval );
-	g_date_time_unref( dt );
-
-	return( timeval );
 }
 
 /**

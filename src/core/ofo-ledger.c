@@ -421,7 +421,7 @@ ledger_load_dataset( void )
 		ledger_set_upd_user( ledger, ( gchar * ) icol->data );
 		icol = icol->next;
 		ledger_set_upd_stamp( ledger,
-				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, ledger );
 	}
@@ -1160,7 +1160,7 @@ ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		memcpy( &ledger->private->upd_stamp, upd_stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &ledger->private->upd_stamp, upd_stamp );
 	}
 }
 

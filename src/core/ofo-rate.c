@@ -208,7 +208,7 @@ rate_load_dataset( void )
 		rate_set_upd_user( rate, ( gchar * ) icol->data );
 		icol = icol->next;
 		rate_set_upd_stamp( rate,
-				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, rate );
 	}
@@ -686,7 +686,7 @@ rate_set_upd_stamp( ofoRate *rate, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		memcpy( &rate->private->upd_stamp, upd_stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &rate->private->upd_stamp, upd_stamp );
 	}
 }
 

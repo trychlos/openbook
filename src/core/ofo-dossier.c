@@ -1603,7 +1603,7 @@ dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		memcpy( &dossier->private->upd_stamp, stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &dossier->private->upd_stamp, stamp );
 	}
 }
 
@@ -1799,7 +1799,7 @@ dossier_read_properties( ofoDossier *dossier )
 		str = icol->data;
 		if( str && g_utf8_strlen( str, -1 )){
 			dossier_set_upd_stamp( dossier,
-					my_utils_stamp_from_sql( &timeval, str ));
+					my_utils_stamp_set_from_sql( &timeval, str ));
 		}
 
 		ok = TRUE;

@@ -189,7 +189,7 @@ currency_load_dataset( void )
 		currency_set_upd_user( currency, ( gchar * ) icol->data );
 		icol = icol->next;
 		currency_set_upd_stamp( currency,
-				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, currency );
 	}
@@ -509,7 +509,7 @@ currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		memcpy( &currency->private->upd_stamp, stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &currency->private->upd_stamp, stamp );
 	}
 }
 

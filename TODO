@@ -69,9 +69,6 @@
   52 2014- 5-17 change the title of the pages of the models notebook
                 when the label of a journal is changed
 
-  57 2014- 5-19 have an entry-derived class for numbers (amounts and
-                rates)
-
   58 2014- 5-19 allow the treeviewes to be sorted
      2014- 6-12 this is mostly needed only in ViewEntries
 
@@ -540,6 +537,10 @@
 
   56 2014- 5-19 have an entry-derived class for date
      2014- 6-26 done - svn #3748
+
+  57 2014- 5-19 have an entry-derived class for numbers (amounts and
+                rates)
+     2014-10-13 done with myEditableAmount
 
   59 2014- 5-19 reset all sentences in english
                 as the g_date_set_parse uses the current locale, the 

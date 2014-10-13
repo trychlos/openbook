@@ -387,7 +387,7 @@ model_load_dataset( void )
 		ope_template_set_upd_user( model, ( gchar * ) icol->data );
 		icol = icol->next;
 		ope_template_set_upd_stamp( model,
-				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, model );
 	}
@@ -916,7 +916,7 @@ ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		memcpy( &model->private->upd_stamp, upd_stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &model->private->upd_stamp, upd_stamp );
 	}
 }
 

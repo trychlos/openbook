@@ -460,7 +460,7 @@ account_load_dataset( void )
 		account_set_upd_user( account, ( gchar * ) icol->data );
 		icol = icol->next;
 		account_set_upd_stamp( account,
-				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			priv->deb_entry = atoi(( gchar * ) icol->data );
@@ -1251,7 +1251,7 @@ account_set_upd_stamp( ofoAccount *account, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		memcpy( &account->private->upd_stamp, upd_stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &account->private->upd_stamp, upd_stamp );
 	}
 }
 

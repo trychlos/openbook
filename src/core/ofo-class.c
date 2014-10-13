@@ -198,7 +198,7 @@ class_load_dataset( void )
 		class_set_upd_user( class, ( gchar * ) icol->data );
 		icol = icol->next;
 		class_set_upd_stamp( class,
-				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, class );
 	}
@@ -456,7 +456,7 @@ class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		memcpy( &class->private->upd_stamp, stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &class->private->upd_stamp, stamp );
 	}
 }
 

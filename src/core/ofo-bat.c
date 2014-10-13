@@ -248,7 +248,7 @@ bat_load_dataset( void )
 		bat_set_upd_user( bat, ( gchar * ) icol->data );
 		icol = icol->next;
 		bat_set_upd_stamp( bat,
-				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, bat );
 	}
@@ -680,7 +680,7 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		memcpy( &bat->private->upd_stamp, upd_stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &bat->private->upd_stamp, upd_stamp );
 	}
 }
 

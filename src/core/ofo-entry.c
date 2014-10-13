@@ -614,7 +614,7 @@ entry_parse_result( const GSList *row )
 		entry_set_upd_user( entry, ( gchar * ) icol->data );
 		icol = icol->next;
 		entry_set_upd_stamp( entry,
-				my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
+				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
 			my_date_set_from_sql( &entry->private->concil_dval, ( const gchar * ) icol->data );
@@ -626,7 +626,7 @@ entry_parse_result( const GSList *row )
 		icol = icol->next;
 		if( icol->data ){
 			ofo_entry_set_concil_stamp( entry,
-					my_utils_stamp_from_sql( &timeval, ( const gchar * ) icol->data ));
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 		}
 	}
 	return( entry );
@@ -1209,7 +1209,7 @@ entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		memcpy( &entry->private->upd_stamp, upd_stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &entry->private->upd_stamp, upd_stamp );
 	}
 }
 
@@ -1254,7 +1254,7 @@ ofo_entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *concil_stamp )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		memcpy( &entry->private->concil_stamp, concil_stamp, sizeof( GTimeVal ));
+		my_utils_stamp_set_from_stamp( &entry->private->concil_stamp, concil_stamp );
 	}
 }
 
