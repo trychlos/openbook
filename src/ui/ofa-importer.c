@@ -158,6 +158,7 @@ static gint
 insert_imported_bat_v1( const ofoDossier *dossier,
 							const gchar *uri, const gchar *format, ofaIImporterBatv1 *batv1 )
 {
+	static const gchar *thisfn = "ofa_importer_insert_imported_bat_v1";
 	ofoBat *bat;
 	ofoBatLine *batline;
 	ofaIImporterSBatv1 *str;
@@ -182,6 +183,7 @@ insert_imported_bat_v1( const ofoDossier *dossier,
 	}
 
 	id = ofo_bat_get_id( bat );
+	g_debug( "%s: bat_id=%u", thisfn, id );
 
 	for( line=batv1->results ; line ; line=line->next ){
 
@@ -196,7 +198,13 @@ insert_imported_bat_v1( const ofoDossier *dossier,
 		ofo_bat_line_set_currency( batline, str->currency );
 
 		ofo_bat_line_insert( batline, dossier );
+		g_debug( "%s: batline id=%u line_id=%u",
+				thisfn, ofo_bat_line_get_bat_id( batline ), ofo_bat_line_get_id( batline ));
+
+		g_object_unref( batline );
 	}
+
+	g_object_unref( bat );
 
 	return( id );
 }

@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofo-account.h"
@@ -111,6 +112,8 @@ static const sConcil st_concils[] = {
 		{ 0 }
 };
 
+static const gchar *st_default_reconciliated_class = "5"; /* default account class to be reconciliated */
+
 G_DEFINE_TYPE( ofaRappro, ofa_rappro, OFA_TYPE_MAIN_PAGE )
 
 static GtkWidget   *v_setup_view( ofaMainPage *page );
@@ -143,7 +146,7 @@ static void         setup_bat_lines( ofaRappro *self, gint bat_id );
 static void         clear_bat_lines( ofaRappro *self );
 static void         display_bat_lines( ofaRappro *self );
 static GtkTreeIter *search_for_entry_by_number( ofaRappro *self, gint number );
-static GtkTreeIter *search_for_entry_by_montant( ofaRappro *self, const gchar *sbat_deb, const gchar *sbat_cre );
+static GtkTreeIter *search_for_entry_by_amount( ofaRappro *self, const gchar *sbat_deb, const gchar *sbat_cre );
 static void         update_candidate_entry( ofaRappro *self, ofoBatLine *batline, GtkTreeIter *entry_iter );
 static void         insert_bat_line( ofaRappro *self, ofoBatLine *batline, GtkTreeIter *entry_iter, const gchar *sdeb, const gchar *scre );
 static gboolean     on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRappro *self );
@@ -462,22 +465,22 @@ setup_auto_rappro( ofaMainPage *page )
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_select_bat ), page );
 	gtk_widget_set_tooltip_text(
 			button,
-			_( "Select a previously imported account transactions list" ));
+			_( "Select a previously imported Bank Account Transactions list" ));
 
 	button = gtk_file_chooser_button_new( NULL, GTK_FILE_CHOOSER_ACTION_OPEN );
 	gtk_grid_attach( grid, GTK_WIDGET( button ), 2, 1, 1, 1 );
 	g_signal_connect( G_OBJECT( button ), "file-set", G_CALLBACK( on_file_set ), page );
 	gtk_widget_set_tooltip_text(
 			button,
-			_( "Import an account transactions list to be used in the reconciliation" ));
+			_( "Import an new Bank Account Transactions list to be used in the reconciliation" ));
 
 	image = gtk_image_new_from_stock( GTK_STOCK_CLEAR, GTK_ICON_SIZE_BUTTON );
 	priv->clear = GTK_BUTTON( gtk_button_new());
 	gtk_button_set_image( priv->clear, image );
 	gtk_grid_attach( grid, GTK_WIDGET( priv->clear ), 3, 1, 1, 1 );
 	gtk_widget_set_tooltip_text(
-			GTK_WIDGET( priv->account ),
-			_( "Clear the displayed account transaction lines" ));
+			GTK_WIDGET( priv->clear ),
+			_( "Clear the displayed Bank Account Transaction lines" ));
 	g_signal_connect(
 			G_OBJECT( priv->clear ),
 			"clicked", G_CALLBACK( on_clear_button_clicked ), page );
@@ -921,11 +924,17 @@ on_account_button_clicked( GtkButton *button, ofaRappro *self )
 static void
 do_account_selection( ofaRappro *self )
 {
+	const gchar *account_number;
 	gchar *number;
 
+	account_number = gtk_entry_get_text( self->private->account );
+	if( !account_number || !g_utf8_strlen( account_number, -1 )){
+		account_number = st_default_reconciliated_class;
+	}
+
 	number = ofa_account_select_run(
-			ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
-			gtk_entry_get_text( self->private->account ));
+					ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+					account_number );
 
 	if( number && g_utf8_strlen( number, -1 )){
 		gtk_entry_set_text( self->private->account, number );
@@ -986,7 +995,7 @@ is_fetch_enableable( ofaRappro *self, ofoAccount **account, gint *mode )
 
 	if( enableable ){
 		my_mode = get_selected_concil_mode( self );
-		enableable &= ( my_mode >= 1 );
+		enableable &= ( my_mode > ENT_CONCILED_FIRST && my_mode < ENT_CONCILED_LAST );
 	}
 
 	if( account ){
@@ -1037,8 +1046,8 @@ do_fetch( ofaRappro *self )
 		entry = OFO_ENTRY( it->data );
 
 		sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
-		sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
-		scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
+		sdeb = my_double_to_str( ofo_entry_get_debit( entry ));
+		scre = my_double_to_str( ofo_entry_get_credit( entry ));
 		dconcil = ofo_entry_get_concil_dval( entry );
 		sdrap = my_date_to_str( dconcil, MY_DATE_DMYY );
 
@@ -1211,11 +1220,11 @@ display_bat_lines( ofaRappro *self )
 
 		bat_amount = ofo_bat_line_get_amount( batline );
 		if( bat_amount < 0 ){
-			sbat_deb = g_strdup_printf( "%'.2lf", -bat_amount );
+			sbat_deb = my_double_to_str( -bat_amount );
 			sbat_cre = g_strdup( "" );
 		} else {
 			sbat_deb = g_strdup( "" );
-			sbat_cre = g_strdup_printf( "%'.2lf", bat_amount );
+			sbat_cre = my_double_to_str( bat_amount );
 		}
 
 		bat_ecr = ofo_bat_line_get_entry( batline );
@@ -1229,7 +1238,7 @@ display_bat_lines( ofaRappro *self )
 		}
 
 		if( !done ){
-			entry_iter = search_for_entry_by_montant( self, sbat_deb, sbat_cre );
+			entry_iter = search_for_entry_by_amount( self, sbat_deb, sbat_cre );
 			if( entry_iter ){
 				update_candidate_entry( self, batline, entry_iter );
 				insert_bat_line( self, batline, entry_iter, sbat_deb, sbat_cre );
@@ -1293,7 +1302,7 @@ search_for_entry_by_number( ofaRappro *self, gint number )
  * returns FALSE if not found
  */
 static GtkTreeIter *
-search_for_entry_by_montant( ofaRappro *self, const gchar *sbat_deb, const gchar *sbat_cre )
+search_for_entry_by_amount( ofaRappro *self, const gchar *sbat_deb, const gchar *sbat_cre )
 {
 	GtkTreeModel *child_tmodel;
 	GtkTreeIter iter;
@@ -1322,13 +1331,9 @@ search_for_entry_by_montant( ofaRappro *self, const gchar *sbat_deb, const gchar
 
 				/* are the amounts compatible ?
 				 * a positive bat_amount implies that the entry should be a debit */
-				g_return_val_if_fail( !g_utf8_strlen( sdeb, -1 ) || !g_utf8_strlen( scre, -1 ), NULL );
+				g_return_val_if_fail( g_utf8_strlen( sdeb, -1 ) || g_utf8_strlen( scre, -1 ), NULL );
 
-				if( g_utf8_strlen( sbat_deb, -1 )){
-					if( g_utf8_collate( scre, sbat_deb ) == 0 ){
-						found = TRUE;
-					}
-				} else if( g_utf8_collate( sdeb, sbat_cre ) == 0 ){
+				if( !g_utf8_collate( scre, sbat_deb ) || !g_utf8_collate( sdeb, sbat_cre )){
 					found = TRUE;
 				}
 			}

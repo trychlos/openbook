@@ -76,9 +76,11 @@ typedef enum {
  * ofaEntryConcil:
  */
 typedef enum {
-	ENT_CONCILED_YES = 1,
+	ENT_CONCILED_FIRST = 0,
+	ENT_CONCILED_YES,
 	ENT_CONCILED_NO,
-	ENT_CONCILED_ALL
+	ENT_CONCILED_ALL,
+	ENT_CONCILED_LAST
 }
 	ofaEntryConcil;
 

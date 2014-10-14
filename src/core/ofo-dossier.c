@@ -83,6 +83,8 @@ struct _sDetailExe {
 	GDate            exe_begin;
 	GDate            exe_end;
 	gint             last_entry;
+	gint             last_bat;
+	gint             last_batline;
 	ofaDossierStatus status;
 };
 
@@ -119,6 +121,7 @@ static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBa
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
 static void        on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry );
+static void        dossier_update_next_number( const ofoDossier *dossier, const gchar *field, gint next_number );
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
 static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
 static gboolean    dossier_do_read( ofoDossier *dossier );
@@ -621,7 +624,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
-			"	BAT_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern import identifier',"
+			"	BAT_ID        INTEGER  NOT NULL UNIQUE    COMMENT 'Intern import identifier',"
 			"	BAT_URI       VARCHAR(128)                COMMENT 'Imported URI',"
 			"	BAT_FORMAT    VARCHAR(80)                 COMMENT 'Identified file format',"
 			"	BAT_COUNT     INTEGER                     COMMENT 'Imported lines count',"
@@ -640,7 +643,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             INTEGER  NOT NULL      COMMENT 'Intern import identifier',"
-			"	BAT_LINE_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern imported line identifier',"
+			"	BAT_LINE_ID        INTEGER  NOT NULL UNIQUE COMMENT 'Intern imported line identifier',"
 			"	BAT_LINE_DEFFECT   DATE                   COMMENT 'Effect date',"
 			"	BAT_LINE_DOPE      DATE                   COMMENT 'Operation date',"
 			"	BAT_LINE_REF       VARCHAR(80)            COMMENT 'Bank reference',"
@@ -777,12 +780,14 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_EXE ("
-			"	DOS_ID             INTEGER      NOT NULL        COMMENT 'Row identifier',"
-			"	DOS_EXE_ID         INTEGER      NOT NULL        COMMENT 'Exercice identifier',"
-			"	DOS_EXE_BEGIN      DATE                         COMMENT 'Exercice beginning date',"
-			"	DOS_EXE_END        DATE                         COMMENT 'Exercice ending date',"
-			"	DOS_EXE_LAST_ENTRY INTEGER                      COMMENT 'Last entry number used',"
-			"	DOS_EXE_STATUS     INTEGER      NOT NULL        COMMENT 'Status of this exercice',"
+			"	DOS_ID               INTEGER      NOT NULL    COMMENT 'Row identifier',"
+			"	DOS_EXE_ID           INTEGER      NOT NULL    COMMENT 'Exercice identifier',"
+			"	DOS_EXE_BEGIN        DATE                     COMMENT 'Exercice beginning date',"
+			"	DOS_EXE_END          DATE                     COMMENT 'Exercice ending date',"
+			"	DOS_EXE_LAST_ENTRY   INTEGER DEFAULT 0        COMMENT 'Last entry number used',"
+			"	DOS_EXE_LAST_BAT     INTEGER DEFAULT 0        COMMENT 'Last BAT file number used',"
+			"	DOS_EXE_LAST_BATLINE INTEGER DEFAULT 0        COMMENT 'Last BAT line number used',"
+			"	DOS_EXE_STATUS       INTEGER      NOT NULL    COMMENT 'Status of this exercice',"
 			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_ID)"
 			")", TRUE )){
 		return( FALSE );
@@ -1471,7 +1476,6 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 {
 	sDetailExe *current;
 	gint next_number;
-	gchar *query;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
 
@@ -1482,18 +1486,76 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 		current = get_current_exe( dossier );
 		current->last_entry += 1;
 		next_number = current->last_entry;
-
-		query = g_strdup_printf(
-				"UPDATE OFA_T_DOSSIER_EXE "
-				"	SET DOS_EXE_LAST_ENTRY=%d "
-				"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
-						next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
-
-		ofo_sgbd_query( dossier->private->sgbd, query, TRUE );
-		g_free( query );
+		dossier_update_next_number( dossier, "DOS_EXE_LAST_ENTRY", next_number );
 	}
 
 	return( next_number );
+}
+
+/**
+ * ofo_dossier_get_next_bat_number:
+ */
+gint
+ofo_dossier_get_next_bat_number( const ofoDossier *dossier )
+{
+	sDetailExe *current;
+	gint next_number;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	next_number = 0;
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		current = get_current_exe( dossier );
+		current->last_bat += 1;
+		next_number = current->last_bat;
+		dossier_update_next_number( dossier, "DOS_EXE_LAST_BAT", next_number );
+	}
+
+	return( next_number );
+}
+
+/**
+ * ofo_dossier_get_next_batline_number:
+ */
+gint
+ofo_dossier_get_next_batline_number( const ofoDossier *dossier )
+{
+	sDetailExe *current;
+	gint next_number;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	next_number = 0;
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		current = get_current_exe( dossier );
+		current->last_batline += 1;
+		next_number = current->last_batline;
+		dossier_update_next_number( dossier, "DOS_EXE_LAST_BATLINE", next_number );
+	}
+
+	return( next_number );
+}
+
+/*
+ * ofo_dossier_update_next_number:
+ */
+static void
+dossier_update_next_number( const ofoDossier *dossier, const gchar *field, gint next_number )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_DOSSIER_EXE "
+			"	SET %s=%d "
+			"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
+					field, next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
+
+	ofo_sgbd_query( dossier->private->sgbd, query, TRUE );
+	g_free( query );
 }
 
 /**
@@ -1820,7 +1882,9 @@ dossier_read_exercices( ofoDossier *dossier )
 	ok = FALSE;
 
 	query = g_strdup_printf(
-			"SELECT DOS_EXE_ID,DOS_EXE_BEGIN,DOS_EXE_END,DOS_EXE_LAST_ENTRY,DOS_EXE_STATUS "
+			"SELECT DOS_EXE_ID,DOS_EXE_BEGIN,DOS_EXE_END,"
+			"	DOS_EXE_LAST_ENTRY,DOS_EXE_LAST_BAT,DOS_EXE_LAST_BATLINE,"
+			"	DOS_EXE_STATUS "
 			"	FROM OFA_T_DOSSIER_EXE "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
 
@@ -1839,9 +1903,11 @@ dossier_read_exercices( ofoDossier *dossier )
 			icol = icol->next;
 			my_date_set_from_sql( &sexe->exe_end, ( const gchar * ) icol->data );
 			icol = icol->next;
-			if( icol->data ){
-				sexe->last_entry = atoi(( gchar * ) icol->data );
-			}
+			sexe->last_entry = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			sexe->last_bat = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			sexe->last_batline = atoi(( gchar * ) icol->data );
 			icol = icol->next;
 			if( icol->data ){
 				sexe->status = atoi(( gchar * ) icol->data );

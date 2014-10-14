@@ -66,7 +66,6 @@ static void        bat_line_set_upd_user( ofoBatLine *bat, const gchar *upd_user
 static void        bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_line_do_insert( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    bat_line_get_back_id( ofoBatLine *bat, const ofoSgbd *sgbd );
 static gboolean    bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
 
 static void
@@ -189,7 +188,7 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 
 	g_string_append_printf( query, "WHERE BAT_ID=%d ", bat_id );
 
-	query = g_string_append( query, "ORDER BY BAT_LINE_VALEUR ASC" );
+	query = g_string_append( query, "ORDER BY BAT_LINE_DEFFECT ASC" );
 
 	result = ofo_sgbd_query_ex( sgbd, query->str, TRUE );
 	g_string_free( query, TRUE );
@@ -592,6 +591,8 @@ ofo_bat_line_insert( ofoBatLine *bat_line, const ofoDossier *dossier )
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat_line, ( void * ) dossier );
 
+		bat_line->private->id = ofo_dossier_get_next_batline_number( dossier );
+
 		if( bat_line_do_insert(
 					bat_line,
 					ofo_dossier_get_sgbd( dossier ),
@@ -607,8 +608,7 @@ ofo_bat_line_insert( ofoBatLine *bat_line, const ofoDossier *dossier )
 static gboolean
 bat_line_do_insert( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 {
-	return( bat_line_insert_main( bat, sgbd, user ) &&
-			bat_line_get_back_id( bat, sgbd ));
+	return( bat_line_insert_main( bat, sgbd, user ));
 }
 
 static gboolean
@@ -624,10 +624,11 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	str = my_date_to_str( ofo_bat_line_get_deffect( bat ), MY_DATE_SQL );
 
 	g_string_append_printf( query,
-			"	(BAT_ID,BAT_LINE_DEFFECT,BAT_LINE_DOPE,BAT_LINE_REF,"
+			"	(BAT_ID,BAT_LINE_ID,BAT_LINE_DEFFECT,BAT_LINE_DOPE,BAT_LINE_REF,"
 			"	 BAT_LINE_LABEL,BAT_LINE_CURRENCY,BAT_LINE_AMOUNT) "
-			"	VALUES (%d,'%s',",
+			"	VALUES (%d,%d,'%s',",
 					ofo_bat_line_get_bat_id( bat ),
+					ofo_bat_line_get_id( bat ),
 					str );
 	g_free( str );
 
@@ -672,25 +673,6 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	g_string_free( query, TRUE );
-
-	return( ok );
-}
-
-static gboolean
-bat_line_get_back_id( ofoBatLine *bat, const ofoSgbd *sgbd )
-{
-	gboolean ok;
-	GSList *result, *icol;
-
-	ok = FALSE;
-	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()", TRUE );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		ofo_bat_line_set_id( bat, atoi(( gchar * ) icol->data ));
-		ofo_sgbd_free_result( result );
-		ok = TRUE;
-	}
 
 	return( ok );
 }

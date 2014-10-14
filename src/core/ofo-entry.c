@@ -381,6 +381,8 @@ ofo_entry_get_dataset_by_concil( const ofoDossier *dossier, const gchar *account
 			break;
 		case ENT_CONCILED_ALL:
 			break;
+		default:
+			break;
 	}
 
 	g_string_append_printf( where, " AND ENT_STATUS!=%d ", ENT_STATUS_DELETED );

@@ -71,9 +71,9 @@ static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_do_insert( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    bat_get_back_id( ofoBat *bat, const ofoSgbd *sgbd );
 static gboolean    bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    bat_do_delete( ofoBat *bat, const ofoSgbd *sgbd );
+static gboolean    bat_do_delete_main( ofoBat *bat, const ofoSgbd *sgbd );
+static gboolean    bat_do_delete_lines( ofoBat *bat, const ofoSgbd *sgbd );
 
 static void
 bat_finalize( GObject *instance )
@@ -704,6 +704,8 @@ ofo_bat_insert( ofoBat *bat, const ofoDossier *dossier )
 
 		init_global_handlers( dossier );
 
+		bat->private->id = ofo_dossier_get_next_bat_number( dossier );
+
 		if( bat_do_insert(
 					bat,
 					ofo_dossier_get_sgbd( dossier ),
@@ -720,8 +722,7 @@ ofo_bat_insert( ofoBat *bat, const ofoDossier *dossier )
 static gboolean
 bat_do_insert( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 {
-	return( bat_insert_main( bat, sgbd, user ) &&
-			bat_get_back_id( bat, sgbd ));
+	return( bat_insert_main( bat, sgbd, user ));
 }
 
 static gboolean
@@ -741,9 +742,10 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_BAT" );
 
 	g_string_append_printf( query,
-			"	(BAT_URI,BAT_FORMAT,BAT_COUNT,BAT_BEGIN,BAT_END,"
+			"	(BAT_ID,BAT_URI,BAT_FORMAT,BAT_COUNT,BAT_BEGIN,BAT_END,"
 			"	 BAT_RIB,BAT_CURRENCY,BAT_SOLDE,"
-			"	 BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP) VALUES ('%s',",
+			"	 BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP) VALUES (%d,'%s',",
+					ofo_bat_get_id( bat ),
 					ofo_bat_get_uri( bat ));
 
 	str = my_utils_quote( ofo_bat_get_format( bat ));
@@ -814,25 +816,6 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
-
-	return( ok );
-}
-
-static gboolean
-bat_get_back_id( ofoBat *bat, const ofoSgbd *sgbd )
-{
-	gboolean ok;
-	GSList *result, *icol;
-
-	ok = FALSE;
-	result = ofo_sgbd_query_ex( sgbd, "SELECT LAST_INSERT_ID()", TRUE );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		ofo_bat_set_id( bat, atoi(( gchar * ) icol->data ));
-		ofo_sgbd_free_result( result );
-		ok = TRUE;
-	}
 
 	return( ok );
 }
@@ -930,10 +913,9 @@ ofo_bat_delete( ofoBat *bat, const ofoDossier *dossier )
 
 		OFO_BASE_SET_GLOBAL( st_global, dossier, bat );
 
-		if( bat_do_delete(
-					bat,
-					ofo_dossier_get_sgbd( dossier ))){
+		if( bat_do_delete_main( bat, ofo_dossier_get_sgbd( dossier ))){
 
+			bat_do_delete_lines( bat, ofo_dossier_get_sgbd( dossier ));
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, bat );
 			return( TRUE );
 		}
@@ -944,13 +926,31 @@ ofo_bat_delete( ofoBat *bat, const ofoDossier *dossier )
 }
 
 static gboolean
-bat_do_delete( ofoBat *bat, const ofoSgbd *sgbd )
+bat_do_delete_main( ofoBat *bat, const ofoSgbd *sgbd )
 {
 	gchar *query;
 	gboolean ok;
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_BAT"
+			"	WHERE BAT_ID=%d",
+					ofo_bat_get_id( bat ));
+
+	ok = ofo_sgbd_query( sgbd, query, TRUE );
+
+	g_free( query );
+
+	return( ok );
+}
+
+static gboolean
+bat_do_delete_lines( ofoBat *bat, const ofoSgbd *sgbd )
+{
+	gchar *query;
+	gboolean ok;
+
+	query = g_strdup_printf(
+			"DELETE FROM OFA_T_BAT_LINES"
 			"	WHERE BAT_ID=%d",
 					ofo_bat_get_id( bat ));
 

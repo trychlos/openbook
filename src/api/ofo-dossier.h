@@ -81,14 +81,15 @@ const GDate    *ofo_dossier_get_current_exe_end       ( const ofoDossier *dossie
 gint            ofo_dossier_get_current_exe_last_entry( const ofoDossier *dossier );
 
 gint            ofo_dossier_get_exe_by_date           ( const ofoDossier *dossier, const GDate *date );
-
 const GDate    *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier, gint exe_id );
 const GDate    *ofo_dossier_get_exe_end               ( const ofoDossier *dossier, gint exe_id );
-
 const gchar    *ofo_dossier_get_exe_status_label      ( ofaDossierStatus status );
 
 GDate          *ofo_dossier_get_last_closed_exercice  ( const ofoDossier *dossier );
+
 gint            ofo_dossier_get_next_entry_number     ( const ofoDossier *dossier );
+gint            ofo_dossier_get_next_bat_number       ( const ofoDossier *dossier );
+gint            ofo_dossier_get_next_batline_number   ( const ofoDossier *dossier );
 
 gboolean        ofo_dossier_is_valid                  ( const gchar *label,
 															gint nb_months, const gchar *currency,

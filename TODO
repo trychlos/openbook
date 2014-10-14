@@ -71,6 +71,7 @@
 
   58 2014- 5-19 allow the treeviewes to be sorted
      2014- 6-12 this is mostly needed only in ViewEntries
+     2014-10-13 also in reconciliation
 
   60 2014- 5-19 manage locale as a user preference (format for entering
                 date, amounts and rates)
@@ -353,7 +354,10 @@
                 let the user enter only dd/mm, then automatically
                 computing the year on focus out
 
- 327
+ 327 2014-10-14 Select account: size and position should be kept 
+                distinctly for each usage
+
+ 328
 
 -----------------------------------------------------------------------
  DONE
