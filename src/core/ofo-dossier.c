@@ -624,7 +624,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
-			"	BAT_ID        INTEGER  NOT NULL UNIQUE    COMMENT 'Intern import identifier',"
+			"	BAT_ID        INTEGER     NOT NULL UNIQUE COMMENT 'Intern import identifier',"
 			"	BAT_URI       VARCHAR(128)                COMMENT 'Imported URI',"
 			"	BAT_FORMAT    VARCHAR(80)                 COMMENT 'Identified file format',"
 			"	BAT_COUNT     INTEGER                     COMMENT 'Imported lines count',"

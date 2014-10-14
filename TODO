@@ -96,11 +96,6 @@
                 may be deleted at any time while it is empty -
                 so reclass the entry models on journal-changed signal
 
- 100 2014- 5-24 add a ofo_sgbd_query_1_1 method which takes a query and
-                returns the first column of the first row as an integer
-                applications are: <class>_get_back_id 
-                                  <class>_count_for_devise
-
  101 2014- 5-24 when updating the currency of an account, the 'delete'
                 button of the 'currencies' page should be updated
      2014- 6-12 ofaDevisesSet should be connected to ofa_signal_updated
@@ -676,6 +671,12 @@
 
   99 2014- 5-23 when loading Journal, only load for the current exercice
      2014- 5-24 done: for now, load all what is exists
+
+ 100 2014- 5-24 add a ofo_sgbd_query_1_1 method which takes a query and
+                returns the first column of the first row as an integer
+                applications are: <class>_get_back_id 
+                                  <class>_count_for_devise
+     2014-10-14 cancelled (no added value)
 
  102 2014- 5-24 test the GtkTreeSortable interface - if not works:
                 define an interface for ofaMainPage which sorts the 

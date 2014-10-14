@@ -165,46 +165,51 @@ insert_imported_bat_v1( const ofoDossier *dossier,
 	GList *line;
 	gint id;
 
-	bat = ofo_bat_new();
+	id = -1;
 
-	ofo_bat_set_uri( bat, uri );
-	ofo_bat_set_format( bat, format );
-	ofo_bat_set_count( bat, batv1->count );
-	ofo_bat_set_begin( bat, &batv1->begin );
-	ofo_bat_set_end( bat, &batv1->end );
-	ofo_bat_set_solde( bat, batv1->solde );
-	ofo_bat_set_solde_set( bat, batv1->solde_set );
-	ofo_bat_set_rib( bat, batv1->rib );
-	ofo_bat_set_currency( bat, batv1->currency );
+	if( !ofo_bat_exists( dossier, batv1->rib, &batv1->begin, &batv1->end )){
 
-	if( !ofo_bat_insert( bat, dossier )){
-		g_clear_object( &bat );
-		return( -1 );
+		bat = ofo_bat_new();
+
+		ofo_bat_set_uri( bat, uri );
+		ofo_bat_set_format( bat, format );
+		ofo_bat_set_count( bat, batv1->count );
+		ofo_bat_set_begin( bat, &batv1->begin );
+		ofo_bat_set_end( bat, &batv1->end );
+		ofo_bat_set_solde( bat, batv1->solde );
+		ofo_bat_set_solde_set( bat, batv1->solde_set );
+		ofo_bat_set_rib( bat, batv1->rib );
+		ofo_bat_set_currency( bat, batv1->currency );
+
+		if( !ofo_bat_insert( bat, dossier )){
+			g_clear_object( &bat );
+			return( -1 );
+		}
+
+		id = ofo_bat_get_id( bat );
+		g_debug( "%s: bat_id=%u", thisfn, id );
+
+		for( line=batv1->results ; line ; line=line->next ){
+
+			str = ( ofaIImporterSBatv1 * ) line->data;
+			batline = ofo_bat_line_new( id );
+
+			ofo_bat_line_set_deffect( batline, &str->deffect );
+			ofo_bat_line_set_dope( batline, &str->dope );
+			ofo_bat_line_set_ref( batline, str->ref );
+			ofo_bat_line_set_label( batline, str->label );
+			ofo_bat_line_set_amount( batline, str->amount );
+			ofo_bat_line_set_currency( batline, str->currency );
+
+			ofo_bat_line_insert( batline, dossier );
+			g_debug( "%s: batline id=%u line_id=%u",
+					thisfn, ofo_bat_line_get_bat_id( batline ), ofo_bat_line_get_id( batline ));
+
+			g_object_unref( batline );
+		}
+
+		g_object_unref( bat );
 	}
-
-	id = ofo_bat_get_id( bat );
-	g_debug( "%s: bat_id=%u", thisfn, id );
-
-	for( line=batv1->results ; line ; line=line->next ){
-
-		str = ( ofaIImporterSBatv1 * ) line->data;
-		batline = ofo_bat_line_new( id );
-
-		ofo_bat_line_set_deffect( batline, &str->deffect );
-		ofo_bat_line_set_dope( batline, &str->dope );
-		ofo_bat_line_set_ref( batline, str->ref );
-		ofo_bat_line_set_label( batline, str->label );
-		ofo_bat_line_set_amount( batline, str->amount );
-		ofo_bat_line_set_currency( batline, str->currency );
-
-		ofo_bat_line_insert( batline, dossier );
-		g_debug( "%s: batline id=%u line_id=%u",
-				thisfn, ofo_bat_line_get_bat_id( batline ), ofo_bat_line_get_id( batline ));
-
-		g_object_unref( batline );
-	}
-
-	g_object_unref( bat );
 
 	return( id );
 }

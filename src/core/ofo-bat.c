@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -477,6 +478,83 @@ ofo_bat_get_upd_stamp( const ofoBat *bat )
 
 	g_assert_not_reached();
 	return( NULL );
+}
+
+/**
+ * ofo_bat_exists:
+ * @dossier:
+ * @rib:
+ * @begin:
+ * @end:
+ *
+ * Returns %TRUE if the Bank Account Transaction file has already been
+ * imported,.
+ */
+gboolean
+ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin, const GDate *end )
+{
+	gboolean exists;
+	gchar *sbegin, *send;
+	GString *query;
+	GSList *result, *icol;
+	gint count;
+	gchar *primary, *secondary;
+	GtkWidget *dialog;
+
+	exists = FALSE;
+
+	sbegin = my_date_to_str( begin, MY_DATE_SQL );
+	send = my_date_to_str( end, MY_DATE_SQL );
+
+	query = g_string_new( "SELECT COUNT(*) FROM OFA_T_BAT WHERE ");
+
+	g_string_append_printf( query, "BAT_RIB='%s' ", rib );
+
+	if( my_date_is_valid( begin )){
+		g_string_append_printf( query, "AND BAT_BEGIN='%s' ", sbegin );
+	} else {
+		g_string_append_printf( query, "AND BAT_BEGIN=NULL " );
+	}
+
+	if( my_date_is_valid( end )){
+		g_string_append_printf( query, "AND BAT_END='%s'", send );
+	} else {
+		g_string_append_printf( query, "AND BAT_END=NULL" );
+	}
+
+	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
+	if( result ){
+		icol = ( GSList * ) result->data;
+		count = atoi(( gchar * ) icol->data );
+		if( count > 0 ){
+			exists = TRUE;
+			primary = g_strdup(
+					_( "The candidate Bank Account Transaction file has already been imported.\n"
+							"A new import is refused." ));
+			secondary = g_strdup_printf(
+					_( "\tRIB\t\t= '%s'\n"
+							"\tBegin\t= '%s'\n"
+							"\tEnd\t\t= '%s'" ), rib, sbegin, send );
+			dialog = gtk_message_dialog_new(
+							NULL,
+							GTK_DIALOG_DESTROY_WITH_PARENT,
+							GTK_MESSAGE_WARNING,
+							GTK_BUTTONS_CLOSE,
+							"%s", primary );
+			gtk_message_dialog_format_secondary_text( GTK_MESSAGE_DIALOG( dialog ), "%s", secondary );
+			gtk_dialog_run( GTK_DIALOG( dialog ));
+			gtk_widget_destroy( dialog );
+			g_free( secondary );
+			g_free( primary );
+		}
+		ofo_sgbd_free_result( result );
+	}
+
+	g_string_free( query, TRUE );
+	g_free( send );
+	g_free( sbegin );
+
+	return( exists );
 }
 
 /**

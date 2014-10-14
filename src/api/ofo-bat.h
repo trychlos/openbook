@@ -60,6 +60,8 @@ const gchar    *ofo_bat_get_notes    ( const ofoBat *bat );
 const gchar    *ofo_bat_get_upd_user ( const ofoBat *bat );
 const GTimeVal *ofo_bat_get_upd_stamp( const ofoBat *bat );
 
+gboolean        ofo_bat_exists       ( const ofoDossier *dossier,
+										const gchar *rib, const GDate *begin, const GDate *end );
 gboolean        ofo_bat_is_deletable ( const ofoBat *bat );
 
 void            ofo_bat_set_id       ( ofoBat *bat, gint id );
