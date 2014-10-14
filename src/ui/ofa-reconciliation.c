@@ -46,11 +46,11 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-importer.h"
-#include "ui/ofa-rappro.h"
+#include "ui/ofa-reconciliation.h"
 
 /* private instance data
  */
-struct _ofaRapproPrivate {
+struct _ofaReconciliationPrivate {
 	gboolean      dispose_has_run;
 
 	/* UI
@@ -114,7 +114,7 @@ static const sConcil st_concils[] = {
 
 static const gchar *st_default_reconciliated_class = "5"; /* default account class to be reconciliated */
 
-G_DEFINE_TYPE( ofaRappro, ofa_rappro, OFA_TYPE_MAIN_PAGE )
+G_DEFINE_TYPE( ofaReconciliation, ofa_reconciliation, OFA_TYPE_MAIN_PAGE )
 
 static GtkWidget   *v_setup_view( ofaMainPage *page );
 static GtkWidget   *setup_select_account( ofaMainPage *page );
@@ -125,66 +125,66 @@ static GtkWidget   *setup_treeview( ofaMainPage *page );
 static GtkWidget   *setup_balance( ofaMainPage *page );
 static GtkWidget   *v_setup_buttons( ofaMainPage *page );
 static void         v_init_view( ofaMainPage *page );
-static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRappro *self );
-static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRappro *self );
-static gboolean     is_visible_entry( ofaRappro *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
-static gboolean     is_visible_batline( ofaRappro *self, ofoBatLine *batline );
-static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRappro *self );
-static void         on_account_changed( GtkEntry *entry, ofaRappro *self );
-static void         on_account_button_clicked( GtkButton *button, ofaRappro *self );
-static void         do_account_selection( ofaRappro *self );
-static void         on_combo_mode_changed( GtkComboBox *box, ofaRappro *self );
-static gint         get_selected_concil_mode( ofaRappro *self );
-static void         check_for_enable_fetch( ofaRappro *self );
-static gboolean     is_fetch_enableable( ofaRappro *self, ofoAccount **account, gint *mode );
-static void         on_fetch_button_clicked( GtkButton *button, ofaRappro *self );
-static void         do_fetch( ofaRappro *self );
-static void         on_select_bat( GtkButton *button, ofaRappro *self );
-static void         on_file_set( GtkFileChooserButton *button, ofaRappro *self );
-static void         on_clear_button_clicked( GtkButton *button, ofaRappro *self );
-static void         setup_bat_lines( ofaRappro *self, gint bat_id );
-static void         clear_bat_lines( ofaRappro *self );
-static void         display_bat_lines( ofaRappro *self );
-static GtkTreeIter *search_for_entry_by_number( ofaRappro *self, gint number );
-static GtkTreeIter *search_for_entry_by_amount( ofaRappro *self, const gchar *sbat_deb, const gchar *sbat_cre );
-static void         update_candidate_entry( ofaRappro *self, ofoBatLine *batline, GtkTreeIter *entry_iter );
-static void         insert_bat_line( ofaRappro *self, ofoBatLine *batline, GtkTreeIter *entry_iter, const gchar *sdeb, const gchar *scre );
-static gboolean     on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRappro *self );
-static void         collapse_node( ofaRappro *self, GtkWidget *widget );
-static void         expand_node( ofaRappro *self, GtkWidget *widget );
+static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconciliation *self );
+static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
+static gboolean     is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
+static gboolean     is_visible_batline( ofaReconciliation *self, ofoBatLine *batline );
+static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
+static void         on_account_changed( GtkEntry *entry, ofaReconciliation *self );
+static void         on_account_button_clicked( GtkButton *button, ofaReconciliation *self );
+static void         do_account_selection( ofaReconciliation *self );
+static void         on_combo_mode_changed( GtkComboBox *box, ofaReconciliation *self );
+static gint         get_selected_concil_mode( ofaReconciliation *self );
+static void         check_for_enable_fetch( ofaReconciliation *self );
+static gboolean     is_fetch_enableable( ofaReconciliation *self, ofoAccount **account, gint *mode );
+static void         on_fetch_button_clicked( GtkButton *button, ofaReconciliation *self );
+static void         do_fetch( ofaReconciliation *self );
+static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
+static void         on_file_set( GtkFileChooserButton *button, ofaReconciliation *self );
+static void         on_clear_button_clicked( GtkButton *button, ofaReconciliation *self );
+static void         setup_bat_lines( ofaReconciliation *self, gint bat_id );
+static void         clear_bat_lines( ofaReconciliation *self );
+static void         display_bat_lines( ofaReconciliation *self );
+static GtkTreeIter *search_for_entry_by_number( ofaReconciliation *self, gint number );
+static GtkTreeIter *search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, const gchar *sbat_cre );
+static void         update_candidate_entry( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIter *entry_iter );
+static void         insert_bat_line( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIter *entry_iter, const gchar *sdeb, const gchar *scre );
+static gboolean     on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconciliation *self );
+static void         collapse_node( ofaReconciliation *self, GtkWidget *widget );
+static void         expand_node( ofaReconciliation *self, GtkWidget *widget );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
-static gboolean     toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path );
-static void         reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter );
-static void         set_reconciliated_balance( ofaRappro *self );
+static gboolean     toggle_rappro( ofaReconciliation *self, GtkTreeView *tview, GtkTreePath *path );
+static void         reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter );
+static void         set_reconciliated_balance( ofaReconciliation *self );
 
 static void
 rappro_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_rappro_finalize";
-	ofaRapproPrivate *priv;
+	static const gchar *thisfn = "ofa_reconciliation_finalize";
+	ofaReconciliationPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( OFA_IS_RAPPRO( instance ));
 
-	priv = OFA_RAPPRO( instance )->private;
+	priv = OFA_RECONCILIATION( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_rappro_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_reconciliation_parent_class )->finalize( instance );
 }
 
 static void
 rappro_dispose( GObject *instance )
 {
-	ofaRapproPrivate *priv;
+	ofaReconciliationPrivate *priv;
 
 	g_return_if_fail( OFA_IS_RAPPRO( instance ));
 
-	priv = ( OFA_RAPPRO( instance ))->private;
+	priv = ( OFA_RECONCILIATION( instance ))->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -195,29 +195,29 @@ rappro_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_rappro_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_reconciliation_parent_class )->dispose( instance );
 }
 
 static void
-ofa_rappro_init( ofaRappro *self )
+ofa_reconciliation_init( ofaReconciliation *self )
 {
-	static const gchar *thisfn = "ofa_rappro_init";
+	static const gchar *thisfn = "ofa_reconciliation_init";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( OFA_IS_RAPPRO( self ));
 
-	self->private = g_new0( ofaRapproPrivate, 1 );
+	self->private = g_new0( ofaReconciliationPrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 	my_date_clear( &self->private->dconcil );
 }
 
 static void
-ofa_rappro_class_init( ofaRapproClass *klass )
+ofa_reconciliation_class_init( ofaReconciliationClass *klass )
 {
-	static const gchar *thisfn = "ofa_rappro_class_init";
+	static const gchar *thisfn = "ofa_reconciliation_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -271,7 +271,7 @@ v_setup_view( ofaMainPage *page )
 static GtkWidget *
 setup_select_account( ofaMainPage *page )
 {
-	ofaRapproPrivate *priv;
+	ofaReconciliationPrivate *priv;
 	GtkFrame *frame;
 	GtkAlignment *alignment;
 	GtkGrid *grid, *grid2;
@@ -284,7 +284,7 @@ setup_select_account( ofaMainPage *page )
 	GtkTreeIter iter;
 	gint i;
 
-	priv = OFA_RAPPRO( page )->private;
+	priv = OFA_RECONCILIATION( page )->private;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
@@ -375,14 +375,14 @@ setup_select_account( ofaMainPage *page )
 static GtkWidget *
 setup_manual_rappro( ofaMainPage *page )
 {
-	ofaRapproPrivate *priv;
+	ofaReconciliationPrivate *priv;
 	GtkFrame *frame;
 	GtkAlignment *alignment;
 	GtkGrid *grid;
 	GtkLabel *label;
 	gchar *markup;
 
-	priv = OFA_RAPPRO( page )->private;
+	priv = OFA_RECONCILIATION( page )->private;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
@@ -431,7 +431,7 @@ setup_manual_rappro( ofaMainPage *page )
 static GtkWidget *
 setup_auto_rappro( ofaMainPage *page )
 {
-	ofaRapproPrivate *priv;
+	ofaReconciliationPrivate *priv;
 	GtkFrame *frame;
 	GtkAlignment *alignment;
 	GtkGrid *grid;
@@ -439,7 +439,7 @@ setup_auto_rappro( ofaMainPage *page )
 	gchar *markup;
 	GtkWidget *button, *image;
 
-	priv = OFA_RAPPRO( page )->private;
+	priv = OFA_RECONCILIATION( page )->private;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_margin_right( GTK_WIDGET( frame ), 4 );
@@ -491,11 +491,11 @@ setup_auto_rappro( ofaMainPage *page )
 static GtkWidget *
 setup_display_account( ofaMainPage *page )
 {
-	ofaRapproPrivate *priv;
+	ofaReconciliationPrivate *priv;
 	GtkBox *box;
 	GtkLabel *label;
 
-	priv = OFA_RAPPRO( page )->private;
+	priv = OFA_RECONCILIATION( page )->private;
 
 	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 ));
 
@@ -540,7 +540,7 @@ setup_display_account( ofaMainPage *page )
 static GtkWidget *
 setup_treeview( ofaMainPage *page )
 {
-	ofaRapproPrivate *priv;
+	ofaReconciliationPrivate *priv;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
@@ -548,7 +548,7 @@ setup_treeview( ofaMainPage *page )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 
-	priv = OFA_RAPPRO( page )->private;
+	priv = OFA_RECONCILIATION( page )->private;
 
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
 	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 4 );
@@ -671,11 +671,11 @@ setup_treeview( ofaMainPage *page )
 static GtkWidget *
 setup_balance( ofaMainPage *page )
 {
-	ofaRapproPrivate *priv;
+	ofaReconciliationPrivate *priv;
 	GtkBox *box;
 	GtkLabel *label;
 
-	priv = OFA_RAPPRO( page )->private;
+	priv = OFA_RECONCILIATION( page )->private;
 
 	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 ));
 	/*gtk_widget_set_margin_bottom( GTK_WIDGET( box ), 2 );*/
@@ -710,7 +710,7 @@ v_setup_buttons( ofaMainPage *page )
 static void
 v_init_view( ofaMainPage *page )
 {
-	check_for_enable_fetch( OFA_RAPPRO( page ));
+	check_for_enable_fetch( OFA_RECONCILIATION( page ));
 }
 
 /*
@@ -721,7 +721,7 @@ v_init_view( ofaMainPage *page )
  * not provided in the bat file; entry number is set to zero
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRappro *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconciliation *self )
 {
 	gchar *dopea, *dopeb;
 	GDate da, db;
@@ -755,7 +755,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRappro *
  * tmodel here is the main GtkTreeModelFilter
  */
 static gboolean
-is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRappro *self )
+is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self )
 {
 	gboolean visible;
 	GObject *object;
@@ -772,9 +772,9 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRappro *self )
 }
 
 static gboolean
-is_visible_entry( ofaRappro *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
+is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
 {
-	static const gchar *thisfn = "ofa_rappro_is_visible_entry";
+	static const gchar *thisfn = "ofa_reconciliation_is_visible_entry";
 	gboolean visible;
 	gboolean validated;
 	gint mode;
@@ -804,7 +804,7 @@ is_visible_entry( ofaRappro *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoE
 }
 
 static gboolean
-is_visible_batline( ofaRappro *self, ofoBatLine *batline )
+is_visible_batline( ofaReconciliation *self, ofoBatLine *batline )
 {
 	gint ecr_number;
 
@@ -828,7 +828,7 @@ is_visible_batline( ofaRappro *self, ofoBatLine *batline )
 static void
 on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
-						ofaRappro *self )
+						ofaReconciliation *self )
 {
 	gboolean validated;
 	GObject *object;
@@ -872,9 +872,9 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaRappro *self )
+on_account_changed( GtkEntry *entry, ofaReconciliation *self )
 {
-	ofaRapproPrivate *priv;
+	ofaReconciliationPrivate *priv;
 	const gchar *number;
 	ofoAccount *account;
 	gdouble amount;
@@ -911,7 +911,7 @@ on_account_changed( GtkEntry *entry, ofaRappro *self )
 }
 
 static void
-on_account_button_clicked( GtkButton *button, ofaRappro *self )
+on_account_button_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	do_account_selection( self );
 }
@@ -922,7 +922,7 @@ on_account_button_clicked( GtkButton *button, ofaRappro *self )
  * dialog
  */
 static void
-do_account_selection( ofaRappro *self )
+do_account_selection( ofaReconciliation *self )
 {
 	const gchar *account_number;
 	gchar *number;
@@ -944,13 +944,13 @@ do_account_selection( ofaRappro *self )
 }
 
 static void
-on_combo_mode_changed( GtkComboBox *box, ofaRappro *self )
+on_combo_mode_changed( GtkComboBox *box, ofaReconciliation *self )
 {
 	check_for_enable_fetch( self );
 }
 
 static gint
-get_selected_concil_mode( ofaRappro *self )
+get_selected_concil_mode( ofaReconciliation *self )
 {
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
@@ -967,7 +967,7 @@ get_selected_concil_mode( ofaRappro *self )
 }
 
 static void
-check_for_enable_fetch( ofaRappro *self )
+check_for_enable_fetch( ofaReconciliation *self )
 {
 	/*gtk_widget_set_sensitive(
 			GTK_WIDGET( self->private->fetch ),
@@ -980,7 +980,7 @@ check_for_enable_fetch( ofaRappro *self )
 }
 
 static gboolean
-is_fetch_enableable( ofaRappro *self, ofoAccount **account, gint *mode )
+is_fetch_enableable( ofaReconciliation *self, ofoAccount **account, gint *mode )
 {
 	gboolean enableable;
 	const gchar *acc_number;
@@ -1009,14 +1009,14 @@ is_fetch_enableable( ofaRappro *self, ofoAccount **account, gint *mode )
 }
 
 static void
-on_fetch_button_clicked( GtkButton *button, ofaRappro *self )
+on_fetch_button_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	do_fetch( self );
 	display_bat_lines( self );
 }
 
 static void
-do_fetch( ofaRappro *self )
+do_fetch( ofaReconciliation *self )
 {
 	gboolean enableable;
 	ofoAccount *account;
@@ -1079,7 +1079,7 @@ do_fetch( ofaRappro *self )
  * select an already imported Bank Account Transaction list file
  */
 static void
-on_select_bat( GtkButton *button, ofaRappro *self )
+on_select_bat( GtkButton *button, ofaReconciliation *self )
 {
 	gint bat_id;
 
@@ -1094,7 +1094,7 @@ on_select_bat( GtkButton *button, ofaRappro *self )
  * try to import a bank account transaction list
  */
 static void
-on_file_set( GtkFileChooserButton *button, ofaRappro *self )
+on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 {
 	gint bat_id;
 
@@ -1109,7 +1109,7 @@ on_file_set( GtkFileChooserButton *button, ofaRappro *self )
 }
 
 static void
-on_clear_button_clicked( GtkButton *button, ofaRappro *self )
+on_clear_button_clicked( GtkButton *button, ofaReconciliation *self )
 {
 	clear_bat_lines( self );
 }
@@ -1121,7 +1121,7 @@ on_clear_button_clicked( GtkButton *button, ofaRappro *self )
  * only lines which have not yet been used for reconciliation are read
  */
 static void
-setup_bat_lines( ofaRappro *self, gint bat_id )
+setup_bat_lines( ofaReconciliation *self, gint bat_id )
 {
 	clear_bat_lines( self );
 
@@ -1142,7 +1142,7 @@ setup_bat_lines( ofaRappro *self, gint bat_id )
  *  proposed reconciliation date in the entries
  */
 static void
-clear_bat_lines( ofaRappro *self )
+clear_bat_lines( ofaReconciliation *self )
 {
 	GtkTreeModel *tmodel;
 	gboolean bvalid;
@@ -1203,7 +1203,7 @@ clear_bat_lines( ofaRappro *self )
  * - else just add the bat line without parent
  */
 static void
-display_bat_lines( ofaRappro *self )
+display_bat_lines( ofaReconciliation *self )
 {
 	GList *line;
 	ofoBatLine *batline;
@@ -1260,7 +1260,7 @@ display_bat_lines( ofaRappro *self )
  * returns an iter of the child model, or NULL
  */
 static GtkTreeIter *
-search_for_entry_by_number( ofaRappro *self, gint number )
+search_for_entry_by_number( ofaReconciliation *self, gint number )
 {
 	GtkTreeModel *child_tmodel;
 	GtkTreeIter iter;
@@ -1302,7 +1302,7 @@ search_for_entry_by_number( ofaRappro *self, gint number )
  * returns FALSE if not found
  */
 static GtkTreeIter *
-search_for_entry_by_amount( ofaRappro *self, const gchar *sbat_deb, const gchar *sbat_cre )
+search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, const gchar *sbat_cre )
 {
 	GtkTreeModel *child_tmodel;
 	GtkTreeIter iter;
@@ -1359,7 +1359,7 @@ search_for_entry_by_amount( ofaRappro *self, const gchar *sbat_deb, const gchar 
  * the provided iter is on the child model
  */
 static void
-update_candidate_entry( ofaRappro *self, ofoBatLine *batline, GtkTreeIter *entry_iter )
+update_candidate_entry( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIter *entry_iter )
 {
 	GtkTreeModel *child_tmodel;
 	gchar *sdvaleur;
@@ -1384,7 +1384,7 @@ update_candidate_entry( ofaRappro *self, ofoBatLine *batline, GtkTreeIter *entry
  * insert the bat line either as a child of entry_iter, or without parent
  */
 static void
-insert_bat_line( ofaRappro *self, ofoBatLine *batline,
+insert_bat_line( ofaReconciliation *self, ofoBatLine *batline,
 							GtkTreeIter *entry_iter, const gchar *sdeb, const gchar *scre )
 {
 	GtkTreeModel *child_tmodel;
@@ -1426,7 +1426,7 @@ insert_bat_line( ofaRappro *self, ofoBatLine *batline,
  * Handles left and right arrows to expand/collapse nodes
  */
 static gboolean
-on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRappro *self )
+on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconciliation *self )
 {
 	if( event->state == 0 ){
 		if( event->keyval == GDK_KEY_Left ){
@@ -1440,7 +1440,7 @@ on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRappro *self )
 }
 
 static void
-collapse_node( ofaRappro *self, GtkWidget *widget )
+collapse_node( ofaReconciliation *self, GtkWidget *widget )
 {
 	GtkTreeSelection *select;
 	GtkTreeIter iter, parent;
@@ -1465,7 +1465,7 @@ collapse_node( ofaRappro *self, GtkWidget *widget )
 }
 
 static void
-expand_node( ofaRappro *self, GtkWidget *widget )
+expand_node( ofaReconciliation *self, GtkWidget *widget )
 {
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
@@ -1487,9 +1487,9 @@ expand_node( ofaRappro *self, GtkWidget *widget )
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page )
 {
-	if( toggle_rappro( OFA_RAPPRO( page ), view, path )){
+	if( toggle_rappro( OFA_RECONCILIATION( page ), view, path )){
 		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( gtk_tree_view_get_model( view )));
-		set_reconciliated_balance( OFA_RAPPRO( page ));
+		set_reconciliated_balance( OFA_RECONCILIATION( page ));
 	}
 }
 
@@ -1499,7 +1499,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
  * do anything
  */
 static gboolean
-toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
+toggle_rappro( ofaReconciliation *self, GtkTreeView *tview, GtkTreePath *path )
 {
 	GtkTreeIter iter;
 	gchar *srappro;
@@ -1562,7 +1562,7 @@ toggle_rappro( ofaRappro *self, GtkTreeView *tview, GtkTreePath *path )
  *
  */
 static void
-reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter )
+reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter )
 {
 	GtkTreeModel *child_tmodel;
 	GtkTreeIter child_iter;
@@ -1643,7 +1643,7 @@ reconciliate_entry( ofaRappro *self, ofoEntry *entry, const GDate *drappro, GtkT
  * reconciliated entries and the unreconciliated BAT lines
  */
 static void
-set_reconciliated_balance( ofaRappro *self )
+set_reconciliated_balance( ofaReconciliation *self )
 {
 	gdouble debit, credit;
 	const gchar *account_number;

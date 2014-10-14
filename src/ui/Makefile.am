@@ -134,12 +134,12 @@ openbook_SOURCES = \
 	ofa-preferences.h									\
 	ofa-print-reconcil.c								\
 	ofa-print-reconcil.h								\
-	ofa-rappro.c										\
-	ofa-rappro.h										\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
 	ofa-rates-set.c										\
 	ofa-rates-set.h										\
+	ofa-reconciliation.c								\
+	ofa-reconciliation.h								\
 	ofa-restore.c										\
 	ofa-restore.h										\
 	ofa-tab-label.c										\

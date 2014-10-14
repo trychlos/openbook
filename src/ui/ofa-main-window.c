@@ -51,7 +51,7 @@
 #include "ui/ofa-ledgers-set.h"
 #include "ui/ofa-ope-templates-set.h"
 #include "ui/ofa-print-reconcil.h"
-#include "ui/ofa-rappro.h"
+#include "ui/ofa-reconciliation.h"
 #include "ui/ofa-main-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-rates-set.h"
@@ -171,7 +171,7 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_CONCIL,
 				N_( "Reconciliation" ),
-				ofa_rappro_get_type,
+				ofa_reconciliation_get_type,
 				FALSE,
 				FALSE },
 
