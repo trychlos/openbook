@@ -233,10 +233,14 @@ ofa_plugin_release_modules( void )
 	GList *imod;
 	GList *iobj;
 
-	g_debug( "%s: ", thisfn );
+	g_debug( "%s: st_modules=%p, count=%u",
+			thisfn, ( void * ) st_modules, g_list_length( st_modules ));
 
 	for( imod = st_modules ; imod ; imod = imod->next ){
 		plugin = OFA_PLUGIN( imod->data );
+
+		g_debug( "%s: objects=%p, count=%u",
+				thisfn, ( void * ) plugin->private->objects, g_list_length( plugin->private->objects ));
 
 		for( iobj = plugin->private->objects ; iobj ; iobj = iobj->next ){
 			if( G_IS_OBJECT( iobj->data )){

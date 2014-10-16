@@ -52,74 +52,76 @@
 /* private instance data
  */
 struct _ofaViewEntriesPrivate {
-	gboolean        dispose_has_run;
+	gboolean          dispose_has_run;
 
 	/* internals
 	 */
-	ofoDossier      *dossier;			/* dossier */
-	GDate            d_from;
-	GDate            d_to;
+	ofoDossier        *dossier;			/* dossier */
+	GDate              d_from;
+	GDate              d_to;
 
 	/* UI
 	 */
-	GtkContainer    *top_box;			/* reparented from dialog */
+	GtkContainer      *top_box;			/* reparented from dialog */
 
 	/* frame 1: general selection
 	 */
-	GtkToggleButton *ledger_btn;
-	ofaLedgerCombo *ledger_combo;
-	GtkComboBox     *ledger_box;
-	gchar           *jou_mnemo;
+	GtkToggleButton   *ledger_btn;
+	ofaLedgerCombo    *ledger_combo;
+	GtkComboBox       *ledger_box;
+	gchar             *jou_mnemo;
 
-	GtkToggleButton *account_btn;
-	GtkEntry        *account_entry;
-	GtkButton       *account_select;
-	gchar           *acc_number;
+	GtkToggleButton   *account_btn;
+	GtkEntry          *account_entry;
+	GtkButton         *account_select;
+	gchar             *acc_number;
 
-	GtkLabel        *f1_label;
+	GtkLabel          *f1_label;
 
 	/* frame 2: effect dates layout
 	 */
-	GtkEntry        *we_from;
-	GtkLabel        *wl_from;
-	GtkEntry        *we_to;
-	GtkLabel        *wl_to;
+	GtkEntry          *we_from;
+	GtkLabel          *wl_from;
+	GtkEntry          *we_to;
+	GtkLabel          *wl_to;
 
 	/* frame 3: entry status
 	 */
-	gboolean         display_rough;
-	gboolean         display_validated;
-	gboolean         display_deleted;
+	gboolean           display_rough;
+	gboolean           display_validated;
+	gboolean           display_deleted;
 
 	/* frame 4: visible columns
 	 */
-	GtkCheckButton  *account_checkbox;
-	GtkCheckButton  *ledger_checkbox;
-	GtkCheckButton  *currency_checkbox;
+	GtkCheckButton    *account_checkbox;
+	GtkCheckButton    *ledger_checkbox;
+	GtkCheckButton    *currency_checkbox;
 
-	gboolean         dope_visible;
-	gboolean         deffect_visible;
-	gboolean         ref_visible;
-	gboolean         ledger_visible;
-	gboolean         account_visible;
-	gboolean         rappro_visible;
-	gboolean         status_visible;
-	gboolean         currency_visible;
+	gboolean           dope_visible;
+	gboolean           deffect_visible;
+	gboolean           ref_visible;
+	gboolean           ledger_visible;
+	gboolean           account_visible;
+	gboolean           rappro_visible;
+	gboolean           status_visible;
+	gboolean           currency_visible;
 
 	/* frame 5: edition switch
 	 */
-	GtkSwitch       *edit_switch;
+	GtkSwitch         *edit_switch;
 
 	/* entries list view
 	 */
-	GtkTreeView     *entries_tview;
-	GtkTreeModel    *tfilter;			/* GtkTreeModelFilter of the listview */
-	ofoEntry        *inserted;			/* a new entry being inserted */
+	GtkTreeView       *entries_tview;
+	GtkTreeModel      *tfilter;				/* GtkTreeModelFilter stacked on the GtkListStore */
+	GtkTreeModel      *tsort;				/* GtkTreeModelSort stacked on the GtkTreeModelFilter */
+	GtkTreeViewColumn *sort_column;
+	ofoEntry          *inserted;			/* a new entry being inserted */
 
 	/* footer
 	 */
-	GtkLabel        *comment;
-	GHashTable      *balances_hash;
+	GtkLabel          *comment;
+	GHashTable        *balances_hash;
 };
 
 /* columns in the entries view
@@ -160,6 +162,15 @@ typedef struct {
  * when actually displaying the columns in on_cell_data_func() */
 #define DATA_PRIV_VISIBLE               "ofa-data-priv-visible"
 
+/* it appears that Gtk+ displays a counter intuitive sort indicator:
+ * when asking for ascending sort, Gtk+ displays a 'v' indicator
+ * while we would prefer the '^' version -
+ * we are defining the inverse indicator, and we are going to sort
+ * in reverse order to have our own illusion
+ */
+#define OFA_SORT_ASCENDING    GTK_SORT_DESCENDING
+#define OFA_SORT_DESCENDING   GTK_SORT_ASCENDING
+
 static const gchar           *st_ui_xml                   = PKGUIDIR "/ofa-view-entries.piece.ui";
 static const gchar           *st_ui_id                    = "ViewEntriesWindow";
 
@@ -177,12 +188,14 @@ static void           setup_status_selection( ofaViewEntries *self );
 static void           setup_display_columns( ofaViewEntries *self );
 static void           setup_edit_switch( ofaViewEntries *self );
 static GtkTreeView   *setup_entries_treeview( ofaViewEntries *self );
+static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntries *self );
+static void           on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self );
 static void           setup_footer( ofaViewEntries *self );
 static void           setup_signaling_connect( ofaViewEntries *self );
 static GtkWidget     *v_setup_buttons( ofaMainPage *page );
 static void           v_init_view( ofaMainPage *page );
 static void           on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self );
-static void           onledger_changed( const gchar *mnemo, ofaViewEntries *self );
+static void           on_ledger_changed( const gchar *mnemo, ofaViewEntries *self );
 static void           display_entries_from_ledger( ofaViewEntries *self );
 static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
@@ -392,7 +405,7 @@ setup_ledger_selection( ofaViewEntries *self )
 	parms.label_name = NULL;
 	parms.disp_mnemo = FALSE;
 	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaLedgerComboCb ) onledger_changed;
+	parms.pfnSelected = ( ofaLedgerComboCb ) on_ledger_changed;
 	parms.user_data = self;
 	parms.initial_mnemo = NULL;
 
@@ -567,16 +580,22 @@ setup_edit_switch( ofaViewEntries *self )
  *   method
  * - the column id is set as a data against the column in order to be
  *   able to switch their visibility state in on_cell_data_func() method
+ *
+ *   As we want both filter and sort the view, we have to stack a
+ *   GtkTreeModelSort onto the GtkTreeModelFilter, itself being stacked
+ *   onto the GtkTreeModel of the GtkListStore
  */
 static GtkTreeView *
 setup_entries_treeview( ofaViewEntries *self )
 {
+	static const gchar *thisfn = "ofa_view_entries_setup_entries_treeview";
 	ofaViewEntriesPrivate *priv;
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
+	gint column_id;
 
 	priv = self->private;
 
@@ -591,162 +610,258 @@ setup_entries_treeview( ofaViewEntries *self )
 			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* currency, rappro, status */
 			G_TYPE_OBJECT,
 			G_TYPE_BOOLEAN ));								/* valid */
+
 	priv->tfilter = gtk_tree_model_filter_new( tmodel, NULL );
 	g_object_unref( tmodel );
-	gtk_tree_view_set_model( tview, priv->tfilter );
-	g_object_unref( priv->tfilter );
+
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( priv->tfilter ),
 			( GtkTreeModelFilterVisibleFunc ) is_visible_row,
 			self,
 			NULL );
 
+	priv->tsort = gtk_tree_model_sort_new_with_model( priv->tfilter );
+	g_object_unref( priv->tfilter );
+
+	gtk_tree_view_set_model( tview, priv->tsort );
+	g_object_unref( priv->tsort );
+
+	g_debug( "%s: self=%p, tmodel=%p, tfilter=%p, tsort=%p",
+			thisfn, ( void * ) self, ( void * ) tmodel, ( void * ) priv->tfilter, ( void * ) priv->tsort );
+
+	/* operation date
+	 */
+	column_id = ENT_COL_DOPE;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_DOPE] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_DOPE ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Operation" ),
-			text_cell, "text", ENT_COL_DOPE,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_DOPE ));
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->dope_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* default is to sort by ascending operation date
+	 */
+	gtk_tree_view_column_set_sort_indicator( column, TRUE );
+	priv->sort_column = column;
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, OFA_SORT_ASCENDING );
+
+	/* effect date
+	 */
+	column_id = ENT_COL_DEFF;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_DEFF] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_DEFF ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Effect" ),
-			text_cell, "text", ENT_COL_DEFF,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_DEFF ));
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->deffect_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* piece's reference
+	 */
+	column_id = ENT_COL_REF;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_REF] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_REF ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Piece" ),
-			text_cell, "text", ENT_COL_REF,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_REF ));
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->ref_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* ledger
+	 */
+	column_id = ENT_COL_LEDGER;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_LEDGER] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_LEDGER ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Ledger" ),
-			text_cell, "text", ENT_COL_LEDGER,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_LEDGER ));
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->ledger_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* account
+	 */
+	column_id = ENT_COL_ACCOUNT;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_ACCOUNT] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_ACCOUNT ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Account" ),
-			text_cell, "text", ENT_COL_ACCOUNT,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_ACCOUNT ));
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->account_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* label
+	 */
+	column_id = ENT_COL_LABEL;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_LABEL] = text_cell;
+	st_renderers[column_id] = text_cell;
 	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_END, NULL );
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_LABEL ));
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
-			text_cell, "text", ENT_COL_LABEL,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* debit
+	 */
+	column_id = ENT_COL_DEBIT;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_DEBIT] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_DEBIT ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	my_cell_renderer_amount_init( text_cell );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Debit" ),
-			text_cell, "text", ENT_COL_DEBIT,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_column_set_min_width( column, 110 );
 	gtk_tree_view_append_column( tview, column );
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* credit
+	 */
+	column_id = ENT_COL_CREDIT;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_CREDIT] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_CREDIT ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	my_cell_renderer_amount_init( text_cell );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Credit" ),
-			text_cell, "text", ENT_COL_CREDIT,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
 	gtk_tree_view_column_set_min_width( column, 110 );
 	gtk_tree_view_append_column( tview, column );
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* currency
+	 */
+	column_id = ENT_COL_CURRENCY;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_CURRENCY] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_CURRENCY ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			"",
-			text_cell, "text", ENT_COL_CURRENCY,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_min_width( column, 32 );	/* "EUR" width */
 	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_CURRENCY ));
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->currency_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* reconciliation status
+	 */
+	column_id = ENT_COL_RAPPRO;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_RAPPRO] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_RAPPRO ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Reconcil." ),
-			text_cell, "text", ENT_COL_RAPPRO,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_RAPPRO ));
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->rappro_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
+	/* entry status
+	 */
+	column_id = ENT_COL_STATUS;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[ENT_COL_STATUS] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_STATUS ));
+	st_renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Status" ),
-			text_cell, "text", ENT_COL_STATUS,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ENT_COL_STATUS ));
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->status_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
@@ -755,6 +870,135 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_key_pressed_event ), self );
 
 	return( tview );
+}
+
+/*
+ * sorting the treeview per account number
+ */
+static gint
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntries *self )
+{
+	static const gchar *thisfn = "ofa_view_entries_on_sort_model";
+	ofaViewEntriesPrivate *priv;
+	gint cmp, sort_column_id;
+	GtkSortType sort_order;
+	ofoEntry *entry_a, *entry_b;
+	gdouble amount_a, amount_b;
+	gint int_a, int_b;
+
+	cmp = 0;
+	priv = self->private;
+
+	gtk_tree_model_get( tmodel, a, ENT_COL_OBJECT, &entry_a, -1 );
+	g_return_val_if_fail( entry_a && OFO_IS_ENTRY( entry_a ), 0 );
+	g_object_unref( entry_a );
+
+	gtk_tree_model_get( tmodel, b, ENT_COL_OBJECT, &entry_b, -1 );
+	g_return_val_if_fail( entry_b && OFO_IS_ENTRY( entry_b ), 0 );
+	g_object_unref( entry_b );
+
+	gtk_tree_sortable_get_sort_column_id(
+			GTK_TREE_SORTABLE( priv->tsort ), &sort_column_id, &sort_order );
+
+	switch( sort_column_id ){
+		case ENT_COL_DOPE:
+			cmp = my_date_compare( ofo_entry_get_dope( entry_a ), ofo_entry_get_dope( entry_b ));
+			break;
+		case ENT_COL_DEFF:
+			cmp = my_date_compare( ofo_entry_get_deffect( entry_a ), ofo_entry_get_deffect( entry_b ));
+			break;
+		case ENT_COL_NUMBER:
+			cmp = ofo_entry_get_number( entry_a ) > ofo_entry_get_number( entry_b ) ? 1 : -1;
+			break;
+		case ENT_COL_REF:
+			cmp = g_utf8_collate( ofo_entry_get_ref( entry_a ), ofo_entry_get_ref( entry_b ));
+			break;
+		case ENT_COL_LABEL:
+			cmp = g_utf8_collate( ofo_entry_get_label( entry_a ), ofo_entry_get_label( entry_b ));
+			break;
+		case ENT_COL_LEDGER:
+			cmp = g_utf8_collate( ofo_entry_get_ledger( entry_a ), ofo_entry_get_ledger( entry_b ));
+			break;
+		case ENT_COL_ACCOUNT:
+			cmp = g_utf8_collate( ofo_entry_get_account( entry_a ), ofo_entry_get_account( entry_b ));
+			break;
+		case ENT_COL_DEBIT:
+			amount_a = ofo_entry_get_debit( entry_a );
+			amount_b = ofo_entry_get_debit( entry_b );
+			cmp = amount_a > amount_b ? 1 : ( amount_a < amount_b ? -1 : 0 );
+			break;
+		case ENT_COL_CREDIT:
+			amount_a = ofo_entry_get_credit( entry_a );
+			amount_b = ofo_entry_get_credit( entry_b );
+			cmp = amount_a > amount_b ? 1 : ( amount_a < amount_b ? -1 : 0 );
+			break;
+		case ENT_COL_CURRENCY:
+			cmp = g_utf8_collate( ofo_entry_get_currency( entry_a ), ofo_entry_get_currency( entry_b ));
+			break;
+		case ENT_COL_RAPPRO:
+			cmp = my_date_compare( ofo_entry_get_concil_dval( entry_a ), ofo_entry_get_concil_dval( entry_b ));
+			break;
+		case ENT_COL_STATUS:
+			int_a = ofo_entry_get_status( entry_a );
+			int_b = ofo_entry_get_status( entry_b );
+			cmp = int_a > int_b ? 1 : ( int_a < int_b ? -1 : 0 );
+			break;
+		default:
+			g_warning( "%s: unhandled column: %d", thisfn, sort_column_id );
+			break;
+	}
+
+	/* return -1 if a > b, so that the order indicator points to the smallest:
+	 * ^: means from smallest to greatest (ascending order)
+	 * v: means from greatest to smallest (descending order)
+	 */
+	return( -cmp );
+}
+
+/*
+ * Gtk+ changes automatically the sort order
+ * we reset yet the sort column id
+ *
+ * as a side effect of our inversion of indicators, clicking on a new
+ * header makes the sort order descending as the default
+ */
+static void
+on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self )
+{
+	static const gchar *thisfn = "ofa_view_entries_on_header_clicked";
+	ofaViewEntriesPrivate *priv;
+	gint sort_column_id, new_column_id;
+	GtkSortType sort_order;
+
+	priv = self->private;
+
+	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
+	gtk_tree_view_column_set_sort_indicator( column, TRUE );
+	priv->sort_column = column;
+
+	gtk_tree_sortable_get_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), &sort_column_id, &sort_order );
+
+	g_debug( "%s: current sort_column_id=%u, sort_order=%s",
+			thisfn, sort_column_id,
+			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
+
+	new_column_id = gtk_tree_view_column_get_sort_column_id( column );
+
+	/*if( new_column_id == sort_column_id ){
+		if( sort_order == GTK_SORT_ASCENDING ){
+			sort_order = GTK_SORT_DESCENDING;
+		} else {
+			sort_order = GTK_SORT_ASCENDING;
+		}
+	} else {
+		sort_order = GTK_SORT_ASCENDING;
+	}*/
+
+	gtk_tree_sortable_set_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), new_column_id, sort_order );
+
+	g_debug( "%s: setting new_column_id=%u, new_sort_order=%s",
+			thisfn, new_column_id,
+			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
 }
 
 static void
@@ -850,7 +1094,7 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
  * ofaLedgerCombo callback
  */
 static void
-onledger_changed( const gchar *mnemo, ofaViewEntries *self )
+on_ledger_changed( const gchar *mnemo, ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
 
@@ -892,7 +1136,7 @@ on_account_changed( GtkEntry *entry, ofaViewEntries *self )
 
 	account = ofo_account_get_by_number( priv->dossier, priv->acc_number );
 
-	if( account ){
+	if( account && !ofo_account_is_root( account )){
 		str = g_strdup_printf( "%s: %s", _( "Account" ), ofo_account_get_label( account ));
 		gtk_label_set_text( priv->f1_label, str );
 		g_free( str );
@@ -1024,9 +1268,12 @@ refresh_display( ofaViewEntries *self )
 static void
 display_entries( ofaViewEntries *self, GList *entries )
 {
+	static const gchar *thisfn = "ofa_view_entries_display_entries";
 	ofaViewEntriesPrivate *priv;
 	GtkTreeModel *tmodel;
 	GList *iset;
+
+	g_debug( "%s: self=%p, entries=%p", thisfn, ( void * ) self, ( void * ) entries );
 
 	priv = self->private;
 
@@ -1039,6 +1286,18 @@ display_entries( ofaViewEntries *self, GList *entries )
 	}
 
 	compute_balances( self );
+
+	/* this is a debut output to make sure the sort order is correctly
+	 * set
+	 */
+	gint sort_column_id;
+	GtkSortType sort_order;
+
+	gtk_tree_sortable_get_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), &sort_column_id, &sort_order );
+
+	g_debug( "%s: current sort_column_id=%u, sort_order=%s",
+			thisfn, sort_column_id,
+			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
 }
 
 /*
