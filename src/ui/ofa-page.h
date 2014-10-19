@@ -56,11 +56,11 @@
  * |+------------------------------------------------+---------------+|
  * +------------------------------------------------------------------+
  *
- * Class        Description                               Buttons box
- * -----------  ----------------------------------------  -----------
- * Account      a notebook with one page per account          Yes
- *               class, each page having its own
- *               tree view on a list store
+ * Class             Description                               Buttons box
+ * ----------------  ----------------------------------------  -----------
+ * ofaAccountsChart  a notebook with one page per account          Yes
+ *                   class, each page having its own tree
+ *                   view on a list store
  *
  * BAT files    a tree view on a list store                   Yes
  *
