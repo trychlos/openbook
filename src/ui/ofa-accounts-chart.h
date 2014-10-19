@@ -35,7 +35,7 @@
  * Display the chart of accounts, letting the user edit it.
  */
 
-#include "ui/ofa-page-book.h"
+#include "ui/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
@@ -50,14 +50,14 @@ typedef struct _ofaAccountsChartPrivate        ofaAccountsChartPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaPageBook              parent;
+	ofaPage                  parent;
 	ofaAccountsChartPrivate *private;
 }
 	ofaAccountsChart;
 
 typedef struct {
 	/*< private >*/
-	ofaPageBookClass parent;
+	ofaPageClass parent;
 }
 	ofaAccountsChartClass;
 
