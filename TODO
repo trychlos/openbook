@@ -72,6 +72,7 @@
   58 2014- 5-19 allow the treeviewes to be sorted
      2014- 6-12 this is mostly needed only in ViewEntries
      2014-10-13 also in reconciliation
+     2014-10-16 ofaViewEntries: done - svn #3960 (cf. also todo #260)
 
   60 2014- 5-19 manage locale as a user preference (format for entering
                 date, amounts and rates)
@@ -276,8 +277,6 @@
 
  259 2014- 6-23 editing rough entries: copy/paste a line
 
- 260 2014- 6-24 editing rough entries: make the columns sortable
-
  264 2014- 6-27 review MySQL data types against C data types
 
  269 2014- 6-27 lettrage des comptes de tiers
@@ -352,7 +351,44 @@
  327 2014-10-14 Select account: size and position should be kept 
                 distinctly for each usage
 
- 328
+ 328 2014-10-17 DossierOpen: display an error message box if account or
+                password are false
+
+ 329 2014-10-17 updating an entry in ViewEntries should be repercuted
+                to the same entry in Reconciliation
+
+ 330 2014-10-17 reconciliating an entry in Reconciliation should update
+                the display of corresponding column in ViewEntries
+
+ 331 2014-10-17 clearing the display BAT lines in Reconciliation : what
+                it is supposed to do ?
+
+ 332 2014-10-17 Reconciliation: should not accept Enter to annulate the
+                reconciliation on an entry, as it is too easy to make
+                an error
+
+ 333 2014-10-18 ViewEntries, Reconciliation: two main pages which display
+                a GtkTreeView with debit/credit amount columns:
+                homogeneize the display (frame), define a footer bar,
+                updating the right decalage as far as columns are 
+                displayed
+
+ 334 2014-10-18 honomgeneize styles:
+                e.g. displaying validated entries in ofaViewEntries or
+                validated balances if AccountProperties should have the
+                same font/background
+                + may be useful to use styles ?
+
+ 335 2014-10-18 some columns are displayed in several pages/dialogs,
+                and should have the same display properties (e.g.
+                piece reference, label, debit/credit, etc.) -> the 
+                treeview setup should be factorized
+
+ 336 2014-10-18 all treeview columns in main pages should be resizeable
+                (autoresize on double click is automatically handled)
+                and the current width should be kept in settings
+
+ 337
 
 -----------------------------------------------------------------------
  DONE
@@ -1123,6 +1159,9 @@
 
  258 2014- 6-23 editing rough entries: delete a line
      2014- 6-27 done - svn #3750
+
+ 260 2014- 6-24 editing rough entries: make the columns sortable
+     2014-10-16 done - svn #3960
 
  261 2014- 6-27 TauxProperties: update ofoTaux with GDate and rate as a
                 gdouble instead of strings

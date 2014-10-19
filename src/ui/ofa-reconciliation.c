@@ -51,25 +51,28 @@
 /* private instance data
  */
 struct _ofaReconciliationPrivate {
-	gboolean      dispose_has_run;
+	gboolean           dispose_has_run;
 
 	/* UI
 	 */
-	GtkEntry     *account;
-	GtkLabel     *account_label;
-	GtkLabel     *account_debit;
-	GtkLabel     *account_credit;
-	GtkComboBox  *mode;
-	GtkButton    *clear;
-	GtkEntry     *date_concil;
-	GtkTreeModel *tmodel;				/* GtkTreeModelFilter of the tree view */
-	GtkLabel     *bal_debit;			/* balance of the account  */
-	GtkLabel     *bal_credit;			/*  ... deducting unreconciliated entries */
+	GtkEntry          *account;
+	GtkLabel          *account_label;
+	GtkLabel          *account_debit;
+	GtkLabel          *account_credit;
+	GtkComboBox       *mode;
+	GtkButton         *clear;
+	GtkEntry          *date_concil;
+	GtkTreeView       *tview;
+	GtkTreeModel      *tfilter;				/* GtkTreeModelFilter of the tree view */
+	GtkTreeModel      *tsort;				/* GtkTreeModelSort stacked onto the TreeModelFilter */
+	GtkTreeViewColumn *sort_column;
+	GtkLabel          *bal_debit;			/* balance of the account  */
+	GtkLabel          *bal_credit;			/*  ... deducting unreconciliated entries */
 
 	/* internals
 	 */
-	GDate         dconcil;
-	GList        *batlines;				/* loaded bank account transaction lines */
+	GDate              dconcil;
+	GList             *batlines;				/* loaded bank account transaction lines */
 };
 
 /* column ordering in the main entries listview
@@ -81,13 +84,13 @@ enum {
 	COL_LABEL,
 	COL_DEBIT,
 	COL_CREDIT,
-	COL_RAPPRO,
+	COL_DRECONCIL,
 	COL_VALID,				/* whether the reconciliation date has been validated */
 	COL_OBJECT,				/* may be an ofoEntry or an ofoBatLine */
 	N_COLUMNS
 };
 
-/* set against the COL_RAPPRO column to be used in on_cell_data_func() */
+/* set against the COL_DRECONCIL column to be used in on_cell_data_func() */
 #define DATA_COLUMN_ID      "ofa-data-column-id"
 
 /* columns in the combo box which let us select which type of entries
@@ -112,6 +115,15 @@ static const sConcil st_concils[] = {
 		{ 0 }
 };
 
+/* it appears that Gtk+ displays a counter intuitive sort indicator:
+ * when asking for ascending sort, Gtk+ displays a 'v' indicator
+ * while we would prefer the '^' version -
+ * we are defining the inverse indicator, and we are going to sort
+ * in reverse order to have our own illusion
+ */
+#define OFA_SORT_ASCENDING    GTK_SORT_DESCENDING
+#define OFA_SORT_DESCENDING   GTK_SORT_ASCENDING
+
 static const gchar *st_default_reconciliated_class = "5"; /* default account class to be reconciliated */
 
 G_DEFINE_TYPE( ofaReconciliation, ofa_reconciliation, OFA_TYPE_MAIN_PAGE )
@@ -126,6 +138,7 @@ static GtkWidget   *setup_balance( ofaMainPage *page );
 static GtkWidget   *v_setup_buttons( ofaMainPage *page );
 static void         v_init_view( ofaMainPage *page );
 static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconciliation *self );
+static void         on_header_clicked( GtkTreeViewColumn *column, ofaReconciliation *self );
 static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
 static gboolean     is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
 static gboolean     is_visible_batline( ofaReconciliation *self, ofoBatLine *batline );
@@ -135,10 +148,10 @@ static void         on_account_button_clicked( GtkButton *button, ofaReconciliat
 static void         do_account_selection( ofaReconciliation *self );
 static void         on_combo_mode_changed( GtkComboBox *box, ofaReconciliation *self );
 static gint         get_selected_concil_mode( ofaReconciliation *self );
-static void         check_for_enable_fetch( ofaReconciliation *self );
-static gboolean     is_fetch_enableable( ofaReconciliation *self, ofoAccount **account, gint *mode );
+static gboolean     check_for_enable_view( ofaReconciliation *self, ofoAccount **account, gint *mode );
+static ofoAccount  *get_reconciliable_account( ofaReconciliation *self );
 static void         on_fetch_button_clicked( GtkButton *button, ofaReconciliation *self );
-static void         do_fetch( ofaReconciliation *self );
+static void         do_fetch_entries( ofaReconciliation *self );
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
 static void         on_file_set( GtkFileChooserButton *button, ofaReconciliation *self );
 static void         on_clear_button_clicked( GtkButton *button, ofaReconciliation *self );
@@ -153,7 +166,7 @@ static gboolean     on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRe
 static void         collapse_node( ofaReconciliation *self, GtkWidget *widget );
 static void         expand_node( ofaReconciliation *self, GtkWidget *widget );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
-static gboolean     toggle_rappro( ofaReconciliation *self, GtkTreeView *tview, GtkTreePath *path );
+static gboolean     toggle_rappro( ofaReconciliation *self, GtkTreePath *path );
 static void         reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter );
 static void         set_reconciliated_balance( ofaReconciliation *self );
 
@@ -540,6 +553,7 @@ setup_display_account( ofaMainPage *page )
 static GtkWidget *
 setup_treeview( ofaMainPage *page )
 {
+	static const gchar *thisfn = "ofa_reconciliation_setup_treeview";
 	ofaReconciliationPrivate *priv;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
@@ -547,6 +561,7 @@ setup_treeview( ofaMainPage *page )
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
+	gint column_id;
 
 	priv = OFA_RECONCILIATION( page )->private;
 
@@ -564,101 +579,172 @@ setup_treeview( ofaMainPage *page )
 
 	tmodel = GTK_TREE_MODEL( gtk_tree_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,
-			G_TYPE_STRING,
-			G_TYPE_STRING, G_TYPE_STRING,
-			G_TYPE_STRING, G_TYPE_BOOLEAN,
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* dope, piece, number */
+			G_TYPE_STRING,									/* label */
+			G_TYPE_STRING, G_TYPE_STRING,					/* debit, credit */
+			G_TYPE_STRING, G_TYPE_BOOLEAN,					/* dcreconcil, bvalid */
 			G_TYPE_OBJECT ));
-	priv->tmodel = gtk_tree_model_filter_new( tmodel, NULL );
+
+	priv->tfilter = gtk_tree_model_filter_new( tmodel, NULL );
 	g_object_unref( tmodel );
-	gtk_tree_view_set_model( tview, priv->tmodel );
-	g_object_unref( priv->tmodel );
 	gtk_tree_model_filter_set_visible_func(
-			GTK_TREE_MODEL_FILTER( priv->tmodel ),
+			GTK_TREE_MODEL_FILTER( priv->tfilter ),
 			( GtkTreeModelFilterVisibleFunc ) is_visible_row,
 			page,
 			NULL );
 
+	priv->tsort = gtk_tree_model_sort_new_with_model( priv->tfilter );
+	g_object_unref( priv->tfilter );
+
+	gtk_tree_view_set_model( tview, priv->tsort );
+	g_object_unref( priv->tsort );
+
+	g_debug( "%s: treestore=%p, tfilter=%p, tsort=%p",
+			thisfn, ( void * ) tmodel, ( void * ) priv->tfilter, ( void * ) priv->tsort );
+
+	/* operation date
+	 */
+	column_id = COL_DOPE;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Ope." ),
-			text_cell, "text", COL_DOPE,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_min_width( column, 80 );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
+	/* default is to sort by ascending operation date
+	 */
+	gtk_tree_view_column_set_sort_indicator( column, TRUE );
+	priv->sort_column = column;
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, OFA_SORT_ASCENDING );
+
+	/* piece's reference
+	 */
+	column_id = COL_PIECE;
 	text_cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_END, NULL );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Piece" ),
-			text_cell, "text", COL_PIECE,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_min_width( column, 80 );
+	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
+	/* number
+	 */
+	column_id = COL_NUMBER;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Label" ),
-			text_cell, "text", COL_LABEL,
+			_( "Number" ),
+			text_cell, "text", column_id,
 			NULL );
-	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
+	/* entry label
+	 */
+	column_id = COL_LABEL;
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_END, NULL );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Label" ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_cell_data_func(
+			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
+
+	/* debit
+	 */
+	column_id = COL_DEBIT;
 	text_cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
 	column = gtk_tree_view_column_new();
 	gtk_tree_view_column_pack_end( column, text_cell, TRUE );
 	gtk_tree_view_column_set_title( column, _( "Debit" ));
 	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_DEBIT );
+	gtk_tree_view_column_add_attribute( column, text_cell, "text", column_id );
 	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
+	/* credit
+	 */
+	column_id = COL_CREDIT;
 	text_cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
 	column = gtk_tree_view_column_new();
 	gtk_tree_view_column_pack_end( column, text_cell, TRUE );
 	gtk_tree_view_column_set_title( column, _( "Credit" ));
 	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_CREDIT );
+	gtk_tree_view_column_add_attribute( column, text_cell, "text", column_id );
 	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
+	/* reconciliation date
+	 */
+	column_id = COL_DRECONCIL;
 	text_cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( text_cell, 0.0, 0.5 );
 	column = gtk_tree_view_column_new();
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( COL_RAPPRO ));
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_pack_end( column, text_cell, FALSE );
 	gtk_tree_view_column_set_alignment( column, 0.5 );
 	gtk_tree_view_column_set_title( column, _( "Reconcil." ));
-	gtk_tree_view_column_add_attribute( column, text_cell, "text", COL_RAPPRO );
+	gtk_tree_view_column_add_attribute( column, text_cell, "text", column_id );
 	gtk_tree_view_column_set_min_width( column, 100 );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, page, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), page );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 
-	/* be sure that this is the underlying (child) tree model which is
-	 * sorted, and not the tree model filter (which only takes care of
-	 * making some row visible or not)
-	 */
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
-
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tmodel ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+	gtk_widget_set_sensitive( GTK_WIDGET( tview ), FALSE );
+	priv->tview = tview;
 
 	return( GTK_WIDGET( scroll ));
 }
@@ -710,39 +796,177 @@ v_setup_buttons( ofaMainPage *page )
 static void
 v_init_view( ofaMainPage *page )
 {
-	check_for_enable_fetch( OFA_RECONCILIATION( page ));
+	check_for_enable_view( OFA_RECONCILIATION( page ), NULL, NULL );
 }
 
 /*
+ * sorting the treeview
+ *
  * sort the visible rows (entries as parent, and bat lines as children)
  * by operation date + entry number (entries only)
  *
  * for bat lines, operation date may be set to effect date (valeur) if
  * not provided in the bat file; entry number is set to zero
+ *
+ * We are only sorting the root lines of the treeview, but these root
+ * lines may be entries or unreconciliated bat lines
  */
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconciliation *self )
 {
-	gchar *dopea, *dopeb;
-	GDate da, db;
-	gint numa, numb;
-	gint cmp;
+	static const gchar *thisfn = "ofa_reconciliation_on_sort_model";
+	static const gchar *empty = "";
+	ofaReconciliationPrivate *priv;
+	gint cmp, sort_column_id;
+	GtkSortType sort_order;
+	ofoBase *object_a, *object_b;
+	const GDate *date_a, *date_b;
+	const gchar *str_a, *str_b;
+	gdouble amount, amount_a, amount_b;
+	gint int_a, int_b;
 
-	gtk_tree_model_get( tmodel, a, COL_DOPE, &dopea, COL_NUMBER, &numa, -1 );
-	my_date_set_from_str( &da, dopea, MY_DATE_DMYY );
+	cmp = 0;
+	priv = self->private;
 
-	gtk_tree_model_get( tmodel, b, COL_DOPE, &dopeb, COL_NUMBER, &numb, -1 );
-	my_date_set_from_str( &db, dopeb, MY_DATE_DMYY );
+	gtk_tree_model_get( tmodel, a, COL_OBJECT, &object_a, -1 );
+	g_return_val_if_fail( object_a && ( OFO_IS_ENTRY( object_a ) || OFO_IS_BAT_LINE( object_a )), 0 );
+	g_object_unref( object_a );
 
-	cmp = my_date_compare( &da, &db );
-	if( cmp == 0 ){
-		cmp = ( numa < numb ? -1 : ( numa > numb ? 1 : 0 ));
+	gtk_tree_model_get( tmodel, b, COL_OBJECT, &object_b, -1 );
+	g_return_val_if_fail( object_b && ( OFO_IS_ENTRY( object_b ) || OFO_IS_BAT_LINE( object_b )), 0 );
+	g_object_unref( object_b );
+
+	gtk_tree_sortable_get_sort_column_id(
+			GTK_TREE_SORTABLE( priv->tsort ), &sort_column_id, &sort_order );
+
+	switch( sort_column_id ){
+		case COL_DOPE:
+			date_a = OFO_IS_ENTRY( object_a ) ?
+						ofo_entry_get_dope( OFO_ENTRY( object_a )) :
+							ofo_bat_line_get_dope( OFO_BAT_LINE( object_a ));
+			date_b = OFO_IS_ENTRY( object_b ) ?
+						ofo_entry_get_dope( OFO_ENTRY( object_b )) :
+							ofo_bat_line_get_dope( OFO_BAT_LINE( object_b ));
+			cmp = my_date_compare( date_a, date_b );
+			break;
+		case COL_PIECE:
+			str_a = OFO_IS_ENTRY( object_a ) ?
+						ofo_entry_get_ref( OFO_ENTRY( object_a )) : empty;
+			str_b = OFO_IS_ENTRY( object_b ) ?
+						ofo_entry_get_ref( OFO_ENTRY( object_b )) : empty;
+			cmp = g_utf8_collate( str_a, str_b );
+			break;
+		case COL_NUMBER:
+			int_a = OFO_IS_ENTRY( object_a ) ?
+						ofo_entry_get_number( OFO_ENTRY( object_a )) :
+							ofo_bat_line_get_id( OFO_BAT_LINE( object_a ));
+			int_b = OFO_IS_ENTRY( object_b ) ?
+						ofo_entry_get_number( OFO_ENTRY( object_b )) :
+							ofo_bat_line_get_id( OFO_BAT_LINE( object_b ));
+			cmp = int_a > int_b ? 1 : ( int_a < int_b ? -1 : 0 );
+			break;
+		case COL_LABEL:
+			str_a = OFO_IS_ENTRY( object_a ) ?
+						ofo_entry_get_label( OFO_ENTRY( object_a )) :
+							ofo_bat_line_get_label( OFO_BAT_LINE( object_a ));
+			str_b = OFO_IS_ENTRY( object_b ) ?
+						ofo_entry_get_label( OFO_ENTRY( object_b )) :
+							ofo_bat_line_get_label( OFO_BAT_LINE( object_b ));
+			cmp = g_utf8_collate( str_a, str_b );
+			break;
+		case COL_DEBIT:
+			if( OFO_IS_BAT_LINE( object_a )){
+				amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object_a ));
+				amount_a = amount < 0 ? -amount : 0;
+			} else {
+				amount_a = ofo_entry_get_debit( OFO_ENTRY( object_a ));
+			}
+			if( OFO_IS_BAT_LINE( object_b )){
+				amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object_b ));
+				amount_b = amount < 0 ? -amount : 0;
+			} else {
+				amount_b = ofo_entry_get_debit( OFO_ENTRY( object_b ));
+			}
+			cmp = amount_a > amount_b ? 1 : ( amount_a < amount_b ? -1 : 0 );
+			break;
+		case COL_CREDIT:
+			if( OFO_IS_BAT_LINE( object_a )){
+				amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object_a ));
+				amount_a = amount < 0 ? 0 : amount;
+			} else {
+				amount_a = ofo_entry_get_credit( OFO_ENTRY( object_a ));
+			}
+			if( OFO_IS_BAT_LINE( object_b )){
+				amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object_b ));
+				amount_b = amount < 0 ? 0 : amount;
+			} else {
+				amount_b = ofo_entry_get_credit( OFO_ENTRY( object_b ));
+			}
+			cmp = amount_a > amount_b ? 1 : ( amount_a < amount_b ? -1 : 0 );
+			break;
+		case COL_DRECONCIL:
+			date_a = OFO_IS_ENTRY( object_a ) ?
+						ofo_entry_get_concil_dval( OFO_ENTRY( object_a )) : NULL;
+			date_b = OFO_IS_ENTRY( object_b ) ?
+						ofo_entry_get_concil_dval( OFO_ENTRY( object_b )) : NULL;
+			cmp = my_date_compare( date_a, date_b );
+			break;
+		default:
+			g_warning( "%s: unhandled column: %d", thisfn, sort_column_id );
+			break;
 	}
 
-	g_free( dopea );
-	g_free( dopeb );
+	/* return -1 if a > b, so that the order indicator points to the smallest:
+	 * ^: means from smallest to greatest (ascending order)
+	 * v: means from greatest to smallest (descending order)
+	 */
+	return( -cmp );
+}
 
-	return( cmp );
+/*
+ * Gtk+ changes automatically the sort order
+ * we reset yet the sort column id
+ *
+ * as a side effect of our inversion of indicators, clicking on a new
+ * header makes the sort order descending as the default
+ */
+static void
+on_header_clicked( GtkTreeViewColumn *column, ofaReconciliation *self )
+{
+	static const gchar *thisfn = "ofa_reconciliation_on_header_clicked";
+	ofaReconciliationPrivate *priv;
+	gint sort_column_id, new_column_id;
+	GtkSortType sort_order;
+
+	priv = self->private;
+
+	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
+	gtk_tree_view_column_set_sort_indicator( column, TRUE );
+	priv->sort_column = column;
+
+	gtk_tree_sortable_get_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), &sort_column_id, &sort_order );
+
+	g_debug( "%s: current sort_column_id=%u, sort_order=%s",
+			thisfn, sort_column_id,
+			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
+
+	new_column_id = gtk_tree_view_column_get_sort_column_id( column );
+
+	/*if( new_column_id == sort_column_id ){
+		if( sort_order == GTK_SORT_ASCENDING ){
+			sort_order = GTK_SORT_DESCENDING;
+		} else {
+			sort_order = GTK_SORT_ASCENDING;
+		}
+	} else {
+		sort_order = GTK_SORT_ASCENDING;
+	}*/
+
+	gtk_tree_sortable_set_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), new_column_id, sort_order );
+
+	g_debug( "%s: setting new_column_id=%u, new_sort_order=%s",
+			thisfn, new_column_id,
+			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
 }
 
 /*
@@ -752,7 +976,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
  *   > reconciliated (and validated): invisible
  *   > not reconciliated (or not validated): visible
  *
- * tmodel here is the main GtkTreeModelFilter
+ * tmodel here is the main GtkTreeModelSort on which the view is built
  */
 static gboolean
 is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self )
@@ -855,7 +1079,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	if( OFO_IS_ENTRY( object )){
 		id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( tcolumn ), DATA_COLUMN_ID ));
-		if( id == COL_RAPPRO ){
+		if( id == COL_DRECONCIL ){
 			if( gtk_tree_model_iter_has_child( tmodel, iter )){
 				paintable = TRUE;
 			}
@@ -874,40 +1098,44 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 static void
 on_account_changed( GtkEntry *entry, ofaReconciliation *self )
 {
+	static const gchar *thisfn = "ofa_reconciliation_on_account_changed";
 	ofaReconciliationPrivate *priv;
-	const gchar *number;
+	gboolean enabled;
 	ofoAccount *account;
 	gdouble amount;
 	gchar *str;
 
-	account = NULL;
 	priv = self->private;
-	number = gtk_entry_get_text( priv->account );
+	enabled = check_for_enable_view( self, &account, NULL );
 
-	if( number && g_utf8_strlen( number, -1 )){
-		account = ofo_account_get_by_number(
-						ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )), number );
-		if( account ){
-			gtk_label_set_text( priv->account_label, ofo_account_get_label( account ));
+	if( account ){
+		g_debug( "%s: setting account %s properties", thisfn, ofo_account_get_number( account ));
 
-			amount = ofo_account_get_deb_amount( account )+ofo_account_get_day_deb_amount( account );
-			str = g_strdup_printf( "%.2f", amount );
-			gtk_label_set_text( priv->account_debit, str );
-			g_free( str );
+		gtk_label_set_text( priv->account_label, ofo_account_get_label( account ));
 
-			amount = ofo_account_get_cre_amount( account )+ofo_account_get_day_cre_amount( account );
-			str = g_strdup_printf( "%.2f", amount );
-			gtk_label_set_text( priv->account_credit, str );
-			g_free( str );
-		}
-	}
-	if( !account ){
+		amount = ofo_account_get_deb_amount( account )+ofo_account_get_day_deb_amount( account );
+		str = my_double_to_str( amount );
+		gtk_label_set_text( priv->account_debit, str );
+		g_free( str );
+
+		amount = ofo_account_get_cre_amount( account )+ofo_account_get_day_cre_amount( account );
+		str = my_double_to_str( amount );
+		gtk_label_set_text( priv->account_credit, str );
+		g_free( str );
+
+
+	} else {
+		g_debug( "%s: clearing account properties", thisfn );
+
 		gtk_label_set_text( priv->account_label, "" );
 		gtk_label_set_text( priv->account_debit, "" );
 		gtk_label_set_text( priv->account_credit, "" );
 	}
 
-	check_for_enable_fetch( self );
+	if( enabled ){
+		/* automatically fetch entries */
+		on_fetch_button_clicked( NULL, self );
+	}
 }
 
 static void
@@ -946,7 +1174,11 @@ do_account_selection( ofaReconciliation *self )
 static void
 on_combo_mode_changed( GtkComboBox *box, ofaReconciliation *self )
 {
-	check_for_enable_fetch( self );
+	if( check_for_enable_view( self, NULL, NULL )){
+
+		/* automatically fetch entries */
+		on_fetch_button_clicked( NULL, self );
+	}
 }
 
 static gint
@@ -966,58 +1198,74 @@ get_selected_concil_mode( ofaReconciliation *self )
 	return( mode );
 }
 
-static void
-check_for_enable_fetch( ofaReconciliation *self )
-{
-	/*gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->fetch ),
-			is_fetch_enableable( self, NULL, NULL ));*/
-
-	if( is_fetch_enableable( self, NULL, NULL )){
-		on_fetch_button_clicked( NULL, self );
-	}
-	set_reconciliated_balance( self );
-}
-
+/*
+ * the view is disabled (insensitive) each time the configuration parms
+ * are not valid (invalid account or invalid reconciliation display
+ * mode)
+ * the status of the BAT (whether one is displayed or not) does not
+ * interfer with the sensitivity of the view
+ */
 static gboolean
-is_fetch_enableable( ofaReconciliation *self, ofoAccount **account, gint *mode )
+check_for_enable_view( ofaReconciliation *self, ofoAccount **account, gint *mode )
 {
-	gboolean enableable;
-	const gchar *acc_number;
+	gboolean enabled;
 	ofoAccount *my_account;
 	gint my_mode;
 
-	my_mode = -1;
-	acc_number = gtk_entry_get_text( self->private->account );
-	my_account = ofo_account_get_by_number(
-						ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )), acc_number );
-	enableable = my_account && OFO_IS_ACCOUNT( my_account );
+	enabled = TRUE;
 
-	if( enableable ){
-		my_mode = get_selected_concil_mode( self );
-		enableable &= ( my_mode > ENT_CONCILED_FIRST && my_mode < ENT_CONCILED_LAST );
-	}
-
+	my_account = get_reconciliable_account( self );
+	enabled &= ( my_account != NULL );
 	if( account ){
 		*account = my_account;
 	}
+
+	my_mode = get_selected_concil_mode( self );
+	enabled &= ( my_mode > ENT_CONCILED_FIRST && my_mode < ENT_CONCILED_LAST );
 	if( mode ){
 		*mode = my_mode;
 	}
 
-	return( enableable );
+	gtk_widget_set_sensitive( GTK_WIDGET( self->private->tview ), enabled );
+
+	return( enabled );
 }
 
+static ofoAccount *
+get_reconciliable_account( ofaReconciliation *self )
+{
+	const gchar *number;
+	ofoAccount *account;
+
+	number = gtk_entry_get_text( self->private->account );
+	account = ofo_account_get_by_number(
+						ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )), number );
+	if( account ){
+		g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
+		if( ofo_account_is_root( account )){
+			account = NULL;
+		}
+	}
+
+	return( account );
+}
+
+/*
+ * there used to be a 'Fetch' button, but we have remove it to provider
+ * a dynamic display
+ */
 static void
 on_fetch_button_clicked( GtkButton *button, ofaReconciliation *self )
 {
-	do_fetch( self );
+	do_fetch_entries( self );
 	display_bat_lines( self );
+	set_reconciliated_balance( self );
 }
 
 static void
-do_fetch( ofaReconciliation *self )
+do_fetch_entries( ofaReconciliation *self )
 {
+	static const gchar *thisfn = "ofa_reconciliation_do_fetch_entries";
 	gboolean enableable;
 	ofoAccount *account;
 	gint mode;
@@ -1025,15 +1273,17 @@ do_fetch( ofaReconciliation *self )
 	ofoEntry *entry;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	gchar *sdope, *sdeb, *scre, *sdrap;
+	gchar *sdope, *sdeb, *scre, *sdrap, *snum;
 	const GDate *dconcil;
 
-	enableable = is_fetch_enableable( self, &account, &mode );
+	enableable = check_for_enable_view( self, &account, &mode );
 	g_return_if_fail( enableable );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
-	g_return_if_fail( mode >= 1 );
+	g_return_if_fail( mode > ENT_CONCILED_FIRST && mode < ENT_CONCILED_LAST );
 
-	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
+	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tfilter ));
+
+	g_debug( "%s: clearing treestore=%p", thisfn, ( void * ) tmodel );
 	gtk_tree_store_clear( GTK_TREE_STORE( tmodel ));
 
 	entries = ofo_entry_get_dataset_by_concil(
@@ -1050,22 +1300,25 @@ do_fetch( ofaReconciliation *self )
 		scre = my_double_to_str( ofo_entry_get_credit( entry ));
 		dconcil = ofo_entry_get_concil_dval( entry );
 		sdrap = my_date_to_str( dconcil, MY_DATE_DMYY );
+		snum = g_strdup_printf( "%u", ofo_entry_get_number( entry ));
 
 		gtk_tree_store_insert_with_values(
 				GTK_TREE_STORE( tmodel ),
 				&iter,
 				NULL,
 				-1,
-				COL_DOPE,   sdope,
-				COL_PIECE,  ofo_entry_get_ref( entry ),
-				COL_LABEL,  ofo_entry_get_label( entry ),
-				COL_DEBIT,  sdeb,
-				COL_CREDIT, scre,
-				COL_RAPPRO, sdrap,
-				COL_VALID,  my_date_is_valid( dconcil ),
-				COL_OBJECT, entry,
+				COL_DOPE,      sdope,
+				COL_PIECE,     ofo_entry_get_ref( entry ),
+				COL_NUMBER,    snum,
+				COL_LABEL,     ofo_entry_get_label( entry ),
+				COL_DEBIT,     sdeb,
+				COL_CREDIT,    scre,
+				COL_DRECONCIL, sdrap,
+				COL_VALID,     my_date_is_valid( dconcil ),
+				COL_OBJECT,    entry,
 				-1 );
 
+		g_free( snum );
 		g_free( sdope );
 		g_free( sdeb );
 		g_free( scre );
@@ -1149,7 +1402,7 @@ clear_bat_lines( ofaReconciliation *self )
 	GObject *object;
 	GtkTreeIter iter, child_iter;
 
-	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
+	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tfilter ));
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 		while( TRUE ){
@@ -1157,7 +1410,7 @@ clear_bat_lines( ofaReconciliation *self )
 			gtk_tree_model_get(
 					tmodel,
 					&iter,
-					COL_VALID, &bvalid,
+					COL_VALID,  &bvalid,
 					COL_OBJECT, &object,
 					-1 );
 			g_object_unref( object );
@@ -1168,7 +1421,7 @@ clear_bat_lines( ofaReconciliation *self )
 					gtk_tree_store_set(
 							GTK_TREE_STORE( tmodel ),
 							&iter,
-							COL_RAPPRO, "",
+							COL_DRECONCIL, "",
 							-1 );
 				}
 
@@ -1269,7 +1522,7 @@ search_for_entry_by_number( ofaReconciliation *self, gint number )
 	GObject *object;
 
 	entry_iter = NULL;
-	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
+	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tfilter ));
 
 	if( gtk_tree_model_get_iter_first( child_tmodel, &iter )){
 		while( TRUE ){
@@ -1313,7 +1566,7 @@ search_for_entry_by_amount( ofaReconciliation *self, const gchar *sbat_deb, cons
 
 	found = FALSE;
 	entry_iter = NULL;
-	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
+	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tfilter ));
 
 	if( gtk_tree_model_get_iter_first( child_tmodel, &iter )){
 		while( TRUE ){
@@ -1366,7 +1619,7 @@ update_candidate_entry( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIte
 
 	g_return_if_fail( entry_iter );
 
-	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
+	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tfilter ));
 
 	sdvaleur = my_date_to_str( ofo_bat_line_get_deffect( batline ), MY_DATE_DMYY );
 
@@ -1374,7 +1627,7 @@ update_candidate_entry( ofaReconciliation *self, ofoBatLine *batline, GtkTreeIte
 	gtk_tree_store_set(
 			GTK_TREE_STORE( child_tmodel ),
 			entry_iter,
-			COL_RAPPRO, sdvaleur,
+			COL_DRECONCIL, sdvaleur,
 			-1 );
 
 	g_free( sdvaleur );
@@ -1389,16 +1642,17 @@ insert_bat_line( ofaReconciliation *self, ofoBatLine *batline,
 {
 	GtkTreeModel *child_tmodel;
 	const GDate *dope;
-	gchar *sdope;
+	gchar *sdope, *snum;
 	GtkTreeIter new_iter;
 
-	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
+	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tfilter ));
 
 	dope = ofo_bat_line_get_dope( batline );
 	if( !my_date_is_valid( dope )){
 		dope = ofo_bat_line_get_deffect( batline );
 	}
 	sdope = my_date_to_str( dope, MY_DATE_DMYY );
+	snum = g_strdup_printf( "%u", ofo_bat_line_get_id( batline ));
 
 	/* set the bat line as a hint */
 	gtk_tree_store_insert_with_values(
@@ -1408,13 +1662,14 @@ insert_bat_line( ofaReconciliation *self, ofoBatLine *batline,
 				-1,
 				COL_DOPE,    sdope,
 				COL_PIECE,   ofo_bat_line_get_ref( batline ),
-				COL_NUMBER,  0,
+				COL_NUMBER,  snum,
 				COL_LABEL,   ofo_bat_line_get_label( batline ),
 				COL_DEBIT,   sdeb,
 				COL_CREDIT,  scre,
 				COL_OBJECT,  batline,
 				-1 );
 
+	g_free( snum );
 	g_free( sdope );
 }
 
@@ -1450,13 +1705,13 @@ collapse_node( ofaReconciliation *self, GtkWidget *widget )
 		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( widget ));
 		if( gtk_tree_selection_get_selected( select, NULL, &iter )){
 
-			if( gtk_tree_model_iter_has_child( self->private->tmodel, &iter )){
-				path = gtk_tree_model_get_path( self->private->tmodel, &iter );
+			if( gtk_tree_model_iter_has_child( self->private->tsort, &iter )){
+				path = gtk_tree_model_get_path( self->private->tsort, &iter );
 				gtk_tree_view_collapse_row( GTK_TREE_VIEW( widget ), path );
 				gtk_tree_path_free( path );
 
-			} else if( gtk_tree_model_iter_parent( self->private->tmodel, &parent, &iter )){
-				path = gtk_tree_model_get_path( self->private->tmodel, &parent );
+			} else if( gtk_tree_model_iter_parent( self->private->tsort, &parent, &iter )){
+				path = gtk_tree_model_get_path( self->private->tsort, &parent );
 				gtk_tree_view_collapse_row( GTK_TREE_VIEW( widget ), path );
 				gtk_tree_path_free( path );
 			}
@@ -1475,8 +1730,8 @@ expand_node( ofaReconciliation *self, GtkWidget *widget )
 		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( widget ));
 		if( gtk_tree_selection_get_selected( select, NULL, &iter )){
 
-			if( gtk_tree_model_iter_has_child( self->private->tmodel, &iter )){
-				path = gtk_tree_model_get_path( self->private->tmodel, &iter );
+			if( gtk_tree_model_iter_has_child( self->private->tsort, &iter )){
+				path = gtk_tree_model_get_path( self->private->tsort, &iter );
 				gtk_tree_view_expand_row( GTK_TREE_VIEW( widget ), path, FALSE );
 				gtk_tree_path_free( path );
 			}
@@ -1487,8 +1742,16 @@ expand_node( ofaReconciliation *self, GtkWidget *widget )
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page )
 {
-	if( toggle_rappro( OFA_RECONCILIATION( page ), view, path )){
-		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( gtk_tree_view_get_model( view )));
+	static const gchar *thisfn = "ofa_reconciliation_on_row_activated";
+	ofaReconciliationPrivate *priv;
+
+	g_debug( "%s: view=%p, path=%p, column=%p, page=%p",
+			thisfn, ( void * ) view, ( void * ) path, ( void * ) column, ( void * ) page );
+
+	priv = OFA_RECONCILIATION( page )->private;
+
+	if( toggle_rappro( OFA_RECONCILIATION( page ), path )){
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 		set_reconciliated_balance( OFA_RECONCILIATION( page ));
 	}
 }
@@ -1499,7 +1762,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
  * do anything
  */
 static gboolean
-toggle_rappro( ofaReconciliation *self, GtkTreeView *tview, GtkTreePath *path )
+toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 {
 	GtkTreeIter iter;
 	gchar *srappro;
@@ -1507,14 +1770,14 @@ toggle_rappro( ofaReconciliation *self, GtkTreeView *tview, GtkTreePath *path )
 	GObject *object;
 	GDate date;
 
-	if( gtk_tree_model_get_iter( self->private->tmodel, &iter, path )){
+	if( gtk_tree_model_get_iter( self->private->tsort, &iter, path )){
 
 		gtk_tree_model_get(
-				self->private->tmodel,
+				self->private->tsort,
 				&iter,
-				COL_RAPPRO,  &srappro,
-				COL_VALID,   &bvalid,
-				COL_OBJECT,  &object,
+				COL_DRECONCIL, &srappro,
+				COL_VALID,     &bvalid,
+				COL_OBJECT,    &object,
 				-1 );
 		g_object_unref( object );
 
@@ -1541,7 +1804,7 @@ toggle_rappro( ofaReconciliation *self, GtkTreeView *tview, GtkTreePath *path )
 			if( my_date_is_valid( &date )){
 				reconciliate_entry( self, OFO_ENTRY( object ), &date, &iter );
 			}
-	}
+		}
 	}
 
 	return( TRUE );
@@ -1549,24 +1812,25 @@ toggle_rappro( ofaReconciliation *self, GtkTreeView *tview, GtkTreePath *path )
 
 /*
  * @drappro: may be NULL for clearing a previously set reconciliation
- * @iter: the iter on the entry row in the parent filter model
+ * @sort_iter: the iter on the entry row in the parent sort model
  *
  * Note on the notations:
  *
- * self->private->tmodel: the filter tree model
- * child_tmodel: the child tree model
+ * self->private->tsort: the sort tree model, on which the view is built
+ * self->private->tfilter: the filter tree model
+ * store_tmodel: the deepest underlying tree model which interfaces to GtkTreeStore
  *
- * iter: the entry iter in the filter tree model
- * child_iter: the entry iter in the child tree model
- * child_iter_child: the entry's child batline iter in the child tree model
+ * sort_iter: the entry iter in the displayed sort tree model
+ * filter_iter: the entry iter in the child filter tree model
+ * store_iter: the entry iter in the child deepest underlying tree model
+ * store_bat_iter: the entry's child batline iter in the child tree model
  *
  */
 static void
-reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter )
+reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *sort_iter )
 {
-	GtkTreeModel *child_tmodel;
-	GtkTreeIter child_iter;
-	GtkTreeIter child_iter_child;
+	GtkTreeModel *store_tmodel;
+	GtkTreeIter filter_iter, store_iter, store_bat_iter;
 	ofoBatLine *batline;
 	gboolean is_valid_rappro;
 	gchar *str;
@@ -1582,17 +1846,19 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 	 * actually says if we have a *visible* child
 	 * but a possible batline is not visible when we are clearing
 	 * the reconciliation date */
-	child_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tmodel ));
+	store_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->private->tfilter ));
 
+	gtk_tree_model_sort_convert_iter_to_child_iter(
+			GTK_TREE_MODEL_SORT( self->private->tsort ), &filter_iter, sort_iter );
 	gtk_tree_model_filter_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_FILTER( self->private->tmodel ), &child_iter, iter );
+			GTK_TREE_MODEL_FILTER( self->private->tfilter ), &store_iter, &filter_iter );
 
-	if( gtk_tree_model_iter_has_child( child_tmodel, &child_iter ) &&
-		gtk_tree_model_iter_children( child_tmodel, &child_iter_child, &child_iter )){
+	if( gtk_tree_model_iter_has_child( store_tmodel, &store_iter ) &&
+		gtk_tree_model_iter_children( store_tmodel, &store_bat_iter, &store_iter )){
 
 		gtk_tree_model_get(
-				child_tmodel,
-				&child_iter_child,
+				store_tmodel,
+				&store_bat_iter,
 				COL_OBJECT,  &batline,
 				-1 );
 		g_object_unref( batline );
@@ -1618,10 +1884,10 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 	}
 
 	gtk_tree_store_set(
-			GTK_TREE_STORE( child_tmodel ),
-			&child_iter,
-			COL_RAPPRO, str,
-			COL_VALID,  is_valid_rappro,
+			GTK_TREE_STORE( store_tmodel ),
+			&store_iter,
+			COL_DRECONCIL, str,
+			COL_VALID,     is_valid_rappro,
 			-1 );
 
 	g_free( str );
@@ -1671,10 +1937,10 @@ set_reconciliated_balance( ofaReconciliation *self )
 	debit = account_debit;
 	credit = account_credit;
 
-	if( gtk_tree_model_get_iter_first( self->private->tmodel, &iter )){
+	if( gtk_tree_model_get_iter_first( self->private->tsort, &iter )){
 		while( TRUE ){
 			gtk_tree_model_get(
-					self->private->tmodel, &iter, COL_VALID, &bvalid, COL_OBJECT, &object, -1 );
+					self->private->tsort, &iter, COL_VALID, &bvalid, COL_OBJECT, &object, -1 );
 			g_object_unref( object );
 
 			if( !bvalid ){
@@ -1690,18 +1956,18 @@ set_reconciliated_balance( ofaReconciliation *self )
 					}
 				}
 			}
-			if( !gtk_tree_model_iter_next( self->private->tmodel, &iter )){
+			if( !gtk_tree_model_iter_next( self->private->tsort, &iter )){
 				break;
 			}
 		}
 	}
 
 	if( debit > credit ){
-		sdeb = g_strdup_printf( "%.2lf", debit-credit );
+		sdeb = my_double_to_str( debit-credit );
 		scre = g_strdup( "" );
 	} else {
 		sdeb = g_strdup( "" );
-		scre = g_strdup_printf( "%.2lf", credit-debit );
+		scre = my_double_to_str( credit-debit );
 	}
 
 	gtk_label_set_text( self->private->bal_debit, sdeb );

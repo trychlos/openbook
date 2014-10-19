@@ -137,7 +137,7 @@ enum {
 	ENT_COL_DEBIT,
 	ENT_COL_CREDIT,
 	ENT_COL_CURRENCY,
-	ENT_COL_RAPPRO,
+	ENT_COL_DRECONCIL,
 	ENT_COL_STATUS,
 	ENT_COL_OBJECT,
 	ENT_COL_VALID,
@@ -613,7 +613,6 @@ setup_entries_treeview( ofaViewEntries *self )
 
 	priv->tfilter = gtk_tree_model_filter_new( tmodel, NULL );
 	g_object_unref( tmodel );
-
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( priv->tfilter ),
 			( GtkTreeModelFilterVisibleFunc ) is_visible_row,
@@ -681,12 +680,15 @@ setup_entries_treeview( ofaViewEntries *self )
 	column_id = ENT_COL_REF;
 	text_cell = gtk_cell_renderer_text_new();
 	st_renderers[column_id] = text_cell;
+	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_END, NULL );
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Piece" ),
 			text_cell, "text", column_id,
 			NULL );
+	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->ref_visible );
@@ -825,7 +827,7 @@ setup_entries_treeview( ofaViewEntries *self )
 
 	/* reconciliation status
 	 */
-	column_id = ENT_COL_RAPPRO;
+	column_id = ENT_COL_DRECONCIL;
 	text_cell = gtk_cell_renderer_text_new();
 	st_renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
@@ -873,7 +875,7 @@ setup_entries_treeview( ofaViewEntries *self )
 }
 
 /*
- * sorting the treeview per account number
+ * sorting the treeview
  */
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntries *self )
@@ -935,7 +937,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 		case ENT_COL_CURRENCY:
 			cmp = g_utf8_collate( ofo_entry_get_currency( entry_a ), ofo_entry_get_currency( entry_b ));
 			break;
-		case ENT_COL_RAPPRO:
+		case ENT_COL_DRECONCIL:
 			cmp = my_date_compare( ofo_entry_get_concil_dval( entry_a ), ofo_entry_get_concil_dval( entry_b ));
 			break;
 		case ENT_COL_STATUS:
@@ -1403,8 +1405,8 @@ display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_DMYY );
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
-	sdeb = g_strdup_printf( "%'.2lf", ofo_entry_get_debit( entry ));
-	scre = g_strdup_printf( "%'.2lf", ofo_entry_get_credit( entry ));
+	sdeb = my_double_to_str( ofo_entry_get_debit( entry ));
+	scre = my_double_to_str( ofo_entry_get_credit( entry ));
 	d = ofo_entry_get_concil_dval( entry );
 	srappro = my_date_to_str( d, MY_DATE_DMYY );
 	status = g_strdup_printf( "%d", ofo_entry_get_status( entry ));
@@ -1413,20 +1415,20 @@ display_entry( ofaViewEntries *self, GtkTreeModel *tmodel, ofoEntry *entry )
 				GTK_LIST_STORE( tmodel ),
 				&iter,
 				-1,
-				ENT_COL_DOPE,     sdope,
-				ENT_COL_DEFF,     sdeff,
-				ENT_COL_NUMBER,   ofo_entry_get_number( entry ),
-				ENT_COL_REF,      ofo_entry_get_ref( entry ),
-				ENT_COL_LABEL,    ofo_entry_get_label( entry ),
-				ENT_COL_LEDGER,   ofo_entry_get_ledger( entry ),
-				ENT_COL_ACCOUNT,  ofo_entry_get_account( entry ),
-				ENT_COL_DEBIT,    sdeb,
-				ENT_COL_CREDIT,   scre,
-				ENT_COL_CURRENCY, ofo_entry_get_currency( entry ),
-				ENT_COL_RAPPRO,   srappro,
-				ENT_COL_STATUS,   status,
-				ENT_COL_OBJECT,   entry,
-				ENT_COL_VALID,    TRUE,
+				ENT_COL_DOPE,      sdope,
+				ENT_COL_DEFF,      sdeff,
+				ENT_COL_NUMBER,    ofo_entry_get_number( entry ),
+				ENT_COL_REF,       ofo_entry_get_ref( entry ),
+				ENT_COL_LABEL,     ofo_entry_get_label( entry ),
+				ENT_COL_LEDGER,    ofo_entry_get_ledger( entry ),
+				ENT_COL_ACCOUNT,   ofo_entry_get_account( entry ),
+				ENT_COL_DEBIT,     sdeb,
+				ENT_COL_CREDIT,    scre,
+				ENT_COL_CURRENCY,  ofo_entry_get_currency( entry ),
+				ENT_COL_DRECONCIL, srappro,
+				ENT_COL_STATUS,    status,
+				ENT_COL_OBJECT,    entry,
+				ENT_COL_VALID,     TRUE,
 				-1 );
 
 	g_free( status );
@@ -1747,7 +1749,7 @@ on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaViewEntries *self
 }
 
 /*
- * rappro date and status are never editable
+ * reconciliation date and status are never editable
  */
 static void
 set_renderers_editable( ofaViewEntries *self, gboolean editable )
@@ -1755,7 +1757,7 @@ set_renderers_editable( ofaViewEntries *self, gboolean editable )
 	gint i;
 
 	for( i=0 ; i<ENT_N_COLUMNS ; ++i ){
-		if( st_renderers[i] && i != ENT_COL_RAPPRO && i != ENT_COL_STATUS ){
+		if( st_renderers[i] && i != ENT_COL_DRECONCIL && i != ENT_COL_STATUS ){
 			g_object_set( G_OBJECT( st_renderers[i] ), "editable", editable, NULL );
 		}
 	}
@@ -1869,7 +1871,7 @@ on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
 
 	entry = NULL;
 	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
-		gtk_tree_model_get( priv->tfilter, &iter, ENT_COL_OBJECT, &entry, -1 );
+		gtk_tree_model_get( priv->tsort, &iter, ENT_COL_OBJECT, &entry, -1 );
 		if( entry ){
 			g_object_unref( entry );
 		}
@@ -1877,18 +1879,22 @@ on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
 		set_comment( self, "" );
 
 		is_editable =
-				( get_entry_status_from_row( self, priv->tfilter, &iter ) == ENT_STATUS_ROUGH );
+				( get_entry_status_from_row( self, priv->tsort, &iter ) == ENT_STATUS_ROUGH );
 		gtk_widget_set_sensitive(  GTK_WIDGET( priv->edit_switch ), is_editable );
 		g_object_get( G_OBJECT( priv->edit_switch ), "active", &is_active, NULL );
 		set_renderers_editable( self, is_editable && is_active );
 
 		/* re-display an eventual error message */
 		if( is_editable ){
-			check_row_for_valid( self, priv->tfilter, &iter );
+			check_row_for_valid( self, priv->tsort, &iter );
 		}
 	}
 }
 
+/*
+ * expect to work on the displayed model, i.e. the GtkTreeModelSort
+ * with the corresponding iter
+ */
 static gboolean
 check_row_for_valid( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
