@@ -32,7 +32,7 @@
  * @short_description: #ofaMainPage class definition.
  * @include: ui/ofa-main-page.h
  *
- * The main window is organized with a treeview of the left pane, and a
+ * The main window is organized with a treeview on the left pane, and a
  * notebook on the right one. The main child of the pages of this said
  * 'main' (because owned by the main window) notebook is always a
  * GtkGrid which is itself created by the main window.
@@ -101,16 +101,6 @@ G_BEGIN_DECLS
 #define MAIN_PAGE_PROP_THEME             "main-page-prop-theme"
 #define MAIN_PAGE_PROP_HAS_IMPORT        "main-page-prop-import"
 #define MAIN_PAGE_PROP_HAS_EXPORT        "main-page-prop-export"
-
-/**
- * Whether an object has been created, updated or deleted
- */
-typedef enum {
-	MAIN_PAGE_OBJECT_CREATED = 1,
-	MAIN_PAGE_OBJECT_UPDATED,
-	MAIN_PAGE_OBJECT_DELETED
-}
-	ofaMainPageUpdateType;
 
 /**
  * The name of the buttons created in the buttons box
