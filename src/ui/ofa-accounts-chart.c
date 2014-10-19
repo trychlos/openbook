@@ -50,7 +50,7 @@ struct _ofaAccountsChartPrivate {
 	GtkButton          *consult_btn;
 };
 
-G_DEFINE_TYPE( ofaAccountsChart, ofa_accounts_chart, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaAccountsChart, ofa_accounts_chart, OFA_TYPE_PAGE_BOOK )
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );

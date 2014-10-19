@@ -120,8 +120,11 @@ openbook_SOURCES = \
 	ofa-ledger-treeview.h								\
 	ofa-ledgers-set.c									\
 	ofa-ledgers-set.h									\
-	ofa-page.c										\
-	ofa-page.h										\
+	ofa-page.c											\
+	ofa-page.h											\
+	ofa-page-def.h										\
+	ofa-page-book.c										\
+	ofa-page-book.h										\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-ope-template-properties.c						\

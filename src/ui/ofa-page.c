@@ -86,7 +86,7 @@ static void       do_on_export_clicked( GtkButton *button, ofaPage *page );
 static void       on_grid_finalized( ofaPage *self, GObject *grid );
 
 static void
-main_page_finalize( GObject *instance )
+page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_page_finalize";
 	ofaPagePrivate *priv;
@@ -106,7 +106,7 @@ main_page_finalize( GObject *instance )
 }
 
 static void
-main_page_dispose( GObject *instance )
+page_dispose( GObject *instance )
 {
 	ofaPagePrivate *priv;
 
@@ -130,7 +130,7 @@ main_page_dispose( GObject *instance )
  * we have so to put the corresponding data into the provided GValue
  */
 static void
-main_page_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
+page_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
 {
 	ofaPagePrivate *priv;
 
@@ -177,7 +177,7 @@ main_page_get_property( GObject *instance, guint property_id, GValue *value, GPa
  * read the content of the provided GValue and set our instance datas
  */
 static void
-main_page_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
+page_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
 {
 	ofaPagePrivate *priv;
 
@@ -220,7 +220,7 @@ main_page_set_property( GObject *instance, guint property_id, const GValue *valu
 }
 
 static void
-main_page_constructed( GObject *instance )
+page_constructed( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_page_constructed";
 	ofaPage *self;
@@ -284,11 +284,11 @@ ofa_page_class_init( ofaPageClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->constructed = main_page_constructed;
-	G_OBJECT_CLASS( klass )->get_property = main_page_get_property;
-	G_OBJECT_CLASS( klass )->set_property = main_page_set_property;
-	G_OBJECT_CLASS( klass )->dispose = main_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = main_page_finalize;
+	G_OBJECT_CLASS( klass )->constructed = page_constructed;
+	G_OBJECT_CLASS( klass )->get_property = page_get_property;
+	G_OBJECT_CLASS( klass )->set_property = page_set_property;
+	G_OBJECT_CLASS( klass )->dispose = page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = page_finalize;
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),

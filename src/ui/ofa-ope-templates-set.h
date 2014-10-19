@@ -35,7 +35,7 @@
  * Display entering ope_templates.
  */
 
-#include "core/ofa-page-def.h"
+#include "ui/ofa-page-def.h"
 
 G_BEGIN_DECLS
 

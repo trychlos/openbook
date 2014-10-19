@@ -388,8 +388,6 @@
  338 2014-10-19 ofa_main_page_delete_confirmed() is not an ofaMainPage
                 method (rather put in ofaMainWindow or in my_utils)
 
- 339 2014-10-19 ofaMainPage becomes ofaPage
-
  340 2014-10-19 defines an ofaPageTree, derived from ofaPage, which will
                 be the base of pages with a GtkTreeView
 
@@ -1393,6 +1391,9 @@
 
  324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
      2014-10-13 cancelled as myDate class has been obsoleted
+
+ 339 2014-10-19 ofaMainPage becomes ofaPage
+     2014-10-19 done - svn #3915
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
