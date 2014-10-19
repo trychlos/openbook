@@ -87,8 +87,6 @@ enum {
 	N_SIGNALS
 };
 
-/* the actions handled from the menubar
- */
 static void on_properties       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_backup           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_close            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -169,7 +167,7 @@ static sThemeDef st_theme_defs[] = {
 				FALSE,
 				FALSE },
 
-		{ THM_CONCIL,
+		{ THM_RECONCIL,
 				N_( "Reconciliation" ),
 				ofa_reconciliation_get_type,
 				FALSE,
@@ -233,7 +231,7 @@ enum {
 static sTreeDef st_tree_defs[] = {
 
 		{ N_( "Guided input" ),        THM_GUIDED_INPUT },
-		{ N_( "Reconciliation" ),      THM_CONCIL },
+		{ N_( "Reconciliation" ),      THM_RECONCIL },
 		{ N_( "Chart of accounts" ),   THM_ACCOUNTS },
 		{ N_( "Ledgers" ),             THM_LEDGERS },
 		{ N_( "Operation templates" ), THM_OPE_TEMPLATES },
@@ -1011,7 +1009,7 @@ on_ope_concil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CONCIL );
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RECONCIL );
 }
 
 static void

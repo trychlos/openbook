@@ -69,11 +69,6 @@
   52 2014- 5-17 change the title of the pages of the models notebook
                 when the label of a journal is changed
 
-  58 2014- 5-19 allow the treeviewes to be sorted
-     2014- 6-12 this is mostly needed only in ViewEntries
-     2014-10-13 also in reconciliation
-     2014-10-16 ofaViewEntries: done - svn #3960 (cf. also todo #260)
-
   60 2014- 5-19 manage locale as a user preference (format for entering
                 date, amounts and rates)
 
@@ -560,6 +555,12 @@
   57 2014- 5-19 have an entry-derived class for numbers (amounts and
                 rates)
      2014-10-13 done with myEditableAmount
+
+  58 2014- 5-19 allow the treeviewes to be sorted
+     2014- 6-12 this is mostly needed only in ViewEntries
+     2014-10-13 also in reconciliation
+     2014-10-16 ofaViewEntries: done - svn #3910 (cf. also todo #260)
+     2014-10-19 ofaReconciliation: done - svn #3911
 
   59 2014- 5-19 reset all sentences in english
                 as the g_date_set_parse uses the current locale, the 
@@ -1161,7 +1162,7 @@
      2014- 6-27 done - svn #3750
 
  260 2014- 6-24 editing rough entries: make the columns sortable
-     2014-10-16 done - svn #3960
+     2014-10-16 done - svn #3910
 
  261 2014- 6-27 TauxProperties: update ofoTaux with GDate and rate as a
                 gdouble instead of strings
