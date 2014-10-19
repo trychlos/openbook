@@ -167,12 +167,6 @@ static sThemeDef st_theme_defs[] = {
 				FALSE,
 				FALSE },
 
-		{ THM_RECONCIL,
-				N_( "Reconciliation" ),
-				ofa_reconciliation_get_type,
-				FALSE,
-				FALSE },
-
 		{ THM_CURRENCIES,
 				N_( "Currencies" ),
 				ofa_currencies_set_get_type,
@@ -200,6 +194,12 @@ static sThemeDef st_theme_defs[] = {
 		{ THM_RATES,
 				N_( "Rates" ),
 				ofa_rates_set_get_type,
+				FALSE,
+				FALSE },
+
+		{ THM_RECONCIL,
+				N_( "Reconciliation" ),
+				ofa_reconciliation_get_type,
 				FALSE,
 				FALSE },
 
