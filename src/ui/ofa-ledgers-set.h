@@ -35,7 +35,7 @@
  * Display the list of ledgers.
  */
 
-#include "core/ofa-main-page-def.h"
+#include "core/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
@@ -50,14 +50,14 @@ typedef struct _ofaLedgersSetPrivate        ofaLedgersSetPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPage           parent;
+	ofaPage           parent;
 	ofaLedgersSetPrivate *private;
 }
 	ofaLedgersSet;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPageClass parent;
+	ofaPageClass parent;
 }
 	ofaLedgersSetClass;
 

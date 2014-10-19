@@ -42,7 +42,7 @@
 #include "core/ofa-plugin.h"
 
 #include "ui/my-editable-date.h"
-#include "ui/ofa-main-page.h"
+#include "ui/ofa-page.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-importer.h"
@@ -126,17 +126,17 @@ static const sConcil st_concils[] = {
 
 static const gchar *st_default_reconciliated_class = "5"; /* default account class to be reconciliated */
 
-G_DEFINE_TYPE( ofaReconciliation, ofa_reconciliation, OFA_TYPE_MAIN_PAGE )
+G_DEFINE_TYPE( ofaReconciliation, ofa_reconciliation, OFA_TYPE_PAGE )
 
-static GtkWidget   *v_setup_view( ofaMainPage *page );
-static GtkWidget   *setup_select_account( ofaMainPage *page );
-static GtkWidget   *setup_manual_rappro( ofaMainPage *page );
-static GtkWidget   *setup_auto_rappro( ofaMainPage *page );
-static GtkWidget   *setup_display_account( ofaMainPage *page );
-static GtkWidget   *setup_treeview( ofaMainPage *page );
-static GtkWidget   *setup_balance( ofaMainPage *page );
-static GtkWidget   *v_setup_buttons( ofaMainPage *page );
-static void         v_init_view( ofaMainPage *page );
+static GtkWidget   *v_setup_view( ofaPage *page );
+static GtkWidget   *setup_select_account( ofaPage *page );
+static GtkWidget   *setup_manual_rappro( ofaPage *page );
+static GtkWidget   *setup_auto_rappro( ofaPage *page );
+static GtkWidget   *setup_display_account( ofaPage *page );
+static GtkWidget   *setup_treeview( ofaPage *page );
+static GtkWidget   *setup_balance( ofaPage *page );
+static GtkWidget   *v_setup_buttons( ofaPage *page );
+static void         v_init_view( ofaPage *page );
 static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconciliation *self );
 static void         on_header_clicked( GtkTreeViewColumn *column, ofaReconciliation *self );
 static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
@@ -165,7 +165,7 @@ static void         insert_bat_line( ofaReconciliation *self, ofoBatLine *batlin
 static gboolean     on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconciliation *self );
 static void         collapse_node( ofaReconciliation *self, GtkWidget *widget );
 static void         expand_node( ofaReconciliation *self, GtkWidget *widget );
-static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page );
+static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static gboolean     toggle_rappro( ofaReconciliation *self, GtkTreePath *path );
 static void         reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter );
 static void         set_reconciliated_balance( ofaReconciliation *self );
@@ -237,13 +237,13 @@ ofa_reconciliation_class_init( ofaReconciliationClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = rappro_dispose;
 	G_OBJECT_CLASS( klass )->finalize = rappro_finalize;
 
-	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
-	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 }
 
 static GtkWidget *
-v_setup_view( ofaMainPage *page )
+v_setup_view( ofaPage *page )
 {
 	GtkFrame *frame;
 	GtkGrid *grid;
@@ -282,7 +282,7 @@ v_setup_view( ofaMainPage *page )
 }
 
 static GtkWidget *
-setup_select_account( ofaMainPage *page )
+setup_select_account( ofaPage *page )
 {
 	ofaReconciliationPrivate *priv;
 	GtkFrame *frame;
@@ -386,7 +386,7 @@ setup_select_account( ofaMainPage *page )
 }
 
 static GtkWidget *
-setup_manual_rappro( ofaMainPage *page )
+setup_manual_rappro( ofaPage *page )
 {
 	ofaReconciliationPrivate *priv;
 	GtkFrame *frame;
@@ -442,7 +442,7 @@ setup_manual_rappro( ofaMainPage *page )
 }
 
 static GtkWidget *
-setup_auto_rappro( ofaMainPage *page )
+setup_auto_rappro( ofaPage *page )
 {
 	ofaReconciliationPrivate *priv;
 	GtkFrame *frame;
@@ -502,7 +502,7 @@ setup_auto_rappro( ofaMainPage *page )
 }
 
 static GtkWidget *
-setup_display_account( ofaMainPage *page )
+setup_display_account( ofaPage *page )
 {
 	ofaReconciliationPrivate *priv;
 	GtkBox *box;
@@ -551,7 +551,7 @@ setup_display_account( ofaMainPage *page )
  * An entry has zero or one child, never more.
  */
 static GtkWidget *
-setup_treeview( ofaMainPage *page )
+setup_treeview( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_reconciliation_setup_treeview";
 	ofaReconciliationPrivate *priv;
@@ -755,7 +755,7 @@ setup_treeview( ofaMainPage *page )
  * in our book - this is supposed simulate the actual bank balance
  */
 static GtkWidget *
-setup_balance( ofaMainPage *page )
+setup_balance( ofaPage *page )
 {
 	ofaReconciliationPrivate *priv;
 	GtkBox *box;
@@ -788,13 +788,13 @@ setup_balance( ofaMainPage *page )
 }
 
 static GtkWidget *
-v_setup_buttons( ofaMainPage *page )
+v_setup_buttons( ofaPage *page )
 {
 	return( NULL );
 }
 
 static void
-v_init_view( ofaMainPage *page )
+v_init_view( ofaPage *page )
 {
 	check_for_enable_view( OFA_RECONCILIATION( page ), NULL, NULL );
 }
@@ -1161,7 +1161,7 @@ do_account_selection( ofaReconciliation *self )
 	}
 
 	number = ofa_account_select_run(
-					ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+					ofa_page_get_main_window( OFA_PAGE( self )),
 					account_number );
 
 	if( number && g_utf8_strlen( number, -1 )){
@@ -1239,7 +1239,7 @@ get_reconciliable_account( ofaReconciliation *self )
 
 	number = gtk_entry_get_text( self->private->account );
 	account = ofo_account_get_by_number(
-						ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )), number );
+						ofa_page_get_dossier( OFA_PAGE( self )), number );
 	if( account ){
 		g_return_val_if_fail( OFO_IS_ACCOUNT( account ), NULL );
 		if( ofo_account_is_root( account )){
@@ -1287,7 +1287,7 @@ do_fetch_entries( ofaReconciliation *self )
 	gtk_tree_store_clear( GTK_TREE_STORE( tmodel ));
 
 	entries = ofo_entry_get_dataset_by_concil(
-					ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )),
+					ofa_page_get_dossier( OFA_PAGE( self )),
 					ofo_account_get_number( account ),
 					mode );
 
@@ -1336,7 +1336,7 @@ on_select_bat( GtkButton *button, ofaReconciliation *self )
 {
 	gint bat_id;
 
-	bat_id = ofa_bat_select_run( ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )));
+	bat_id = ofa_bat_select_run( ofa_page_get_main_window( OFA_PAGE( self )));
 
 	if( bat_id > 0 ){
 		setup_bat_lines( self, bat_id );
@@ -1352,7 +1352,7 @@ on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 	gint bat_id;
 
 	bat_id = ofa_importer_import_from_uri(
-					ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )),
+					ofa_page_get_dossier( OFA_PAGE( self )),
 					IMPORTER_TYPE_BAT,
 					gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button )));
 
@@ -1380,7 +1380,7 @@ setup_bat_lines( ofaReconciliation *self, gint bat_id )
 
 	self->private->batlines =
 			ofo_bat_line_get_dataset(
-					ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )),
+					ofa_page_get_dossier( OFA_PAGE( self )),
 					bat_id );
 
 	display_bat_lines( self );
@@ -1740,7 +1740,7 @@ expand_node( ofaReconciliation *self, GtkWidget *widget )
 }
 
 static void
-on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainPage *page )
+on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_reconciliation_on_row_activated";
 	ofaReconciliationPrivate *priv;
@@ -1895,12 +1895,12 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 	/* last, update the sgbd */
 	ofo_entry_update_concil(
 			entry,
-			ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )));
+			ofa_page_get_dossier( OFA_PAGE( self )));
 
 	if( batline ){
 		ofo_bat_line_update(
 				batline,
-				ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )));
+				ofa_page_get_dossier( OFA_PAGE( self )));
 	}
 }
 
@@ -1927,7 +1927,7 @@ set_reconciliated_balance( ofaReconciliation *self )
 	account_number = gtk_entry_get_text( self->private->account );
 	if( account_number && g_utf8_strlen( account_number, -1 )){
 		account = ofo_account_get_by_number(
-						ofa_main_page_get_dossier( OFA_MAIN_PAGE( self )), account_number );
+						ofa_page_get_dossier( OFA_PAGE( self )), account_number );
 	}
 	if( account ){
 		account_debit = ofo_account_get_deb_amount( account )+ofo_account_get_day_deb_amount( account );

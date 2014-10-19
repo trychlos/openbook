@@ -45,7 +45,7 @@
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-ledger-combo.h"
-#include "ui/ofa-main-page.h"
+#include "ui/ofa-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-view-entries.h"
 
@@ -176,9 +176,9 @@ static const gchar           *st_ui_id                    = "ViewEntriesWindow";
 
 static       GtkCellRenderer *st_renderers[ENT_N_COLUMNS] = { 0 };
 
-G_DEFINE_TYPE( ofaViewEntries, ofa_view_entries, OFA_TYPE_MAIN_PAGE )
+G_DEFINE_TYPE( ofaViewEntries, ofa_view_entries, OFA_TYPE_PAGE )
 
-static GtkWidget     *v_setup_view( ofaMainPage *page );
+static GtkWidget     *v_setup_view( ofaPage *page );
 static void           reparent_from_dialog( ofaViewEntries *self, GtkContainer *parent );
 static void           setup_gen_selection( ofaViewEntries *self );
 static void           setup_ledger_selection( ofaViewEntries *self );
@@ -192,8 +192,8 @@ static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 static void           on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self );
 static void           setup_footer( ofaViewEntries *self );
 static void           setup_signaling_connect( ofaViewEntries *self );
-static GtkWidget     *v_setup_buttons( ofaMainPage *page );
-static void           v_init_view( ofaMainPage *page );
+static GtkWidget     *v_setup_buttons( ofaPage *page );
+static void           v_init_view( ofaPage *page );
 static void           on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self );
 static void           on_ledger_changed( const gchar *mnemo, ofaViewEntries *self );
 static void           display_entries_from_ledger( ofaViewEntries *self );
@@ -315,20 +315,20 @@ ofa_view_entries_class_init( ofaViewEntriesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = view_entries_dispose;
 	G_OBJECT_CLASS( klass )->finalize = view_entries_finalize;
 
-	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
-	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 }
 
 static GtkWidget *
-v_setup_view( ofaMainPage *page )
+v_setup_view( ofaPage *page )
 {
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *frame;
 
 	priv = OFA_VIEW_ENTRIES( page )->private;
 
-	priv->dossier = ofa_main_page_get_dossier( page );
+	priv->dossier = ofa_page_get_dossier( page );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
@@ -1041,14 +1041,14 @@ setup_signaling_connect( ofaViewEntries *self )
 }
 
 static GtkWidget *
-v_setup_buttons( ofaMainPage *page )
+v_setup_buttons( ofaPage *page )
 {
-	/*return( OFA_MAIN_PAGE_CLASS( ofa_view_entries_parent_class )->setup_buttons( page ));*/
+	/*return( OFA_PAGE_CLASS( ofa_view_entries_parent_class )->setup_buttons( page ));*/
 	return( NULL );
 }
 
 static void
-v_init_view( ofaMainPage *page )
+v_init_view( ofaPage *page )
 {
 }
 
@@ -1158,7 +1158,7 @@ on_account_select( GtkButton *button, ofaViewEntries *self )
 	priv = self->private;
 
 	acc_number = ofa_account_select_run(
-							ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+							ofa_page_get_main_window( OFA_PAGE( self )),
 							gtk_entry_get_text( priv->account_entry ));
 	if( acc_number ){
 		gtk_entry_set_text( priv->account_entry, acc_number );

@@ -38,7 +38,7 @@
 
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-properties.h"
-#include "ui/ofa-main-page.h"
+#include "ui/ofa-page.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -482,7 +482,7 @@ setup_buttons( ofaAccountNotebook *self )
 	priv = self->private;
 
 	/* get the standard buttons and connect our signals */
-	buttons_box = ofa_main_page_get_buttons_box_new( priv->has_import, priv->has_export );
+	buttons_box = ofa_page_get_buttons_box_new( priv->has_import, priv->has_export );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_NEW );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_clicked ), self );
@@ -1472,7 +1472,7 @@ delete_confirmed( ofaAccountNotebook *self, ofoAccount *account )
 			ofo_account_get_number( account ),
 			ofo_account_get_label( account ));
 
-	delete_ok = ofa_main_page_delete_confirmed( NULL, msg );
+	delete_ok = ofa_page_delete_confirmed( NULL, msg );
 
 	g_free( msg );
 

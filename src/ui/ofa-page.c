@@ -33,11 +33,11 @@
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 
-#include "ui/ofa-main-page.h"
+#include "ui/ofa-page.h"
 
 /* private instance data
  */
-struct _ofaMainPagePrivate {
+struct _ofaPagePrivate {
 	gboolean       dispose_has_run;
 
 	/* properties set at instanciation time
@@ -69,50 +69,50 @@ enum {
 	PROP_HAS_EXPORT_ID
 };
 
-G_DEFINE_TYPE( ofaMainPage, ofa_main_page, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaPage, ofa_page, G_TYPE_OBJECT )
 
-static void       do_setup_page( ofaMainPage *page );
-static void       v_setup_page( ofaMainPage *page );
-static GtkWidget *do_setup_view( ofaMainPage *page );
-static GtkWidget *do_setup_buttons( ofaMainPage *page );
-static GtkWidget *v_setup_buttons( ofaMainPage *page );
+static void       do_setup_page( ofaPage *page );
+static void       v_setup_page( ofaPage *page );
+static GtkWidget *do_setup_view( ofaPage *page );
+static GtkWidget *do_setup_buttons( ofaPage *page );
+static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *create_buttons( gboolean has_import, gboolean has_export );
-static void       do_init_view( ofaMainPage *page );
-static void       do_on_new_clicked( GtkButton *button, ofaMainPage *page );
-static void       do_on_update_clicked( GtkButton *button, ofaMainPage *page );
-static void       do_on_delete_clicked( GtkButton *button, ofaMainPage *page );
-static void       do_on_import_clicked( GtkButton *button, ofaMainPage *page );
-static void       do_on_export_clicked( GtkButton *button, ofaMainPage *page );
-static void       on_grid_finalized( ofaMainPage *self, GObject *grid );
+static void       do_init_view( ofaPage *page );
+static void       do_on_new_clicked( GtkButton *button, ofaPage *page );
+static void       do_on_update_clicked( GtkButton *button, ofaPage *page );
+static void       do_on_delete_clicked( GtkButton *button, ofaPage *page );
+static void       do_on_import_clicked( GtkButton *button, ofaPage *page );
+static void       do_on_export_clicked( GtkButton *button, ofaPage *page );
+static void       on_grid_finalized( ofaPage *self, GObject *grid );
 
 static void
 main_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_main_page_finalize";
-	ofaMainPagePrivate *priv;
+	static const gchar *thisfn = "ofa_page_finalize";
+	ofaPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_MAIN_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
 
-	priv = OFA_MAIN_PAGE( instance )->private;
+	priv = OFA_PAGE( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_main_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_page_parent_class )->finalize( instance );
 }
 
 static void
 main_page_dispose( GObject *instance )
 {
-	ofaMainPagePrivate *priv;
+	ofaPagePrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_MAIN_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
 
-	priv = ( OFA_MAIN_PAGE( instance ))->private;
+	priv = ( OFA_PAGE( instance ))->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -122,7 +122,7 @@ main_page_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_main_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_page_parent_class )->dispose( instance );
 }
 
 /*
@@ -132,11 +132,11 @@ main_page_dispose( GObject *instance )
 static void
 main_page_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
 {
-	ofaMainPagePrivate *priv;
+	ofaPagePrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
+	g_return_if_fail( OFA_IS_PAGE( instance ));
 
-	priv = OFA_MAIN_PAGE( instance )->private;
+	priv = OFA_PAGE( instance )->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -179,11 +179,11 @@ main_page_get_property( GObject *instance, guint property_id, GValue *value, GPa
 static void
 main_page_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
 {
-	ofaMainPagePrivate *priv;
+	ofaPagePrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_PAGE( instance ));
+	g_return_if_fail( OFA_IS_PAGE( instance ));
 
-	priv = OFA_MAIN_PAGE( instance )->private;
+	priv = OFA_PAGE( instance )->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -222,18 +222,18 @@ main_page_set_property( GObject *instance, guint property_id, const GValue *valu
 static void
 main_page_constructed( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_main_page_constructed";
-	ofaMainPage *self;
-	ofaMainPagePrivate *priv;
+	static const gchar *thisfn = "ofa_page_constructed";
+	ofaPage *self;
+	ofaPagePrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_MAIN_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
 
-	self = OFA_MAIN_PAGE( instance );
+	self = OFA_PAGE( instance );
 	priv = self->private;
 
 	/* first, chain up to the parent class */
-	if( G_OBJECT_CLASS( ofa_main_page_parent_class )->constructed ){
-		G_OBJECT_CLASS( ofa_main_page_parent_class )->constructed( instance );
+	if( G_OBJECT_CLASS( ofa_page_parent_class )->constructed ){
+		G_OBJECT_CLASS( ofa_page_parent_class )->constructed( instance );
 	}
 
 #if 0
@@ -254,7 +254,7 @@ main_page_constructed( GObject *instance )
 	g_object_weak_ref(
 			G_OBJECT( priv->grid ),
 			( GWeakNotify ) on_grid_finalized,
-			OFA_MAIN_PAGE( instance ));
+			OFA_PAGE( instance ));
 
 	/* let the child class setup its page */
 	do_setup_page( self );
@@ -262,25 +262,25 @@ main_page_constructed( GObject *instance )
 }
 
 static void
-ofa_main_page_init( ofaMainPage *self )
+ofa_page_init( ofaPage *self )
 {
-	static const gchar *thisfn = "ofa_main_page_init";
+	static const gchar *thisfn = "ofa_page_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_MAIN_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_PAGE( self ));
 
-	self->private = g_new0( ofaMainPagePrivate, 1 );
+	self->private = g_new0( ofaPagePrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 	self->private->theme = -1;
 }
 
 static void
-ofa_main_page_class_init( ofaMainPageClass *klass )
+ofa_page_class_init( ofaPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_main_page_class_init";
+	static const gchar *thisfn = "ofa_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -294,7 +294,7 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 			G_OBJECT_CLASS( klass ),
 			PROP_WINDOW_ID,
 			g_param_spec_pointer(
-					MAIN_PAGE_PROP_WINDOW,
+					PAGE_PROP_WINDOW,
 					"Main window",
 					"The main window (ofaMainWindow *)",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
@@ -303,7 +303,7 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 			G_OBJECT_CLASS( klass ),
 			PROP_DOSSIER_ID,
 			g_param_spec_pointer(
-					MAIN_PAGE_PROP_DOSSIER,
+					PAGE_PROP_DOSSIER,
 					"Current dossier",
 					"The currently opened dossier (ofoDossier *)",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
@@ -312,7 +312,7 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 			G_OBJECT_CLASS( klass ),
 			PROP_GRID_ID,
 			g_param_spec_pointer(
-					MAIN_PAGE_PROP_GRID,
+					PAGE_PROP_GRID,
 					"Page grid",
 					"The top child of the page (GtkGrid *)",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
@@ -321,7 +321,7 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 			G_OBJECT_CLASS( klass ),
 			PROP_THEME_ID,
 			g_param_spec_int(
-					MAIN_PAGE_PROP_THEME,
+					PAGE_PROP_THEME,
 					"Theme",
 					"The theme handled by this class (gint)",
 					-1,
@@ -333,7 +333,7 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 			G_OBJECT_CLASS( klass ),
 			PROP_HAS_IMPORT_ID,
 			g_param_spec_boolean(
-					MAIN_PAGE_PROP_HAS_IMPORT,
+					PAGE_PROP_HAS_IMPORT,
 					"Has import button",
 					"Whether the page will display the 'Import...' button",
 					FALSE,
@@ -343,7 +343,7 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 			G_OBJECT_CLASS( klass ),
 			PROP_HAS_EXPORT_ID,
 			g_param_spec_boolean(
-					MAIN_PAGE_PROP_HAS_EXPORT,
+					PAGE_PROP_HAS_EXPORT,
 					"Has export button",
 					"Whether the page will display the 'Export...' button",
 					FALSE,
@@ -362,21 +362,21 @@ ofa_main_page_class_init( ofaMainPageClass *klass )
 }
 
 /**
- * ofa_main_page_pre_remove:
+ * ofa_page_pre_remove:
  */
 void
-ofa_main_page_pre_remove( ofaMainPage *page )
+ofa_page_pre_remove( ofaPage *page )
 {
 
 }
 
 static void
-do_setup_page( ofaMainPage *page )
+do_setup_page( ofaPage *page )
 {
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->setup_page ){
-		OFA_MAIN_PAGE_GET_CLASS( page )->setup_page( page );
+	if( OFA_PAGE_GET_CLASS( page )->setup_page ){
+		OFA_PAGE_GET_CLASS( page )->setup_page( page );
 
 	} else {
 		v_setup_page( page );
@@ -384,12 +384,12 @@ do_setup_page( ofaMainPage *page )
 }
 
 static void
-v_setup_page( ofaMainPage *page )
+v_setup_page( ofaPage *page )
 {
 	GtkWidget *view;
 	GtkWidget *buttons_box;
 
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
 	view = do_setup_view( page );
 	if( view ){
@@ -405,17 +405,17 @@ v_setup_page( ofaMainPage *page )
 }
 
 static GtkWidget *
-do_setup_view( ofaMainPage *page )
+do_setup_view( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_do_setup_view";
+	static const gchar *thisfn = "ofa_page_do_setup_view";
 	GtkWidget *view;
 
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	view = NULL;
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->setup_view ){
-		view = OFA_MAIN_PAGE_GET_CLASS( page )->setup_view( page );
+	if( OFA_PAGE_GET_CLASS( page )->setup_view ){
+		view = OFA_PAGE_GET_CLASS( page )->setup_view( page );
 
 	} else {
 		g_debug( "%s: page=%p", thisfn, ( void * ) page );
@@ -425,16 +425,16 @@ do_setup_view( ofaMainPage *page )
 }
 
 static GtkWidget *
-do_setup_buttons( ofaMainPage *page )
+do_setup_buttons( ofaPage *page )
 {
 	GtkWidget *buttons_box;
 
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	buttons_box = NULL;
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->setup_buttons ){
-		buttons_box = OFA_MAIN_PAGE_GET_CLASS( page )->setup_buttons( page );
+	if( OFA_PAGE_GET_CLASS( page )->setup_buttons ){
+		buttons_box = OFA_PAGE_GET_CLASS( page )->setup_buttons( page );
 
 	} else {
 		v_setup_buttons( page );
@@ -444,13 +444,13 @@ do_setup_buttons( ofaMainPage *page )
 }
 
 static GtkWidget *
-v_setup_buttons( ofaMainPage *page )
+v_setup_buttons( ofaPage *page )
 {
-	ofaMainPagePrivate *priv;
+	ofaPagePrivate *priv;
 	GtkBox *buttons_box;
 	GtkWidget *button;
 
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	priv = page->private;
 	buttons_box = GTK_BOX( create_buttons( priv->has_import, priv->has_export ));
@@ -529,7 +529,7 @@ create_buttons( gboolean has_import, gboolean has_export )
 }
 
 /**
- * ofa_main_page_get_buttons_box_new:
+ * ofa_page_get_buttons_box_new:
  *
  * This is a convenience function which provides to others the same
  * buttons box than that of the standard main page (first used by
@@ -538,20 +538,20 @@ create_buttons( gboolean has_import, gboolean has_export )
  * Returns a new box, with its attached buttons.
  */
 GtkBox *
-ofa_main_page_get_buttons_box_new( gboolean has_import, gboolean has_export )
+ofa_page_get_buttons_box_new( gboolean has_import, gboolean has_export )
 {
 	return( GTK_BOX( create_buttons( has_import, has_export )));
 }
 
 static void
-do_init_view( ofaMainPage *page )
+do_init_view( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_do_init_view";
+	static const gchar *thisfn = "ofa_page_do_init_view";
 
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->init_view ){
-		OFA_MAIN_PAGE_GET_CLASS( page )->init_view( page );
+	if( OFA_PAGE_GET_CLASS( page )->init_view ){
+		OFA_PAGE_GET_CLASS( page )->init_view( page );
 
 	} else {
 		g_debug( "%s: page=%p", thisfn, ( void * ) page );
@@ -559,15 +559,15 @@ do_init_view( ofaMainPage *page )
 }
 
 static void
-do_on_new_clicked( GtkButton *button, ofaMainPage *page )
+do_on_new_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_do_on_new_clicked";
+	static const gchar *thisfn = "ofa_page_do_on_new_clicked";
 
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_new_clicked ){
-		OFA_MAIN_PAGE_GET_CLASS( page )->on_new_clicked( button, page );
+	if( OFA_PAGE_GET_CLASS( page )->on_new_clicked ){
+		OFA_PAGE_GET_CLASS( page )->on_new_clicked( button, page );
 
 	} else {
 		g_debug( "%s: button=%p, page=%p (%s)",
@@ -576,15 +576,15 @@ do_on_new_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 static void
-do_on_update_clicked( GtkButton *button, ofaMainPage *page )
+do_on_update_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_do_on_update_clicked";
+	static const gchar *thisfn = "ofa_page_do_on_update_clicked";
 
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_update_clicked ){
-		OFA_MAIN_PAGE_GET_CLASS( page )->on_update_clicked( button, page );
+	if( OFA_PAGE_GET_CLASS( page )->on_update_clicked ){
+		OFA_PAGE_GET_CLASS( page )->on_update_clicked( button, page );
 
 	} else {
 		g_debug( "%s: button=%p, page=%p (%s)",
@@ -593,15 +593,15 @@ do_on_update_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 static void
-do_on_delete_clicked( GtkButton *button, ofaMainPage *page )
+do_on_delete_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_do_on_delete_clicked";
+	static const gchar *thisfn = "ofa_page_do_on_delete_clicked";
 
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_delete_clicked ){
-		OFA_MAIN_PAGE_GET_CLASS( page )->on_delete_clicked( button, page );
+	if( OFA_PAGE_GET_CLASS( page )->on_delete_clicked ){
+		OFA_PAGE_GET_CLASS( page )->on_delete_clicked( button, page );
 
 	} else {
 		g_debug( "%s: button=%p, page=%p (%s)",
@@ -610,15 +610,15 @@ do_on_delete_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 static void
-do_on_import_clicked( GtkButton *button, ofaMainPage *page )
+do_on_import_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_do_on_import_clicked";
+	static const gchar *thisfn = "ofa_page_do_on_import_clicked";
 
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_import_clicked ){
-		OFA_MAIN_PAGE_GET_CLASS( page )->on_import_clicked( button, page );
+	if( OFA_PAGE_GET_CLASS( page )->on_import_clicked ){
+		OFA_PAGE_GET_CLASS( page )->on_import_clicked( button, page );
 
 	} else {
 		g_debug( "%s: button=%p, page=%p (%s)",
@@ -627,15 +627,15 @@ do_on_import_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 static void
-do_on_export_clicked( GtkButton *button, ofaMainPage *page )
+do_on_export_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_main_page_do_on_export_clicked";
+	static const gchar *thisfn = "ofa_page_do_on_export_clicked";
 
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_return_if_fail( page && OFA_IS_MAIN_PAGE( page ));
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
 
-	if( OFA_MAIN_PAGE_GET_CLASS( page )->on_export_clicked ){
-		OFA_MAIN_PAGE_GET_CLASS( page )->on_export_clicked( button, page );
+	if( OFA_PAGE_GET_CLASS( page )->on_export_clicked ){
+		OFA_PAGE_GET_CLASS( page )->on_export_clicked( button, page );
 
 	} else {
 		g_debug( "%s: button=%p, page=%p (%s)",
@@ -644,12 +644,12 @@ do_on_export_clicked( GtkButton *button, ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_main_window:
+ * ofa_page_get_main_window:
  */
 ofaMainWindow *
-ofa_main_page_get_main_window( const ofaMainPage *page )
+ofa_page_get_main_window( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	if( !page->private->dispose_has_run ){
 
@@ -660,12 +660,12 @@ ofa_main_page_get_main_window( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_dossier:
+ * ofa_page_get_dossier:
  */
 ofoDossier *
-ofa_main_page_get_dossier( const ofaMainPage *page )
+ofa_page_get_dossier( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	if( !page->private->dispose_has_run ){
 
@@ -676,15 +676,15 @@ ofa_main_page_get_dossier( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_theme:
+ * ofa_page_get_theme:
  *
  * Returns -1 if theme is not set.
  * If theme is set, it is strictly greater than zero (start with 1).
  */
 gint
-ofa_main_page_get_theme( const ofaMainPage *page )
+ofa_page_get_theme( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	if( !page->private->dispose_has_run ){
 
@@ -695,12 +695,12 @@ ofa_main_page_get_theme( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_grid:
+ * ofa_page_get_grid:
  */
 GtkGrid *
-ofa_main_page_get_grid( const ofaMainPage *page )
+ofa_page_get_grid( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	if( !page->private->dispose_has_run ){
 
@@ -711,9 +711,9 @@ ofa_main_page_get_grid( const ofaMainPage *page )
 }
 
 static void
-on_grid_finalized( ofaMainPage *self, GObject *grid )
+on_grid_finalized( ofaPage *self, GObject *grid )
 {
-	static const gchar *thisfn = "ofa_main_page_on_grid_finalized";
+	static const gchar *thisfn = "ofa_page_on_grid_finalized";
 
 	g_debug( "%s: self=%p (%s), grid=%p",
 			thisfn,
@@ -724,7 +724,7 @@ on_grid_finalized( ofaMainPage *self, GObject *grid )
 }
 
 /**
- * ofa_main_page_get_treeview:
+ * ofa_page_get_treeview:
  *
  * Each page of the main notebook is built inside of a GtkGrid.
  * This GtkGrid is supposed to hold a GtkTreeView, more or less direcly,
@@ -735,9 +735,9 @@ on_grid_finalized( ofaMainPage *self, GObject *grid )
  * signal handler, as the current page is not yet set at this time.
  */
 GtkTreeView *
-ofa_main_page_get_treeview( const ofaMainPage *page )
+ofa_page_get_treeview( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 	GtkNotebook *child_book;
 	gint tab_num;
 	GtkWidget *tab_widget;
@@ -777,12 +777,12 @@ ofa_main_page_get_treeview( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_new_btn:
+ * ofa_page_get_new_btn:
  */
 GtkWidget *
-ofa_main_page_get_new_btn( const ofaMainPage *page )
+ofa_page_get_new_btn( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	if( !page->private->dispose_has_run &&
 			page->private->btn_new ){
@@ -794,12 +794,12 @@ ofa_main_page_get_new_btn( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_update_btn:
+ * ofa_page_get_update_btn:
  */
 GtkWidget *
-ofa_main_page_get_update_btn( const ofaMainPage *page )
+ofa_page_get_update_btn( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	if( !page->private->dispose_has_run &&
 			page->private->btn_update ){
@@ -811,12 +811,12 @@ ofa_main_page_get_update_btn( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_delete_btn:
+ * ofa_page_get_delete_btn:
  */
 GtkWidget *
-ofa_main_page_get_delete_btn( const ofaMainPage *page )
+ofa_page_get_delete_btn( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	if( !page->private->dispose_has_run &&
 			page->private->btn_delete ){
@@ -828,12 +828,12 @@ ofa_main_page_get_delete_btn( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_import_btn:
+ * ofa_page_get_import_btn:
  */
 GtkWidget *
-ofa_main_page_get_import_btn( const ofaMainPage *page )
+ofa_page_get_import_btn( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	if( !page->private->dispose_has_run &&
 			page->private->btn_import ){
@@ -845,12 +845,12 @@ ofa_main_page_get_import_btn( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_get_export_btn:
+ * ofa_page_get_export_btn:
  */
 GtkWidget *
-ofa_main_page_get_export_btn( const ofaMainPage *page )
+ofa_page_get_export_btn( const ofaPage *page )
 {
-	g_return_val_if_fail( page && OFA_IS_MAIN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
 	if( !page->private->dispose_has_run &&
 			page->private->btn_export ){
@@ -862,12 +862,12 @@ ofa_main_page_get_export_btn( const ofaMainPage *page )
 }
 
 /**
- * ofa_main_page_delete_confirmed:
+ * ofa_page_delete_confirmed:
  *
  * Returns: %TRUE if the deletion is confirmed by the user.
  */
 gboolean
-ofa_main_page_delete_confirmed( const ofaMainPage *page, const gchar *message )
+ofa_page_delete_confirmed( const ofaPage *page, const gchar *message )
 {
 	GtkWidget *dialog;
 	gint response;

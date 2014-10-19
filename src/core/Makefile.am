@@ -57,7 +57,7 @@ libofa_core_la_SOURCES = \
 	ofa-dblogin.c										\
 	ofa-dblogin.h										\
 	ofa-idbms.c											\
-	ofa-main-page-def.h									\
+	ofa-page-def.h									\
 	ofa-main-window-def.h								\
 	ofa-plugin.c										\
 	ofa-plugin.h										\

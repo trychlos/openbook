@@ -35,7 +35,7 @@
  * Display entering ope_templates.
  */
 
-#include "core/ofa-main-page-def.h"
+#include "core/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
@@ -50,14 +50,14 @@ typedef struct _ofaOpeTemplatesSetPrivate         ofaOpeTemplatesSetPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPage                parent;
+	ofaPage                parent;
 	ofaOpeTemplatesSetPrivate *private;
 }
 	ofaOpeTemplatesSet;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPageClass parent;
+	ofaPageClass parent;
 }
 	ofaOpeTemplatesSetClass;
 

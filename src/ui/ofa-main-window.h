@@ -50,11 +50,11 @@
  * | | | | |             | | |                                | | | | |
  * | | | | |             | | | where each page is a GtkGrid   | | | | |
  * | | | | |             | | |  which is handled by an        | | | | |
- * | | | | |             | | |  ofaMainPage                   | | | | |
+ * | | | | |             | | |  ofaPage                   | | | | |
  * | | | | |             | | |                                | | | | |
- * | | | | |             | | | see ofa-main-page.h for a more | | | | |
+ * | | | | |             | | | see ofa-page.h for a more | | | | |
  * | | | | |             | | |  complete description of the   | | | | |
- * | | | | |             | | |  ofaMainPage class behavior    | | | | |
+ * | | | | |             | | |  ofaPage class behavior    | | | | |
  * | | | | |             | | |                                | | | | |
  * | | | | +-------------+ | +--------------------------------+ | | | |
  * | | | +-----------------+------------------------------------+ | | |
@@ -66,7 +66,7 @@
 #include "api/ofo-dossier-def.h"
 
 #include "core/ofa-application-def.h"
-#include "core/ofa-main-page-def.h"
+#include "core/ofa-page-def.h"
 #include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -103,7 +103,7 @@ enum {
 
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
 
-ofaMainPage   *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );
+ofaPage   *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );
 
 gboolean       ofa_main_window_is_willing_to_quit( ofaMainWindow *window );
 

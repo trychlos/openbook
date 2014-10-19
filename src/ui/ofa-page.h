@@ -24,13 +24,13 @@
  * $Id$
  */
 
-#ifndef __OFA_MAIN_PAGE_H__
-#define __OFA_MAIN_PAGE_H__
+#ifndef __OFA_PAGE_H__
+#define __OFA_PAGE_H__
 
 /**
- * SECTION: ofa_main_page
- * @short_description: #ofaMainPage class definition.
- * @include: ui/ofa-main-page.h
+ * SECTION: ofa_page
+ * @short_description: #ofaPage class definition.
+ * @include: ui/ofa-page.h
  *
  * The main window is organized with a treeview on the left pane, and a
  * notebook on the right one. The main child of the pages of this said
@@ -38,8 +38,8 @@
  * GtkGrid which is itself created by the main window.
  *
  * All datas of the applications are displayed in pages of this 'main'
- * notebook. These datas are handled by ofaMainPage-derived classes
- * (this class). Each ofaMainPage-derived class begins so with an empty
+ * notebook. These datas are handled by ofaPage-derived classes
+ * (this class). Each ofaPage-derived class begins so with an empty
  * GtkGrid.
  *
  * Most of them, though this is far from being mandatory, have a
@@ -59,7 +59,7 @@
  * Class        Description                               Buttons box
  * -----------  ----------------------------------------  -----------
  * Account      a notebook with one page per account          Yes
- *               class number, each page having its own
+ *               class, each page having its own
  *               tree view on a list store
  *
  * BAT files    a tree view on a list store                   Yes
@@ -87,7 +87,7 @@
 
 #include "api/ofo-dossier-def.h"
 
-#include "core/ofa-main-page-def.h"
+#include "core/ofa-page-def.h"
 #include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -95,12 +95,12 @@ G_BEGIN_DECLS
 /**
  * Properties set against this base class at instanciation time
  */
-#define MAIN_PAGE_PROP_WINDOW            "main-page-prop-window"
-#define MAIN_PAGE_PROP_DOSSIER           "main-page-prop-dossier"
-#define MAIN_PAGE_PROP_GRID              "main-page-prop-grid"
-#define MAIN_PAGE_PROP_THEME             "main-page-prop-theme"
-#define MAIN_PAGE_PROP_HAS_IMPORT        "main-page-prop-import"
-#define MAIN_PAGE_PROP_HAS_EXPORT        "main-page-prop-export"
+#define PAGE_PROP_WINDOW            "main-page-prop-window"
+#define PAGE_PROP_DOSSIER           "main-page-prop-dossier"
+#define PAGE_PROP_GRID              "main-page-prop-grid"
+#define PAGE_PROP_THEME             "main-page-prop-theme"
+#define PAGE_PROP_HAS_IMPORT        "main-page-prop-import"
+#define PAGE_PROP_HAS_EXPORT        "main-page-prop-export"
 
 /**
  * The name of the buttons created in the buttons box
@@ -111,24 +111,24 @@ G_BEGIN_DECLS
 #define PAGE_BUTTON_IMPORT              "btn-import"
 #define PAGE_BUTTON_EXPORT              "btn-export"
 
-void           ofa_main_page_pre_remove         ( ofaMainPage *page );
+void           ofa_page_pre_remove         ( ofaPage *page );
 
-ofaMainWindow *ofa_main_page_get_main_window    ( const ofaMainPage *page );
-ofoDossier    *ofa_main_page_get_dossier        ( const ofaMainPage *page );
-gint           ofa_main_page_get_theme          ( const ofaMainPage *page );
-GtkGrid       *ofa_main_page_get_grid           ( const ofaMainPage *page );
-GtkTreeView   *ofa_main_page_get_treeview       ( const ofaMainPage *page );
+ofaMainWindow *ofa_page_get_main_window    ( const ofaPage *page );
+ofoDossier    *ofa_page_get_dossier        ( const ofaPage *page );
+gint           ofa_page_get_theme          ( const ofaPage *page );
+GtkGrid       *ofa_page_get_grid           ( const ofaPage *page );
+GtkTreeView   *ofa_page_get_treeview       ( const ofaPage *page );
 
-GtkWidget     *ofa_main_page_get_new_btn        ( const ofaMainPage *page );
-GtkWidget     *ofa_main_page_get_update_btn     ( const ofaMainPage *page );
-GtkWidget     *ofa_main_page_get_delete_btn     ( const ofaMainPage *page );
-GtkWidget     *ofa_main_page_get_import_btn     ( const ofaMainPage *page );
-GtkWidget     *ofa_main_page_get_export_btn     ( const ofaMainPage *page );
+GtkWidget     *ofa_page_get_new_btn        ( const ofaPage *page );
+GtkWidget     *ofa_page_get_update_btn     ( const ofaPage *page );
+GtkWidget     *ofa_page_get_delete_btn     ( const ofaPage *page );
+GtkWidget     *ofa_page_get_import_btn     ( const ofaPage *page );
+GtkWidget     *ofa_page_get_export_btn     ( const ofaPage *page );
 
-GtkBox        *ofa_main_page_get_buttons_box_new( gboolean has_import, gboolean has_export );
+GtkBox        *ofa_page_get_buttons_box_new( gboolean has_import, gboolean has_export );
 
-gboolean       ofa_main_page_delete_confirmed   ( const ofaMainPage *page, const gchar *message );
+gboolean       ofa_page_delete_confirmed   ( const ofaPage *page, const gchar *message );
 
 G_END_DECLS
 
-#endif /* __OFA_MAIN_PAGE_H__ */
+#endif /* __OFA_PAGE_H__ */

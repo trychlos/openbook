@@ -33,7 +33,7 @@
  * @include: ui/ofa-view-entries.h
  */
 
-#include "core/ofa-main-page-def.h"
+#include "core/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
@@ -48,14 +48,14 @@ typedef struct _ofaViewEntriesPrivate        ofaViewEntriesPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPage            parent;
+	ofaPage            parent;
 	ofaViewEntriesPrivate *private;
 }
 	ofaViewEntries;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPageClass parent;
+	ofaPageClass parent;
 }
 	ofaViewEntriesClass;
 

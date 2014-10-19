@@ -35,7 +35,7 @@
  * Display the chart of accounts, letting the user edit it.
  */
 
-#include "core/ofa-main-page-def.h"
+#include "core/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
@@ -50,14 +50,14 @@ typedef struct _ofaReconciliationPrivate       ofaReconciliationPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPage       parent;
+	ofaPage       parent;
 	ofaReconciliationPrivate *private;
 }
 	ofaReconciliation;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPageClass parent;
+	ofaPageClass parent;
 }
 	ofaReconciliationClass;
 

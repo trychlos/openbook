@@ -38,7 +38,7 @@
  * order with insensitive case.
  */
 
-#include "core/ofa-main-page-def.h"
+#include "core/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
@@ -53,14 +53,14 @@ typedef struct _ofaBatSetPrivate        ofaBatSetPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPage       parent;
+	ofaPage       parent;
 	ofaBatSetPrivate *private;
 }
 	ofaBatSet;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPageClass parent;
+	ofaPageClass parent;
 }
 	ofaBatSetClass;
 

@@ -37,7 +37,7 @@
  * The display treeview is sorted in ascending currency class number.
  */
 
-#include "core/ofa-main-page-def.h"
+#include "core/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
@@ -52,14 +52,14 @@ typedef struct _ofaClassesSetPrivate        ofaClassesSetPrivate;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPage           parent;
+	ofaPage           parent;
 	ofaClassesSetPrivate *private;
 }
 	ofaClassesSet;
 
 typedef struct {
 	/*< private >*/
-	ofaMainPageClass parent;
+	ofaPageClass parent;
 }
 	ofaClassesSetClass;
 

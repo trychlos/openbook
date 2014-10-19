@@ -30,7 +30,7 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/ofa-main-page.h"
+#include "ui/ofa-page.h"
 #include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-accounts-chart.h"
@@ -50,12 +50,12 @@ struct _ofaAccountsChartPrivate {
 	GtkButton          *consult_btn;
 };
 
-G_DEFINE_TYPE( ofaAccountsChart, ofa_accounts_chart, OFA_TYPE_MAIN_PAGE )
+G_DEFINE_TYPE( ofaAccountsChart, ofa_accounts_chart, OFA_TYPE_PAGE )
 
-static GtkWidget *v_setup_view( ofaMainPage *page );
-static GtkWidget *v_setup_buttons( ofaMainPage *page );
-static void       v_init_view( ofaMainPage *page );
-static void       on_row_activated( ofoAccount *account, ofaMainPage *page );
+static GtkWidget *v_setup_view( ofaPage *page );
+static GtkWidget *v_setup_buttons( ofaPage *page );
+static void       v_init_view( ofaPage *page );
+static void       on_row_activated( ofoAccount *account, ofaPage *page );
 static void       on_view_entries( ofoAccount *account, ofaAccountsChart *self );
 
 static void
@@ -123,13 +123,13 @@ ofa_accounts_chart_class_init( ofaAccountsChartClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = accounts_chart_dispose;
 	G_OBJECT_CLASS( klass )->finalize = accounts_chart_finalize;
 
-	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 }
 
 static GtkWidget *
-v_setup_view( ofaMainPage *page )
+v_setup_view( ofaPage *page )
 {
 	GtkNotebook *chart_book;
 	ofaAccountNotebookParms parms;
@@ -140,8 +140,8 @@ v_setup_view( ofaMainPage *page )
 	gtk_widget_set_margin_bottom( GTK_WIDGET( chart_book ), 4 );
 	gtk_notebook_popup_enable( chart_book );
 
-	parms.main_window = ofa_main_page_get_main_window( page );
-	parms.parent = GTK_CONTAINER( ofa_main_page_get_grid( page ));
+	parms.main_window = ofa_page_get_main_window( page );
+	parms.parent = GTK_CONTAINER( ofa_page_get_grid( page ));
 	parms.has_import = FALSE;
 	parms.has_export = FALSE;
 	parms.has_view_entries = TRUE;
@@ -157,13 +157,13 @@ v_setup_view( ofaMainPage *page )
 }
 
 static GtkWidget *
-v_setup_buttons( ofaMainPage *page )
+v_setup_buttons( ofaPage *page )
 {
 	return( NULL );
 }
 
 static void
-v_init_view( ofaMainPage *page )
+v_init_view( ofaPage *page )
 {
 	ofa_account_notebook_init_view( OFA_ACCOUNTS_CHART( page )->private->chart_child, NULL );
 }
@@ -172,12 +172,12 @@ v_init_view( ofaMainPage *page )
  * ofaAccountNotebook callback:
  */
 static void
-on_row_activated( ofoAccount *account, ofaMainPage *page )
+on_row_activated( ofoAccount *account, ofaPage *page )
 {
 	if( account ){
 		g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-		ofa_account_properties_run( ofa_main_page_get_main_window( page ), account );
+		ofa_account_properties_run( ofa_page_get_main_window( page ), account );
 	}
 
 	ofa_account_notebook_grab_focus( OFA_ACCOUNTS_CHART( page )->private->chart_child );
@@ -186,11 +186,11 @@ on_row_activated( ofoAccount *account, ofaMainPage *page )
 static void
 on_view_entries( ofoAccount *account, ofaAccountsChart *self )
 {
-	ofaMainPage *page;
+	ofaPage *page;
 
 	if( account ){
 		page = ofa_main_window_activate_theme(
-						ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+						ofa_page_get_main_window( OFA_PAGE( self )),
 						THM_VIEW_ENTRIES );
 		if( page ){
 			ofa_view_entries_display_entries(

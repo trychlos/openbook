@@ -38,7 +38,7 @@
 
 #include "ui/ofa-guided-common.h"
 #include "ui/ofa-guided-ex.h"
-#include "ui/ofa-main-page.h"
+#include "ui/ofa-page.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -82,12 +82,12 @@ enum {
 static const gchar  *st_ui_xml    = PKGUIDIR "/ofa-guided-input.ui";
 static const gchar  *st_ui_id     = "GuidedInputDlg";
 
-G_DEFINE_TYPE( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_MAIN_PAGE )
+G_DEFINE_TYPE( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_PAGE )
 
-static GtkWidget *v_setup_view( ofaMainPage *page );
+static GtkWidget *v_setup_view( ofaPage *page );
 static void       pane_restore_position( GtkPaned *pane );
-static GtkWidget *v_setup_buttons( ofaMainPage *page );
-static void       v_init_view( ofaMainPage *page );
+static GtkWidget *v_setup_buttons( ofaPage *page );
+static void       v_init_view( ofaPage *page );
 static GtkWidget *setup_view_left( ofaGuidedEx *self );
 static GtkWidget *setup_view_right( ofaGuidedEx *self );
 static GtkWidget *setup_left_treeview( ofaGuidedEx *self );
@@ -118,7 +118,7 @@ static void       on_new_object( const ofoDossier *dossier, const ofoBase *objec
 static void       on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
 static void       on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
-static void       v_pre_remove( ofaMainPage *page );
+static void       v_pre_remove( ofaPage *page );
 static void       pane_save_position( GtkPaned *pane );
 
 static void
@@ -185,20 +185,20 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = guided_ex_dispose;
 	G_OBJECT_CLASS( klass )->finalize = guided_ex_finalize;
 
-	OFA_MAIN_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_MAIN_PAGE_CLASS( klass )->init_view = v_init_view;
-	OFA_MAIN_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_MAIN_PAGE_CLASS( klass )->pre_remove = v_pre_remove;
+	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->pre_remove = v_pre_remove;
 }
 
 static GtkWidget *
-v_setup_view( ofaMainPage *page )
+v_setup_view( ofaPage *page )
 {
 	ofaGuidedExPrivate *priv;
 	GtkPaned *child;
 
 	priv = OFA_GUIDED_EX( page )->private;
-	priv->dossier = ofa_main_page_get_dossier( page );
+	priv->dossier = ofa_page_get_dossier( page );
 
 	child = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
 	gtk_paned_add1( child, setup_view_left( OFA_GUIDED_EX( page )));
@@ -232,13 +232,13 @@ pane_restore_position( GtkPaned *pane )
 }
 
 static GtkWidget *
-v_setup_buttons( ofaMainPage *page )
+v_setup_buttons( ofaPage *page )
 {
 	return( NULL );
 }
 
 static void
-v_init_view( ofaMainPage *page )
+v_init_view( ofaPage *page )
 {
 	init_left_view( OFA_GUIDED_EX( page ),
 						gtk_paned_get_child1( OFA_GUIDED_EX( page )->private->pane ));
@@ -315,7 +315,7 @@ setup_view_right( ofaGuidedEx *self )
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_right_cancel ), self );
 
 	priv->common = ofa_guided_common_new(
-							ofa_main_page_get_main_window( OFA_MAIN_PAGE( self )),
+							ofa_page_get_main_window( OFA_PAGE( self )),
 							priv->right_box );
 
 	return( GTK_WIDGET( frame ));
@@ -962,7 +962,7 @@ on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )
 }
 
 static void
-v_pre_remove( ofaMainPage *page )
+v_pre_remove( ofaPage *page )
 {
 	ofaGuidedExPrivate *priv;
 
