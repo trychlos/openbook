@@ -84,13 +84,11 @@ currency_properties_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_CURRENCY_PROPERTIES( instance ));
 
-	priv = OFA_CURRENCY_PROPERTIES( instance )->private;
-
 	/* free data members here */
+	priv = OFA_CURRENCY_PROPERTIES( instance )->priv;
 	g_free( priv->code );
 	g_free( priv->label );
 	g_free( priv->symbol );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_currency_properties_parent_class )->finalize( instance );
@@ -120,10 +118,10 @@ ofa_currency_properties_init( ofaCurrencyProperties *self )
 
 	g_return_if_fail( self && OFA_IS_CURRENCY_PROPERTIES( self ));
 
-	self->private = g_new0( ofaCurrencyPropertiesPrivate, 1 );
-
-	self->private->is_new = FALSE;
-	self->private->updated = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+						self, OFA_TYPE_CURRENCY_PROPERTIES, ofaCurrencyPropertiesPrivate );
+	self->priv->is_new = FALSE;
+	self->priv->updated = FALSE;
 }
 
 static void
@@ -138,6 +136,8 @@ ofa_currency_properties_class_init( ofaCurrencyPropertiesClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaCurrencyPropertiesPrivate ));
 }
 
 /**
@@ -166,11 +166,11 @@ ofa_currency_properties_run( ofaMainWindow *main_window, ofoCurrency *currency )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
-	self->private->currency = currency;
+	self->priv->currency = currency;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	updated = self->private->updated;
+	updated = self->priv->updated;
 	g_object_unref( self );
 
 	return( updated );
@@ -186,7 +186,7 @@ v_init_dialog( myDialog *dialog )
 	gchar *str;
 	GtkWindow *toplevel;
 
-	priv = OFA_CURRENCY_PROPERTIES( dialog )->private;
+	priv = OFA_CURRENCY_PROPERTIES( dialog )->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
 	code = ofo_currency_get_code( priv->currency );
@@ -243,8 +243,8 @@ v_init_dialog( myDialog *dialog )
 static void
 on_code_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
-	g_free( self->private->code );
-	self->private->code = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->code );
+	self->priv->code = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -252,8 +252,8 @@ on_code_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 static void
 on_label_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
-	g_free( self->private->label );
-	self->private->label = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->label );
+	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -261,8 +261,8 @@ on_label_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 static void
 on_symbol_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
-	g_free( self->private->symbol );
-	self->private->symbol = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->symbol );
+	self->priv->symbol = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -270,7 +270,7 @@ on_symbol_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 static void
 on_digits_changed( GtkEntry *entry, ofaCurrencyProperties *self )
 {
-	self->private->digits = atoi( gtk_entry_get_text( entry ));
+	self->priv->digits = atoi( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -293,7 +293,7 @@ is_dialog_validable( ofaCurrencyProperties *self )
 	gboolean ok;
 	ofoCurrency *exists;
 
-	priv = self->private;
+	priv = self->priv;
 
 	ok = ofo_currency_is_valid( priv->code, priv->label, priv->symbol, priv->digits );
 	if( ok ){
@@ -320,7 +320,7 @@ do_update( ofaCurrencyProperties *self )
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	priv = self->private;
+	priv = self->priv;
 	prev_code = g_strdup( ofo_currency_get_code( priv->currency ));
 
 	ofo_currency_set_code( priv->currency, priv->code );
