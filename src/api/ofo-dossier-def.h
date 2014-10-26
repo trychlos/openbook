@@ -51,20 +51,22 @@ G_BEGIN_DECLS
 #define OFO_IS_DOSSIER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_DOSSIER ))
 #define OFO_DOSSIER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_DOSSIER, ofoDossierClass ))
 
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoDossierClass;
-
 typedef struct _ofoDossierPrivate       ofoDossierPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofoBase            parent;
-	ofoDossierPrivate *private;
+
+	/*< private members >*/
+	ofoDossierPrivate *priv;
 }
 	ofoDossier;
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass parent;
+}
+	ofoDossierClass;
 
 /* default length of exercice in months
  */
