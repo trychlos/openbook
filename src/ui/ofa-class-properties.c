@@ -80,11 +80,9 @@ class_properties_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_CLASS_PROPERTIES( instance ));
 
-	priv = OFA_CLASS_PROPERTIES( instance )->private;
-
 	/* free data members here */
+	priv = OFA_CLASS_PROPERTIES( instance )->priv;
 	g_free( priv->label );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_class_properties_parent_class )->finalize( instance );
@@ -114,10 +112,10 @@ ofa_class_properties_init( ofaClassProperties *self )
 
 	g_return_if_fail( self && OFA_IS_CLASS_PROPERTIES( self ));
 
-	self->private = g_new0( ofaClassPropertiesPrivate, 1 );
-
-	self->private->is_new = FALSE;
-	self->private->updated = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+						self, OFA_TYPE_CLASS_PROPERTIES, ofaClassPropertiesPrivate );
+	self->priv->is_new = FALSE;
+	self->priv->updated = FALSE;
 }
 
 static void
@@ -132,6 +130,8 @@ ofa_class_properties_class_init( ofaClassPropertiesClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaClassPropertiesPrivate ));
 }
 
 /**
@@ -160,11 +160,11 @@ ofa_class_properties_run( ofaMainWindow *main_window, ofoClass *class )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
-	self->private->class = class;
+	self->priv->class = class;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	updated = self->private->updated;
+	updated = self->priv->updated;
 
 	g_object_unref( self );
 
@@ -181,7 +181,7 @@ v_init_dialog( myDialog *dialog )
 	gchar *str;
 	GtkWindow *toplevel;
 
-	priv = OFA_CLASS_PROPERTIES( dialog )->private;
+	priv = OFA_CLASS_PROPERTIES( dialog )->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 
 	number = ofo_class_get_number( priv->class );
@@ -224,7 +224,7 @@ v_init_dialog( myDialog *dialog )
 static void
 on_number_changed( GtkEntry *entry, ofaClassProperties *self )
 {
-	self->private->number = atoi( gtk_entry_get_text( entry ));
+	self->priv->number = atoi( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -232,8 +232,8 @@ on_number_changed( GtkEntry *entry, ofaClassProperties *self )
 static void
 on_label_changed( GtkEntry *entry, ofaClassProperties *self )
 {
-	g_free( self->private->label );
-	self->private->label = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->label );
+	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -256,7 +256,7 @@ is_dialog_validable( ofaClassProperties *self )
 	gboolean ok;
 	ofoClass *exists;
 
-	priv = self->private;
+	priv = self->priv;
 
 	ok = ofo_class_is_valid( priv->number, priv->label );
 	if( ok ){
@@ -282,7 +282,7 @@ do_update( ofaClassProperties *self )
 	gint prev_id;
 	GtkWindow *toplevel;
 
-	priv = self->private;
+	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
