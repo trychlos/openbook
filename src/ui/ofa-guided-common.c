@@ -254,12 +254,10 @@ guided_common_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_GUIDED_COMMON( instance ));
 
-	priv = OFA_GUIDED_COMMON( instance )->private;
-
 	/* free data members here */
+	priv = OFA_GUIDED_COMMON( instance )->priv;
 	g_free( priv->ledger );
 	g_free( priv->last_closed_exe );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_guided_common_parent_class )->finalize( instance );
@@ -272,7 +270,7 @@ guided_common_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_GUIDED_COMMON( instance ));
 
-	priv = OFA_GUIDED_COMMON( instance )->private;
+	priv = OFA_GUIDED_COMMON( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -293,15 +291,14 @@ ofa_guided_common_init( ofaGuidedCommon *self )
 
 	g_return_if_fail( self && OFA_IS_GUIDED_COMMON( self ));
 
-	self->private = g_new0( ofaGuidedCommonPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_GUIDED_COMMON, ofaGuidedCommonPrivate );
 
-	self->private->dispose_has_run = FALSE;
-
-	my_date_clear( &self->private->last_closing );
-	my_date_clear( &self->private->deff );
-	my_date_clear( &self->private->dope );
-	self->private->deffect_changed_while_focus = FALSE;
-	self->private->entries_count = 0;
+	self->priv->dispose_has_run = FALSE;
+	my_date_clear( &self->priv->last_closing );
+	my_date_clear( &self->priv->deff );
+	my_date_clear( &self->priv->dope );
+	self->priv->deffect_changed_while_focus = FALSE;
+	self->priv->entries_count = 0;
 }
 
 static void
@@ -313,6 +310,8 @@ ofa_guided_common_class_init( ofaGuidedCommonClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = guided_common_dispose;
 	G_OBJECT_CLASS( klass )->finalize = guided_common_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaGuidedCommonPrivate ));
 
 	my_date_clear( &st_last_dope );
 	my_date_clear( &st_last_deff );
@@ -344,9 +343,9 @@ ofa_guided_common_new( ofaMainWindow *main_window, GtkContainer *parent )
 
 	self = g_object_new( OFA_TYPE_GUIDED_COMMON, NULL );
 
-	self->private->main_window = main_window;
-	self->private->parent = parent;
-	self->private->dossier = ofa_main_window_get_dossier( main_window );
+	self->priv->main_window = main_window;
+	self->priv->parent = parent;
+	self->priv->dossier = ofa_main_window_get_dossier( main_window );
 
 	setup_from_dossier( self );
 	setup_ledger_combo( self );
@@ -365,7 +364,7 @@ setup_from_dossier( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	priv->last_closed_exe = ofo_dossier_get_last_closed_exercice( priv->dossier );
 	g_debug( "ofa_guided_common_setup_from_dossier: last_closed_exe=%p", ( void * ) priv->last_closed_exe );
@@ -385,7 +384,7 @@ setup_ledger_combo( ofaGuidedCommon *self )
 	ofaGuidedCommonPrivate *priv;
 	ofaLedgerComboParms parms;
 
-	priv = self->private;
+	priv = self->priv;
 
 	parms.container = priv->parent;
 	parms.dossier = priv->dossier;
@@ -411,7 +410,7 @@ setup_dates( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	priv->dope_entry = GTK_ENTRY( my_utils_container_get_child_by_name( priv->parent, "p1-dope" ));
 	my_editable_date_init( GTK_EDITABLE( priv->dope_entry ));
@@ -444,7 +443,7 @@ setup_misc( ofaGuidedCommon *self )
 	ofaGuidedCommonPrivate *priv;
 	GtkWidget *widget, *view;
 
-	priv = self->private;
+	priv = self->priv;
 
 	widget = my_utils_container_get_child_by_name( priv->parent, "p1-model-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
@@ -476,7 +475,7 @@ ofa_guided_common_set_model( ofaGuidedCommon *self, const ofoOpeTemplate *model 
 	g_return_if_fail( self && OFA_IS_GUIDED_COMMON( self ));
 	g_return_if_fail( model && OFO_IS_OPE_TEMPLATE( model ));
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -502,7 +501,7 @@ init_ledger_combo( ofaGuidedCommon *self )
 	ofaGuidedCommonPrivate *priv;
 	GtkWidget *combo;
 
-	priv = self->private;
+	priv = self->priv;
 	priv->ledger = g_strdup( ofo_ope_template_get_ledger( priv->model ));
 
 	ofa_ledger_combo_set_selection( priv->ledger_combo, priv->ledger );
@@ -517,7 +516,7 @@ setup_model_data( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 	gtk_label_set_text( priv->model_label, ofo_ope_template_get_label( priv->model ));
 }
 
@@ -529,7 +528,7 @@ setup_entries_grid( ofaGuidedCommon *self )
 	GtkLabel *label;
 	GtkEntry *entry;
 
-	priv = self->private;
+	priv = self->priv;
 
 	count = ofo_ope_template_get_detail_count( priv->model );
 	for( i=0 ; i<count ; ++i ){
@@ -589,7 +588,7 @@ add_entry_row( ofaGuidedCommon *self, gint i )
 	gtk_entry_set_alignment( entry, 1 );
 	gtk_entry_set_text( entry, str );
 	gtk_entry_set_width_chars( entry, RANG_WIDTH );
-	gtk_grid_attach( self->private->entries_grid, GTK_WIDGET( entry ), COL_RANG, i+1, 1, 1 );
+	gtk_grid_attach( self->priv->entries_grid, GTK_WIDGET( entry ), COL_RANG, i+1, 1, 1 );
 	g_free( str );
 
 	/* other columns starting with COL_ACCOUNT=1 */
@@ -612,8 +611,8 @@ add_entry_row_set( ofaGuidedCommon *self, gint col_id, gint row )
 	col_def = find_column_def_from_col_id( self, col_id );
 	g_return_if_fail( col_def );
 
-	str = (*col_def->get_label)( self->private->model, row-1 );
-	locked = (*col_def->is_locked)( self->private->model, row-1 );
+	str = (*col_def->get_label)( self->priv->model, row-1 );
+	locked = (*col_def->is_locked)( self->priv->model, row-1 );
 
 	/* only create the entry if the field is not empty or not locked
 	 * (because an empty locked field will obviously never be set)
@@ -661,7 +660,7 @@ add_entry_row_set( ofaGuidedCommon *self, gint col_id, gint row )
 		g_signal_connect( G_OBJECT( entry ), "key-press-event", G_CALLBACK( on_key_pressed ), self );
 	}
 
-	gtk_grid_attach( self->private->entries_grid, GTK_WIDGET( entry ), col_id, row, 1, 1 );
+	gtk_grid_attach( self->priv->entries_grid, GTK_WIDGET( entry ), col_id, row, 1, 1 );
 }
 
 static void
@@ -676,7 +675,7 @@ add_entry_row_button( ofaGuidedCommon *self, const gchar *stock_id, gint column,
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_button_set_image( button, image );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
-	gtk_grid_attach( self->private->entries_grid, GTK_WIDGET( button ), column, row, 1, 1 );
+	gtk_grid_attach( self->priv->entries_grid, GTK_WIDGET( button ), column, row, 1, 1 );
 }
 
 static void
@@ -686,7 +685,7 @@ remove_entry_row( ofaGuidedCommon *self, gint row )
 	GtkWidget *widget;
 
 	for( i=0 ; i<N_COLUMNS ; ++i ){
-		widget = gtk_grid_get_child_at( self->private->entries_grid, i, row );
+		widget = gtk_grid_get_child_at( self->priv->entries_grid, i, row );
 		if( widget ){
 			gtk_widget_destroy( widget );
 		}
@@ -710,7 +709,7 @@ on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
 	gint exe_id;
 	const GDate *date;
 
-	priv = self->private;
+	priv = self->priv;
 
 	g_free( priv->ledger );
 	priv->ledger = g_strdup( mnemo );
@@ -743,7 +742,7 @@ on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
 static gboolean
 on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 {
-	set_date_comment( self, _( "Operation date" ), &self->private->dope );
+	set_date_comment( self, _( "Operation date" ), &self->priv->dope );
 
 	return( FALSE );
 }
@@ -766,7 +765,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* check the operation date */
 	my_date_set_from_date( &priv->dope,
@@ -801,8 +800,8 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 static gboolean
 on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 {
-	self->private->deffect_has_focus = TRUE;
-	set_date_comment( self, _( "Effect date" ), &self->private->deff );
+	self->priv->deffect_has_focus = TRUE;
+	set_date_comment( self, _( "Effect date" ), &self->priv->deff );
 
 	return( FALSE );
 }
@@ -815,7 +814,7 @@ on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 static gboolean
 on_deffect_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 {
-	self->private->deffect_has_focus = FALSE;
+	self->priv->deffect_has_focus = FALSE;
 	set_comment( self, "" );
 
 	return( FALSE );
@@ -826,7 +825,7 @@ on_deffect_changed( GtkEntry *entry, ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( priv->deffect_has_focus ){
 
@@ -855,7 +854,7 @@ on_entry_changed( GtkEntry *entry, ofaGuidedCommon *self )
 	static const gchar *thisfn = "ofa_guided_common_on_entry_changed";
 	ofaGuidedCommonPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	g_debug( "%s: entry=%p, row=%u, column=%u, on_changed_count=%u",
 			thisfn, ( void * ) entry, priv->focused_row, priv->focused_column, priv->on_changed_count );
@@ -884,7 +883,7 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 	sEntryData *sdata;
 	const gchar *comment;
 
-	priv = self->private;
+	priv = self->priv;
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
 	priv->on_changed_count = 0;
@@ -921,7 +920,7 @@ on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 	sEntryData *sdata;
 	const gchar *current;
 
-	priv = self->private;
+	priv = self->priv;
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
 	g_debug( "%s: entry=%p, row=%u, column=%u",
@@ -998,9 +997,9 @@ on_account_selection( ofaGuidedCommon *self, gint row )
 	GtkEntry *entry;
 	gchar *number;
 
-	entry = GTK_ENTRY( gtk_grid_get_child_at( self->private->entries_grid, COL_ACCOUNT, row ));
+	entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->entries_grid, COL_ACCOUNT, row ));
 
-	number = ofa_account_select_run( self->private->main_window, gtk_entry_get_text( entry ));
+	number = ofa_account_select_run( self->priv->main_window, gtk_entry_get_text( entry ));
 
 	if( number && g_utf8_strlen( number, -1 )){
 		gtk_entry_set_text( entry, number );
@@ -1025,11 +1024,11 @@ check_for_account( ofaGuidedCommon *self, GtkEntry *entry  )
 
 	asked_account = gtk_entry_get_text( entry );
 	account = ofo_account_get_by_number(
-						self->private->dossier,
+						self->priv->dossier,
 						asked_account );
 	if( !account ){
 		number = ofa_account_select_run(
-							self->private->main_window,
+							self->priv->main_window,
 							asked_account );
 		if( number ){
 			gtk_entry_set_text( entry, number );
@@ -1065,7 +1064,7 @@ set_date_comment( ofaGuidedCommon *self, const gchar *label, const GDate *date )
 static void
 set_comment( ofaGuidedCommon *self, const gchar *comment )
 {
-	gtk_entry_set_text( self->private->comment, comment );
+	gtk_entry_set_text( self->priv->comment, comment );
 }
 
 static const sColumnDef *
@@ -1108,11 +1107,11 @@ check_for_enable_dlg( ofaGuidedCommon *self )
 {
 	gboolean ok;
 
-	if( self->private->entries_grid ){
+	if( self->priv->entries_grid ){
 
 		ok = is_dialog_validable( self );
 
-		gtk_widget_set_sensitive( GTK_WIDGET( self->private->ok_btn ), ok );
+		gtk_widget_set_sensitive( GTK_WIDGET( self->priv->ok_btn ), ok );
 	}
 }
 
@@ -1154,7 +1153,7 @@ update_all_formulas( ofaGuidedCommon *self )
 	const gchar *str;
 	GtkWidget *entry;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( priv->model ){
 		count = ofo_ope_template_get_detail_count( priv->model );
@@ -1316,7 +1315,7 @@ formula_compute_solde( ofaGuidedCommon *self, GtkEntry *entry )
 
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
-	count = ofo_ope_template_get_detail_count( self->private->model );
+	count = ofo_ope_template_get_detail_count( self->priv->model );
 	csold = 0.0;
 	dsold = 0.0;
 	for( idx=0 ; idx<count ; ++idx ){
@@ -1338,7 +1337,7 @@ formula_set_entry_idem( ofaGuidedCommon *self, GtkEntry *entry )
 	GtkWidget *widget;
 
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
-	widget = gtk_grid_get_child_at( self->private->entries_grid, sdata->column_id, sdata->row_id-1 );
+	widget = gtk_grid_get_child_at( self->priv->entries_grid, sdata->column_id, sdata->row_id-1 );
 	if( widget && GTK_IS_ENTRY( widget )){
 		gtk_entry_set_text( entry, gtk_entry_get_text( GTK_ENTRY( widget )));
 	}
@@ -1356,7 +1355,7 @@ formula_parse_token( ofaGuidedCommon *self, const gchar *formula, const gchar *t
 	ofoRate *rate;
 	gchar *str;
 
-	priv = self->private;
+	priv = self->priv;
 	init = token[0];
 	row = atoi( token+1 );
 	amount = 0;
@@ -1420,7 +1419,7 @@ update_all_totals( ofaGuidedCommon *self )
 	gint count, idx;
 	GtkWidget *entry;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( priv->model ){
 		count = ofo_ope_template_get_detail_count( priv->model );
@@ -1475,7 +1474,7 @@ get_amount( ofaGuidedCommon *self, gint col_id, gint row )
 
 	col_def = find_column_def_from_col_id( self, col_id );
 	if( col_def ){
-		entry = gtk_grid_get_child_at( self->private->entries_grid, col_def->column_id, row );
+		entry = gtk_grid_get_child_at( self->priv->entries_grid, col_def->column_id, row );
 		if( entry && GTK_IS_ENTRY( entry )){
 			return( my_editable_amount_get_amount( GTK_EDITABLE( entry )));
 		}
@@ -1493,9 +1492,9 @@ check_for_ledger( ofaGuidedCommon *self )
 	static const gchar *thisfn = "ofa_guided_common_check_for_ledger";
 	gboolean ok;
 
-	ok = self->private->ledger && g_utf8_strlen( self->private->ledger, -1 );
+	ok = self->priv->ledger && g_utf8_strlen( self->priv->ledger, -1 );
 	if( !ok ){
-		g_debug( "%s: ledger=%s", thisfn, self->private->ledger );
+		g_debug( "%s: ledger=%s", thisfn, self->priv->ledger );
 	}
 
 	return( ok );
@@ -1516,7 +1515,7 @@ check_for_dates( ofaGuidedCommon *self )
 	gboolean ok, oki;
 
 	ok = TRUE;
-	priv = self->private;
+	priv = self->priv;
 
 	oki = my_date_is_valid( &priv->dope );
 	my_utils_entry_set_valid( GTK_ENTRY( priv->dope_entry ), oki );
@@ -1562,7 +1561,7 @@ check_for_all_entries( ofaGuidedCommon *self )
 	gdouble deb, cred;
 
 	ok = TRUE;
-	priv = self->private;
+	priv = self->priv;
 
 	if( priv->model ){
 		count = ofo_ope_template_get_detail_count( priv->model );
@@ -1606,7 +1605,7 @@ check_for_entry( ofaGuidedCommon *self, gint row )
 	const gchar *str;
 
 	ok = TRUE;
-	priv = self->private;
+	priv = self->priv;
 
 	entry = gtk_grid_get_child_at( priv->entries_grid, COL_ACCOUNT, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
@@ -1652,7 +1651,7 @@ ofa_guided_common_validate( ofaGuidedCommon *self )
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	ok = FALSE;
-	priv = self->private;
+	priv = self->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -1688,7 +1687,7 @@ do_validate( ofaGuidedCommon *self )
 	gint errors;
 
 	ok = FALSE;
-	priv = self->private;
+	priv = self->priv;
 
 	piece = NULL;
 	entry = my_utils_container_get_child_by_name( priv->parent, "p1-piece" );
@@ -1750,7 +1749,7 @@ entry_from_detail( ofaGuidedCommon *self, gint row, const gchar *piece )
 	const gchar *label;
 	gdouble deb, cre;
 
-	priv = self->private;
+	priv = self->priv;
 
 	entry = gtk_grid_get_child_at( priv->entries_grid, COL_ACCOUNT, row );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
@@ -1785,7 +1784,7 @@ display_ok_message( ofaGuidedCommon *self, gint count )
 	message = g_strdup_printf( _( "%d entries have been succesffully created" ), count );
 
 	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( self->private->main_window ),
+			GTK_WINDOW( self->priv->main_window ),
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_INFO,
 			GTK_BUTTONS_OK,
@@ -1806,7 +1805,7 @@ ofa_guided_common_reset( ofaGuidedCommon *common )
 {
 	g_return_if_fail( common && OFA_IS_GUIDED_COMMON( common ));
 
-	if( !common->private->dispose_has_run ){
+	if( !common->priv->dispose_has_run ){
 
 		do_reset_entries_rows( common );
 	}
@@ -1822,16 +1821,16 @@ do_reset_entries_rows( ofaGuidedCommon *self )
 	gint i;
 	GtkWidget *entry;
 
-	for( i=1 ; i<=self->private->entries_count ; ++i ){
-		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_LABEL, i );
+	for( i=1 ; i<=self->priv->entries_count ; ++i ){
+		entry = gtk_grid_get_child_at( self->priv->entries_grid, COL_LABEL, i );
 		if( entry && GTK_IS_ENTRY( entry )){
 			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
 		}
-		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_DEBIT, i );
+		entry = gtk_grid_get_child_at( self->priv->entries_grid, COL_DEBIT, i );
 		if( entry && GTK_IS_ENTRY( entry )){
 			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
 		}
-		entry = gtk_grid_get_child_at( self->private->entries_grid, COL_CREDIT, i );
+		entry = gtk_grid_get_child_at( self->priv->entries_grid, COL_CREDIT, i );
 		if( entry && GTK_IS_ENTRY( entry )){
 			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
 		}
@@ -1854,7 +1853,7 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
 			( void * ) self );
 
 	if( OFO_IS_OPE_TEMPLATE( object )){
-		if( OFO_OPE_TEMPLATE( object ) == self->private->model ){
+		if( OFO_OPE_TEMPLATE( object ) == self->priv->model ){
 			ofa_guided_common_set_model( self, OFO_OPE_TEMPLATE( object ));
 		}
 	}
@@ -1876,13 +1875,13 @@ on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedCo
 			( void * ) self );
 
 	if( OFO_IS_OPE_TEMPLATE( object )){
-		if( OFO_OPE_TEMPLATE( object ) == self->private->model ){
+		if( OFO_OPE_TEMPLATE( object ) == self->priv->model ){
 
-			for( i=0 ; i < self->private->entries_count ; ++i ){
+			for( i=0 ; i < self->priv->entries_count ; ++i ){
 				remove_entry_row( self, i );
 			}
-			self->private->model = NULL;
-			self->private->entries_count = 0;
+			self->priv->model = NULL;
+			self->priv->entries_count = 0;
 		}
 	}
 }

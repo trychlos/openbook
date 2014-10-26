@@ -58,14 +58,16 @@ G_BEGIN_DECLS
 typedef struct _ofaGuidedCommonPrivate        ofaGuidedCommonPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject                 parent;
-	ofaGuidedCommonPrivate *private;
+
+	/*< private members >*/
+	ofaGuidedCommonPrivate *priv;
 }
 	ofaGuidedCommon;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaGuidedCommonClass;
