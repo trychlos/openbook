@@ -55,7 +55,7 @@
 #include "ui/ofa-reconciliation.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-rates-set.h"
+#include "ui/ofa-rates-page.h"
 #include "ui/ofa-view-entries.h"
 
 static gboolean pref_confirm_on_altf4 = FALSE;
@@ -193,7 +193,7 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_RATES,
 				N_( "Rates" ),
-				ofa_rates_set_get_type,
+				ofa_rates_page_get_type,
 				FALSE,
 				FALSE },
 

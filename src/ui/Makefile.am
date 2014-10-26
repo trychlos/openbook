@@ -144,8 +144,8 @@ openbook_SOURCES = \
 	ofa-print-reconcil.h								\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
-	ofa-rates-set.c										\
-	ofa-rates-set.h										\
+	ofa-rates-page.c									\
+	ofa-rates-page.h									\
 	ofa-reconciliation.c								\
 	ofa-reconciliation.h								\
 	ofa-restore.c										\

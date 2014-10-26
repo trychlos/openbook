@@ -39,16 +39,16 @@
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-rate-properties.h"
-#include "ui/ofa-rates-set.h"
+#include "ui/ofa-rates-page.h"
 
 /* private instance data
  */
-struct _ofaRatesSetPrivate {
-	gboolean      dispose_has_run;
+struct _ofaRatesPagePrivate {
 
 	/* internals
 	 */
 	GList        *handlers;
+
 	/* UI
 	 */
 	GtkTreeView  *tview;
@@ -66,68 +66,61 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaRatesSet, ofa_rates_set, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaRatesPage, ofa_rates_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
-static void       setup_dossier_signaling( ofaRatesSet *self );
-static GtkWidget *setup_tree_view( ofaRatesSet *self );
+static void       setup_dossier_signaling( ofaRatesPage *self );
+static GtkWidget *setup_tree_view( ofaRatesPage *self );
 static void       v_init_view( ofaPage *page );
-static void       insert_dataset( ofaRatesSet *self );
-static void       insert_new_row( ofaRatesSet *self, ofoRate *rate, gboolean with_selection );
-static void       set_row_by_iter( ofaRatesSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoRate *rate );
-static gboolean   find_row_by_mnemo( ofaRatesSet *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void       insert_dataset( ofaRatesPage *self );
+static void       insert_new_row( ofaRatesPage *self, ofoRate *rate, gboolean with_selection );
+static void       set_row_by_iter( ofaRatesPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoRate *rate );
+static gboolean   find_row_by_mnemo( ofaRatesPage *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static gchar     *get_min_val_date( ofoRate *rate );
 static gchar     *get_max_val_date( ofoRate *rate );
-static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRatesSet *self );
-static void       setup_first_selection( ofaRatesSet *self );
+static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRatesPage *self );
+static void       setup_first_selection( ofaRatesPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
-static void       on_row_selected( GtkTreeSelection *selection, ofaRatesSet *self );
+static void       on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self );
 static void       v_on_new_clicked( GtkButton *button, ofaPage *page );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatesSet *self );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatesPage *self );
 static void       v_on_update_clicked( GtkButton *button, ofaPage *page );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaRatesSet *self );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaRatesPage *self );
 static void       v_on_delete_clicked( GtkButton *button, ofaPage *page );
-static gboolean   delete_confirmed( ofaRatesSet *self, ofoRate *rate );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaRatesSet *self );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaRatesSet *self );
+static gboolean   delete_confirmed( ofaRatesPage *self, ofoRate *rate );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaRatesPage *self );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaRatesPage *self );
 
 static void
-rates_set_finalize( GObject *instance )
+rates_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_rates_set_finalize";
-	ofaRatesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_rates_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( OFA_IS_RATES_SET( instance ));
-
-	priv = OFA_RATES_SET( instance )->private;
+	g_return_if_fail( OFA_IS_RATES_PAGE( instance ));
 
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_rates_set_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_rates_page_parent_class )->finalize( instance );
 }
 
 static void
-rates_set_dispose( GObject *instance )
+rates_page_dispose( GObject *instance )
 {
-	ofaRatesSetPrivate *priv;
+	ofaRatesPagePrivate *priv;
 	gulong handler_id;
 	GList *iha;
 	ofoDossier *dossier;
 
-	g_return_if_fail( OFA_IS_RATES_SET( instance ));
+	g_return_if_fail( OFA_IS_RATES_PAGE( instance ));
 
-	priv = ( OFA_RATES_SET( instance ))->private;
-
-	if( !priv->dispose_has_run ){
-
-		priv->dispose_has_run = TRUE;
+	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = ( OFA_RATES_PAGE( instance ))->priv;
 
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
@@ -142,58 +135,59 @@ rates_set_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_rates_set_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_rates_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_rates_set_init( ofaRatesSet *self )
+ofa_rates_page_init( ofaRatesPage *self )
 {
-	static const gchar *thisfn = "ofa_rates_set_instance_init";
+	static const gchar *thisfn = "ofa_rates_page_instance_init";
 
-	g_return_if_fail( OFA_IS_RATES_SET( self ));
+	g_return_if_fail( OFA_IS_RATES_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaRatesSetPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RATES_PAGE, ofaRatesPagePrivate );
 
-	self->private->dispose_has_run = FALSE;
-	self->private->handlers = NULL;
+	self->priv->handlers = NULL;
 }
 
 static void
-ofa_rates_set_class_init( ofaRatesSetClass *klass )
+ofa_rates_page_class_init( ofaRatesPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_rates_set_class_init";
+	static const gchar *thisfn = "ofa_rates_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = rates_set_dispose;
-	G_OBJECT_CLASS( klass )->finalize = rates_set_finalize;
+	G_OBJECT_CLASS( klass )->dispose = rates_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = rates_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
+
+	g_type_class_add_private( klass, sizeof( ofaRatesPagePrivate ));
 }
 
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	setup_dossier_signaling( OFA_RATES_SET( page ));
+	setup_dossier_signaling( OFA_RATES_PAGE( page ));
 
-	return( setup_tree_view( OFA_RATES_SET( page )));
+	return( setup_tree_view( OFA_RATES_PAGE( page )));
 }
 
 static void
-setup_dossier_signaling( ofaRatesSet *self )
+setup_dossier_signaling( ofaRatesPage *self )
 {
-	ofaRatesSetPrivate *priv;
+	ofaRatesPagePrivate *priv;
 	ofoDossier *dossier;
 	gulong handler;
 
-	priv = self->private;
+	priv = self->priv;
 	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
 
 	handler = g_signal_connect(
@@ -218,7 +212,7 @@ setup_dossier_signaling( ofaRatesSet *self )
 }
 
 static GtkWidget *
-setup_tree_view( ofaRatesSet *self )
+setup_tree_view( ofaRatesPage *self )
 {
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
@@ -244,14 +238,14 @@ setup_tree_view( ofaRatesSet *self )
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
 	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
-	self->private->tview = tview;
+	self->priv->tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( tview, tmodel );
 	g_object_unref( tmodel );
-	self->private->tmodel = tmodel;
+	self->priv->tmodel = tmodel;
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -303,11 +297,11 @@ setup_tree_view( ofaRatesSet *self )
 static void
 v_init_view( ofaPage *page )
 {
-	insert_dataset( OFA_RATES_SET( page ));
+	insert_dataset( OFA_RATES_PAGE( page ));
 }
 
 static void
-insert_dataset( ofaRatesSet *self )
+insert_dataset( ofaRatesPage *self )
 {
 	GList *dataset, *it;
 	ofoRate *rate;
@@ -328,13 +322,13 @@ insert_dataset( ofaRatesSet *self )
  * on_sort_model() function does not complain about null strings
  */
 static void
-insert_new_row( ofaRatesSet *self, ofoRate *rate, gboolean with_selection )
+insert_new_row( ofaRatesPage *self, ofoRate *rate, gboolean with_selection )
 {
-	ofaRatesSetPrivate *priv;
+	ofaRatesPagePrivate *priv;
 	GtkTreeIter iter;
 	GtkTreePath *path;
 
-	priv = self->private;
+	priv = self->priv;
 
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( priv->tmodel ),
@@ -361,7 +355,7 @@ insert_new_row( ofaRatesSet *self, ofoRate *rate, gboolean with_selection )
  * modification
  */
 static void
-set_row_by_iter( ofaRatesSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoRate *rate )
+set_row_by_iter( ofaRatesPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoRate *rate )
 {
 	gchar *sbegin, *send;
 
@@ -382,12 +376,12 @@ set_row_by_iter( ofaRatesSet *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofo
 }
 
 static gboolean
-find_row_by_mnemo( ofaRatesSet *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+find_row_by_mnemo( ofaRatesPage *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
 	gchar *row_mnemo;
 	gint cmp;
 
-	*tmodel = gtk_tree_view_get_model( self->private->tview );
+	*tmodel = gtk_tree_view_get_model( self->priv->tview );
 
 	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
 		while( TRUE ){
@@ -450,7 +444,7 @@ get_max_val_date( ofoRate *rate )
  * sorting the treeview in only sorting per mnemo
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRatesSet *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRatesPage *self )
 {
 	gchar *amnemo, *bmnemo, *afold, *bfold;
 	gint cmp;
@@ -472,13 +466,13 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRatesSet
 }
 
 static void
-setup_first_selection( ofaRatesSet *self )
+setup_first_selection( ofaRatesPage *self )
 {
-	ofaRatesSetPrivate *priv;
+	ofaRatesPagePrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( gtk_tree_model_get_iter_first( priv->tmodel, &iter )){
 		select = gtk_tree_view_get_selection( priv->tview );
@@ -498,13 +492,13 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 }
 
 static void
-on_row_selected( GtkTreeSelection *selection, ofaRatesSet *self )
+on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self )
 {
-	ofaRatesSetPrivate *priv;
+	ofaRatesPagePrivate *priv;
 	GtkTreeIter iter;
 	ofoRate *rate;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( gtk_tree_selection_get_selected( selection, NULL, &iter )){
 		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
@@ -525,7 +519,7 @@ v_on_new_clicked( GtkButton *button, ofaPage *page )
 {
 	ofoRate *rate;
 
-	g_return_if_fail( page && OFA_IS_RATES_SET( page ));
+	g_return_if_fail( page && OFA_IS_RATES_PAGE( page ));
 
 	rate = ofo_rate_new();
 
@@ -541,9 +535,9 @@ v_on_new_clicked( GtkButton *button, ofaPage *page )
 }
 
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatesSet *self )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatesPage *self )
 {
-	static const gchar *thisfn = "ofa_rates_set_on_new_object";
+	static const gchar *thisfn = "ofa_rates_page_on_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -559,14 +553,14 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatesSet *self )
 static void
 v_on_update_clicked( GtkButton *button, ofaPage *page )
 {
-	ofaRatesSetPrivate *priv;
+	ofaRatesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	ofoRate *rate;
 
-	g_return_if_fail( page && OFA_IS_RATES_SET( page ));
+	g_return_if_fail( page && OFA_IS_RATES_PAGE( page ));
 
-	priv = OFA_RATES_SET( page )->private;
+	priv = OFA_RATES_PAGE( page )->priv;
 
 	select = gtk_tree_view_get_selection( priv->tview );
 
@@ -587,9 +581,9 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 }
 
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaRatesSet *self )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaRatesPage *self )
 {
-	static const gchar *thisfn = "ofa_rates_set_on_updated_object";
+	static const gchar *thisfn = "ofa_rates_page_on_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
@@ -612,14 +606,14 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 static void
 v_on_delete_clicked( GtkButton *button, ofaPage *page )
 {
-	ofaRatesSetPrivate *priv;
+	ofaRatesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	ofoRate *rate;
 
-	g_return_if_fail( page && OFA_IS_RATES_SET( page ));
+	g_return_if_fail( page && OFA_IS_RATES_PAGE( page ));
 
-	priv = OFA_RATES_SET( page )->private;
+	priv = OFA_RATES_PAGE( page )->priv;
 
 	select = gtk_tree_view_get_selection( priv->tview );
 
@@ -628,7 +622,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
 		g_object_unref( rate );
 
-		if( delete_confirmed( OFA_RATES_SET( page ), rate ) &&
+		if( delete_confirmed( OFA_RATES_PAGE( page ), rate ) &&
 				ofo_rate_delete( rate )){
 
 			/* nothing to do here as all is managed by dossier signaling
@@ -640,7 +634,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 }
 
 static gboolean
-delete_confirmed( ofaRatesSet *self, ofoRate *rate )
+delete_confirmed( ofaRatesPage *self, ofoRate *rate )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -657,9 +651,9 @@ delete_confirmed( ofaRatesSet *self, ofoRate *rate )
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaRatesSet *self )
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaRatesPage *self )
 {
-	static const gchar *thisfn = "ofa_rates_set_on_deleted_object";
+	static const gchar *thisfn = "ofa_rates_page_on_deleted_object";
 	static const gchar *mnemo;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -681,16 +675,16 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaRatesSet *self )
 }
 
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaRatesSet *self )
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaRatesPage *self )
 {
-	static const gchar *thisfn = "ofa_rates_set_on_reloaded_dataset";
+	static const gchar *thisfn = "ofa_rates_page_on_reloaded_dataset";
 	GtkTreeModel *tmodel;
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
 	if( type == OFO_TYPE_RATE ){
-		tmodel = gtk_tree_view_get_model( self->private->tview );
+		tmodel = gtk_tree_view_get_model( self->priv->tview );
 		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 		insert_dataset( self );
 	}
