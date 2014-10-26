@@ -631,10 +631,6 @@
                 + rename private to priv
                 ofaTabLabel
 
- 405 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                ofaViewEntries
-
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
@@ -1658,6 +1654,11 @@
                 + rename private to priv
                 ofaMainWindow
      2014-10-26 done - svn #3924
+
+ 405 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaViewEntries
+     2014-10-26 done - svn #3925
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

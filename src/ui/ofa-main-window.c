@@ -35,6 +35,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
+#include "ui/my-tab-label.h"
 #include "ui/ofa-accounts-page.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-backup.h"
@@ -55,7 +56,6 @@
 #include "ui/ofa-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-rates-set.h"
-#include "ui/ofa-tab-label.h"
 #include "ui/ofa-view-entries.h"
 
 static gboolean pref_confirm_on_altf4 = FALSE;
@@ -274,7 +274,7 @@ static GtkNotebook     *main_get_book( const ofaMainWindow *window );
 static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
 static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
-static void             on_tab_close_clicked( ofaTabLabel *tab, GtkGrid *grid );
+static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
 
 static void
 main_window_finalize( GObject *instance )
@@ -1261,7 +1261,7 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 {
 	GtkGrid *grid;
 	ofaPage *handler;
-	ofaTabLabel *tab;
+	myTabLabel *tab;
 	GtkWidget *label;
 
 	/* all pages of the main notebook begin with a GtkGrid
@@ -1269,10 +1269,10 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 	grid = GTK_GRID( gtk_grid_new());
 	gtk_grid_set_column_spacing( grid, 4 );
 
-	tab = ofa_tab_label_new( NULL, gettext( theme_def->label ));
+	tab = my_tab_label_new( NULL, gettext( theme_def->label ));
 	g_signal_connect(
 			G_OBJECT( tab),
-			OFA_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), grid );
+			MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), grid );
 
 	label = gtk_label_new( gettext( theme_def->label ));
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
@@ -1328,8 +1328,12 @@ main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidg
 	}
 }
 
+/*
+ * @grid: the grid which contains the #ofaPage content of the main
+ *  GtkNotebook
+ */
 static void
-on_tab_close_clicked( ofaTabLabel *tab, GtkGrid *grid )
+on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid )
 {
 	ofaPage *handler;
 	ofaMainWindow *main_window;

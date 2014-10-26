@@ -52,6 +52,8 @@ openbook_SOURCES = \
 	my-editable-amount.h								\
 	my-editable-date.c									\
 	my-editable-date.h									\
+	my-tab-label.c										\
+	my-tab-label.h										\
 	ofa-account-properties.c							\
 	ofa-account-properties.h							\
 	ofa-accounts-book.c									\
@@ -148,8 +150,6 @@ openbook_SOURCES = \
 	ofa-reconciliation.h								\
 	ofa-restore.c										\
 	ofa-restore.h										\
-	ofa-tab-label.c										\
-	ofa-tab-label.h										\
 	ofa-view-entries.c									\
 	ofa-view-entries.h									\
 	$(NULL)

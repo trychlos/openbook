@@ -24,13 +24,13 @@
  * $Id$
  */
 
-#ifndef __OFA_TAB_LABEL_H__
-#define __OFA_TAB_LABEL_H__
+#ifndef __MY_TAB_LABEL_H__
+#define __MY_TAB_LABEL_H__
 
 /**
- * SECTION: ofa_tab_label
- * @short_description: #ofaTabLabel class definition.
- * @include: ui/ofa-tab-label.h
+ * SECTION: my_tab_label
+ * @short_description: #myTabLabel class definition.
+ * @include: ui/my-tab-label.h
  *
  * A custom label for GtkNotebook main pages, which embeds an icon on
  * the left side, and a small close button on the right.
@@ -38,7 +38,7 @@
  * From http://www.micahcarrick.com/gtk-notebook-tabs-with-close-button.html
  *
  * Note two side effects:
- * - the tab is a bit more height
+ * - the tab is a bit higher
  * - the popup menu comes back to default labels "Page 1",....
  */
 
@@ -46,38 +46,40 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_TAB_LABEL                ( ofa_tab_label_get_type())
-#define OFA_TAB_LABEL( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_TAB_LABEL, ofaTabLabel ))
-#define OFA_TAB_LABEL_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_TAB_LABEL, ofaTabLabelClass ))
-#define OFA_IS_TAB_LABEL( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_TAB_LABEL ))
-#define OFA_IS_TAB_LABEL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TAB_LABEL ))
-#define OFA_TAB_LABEL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TAB_LABEL, ofaTabLabelClass ))
+#define MY_TYPE_TAB_LABEL                ( my_tab_label_get_type())
+#define MY_TAB_LABEL( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, MY_TYPE_TAB_LABEL, myTabLabel ))
+#define MY_TAB_LABEL_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, MY_TYPE_TAB_LABEL, myTabLabelClass ))
+#define MY_IS_TAB_LABEL( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, MY_TYPE_TAB_LABEL ))
+#define MY_IS_TAB_LABEL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_TAB_LABEL ))
+#define MY_TAB_LABEL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_TAB_LABEL, myTabLabelClass ))
 
-typedef struct _ofaTabLabelPrivate        ofaTabLabelPrivate;
+typedef struct _myTabLabelPrivate        myTabLabelPrivate;
 
 typedef struct {
-	/*< private >*/
-	GtkGrid             parent;
-	ofaTabLabelPrivate *private;
+	/*< public members >*/
+	GtkGrid            parent;
+
+	/*< private members >*/
+	myTabLabelPrivate *priv;
 }
-	ofaTabLabel;
+	myTabLabel;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GtkGridClass parent;
 }
-	ofaTabLabelClass;
+	myTabLabelClass;
 
 /**
- * OFA_SIGNAL_TAB_CLOSE_CLICKED: emitted when the 'close' button of a
+ * MY_SIGNAL_TAB_CLOSE_CLICKED: emitted when the 'close' button of a
  *                               tab is clicked
  */
-#define OFA_SIGNAL_TAB_CLOSE_CLICKED    "ofa-signal-tab-close-clicked"
+#define MY_SIGNAL_TAB_CLOSE_CLICKED    "my-signal-tab-close-clicked"
 
-GType        ofa_tab_label_get_type( void ) G_GNUC_CONST;
+GType       my_tab_label_get_type( void ) G_GNUC_CONST;
 
-ofaTabLabel *ofa_tab_label_new     ( GtkImage *image, const gchar *text );
+myTabLabel *my_tab_label_new     ( GtkImage *image, const gchar *text );
 
 G_END_DECLS
 
-#endif /* __OFA_TAB_LABEL_H__ */
+#endif /* __MY_TAB_LABEL_H__ */
