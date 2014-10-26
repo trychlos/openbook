@@ -76,15 +76,14 @@ sgbd_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFO_IS_SGBD( instance ));
 
-	priv = OFO_SGBD( instance )->private;
-
 	/* free data members here */
+	priv = OFO_SGBD( instance )->priv;
+
 	g_free( priv->label );
 	g_free( priv->provider );
 
 	g_free( priv->account );
 	g_free( priv->password );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_sgbd_parent_class )->finalize( instance );
@@ -95,7 +94,7 @@ sgbd_dispose( GObject *instance )
 {
 	ofoSgbdPrivate *priv;
 
-	priv = OFO_SGBD( instance )->private;
+	priv = OFO_SGBD( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -123,9 +122,8 @@ ofo_sgbd_init( ofoSgbd *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofoSgbdPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_SGBD, ofoSgbdPrivate );
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -139,6 +137,8 @@ ofo_sgbd_class_init( ofoSgbdClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = sgbd_dispose;
 	G_OBJECT_CLASS( klass )->finalize = sgbd_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofoSgbdPrivate ));
 }
 
 /**
@@ -161,7 +161,7 @@ ofo_sgbd_new( const gchar *label )
 
 	sgbd = g_object_new( OFO_TYPE_SGBD, NULL );
 
-	sgbd->private->label = g_strdup( label );
+	sgbd->priv->label = g_strdup( label );
 
 	return( sgbd );
 }
@@ -213,7 +213,7 @@ ofo_sgbd_connect( ofoSgbd *sgbd, const gchar *account, const gchar *password,
 
 	sgbd_connect_static( sgbd, FALSE, NULL, account, password, display_error );
 
-	return( sgbd->private->connected );
+	return( sgbd->priv->connected );
 }
 
 /**
@@ -243,7 +243,7 @@ ofo_sgbd_connect_ex( ofoSgbd *sgbd, const gchar *dbname, const gchar *account, c
 
 	sgbd_connect_static( sgbd, TRUE, dbname, account, password, display_error );
 
-	return( sgbd->private->connected );
+	return( sgbd->priv->connected );
 }
 
 /*
@@ -273,7 +273,7 @@ sgbd_connect_static( ofoSgbd *sgbd,
 
 	g_return_if_fail( sgbd && OFO_IS_SGBD( sgbd ));
 
-	priv = sgbd->private;
+	priv = sgbd->priv;
 
 	if( priv->dispose_has_run ){
 		return;
@@ -335,7 +335,7 @@ error_already_connected( const ofoSgbd *sgbd )
 	GtkMessageDialog *dlg;
 	GString *str;
 
-	priv = sgbd->private;
+	priv = sgbd->priv;
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				NULL,
@@ -366,7 +366,7 @@ error_provider_not_defined( const ofoSgbd *sgbd )
 	gchar *str;
 
 	str = g_strdup_printf(
-				_( "No provider defined for '%s' dossier" ), sgbd->private->label );
+				_( "No provider defined for '%s' dossier" ), sgbd->priv->label );
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				NULL,
@@ -386,7 +386,7 @@ error_connect( const ofoSgbd *sgbd, const gchar *account )
 	GtkMessageDialog *dlg;
 	GString *str;
 
-	priv = sgbd->private;
+	priv = sgbd->priv;
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				NULL,
@@ -422,7 +422,7 @@ ofo_sgbd_query( const ofoSgbd *sgbd, const gchar *query, gboolean display_error 
 
 	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), FALSE );
 
-	priv = sgbd->private;
+	priv = sgbd->priv;
 	query_ok = FALSE;
 
 	g_return_val_if_fail( priv->module && OFA_IS_IDBMS( priv->module ), FALSE );
@@ -471,7 +471,7 @@ ofo_sgbd_query_ex( const ofoSgbd *sgbd, const gchar *query, gboolean display_err
 
 	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), NULL );
 
-	priv = sgbd->private;
+	priv = sgbd->priv;
 	result = NULL;
 
 	g_return_val_if_fail( priv->module && OFA_IS_IDBMS( priv->module ), NULL );
@@ -504,7 +504,7 @@ error_query( const ofoSgbd *sgbd, const gchar *query )
 				GTK_BUTTONS_OK,
 				"%s", query ));
 
-	str = ofa_idbms_error( sgbd->private->module, sgbd->private->handle );
+	str = ofa_idbms_error( sgbd->priv->module, sgbd->priv->handle );
 
 	/* query_ex returns NULL if the result is empty: this is not an error */
 	if( str && g_utf8_strlen( str, -1 )){
@@ -524,7 +524,7 @@ sgbd_audit_query( const ofoSgbd *sgbd, const gchar *query )
 
 	quoted = quote_query( query );
 	audit = g_strdup_printf( "INSERT INTO OFA_T_AUDIT (AUD_QUERY) VALUES ('%s')", quoted );
-	ofa_idbms_query( sgbd->private->module, sgbd->private->handle, audit );
+	ofa_idbms_query( sgbd->priv->module, sgbd->priv->handle, audit );
 
 	g_free( quoted );
 	g_free( audit );
@@ -571,7 +571,7 @@ ofo_sgbd_get_dbname( const ofoSgbd *sgbd )
 
 	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), NULL );
 
-	priv = sgbd->private;
+	priv = sgbd->priv;
 
 	if( !priv->dispose_has_run &&
 		priv->module &&
@@ -598,7 +598,7 @@ ofo_sgbd_backup( const ofoSgbd *sgbd, const gchar *fname )
 	g_return_val_if_fail( fname && g_utf8_strlen( fname, -1 ), FALSE );
 
 	ok = FALSE;
-	priv = sgbd->private;
+	priv = sgbd->priv;
 
 	if( !priv->dispose_has_run ){
 

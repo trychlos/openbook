@@ -44,20 +44,22 @@ G_BEGIN_DECLS
 #define OFO_IS_SGBD_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_SGBD ))
 #define OFO_SGBD_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_SGBD, ofoSgbdClass ))
 
-typedef struct {
-	/*< private >*/
-	GObjectClass parent;
-}
-	ofoSgbdClass;
-
 typedef struct _ofoSgbdPrivate       ofoSgbdPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject         parent;
-	ofoSgbdPrivate *private;
+
+	/*< private members >*/
+	ofoSgbdPrivate *priv;
 }
 	ofoSgbd;
+
+typedef struct {
+	/*< public members >*/
+	GObjectClass parent;
+}
+	ofoSgbdClass;
 
 GType ofo_sgbd_get_type( void ) G_GNUC_CONST;
 

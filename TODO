@@ -455,10 +455,6 @@
                 + rename private to priv
                 ofoSgbd
 
- 360 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                myAssistant
-
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
@@ -1484,6 +1480,11 @@
  341 2014-10-19 defines an ofaPageBook, derived from ofaPage, which will
                 be the base of pages with a GtkNotebook
      2014-10-19 done - svn #3916
+
+ 360 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                myAssistant
+     2014-10-26 done - svn #3969
 
  361 2014-10-26 review public vs private members in class definitions
                 + rename private to priv
