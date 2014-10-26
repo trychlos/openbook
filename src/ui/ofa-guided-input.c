@@ -64,17 +64,13 @@ static void
 guided_input_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_guided_input_finalize";
-	ofaGuidedInputPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT( instance ));
 
-	priv = OFA_GUIDED_INPUT( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_guided_input_parent_class )->finalize( instance );
@@ -104,7 +100,7 @@ ofa_guided_input_init( ofaGuidedInput *self )
 
 	g_return_if_fail( self && OFA_IS_GUIDED_INPUT( self ));
 
-	self->private = g_new0( ofaGuidedInputPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_GUIDED_INPUT, ofaGuidedInputPrivate );
 }
 
 static void
@@ -118,6 +114,8 @@ ofa_guided_input_class_init( ofaGuidedInputClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = guided_input_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+
+	g_type_class_add_private( klass, sizeof( ofaGuidedInputPrivate ));
 }
 
 /**
@@ -145,7 +143,7 @@ ofa_guided_input_run( ofaMainWindow *main_window, const ofoOpeTemplate *model )
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	self->private->model = model;
+	self->priv->model = model;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
@@ -159,7 +157,7 @@ v_init_dialog( myDialog *dialog )
 	GtkWidget *button;
 	GtkContainer *container;
 
-	priv = OFA_GUIDED_INPUT( dialog )->private;
+	priv = OFA_GUIDED_INPUT( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	priv->common = ofa_guided_common_new(
@@ -180,7 +178,7 @@ v_init_dialog( myDialog *dialog )
 static void
 on_ok_clicked( GtkButton *button, ofaGuidedInput *self )
 {
-	if( ofa_guided_common_validate( self->private->common )){
+	if( ofa_guided_common_validate( self->priv->common )){
 		gtk_dialog_response(
 				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
 				GTK_RESPONSE_OK );

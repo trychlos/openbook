@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _ofaGuidedInputPrivate        ofaGuidedInputPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog               parent;
-	ofaGuidedInputPrivate *private;
+
+	/*< private members >*/
+	ofaGuidedInputPrivate *priv;
 }
 	ofaGuidedInput;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaGuidedInputClass;
