@@ -70,17 +70,13 @@ static void
 bat_properties_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_bat_properties_finalize";
-	ofaBatPropertiesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_BAT_PROPERTIES( instance ));
 
-	priv = OFA_BAT_PROPERTIES( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_bat_properties_parent_class )->finalize( instance );
@@ -110,10 +106,9 @@ ofa_bat_properties_init( ofaBatProperties *self )
 
 	g_return_if_fail( self && OFA_IS_BAT_PROPERTIES( self ));
 
-	self->private = g_new0( ofaBatPropertiesPrivate, 1 );
-
-	self->private->is_new = FALSE;
-	self->private->updated = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BAT_PROPERTIES, ofaBatPropertiesPrivate );
+	self->priv->is_new = FALSE;
+	self->priv->updated = FALSE;
 }
 
 static void
@@ -128,6 +123,8 @@ ofa_bat_properties_class_init( ofaBatPropertiesClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaBatPropertiesPrivate ));
 }
 
 /**
@@ -156,11 +153,11 @@ ofa_bat_properties_run( ofaMainWindow *main_window, ofoBat *bat )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
-	self->private->bat = bat;
+	self->priv->bat = bat;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	updated = self->private->updated;
+	updated = self->priv->updated;
 	g_object_unref( self );
 
 	return( updated );
@@ -182,7 +179,7 @@ v_init_dialog( myDialog *dialog )
 	gtk_window_set_title( toplevel, title );
 
 	self = OFA_BAT_PROPERTIES( dialog );
-	priv = self->private;
+	priv = self->priv;
 
 	container = my_utils_container_get_child_by_name(
 								GTK_CONTAINER( toplevel ), "containing-frame" );
@@ -232,9 +229,9 @@ do_update( ofaBatProperties *self )
 	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
-	g_return_val_if_fail( !self->private->is_new, FALSE );
+	g_return_val_if_fail( !self->priv->is_new, FALSE );
 
-	priv = self->private;
+	priv = self->priv;
 	dossier = MY_WINDOW( self )->protected->dossier;
 
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), bat );
