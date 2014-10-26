@@ -52,14 +52,16 @@ G_BEGIN_DECLS
 typedef struct _ofaAccountPropertiesPrivate        ofaAccountPropertiesPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog                     parent;
-	ofaAccountPropertiesPrivate *private;
+
+	/*< private members >*/
+	ofaAccountPropertiesPrivate *priv;
 }
 	ofaAccountProperties;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaAccountPropertiesClass;

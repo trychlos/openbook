@@ -117,15 +117,13 @@ account_properties_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_PROPERTIES( instance ));
 
-	priv = OFA_ACCOUNT_PROPERTIES( instance )->private;
-
 	/* free data members here */
+	priv = OFA_ACCOUNT_PROPERTIES( instance )->priv;
 	g_free( priv->number );
 	g_free( priv->label );
 	g_free( priv->currency );
 	g_free( priv->type );
 	g_free( priv->upd_user );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_account_properties_parent_class )->finalize( instance );
@@ -153,16 +151,17 @@ ofa_account_properties_init( ofaAccountProperties *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaAccountPropertiesPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+						self, OFA_TYPE_ACCOUNT_PROPERTIES, ofaAccountPropertiesPrivate );
 
-	self->private->account = NULL;
-	self->private->is_new = FALSE;
-	self->private->updated = FALSE;
+	self->priv->account = NULL;
+	self->priv->is_new = FALSE;
+	self->priv->updated = FALSE;
 
-	my_date_clear( &self->private->deb_date );
-	my_date_clear( &self->private->cre_date );
-	my_date_clear( &self->private->day_deb_date );
-	my_date_clear( &self->private->day_cre_date );
+	my_date_clear( &self->priv->deb_date );
+	my_date_clear( &self->priv->cre_date );
+	my_date_clear( &self->priv->day_deb_date );
+	my_date_clear( &self->priv->day_cre_date );
 }
 
 static void
@@ -177,6 +176,8 @@ ofa_account_properties_class_init( ofaAccountPropertiesClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaAccountPropertiesPrivate ));
 }
 
 /**
@@ -206,11 +207,11 @@ ofa_account_properties_run( ofaMainWindow *main_window, ofoAccount *account )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
-	self->private->account = account;
+	self->priv->account = account;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	updated = self->private->updated;
+	updated = self->priv->updated;
 	g_object_unref( self );
 
 	return( updated );
@@ -229,7 +230,7 @@ v_init_dialog( myDialog *dialog )
 	GtkContainer *container;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
-	priv = self->private;
+	priv = self->priv;
 
 	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
@@ -325,7 +326,7 @@ set_amount( ofaAccountProperties *self, gdouble *amount, fnGetDouble fn, const g
 	GtkLabel *label;
 	gchar *str;
 
-	*amount = ( *fn )( self->private->account );
+	*amount = ( *fn )( self->priv->account );
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
 	str = g_strdup_printf( "%'.2lf €", *amount );
@@ -339,7 +340,7 @@ set_entry_number( ofaAccountProperties *self, gint *num, fnGetInt fn, const gcha
 	GtkLabel *label;
 	gchar *str;
 
-	*num = ( *fn )( self->private->account );
+	*num = ( *fn )( self->priv->account );
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
 				GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
 	if( *num ){
@@ -358,7 +359,7 @@ set_entry_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gch
 	gchar *str;
 
 	g_debug( "ofa_account_properties_set_entry_date: wname=%s", wname );
-	my_date_set_from_date( date, ( *fn )( self->private->account ));
+	my_date_set_from_date( date, ( *fn )( self->priv->account ));
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
 	str = my_date_to_str( date, MY_DATE_DMMM );
@@ -369,9 +370,9 @@ set_entry_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gch
 static void
 on_number_changed( GtkEntry *entry, ofaAccountProperties *self )
 {
-	g_free( self->private->number );
-	self->private->number = g_strdup( gtk_entry_get_text( entry ));
-	self->private->number_ok = FALSE;
+	g_free( self->priv->number );
+	self->priv->number = g_strdup( gtk_entry_get_text( entry ));
+	self->priv->number_ok = FALSE;
 
 	check_for_enable_dlg( self );
 }
@@ -379,8 +380,8 @@ on_number_changed( GtkEntry *entry, ofaAccountProperties *self )
 static void
 on_label_changed( GtkEntry *entry, ofaAccountProperties *self )
 {
-	g_free( self->private->label );
-	self->private->label = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->label );
+	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -391,8 +392,8 @@ on_label_changed( GtkEntry *entry, ofaAccountProperties *self )
 static void
 on_currency_changed( const gchar *code, ofaAccountProperties *self )
 {
-	g_free( self->private->currency );
-	self->private->currency = g_strdup( code );
+	g_free( self->priv->currency );
+	self->priv->currency = g_strdup( code );
 
 	check_for_enable_dlg( self );
 }
@@ -416,8 +417,8 @@ on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *t
 
 	if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
 		g_debug( "%s: setting account type to %s", thisfn, type );
-		g_free( self->private->type );
-		self->private->type = g_strdup( type );
+		g_free( self->priv->type );
+		self->priv->type = g_strdup( type );
 	}
 
 	check_for_enable_dlg( self );
@@ -433,7 +434,7 @@ check_for_enable_dlg( ofaAccountProperties *self )
 	GtkWidget *button;
 	gboolean ok_enabled;
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* has this account already add some imputation ? */
 	vierge = !priv->deb_amount && !priv->cre_amount && !priv->day_deb_amount && !priv->day_cre_amount;
@@ -476,7 +477,7 @@ is_dialog_validable( ofaAccountProperties *self )
 	ofoAccount *exists;
 	const gchar *prev;
 
-	priv = self->private;
+	priv = self->priv;
 
 	ok = ofo_account_is_valid_data( priv->number, priv->label, priv->currency, priv->type );
 
@@ -486,13 +487,13 @@ is_dialog_validable( ofaAccountProperties *self )
 	 * => we are refusing a new number which already exists and is for
 	 *    another account
 	 */
-	if( ok && !self->private->number_ok ){
+	if( ok && !self->priv->number_ok ){
 
 		dossier = MY_WINDOW( self )->protected->dossier;
-		exists = ofo_account_get_by_number( dossier, self->private->number );
+		exists = ofo_account_get_by_number( dossier, self->priv->number );
 		prev = ofo_account_get_number( priv->account );
-		self->private->number_ok = !exists || !g_utf8_collate( prev, priv->number );
-		ok &= self->private->number_ok;
+		self->priv->number_ok = !exists || !g_utf8_collate( prev, priv->number );
+		ok &= self->priv->number_ok;
 	}
 
 	return( ok );
@@ -512,8 +513,8 @@ do_update( ofaAccountProperties *self )
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	priv = self->private;
-	prev_number = g_strdup( ofo_account_get_number( self->private->account ));
+	priv = self->priv;
+	prev_number = g_strdup( ofo_account_get_number( self->priv->account ));
 
 	ofo_account_set_number( priv->account, priv->number );
 	ofo_account_set_label( priv->account, priv->label );
