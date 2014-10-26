@@ -47,20 +47,22 @@ G_BEGIN_DECLS
 #define OFO_IS_BAT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_BAT ))
 #define OFO_BAT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_BAT, ofoBatClass ))
 
+typedef struct _ofoBatPrivate       ofoBatPrivate;
+
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
+	ofoBase        parent;
+
+	/*< private members >*/
+	ofoBatPrivate *priv;
+}
+	ofoBat;
+
+typedef struct {
+	/*< public members >*/
 	ofoBaseClass parent;
 }
 	ofoBatClass;
-
-typedef struct _ofoBatPrivate        ofoBatPrivate;
-
-typedef struct {
-	/*< private >*/
-	ofoBase        parent;
-	ofoBatPrivate *private;
-}
-	ofoBat;
 
 GType ofo_bat_get_type( void ) G_GNUC_CONST;
 
