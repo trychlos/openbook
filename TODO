@@ -595,10 +595,6 @@
                 + rename private to priv
                 ofaOpeTemplateProperties
 
- 396 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                ofaOpeTemplatesSet + rename to ofaOpeTemplatesPage
-
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
@@ -1629,6 +1625,11 @@
                 + rename private to priv
                 ofaMainWindow
      2014-10-26 done - svn #3924
+
+ 396 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaOpeTemplatesSet + rename to ofaOpeTemplatesPage
+     2014-10-26 done - svn #3934
 
  397 2014-10-26 review public vs private members in class definitions
                 + rename private to priv
