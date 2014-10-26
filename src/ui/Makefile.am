@@ -126,8 +126,8 @@ openbook_SOURCES = \
 	ofa-main-window.h									\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
-	ofa-ope-templates-set.c								\
-	ofa-ope-templates-set.h								\
+	ofa-ope-templates-page.c							\
+	ofa-ope-templates-page.h							\
 	ofa-page.c											\
 	ofa-page.h											\
 	ofa-page-def.h										\

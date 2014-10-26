@@ -39,14 +39,13 @@
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-properties.h"
-#include "ui/ofa-ope-templates-set.h"
+#include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
-struct _ofaOpeTemplatesSetPrivate {
-	gboolean       dispose_has_run;
+struct _ofaOpeTemplatesPagePrivate {
 
 	/* properties
 	 */
@@ -78,76 +77,69 @@ enum {
 #define DATA_PAGE_LEDGER                 "data-page-ledger-id"
 #define DATA_PAGE_VIEW                   "data-page-treeview"
 
-G_DEFINE_TYPE( ofaOpeTemplatesSet, ofa_ope_templates_set, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaOpeTemplatesPage, ofa_ope_templates_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
-static void       setup_dossier_signaling( ofaOpeTemplatesSet *self );
+static void       setup_dossier_signaling( ofaOpeTemplatesPage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
-static void       insert_dataset( ofaOpeTemplatesSet *self );
-static GtkWidget *book_create_page( ofaOpeTemplatesSet *self, GtkNotebook *book, const gchar *ledger, const gchar *ledger_label );
-static gboolean   book_activate_page_by_ledger( ofaOpeTemplatesSet *self, const gchar *ledger );
-static gint       book_get_page_by_ledger( ofaOpeTemplatesSet *self, const gchar *ledger );
-static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplatesSet *self );
+static void       insert_dataset( ofaOpeTemplatesPage *self );
+static GtkWidget *book_create_page( ofaOpeTemplatesPage *self, GtkNotebook *book, const gchar *ledger, const gchar *ledger_label );
+static gboolean   book_activate_page_by_ledger( ofaOpeTemplatesPage *self, const gchar *ledger );
+static gint       book_get_page_by_ledger( ofaOpeTemplatesPage *self, const gchar *ledger );
+static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplatesPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
-static void       insert_new_row( ofaOpeTemplatesSet *self, ofoOpeTemplate *model, gboolean with_selection );
-static void       set_row_by_iter( ofaOpeTemplatesSet *self, ofoOpeTemplate *model, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void       setup_first_selection( ofaOpeTemplatesSet *self );
-static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplatesSet *self );
-static void       on_model_selected( GtkTreeSelection *selection, ofaOpeTemplatesSet *self );
-static void       enable_buttons( ofaOpeTemplatesSet *self, GtkTreeSelection *selection );
+static void       insert_new_row( ofaOpeTemplatesPage *self, ofoOpeTemplate *model, gboolean with_selection );
+static void       set_row_by_iter( ofaOpeTemplatesPage *self, ofoOpeTemplate *model, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void       setup_first_selection( ofaOpeTemplatesPage *self );
+static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplatesPage *self );
+static void       on_model_selected( GtkTreeSelection *selection, ofaOpeTemplatesPage *self );
+static void       enable_buttons( ofaOpeTemplatesPage *self, GtkTreeSelection *selection );
 static void       v_on_new_clicked( GtkButton *button, ofaPage *page );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesSet *self );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self );
 static void       v_on_update_clicked( GtkButton *button, ofaPage *page );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplatesSet *self );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplatesPage *self );
 static void       v_on_delete_clicked( GtkButton *button, ofaPage *page );
-static gboolean   delete_confirmed( ofaOpeTemplatesSet *self, ofoOpeTemplate *model );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesSet *self );
-static void       on_duplicate( GtkButton *button, ofaOpeTemplatesSet *self );
-static void       on_guided_input( GtkButton *button, ofaOpeTemplatesSet *self );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplatesSet *self );
+static gboolean   delete_confirmed( ofaOpeTemplatesPage *self, ofoOpeTemplate *model );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self );
+static void       on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self );
+static void       on_guided_input( GtkButton *button, ofaOpeTemplatesPage *self );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplatesPage *self );
 
 static void
-ope_templates_set_finalize( GObject *instance )
+ope_templates_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_finalize";
-	ofaOpeTemplatesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_templates_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATES_SET( instance ));
-
-	priv = OFA_OPE_TEMPLATES_SET( instance )->private;
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATES_PAGE( instance ));
 
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ope_templates_set_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ope_templates_page_parent_class )->finalize( instance );
 }
 
 static void
-ope_templates_set_dispose( GObject *instance )
+ope_templates_page_dispose( GObject *instance )
 {
-	ofaOpeTemplatesSetPrivate *priv;
+	ofaOpeTemplatesPagePrivate *priv;
 	gulong handler_id;
 	GList *iha;
 	ofoDossier *dossier;
 
-	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATES_SET( instance ));
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATES_PAGE( instance ));
 
-	priv = ( OFA_OPE_TEMPLATES_SET( instance ))->private;
-
-	if( !priv->dispose_has_run ){
-
-		priv->dispose_has_run = TRUE;
+	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
 		 * terminates) */
+		priv = ( OFA_OPE_TEMPLATES_PAGE( instance ))->priv;
 		dossier = ofa_page_get_dossier( OFA_PAGE( instance ));
 		if( OFO_IS_DOSSIER( dossier )){
 			for( iha=priv->handlers ; iha ; iha=iha->next ){
@@ -158,33 +150,31 @@ ope_templates_set_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ope_templates_set_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ope_templates_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_ope_templates_set_init( ofaOpeTemplatesSet *self )
+ofa_ope_templates_page_init( ofaOpeTemplatesPage *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_init";
+	static const gchar *thisfn = "ofa_ope_templates_page_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_OPE_TEMPLATES_SET( self ));
+	g_return_if_fail( self && OFA_IS_OPE_TEMPLATES_PAGE( self ));
 
-	self->private = g_new0( ofaOpeTemplatesSetPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_OPE_TEMPLATES_PAGE, ofaOpeTemplatesPagePrivate );
 }
 
 static void
-ofa_ope_templates_set_class_init( ofaOpeTemplatesSetClass *klass )
+ofa_ope_templates_page_class_init( ofaOpeTemplatesPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_class_init";
+	static const gchar *thisfn = "ofa_ope_templates_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = ope_templates_set_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ope_templates_set_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ope_templates_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ope_templates_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
@@ -192,17 +182,19 @@ ofa_ope_templates_set_class_init( ofaOpeTemplatesSetClass *klass )
 	OFA_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
+
+	g_type_class_add_private( klass, sizeof( ofaOpeTemplatesPagePrivate ));
 }
 
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	ofaOpeTemplatesSet *self;
+	ofaOpeTemplatesPage *self;
 	GtkNotebook *book;
 	GList *dataset, *iset;
 	ofoLedger *ledger;
 
-	self = OFA_OPE_TEMPLATES_SET( page );
+	self = OFA_OPE_TEMPLATES_PAGE( page );
 
 	setup_dossier_signaling( self );
 
@@ -213,7 +205,7 @@ v_setup_view( ofaPage *page )
 	gtk_notebook_set_scrollable( book, TRUE );
 	gtk_notebook_popup_enable( book );
 
-	self->private->book = GTK_NOTEBOOK( book );
+	self->priv->book = GTK_NOTEBOOK( book );
 
 	dataset = ofo_ledger_get_dataset( ofa_page_get_dossier( page ));
 
@@ -229,13 +221,13 @@ v_setup_view( ofaPage *page )
 }
 
 static void
-setup_dossier_signaling( ofaOpeTemplatesSet *self )
+setup_dossier_signaling( ofaOpeTemplatesPage *self )
 {
-	ofaOpeTemplatesSetPrivate *priv;
+	ofaOpeTemplatesPagePrivate *priv;
 	ofoDossier *dossier;
 	gulong handler;
 
-	priv = self->private;
+	priv = self->priv;
 	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
 
 	handler = g_signal_connect(
@@ -267,12 +259,12 @@ v_setup_buttons( ofaPage *page )
 	GtkButton *button;
 
 	buttons_box = GTK_BOX(
-					OFA_PAGE_CLASS( ofa_ope_templates_set_parent_class )->setup_buttons( page ));
+					OFA_PAGE_CLASS( ofa_ope_templates_page_parent_class )->setup_buttons( page ));
 
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "Dup_licate" )));
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_duplicate ), page );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	OFA_OPE_TEMPLATES_SET( page )->private->duplicate_btn = button;
+	OFA_OPE_TEMPLATES_PAGE( page )->priv->duplicate_btn = button;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 12 );
@@ -282,7 +274,7 @@ v_setup_buttons( ofaPage *page )
 	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Guided input..." )));
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_guided_input ), page );
 	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	OFA_OPE_TEMPLATES_SET( page )->private->guided_input_btn = button;
+	OFA_OPE_TEMPLATES_PAGE( page )->priv->guided_input_btn = button;
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -290,11 +282,11 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	insert_dataset( OFA_OPE_TEMPLATES_SET( page ));
+	insert_dataset( OFA_OPE_TEMPLATES_PAGE( page ));
 }
 
 static void
-insert_dataset( ofaOpeTemplatesSet *self )
+insert_dataset( ofaOpeTemplatesPage *self )
 {
 	GList *dataset, *iset;
 
@@ -308,7 +300,7 @@ insert_dataset( ofaOpeTemplatesSet *self )
 }
 
 static GtkWidget *
-book_create_page( ofaOpeTemplatesSet *self, GtkNotebook *book, const gchar *ledger, const gchar *ledger_label )
+book_create_page( ofaOpeTemplatesPage *self, GtkNotebook *book, const gchar *ledger, const gchar *ledger_label )
 {
 	GtkScrolledWindow *scroll;
 	GtkLabel *label;
@@ -371,7 +363,7 @@ book_create_page( ofaOpeTemplatesSet *self, GtkNotebook *book, const gchar *ledg
 }
 
 static gboolean
-book_activate_page_by_ledger( ofaOpeTemplatesSet *self, const gchar *mnemo )
+book_activate_page_by_ledger( ofaOpeTemplatesPage *self, const gchar *mnemo )
 {
 	gint page_num;
 
@@ -379,27 +371,27 @@ book_activate_page_by_ledger( ofaOpeTemplatesSet *self, const gchar *mnemo )
 	if( page_num < 0 ){
 		page_num = book_get_page_by_ledger( self, UNKNOWN_LEDGER_MNEMO );
 		if( page_num < 0 ){
-				book_create_page( self, self->private->book, UNKNOWN_LEDGER_MNEMO, UNKNOWN_LEDGER_LABEL );
+				book_create_page( self, self->priv->book, UNKNOWN_LEDGER_MNEMO, UNKNOWN_LEDGER_LABEL );
 				page_num = book_get_page_by_ledger( self, UNKNOWN_LEDGER_MNEMO );
 		}
 	}
 	g_return_val_if_fail( page_num >= 0, FALSE );
 
-	gtk_notebook_set_current_page( self->private->book, page_num );
+	gtk_notebook_set_current_page( self->priv->book, page_num );
 	return( TRUE );
 }
 
 static gint
-book_get_page_by_ledger( ofaOpeTemplatesSet *self, const gchar *mnemo )
+book_get_page_by_ledger( ofaOpeTemplatesPage *self, const gchar *mnemo )
 {
 	gint count, i;
 	GtkWidget *page_widget;
 	const gchar *ledger;
 
-	count = gtk_notebook_get_n_pages( self->private->book );
+	count = gtk_notebook_get_n_pages( self->priv->book );
 
 	for( i=0 ; i<count ; ++i ){
-		page_widget = gtk_notebook_get_nth_page( self->private->book, i );
+		page_widget = gtk_notebook_get_nth_page( self->priv->book, i );
 		ledger = ( const gchar * ) g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_LEDGER );
 		if( !g_utf8_collate( ledger, mnemo )){
 			return( i );
@@ -410,7 +402,7 @@ book_get_page_by_ledger( ofaOpeTemplatesSet *self, const gchar *mnemo )
 }
 
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplatesSet *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplatesPage *self )
 {
 	gchar *amnemo, *bmnemo, *afold, *bfold;
 	gint cmp;
@@ -441,9 +433,9 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 }
 
 static void
-insert_new_row( ofaOpeTemplatesSet *self, ofoOpeTemplate *model, gboolean with_selection )
+insert_new_row( ofaOpeTemplatesPage *self, ofoOpeTemplate *model, gboolean with_selection )
 {
-	ofaOpeTemplatesSetPrivate *priv;
+	ofaOpeTemplatesPagePrivate *priv;
 	GtkTreeIter iter;
 	GtkTreePath *path;
 
@@ -451,7 +443,7 @@ insert_new_row( ofaOpeTemplatesSet *self, ofoOpeTemplate *model, gboolean with_s
 	 * creating a new page if the ledger has not been found */
 	if( book_activate_page_by_ledger( self, ofo_ope_template_get_ledger( model ))){
 
-		priv = self->private;
+		priv = self->priv;
 
 		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 		g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
@@ -477,7 +469,7 @@ insert_new_row( ofaOpeTemplatesSet *self, ofoOpeTemplate *model, gboolean with_s
 }
 
 static void
-set_row_by_iter( ofaOpeTemplatesSet *self, ofoOpeTemplate *model, GtkTreeModel *tmodel, GtkTreeIter *iter )
+set_row_by_iter( ofaOpeTemplatesPage *self, ofoOpeTemplate *model, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gtk_list_store_set(
 			GTK_LIST_STORE( tmodel ),
@@ -488,19 +480,19 @@ set_row_by_iter( ofaOpeTemplatesSet *self, ofoOpeTemplate *model, GtkTreeModel *
 }
 
 static void
-setup_first_selection( ofaOpeTemplatesSet *self )
+setup_first_selection( ofaOpeTemplatesPage *self )
 {
-	ofaOpeTemplatesSetPrivate *priv;
+	ofaOpeTemplatesPagePrivate *priv;
 	GtkWidget *first_tab;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	priv = self->private;
+	priv = self->priv;
 
-	first_tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( self->private->book ), 0 );
+	first_tab = gtk_notebook_get_nth_page( GTK_NOTEBOOK( self->priv->book ), 0 );
 
 	if( first_tab ){
-		gtk_notebook_set_current_page( GTK_NOTEBOOK( self->private->book ), 0 );
+		gtk_notebook_set_current_page( GTK_NOTEBOOK( self->priv->book ), 0 );
 		priv->tview =
 				( GtkTreeView * ) my_utils_container_get_child_by_type(
 												GTK_CONTAINER( first_tab ),
@@ -533,15 +525,15 @@ setup_first_selection( ofaOpeTemplatesSet *self )
  * before having created the treeview
  */
 static void
-on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplatesSet *self )
+on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplatesPage *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_on_page_switched";
-	ofaOpeTemplatesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_templates_page_on_page_switched";
+	ofaOpeTemplatesPagePrivate *priv;
 
 	g_debug( "%s: book=%p, wpage=%p, npage=%d, page=%p",
 			thisfn, ( void * ) book, ( void * ) wpage, npage, ( void * ) self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	priv->tview = ( GtkTreeView * )
 							my_utils_container_get_child_by_type(
@@ -557,9 +549,9 @@ on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTempla
 }
 
 static void
-on_model_selected( GtkTreeSelection *selection, ofaOpeTemplatesSet *self )
+on_model_selected( GtkTreeSelection *selection, ofaOpeTemplatesPage *self )
 {
-	/*static const gchar *thisfn = "ofa_ope_templates_set_on_model_selected";*/
+	/*static const gchar *thisfn = "ofa_ope_templates_page_on_model_selected";*/
 
 	/*g_debug( "%s: selection=%p, self=%p", thisfn, ( void * ) selection, ( void * ) self );*/
 
@@ -567,9 +559,9 @@ on_model_selected( GtkTreeSelection *selection, ofaOpeTemplatesSet *self )
 }
 
 static void
-enable_buttons( ofaOpeTemplatesSet *self, GtkTreeSelection *selection )
+enable_buttons( ofaOpeTemplatesPage *self, GtkTreeSelection *selection )
 {
-	/*static const gchar *thisfn = "ofa_ope_templates_set_enable_buttons";*/
+	/*static const gchar *thisfn = "ofa_ope_templates_page_enable_buttons";*/
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoOpeTemplate *model;
@@ -601,27 +593,27 @@ enable_buttons( ofaOpeTemplatesSet *self, GtkTreeSelection *selection )
 	}
 
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->duplicate_btn ), select_ok );
+			GTK_WIDGET( self->priv->duplicate_btn ), select_ok );
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->guided_input_btn ), select_ok );
+			GTK_WIDGET( self->priv->guided_input_btn ), select_ok );
 }
 
 static void
 v_on_new_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_v_on_new_clicked";
+	static const gchar *thisfn = "ofa_ope_templates_page_v_on_new_clicked";
 	ofoOpeTemplate *model;
 	gint page_n;
 	GtkWidget *page_w;
 	const gchar *mnemo;
 
-	g_return_if_fail( OFA_IS_OPE_TEMPLATES_SET( page ));
+	g_return_if_fail( OFA_IS_OPE_TEMPLATES_PAGE( page ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) page );
 
 	model = ofo_ope_template_new();
-	page_n = gtk_notebook_get_current_page( OFA_OPE_TEMPLATES_SET( page )->private->book );
-	page_w = gtk_notebook_get_nth_page( OFA_OPE_TEMPLATES_SET( page )->private->book, page_n );
+	page_n = gtk_notebook_get_current_page( OFA_OPE_TEMPLATES_PAGE( page )->priv->book );
+	page_w = gtk_notebook_get_nth_page( OFA_OPE_TEMPLATES_PAGE( page )->priv->book, page_n );
 	mnemo = ( const gchar * ) g_object_get_data( G_OBJECT( page_w ), DATA_PAGE_LEDGER );
 
 	if( ofa_ope_template_properties_run(
@@ -635,9 +627,9 @@ v_on_new_clicked( GtkButton *button, ofaPage *page )
 }
 
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesSet *self )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_on_new_object";
+	static const gchar *thisfn = "ofa_ope_templates_page_on_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -661,17 +653,17 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesSet *self )
 static void
 v_on_update_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_v_on_update_clicked";
-	ofaOpeTemplatesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_templates_page_v_on_update_clicked";
+	ofaOpeTemplatesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	gchar *prev_ledger;
 	const gchar *new_ledger;
 	ofoOpeTemplate *model;
 
-	g_return_if_fail( OFA_IS_OPE_TEMPLATES_SET( page ));
+	g_return_if_fail( OFA_IS_OPE_TEMPLATES_PAGE( page ));
 
-	priv = OFA_OPE_TEMPLATES_SET( page )->private;
+	priv = OFA_OPE_TEMPLATES_PAGE( page )->priv;
 
 	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 	g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
@@ -695,10 +687,10 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 
 			if( g_utf8_collate( prev_ledger, new_ledger )){
 				gtk_list_store_remove( GTK_LIST_STORE( priv->tmodel ), &iter );
-				insert_new_row( OFA_OPE_TEMPLATES_SET( page ), model, TRUE );
+				insert_new_row( OFA_OPE_TEMPLATES_PAGE( page ), model, TRUE );
 
 			} else {
-				set_row_by_iter( OFA_OPE_TEMPLATES_SET( page ), model, priv->tmodel, &iter );
+				set_row_by_iter( OFA_OPE_TEMPLATES_PAGE( page ), model, priv->tmodel, &iter );
 			}
 		}
 
@@ -707,9 +699,9 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 }
 
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplatesSet *self )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplatesPage *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_on_updated_object";
+	static const gchar *thisfn = "ofa_ope_templates_page_on_updated_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
@@ -734,15 +726,15 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 static void
 v_on_delete_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_v_on_delete_clicked";
-	ofaOpeTemplatesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_templates_page_v_on_delete_clicked";
+	ofaOpeTemplatesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	ofoOpeTemplate *model;
 
-	g_return_if_fail( OFA_IS_OPE_TEMPLATES_SET( page ));
+	g_return_if_fail( OFA_IS_OPE_TEMPLATES_PAGE( page ));
 
-	priv = OFA_OPE_TEMPLATES_SET( page )->private;
+	priv = OFA_OPE_TEMPLATES_PAGE( page )->priv;
 
 	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 	g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
@@ -755,7 +747,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &model, -1 );
 		g_object_unref( model );
 
-		if( delete_confirmed( OFA_OPE_TEMPLATES_SET( page ), model ) &&
+		if( delete_confirmed( OFA_OPE_TEMPLATES_PAGE( page ), model ) &&
 				ofo_ope_template_delete( model )){
 
 			/* remove the row from the model
@@ -766,7 +758,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 }
 
 static gboolean
-delete_confirmed( ofaOpeTemplatesSet *self, ofoOpeTemplate *model )
+delete_confirmed( ofaOpeTemplatesPage *self, ofoOpeTemplate *model )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -783,9 +775,9 @@ delete_confirmed( ofaOpeTemplatesSet *self, ofoOpeTemplate *model )
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesSet *self )
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_on_deleted_object";
+	static const gchar *thisfn = "ofa_ope_templates_page_on_deleted_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -802,21 +794,21 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesSet *sel
 }
 
 static void
-on_duplicate( GtkButton *button, ofaOpeTemplatesSet *self )
+on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_on_duplicate";
-	ofaOpeTemplatesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_templates_page_on_duplicate";
+	ofaOpeTemplatesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	ofoOpeTemplate *model;
 	ofoOpeTemplate *duplicate;
 	gchar *str;
 
-	g_return_if_fail( OFA_IS_OPE_TEMPLATES_SET( self ));
+	g_return_if_fail( OFA_IS_OPE_TEMPLATES_PAGE( self ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 	g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
@@ -842,19 +834,19 @@ on_duplicate( GtkButton *button, ofaOpeTemplatesSet *self )
 }
 
 static void
-on_guided_input( GtkButton *button, ofaOpeTemplatesSet *self )
+on_guided_input( GtkButton *button, ofaOpeTemplatesPage *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_on_guided_input";
-	ofaOpeTemplatesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_templates_page_on_guided_input";
+	ofaOpeTemplatesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	ofoOpeTemplate *model;
 
-	g_return_if_fail( OFA_IS_OPE_TEMPLATES_SET( self ));
+	g_return_if_fail( OFA_IS_OPE_TEMPLATES_PAGE( self ));
 
 	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 	g_return_if_fail( priv->tmodel && GTK_IS_TREE_MODEL( priv->tmodel ));
@@ -875,16 +867,16 @@ on_guided_input( GtkButton *button, ofaOpeTemplatesSet *self )
  * also when the ledgers are reloaded
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplatesSet *self )
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplatesPage *self )
 {
-	static const gchar *thisfn = "ofa_ope_templates_set_on_reloaded_dataset";
+	static const gchar *thisfn = "ofa_ope_templates_page_on_reloaded_dataset";
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
 	if( type == OFO_TYPE_OPE_TEMPLATE || type == OFO_TYPE_LEDGER ){
-		while( gtk_notebook_get_n_pages( self->private->book )){
-			gtk_notebook_remove_page( self->private->book, 0 );
+		while( gtk_notebook_get_n_pages( self->priv->book )){
+			gtk_notebook_remove_page( self->priv->book, 0 );
 		}
 		insert_dataset( self );
 	}

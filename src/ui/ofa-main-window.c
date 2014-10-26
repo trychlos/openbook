@@ -50,7 +50,7 @@
 #include "ui/ofa-import.h"
 #include "ui/ofa-int-closing.h"
 #include "ui/ofa-ledgers-set.h"
-#include "ui/ofa-ope-templates-set.h"
+#include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-print-reconcil.h"
 #include "ui/ofa-reconciliation.h"
 #include "ui/ofa-page.h"
@@ -187,7 +187,7 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_OPE_TEMPLATES,
 				N_( "Operation templates" ),
-				ofa_ope_templates_set_get_type,
+				ofa_ope_templates_page_get_type,
 				FALSE,
 				FALSE },
 
