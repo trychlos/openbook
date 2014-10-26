@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _ofaDossierDeletePrefsPrivate         ofaDossierDeletePrefsPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject                       parent;
-	ofaDossierDeletePrefsPrivate *private;
+
+	/*< private members >*/
+	ofaDossierDeletePrefsPrivate *priv;
 }
 	ofaDossierDeletePrefs;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaDossierDeletePrefsClass;

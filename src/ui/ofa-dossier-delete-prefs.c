@@ -59,17 +59,13 @@ static void
 dossier_delete_prefs_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_delete_prefs_finalize";
-	ofaDossierDeletePrefsPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE_PREFS( instance ));
 
-	priv = OFA_DOSSIER_DELETE_PREFS( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_delete_prefs_parent_class )->finalize( instance );
@@ -78,15 +74,15 @@ dossier_delete_prefs_finalize( GObject *instance )
 static void
 dossier_delete_prefs_dispose( GObject *instance )
 {
-	ofaDossierDeletePrefs *self;
+	ofaDossierDeletePrefsPrivate *priv;
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE_PREFS( instance ));
 
-	self = OFA_DOSSIER_DELETE_PREFS( instance );
+	priv = OFA_DOSSIER_DELETE_PREFS( instance )->priv;
 
-	if( !self->private->dispose_has_run ){
+	if( !priv->dispose_has_run ){
 
-		self->private->dispose_has_run = TRUE;
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -105,7 +101,8 @@ ofa_dossier_delete_prefs_init( ofaDossierDeletePrefs *self )
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_DELETE_PREFS( self ));
 
-	self->private = g_new0( ofaDossierDeletePrefsPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+							self, OFA_TYPE_DOSSIER_DELETE_PREFS, ofaDossierDeletePrefsPrivate );
 }
 
 static void
@@ -117,6 +114,8 @@ ofa_dossier_delete_prefs_class_init( ofaDossierDeletePrefsClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_delete_prefs_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_delete_prefs_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaDossierDeletePrefsPrivate ));
 }
 
 /**
@@ -153,9 +152,9 @@ ofa_dossier_delete_prefs_init_dialog( ofaDossierDeletePrefs *prefs, GtkContainer
 	g_return_if_fail( prefs && OFA_IS_DOSSIER_DELETE_PREFS( prefs ));
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
-	if( !prefs->private->dispose_has_run ){
+	if( !prefs->priv->dispose_has_run ){
 
-		priv = prefs->private;
+		priv = prefs->priv;
 
 		radio = my_utils_container_get_child_by_name( container, "p2-db-drop" );
 		g_return_if_fail( radio && GTK_IS_RADIO_BUTTON( radio ));
@@ -200,7 +199,7 @@ on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefs *self )
 	ofaDossierDeletePrefsPrivate *priv;
 	gboolean is_active;
 
-	priv = self->private;
+	priv = self->priv;
 	is_active = gtk_toggle_button_get_active( btn );
 	priv->db_mode = 0;
 
@@ -216,7 +215,7 @@ on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefs *self )
 static void
 on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefs *self )
 {
-	self->private->account_mode = gtk_toggle_button_get_active( btn );
+	self->priv->account_mode = gtk_toggle_button_get_active( btn );
 }
 
 /**
@@ -227,9 +226,9 @@ ofa_dossier_delete_prefs_get_db_mode( ofaDossierDeletePrefs *prefs )
 {
 	g_return_val_if_fail( prefs && OFA_IS_DOSSIER_DELETE_PREFS( prefs ), -1 );
 
-	if( !prefs->private->dispose_has_run ){
+	if( !prefs->priv->dispose_has_run ){
 
-		return( prefs->private->db_mode );
+		return( prefs->priv->db_mode );
 	}
 
 	return( -1 );
@@ -243,9 +242,9 @@ ofa_dossier_delete_prefs_get_account_mode( ofaDossierDeletePrefs *prefs )
 {
 	g_return_val_if_fail( prefs && OFA_IS_DOSSIER_DELETE_PREFS( prefs ), FALSE );
 
-	if( !prefs->private->dispose_has_run ){
+	if( !prefs->priv->dispose_has_run ){
 
-		return( prefs->private->account_mode );
+		return( prefs->priv->account_mode );
 	}
 
 	return( FALSE );
@@ -264,7 +263,7 @@ ofa_dossier_delete_prefs_set_settings( ofaDossierDeletePrefs *prefs )
 
 	g_return_if_fail( prefs && OFA_IS_DOSSIER_DELETE_PREFS( prefs ));
 
-	priv = prefs->private;
+	priv = prefs->priv;
 
 	if( !priv->dispose_has_run ){
 
