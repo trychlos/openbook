@@ -65,17 +65,13 @@ static void
 bat_select_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_bat_select_finalize";
-	ofaBatSelectPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_BAT_SELECT( instance ));
 
-	priv = OFA_BAT_SELECT( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_bat_select_parent_class )->finalize( instance );
@@ -105,7 +101,7 @@ ofa_bat_select_init( ofaBatSelect *self )
 
 	g_return_if_fail( self && OFA_IS_BAT_SELECT( self ));
 
-	self->private = g_new0( ofaBatSelectPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BAT_SELECT, ofaBatSelectPrivate );
 }
 
 static void
@@ -120,6 +116,8 @@ ofa_bat_select_class_init( ofaBatSelectClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaBatSelectPrivate ));
 }
 
 /**
@@ -149,7 +147,7 @@ ofa_bat_select_run( ofaMainWindow *main_window )
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	bat_id = self->private->bat_id;
+	bat_id = self->priv->bat_id;
 
 	g_object_unref( self );
 
@@ -163,7 +161,7 @@ v_init_dialog( myDialog *dialog )
 	ofaBatCommonParms parms;
 	GtkWidget *container;
 
-	priv = OFA_BAT_SELECT( dialog )->private;
+	priv = OFA_BAT_SELECT( dialog )->priv;
 
 	container = my_utils_container_get_child_by_name(
 						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog ))),
@@ -200,7 +198,7 @@ check_for_enable_dlg( ofaBatSelect *self )
 	const ofoBat *bat;
 	GtkWidget *btn;
 
-	bat = ofa_bat_common_get_selection( self->private->bat_common );
+	bat = ofa_bat_common_get_selection( self->priv->bat_common );
 
 	btn = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
@@ -219,9 +217,9 @@ do_update( ofaBatSelect *self )
 {
 	const ofoBat *bat;
 
-	bat = ofa_bat_common_get_selection( self->private->bat_common );
+	bat = ofa_bat_common_get_selection( self->priv->bat_common );
 	if( bat ){
-		self->private->bat_id = ofo_bat_get_id( bat );
+		self->priv->bat_id = ofo_bat_get_id( bat );
 	}
 
 	return( TRUE );

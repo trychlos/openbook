@@ -50,14 +50,16 @@ G_BEGIN_DECLS
 typedef struct _ofaBatSelectPrivate        ofaBatSelectPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog             parent;
-	ofaBatSelectPrivate *private;
+
+	/*< private members >*/
+	ofaBatSelectPrivate *priv;
 }
 	ofaBatSelect;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaBatSelectClass;
