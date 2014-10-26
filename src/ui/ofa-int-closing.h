@@ -51,14 +51,16 @@ G_BEGIN_DECLS
 typedef struct _ofaIntClosingPrivate        ofaIntClosingPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog              parent;
-	ofaIntClosingPrivate *private;
+
+	/*< private members >*/
+	ofaIntClosingPrivate *priv;
 }
 	ofaIntClosing;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaIntClosingClass;

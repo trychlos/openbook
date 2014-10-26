@@ -86,17 +86,13 @@ static void
 int_closing_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_int_closing_finalize";
-	ofaIntClosingPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_INT_CLOSING( instance ));
 
-	priv = OFA_INT_CLOSING( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_int_closing_parent_class )->finalize( instance );
@@ -126,9 +122,9 @@ ofa_int_closing_init( ofaIntClosing *self )
 
 	g_return_if_fail( self && OFA_IS_INT_CLOSING( self ));
 
-	self->private = g_new0( ofaIntClosingPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_INT_CLOSING, ofaIntClosingPrivate );
 
-	my_date_clear( &self->private->closing );
+	my_date_clear( &self->priv->closing );
 }
 
 static void
@@ -143,6 +139,8 @@ ofa_int_closing_class_init( ofaIntClosingClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaIntClosingPrivate ));
 }
 
 /**
@@ -172,7 +170,7 @@ ofa_int_closing_run( ofaMainWindow *main_window )
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	done = self->private->done;
+	done = self->priv->done;
 
 	g_object_unref( self );
 
@@ -188,7 +186,7 @@ v_init_dialog( myDialog *dialog )
 	GtkButton *button;
 	GtkLabel *label;
 
-	priv = OFA_INT_CLOSING( dialog )->private;
+	priv = OFA_INT_CLOSING( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	button = ( GtkButton * )
@@ -249,7 +247,7 @@ on_date_changed( GtkEditable *entry, ofaIntClosing *self )
 	ofaIntClosingPrivate *priv;
 	const GDate *exe_end;
 
-	priv = self->private;
+	priv = self->priv;
 	priv->valid = FALSE;
 	my_date_set_from_date( &priv->closing,
 			my_editable_date_get_date( GTK_EDITABLE( priv->closing_entry ), NULL ));
@@ -271,7 +269,7 @@ static void
 check_for_enable_dlg( ofaIntClosing *self, GList *selected )
 {
 	gtk_widget_set_sensitive(
-				GTK_WIDGET( self->private->do_close_btn ),
+				GTK_WIDGET( self->priv->do_close_btn ),
 				is_dialog_validable( self, selected ));
 }
 
@@ -286,7 +284,7 @@ is_dialog_validable( ofaIntClosing *self, GList *selected )
 	GList *isel;
 	gboolean ok;
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* do we have a intrinsically valid proposed closing date ? */
 	ok = priv->valid;
@@ -322,7 +320,7 @@ check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 	ofaIntClosingPrivate *priv;
 	GDate *last;
 
-	priv = self->private;
+	priv = self->priv;
 	priv->count += 1;
 
 	last = ofo_ledger_get_last_closing( ledger );
@@ -347,7 +345,7 @@ do_close( ofaIntClosing *self )
 	GList *selected, *isel;
 	gboolean ok;
 
-	priv = self->private;
+	priv = self->priv;
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
 	ok = is_dialog_validable( self, selected );
 
@@ -373,7 +371,7 @@ close_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 	gchar *str;
 	gboolean ok;
 
-	priv = self->private;
+	priv = self->priv;
 
 	mnemo = ofo_ledger_get_mnemo( ledger );
 
@@ -402,7 +400,7 @@ do_end_close( ofaIntClosing *self )
 	GtkWidget *button;
 	GtkWidget *dialog;
 
-	priv = self->private;
+	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
 	gtk_label_set_text( priv->message_label, "" );
