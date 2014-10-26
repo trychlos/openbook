@@ -119,17 +119,13 @@ dossier_new_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
 
-	priv = OFA_DOSSIER_NEW( instance )->private;
-
 	/* free data members here */
+	priv = OFA_DOSSIER_NEW( instance )->priv;
 	g_free( priv->p1_sgdb_provider );
-
 	g_free( priv->p3_label );
 	g_free( priv->p3_account );
 	g_free( priv->p3_password );
 	g_free( priv->p3_bis );
-
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_new_parent_class )->finalize( instance );
@@ -144,7 +140,7 @@ dossier_new_dispose( GObject *instance )
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
-		priv = OFA_DOSSIER_NEW( instance )->private;
+		priv = OFA_DOSSIER_NEW( instance )->priv;
 
 		/* unref object members here */
 		if( priv->p1_module ){
@@ -166,8 +162,8 @@ ofa_dossier_new_init( ofaDossierNew *self )
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_NEW( self ));
 
-	self->private = g_new0( ofaDossierNewPrivate, 1 );
-	self->private->dossier_created = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_NEW, ofaDossierNewPrivate );
+	self->priv->dossier_created = FALSE;
 }
 
 static void
@@ -182,6 +178,8 @@ ofa_dossier_new_class_init( ofaDossierNewClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaDossierNewPrivate ));
 }
 
 /**
@@ -212,16 +210,16 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	dossier_opened = FALSE;
-	dossier_created = self->private->dossier_created;
-	open_dossier = self->private->p3_open_dossier;
-	open_properties = self->private->p3_update_properties;
+	dossier_created = self->priv->dossier_created;
+	open_dossier = self->priv->p3_open_dossier;
+	open_properties = self->priv->p3_update_properties;
 
 	if( dossier_created ){
 		if( open_dossier ){
 			sdo = g_new0( ofsDossierOpen, 1 );
-			sdo->label = g_strdup( self->private->p3_label );
-			sdo->account = g_strdup( self->private->p3_account );
-			sdo->password = g_strdup( self->private->p3_password );
+			sdo->label = g_strdup( self->priv->p3_label );
+			sdo->account = g_strdup( self->priv->p3_account );
+			sdo->password = g_strdup( self->priv->p3_password );
 		}
 	}
 
@@ -309,7 +307,7 @@ on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self )
 
 	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* remove previous provider if any */
 	g_free( priv->p1_sgdb_provider );
@@ -387,7 +385,7 @@ init_p3_dossier_properties( ofaDossierNew *self )
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_db_properties_toggled ), self );
 	value = ofa_settings_get_boolean( "DossierNewDlg-properties" );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), value );
-	self->private->p3_properties_btn = widget;
+	self->priv->p3_properties_btn = widget;
 
 	widget = my_utils_container_get_child_by_name( container, "p3-open" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
@@ -404,7 +402,7 @@ on_db_label_changed( GtkEntry *entry, ofaDossierNew *self )
 	ofaDossierNewPrivate *priv;
 	const gchar *label;
 
-	priv = self->private;
+	priv = self->priv;
 
 	label = gtk_entry_get_text( entry );
 	g_free( priv->p3_label );
@@ -420,7 +418,7 @@ on_db_account_changed( GtkEntry *entry, ofaDossierNew *self )
 	ofaDossierNewPrivate *priv;
 	const gchar *account;
 
-	priv = self->private;
+	priv = self->priv;
 
 	account = gtk_entry_get_text( entry );
 	g_free( priv->p3_account );
@@ -440,7 +438,7 @@ is_account_ok( ofaDossierNew *self )
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
 
-	priv = self->private;
+	priv = self->priv;
 	ok = FALSE;
 
 	if( !priv->p3_account || !g_utf8_strlen( priv->p3_account, -1 )){
@@ -463,7 +461,7 @@ on_db_password_changed( GtkEntry *entry, ofaDossierNew *self )
 	ofaDossierNewPrivate *priv;
 	const gchar *password;
 
-	priv = self->private;
+	priv = self->priv;
 
 	password = gtk_entry_get_text( entry );
 	g_free( priv->p3_password );
@@ -479,7 +477,7 @@ on_db_bis_changed( GtkEntry *entry, ofaDossierNew *self )
 	ofaDossierNewPrivate *priv;
 	const gchar *bis;
 
-	priv = self->private;
+	priv = self->priv;
 
 	bis = gtk_entry_get_text( entry );
 	g_free( priv->p3_bis );
@@ -495,7 +493,7 @@ db_passwords_are_equals( ofaDossierNew *self )
 	ofaDossierNewPrivate *priv;
 	gboolean are_equals;
 
-	priv = self->private;
+	priv = self->priv;
 
 	are_equals = (( !priv->p3_password && !priv->p3_bis ) ||
 				( priv->p3_password && g_utf8_strlen( priv->p3_password, -1 ) &&
@@ -516,7 +514,7 @@ on_db_open_toggled( GtkToggleButton *button, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	priv->p3_open_dossier = gtk_toggle_button_get_active( button );
 
@@ -527,7 +525,7 @@ on_db_open_toggled( GtkToggleButton *button, ofaDossierNew *self )
 static void
 on_db_properties_toggled( GtkToggleButton *button, ofaDossierNew *self )
 {
-	self->private->p3_update_properties = gtk_toggle_button_get_active( button );
+	self->priv->p3_update_properties = gtk_toggle_button_get_active( button );
 }
 
 static void
@@ -536,7 +534,7 @@ set_message( ofaDossierNew *self, const gchar *msg )
 	ofaDossierNewPrivate *priv;
 	GdkRGBA color;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( !priv->msg_label ){
 		priv->msg_label = ( GtkLabel * )
@@ -571,7 +569,7 @@ check_for_enable_dlg( ofaDossierNew *self )
 	ofaDossierNewPrivate *priv;
 	gboolean enabled;
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* #288: enable dlg should not depend of connection check */
 	enabled = priv->p3_label_is_ok &&
@@ -601,7 +599,7 @@ v_quit_on_ok( myDialog *dialog )
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
 
-	priv = OFA_DOSSIER_NEW( dialog )->private;
+	priv = OFA_DOSSIER_NEW( dialog )->priv;
 
 	ok = ofa_idbms_properties_new_apply(
 			priv->p1_module, priv->p1_parent,
