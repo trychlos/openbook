@@ -71,7 +71,7 @@ class_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_class_finalize";
 	ofoClassPrivate *priv;
 
-	priv = OFO_CLASS( instance )->private;
+	priv = OFO_CLASS( instance )->priv;
 
 	g_debug( "%s: instance=%p (%s): [%d] %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
@@ -83,7 +83,6 @@ class_finalize( GObject *instance )
 	/* free data members here */
 	g_free( priv->label );
 	g_free( priv->notes );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_class_parent_class )->finalize( instance );
@@ -111,9 +110,8 @@ ofo_class_init( ofoClass *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofoClassPrivate, 1 );
-
-	self->private->number = OFO_BASE_UNSET_ID;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_CLASS, ofoClassPrivate );
+	self->priv->number = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -125,6 +123,8 @@ ofo_class_class_init( ofoClassClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = class_dispose;
 	G_OBJECT_CLASS( klass )->finalize = class_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofoClassPrivate ));
 }
 
 /**
@@ -250,7 +250,7 @@ ofo_class_get_number( const ofoClass *class )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		return( class->private->number );
+		return( class->priv->number );
 	}
 
 	g_assert_not_reached();
@@ -267,7 +267,7 @@ ofo_class_get_label( const ofoClass *class )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		return(( const gchar * ) class->private->label );
+		return(( const gchar * ) class->priv->label );
 	}
 
 	g_assert_not_reached();
@@ -284,7 +284,7 @@ ofo_class_get_notes( const ofoClass *class )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		return(( const gchar * ) class->private->notes );
+		return(( const gchar * ) class->priv->notes );
 	}
 
 	g_assert_not_reached();
@@ -301,7 +301,7 @@ ofo_class_get_upd_user( const ofoClass *class )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		return(( const gchar * ) class->private->upd_user );
+		return(( const gchar * ) class->priv->upd_user );
 	}
 
 	g_assert_not_reached();
@@ -318,7 +318,7 @@ ofo_class_get_upd_stamp( const ofoClass *class )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &class->private->upd_stamp );
+		return(( const GTimeVal * ) &class->priv->upd_stamp );
 	}
 
 	g_assert_not_reached();
@@ -388,7 +388,7 @@ ofo_class_set_number( ofoClass *class, gint number )
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
 		if( ofo_class_is_valid_number( number )){
-			class->private->number = number;
+			class->priv->number = number;
 			return( TRUE );
 		}
 	}
@@ -407,8 +407,8 @@ ofo_class_set_label( ofoClass *class, const gchar *label )
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
 		if( ofo_class_is_valid_label( label )){
-			g_free( class->private->label );
-			class->private->label = g_strdup( label );
+			g_free( class->priv->label );
+			class->priv->label = g_strdup( label );
 			return( TRUE );
 		}
 	}
@@ -426,8 +426,8 @@ ofo_class_set_notes( ofoClass *class, const gchar *notes )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_free( class->private->notes );
-		class->private->notes = g_strdup( notes );
+		g_free( class->priv->notes );
+		class->priv->notes = g_strdup( notes );
 	}
 }
 
@@ -441,8 +441,8 @@ class_set_upd_user( ofoClass *class, const gchar *user )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_free( class->private->upd_user );
-		class->private->upd_user = g_strdup( user );
+		g_free( class->priv->upd_user );
+		class->priv->upd_user = g_strdup( user );
 	}
 }
 
@@ -456,7 +456,7 @@ class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		my_utils_stamp_set_from_stamp( &class->private->upd_stamp, stamp );
+		my_utils_stamp_set_from_stamp( &class->priv->upd_stamp, stamp );
 	}
 }
 

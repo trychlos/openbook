@@ -47,20 +47,22 @@ G_BEGIN_DECLS
 #define OFO_IS_CLASS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_CLASS ))
 #define OFO_CLASS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_CLASS, ofoClassClass ))
 
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoClassClass;
-
 typedef struct _ofoClassPrivate       ofoClassPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofoBase          parent;
-	ofoClassPrivate *private;
+
+	/*< private members >*/
+	ofoClassPrivate *priv;
 }
 	ofoClass;
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass parent;
+}
+	ofoClassClass;
 
 GType ofo_class_get_type( void ) G_GNUC_CONST;
 
