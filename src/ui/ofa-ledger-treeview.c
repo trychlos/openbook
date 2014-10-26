@@ -41,22 +41,22 @@
 /* private instance data
  */
 struct _ofaLedgerTreeviewPrivate {
-	gboolean          dispose_has_run;
+	gboolean            dispose_has_run;
 
 	/* input parameters
 	 */
-	ofaMainWindow    *main_window;
-	ofoDossier       *dossier;
-	GtkContainer     *parent;
-	gboolean          allow_multiple_selection;
-	ofaLedgerTreeviewCb  pfnSelected;
-	ofaLedgerTreeviewCb  pfnActivated;
-	void             *user_data;
+	ofaMainWindow      *main_window;
+	ofoDossier         *dossier;
+	GtkContainer       *parent;
+	gboolean            allow_multiple_selection;
+	ofaLedgerTreeviewCb pfnSelected;
+	ofaLedgerTreeviewCb pfnActivated;
+	void               *user_data;
 
 	/* internal datas
 	 */
-	GList            *handlers;
-	GtkTreeView      *tview;
+	GList              *handlers;
+	GtkTreeView        *tview;
 };
 
 /* column ordering in the listview
@@ -69,15 +69,6 @@ enum {
 	COL_OBJECT,
 	N_COLUMNS
 };
-
-/* a structure used during the iteration for each selected
- */
-typedef struct {
-	ofaLedgerTreeviewCb    fn;
-	void               *user_data;
-	ofaLedgerTreeview  *self;
-}
-	ForeachTreeview;
 
 G_DEFINE_TYPE( ofaLedgerTreeview, ofa_ledger_treeview, G_TYPE_OBJECT )
 
@@ -104,17 +95,13 @@ static void
 ledger_treeview_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_treeview_finalize";
-	ofaLedgerTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_TREEVIEW( instance ));
 
-	priv = OFA_LEDGER_TREEVIEW( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ledger_treeview_parent_class )->finalize( instance );
@@ -129,7 +116,7 @@ ledger_treeview_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_TREEVIEW( instance ));
 
-	priv = ( OFA_LEDGER_TREEVIEW( instance ))->private;
+	priv = ( OFA_LEDGER_TREEVIEW( instance ))->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -162,10 +149,10 @@ ofa_ledger_treeview_init( ofaLedgerTreeview *self )
 
 	g_return_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ));
 
-	self->private = g_new0( ofaLedgerTreeviewPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LEDGER_TREEVIEW, ofaLedgerTreeviewPrivate );
 
-	self->private->dispose_has_run = FALSE;
-	self->private->handlers = NULL;
+	self->priv->dispose_has_run = FALSE;
+	self->priv->handlers = NULL;
 }
 
 static void
@@ -177,6 +164,8 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ledger_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_treeview_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaLedgerTreeviewPrivate ));
 }
 
 /**
@@ -190,13 +179,13 @@ ofa_ledger_treeview_new( const ofaLedgerTreeviewParms *parms )
 	view = g_object_new( OFA_TYPE_LEDGER_TREEVIEW, NULL );
 
 	/* get the input parameters */
-	view->private->main_window = parms->main_window;
-	view->private->dossier = ofa_main_window_get_dossier( parms->main_window );
-	view->private->parent = parms->parent;
-	view->private->allow_multiple_selection = parms->allow_multiple_selection;
-	view->private->pfnSelected = parms->pfnSelected;
-	view->private->pfnActivated = parms->pfnActivated;
-	view->private->user_data = parms->user_data;
+	view->priv->main_window = parms->main_window;
+	view->priv->dossier = ofa_main_window_get_dossier( parms->main_window );
+	view->priv->parent = parms->parent;
+	view->priv->allow_multiple_selection = parms->allow_multiple_selection;
+	view->priv->pfnSelected = parms->pfnSelected;
+	view->priv->pfnActivated = parms->pfnActivated;
+	view->priv->user_data = parms->user_data;
 
 	/* setup a weak reference on the container to auto-unref */
 	g_object_weak_ref( G_OBJECT( parms->parent ), ( GWeakNotify ) on_parent_container_finalized, view );
@@ -231,7 +220,7 @@ setup_treeview( ofaLedgerTreeview *self )
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
 	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 4 );
 	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( self->private->parent, GTK_WIDGET( scroll ));
+	gtk_container_add( self->priv->parent, GTK_WIDGET( scroll ));
 
 	tview = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_hexpand( GTK_WIDGET( tview ), TRUE );
@@ -278,7 +267,7 @@ setup_treeview( ofaLedgerTreeview *self )
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode(
 			select,
-			self->private->allow_multiple_selection ?
+			self->priv->allow_multiple_selection ?
 					GTK_SELECTION_MULTIPLE : GTK_SELECTION_BROWSE );
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
 
@@ -289,7 +278,7 @@ setup_treeview( ofaLedgerTreeview *self )
 			GTK_TREE_SORTABLE( tmodel ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-	self->private->tview = tview;
+	self->priv->tview = tview;
 }
 
 static void
@@ -298,32 +287,32 @@ dossier_signal_connect( ofaLedgerTreeview *self )
 	gulong handler;
 
 	handler = g_signal_connect(
-						G_OBJECT( self->private->dossier ),
+						G_OBJECT( self->priv->dossier ),
 						OFA_SIGNAL_NEW_OBJECT,
 						G_CALLBACK( on_new_object ),
 						self );
-	self->private->handlers = g_list_prepend( self->private->handlers, ( gpointer ) handler );
+	self->priv->handlers = g_list_prepend( self->priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
-						G_OBJECT( self->private->dossier ),
+						G_OBJECT( self->priv->dossier ),
 						OFA_SIGNAL_UPDATED_OBJECT,
 						G_CALLBACK( on_updated_object ),
 						self );
-	self->private->handlers = g_list_prepend( self->private->handlers, ( gpointer ) handler );
+	self->priv->handlers = g_list_prepend( self->priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
-						G_OBJECT( self->private->dossier ),
+						G_OBJECT( self->priv->dossier ),
 						OFA_SIGNAL_DELETED_OBJECT,
 						G_CALLBACK( on_deleted_object ),
 						self );
-	self->private->handlers = g_list_prepend( self->private->handlers, ( gpointer ) handler );
+	self->priv->handlers = g_list_prepend( self->priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
-						G_OBJECT( self->private->dossier ),
+						G_OBJECT( self->priv->dossier ),
 						OFA_SIGNAL_RELOAD_DATASET,
 						G_CALLBACK( on_reloaded_dataset ),
 						self );
-	self->private->handlers = g_list_prepend( self->private->handlers, ( gpointer ) handler );
+	self->priv->handlers = g_list_prepend( self->priv->handlers, ( gpointer ) handler );
 }
 
 /**
@@ -334,7 +323,7 @@ ofa_ledger_treeview_init_view( ofaLedgerTreeview *self, const gchar *initial_sel
 {
 	g_return_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		insert_dataset( self, initial_selection );
 	}
@@ -346,7 +335,7 @@ insert_dataset( ofaLedgerTreeview *self, const gchar *initial_selection )
 	GList *dataset, *iset;
 	ofoLedger *ledger;
 
-	dataset = ofo_ledger_get_dataset( self->private->dossier );
+	dataset = ofo_ledger_get_dataset( self->priv->dossier );
 
 	for( iset=dataset ; iset ; iset=iset->next ){
 
@@ -364,7 +353,7 @@ insert_new_row( ofaLedgerTreeview *self, ofoLedger *ledger, gboolean with_select
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	priv = self->private;
+	priv = self->priv;
 	tmodel = gtk_tree_view_get_model( priv->tview );
 
 	gtk_list_store_insert_with_values(
@@ -453,7 +442,7 @@ select_row_by_mnemo( ofaLedgerTreeview *self, const gchar *mnemo )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	priv = self->private;
+	priv = self->priv;
 	tmodel = gtk_tree_view_get_model( priv->tview );
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
@@ -475,7 +464,7 @@ select_row_by_iter( ofaLedgerTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *
 	GtkTreeSelection *select;
 	GtkTreePath *path;
 
-	priv = self->private;
+	priv = self->priv;
 	select = gtk_tree_view_get_selection( priv->tview );
 	gtk_tree_selection_select_iter( select, iter );
 
@@ -498,7 +487,7 @@ find_row_by_mnemo( ofaLedgerTreeview *self, const gchar *mnemo, GtkTreeModel **t
 	g_debug( "%s: self=%p, mnemo=%s, tmodel=%p, iter=%p",
 				thisfn, ( void * ) self, mnemo, ( void * ) tmodel, ( void * ) iter );
 
-	priv = self->private;
+	priv = self->priv;
 	found = FALSE;
 
 	my_tmodel = gtk_tree_view_get_model( priv->tview );
@@ -535,7 +524,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 	ofaLedgerTreeviewPrivate *priv;
 	GList *sel_objects;
 
-	priv = self->private;
+	priv = self->priv;
 	sel_objects = get_selected( self );
 
 	if( sel_objects && priv->pfnActivated ){
@@ -549,7 +538,7 @@ on_row_selected( GtkTreeSelection *selection, ofaLedgerTreeview *self )
 	ofaLedgerTreeviewPrivate *priv;
 	GList *sel_objects;
 
-	priv = self->private;
+	priv = self->priv;
 	sel_objects = get_selected( self );
 
 	if( sel_objects && priv->pfnSelected ){
@@ -568,7 +557,7 @@ get_selected( ofaLedgerTreeview *self )
 	GList *sel_objects;
 	ofoLedger *ledger;
 
-	priv = self->private;
+	priv = self->priv;
 	sel_objects = NULL;
 	select = gtk_tree_view_get_selection( priv->tview );
 	sel_rows = gtk_tree_selection_get_selected_rows( select, &tmodel );
@@ -594,7 +583,7 @@ ofa_ledger_treeview_get_selected( ofaLedgerTreeview *self )
 {
 	g_return_val_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ), NULL );
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		return( get_selected( self ));
 	}
@@ -610,9 +599,9 @@ ofa_ledger_treeview_grab_focus( ofaLedgerTreeview *self )
 {
 	g_return_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
-		gtk_widget_grab_focus( GTK_WIDGET( self->private->tview ));
+		gtk_widget_grab_focus( GTK_WIDGET( self->priv->tview ));
 	}
 }
 
@@ -702,7 +691,7 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaLedgerTreeview *self )
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
 	if( type == OFO_TYPE_LEDGER ){
-		tmodel = gtk_tree_view_get_model( self->private->tview );
+		tmodel = gtk_tree_view_get_model( self->priv->tview );
 		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 		insert_dataset( self, NULL );
 	}

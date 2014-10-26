@@ -56,14 +56,16 @@ G_BEGIN_DECLS
 typedef struct _ofaLedgerTreeviewPrivate        ofaLedgerTreeviewPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject                   parent;
-	ofaLedgerTreeviewPrivate *private;
+
+	/*< private members >*/
+	ofaLedgerTreeviewPrivate *priv;
 }
 	ofaLedgerTreeview;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaLedgerTreeviewClass;

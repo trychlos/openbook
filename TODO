@@ -591,10 +591,6 @@
                 + rename private to priv
                 ofaLedgerTreeview
 
- 395 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                ofaOpeTemplateProperties
-
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
@@ -1625,6 +1621,11 @@
                 + rename private to priv
                 ofaMainWindow
      2014-10-26 done - svn #3924
+
+ 395 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaOpeTemplateProperties
+     2014-10-26 done - svn #3935
 
  396 2014-10-26 review public vs private members in class definitions
                 + rename private to priv
