@@ -50,14 +50,16 @@ G_BEGIN_DECLS
 typedef struct _ofaPluginManagerPrivate        ofaPluginManagerPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog                 parent;
-	ofaPluginManagerPrivate *private;
+
+	/*< private members >*/
+	ofaPluginManagerPrivate *priv;
 }
 	ofaPluginManager;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaPluginManagerClass;

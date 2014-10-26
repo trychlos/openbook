@@ -80,17 +80,13 @@ static void
 plugin_manager_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_plugin_manager_finalize";
-	ofaPluginManagerPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_PLUGIN_MANAGER( instance ));
 
-	priv = OFA_PLUGIN_MANAGER( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_plugin_manager_parent_class )->finalize( instance );
@@ -120,7 +116,7 @@ ofa_plugin_manager_init( ofaPluginManager *self )
 
 	g_return_if_fail( self && OFA_IS_PLUGIN_MANAGER( self ));
 
-	self->private = g_new0( ofaPluginManagerPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PLUGIN_MANAGER, ofaPluginManagerPrivate );
 }
 
 static void
@@ -134,6 +130,8 @@ ofa_plugin_manager_class_init( ofaPluginManagerClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = plugin_manager_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+
+	g_type_class_add_private( klass, sizeof( ofaPluginManagerPrivate ));
 }
 
 /**
@@ -172,7 +170,7 @@ v_init_dialog( myDialog *dialog )
 	GtkWidget *button;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	priv = OFA_PLUGIN_MANAGER( dialog )->private;
+	priv = OFA_PLUGIN_MANAGER( dialog )->priv;
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "properties-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
@@ -198,7 +196,7 @@ setup_treeview( ofaPluginManager *self )
 
 	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "treeview" );
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-	self->private->tview = GTK_TREE_VIEW( tview );
+	self->priv->tview = GTK_TREE_VIEW( tview );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
@@ -246,7 +244,7 @@ load_in_treeview( ofaPluginManager *self )
 	ofaPlugin *plugin;
 	const gchar *name, *version;
 
-	tmodel = gtk_tree_view_get_model( self->private->tview );
+	tmodel = gtk_tree_view_get_model( self->priv->tview );
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
 	modules = ofa_plugin_get_modules();
@@ -266,7 +264,7 @@ load_in_treeview( ofaPluginManager *self )
 	}
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		select = gtk_tree_view_get_selection( self->private->tview );
+		select = gtk_tree_view_get_selection( self->priv->tview );
 		gtk_tree_selection_select_iter( select, &iter );
 	}
 }
@@ -306,7 +304,7 @@ on_plugin_selected( GtkTreeSelection *selection, ofaPluginManager *self )
 		ok = ofa_plugin_implements_type( plugin, OFA_TYPE_IPREFERENCES );
 	}
 
-	gtk_widget_set_sensitive( self->private->properties_btn, ok );
+	gtk_widget_set_sensitive( self->priv->properties_btn, ok );
 }
 
 static void
@@ -317,7 +315,7 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 	GtkTreeIter iter;
 	ofaPlugin *plugin;
 
-	selection = gtk_tree_view_get_selection( self->private->tview );
+	selection = gtk_tree_view_get_selection( self->priv->tview );
 
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 

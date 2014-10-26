@@ -603,10 +603,6 @@
                 + rename private to priv
                 ofaPluginManager
 
- 398 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                ofaPreferences
-
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
@@ -617,7 +613,10 @@
 
  409 2014-10-26 print reconcil: should also print currency symbol
 
- 410
+ 410 2014-10-26 when opening the properties of a plugin, the preferences
+                dialog should open on the appropriate tab
+
+ 411
 
 -----------------------------------------------------------------------
  DONE
@@ -1634,6 +1633,11 @@
                 + rename private to priv
                 ofaMainWindow
      2014-10-26 done - svn #3924
+
+ 398 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPreferences
+     2014-10-26 done - svn #3932
 
  399 2014-10-26 review public vs private members in class definitions
                 + rename private to priv
