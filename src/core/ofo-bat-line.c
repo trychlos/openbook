@@ -74,7 +74,7 @@ bat_line_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_bat_line_finalize";
 	ofoBatLinePrivate *priv;
 
-	priv = OFO_BAT_LINE( instance )->private;
+	priv = OFO_BAT_LINE( instance )->priv;
 
 	g_debug( "%s: instance=%p (%s): %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), priv->label );
@@ -86,7 +86,6 @@ bat_line_finalize( GObject *instance )
 	g_free( priv->label );
 	g_free( priv->currency );
 	g_free( priv->upd_user );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_bat_line_parent_class )->finalize( instance );
@@ -114,12 +113,12 @@ ofo_bat_line_init( ofoBatLine *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofoBatLinePrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_BAT_LINE, ofoBatLinePrivate );
 
-	self->private->bat_id = OFO_BASE_UNSET_ID;
-	self->private->id = OFO_BASE_UNSET_ID;
-	my_date_clear( &self->private->deffect );
-	my_date_clear( &self->private->dope );
+	self->priv->bat_id = OFO_BASE_UNSET_ID;
+	self->priv->id = OFO_BASE_UNSET_ID;
+	my_date_clear( &self->priv->deffect );
+	my_date_clear( &self->priv->dope );
 }
 
 static void
@@ -129,10 +128,10 @@ ofo_bat_line_class_init( ofoBatLineClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	g_type_class_add_private( klass, sizeof( ofoBatLinePrivate ));
-
 	G_OBJECT_CLASS( klass )->dispose = bat_line_dispose;
 	G_OBJECT_CLASS( klass )->finalize = bat_line_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofoBatLinePrivate ));
 }
 
 /**
@@ -144,7 +143,7 @@ ofo_bat_line_new( gint bat_id )
 	ofoBatLine *bat;
 
 	bat = g_object_new( OFO_TYPE_BAT_LINE, NULL );
-	bat->private->bat_id = bat_id;
+	bat->priv->bat_id = bat_id;
 
 	return( bat );
 }
@@ -199,10 +198,10 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 			line = ofo_bat_line_new( bat_id );
 			ofo_bat_line_set_id( line, atoi(( gchar * ) icol->data ));
 			icol = icol->next;
-			my_date_set_from_sql( &line->private->deffect, ( const gchar * ) icol->data );
+			my_date_set_from_sql( &line->priv->deffect, ( const gchar * ) icol->data );
 			icol = icol->next;
 			if( icol->data ){
-				my_date_set_from_sql( &line->private->dope, ( const gchar * ) icol->data );
+				my_date_set_from_sql( &line->priv->dope, ( const gchar * ) icol->data );
 			}
 			icol = icol->next;
 			ofo_bat_line_set_label( line, ( gchar * ) icol->data );
@@ -250,7 +249,7 @@ ofo_bat_line_get_id( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->private->id );
+		return( bat->priv->id );
 	}
 
 	g_assert_not_reached();
@@ -267,7 +266,7 @@ ofo_bat_line_get_bat_id( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->private->bat_id );
+		return( bat->priv->bat_id );
 	}
 
 	g_assert_not_reached();
@@ -284,7 +283,7 @@ ofo_bat_line_get_deffect( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &bat->private->deffect );
+		return(( const GDate * ) &bat->priv->deffect );
 	}
 
 	g_assert_not_reached();
@@ -301,7 +300,7 @@ ofo_bat_line_get_dope( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &bat->private->dope );
+		return(( const GDate * ) &bat->priv->dope );
 	}
 
 	g_assert_not_reached();
@@ -318,7 +317,7 @@ ofo_bat_line_get_ref( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const gchar * ) bat->private->ref );
+		return(( const gchar * ) bat->priv->ref );
 	}
 
 	g_assert_not_reached();
@@ -335,7 +334,7 @@ ofo_bat_line_get_label( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const gchar * ) bat->private->label );
+		return(( const gchar * ) bat->priv->label );
 	}
 
 	g_assert_not_reached();
@@ -352,7 +351,7 @@ ofo_bat_line_get_currency( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const gchar * ) bat->private->currency );
+		return(( const gchar * ) bat->priv->currency );
 	}
 
 	g_assert_not_reached();
@@ -369,7 +368,7 @@ ofo_bat_line_get_amount( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->private->amount );
+		return( bat->priv->amount );
 	}
 
 	g_assert_not_reached();
@@ -386,7 +385,7 @@ ofo_bat_line_get_entry( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->private->entry );
+		return( bat->priv->entry );
 	}
 
 	g_assert_not_reached();
@@ -403,7 +402,7 @@ ofo_bat_line_get_upd_user( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const gchar * ) bat->private->upd_user );
+		return(( const gchar * ) bat->priv->upd_user );
 	}
 
 	g_assert_not_reached();
@@ -420,7 +419,7 @@ ofo_bat_line_get_upd_stamp( const ofoBatLine *bat )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &bat->private->upd_stamp );
+		return(( const GTimeVal * ) &bat->priv->upd_stamp );
 	}
 
 	g_assert_not_reached();
@@ -437,7 +436,7 @@ ofo_bat_line_set_id( ofoBatLine *bat, gint id )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		bat->private->id = id;
+		bat->priv->id = id;
 	}
 }
 
@@ -451,7 +450,7 @@ ofo_bat_line_set_deffect( ofoBatLine *bat, const GDate *date )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		my_date_set_from_date( &bat->private->deffect, date );
+		my_date_set_from_date( &bat->priv->deffect, date );
 	}
 }
 
@@ -465,7 +464,7 @@ ofo_bat_line_set_dope( ofoBatLine *bat, const GDate *date )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		my_date_set_from_date( &bat->private->dope, date );
+		my_date_set_from_date( &bat->priv->dope, date );
 	}
 }
 
@@ -479,8 +478,8 @@ ofo_bat_line_set_ref( ofoBatLine *bat, const gchar *ref )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		g_free( bat->private->ref );
-		bat->private->ref = g_strdup( ref );
+		g_free( bat->priv->ref );
+		bat->priv->ref = g_strdup( ref );
 	}
 }
 
@@ -494,8 +493,8 @@ ofo_bat_line_set_label( ofoBatLine *bat, const gchar *label )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		g_free( bat->private->label );
-		bat->private->label = g_strdup( label );
+		g_free( bat->priv->label );
+		bat->priv->label = g_strdup( label );
 	}
 }
 
@@ -509,8 +508,8 @@ ofo_bat_line_set_currency( ofoBatLine *bat, const gchar *currency )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		g_free( bat->private->currency );
-		bat->private->currency = g_strdup( currency );
+		g_free( bat->priv->currency );
+		bat->priv->currency = g_strdup( currency );
 	}
 }
 
@@ -524,7 +523,7 @@ ofo_bat_line_set_amount( ofoBatLine *bat, gdouble amount )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		bat->private->amount = amount;
+		bat->priv->amount = amount;
 	}
 }
 
@@ -538,7 +537,7 @@ ofo_bat_line_set_entry( ofoBatLine *bat, gint number )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		bat->private->entry = number;
+		bat->priv->entry = number;
 	}
 }
 
@@ -552,8 +551,8 @@ bat_line_set_upd_user( ofoBatLine *bat, const gchar *upd_user )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		g_free( bat->private->upd_user );
-		bat->private->upd_user = g_strdup( upd_user );
+		g_free( bat->priv->upd_user );
+		bat->priv->upd_user = g_strdup( upd_user );
 	}
 }
 
@@ -567,7 +566,7 @@ bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		my_utils_stamp_set_from_stamp( &bat->private->upd_stamp, upd_stamp );
+		my_utils_stamp_set_from_stamp( &bat->priv->upd_stamp, upd_stamp );
 	}
 }
 
@@ -591,7 +590,7 @@ ofo_bat_line_insert( ofoBatLine *bat_line, const ofoDossier *dossier )
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat_line, ( void * ) dossier );
 
-		bat_line->private->id = ofo_dossier_get_next_batline_number( dossier );
+		bat_line->priv->id = ofo_dossier_get_next_batline_number( dossier );
 
 		if( bat_line_do_insert(
 					bat_line,
