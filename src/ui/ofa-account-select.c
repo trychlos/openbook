@@ -74,11 +74,9 @@ account_select_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_SELECT( instance ));
 
-	priv = OFA_ACCOUNT_SELECT( instance )->private;
-
 	/* free data members here */
+	priv = OFA_ACCOUNT_SELECT( instance )->priv;
 	g_free( priv->account_number );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_account_select_parent_class )->finalize( instance );
@@ -108,7 +106,7 @@ ofa_account_select_init( ofaAccountSelect *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaAccountSelectPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNT_SELECT, ofaAccountSelectPrivate );
 }
 
 static void
@@ -123,6 +121,8 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaAccountSelectPrivate ));
 }
 
 static void
@@ -165,17 +165,17 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 		g_object_weak_ref( G_OBJECT( main_window ), ( GWeakNotify ) on_main_window_finalized, NULL );
 	}
 
-	g_free( st_this->private->account_number );
-	st_this->private->account_number = NULL;
+	g_free( st_this->priv->account_number );
+	st_this->priv->account_number = NULL;
 
-	ofa_accounts_book_set_selected( st_this->private->child, asked_number );
+	ofa_accounts_book_set_selected( st_this->priv->child, asked_number );
 	check_for_enable_dlg( st_this );
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
 
 	gtk_widget_hide( GTK_WIDGET( my_window_get_toplevel( MY_WINDOW( st_this ))));
 
-	return( g_strdup( st_this->private->account_number ));
+	return( g_strdup( st_this->priv->account_number ));
 }
 
 static void
@@ -185,7 +185,7 @@ v_init_dialog( myDialog *dialog )
 	GtkWidget *box;
 	ofsAccountsBookParms parms;
 
-	priv = OFA_ACCOUNT_SELECT( dialog )->private;
+	priv = OFA_ACCOUNT_SELECT( dialog )->priv;
 
 	box = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this ))),
@@ -204,7 +204,7 @@ v_init_dialog( myDialog *dialog )
 
 	priv->child = ofa_accounts_book_new( &parms );
 
-	ofa_accounts_book_init_view( st_this->private->child, NULL );
+	ofa_accounts_book_init_view( st_this->priv->child, NULL );
 }
 
 static void
@@ -221,7 +221,7 @@ check_for_enable_dlg( ofaAccountSelect *self )
 	ofoAccount *account;
 	GtkWidget *btn;
 
-	account = ofa_accounts_book_get_selected( self->private->child );
+	account = ofa_accounts_book_get_selected( self->priv->child );
 
 	btn = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this ))),
@@ -241,9 +241,9 @@ do_select( ofaAccountSelect *self )
 {
 	ofoAccount *account;
 
-	account = ofa_accounts_book_get_selected( self->private->child );
+	account = ofa_accounts_book_get_selected( self->priv->child );
 	if( account ){
-		self->private->account_number = g_strdup( ofo_account_get_number( account ));
+		self->priv->account_number = g_strdup( ofo_account_get_number( account ));
 	}
 
 	return( TRUE );

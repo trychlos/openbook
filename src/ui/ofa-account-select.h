@@ -50,14 +50,16 @@ G_BEGIN_DECLS
 typedef struct _ofaAccountSelectPrivate        ofaAccountSelectPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog                 parent;
-	ofaAccountSelectPrivate *private;
+
+	/*< private members >*/
+	ofaAccountSelectPrivate *priv;
 }
 	ofaAccountSelect;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaAccountSelectClass;
