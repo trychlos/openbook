@@ -85,12 +85,10 @@ ledger_combo_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_COMBO( instance ));
 
-	priv = OFA_LEDGER_COMBO( instance )->private;
-
 	/* free data members here */
+	priv = OFA_LEDGER_COMBO( instance )->priv;
 	g_free( priv->combo_name );
 	g_free( priv->label_name );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ledger_combo_parent_class )->finalize( instance );
@@ -103,7 +101,7 @@ ledger_combo_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_COMBO( instance ));
 
-	priv = ( OFA_LEDGER_COMBO( instance ))->private;
+	priv = ( OFA_LEDGER_COMBO( instance ))->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -126,9 +124,9 @@ ofa_ledger_combo_init( ofaLedgerCombo *self )
 
 	g_return_if_fail( self && OFA_IS_LEDGER_COMBO( self ));
 
-	self->private = g_new0( ofaLedgerComboPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LEDGER_COMBO, ofaLedgerComboPrivate );
 
-	self->private->dispose_has_run = FALSE;
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -140,6 +138,8 @@ ofa_ledger_combo_class_init( ofaLedgerComboClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ledger_combo_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_combo_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaLedgerComboPrivate ));
 }
 
 static void
@@ -174,7 +174,7 @@ ofa_ledger_combo_new( const ofaLedgerComboParms *parms )
 
 	self = g_object_new( OFA_TYPE_LEDGER_COMBO, NULL );
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* parms data */
 	priv->container = parms->container;
@@ -226,7 +226,7 @@ load_dataset( ofaLedgerCombo *self, const gchar *initial_mnemo )
 	gint idx, i;
 	ofoLedger *ledger;
 
-	priv = self->private;
+	priv = self->priv;
 	set = ofo_ledger_get_dataset( priv->dossier );
 
 	for( elt=set, i=0, idx=-1 ; elt ; elt=elt->next, ++i ){
@@ -249,7 +249,7 @@ insert_new_row( ofaLedgerCombo *self, const ofoLedger *ledger )
 	GtkTreeIter iter;
 
 	gtk_list_store_insert_with_values(
-			GTK_LIST_STORE( self->private->tmodel ),
+			GTK_LIST_STORE( self->priv->tmodel ),
 			&iter,
 			-1,
 			JOU_COL_MNEMO, ofo_ledger_get_mnemo( ledger ),
@@ -262,7 +262,7 @@ setup_signaling_connect( ofaLedgerCombo *self )
 {
 	ofaLedgerComboPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
@@ -291,9 +291,9 @@ on_ledger_changed( GtkComboBox *box, ofaLedgerCombo *self )
 	gchar *mnemo, *label;
 
 	/*g_debug( "ofa_ledger_combo_on_ledger_changed: dialog=%p (%s)",
-			( void * ) self->private->dialog, G_OBJECT_TYPE_NAME( self->private->dialog ));*/
+			( void * ) self->priv->dialog, G_OBJECT_TYPE_NAME( self->priv->dialog ));*/
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 
@@ -340,11 +340,11 @@ ofa_ledger_combo_get_selection( ofaLedgerCombo *self, gchar **mnemo, gchar **lab
 
 	id = -1;
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
-		if( gtk_combo_box_get_active_iter( self->private->combo, &iter )){
+		if( gtk_combo_box_get_active_iter( self->priv->combo, &iter )){
 
-			tmodel = gtk_combo_box_get_model( self->private->combo );
+			tmodel = gtk_combo_box_get_model( self->priv->combo );
 			gtk_tree_model_get( tmodel, &iter,
 					JOU_COL_MNEMO, &local_mnemo,
 					JOU_COL_LABEL, &local_label,
@@ -373,9 +373,9 @@ ofa_ledger_combo_set_selection( ofaLedgerCombo *self, const gchar *mnemo )
 {
 	g_return_if_fail( self && OFA_IS_LEDGER_COMBO( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
-		gtk_combo_box_set_active_id( self->private->combo, mnemo );
+		gtk_combo_box_set_active_id( self->priv->combo, mnemo );
 	}
 }
 
@@ -431,7 +431,7 @@ find_ledger_by_mnemo( ofaLedgerCombo *self, const gchar *mnemo, GtkTreeModel **t
 	gchar *str;
 	gint cmp;
 
-	priv = self->private;
+	priv = self->priv;
 	*tmodel = priv->tmodel;
 
 	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
@@ -483,7 +483,7 @@ on_reload_dataset( ofoDossier *dossier, GType type, ofaLedgerCombo *self )
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( type == OFO_TYPE_LEDGER ){
 		gtk_list_store_clear( GTK_LIST_STORE( priv->tmodel ));

@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _ofaLedgerComboPrivate        ofaLedgerComboPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject                parent;
-	ofaLedgerComboPrivate *private;
+
+	/*< private members >*/
+	ofaLedgerComboPrivate *priv;
 }
 	ofaLedgerCombo;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaLedgerComboClass;
@@ -77,7 +79,7 @@ GType           ofa_ledger_combo_get_type     ( void ) G_GNUC_CONST;
 /**
  * ofaLedgerComboParms
  *
- * The structure passed to the init_dialog() function.
+ * The structure passed to the ofa_ledger_combo_new() function.
  *
  * @container: the parent container of the target combo box
  * @dossier: the current opened ofoDossier
