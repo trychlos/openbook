@@ -33,8 +33,8 @@
 
 #include "core/my-window-prot.h"
 
-#include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-accounts-book.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -43,11 +43,11 @@ struct _ofaAccountSelectPrivate {
 
 	/* runtime
 	 */
-	ofaAccountNotebook  *child;
+	ofaAccountsBook  *child;
 
 	/* returned value
 	 */
-	gchar               *account_number;
+	gchar            *account_number;
 };
 
 static const gchar      *st_ui_xml = PKGUIDIR "/ofa-account-select.ui";
@@ -168,7 +168,7 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 	g_free( st_this->private->account_number );
 	st_this->private->account_number = NULL;
 
-	ofa_account_notebook_set_selected( st_this->private->child, asked_number );
+	ofa_accounts_book_set_selected( st_this->private->child, asked_number );
 	check_for_enable_dlg( st_this );
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
@@ -183,7 +183,7 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaAccountSelectPrivate *priv;
 	GtkWidget *box;
-	ofaAccountNotebookParms parms;
+	ofsAccountsBookParms parms;
 
 	priv = OFA_ACCOUNT_SELECT( dialog )->private;
 
@@ -198,13 +198,13 @@ v_init_dialog( myDialog *dialog )
 	parms.has_export = FALSE;
 	parms.has_view_entries = FALSE;
 	parms.pfnSelected = NULL;
-	parms.pfnActivated = ( ofaAccountNotebookCb ) on_account_activated;
+	parms.pfnActivated = ( ofaAccountsBookCb ) on_account_activated;
 	parms.pfnViewEntries = NULL;
 	parms.user_data = dialog;
 
-	priv->child = ofa_account_notebook_new( &parms );
+	priv->child = ofa_accounts_book_new( &parms );
 
-	ofa_account_notebook_init_view( st_this->private->child, NULL );
+	ofa_accounts_book_init_view( st_this->private->child, NULL );
 }
 
 static void
@@ -221,7 +221,7 @@ check_for_enable_dlg( ofaAccountSelect *self )
 	ofoAccount *account;
 	GtkWidget *btn;
 
-	account = ofa_account_notebook_get_selected( self->private->child );
+	account = ofa_accounts_book_get_selected( self->private->child );
 
 	btn = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this ))),
@@ -241,7 +241,7 @@ do_select( ofaAccountSelect *self )
 {
 	ofoAccount *account;
 
-	account = ofa_account_notebook_get_selected( self->private->child );
+	account = ofa_accounts_book_get_selected( self->private->child );
 	if( account ){
 		self->private->account_number = g_strdup( ofo_account_get_number( account ));
 	}

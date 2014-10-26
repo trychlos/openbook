@@ -52,12 +52,12 @@ openbook_SOURCES = \
 	my-editable-amount.h								\
 	my-editable-date.c									\
 	my-editable-date.h									\
-	ofa-account-notebook.c								\
-	ofa-account-notebook.h								\
 	ofa-account-properties.c							\
 	ofa-account-properties.h							\
-	ofa-accounts-chart.c								\
-	ofa-accounts-chart.h								\
+	ofa-accounts-book.c									\
+	ofa-accounts-book.h									\
+	ofa-accounts-page.c									\
+	ofa-accounts-page.h									\
 	ofa-account-select.c								\
 	ofa-account-select.h								\
 	ofa-application.c									\
@@ -167,9 +167,9 @@ rc_files = \
 	$(NULL)
 
 ui_files = \
-	ofa-account-notebook.ui								\
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
+	ofa-accounts-book.ui								\
 	ofa-bat-common.ui									\
 	ofa-bat-properties.ui								\
 	ofa-bat-select.ui									\

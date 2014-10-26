@@ -35,7 +35,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-accounts-page.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-backup.h"
 #include "ui/ofa-bat-set.h"
@@ -151,7 +151,7 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_ACCOUNTS,
 				N_( "Chart of accounts" ),
-				ofa_accounts_chart_get_type,
+				ofa_accounts_page_get_type,
 				FALSE,
 				FALSE },
 

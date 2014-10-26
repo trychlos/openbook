@@ -31,9 +31,9 @@
 #include <glib/gi18n.h>
 
 #include "ui/ofa-page.h"
-#include "ui/ofa-account-notebook.h"
 #include "ui/ofa-account-properties.h"
-#include "ui/ofa-accounts-chart.h"
+#include "ui/ofa-accounts-book.h"
+#include "ui/ofa-accounts-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-view-entries.h"
 #include "api/ofo-account.h"
@@ -41,51 +41,51 @@
 
 /* private instance data
  */
-struct _ofaAccountsChartPrivate {
-	gboolean            dispose_has_run;
+struct _ofaAccountsPagePrivate {
+	gboolean         dispose_has_run;
 
 	/* UI
 	 */
-	ofaAccountNotebook *chart_child;
-	GtkButton          *consult_btn;
+	ofaAccountsBook *book_child;
+	GtkButton       *consult_btn;
 };
 
-G_DEFINE_TYPE( ofaAccountsChart, ofa_accounts_chart, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static void       on_row_activated( ofoAccount *account, ofaPage *page );
-static void       on_view_entries( ofoAccount *account, ofaAccountsChart *self );
+static void       on_view_entries( ofoAccount *account, ofaAccountsPage *self );
 
 static void
-accounts_chart_finalize( GObject *instance )
+accounts_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_accounts_chart_finalize";
-	ofaAccountsChartPrivate *priv;
+	static const gchar *thisfn = "ofa_accounts_page_finalize";
+	ofaAccountsPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_CHART( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNTS_PAGE( instance ));
 
-	priv = OFA_ACCOUNTS_CHART( instance )->private;
+	priv = OFA_ACCOUNTS_PAGE( instance )->private;
 
 	/* free data members here */
 	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_chart_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_accounts_page_parent_class )->finalize( instance );
 }
 
 static void
-accounts_chart_dispose( GObject *instance )
+accounts_page_dispose( GObject *instance )
 {
-	ofaAccountsChartPrivate *priv;
+	ofaAccountsPagePrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_CHART( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNTS_PAGE( instance ));
 
-	priv = ( OFA_ACCOUNTS_CHART( instance ))->private;
+	priv = ( OFA_ACCOUNTS_PAGE( instance ))->private;
 
 	if( !priv->dispose_has_run ){
 
@@ -95,33 +95,33 @@ accounts_chart_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_chart_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_accounts_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_accounts_chart_init( ofaAccountsChart *self )
+ofa_accounts_page_init( ofaAccountsPage *self )
 {
-	static const gchar *thisfn = "ofa_accounts_chart_init";
+	static const gchar *thisfn = "ofa_accounts_page_init";
 
-	g_return_if_fail( self && OFA_IS_ACCOUNTS_CHART( self ));
+	g_return_if_fail( self && OFA_IS_ACCOUNTS_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaAccountsChartPrivate, 1 );
+	self->private = g_new0( ofaAccountsPagePrivate, 1 );
 
 	self->private->dispose_has_run = FALSE;
 }
 
 static void
-ofa_accounts_chart_class_init( ofaAccountsChartClass *klass )
+ofa_accounts_page_class_init( ofaAccountsPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_accounts_chart_class_init";
+	static const gchar *thisfn = "ofa_accounts_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = accounts_chart_dispose;
-	G_OBJECT_CLASS( klass )->finalize = accounts_chart_finalize;
+	G_OBJECT_CLASS( klass )->dispose = accounts_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = accounts_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
@@ -132,8 +132,8 @@ static GtkWidget *
 v_setup_view( ofaPage *page )
 {
 	GtkNotebook *chart_book;
-	ofaAccountNotebookParms parms;
-	ofaAccountsChartPrivate *priv;
+	ofsAccountsBookParms parms;
+	ofaAccountsPagePrivate *priv;
 
 	chart_book = GTK_NOTEBOOK( gtk_notebook_new());
 	gtk_widget_set_margin_left( GTK_WIDGET( chart_book ), 4 );
@@ -146,12 +146,12 @@ v_setup_view( ofaPage *page )
 	parms.has_export = FALSE;
 	parms.has_view_entries = TRUE;
 	parms.pfnSelected = NULL;
-	parms.pfnActivated = ( ofaAccountNotebookCb ) on_row_activated;
-	parms.pfnViewEntries = ( ofaAccountNotebookCb ) on_view_entries;
+	parms.pfnActivated = ( ofaAccountsBookCb ) on_row_activated;
+	parms.pfnViewEntries = ( ofaAccountsBookCb ) on_view_entries;
 	parms.user_data = page;
 
-	priv = OFA_ACCOUNTS_CHART( page )->private;
-	priv->chart_child = ofa_account_notebook_new( &parms );
+	priv = OFA_ACCOUNTS_PAGE( page )->private;
+	priv->book_child = ofa_accounts_book_new( &parms );
 
 	return( GTK_WIDGET( chart_book ));
 }
@@ -165,11 +165,11 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	ofa_account_notebook_init_view( OFA_ACCOUNTS_CHART( page )->private->chart_child, NULL );
+	ofa_accounts_book_init_view( OFA_ACCOUNTS_PAGE( page )->private->book_child, NULL );
 }
 
 /*
- * ofaAccountNotebook callback:
+ * ofaAccountsBook callback:
  */
 static void
 on_row_activated( ofoAccount *account, ofaPage *page )
@@ -180,11 +180,11 @@ on_row_activated( ofoAccount *account, ofaPage *page )
 		ofa_account_properties_run( ofa_page_get_main_window( page ), account );
 	}
 
-	ofa_account_notebook_grab_focus( OFA_ACCOUNTS_CHART( page )->private->chart_child );
+	ofa_accounts_book_grab_focus( OFA_ACCOUNTS_PAGE( page )->private->book_child );
 }
 
 static void
-on_view_entries( ofoAccount *account, ofaAccountsChart *self )
+on_view_entries( ofoAccount *account, ofaAccountsPage *self )
 {
 	ofaPage *page;
 
