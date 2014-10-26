@@ -94,13 +94,11 @@ dossier_properties_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_PROPERTIES( instance ));
 
-	priv = OFA_DOSSIER_PROPERTIES( instance )->private;
-
 	/* free data members here */
+	priv = OFA_DOSSIER_PROPERTIES( instance )->priv;
 	g_free( priv->label );
 	g_free( priv->currency );
 	g_free( priv->last_closed );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_properties_parent_class )->finalize( instance );
@@ -130,9 +128,10 @@ ofa_dossier_properties_init( ofaDossierProperties *self )
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_PROPERTIES( self ));
 
-	self->private = g_new0( ofaDossierPropertiesPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+						self, OFA_TYPE_DOSSIER_PROPERTIES, ofaDossierPropertiesPrivate );
 
-	self->private->updated = FALSE;
+	self->priv->updated = FALSE;
 }
 
 static void
@@ -147,6 +146,8 @@ ofa_dossier_properties_class_init( ofaDossierPropertiesClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaDossierPropertiesPrivate ));
 }
 
 /**
@@ -174,11 +175,11 @@ ofa_dossier_properties_run( ofaMainWindow *main_window, ofoDossier *dossier )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
-	self->private->dossier = dossier;
+	self->priv->dossier = dossier;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	updated = self->private->updated;
+	updated = self->priv->updated;
 
 	g_object_unref( self );
 
@@ -193,7 +194,7 @@ v_init_dialog( myDialog *dialog )
 	GtkContainer *container;
 
 	self = OFA_DOSSIER_PROPERTIES( dialog );
-	priv = self->private;
+	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	init_properties_page( self );
@@ -216,7 +217,7 @@ init_properties_page( ofaDossierProperties *self )
 	const gchar *costr;
 	gint ivalue;
 
-	priv = self->private;
+	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	entry = my_utils_container_get_child_by_name( container, "p1-label" );
@@ -255,7 +256,7 @@ init_current_exe_page( ofaDossierProperties *self )
 	GtkWidget *label;
 	gchar *str;
 
-	priv = self->private;
+	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	priv->last_closed = ofo_dossier_get_last_closed_exercice( priv->dossier );
@@ -296,8 +297,8 @@ init_current_exe_page( ofaDossierProperties *self )
 static void
 on_label_changed( GtkEntry *entry, ofaDossierProperties *self )
 {
-	g_free( self->private->label );
-	self->private->label = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->label );
+	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -309,7 +310,7 @@ on_duree_changed( GtkEntry *entry, ofaDossierProperties *self )
 
 	text = gtk_entry_get_text( entry );
 	if( text && g_utf8_strlen( text, -1 )){
-		self->private->duree = atoi( text );
+		self->priv->duree = atoi( text );
 	}
 
 	check_for_enable_dlg( self );
@@ -321,8 +322,8 @@ on_duree_changed( GtkEntry *entry, ofaDossierProperties *self )
 static void
 on_currency_changed( const gchar *code, ofaDossierProperties *self )
 {
-	g_free( self->private->currency );
-	self->private->currency = g_strdup( code );
+	g_free( self->priv->currency );
+	self->priv->currency = g_strdup( code );
 
 	check_for_enable_dlg( self );
 }
@@ -348,7 +349,7 @@ is_dialog_valid( ofaDossierProperties *self )
 	ofaDossierPropertiesPrivate *priv;
 	gboolean ok;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( priv->begin_entry ){
 		my_date_set_from_date( &priv->begin,
@@ -381,7 +382,7 @@ do_update( ofaDossierProperties *self )
 
 	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
 
-	priv = self->private;
+	priv = self->priv;
 
 	ofo_dossier_set_label( priv->dossier, priv->label );
 	ofo_dossier_set_exercice_length( priv->dossier, priv->duree );

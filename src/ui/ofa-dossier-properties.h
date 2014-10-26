@@ -51,14 +51,16 @@ G_BEGIN_DECLS
 typedef struct _ofaDossierPropertiesPrivate        ofaDossierPropertiesPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog                     parent;
-	ofaDossierPropertiesPrivate *private;
+
+	/*< private members >*/
+	ofaDossierPropertiesPrivate *priv;
 }
 	ofaDossierProperties;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaDossierPropertiesClass;
