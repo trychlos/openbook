@@ -184,8 +184,6 @@ ofo_ope_template_class_init( ofoOpeTemplateClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	g_type_class_add_private( klass, sizeof( ofoOpeTemplatePrivate ));
-
 	G_OBJECT_CLASS( klass )->dispose = ope_template_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_finalize;
 

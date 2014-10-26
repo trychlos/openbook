@@ -46,20 +46,22 @@ G_BEGIN_DECLS
 #define OFO_IS_LEDGER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_LEDGER ))
 #define OFO_LEDGER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_LEDGER, ofoLedgerClass ))
 
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoLedgerClass;
-
 typedef struct _ofoLedgerPrivate       ofoLedgerPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofoBase           parent;
-	ofoLedgerPrivate *private;
+
+	/*< private members >*/
+	ofoLedgerPrivate *priv;
 }
 	ofoLedger;
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass parent;
+}
+	ofoLedgerClass;
 
 GType ofo_ledger_get_type( void ) G_GNUC_CONST;
 

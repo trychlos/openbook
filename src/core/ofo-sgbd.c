@@ -133,8 +133,6 @@ ofo_sgbd_class_init( ofoSgbdClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	g_type_class_add_private( klass, sizeof( ofoSgbdPrivate ));
-
 	G_OBJECT_CLASS( klass )->dispose = sgbd_dispose;
 	G_OBJECT_CLASS( klass )->finalize = sgbd_finalize;
 

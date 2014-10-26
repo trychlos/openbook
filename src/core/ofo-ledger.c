@@ -123,7 +123,7 @@ ledger_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_ledger_finalize";
 	ofoLedgerPrivate *priv;
 
-	priv = OFO_LEDGER( instance )->private;
+	priv = OFO_LEDGER( instance )->priv;
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
@@ -138,7 +138,6 @@ ledger_finalize( GObject *instance )
 	g_free( priv->upd_user );
 	g_list_free_full( priv->exes, ( GDestroyNotify ) free_detail_exe );
 	g_list_free_full( priv->amounts, ( GDestroyNotify ) free_detail_cur );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_ledger_parent_class )->finalize( instance );
@@ -166,7 +165,7 @@ ofo_ledger_init( ofoLedger *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofoLedgerPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_LEDGER, ofoLedgerPrivate );
 }
 
 static void
@@ -176,10 +175,10 @@ ofo_ledger_class_init( ofoLedgerClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	g_type_class_add_private( klass, sizeof( ofoLedgerPrivate ));
-
 	G_OBJECT_CLASS( klass )->dispose = ledger_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofoLedgerPrivate ));
 }
 
 /**
@@ -471,7 +470,7 @@ ledger_load_dataset( void )
 			g_debug( "ledger_load_dataset: adding ledger=%s, exe_id=%d, currency=%s",
 					ofo_ledger_get_mnemo( ledger ), balance->exe_id, balance->currency );
 
-			ledger->private->amounts = g_list_prepend( ledger->private->amounts, balance );
+			ledger->priv->amounts = g_list_prepend( ledger->priv->amounts, balance );
 		}
 
 		ofo_sgbd_free_result( result );
@@ -492,7 +491,7 @@ ledger_load_dataset( void )
 			icol = icol->next;
 			my_date_set_from_sql( &exercice->last_clo, ( const gchar * ) icol->data );
 
-			ledger->private->exes = g_list_prepend( ledger->private->exes, exercice );
+			ledger->priv->exes = g_list_prepend( ledger->priv->exes, exercice );
 		}
 
 		ofo_sgbd_free_result( result );
@@ -603,7 +602,7 @@ ofo_ledger_get_mnemo( const ofoLedger *ledger )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		return(( const gchar * ) ledger->private->mnemo );
+		return(( const gchar * ) ledger->priv->mnemo );
 	}
 
 	g_assert_not_reached();
@@ -620,7 +619,7 @@ ofo_ledger_get_label( const ofoLedger *ledger )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		return(( const gchar * ) ledger->private->label );
+		return(( const gchar * ) ledger->priv->label );
 	}
 
 	g_assert_not_reached();
@@ -637,7 +636,7 @@ ofo_ledger_get_notes( const ofoLedger *ledger )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		return(( const gchar * ) ledger->private->notes );
+		return(( const gchar * ) ledger->priv->notes );
 	}
 
 	g_assert_not_reached();
@@ -654,7 +653,7 @@ ofo_ledger_get_upd_user( const ofoLedger *ledger )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		return(( const gchar * ) ledger->private->upd_user );
+		return(( const gchar * ) ledger->priv->upd_user );
 	}
 
 	g_assert_not_reached();
@@ -671,7 +670,7 @@ ofo_ledger_get_upd_stamp( const ofoLedger *ledger )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &ledger->private->upd_stamp );
+		return(( const GTimeVal * ) &ledger->priv->upd_stamp );
 	}
 
 	g_assert_not_reached();
@@ -739,7 +738,7 @@ ofo_ledger_get_last_closing( const ofoLedger *ledger )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		for( idet=ledger->private->exes ; idet ; idet=idet->next ){
+		for( idet=ledger->priv->exes ; idet ; idet=idet->next ){
 			sdetail = ( sDetailExe * ) idet->data;
 			if( dlast ){
 				if( my_date_is_valid( &sdetail->last_clo ) &&
@@ -936,7 +935,7 @@ ofo_ledger_get_exe_list( const ofoLedger *ledger )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		for( iam=ledger->private->amounts ; iam ; iam=iam->next ){
+		for( iam=ledger->priv->amounts ; iam ; iam=iam->next ){
 			sdev = ( sDetailCur * ) iam->data;
 			list = g_list_prepend( list, GINT_TO_POINTER( sdev->exe_id ));
 		}
@@ -976,7 +975,7 @@ ledger_find_cur_by_code( const ofoLedger *ledger, gint exe_id, const gchar *curr
 	GList *idet;
 	sDetailCur *sdet;
 
-	for( idet=ledger->private->amounts ; idet ; idet=idet->next ){
+	for( idet=ledger->priv->amounts ; idet ; idet=idet->next ){
 		sdet = ( sDetailCur * ) idet->data;
 		if( sdet->exe_id == exe_id && !g_utf8_collate( sdet->currency, currency )){
 			return( sdet );
@@ -995,7 +994,7 @@ ledger_find_exe_by_id( const ofoLedger *ledger, gint exe_id )
 	GList *idet;
 	sDetailExe *sdet;
 
-	for( idet=ledger->private->exes ; idet ; idet=idet->next ){
+	for( idet=ledger->priv->exes ; idet ; idet=idet->next ){
 		sdet = ( sDetailExe * ) idet->data;
 		if( sdet->exe_id == exe_id ){
 			return( sdet );
@@ -1056,7 +1055,7 @@ ofo_ledger_is_deletable( const ofoLedger *ledger, const ofoDossier *dossier )
 		ok = TRUE;
 		exe_id = ofo_dossier_get_current_exe_id( dossier );
 
-		for( ic=ledger->private->amounts ; ic && ok ; ic=ic->next ){
+		for( ic=ledger->priv->amounts ; ic && ok ; ic=ic->next ){
 			detail = ( sDetailCur * ) ic->data;
 			if( detail->exe_id == exe_id ){
 				ok &= detail->clo_deb == 0.0 && detail->clo_cre == 0.0 &&
@@ -1100,8 +1099,8 @@ ofo_ledger_set_mnemo( ofoLedger *ledger, const gchar *mnemo )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		g_free( ledger->private->mnemo );
-		ledger->private->mnemo = g_strdup( mnemo );
+		g_free( ledger->priv->mnemo );
+		ledger->priv->mnemo = g_strdup( mnemo );
 	}
 }
 
@@ -1115,8 +1114,8 @@ ofo_ledger_set_label( ofoLedger *ledger, const gchar *label )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		g_free( ledger->private->label );
-		ledger->private->label = g_strdup( label );
+		g_free( ledger->priv->label );
+		ledger->priv->label = g_strdup( label );
 	}
 }
 
@@ -1130,8 +1129,8 @@ ofo_ledger_set_notes( ofoLedger *ledger, const gchar *notes )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		g_free( ledger->private->notes );
-		ledger->private->notes = g_strdup( notes );
+		g_free( ledger->priv->notes );
+		ledger->priv->notes = g_strdup( notes );
 	}
 }
 
@@ -1145,8 +1144,8 @@ ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		g_free( ledger->private->upd_user );
-		ledger->private->upd_user = g_strdup( upd_user );
+		g_free( ledger->priv->upd_user );
+		ledger->priv->upd_user = g_strdup( upd_user );
 	}
 }
 
@@ -1160,7 +1159,7 @@ ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		my_utils_stamp_set_from_stamp( &ledger->private->upd_stamp, upd_stamp );
+		my_utils_stamp_set_from_stamp( &ledger->priv->upd_stamp, upd_stamp );
 	}
 }
 
@@ -1343,7 +1342,7 @@ ledger_new_cur_with_code( ofoLedger *ledger, gint exe_id, const gchar *currency 
 		sdet->exe_id = exe_id;
 		sdet->currency = g_strdup( currency );
 
-		ledger->private->amounts = g_list_prepend( ledger->private->amounts, sdet );
+		ledger->priv->amounts = g_list_prepend( ledger->priv->amounts, sdet );
 	}
 
 	return( sdet );
@@ -1385,7 +1384,7 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 				sexe = g_new0( sDetailExe, 1 );
 				sexe->exe_id = exe_id;
 				my_date_clear( &sexe->last_clo );
-				ledger->private->exes = g_list_prepend( ledger->private->exes, sexe );
+				ledger->priv->exes = g_list_prepend( ledger->priv->exes, sexe );
 			}
 
 			my_date_set_from_date( &sexe->last_clo, closing );
@@ -1801,7 +1800,7 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 
 		lines = g_slist_prepend( lines, str );
 
-		for( exe=ledger->private->exes ; exe ; exe=exe->next ){
+		for( exe=ledger->priv->exes ; exe ; exe=exe->next ){
 			sexe = ( sDetailExe * ) exe->data;
 
 			sdfin = my_date_to_str( ofo_dossier_get_exe_end( dossier, sexe->exe_id ), MY_DATE_SQL );
@@ -1818,7 +1817,7 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 			lines = g_slist_prepend( lines, str );
 		}
 
-		for( amount=ledger->private->amounts ; amount ; amount=amount->next ){
+		for( amount=ledger->priv->amounts ; amount ; amount=amount->next ){
 			sdev = ( sDetailCur * ) amount->data;
 
 			sdfin = my_date_to_str(
