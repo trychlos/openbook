@@ -30,33 +30,36 @@
 /**
  * SECTION: ofa_reconciliation
  * @short_description: #ofaReconciliation class definition.
- * @include: ui/ofa-ledgers-set.h
+ * @include: ui/ofa-reconciliation.h
  *
- * Display the chart of accounts, letting the user edit it.
+ * Display both entries from an account and a Bank Account Transaction
+ * list, letting user reconciliate balanced lines.
  */
 
 #include "ui/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_RAPPRO                ( ofa_reconciliation_get_type())
-#define OFA_RECONCILIATION( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RAPPRO, ofaReconciliation ))
-#define OFA_RECONCILIATION_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RAPPRO, ofaReconciliationClass ))
-#define OFA_IS_RAPPRO( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RAPPRO ))
-#define OFA_IS_RAPPRO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RAPPRO ))
-#define OFA_RECONCILIATION_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RAPPRO, ofaReconciliationClass ))
+#define OFA_TYPE_RECONCILIATION                ( ofa_reconciliation_get_type())
+#define OFA_RECONCILIATION( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RECONCILIATION, ofaReconciliation ))
+#define OFA_RECONCILIATION_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RECONCILIATION, ofaReconciliationClass ))
+#define OFA_IS_RECONCILIATION( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RECONCILIATION ))
+#define OFA_IS_RECONCILIATION_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECONCILIATION ))
+#define OFA_RECONCILIATION_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECONCILIATION, ofaReconciliationClass ))
 
 typedef struct _ofaReconciliationPrivate       ofaReconciliationPrivate;
 
 typedef struct {
-	/*< private >*/
-	ofaPage       parent;
-	ofaReconciliationPrivate *private;
+	/*< public members >*/
+	ofaPage                   parent;
+
+	/*< private members >*/
+	ofaReconciliationPrivate *priv;
 }
 	ofaReconciliation;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofaPageClass parent;
 }
 	ofaReconciliationClass;

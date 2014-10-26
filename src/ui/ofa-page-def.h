@@ -69,13 +69,13 @@ typedef struct {
 	 * @page: this #ofaPage object.
 	 *
 	 * This virtual function is called at the end of instance
-	 * construction (before instance initialization be triggered).
-	 * The base class implementation successively calls #setup_view()
-	 * and #setup_buttons_box() virtual methods, attaching the two
-	 * returned widgets respectively on columns 0 and 1 of the main
-	 * grid of the page.
-	 * The base class implementation ends up by calling #init_view()
-	 * virtual method.
+	 * construction (before instance initialization returns).
+	 *
+	 * The base class default implementation successively calls
+	 * #setup_view() and #setup_buttons_box() virtual methods,
+	 * attaching the two returned widgets respectively on columns 0
+	 * and 1 of the main grid of the page.
+	 * It ends up by calling #init_view() virtual method.
 	 */
 	void        ( *setup_page )       ( ofaPage *page );
 
@@ -83,8 +83,9 @@ typedef struct {
 	 * setup_view:
 	 * @page: this #ofaPage object.
 	 *
-	 * This virtual function is called by #setup_page() implementation
-	 * of the base class virtual method.
+	 * This virtual function is called by #setup_page() default
+	 * implementation of the base class virtual method.
+	 *
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
@@ -94,9 +95,10 @@ typedef struct {
 	 * setup_buttons:
 	 * @page: this #ofaPage object.
 	 *
-	 * This virtual function is called by #setup_page() implementation
-	 * of the base class virtual method.
-	 * The base class implementation defines three 'New',
+	 * This virtual function is called by #setup_page() default
+	 * implementation of the base class virtual method.
+	 *
+	 * The base class default implementation defines three 'New',
 	 * 'Update' and 'Delete' buttons, attaching respectively to
 	 * 'on_new_clicked', 'on_update_clicked' and 'on_delete_clicked'
 	 * virtual methods.

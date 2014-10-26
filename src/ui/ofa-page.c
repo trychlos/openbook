@@ -70,10 +70,10 @@ enum {
 G_DEFINE_TYPE( ofaPage, ofa_page, G_TYPE_OBJECT )
 
 static void       do_setup_page( ofaPage *page );
-static void       v_setup_page( ofaPage *page );
+static void       v_setup_page_default( ofaPage *page );
 static GtkWidget *do_setup_view( ofaPage *page );
 static GtkWidget *do_setup_buttons( ofaPage *page );
-static GtkWidget *v_setup_buttons( ofaPage *page );
+static GtkWidget *v_setup_buttons_default( ofaPage *page );
 static GtkWidget *create_buttons( gboolean has_import, gboolean has_export );
 static void       do_init_view( ofaPage *page );
 static void       do_on_new_clicked( GtkButton *button, ofaPage *page );
@@ -221,34 +221,35 @@ page_set_property( GObject *instance, guint property_id, const GValue *value, GP
 	}
 }
 
+/*
+ * called during instance initialization, after properties have been set
+ */
 static void
 page_constructed( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_page_constructed";
 	ofaPage *self;
+	ofaPageProtected *prot;
 	ofaPagePrivate *priv;
 
 	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
-
-	self = OFA_PAGE( instance );
-	priv = self->priv;
 
 	/* first, chain up to the parent class */
 	if( G_OBJECT_CLASS( ofa_page_parent_class )->constructed ){
 		G_OBJECT_CLASS( ofa_page_parent_class )->constructed( instance );
 	}
 
-#if 0
-	g_debug( "%s: main_window=%p, dossier=%p, theme=%d, grid=%p",
+	self = OFA_PAGE( instance );
+	prot = self->prot;
+	priv = self->priv;
+
+	g_debug( "%s: instance=%p (%s), main_window=%p, dossier=%p, theme=%d, grid=%p",
 			thisfn,
-			( void * ) priv->main_window,
-			( void * ) priv->dossier,
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) prot->main_window,
+			( void * ) prot->dossier,
 			priv->theme,
 			( void * ) priv->grid );
-#else
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-#endif
 
 	/* attach a weak reference to the grid widget to unref this object
 	 * and (more useful) the derived class which handles it */
@@ -354,9 +355,9 @@ ofa_page_class_init( ofaPageClass *klass )
 					FALSE,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	klass->setup_page = v_setup_page;
+	klass->setup_page = v_setup_page_default;
 	klass->setup_view = NULL;
-	klass->setup_buttons = v_setup_buttons;
+	klass->setup_buttons = v_setup_buttons_default;
 	klass->init_view = NULL;
 	klass->on_new_clicked = NULL;
 	klass->on_update_clicked = NULL;
@@ -366,15 +367,6 @@ ofa_page_class_init( ofaPageClass *klass )
 	klass->pre_remove = NULL;
 }
 
-/**
- * ofa_page_pre_remove:
- */
-void
-ofa_page_pre_remove( ofaPage *page )
-{
-
-}
-
 static void
 do_setup_page( ofaPage *page )
 {
@@ -382,14 +374,15 @@ do_setup_page( ofaPage *page )
 
 	if( OFA_PAGE_GET_CLASS( page )->setup_page ){
 		OFA_PAGE_GET_CLASS( page )->setup_page( page );
-
-	} else {
-		v_setup_page( page );
 	}
 }
 
+/*
+ * this is only called if the derived class doesn't provide its own
+ * version of the 'setup_page' virtual method
+ */
 static void
-v_setup_page( ofaPage *page )
+v_setup_page_default( ofaPage *page )
 {
 	GtkWidget *view;
 	GtkWidget *buttons_box;
@@ -440,16 +433,13 @@ do_setup_buttons( ofaPage *page )
 
 	if( OFA_PAGE_GET_CLASS( page )->setup_buttons ){
 		buttons_box = OFA_PAGE_GET_CLASS( page )->setup_buttons( page );
-
-	} else {
-		v_setup_buttons( page );
 	}
 
 	return( buttons_box );
 }
 
 static GtkWidget *
-v_setup_buttons( ofaPage *page )
+v_setup_buttons_default( ofaPage *page )
 {
 	ofaPagePrivate *priv;
 	GtkBox *buttons_box;
@@ -789,8 +779,7 @@ ofa_page_get_new_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->prot->dispose_has_run &&
-			page->priv->btn_new ){
+	if( !page->prot->dispose_has_run ){
 
 		return( GTK_WIDGET( page->priv->btn_new ));
 	}
@@ -806,8 +795,7 @@ ofa_page_get_update_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->prot->dispose_has_run &&
-			page->priv->btn_update ){
+	if( !page->prot->dispose_has_run ){
 
 		return( GTK_WIDGET( page->priv->btn_update ));
 	}
@@ -823,8 +811,7 @@ ofa_page_get_delete_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->prot->dispose_has_run &&
-			page->priv->btn_delete ){
+	if( !page->prot->dispose_has_run ){
 
 		return( GTK_WIDGET( page->priv->btn_delete ));
 	}
@@ -840,8 +827,7 @@ ofa_page_get_import_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->prot->dispose_has_run &&
-			page->priv->btn_import ){
+	if( !page->prot->dispose_has_run ){
 
 		return( GTK_WIDGET( page->priv->btn_import ));
 	}
@@ -857,11 +843,31 @@ ofa_page_get_export_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->prot->dispose_has_run &&
-			page->priv->btn_export ){
+	if( !page->prot->dispose_has_run ){
 
 		return( GTK_WIDGET( page->priv->btn_export ));
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_page_pre_remove:
+ *
+ * This function is called by the #ofaMainWindow main window when it is
+ * about to remove an #ofaPage from the main notebook. It is time for
+ * the #ofaPage-derived class to handle widgets before they are
+ * destroyed.
+ */
+void
+ofa_page_pre_remove( ofaPage *page )
+{
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
+
+	if( !page->prot->dispose_has_run ){
+
+		if( OFA_PAGE_GET_CLASS( page )->pre_remove ){
+			OFA_PAGE_GET_CLASS( page )->pre_remove( page );
+		}
+	}
 }

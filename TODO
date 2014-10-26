@@ -623,17 +623,15 @@
                 + rename private to priv
                 ofaReconciliation
 
- 403 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                ofaRestore
-
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
  407 2014-10-26 only ofaMainWindow should keep a ofoDossier pointer,
                 not the ofaPage
 
- 408
+ 408 2014-10-26 buttons should be properties of the ofaPage
+
+ 409
 
 -----------------------------------------------------------------------
  DONE
@@ -1650,6 +1648,11 @@
                 + rename private to priv
                 ofaMainWindow
      2014-10-26 done - svn #3924
+
+ 403 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaRestore
+     2014-10-26 done - svn #3927
 
  404 2014-10-26 review public vs private members in class definitions
                 + rename private to priv
