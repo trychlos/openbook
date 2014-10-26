@@ -142,17 +142,13 @@ static void
 preferences_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_preferences_finalize";
-	ofaPreferencesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_PREFERENCES( instance ));
 
-	priv = OFA_PREFERENCES( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_preferences_parent_class )->finalize( instance );
@@ -167,9 +163,9 @@ preferences_dispose( GObject *instance )
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
-		priv = OFA_PREFERENCES( instance )->private;
-
 		/* unref object members here */
+		priv = OFA_PREFERENCES( instance )->priv;
+
 		g_clear_object( &priv->dd_prefs );
 
 		g_list_free_full( priv->plugs, ( GDestroyNotify ) g_free );
@@ -190,7 +186,7 @@ ofa_preferences_init( ofaPreferences *self )
 
 	g_return_if_fail( self && OFA_IS_PREFERENCES( self ));
 
-	self->private = g_new0( ofaPreferencesPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PREFERENCES, ofaPreferencesPrivate );
 }
 
 static void
@@ -205,6 +201,8 @@ ofa_preferences_class_init( ofaPreferencesClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaPreferencesPrivate ));
 }
 
 /**
@@ -233,7 +231,7 @@ ofa_preferences_run( ofaMainWindow *main_window, ofaPlugin *plugin )
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	updated = self->private->updated;
+	updated = self->priv->updated;
 
 	g_object_unref( self );
 
@@ -257,7 +255,7 @@ init_quit_assistant_page( ofaPreferences *self )
 	GtkWidget *button;
 	gboolean bvalue;
 
-	priv = self->private;
+	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	/* priv->confirm_on_escape_btn is set before acting on
@@ -291,7 +289,7 @@ init_dossier_delete_page( ofaPreferences *self )
 	GtkWidget *window;
 	GtkWidget *grid, *parent;
 
-	priv = self->private;
+	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	window = my_utils_builder_load_from_path( st_delete_dossier_xml, st_delete_dossier_id );
@@ -312,7 +310,7 @@ init_locales_page( ofaPreferences *self )
 	/*ofaPreferencesPrivate *priv;
 	GSList *slist;
 
-	priv = self->private;*/
+	priv = self->priv;*/
 
 	get_locales();
 
@@ -515,14 +513,14 @@ init_plugin_page( ofaPreferences *self, ofaIPreferences *instance )
 	splug->object = instance;
 	splug->page = page;
 
-	self->private->plugs = g_list_append( self->private->plugs, splug );
+	self->priv->plugs = g_list_append( self->priv->plugs, splug );
 }
 
 static void
 on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 {
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->confirm_on_escape_btn ),
+			GTK_WIDGET( self->priv->confirm_on_escape_btn ),
 			gtk_toggle_button_get_active( button ));
 }
 
@@ -575,7 +573,7 @@ do_update( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	do_update_assistant_page( self );
 	ofa_dossier_delete_prefs_set_settings( priv->dd_prefs );
@@ -594,7 +592,7 @@ do_update_assistant_page( ofaPreferences *self )
 	GtkContainer *container;
 	GtkWidget *button;
 
-	priv = self->private;
+	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	button = my_utils_container_get_child_by_name( container, "p1-quit-on-escape" );
@@ -647,7 +645,7 @@ do_update_locales_page( ofaPreferences *self )
 	/*ofaPreferencesPrivate *priv;
 	GString *text;
 
-	priv = self->private;
+	priv = self->priv;
 
 	ofa_settings_set_uint( "PrefDateEnter",   priv->p3_date_enter );
 	ofa_settings_set_uint( "PrefDateDisplay", priv->p3_date_display );
@@ -684,7 +682,7 @@ find_prefs_plugin( ofaPreferences *self, ofaIPreferences *instance )
 	GList *it;
 	pagePlugin *splug;
 
-	for( it=self->private->plugs ; it ; it=it->next ){
+	for( it=self->priv->plugs ; it ; it=it->next ){
 		splug = ( pagePlugin * ) it->data;
 		if( splug->object == instance ){
 			return( splug->page );

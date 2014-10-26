@@ -607,10 +607,6 @@
                 + rename private to priv
                 ofaPreferences
 
- 399 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                ofaPrintReconcil
-
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
@@ -619,7 +615,9 @@
 
  408 2014-10-26 buttons should be properties of the ofaPage
 
- 409
+ 409 2014-10-26 print reconcil: should also print currency symbol
+
+ 410
 
 -----------------------------------------------------------------------
  DONE
@@ -1636,6 +1634,11 @@
                 + rename private to priv
                 ofaMainWindow
      2014-10-26 done - svn #3924
+
+ 399 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPrintReconcil
+     2014-10-26 done - svn #3931
 
  400 2014-10-26 review public vs private members in class definitions
                 + rename private to priv
