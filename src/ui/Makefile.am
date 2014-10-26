@@ -76,8 +76,8 @@ openbook_SOURCES = \
 	ofa-bat-set.h										\
 	ofa-class-properties.c								\
 	ofa-class-properties.h								\
-	ofa-classes-set.c									\
-	ofa-classes-set.h									\
+	ofa-classes-page.c									\
+	ofa-classes-page.h									\
 	ofa-currencies-page.c								\
 	ofa-currencies-page.h								\
 	ofa-currency-combo.c								\

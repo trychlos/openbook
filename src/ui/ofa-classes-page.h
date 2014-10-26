@@ -24,12 +24,12 @@
  * $Id$
  */
 
-#ifndef __OFA_CLASSES_SET_H__
-#define __OFA_CLASSES_SET_H__
+#ifndef __OFA_CLASSES_PAGE_H__
+#define __OFA_CLASSES_PAGE_H__
 
 /**
- * SECTION: ofa_classes_set
- * @short_description: #ofaClassesSet class definition.
+ * SECTION: ofa_classes_page
+ * @short_description: #ofaClassesPage class definition.
  * @include: ui/ofa-classes-set.h
  *
  * Display the list of known classes, letting the user edit their label.
@@ -41,30 +41,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_CLASSES_SET                ( ofa_classes_set_get_type())
-#define OFA_CLASSES_SET( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_CLASSES_SET, ofaClassesSet ))
-#define OFA_CLASSES_SET_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_CLASSES_SET, ofaClassesSetClass ))
-#define OFA_IS_CLASSES_SET( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_CLASSES_SET ))
-#define OFA_IS_CLASSES_SET_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CLASSES_SET ))
-#define OFA_CLASSES_SET_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CLASSES_SET, ofaClassesSetClass ))
+#define OFA_TYPE_CLASSES_PAGE                ( ofa_classes_page_get_type())
+#define OFA_CLASSES_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_CLASSES_PAGE, ofaClassesPage ))
+#define OFA_CLASSES_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_CLASSES_PAGE, ofaClassesPageClass ))
+#define OFA_IS_CLASSES_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_CLASSES_PAGE ))
+#define OFA_IS_CLASSES_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CLASSES_PAGE ))
+#define OFA_CLASSES_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CLASSES_PAGE, ofaClassesPageClass ))
 
-typedef struct _ofaClassesSetPrivate        ofaClassesSetPrivate;
+typedef struct _ofaClassesPagePrivate        ofaClassesPagePrivate;
 
 typedef struct {
-	/*< private >*/
-	ofaPage           parent;
-	ofaClassesSetPrivate *private;
+	/*< public members >*/
+	ofaPage                parent;
+
+	/*< private members >*/
+	ofaClassesPagePrivate *priv;
 }
-	ofaClassesSet;
+	ofaClassesPage;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofaPageClass parent;
 }
-	ofaClassesSetClass;
+	ofaClassesPageClass;
 
-GType ofa_classes_set_get_type( void ) G_GNUC_CONST;
+GType ofa_classes_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_CLASSES_SET_H__ */
+#endif /* __OFA_CLASSES_PAGE_H__ */

@@ -40,7 +40,7 @@
 #include "ui/ofa-application.h"
 #include "ui/ofa-backup.h"
 #include "ui/ofa-bat-set.h"
-#include "ui/ofa-classes-set.h"
+#include "ui/ofa-classes-page.h"
 #include "ui/ofa-currencies-page.h"
 #include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-properties.h"
@@ -163,7 +163,7 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_CLASSES,
 				N_( "Account classes" ),
-				ofa_classes_set_get_type,
+				ofa_classes_page_get_type,
 				FALSE,
 				FALSE },
 

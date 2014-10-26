@@ -35,15 +35,14 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-class-properties.h"
-#include "ui/ofa-classes-set.h"
+#include "ui/ofa-classes-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
-struct _ofaClassesSetPrivate {
-	gboolean  dispose_has_run;
+struct _ofaClassesPagePrivate {
 
 	/* internals
 	 */
@@ -60,64 +59,57 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaClassesSet, ofa_classes_set, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaClassesPage, ofa_classes_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static void       v_init_view( ofaPage *page );
-static void       insert_dataset( ofaClassesSet *self );
-static void       insert_new_row( ofaClassesSet *self, ofoClass *class, gboolean with_selection );
-static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassesSet *self );
-static void       setup_first_selection( ofaClassesSet *self );
+static void       insert_dataset( ofaClassesPage *self );
+static void       insert_new_row( ofaClassesPage *self, ofoClass *class, gboolean with_selection );
+static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassesPage *self );
+static void       setup_first_selection( ofaClassesPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
-static void       on_row_selected( GtkTreeSelection *selection, ofaClassesSet *self );
+static void       on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self );
 static void       v_on_new_clicked( GtkButton *button, ofaPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaPage *page );
 static void       v_on_delete_clicked( GtkButton *button, ofaPage *page );
-static gboolean   delete_confirmed( ofaClassesSet *self, ofoClass *class );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassesSet *self );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassesSet *self );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesSet *self );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesSet *self );
-static gboolean   find_row_by_id( ofaClassesSet *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static gboolean   delete_confirmed( ofaClassesPage *self, ofoClass *class );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassesPage *self );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesPage *self );
+static gboolean   find_row_by_id( ofaClassesPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
 
 static void
-classes_set_finalize( GObject *instance )
+classes_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_classes_set_finalize";
-	ofaClassesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_classes_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_CLASSES_SET( instance ));
-
-	priv = OFA_CLASSES_SET( instance )->private;
+	g_return_if_fail( instance && OFA_IS_CLASSES_PAGE( instance ));
 
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_classes_set_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_classes_page_parent_class )->finalize( instance );
 }
 
 static void
-classes_set_dispose( GObject *instance )
+classes_page_dispose( GObject *instance )
 {
-	ofaClassesSetPrivate *priv;
+	ofaClassesPagePrivate *priv;
 	gulong handler_id;
 	GList *iha;
 	ofoDossier *dossier;
 
-	g_return_if_fail( instance && OFA_IS_CLASSES_SET( instance ));
+	g_return_if_fail( instance && OFA_IS_CLASSES_PAGE( instance ));
 
-	priv = ( OFA_CLASSES_SET( instance ))->private;
-
-	if( !priv->dispose_has_run ){
-
-		priv->dispose_has_run = TRUE;
+	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = ( OFA_CLASSES_PAGE( instance ))->priv;
 
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
@@ -132,50 +124,50 @@ classes_set_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_classes_set_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_classes_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_classes_set_init( ofaClassesSet *self )
+ofa_classes_page_init( ofaClassesPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_set_init";
+	static const gchar *thisfn = "ofa_classes_page_init";
 
-	g_return_if_fail( self && OFA_IS_CLASSES_SET( self ));
+	g_return_if_fail( self && OFA_IS_CLASSES_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaClassesSetPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-	self->private->handlers = NULL;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_CLASSES_PAGE, ofaClassesPagePrivate );
+	self->priv->handlers = NULL;
 }
 
 static void
-ofa_classes_set_class_init( ofaClassesSetClass *klass )
+ofa_classes_page_class_init( ofaClassesPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_classes_set_class_init";
+	static const gchar *thisfn = "ofa_classes_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = classes_set_dispose;
-	G_OBJECT_CLASS( klass )->finalize = classes_set_finalize;
+	G_OBJECT_CLASS( klass )->dispose = classes_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = classes_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
+
+	g_type_class_add_private( klass, sizeof( ofaClassesPagePrivate ));
 }
 
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	ofaClassesSetPrivate *priv;
+	ofaClassesPagePrivate *priv;
 	ofoDossier *dossier;
 	gulong handler;
 
-	priv = OFA_CLASSES_SET( page )->private;
+	priv = OFA_CLASSES_PAGE( page )->priv;
 	dossier = ofa_page_get_dossier( page );
 
 	handler = g_signal_connect(
@@ -268,11 +260,11 @@ setup_tree_view( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	insert_dataset( OFA_CLASSES_SET( page ));
+	insert_dataset( OFA_CLASSES_PAGE( page ));
 }
 
 static void
-insert_dataset( ofaClassesSet *self )
+insert_dataset( ofaClassesPage *self )
 {
 	GList *dataset, *iset;
 	ofoClass *class;
@@ -290,7 +282,7 @@ insert_dataset( ofaClassesSet *self )
 }
 
 static void
-insert_new_row( ofaClassesSet *self, ofoClass *class, gboolean with_selection )
+insert_new_row( ofaClassesPage *self, ofoClass *class, gboolean with_selection )
 {
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
@@ -327,7 +319,7 @@ insert_new_row( ofaClassesSet *self, ofoClass *class, gboolean with_selection )
 }
 
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassesSet *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassesPage *self )
 {
 	gint anum, bnum;
 
@@ -338,7 +330,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassesS
 }
 
 static void
-setup_first_selection( ofaClassesSet *self )
+setup_first_selection( ofaClassesPage *self )
 {
 	GtkTreeView *tview;
 	GtkTreeModel *model;
@@ -362,7 +354,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 }
 
 static void
-on_row_selected( GtkTreeSelection *selection, ofaClassesSet *self )
+on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -387,10 +379,10 @@ on_row_selected( GtkTreeSelection *selection, ofaClassesSet *self )
 static void
 v_on_new_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_classes_set_v_on_new_clicked";
+	static const gchar *thisfn = "ofa_classes_page_v_on_new_clicked";
 	ofoClass *class;
 
-	g_return_if_fail( OFA_IS_CLASSES_SET( page ));
+	g_return_if_fail( OFA_IS_CLASSES_PAGE( page ));
 
 	g_debug( "%s: button=%p, page=%p", thisfn, ( void * ) button, ( void * ) page );
 
@@ -412,7 +404,7 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 	GtkTreeIter iter;
 	ofoClass *class;
 
-	g_return_if_fail( page && OFA_IS_CLASSES_SET( page ));
+	g_return_if_fail( page && OFA_IS_CLASSES_PAGE( page ));
 
 	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
 	select = gtk_tree_view_get_selection( tview );
@@ -438,7 +430,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 	GtkTreeIter iter;
 	ofoClass *class;
 
-	g_return_if_fail( OFA_IS_CLASSES_SET( page ));
+	g_return_if_fail( OFA_IS_CLASSES_PAGE( page ));
 
 	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
 	select = gtk_tree_view_get_selection( tview );
@@ -450,7 +442,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 
 		g_return_if_fail( ofo_class_is_deletable( class ));
 
-		if( delete_confirmed( OFA_CLASSES_SET( page ), class )){
+		if( delete_confirmed( OFA_CLASSES_PAGE( page ), class )){
 
 			/* this will remove the object from the global dataset,
 			 * and send the 'updated-dataset' message that we handle
@@ -463,7 +455,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 }
 
 static gboolean
-delete_confirmed( ofaClassesSet *self, ofoClass *class )
+delete_confirmed( ofaClassesPage *self, ofoClass *class )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -479,9 +471,9 @@ delete_confirmed( ofaClassesSet *self, ofoClass *class )
 }
 
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassesSet *self )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_set_on_new_object";
+	static const gchar *thisfn = "ofa_classes_page_on_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -498,9 +490,9 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaClassesSet *self )
  * modifying the class number is forbidden
  */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassesSet *self )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaClassesPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_set_on_updated_object";
+	static const gchar *thisfn = "ofa_classes_page_on_updated_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint prev_num, class_num;
@@ -533,9 +525,9 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesSet *self )
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_set_on_deleted_object";
+	static const gchar *thisfn = "ofa_classes_page_on_deleted_object";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint class_num;
@@ -558,9 +550,9 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesSet *self )
  * OFA_SIGNAL_RELOAD_DATASET signal handler
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesSet *self )
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesPage *self )
 {
-	static const gchar *thisfn = "ofa_classes_set_on_reloaded_dataset";
+	static const gchar *thisfn = "ofa_classes_page_on_reloaded_dataset";
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
 
@@ -579,9 +571,9 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesSet *self )
 }
 
 static gboolean
-find_row_by_id( ofaClassesSet *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter )
+find_row_by_id( ofaClassesPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
-	static const gchar *thisfn = "ofa_classes_set_find_row_by_id";
+	static const gchar *thisfn = "ofa_classes_page_find_row_by_id";
 	GtkTreeView *tview;
 	gint num;
 
