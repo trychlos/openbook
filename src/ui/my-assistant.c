@@ -54,21 +54,16 @@ static void     on_close( GtkAssistant *assistant, myAssistant *self );
 static void     do_close( myAssistant *self );
 
 static void
-my_assistant_finalize( GObject *instance )
+assistant_finalize( GObject *instance )
 {
-	myAssistant *self;
-
-	self = MY_ASSISTANT( instance );
-
 	/* free data members here */
-	g_free( self->private );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_assistant_parent_class )->finalize( instance );
 }
 
 static void
-my_assistant_dispose( GObject *instance )
+assistant_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && MY_IS_ASSISTANT( instance ));
 
@@ -84,7 +79,7 @@ my_assistant_dispose( GObject *instance )
 }
 
 static void
-my_assistant_constructed( GObject *instance )
+assistant_constructed( GObject *instance )
 {
 	myAssistant *self;
 
@@ -110,7 +105,7 @@ my_assistant_init( myAssistant *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( myAssistantPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, MY_TYPE_ASSISTANT, myAssistantPrivate );
 }
 
 static void
@@ -120,9 +115,11 @@ my_assistant_class_init( myAssistantClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->constructed = my_assistant_constructed;
-	G_OBJECT_CLASS( klass )->dispose = my_assistant_dispose;
-	G_OBJECT_CLASS( klass )->finalize = my_assistant_finalize;
+	G_OBJECT_CLASS( klass )->constructed = assistant_constructed;
+	G_OBJECT_CLASS( klass )->dispose = assistant_dispose;
+	G_OBJECT_CLASS( klass )->finalize = assistant_finalize;
+
+	g_type_class_add_private( klass, sizeof( myAssistantPrivate ));
 }
 
 static void
@@ -160,7 +157,7 @@ on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, myAssistant *self )
 		if( event->keyval == GDK_KEY_Escape &&
 				ofa_prefs_assistant_quit_on_escape()){
 
-				self->private->escape_key_pressed = TRUE;
+				self->priv->escape_key_pressed = TRUE;
 				g_signal_emit_by_name(
 						my_window_get_toplevel( MY_WINDOW( self )), "cancel", self );
 				stop = TRUE;
@@ -188,7 +185,7 @@ on_cancel( GtkAssistant *assistant, myAssistant *self )
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
 
-		if(( self->private->escape_key_pressed &&
+		if(( self->priv->escape_key_pressed &&
 				( !ofa_prefs_assistant_confirm_on_escape() || is_willing_to_quit( self ))) ||
 					!ofa_prefs_assistant_confirm_on_cancel() || is_willing_to_quit( self )){
 

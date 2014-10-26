@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _myAssistantPrivate       myAssistantPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myWindow            parent;
-	myAssistantPrivate *private;
+
+	/*< private members >*/
+	myAssistantPrivate *priv;
 }
 	myAssistant;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myWindowClass parent;
 }
 	myAssistantClass;
