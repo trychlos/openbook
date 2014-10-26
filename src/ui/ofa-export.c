@@ -231,11 +231,9 @@ export_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_EXPORT( instance ));
 
-	priv = OFA_EXPORT( instance )->private;
-
 	/* free data members here */
+	priv = OFA_EXPORT( instance )->priv;
 	g_free( priv->p3_uri );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_export_parent_class )->finalize( instance );
@@ -248,7 +246,7 @@ export_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_EXPORT( instance ));
 
-	priv = ( OFA_EXPORT( instance ))->private;
+	priv = ( OFA_EXPORT( instance ))->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -273,7 +271,7 @@ export_constructed( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_EXPORT( instance ));
 
-	priv = OFA_EXPORT( instance )->private;
+	priv = OFA_EXPORT( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -310,7 +308,7 @@ export_get_property( GObject *instance, guint property_id, GValue *value, GParam
 
 	g_return_if_fail( OFA_IS_EXPORT( instance ));
 
-	priv = OFA_EXPORT( instance )->private;
+	priv = OFA_EXPORT( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -333,7 +331,7 @@ export_set_property( GObject *instance, guint property_id, const GValue *value, 
 
 	g_return_if_fail( OFA_IS_EXPORT( instance ));
 
-	priv = OFA_EXPORT( instance )->private;
+	priv = OFA_EXPORT( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -359,9 +357,9 @@ ofa_export_init( ofaExport *self )
 
 	g_return_if_fail( self && OFA_IS_EXPORT( self ));
 
-	self->private = g_new0( ofaExportPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_EXPORT, ofaExportPrivate );
 
-	self->private->dispose_has_run = FALSE;
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -376,6 +374,8 @@ ofa_export_class_init( ofaExportClass *klass )
 	G_OBJECT_CLASS( klass )->constructed = export_constructed;
 	G_OBJECT_CLASS( klass )->dispose = export_dispose;
 	G_OBJECT_CLASS( klass )->finalize = export_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaExportPrivate ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -418,7 +418,7 @@ do_initialize_assistant( ofaExport *self )
 			thisfn,
 			( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	assistant = self->private->assistant;
+	assistant = self->priv->assistant;
 
 	/* deals with 'Esc' key */
 	g_signal_connect( assistant,
@@ -439,12 +439,12 @@ on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaExport *self )
 
 	g_return_val_if_fail( OFA_IS_EXPORT( self ), FALSE );
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		if( event->keyval == GDK_KEY_Escape && pref_quit_on_escape ){
 
-				self->private->escape_key_pressed = TRUE;
-				g_signal_emit_by_name( self->private->assistant, "cancel", self );
+				self->priv->escape_key_pressed = TRUE;
+				g_signal_emit_by_name( self->priv->assistant, "cancel", self );
 				stop = TRUE;
 		}
 	}
@@ -465,7 +465,7 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaExport *self )
 	g_return_if_fail( GTK_IS_WIDGET( page ));
 	g_return_if_fail( OFA_IS_EXPORT( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, page=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) page, ( void * ) self );
@@ -519,9 +519,9 @@ do_prepare_p1_type( ofaExport *self, GtkWidget *page )
 			( void * ) self,
 			( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	if( !self->private->p1_page_initialized ){
+	if( !self->priv->p1_page_initialized ){
 		do_init_p1_type( self, page );
-		self->private->p1_page_initialized = TRUE;
+		self->priv->p1_page_initialized = TRUE;
 	}
 
 	check_for_p1_complete( self );
@@ -534,7 +534,7 @@ do_init_p1_type( ofaExport *self, GtkWidget *page )
 	GtkWidget *btn;
 	gint i;
 
-	priv = self->private;
+	priv = self->priv;
 
 	for( i=0 ; st_type_group[i].widget_name ; ++ i ){
 
@@ -555,7 +555,7 @@ on_type_toggled( GtkToggleButton *button, ofaExport *self )
 {
 	ofaExportPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( gtk_toggle_button_get_active( button )){
 		priv->p1_type = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_TYPE ));
@@ -572,7 +572,7 @@ get_active_type( ofaExport *self )
 	ofaExportPrivate *priv;
 	GSList *ig;
 
-	priv = self->private;
+	priv = self->priv;
 	priv->p1_type = 0;
 	priv->p1_btn = NULL;
 
@@ -593,7 +593,7 @@ check_for_p1_complete( ofaExport *self )
 
 	get_active_type( self );
 
-	priv = self->private;
+	priv = self->priv;
 	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_SELECT );
 	gtk_assistant_set_page_complete( priv->assistant, page, priv->p1_type > 0 );
 }
@@ -611,9 +611,9 @@ do_prepare_p2_format( ofaExport *self, GtkWidget *page )
 			( void * ) self,
 			( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	if( !self->private->p2_page_initialized ){
+	if( !self->priv->p2_page_initialized ){
 		do_init_p2_format( self, page );
-		self->private->p2_page_initialized = TRUE;
+		self->priv->p2_page_initialized = TRUE;
 	}
 
 	check_for_p2_complete( self );
@@ -626,7 +626,7 @@ do_init_p2_format( ofaExport *self, GtkWidget *page )
 	GtkWidget *btn;
 	gint i;
 
-	priv = self->private;
+	priv = self->priv;
 
 	for( i=0 ; st_format_group[i].widget_name ; ++ i ){
 
@@ -645,7 +645,7 @@ on_format_toggled( GtkToggleButton *button, ofaExport *self )
 {
 	ofaExportPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( gtk_toggle_button_get_active( button )){
 		priv->p2_format = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_FORMAT ));
@@ -662,7 +662,7 @@ get_active_format( ofaExport *self )
 	ofaExportPrivate *priv;
 	GSList *ig;
 
-	priv = self->private;
+	priv = self->priv;
 	priv->p2_format = 0;
 	priv->p2_btn = NULL;
 
@@ -683,7 +683,7 @@ check_for_p2_complete( ofaExport *self )
 
 	get_active_format( self );
 
-	priv = self->private;
+	priv = self->priv;
 	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_FORMAT );
 	gtk_assistant_set_page_complete( priv->assistant, page, priv->p2_format > 0 );
 }
@@ -701,9 +701,9 @@ do_prepare_p3_output( ofaExport *self, GtkWidget *page )
 			( void * ) self,
 			( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	if( !self->private->p3_page_initialized ){
+	if( !self->priv->p3_page_initialized ){
 		do_init_p3_output( self, page );
-		self->private->p3_page_initialized = TRUE;
+		self->priv->p3_page_initialized = TRUE;
 	}
 
 	check_for_p3_complete( self );
@@ -729,7 +729,7 @@ do_init_p3_output( ofaExport *self, GtkWidget *page )
 	ofaExportPrivate *priv;
 	gint idx;
 
-	priv = self->private;
+	priv = self->priv;
 
 	priv->p3_chooser =
 			GTK_FILE_CHOOSER( gtk_file_chooser_widget_new( GTK_FILE_CHOOSER_ACTION_SAVE ));
@@ -763,7 +763,7 @@ check_for_p3_complete( ofaExport *self )
 	GtkWidget *page;
 	ofaExportPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	g_free( priv->p3_uri );
 	priv->p3_uri = gtk_file_chooser_get_uri( priv->p3_chooser );
@@ -800,7 +800,7 @@ do_init_p4_confirm( ofaExport *self, GtkWidget *page )
 	GtkLabel *label;
 	gchar *markup;
 
-	priv = self->private;
+	priv = self->priv;
 
 	widget = gtk_grid_get_child_at( GTK_GRID( page ), 0, 0 );
 	if( widget ){
@@ -855,7 +855,7 @@ on_apply( GtkAssistant *assistant, ofaExport *self )
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_EXPORT( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
@@ -876,16 +876,16 @@ apply_export_type( ofaExport *self )
 	gchar *str;
 	gboolean ok;
 
-	if( !my_utils_output_stream_new( self->private->p3_uri, &output, &stream )){
+	if( !my_utils_output_stream_new( self->priv->p3_uri, &output, &stream )){
 		return( FALSE );
 	}
 	g_return_val_if_fail( G_IS_FILE_OUTPUT_STREAM( stream ), FALSE );
 
-	idx = get_export_datas_for_type( self->private->p1_type );
+	idx = get_export_datas_for_type( self->priv->p1_type );
 	g_return_val_if_fail( idx >= 0, FALSE );
 
 	lines = ( *st_export_datas[idx].fn_csv )
-						( ofa_main_window_get_dossier( self->private->main_window ));
+						( ofa_main_window_get_dossier( self->priv->main_window ));
 
 	for( i=lines ; i ; i=i->next ){
 
@@ -922,12 +922,12 @@ on_cancel( GtkAssistant *assistant, ofaExport *self )
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_EXPORT( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
 
-		if(( self->private->escape_key_pressed && ( !pref_confirm_on_escape || is_willing_to_quit( self ))) ||
+		if(( self->priv->escape_key_pressed && ( !pref_confirm_on_escape || is_willing_to_quit( self ))) ||
 				!pref_confirm_on_cancel ||
 				is_willing_to_quit( self )){
 
@@ -943,7 +943,7 @@ is_willing_to_quit( ofaExport *self )
 	gint response;
 
 	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( self->private->assistant ),
+			GTK_WINDOW( self->priv->assistant ),
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
@@ -969,7 +969,7 @@ on_close( GtkAssistant *assistant, ofaExport *self )
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_EXPORT( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );

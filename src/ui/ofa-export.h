@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _ofaExportPrivate        ofaExportPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public memnbers >*/
 	GObject           parent;
-	ofaExportPrivate *private;
+
+	/*< private memnbers >*/
+	ofaExportPrivate *priv;
 }
 	ofaExport;
 
 typedef struct {
-	/*< private >*/
+	/*< public memnbers >*/
 	GObjectClass parent;
 }
 	ofaExportClass;
