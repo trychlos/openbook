@@ -242,7 +242,17 @@ ofa_plugin_release_modules( void )
 		g_debug( "%s: objects=%p, count=%u",
 				thisfn, ( void * ) plugin->private->objects, g_list_length( plugin->private->objects ));
 
+#if 0
 		for( iobj = plugin->private->objects ; iobj ; iobj = iobj->next ){
+			if( G_IS_OBJECT( iobj->data )){
+				g_object_unref( iobj->data );
+			} else {
+				g_warning( "%s: object=%p is not a GObject", thisfn, ( void * ) iobj->data );
+			}
+		}
+#endif
+		while( plugin->private->objects ){
+			iobj = plugin->private->objects;
 			if( G_IS_OBJECT( iobj->data )){
 				g_object_unref( iobj->data );
 			} else {
@@ -406,6 +416,8 @@ object_weak_notify( ofaPlugin *plugin, GObject *object )
 			thisfn, ( void * ) plugin, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
 	plugin->private->objects = g_list_remove( plugin->private->objects, object );
+
+	g_debug( "%s: new objects list after remove is %p", thisfn, ( void * ) plugin->private->objects );
 }
 
 /*

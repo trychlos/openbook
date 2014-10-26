@@ -591,10 +591,6 @@
                 + rename private to priv
                 ofaLedgerTreeview
 
- 394 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                ofaMainWindow
-
  395 2014-10-26 review public vs private members in class definitions
                 + rename private to priv
                 ofaOpeTemplateProperties
@@ -1657,6 +1653,11 @@
  341 2014-10-19 defines an ofaPageBook, derived from ofaPage, which will
                 be the base of pages with a GtkNotebook
      2014-10-19 done - svn #3916
+
+ 394 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaMainWindow
+     2014-10-26 done - svn #3924
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
