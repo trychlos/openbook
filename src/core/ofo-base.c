@@ -44,7 +44,6 @@ ofo_base_finalize( GObject *instance )
 	ofoBase *self = OFO_BASE( instance );
 
 	/* free data members here */
-	g_free( self->private );
 	g_free( self->prot );
 
 	/* chain up to the parent class */
@@ -70,11 +69,10 @@ ofo_base_dispose( GObject *instance )
 static void
 ofo_base_init( ofoBase *self )
 {
-	self->private = g_new0( ofoBasePrivate, 1 );
-
 	self->prot = g_new0( ofoBaseProtected, 1 );
-
 	self->prot->dispose_has_run = FALSE;
+
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_BASE, ofoBasePrivate );
 }
 
 static void
@@ -86,6 +84,8 @@ ofo_base_class_init( ofoBaseClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ofo_base_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ofo_base_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofoBasePrivate ));
 }
 
 /**
