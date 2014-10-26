@@ -44,7 +44,6 @@
 /* private instance data
  */
 struct _ofaGuidedExPrivate {
-	gboolean         dispose_has_run;
 
 	/* internals
 	 */
@@ -125,17 +124,13 @@ static void
 guided_ex_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_guided_ex_finalize";
-	ofaGuidedExPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_GUIDED_EX( instance ));
 
-	priv = OFA_GUIDED_EX( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_guided_ex_parent_class )->finalize( instance );
@@ -148,11 +143,11 @@ guided_ex_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_GUIDED_EX( instance ));
 
-	priv = OFA_GUIDED_EX( instance )->private;
-
-	if( !priv->dispose_has_run ){
+	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = OFA_GUIDED_EX( instance )->priv;
+
 		if( priv->common ){
 			g_clear_object( &priv->common );
 		}
@@ -172,7 +167,7 @@ ofa_guided_ex_init( ofaGuidedEx *self )
 
 	g_return_if_fail( self && OFA_IS_GUIDED_EX( self ));
 
-	self->private = g_new0( ofaGuidedExPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_GUIDED_EX, ofaGuidedExPrivate );
 }
 
 static void
@@ -189,6 +184,8 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->pre_remove = v_pre_remove;
+
+	g_type_class_add_private( klass, sizeof( ofaGuidedExPrivate ));
 }
 
 static GtkWidget *
@@ -197,7 +194,7 @@ v_setup_view( ofaPage *page )
 	ofaGuidedExPrivate *priv;
 	GtkPaned *child;
 
-	priv = OFA_GUIDED_EX( page )->private;
+	priv = OFA_GUIDED_EX( page )->priv;
 	priv->dossier = ofa_page_get_dossier( page );
 
 	child = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
@@ -241,7 +238,7 @@ static void
 v_init_view( ofaPage *page )
 {
 	init_left_view( OFA_GUIDED_EX( page ),
-						gtk_paned_get_child1( OFA_GUIDED_EX( page )->private->pane ));
+						gtk_paned_get_child1( OFA_GUIDED_EX( page )->priv->pane ));
 }
 
 /*
@@ -273,7 +270,7 @@ setup_view_left( ofaGuidedEx *self )
 	gtk_widget_set_margin_right( GTK_WIDGET( button ), 4 );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_left_select_clicked ), self );
 	gtk_box_pack_end( box2, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	self->private->left_select = button;
+	self->priv->left_select = button;
 
 	enable_left_select( self );
 
@@ -291,7 +288,7 @@ setup_view_right( ofaGuidedEx *self )
 	GtkScrolledWindow *scroll;
 	GtkWidget *widget;
 
-	priv = self->private;
+	priv = self->priv;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
@@ -345,7 +342,7 @@ setup_left_treeview( ofaGuidedEx *self )
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
 	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_left_row_activated ), self );
 	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_left_key_pressed ), self );
-	self->private->left_tview = tview;
+	self->priv->left_tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_tree_store_new(
 			LEFT_N_COLUMNS,
@@ -436,7 +433,7 @@ reparent_from_dialog( ofaGuidedEx *self, GtkContainer *parent )
 
 	box = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "px-box" );
 	g_return_if_fail( box && GTK_IS_BOX( box ));
-	self->private->right_box = GTK_CONTAINER( box );
+	self->priv->right_box = GTK_CONTAINER( box );
 
 	/* attach our box to the parent's frame */
 	gtk_widget_reparent( box, GTK_WIDGET( parent ));
@@ -447,12 +444,12 @@ init_left_view( ofaGuidedEx *self, GtkWidget *child )
 {
 	GList *dataset, *ise;
 
-	dataset = ofo_ledger_get_dataset( self->private->dossier );
+	dataset = ofo_ledger_get_dataset( self->priv->dossier );
 	for( ise=dataset ; ise ; ise=ise->next ){
 		insert_left_ledger_row( self, OFO_LEDGER( ise->data ));
 	}
 
-	dataset = ofo_ope_template_get_dataset( self->private->dossier );
+	dataset = ofo_ope_template_get_dataset( self->priv->dossier );
 	for( ise=dataset ; ise ; ise=ise->next ){
 		insert_left_model_row( self, OFO_OPE_TEMPLATE( ise->data ));
 	}
@@ -544,7 +541,7 @@ static void
 enable_left_select( ofaGuidedEx *self )
 {
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->left_select ), is_left_select_enableable( self ));
+			GTK_WIDGET( self->priv->left_select ), is_left_select_enableable( self ));
 }
 
 static gboolean
@@ -558,7 +555,7 @@ is_left_select_enableable( ofaGuidedEx *self )
 
 	ok = FALSE;
 
-	select = gtk_tree_view_get_selection( self->private->left_tview );
+	select = gtk_tree_view_get_selection( self->priv->left_tview );
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
 		g_object_unref( object );
@@ -583,7 +580,7 @@ select_model( ofaGuidedEx *self )
 	GtkTreeIter iter;
 	ofoBase *object;
 
-	priv = self->private;
+	priv = self->priv;
 
 	object = NULL;
 	select = gtk_tree_view_get_selection( priv->left_tview );
@@ -604,7 +601,7 @@ insert_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	tmodel = gtk_tree_view_get_model( self->private->left_tview );
+	tmodel = gtk_tree_view_get_model( self->priv->left_tview );
 	gtk_tree_store_insert_with_values(
 			GTK_TREE_STORE( tmodel ),
 			&iter,
@@ -691,7 +688,7 @@ find_left_ledger_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel *
 	ofoBase *object;
 	gint cmp;
 
-	my_tmodel = gtk_tree_view_get_model( self->private->left_tview );
+	my_tmodel = gtk_tree_view_get_model( self->priv->left_tview );
 	if( tmodel ){
 		*tmodel = my_tmodel;
 	}
@@ -814,7 +811,7 @@ find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **
 	gchar *child_mnemo;
 	gint count, i, cmp;
 
-	my_tmodel = gtk_tree_view_get_model( self->private->left_tview );
+	my_tmodel = gtk_tree_view_get_model( self->priv->left_tview );
 	if( tmodel ){
 		*tmodel = my_tmodel;
 	}
@@ -862,7 +859,7 @@ find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **
 static void
 on_right_ok( GtkButton *button, ofaGuidedEx *self )
 {
-	ofa_guided_common_validate( self->private->common );
+	ofa_guided_common_validate( self->priv->common );
 }
 
 /*
@@ -872,7 +869,7 @@ on_right_ok( GtkButton *button, ofaGuidedEx *self )
 static void
 on_right_cancel( GtkButton *button, ofaGuidedEx *self )
 {
-	ofa_guided_common_reset( self->private->common );
+	ofa_guided_common_reset( self->priv->common );
 }
 
 /*
@@ -968,9 +965,9 @@ v_pre_remove( ofaPage *page )
 
 	g_return_if_fail( page && OFA_IS_GUIDED_EX( page ));
 
-	priv = OFA_GUIDED_EX( page )->private;
+	if( !page->prot->dispose_has_run ){
 
-	if( !priv->dispose_has_run ){
+		priv = OFA_GUIDED_EX( page )->priv;
 
 		if( priv->pane ){
 			pane_save_position( priv->pane );

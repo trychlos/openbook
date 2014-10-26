@@ -47,14 +47,16 @@ G_BEGIN_DECLS
 typedef struct _ofaGuidedExPrivate        ofaGuidedExPrivate;
 
 typedef struct {
-	/*< private >*/
-	ofaPage         parent;
-	ofaGuidedExPrivate *private;
+	/*< public members >*/
+	ofaPage             parent;
+
+	/*< private members >*/
+	ofaGuidedExPrivate *priv;
 }
 	ofaGuidedEx;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofaPageClass parent;
 }
 	ofaGuidedExClass;
