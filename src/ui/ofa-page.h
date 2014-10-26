@@ -56,9 +56,9 @@
  * |+------------------------------------------------+---------------+|
  * +------------------------------------------------------------------+
  *
- * Class             Description                               Buttons box
+ * Class             View description                          Buttons box
  * ----------------  ----------------------------------------  -----------
- * ofaAccountsPage  a notebook with one page per account          Yes
+ * ofaAccountsPage   a notebook with one page per account          Yes
  *                   class, each page having its own tree
  *                   view on a list store
  *

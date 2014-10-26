@@ -28,8 +28,8 @@
 #define __OFA_PAGE_BOOK_H__
 
 /**
- * SECTION: ofa_page_book_book
- * @short_description: #ofaPageBookBook class definition.
+ * SECTION: ofa_page_book
+ * @short_description: #ofaPageBook class definition.
  * @include: ui/ofa-page-book.h
  *
  * This class is derived from #ofaPage class, and serves as a base
