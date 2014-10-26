@@ -63,17 +63,13 @@ static void
 backup_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_backup_finalize";
-	ofaBackupPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_BACKUP( instance ));
 
-	priv = OFA_BACKUP( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_backup_parent_class )->finalize( instance );
@@ -86,7 +82,7 @@ backup_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_BACKUP( instance ));
 
-	priv = OFA_BACKUP( instance )->private;
+	priv = OFA_BACKUP( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -111,9 +107,8 @@ ofa_backup_init( ofaBackup *self )
 
 	g_return_if_fail( self && OFA_IS_BACKUP( self ));
 
-	self->private = g_new0( ofaBackupPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BACKUP, ofaBackupPrivate );
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -125,6 +120,8 @@ ofa_backup_class_init( ofaBackupClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = backup_dispose;
 	G_OBJECT_CLASS( klass )->finalize = backup_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaBackupPrivate ));
 }
 
 /**
@@ -145,7 +142,7 @@ ofa_backup_run( ofaMainWindow *main_window )
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
 	self = g_object_new( OFA_TYPE_BACKUP, NULL );
-	priv = self->private;
+	priv = self->priv;
 	priv->main_window = main_window;
 	priv->dossier = ofa_main_window_get_dossier( main_window );
 
@@ -165,7 +162,7 @@ init_dialog( ofaBackup *self )
 	ofaBackupPrivate *priv;
 	gchar *last_folder, *def_name;
 
-	priv = self->private;
+	priv = self->priv;
 
 	priv->dialog = gtk_file_chooser_dialog_new(
 							_( "Backup the dossier" ),
@@ -200,8 +197,8 @@ get_default_name( ofaBackup *self )
 
 	/* get database name without spaces */
 	regex = g_regex_new( " ", 0, 0, NULL );
-	/*dbname = ofo_dossier_get_dbname( self->private->dossier );*/
-	dbname = g_strdup( ofo_dossier_get_name( self->private->dossier ));
+	/*dbname = ofo_dossier_get_dbname( self->priv->dossier );*/
+	dbname = g_strdup( ofo_dossier_get_name( self->priv->dossier ));
 	fname = g_regex_replace_literal( regex, dbname, -1, 0, "", 0, NULL );
 	g_free( dbname );
 
@@ -223,7 +220,7 @@ do_backup( ofaBackup *self )
 	gchar *fname;
 	gboolean ok;
 
-	priv = self->private;
+	priv = self->priv;
 
 	folder = gtk_file_chooser_get_current_folder( GTK_FILE_CHOOSER( priv->dialog ));
 	ofa_settings_set_dossier_key_string(

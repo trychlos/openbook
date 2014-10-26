@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _ofaBackupPrivate        ofaBackupPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject           parent;
-	ofaBackupPrivate *private;
+
+	/*< private members >*/
+	ofaBackupPrivate *priv;
 }
 	ofaBackup;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaBackupClass;
