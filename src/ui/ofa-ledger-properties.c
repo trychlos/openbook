@@ -106,14 +106,12 @@ ledger_properties_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_PROPERTIES( instance ));
 
-	priv = OFA_LEDGER_PROPERTIES( instance )->private;
-
 	/* free data members here */
+	priv = OFA_LEDGER_PROPERTIES( instance )->priv;
 	g_free( priv->currency );
 	g_free( priv->mnemo );
 	g_free( priv->label );
 	g_free( priv->upd_user );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ledger_properties_parent_class )->finalize( instance );
@@ -143,11 +141,12 @@ ofa_ledger_properties_init( ofaLedgerProperties *self )
 
 	g_return_if_fail( self && OFA_IS_LEDGER_PROPERTIES( self ));
 
-	self->private = g_new0( ofaLedgerPropertiesPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+							self, OFA_TYPE_LEDGER_PROPERTIES, ofaLedgerPropertiesPrivate );
 
-	self->private->is_new = FALSE;
-	self->private->updated = FALSE;
-	my_date_clear( &self->private->closing );
+	self->priv->is_new = FALSE;
+	self->priv->updated = FALSE;
+	my_date_clear( &self->priv->closing );
 }
 
 static void
@@ -162,6 +161,8 @@ ofa_ledger_properties_class_init( ofaLedgerPropertiesClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaLedgerPropertiesPrivate ));
 }
 
 /**
@@ -190,11 +191,11 @@ ofa_ledger_properties_run( ofaMainWindow *main_window, ofoLedger *ledger )
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	self->private->ledger = ledger;
+	self->priv->ledger = ledger;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	updated = self->private->updated;
+	updated = self->priv->updated;
 
 	g_object_unref( self );
 
@@ -210,7 +211,7 @@ v_init_dialog( myDialog *dialog )
 	GtkEntry *entry;
 	GtkContainer *container;
 
-	priv = OFA_LEDGER_PROPERTIES( dialog )->private;
+	priv = OFA_LEDGER_PROPERTIES( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	jou_mnemo = ofo_ledger_get_mnemo( priv->ledger );
@@ -271,7 +272,7 @@ init_balances_page( ofaLedgerProperties *self )
 	parms.user_data = self;
 	parms.initial_code = ofo_dossier_get_default_currency( MY_WINDOW( self )->protected->dossier );
 
-	self->private->dev_combo = ofa_currency_combo_new( &parms );
+	self->priv->dev_combo = ofa_currency_combo_new( &parms );
 
 	exe_box = ( GtkComboBox * ) my_utils_container_get_child_by_name( container, "p2-exe-combo" );
 	g_return_if_fail( exe_box && GTK_IS_COMBO_BOX( exe_box ));
@@ -290,7 +291,7 @@ init_balances_page( ofaLedgerProperties *self )
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( exe_box ), text_cell, FALSE );
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( exe_box ), text_cell, "text", EXE_COL_END );
 
-	list = ofo_ledger_get_exe_list( self->private->ledger );
+	list = ofo_ledger_get_exe_list( self->priv->ledger );
 	idx = -1;
 	current_exe_id = ofo_dossier_get_current_exe_id( MY_WINDOW( self )->protected->dossier );
 
@@ -340,8 +341,8 @@ init_balances_page( ofaLedgerProperties *self )
 static void
 on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self )
 {
-	g_free( self->private->mnemo );
-	self->private->mnemo = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->mnemo );
+	self->priv->mnemo = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -349,8 +350,8 @@ on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self )
 static void
 on_label_changed( GtkEntry *entry, ofaLedgerProperties *self )
 {
-	g_free( self->private->label );
-	self->private->label = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->label );
+	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -363,7 +364,7 @@ on_exe_changed( GtkComboBox *box, ofaLedgerProperties *self )
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 		tmodel = gtk_combo_box_get_model( box );
-		gtk_tree_model_get( tmodel, &iter, EXE_COL_EXE_ID, &self->private->exe_id, -1 );
+		gtk_tree_model_get( tmodel, &iter, EXE_COL_EXE_ID, &self->priv->exe_id, -1 );
 		display_balances( self );
 	}
 }
@@ -374,8 +375,8 @@ on_exe_changed( GtkComboBox *box, ofaLedgerProperties *self )
 static void
 on_currency_changed( const gchar *currency, ofaLedgerProperties *self )
 {
-	g_free( self->private->currency );
-	self->private->currency = g_strdup( currency );
+	g_free( self->priv->currency );
+	self->priv->currency = g_strdup( currency );
 	display_balances( self );
 }
 
@@ -387,7 +388,7 @@ display_balances( ofaLedgerProperties *self )
 	GtkLabel *label;
 	gchar *str;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( priv->exe_id <= 0 || !priv->currency || !g_utf8_strlen( priv->currency, -1 )){
 		return;
@@ -446,7 +447,7 @@ is_dialog_validable( ofaLedgerProperties *self )
 	ofaLedgerPropertiesPrivate *priv;
 	ofoLedger *exists;
 
-	priv = self->private;
+	priv = self->priv;
 
 	ok = ofo_ledger_is_valid( priv->mnemo, priv->label );
 
@@ -481,7 +482,7 @@ do_update( ofaLedgerProperties *self )
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	priv = self->private;
+	priv = self->priv;
 	prev_mnemo = g_strdup( ofo_ledger_get_mnemo( priv->ledger ));
 
 	/* the new mnemo is not yet used,

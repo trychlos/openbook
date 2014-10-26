@@ -51,14 +51,16 @@ G_BEGIN_DECLS
 typedef struct _ofaLedgerPropertiesPrivate        ofaLedgerPropertiesPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog                    parent;
-	ofaLedgerPropertiesPrivate *private;
+
+	/*< private members >*/
+	ofaLedgerPropertiesPrivate *priv;
 }
 	ofaLedgerProperties;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaLedgerPropertiesClass;
