@@ -50,14 +50,16 @@ G_BEGIN_DECLS
 typedef struct _ofaDossierOpenPrivate        ofaDossierOpenPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog               parent;
-	ofaDossierOpenPrivate *private;
+
+	/*< private members >*/
+	ofaDossierOpenPrivate *priv;
 }
 	ofaDossierOpen;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaDossierOpenClass;

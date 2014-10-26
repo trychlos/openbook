@@ -87,13 +87,11 @@ dossier_open_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_OPEN( instance ));
 
-	priv = OFA_DOSSIER_OPEN( instance )->private;
-
 	/* free data members here */
+	priv = OFA_DOSSIER_OPEN( instance )->priv;
 	g_free( priv->name );
 	g_free( priv->account );
 	g_free( priv->password );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_open_parent_class )->finalize( instance );
@@ -123,7 +121,7 @@ ofa_dossier_open_init( ofaDossierOpen *self )
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_OPEN( self ));
 
-	self->private = g_new0( ofaDossierOpenPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_OPEN, ofaDossierOpenPrivate );
 }
 
 static void
@@ -138,6 +136,8 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaDossierOpenPrivate ));
 }
 
 /**
@@ -166,7 +166,7 @@ ofa_dossier_open_run( ofaMainWindow *main_window )
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	sdo = self->private->sdo;
+	sdo = self->priv->sdo;
 	g_object_unref( self );
 
 	return( sdo );
@@ -283,9 +283,9 @@ on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self )
 	g_debug( "%s: selection=%p, self=%p", thisfn, ( void * ) selection, ( void * ) self );
 
 	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-		g_free( self->private->name );
-		gtk_tree_model_get( model, &iter, COL_NAME, &self->private->name, -1 );
-		g_debug( "%s: name=%s", thisfn, self->private->name );
+		g_free( self->priv->name );
+		gtk_tree_model_get( model, &iter, COL_NAME, &self->priv->name, -1 );
+		g_debug( "%s: name=%s", thisfn, self->priv->name );
 	}
 
 	check_for_enable_dlg( self );
@@ -294,8 +294,8 @@ on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self )
 static void
 on_account_changed( GtkEntry *entry, ofaDossierOpen *self )
 {
-	g_free( self->private->account );
-	self->private->account = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->account );
+	self->priv->account = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -303,8 +303,8 @@ on_account_changed( GtkEntry *entry, ofaDossierOpen *self )
 static void
 on_password_changed( GtkEntry *entry, ofaDossierOpen *self )
 {
-	g_free( self->private->password );
-	self->private->password = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->password );
+	self->priv->password = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -315,7 +315,7 @@ check_for_enable_dlg( ofaDossierOpen *self )
 	GtkWidget *button;
 	gboolean ok_enable;
 
-	ok_enable = self->private->name && self->private->account && self->private->password;
+	ok_enable = self->priv->name && self->priv->account && self->priv->password;
 
 	button = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-open" );
@@ -340,7 +340,7 @@ do_open( ofaDossierOpen *self )
 	ofsDossierOpen *sdo;
 	ofoSgbd *sgbd;
 
-	priv = self->private;
+	priv = self->priv;
 
 	sgbd = ofo_sgbd_new( priv->name );
 	if( !ofo_sgbd_connect( sgbd, priv->account, priv->password, FALSE )){
@@ -352,10 +352,10 @@ do_open( ofaDossierOpen *self )
 	g_object_unref( sgbd );
 
 	sdo = g_new0( ofsDossierOpen, 1 );
-	sdo->label = g_strdup( self->private->name );
-	sdo->account = g_strdup( self->private->account );
-	sdo->password = g_strdup( self->private->password );
-	self->private->sdo = sdo;
+	sdo->label = g_strdup( self->priv->name );
+	sdo->account = g_strdup( self->priv->account );
+	sdo->password = g_strdup( self->priv->password );
+	self->priv->sdo = sdo;
 
 	return( TRUE );
 }
