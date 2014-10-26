@@ -399,10 +399,6 @@
                 + rename private to priv
                 ofaDBLogin
 
- 346 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                ofaPlugin
-
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
@@ -1428,6 +1424,11 @@
  341 2014-10-19 defines an ofaPageBook, derived from ofaPage, which will
                 be the base of pages with a GtkNotebook
      2014-10-19 done - svn #3916
+
+ 346 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPlugin
+     2014-10-26 done - svn #3983
 
  347 2014-10-26 review public vs private members in class definitions
                 + rename private to priv

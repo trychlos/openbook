@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _ofaDBLoginPrivate       ofaDBLoginPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialog           parent;
-	ofaDBLoginPrivate *private;
+
+	/*< private members >*/
+	ofaDBLoginPrivate *priv;
 }
 	ofaDBLogin;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myDialogClass parent;
 }
 	ofaDBLoginClass;
