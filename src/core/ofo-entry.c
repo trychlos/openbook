@@ -105,7 +105,7 @@ entry_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_entry_finalize";
 	ofoEntryPrivate *priv;
 
-	priv = OFO_ENTRY( instance )->private;
+	priv = OFO_ENTRY( instance )->priv;
 
 	g_debug( "%s: instance=%p (%s): %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
@@ -120,7 +120,6 @@ entry_finalize( GObject *instance )
 	g_free( priv->model );
 	g_free( priv->ref );
 	g_free( priv->upd_user );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_entry_parent_class )->finalize( instance );
@@ -146,12 +145,12 @@ ofo_entry_init( ofoEntry *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofoEntryPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_ENTRY, ofoEntryPrivate );
 
-	self->private->number = OFO_BASE_UNSET_ID;
-	my_date_clear( &self->private->deffect );
-	my_date_clear( &self->private->dope );
-	my_date_clear( &self->private->concil_dval );
+	self->priv->number = OFO_BASE_UNSET_ID;
+	my_date_clear( &self->priv->deffect );
+	my_date_clear( &self->priv->dope );
+	my_date_clear( &self->priv->concil_dval );
 }
 
 static void
@@ -163,6 +162,8 @@ ofo_entry_class_init( ofoEntryClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = entry_dispose;
 	G_OBJECT_CLASS( klass )->finalize = entry_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofoEntryPrivate ));
 }
 
 /**
@@ -583,9 +584,9 @@ entry_parse_result( const GSList *row )
 	if( row ){
 		icol = ( GSList * ) row->data;
 		entry = ofo_entry_new();
-		my_date_set_from_sql( &entry->private->dope, ( const gchar * ) icol->data );
+		my_date_set_from_sql( &entry->priv->dope, ( const gchar * ) icol->data );
 		icol = icol->next;
-		my_date_set_from_sql( &entry->private->deffect, ( const gchar * ) icol->data );
+		my_date_set_from_sql( &entry->priv->deffect, ( const gchar * ) icol->data );
 		icol = icol->next;
 		ofo_entry_set_number( entry, atoi(( gchar * ) icol->data ));
 		icol = icol->next;
@@ -619,7 +620,7 @@ entry_parse_result( const GSList *row )
 				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 		icol = icol->next;
 		if( icol->data ){
-			my_date_set_from_sql( &entry->private->concil_dval, ( const gchar * ) icol->data );
+			my_date_set_from_sql( &entry->priv->concil_dval, ( const gchar * ) icol->data );
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -735,7 +736,7 @@ ofo_entry_get_number( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->private->number );
+		return( entry->priv->number );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -751,7 +752,7 @@ ofo_entry_get_label( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->private->label );
+		return( entry->priv->label );
 	}
 
 	return( NULL );
@@ -767,7 +768,7 @@ ofo_entry_get_deffect( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &entry->private->deffect );
+		return(( const GDate * ) &entry->priv->deffect );
 	}
 
 	return( NULL );
@@ -783,7 +784,7 @@ ofo_entry_get_dope( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &entry->private->dope );
+		return(( const GDate * ) &entry->priv->dope );
 	}
 
 	return( NULL );
@@ -799,7 +800,7 @@ ofo_entry_get_ref( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->private->ref );
+		return( entry->priv->ref );
 	}
 
 	return( NULL );
@@ -815,7 +816,7 @@ ofo_entry_get_account( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->private->account );
+		return( entry->priv->account );
 	}
 
 	return( NULL );
@@ -831,7 +832,7 @@ ofo_entry_get_currency( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const gchar * ) entry->private->currency );
+		return(( const gchar * ) entry->priv->currency );
 	}
 
 	return( NULL );
@@ -847,7 +848,7 @@ ofo_entry_get_ledger( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const gchar * ) entry->private->ledger );
+		return(( const gchar * ) entry->priv->ledger );
 	}
 
 	return( NULL );
@@ -863,7 +864,7 @@ ofo_entry_get_ope_template( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const gchar * ) entry->private->model );
+		return(( const gchar * ) entry->priv->model );
 	}
 
 	return( NULL );
@@ -879,7 +880,7 @@ ofo_entry_get_debit( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->private->debit );
+		return( entry->priv->debit );
 	}
 
 	return( 0.0 );
@@ -895,7 +896,7 @@ ofo_entry_get_credit( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->private->credit );
+		return( entry->priv->credit );
 	}
 
 	return( 0.0 );
@@ -911,7 +912,7 @@ ofo_entry_get_status( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return( entry->private->status );
+		return( entry->priv->status );
 	}
 
 	return( OFO_BASE_UNSET_ID );
@@ -927,7 +928,7 @@ ofo_entry_get_upd_user( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const gchar * ) entry->private->upd_user );
+		return(( const gchar * ) entry->priv->upd_user );
 	}
 
 	g_assert_not_reached();
@@ -944,7 +945,7 @@ ofo_entry_get_upd_stamp( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &entry->private->upd_stamp );
+		return(( const GTimeVal * ) &entry->priv->upd_stamp );
 	}
 
 	g_assert_not_reached();
@@ -963,7 +964,7 @@ ofo_entry_get_concil_dval( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &entry->private->concil_dval );
+		return(( const GDate * ) &entry->priv->concil_dval );
 	}
 
 	return( NULL );
@@ -979,7 +980,7 @@ ofo_entry_get_concil_user( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const gchar * ) entry->private->concil_user );
+		return(( const gchar * ) entry->priv->concil_user );
 	}
 
 	g_assert_not_reached();
@@ -996,7 +997,7 @@ ofo_entry_get_concil_stamp( const ofoEntry *entry )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &entry->private->concil_stamp );
+		return(( const GTimeVal * ) &entry->priv->concil_stamp );
 	}
 
 	g_assert_not_reached();
@@ -1014,7 +1015,7 @@ ofo_entry_set_number( ofoEntry *entry, gint number )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->private->number = number;
+		entry->priv->number = number;
 	}
 }
 
@@ -1029,8 +1030,8 @@ ofo_entry_set_label( ofoEntry *entry, const gchar *label )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->private->label );
-		entry->private->label = g_strdup( label );
+		g_free( entry->priv->label );
+		entry->priv->label = g_strdup( label );
 	}
 }
 
@@ -1045,7 +1046,7 @@ ofo_entry_set_deffect( ofoEntry *entry, const GDate *deffect )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		my_date_set_from_date( &entry->private->deffect, deffect );
+		my_date_set_from_date( &entry->priv->deffect, deffect );
 	}
 }
 
@@ -1060,7 +1061,7 @@ ofo_entry_set_dope( ofoEntry *entry, const GDate *dope )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		my_date_set_from_date( &entry->private->dope, dope );
+		my_date_set_from_date( &entry->priv->dope, dope );
 	}
 }
 
@@ -1074,8 +1075,8 @@ ofo_entry_set_ref( ofoEntry *entry, const gchar *ref )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->private->ref );
-		entry->private->ref = g_strdup( ref );
+		g_free( entry->priv->ref );
+		entry->priv->ref = g_strdup( ref );
 	}
 }
 
@@ -1090,8 +1091,8 @@ ofo_entry_set_account( ofoEntry *entry, const gchar *account )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->private->account );
-		entry->private->account = g_strdup( account );
+		g_free( entry->priv->account );
+		entry->priv->account = g_strdup( account );
 	}
 }
 
@@ -1106,8 +1107,8 @@ ofo_entry_set_currency( ofoEntry *entry, const gchar *currency )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->private->currency );
-		entry->private->currency = g_strdup( currency );
+		g_free( entry->priv->currency );
+		entry->priv->currency = g_strdup( currency );
 	}
 }
 
@@ -1122,8 +1123,8 @@ ofo_entry_set_ledger( ofoEntry *entry, const gchar *ledger )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->private->ledger );
-		entry->private->ledger = g_strdup( ledger );
+		g_free( entry->priv->ledger );
+		entry->priv->ledger = g_strdup( ledger );
 	}
 }
 
@@ -1138,8 +1139,8 @@ ofo_entry_set_ope_template( ofoEntry *entry, const gchar *model )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->private->model );
-		entry->private->model = g_strdup( model );
+		g_free( entry->priv->model );
+		entry->priv->model = g_strdup( model );
 	}
 }
 
@@ -1153,7 +1154,7 @@ ofo_entry_set_debit( ofoEntry *entry, gdouble debit )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->private->debit = debit;
+		entry->priv->debit = debit;
 	}
 }
 
@@ -1167,7 +1168,7 @@ ofo_entry_set_credit( ofoEntry *entry, gdouble credit )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->private->credit = credit;
+		entry->priv->credit = credit;
 	}
 }
 
@@ -1182,7 +1183,7 @@ ofo_entry_set_status( ofoEntry *entry, ofaEntryStatus status )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->private->status = status;
+		entry->priv->status = status;
 	}
 }
 
@@ -1196,8 +1197,8 @@ entry_set_upd_user( ofoEntry *entry, const gchar *upd_user )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->private->upd_user );
-		entry->private->upd_user = g_strdup( upd_user );
+		g_free( entry->priv->upd_user );
+		entry->priv->upd_user = g_strdup( upd_user );
 	}
 }
 
@@ -1211,7 +1212,7 @@ entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		my_utils_stamp_set_from_stamp( &entry->private->upd_stamp, upd_stamp );
+		my_utils_stamp_set_from_stamp( &entry->priv->upd_stamp, upd_stamp );
 	}
 }
 
@@ -1227,7 +1228,7 @@ ofo_entry_set_concil_dval( ofoEntry *entry, const GDate *drappro )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		my_date_set_from_date( &entry->private->concil_dval, drappro );
+		my_date_set_from_date( &entry->priv->concil_dval, drappro );
 	}
 }
 
@@ -1241,8 +1242,8 @@ ofo_entry_set_concil_user( ofoEntry *entry, const gchar *concil_user )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		g_free( entry->private->concil_user );
-		entry->private->concil_user = g_strdup( concil_user );
+		g_free( entry->priv->concil_user );
+		entry->priv->concil_user = g_strdup( concil_user );
 	}
 }
 
@@ -1256,7 +1257,7 @@ ofo_entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *concil_stamp )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		my_utils_stamp_set_from_stamp( &entry->private->concil_stamp, concil_stamp );
+		my_utils_stamp_set_from_stamp( &entry->priv->concil_stamp, concil_stamp );
 	}
 }
 
@@ -1335,17 +1336,17 @@ ofo_entry_new_with_data( const ofoDossier *dossier,
 
 	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
 
-	my_date_set_from_date( &entry->private->deffect, deffect );
-	my_date_set_from_date( &entry->private->dope, dope );
-	entry->private->label = g_strdup( label );
-	entry->private->ref = g_strdup( ref );
-	entry->private->account = g_strdup( account );
-	entry->private->currency = g_strdup( currency );
-	entry->private->ledger = g_strdup( ledger );
-	entry->private->model = g_strdup( model );
-	entry->private->debit = debit;
-	entry->private->credit = credit;
-	entry->private->status = ENT_STATUS_ROUGH;
+	my_date_set_from_date( &entry->priv->deffect, deffect );
+	my_date_set_from_date( &entry->priv->dope, dope );
+	entry->priv->label = g_strdup( label );
+	entry->priv->ref = g_strdup( ref );
+	entry->priv->account = g_strdup( account );
+	entry->priv->currency = g_strdup( currency );
+	entry->priv->ledger = g_strdup( ledger );
+	entry->priv->model = g_strdup( model );
+	entry->priv->debit = debit;
+	entry->priv->credit = credit;
+	entry->priv->status = ENT_STATUS_ROUGH;
 
 	return( entry );
 }
@@ -1371,7 +1372,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->private->number = ofo_dossier_get_next_entry_number( dossier );
+		entry->priv->number = ofo_dossier_get_next_entry_number( dossier );
 
 		if( entry_do_insert( entry,
 					ofo_dossier_get_sgbd( dossier ),
@@ -1973,7 +1974,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				errors += 1;
 				continue;
 			}
-			entry->private->dope = date;
+			entry->priv->dope = date;
 
 			/* effect date */
 			ico=ico->next;
@@ -1984,7 +1985,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				errors += 1;
 				continue;
 			}
-			entry->private->deffect = date;
+			entry->priv->deffect = date;
 
 			/* entry label */
 			ico = ico->next;

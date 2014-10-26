@@ -47,20 +47,22 @@ G_BEGIN_DECLS
 #define OFO_IS_ENTRY_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_ENTRY ))
 #define OFO_ENTRY_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_ENTRY, ofoEntryClass ))
 
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoEntryClass;
-
 typedef struct _ofoEntryPrivate       ofoEntryPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofoBase          parent;
-	ofoEntryPrivate *private;
+
+	/*< private members >*/
+	ofoEntryPrivate *priv;
 }
 	ofoEntry;
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass parent;
+}
+	ofoEntryClass;
 
 /**
  * ofaEntryStatus:
