@@ -116,12 +116,10 @@ rate_properties_finalize( GObject *instance )
 
 	g_return_if_fail( OFA_IS_RATE_PROPERTIES( instance ));
 
-	priv = OFA_RATE_PROPERTIES( instance )->private;
-
 	/* free data members here */
+	priv = OFA_RATE_PROPERTIES( instance )->priv;
 	g_free( priv->mnemo );
 	g_free( priv->label );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_rate_properties_parent_class )->finalize( instance );
@@ -151,11 +149,11 @@ ofa_rate_properties_init( ofaRateProperties *self )
 
 	g_return_if_fail( OFA_IS_RATE_PROPERTIES( self ));
 
-	self->private = g_new0( ofaRatePropertiesPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RATE_PROPERTIES, ofaRatePropertiesPrivate );
 
-	self->private->is_new = FALSE;
-	self->private->updated = FALSE;
-	self->private->count = 0;
+	self->priv->is_new = FALSE;
+	self->priv->updated = FALSE;
+	self->priv->count = 0;
 }
 
 static void
@@ -170,6 +168,8 @@ ofa_rate_properties_class_init( ofaRatePropertiesClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaRatePropertiesPrivate ));
 }
 
 /**
@@ -198,11 +198,11 @@ ofa_rate_properties_run( ofaMainWindow *main_window, ofoRate *rate )
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	self->private->rate = rate;
+	self->priv->rate = rate;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	updated = self->private->updated;
+	updated = self->priv->updated;
 
 	g_object_unref( self );
 
@@ -221,7 +221,7 @@ v_init_dialog( myDialog *dialog )
 	GtkContainer *container;
 
 	self = OFA_RATE_PROPERTIES( dialog );
-	priv = self->private;
+	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	mnemo = ofo_rate_get_mnemo( priv->rate );
@@ -270,9 +270,9 @@ insert_new_row( ofaRateProperties *self, gint idx )
 	gdouble rate;
 	gint row;
 
-	priv = self->private;
+	priv = self->priv;
 	add_empty_row( self );
-	row = self->private->count;
+	row = self->priv->count;
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, row ));
 	d = ofo_rate_get_val_begin( priv->rate, idx );
@@ -298,8 +298,8 @@ add_empty_row( ofaRateProperties *self )
 	GtkLabel *label;
 	gint row;
 
-	priv = self->private;
-	row = self->private->count + 1;
+	priv = self->priv;
+	row = self->priv->count + 1;
 
 	gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, COL_ADD, row ));
 
@@ -338,7 +338,7 @@ add_empty_row( ofaRateProperties *self )
 	add_button( self, GTK_STOCK_REMOVE, COL_REMOVE, row );
 	add_button( self, GTK_STOCK_ADD, COL_ADD, row+1 );
 
-	self->private->count = row;
+	self->priv->count = row;
 	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
 }
 
@@ -354,14 +354,14 @@ add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint ro
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_button_set_image( button, image );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
-	gtk_grid_attach( self->private->grid, GTK_WIDGET( button ), column, row, 1, 1 );
+	gtk_grid_attach( self->priv->grid, GTK_WIDGET( button ), column, row, 1, 1 );
 }
 
 static void
 on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self )
 {
-	g_free( self->private->mnemo );
-	self->private->mnemo = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->mnemo );
+	self->priv->mnemo = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -369,8 +369,8 @@ on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self )
 static void
 on_label_changed( GtkEntry *entry, ofaRateProperties *self )
 {
-	g_free( self->private->label );
-	self->private->label = g_strdup( gtk_entry_get_text( entry ));
+	g_free( self->priv->label );
+	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -450,7 +450,7 @@ set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *
 	gchar *markup;
 
 	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( widget ), DATA_ROW ));
-	label = GTK_LABEL( gtk_grid_get_child_at( self->private->grid, COL_MESSAGE, row ));
+	label = GTK_LABEL( gtk_grid_get_child_at( self->priv->grid, COL_MESSAGE, row ));
 	markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", comment );
 	gtk_label_set_markup( label, markup );
 	g_free( markup );
@@ -480,7 +480,7 @@ remove_row( ofaRateProperties *self, gint row )
 	gint i, line;
 	GtkWidget *widget;
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* first remove the line
 	 * note that there is no 'add' button in a used line */
@@ -491,7 +491,7 @@ remove_row( ofaRateProperties *self, gint row )
 	}
 
 	/* then move the follow lines one row up */
-	for( line=row+1 ; line<=self->private->count+1 ; ++line ){
+	for( line=row+1 ; line<=self->priv->count+1 ; ++line ){
 		for( i=0 ; i<N_COLUMNS ; ++i ){
 			widget = gtk_grid_get_child_at( priv->grid, i, line );
 			if( widget ){
@@ -507,7 +507,7 @@ remove_row( ofaRateProperties *self, gint row )
 	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
 
 	/* last update the lines count */
-	self->private->count -= 1;
+	self->priv->count -= 1;
 }
 
 /*
@@ -543,7 +543,7 @@ is_dialog_validable( ofaRateProperties *self )
 	ofoRate *exists;
 	const GDate *dbegin, *dend;
 
-	priv = self->private;
+	priv = self->priv;
 
 	for( i=1, valids=NULL ; i<=priv->count ; ++i ){
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, i ));
@@ -570,10 +570,10 @@ is_dialog_validable( ofaRateProperties *self )
 	if( ok ){
 		exists = ofo_rate_get_by_mnemo(
 				MY_WINDOW( self )->protected->dossier,
-				self->private->mnemo );
+				self->priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new &&
-						!g_utf8_collate( self->private->mnemo, ofo_rate_get_mnemo( self->private->rate )));
+						!g_utf8_collate( self->priv->mnemo, ofo_rate_get_mnemo( self->priv->rate )));
 	}
 
 	return( ok );
@@ -605,7 +605,7 @@ do_update( ofaRateProperties *self )
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	priv = self->private;
+	priv = self->priv;
 
 	prev_mnemo = g_strdup( ofo_rate_get_mnemo( priv->rate ));
 
