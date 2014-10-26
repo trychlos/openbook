@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _ofaAccountsPagePrivate        ofaAccountsPagePrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofaPage                 parent;
-	ofaAccountsPagePrivate *private;
+
+	/*< private members >*/
+	ofaAccountsPagePrivate *priv;
 }
 	ofaAccountsPage;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofaPageClass parent;
 }
 	ofaAccountsPageClass;
