@@ -71,13 +71,10 @@ dossier_login_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_LOGIN( instance ));
 
-	priv = OFA_DOSSIER_LOGIN( instance )->private;
-
 	/* free data members here */
+	priv = OFA_DOSSIER_LOGIN( instance )->priv;
 	g_free( priv->account );
 	g_free( priv->password );
-
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_login_parent_class )->finalize( instance );
@@ -107,9 +104,9 @@ ofa_dossier_login_init( ofaDossierLogin *self )
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_LOGIN( self ));
 
-	self->private = g_new0( ofaDossierLoginPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_LOGIN, ofaDossierLoginPrivate );
 
-	self->private->ok = FALSE;
+	self->priv->ok = FALSE;
 }
 
 static void
@@ -124,6 +121,8 @@ ofa_dossier_login_class_init( ofaDossierLoginClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaDossierLoginPrivate ));
 }
 
 /**
@@ -151,13 +150,13 @@ ofa_dossier_login_run( const ofaMainWindow *main_window, const gchar *label, gch
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	self->private->label = label;
+	self->priv->label = label;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	if( self->private->ok ){
-		*account = g_strdup( self->private->account );
-		*password = g_strdup( self->private->password );
+	if( self->priv->ok ){
+		*account = g_strdup( self->priv->account );
+		*password = g_strdup( self->priv->password );
 	}
 
 	g_object_unref( self );
@@ -171,7 +170,7 @@ v_init_dialog( myDialog *dialog )
 	GtkWidget *entry, *label;
 	gchar *msg;
 
-	priv = OFA_DOSSIER_LOGIN( dialog )->private;
+	priv = OFA_DOSSIER_LOGIN( dialog )->priv;
 
 	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
@@ -198,8 +197,8 @@ v_init_dialog( myDialog *dialog )
 static void
 on_account_changed( GtkEditable *entry, ofaDossierLogin *self )
 {
-	g_free( self->private->account );
-	self->private->account = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
+	g_free( self->priv->account );
+	self->priv->account = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
 
 	check_for_enable_dlg( self );
 }
@@ -207,8 +206,8 @@ on_account_changed( GtkEditable *entry, ofaDossierLogin *self )
 static void
 on_password_changed( GtkEditable *entry, ofaDossierLogin *self )
 {
-	g_free( self->private->password );
-	self->private->password = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
+	g_free( self->priv->password );
+	self->priv->password = g_strdup( gtk_entry_get_text( GTK_ENTRY( entry )));
 
 	check_for_enable_dlg( self );
 }
@@ -221,7 +220,7 @@ check_for_enable_dlg( ofaDossierLogin *self )
 
 	ok = is_dialog_validable( self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( !priv->btn_ok ){
 		priv->btn_ok = my_utils_container_get_child_by_name(
@@ -229,7 +228,7 @@ check_for_enable_dlg( ofaDossierLogin *self )
 		g_return_if_fail( priv->btn_ok && GTK_IS_BUTTON( priv->btn_ok ));
 	}
 
-	gtk_widget_set_sensitive( self->private->btn_ok, ok );
+	gtk_widget_set_sensitive( self->priv->btn_ok, ok );
 }
 
 static gboolean
@@ -238,7 +237,7 @@ is_dialog_validable( ofaDossierLogin *self )
 	ofaDossierLoginPrivate *priv;
 	gboolean ok;
 
-	priv = self->private;
+	priv = self->priv;
 
 	ok = priv->account && g_utf8_strlen( priv->account, -1 ) &&
 			priv->password && g_utf8_strlen( priv->password, -1 );
@@ -254,7 +253,7 @@ v_quit_on_ok( myDialog *dialog )
 {
 	ofaDossierLoginPrivate *priv;
 
-	priv = OFA_DOSSIER_LOGIN( dialog )->private;
+	priv = OFA_DOSSIER_LOGIN( dialog )->priv;
 
 	priv->ok = TRUE;
 
