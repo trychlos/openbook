@@ -77,14 +77,16 @@ G_BEGIN_DECLS
 typedef struct _ofaPluginPrivate       ofaPluginPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GTypeModule       parent;
-	ofaPluginPrivate *private;
+
+	/*< private members >*/
+	ofaPluginPrivate *priv;
 }
 	ofaPlugin;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GTypeModuleClass parent;
 }
 	ofaPluginClass;
