@@ -54,14 +54,16 @@ G_BEGIN_DECLS
 typedef struct _ofaBatCommonPrivate        ofaBatCommonPrivate;
 
 typedef struct {
-	/*< private >*/
-	GObject            parent;
-	ofaBatCommonPrivate *private;
+	/*< public members >*/
+	GObject              parent;
+
+	/*< private members >*/
+	ofaBatCommonPrivate *priv;
 }
 	ofaBatCommon;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaBatCommonClass;
@@ -79,7 +81,7 @@ typedef struct {
 typedef void ( *ofaBatCommonCb )( const ofoBat *, gpointer );
 
 /**
- * ofaBatCommonParms
+ * ofsBatCommonParms
  *
  * The structure passed to the init_dialog() function.
  *
@@ -103,11 +105,11 @@ typedef struct {
 	ofaBatCommonCb    pfnActivation;
 	gpointer          user_data;
 }
-	ofaBatCommonParms;
+	ofsBatCommonParms;
 
 GType         ofa_bat_common_get_type     ( void ) G_GNUC_CONST;
 
-ofaBatCommon *ofa_bat_common_init_dialog  ( const ofaBatCommonParms *parms );
+ofaBatCommon *ofa_bat_common_init_dialog  ( const ofsBatCommonParms *parms );
 
 void          ofa_bat_common_set_bat      ( const ofaBatCommon *self, const ofoBat *bat );
 

@@ -158,7 +158,7 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaBatSelectPrivate *priv;
-	ofaBatCommonParms parms;
+	ofsBatCommonParms parms;
 	GtkWidget *container;
 
 	priv = OFA_BAT_SELECT( dialog )->priv;

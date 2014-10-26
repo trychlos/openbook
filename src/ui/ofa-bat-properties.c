@@ -169,7 +169,7 @@ v_init_dialog( myDialog *dialog )
 	ofaBatProperties *self;
 	ofaBatPropertiesPrivate *priv;
 	gchar *title;
-	ofaBatCommonParms parms;
+	ofsBatCommonParms parms;
 	GtkWindow *toplevel;
 	GtkWidget *container;
 
