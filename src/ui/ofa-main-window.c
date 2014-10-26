@@ -39,7 +39,7 @@
 #include "ui/ofa-accounts-page.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-backup.h"
-#include "ui/ofa-bat-set.h"
+#include "ui/ofa-bats-page.h"
 #include "ui/ofa-classes-page.h"
 #include "ui/ofa-currencies-page.h"
 #include "ui/ofa-dossier-login.h"
@@ -157,7 +157,7 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_BATFILES,
 				N_( "Imported BAT files" ),
-				ofa_bat_set_get_type,
+				ofa_bats_page_get_type,
 				FALSE,
 				FALSE },
 

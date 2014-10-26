@@ -72,8 +72,8 @@ openbook_SOURCES = \
 	ofa-bat-properties.h								\
 	ofa-bat-select.c									\
 	ofa-bat-select.h									\
-	ofa-bat-set.c										\
-	ofa-bat-set.h										\
+	ofa-bats-page.c										\
+	ofa-bats-page.h										\
 	ofa-class-properties.c								\
 	ofa-class-properties.h								\
 	ofa-classes-page.c									\

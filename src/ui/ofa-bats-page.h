@@ -24,12 +24,12 @@
  * $Id$
  */
 
-#ifndef __OFA_BAT_SET_H__
-#define __OFA_BAT_SET_H__
+#ifndef __OFA_BATS_PAGE_H__
+#define __OFA_BATS_PAGE_H__
 
 /**
- * SECTION: ofa_bat_set
- * @short_description: #ofaBatSet class definition.
+ * SECTION: ofa_bats_page
+ * @short_description: #ofaBatsPage class definition.
  * @include: ui/ofa-bat-set.h
  *
  * Display the list of known bat, letting the user edit it.
@@ -42,30 +42,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_BAT_SET                ( ofa_bat_set_get_type())
-#define OFA_BAT_SET( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BAT_SET, ofaBatSet ))
-#define OFA_BAT_SET_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BAT_SET, ofaBatSetClass ))
-#define OFA_IS_BAT_SET( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BAT_SET ))
-#define OFA_IS_BAT_SET_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BAT_SET ))
-#define OFA_BAT_SET_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BAT_SET, ofaBatSetClass ))
+#define OFA_TYPE_BATS_PAGE                ( ofa_bats_page_get_type())
+#define OFA_BATS_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BATS_PAGE, ofaBatsPage ))
+#define OFA_BATS_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BATS_PAGE, ofaBatsPageClass ))
+#define OFA_IS_BATS_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BATS_PAGE ))
+#define OFA_IS_BATS_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BATS_PAGE ))
+#define OFA_BATS_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BATS_PAGE, ofaBatsPageClass ))
 
-typedef struct _ofaBatSetPrivate        ofaBatSetPrivate;
+typedef struct _ofaBatsPagePrivate        ofaBatsPagePrivate;
 
 typedef struct {
-	/*< private >*/
-	ofaPage       parent;
-	ofaBatSetPrivate *private;
+	/*< public members >*/
+	ofaPage             parent;
+
+	/*< private members >*/
+	ofaBatsPagePrivate *priv;
 }
-	ofaBatSet;
+	ofaBatsPage;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofaPageClass parent;
 }
-	ofaBatSetClass;
+	ofaBatsPageClass;
 
-GType ofa_bat_set_get_type( void ) G_GNUC_CONST;
+GType ofa_bats_page_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_BAT_SET_H__ */
+#endif /* __OFA_BATS_PAGE_H__ */

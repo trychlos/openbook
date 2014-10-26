@@ -33,15 +33,15 @@
 #include "api/ofo-bat.h"
 
 #include "ui/ofa-bat-properties.h"
-#include "ui/ofa-bat-set.h"
+#include "ui/ofa-bats-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
-struct _ofaBatSetPrivate {
-	gboolean dispose_has_run;
+struct _ofaBatsPagePrivate {
+	void  *empty;							/* so that 'gcc -pedantic' is happy */
 };
 
 /* column ordering in the selection listview
@@ -52,91 +52,81 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaBatSet, ofa_bat_set, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaBatsPage, ofa_bats_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
-static void       insert_new_row( ofaBatSet *self, ofoBat *bat, gboolean with_selection );
-static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatSet *self );
-static void       setup_first_selection( ofaBatSet *self );
+static void       insert_new_row( ofaBatsPage *self, ofoBat *bat, gboolean with_selection );
+static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatsPage *self );
+static void       setup_first_selection( ofaBatsPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
-static void       on_row_selected( GtkTreeSelection *selection, ofaBatSet *self );
+static void       on_row_selected( GtkTreeSelection *selection, ofaBatsPage *self );
 /*static void       v_on_new_clicked( GtkButton *button, ofaPage *page );*/
 static void       v_on_update_clicked( GtkButton *button, ofaPage *page );
 static void       v_on_delete_clicked( GtkButton *button, ofaPage *page );
-static gboolean   delete_confirmed( ofaBatSet *self, ofoBat *bat );
+static gboolean   delete_confirmed( ofaBatsPage *self, ofoBat *bat );
 
 static void
-bat_set_finalize( GObject *instance )
+bats_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_bat_set_finalize";
-	ofaBatSetPrivate *priv;
+	static const gchar *thisfn = "ofa_bats_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_BAT_SET( instance ));
-
-	priv = OFA_BAT_SET( instance )->private;
+	g_return_if_fail( instance && OFA_IS_BATS_PAGE( instance ));
 
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_bat_set_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_bats_page_parent_class )->finalize( instance );
 }
 
 static void
-bat_set_dispose( GObject *instance )
+bats_page_dispose( GObject *instance )
 {
-	ofaBatSetPrivate *priv;
+	g_return_if_fail( instance && OFA_IS_BATS_PAGE( instance ));
 
-	g_return_if_fail( instance && OFA_IS_BAT_SET( instance ));
-
-	priv = ( OFA_BAT_SET( instance ))->private;
-
-	if( !priv->dispose_has_run ){
-
-		priv->dispose_has_run = TRUE;
+	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_bat_set_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_bats_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_bat_set_init( ofaBatSet *self )
+ofa_bats_page_init( ofaBatsPage *self )
 {
-	static const gchar *thisfn = "ofa_bat_set_init";
+	static const gchar *thisfn = "ofa_bats_page_init";
 
-	g_return_if_fail( OFA_IS_BAT_SET( self ));
+	g_return_if_fail( OFA_IS_BATS_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaBatSetPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BATS_PAGE, ofaBatsPagePrivate );
 }
 
 static void
-ofa_bat_set_class_init( ofaBatSetClass *klass )
+ofa_bats_page_class_init( ofaBatsPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_bat_set_class_init";
+	static const gchar *thisfn = "ofa_bats_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = bat_set_dispose;
-	G_OBJECT_CLASS( klass )->finalize = bat_set_finalize;
+	G_OBJECT_CLASS( klass )->dispose = bats_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = bats_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
+
+	g_type_class_add_private( klass, sizeof( ofaBatsPagePrivate ));
 }
 
 static GtkWidget *
@@ -200,7 +190,7 @@ v_setup_buttons( ofaPage *page )
 {
 	GtkWidget *buttons_box;
 
-	buttons_box = OFA_PAGE_CLASS( ofa_bat_set_parent_class )->setup_buttons( page );
+	buttons_box = OFA_PAGE_CLASS( ofa_bats_page_parent_class )->setup_buttons( page );
 
 	gtk_widget_set_sensitive( ofa_page_get_new_btn( page ), FALSE );
 
@@ -210,12 +200,12 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	ofaBatSet *self;
+	ofaBatsPage *self;
 	ofoDossier *dossier;
 	GList *dataset, *iset;
 	ofoBat *bat;
 
-	self = OFA_BAT_SET( page );
+	self = OFA_BATS_PAGE( page );
 	dossier = ofa_page_get_dossier( page );
 	dataset = ofo_bat_get_dataset( dossier );
 
@@ -229,7 +219,7 @@ v_init_view( ofaPage *page )
 }
 
 static void
-insert_new_row( ofaBatSet *self, ofoBat *bat, gboolean with_selection )
+insert_new_row( ofaBatsPage *self, ofoBat *bat, gboolean with_selection )
 {
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
@@ -259,7 +249,7 @@ insert_new_row( ofaBatSet *self, ofoBat *bat, gboolean with_selection )
  * list of imported BAT is sorted on import timestamp
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatSet *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatsPage *self )
 {
 	ofoBat *aobj, *bobj;
 	const GTimeVal *astamp, *bstamp;
@@ -276,7 +266,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatSet *
 }
 
 static void
-setup_first_selection( ofaBatSet *self )
+setup_first_selection( ofaBatsPage *self )
 {
 	GtkTreeView *tview;
 	GtkTreeModel *model;
@@ -300,7 +290,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 }
 
 static void
-on_row_selected( GtkTreeSelection *selection, ofaBatSet *self )
+on_row_selected( GtkTreeSelection *selection, ofaBatsPage *self )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -326,14 +316,14 @@ v_on_new_clicked( GtkButton *button, ofaPage *page )
 {
 	ofoBat *bat;
 
-	g_return_if_fail( page && OFA_IS_BAT_SET( page ));
+	g_return_if_fail( page && OFA_IS_BATS_PAGE( page ));
 
 	bat = ofo_bat_new();
 
 	if( ofa_bat_properties_run(
 			ofa_page_get_main_window( page ), bat )){
 
-		insert_new_row( OFA_BAT_SET( page ), bat, TRUE );
+		insert_new_row( OFA_BATS_PAGE( page ), bat, TRUE );
 
 	} else {
 		g_object_unref( bat );
@@ -353,7 +343,7 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 	GtkTreeIter iter;
 	ofoBat *bat;
 
-	g_return_if_fail( page && OFA_IS_BAT_SET( page ));
+	g_return_if_fail( page && OFA_IS_BATS_PAGE( page ));
 
 	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
 	select = gtk_tree_view_get_selection( tview );
@@ -377,7 +367,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 	GtkTreeIter iter;
 	ofoBat *bat;
 
-	g_return_if_fail( page && OFA_IS_BAT_SET( page ));
+	g_return_if_fail( page && OFA_IS_BATS_PAGE( page ));
 
 	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
 	select = gtk_tree_view_get_selection( tview );
@@ -389,7 +379,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 
 		g_return_if_fail( ofo_bat_is_deletable( bat ));
 
-		if( delete_confirmed( OFA_BAT_SET( page ), bat ) &&
+		if( delete_confirmed( OFA_BATS_PAGE( page ), bat ) &&
 				ofo_bat_delete( bat, ofa_page_get_dossier( page ))){
 
 			/* remove the row from the tmodel
@@ -402,7 +392,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 }
 
 static gboolean
-delete_confirmed( ofaBatSet *self, ofoBat *bat )
+delete_confirmed( ofaBatsPage *self, ofoBat *bat )
 {
 	gchar *msg;
 	gboolean delete_ok;
