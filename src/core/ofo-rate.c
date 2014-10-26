@@ -87,8 +87,8 @@ rate_free_validity( ofsRateValidity *sval )
 static void
 rate_free_validities( ofoRate *rate )
 {
-	g_list_free_full( rate->private->validities, ( GDestroyNotify ) rate_free_validity );
-	rate->private->validities = NULL;
+	g_list_free_full( rate->priv->validities, ( GDestroyNotify ) rate_free_validity );
+	rate->priv->validities = NULL;
 }
 
 static void
@@ -97,8 +97,6 @@ rate_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_rate_finalize";
 	ofoRatePrivate *priv;
 
-	priv = OFO_RATE( instance )->private;
-
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			priv->mnemo, priv->label );
@@ -106,14 +104,14 @@ rate_finalize( GObject *instance )
 	g_return_if_fail( instance && OFO_IS_RATE( instance ));
 
 	/* free data members here */
+	priv = OFO_RATE( instance )->priv;
+
 	g_free( priv->mnemo );
 	g_free( priv->label );
 	g_free( priv->notes );
 	g_free( priv->upd_user );
 
 	rate_free_validities( OFO_RATE( instance ));
-
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_rate_parent_class )->finalize( instance );
@@ -141,7 +139,7 @@ ofo_rate_init( ofoRate *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofoRatePrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_RATE, ofoRatePrivate );
 }
 
 static void
@@ -153,6 +151,8 @@ ofo_rate_class_init( ofoRateClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = rate_dispose;
 	G_OBJECT_CLASS( klass )->finalize = rate_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofoRatePrivate ));
 }
 
 /**
@@ -218,7 +218,7 @@ rate_load_dataset( void )
 	for( it=dataset ; it ; it=it->next ){
 
 		rate = OFO_RATE( it->data );
-		rate->private->validities = NULL;
+		rate->priv->validities = NULL;
 
 		query = g_strdup_printf(
 					"SELECT RAT_VAL_BEG,RAT_VAL_END,RAT_VAL_RATE"
@@ -302,7 +302,7 @@ ofo_rate_get_mnemo( const ofoRate *rate )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		return(( const gchar * ) rate->private->mnemo );
+		return(( const gchar * ) rate->priv->mnemo );
 	}
 
 	g_assert_not_reached();
@@ -319,7 +319,7 @@ ofo_rate_get_label( const ofoRate *rate )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		return(( const gchar * ) rate->private->label );
+		return(( const gchar * ) rate->priv->label );
 	}
 
 	g_assert_not_reached();
@@ -336,7 +336,7 @@ ofo_rate_get_notes( const ofoRate *rate )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		return(( const gchar * ) rate->private->notes );
+		return(( const gchar * ) rate->priv->notes );
 	}
 
 	g_assert_not_reached();
@@ -353,7 +353,7 @@ ofo_rate_get_upd_user( const ofoRate *rate )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		return(( const gchar * ) rate->private->upd_user );
+		return(( const gchar * ) rate->priv->upd_user );
 	}
 
 	g_assert_not_reached();
@@ -370,7 +370,7 @@ ofo_rate_get_upd_stamp( const ofoRate *rate )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &rate->private->upd_stamp );
+		return(( const GTimeVal * ) &rate->priv->upd_stamp );
 	}
 
 	g_assert_not_reached();
@@ -395,7 +395,7 @@ ofo_rate_get_min_valid( const ofoRate *rate )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		for (min=NULL, iv=rate->private->validities ; iv ; iv=iv->next ){
+		for (min=NULL, iv=rate->priv->validities ; iv ; iv=iv->next ){
 			sval = ( ofsRateValidity * ) iv->data;
 			if( !min ){
 				min = &sval->begin;
@@ -429,7 +429,7 @@ ofo_rate_get_max_valid( const ofoRate *rate )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		for (max=NULL, iv=rate->private->validities ; iv ; iv=iv->next ){
+		for (max=NULL, iv=rate->priv->validities ; iv ; iv=iv->next ){
 			sval = ( ofsRateValidity * ) iv->data;
 			if( !max ){
 				max = &sval->end;
@@ -455,7 +455,7 @@ ofo_rate_get_val_count( const ofoRate *rate )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		return( g_list_length( rate->private->validities ));
+		return( g_list_length( rate->priv->validities ));
 	}
 
 	return( 0 );
@@ -474,7 +474,7 @@ ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		nth = g_list_nth( rate->private->validities, idx );
+		nth = g_list_nth( rate->priv->validities, idx );
 		if( nth ){
 			validity = ( ofsRateValidity * ) nth->data;
 			return(( const GDate * ) &validity->begin );
@@ -497,7 +497,7 @@ ofo_rate_get_val_end( const ofoRate *rate, gint idx )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		nth = g_list_nth( rate->private->validities, idx );
+		nth = g_list_nth( rate->priv->validities, idx );
 		if( nth ){
 			validity = ( ofsRateValidity * ) nth->data;
 			return(( const GDate * ) &validity->end );
@@ -520,7 +520,7 @@ ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		nth = g_list_nth( rate->private->validities, idx );
+		nth = g_list_nth( rate->priv->validities, idx );
 		if( nth ){
 			validity = ( ofsRateValidity * ) nth->data;
 			return( validity->rate );
@@ -549,7 +549,7 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		for( iva=rate->private->validities ; iva ; iva=iva->next ){
+		for( iva=rate->priv->validities ; iva ; iva=iva->next ){
 			svalid = ( ofsRateValidity * ) iva->data;
 			if( my_date_compare_ex( &svalid->begin, date, TRUE ) > 0 ){
 				continue;
@@ -626,8 +626,8 @@ ofo_rate_set_mnemo( ofoRate *rate, const gchar *mnemo )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		g_free( rate->private->mnemo );
-		rate->private->mnemo = g_strdup( mnemo );
+		g_free( rate->priv->mnemo );
+		rate->priv->mnemo = g_strdup( mnemo );
 	}
 }
 
@@ -641,8 +641,8 @@ ofo_rate_set_label( ofoRate *rate, const gchar *label )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		g_free( rate->private->label );
-		rate->private->label = g_strdup( label );
+		g_free( rate->priv->label );
+		rate->priv->label = g_strdup( label );
 	}
 }
 
@@ -656,8 +656,8 @@ ofo_rate_set_notes( ofoRate *rate, const gchar *notes )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		g_free( rate->private->notes );
-		rate->private->notes = g_strdup( notes );
+		g_free( rate->priv->notes );
+		rate->priv->notes = g_strdup( notes );
 	}
 }
 
@@ -671,8 +671,8 @@ rate_set_upd_user( ofoRate *rate, const gchar *upd_user )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		g_free( rate->private->upd_user );
-		rate->private->upd_user = g_strdup( upd_user );
+		g_free( rate->priv->upd_user );
+		rate->priv->upd_user = g_strdup( upd_user );
 	}
 }
 
@@ -686,7 +686,7 @@ rate_set_upd_stamp( ofoRate *rate, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		my_utils_stamp_set_from_stamp( &rate->private->upd_stamp, upd_stamp );
+		my_utils_stamp_set_from_stamp( &rate->priv->upd_stamp, upd_stamp );
 	}
 }
 
@@ -738,7 +738,7 @@ ofo_rate_add_val( ofoRate *rate, const GDate *begin, const GDate *end, gdouble v
 static void
 rate_val_add_detail( ofoRate *rate, ofsRateValidity *detail )
 {
-	rate->private->validities = g_list_append( rate->private->validities, detail );
+	rate->priv->validities = g_list_append( rate->priv->validities, detail );
 }
 
 /**
@@ -856,7 +856,7 @@ rate_insert_validities( ofoRate *rate, const ofoSgbd *sgbd )
 	ofsRateValidity *sdet;
 
 	ok = TRUE;
-	for( idet=rate->private->validities ; idet ; idet=idet->next ){
+	for( idet=rate->priv->validities ; idet ; idet=idet->next ){
 		sdet = ( ofsRateValidity * ) idet->data;
 		ok &= rate_insert_validity( rate, sdet, sgbd );
 	}
@@ -1180,7 +1180,7 @@ ofo_rate_get_csv( const ofoDossier *dossier )
 
 		lines = g_slist_prepend( lines, str );
 
-		for( det=rate->private->validities ; det ; det=det->next ){
+		for( det=rate->priv->validities ; det ; det=det->next ){
 			sdet = ( ofsRateValidity * ) det->data;
 
 			sbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );

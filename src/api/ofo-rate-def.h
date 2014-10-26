@@ -46,20 +46,22 @@ G_BEGIN_DECLS
 #define OFO_IS_RATE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_RATE ))
 #define OFO_RATE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_RATE, ofoRateClass ))
 
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoRateClass;
-
 typedef struct _ofoRatePrivate       ofoRatePrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofoBase         parent;
-	ofoRatePrivate *private;
+
+	/*< private members >*/
+	ofoRatePrivate *priv;
 }
 	ofoRate;
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass parent;
+}
+	ofoRateClass;
 
 GType ofo_rate_get_type( void ) G_GNUC_CONST;
 
