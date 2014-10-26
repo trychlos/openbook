@@ -47,14 +47,16 @@
 typedef struct _ofaSettingsPrivate       ofaSettingsPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject             parent;
-	ofaSettingsPrivate *private;
+
+	/*< private members >*/
+	ofaSettingsPrivate *priv;
 }
 	ofaSettings;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaSettingsClass;
@@ -94,12 +96,10 @@ settings_finalize( GObject *object )
 
 	g_return_if_fail( object && OFA_IS_SETTINGS( object ));
 
-	priv = OFA_SETTINGS( object )->private;
-
 	/* free data members here */
+	priv = OFA_SETTINGS( object )->priv;
 	g_key_file_free( priv->keyfile );
 	g_free( priv->kf_name );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_settings_parent_class )->finalize( object );
@@ -112,7 +112,7 @@ settings_dispose( GObject *object )
 
 	g_return_if_fail( object && OFA_IS_SETTINGS( object ));
 
-	priv = OFA_SETTINGS( object )->private;
+	priv = OFA_SETTINGS( object )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -133,7 +133,7 @@ settings_constructed( GObject *object )
 
 	g_return_if_fail( object && OFA_IS_SETTINGS( object ));
 
-	priv = OFA_SETTINGS( object )->private;
+	priv = OFA_SETTINGS( object )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -160,9 +160,8 @@ ofa_settings_init( ofaSettings *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaSettingsPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_SETTINGS, ofaSettingsPrivate );
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -175,6 +174,8 @@ ofa_settings_class_init( ofaSettingsClass *klass )
 	G_OBJECT_CLASS( klass )->constructed = settings_constructed;
 	G_OBJECT_CLASS( klass )->dispose = settings_dispose;
 	G_OBJECT_CLASS( klass )->finalize = settings_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaSettingsPrivate ));
 }
 
 /**
@@ -200,22 +201,22 @@ load_key_file( ofaSettings *settings )
 
 	g_debug( "%s: settings=%p", thisfn, ( void * ) settings );
 
-	settings->private->keyfile = g_key_file_new();
+	settings->priv->keyfile = g_key_file_new();
 
 	dir = g_build_filename( g_get_home_dir(), ".config", PACKAGE, NULL );
 	g_mkdir_with_parents( dir, 0750 );
-	settings->private->kf_name = g_strdup_printf( "%s/%s.conf", dir, PACKAGE );
+	settings->priv->kf_name = g_strdup_printf( "%s/%s.conf", dir, PACKAGE );
 	g_free( dir );
 
 	error = NULL;
 	if( !g_key_file_load_from_file(
-			settings->private->keyfile,
-			settings->private->kf_name, G_KEY_FILE_KEEP_COMMENTS, &error )){
+			settings->priv->keyfile,
+			settings->priv->kf_name, G_KEY_FILE_KEEP_COMMENTS, &error )){
 		if( error->code != G_FILE_ERROR_NOENT ){
 			g_warning( "%s: %s (%d) %s",
-					thisfn, settings->private->kf_name, error->code, error->message );
+					thisfn, settings->priv->kf_name, error->code, error->message );
 		} else {
-			g_debug( "%s: %s: file doesn't exist", thisfn, settings->private->kf_name );
+			g_debug( "%s: %s: file doesn't exist", thisfn, settings->priv->kf_name );
 		}
 		g_error_free( error );
 	}
@@ -232,8 +233,8 @@ write_key_file( ofaSettings *settings )
 	gsize length;
 
 	error = NULL;
-	data = g_key_file_to_data( settings->private->keyfile, &length, NULL );
-	file = g_file_new_for_path( settings->private->kf_name );
+	data = g_key_file_to_data( settings->priv->keyfile, &length, NULL );
+	file = g_file_new_for_path( settings->priv->kf_name );
 
 	stream = g_file_replace( file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &error );
 	if( error ){
@@ -308,7 +309,7 @@ ofa_settings_get_dossiers( void )
 
 	prefix = g_strdup_printf( "%s ", GROUP_DOSSIER );
 	spfx = g_utf8_strlen( prefix, -1 );
-	array = g_key_file_get_groups( st_settings->private->keyfile, NULL );
+	array = g_key_file_get_groups( st_settings->priv->keyfile, NULL );
 	slist = NULL;
 	idx = array;
 
@@ -339,7 +340,7 @@ ofa_settings_remove_dossier( const gchar *name )
 	settings_new();
 
 	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
-	g_key_file_remove_group( st_settings->private->keyfile, group, NULL );
+	g_key_file_remove_group( st_settings->priv->keyfile, group, NULL );
 	g_free( group );
 }
 
@@ -379,7 +380,7 @@ ofa_settings_get_dossier_key_string( const gchar *name, const gchar *key )
 	settings_new();
 
 	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
-	value = g_key_file_get_string( st_settings->private->keyfile, group, key, NULL );
+	value = g_key_file_get_string( st_settings->priv->keyfile, group, key, NULL );
 	g_free( group );
 
 	return( value );
@@ -472,10 +473,10 @@ ofa_settings_set_dossier( const gchar *name, ... )
 				scontent = va_arg( ap, const gchar * );
 				if( scontent && g_utf8_strlen( scontent, -1 )){
 					g_debug( "%s: setting key group=%s, key=%s, content=%s", thisfn, group, key, scontent );
-					g_key_file_set_string( st_settings->private->keyfile, group, key, scontent );
+					g_key_file_set_string( st_settings->priv->keyfile, group, key, scontent );
 				} else {
 					g_debug( "%s: removing key group=%s, key=%s", thisfn, group, key );
-					g_key_file_remove_key( st_settings->private->keyfile, group, key, NULL );
+					g_key_file_remove_key( st_settings->priv->keyfile, group, key, NULL );
 				}
 				break;
 
@@ -483,10 +484,10 @@ ofa_settings_set_dossier( const gchar *name, ... )
 				icontent = va_arg( ap, gint );
 				if( icontent > 0 ){
 					g_debug( "%s: setting key group=%s, key=%s, content=%d", thisfn, group, key, icontent );
-					g_key_file_set_integer( st_settings->private->keyfile, group, key, icontent );
+					g_key_file_set_integer( st_settings->priv->keyfile, group, key, icontent );
 				} else {
 					g_debug( "%s: removing key group=%s, key=%s", thisfn, group, key );
-					g_key_file_remove_key( st_settings->private->keyfile, group, key, NULL );
+					g_key_file_remove_key( st_settings->priv->keyfile, group, key, NULL );
 				}
 				break;
 		}
@@ -514,7 +515,7 @@ ofa_settings_get_string_list( const gchar *key )
 
 	list = NULL;
 
-	array = g_key_file_get_string_list( st_settings->private->keyfile, GROUP_GENERAL, key, NULL, NULL );
+	array = g_key_file_get_string_list( st_settings->priv->keyfile, GROUP_GENERAL, key, NULL, NULL );
 	if( array ){
 		i = ( gchar ** ) array;
 		while( *i ){
@@ -542,7 +543,7 @@ ofa_settings_set_string_list( const gchar *key, const GSList *str_list )
 	for( it = str_list ; it ; it = it->next ){
 		g_string_append_printf( string, "%s;", ( const gchar * ) it->data );
 	}
-	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string->str );
+	g_key_file_set_string( st_settings->priv->keyfile, GROUP_GENERAL, key, string->str );
 	g_string_free( string, TRUE );
 
 	write_key_file( st_settings );
@@ -565,7 +566,7 @@ ofa_settings_get_uint_list( const gchar *key )
 
 	list = NULL;
 
-	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
+	str = g_key_file_get_string( st_settings->priv->keyfile, GROUP_GENERAL, key, NULL );
 
 	if( str && g_utf8_strlen( str, -1 )){
 		array = string_to_array( str );
@@ -599,7 +600,7 @@ ofa_settings_set_uint_list( const gchar *key, const GList *uint_list )
 	for( it = uint_list ; it ; it = it->next ){
 		g_string_append_printf( string, "%u;", GPOINTER_TO_UINT( it->data ));
 	}
-	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string->str );
+	g_key_file_set_string( st_settings->priv->keyfile, GROUP_GENERAL, key, string->str );
 	g_string_free( string, TRUE );
 
 	write_key_file( st_settings );
@@ -671,7 +672,7 @@ settings_get_uint( const gchar *group, const gchar *key )
 
 	result = -1;
 
-	str = g_key_file_get_string( st_settings->private->keyfile, group, key, NULL );
+	str = g_key_file_get_string( st_settings->priv->keyfile, group, key, NULL );
 	if( str && g_utf8_strlen( str, -1 )){
 		result = atoi( str );
 	}
@@ -692,7 +693,7 @@ ofa_settings_set_uint( const gchar *key, guint value )
 	settings_new();
 
 	string = g_strdup_printf( "%u", value );
-	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string );
+	g_key_file_set_string( st_settings->priv->keyfile, GROUP_GENERAL, key, string );
 	g_free( string );
 
 	write_key_file( st_settings );
@@ -733,7 +734,7 @@ ofa_settings_get_boolean( const gchar *key )
 	settings_new();
 
 	result = FALSE;
-	str = g_key_file_get_string( st_settings->private->keyfile, GROUP_GENERAL, key, NULL );
+	str = g_key_file_get_string( st_settings->priv->keyfile, GROUP_GENERAL, key, NULL );
 	result = my_utils_boolean_from_str( str );
 	g_free( str );
 
@@ -751,7 +752,7 @@ ofa_settings_set_boolean( const gchar *key, gboolean value )
 	settings_new();
 
 	string = g_strdup_printf( "%s", value ? "True":"False" );
-	g_key_file_set_string( st_settings->private->keyfile, GROUP_GENERAL, key, string );
+	g_key_file_set_string( st_settings->priv->keyfile, GROUP_GENERAL, key, string );
 	g_free( string );
 
 	write_key_file( st_settings );
@@ -770,7 +771,7 @@ ofa_settings_get_string_ex( const gchar *group, const gchar *key )
 
 	settings_new();
 
-	str = g_key_file_get_string( st_settings->private->keyfile, group, key, NULL );
+	str = g_key_file_get_string( st_settings->priv->keyfile, group, key, NULL );
 
 	return( str );
 }
@@ -783,7 +784,7 @@ ofa_settings_set_string_ex( const gchar *group, const gchar *key, const gchar *v
 {
 	settings_new();
 
-	g_key_file_set_string( st_settings->private->keyfile, group, key, value );
+	g_key_file_set_string( st_settings->priv->keyfile, group, key, value );
 
 	write_key_file( st_settings );
 }
