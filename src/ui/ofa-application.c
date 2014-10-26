@@ -150,11 +150,9 @@ application_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_APPLICATION( instance ));
 
-	priv = OFA_APPLICATION( instance )->private;
-
 	/* free data members here */
+	priv = OFA_APPLICATION( instance )->priv;
 	g_strfreev( priv->argv );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_application_parent_class )->finalize( instance );
@@ -167,7 +165,7 @@ application_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_APPLICATION( instance ));
 
-	priv = OFA_APPLICATION( instance )->private;
+	priv = OFA_APPLICATION( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -194,7 +192,7 @@ application_get_property( GObject *object, guint property_id, GValue *value, GPa
 
 	g_return_if_fail( object && OFA_IS_APPLICATION( object ));
 
-	priv = OFA_APPLICATION( object )->private;
+	priv = OFA_APPLICATION( object )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -229,7 +227,7 @@ application_set_property( GObject *object, guint property_id, const GValue *valu
 
 	g_return_if_fail( OFA_IS_APPLICATION( object ));
 
-	priv = OFA_APPLICATION( object )->private;
+	priv = OFA_APPLICATION( object )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -270,10 +268,9 @@ ofa_application_init( ofaApplication *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaApplicationPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-	self->private->sdo = NULL;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_APPLICATION, ofaApplicationPrivate );
+	self->priv->dispose_has_run = FALSE;
+	self->priv->sdo = NULL;
 }
 
 static void
@@ -291,6 +288,8 @@ ofa_application_class_init( ofaApplicationClass *klass )
 	G_APPLICATION_CLASS( klass )->startup = application_startup;
 	G_APPLICATION_CLASS( klass )->activate = application_activate;
 	G_APPLICATION_CLASS( klass )->open = application_open;
+
+	g_type_class_add_private( klass, sizeof( ofaApplicationPrivate ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -377,7 +376,7 @@ ofa_application_run_with_args( ofaApplication *application, int argc, GStrv argv
 
 	g_return_val_if_fail( OFA_IS_APPLICATION( application ), OFA_EXIT_CODE_PROGRAM );
 
-	priv = application->private;
+	priv = application->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -462,7 +461,7 @@ application_startup( GApplication *application )
 	if( gtk_builder_add_from_file( builder, st_appmenu_xml, &error )){
 		menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_appmenu_id ));
 		if( menu ){
-			appli->private->menu = menu;
+			appli->priv->menu = menu;
 			/*gtk_application_set_menubar( GTK_APPLICATION( application ), menu );*/
 		} else {
 			g_warning( "%s: unable to find '%s' object in '%s' file", thisfn, st_appmenu_id, st_appmenu_xml );
@@ -508,7 +507,7 @@ application_activate( GApplication *application )
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
-	priv = OFA_APPLICATION( application )->private;
+	priv = OFA_APPLICATION( application )->priv;
 
 	priv->main_window = ofa_main_window_new( OFA_APPLICATION( application ));
 	g_debug( "%s: main window instanciated at %p", thisfn, priv->main_window );
@@ -546,14 +545,14 @@ application_open( GApplication *application, GFile **files, gint n_files, const 
 	g_return_if_fail( OFA_IS_APPLICATION( application ));
 	appli = OFA_APPLICATION( application );
 
-	if( !appli->private->main_window ){
-		appli->private->main_window = ofa_main_window_new( appli );
+	if( !appli->priv->main_window ){
+		appli->priv->main_window = ofa_main_window_new( appli );
 	}
 
 	/*for (i = 0; i < n_files; i++)
 	    example_app_window_open (win, files[i]);*/
 
-	gtk_window_present( GTK_WINDOW( appli->private->main_window ));
+	gtk_window_present( GTK_WINDOW( appli->priv->main_window ));
 }
 
 /*
@@ -595,31 +594,31 @@ init_gtk_args( ofaApplication *application )
 
 	/* manage command-line arguments
 	 */
-	if( application->private->options ){
+	if( application->priv->options ){
 		parameter_string = g_strdup( g_get_application_name());
 		error = NULL;
 		ret = gtk_init_with_args(
-				&application->private->argc,
-				( char *** ) &application->private->argv,
+				&application->priv->argc,
+				( char *** ) &application->priv->argv,
 				parameter_string,
-				application->private->options,
+				application->priv->options,
 				GETTEXT_PACKAGE,
 				&error );
 		if( error ){
 			g_warning( "%s: %s", thisfn, error->message );
 			g_error_free( error );
 			ret = FALSE;
-			application->private->code = OFA_EXIT_CODE_ARGS;
+			application->priv->code = OFA_EXIT_CODE_ARGS;
 		}
 		g_free( parameter_string );
 
 	} else {
 		ret = gtk_init_check(
-				&application->private->argc,
-				( char *** ) &application->private->argv );
+				&application->priv->argc,
+				( char *** ) &application->priv->argv );
 		if( !ret ){
 			g_warning( "%s", _( "Erreur à l'interprétation des arguments en ligne de commande" ));
-			application->private->code = OFA_EXIT_CODE_ARGS;
+			application->priv->code = OFA_EXIT_CODE_ARGS;
 		}
 	}
 
@@ -636,7 +635,7 @@ manage_options( ofaApplication *application )
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
 	ret = TRUE;
-	priv = application->private;
+	priv = application->priv;
 
 	/* display the program version ?
 	 * if yes, then stops here
@@ -674,7 +673,7 @@ on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	priv = OFA_APPLICATION( user_data )->private;
+	priv = OFA_APPLICATION( user_data )->priv;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
 	ofa_dossier_manager_run( priv->main_window );
@@ -690,7 +689,7 @@ on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	priv = OFA_APPLICATION( user_data )->private;
+	priv = OFA_APPLICATION( user_data )->priv;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
 	ofa_dossier_new_run( priv->main_window );
@@ -707,7 +706,7 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	priv = OFA_APPLICATION( user_data )->private;
+	priv = OFA_APPLICATION( user_data )->priv;
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
@@ -727,7 +726,7 @@ on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	priv = OFA_APPLICATION( user_data )->private;
+	priv = OFA_APPLICATION( user_data )->priv;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
 	ofa_restore_run( priv->main_window );
@@ -743,7 +742,7 @@ on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	priv = OFA_APPLICATION( user_data )->private;
+	priv = OFA_APPLICATION( user_data )->priv;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
 	ofa_preferences_run( priv->main_window, NULL );
@@ -788,7 +787,7 @@ on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	priv = OFA_APPLICATION( user_data )->private;
+	priv = OFA_APPLICATION( user_data )->priv;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
 	ofa_plugin_manager_run( priv->main_window );
@@ -825,9 +824,9 @@ ofa_application_get_menu_model( const ofaApplication *application )
 {
 	g_return_val_if_fail( OFA_IS_APPLICATION( application ), NULL );
 
-	if( !application->private->dispose_has_run ){
+	if( !application->priv->dispose_has_run ){
 
-		return( application->private->menu );
+		return( application->priv->menu );
 	}
 
 	return( NULL );

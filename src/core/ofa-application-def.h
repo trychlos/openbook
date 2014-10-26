@@ -66,9 +66,11 @@ G_BEGIN_DECLS
 typedef struct _ofaApplicationPrivate       ofaApplicationPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GtkApplication         parent;
-	ofaApplicationPrivate *private;
+
+	/*< private members >*/
+	ofaApplicationPrivate *priv;
 }
 	ofaApplication;
 
@@ -76,7 +78,7 @@ typedef struct {
  * ofaApplicationClass:
  */
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GtkApplicationClass parent;
 }
 	ofaApplicationClass;
