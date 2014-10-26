@@ -60,12 +60,7 @@ static gboolean v_quit_on_code( myDialog *dialog, gint code );
 static void
 my_dialog_finalize( GObject *instance )
 {
-	myDialog *self;
-
-	self = MY_DIALOG( instance );
-
 	/* free data members here */
-	g_free( self->private );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_dialog_parent_class )->finalize( instance );
@@ -94,7 +89,7 @@ my_dialog_init( myDialog *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( myDialogPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, MY_TYPE_DIALOG, myDialogPrivate );
 }
 
 static void
@@ -114,6 +109,8 @@ my_dialog_class_init( myDialogClass *klass )
 	MY_DIALOG_CLASS( klass )->quit_on_close = v_quit_on_close;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 	MY_DIALOG_CLASS( klass )->quit_on_code = v_quit_on_code;
+
+	g_type_class_add_private( klass, sizeof( myDialogPrivate ));
 }
 
 /**
@@ -127,13 +124,13 @@ my_dialog_init_dialog( myDialog *self )
 	if( !MY_WINDOW( self )->prot->dispose_has_run ){
 
 		if( my_window_has_valid_toplevel( MY_WINDOW( self )) &&
-				!self->private->init_has_run ){
+				!self->priv->init_has_run ){
 
 			do_init_dialog( self );
 
 			gtk_widget_show_all( GTK_WIDGET( my_window_get_toplevel( MY_WINDOW( self ))));
 
-			self->private->init_has_run = TRUE;
+			self->priv->init_has_run = TRUE;
 
 			return( TRUE );
 		}
@@ -172,7 +169,7 @@ my_dialog_run_dialog( myDialog *self )
 
 	if( !MY_WINDOW( self )->prot->dispose_has_run ){
 
-		if( self->private->init_has_run || my_dialog_init_dialog( self )){
+		if( self->priv->init_has_run || my_dialog_init_dialog( self )){
 
 			code = do_run_dialog( self );
 		}

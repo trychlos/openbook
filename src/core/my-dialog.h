@@ -49,17 +49,19 @@ G_BEGIN_DECLS
 typedef struct _myDialogPrivate       myDialogPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myWindow           parent;
-	myDialogPrivate   *private;
+
+	/*< private members >*/
+	myDialogPrivate   *priv;
 }
 	myDialog;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	myWindowClass parent;
 
-	/*< virtual functions >*/
+	/*< protected virtual functions >*/
 	/**
 	 * init_dialog:
 	 * @dialog:
