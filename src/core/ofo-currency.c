@@ -78,7 +78,7 @@ currency_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_currency_finalize";
 	ofoCurrencyPrivate *priv;
 
-	priv = OFO_CURRENCY( instance )->private;
+	priv = OFO_CURRENCY( instance )->priv;
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
@@ -91,7 +91,6 @@ currency_finalize( GObject *instance )
 	g_free( priv->label );
 	g_free( priv->symbol );
 	g_free( priv->notes );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_currency_parent_class )->finalize( instance );
@@ -119,7 +118,7 @@ ofo_currency_init( ofoCurrency *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofoCurrencyPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_CURRENCY, ofoCurrencyPrivate );
 }
 
 static void
@@ -131,6 +130,8 @@ ofo_currency_class_init( ofoCurrencyClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = currency_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofoCurrencyPrivate ));
 }
 
 /**
@@ -255,7 +256,7 @@ ofo_currency_get_code( const ofoCurrency *currency )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		return(( const gchar * ) currency->private->code );
+		return(( const gchar * ) currency->priv->code );
 	}
 
 	g_assert_not_reached();
@@ -272,7 +273,7 @@ ofo_currency_get_label( const ofoCurrency *currency )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		return(( const gchar * ) currency->private->label );
+		return(( const gchar * ) currency->priv->label );
 	}
 
 	g_assert_not_reached();
@@ -289,7 +290,7 @@ ofo_currency_get_symbol( const ofoCurrency *currency )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		return(( const gchar * ) currency->private->symbol );
+		return(( const gchar * ) currency->priv->symbol );
 	}
 
 	g_assert_not_reached();
@@ -306,7 +307,7 @@ ofo_currency_get_digits( const ofoCurrency *currency )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		return( currency->private->digits );
+		return( currency->priv->digits );
 	}
 
 	g_assert_not_reached();
@@ -323,7 +324,7 @@ ofo_currency_get_notes( const ofoCurrency *currency )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		return(( const gchar * ) currency->private->notes );
+		return(( const gchar * ) currency->priv->notes );
 	}
 
 	g_assert_not_reached();
@@ -340,7 +341,7 @@ ofo_currency_get_upd_user( const ofoCurrency *currency )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		return(( const gchar * ) currency->private->upd_user );
+		return(( const gchar * ) currency->priv->upd_user );
 	}
 
 	g_assert_not_reached();
@@ -357,7 +358,7 @@ ofo_currency_get_upd_stamp( const ofoCurrency *currency )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &currency->private->upd_stamp );
+		return(( const GTimeVal * ) &currency->priv->upd_stamp );
 	}
 
 	g_assert_not_reached();
@@ -420,8 +421,8 @@ ofo_currency_set_code( ofoCurrency *currency, const gchar *code )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		g_free( currency->private->code );
-		currency->private->code = g_strdup( code );
+		g_free( currency->priv->code );
+		currency->priv->code = g_strdup( code );
 	}
 }
 
@@ -435,8 +436,8 @@ ofo_currency_set_label( ofoCurrency *currency, const gchar *label )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		g_free( currency->private->label );
-		currency->private->label = g_strdup( label );
+		g_free( currency->priv->label );
+		currency->priv->label = g_strdup( label );
 	}
 }
 
@@ -450,8 +451,8 @@ ofo_currency_set_symbol( ofoCurrency *currency, const gchar *symbol )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		g_free( currency->private->symbol );
-		currency->private->symbol = g_strdup( symbol );
+		g_free( currency->priv->symbol );
+		currency->priv->symbol = g_strdup( symbol );
 	}
 }
 
@@ -465,7 +466,7 @@ ofo_currency_set_digits( ofoCurrency *currency, gint digits )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		currency->private->digits = digits;
+		currency->priv->digits = digits;
 	}
 }
 
@@ -479,8 +480,8 @@ ofo_currency_set_notes( ofoCurrency *currency, const gchar *notes )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		g_free( currency->private->notes );
-		currency->private->notes = g_strdup( notes );
+		g_free( currency->priv->notes );
+		currency->priv->notes = g_strdup( notes );
 	}
 }
 
@@ -494,8 +495,8 @@ currency_set_upd_user( ofoCurrency *currency, const gchar *user )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		g_free( currency->private->upd_user );
-		currency->private->upd_user = g_strdup( user );
+		g_free( currency->priv->upd_user );
+		currency->priv->upd_user = g_strdup( user );
 	}
 }
 
@@ -509,7 +510,7 @@ currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		my_utils_stamp_set_from_stamp( &currency->private->upd_stamp, stamp );
+		my_utils_stamp_set_from_stamp( &currency->priv->upd_stamp, stamp );
 	}
 }
 

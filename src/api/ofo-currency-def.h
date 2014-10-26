@@ -47,20 +47,22 @@ G_BEGIN_DECLS
 #define OFO_IS_CURRENCY_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_CURRENCY ))
 #define OFO_CURRENCY_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_CURRENCY, ofoCurrencyClass ))
 
-typedef struct {
-	/*< private >*/
-	ofoBaseClass parent;
-}
-	ofoCurrencyClass;
-
 typedef struct _ofoCurrencyPrivate       ofoCurrencyPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	ofoBase             parent;
-	ofoCurrencyPrivate *private;
+
+	/*< private members >*/
+	ofoCurrencyPrivate *priv;
 }
 	ofoCurrency;
+
+typedef struct {
+	/*< public members >*/
+	ofoBaseClass parent;
+}
+	ofoCurrencyClass;
 
 /**
  * CUR_DEFAULT_DIGITS:
