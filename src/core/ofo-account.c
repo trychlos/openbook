@@ -97,7 +97,7 @@ account_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_account_finalize";
 	ofoAccountPrivate *priv;
 
-	priv = OFO_ACCOUNT( instance )->private;
+	priv = OFO_ACCOUNT( instance )->priv;
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
@@ -112,7 +112,6 @@ account_finalize( GObject *instance )
 	g_free( priv->type );
 	g_free( priv->notes );
 	g_free( priv->upd_user );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_account_parent_class )->finalize( instance );
@@ -140,12 +139,12 @@ ofo_account_init( ofoAccount *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofoAccountPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_ACCOUNT, ofoAccountPrivate );
 
-	my_date_clear( &self->private->deb_date );
-	my_date_clear( &self->private->cre_date );
-	my_date_clear( &self->private->day_deb_date );
-	my_date_clear( &self->private->day_cre_date );
+	my_date_clear( &self->priv->deb_date );
+	my_date_clear( &self->priv->cre_date );
+	my_date_clear( &self->priv->day_deb_date );
+	my_date_clear( &self->priv->day_cre_date );
 }
 
 static void
@@ -157,6 +156,8 @@ ofo_account_class_init( ofoAccountClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = account_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofoAccountPrivate ));
 }
 
 /**
@@ -215,7 +216,7 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 
 		account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
 		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
-		priv = account->private;
+		priv = account->priv;
 
 		debit = ofo_entry_get_debit( entry );
 		credit = ofo_entry_get_credit( entry );
@@ -334,7 +335,7 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	acc_number = ofo_entry_get_account( entry );
 	account = ofo_account_get_by_number( dossier, acc_number );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
-	priv = account->private;
+	priv = account->priv;
 
 	debit = ofo_entry_get_debit( entry );
 	if( debit ){
@@ -439,7 +440,7 @@ account_load_dataset( void )
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
 		account = ofo_account_new();
-		priv = account->private;
+		priv = account->priv;
 
 		ofo_account_set_number( account, ( gchar * ) icol->data );
 		icol = icol->next;
@@ -629,7 +630,7 @@ ofo_account_dump_chart( GList *chart )
 	GList *ic;
 
 	for( ic=chart ; ic ; ic=ic->next ){
-		priv = OFO_ACCOUNT( ic->data )->private;
+		priv = OFO_ACCOUNT( ic->data )->priv;
 		g_debug( "%s: account %s - %s", thisfn, priv->number, priv->label );
 	}
 }
@@ -644,7 +645,7 @@ ofo_account_get_class( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( ofo_account_get_class_from_number( account->private->number ));
+		return( ofo_account_get_class_from_number( account->priv->number ));
 	}
 
 	return( 0 );
@@ -693,7 +694,7 @@ ofo_account_get_number( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->number );
+		return( account->priv->number );
 	}
 
 	return( NULL );
@@ -709,7 +710,7 @@ ofo_account_get_label( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->label );
+		return( account->priv->label );
 	}
 
 	return( NULL );
@@ -725,7 +726,7 @@ ofo_account_get_currency( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const gchar * ) account->private->currency );
+		return(( const gchar * ) account->priv->currency );
 	}
 
 	return( NULL );
@@ -741,7 +742,7 @@ ofo_account_get_notes( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->notes );
+		return( account->priv->notes );
 	}
 
 	return( NULL );
@@ -757,7 +758,7 @@ ofo_account_get_type_account( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->type );
+		return( account->priv->type );
 	}
 
 	return( NULL );
@@ -773,7 +774,7 @@ ofo_account_get_upd_user( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const gchar * ) account->private->upd_user );
+		return(( const gchar * ) account->priv->upd_user );
 	}
 
 	g_assert_not_reached();
@@ -790,7 +791,7 @@ ofo_account_get_upd_stamp( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const GTimeVal * ) &account->private->upd_stamp );
+		return(( const GTimeVal * ) &account->priv->upd_stamp );
 	}
 
 	g_assert_not_reached();
@@ -807,7 +808,7 @@ ofo_account_get_deb_entry( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->deb_entry );
+		return( account->priv->deb_entry );
 	}
 
 	return( 0 );
@@ -823,7 +824,7 @@ ofo_account_get_deb_date( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &account->private->deb_date );
+		return(( const GDate * ) &account->priv->deb_date );
 	}
 
 	return( NULL );
@@ -839,7 +840,7 @@ ofo_account_get_deb_amount( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->deb_amount );
+		return( account->priv->deb_amount );
 	}
 
 	return( 0.0 );
@@ -855,7 +856,7 @@ ofo_account_get_cre_entry( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->cre_entry );
+		return( account->priv->cre_entry );
 	}
 
 	return( 0 );
@@ -871,7 +872,7 @@ ofo_account_get_cre_date( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &account->private->cre_date );
+		return(( const GDate * ) &account->priv->cre_date );
 	}
 
 	return( NULL );
@@ -887,7 +888,7 @@ ofo_account_get_cre_amount( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->cre_amount );
+		return( account->priv->cre_amount );
 	}
 
 	return( 0.0 );
@@ -903,7 +904,7 @@ ofo_account_get_day_deb_entry( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->day_deb_entry );
+		return( account->priv->day_deb_entry );
 	}
 
 	return( 0 );
@@ -919,7 +920,7 @@ ofo_account_get_day_deb_date( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &account->private->day_deb_date );
+		return(( const GDate * ) &account->priv->day_deb_date );
 	}
 
 	return( NULL );
@@ -935,7 +936,7 @@ ofo_account_get_day_deb_amount( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->day_deb_amount );
+		return( account->priv->day_deb_amount );
 	}
 
 	return( 0.0 );
@@ -951,7 +952,7 @@ ofo_account_get_day_cre_entry( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->day_cre_entry );
+		return( account->priv->day_cre_entry );
 	}
 
 	return( 0 );
@@ -967,7 +968,7 @@ ofo_account_get_day_cre_date( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return(( const GDate * ) &account->private->day_cre_date );
+		return(( const GDate * ) &account->priv->day_cre_date );
 	}
 
 	return( NULL );
@@ -983,7 +984,7 @@ ofo_account_get_day_cre_amount( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return( account->private->day_cre_amount );
+		return( account->priv->day_cre_amount );
 	}
 
 	return( 0.0 );
@@ -1026,7 +1027,7 @@ ofo_account_is_root( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		if( account->private->type && !g_utf8_collate( account->private->type, "R" )){
+		if( account->priv->type && !g_utf8_collate( account->priv->type, "R" )){
 			is_root = TRUE;
 		}
 	}
@@ -1161,8 +1162,8 @@ ofo_account_set_number( ofoAccount *account, const gchar *number )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_free( account->private->number );
-		account->private->number = g_strdup( number );
+		g_free( account->priv->number );
+		account->priv->number = g_strdup( number );
 	}
 }
 
@@ -1176,8 +1177,8 @@ ofo_account_set_label( ofoAccount *account, const gchar *label )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_free( account->private->label );
-		account->private->label = g_strdup( label );
+		g_free( account->priv->label );
+		account->priv->label = g_strdup( label );
 	}
 }
 
@@ -1191,8 +1192,8 @@ ofo_account_set_currency( ofoAccount *account, const gchar *currency )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_free( account->private->currency );
-		account->private->currency = g_strdup( currency );
+		g_free( account->priv->currency );
+		account->priv->currency = g_strdup( currency );
 	}
 }
 
@@ -1206,8 +1207,8 @@ ofo_account_set_notes( ofoAccount *account, const gchar *notes )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_free( account->private->notes );
-		account->private->notes = g_strdup( notes );
+		g_free( account->priv->notes );
+		account->priv->notes = g_strdup( notes );
 	}
 }
 
@@ -1221,8 +1222,8 @@ ofo_account_set_type( ofoAccount *account, const gchar *type )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_free( account->private->type );
-		account->private->type = g_strdup( type );
+		g_free( account->priv->type );
+		account->priv->type = g_strdup( type );
 	}
 }
 
@@ -1236,8 +1237,8 @@ account_set_upd_user( ofoAccount *account, const gchar *upd_user )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_free( account->private->upd_user );
-		account->private->upd_user = g_strdup( upd_user );
+		g_free( account->priv->upd_user );
+		account->priv->upd_user = g_strdup( upd_user );
 	}
 }
 
@@ -1251,7 +1252,7 @@ account_set_upd_stamp( ofoAccount *account, const GTimeVal *upd_stamp )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		my_utils_stamp_set_from_stamp( &account->private->upd_stamp, upd_stamp );
+		my_utils_stamp_set_from_stamp( &account->priv->upd_stamp, upd_stamp );
 	}
 }
 
