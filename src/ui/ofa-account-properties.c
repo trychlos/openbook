@@ -225,7 +225,7 @@ v_init_dialog( myDialog *dialog )
 	gchar *title;
 	const gchar *acc_number;
 	GtkEntry *entry;
-	ofaCurrencyComboParms parms;
+	ofsCurrencyComboParms parms;
 	GtkContainer *container;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );

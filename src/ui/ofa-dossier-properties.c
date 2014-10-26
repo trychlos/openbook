@@ -213,7 +213,7 @@ init_properties_page( ofaDossierProperties *self )
 	GtkContainer *container;
 	GtkWidget *entry;
 	gchar *str;
-	ofaCurrencyComboParms parms;
+	ofsCurrencyComboParms parms;
 	const gchar *costr;
 	gint ivalue;
 

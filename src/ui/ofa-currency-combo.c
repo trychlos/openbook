@@ -77,12 +77,10 @@ currency_combo_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_CURRENCY_COMBO( instance ));
 
-	priv = OFA_CURRENCY_COMBO( instance )->private;
-
 	/* free data members here */
+	priv = OFA_CURRENCY_COMBO( instance )->priv;
 	g_free( priv->combo_name );
 	g_free( priv->label_name );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_currency_combo_parent_class )->finalize( instance );
@@ -95,7 +93,7 @@ currency_combo_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_CURRENCY_COMBO( instance ));
 
-	priv = ( OFA_CURRENCY_COMBO( instance ))->private;
+	priv = ( OFA_CURRENCY_COMBO( instance ))->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -118,9 +116,10 @@ ofa_currency_combo_init( ofaCurrencyCombo *self )
 
 	g_return_if_fail( self && OFA_IS_CURRENCY_COMBO( self ));
 
-	self->private = g_new0( ofaCurrencyComboPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+						self, OFA_TYPE_CURRENCY_COMBO, ofaCurrencyComboPrivate );
 
-	self->private->dispose_has_run = FALSE;
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -132,6 +131,8 @@ ofa_currency_combo_class_init( ofaCurrencyComboClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = currency_combo_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_combo_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaCurrencyComboPrivate ));
 }
 
 static void
@@ -145,7 +146,7 @@ on_dialog_finalized( ofaCurrencyCombo *self, gpointer this_was_the_dialog )
  * ofa_currency_combo_init_dialog:
  */
 ofaCurrencyCombo *
-ofa_currency_combo_new( const ofaCurrencyComboParms *parms )
+ofa_currency_combo_new( const ofsCurrencyComboParms *parms )
 {
 	static const gchar *thisfn = "ofa_currency_combo_new";
 	ofaCurrencyCombo *self;
@@ -171,7 +172,7 @@ ofa_currency_combo_new( const ofaCurrencyComboParms *parms )
 
 	self = g_object_new( OFA_TYPE_CURRENCY_COMBO, NULL );
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* parms data */
 	priv->container = parms->container;
@@ -242,9 +243,9 @@ on_currency_changed( GtkComboBox *box, ofaCurrencyCombo *self )
 	gchar *code, *label;
 
 	/*g_debug( "ofa_currency_combo_on_currency_changed: dialog=%p (%s)",
-			( void * ) self->private->dialog, G_OBJECT_TYPE_NAME( self->private->dialog ));*/
+			( void * ) self->priv->dialog, G_OBJECT_TYPE_NAME( self->priv->dialog ));*/
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 
@@ -290,10 +291,10 @@ ofa_currency_combo_get_selection( ofaCurrencyCombo *self, gchar **code, gchar **
 
 	id = OFO_BASE_UNSET_ID;
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
-		if( gtk_combo_box_get_active_iter( self->private->combo, &iter )){
-			tmodel = gtk_combo_box_get_model( self->private->combo );
+		if( gtk_combo_box_get_active_iter( self->priv->combo, &iter )){
+			tmodel = gtk_combo_box_get_model( self->priv->combo );
 			gtk_tree_model_get( tmodel, &iter,
 					COL_CODE,  &local_code,
 					COL_LABEL, &local_label,

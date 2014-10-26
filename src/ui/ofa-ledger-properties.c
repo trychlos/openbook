@@ -249,7 +249,7 @@ static void
 init_balances_page( ofaLedgerProperties *self )
 {
 	GtkContainer *container;
-	ofaCurrencyComboParms parms;
+	ofsCurrencyComboParms parms;
 	GtkComboBox *exe_box;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *text_cell;

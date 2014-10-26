@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _ofaCurrencyComboPrivate        ofaCurrencyComboPrivate;
 
 typedef struct {
-	/*< private >*/
-	GObject                parent;
-	ofaCurrencyComboPrivate *private;
+	/*< public members >*/
+	GObject                  parent;
+
+	/*< private members >*/
+	ofaCurrencyComboPrivate *priv;
 }
 	ofaCurrencyCombo;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaCurrencyComboClass;
@@ -73,7 +75,7 @@ typedef struct {
 typedef void ( *ofaCurrencyComboCb )( const gchar *, gpointer );
 
 /**
- * ofaCurrencyComboParms
+ * ofsCurrencyComboParms
  *
  * The structure passed to the init_dialog() function.
  *
@@ -102,11 +104,11 @@ typedef struct {
 	gpointer          user_data;
 	const gchar      *initial_code;
 }
-	ofaCurrencyComboParms;
+	ofsCurrencyComboParms;
 
 GType             ofa_currency_combo_get_type     ( void ) G_GNUC_CONST;
 
-ofaCurrencyCombo *ofa_currency_combo_new          ( const ofaCurrencyComboParms *parms );
+ofaCurrencyCombo *ofa_currency_combo_new          ( const ofsCurrencyComboParms *parms );
 
 gint              ofa_currency_combo_get_selection( ofaCurrencyCombo *self, gchar **code, gchar **label );
 
