@@ -188,11 +188,9 @@ import_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_IMPORT( instance ));
 
-	priv = OFA_IMPORT( instance )->private;
-
 	/* free data members here */
+	priv = OFA_IMPORT( instance )->priv;
 	g_slist_free_full( priv->p1_fnames, ( GDestroyNotify ) g_free );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_import_parent_class )->finalize( instance );
@@ -205,7 +203,7 @@ import_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_IMPORT( instance ));
 
-	priv = ( OFA_IMPORT( instance ))->private;
+	priv = ( OFA_IMPORT( instance ))->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -230,7 +228,7 @@ import_constructed( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_IMPORT( instance ));
 
-	priv = OFA_IMPORT( instance )->private;
+	priv = OFA_IMPORT( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -267,7 +265,7 @@ import_get_property( GObject *instance, guint property_id, GValue *value, GParam
 
 	g_return_if_fail( OFA_IS_IMPORT( instance ));
 
-	priv = OFA_IMPORT( instance )->private;
+	priv = OFA_IMPORT( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -290,7 +288,7 @@ import_set_property( GObject *instance, guint property_id, const GValue *value, 
 
 	g_return_if_fail( OFA_IS_IMPORT( instance ));
 
-	priv = OFA_IMPORT( instance )->private;
+	priv = OFA_IMPORT( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -316,9 +314,9 @@ ofa_import_init( ofaImport *self )
 
 	g_return_if_fail( self && OFA_IS_IMPORT( self ));
 
-	self->private = g_new0( ofaImportPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_IMPORT, ofaImportPrivate );
 
-	self->private->dispose_has_run = FALSE;
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -342,6 +340,8 @@ ofa_import_class_init( ofaImportClass *klass )
 					"Main window",
 					"A pointer (not a ref) to the toplevel parent main window",
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
+
+	g_type_class_add_private( klass, sizeof( ofaImportPrivate ));
 }
 
 /**
@@ -375,7 +375,7 @@ do_initialize_assistant( ofaImport *self )
 			thisfn,
 			( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	assistant = self->private->assistant;
+	assistant = self->priv->assistant;
 
 	/* deals with 'Esc' key */
 	g_signal_connect( assistant,
@@ -396,12 +396,12 @@ on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaImport *self )
 
 	g_return_val_if_fail( OFA_IS_IMPORT( self ), FALSE );
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		if( event->keyval == GDK_KEY_Escape && pref_quit_on_escape ){
 
-				self->private->escape_key_pressed = TRUE;
-				g_signal_emit_by_name( self->private->assistant, "cancel", self );
+				self->priv->escape_key_pressed = TRUE;
+				g_signal_emit_by_name( self->priv->assistant, "cancel", self );
 				stop = TRUE;
 		}
 	}
@@ -422,7 +422,7 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaImport *self )
 	g_return_if_fail( GTK_IS_WIDGET( page ));
 	g_return_if_fail( OFA_IS_IMPORT( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, page=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) page, ( void * ) self );
@@ -469,9 +469,9 @@ do_prepare_p1_select( ofaImport *self, GtkWidget *page )
 			( void * ) self,
 			( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	if( !self->private->p1_page_initialized ){
+	if( !self->priv->p1_page_initialized ){
 		do_init_p1_select( self, page );
-		self->private->p1_page_initialized = TRUE;
+		self->priv->p1_page_initialized = TRUE;
 	}
 
 	check_for_p1_complete( self );
@@ -482,7 +482,7 @@ do_init_p1_select( ofaImport *self, GtkWidget *page )
 {
 	ofaImportPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 	priv->p1_chooser =
 			GTK_FILE_CHOOSER( gtk_file_chooser_widget_new( GTK_FILE_CHOOSER_ACTION_OPEN ));
 	gtk_widget_set_hexpand( GTK_WIDGET( priv->p1_chooser ), TRUE );
@@ -513,7 +513,7 @@ check_for_p1_complete( ofaImport *self )
 	GtkWidget *page;
 	ofaImportPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_SELECT );
 	g_slist_free_full( priv->p1_fnames, ( GDestroyNotify ) g_free );
 	priv->p1_fnames = gtk_file_chooser_get_uris( priv->p1_chooser );
@@ -533,9 +533,9 @@ do_prepare_p2_type( ofaImport *self, GtkWidget *page )
 			( void * ) self,
 			( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	if( !self->private->p2_page_initialized ){
+	if( !self->priv->p2_page_initialized ){
 		do_init_p2_type( self, page );
-		self->private->p2_page_initialized = TRUE;
+		self->priv->p2_page_initialized = TRUE;
 	}
 
 	check_for_p2_complete( self );
@@ -548,7 +548,7 @@ do_init_p2_type( ofaImport *self, GtkWidget *page )
 	gint i;
 	GtkWidget *button;
 
-	priv = self->private;
+	priv = self->priv;
 
 	for( i=0 ; st_radios[i].type_id ; ++i ){
 		button = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), st_radios[i].w_name );
@@ -565,7 +565,7 @@ on_p2_type_toggled( GtkToggleButton *button, ofaImport *self )
 {
 	ofaImportPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( gtk_toggle_button_get_active( button )){
 		priv->p2_type = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( button ), DATA_BUTTON_TYPE ));
@@ -582,7 +582,7 @@ get_active_type( ofaImport *self )
 	ofaImportPrivate *priv;
 	GSList *ig;
 
-	priv = self->private;
+	priv = self->priv;
 	priv->p2_type = 0;
 	priv->p2_type_btn = NULL;
 
@@ -601,7 +601,7 @@ check_for_p2_complete( ofaImport *self )
 	GtkWidget *page;
 	ofaImportPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_TYPE );
 
 	get_active_type( self );
@@ -637,7 +637,7 @@ do_init_p3_confirm( ofaImport *self, GtkWidget *page )
 	gint row;
 	GSList *i;
 
-	priv = self->private;
+	priv = self->priv;
 
 	widget = gtk_grid_get_child_at( GTK_GRID( page ), 0, 0 );
 	if( widget ){
@@ -683,7 +683,7 @@ check_for_p3_complete( ofaImport *self )
 	ofaImportPrivate *priv;
 	GtkWidget *page;
 
-	priv = self->private;
+	priv = self->priv;
 	page = gtk_assistant_get_nth_page( priv->assistant, ASSIST_PAGE_CONFIRM );
 	gtk_assistant_set_page_complete( priv->assistant, page, TRUE );
 }
@@ -698,7 +698,7 @@ on_apply( GtkAssistant *assistant, ofaImport *self )
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_IMPORT( self ));
 
-	priv = self->private;
+	priv = self->priv;
 	count = 0;
 
 	if( !priv->dispose_has_run ){
@@ -756,12 +756,12 @@ on_cancel( GtkAssistant *assistant, ofaImport *self )
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_IMPORT( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
 
-		if(( self->private->escape_key_pressed && ( !pref_confirm_on_escape || is_willing_to_quit( self ))) ||
+		if(( self->priv->escape_key_pressed && ( !pref_confirm_on_escape || is_willing_to_quit( self ))) ||
 				!pref_confirm_on_cancel ||
 				is_willing_to_quit( self )){
 
@@ -777,7 +777,7 @@ is_willing_to_quit( ofaImport *self )
 	gint response;
 
 	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( self->private->assistant ),
+			GTK_WINDOW( self->priv->assistant ),
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
@@ -803,7 +803,7 @@ on_close( GtkAssistant *assistant, ofaImport *self )
 	g_return_if_fail( GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( OFA_IS_IMPORT( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
@@ -865,7 +865,7 @@ import_class_csv( ofaImport *self )
 	}
 
 	ofo_class_import_csv(
-			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -897,7 +897,7 @@ import_account_csv( ofaImport *self )
 	}
 
 	ofo_account_import_csv(
-			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -929,7 +929,7 @@ import_currency_csv( ofaImport *self )
 	}
 
 	ofo_currency_import_csv(
-			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -964,7 +964,7 @@ import_entry_csv( ofaImport *self )
 	}
 
 	ofo_entry_import_csv(
-			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -996,7 +996,7 @@ importledger_csv( ofaImport *self )
 	}
 
 	ofo_ledger_import_csv(
-			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -1031,7 +1031,7 @@ import_model_csv( ofaImport *self )
 	}
 
 	ofo_ope_template_import_csv(
-			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -1066,7 +1066,7 @@ import_rate_csv( ofaImport *self )
 	}
 
 	ofo_rate_import_csv(
-			ofa_main_window_get_dossier( self->private->main_window ), lines, TRUE );
+			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
 
 	free_csv_content( lines );
 	return( 0 );
@@ -1089,7 +1089,7 @@ split_csv_content( ofaImport *self )
 	GSList *s_fields, *s_lines;
 	gchar *field;
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* only deal with the first uri */
 	gfile = g_file_new_for_uri( priv->p1_fnames->data );
@@ -1148,7 +1148,7 @@ confirm_import( ofaImport *self, const gchar *str )
 	gint response;
 
 	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( self->private->assistant ),
+			GTK_WINDOW( self->priv->assistant ),
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_QUESTION,
 			GTK_BUTTONS_NONE,
