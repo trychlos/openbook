@@ -51,14 +51,16 @@ G_BEGIN_DECLS
 typedef struct _ofaPrintReconcilPrivate        ofaPrintReconcilPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject                  parent;
-	ofaPrintReconcilPrivate *private;
+
+	/*< private members >*/
+	ofaPrintReconcilPrivate *priv;
 }
 	ofaPrintReconcil;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaPrintReconcilClass;

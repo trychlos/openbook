@@ -161,17 +161,13 @@ static void
 print_reconcil_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_print_reconcil_finalize";
-	ofaPrintReconcilPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_PRINT_RECONCIL( instance ));
 
-	priv = OFA_PRINT_RECONCIL( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_print_reconcil_parent_class )->finalize( instance );
@@ -184,7 +180,7 @@ print_reconcil_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_PRINT_RECONCIL( instance ));
 
-	priv = OFA_PRINT_RECONCIL( instance )->private;
+	priv = OFA_PRINT_RECONCIL( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -211,12 +207,12 @@ ofa_print_reconcil_init( ofaPrintReconcil *self )
 
 	g_return_if_fail( self && OFA_IS_PRINT_RECONCIL( self ));
 
-	self->private = g_new0( ofaPrintReconcilPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PRINT_RECONCIL, ofaPrintReconcilPrivate );
 
-	self->private->dispose_has_run = FALSE;
+	self->priv->dispose_has_run = FALSE;
 
-	self->private->entries = NULL;
-	my_date_clear( &self->private->date );
+	self->priv->entries = NULL;
+	my_date_clear( &self->priv->date );
 }
 
 static void
@@ -228,6 +224,8 @@ ofa_print_reconcil_class_init( ofaPrintReconcilClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = print_reconcil_dispose;
 	G_OBJECT_CLASS( klass )->finalize = print_reconcil_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaPrintReconcilPrivate ));
 }
 
 /**
@@ -258,8 +256,8 @@ ofa_print_reconcil_run( ofaMainWindow *main_window )
 					OFA_TYPE_PRINT_RECONCIL,
 					NULL );
 
-	self->private->main_window = main_window;
-	self->private->dossier = ofa_main_window_get_dossier( main_window );
+	self->priv->main_window = main_window;
+	self->priv->dossier = ofa_main_window_get_dossier( main_window );
 
 	print = gtk_print_operation_new ();
 
@@ -338,7 +336,7 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	g_debug( "%s: operation=%p, self=%p",
 			thisfn, ( void * ) operation, ( void * ) self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	box = my_utils_builder_load_from_path( st_ui_xml, "box-reconcil" );
 	frame = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "frame-reconcil" );
@@ -375,7 +373,7 @@ on_account_changed( GtkEntry *entry, ofaPrintReconcil *self )
 	ofaPrintReconcilPrivate *priv;
 	const gchar *str;
 
-	priv = self->private;
+	priv = self->priv;
 	str = gtk_entry_get_text( entry );
 	priv->account = ofo_account_get_by_number( priv->dossier, str );
 	if( priv->account ){
@@ -391,7 +389,7 @@ on_account_select( GtkButton *button, ofaPrintReconcil *self )
 	ofaPrintReconcilPrivate *priv;
 	gchar *number;
 
-	priv = self->private;
+	priv = self->priv;
 	number = ofa_account_select_run(
 						priv->main_window,
 						gtk_entry_get_text( priv->account_entry ));
@@ -406,7 +404,7 @@ on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrin
 {
 	ofaPrintReconcilPrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( my_date_is_valid( &priv->date ) &&
 			priv->account && OFO_IS_ACCOUNT( priv->account )){
@@ -430,7 +428,7 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 	g_debug( "%s: operation=%p, context=%p, self=%p",
 			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	priv->context_width = gtk_print_context_get_width( context );
 	priv->page_width = priv->context_width - st_page_left_margin - st_page_right_margin;
@@ -462,7 +460,7 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 			st_body_font_size + 2*st_body_line_spacing
 			+ 3*( st_body_font_size ) + st_body_line_spacing;
 
-	entries_count = g_list_length( self->private->entries );
+	entries_count = g_list_length( self->priv->entries );
 
 	priv->lines_per_page_first =
 			( priv->page_height - priv->header_height_first - footer_height )
@@ -514,7 +512,7 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 	layout = gtk_print_context_create_pango_layout( context );
 
 	/*g_debug( "%s: context_height=%lf", thisfn, gtk_print_context_get_height( context ));
-	g_debug( "%s: lines_per_page=%d", thisfn, self->private->lines_per_page );
+	g_debug( "%s: lines_per_page=%d", thisfn, self->priv->lines_per_page );
 	context_height = 783,569764
 	lines_per_page = 32 */
 	/*g_debug( "%s: context_width=%u, pango_layout_width=%u", thisfn, width, pango_layout_get_width( priv->layout ));*/
@@ -538,7 +536,7 @@ on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_
 	g_debug( "%s: operation=%p, context=%p, self=%p",
 			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	draw_header( self, operation, context, page_num );
 
@@ -573,7 +571,7 @@ on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintRe
 	g_debug( "%s: operation=%p, context=%p, self=%p",
 			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );
 
-	priv = self->private;
+	priv = self->priv;
 
 	g_clear_object( &priv->header_layout );
 	g_clear_object( &priv->body_layout );
@@ -600,7 +598,7 @@ build_body_layout( ofaPrintReconcil *self, GtkPrintContext *context, PangoLayout
 
 	b_layout = pango_layout_copy( layout );
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* we are uning a unique font to draw the lines */
 	str = g_strdup_printf( "%s %d", st_font_family, st_body_font_size );
@@ -662,7 +660,7 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 	gchar *str, *sdate;
 	gdouble y;
 
-	priv = self->private;
+	priv = self->priv;
 
 	cr = gtk_print_context_get_cairo_context( context );
 
@@ -833,7 +831,7 @@ draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext
 	const gchar *conststr;
 	gdouble amount;
 
-	priv = self->private;
+	priv = self->priv;
 
 	cr = gtk_print_context_get_cairo_context( context );
 
@@ -946,7 +944,7 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	PangoRectangle rc;
 	gdouble y;
 
-	priv = self->private;
+	priv = self->priv;
 
 	cr = gtk_print_context_get_cairo_context( context );
 
@@ -1010,7 +1008,7 @@ draw_footer( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 	PangoRectangle rc;
 	gdouble y;
 
-	priv = self->private;
+	priv = self->priv;
 
 	cr = gtk_print_context_get_cairo_context( context );
 	cairo_set_source_rgb( cr, 0.5, 0.5, 0.5 );

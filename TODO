@@ -611,10 +611,6 @@
                 + rename private to priv
                 ofaPrintReconcil
 
- 400 2014-10-26 review public vs private members in class definitions
-                + rename private to priv
-                ofaRateProperties
-
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
@@ -1640,6 +1636,11 @@
                 + rename private to priv
                 ofaMainWindow
      2014-10-26 done - svn #3924
+
+ 400 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaRateProperties
+     2014-10-26 done - svn #3930
 
  401 2014-10-26 review public vs private members in class definitions
                 + rename private to priv
