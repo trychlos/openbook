@@ -385,12 +385,267 @@
 
  337 2014-10-19 ofaAccountsChart: should be a tree store
 
- 338 2014-10-19 ofa_main_page_delete_confirmed() is not an ofaMainPage
-                method (rather put in ofaMainWindow or in my_utils)
-
  342 2014-10-26 document signals + callbacks should be signals
 
- 343
+ 343 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                myDialog
+
+ 344 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                myWindow
+
+ 345 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDBLogin
+
+ 346 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPlugin
+
+ 347 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaSettings
+
+ 348 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoBase
+
+ 349 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoAccount
+
+ 350 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoBat
+
+ 351 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoBatLine
+
+ 352 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoClass
+
+ 353 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoCurrency
+
+ 354 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoDossier
+
+ 355 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoEntry
+
+ 356 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoLedger
+
+ 357 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoOpeTemplate
+
+ 358 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoRate
+
+ 359 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofoSgbd
+
+ 360 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                myAssistant
+
+ 361 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaAccountProperties
+
+ 362 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaAccountsBook
+
+ 363 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaAccountSelect
+
+ 364 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaAccountsPage
+
+ 365 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaApplication
+
+ 366 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBackup
+
+ 367 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBatCommon
+
+ 368 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBatProperties
+
+ 369 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBatSelect
+
+ 370 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaBatSet + rename to ofaBatsPage
+
+ 371 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaClassesSet + rename to ofaClassesPage
+
+ 372 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaClassProperties
+
+ 373 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaCurrenciesSet + rename to ofaCurrenciesPage
+
+ 374 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaCurrencyCombo
+
+ 375 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaCurrencyProperties
+
+ 376 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierDelete
+
+ 377 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierDeletePrefs
+
+ 378 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierLogin
+
+ 379 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierManager
+
+ 380 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierNew
+
+ 381 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierOpen
+
+ 382 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaDossierProperties
+
+ 383 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaExport
+
+ 384 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaGuidedCommon
+
+ 385 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaGuidedEx
+
+ 386 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaGuidedInput
+
+ 387 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaImport
+
+ 388 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaIntClosing
+
+ 389 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgerCombo
+
+ 390 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgerProperties
+
+ 391 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgersSet + rename to ofaLedgersPage
+
+ 392 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgerProperties
+
+ 393 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaLedgerTreeview
+
+ 394 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaMainWindow
+
+ 395 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaOpeTemplateProperties
+
+ 396 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaOpeTemplatesSet + rename to ofaOpeTemplatesPage
+
+ 397 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPluginManager
+
+ 398 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPreferences
+
+ 399 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaPrintReconcil
+
+ 400 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaRateProperties
+
+ 401 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaRatesSet + rename to ofaRatesPage
+
+ 402 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaReconciliation
+
+ 403 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaRestore
+
+ 404 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaTabLabel
+
+ 405 2014-10-26 review public vs private members in class definitions
+                + rename private to priv
+                ofaViewEntries
+
+ 406 2014-10-26 review application startup, making sure when and how
+                startup/activate/open methods are called
+
+ 407 2014-10-26 only ofaMainWindow should keep a ofoDossier pointer,
+                not the ofaPage
+
+ 408
 
 -----------------------------------------------------------------------
  DONE
@@ -1387,6 +1642,10 @@
 
  324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
      2014-10-13 cancelled as myDate class has been obsoleted
+
+ 338 2014-10-19 ofa_main_page_delete_confirmed() is not an ofaMainPage
+                method (rather put in ofaMainWindow or in my_utils)
+     2014-10-26 done - svn #3923
 
  339 2014-10-19 ofaMainPage becomes ofaPage
      2014-10-19 done - svn #3915

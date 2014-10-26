@@ -39,6 +39,7 @@
 /* private instance data
  */
 struct _ofaPagePrivate {
+
 	/* properties set at instanciation time
 	 */
 	GtkGrid       *grid;
@@ -85,6 +86,8 @@ static void       on_grid_finalized( ofaPage *self, GObject *grid );
 static void
 page_finalize( GObject *instance )
 {
+	ofaPageProtected *prot;
+
 	static const gchar *thisfn = "ofa_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
@@ -93,6 +96,8 @@ page_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
 
 	/* free data members here */
+	prot = OFA_PAGE( instance )->prot;
+	g_free( prot );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_page_parent_class )->finalize( instance );
@@ -268,11 +273,10 @@ ofa_page_init( ofaPage *self )
 
 	g_return_if_fail( self && OFA_IS_PAGE( self ));
 
-	self->prot = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PAGE, ofaPageProtected );
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PAGE, ofaPagePrivate );
-
+	self->prot = g_new0( ofaPageProtected, 1 );
 	self->prot->dispose_has_run = FALSE;
 
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PAGE, ofaPagePrivate );
 	self->priv->theme = -1;
 }
 
@@ -289,7 +293,6 @@ ofa_page_class_init( ofaPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = page_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaPageProtected ));
 	g_type_class_add_private( klass, sizeof( ofaPagePrivate ));
 
 	g_object_class_install_property(

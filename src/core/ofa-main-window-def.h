@@ -50,14 +50,16 @@ G_BEGIN_DECLS
 typedef struct _ofaMainWindowPrivate        ofaMainWindowPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GtkApplicationWindow  parent;
-	ofaMainWindowPrivate *private;
+
+	/*< private members >*/
+	ofaMainWindowPrivate *priv;
 }
 	ofaMainWindow;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GtkApplicationWindowClass parent;
 }
 	ofaMainWindowClass;

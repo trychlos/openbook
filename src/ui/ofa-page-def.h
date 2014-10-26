@@ -50,8 +50,10 @@ typedef struct _ofaPagePrivate        ofaPagePrivate;
 typedef struct {
 	/*< public members >*/
 	GObject           parent;
+
 	/*< protected members >*/
 	ofaPageProtected *prot;
+
 	/*< private members >*/
 	ofaPagePrivate   *priv;
 }
