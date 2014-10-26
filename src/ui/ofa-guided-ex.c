@@ -39,6 +39,7 @@
 #include "ui/ofa-guided-common.h"
 #include "ui/ofa-guided-ex.h"
 #include "ui/ofa-page.h"
+#include "ui/ofa-page-prot.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
