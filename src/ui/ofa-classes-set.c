@@ -34,9 +34,11 @@
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/ofa-page.h"
 #include "ui/ofa-class-properties.h"
 #include "ui/ofa-classes-set.h"
+#include "ui/ofa-main-window.h"
+#include "ui/ofa-page.h"
+#include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
@@ -469,7 +471,7 @@ delete_confirmed( ofaClassesSet *self, ofoClass *class )
 	msg = g_strdup_printf( _( "Are you sure you want delete the '%s' class label ?" ),
 			ofo_class_get_label( class ));
 
-	delete_ok = ofa_page_delete_confirmed( OFA_PAGE( self ), msg );
+	delete_ok = ofa_main_window_confirm_deletion( OFA_PAGE( self )->prot->main_window, msg );
 
 	g_free( msg );
 

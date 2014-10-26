@@ -50,11 +50,11 @@
  * | | | | |             | | |                                | | | | |
  * | | | | |             | | | where each page is a GtkGrid   | | | | |
  * | | | | |             | | |  which is handled by an        | | | | |
- * | | | | |             | | |  ofaPage                   | | | | |
+ * | | | | |             | | |  ofaPage                       | | | | |
  * | | | | |             | | |                                | | | | |
- * | | | | |             | | | see ofa-page.h for a more | | | | |
+ * | | | | |             | | | see ofa-page.h for a more      | | | | |
  * | | | | |             | | |  complete description of the   | | | | |
- * | | | | |             | | |  ofaPage class behavior    | | | | |
+ * | | | | |             | | |  ofaPage class behavior        | | | | |
  * | | | | |             | | |                                | | | | |
  * | | | | +-------------+ | +--------------------------------+ | | | |
  * | | | +-----------------+------------------------------------+ | | |
@@ -73,6 +73,7 @@ G_BEGIN_DECLS
 
 /**
  * The theme identifiers of the pages of the main notebook
+ * sorted in alphabetical order
  */
 enum {
 	THM_ACCOUNTS = 1,
@@ -103,13 +104,15 @@ enum {
 
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
 
-ofaPage   *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );
+ofaPage       *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );
 
 gboolean       ofa_main_window_is_willing_to_quit( ofaMainWindow *window );
 
 ofoDossier    *ofa_main_window_get_dossier       ( const ofaMainWindow *window );
 
 void           ofa_main_window_close_dossier     ( ofaMainWindow *window );
+
+gboolean       ofa_main_window_confirm_deletion  ( const ofaMainWindow *window, const gchar *message );
 
 G_END_DECLS
 

@@ -34,16 +34,13 @@
 #include "api/ofo-base.h"
 
 #include "ui/ofa-page.h"
+#include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
 struct _ofaPagePrivate {
-	gboolean       dispose_has_run;
-
 	/* properties set at instanciation time
 	 */
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
 	GtkGrid       *grid;
 	gint           theme;
 	gboolean       has_import;
@@ -89,17 +86,13 @@ static void
 page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_page_finalize";
-	ofaPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
 
-	priv = OFA_PAGE( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_page_parent_class )->finalize( instance );
@@ -108,15 +101,15 @@ page_finalize( GObject *instance )
 static void
 page_dispose( GObject *instance )
 {
-	ofaPagePrivate *priv;
+	ofaPageProtected *prot;
 
 	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
 
-	priv = ( OFA_PAGE( instance ))->private;
+	prot = ( OFA_PAGE( instance ))->prot;
 
-	if( !priv->dispose_has_run ){
+	if( !prot->dispose_has_run ){
 
-		priv->dispose_has_run = TRUE;
+		prot->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -132,21 +125,23 @@ page_dispose( GObject *instance )
 static void
 page_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
 {
+	ofaPageProtected *prot;
 	ofaPagePrivate *priv;
 
 	g_return_if_fail( OFA_IS_PAGE( instance ));
 
-	priv = OFA_PAGE( instance )->private;
+	prot = OFA_PAGE( instance )->prot;
+	priv = OFA_PAGE( instance )->priv;
 
-	if( !priv->dispose_has_run ){
+	if( !prot->dispose_has_run ){
 
 		switch( property_id ){
 			case PROP_WINDOW_ID:
-				g_value_set_pointer( value, priv->main_window );
+				g_value_set_pointer( value, prot->main_window );
 				break;
 
 			case PROP_DOSSIER_ID:
-				g_value_set_pointer( value, priv->dossier );
+				g_value_set_pointer( value, prot->dossier );
 				break;
 
 			case PROP_GRID_ID:
@@ -179,21 +174,23 @@ page_get_property( GObject *instance, guint property_id, GValue *value, GParamSp
 static void
 page_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
 {
+	ofaPageProtected *prot;
 	ofaPagePrivate *priv;
 
 	g_return_if_fail( OFA_IS_PAGE( instance ));
 
-	priv = OFA_PAGE( instance )->private;
+	prot = OFA_PAGE( instance )->prot;
+	priv = OFA_PAGE( instance )->priv;
 
-	if( !priv->dispose_has_run ){
+	if( !prot->dispose_has_run ){
 
 		switch( property_id ){
 			case PROP_WINDOW_ID:
-				priv->main_window = g_value_get_pointer( value );
+				prot->main_window = g_value_get_pointer( value );
 				break;
 
 			case PROP_DOSSIER_ID:
-				priv->dossier = g_value_get_pointer( value );
+				prot->dossier = g_value_get_pointer( value );
 				break;
 
 			case PROP_GRID_ID:
@@ -229,7 +226,7 @@ page_constructed( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
 
 	self = OFA_PAGE( instance );
-	priv = self->private;
+	priv = self->priv;
 
 	/* first, chain up to the parent class */
 	if( G_OBJECT_CLASS( ofa_page_parent_class )->constructed ){
@@ -271,10 +268,12 @@ ofa_page_init( ofaPage *self )
 
 	g_return_if_fail( self && OFA_IS_PAGE( self ));
 
-	self->private = g_new0( ofaPagePrivate, 1 );
+	self->prot = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PAGE, ofaPageProtected );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PAGE, ofaPagePrivate );
 
-	self->private->dispose_has_run = FALSE;
-	self->private->theme = -1;
+	self->prot->dispose_has_run = FALSE;
+
+	self->priv->theme = -1;
 }
 
 static void
@@ -289,6 +288,9 @@ ofa_page_class_init( ofaPageClass *klass )
 	G_OBJECT_CLASS( klass )->set_property = page_set_property;
 	G_OBJECT_CLASS( klass )->dispose = page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = page_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaPageProtected ));
+	g_type_class_add_private( klass, sizeof( ofaPagePrivate ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -393,15 +395,15 @@ v_setup_page( ofaPage *page )
 
 	view = do_setup_view( page );
 	if( view ){
-		gtk_grid_attach( page->private->grid, view, 0, 0, 1, 1 );
+		gtk_grid_attach( page->priv->grid, view, 0, 0, 1, 1 );
 	}
 
 	buttons_box = do_setup_buttons( page );
 	if( buttons_box ){
-		gtk_grid_attach( page->private->grid, buttons_box, 1, 0, 1, 1 );
+		gtk_grid_attach( page->priv->grid, buttons_box, 1, 0, 1, 1 );
 	}
 
-	gtk_widget_show_all( GTK_WIDGET( page->private->grid ));
+	gtk_widget_show_all( GTK_WIDGET( page->priv->grid ));
 }
 
 static GtkWidget *
@@ -452,7 +454,7 @@ v_setup_buttons( ofaPage *page )
 
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	priv = page->private;
+	priv = page->priv;
 	buttons_box = GTK_BOX( create_buttons( priv->has_import, priv->has_export ));
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_NEW );
@@ -533,7 +535,7 @@ create_buttons( gboolean has_import, gboolean has_export )
  *
  * This is a convenience function which provides to others the same
  * buttons box than that of the standard main page (first used by
- * ofaAccountNotebook)
+ * ofaAccountsBook)
  *
  * Returns a new box, with its attached buttons.
  */
@@ -651,9 +653,9 @@ ofa_page_get_main_window( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run ){
+	if( !page->prot->dispose_has_run ){
 
-		return( page->private->main_window );
+		return( page->prot->main_window );
 	}
 
 	return( NULL );
@@ -667,9 +669,9 @@ ofa_page_get_dossier( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run ){
+	if( !page->prot->dispose_has_run ){
 
-		return( page->private->dossier );
+		return( page->prot->dossier );
 	}
 
 	return( NULL );
@@ -686,9 +688,9 @@ ofa_page_get_theme( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run ){
+	if( !page->prot->dispose_has_run ){
 
-		return( page->private->theme );
+		return( page->priv->theme );
 	}
 
 	return( -1 );
@@ -702,9 +704,9 @@ ofa_page_get_grid( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run ){
+	if( !page->prot->dispose_has_run ){
 
-		return( page->private->grid );
+		return( page->priv->grid );
 	}
 
 	return( NULL );
@@ -745,11 +747,11 @@ ofa_page_get_treeview( const ofaPage *page )
 
 	tview = NULL;
 
-	if( !page->private->dispose_has_run ){
+	if( !page->prot->dispose_has_run ){
 
 		child_book =
 				( GtkNotebook * ) my_utils_container_get_child_by_type(
-													GTK_CONTAINER( page->private->grid ),
+													GTK_CONTAINER( page->priv->grid ),
 													GTK_TYPE_NOTEBOOK );
 		if( child_book ){
 			g_return_val_if_fail( GTK_IS_NOTEBOOK( child_book ), NULL );
@@ -768,7 +770,7 @@ ofa_page_get_treeview( const ofaPage *page )
 		}
 		if( !tview ){
 			tview = ( GtkTreeView * ) my_utils_container_get_child_by_type(
-														GTK_CONTAINER( page->private->grid ),
+														GTK_CONTAINER( page->priv->grid ),
 														GTK_TYPE_TREE_VIEW );
 		}
 	}
@@ -784,10 +786,10 @@ ofa_page_get_new_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run &&
-			page->private->btn_new ){
+	if( !page->prot->dispose_has_run &&
+			page->priv->btn_new ){
 
-		return( GTK_WIDGET( page->private->btn_new ));
+		return( GTK_WIDGET( page->priv->btn_new ));
 	}
 
 	return( NULL );
@@ -801,10 +803,10 @@ ofa_page_get_update_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run &&
-			page->private->btn_update ){
+	if( !page->prot->dispose_has_run &&
+			page->priv->btn_update ){
 
-		return( GTK_WIDGET( page->private->btn_update ));
+		return( GTK_WIDGET( page->priv->btn_update ));
 	}
 
 	return( NULL );
@@ -818,10 +820,10 @@ ofa_page_get_delete_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run &&
-			page->private->btn_delete ){
+	if( !page->prot->dispose_has_run &&
+			page->priv->btn_delete ){
 
-		return( GTK_WIDGET( page->private->btn_delete ));
+		return( GTK_WIDGET( page->priv->btn_delete ));
 	}
 
 	return( NULL );
@@ -835,10 +837,10 @@ ofa_page_get_import_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run &&
-			page->private->btn_import ){
+	if( !page->prot->dispose_has_run &&
+			page->priv->btn_import ){
 
-		return( GTK_WIDGET( page->private->btn_import ));
+		return( GTK_WIDGET( page->priv->btn_import ));
 	}
 
 	return( NULL );
@@ -852,41 +854,11 @@ ofa_page_get_export_btn( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
 
-	if( !page->private->dispose_has_run &&
-			page->private->btn_export ){
+	if( !page->prot->dispose_has_run &&
+			page->priv->btn_export ){
 
-		return( GTK_WIDGET( page->private->btn_export ));
+		return( GTK_WIDGET( page->priv->btn_export ));
 	}
 
 	return( NULL );
-}
-
-/**
- * ofa_page_delete_confirmed:
- *
- * Returns: %TRUE if the deletion is confirmed by the user.
- */
-gboolean
-ofa_page_delete_confirmed( const ofaPage *page, const gchar *message )
-{
-	GtkWidget *dialog;
-	gint response;
-
-	dialog = gtk_message_dialog_new(
-			page ? GTK_WINDOW( page->private->main_window ) : NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			"%s", message );
-
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_DELETE, GTK_RESPONSE_OK,
-			NULL );
-
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
 }

@@ -30,10 +30,13 @@
 
 #include <glib/gi18n.h>
 
-#include "ui/ofa-page.h"
+#include "api/ofo-bat.h"
+
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-set.h"
-#include "api/ofo-bat.h"
+#include "ui/ofa-main-window.h"
+#include "ui/ofa-page.h"
+#include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
@@ -407,7 +410,7 @@ delete_confirmed( ofaBatSet *self, ofoBat *bat )
 	msg = g_strdup( _( "Are you sure you want delete this imported BAT file\n"
 			"(All the corresponding lines will be deleted too) ?" ));
 
-	delete_ok = ofa_page_delete_confirmed( OFA_PAGE( self ), msg );
+	delete_ok = ofa_main_window_confirm_deletion( OFA_PAGE( self )->prot->main_window, msg );
 
 	g_free( msg );
 

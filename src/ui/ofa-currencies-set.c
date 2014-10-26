@@ -33,9 +33,11 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/ofa-page.h"
 #include "ui/ofa-currency-properties.h"
 #include "ui/ofa-currencies-set.h"
+#include "ui/ofa-main-window.h"
+#include "ui/ofa-page.h"
+#include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
@@ -486,7 +488,7 @@ delete_confirmed( ofaCurrenciesSet *self, ofoCurrency *currency )
 			ofo_currency_get_code( currency ),
 			ofo_currency_get_label( currency ));
 
-	delete_ok = ofa_page_delete_confirmed( OFA_PAGE( self ), msg );
+	delete_ok = ofa_main_window_confirm_deletion( OFA_PAGE( self )->prot->main_window, msg );
 
 	g_free( msg );
 

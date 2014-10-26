@@ -1472,7 +1472,7 @@ delete_confirmed( ofaAccountsBook *self, ofoAccount *account )
 			ofo_account_get_number( account ),
 			ofo_account_get_label( account ));
 
-	delete_ok = ofa_page_delete_confirmed( NULL, msg );
+	delete_ok = ofa_main_window_confirm_deletion( NULL, msg );
 
 	g_free( msg );
 

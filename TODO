@@ -388,7 +388,9 @@
  338 2014-10-19 ofa_main_page_delete_confirmed() is not an ofaMainPage
                 method (rather put in ofaMainWindow or in my_utils)
 
- 342
+ 342 2014-10-26 document signals + callbacks should be signals
+
+ 343
 
 -----------------------------------------------------------------------
  DONE

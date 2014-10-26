@@ -127,8 +127,6 @@ GtkWidget     *ofa_page_get_export_btn     ( const ofaPage *page );
 
 GtkBox        *ofa_page_get_buttons_box_new( gboolean has_import, gboolean has_export );
 
-gboolean       ofa_page_delete_confirmed   ( const ofaPage *page, const gchar *message );
-
 G_END_DECLS
 
 #endif /* __OFA_PAGE_H__ */

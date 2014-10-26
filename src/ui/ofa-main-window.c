@@ -1351,3 +1351,36 @@ on_tab_close_clicked( ofaTabLabel *tab, GtkGrid *grid )
 	ofa_page_pre_remove( handler );
 	gtk_notebook_remove_page( book, page_num );
 }
+
+/**
+ * ofa_main_window_confirm_deletion:
+ * @window: [allow-null]: this main window, or %NULL if the method is
+ *  not called from a #ofaPage-derived class.
+ * @message: the message to be displayed.
+ *
+ * Returns: %TRUE if the deletion is confirmed by the user.
+ */
+gboolean
+ofa_main_window_confirm_deletion( const ofaMainWindow *window, const gchar *message )
+{
+	GtkWidget *dialog;
+	gint response;
+
+	dialog = gtk_message_dialog_new(
+			window ? GTK_WINDOW( window ) : NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE,
+			"%s", message );
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_DELETE, GTK_RESPONSE_OK,
+			NULL );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
+}

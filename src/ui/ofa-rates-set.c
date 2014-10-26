@@ -35,7 +35,9 @@
 #include "api/ofo-rate.h"
 #include "api/ofo-dossier.h"
 
+#include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
+#include "ui/ofa-page-prot.h"
 #include "ui/ofa-rate-properties.h"
 #include "ui/ofa-rates-set.h"
 
@@ -647,7 +649,7 @@ delete_confirmed( ofaRatesSet *self, ofoRate *rate )
 			ofo_rate_get_mnemo( rate ),
 			ofo_rate_get_label( rate ));
 
-	delete_ok = ofa_page_delete_confirmed( OFA_PAGE( self ), msg );
+	delete_ok = ofa_main_window_confirm_deletion( OFA_PAGE( self )->prot->main_window, msg );
 
 	g_free( msg );
 

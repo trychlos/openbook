@@ -34,12 +34,13 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 
-#include "ui/ofa-page.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-view-entries.h"
 #include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-ledgers-set.h"
+#include "ui/ofa-main-window.h"
+#include "ui/ofa-page.h"
+#include "ui/ofa-page-prot.h"
+#include "ui/ofa-view-entries.h"
 
 /* private instance data
  */
@@ -358,7 +359,7 @@ delete_confirmed( ofaLedgersSet *self, ofoLedger *ledger )
 			ofo_ledger_get_mnemo( ledger ),
 			ofo_ledger_get_label( ledger ));
 
-	delete_ok = ofa_page_delete_confirmed( OFA_PAGE( self ), msg );
+	delete_ok = ofa_main_window_confirm_deletion( OFA_PAGE( self )->prot->main_window, msg );
 
 	g_free( msg );
 

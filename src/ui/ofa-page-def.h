@@ -44,17 +44,21 @@ G_BEGIN_DECLS
 #define OFA_IS_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PAGE ))
 #define OFA_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PAGE, ofaPageClass ))
 
+typedef struct _ofaPageProtected      ofaPageProtected;
 typedef struct _ofaPagePrivate        ofaPagePrivate;
 
 typedef struct {
+	/*< public members >*/
+	GObject           parent;
+	/*< protected members >*/
+	ofaPageProtected *prot;
 	/*< private members >*/
-	GObject         parent;
-	ofaPagePrivate *private;
+	ofaPagePrivate   *priv;
 }
 	ofaPage;
 
 typedef struct {
-	/*< private members >*/
+	/*< public members >*/
 	GObjectClass parent;
 
 	/*< protected virtual functions >*/
