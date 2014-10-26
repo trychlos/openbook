@@ -60,14 +60,16 @@ G_BEGIN_DECLS
 typedef struct _ofaAccountsBookPrivate        ofaAccountsBookPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject                 parent;
-	ofaAccountsBookPrivate *private;
+
+	/*< private members >*/
+	ofaAccountsBookPrivate *priv;
 }
 	ofaAccountsBook;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaAccountsBookClass;

@@ -151,17 +151,13 @@ static void
 accounts_book_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_accounts_book_finalize";
-	ofaAccountsBookPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNTS_BOOK( instance ));
 
-	priv = OFA_ACCOUNTS_BOOK( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_accounts_book_parent_class )->finalize( instance );
@@ -176,7 +172,7 @@ accounts_book_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_ACCOUNTS_BOOK( instance ));
 
-	priv = ( OFA_ACCOUNTS_BOOK( instance ))->private;
+	priv = ( OFA_ACCOUNTS_BOOK( instance ))->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -209,10 +205,9 @@ ofa_accounts_book_init( ofaAccountsBook *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( ofaAccountsBookPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-	self->private->handlers = NULL;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNTS_BOOK, ofaAccountsBookPrivate );
+	self->priv->dispose_has_run = FALSE;
+	self->priv->handlers = NULL;
 }
 
 static void
@@ -224,6 +219,8 @@ ofa_accounts_book_class_init( ofaAccountsBookClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = accounts_book_dispose;
 	G_OBJECT_CLASS( klass )->finalize = accounts_book_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaAccountsBookPrivate ));
 }
 
 /**
@@ -260,7 +257,7 @@ ofa_accounts_book_new( ofsAccountsBookParms *parms  )
 	g_return_val_if_fail( parms->main_window && OFA_IS_MAIN_WINDOW( parms->main_window ), NULL );
 
 	self = g_object_new( OFA_TYPE_ACCOUNTS_BOOK, NULL );
-	priv = self->private;
+	priv = self->priv;
 
 	priv->main_window = parms->main_window;
 	priv->dossier = ofa_main_window_get_dossier( parms->main_window );
@@ -304,7 +301,7 @@ dossier_signals_connect( ofaAccountsBook *self )
 	ofaAccountsBookPrivate *priv;
 	gulong handler;
 
-	priv = self->private;
+	priv = self->priv;
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
@@ -406,8 +403,8 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountsBook *self )
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
 	if( type == OFO_TYPE_ACCOUNT ){
-		while( gtk_notebook_get_n_pages( self->private->book )){
-			gtk_notebook_remove_page( self->private->book, 0 );
+		while( gtk_notebook_get_n_pages( self->priv->book )){
+			gtk_notebook_remove_page( self->priv->book, 0 );
 		}
 		insert_dataset( self );
 	}
@@ -438,10 +435,10 @@ reparent_from_window( ofaAccountsBook *self )
 
 	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-grid" );
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));
-	self->private->top_grid = GTK_GRID( grid );
+	self->priv->top_grid = GTK_GRID( grid );
 
 	/* attach our grid to the parent's frame */
-	gtk_widget_reparent( grid, GTK_WIDGET( self->private->parent ));
+	gtk_widget_reparent( grid, GTK_WIDGET( self->priv->parent ));
 }
 
 static void
@@ -450,7 +447,7 @@ setup_account_book( ofaAccountsBook *self )
 	ofaAccountsBookPrivate *priv;
 	GtkWidget *book;
 
-	priv = self->private;
+	priv = self->priv;
 
 	book = my_utils_container_get_child_by_type(
 						GTK_CONTAINER( priv->top_grid ), GTK_TYPE_NOTEBOOK );
@@ -479,7 +476,7 @@ setup_buttons( ofaAccountsBook *self )
 	GtkWidget *button;
 	GtkFrame *frame;
 
-	priv = self->private;
+	priv = self->priv;
 
 	/* get the standard buttons and connect our signals */
 	buttons_box = ofa_page_get_buttons_box_new( priv->has_import, priv->has_export );
@@ -613,7 +610,7 @@ ofa_accounts_book_init_view( ofaAccountsBook *self, const gchar *number )
 
 	g_debug( "%s: self=%p, number=%s", thisfn, ( void * ) self, number );
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		insert_dataset( self );
 
@@ -621,7 +618,7 @@ ofa_accounts_book_init_view( ofaAccountsBook *self, const gchar *number )
 			select_row_by_number( self, number );
 
 		} else {
-			page_w = gtk_notebook_get_nth_page( self->private->book, 0 );
+			page_w = gtk_notebook_get_nth_page( self->priv->book, 0 );
 			if( page_w ){
 				tview = ( GtkTreeView * ) my_utils_container_get_child_by_type( GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
 				g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
@@ -643,7 +640,7 @@ insert_dataset( ofaAccountsBook *self )
 {
 	GList *chart, *ic;
 
-	chart = ofo_account_get_dataset( self->private->dossier );
+	chart = ofo_account_get_dataset( self->priv->dossier );
 
 	for( ic=chart ; ic ; ic=ic->next ){
 		insert_row( self, OFO_ACCOUNT( ic->data ), FALSE );
@@ -678,7 +675,7 @@ insert_row( ofaAccountsBook *self, ofoAccount *account, gboolean with_selection 
 		set_row_by_iter( self, account, tmodel, &iter );
 
 		if( with_selection ){
-			gtk_notebook_set_current_page( self->private->book, page_num );
+			gtk_notebook_set_current_page( self->priv->book, page_num );
 			select_row_by_iter( self, tview, tmodel, &iter );
 		}
 	} else {
@@ -710,11 +707,11 @@ book_get_page_by_class( ofaAccountsBook *self,
 	}
 
 	found = -1;
-	count = gtk_notebook_get_n_pages( self->private->book );
+	count = gtk_notebook_get_n_pages( self->priv->book );
 
 	/* search for an existing page */
 	for( i=0 ; i<count ; ++i ){
-		page_widget = gtk_notebook_get_nth_page( self->private->book, i );
+		page_widget = gtk_notebook_get_nth_page( self->priv->book, i );
 		page_class = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( page_widget ), DATA_PAGE_CLASS ));
 		if( page_class == class_num ){
 			found = i;
@@ -724,7 +721,7 @@ book_get_page_by_class( ofaAccountsBook *self,
 
 	/* if not exists, create it (if allowed) */
 	if( found == -1 && bcreate ){
-		found = book_create_page( self, self->private->book, class_num, &page_widget );
+		found = book_create_page( self, self->priv->book, class_num, &page_widget );
 	}
 
 	/* retrieve tree informations */
@@ -776,7 +773,7 @@ book_create_page( ofaAccountsBook *self, GtkNotebook *book, gint class, GtkWidge
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
 	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
 
-	obj_class = ofo_class_get_by_number( self->private->dossier, class );
+	obj_class = ofo_class_get_by_number( self->priv->dossier, class );
 	if( obj_class && OFO_IS_CLASS( obj_class )){
 		obj_label = ofo_class_get_label( obj_class );
 	} else {
@@ -900,8 +897,8 @@ on_row_selected( GtkTreeSelection *selection, ofaAccountsBook *self )
 
 	update_buttons_sensitivity( self, account );
 
-	if( self->private->pfnSelected ){
-		( *self->private->pfnSelected )( account, self->private->user_data );
+	if( self->priv->pfnSelected ){
+		( *self->priv->pfnSelected )( account, self->priv->user_data );
 	}
 }
 
@@ -921,8 +918,8 @@ on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *colu
 		g_object_unref( account );
 	}
 
-	if( self->private->pfnActivated ){
-		( *self->private->pfnActivated)( account, self->private->user_data );
+	if( self->priv->pfnActivated ){
+		( *self->priv->pfnActivated)( account, self->priv->user_data );
 	}
 }
 
@@ -1008,7 +1005,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 		}
 
 	} else {
-		currency = ofo_currency_get_by_code( self->private->dossier, ofo_account_get_currency( account ));
+		currency = ofo_currency_get_by_code( self->priv->dossier, ofo_account_get_currency( account ));
 		if( !currency ){
 			gdk_rgba_parse( &color, "#800000" );
 			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
@@ -1020,16 +1017,16 @@ static void
 update_buttons_sensitivity( ofaAccountsBook *self, ofoAccount *account )
 {
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->btn_update ),
+			GTK_WIDGET( self->priv->btn_update ),
 			account && OFO_IS_ACCOUNT( account ));
 
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->private->btn_delete ),
+			GTK_WIDGET( self->priv->btn_delete ),
 			account && OFO_IS_ACCOUNT( account ) && ofo_account_is_deletable( account ));
 
-	if( self->private->btn_consult ){
+	if( self->priv->btn_consult ){
 		gtk_widget_set_sensitive(
-				GTK_WIDGET( self->private->btn_consult ),
+				GTK_WIDGET( self->priv->btn_consult ),
 				account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account ));
 	}
 }
@@ -1057,7 +1054,7 @@ set_row_by_iter( ofaAccountsBook *self,
 				ofo_account_get_deb_amount( account )+ofo_account_get_day_deb_amount( account ));
 		scre = g_strdup_printf( "%'.2f",
 				ofo_account_get_cre_amount( account )+ofo_account_get_day_cre_amount( account ));
-		currency = ofo_currency_get_by_code( self->private->dossier, ofo_account_get_currency( account ));
+		currency = ofo_currency_get_by_code( self->priv->dossier, ofo_account_get_currency( account ));
 		if( currency ){
 			cdev = g_strdup( ofo_currency_get_code( currency ));
 		} else {
@@ -1106,7 +1103,7 @@ select_row_by_number( ofaAccountsBook *self, const gchar *number )
 		page_num = book_get_page_by_class( self,
 							ofo_account_get_class_from_number( number ), FALSE, &tview, &tmodel );
 		if( page_num > 0 ){
-			gtk_notebook_set_current_page( self->private->book, page_num );
+			gtk_notebook_set_current_page( self->priv->book, page_num );
 			find_row_by_number( self, number, tmodel, &iter, &bvalid );
 			if( bvalid ){
 				select_row_by_iter( self, tview, tmodel, &iter );
@@ -1219,7 +1216,7 @@ book_activate_page_by_class( ofaAccountsBook *self, gint class_num )
 
 	page_num = book_get_page_by_class( self, class_num, FALSE, NULL, NULL );
 	if( page_num >= 0 ){
-		gtk_notebook_set_current_page( self->private->book, page_num );
+		gtk_notebook_set_current_page( self->priv->book, page_num );
 		return( TRUE );
 	}
 
@@ -1244,12 +1241,12 @@ ofa_accounts_book_get_selected( ofaAccountsBook *self )
 
 	account = NULL;
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
-		page_n = gtk_notebook_get_current_page( self->private->book );
+		page_n = gtk_notebook_get_current_page( self->priv->book );
 		g_return_val_if_fail( page_n >= 0, NULL );
 
-		page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+		page_w = gtk_notebook_get_nth_page( self->priv->book, page_n );
 		g_return_val_if_fail( page_w && GTK_IS_CONTAINER( page_w ), NULL );
 
 		tview = ( GtkTreeView * )
@@ -1278,7 +1275,7 @@ ofa_accounts_book_set_selected( ofaAccountsBook *self, const gchar *number )
 {
 	g_return_if_fail( self && OFA_IS_ACCOUNTS_BOOK( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
 		select_row_by_number( self, number );
 	}
@@ -1298,12 +1295,12 @@ ofa_accounts_book_grab_focus( ofaAccountsBook *self )
 
 	g_return_if_fail( self && OFA_IS_ACCOUNTS_BOOK( self ));
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
-		page_n = gtk_notebook_get_current_page( self->private->book );
+		page_n = gtk_notebook_get_current_page( self->priv->book );
 		g_return_if_fail( page_n >= 0 );
 
-		page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+		page_w = gtk_notebook_get_nth_page( self->priv->book, page_n );
 		g_return_if_fail( page_w && GTK_IS_CONTAINER( page_w ));
 
 		tview = my_utils_container_get_child_by_type(
@@ -1331,11 +1328,11 @@ on_updated_currency_code( ofaAccountsBook *self, ofoCurrency *currency )
 	gint dev_id;
 
 	dev_id = ofo_currency_get_id( currency );
-	pages_count = gtk_notebook_get_n_pages( self->private->book );
+	pages_count = gtk_notebook_get_n_pages( self->priv->book );
 
 	for( i=0 ; i<pages_count ; ++i ){
 
-		page_w = gtk_notebook_get_nth_page( self->private->book, i );
+		page_w = gtk_notebook_get_nth_page( self->priv->book, i );
 		g_return_if_fail( page_w && GTK_IS_CONTAINER( page_w ));
 
 		tview = ( GtkTreeView * )
@@ -1374,9 +1371,9 @@ on_updated_class_label( ofaAccountsBook *self, ofoClass *class )
 	class_num = ofo_class_get_number( class );
 	page_n = book_get_page_by_class( self, class_num, FALSE, NULL, NULL );
 	if( page_n >= 0 ){
-		page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+		page_w = gtk_notebook_get_nth_page( self->priv->book, page_n );
 		g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
-		gtk_notebook_set_tab_label_text( self->private->book, page_w, ofo_class_get_label( class ));
+		gtk_notebook_set_tab_label_text( self->priv->book, page_w, ofo_class_get_label( class ));
 	}
 }
 
@@ -1390,9 +1387,9 @@ on_deleted_class_label( ofaAccountsBook *self, ofoClass *class )
 	class_num = ofo_class_get_number( class );
 	page_n = book_get_page_by_class( self, class_num, FALSE, NULL, NULL );
 	if( page_n >= 0 ){
-		page_w = gtk_notebook_get_nth_page( self->private->book, page_n );
+		page_w = gtk_notebook_get_nth_page( self->priv->book, page_n );
 		g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
-		gtk_notebook_set_tab_label_text( self->private->book, page_w, st_class_labels[class_num-1] );
+		gtk_notebook_set_tab_label_text( self->priv->book, page_w, st_class_labels[class_num-1] );
 	}
 }
 
@@ -1403,7 +1400,7 @@ on_new_clicked( GtkButton *button, ofaAccountsBook *self )
 
 	account = ofo_account_new();
 
-	if( !ofa_account_properties_run( self->private->main_window, account )){
+	if( !ofa_account_properties_run( self->priv->main_window, account )){
 		g_object_unref( account );
 	}
 }
@@ -1425,7 +1422,7 @@ do_update_with_account( ofaAccountsBook *self, ofoAccount *account )
 	if( account ){
 		g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
-		ofa_account_properties_run( self->private->main_window, account );
+		ofa_account_properties_run( self->priv->main_window, account );
 	}
 
 	ofa_accounts_book_grab_focus( self );
@@ -1486,7 +1483,7 @@ on_view_entries( GtkButton *button, ofaAccountsBook *self )
 
 	account = ofa_accounts_book_get_selected( self );
 
-	if( self->private->pfnViewEntries ){
-		( *self->private->pfnViewEntries )( account, self->private->user_data );
+	if( self->priv->pfnViewEntries ){
+		( *self->priv->pfnViewEntries )( account, self->priv->user_data );
 	}
 }
