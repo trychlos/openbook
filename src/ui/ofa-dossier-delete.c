@@ -101,12 +101,10 @@ dossier_delete_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE( instance ));
 
-	priv = OFA_DOSSIER_DELETE( instance )->private;
-
 	/* free data members here */
+	priv = OFA_DOSSIER_DELETE( instance )->priv;
 	g_free( priv->p2_account );
 	g_free( priv->p2_password );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_delete_parent_class )->finalize( instance );
@@ -121,9 +119,8 @@ dossier_delete_dispose( GObject *instance )
 
 	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
 
-		priv = OFA_DOSSIER_DELETE( instance )->private;
-
 		/* unref object members here */
+		priv = OFA_DOSSIER_DELETE( instance )->priv;
 		g_clear_object( &priv->prefs );
 	}
 
@@ -141,7 +138,7 @@ ofa_dossier_delete_init( ofaDossierDelete *self )
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_DELETE( self ));
 
-	self->private = g_new0( ofaDossierDeletePrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_DELETE, ofaDossierDeletePrivate );
 }
 
 static void
@@ -156,6 +153,8 @@ ofa_dossier_delete_class_init( ofaDossierDeleteClass *klass )
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+
+	g_type_class_add_private( klass, sizeof( ofaDossierDeletePrivate ));
 }
 
 /**
@@ -185,7 +184,7 @@ ofa_dossier_delete_run( ofaMainWindow *main_window, const gchar *label,
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
-	priv = self->private;
+	priv = self->priv;
 
 	priv->label = label;
 	priv->provider = provider;
@@ -214,7 +213,7 @@ v_init_dialog( myDialog *dialog )
 	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
-	priv = OFA_DOSSIER_DELETE( dialog )->private;
+	priv = OFA_DOSSIER_DELETE( dialog )->priv;
 	priv->connect_ok = FALSE;
 
 	label = my_utils_container_get_child_by_name( container, "message" );
@@ -266,7 +265,7 @@ init_delete_prefs( ofaDossierDelete *self )
 	GtkWidget *window;
 	GtkWidget *grid, *parent;
 
-	priv = self->private;
+	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	window = my_utils_builder_load_from_path( st_delete_prefs_xml, st_delete_prefs_ui );
@@ -287,7 +286,7 @@ on_account_changed( GtkEntry *entry, ofaDossierDelete *self )
 	ofaDossierDeletePrivate *priv;
 	const gchar *account;
 
-	priv = self->private;
+	priv = self->priv;
 
 	account = gtk_entry_get_text( entry );
 	g_free( priv->p2_account );
@@ -304,7 +303,7 @@ on_password_changed( GtkEntry *entry, ofaDossierDelete *self )
 	ofaDossierDeletePrivate *priv;
 	const gchar *password;
 
-	priv = self->private;
+	priv = self->priv;
 
 	password = gtk_entry_get_text( entry );
 	g_free( priv->p2_password );
@@ -323,7 +322,7 @@ check_for_dbserver_connection( ofaDossierDelete *self )
 	const gchar *msg;
 	GdkRGBA color;
 
-	priv = self->private;
+	priv = self->priv;
 
 	if( !priv->connect_ok ){
 
@@ -358,7 +357,7 @@ check_for_enable_dlg( ofaDossierDelete *self )
 	ofaDossierDeletePrivate *priv;
 	gboolean enabled;
 
-	priv = self->private;
+	priv = self->priv;
 	enabled = priv->connect_ok;
 
 	if( !priv->btn_ok ){
@@ -376,7 +375,7 @@ v_quit_on_ok( myDialog *dialog )
 {
 	ofaDossierDeletePrivate *priv;
 
-	priv = OFA_DOSSIER_DELETE( dialog )->private;
+	priv = OFA_DOSSIER_DELETE( dialog )->priv;
 
 	priv->deleted = do_delete_dossier( OFA_DOSSIER_DELETE( dialog ));
 
@@ -394,7 +393,7 @@ do_delete_dossier( ofaDossierDelete *self )
 	gboolean drop_db, drop_accounts;
 	ofaIDbms *module;
 
-	priv = self->private;
+	priv = self->priv;
 
 	module = ofa_idbms_get_provider_by_name( priv->provider );
 	if( !module ){
