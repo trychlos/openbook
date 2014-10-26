@@ -78,8 +78,8 @@ openbook_SOURCES = \
 	ofa-class-properties.h								\
 	ofa-classes-set.c									\
 	ofa-classes-set.h									\
-	ofa-currencies-set.c								\
-	ofa-currencies-set.h								\
+	ofa-currencies-page.c								\
+	ofa-currencies-page.h								\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
 	ofa-currency-properties.c							\

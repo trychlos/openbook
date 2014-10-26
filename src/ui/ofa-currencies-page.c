@@ -34,15 +34,14 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-currency-properties.h"
-#include "ui/ofa-currencies-set.h"
+#include "ui/ofa-currencies-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 
 /* private instance data
  */
-struct _ofaCurrenciesSetPrivate {
-	gboolean  dispose_has_run;
+struct _ofaCurrenciesPagePrivate {
 
 	/* internals
 	 */
@@ -59,63 +58,56 @@ enum {
 	N_COLUMNS
 };
 
-G_DEFINE_TYPE( ofaCurrenciesSet, ofa_currencies_set, OFA_TYPE_PAGE )
+G_DEFINE_TYPE( ofaCurrenciesPage, ofa_currencies_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_tree_view( ofaCurrenciesSet *self );
+static GtkWidget *setup_tree_view( ofaCurrenciesPage *self );
 static void       v_init_view( ofaPage *page );
-static void       insert_dataset( ofaCurrenciesSet *self );
-static void       insert_new_row( ofaCurrenciesSet *self, ofoCurrency *currency, gboolean with_selection );
-static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenciesSet *self );
-static void       setup_first_selection( ofaCurrenciesSet *self );
+static void       insert_dataset( ofaCurrenciesPage *self );
+static void       insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_selection );
+static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenciesPage *self );
+static void       setup_first_selection( ofaCurrenciesPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
-static void       on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesSet *self );
+static void       on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self );
 static void       v_on_new_clicked( GtkButton *button, ofaPage *page );
 static void       v_on_update_clicked( GtkButton *button, ofaPage *page );
 static void       v_on_delete_clicked( GtkButton *button, ofaPage *page );
-static gboolean   delete_confirmed( ofaCurrenciesSet *self, ofoCurrency *currency );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesSet *self );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrenciesSet *self );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesSet *self );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesSet *self );
+static gboolean   delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *currency );
+static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self );
+static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrenciesPage *self );
+static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self );
+static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesPage *self );
 
 static void
-currencies_set_finalize( GObject *instance )
+currencies_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_currencies_set_finalize";
-	ofaCurrenciesSetPrivate *priv;
+	static const gchar *thisfn = "ofa_currencies_page_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_CURRENCIES_SET( instance ));
-
-	priv = OFA_CURRENCIES_SET( instance )->private;
+	g_return_if_fail( instance && OFA_IS_CURRENCIES_PAGE( instance ));
 
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_currencies_set_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_currencies_page_parent_class )->finalize( instance );
 }
 
 static void
-currencies_set_dispose( GObject *instance )
+currencies_page_dispose( GObject *instance )
 {
-	ofaCurrenciesSetPrivate *priv;
+	ofaCurrenciesPagePrivate *priv;
 	gulong handler_id;
 	GList *iha;
 	ofoDossier *dossier;
 
-	g_return_if_fail( instance && OFA_IS_CURRENCIES_SET( instance ));
+	g_return_if_fail( instance && OFA_IS_CURRENCIES_PAGE( instance ));
 
-	priv = ( OFA_CURRENCIES_SET( instance ))->private;
-
-	if( !priv->dispose_has_run ){
-
-		priv->dispose_has_run = TRUE;
+	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = ( OFA_CURRENCIES_PAGE( instance ))->priv;
 
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
@@ -130,50 +122,51 @@ currencies_set_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_currencies_set_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_currencies_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_currencies_set_init( ofaCurrenciesSet *self )
+ofa_currencies_page_init( ofaCurrenciesPage *self )
 {
-	static const gchar *thisfn = "ofa_currencies_set_init";
+	static const gchar *thisfn = "ofa_currencies_page_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_CURRENCIES_SET( self ));
+	g_return_if_fail( self && OFA_IS_CURRENCIES_PAGE( self ));
 
-	self->private = g_new0( ofaCurrenciesSetPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
-	self->private->handlers = NULL;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+						self, OFA_TYPE_CURRENCIES_PAGE, ofaCurrenciesPagePrivate );
+	self->priv->handlers = NULL;
 }
 
 static void
-ofa_currencies_set_class_init( ofaCurrenciesSetClass *klass )
+ofa_currencies_page_class_init( ofaCurrenciesPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_currencies_set_class_init";
+	static const gchar *thisfn = "ofa_currencies_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = currencies_set_dispose;
-	G_OBJECT_CLASS( klass )->finalize = currencies_set_finalize;
+	G_OBJECT_CLASS( klass )->dispose = currencies_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = currencies_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
+
+	g_type_class_add_private( klass, sizeof( ofaCurrenciesPagePrivate ));
 }
 
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	ofaCurrenciesSetPrivate *priv;
+	ofaCurrenciesPagePrivate *priv;
 	ofoDossier *dossier;
 	gulong handler;
 
-	priv = OFA_CURRENCIES_SET( page )->private;
+	priv = OFA_CURRENCIES_PAGE( page )->priv;
 	dossier = ofa_page_get_dossier( page );
 
 	handler = g_signal_connect(
@@ -196,11 +189,11 @@ v_setup_view( ofaPage *page )
 						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
-	return( setup_tree_view( OFA_CURRENCIES_SET( page )));
+	return( setup_tree_view( OFA_CURRENCIES_PAGE( page )));
 }
 
 static GtkWidget *
-setup_tree_view( ofaCurrenciesSet *self )
+setup_tree_view( ofaCurrenciesPage *self )
 {
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
@@ -272,11 +265,11 @@ setup_tree_view( ofaCurrenciesSet *self )
 static void
 v_init_view( ofaPage *page )
 {
-	insert_dataset( OFA_CURRENCIES_SET( page ));
+	insert_dataset( OFA_CURRENCIES_PAGE( page ));
 }
 
 static void
-insert_dataset( ofaCurrenciesSet *self )
+insert_dataset( ofaCurrenciesPage *self )
 {
 	ofoDossier *dossier;
 	GList *dataset, *iset;
@@ -295,7 +288,7 @@ insert_dataset( ofaCurrenciesSet *self )
 }
 
 static void
-insert_new_row( ofaCurrenciesSet *self, ofoCurrency *currency, gboolean with_selection )
+insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_selection )
 {
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
@@ -324,7 +317,7 @@ insert_new_row( ofaCurrenciesSet *self, ofoCurrency *currency, gboolean with_sel
 }
 
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenciesSet *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenciesPage *self )
 {
 	gchar *acod, *bcod, *afold, *bfold;
 	gint cmp;
@@ -347,7 +340,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenci
 }
 
 static void
-setup_first_selection( ofaCurrenciesSet *self )
+setup_first_selection( ofaCurrenciesPage *self )
 {
 	GtkTreeView *tview;
 	GtkTreeModel *model;
@@ -371,7 +364,7 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 }
 
 static void
-on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesSet *self )
+on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -396,14 +389,14 @@ v_on_new_clicked( GtkButton *button, ofaPage *page )
 {
 	ofoCurrency *currency;
 
-	g_return_if_fail( page && OFA_IS_CURRENCIES_SET( page ));
+	g_return_if_fail( page && OFA_IS_CURRENCIES_PAGE( page ));
 
 	currency = ofo_currency_new();
 
 	if( ofa_currency_properties_run(
 			ofa_page_get_main_window( page ), currency )){
 
-		insert_new_row( OFA_CURRENCIES_SET( page ), currency, TRUE );
+		insert_new_row( OFA_CURRENCIES_PAGE( page ), currency, TRUE );
 
 	} else {
 		g_object_unref( currency );
@@ -419,7 +412,7 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 	GtkTreeIter iter;
 	ofoCurrency *currency;
 
-	g_return_if_fail( page && OFA_IS_CURRENCIES_SET( page ));
+	g_return_if_fail( page && OFA_IS_CURRENCIES_PAGE( page ));
 
 	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
 	select = gtk_tree_view_get_selection( tview );
@@ -454,7 +447,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 	GtkTreeIter iter;
 	ofoCurrency *currency;
 
-	g_return_if_fail( page && OFA_IS_CURRENCIES_SET( page ));
+	g_return_if_fail( page && OFA_IS_CURRENCIES_PAGE( page ));
 
 	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
 	select = gtk_tree_view_get_selection( tview );
@@ -466,7 +459,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 
 		g_return_if_fail( ofo_currency_is_deletable( currency ));
 
-		if( delete_confirmed( OFA_CURRENCIES_SET( page ), currency ) &&
+		if( delete_confirmed( OFA_CURRENCIES_PAGE( page ), currency ) &&
 				ofo_currency_delete( currency )){
 
 			/* remove the row from the tmodel
@@ -479,7 +472,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 }
 
 static gboolean
-delete_confirmed( ofaCurrenciesSet *self, ofoCurrency *currency )
+delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *currency )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -499,9 +492,9 @@ delete_confirmed( ofaCurrenciesSet *self, ofoCurrency *currency )
  * OFA_SIGNAL_NEW_OBJECT signal handler
  */
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesSet *self )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self )
 {
-	static const gchar *thisfn = "ofa_currencies_set_on_new_object";
+	static const gchar *thisfn = "ofa_currencies_page_on_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -517,9 +510,9 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesSet *self )
  * OFA_SIGNAL_UPDATE_OBJECT signal handler
  */
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrenciesSet *self )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrenciesPage *self )
 {
-	static const gchar *thisfn = "ofa_currencies_set_on_updated_object";
+	static const gchar *thisfn = "ofa_currencies_page_on_updated_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn, ( void * ) dossier,
@@ -533,9 +526,9 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
  * OFA_SIGNAL_DELETED_OBJECT signal handler
  */
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesSet *self )
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self )
 {
-	static const gchar *thisfn = "ofa_currencies_set_on_deleted_object";
+	static const gchar *thisfn = "ofa_currencies_page_on_deleted_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
 			thisfn, ( void * ) dossier,
@@ -549,9 +542,9 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesSet *self 
  * OFA_SIGNAL_RELOAD_DATASET signal handler
  */
 static void
-on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesSet *self )
+on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesPage *self )
 {
-	static const gchar *thisfn = "ofa_currencies_set_on_reloaded_dataset";
+	static const gchar *thisfn = "ofa_currencies_page_on_reloaded_dataset";
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
 

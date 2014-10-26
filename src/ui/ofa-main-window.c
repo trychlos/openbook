@@ -41,7 +41,7 @@
 #include "ui/ofa-backup.h"
 #include "ui/ofa-bat-set.h"
 #include "ui/ofa-classes-set.h"
-#include "ui/ofa-currencies-set.h"
+#include "ui/ofa-currencies-page.h"
 #include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-export.h"
@@ -169,7 +169,7 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_CURRENCIES,
 				N_( "Currencies" ),
-				ofa_currencies_set_get_type,
+				ofa_currencies_page_get_type,
 				FALSE,
 				FALSE },
 
