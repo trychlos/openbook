@@ -117,13 +117,11 @@ restore_finalize( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_RESTORE( instance ));
 
-	priv = OFA_RESTORE( instance )->private;
-
 	/* free data members here */
+	priv = OFA_RESTORE( instance )->priv;
+
 	g_free( priv->fname );
 	g_free( priv->label );
-
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_restore_parent_class )->finalize( instance );
@@ -136,7 +134,7 @@ restore_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_RESTORE( instance ));
 
-	priv = OFA_RESTORE( instance )->private;
+	priv = OFA_RESTORE( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -161,9 +159,9 @@ ofa_restore_init( ofaRestore *self )
 
 	g_return_if_fail( self && OFA_IS_RESTORE( self ));
 
-	self->private = g_new0( ofaRestorePrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_RESTORE, ofaRestorePrivate );
 
-	self->private->dispose_has_run = FALSE;
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -175,13 +173,15 @@ ofa_restore_class_init( ofaRestoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = restore_dispose;
 	G_OBJECT_CLASS( klass )->finalize = restore_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaRestorePrivate ));
 }
 
 /**
  * ofa_restore_run:
  * @main: the main window of the application.
  *
- * Update the properties of an dossier
+ * Restore a database backup.
  */
 void
 ofa_restore_run( ofaMainWindow *main_window )
@@ -195,7 +195,7 @@ ofa_restore_run( ofaMainWindow *main_window )
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
 	self = g_object_new( OFA_TYPE_RESTORE, NULL );
-	priv = self->private;
+	priv = self->priv;
 	priv->main_window = main_window;
 
 	init_dialog( self );
@@ -216,7 +216,7 @@ init_dialog( ofaRestore *self )
 	GtkWidget *combo;
 	gboolean open;
 
-	priv = self->private;
+	priv = self->priv;
 
 	priv->dialog = gtk_file_chooser_dialog_new(
 							_( "Restore a dossier's database" ),
@@ -305,7 +305,7 @@ on_dest_changed( GtkComboBox *box, ofaRestore *self )
 	GtkTreeModel *tmodel;
 	gint code;
 
-	self->private->dest_mode = -1;
+	self->priv->dest_mode = -1;
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 
@@ -317,13 +317,13 @@ on_dest_changed( GtkComboBox *box, ofaRestore *self )
 		switch( code ){
 			case DEST_EXISTING_DOSSIER:
 				remove_current_dest( self );
-				self->private->dest_mode = code;
+				self->priv->dest_mode = code;
 				setup_existing_dossier( self );
 				break;
 
 			case DEST_NEW_DOSSIER:
 				remove_current_dest( self );
-				self->private->dest_mode = code;
+				self->priv->dest_mode = code;
 				setup_new_dossier( self );
 				break;
 		}
@@ -335,7 +335,7 @@ remove_current_dest( ofaRestore *self )
 {
 	GtkWidget *child;
 
-	child = gtk_grid_get_child_at( GTK_GRID( self->private->grid ), 1, 0 );
+	child = gtk_grid_get_child_at( GTK_GRID( self->priv->grid ), 1, 0 );
 	if( child ){
 		g_return_if_fail( GTK_IS_WIDGET( child ));
 		gtk_widget_destroy( child );
@@ -354,7 +354,7 @@ setup_existing_dossier( ofaRestore *self )
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	priv = self->private;
+	priv = self->priv;
 
 	frame = gtk_frame_new( NULL );
 	gtk_widget_set_size_request( frame, 200, -1 );
@@ -411,7 +411,7 @@ on_dossier_selection_changed( GtkTreeSelection *select, ofaRestore *self )
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
 
-	priv = self->private;
+	priv = self->priv;
 
 	g_free( priv->label );
 	priv->label = NULL;
@@ -430,7 +430,7 @@ setup_new_dossier( ofaRestore *self )
 	GtkWidget *frame, *alignment;
 
 	frame = gtk_frame_new( NULL );
-	gtk_grid_attach( GTK_GRID( self->private->grid ), frame, 1, 0, 1, 1 );
+	gtk_grid_attach( GTK_GRID( self->priv->grid ), frame, 1, 0, 1, 1 );
 
 	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
 	gtk_container_add( GTK_CONTAINER( frame ), alignment );
@@ -441,7 +441,7 @@ on_chooser_selection_changed( GtkFileChooser *chooser, ofaRestore *self )
 {
 	ofaRestorePrivate *priv;
 
-	priv = self->private;
+	priv = self->priv;
 
 	g_free( priv->fname );
 	priv->fname = NULL;
@@ -463,7 +463,7 @@ check_for_enable_dlg( ofaRestore *self )
 	ofaRestorePrivate *priv;
 	gboolean enable;
 
-	priv = self->private;
+	priv = self->priv;
 
 	enable = priv->fname && g_utf8_strlen( priv->fname, -1 );
 
@@ -493,7 +493,7 @@ do_restore( ofaRestore *self )
 	ofsDossierOpen *sdo;
 
 	ok = FALSE;
-	priv = self->private;
+	priv = self->priv;
 
 	dirname = g_path_get_dirname( priv->fname );
 	ofa_settings_set_string( st_restore_folder, dirname );
@@ -531,7 +531,7 @@ do_restore_existing( ofaRestore *self )
 	ofaIDbms *dbms;
 
 	ok = FALSE;
-	priv = self->private;
+	priv = self->priv;
 
 	/* first close the currently opened dossier if we are going to
 	 * restore to this same dossier */

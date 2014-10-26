@@ -52,14 +52,16 @@ G_BEGIN_DECLS
 typedef struct _ofaRestorePrivate        ofaRestorePrivate;
 
 typedef struct {
-	/*< private >*/
-	GObject           parent;
-	ofaRestorePrivate *private;
+	/*< public members >*/
+	GObject            parent;
+
+	/*< private members >*/
+	ofaRestorePrivate *priv;
 }
 	ofaRestore;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaRestoreClass;
