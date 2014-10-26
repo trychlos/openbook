@@ -103,7 +103,7 @@ int_closing_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_INT_CLOSING( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -194,7 +194,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	priv->do_close_btn = button;
 
-	parms.main_window = MY_WINDOW( dialog )->protected->main_window;
+	parms.main_window = MY_WINDOW( dialog )->prot->main_window;
 	parms.parent = GTK_CONTAINER(
 					my_utils_container_get_child_by_name( container, "px-treeview-alignement" ));
 	parms.allow_multiple_selection = TRUE;
@@ -253,7 +253,7 @@ on_date_changed( GtkEditable *entry, ofaIntClosing *self )
 			my_editable_date_get_date( GTK_EDITABLE( priv->closing_entry ), NULL ));
 
 	/* the date must be less or equal that the end of exercice */
-	exe_end = ofo_dossier_get_current_exe_end( MY_WINDOW( self )->protected->dossier );
+	exe_end = ofo_dossier_get_current_exe_end( MY_WINDOW( self )->prot->dossier );
 	if( !my_date_is_valid( exe_end ) || my_date_compare( &priv->closing, exe_end ) <= 0 ){
 		priv->valid = TRUE;
 		gtk_label_set_text( priv->message_label, "" );

@@ -138,7 +138,7 @@ dossier_new_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		priv = OFA_DOSSIER_NEW( instance )->priv;
 

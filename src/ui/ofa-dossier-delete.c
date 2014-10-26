@@ -117,7 +117,7 @@ dossier_delete_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_DELETE( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 		priv = OFA_DOSSIER_DELETE( instance )->priv;

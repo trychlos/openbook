@@ -68,10 +68,9 @@ my_window_finalize( GObject *instance )
 	self = MY_WINDOW( instance );
 
 	/* free data members here */
-	g_free( self->private->window_xml );
-	g_free( self->private->window_name );
-	g_free( self->private );
-	g_free( self->protected );
+	g_free( self->priv->window_xml );
+	g_free( self->priv->window_name );
+	g_free( self->prot );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_window_parent_class )->finalize( instance );
@@ -81,16 +80,18 @@ static void
 my_window_dispose( GObject *instance )
 {
 	myWindow *self;
+	myWindowProtected *prot;
 	myWindowPrivate *priv;
 
 	g_return_if_fail( instance && MY_IS_WINDOW( instance ));
 
 	self = MY_WINDOW( instance );
-	priv = self->private;
+	prot = self->prot;
 
-	if( !self->protected->dispose_has_run ){
+	if( !prot->dispose_has_run ){
 
-		self->protected->dispose_has_run = TRUE;
+		prot->dispose_has_run = TRUE;
+		priv = self->priv;
 
 		if( priv->manage_size_position && priv->toplevel && priv->window_name ){
 
@@ -115,9 +116,9 @@ my_window_constructed( GObject *instance )
 	GtkWidget *toplevel;
 
 	g_return_if_fail( instance && MY_IS_WINDOW( instance ));
-	g_return_if_fail( !MY_WINDOW( instance )->protected->dispose_has_run );
+	g_return_if_fail( !MY_WINDOW( instance )->prot->dispose_has_run );
 
-	priv = MY_WINDOW( instance )->private;
+	priv = MY_WINDOW( instance )->priv;
 
 	/* first, chain up to the parent class */
 	G_OBJECT_CLASS( my_window_parent_class )->constructed( instance );
@@ -149,27 +150,27 @@ my_window_get_property( GObject *object, guint property_id, GValue *value, GPara
 
 	self = MY_WINDOW( object );
 
-	if( !self->protected->dispose_has_run ){
+	if( !self->prot->dispose_has_run ){
 
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
-				g_value_set_pointer( value, self->protected->main_window );
+				g_value_set_pointer( value, self->prot->main_window );
 				break;
 
 			case PROP_DOSSIER_ID:
-				g_value_set_pointer( value, self->protected->dossier );
+				g_value_set_pointer( value, self->prot->dossier );
 				break;
 
 			case PROP_WINDOW_XML_ID:
-				g_value_set_string( value, self->private->window_xml);
+				g_value_set_string( value, self->priv->window_xml);
 				break;
 
 			case PROP_WINDOW_NAME_ID:
-				g_value_set_string( value, self->private->window_name );
+				g_value_set_string( value, self->priv->window_name );
 				break;
 
 			case PROP_SIZE_POSITION_ID:
-				g_value_set_boolean( value, self->private->manage_size_position );
+				g_value_set_boolean( value, self->priv->manage_size_position );
 				break;
 
 			default:
@@ -188,29 +189,29 @@ my_window_set_property( GObject *object, guint property_id, const GValue *value,
 
 	self = MY_WINDOW( object );
 
-	if( !self->protected->dispose_has_run ){
+	if( !self->prot->dispose_has_run ){
 
 		switch( property_id ){
 			case PROP_MAIN_WINDOW_ID:
-				self->protected->main_window = g_value_get_pointer( value );
+				self->prot->main_window = g_value_get_pointer( value );
 				break;
 
 			case PROP_DOSSIER_ID:
-				self->protected->dossier = g_value_get_pointer( value );
+				self->prot->dossier = g_value_get_pointer( value );
 				break;
 
 			case PROP_WINDOW_XML_ID:
-				g_free( self->private->window_xml );
-				self->private->window_xml = g_value_dup_string( value );
+				g_free( self->priv->window_xml );
+				self->priv->window_xml = g_value_dup_string( value );
 				break;
 
 			case PROP_WINDOW_NAME_ID:
-				g_free( self->private->window_name );
-				self->private->window_name = g_value_dup_string( value );
+				g_free( self->priv->window_name );
+				self->priv->window_name = g_value_dup_string( value );
 				break;
 
 			case PROP_SIZE_POSITION_ID:
-				self->private->manage_size_position = g_value_get_boolean( value );
+				self->priv->manage_size_position = g_value_get_boolean( value );
 				break;
 
 			default:
@@ -228,14 +229,14 @@ my_window_init( myWindow *self )
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->private = g_new0( myWindowPrivate, 1 );
-	self->protected = g_new0( myWindowProtected, 1 );
+	self->prot = g_new0( myWindowProtected, 1 );
+	self->prot->dispose_has_run = FALSE;
 
-	self->private->window_xml = NULL;
-	self->private->window_name = NULL;
-	self->private->toplevel = NULL;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, MY_TYPE_WINDOW, myWindowPrivate );
+	self->priv->window_xml = NULL;
+	self->priv->window_name = NULL;
+	self->priv->toplevel = NULL;
 
-	self->protected->dispose_has_run = FALSE;
 }
 
 static void
@@ -250,6 +251,8 @@ my_window_class_init( myWindowClass *klass )
 	G_OBJECT_CLASS( klass )->constructed = my_window_constructed;
 	G_OBJECT_CLASS( klass )->dispose = my_window_dispose;
 	G_OBJECT_CLASS( klass )->finalize = my_window_finalize;
+
+	g_type_class_add_private( klass, sizeof( myWindowPrivate ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -308,9 +311,9 @@ my_window_get_dossier( const myWindow *self )
 {
 	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
 
-	if( !self->protected->dispose_has_run ){
+	if( !self->prot->dispose_has_run ){
 
-		return( self->protected->dossier );
+		return( self->prot->dossier );
 	}
 
 	return( NULL );
@@ -324,9 +327,9 @@ my_window_get_main_window( const myWindow *self )
 {
 	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
 
-	if( !self->protected->dispose_has_run ){
+	if( !self->prot->dispose_has_run ){
 
-		return( self->protected->main_window );
+		return( self->prot->main_window );
 	}
 
 	return( NULL );
@@ -340,9 +343,9 @@ my_window_get_toplevel( const myWindow *self )
 {
 	g_return_val_if_fail( self && MY_IS_WINDOW( self ), NULL );
 
-	if( !self->protected->dispose_has_run ){
+	if( !self->prot->dispose_has_run ){
 
-		return( self->private->toplevel );
+		return( self->priv->toplevel );
 	}
 
 	return( NULL );
@@ -356,9 +359,9 @@ my_window_has_valid_toplevel( const myWindow *self )
 {
 	g_return_val_if_fail( self && MY_IS_WINDOW( self ), FALSE );
 
-	if( !self->protected->dispose_has_run ){
+	if( !self->prot->dispose_has_run ){
 
-		return( self->private->toplevel && GTK_IS_WINDOW( self->private->toplevel ));
+		return( self->priv->toplevel && GTK_IS_WINDOW( self->priv->toplevel ));
 	}
 
 	return( FALSE );

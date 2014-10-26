@@ -87,7 +87,7 @@ account_select_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_SELECT( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -192,7 +192,7 @@ v_init_dialog( myDialog *dialog )
 					"top-box" );
 	g_return_if_fail( box && GTK_IS_BOX( box ));
 
-	parms.main_window = MY_WINDOW( dialog )->protected->main_window;
+	parms.main_window = MY_WINDOW( dialog )->prot->main_window;
 	parms.parent = GTK_CONTAINER( box );
 	parms.has_import = FALSE;
 	parms.has_export = FALSE;

@@ -130,7 +130,7 @@ rate_properties_dispose( GObject *instance )
 {
 	g_return_if_fail( OFA_IS_RATE_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -569,7 +569,7 @@ is_dialog_validable( ofaRateProperties *self )
 
 	if( ok ){
 		exists = ofo_rate_get_by_mnemo(
-				MY_WINDOW( self )->protected->dossier,
+				MY_WINDOW( self )->prot->dossier,
 				self->priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new &&

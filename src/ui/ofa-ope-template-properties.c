@@ -170,7 +170,7 @@ ope_template_properties_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -273,7 +273,7 @@ v_init_dialog( myDialog *dialog )
 	priv->is_new = !mnemo || !g_utf8_strlen( mnemo, -1 );
 
 	parms.container = GTK_CONTAINER( toplevel );
-	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
+	parms.dossier = MY_WINDOW( dialog )->prot->dossier;
 	parms.combo_name = "p1-ledger";
 	parms.label_name = NULL;
 	parms.disp_mnemo = FALSE;
@@ -624,7 +624,7 @@ on_account_selection( ofaOpeTemplateProperties *self, gint row )
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->grid, DET_COL_ACCOUNT, row ));
 	number = ofa_account_select_run(
-					MY_WINDOW( self )->protected->main_window,
+					MY_WINDOW( self )->prot->main_window,
 					gtk_entry_get_text( entry ));
 	if( number && g_utf8_strlen( number, -1 )){
 		gtk_entry_set_text( entry, number );
@@ -764,7 +764,7 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 
 	if( ok ){
 		exists = ofo_ope_template_get_by_mnemo(
-						MY_WINDOW( self )->protected->dossier,
+						MY_WINDOW( self )->prot->dossier,
 						priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ope_template_get_mnemo( priv->ope_template )));

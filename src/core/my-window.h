@@ -55,19 +55,23 @@ G_BEGIN_DECLS
 #define MY_IS_WINDOW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_WINDOW ))
 #define MY_WINDOW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_WINDOW, myWindowClass ))
 
-typedef struct _myWindowPrivate       myWindowPrivate;
 typedef struct _myWindowProtected     myWindowProtected;
+typedef struct _myWindowPrivate       myWindowPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject            parent;
-	myWindowPrivate   *private;
-	myWindowProtected *protected;
+
+	/*< protected members >*/
+	myWindowProtected *prot;
+
+	/*< private members >*/
+	myWindowPrivate   *priv;
 }
 	myWindow;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	myWindowClass;

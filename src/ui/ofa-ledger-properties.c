@@ -122,7 +122,7 @@ ledger_properties_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_LEDGER_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -263,14 +263,14 @@ init_balances_page( ofaLedgerProperties *self )
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	parms.container = container;
-	parms.dossier = MY_WINDOW( self )->protected->dossier;
+	parms.dossier = MY_WINDOW( self )->prot->dossier;
 	parms.combo_name = "p2-dev-combo";
 	parms.label_name = NULL;
 	parms.disp_code = FALSE;
 	parms.disp_label = TRUE;
 	parms.pfnSelected = ( ofaCurrencyComboCb ) on_currency_changed;
 	parms.user_data = self;
-	parms.initial_code = ofo_dossier_get_default_currency( MY_WINDOW( self )->protected->dossier );
+	parms.initial_code = ofo_dossier_get_default_currency( MY_WINDOW( self )->prot->dossier );
 
 	self->priv->dev_combo = ofa_currency_combo_new( &parms );
 
@@ -293,15 +293,15 @@ init_balances_page( ofaLedgerProperties *self )
 
 	list = ofo_ledger_get_exe_list( self->priv->ledger );
 	idx = -1;
-	current_exe_id = ofo_dossier_get_current_exe_id( MY_WINDOW( self )->protected->dossier );
+	current_exe_id = ofo_dossier_get_current_exe_id( MY_WINDOW( self )->prot->dossier );
 
 	for( ili=list, i=0 ; ili ; ili=ili->next, ++i ){
 		exe_id = GPOINTER_TO_INT( ili->data );
 		if( exe_id == current_exe_id ){
 			idx = i;
 		}
-		begin = ofo_dossier_get_exe_begin( MY_WINDOW( self )->protected->dossier, exe_id );
-		end = ofo_dossier_get_exe_end( MY_WINDOW( self )->protected->dossier, exe_id );
+		begin = ofo_dossier_get_exe_begin( MY_WINDOW( self )->prot->dossier, exe_id );
+		end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier, exe_id );
 		if( !my_date_is_valid( begin )){
 			sbegin = g_strdup( "" );
 			if( !my_date_is_valid( end )){
@@ -453,7 +453,7 @@ is_dialog_validable( ofaLedgerProperties *self )
 
 	if( ok ){
 		exists = ofo_ledger_get_by_mnemo(
-				MY_WINDOW( self )->protected->dossier, priv->mnemo );
+				MY_WINDOW( self )->prot->dossier, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ledger_get_mnemo( priv->ledger )));
 	}

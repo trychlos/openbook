@@ -97,7 +97,7 @@ plugin_manager_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_PLUGIN_MANAGER( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -322,6 +322,6 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
 		g_object_unref( plugin );
 
-		ofa_preferences_run( MY_WINDOW( self )->protected->main_window, plugin );
+		ofa_preferences_run( MY_WINDOW( self )->prot->main_window, plugin );
 	}
 }

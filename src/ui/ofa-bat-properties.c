@@ -87,7 +87,7 @@ bat_properties_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_BAT_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -186,7 +186,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	parms.container = GTK_CONTAINER( container );
-	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
+	parms.dossier = MY_WINDOW( dialog )->prot->dossier;
 	parms.with_tree_view = FALSE;
 	parms.editable = TRUE;
 	parms.pfnSelection = NULL;
@@ -232,7 +232,7 @@ do_update( ofaBatProperties *self )
 	g_return_val_if_fail( !self->priv->is_new, FALSE );
 
 	priv = self->priv;
-	dossier = MY_WINDOW( self )->protected->dossier;
+	dossier = MY_WINDOW( self )->prot->dossier;
 
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), bat );
 

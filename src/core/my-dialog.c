@@ -76,7 +76,7 @@ my_dialog_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && MY_IS_DIALOG( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref member objects here */
 
@@ -124,7 +124,7 @@ my_dialog_init_dialog( myDialog *self )
 {
 	g_return_val_if_fail( self && MY_IS_DIALOG( self ), FALSE );
 
-	if( !MY_WINDOW( self )->protected->dispose_has_run ){
+	if( !MY_WINDOW( self )->prot->dispose_has_run ){
 
 		if( my_window_has_valid_toplevel( MY_WINDOW( self )) &&
 				!self->private->init_has_run ){
@@ -170,7 +170,7 @@ my_dialog_run_dialog( myDialog *self )
 
 	g_return_val_if_fail( self && MY_IS_DIALOG( self ), code );
 
-	if( !MY_WINDOW( self )->protected->dispose_has_run ){
+	if( !MY_WINDOW( self )->prot->dispose_has_run ){
 
 		if( self->private->init_has_run || my_dialog_init_dialog( self )){
 

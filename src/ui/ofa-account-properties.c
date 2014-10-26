@@ -134,7 +134,7 @@ account_properties_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -263,7 +263,7 @@ v_init_dialog( myDialog *dialog )
 	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
 
 	parms.container = container;
-	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
+	parms.dossier = MY_WINDOW( dialog )->prot->dossier;
 	parms.combo_name = "p1-currency";
 	parms.label_name = NULL;
 	parms.disp_code = TRUE;
@@ -489,7 +489,7 @@ is_dialog_validable( ofaAccountProperties *self )
 	 */
 	if( ok && !self->priv->number_ok ){
 
-		dossier = MY_WINDOW( self )->protected->dossier;
+		dossier = MY_WINDOW( self )->prot->dossier;
 		exists = ofo_account_get_by_number( dossier, self->priv->number );
 		prev = ofo_account_get_number( priv->account );
 		self->priv->number_ok = !exists || !g_utf8_collate( prev, priv->number );

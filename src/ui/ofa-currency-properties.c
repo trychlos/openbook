@@ -99,7 +99,7 @@ currency_properties_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_CURRENCY_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -298,7 +298,7 @@ is_dialog_validable( ofaCurrencyProperties *self )
 	ok = ofo_currency_is_valid( priv->code, priv->label, priv->symbol, priv->digits );
 	if( ok ){
 		exists = ofo_currency_get_by_code(
-					MY_WINDOW( self )->protected->dossier, priv->code );
+					MY_WINDOW( self )->prot->dossier, priv->code );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->code, ofo_currency_get_code( priv->currency )));
 	}

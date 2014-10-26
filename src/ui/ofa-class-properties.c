@@ -93,7 +93,7 @@ class_properties_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_CLASS_PROPERTIES( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -261,7 +261,7 @@ is_dialog_validable( ofaClassProperties *self )
 	ok = ofo_class_is_valid( priv->number, priv->label );
 	if( ok ){
 		exists = ofo_class_get_by_number(
-				MY_WINDOW( self )->protected->dossier, priv->number );
+				MY_WINDOW( self )->prot->dossier, priv->number );
 		ok &= !exists ||
 				( ofo_class_get_number( exists ) == ofo_class_get_number( priv->class ));
 	}

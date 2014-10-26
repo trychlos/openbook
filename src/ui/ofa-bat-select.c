@@ -82,7 +82,7 @@ bat_select_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_BAT_SELECT( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -169,7 +169,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	parms.container = GTK_CONTAINER( container );
-	parms.dossier = MY_WINDOW( dialog )->protected->dossier;
+	parms.dossier = MY_WINDOW( dialog )->prot->dossier;
 	parms.with_tree_view = TRUE;
 	parms.editable = FALSE;
 	parms.pfnSelection = NULL;

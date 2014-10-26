@@ -67,7 +67,7 @@ assistant_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && MY_IS_ASSISTANT( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref member objects here */
 
@@ -85,7 +85,7 @@ assistant_constructed( GObject *instance )
 
 	g_return_if_fail( instance && MY_IS_ASSISTANT( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* first, chain up to the parent class */
 		if( G_OBJECT_CLASS( my_assistant_parent_class )->constructed ){
@@ -152,7 +152,7 @@ on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, myAssistant *self )
 
 	g_return_val_if_fail( self && MY_IS_ASSISTANT( self ), FALSE );
 
-	if( !MY_WINDOW( self )->protected->dispose_has_run ){
+	if( !MY_WINDOW( self )->prot->dispose_has_run ){
 
 		if( event->keyval == GDK_KEY_Escape &&
 				ofa_prefs_assistant_quit_on_escape()){
@@ -180,7 +180,7 @@ on_cancel( GtkAssistant *assistant, myAssistant *self )
 	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( self && MY_IS_ASSISTANT( self ));
 
-	if( !MY_WINDOW( self )->protected->dispose_has_run ){
+	if( !MY_WINDOW( self )->prot->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
@@ -227,7 +227,7 @@ on_close( GtkAssistant *assistant, myAssistant *self )
 	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
 	g_return_if_fail( self && MY_IS_ASSISTANT( self ));
 
-	if( !MY_WINDOW( self )->protected->dispose_has_run ){
+	if( !MY_WINDOW( self )->prot->dispose_has_run ){
 
 		g_debug( "%s: assistant=%p, self=%p",
 				thisfn, ( void * ) assistant, ( void * ) self );
@@ -250,7 +250,7 @@ my_assistant_run( myAssistant *assistant )
 {
 	g_return_if_fail( assistant && MY_IS_ASSISTANT( assistant ));
 
-	if( !MY_WINDOW( assistant )->protected->dispose_has_run ){
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
 
 		gtk_main();
 	}
@@ -271,7 +271,7 @@ my_assistant_get_page_num( myAssistant *assistant, GtkWidget *page )
 	g_return_val_if_fail( assistant && MY_IS_ASSISTANT( assistant ), -1 );
 	g_return_val_if_fail( page && GTK_IS_WIDGET( page ), -1 );
 
-	if( !MY_WINDOW( assistant )->protected->dispose_has_run ){
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
 
 		toplevel = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( assistant ));
 		g_return_val_if_fail( toplevel && GTK_IS_ASSISTANT( toplevel ), -1 );

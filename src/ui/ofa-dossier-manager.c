@@ -105,7 +105,7 @@ dossier_manager_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_DOSSIER_MANAGER( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -383,7 +383,7 @@ on_new_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	gboolean dossier_opened;
 
-	dossier_opened = ofa_dossier_new_run( MY_WINDOW( self )->protected->main_window );
+	dossier_opened = ofa_dossier_new_run( MY_WINDOW( self )->prot->main_window );
 
 	if( dossier_opened ){
 		gtk_dialog_response(
@@ -401,11 +401,11 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 	ofsDossierOpen *sdo;
 
 	sdo = ofa_dossier_open_run(
-			MY_WINDOW( self )->protected->main_window );
+			MY_WINDOW( self )->prot->main_window );
 
 	if( sdo ){
 		g_signal_emit_by_name(
-				MY_WINDOW( self )->protected->main_window, OFA_SIGNAL_OPEN_DOSSIER, sdo );
+				MY_WINDOW( self )->prot->main_window, OFA_SIGNAL_OPEN_DOSSIER, sdo );
 		gtk_dialog_response(
 				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
 				GTK_RESPONSE_CANCEL );
@@ -441,7 +441,7 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 
 		if( confirm_delete( self, name, provider, dbname )){
 			deleted = ofa_dossier_delete_run(
-							MY_WINDOW( self )->protected->main_window,
+							MY_WINDOW( self )->prot->main_window,
 							name, provider, host, dbname );
 			g_debug( "%s: deleted=%s", thisfn, deleted ? "True":"False" );
 			if( deleted ){

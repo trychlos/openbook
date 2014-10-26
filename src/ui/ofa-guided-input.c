@@ -81,7 +81,7 @@ guided_input_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT( instance ));
 
-	if( !MY_WINDOW( instance )->protected->dispose_has_run ){
+	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
 	}
@@ -161,7 +161,7 @@ v_init_dialog( myDialog *dialog )
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	priv->common = ofa_guided_common_new(
-							MY_WINDOW( dialog )->protected->main_window,
+							MY_WINDOW( dialog )->prot->main_window,
 							container );
 
 	ofa_guided_common_set_model( priv->common, priv->model );
