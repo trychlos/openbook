@@ -88,17 +88,13 @@ static void
 dossier_manager_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_finalize";
-	ofaDossierManagerPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_MANAGER( instance ));
 
-	priv = OFA_DOSSIER_MANAGER( instance )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_manager_parent_class )->finalize( instance );
@@ -128,7 +124,8 @@ ofa_dossier_manager_init( ofaDossierManager *self )
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_MANAGER( self ));
 
-	self->private = g_new0( ofaDossierManagerPrivate, 1 );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+						self, OFA_TYPE_DOSSIER_MANAGER, ofaDossierManagerPrivate );
 }
 
 static void
@@ -142,6 +139,8 @@ ofa_dossier_manager_class_init( ofaDossierManagerClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = dossier_manager_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+
+	g_type_class_add_private( klass, sizeof( ofaDossierManagerPrivate ));
 }
 
 /**
@@ -180,7 +179,7 @@ v_init_dialog( myDialog *dialog )
 	ofaDossierManagerPrivate *priv;
 
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	priv = OFA_DOSSIER_MANAGER( dialog )->private;
+	priv = OFA_DOSSIER_MANAGER( dialog )->priv;
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -219,7 +218,7 @@ setup_treeview( ofaDossierManager *self )
 
 	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "treeview" );
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-	self->private->tview = GTK_TREE_VIEW( tview );
+	self->priv->tview = GTK_TREE_VIEW( tview );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
@@ -284,7 +283,7 @@ load_in_treeview( ofaDossierManager *self )
 	gchar *provider, *host, *dbname;
 	ofaIDbms *module;
 
-	tmodel = gtk_tree_view_get_model( self->private->tview );
+	tmodel = gtk_tree_view_get_model( self->priv->tview );
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
 	dossiers = ofa_settings_get_dossiers();
@@ -315,7 +314,7 @@ load_in_treeview( ofaDossierManager *self )
 	g_slist_free_full( dossiers, ( GDestroyNotify ) g_free );
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		select = gtk_tree_view_get_selection( self->private->tview );
+		select = gtk_tree_view_get_selection( self->priv->tview );
 		gtk_tree_selection_select_iter( select, &iter );
 	}
 }
@@ -374,9 +373,9 @@ on_dossier_selected( GtkTreeSelection *selection, ofaDossierManager *self )
 
 	ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
 
-	gtk_widget_set_sensitive( self->private->open_btn, ok );
-	gtk_widget_set_sensitive( self->private->update_btn, ok );
-	gtk_widget_set_sensitive( self->private->delete_btn, ok );
+	gtk_widget_set_sensitive( self->priv->open_btn, ok );
+	gtk_widget_set_sensitive( self->priv->update_btn, ok );
+	gtk_widget_set_sensitive( self->priv->delete_btn, ok );
 }
 
 static void
@@ -428,7 +427,7 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 	gchar *name, *provider, *host, *dbname;
 	gboolean deleted;
 
-	select = gtk_tree_view_get_selection( self->private->tview );
+	select = gtk_tree_view_get_selection( self->priv->tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 		gtk_tree_model_get(
