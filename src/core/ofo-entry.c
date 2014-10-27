@@ -510,7 +510,7 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 		g_free( str );
 	}
 
-	where = g_string_append( where, " AND ENT_STATUS!=3 " );
+	g_string_append_printf( where, " AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 
 	dataset = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), where->str );
 

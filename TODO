@@ -397,9 +397,6 @@
 
  409 2014-10-26 print reconcil: should also print currency symbol
 
- 410 2014-10-26 when opening the properties of a plugin, the preferences
-                dialog should open on the appropriate tab
-
  411
 
 -----------------------------------------------------------------------
@@ -1727,6 +1724,10 @@
                 + rename private to priv
                 ofaViewEntries
      2014-10-26 done - svn #3925
+
+ 410 2014-10-26 when opening the properties of a plugin, the preferences
+                dialog should open on the appropriate tab
+     2014-10-26 done - svn #3988
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

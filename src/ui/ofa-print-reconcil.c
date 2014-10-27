@@ -31,8 +31,10 @@
 #include <glib/gi18n.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
@@ -55,6 +57,7 @@ struct _ofaPrintReconcilPrivate {
 	/* internals
 	 */
 	ofoAccount    *account;
+	ofoCurrency   *currency;
 	GDate          date;
 	GList         *entries;
 	gdouble        account_solde;
@@ -153,6 +156,7 @@ static PangoLayout *build_header_layout( ofaPrintReconcil *self, GtkPrintContext
 static PangoLayout *build_body_layout( ofaPrintReconcil *self, GtkPrintContext *context, PangoLayout *layout );
 static PangoLayout *build_footer_layout( ofaPrintReconcil *self, GtkPrintContext *context, PangoLayout *layout );
 static void         draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
+static gchar       *display_account_solde( ofaPrintReconcil *self, gdouble amount );
 static void         draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, gint line_num, ofoEntry *entry );
 static void         draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context );
 static void         draw_footer( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
@@ -403,8 +407,12 @@ static void
 on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintReconcil *self )
 {
 	ofaPrintReconcilPrivate *priv;
+	const gchar *mnemo;
 
 	priv = self->priv;
+
+	my_date_set_from_date( &priv->date,
+			my_editable_date_get_date( GTK_EDITABLE( priv->date_entry ), NULL ));
 
 	if( my_date_is_valid( &priv->date ) &&
 			priv->account && OFO_IS_ACCOUNT( priv->account )){
@@ -413,6 +421,9 @@ on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrin
 								priv->dossier,
 								ofo_account_get_number( priv->account ),
 								&priv->date );
+
+		mnemo = ofo_account_get_currency( priv->account );
+		priv->currency = ofo_currency_get_by_code( priv->dossier, mnemo );
 	}
 }
 
@@ -657,7 +668,8 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 	PangoFontDescription *desc;
 	cairo_t *cr;
 	PangoRectangle rc;
-	gchar *str, *sdate;
+	const GDate *date;
+	gchar *str, *str_solde, *sdate;
 	gdouble y;
 
 	priv = self->priv;
@@ -782,19 +794,20 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 		cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
 		str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
 		desc = pango_font_description_from_string( str );
+		g_free( str );
 		pango_layout_set_font_description( priv->header_layout, desc );
 		pango_font_description_free( desc );
 
-		sdate = my_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
-		if( !sdate || !g_utf8_strlen( sdate, -1 )){
-			g_free( sdate );
-			sdate = my_date_to_str( &priv->date, MY_DATE_DMYY );
+		date = ofo_account_get_global_deffect( priv->account );
+		if( !my_date_is_valid( date )){
+			date = ( const GDate * ) &priv->date;
 		}
+		sdate = my_date_to_str( date, MY_DATE_DMYY );
 		priv->account_solde = ofo_account_get_global_solde( priv->account );
-		str = g_strdup_printf(
-						"Account solde on %s is %+'.2lf",
-						sdate, priv->account_solde );
+		str_solde = display_account_solde( self, priv->account_solde );
+		str = g_strdup_printf( _( "Account solde on %s is %s" ), sdate, str_solde );
 		g_free( sdate );
+		g_free( str_solde );
 		pango_layout_set_text( priv->header_layout, str, -1 );
 		g_free( str );
 		pango_layout_get_pixel_extents( priv->header_layout, NULL, &rc );
@@ -811,6 +824,20 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 	/* w_header: final y=138,500000
 (openbook:27358): OFA-DEBUG: ofa_print_reconcil_on_draw_page: operation=0x7a9430, context=0xb55e80, self=0x8afd00
 (openbook:27358): OFA-DEBUG: draw_header: final y=116,00000 */
+}
+
+static gchar *
+display_account_solde( ofaPrintReconcil *self, gdouble amount )
+{
+	gint decimals;
+	gchar *str, *str_amount;
+
+	decimals = ofo_currency_get_digits( self->priv->currency );
+	str_amount = my_double_to_str_ex( amount, decimals );
+	str = g_strdup_printf( "%s %s", str_amount, ofo_currency_get_symbol( self->priv->currency ));
+	g_free( str_amount );
+
+	return( str );
 }
 
 /*
@@ -940,7 +967,8 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	ofaPrintReconcilPrivate *priv;
 	PangoFontDescription *desc;
 	cairo_t *cr;
-	gchar *str, *sdate;
+	const GDate *date;
+	gchar *str, *sdate, *str_amount;
 	PangoRectangle rc;
 	gdouble y;
 
@@ -953,18 +981,19 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 
 	str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
 	desc = pango_font_description_from_string( str );
+	g_free( str );
 	pango_layout_set_font_description( priv->body_layout, desc );
 	pango_font_description_free( desc );
 
-	sdate = my_date_to_str( ofo_account_get_global_deffect( priv->account ), MY_DATE_DMYY );
-	if( !sdate || !g_utf8_strlen( sdate, -1 )){
-		g_free( sdate );
-		sdate = my_date_to_str( &priv->date, MY_DATE_DMYY );
+	date = ofo_account_get_global_deffect( priv->account );
+	if( !my_date_is_valid( date ) || my_date_compare( date, &priv->date ) < 0 ){
+		date = ( const GDate * ) &priv->date;
 	}
-	str = g_strdup_printf(
-					"Reconciliated account solde on %s is %+'.2lf",
-					sdate, priv->account_solde );
+	sdate = my_date_to_str( date, MY_DATE_DMYY );
+	str_amount = display_account_solde( self, priv->account_solde );
+	str = g_strdup_printf( _( "Reconciliated account solde on %s is %s" ), sdate, str_amount );
 	g_free( sdate );
+	g_free( str_amount );
 	pango_layout_set_text( priv->body_layout, str, -1 );
 	g_free( str );
 	pango_layout_get_pixel_extents( priv->body_layout, NULL, &rc );
@@ -977,6 +1006,7 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 
 	str = g_strdup_printf( "%s %d", st_font_family, st_body_font_size );
 	desc = pango_font_description_from_string( str );
+	g_free( str );
 	pango_layout_set_font_description( priv->body_layout, desc );
 	pango_font_description_free( desc );
 
