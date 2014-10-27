@@ -189,8 +189,8 @@ ofa_ope_template_properties_init( ofaOpeTemplateProperties *self )
 
 	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_PROPERTIES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self,
-						OFA_TYPE_OPE_TEMPLATE_PROPERTIES, ofaOpeTemplatePropertiesPrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
+						self, OFA_TYPE_OPE_TEMPLATE_PROPERTIES, ofaOpeTemplatePropertiesPrivate );
 	self->priv->is_new = FALSE;
 	self->priv->updated = FALSE;
 }

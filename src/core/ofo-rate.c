@@ -38,8 +38,8 @@
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
-#include "api/ofo-sgbd.h"
 #include "api/ofo-rate.h"
+#include "api/ofo-sgbd.h"
 
 /* priv instance data
  */
@@ -97,6 +97,8 @@ rate_finalize( GObject *instance )
 	static const gchar *thisfn = "ofo_rate_finalize";
 	ofoRatePrivate *priv;
 
+	priv = OFO_RATE( instance )->priv;
+
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			priv->mnemo, priv->label );
@@ -104,8 +106,6 @@ rate_finalize( GObject *instance )
 	g_return_if_fail( instance && OFO_IS_RATE( instance ));
 
 	/* free data members here */
-	priv = OFO_RATE( instance )->priv;
-
 	g_free( priv->mnemo );
 	g_free( priv->label );
 	g_free( priv->notes );

@@ -53,11 +53,15 @@ ofo_base_finalize( GObject *instance )
 static void
 ofo_base_dispose( GObject *instance )
 {
-	ofoBase *self = OFO_BASE( instance );
+	ofoBase *self;
+	ofoBaseProtected *prot;
 
-	if( !self->prot->dispose_has_run ){
+	self = OFO_BASE( instance );
+	prot = self->prot;
 
-		self->prot->dispose_has_run = TRUE;
+	if( !prot->dispose_has_run ){
+
+		prot->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -99,7 +103,7 @@ ofo_base_class_init( ofoBaseClass *klass )
  * @user_data: user data to be passed to @fn. The #OFO_BASE_DEFINE_GLOBAL
  *  macro sets this value to %NULL.
  *
- * Check that the global #ofoBaseGlobal structure is allocated.
+ * Check that the global #ofsBaseGlobal structure is allocated.
  * Allocate it if it is not yet allocated.
  * Install a weak reference of the @dossier, in order to be able to free
  * the objects allocated in #ofoBase Global->#GList dataset list.
@@ -107,17 +111,19 @@ ofo_base_class_init( ofoBaseClass *klass )
  * Returns: the same pointer that @ptr if the structure was already
  * allocated, or a pointer to a newly allocated structure.
  */
-ofoBaseGlobal *
-ofo_base_get_global( ofoBaseGlobal *ptr, ofoBase *dossier, GWeakNotify fn, gpointer user_data )
+ofsBaseGlobal *
+ofo_base_get_global( ofsBaseGlobal *ptr, ofoBase *dossier, GWeakNotify fn, gpointer user_data )
 {
-	ofoBaseGlobal *new_ptr;
+	static const gchar *thisfn = "ofa_base_get_global";
+	ofsBaseGlobal *new_ptr;
 
 	new_ptr = ptr;
 
 	if( !ptr ){
 
 		/* allocate a new global structure */
-		new_ptr = g_new0( ofoBaseGlobal, 1 );
+		new_ptr = g_new0( ofsBaseGlobal, 1 );
+		g_debug( "%s: allocating a new ofsBaseGlobal at %p", thisfn, ( void * ) new_ptr );
 		new_ptr->dossier = dossier;
 		new_ptr->send_signal_new = TRUE;
 

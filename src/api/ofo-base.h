@@ -40,7 +40,7 @@
 G_BEGIN_DECLS
 
 /**
- * ofoBaseGlobal:
+ * ofsBaseGlobal:
  *
  * This structure is used by every derived class (but ofoDossier which
  * doesn't need it), in order to store its own global data.
@@ -55,7 +55,7 @@ typedef struct {
 	ofoBase  *dossier;
 	gboolean  send_signal_new;
 }
-	ofoBaseGlobal;
+	ofsBaseGlobal;
 
 /**
  * OFO_BASE_DEFINE_GLOBAL:
@@ -63,23 +63,25 @@ typedef struct {
  * ex: OFO_BASE_DEFINE_GLOBAL( st_global, class )
  *
  * a) defines a static pointer 'V' to a dynamically allocated
- *    ofoBaseGlobal structure. This structure will be actually
+ *    ofsBaseGlobal structure. This structure will be actually
  *    allocated and initialised by the #OFO_BASE_SET_GLOBAL macro.
  *
  * b) defines a 'T'_clear_global static function which fully clears the
- *    above ofoBaseGlobal structure and its data.
+ *    above ofsBaseGlobal structure and its data.
  *
  * This macro is to be invoked at the toplevel, once in each source
  * file.
  */
-#define OFO_BASE_DEFINE_GLOBAL( V,T )   static ofoBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer \
-											user_data, GObject *finalizing_dossier ){ g_debug( "ofo_" #T "_clear_global:" ); \
+#define OFO_BASE_DEFINE_GLOBAL( V,T )   static ofsBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer \
+											user_data, GObject *finalizing_dossier ){ \
+											g_debug( "ofo_" #T "_clear_global: " #V "=%p, count=%u", ( void * )(V), \
+											((V) && (V)->dataset) ? g_list_length((V)->dataset) : 0 ); \
 											if(V){ g_list_foreach((V)->dataset, (GFunc) g_object_unref, NULL ); \
 											g_list_free((V)->dataset ); g_free(V); (V)=NULL; }}
 
 /**
  * OFO_BASE_SET_GLOBAL:
- * @P: the name of the global variable
+ * @V: the name of the global variable
  *     e.g. 'st_global'
  * @D: the name of the #ofoDossier variable
  *     e.g. 'dossier'
@@ -88,7 +90,7 @@ typedef struct {
  *
  * ex: OFO_BASE_SET_GLOBAL( st_global, dossier, class )
  *
- * a) makes sure that the global ofoBaseGlobal structure is allocated
+ * a) makes sure that the global ofsBaseGlobal structure is allocated
  *    and initialized
  *
  * b) auto attach to the 'dossier', so that we will clear the global
@@ -101,8 +103,8 @@ typedef struct {
  * order to be sure the global structure is available.
  * It is safe to invoke it many times, as it is auto-protected.
  */
-#define OFO_BASE_SET_GLOBAL( P,D,T )    ({ (P)=ofo_base_get_global((P),OFO_BASE(D),(GWeakNotify)(T ## _clear_global), \
-											NULL); if(!(P)->dataset){ (P)->dataset=(T ## _load_dataset)();} })
+#define OFO_BASE_SET_GLOBAL( V,D,T )    ({ (V)=ofo_base_get_global((V),OFO_BASE(D),(GWeakNotify)(T ## _clear_global), \
+											NULL); if(!(V)->dataset){ (V)->dataset=(T ## _load_dataset)();} })
 
 /**
  * OFO_BASE_ADD_TO_DATASET:
@@ -161,7 +163,7 @@ typedef struct {
 
 #define OFO_BASE_UNSET_ID                   -1
 
-ofoBaseGlobal *ofo_base_get_global( ofoBaseGlobal *ptr,
+ofsBaseGlobal *ofo_base_get_global( ofsBaseGlobal *ptr,
 										ofoBase *dossier, GWeakNotify fn, gpointer user_data );
 
 G_END_DECLS

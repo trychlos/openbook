@@ -32,8 +32,8 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofo-rate.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-rate.h"
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
