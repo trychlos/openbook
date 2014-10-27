@@ -61,7 +61,7 @@ enum {
 G_DEFINE_TYPE( myWindow, my_window, G_TYPE_OBJECT )
 
 static void
-my_window_finalize( GObject *instance )
+window_finalize( GObject *instance )
 {
 	myWindow *self;
 
@@ -77,7 +77,7 @@ my_window_finalize( GObject *instance )
 }
 
 static void
-my_window_dispose( GObject *instance )
+window_dispose( GObject *instance )
 {
 	myWindow *self;
 	myWindowProtected *prot;
@@ -110,7 +110,7 @@ my_window_dispose( GObject *instance )
 }
 
 static void
-my_window_constructed( GObject *instance )
+window_constructed( GObject *instance )
 {
 	myWindowPrivate *priv;
 	GtkWidget *toplevel;
@@ -118,14 +118,14 @@ my_window_constructed( GObject *instance )
 	g_return_if_fail( instance && MY_IS_WINDOW( instance ));
 	g_return_if_fail( !MY_WINDOW( instance )->prot->dispose_has_run );
 
-	priv = MY_WINDOW( instance )->priv;
-
 	/* first, chain up to the parent class */
 	G_OBJECT_CLASS( my_window_parent_class )->constructed( instance );
 
 	/* then it is time to load the toplevel from builder
 	 * NB: even if properties are not set by the derived class, then
 	 *     the variables are set, though empty */
+	priv = MY_WINDOW( instance )->priv;
+
 	if( priv->window_xml && g_utf8_strlen( priv->window_xml, -1 ) &&
 		priv->window_name && g_utf8_strlen( priv->window_name, -1 )){
 
@@ -142,7 +142,7 @@ my_window_constructed( GObject *instance )
 }
 
 static void
-my_window_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
+window_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
 {
 	myWindow *self;
 
@@ -181,7 +181,7 @@ my_window_get_property( GObject *object, guint property_id, GValue *value, GPara
 }
 
 static void
-my_window_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
+window_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
 {
 	myWindow *self;
 
@@ -246,11 +246,11 @@ my_window_class_init( myWindowClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->get_property = my_window_get_property;
-	G_OBJECT_CLASS( klass )->set_property = my_window_set_property;
-	G_OBJECT_CLASS( klass )->constructed = my_window_constructed;
-	G_OBJECT_CLASS( klass )->dispose = my_window_dispose;
-	G_OBJECT_CLASS( klass )->finalize = my_window_finalize;
+	G_OBJECT_CLASS( klass )->get_property = window_get_property;
+	G_OBJECT_CLASS( klass )->set_property = window_set_property;
+	G_OBJECT_CLASS( klass )->constructed = window_constructed;
+	G_OBJECT_CLASS( klass )->dispose = window_dispose;
+	G_OBJECT_CLASS( klass )->finalize = window_finalize;
 
 	g_type_class_add_private( klass, sizeof( myWindowPrivate ));
 

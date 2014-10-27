@@ -37,6 +37,7 @@
 #include "api/ofa-settings.h"
 
 #include "core/my-window-prot.h"
+#include "core/ofa-plugin.h"
 
 #include "ui/ofa-dossier-delete-prefs.h"
 #include "ui/ofa-main-window.h"
@@ -46,9 +47,16 @@
  */
 struct _ofaPreferencesPrivate {
 
+	GtkWidget             *book;			/* main notebook of the dialog */
+
 	/* whether the dialog has been validated
 	 */
 	gboolean               updated;
+
+	/* when opening the preferences from the plugin manager
+	 */
+	ofaPlugin             *plugin;
+	GtkWidget             *object_page;
 
 	/* UI - Quit assistant page
 	 */
@@ -66,7 +74,7 @@ struct _ofaPreferencesPrivate {
 	gint                   p3_date_display;
 	gint                   p3_date_check;
 
-	/* UI - Plugins
+	/* UI - Plugin pages
 	 */
 	GList                 *plugs;
 };
@@ -110,7 +118,7 @@ typedef struct {
 	ofaIPreferences *object;
 	GtkWidget       *page;
 }
-	pagePlugin;
+	sPagePlugin;
 
 typedef void ( *pfnPlugin )( ofaPreferences *, ofaIPreferences * );
 
@@ -127,6 +135,7 @@ static gint       find_str( const gchar *a, const gchar *b );
 static void       init_locale_sep( ofaPreferences *self, const gchar *wname, const gchar *pref, gchar **pdata, const gchar *def_value );*/
 static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
 static void       init_plugin_page( ofaPreferences *self, ofaIPreferences *plugin );
+static void       activate_first_page( ofaPreferences *self );
 static void       on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
 /*static void       on_format_date_changed( GtkComboBox *combo, ofaPreferences *self );
 static void       on_decimal_toggled( GtkToggleButton *check, ofaPreferences *self );
@@ -208,6 +217,8 @@ ofa_preferences_class_init( ofaPreferencesClass *klass )
 /**
  * ofa_preferences_run:
  * @main: the main window of the application.
+ * @plugin: [allow-null]: the #ofaPlugin object for which the properties
+ *  are to be displayed.
  *
  * Update the properties of an dossier
  */
@@ -216,6 +227,7 @@ ofa_preferences_run( ofaMainWindow *main_window, ofaPlugin *plugin )
 {
 	static const gchar *thisfn = "ofa_preferences_run";
 	ofaPreferences *self;
+	ofaPreferencesPrivate *priv;
 	gboolean updated;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
@@ -229,6 +241,13 @@ ofa_preferences_run( ofaMainWindow *main_window, ofaPlugin *plugin )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
+	priv = self->priv;
+
+	priv->plugin = plugin;
+	priv->object_page = NULL;
+
+	my_dialog_init_dialog( MY_DIALOG( self ));
+	activate_first_page( self );
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
 	updated = self->priv->updated;
@@ -241,6 +260,12 @@ ofa_preferences_run( ofaMainWindow *main_window, ofaPlugin *plugin )
 static void
 v_init_dialog( myDialog *dialog )
 {
+	GtkWindow *toplevel;
+
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	OFA_PREFERENCES( dialog )->priv->book =
+			my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "notebook" );
+
 	init_quit_assistant_page( OFA_PREFERENCES( dialog ));
 	init_dossier_delete_page( OFA_PREFERENCES( dialog ));
 	init_locales_page( OFA_PREFERENCES( dialog ));
@@ -493,27 +518,52 @@ enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn )
  * @instance: an object maintained by a plugin, which implements our
  *  IPreferences interface.
  *
- * add a page to the notebook for each plugin which implements the
+ * add a page to the notebook for each object type which implements the
  * ofaIPreferences interface
  */
 static void
 init_plugin_page( ofaPreferences *self, ofaIPreferences *instance )
 {
-	GtkWindow *toplevel;
-	GtkWidget *book;
+	ofaPreferencesPrivate *priv;
 	GtkWidget *page;
-	pagePlugin *splug;
+	sPagePlugin *splug;
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
-	book = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "notebook" );
+	priv = self->priv;
 
-	page = ofa_ipreferences_run_init( instance, GTK_NOTEBOOK( book ));
+	page = ofa_ipreferences_run_init( instance, GTK_NOTEBOOK( priv->book ));
 
-	splug = g_new0( pagePlugin, 1 );
+	splug = g_new0( sPagePlugin, 1 );
 	splug->object = instance;
 	splug->page = page;
 
-	self->priv->plugs = g_list_append( self->priv->plugs, splug );
+	priv->plugs = g_list_append( priv->plugs, splug );
+
+	/* try to identify if the plugin which implements this object is the
+	 * one which has been required */
+	if( priv->plugin && !priv->object_page ){
+		if( ofa_plugin_has_object( priv->plugin, G_OBJECT( instance ))){
+			priv->object_page = page;
+		}
+	}
+}
+
+/*
+ * activate the first page of the preferences notebook
+ */
+static void
+activate_first_page( ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+	gint page_num;
+
+	priv = self->priv;
+
+	if( priv->object_page ){
+		page_num = gtk_notebook_page_num( GTK_NOTEBOOK( priv->book ), priv->object_page );
+		if( page_num >= 0 ){
+			gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->book ), page_num );
+		}
+	}
 }
 
 static void
@@ -680,10 +730,10 @@ static GtkWidget *
 find_prefs_plugin( ofaPreferences *self, ofaIPreferences *instance )
 {
 	GList *it;
-	pagePlugin *splug;
+	sPagePlugin *splug;
 
 	for( it=self->priv->plugs ; it ; it=it->next ){
-		splug = ( pagePlugin * ) it->data;
+		splug = ( sPagePlugin * ) it->data;
 		if( splug->object == instance ){
 			return( splug->page );
 		}

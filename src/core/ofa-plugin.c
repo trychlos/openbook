@@ -533,6 +533,34 @@ ofa_plugin_implements_type( const ofaPlugin *plugin, GType type )
 }
 
 /**
+ * ofa_plugin_has_object:
+ * @plugin:
+ * @instance: an instanciated object, for which we are searching for
+ *  its host plugin
+ */
+gboolean
+ofa_plugin_has_object( const ofaPlugin *plugin, GObject *instance )
+{
+	ofaPluginPrivate *priv;
+	GList *io;
+
+	g_return_val_if_fail( plugin && OFA_IS_PLUGIN( plugin ), FALSE );
+
+	priv = plugin->priv;
+
+	if( !priv->dispose_has_run ){
+
+		for( io = priv->objects ; io ; io = io->next ){
+			if( G_OBJECT( io->data ) == instance ){
+				return( TRUE );
+			}
+		}
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofa_plugin_get_name:
  */
 const gchar *

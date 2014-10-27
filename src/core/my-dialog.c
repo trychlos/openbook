@@ -58,7 +58,7 @@ static gboolean do_quit_on_code( myDialog *dialog, gint code );
 static gboolean v_quit_on_code( myDialog *dialog, gint code );
 
 static void
-my_dialog_finalize( GObject *instance )
+dialog_finalize( GObject *instance )
 {
 	/* free data members here */
 
@@ -67,7 +67,7 @@ my_dialog_finalize( GObject *instance )
 }
 
 static void
-my_dialog_dispose( GObject *instance )
+dialog_dispose( GObject *instance )
 {
 	g_return_if_fail( instance && MY_IS_DIALOG( instance ));
 
@@ -99,8 +99,8 @@ my_dialog_class_init( myDialogClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = my_dialog_dispose;
-	G_OBJECT_CLASS( klass )->finalize = my_dialog_finalize;
+	G_OBJECT_CLASS( klass )->dispose = dialog_dispose;
+	G_OBJECT_CLASS( klass )->finalize = dialog_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = NULL;
 	MY_DIALOG_CLASS( klass )->run_dialog = v_run_dialog;

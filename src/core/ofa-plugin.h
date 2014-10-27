@@ -108,6 +108,7 @@ const GList *ofa_plugin_get_modules            ( void );
 
 /* requesting a plugin */
 gboolean     ofa_plugin_implements_type        ( const ofaPlugin *plugin, GType type );
+gboolean     ofa_plugin_has_object             ( const ofaPlugin *plugin, GObject *instance );
 
 const gchar *ofa_plugin_get_name               ( ofaPlugin *plugin );
 

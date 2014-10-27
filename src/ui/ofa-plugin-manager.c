@@ -307,6 +307,10 @@ on_plugin_selected( GtkTreeSelection *selection, ofaPluginManager *self )
 	gtk_widget_set_sensitive( self->priv->properties_btn, ok );
 }
 
+/*
+ * display the preferences for the first object type implemented by the
+ * plugin
+ */
 static void
 on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 {
