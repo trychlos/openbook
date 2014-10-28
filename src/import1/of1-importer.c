@@ -139,6 +139,8 @@ class_init( of1ImporterClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
 	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
+
+	g_type_class_add_private( klass, sizeof( of1ImporterPrivate ));
 }
 
 static void
@@ -154,23 +156,22 @@ instance_init( GTypeInstance *instance, gpointer klass )
 
 	self = OF1_IMPORTER( instance );
 
-	self->private = g_new0( of1ImporterPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OF1_TYPE_IMPORTER, of1ImporterPrivate );
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
 instance_dispose( GObject *object )
 {
-	of1Importer *self;
+	of1ImporterPrivate *priv;
 
 	g_return_if_fail( object && OF1_IS_IMPORTER( object ));
 
-	self = OF1_IMPORTER( object );
+	priv = OF1_IMPORTER( object )->priv;
 
-	if( !self->private->dispose_has_run ){
+	if( !priv->dispose_has_run ){
 
-		self->private->dispose_has_run = TRUE;
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -190,12 +191,10 @@ instance_finalize( GObject *object )
 	g_debug( "%s: object=%p (%s)",
 			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
-	priv = OF1_IMPORTER( object )->private;
-
 	/* free data members here */
+	priv = OF1_IMPORTER( object )->priv;
 	g_slist_free_full( priv->content, ( GDestroyNotify ) g_free );
 	g_free( priv->etag );
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( st_parent_class )->finalize( object );
@@ -234,7 +233,7 @@ of1_importer_import_from_uri( const ofaIImporter *importer, ofaIImporterParms *p
 	g_debug( "%s: importer=%p, parms=%p, uri=%s",
 			thisfn, ( void * ) importer, parms, parms->uri );
 
-	priv = OF1_IMPORTER( importer )->private;
+	priv = OF1_IMPORTER( importer )->priv;
 	priv->parms = parms;
 
 	code = IMPORTER_CODE_NOT_WILLING_TO;
@@ -328,7 +327,7 @@ import_bourso_tabulated_text_v1( of1Importer *importer, const gchar *thisfn )
 	ofaIImporterSBatv1 *bat;
 	gchar **tokens, **iter;
 
-	priv = importer->private;
+	priv = importer->priv;
 	output = &priv->parms->batv1;
 	output->count = 0;
 	output->results = NULL;
@@ -494,7 +493,7 @@ import_lcl_tabulated_text_v1( of1Importer *importer )
 	gchar **tokens, **iter;
 	gint nb;
 
-	priv = importer->private;
+	priv = importer->priv;
 	output = &priv->parms->batv1;
 	output->count = 0;
 

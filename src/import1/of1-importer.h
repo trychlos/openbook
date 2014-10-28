@@ -49,14 +49,16 @@ G_BEGIN_DECLS
 typedef struct _of1ImporterPrivate       of1ImporterPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject             parent;
-	of1ImporterPrivate *private;
+
+	/*< private members >*/
+	of1ImporterPrivate *priv;
 }
 	of1Importer;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	of1ImporterClass;
