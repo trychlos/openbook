@@ -132,10 +132,6 @@ openbook_SOURCES = \
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
-	ofa-page-book.c										\
-	ofa-page-book.h										\
-	ofa-page-tree.c										\
-	ofa-page-tree.h										\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
 	ofa-preferences.c									\

@@ -155,8 +155,6 @@
                 character set of the imported file, so that we are
                 able to convert to UTF-8
 
- 177 2014- 6- 9 there is no sens to manage a GtkTreeView in ofaMainPage
-
  179 2014- 6- 9 ofaModelsSet: manage delete journal (reclass in 
                 'Unclassed')
 
@@ -907,6 +905,9 @@
                 unconditionally close a previously already opened
                 dossier.
      2014- 6- 7 done - svn #3657
+
+ 177 2014- 6- 9 there is no sens to manage a GtkTreeView in ofaMainPage
+     2014-10-28 done - svn #3995
 
  178 2014- 6- 9 ofaModelsSet: manage update journal (tab labels)
      2014- 6-12 same item as #52 
