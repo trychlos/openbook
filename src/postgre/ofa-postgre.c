@@ -96,6 +96,8 @@ class_init( ofaPostgreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
 	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaPostgrePrivate ));
 }
 
 static void
@@ -113,9 +115,8 @@ instance_init( GTypeInstance *instance, gpointer klass )
 
 	self = OFA_POSTGRE( instance );
 
-	self->private = g_new0( ofaPostgrePrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_POSTGRE, ofaPostgrePrivate );
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -127,9 +128,9 @@ instance_dispose( GObject *object )
 
 	self = OFA_POSTGRE( object );
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
-		self->private->dispose_has_run = TRUE;
+		self->priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -142,17 +143,13 @@ static void
 instance_finalize( GObject *object )
 {
 	static const gchar *thisfn = "ofa_postgre_instance_finalize";
-	ofaPostgrePrivate *priv;
 
 	g_debug( "%s: object=%p (%s)",
 			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
 	g_return_if_fail( object && OFA_IS_POSTGRE( object ));
 
-	priv = OFA_POSTGRE( object )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( st_parent_class )->finalize( object );

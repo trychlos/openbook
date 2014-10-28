@@ -51,14 +51,16 @@ G_BEGIN_DECLS
 typedef struct _ofaPostgrePrivate       ofaPostgrePrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject            parent;
-	ofaPostgrePrivate *private;
+
+	/*< private members >*/
+	ofaPostgrePrivate *priv;
 }
 	ofaPostgre;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaPostgreClass;
