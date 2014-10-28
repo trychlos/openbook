@@ -88,6 +88,7 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static void       pane_restore_position( GtkPaned *pane );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
 static GtkWidget *setup_view_left( ofaGuidedEx *self );
 static GtkWidget *setup_view_right( ofaGuidedEx *self );
 static GtkWidget *setup_left_treeview( ofaGuidedEx *self );
@@ -183,6 +184,7 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->pre_remove = v_pre_remove;
 
@@ -240,6 +242,14 @@ v_init_view( ofaPage *page )
 {
 	init_left_view( OFA_GUIDED_EX( page ),
 						gtk_paned_get_child1( OFA_GUIDED_EX( page )->priv->pane ));
+}
+
+static GtkWidget *
+v_get_top_focusable_widget( ofaPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_GUIDED_EX( page ), NULL );
+
+	return( GTK_WIDGET( OFA_GUIDED_EX( page )->priv->left_tview ));
 }
 
 /*

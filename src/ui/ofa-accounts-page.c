@@ -56,6 +56,7 @@ G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
 static void       on_row_activated( ofoAccount *account, ofaPage *page );
 static void       on_view_entries( ofoAccount *account, ofaAccountsPage *self );
 
@@ -115,6 +116,7 @@ ofa_accounts_page_class_init( ofaAccountsPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaAccountsPagePrivate ));
 }
@@ -159,19 +161,35 @@ v_init_view( ofaPage *page )
 	ofa_accounts_book_init_view( OFA_ACCOUNTS_PAGE( page )->priv->book_child, NULL );
 }
 
+static GtkWidget *
+v_get_top_focusable_widget( ofaPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_ACCOUNTS_PAGE( page ), NULL );
+
+	return(
+			ofa_accounts_book_get_top_focusable_widget(
+					OFA_ACCOUNTS_PAGE( page )->priv->book_child ));
+}
+
 /*
  * ofaAccountsBook callback:
  */
 static void
 on_row_activated( ofoAccount *account, ofaPage *page )
 {
+	GtkWidget *tview;
+
 	if( account ){
 		g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
 		ofa_account_properties_run( ofa_page_get_main_window( page ), account );
 	}
 
-	ofa_accounts_book_grab_focus( OFA_ACCOUNTS_PAGE( page )->priv->book_child );
+	tview = ofa_accounts_book_get_top_focusable_widget(
+					OFA_ACCOUNTS_PAGE( page )->priv->book_child );
+	if( tview ){
+		gtk_widget_grab_focus( tview );
+	}
 }
 
 static void

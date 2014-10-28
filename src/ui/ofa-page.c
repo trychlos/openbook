@@ -719,59 +719,6 @@ on_grid_finalized( ofaPage *self, GObject *grid )
 }
 
 /**
- * ofa_page_get_treeview:
- *
- * Each page of the main notebook is built inside of a GtkGrid.
- * This GtkGrid is supposed to hold a GtkTreeView, more or less direcly,
- * maybe via another GtkNotebook (e.g. see #ofAccountsChart and
- * #ofaModelsSet).
- *
- * This function should not be called from a 'switch-page' notebook
- * signal handler, as the current page is not yet set at this time.
- */
-GtkTreeView *
-ofa_page_get_treeview( const ofaPage *page )
-{
-	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-	GtkNotebook *child_book;
-	gint tab_num;
-	GtkWidget *tab_widget;
-	GtkTreeView *tview;
-
-	tview = NULL;
-
-	if( !page->prot->dispose_has_run ){
-
-		child_book =
-				( GtkNotebook * ) my_utils_container_get_child_by_type(
-													GTK_CONTAINER( page->priv->grid ),
-													GTK_TYPE_NOTEBOOK );
-		if( child_book ){
-			g_return_val_if_fail( GTK_IS_NOTEBOOK( child_book ), NULL );
-
-			tab_num = gtk_notebook_get_current_page( GTK_NOTEBOOK( child_book ));
-			if( tab_num < 0 ){
-				return( NULL );
-			}
-
-			tab_widget = gtk_notebook_get_nth_page( GTK_NOTEBOOK( child_book ), tab_num );
-			g_return_val_if_fail( tab_widget && GTK_IS_WIDGET( tab_widget ), NULL );
-
-			tview = ( GtkTreeView * ) my_utils_container_get_child_by_type(
-														GTK_CONTAINER( tab_widget ),
-														GTK_TYPE_TREE_VIEW );
-		}
-		if( !tview ){
-			tview = ( GtkTreeView * ) my_utils_container_get_child_by_type(
-														GTK_CONTAINER( page->priv->grid ),
-														GTK_TYPE_TREE_VIEW );
-		}
-	}
-
-	return( tview );
-}
-
-/**
  * ofa_page_get_new_btn:
  */
 GtkWidget *
@@ -870,4 +817,27 @@ ofa_page_pre_remove( ofaPage *page )
 			OFA_PAGE_GET_CLASS( page )->pre_remove( page );
 		}
 	}
+}
+
+/**
+ * ofa_page_get_top_focusable_widget:
+ *
+ * This virtual function should return the top focusable widget of
+ * the page. The default implementation just returns NULL. The main
+ * window typically call this virtual when activating a page in
+ * order the focus to be correctly set.
+ */
+GtkWidget *
+ofa_page_get_top_focusable_widget( ofaPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+
+	if( !page->prot->dispose_has_run ){
+
+		if( OFA_PAGE_GET_CLASS( page )->get_top_focusable_widget ){
+			return( OFA_PAGE_GET_CLASS( page )->get_top_focusable_widget( page ));
+		}
+	}
+
+	return( NULL );
 }

@@ -111,15 +111,15 @@ typedef struct {
 }
 	ofsAccountsBookParms;
 
-ofaAccountsBook *ofa_accounts_book_new         ( ofsAccountsBookParms *parms );
+ofaAccountsBook *ofa_accounts_book_new                     ( ofsAccountsBookParms *parms );
 
-void             ofa_accounts_book_init_view   ( ofaAccountsBook *self, const gchar *number );
+void             ofa_accounts_book_init_view               ( ofaAccountsBook *self, const gchar *number );
 
-ofoAccount      *ofa_accounts_book_get_selected( ofaAccountsBook *self );
+ofoAccount      *ofa_accounts_book_get_selected            ( ofaAccountsBook *self );
 
-void             ofa_accounts_book_set_selected( ofaAccountsBook *self, const gchar *number );
+void             ofa_accounts_book_set_selected            ( ofaAccountsBook *self, const gchar *number );
 
-void             ofa_accounts_book_grab_focus  ( ofaAccountsBook *self );
+GtkWidget       *ofa_accounts_book_get_top_focusable_widget( ofaAccountsBook *self );
 
 G_END_DECLS
 

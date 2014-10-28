@@ -72,6 +72,7 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
 static void       insert_dataset( ofaLedgersPage *self );
 static void       on_row_activated( GList *selected, ofaLedgersPage *self );
 static void       on_row_selected( GList *selected, ofaLedgersPage *self );
@@ -138,6 +139,7 @@ ofa_ledgers_page_class_init( ofaLedgersPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 	OFA_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
@@ -211,6 +213,14 @@ static void
 v_init_view( ofaPage *page )
 {
 	insert_dataset( OFA_LEDGERS_PAGE( page ));
+}
+
+static GtkWidget *
+v_get_top_focusable_widget( ofaPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_LEDGERS_PAGE( page ), NULL );
+
+	return( ofa_ledger_treeview_get_top_focusable_widget( OFA_LEDGERS_PAGE( page )->priv->tview ));
 }
 
 static void
@@ -294,6 +304,7 @@ static void
 do_update( ofaLedgersPage *self, ofoLedger *ledger )
 {
 	ofaLedgersPagePrivate *priv;
+	GtkWidget *view;
 
 	priv = self->priv;
 
@@ -305,7 +316,10 @@ do_update( ofaLedgersPage *self, ofoLedger *ledger )
 			 * class, graceful to the dossier signaling system */
 	}
 
-	ofa_ledger_treeview_grab_focus( priv->tview );
+	view = ofa_ledger_treeview_get_top_focusable_widget( priv->tview );
+	if( view ){
+		gtk_widget_grab_focus( view );
+	}
 }
 
 /*
@@ -318,6 +332,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 	ofaLedgersPagePrivate *priv;
 	ofoDossier *dossier;
 	ofoLedger *ledger;
+	GtkWidget *view;
 
 	g_return_if_fail( page && OFA_IS_LEDGERS_PAGE( page ));
 
@@ -335,7 +350,10 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 		 * class, graceful to the dossier signaling system */
 	}
 
-	ofa_ledger_treeview_grab_focus( priv->tview );
+	view = ofa_ledger_treeview_get_top_focusable_widget( priv->tview );
+	if( view ){
+		gtk_widget_grab_focus( view );
+	}
 }
 
 static gboolean

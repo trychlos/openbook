@@ -100,9 +100,6 @@
  107 2014- 5-24 have a message when current exercice changes
                 so that e.g. the journals set may adapt its display
 
- 114 2014- 5-26 dispose_has_run should be a protected data of the
-                ofaMainPage base class
-
  126 2014- 5-28 have several demo dossiers
 
  129 2014- 5-28 Account: archive balances after closing in ACCOUNT_EXE
@@ -766,6 +763,10 @@
 
  113 2014- 5-26 have a base class for properties dialogs
      2014- 5-28 done - svn #3540
+
+ 114 2014- 5-26 dispose_has_run should be a protected data of the
+                ofaMainPage base class
+     2014-10-28 done
 
  115 2014- 5-26 it seems that an account cannot be finalized after 
                 having be udated in AccountsChart (ref count issue ?)

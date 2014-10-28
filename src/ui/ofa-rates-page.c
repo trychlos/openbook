@@ -72,6 +72,7 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static void       setup_dossier_signaling( ofaRatesPage *self );
 static GtkWidget *setup_tree_view( ofaRatesPage *self );
 static void       v_init_view( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
 static void       insert_dataset( ofaRatesPage *self );
 static void       insert_new_row( ofaRatesPage *self, ofoRate *rate, gboolean with_selection );
 static void       set_row_by_iter( ofaRatesPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoRate *rate );
@@ -165,6 +166,7 @@ ofa_rates_page_class_init( ofaRatesPageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 	OFA_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
@@ -298,6 +300,14 @@ static void
 v_init_view( ofaPage *page )
 {
 	insert_dataset( OFA_RATES_PAGE( page ));
+}
+
+static GtkWidget *
+v_get_top_focusable_widget( ofaPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_RATES_PAGE( page ), NULL );
+
+	return( GTK_WIDGET( OFA_RATES_PAGE( page )->priv->tview ));
 }
 
 static void

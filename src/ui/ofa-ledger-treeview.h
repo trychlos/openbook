@@ -96,15 +96,15 @@ typedef struct {
 }
 	ofaLedgerTreeviewParms;
 
-GType              ofa_ledger_treeview_get_type    ( void ) G_GNUC_CONST;
+GType              ofa_ledger_treeview_get_type                ( void ) G_GNUC_CONST;
 
-ofaLedgerTreeview *ofa_ledger_treeview_new         ( const ofaLedgerTreeviewParms *parms );
+ofaLedgerTreeview *ofa_ledger_treeview_new                     ( const ofaLedgerTreeviewParms *parms );
 
-void               ofa_ledger_treeview_init_view   ( ofaLedgerTreeview *view, const gchar *initial_selection );
+void               ofa_ledger_treeview_init_view               ( ofaLedgerTreeview *view, const gchar *initial_selection );
 
-GList             *ofa_ledger_treeview_get_selected( ofaLedgerTreeview *view );
+GList             *ofa_ledger_treeview_get_selected            ( ofaLedgerTreeview *view );
 
-void               ofa_ledger_treeview_grab_focus  ( ofaLedgerTreeview *view );
+GtkWidget         *ofa_ledger_treeview_get_top_focusable_widget( ofaLedgerTreeview *view );
 
 G_END_DECLS
 

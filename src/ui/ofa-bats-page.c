@@ -41,7 +41,10 @@
 /* private instance data
  */
 struct _ofaBatsPagePrivate {
-	void  *empty;							/* so that 'gcc -pedantic' is happy */
+
+	/* UI
+	 */
+	GtkTreeView *tview;					/* the main treeview of the page */
 };
 
 /* column ordering in the selection listview
@@ -57,6 +60,7 @@ G_DEFINE_TYPE( ofaBatsPage, ofa_bats_page, OFA_TYPE_PAGE )
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
 static void       insert_new_row( ofaBatsPage *self, ofoBat *bat, gboolean with_selection );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatsPage *self );
 static void       setup_first_selection( ofaBatsPage *self );
@@ -123,6 +127,7 @@ ofa_bats_page_class_init( ofaBatsPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
 
@@ -132,6 +137,7 @@ ofa_bats_page_class_init( ofaBatsPageClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
+	ofaBatsPagePrivate *priv;
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
@@ -139,6 +145,8 @@ v_setup_view( ofaPage *page )
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
+
+	priv = OFA_BATS_PAGE( page )->priv;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
@@ -156,6 +164,7 @@ v_setup_view( ofaPage *page )
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
 	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), page );
+	priv->tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
@@ -221,13 +230,13 @@ v_init_view( ofaPage *page )
 static void
 insert_new_row( ofaBatsPage *self, ofoBat *bat, gboolean with_selection )
 {
-	GtkTreeView *tview;
+	ofaBatsPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreePath *path;
 
-	tview = GTK_TREE_VIEW( ofa_page_get_treeview( OFA_PAGE( self )));
-	tmodel = gtk_tree_view_get_model( tview );
+	priv = self->priv;
+	tmodel = gtk_tree_view_get_model( priv->tview );
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( tmodel ),
 			&iter,
@@ -239,9 +248,9 @@ insert_new_row( ofaBatsPage *self, ofoBat *bat, gboolean with_selection )
 	/* select the newly added bat */
 	if( with_selection ){
 		path = gtk_tree_model_get_path( tmodel, &iter );
-		gtk_tree_view_set_cursor( tview, path, NULL, FALSE );
+		gtk_tree_view_set_cursor( priv->tview, path, NULL, FALSE );
 		gtk_tree_path_free( path );
-		gtk_widget_grab_focus( GTK_WIDGET( tview ));
+		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 	}
 }
 
@@ -268,19 +277,19 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatsPage
 static void
 setup_first_selection( ofaBatsPage *self )
 {
-	GtkTreeView *tview;
+	ofaBatsPagePrivate *priv;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	tview = GTK_TREE_VIEW( ofa_page_get_treeview( OFA_PAGE( self )));
-	model = gtk_tree_view_get_model( tview );
+	priv = self->priv;
+	model = gtk_tree_view_get_model( priv->tview );
 	if( gtk_tree_model_get_iter_first( model, &iter )){
-		select = gtk_tree_view_get_selection( tview );
+		select = gtk_tree_view_get_selection( priv->tview );
 		gtk_tree_selection_select_iter( select, &iter );
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
 static void
@@ -310,6 +319,14 @@ on_row_selected( GtkTreeSelection *selection, ofaBatsPage *self )
 			bat && OFO_IS_BAT( bat ) && ofo_bat_is_deletable( bat ));
 }
 
+static GtkWidget *
+v_get_top_focusable_widget( ofaPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_BATS_PAGE( page ), NULL );
+
+	return( GTK_WIDGET( OFA_BATS_PAGE( page )->priv->tview ));
+}
+
 #if 0
 static void
 v_on_new_clicked( GtkButton *button, ofaPage *page )
@@ -337,7 +354,7 @@ v_on_new_clicked( GtkButton *button, ofaPage *page )
 static void
 v_on_update_clicked( GtkButton *button, ofaPage *page )
 {
-	GtkTreeView *tview;
+	ofaBatsPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -345,8 +362,8 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 
 	g_return_if_fail( page && OFA_IS_BATS_PAGE( page ));
 
-	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
-	select = gtk_tree_view_get_selection( tview );
+	priv = OFA_BATS_PAGE( page )->priv;
+	select = gtk_tree_view_get_selection( priv->tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
@@ -355,13 +372,13 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 		ofa_bat_properties_run( ofa_page_get_main_window( page ), bat );
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
 static void
 v_on_delete_clicked( GtkButton *button, ofaPage *page )
 {
-	GtkTreeView *tview;
+	ofaBatsPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -369,8 +386,8 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 
 	g_return_if_fail( page && OFA_IS_BATS_PAGE( page ));
 
-	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
-	select = gtk_tree_view_get_selection( tview );
+	priv = OFA_BATS_PAGE( page )->priv;
+	select = gtk_tree_view_get_selection( priv->tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
@@ -388,7 +405,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 		}
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
 static gboolean

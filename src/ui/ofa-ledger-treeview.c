@@ -592,17 +592,19 @@ ofa_ledger_treeview_get_selected( ofaLedgerTreeview *self )
 }
 
 /**
- * ofa_ledger_treeview_grab_focus:
+ * ofa_ledger_treeview_get_top_focusable_widget:
  */
-void
-ofa_ledger_treeview_grab_focus( ofaLedgerTreeview *self )
+GtkWidget *
+ofa_ledger_treeview_get_top_focusable_widget( ofaLedgerTreeview *self )
 {
-	g_return_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ));
+	g_return_val_if_fail( self && OFA_IS_LEDGER_TREEVIEW( self ), NULL );
 
 	if( !self->priv->dispose_has_run ){
 
-		gtk_widget_grab_focus( GTK_WIDGET( self->priv->tview ));
+		return( GTK_WIDGET( self->priv->tview ));
 	}
+
+	return( NULL );
 }
 
 /*

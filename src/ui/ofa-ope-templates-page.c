@@ -83,6 +83,7 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static void       setup_dossier_signaling( ofaOpeTemplatesPage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
 static void       insert_dataset( ofaOpeTemplatesPage *self );
 static GtkWidget *book_create_page( ofaOpeTemplatesPage *self, GtkNotebook *book, const gchar *ledger, const gchar *ledger_label );
 static gboolean   book_activate_page_by_ledger( ofaOpeTemplatesPage *self, const gchar *ledger );
@@ -179,6 +180,7 @@ ofa_ope_templates_page_class_init( ofaOpeTemplatesPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 	OFA_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
@@ -283,6 +285,14 @@ static void
 v_init_view( ofaPage *page )
 {
 	insert_dataset( OFA_OPE_TEMPLATES_PAGE( page ));
+}
+
+static GtkWidget *
+v_get_top_focusable_widget( ofaPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATES_PAGE( page ), NULL );
+
+	return( GTK_WIDGET( OFA_OPE_TEMPLATES_PAGE( page )->priv->tview ));
 }
 
 static void

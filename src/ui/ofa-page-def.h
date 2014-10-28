@@ -77,7 +77,7 @@ typedef struct {
 	 * and 1 of the main grid of the page.
 	 * It ends up by calling #init_view() virtual method.
 	 */
-	void        ( *setup_page )       ( ofaPage *page );
+	void        ( *setup_page )              ( ofaPage *page );
 
 	/**
 	 * setup_view:
@@ -89,7 +89,7 @@ typedef struct {
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
-	GtkWidget * ( *setup_view )       ( ofaPage *page );
+	GtkWidget * ( *setup_view )              ( ofaPage *page );
 
 	/**
 	 * setup_buttons:
@@ -103,7 +103,7 @@ typedef struct {
 	 * 'on_new_clicked', 'on_update_clicked' and 'on_delete_clicked'
 	 * virtual methods.
 	 */
-	GtkWidget * ( *setup_buttons )    ( ofaPage *page );
+	GtkWidget * ( *setup_buttons )           ( ofaPage *page );
 
 	/**
 	 * init_view:
@@ -114,7 +114,7 @@ typedef struct {
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
-	void        ( *init_view )        ( ofaPage *page );
+	void        ( *init_view )               ( ofaPage *page );
 
 	/**
 	 * on_new_clicked:
@@ -126,7 +126,7 @@ typedef struct {
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
-	void        ( *on_new_clicked )   ( GtkButton *button, ofaPage *page );
+	void        ( *on_new_clicked )          ( GtkButton *button, ofaPage *page );
 
 	/**
 	 * on_update_clicked:
@@ -138,7 +138,7 @@ typedef struct {
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
-	void        ( *on_update_clicked )( GtkButton *button, ofaPage *page );
+	void        ( *on_update_clicked )       ( GtkButton *button, ofaPage *page );
 
 	/**
 	 * on_delete_clicked:
@@ -150,7 +150,7 @@ typedef struct {
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
-	void        ( *on_delete_clicked )( GtkButton *button, ofaPage *page );
+	void        ( *on_delete_clicked )       ( GtkButton *button, ofaPage *page );
 
 	/**
 	 * on_import_clicked:
@@ -162,7 +162,7 @@ typedef struct {
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
-	void        ( *on_import_clicked )( GtkButton *button, ofaPage *page );
+	void        ( *on_import_clicked )       ( GtkButton *button, ofaPage *page );
 
 	/**
 	 * on_export_clicked:
@@ -174,7 +174,7 @@ typedef struct {
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
-	void        ( *on_export_clicked )( GtkButton *button, ofaPage *page );
+	void        ( *on_export_clicked )       ( GtkButton *button, ofaPage *page );
 
 	/**
 	 * pre_remove:
@@ -185,7 +185,18 @@ typedef struct {
 	 * This is time for derived classes to handle widgets before they
 	 * are finalized.
 	 */
-	void        ( *pre_remove )       ( ofaPage *page );
+	void        ( *pre_remove )              ( ofaPage *page );
+
+	/**
+	 * get_top_focusable_widget:
+	 * @page: this #ofaPage object.
+	 *
+	 * This virtual function should return the top focusable widget of
+	 * the page. The default implementation just returns NULL. The main
+	 * window typically call this virtual when activating a page in
+	 * order the focus to be correctly set.
+	 */
+	GtkWidget * ( *get_top_focusable_widget )( ofaPage *page );
 }
 	ofaPageClass;
 

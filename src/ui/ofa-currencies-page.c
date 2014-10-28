@@ -45,7 +45,11 @@ struct _ofaCurrenciesPagePrivate {
 
 	/* internals
 	 */
-	GList    *handlers;
+	GList       *handlers;
+
+	/* UI
+	 */
+	GtkTreeView *tview;					/* the main treeview of the page */
 };
 
 /* column ordering in the selection listview
@@ -63,6 +67,7 @@ G_DEFINE_TYPE( ofaCurrenciesPage, ofa_currencies_page, OFA_TYPE_PAGE )
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaCurrenciesPage *self );
 static void       v_init_view( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
 static void       insert_dataset( ofaCurrenciesPage *self );
 static void       insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_selection );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenciesPage *self );
@@ -152,6 +157,7 @@ ofa_currencies_page_class_init( ofaCurrenciesPageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 	OFA_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
 	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
 	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
@@ -195,6 +201,7 @@ v_setup_view( ofaPage *page )
 static GtkWidget *
 setup_tree_view( ofaCurrenciesPage *self )
 {
+	ofaCurrenciesPagePrivate *priv;
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
@@ -202,6 +209,8 @@ setup_tree_view( ofaCurrenciesPage *self )
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
+
+	priv = self->priv;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
@@ -219,6 +228,7 @@ setup_tree_view( ofaCurrenciesPage *self )
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
 	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
+	priv->tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
@@ -268,6 +278,14 @@ v_init_view( ofaPage *page )
 	insert_dataset( OFA_CURRENCIES_PAGE( page ));
 }
 
+static GtkWidget *
+v_get_top_focusable_widget( ofaPage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_CURRENCIES_PAGE( page ), NULL );
+
+	return( GTK_WIDGET( OFA_CURRENCIES_PAGE( page )->priv->tview ));
+}
+
 static void
 insert_dataset( ofaCurrenciesPage *self )
 {
@@ -290,13 +308,13 @@ insert_dataset( ofaCurrenciesPage *self )
 static void
 insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_selection )
 {
-	GtkTreeView *tview;
+	ofaCurrenciesPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreePath *path;
 
-	tview = GTK_TREE_VIEW( ofa_page_get_treeview( OFA_PAGE( self )));
-	tmodel = gtk_tree_view_get_model( tview );
+	priv = self->priv;
+	tmodel = gtk_tree_view_get_model( priv->tview );
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( tmodel ),
 			&iter,
@@ -310,9 +328,9 @@ insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_se
 	/* select the newly added currency */
 	if( with_selection ){
 		path = gtk_tree_model_get_path( tmodel, &iter );
-		gtk_tree_view_set_cursor( tview, path, NULL, FALSE );
+		gtk_tree_view_set_cursor( priv->tview, path, NULL, FALSE );
 		gtk_tree_path_free( path );
-		gtk_widget_grab_focus( GTK_WIDGET( tview ));
+		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 	}
 }
 
@@ -342,19 +360,19 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenci
 static void
 setup_first_selection( ofaCurrenciesPage *self )
 {
-	GtkTreeView *tview;
+	ofaCurrenciesPagePrivate *priv;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 	GtkTreeSelection *select;
 
-	tview = GTK_TREE_VIEW( ofa_page_get_treeview( OFA_PAGE( self )));
-	model = gtk_tree_view_get_model( tview );
+	priv = self->priv;
+	model = gtk_tree_view_get_model( priv->tview );
 	if( gtk_tree_model_get_iter_first( model, &iter )){
-		select = gtk_tree_view_get_selection( tview );
+		select = gtk_tree_view_get_selection( priv->tview );
 		gtk_tree_selection_select_iter( select, &iter );
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
 static void
@@ -406,7 +424,7 @@ v_on_new_clicked( GtkButton *button, ofaPage *page )
 static void
 v_on_update_clicked( GtkButton *button, ofaPage *page )
 {
-	GtkTreeView *tview;
+	ofaCurrenciesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -414,8 +432,8 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 
 	g_return_if_fail( page && OFA_IS_CURRENCIES_PAGE( page ));
 
-	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
-	select = gtk_tree_view_get_selection( tview );
+	priv = OFA_CURRENCIES_PAGE( page )->priv;
+	select = gtk_tree_view_get_selection( priv->tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
@@ -435,13 +453,13 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 		}
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
 static void
 v_on_delete_clicked( GtkButton *button, ofaPage *page )
 {
-	GtkTreeView *tview;
+	ofaCurrenciesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -449,8 +467,8 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 
 	g_return_if_fail( page && OFA_IS_CURRENCIES_PAGE( page ));
 
-	tview = GTK_TREE_VIEW( ofa_page_get_treeview( page ));
-	select = gtk_tree_view_get_selection( tview );
+	priv = OFA_CURRENCIES_PAGE( page )->priv;
+	select = gtk_tree_view_get_selection( priv->tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
@@ -468,7 +486,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 		}
 	}
 
-	gtk_widget_grab_focus( GTK_WIDGET( tview ));
+	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
 static gboolean
@@ -545,15 +563,16 @@ static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesPage *self )
 {
 	static const gchar *thisfn = "ofa_currencies_page_on_reloaded_dataset";
-	GtkTreeView *tview;
+	ofaCurrenciesPagePrivate *priv;
 	GtkTreeModel *tmodel;
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
+	priv = self->priv;
+
 	if( type == OFO_TYPE_CURRENCY ){
-		tview = GTK_TREE_VIEW( ofa_page_get_treeview( OFA_PAGE( self )));
-		tmodel = gtk_tree_view_get_model( tview );
+		tmodel = gtk_tree_view_get_model( priv->tview );
 		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 		insert_dataset( self );
 	}

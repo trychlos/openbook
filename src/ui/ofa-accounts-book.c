@@ -1282,33 +1282,36 @@ ofa_accounts_book_set_selected( ofaAccountsBook *self, const gchar *number )
 }
 
 /**
- * ofa_accounts_book_grab_focus:
+ * ofa_accounts_book_get_top_focusable_widget:
  *
- * Reset the focus on the treeview.
+ * Returns the top focusable widget, here the treeview of the current
+ * page.
  */
-void
-ofa_accounts_book_grab_focus( ofaAccountsBook *self )
+GtkWidget *
+ofa_accounts_book_get_top_focusable_widget( ofaAccountsBook *self )
 {
 	gint page_n;
 	GtkWidget *page_w;
 	GtkWidget *tview;
 
-	g_return_if_fail( self && OFA_IS_ACCOUNTS_BOOK( self ));
+	g_return_val_if_fail( self && OFA_IS_ACCOUNTS_BOOK( self ), NULL );
 
 	if( !self->priv->dispose_has_run ){
 
 		page_n = gtk_notebook_get_current_page( self->priv->book );
-		g_return_if_fail( page_n >= 0 );
+		g_return_val_if_fail( page_n >= 0, NULL );
 
 		page_w = gtk_notebook_get_nth_page( self->priv->book, page_n );
-		g_return_if_fail( page_w && GTK_IS_CONTAINER( page_w ));
+		g_return_val_if_fail( page_w && GTK_IS_CONTAINER( page_w ), NULL );
 
 		tview = my_utils_container_get_child_by_type(
 								GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
-		g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+		g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), NULL );
 
-		gtk_widget_grab_focus( tview );
+		return( tview );
 	}
+
+	return( NULL );
 }
 
 #if 0
@@ -1419,13 +1422,18 @@ on_update_clicked( GtkButton *button, ofaAccountsBook *self )
 static void
 do_update_with_account( ofaAccountsBook *self, ofoAccount *account )
 {
+	GtkWidget *tview;
+
 	if( account ){
 		g_return_if_fail( OFO_IS_ACCOUNT( account ));
 
 		ofa_account_properties_run( self->priv->main_window, account );
 	}
 
-	ofa_accounts_book_grab_focus( self );
+	tview = ofa_accounts_book_get_top_focusable_widget( self );
+	if( tview ){
+		gtk_widget_grab_focus( tview );
+	}
 }
 
 static void
@@ -1433,6 +1441,7 @@ on_delete_clicked( GtkButton *button, ofaAccountsBook *self )
 {
 	ofoAccount *account;
 	gchar *number;
+	GtkWidget *tview;
 
 	account = ofa_accounts_book_get_selected( self );
 	if( account ){
@@ -1456,7 +1465,10 @@ on_delete_clicked( GtkButton *button, ofaAccountsBook *self )
 		g_free( number );
 	}
 
-	ofa_accounts_book_grab_focus( self );
+	tview = ofa_accounts_book_get_top_focusable_widget( self );
+	if( tview ){
+		gtk_widget_grab_focus( tview );
+	}
 }
 
 static gboolean

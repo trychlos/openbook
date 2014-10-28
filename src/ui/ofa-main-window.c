@@ -1307,7 +1307,7 @@ static void
 main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page )
 {
 	gint page_num;
-	GtkTreeView *tview;
+	GtkWidget *widget;
 	ofaPage *handler;
 
 	g_return_if_fail( window && OFA_IS_MAIN_WINDOW( window ));
@@ -1321,10 +1321,11 @@ main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidg
 
 	handler = ( ofaPage * ) g_object_get_data( G_OBJECT( page ), OFA_DATA_HANDLER );
 	g_return_if_fail( handler && OFA_IS_PAGE( handler ));
-	tview = ofa_page_get_treeview( handler );
 
-	if( tview ){
-		gtk_widget_grab_focus( GTK_WIDGET( tview ));
+	widget = ofa_page_get_top_focusable_widget( handler );
+	if( widget ){
+		g_return_if_fail( GTK_IS_WIDGET( widget ));
+		gtk_widget_grab_focus( widget );
 	}
 }
 
