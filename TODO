@@ -236,19 +236,6 @@
 
  229 2014- 6-16 Entry model: duplicate a line
 
- 234 2014- 6-17 the ofaMainPage derived-classes should be named
-                ofaPageXxxx (or maybe better ofaXxxxPage)
-     2014- 6-20 src/ui/ofa-accounts-chart.h -> ofaAccountsPage
-                src/ui/ofa-bat-set.h        -> ofaBatsPage
-                src/ui/ofa-classes-set.h    -> ofaClassesPage
-                src/ui/ofa-devises-set.h    -> ofaCurrenciesPage
-                src/ui/ofa-guided-ex.h
-                src/ui/ofa-journals-set.h
-                src/ui/ofa-models-set.h
-                src/ui/ofa-rappro.h
-                src/ui/ofa-taux-set.h
-                src/ui/ofa-view-entries.h
-
  252 2014- 6-23 make the ofoBase objects members of a dynamic loadable
                 library (not a dynamically loadabled plugin) of same
                 version than sgbd (i.e. 1 as for now)
@@ -389,6 +376,9 @@
                 not the ofaPage
 
  408 2014-10-26 buttons should be properties of the ofaPage
+     2014-10-28 No: the main page is only a grid created on top of the
+                main notebook page, with a theme id attached.
+                Buttons are to be created via a separated class.
 
  411
 
@@ -1094,6 +1084,20 @@
  233 2014- 6-16 factorize the code common to ofaGuidedInput and
                  ofaGuidedEx
      2014- 6-17 done - svn #3721  
+
+ 234 2014- 6-17 the ofaMainPage derived-classes should be named
+                ofaPageXxxx (or maybe better ofaXxxxPage)
+     2014- 6-20 src/ui/ofa-accounts-chart.h -> ofaAccountsPage
+                src/ui/ofa-bat-set.h        -> ofaBatsPage
+                src/ui/ofa-classes-set.h    -> ofaClassesPage
+                src/ui/ofa-devises-set.h    -> ofaCurrenciesPage
+                src/ui/ofa-guided-ex.h         x
+                src/ui/ofa-journals-set.h   -> ofaLedgersPage
+                src/ui/ofa-models-set.h     -> ofaOpeTemplatesPage
+                src/ui/ofa-rappro.h         -> ofaReconciliation
+                src/ui/ofa-taux-set.h       -> ofaRatesPage
+                src/ui/ofa-view-entries.h      x
+     2014-10-28 done
 
  235 2014- 6-17 xxxx_get_type() function should be in xxxx-def.h file
      2014- 6-20 done - svn #3734

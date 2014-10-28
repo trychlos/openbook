@@ -86,9 +86,8 @@ static void       on_grid_finalized( ofaPage *self, GObject *grid );
 static void
 page_finalize( GObject *instance )
 {
-	ofaPageProtected *prot;
-
 	static const gchar *thisfn = "ofa_page_finalize";
+	ofaPageProtected *prot;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
