@@ -222,8 +222,8 @@ init_dialog( ofaRestore *self )
 							_( "Restore a dossier's database" ),
 							GTK_WINDOW( priv->main_window ),
 							GTK_FILE_CHOOSER_ACTION_OPEN,
-							GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-							GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+							_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+							_( "_Open" ), GTK_RESPONSE_OK,
 							NULL );
 
 	my_utils_window_restore_position( GTK_WINDOW( priv->dialog ), st_dialog_name );

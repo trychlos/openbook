@@ -476,8 +476,8 @@ confirm_for_deletion( const ofaIDbms *instance, const gchar *label, gboolean dro
 	g_free( msg );
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_DELETE, GTK_RESPONSE_OK,
+			_( "_OK" ), GTK_RESPONSE_CANCEL,
+			_( "_Cancel" ), GTK_RESPONSE_OK,
 			NULL );
 
 	response = gtk_dialog_run( GTK_DIALOG( dialog ));

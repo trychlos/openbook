@@ -257,7 +257,7 @@ main( int argc, char *argv[] )
 	gtk_tree_view_set_model( view, model );
 	g_object_unref( model ); /* so that view holds the only ref to model */
 
-	GtkButton *button = GTK_BUTTON( gtk_button_new_from_stock( GTK_STOCK_DELETE ));
+	GtkButton *button = GTK_BUTTON( gtk_button_new_from_icon_name( "edit-delete", GTK_ICON_SIZE_BUTTON ));
 	gtk_widget_set_valign( GTK_WIDGET( button ), GTK_ALIGN_START );
 	gtk_grid_attach( grid, GTK_WIDGET( button ), 1, 0, 1, 1 );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_delete_row ), view );

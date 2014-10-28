@@ -383,7 +383,7 @@ init_dialog_detail( ofaOpeTemplateProperties *self )
 						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-details" );
 	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
 
-	add_button( self, GTK_STOCK_ADD, DET_COL_ADD, 1, DETAIL_SPACE, 0 );
+	add_button( self, "gtk-add", DET_COL_ADD, 1, DETAIL_SPACE, 0 );
 	count = ofo_ope_template_get_detail_count( self->priv->ope_template );
 	for( i=1 ; i<=count ; ++i ){
 		insert_new_row( self, i );
@@ -473,7 +473,7 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( self->priv->grid, GTK_WIDGET( entry ), DET_COL_ACCOUNT, row, 1, 1 );
 
-	add_button( self, GTK_STOCK_INDEX, DET_COL_ACCOUNT_SELECT, row, DETAIL_SPACE, 0 );
+	add_button( self, "gtk-index", DET_COL_ACCOUNT_SELECT, row, DETAIL_SPACE, 0 );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -513,10 +513,10 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_grid_attach( self->priv->grid, toggle, DET_COL_CREDIT_LOCKED, row, 1, 1 );
 
-	add_button( self, GTK_STOCK_GO_UP, DET_COL_UP, row, DETAIL_SPACE, 0 );
-	add_button( self, GTK_STOCK_GO_DOWN, DET_COL_DOWN, row, DETAIL_SPACE, 0 );
-	add_button( self, GTK_STOCK_REMOVE, DET_COL_REMOVE, row, DETAIL_SPACE, 2*DETAIL_SPACE );
-	add_button( self, GTK_STOCK_ADD, DET_COL_ADD, row+1, DETAIL_SPACE, 0 );
+	add_button( self, "gtk-go-up", DET_COL_UP, row, DETAIL_SPACE, 0 );
+	add_button( self, "gtk-go-down", DET_COL_DOWN, row, DETAIL_SPACE, 0 );
+	add_button( self, "gtk-remove", DET_COL_REMOVE, row, DETAIL_SPACE, 2*DETAIL_SPACE );
+	add_button( self, "gtk-add", DET_COL_ADD, row+1, DETAIL_SPACE, 0 );
 
 	self->priv->count = row;
 
@@ -530,7 +530,7 @@ add_button( ofaOpeTemplateProperties *self, const gchar *stock_id, gint column, 
 	GtkWidget *image;
 	GtkButton *button;
 
-	image = gtk_image_new_from_stock( stock_id, GTK_ICON_SIZE_BUTTON );
+	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
 	button = GTK_BUTTON( gtk_button_new());
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));

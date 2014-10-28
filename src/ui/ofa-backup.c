@@ -168,8 +168,8 @@ init_dialog( ofaBackup *self )
 							_( "Backup the dossier" ),
 							GTK_WINDOW( priv->main_window ),
 							GTK_FILE_CHOOSER_ACTION_SAVE,
-							GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-							GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+							_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+							_( "_Save" ), GTK_RESPONSE_OK,
 							NULL );
 
 	my_utils_window_restore_position( GTK_WINDOW( priv->dialog ), st_dialog_name );

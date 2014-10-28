@@ -208,8 +208,8 @@ is_willing_to_quit( myAssistant *self )
 			_( "Are you sure you want to quit this assistant ?" ));
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_QUIT, GTK_RESPONSE_OK,
+			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+			_( "_Quit" ), GTK_RESPONSE_OK,
 			NULL );
 
 	response = gtk_dialog_run( GTK_DIALOG( dialog ));

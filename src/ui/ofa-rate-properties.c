@@ -248,7 +248,7 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), self );
 
 	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( container, "p2-grid" ));
-	add_button( self, GTK_STOCK_ADD, COL_ADD, 1 );
+	add_button( self, "gtk-add", COL_ADD, 1 );
 
 	count = ofo_rate_get_val_count( priv->rate );
 	for( idx=0 ; idx<count ; ++idx ){
@@ -335,8 +335,8 @@ add_empty_row( ofaRateProperties *self )
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( label ), COL_MESSAGE, row, 1, 1 );
 
-	add_button( self, GTK_STOCK_REMOVE, COL_REMOVE, row );
-	add_button( self, GTK_STOCK_ADD, COL_ADD, row+1 );
+	add_button( self, "gtk-remove", COL_REMOVE, row );
+	add_button( self, "gtk-add", COL_ADD, row+1 );
 
 	self->priv->count = row;
 	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
@@ -348,7 +348,7 @@ add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint ro
 	GtkWidget *image;
 	GtkButton *button;
 
-	image = gtk_image_new_from_stock( stock_id, GTK_ICON_SIZE_BUTTON );
+	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
 	button = GTK_BUTTON( gtk_button_new());
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));

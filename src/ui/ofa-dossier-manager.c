@@ -480,8 +480,8 @@ confirm_delete( ofaDossierManager *self, const gchar *name, const gchar *provide
 			"%s", str );
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_DELETE, GTK_RESPONSE_OK,
+			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+			_( "_Delete" ), GTK_RESPONSE_OK,
 			NULL );
 
 	g_free( str );

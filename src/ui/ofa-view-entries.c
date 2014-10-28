@@ -424,7 +424,7 @@ setup_account_selection( ofaViewEntries *self )
 
 	btn = ( GtkButton * ) my_utils_container_get_child_by_name( priv->top_box, "f1-account-select" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	image = gtk_image_new_from_stock( GTK_STOCK_INDEX, GTK_ICON_SIZE_BUTTON );
+	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
 	gtk_button_set_image( btn, image );
 	g_signal_connect( G_OBJECT( btn ), "clicked", G_CALLBACK( on_account_select ), self );
 	priv->account_select = btn;
@@ -2627,8 +2627,8 @@ delete_confirmed( const ofaViewEntries *self, const gchar *message )
 			"%s", message );
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_DELETE, GTK_RESPONSE_OK,
+			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+			_( "_Delete" ), GTK_RESPONSE_OK,
 			NULL );
 
 	response = gtk_dialog_run( GTK_DIALOG( dialog ));

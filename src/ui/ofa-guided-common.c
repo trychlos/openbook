@@ -593,7 +593,7 @@ add_entry_row( ofaGuidedCommon *self, gint i )
 
 	/* other columns starting with COL_ACCOUNT=1 */
 	add_entry_row_set( self, COL_ACCOUNT, i+1 );
-	add_entry_row_button( self, GTK_STOCK_INDEX, COL_ACCOUNT_SELECT, i+1 );
+	add_entry_row_button( self, "gtk-index", COL_ACCOUNT_SELECT, i+1 );
 	add_entry_row_set( self, COL_LABEL, i+1 );
 	add_entry_row_set( self, COL_DEBIT, i+1 );
 	add_entry_row_set( self, COL_CREDIT, i+1 );
@@ -669,7 +669,7 @@ add_entry_row_button( ofaGuidedCommon *self, const gchar *stock_id, gint column,
 	GtkWidget *image;
 	GtkButton *button;
 
-	image = gtk_image_new_from_stock( stock_id, GTK_ICON_SIZE_BUTTON );
+	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
 	button = GTK_BUTTON( gtk_button_new());
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));

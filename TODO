@@ -395,8 +395,6 @@
 
  408 2014-10-26 buttons should be properties of the ofaPage
 
- 409 2014-10-26 print reconcil: should also print currency symbol
-
  411
 
 -----------------------------------------------------------------------
@@ -1725,9 +1723,12 @@
                 ofaViewEntries
      2014-10-26 done - svn #3925
 
+ 409 2014-10-26 print reconcil: should also print currency symbol
+     2014-10-27 done - svn #3989
+
  410 2014-10-26 when opening the properties of a plugin, the preferences
                 dialog should open on the appropriate tab
-     2014-10-26 done - svn #3988
+     2014-10-27 done - svn #3988
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

@@ -333,7 +333,7 @@ setup_account_selection( ofaPage *page )
 			G_OBJECT( priv->account ),
 			"changed", G_CALLBACK( on_account_changed ), page );
 
-	image = gtk_image_new_from_stock( GTK_STOCK_INDEX, GTK_ICON_SIZE_BUTTON );
+	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
 	button = GTK_BUTTON( gtk_button_new());
 	gtk_button_set_image( button, image );
 	gtk_grid_attach( grid2, GTK_WIDGET( button ), 1, 0, 1, 1 );
@@ -481,7 +481,7 @@ setup_auto_rappro( ofaPage *page )
 			button,
 			_( "Import an new Bank Account Transactions list to be used in the reconciliation" ));
 
-	image = gtk_image_new_from_stock( GTK_STOCK_CLEAR, GTK_ICON_SIZE_BUTTON );
+	image = gtk_image_new_from_icon_name( "gtk-clear", GTK_ICON_SIZE_BUTTON );
 	priv->clear = GTK_BUTTON( gtk_button_new());
 	gtk_button_set_image( priv->clear, image );
 	gtk_grid_attach( grid, GTK_WIDGET( priv->clear ), 3, 1, 1, 1 );

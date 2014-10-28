@@ -176,7 +176,7 @@ setup_tab_content( myTabLabel *tab, GtkImage *image, const gchar *text )
 	gtk_button_set_relief( GTK_BUTTON( priv->close_btn ), GTK_RELIEF_NONE );
 	gtk_button_set_focus_on_click( GTK_BUTTON( priv->close_btn ), FALSE );
 	gtk_button_set_image( GTK_BUTTON( priv->close_btn ),
-			gtk_image_new_from_stock( GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU ));
+			gtk_image_new_from_icon_name( "window-close", GTK_ICON_SIZE_MENU ));
 	gtk_grid_attach( GTK_GRID( tab ), priv->close_btn, 2, 0, 1, 1 );
 
 	g_signal_connect( G_OBJECT( priv->close_btn ),

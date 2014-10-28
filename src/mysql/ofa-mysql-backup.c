@@ -240,7 +240,7 @@ create_window( backupInfos *infos, const gchar *window_title )
 							window_title,
 							NULL,
 							GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-							GTK_STOCK_CLOSE, GTK_RESPONSE_ACCEPT,
+							_( "_Close" ), GTK_RESPONSE_ACCEPT,
 							NULL );
 
 	content = gtk_dialog_get_content_area( GTK_DIALOG( infos->window ));
