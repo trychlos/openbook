@@ -128,6 +128,8 @@ class_init( ofaMysqlClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
 	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
+
+	g_type_class_add_private( klass, sizeof( ofaMysqlPrivate ));
 }
 
 static void
@@ -145,9 +147,8 @@ instance_init( GTypeInstance *instance, gpointer klass )
 
 	self = OFA_MYSQL( instance );
 
-	self->private = g_new0( ofaMysqlPrivate, 1 );
-
-	self->private->dispose_has_run = FALSE;
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_MYSQL, ofaMysqlPrivate );
+	self->priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -159,9 +160,9 @@ instance_dispose( GObject *object )
 
 	self = OFA_MYSQL( object );
 
-	if( !self->private->dispose_has_run ){
+	if( !self->priv->dispose_has_run ){
 
-		self->private->dispose_has_run = TRUE;
+		self->priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -174,17 +175,13 @@ static void
 instance_finalize( GObject *object )
 {
 	static const gchar *thisfn = "ofa_mysql_instance_finalize";
-	ofaMysqlPrivate *priv;
 
 	g_debug( "%s: object=%p (%s)",
 			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
 	g_return_if_fail( object && OFA_IS_MYSQL( object ));
 
-	priv = OFA_MYSQL( object )->private;
-
 	/* free data members here */
-	g_free( priv );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( st_parent_class )->finalize( object );

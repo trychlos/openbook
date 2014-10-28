@@ -55,14 +55,16 @@ G_BEGIN_DECLS
 typedef struct _ofaMysqlPrivate       ofaMysqlPrivate;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObject          parent;
-	ofaMysqlPrivate *private;
+
+	/*< private members >*/
+	ofaMysqlPrivate *priv;
 }
 	ofaMysql;
 
 typedef struct {
-	/*< private >*/
+	/*< public members >*/
 	GObjectClass parent;
 }
 	ofaMysqlClass;
