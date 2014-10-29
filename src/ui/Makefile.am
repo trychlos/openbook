@@ -168,7 +168,6 @@ rc_files = \
 ui_files = \
 	ofa-account-properties.ui							\
 	ofa-account-select.ui								\
-	ofa-accounts-book.ui								\
 	ofa-bat-common.ui									\
 	ofa-bat-properties.ui								\
 	ofa-bat-select.ui									\
