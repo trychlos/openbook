@@ -224,6 +224,12 @@ my_buttons_box_pack_button_by_id( myButtonsBox *box, guint id, gboolean sensitiv
 				my_buttons_box_pack_button( box, button, sensitive, callback, user_data );
 				break;
 
+			case BUTTONS_BOX_DUPLICATE:
+				button = gtk_button_new_with_mnemonic( _( "D_uplicate" ));
+				g_object_set_data( G_OBJECT( button ), BUTTON_ID, GUINT_TO_POINTER( id ));
+				my_buttons_box_pack_button( box, button, sensitive, callback, user_data );
+				break;
+
 			case BUTTONS_BOX_DELETE:
 				button = gtk_button_new_with_mnemonic( _( "_Delete..." ));
 				g_object_set_data( G_OBJECT( button ), BUTTON_ID, GUINT_TO_POINTER( id ));
