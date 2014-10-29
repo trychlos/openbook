@@ -145,10 +145,10 @@ static void       set_row( ofaAccountsBook *self, ofoAccount *account, gboolean 
 static gboolean   book_activate_page_by_class( ofaAccountsBook *self, gint class_num );
 static void       on_updated_class_label( ofaAccountsBook *self, ofoClass *class );
 static void       on_deleted_class_label( ofaAccountsBook *self, ofoClass *class );
-static void       on_new_clicked( GtkButton *button, ofaAccountsBook *self );
-static void       on_update_clicked( GtkButton *button, ofaAccountsBook *self );
-static void       do_update_with_account( ofaAccountsBook *self, ofoAccount *account );
-static void       on_delete_clicked( GtkButton *button, ofaAccountsBook *self );
+static void       on_button_clicked( GtkWidget *button, ofaAccountsBook *self );
+static void       on_new_clicked( ofaAccountsBook *self );
+static void       on_update_clicked( ofaAccountsBook *self );
+static void       on_delete_clicked( ofaAccountsBook *self );
 static gboolean   delete_confirmed( ofaAccountsBook *self, ofoAccount *account );
 static void       on_view_entries( GtkButton *button, ofaAccountsBook *self );
 
@@ -425,6 +425,7 @@ init_ui( ofaAccountsBook *self )
 	priv = self->priv;
 
 	priv->grid = GTK_GRID( gtk_grid_new());
+	gtk_grid_set_column_spacing( priv->grid, 4 );
 	gtk_container_add( priv->parent, GTK_WIDGET( priv->grid ));
 
 	/* setup and connect the notebook */
@@ -464,20 +465,12 @@ setup_buttons( ofaAccountsBook *self )
 
 	priv = self->priv;
 
-	priv->buttons_box = my_buttons_box_new();
-	my_buttons_box_inc_top_spacer( priv->buttons_box );
+	priv->buttons_box = MY_BUTTONS_BOX(
+							ofa_page_create_default_buttons_box(
+									2, G_CALLBACK( on_button_clicked ), self ));
 
-	my_buttons_box_pack_button_by_id( priv->buttons_box,
-			BUTTONS_BOX_NEW,
-			TRUE, G_CALLBACK( on_new_clicked ), self );
-
-	priv->btn_update = my_buttons_box_pack_button_by_id( priv->buttons_box,
-								BUTTONS_BOX_PROPERTIES,
-								FALSE, G_CALLBACK( on_update_clicked ), self );
-
-	priv->btn_delete = my_buttons_box_pack_button_by_id( priv->buttons_box,
-								BUTTONS_BOX_DELETE,
-								FALSE, G_CALLBACK( on_delete_clicked ), self );
+	priv->btn_update = my_buttons_box_get_button_by_id( priv->buttons_box, BUTTONS_BOX_PROPERTIES );
+	priv->btn_delete = my_buttons_box_get_button_by_id( priv->buttons_box, BUTTONS_BOX_DELETE );
 
 	my_buttons_box_add_spacer( priv->buttons_box );
 
@@ -1271,7 +1264,7 @@ ofa_accounts_book_set_selected( ofaAccountsBook *self, const gchar *number )
  * page.
  */
 GtkWidget *
-ofa_accounts_book_get_top_focusable_widget( ofaAccountsBook *self )
+ofa_accounts_book_get_top_focusable_widget( const ofaAccountsBook *self )
 {
 	gint page_n;
 	GtkWidget *page_w;
@@ -1379,8 +1372,35 @@ on_deleted_class_label( ofaAccountsBook *self, ofoClass *class )
 	}
 }
 
+/*
+ * this is the 'clicked' message handler for default buttons
+ */
 static void
-on_new_clicked( GtkButton *button, ofaAccountsBook *self )
+on_button_clicked( GtkWidget *button, ofaAccountsBook *self )
+{
+	static const gchar *thisfn = "ofa_accounts_book_on_button_clicked";
+	guint id;
+
+	id = my_buttons_box_get_button_id( self->priv->buttons_box, button );
+
+	switch( id ){
+		case BUTTONS_BOX_NEW:
+			on_new_clicked( self );
+			break;
+		case BUTTONS_BOX_PROPERTIES:
+			on_update_clicked( self );
+			break;
+		case BUTTONS_BOX_DELETE:
+			on_delete_clicked( self );
+			break;
+		default:
+			g_warning( "%s: %u: unknown button identifier", thisfn, id );
+			break;
+	}
+}
+
+static void
+on_new_clicked( ofaAccountsBook *self )
 {
 	ofoAccount *account;
 
@@ -1392,24 +1412,14 @@ on_new_clicked( GtkButton *button, ofaAccountsBook *self )
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaAccountsBook *self )
+on_update_clicked( ofaAccountsBook *self )
 {
 	ofoAccount *account;
+	GtkWidget *tview;
 
 	account = ofa_accounts_book_get_selected( self );
 	if( account ){
-		do_update_with_account( self, account );
-	}
-}
-
-static void
-do_update_with_account( ofaAccountsBook *self, ofoAccount *account )
-{
-	GtkWidget *tview;
-
-	if( account ){
 		g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
 		ofa_account_properties_run( self->priv->main_window, account );
 	}
 
@@ -1420,7 +1430,7 @@ do_update_with_account( ofaAccountsBook *self, ofoAccount *account )
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaAccountsBook *self )
+on_delete_clicked( ofaAccountsBook *self )
 {
 	ofoAccount *account;
 	gchar *number;

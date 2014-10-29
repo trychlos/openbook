@@ -137,7 +137,7 @@ static GtkWidget   *setup_treeview( ofaPage *page );
 static GtkWidget   *setup_balance( ofaPage *page );
 static GtkWidget   *v_setup_buttons( ofaPage *page );
 static void         v_init_view( ofaPage *page );
-static GtkWidget   *v_get_top_focusable_widget( ofaPage *page );
+static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
 static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconciliation *self );
 static void         on_header_clicked( GtkTreeViewColumn *column, ofaReconciliation *self );
 static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self );
@@ -231,9 +231,9 @@ ofa_reconciliation_class_init( ofaReconciliationClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = reconciliation_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 
 	g_type_class_add_private( klass, sizeof( ofaReconciliationPrivate ));
 }
@@ -800,7 +800,7 @@ v_init_view( ofaPage *page )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_RECONCILIATION( page ), NULL );
 

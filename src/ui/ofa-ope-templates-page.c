@@ -36,6 +36,7 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-ledger.h"
 
+#include "ui/my-buttons-box.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-properties.h"
@@ -59,8 +60,10 @@ struct _ofaOpeTemplatesPagePrivate {
 	GtkNotebook   *book;				/* one page per imputation ledger */
 	GtkTreeView   *tview;				/* the treeview of the current page */
 	GtkTreeModel  *tmodel;
-	GtkButton     *duplicate_btn;
-	GtkButton     *guided_input_btn;
+	GtkWidget     *update_btn;
+	GtkWidget     *duplicate_btn;
+	GtkWidget     *delete_btn;
+	GtkWidget     *guided_input_btn;
 };
 
 /* column ordering in the selection listview
@@ -83,7 +86,7 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static void       setup_dossier_signaling( ofaOpeTemplatesPage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
-static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       insert_dataset( ofaOpeTemplatesPage *self );
 static GtkWidget *book_create_page( ofaOpeTemplatesPage *self, GtkNotebook *book, const gchar *ledger, const gchar *ledger_label );
 static gboolean   book_activate_page_by_ledger( ofaOpeTemplatesPage *self, const gchar *ledger );
@@ -96,11 +99,11 @@ static void       setup_first_selection( ofaOpeTemplatesPage *self );
 static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplatesPage *self );
 static void       on_model_selected( GtkTreeSelection *selection, ofaOpeTemplatesPage *self );
 static void       enable_buttons( ofaOpeTemplatesPage *self, GtkTreeSelection *selection );
-static void       v_on_new_clicked( GtkButton *button, ofaPage *page );
+static void       on_new_clicked( GtkButton *button, ofaPage *page );
 static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self );
-static void       v_on_update_clicked( GtkButton *button, ofaPage *page );
+static void       on_update_clicked( GtkButton *button, ofaPage *page );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplatesPage *self );
-static void       v_on_delete_clicked( GtkButton *button, ofaPage *page );
+static void       on_delete_clicked( GtkButton *button, ofaPage *page );
 static gboolean   delete_confirmed( ofaOpeTemplatesPage *self, ofoOpeTemplate *model );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self );
 static void       on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self );
@@ -181,9 +184,6 @@ ofa_ope_templates_page_class_init( ofaOpeTemplatesPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-	OFA_PAGE_CLASS( klass )->on_new_clicked = v_on_new_clicked;
-	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
-	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
 
 	g_type_class_add_private( klass, sizeof( ofaOpeTemplatesPagePrivate ));
 }
@@ -253,32 +253,42 @@ setup_dossier_signaling( ofaOpeTemplatesPage *self )
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
+/*
+ * have to rebuild the whole buttons box, in order to insert a
+ * 'Duplicate' button
+ */
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
-	GtkBox *buttons_box;
-	GtkFrame *frame;
-	GtkButton *button;
+	ofaOpeTemplatesPagePrivate *priv;
+	myButtonsBox *box;
+	GtkWidget *button;
 
-	buttons_box = GTK_BOX(
-					OFA_PAGE_CLASS( ofa_ope_templates_page_parent_class )->setup_buttons( page ));
+	priv = OFA_OPE_TEMPLATES_PAGE( page )->priv;
+	box = my_buttons_box_new();
+	my_buttons_box_set_header_rows( box, 2 );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "Dup_licate" )));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_duplicate ), page );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	OFA_OPE_TEMPLATES_PAGE( page )->priv->duplicate_btn = button;
+	my_buttons_box_pack_button_by_id( box,
+								BUTTONS_BOX_NEW,
+								TRUE, G_CALLBACK( on_new_clicked ), page );
+	priv->update_btn = my_buttons_box_pack_button_by_id( box,
+								BUTTONS_BOX_PROPERTIES,
+								FALSE, G_CALLBACK( on_update_clicked ), page );
+	priv->duplicate_btn = my_buttons_box_pack_button_by_id( box,
+								BUTTONS_BOX_DUPLICATE,
+								FALSE, G_CALLBACK( on_duplicate ), page );
+	priv->delete_btn = my_buttons_box_pack_button_by_id( box,
+								BUTTONS_BOX_DELETE,
+								FALSE, G_CALLBACK( on_delete_clicked ), page );
 
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_widget_set_size_request( GTK_WIDGET( frame ), -1, 12 );
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 0 );
+	my_buttons_box_add_spacer( box );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Guided input..." )));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_guided_input ), page );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	OFA_OPE_TEMPLATES_PAGE( page )->priv->guided_input_btn = button;
+	button = gtk_button_new_with_mnemonic( _( "_Guided input..." ));
+	my_buttons_box_pack_button( box,
+			button, FALSE, G_CALLBACK( on_guided_input ), page );
+	priv->guided_input_btn = button;
 
-	return( GTK_WIDGET( buttons_box ));
+	return( GTK_WIDGET( box ));
 }
 
 static void
@@ -288,7 +298,7 @@ v_init_view( ofaPage *page )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATES_PAGE( page ), NULL );
 
@@ -439,7 +449,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTempl
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
 {
-	v_on_update_clicked( NULL, page );
+	on_update_clicked( NULL, page );
 }
 
 static void
@@ -572,6 +582,7 @@ static void
 enable_buttons( ofaOpeTemplatesPage *self, GtkTreeSelection *selection )
 {
 	/*static const gchar *thisfn = "ofa_ope_templates_page_enable_buttons";*/
+	ofaOpeTemplatesPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoOpeTemplate *model;
@@ -583,35 +594,33 @@ enable_buttons( ofaOpeTemplatesPage *self, GtkTreeSelection *selection )
 					? gtk_tree_selection_get_selected( selection, &tmodel, &iter )
 					: FALSE;
 
+	priv = self->priv;
+
 	if( select_ok ){
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );
 		g_object_unref( model );
 		/*g_debug( "%s: current selection is %s", thisfn, ofo_ope_template_get_mnemo( model ));*/
 
 		gtk_widget_set_sensitive(
-				ofa_page_get_update_btn( OFA_PAGE( self )),
+				priv->update_btn,
 				model && OFO_IS_OPE_TEMPLATE( model ));
 		gtk_widget_set_sensitive(
-				ofa_page_get_delete_btn( OFA_PAGE( self )),
+				priv->delete_btn,
 				model && OFO_IS_OPE_TEMPLATE( model ) && ofo_ope_template_is_deletable( model ));
 
 	} else {
-		gtk_widget_set_sensitive(
-				ofa_page_get_update_btn( OFA_PAGE( self )), FALSE );
-		gtk_widget_set_sensitive(
-				ofa_page_get_delete_btn( OFA_PAGE( self )), FALSE );
+		gtk_widget_set_sensitive( priv->update_btn, FALSE );
+		gtk_widget_set_sensitive( priv->delete_btn, FALSE );
 	}
 
-	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->priv->duplicate_btn ), select_ok );
-	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->priv->guided_input_btn ), select_ok );
+	gtk_widget_set_sensitive( priv->duplicate_btn, select_ok );
+	gtk_widget_set_sensitive( priv->guided_input_btn, select_ok );
 }
 
 static void
-v_on_new_clicked( GtkButton *button, ofaPage *page )
+on_new_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_ope_templates_page_v_on_new_clicked";
+	static const gchar *thisfn = "ofa_ope_templates_page_on_new_clicked";
 	ofoOpeTemplate *model;
 	gint page_n;
 	GtkWidget *page_w;
@@ -661,9 +670,9 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self )
  * signaling system of no worth..
  */
 static void
-v_on_update_clicked( GtkButton *button, ofaPage *page )
+on_update_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_ope_templates_page_v_on_update_clicked";
+	static const gchar *thisfn = "ofa_ope_templates_page_on_update_clicked";
 	ofaOpeTemplatesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
@@ -734,9 +743,9 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
  * enregistrée, et après confirmation de l'utilisateur
  */
 static void
-v_on_delete_clicked( GtkButton *button, ofaPage *page )
+on_delete_clicked( GtkButton *button, ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_ope_templates_page_v_on_delete_clicked";
+	static const gchar *thisfn = "ofa_ope_templates_page_on_delete_clicked";
 	ofaOpeTemplatesPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
@@ -777,7 +786,8 @@ delete_confirmed( ofaOpeTemplatesPage *self, ofoOpeTemplate *model )
 			ofo_ope_template_get_mnemo( model ),
 			ofo_ope_template_get_label( model ));
 
-	delete_ok = ofa_main_window_confirm_deletion( OFA_PAGE( self )->prot->main_window, msg );
+	delete_ok = ofa_main_window_confirm_deletion(
+						ofa_page_get_main_window( OFA_PAGE( self )), msg );
 
 	g_free( msg );
 

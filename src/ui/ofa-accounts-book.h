@@ -119,7 +119,7 @@ ofoAccount      *ofa_accounts_book_get_selected            ( ofaAccountsBook *se
 
 void             ofa_accounts_book_set_selected            ( ofaAccountsBook *self, const gchar *number );
 
-GtkWidget       *ofa_accounts_book_get_top_focusable_widget( ofaAccountsBook *self );
+GtkWidget       *ofa_accounts_book_get_top_focusable_widget( const ofaAccountsBook *self );
 
 G_END_DECLS
 

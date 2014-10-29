@@ -107,9 +107,15 @@ GtkWidget    *my_buttons_box_pack_button_by_id( myButtonsBox *box, guint id,
 														gboolean sensitive,
 														GCallback callback, void *user_data );
 
-void          my_buttons_box_inc_top_spacer   ( myButtonsBox *box );
+void          my_buttons_box_set_header_rows  ( myButtonsBox *box, guint count );
 
 void          my_buttons_box_add_spacer       ( myButtonsBox *box );
+
+GtkWidget    *my_buttons_box_get_button_by_id ( const myButtonsBox *box, guint id );
+
+guint         my_buttons_box_get_button_id    ( const myButtonsBox *box, GtkWidget *button );
+
+void          my_buttons_box_fake_button_1    ( myButtonsBox *box );
 
 G_END_DECLS
 

@@ -98,8 +98,9 @@ typedef struct {
 	 * This virtual function is called by #setup_page() default
 	 * implementation of the base class virtual method.
 	 *
-	 * The base class default implementation just creates a new, empty,
-	 * #myButtonsBox object, to be attached in the right of the view.
+	 * The base class default implementation creates 'New',
+	 * 'Properties' and 'Delete' buttons. On click messages are sent to
+	 * the corresponding virtual functions.
 	 */
 	GtkWidget * ( *setup_buttons )           ( ofaPage *page );
 
@@ -115,64 +116,27 @@ typedef struct {
 	void        ( *init_view )               ( ofaPage *page );
 
 	/**
-	 * on_new_clicked:
+	 * on_button_clicked:
 	 * @page: this #ofaPage object.
+	 * @button_id: the standard identifier of the clicked button.
 	 *
-	 * This virtual function is triggered when the 'New' button
-	 * installed by the above #setup_buttons() virtual function is
-	 * clicked.
+	 * This virtual function is triggered when a button is clicked.
+	 *
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */
-	void        ( *on_new_clicked )          ( GtkButton *button, ofaPage *page );
+	void        ( *on_button_clicked )       ( ofaPage *page, guint button_id );
 
 	/**
-	 * on_update_clicked:
+	 * get_top_focusable_widget:
 	 * @page: this #ofaPage object.
 	 *
-	 * This virtual function is triggered when the 'Update' button
-	 * installed by the above #setup_buttons() virtual function is
-	 * clicked.
-	 * This is a pure virtual function, that the child class should
-	 * implement.
+	 * This virtual function should return the top focusable widget of
+	 * the page. The default implementation just returns NULL. The main
+	 * window typically call this virtual when activating a page in
+	 * order the focus to be correctly set.
 	 */
-	void        ( *on_update_clicked )       ( GtkButton *button, ofaPage *page );
-
-	/**
-	 * on_delete_clicked:
-	 * @page: this #ofaPage object.
-	 *
-	 * This virtual function is triggered when the 'Delete' button
-	 * installed by the above #setup_buttons() virtual function is
-	 * clicked.
-	 * This is a pure virtual function, that the child class should
-	 * implement.
-	 */
-	void        ( *on_delete_clicked )       ( GtkButton *button, ofaPage *page );
-
-	/**
-	 * on_import_clicked:
-	 * @page: this #ofaPage object.
-	 *
-	 * This virtual function is triggered when the 'Import' button
-	 * installed by the above #setup_buttons() virtual function is
-	 * clicked.
-	 * This is a pure virtual function, that the child class should
-	 * implement.
-	 */
-	void        ( *on_import_clicked )       ( GtkButton *button, ofaPage *page );
-
-	/**
-	 * on_export_clicked:
-	 * @page: this #ofaPage object.
-	 *
-	 * This virtual function is triggered when the 'Export' button
-	 * installed by the above #setup_buttons() virtual function is
-	 * clicked.
-	 * This is a pure virtual function, that the child class should
-	 * implement.
-	 */
-	void        ( *on_export_clicked )       ( GtkButton *button, ofaPage *page );
+	GtkWidget * ( *get_top_focusable_widget )( const ofaPage *page );
 
 	/**
 	 * pre_remove:
@@ -184,17 +148,6 @@ typedef struct {
 	 * are finalized.
 	 */
 	void        ( *pre_remove )              ( ofaPage *page );
-
-	/**
-	 * get_top_focusable_widget:
-	 * @page: this #ofaPage object.
-	 *
-	 * This virtual function should return the top focusable widget of
-	 * the page. The default implementation just returns NULL. The main
-	 * window typically call this virtual when activating a page in
-	 * order the focus to be correctly set.
-	 */
-	GtkWidget * ( *get_top_focusable_widget )( ofaPage *page );
 }
 	ofaPageClass;
 

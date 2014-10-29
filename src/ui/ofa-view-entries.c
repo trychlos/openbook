@@ -194,7 +194,7 @@ static void           setup_footer( ofaViewEntries *self );
 static void           setup_signaling_connect( ofaViewEntries *self );
 static GtkWidget     *v_setup_buttons( ofaPage *page );
 static void           v_init_view( ofaPage *page );
-static GtkWidget     *v_get_top_focusable_widget( ofaPage *page );
+static GtkWidget     *v_get_top_focusable_widget( const ofaPage *page );
 static void           on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self );
 static void           on_ledger_changed( const gchar *mnemo, ofaViewEntries *self );
 static void           display_entries_from_ledger( ofaViewEntries *self );
@@ -312,9 +312,9 @@ ofa_view_entries_class_init( ofaViewEntriesClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = view_entries_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 
 	g_type_class_add_private( klass, sizeof( ofaViewEntriesPrivate ));
 }
@@ -1042,7 +1042,6 @@ setup_signaling_connect( ofaViewEntries *self )
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
-	/*return( OFA_PAGE_CLASS( ofa_view_entries_parent_class )->setup_buttons( page ));*/
 	return( NULL );
 }
 
@@ -1052,7 +1051,7 @@ v_init_view( ofaPage *page )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_VIEW_ENTRIES( page ), NULL );
 

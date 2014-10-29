@@ -55,7 +55,7 @@ G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
 
 static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
-static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofoAccount *account, ofaPage *page );
 static void       on_view_entries( ofoAccount *account, ofaAccountsPage *self );
 
@@ -126,7 +126,7 @@ v_setup_page( ofaPage *page )
 	ofaAccountsPagePrivate *priv;
 
 	parms.main_window = ofa_page_get_main_window( page );
-	parms.parent = GTK_CONTAINER( ofa_page_get_grid( page ));
+	parms.parent = GTK_CONTAINER( ofa_page_get_top_grid( page ));
 	parms.has_import = FALSE;
 	parms.has_export = FALSE;
 	parms.has_view_entries = TRUE;
@@ -147,12 +147,11 @@ v_init_view( ofaPage *page )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_ACCOUNTS_PAGE( page ), NULL );
 
-	return(
-			ofa_accounts_book_get_top_focusable_widget(
+	return( ofa_accounts_book_get_top_focusable_widget(
 					OFA_ACCOUNTS_PAGE( page )->priv->book_child ));
 }
 

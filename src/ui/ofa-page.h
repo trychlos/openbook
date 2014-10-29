@@ -58,75 +58,68 @@
  *
  * Class             View description                          Buttons box
  * ----------------  ----------------------------------------  -----------
- * ofaAccountsPage   a notebook with one page per account          Yes
- *                   class, each page having its own tree
- *                   view on a list store
+ * ofaAccountsPage   an empty grid which is handled by the     book-handled
+ *                   ofaAccountsBook class
  *
- * BAT files    a tree view on a list store                   Yes
+ * ofaBatsPage       a tree view on a list store                   Yes
  *
- * Classes      a tree view on a list store                   Yes
+ * ofaClassesPage    a tree view on a list store                   Yes
  *
- * Currencies   a tree view on a list store                   Yes
+ * ofaCurrenciesPage a tree view on a list store                   Yes
  *
- * Entries      (none)
+ * ofaGuidedEx       a paned which embeds:                         No
+ *                   - on the left, a tree view on a tree
+ *                     store where operation templates are
+ *                     stored 'under' the journal;
+ *                   - on the right, the characteristics of
+ *                     the current operation template
  *
- * Entry Model  a notebook with one page per journal          Yes
- *               each page having its own tree view
- *               on a list store
+ * ofaLedgersPage    a tree view on a list store                   Yes
  *
- * GuidedInputEx  a paned which embeds a tree view on a        ?
- *                tree store on the left where entry
- *                models are stored 'under' the journal;
- *                the entry model with its characteristics
- *                and its entry grid on the right
+ * ofaOpeTemplatesPage  a top frame, a grid with dynamic fields    Yes
  *
- * Journals     a tree view on a list store                   Yes
+ * ofaRatesPage      a tree view on a list store                   Yes
  *
- * Rate         a tree view on a list store                   Yes
+ * ofaReconciliation several top frames, with a treeview on        No
+ *                   a tree store
+ *
+ * ofaViewEntries    several top frames with a treeview on a       No
+ *                   list store
  */
 
 #include "api/ofo-dossier-def.h"
 
-#include "ui/ofa-page-def.h"
 #include "core/ofa-main-window-def.h"
+
+#include "ui/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
 /**
  * Properties set against this base class at instanciation time
  */
-#define PAGE_PROP_WINDOW            "main-page-prop-window"
-#define PAGE_PROP_DOSSIER           "main-page-prop-dossier"
-#define PAGE_PROP_GRID              "main-page-prop-grid"
-#define PAGE_PROP_THEME             "main-page-prop-theme"
-#define PAGE_PROP_HAS_IMPORT        "main-page-prop-import"
-#define PAGE_PROP_HAS_EXPORT        "main-page-prop-export"
+#define PAGE_PROP_MAIN_WINDOW           "page-prop-main-window"
+#define PAGE_PROP_TOP_GRID              "page-prop-top-grid"
+#define PAGE_PROP_THEME                 "page-prop-theme"
+#define PAGE_PROP_HEADER_ROWS_COUNT     "page-prop-header-rows-count"
 
 /**
- * The name of the buttons created in the buttons box
+ * Default rows count before the first button
  */
-#define PAGE_BUTTON_NEW                 "btn-new"
-#define PAGE_BUTTON_UPDATE              "btn-update"
-#define PAGE_BUTTON_DELETE              "btn-delete"
-#define PAGE_BUTTON_IMPORT              "btn-import"
-#define PAGE_BUTTON_EXPORT              "btn-export"
+#define PAGE_HEADER_ROWS_DEFAULT        1
 
-ofaMainWindow *ofa_page_get_main_window         ( const ofaPage *page );
-ofoDossier    *ofa_page_get_dossier             ( const ofaPage *page );
-gint           ofa_page_get_theme               ( const ofaPage *page );
-GtkGrid       *ofa_page_get_grid                ( const ofaPage *page );
+ofaMainWindow *ofa_page_get_main_window           ( const ofaPage *page );
+GtkGrid       *ofa_page_get_top_grid              ( const ofaPage *page );
+gint           ofa_page_get_theme                 ( const ofaPage *page );
+ofoDossier    *ofa_page_get_dossier               ( const ofaPage *page );
+GtkWidget     *ofa_page_get_button_by_id          ( const ofaPage *page, guint id );
 
-GtkWidget     *ofa_page_get_new_btn             ( const ofaPage *page );
-GtkWidget     *ofa_page_get_update_btn          ( const ofaPage *page );
-GtkWidget     *ofa_page_get_delete_btn          ( const ofaPage *page );
-GtkWidget     *ofa_page_get_import_btn          ( const ofaPage *page );
-GtkWidget     *ofa_page_get_export_btn          ( const ofaPage *page );
+GtkWidget     *ofa_page_create_default_buttons_box( guint header_rows, GCallback callback, void *user_data );
 
-GtkWidget     *ofa_page_get_top_focusable_widget( ofaPage *page );
 
-GtkBox        *ofa_page_get_buttons_box_new     ( gboolean has_import, gboolean has_export );
+GtkWidget     *ofa_page_get_top_focusable_widget  ( const ofaPage *page );
 
-void           ofa_page_pre_remove              ( ofaPage *page );
+void           ofa_page_pre_remove                ( ofaPage *page );
 
 G_END_DECLS
 

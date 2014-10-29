@@ -32,6 +32,7 @@
 
 #include "api/ofo-bat.h"
 
+#include "ui/my-buttons-box.h"
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bats-page.h"
 #include "ui/ofa-main-window.h"
@@ -45,6 +46,8 @@ struct _ofaBatsPagePrivate {
 	/* UI
 	 */
 	GtkTreeView *tview;					/* the main treeview of the page */
+	GtkWidget   *update_btn;
+	GtkWidget   *delete_btn;
 };
 
 /* column ordering in the selection listview
@@ -60,15 +63,15 @@ G_DEFINE_TYPE( ofaBatsPage, ofa_bats_page, OFA_TYPE_PAGE )
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
-static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       insert_new_row( ofaBatsPage *self, ofoBat *bat, gboolean with_selection );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatsPage *self );
 static void       setup_first_selection( ofaBatsPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaBatsPage *self );
-/*static void       v_on_new_clicked( GtkButton *button, ofaPage *page );*/
-static void       v_on_update_clicked( GtkButton *button, ofaPage *page );
-static void       v_on_delete_clicked( GtkButton *button, ofaPage *page );
+static void       v_on_button_clicked( ofaPage *page, guint button_id );
+static void       on_update_clicked( ofaBatsPage *page );
+static void       on_delete_clicked( ofaBatsPage *page );
 static gboolean   delete_confirmed( ofaBatsPage *self, ofoBat *bat );
 
 static void
@@ -128,8 +131,7 @@ ofa_bats_page_class_init( ofaBatsPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-	OFA_PAGE_CLASS( klass )->on_update_clicked = v_on_update_clicked;
-	OFA_PAGE_CLASS( klass )->on_delete_clicked = v_on_delete_clicked;
+	OFA_PAGE_CLASS( klass )->on_button_clicked = v_on_button_clicked;
 
 	g_type_class_add_private( klass, sizeof( ofaBatsPagePrivate ));
 }
@@ -197,11 +199,17 @@ v_setup_view( ofaPage *page )
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
+	ofaBatsPagePrivate *priv;
 	GtkWidget *buttons_box;
+	GtkWidget *btn_new;
 
 	buttons_box = OFA_PAGE_CLASS( ofa_bats_page_parent_class )->setup_buttons( page );
+	btn_new = ofa_page_get_button_by_id( page, BUTTONS_BOX_NEW );
+	gtk_widget_set_sensitive( btn_new, FALSE );
 
-	gtk_widget_set_sensitive( ofa_page_get_new_btn( page ), FALSE );
+	priv = OFA_BATS_PAGE( page )->priv;
+	priv->update_btn = ofa_page_get_button_by_id( page, BUTTONS_BOX_PROPERTIES );
+	priv->delete_btn = ofa_page_get_button_by_id( page, BUTTONS_BOX_DELETE );
 
 	return( buttons_box );
 }
@@ -295,7 +303,7 @@ setup_first_selection( ofaBatsPage *self )
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
 {
-	v_on_update_clicked( NULL, page );
+	on_update_clicked( OFA_BATS_PAGE( page ));
 }
 
 static void
@@ -311,48 +319,42 @@ on_row_selected( GtkTreeSelection *selection, ofaBatsPage *self )
 	}
 
 	gtk_widget_set_sensitive(
-			ofa_page_get_update_btn( OFA_PAGE( self )),
+			self->priv->update_btn,
 			bat && OFO_IS_BAT( bat ));
 
 	gtk_widget_set_sensitive(
-			ofa_page_get_delete_btn( OFA_PAGE( self )),
+			self->priv->delete_btn,
 			bat && OFO_IS_BAT( bat ) && ofo_bat_is_deletable( bat ));
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_BATS_PAGE( page ), NULL );
 
 	return( GTK_WIDGET( OFA_BATS_PAGE( page )->priv->tview ));
 }
 
-#if 0
 static void
-v_on_new_clicked( GtkButton *button, ofaPage *page )
+v_on_button_clicked( ofaPage *page, guint button_id )
 {
-	ofoBat *bat;
-
 	g_return_if_fail( page && OFA_IS_BATS_PAGE( page ));
 
-	bat = ofo_bat_new();
-
-	if( ofa_bat_properties_run(
-			ofa_page_get_main_window( page ), bat )){
-
-		insert_new_row( OFA_BATS_PAGE( page ), bat, TRUE );
-
-	} else {
-		g_object_unref( bat );
+	switch( button_id ){
+		case BUTTONS_BOX_PROPERTIES:
+			on_update_clicked( OFA_BATS_PAGE( page ));
+			break;
+		case BUTTONS_BOX_DELETE:
+			on_delete_clicked( OFA_BATS_PAGE( page ));
+			break;
 	}
 }
-#endif
 
 /*
  * only notes can be updated
  */
 static void
-v_on_update_clicked( GtkButton *button, ofaPage *page )
+on_update_clicked( ofaBatsPage *page )
 {
 	ofaBatsPagePrivate *priv;
 	GtkTreeSelection *select;
@@ -360,23 +362,21 @@ v_on_update_clicked( GtkButton *button, ofaPage *page )
 	GtkTreeIter iter;
 	ofoBat *bat;
 
-	g_return_if_fail( page && OFA_IS_BATS_PAGE( page ));
-
-	priv = OFA_BATS_PAGE( page )->priv;
+	priv = page->priv;
 	select = gtk_tree_view_get_selection( priv->tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &bat, -1 );
 		g_object_unref( bat );
-		ofa_bat_properties_run( ofa_page_get_main_window( page ), bat );
+		ofa_bat_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), bat );
 	}
 
 	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 }
 
 static void
-v_on_delete_clicked( GtkButton *button, ofaPage *page )
+on_delete_clicked( ofaBatsPage *page )
 {
 	ofaBatsPagePrivate *priv;
 	GtkTreeSelection *select;
@@ -384,9 +384,7 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 	GtkTreeIter iter;
 	ofoBat *bat;
 
-	g_return_if_fail( page && OFA_IS_BATS_PAGE( page ));
-
-	priv = OFA_BATS_PAGE( page )->priv;
+	priv = page->priv;
 	select = gtk_tree_view_get_selection( priv->tview );
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
@@ -396,8 +394,8 @@ v_on_delete_clicked( GtkButton *button, ofaPage *page )
 
 		g_return_if_fail( ofo_bat_is_deletable( bat ));
 
-		if( delete_confirmed( OFA_BATS_PAGE( page ), bat ) &&
-				ofo_bat_delete( bat, ofa_page_get_dossier( page ))){
+		if( delete_confirmed( page, bat ) &&
+				ofo_bat_delete( bat, ofa_page_get_dossier( OFA_PAGE( page )))){
 
 			/* remove the row from the tmodel
 			 * this will cause an automatic new selection */
@@ -417,7 +415,8 @@ delete_confirmed( ofaBatsPage *self, ofoBat *bat )
 	msg = g_strdup( _( "Are you sure you want delete this imported BAT file\n"
 			"(All the corresponding lines will be deleted too) ?" ));
 
-	delete_ok = ofa_main_window_confirm_deletion( OFA_PAGE( self )->prot->main_window, msg );
+	delete_ok = ofa_main_window_confirm_deletion(
+						ofa_page_get_main_window( OFA_PAGE( self )), msg );
 
 	g_free( msg );
 

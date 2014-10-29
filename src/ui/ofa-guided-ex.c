@@ -48,26 +48,26 @@ struct _ofaGuidedExPrivate {
 
 	/* internals
 	 */
-	ofoDossier      *dossier;			/* dossier */
-	const ofoOpeTemplate  *model;		/* model */
-	ofaGuidedCommon *common;
+	ofoDossier            *dossier;			/* dossier */
+	const ofoOpeTemplate  *model;			/* model */
+	ofaGuidedCommon       *common;
 
 	/* UI - the pane
 	 */
-	GtkPaned        *pane;
+	GtkPaned              *pane;
 
 	/* UI - left part treeview selection of the entry model
 	 */
-	GtkTreeView     *left_tview;
-	GtkButton       *left_select;
+	GtkTreeView           *left_tview;
+	GtkButton             *left_select;
 
 	/* UI - right part guided input
 	 *      most if not all elements are taken from ofa-guided-input.ui
 	 *      dialog box definition
 	 */
-	GtkContainer    *right_box;				/* the reparented container from dialog */
-	GtkButton       *right_ok;
-	GtkButton       *right_cancel;
+	GtkContainer          *right_box;		/* the reparented container from dialog */
+	GtkButton             *right_ok;
+	GtkButton             *right_cancel;
 };
 
 /* columns in the left tree view which handles the entry models
@@ -88,7 +88,7 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static void       pane_restore_position( GtkPaned *pane );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
-static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget *setup_view_left( ofaGuidedEx *self );
 static GtkWidget *setup_view_right( ofaGuidedEx *self );
 static GtkWidget *setup_left_treeview( ofaGuidedEx *self );
@@ -228,7 +228,7 @@ v_setup_view( ofaPage *page )
 static void
 pane_restore_position( GtkPaned *pane )
 {
-	gtk_paned_set_position( pane, ofa_settings_get_uint( "GuidedInputDlgEx-pane" ));
+	gtk_paned_set_position( pane, ofa_settings_get_uint( "GuidedInputExDlg-pane" ));
 }
 
 static GtkWidget *
@@ -245,7 +245,7 @@ v_init_view( ofaPage *page )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_GUIDED_EX( page ), NULL );
 
@@ -264,7 +264,9 @@ setup_view_left( ofaGuidedEx *self )
 	GtkBox *box, *box2;
 	GtkButton *button;
 
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
+	frame = GTK_FRAME( gtk_frame_new( _( " Per ledger " )));
+	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
+	gtk_widget_set_margin_bottom( GTK_WIDGET( frame ), 4 );
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
 
 	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 ));
@@ -302,6 +304,8 @@ setup_view_right( ofaGuidedEx *self )
 	priv = self->priv;
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
+	gtk_widget_set_margin_right( GTK_WIDGET( frame ), 4 );
+	gtk_widget_set_margin_bottom( GTK_WIDGET( frame ), 4 );
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
 
 	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
@@ -989,5 +993,5 @@ v_pre_remove( ofaPage *page )
 static void
 pane_save_position( GtkPaned *pane )
 {
-	ofa_settings_set_uint( "GuidedInputDlgEx-pane", gtk_paned_get_position( pane ));
+	ofa_settings_set_uint( "GuidedInputExDlg-pane", gtk_paned_get_position( pane ));
 }

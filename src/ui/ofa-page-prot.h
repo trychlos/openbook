@@ -33,21 +33,12 @@
  * @include: ui/ofa-page.h
  */
 
-#include "api/ofo-dossier-def.h"
-
-#include "core/ofa-main-window-def.h"
-
 G_BEGIN_DECLS
 
 /* protected instance data
  */
 struct _ofaPageProtected {
-	gboolean       dispose_has_run;
-
-	/* properties set at instanciation time
-	 */
-	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
+	gboolean dispose_has_run;
 };
 
 G_END_DECLS

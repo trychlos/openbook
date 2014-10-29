@@ -1284,12 +1284,9 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 	 * ofaPage
 	 */
 	handler = g_object_new(( *theme_def->fn_get_type )(),
-					PAGE_PROP_WINDOW,     main,
-					PAGE_PROP_DOSSIER,    main->priv->dossier,
-					PAGE_PROP_GRID,       grid,
-					PAGE_PROP_THEME,      theme_def->theme_id,
-					PAGE_PROP_HAS_IMPORT, theme_def->has_import,
-					PAGE_PROP_HAS_EXPORT, theme_def->has_export,
+					PAGE_PROP_MAIN_WINDOW, main,
+					PAGE_PROP_TOP_GRID,    grid,
+					PAGE_PROP_THEME,       theme_def->theme_id,
 					NULL );
 
 	g_object_set_data( G_OBJECT( grid ), OFA_DATA_HANDLER, handler );
