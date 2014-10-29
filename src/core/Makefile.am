@@ -60,6 +60,7 @@ libofa_core_la_SOURCES = \
 	ofa-main-window-def.h								\
 	ofa-plugin.c										\
 	ofa-plugin.h										\
+	ofa-preferences.h									\
 	ofa-settings.c										\
 	\
 	ofo-account.c										\

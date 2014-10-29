@@ -42,6 +42,8 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-sgbd.h"
 
+#include "core/ofa-preferences.h"
+
 /* priv instance data
  */
 struct _ofoAccountPrivate {
@@ -995,19 +997,30 @@ ofo_account_get_day_cre_amount( const ofoAccount *account )
  *
  * A account is considered to be deletable if no entry has been recorded
  * during the current exercice - This means that all its amounts must be
- * nuls
+ * nuls.
+ *
+ * Whether a root account with children is deletable is a user preference
+ * (todo #411).
  */
 gboolean
 ofo_account_is_deletable( const ofoAccount *account )
 {
+	gboolean deletable;
+
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		return (!ofo_account_get_deb_amount( account ) &&
-				!ofo_account_get_cre_amount( account ) &&
-				!ofo_account_get_day_deb_amount( account ) &&
-				!ofo_account_get_day_cre_amount( account ));
+		deletable = !ofo_account_get_deb_amount( account ) &&
+					!ofo_account_get_cre_amount( account ) &&
+					!ofo_account_get_day_deb_amount( account ) &&
+					!ofo_account_get_day_cre_amount( account );
+
+		if( ofo_account_is_root( account ) && ofo_account_has_children( account )){
+			deletable &= ofa_prefs_account_delete_root_with_children();
+		}
+
+		return( deletable );
 	}
 
 	return( FALSE );
@@ -1150,6 +1163,42 @@ ofo_account_get_global_solde( const ofoAccount *account )
 	}
 
 	return( amount );
+}
+
+/**
+ * ofo_account_has_children:
+ *
+ * Whether an account has children is only relevant for a root account
+ * (but this is not checked here).
+ */
+gboolean
+ofo_account_has_children( const ofoAccount *account )
+{
+	gchar *query;
+	GSList *result, *icol;
+	gint count;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		query = g_strdup_printf(
+					"SELECT COUNT(*) FROM OFA_T_ACCOUNTS "
+					"	WHERE ACC_NUMBER LIKE '%s%%'", ofo_account_get_number( account ));
+
+		count = 0;
+		result = ofo_sgbd_query_ex(
+						ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query, TRUE );
+		if( result ){
+			icol = ( GSList * ) result->data;
+			count = atoi( icol->data );
+		}
+		ofo_sgbd_free_result( result );
+
+		return( count > 1 );
+	}
+
+	return( FALSE );
 }
 
 /**

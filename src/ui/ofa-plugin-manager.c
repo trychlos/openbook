@@ -43,7 +43,7 @@
 
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-plugin-manager.h"
-#include "ui/ofa-preferences.h"
+#include "core/ofa-preferences.h"
 
 /* private instance data
  */

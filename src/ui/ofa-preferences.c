@@ -41,7 +41,7 @@
 
 #include "ui/ofa-dossier-delete-prefs.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-preferences.h"
+#include "core/ofa-preferences.h"
 
 /* private instance data
  */
@@ -66,6 +66,9 @@ struct _ofaPreferencesPrivate {
 	 */
 	ofaDossierDeletePrefs *dd_prefs;
 
+	/* UI - Account delete page
+	 */
+
 	/* UI - Locales
 	 */
 	gchar                 *p3_decimal_sep;
@@ -79,15 +82,17 @@ struct _ofaPreferencesPrivate {
 	GList                 *plugs;
 };
 
-static const gchar *st_assistant_quit_on_escape    = "AssistantQuitOnEscape";
-static const gchar *st_assistant_confirm_on_escape = "AssistantConfirmOnEscape";
-static const gchar *st_assistant_confirm_on_cancel = "AssistantConfirmOnCancel";
+static const gchar *st_assistant_quit_on_escape       = "AssistantQuitOnEscape";
+static const gchar *st_assistant_confirm_on_escape    = "AssistantConfirmOnEscape";
+static const gchar *st_assistant_confirm_on_cancel    = "AssistantConfirmOnCancel";
 
-static const gchar *st_ui_xml                      = PKGUIDIR "/ofa-preferences.ui";
-static const gchar *st_ui_id                       = "PreferencesDlg";
+static const gchar *st_account_delete_root_with_child = "AssistantConfirmOnCancel";
 
-static const gchar *st_delete_dossier_xml          = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
-static const gchar *st_delete_dossier_id           = "DossierDeleteWindow";
+static const gchar *st_ui_xml                         = PKGUIDIR "/ofa-preferences.ui";
+static const gchar *st_ui_id                          = "PreferencesDlg";
+
+static const gchar *st_delete_dossier_xml             = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
+static const gchar *st_delete_dossier_id              = "DossierDeleteWindow";
 
 /*
 enum {
@@ -127,6 +132,7 @@ G_DEFINE_TYPE( ofaPreferences, ofa_preferences, MY_TYPE_DIALOG )
 static void       v_init_dialog( myDialog *dialog );
 static void       init_quit_assistant_page( ofaPreferences *self );
 static void       init_dossier_delete_page( ofaPreferences *self );
+static void       init_account_page( ofaPreferences *self );
 static void       init_locales_page( ofaPreferences *self );
 static void       get_locales( void );
 /*static void       init_locale_date( ofaPreferences *self, const gchar *wname, const gchar *pref, gint *pdata, gint def_value );
@@ -143,6 +149,7 @@ static void       on_sep_changed( GtkCellEditable *editable, ofaPreferences *sel
 static gboolean   v_quit_on_ok( myDialog *dialog );
 static gboolean   do_update( ofaPreferences *self );
 static void       do_update_assistant_page( ofaPreferences *self );
+static void       do_update_account_page( ofaPreferences *self );
 static void       do_update_locales_page( ofaPreferences *self );
 static void       update_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
 static GtkWidget *find_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
@@ -268,6 +275,7 @@ v_init_dialog( myDialog *dialog )
 
 	init_quit_assistant_page( OFA_PREFERENCES( dialog ));
 	init_dossier_delete_page( OFA_PREFERENCES( dialog ));
+	init_account_page( OFA_PREFERENCES( dialog ));
 	init_locales_page( OFA_PREFERENCES( dialog ));
 	enumerate_prefs_plugins( OFA_PREFERENCES( dialog ), init_plugin_page );
 }
@@ -327,6 +335,21 @@ init_dossier_delete_page( ofaPreferences *self )
 
 	priv->dd_prefs = ofa_dossier_delete_prefs_new();
 	ofa_dossier_delete_prefs_init_dialog( priv->dd_prefs, container );
+}
+
+static void
+init_account_page( ofaPreferences *self )
+{
+	GtkContainer *container;
+	GtkWidget *button;
+	gboolean bvalue;
+
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+
+	button = my_utils_container_get_child_by_name( container, "p4-delete-with-child" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	bvalue = ofa_prefs_account_delete_root_with_children();
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 }
 
 static void
@@ -627,6 +650,7 @@ do_update( ofaPreferences *self )
 
 	do_update_assistant_page( self );
 	ofa_dossier_delete_prefs_set_settings( priv->dd_prefs );
+	do_update_account_page( self );
 	do_update_locales_page( self );
 	enumerate_prefs_plugins( self, update_prefs_plugin );
 
@@ -687,6 +711,30 @@ gboolean
 ofa_prefs_assistant_confirm_on_cancel( void )
 {
 	return( ofa_settings_get_boolean( st_assistant_confirm_on_cancel ));
+}
+
+static void
+do_update_account_page( ofaPreferences *self )
+{
+	GtkContainer *container;
+	GtkWidget *button;
+
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+
+	button = my_utils_container_get_child_by_name( container, "p4-delete-with-child" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	ofa_settings_set_boolean(
+			st_account_delete_root_with_child,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
+}
+
+/**
+ * ofa_prefs_account_delete_root_with_child:
+ */
+gboolean
+ofa_prefs_account_delete_root_with_children( void )
+{
+	return( ofa_settings_get_boolean( st_account_delete_root_with_child ));
 }
 
 static void

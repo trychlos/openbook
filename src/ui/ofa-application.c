@@ -41,7 +41,7 @@
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
-#include "ui/ofa-preferences.h"
+#include "core/ofa-preferences.h"
 #include "ui/ofa-plugin-manager.h"
 #include "ui/ofa-restore.h"
 

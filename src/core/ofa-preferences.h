@@ -30,7 +30,7 @@
 /**
  * SECTION: ofa_preferences
  * @short_description: #ofaPreferences class definition.
- * @include: ui/ofa-preferences.h
+ * @include: core/ofa-preferences.h
  *
  * Manage the general user preferences,
  * i.e. user preferences which are not attached to any dossier.
@@ -72,9 +72,11 @@ gboolean ofa_preferences_run     ( ofaMainWindow *parent, ofaPlugin *plugin );
 
 /* these are helpers available to the rest of the application
  */
-gboolean ofa_prefs_assistant_quit_on_escape   ( void );
-gboolean ofa_prefs_assistant_confirm_on_escape( void );
-gboolean ofa_prefs_assistant_confirm_on_cancel( void );
+gboolean ofa_prefs_assistant_quit_on_escape         ( void );
+gboolean ofa_prefs_assistant_confirm_on_escape      ( void );
+gboolean ofa_prefs_assistant_confirm_on_cancel      ( void );
+
+gboolean ofa_prefs_account_delete_root_with_children( void );
 
 G_END_DECLS
 
