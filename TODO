@@ -363,11 +363,12 @@
                 and the current width should be kept in settings
 
  337 2014-10-19 ofaAccountsChart: should be a tree store
+     2014-10-29 note that this may imply to define fake root accounts
+                and this - at least - implies to get the dataseset
+                ordered per account number (which is the case when
+                loading the dataset)
 
  342 2014-10-26 document signals + callbacks should be signals
-
- 411 2014-10-29 have a preference to allow the deletion of root accounts
-                which have detail accounts ?
 
  412
 
@@ -1742,6 +1743,10 @@
  410 2014-10-26 when opening the properties of a plugin, the preferences
                 dialog should open on the appropriate tab
      2014-10-27 done - svn #3988
+
+ 411 2014-10-29 have a preference to allow the deletion of root accounts
+                which have detail accounts ?
+     2014-10-29 done - svn #4008
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
