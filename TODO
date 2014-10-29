@@ -372,14 +372,6 @@
  406 2014-10-26 review application startup, making sure when and how
                 startup/activate/open methods are called
 
- 407 2014-10-26 only ofaMainWindow should keep a ofoDossier pointer,
-                not the ofaPage
-
- 408 2014-10-26 buttons should be properties of the ofaPage
-     2014-10-28 No: the main page is only a grid created on top of the
-                main notebook page, with a theme id attached.
-                Buttons are to be created via a separated class.
-
  411 2014-10-29 have a preference to allow the deletion of root accounts
                 which have detail accounts ?
 
@@ -1731,6 +1723,16 @@
                 + rename private to priv
                 ofaViewEntries
      2014-10-26 done - svn #3925
+
+ 407 2014-10-26 only ofaMainWindow should keep a ofoDossier pointer,
+                not the ofaPage
+     2014-10-29 done
+
+ 408 2014-10-26 buttons should be properties of the ofaPage
+     2014-10-28 No: the main page is only a grid created on top of the
+                main notebook page, with a theme id attached.
+                Buttons are to be created via a separated class.
+     2014-10-29 done - svn #4003
 
  409 2014-10-26 print reconcil: should also print currency symbol
      2014-10-27 done - svn #3989

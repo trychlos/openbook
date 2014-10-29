@@ -82,7 +82,6 @@ enum {
 static gboolean pref_confirm_on_quit = FALSE;
 
 static const gchar            *st_application_id     = "org.trychlos.openbook.ui";
-static const GApplicationFlags st_application_flags  = G_APPLICATION_NON_UNIQUE;
 
 static const gchar            *st_application_name   = N_( "Open Freelance Accounting" );
 static const gchar            *st_description        = N_( "Une comptabilité en partie-double orientée vers les freelances" );
@@ -107,13 +106,13 @@ static       GOptionEntry      st_option_entries[]  = {
 
 G_DEFINE_TYPE( ofaApplication, ofa_application, GTK_TYPE_APPLICATION )
 
-static void     application_startup( GApplication *application );
-static void     application_activate( GApplication *application );
-static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
-
 static void     init_i18n( ofaApplication *application );
 static gboolean init_gtk_args( ofaApplication *application );
 static gboolean manage_options( ofaApplication *application );
+
+static void     application_startup( GApplication *application );
+static void     application_activate( GApplication *application );
+static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -345,7 +344,7 @@ ofa_application_new( void )
 
 			/* GApplication properties */
 			"application-id",          st_application_id,
-			"flags",                   st_application_flags,
+			"flags",                   G_APPLICATION_NON_UNIQUE,
 
 			/* ofaApplication properties */
 			OFA_PROP_OPTIONS,          st_option_entries,
@@ -402,6 +401,114 @@ ofa_application_run_with_args( ofaApplication *application, int argc, GStrv argv
 	}
 
 	return( priv->code );
+}
+
+/*
+ * i18n initialization
+ */
+static void
+init_i18n( ofaApplication *application )
+{
+	static const gchar *thisfn = "ofa_application_init_i18n";
+
+	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+
+#ifdef ENABLE_NLS
+	bindtextdomain( GETTEXT_PACKAGE, GNOMELOCALEDIR );
+# ifdef HAVE_BIND_TEXTDOMAIN_CODESET
+	bind_textdomain_codeset( GETTEXT_PACKAGE, "UTF-8" );
+# endif
+	textdomain( GETTEXT_PACKAGE );
+#endif
+}
+
+/*
+ * Pre-Gtk+ initialization
+ *
+ * Though GApplication has its own infrastructure to handle command-line
+ * arguments, it appears that it does not deal with Gtk+-specific arguments.
+ * We so have to explicitely call gtk_init_with_args() in order to let Gtk+
+ * "eat" its own arguments, and only have to handle our owns...
+ */
+static gboolean
+init_gtk_args( ofaApplication *application )
+{
+	static const gchar *thisfn = "ofa_application_init_gtk_args";
+	gboolean ret;
+	char *parameter_string;
+	GError *error;
+
+	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+
+	/* manage command-line arguments
+	 */
+	if( application->priv->options ){
+		parameter_string = g_strdup( g_get_application_name());
+		error = NULL;
+		ret = gtk_init_with_args(
+				&application->priv->argc,
+				( char *** ) &application->priv->argv,
+				parameter_string,
+				application->priv->options,
+				GETTEXT_PACKAGE,
+				&error );
+		if( error ){
+			g_warning( "%s: %s", thisfn, error->message );
+			g_error_free( error );
+			ret = FALSE;
+			application->priv->code = OFA_EXIT_CODE_ARGS;
+		}
+		g_free( parameter_string );
+
+	} else {
+		ret = gtk_init_check(
+				&application->priv->argc,
+				( char *** ) &application->priv->argv );
+		if( !ret ){
+			g_warning( "%s", _( "Erreur à l'interprétation des arguments en ligne de commande" ));
+			application->priv->code = OFA_EXIT_CODE_ARGS;
+		}
+	}
+
+	return( ret );
+}
+
+static gboolean
+manage_options( ofaApplication *application )
+{
+	static const gchar *thisfn = "ofa_application_manage_options";
+	ofaApplicationPrivate *priv;
+	gboolean ret;
+
+	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+
+	ret = TRUE;
+	priv = application->priv;
+
+	/* display the program version ?
+	 * if yes, then stops here
+	 */
+	if( st_version_opt ){
+		on_version( application );
+		ret = FALSE;
+
+	} else if( st_dossier_name_opt || st_dossier_user_opt || st_dossier_passwd_opt ){
+
+		if( !g_utf8_strlen( st_dossier_name_opt, -1 ) ||
+				!g_utf8_strlen( st_dossier_user_opt, -1 ) ||
+				!g_utf8_strlen( st_dossier_passwd_opt, -1 )){
+			g_warning( "%s: ioncomplete arguments: dossier=%s, user=%s, password=%s",
+					thisfn, st_dossier_name_opt, st_dossier_user_opt, st_dossier_passwd_opt );
+
+		} else {
+			priv->sdo = g_new0( ofsDossierOpen, 1 );
+			priv->sdo->label = g_strdup( st_dossier_name_opt );
+			priv->sdo->account = g_strdup( st_dossier_user_opt );
+			priv->sdo->password = g_strdup( st_dossier_passwd_opt );
+		}
+	}
+
+	return( ret );
 }
 
 /*
@@ -514,6 +621,9 @@ application_activate( GApplication *application )
 
 	gtk_window_present( GTK_WINDOW( priv->main_window ));
 
+	/* if present, command-line options have been dealt with before
+	 * g_application_run() has been called, i.e. before even startup
+	 * has been triggered */
 	if( priv->sdo ){
 		g_signal_emit_by_name(
 				priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, priv->sdo );
@@ -531,138 +641,25 @@ application_activate( GApplication *application )
  * open the file in this window. If multiple files are given, possibly
  * several windows should be opened.
  * open will only be invoked in the case that your application declares
- * that it supports opening files with the G_APPLICATION_HANDLES_OPE
+ * that it supports opening files with the G_APPLICATION_HANDLES_OPEN
  * GApplicationFlag.
+ *
+ * Openbook: as the G_APPLICATION_HANDLES_OPEN flag is not set, then
+ * this function should never be called.
  */
 static void
 application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint )
 {
 	static const gchar *thisfn = "ofa_application_open";
-	ofaApplication *appli;
 
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
-
-	g_return_if_fail( OFA_IS_APPLICATION( application ));
-	appli = OFA_APPLICATION( application );
-
-	if( !appli->priv->main_window ){
-		appli->priv->main_window = ofa_main_window_new( appli );
-	}
-
-	/*for (i = 0; i < n_files; i++)
-	    example_app_window_open (win, files[i]);*/
-
-	gtk_window_present( GTK_WINDOW( appli->priv->main_window ));
+	g_warning( "%s: application=%p, n_files=%d, hint=%s: unexpected run here",
+			thisfn, ( void * ) application, n_files, hint );
 }
+/*                                                                   */
+/******************* END OF APPLICATION STARTUP **********************/
 
-/*
- * i18n initialization
- */
-static void
-init_i18n( ofaApplication *application )
-{
-	static const gchar *thisfn = "ofa_application_init_i18n";
-
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
-
-#ifdef ENABLE_NLS
-	bindtextdomain( GETTEXT_PACKAGE, GNOMELOCALEDIR );
-# ifdef HAVE_BIND_TEXTDOMAIN_CODESET
-	bind_textdomain_codeset( GETTEXT_PACKAGE, "UTF-8" );
-# endif
-	textdomain( GETTEXT_PACKAGE );
-#endif
-}
-
-/*
- * Pre-Gtk+ initialization
- *
- * Though GApplication has its own infrastructure to handle command-line
- * arguments, it appears that it does not deal with Gtk+-specific arguments.
- * We so have to explicitely call gtk_init_with_args() in order to let Gtk+
- * "eat" its own arguments, and only have to handle our owns...
- */
-static gboolean
-init_gtk_args( ofaApplication *application )
-{
-	static const gchar *thisfn = "ofa_application_init_gtk_args";
-	gboolean ret;
-	char *parameter_string;
-	GError *error;
-
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
-
-	/* manage command-line arguments
-	 */
-	if( application->priv->options ){
-		parameter_string = g_strdup( g_get_application_name());
-		error = NULL;
-		ret = gtk_init_with_args(
-				&application->priv->argc,
-				( char *** ) &application->priv->argv,
-				parameter_string,
-				application->priv->options,
-				GETTEXT_PACKAGE,
-				&error );
-		if( error ){
-			g_warning( "%s: %s", thisfn, error->message );
-			g_error_free( error );
-			ret = FALSE;
-			application->priv->code = OFA_EXIT_CODE_ARGS;
-		}
-		g_free( parameter_string );
-
-	} else {
-		ret = gtk_init_check(
-				&application->priv->argc,
-				( char *** ) &application->priv->argv );
-		if( !ret ){
-			g_warning( "%s", _( "Erreur à l'interprétation des arguments en ligne de commande" ));
-			application->priv->code = OFA_EXIT_CODE_ARGS;
-		}
-	}
-
-	return( ret );
-}
-
-static gboolean
-manage_options( ofaApplication *application )
-{
-	static const gchar *thisfn = "ofa_application_manage_options";
-	ofaApplicationPrivate *priv;
-	gboolean ret;
-
-	g_debug( "%s: application=%p", thisfn, ( void * ) application );
-
-	ret = TRUE;
-	priv = application->priv;
-
-	/* display the program version ?
-	 * if yes, then stops here
-	 */
-	if( st_version_opt ){
-		on_version( application );
-		ret = FALSE;
-
-	} else if( st_dossier_name_opt || st_dossier_user_opt || st_dossier_passwd_opt ){
-
-		if( !g_utf8_strlen( st_dossier_name_opt, -1 ) ||
-				!g_utf8_strlen( st_dossier_user_opt, -1 ) ||
-				!g_utf8_strlen( st_dossier_passwd_opt, -1 )){
-			g_warning( "%s: ioncomplete arguments: dossier=%s, user=%s, password=%s",
-					thisfn, st_dossier_name_opt, st_dossier_user_opt, st_dossier_passwd_opt );
-
-		} else {
-			priv->sdo = g_new0( ofsDossierOpen, 1 );
-			priv->sdo->label = g_strdup( st_dossier_name_opt );
-			priv->sdo->account = g_strdup( st_dossier_user_opt );
-			priv->sdo->password = g_strdup( st_dossier_passwd_opt );
-		}
-	}
-
-	return( ret );
-}
-
+/***** Starting here with functions which handle the menu options ****/
+/*                                                                   */
 static void
 on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {

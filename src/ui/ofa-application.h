@@ -32,6 +32,38 @@
  * @title: ofaApplication
  * @short_description: The ofaApplication application class definition
  * @include: ui/ofa-application.h
+ *
+ * Startup dynamic:
+ * [main]
+ *  |
+ *  +-> appli = ofa_application_new();
+ *      |
+ *      +-> ofa_application_class_init: klass=0xd884b0
+ *          ofa_application_init: self=0xd8a120 (ofaApplication)
+ *            ofa_plugin_load_modules:
+ *            ofa_plugin_class_init:
+ *              ofa_plugin_init: self=0xd93880 (ofaPlugin)
+ *              ofa_plugin_init: self=0xd93920 (ofaPlugin)
+ *              ofa_plugin_init: self=0xd93a60 (ofaPlugin)
+ *  |
+ *  +-> ret = ofa_application_run_with_args( appli, argc, argv );
+ *      |
+ *      +-> ofa_application_run_with_args: application=0xd8a120 (ofaApplication), argc=1
+ *            ofa_application_init_i18n: application=0xd8a120
+ *            ofa_application_init_gtk_args: application=0xd8a120
+ *            ofa_application_manage_options: application=0xd8a120
+ *
+ *          ofa_application_run_with_args: entering g_application_run
+ *            ofa_application_startup: application=0xd8a120
+ *               (init here the application menu when there is no dossier)
+ *
+ *            ofa_application_activate: application=0xd8a120
+ *              (instanciate a new empty main window, and gtk_window_present it)
+ *              ofa_main_window_new: application=0xd8a120
+ *              ofa_main_window_class_init: klass=0xed8000
+ *              ofa_main_window_init: self=0xfe43d0 (ofaMainWindow)
+ *              ...
+ *            ofa_application_activate: main window instanciated at 0xfe43d0
  */
 
 #include "core/ofa-application-def.h"
