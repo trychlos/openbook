@@ -362,12 +362,6 @@
                 (autoresize on double click is automatically handled)
                 and the current width should be kept in settings
 
- 337 2014-10-19 ofaAccountsChart: should be a tree store
-     2014-10-29 note that this may imply to define fake root accounts
-                and this - at least - implies to get the dataseset
-                ordered per account number (which is the case when
-                loading the dataset)
-
  342 2014-10-26 document signals + callbacks should be signals
 
  412
@@ -1392,6 +1386,13 @@
  328 2014-10-17 DossierOpen: display an error message box if account or
                 password are false
      2014-10-29 done - svn #4005
+
+ 337 2014-10-19 ofaAccountsChart: should be a tree store
+     2014-10-29 note that this may imply to define fake root accounts
+                and this - at least - implies to get the dataseset
+                ordered per account number (which is the case when
+                loading the dataset)
+     2014-10-29 done - svn #4009
 
  338 2014-10-19 ofa_main_page_delete_confirmed() is not an ofaMainPage
                 method (rather put in ofaMainWindow or in my_utils)
