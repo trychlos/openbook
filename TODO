@@ -328,9 +328,6 @@
  327 2014-10-14 Select account: size and position should be kept 
                 distinctly for each usage
 
- 328 2014-10-17 DossierOpen: display an error message box if account or
-                password are false
-
  329 2014-10-17 updating an entry in ViewEntries should be repercuted
                 to the same entry in Reconciliation
 
@@ -1390,6 +1387,10 @@
 
  324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
      2014-10-13 cancelled as myDate class has been obsoleted
+
+ 328 2014-10-17 DossierOpen: display an error message box if account or
+                password are false
+     2014-10-29 done - svn #4005
 
  338 2014-10-19 ofa_main_page_delete_confirmed() is not an ofaMainPage
                 method (rather put in ofaMainWindow or in my_utils)

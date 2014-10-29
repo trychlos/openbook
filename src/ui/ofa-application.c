@@ -627,7 +627,7 @@ application_activate( GApplication *application )
 	 * has been triggered */
 	if( priv->sdo ){
 		g_signal_emit_by_name(
-				priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, priv->sdo );
+				priv->main_window, OFA_SIGNAL_ACTION_DOSSIER_OPEN, priv->sdo );
 	}
 }
 
@@ -710,7 +710,7 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	sdo = ofa_dossier_open_run( priv->main_window );
 	if( sdo ){
-		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_OPEN_DOSSIER, sdo );
+		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_ACTION_DOSSIER_OPEN, sdo );
 	}
 }
 

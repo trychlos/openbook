@@ -88,20 +88,6 @@ enum {
 	THM_VIEW_ENTRIES
 };
 
-/**
- *  Signal to be sent to the main window in order to ask for the opening
- * of a dossier. See also the #ofaOpenDossier struct.
- */
-#define OFA_SIGNAL_OPEN_DOSSIER                  "ofa-signal-open-dossier"
-
-/**
- *  Signal to be sent to the main window in order to update the
- *  properties of the currently opened dossier
- *  use case: DossierNew: update the properties right after having
- *  opened the new dossier.
- */
-#define OFA_SIGNAL_UPDATE_PROPERTIES             "ofa-signal-update-properties"
-
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
 
 ofaPage       *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );

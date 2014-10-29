@@ -227,9 +227,9 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 
 	if( dossier_created ){
 		if( open_dossier ){
-			g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_OPEN_DOSSIER, sdo );
+			g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_ACTION_DOSSIER_OPEN, sdo );
 			if( open_properties ){
-				g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_UPDATE_PROPERTIES );
+				g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_ACTION_DOSSIER_PROPERTIES );
 			}
 			dossier_opened = TRUE;
 		}

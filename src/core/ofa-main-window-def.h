@@ -65,13 +65,20 @@ typedef struct {
 	ofaMainWindowClass;
 
 /**
+ * OFA_SIGNAL_ACTION_DOSSIER_OPEN:
+ * Signal to be sent to the main window in order to ask for the opening
+ * of a dossier. See also the #ofsDossierOpen struct.
+ */
+#define OFA_SIGNAL_ACTION_DOSSIER_OPEN      "ofa-signal-dossier-open"
+
+/**
  * ofsDossierOpen:
- * @label: the label of the dossier
- * @account: an account authorized to the dossier
- * @password: the password of the account
+ * @label: the label of the dossier, as in the settings.
+ * @account: an account authorized to the dossier.
+ * @password: the password of the account.
  *
- * The structure which should be allocated and attached to the above
- * signal. This structure will be freed in the signal cleanup handler.
+ * This structure must be allocated by the emitter, and attached to the
+ * above signal. It will be freed in the signal cleanup handler.
  */
 typedef struct {
 	gchar *label;
@@ -79,6 +86,15 @@ typedef struct {
 	gchar *password;
 }
 	ofsDossierOpen;
+
+/**
+ * OFA_SIGNAL_ACTION_DOSSIER_PROPERTIES:
+ *  Signal to be sent to the main window in order to update the
+ *  properties of the currently opened dossier.
+ *  use case: DossierNew: update the properties right after having
+ *  opened the new dossier.
+ */
+#define OFA_SIGNAL_ACTION_DOSSIER_PROPERTIES "ofa-signal-dossier-properties"
 
 GType ofa_main_window_get_type( void ) G_GNUC_CONST;
 
