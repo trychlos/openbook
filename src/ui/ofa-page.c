@@ -33,6 +33,7 @@
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 
+#include "ui/my-buttons-box.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 
@@ -49,6 +50,7 @@ struct _ofaPagePrivate {
 
 	/* UI
 	 */
+	myButtonsBox  *buttons_box;
 	GtkButton     *btn_new;
 	GtkButton     *btn_update;
 	GtkButton     *btn_delete;
@@ -798,27 +800,6 @@ ofa_page_get_export_btn( const ofaPage *page )
 }
 
 /**
- * ofa_page_pre_remove:
- *
- * This function is called by the #ofaMainWindow main window when it is
- * about to remove an #ofaPage from the main notebook. It is time for
- * the #ofaPage-derived class to handle widgets before they are
- * destroyed.
- */
-void
-ofa_page_pre_remove( ofaPage *page )
-{
-	g_return_if_fail( page && OFA_IS_PAGE( page ));
-
-	if( !page->prot->dispose_has_run ){
-
-		if( OFA_PAGE_GET_CLASS( page )->pre_remove ){
-			OFA_PAGE_GET_CLASS( page )->pre_remove( page );
-		}
-	}
-}
-
-/**
  * ofa_page_get_top_focusable_widget:
  *
  * This virtual function should return the top focusable widget of
@@ -839,4 +820,25 @@ ofa_page_get_top_focusable_widget( ofaPage *page )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_page_pre_remove:
+ *
+ * This function is called by the #ofaMainWindow main window when it is
+ * about to remove an #ofaPage from the main notebook. It is time for
+ * the #ofaPage-derived class to handle widgets before they are
+ * destroyed.
+ */
+void
+ofa_page_pre_remove( ofaPage *page )
+{
+	g_return_if_fail( page && OFA_IS_PAGE( page ));
+
+	if( !page->prot->dispose_has_run ){
+
+		if( OFA_PAGE_GET_CLASS( page )->pre_remove ){
+			OFA_PAGE_GET_CLASS( page )->pre_remove( page );
+		}
+	}
 }

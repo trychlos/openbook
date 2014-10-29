@@ -53,8 +53,7 @@ struct _ofaAccountsPagePrivate {
 
 G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *v_setup_buttons( ofaPage *page );
+static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( ofaPage *page );
 static void       on_row_activated( ofoAccount *account, ofaPage *page );
@@ -113,25 +112,18 @@ ofa_accounts_page_class_init( ofaAccountsPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = accounts_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = accounts_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 
 	g_type_class_add_private( klass, sizeof( ofaAccountsPagePrivate ));
 }
 
-static GtkWidget *
-v_setup_view( ofaPage *page )
+static void
+v_setup_page( ofaPage *page )
 {
-	GtkNotebook *chart_book;
 	ofsAccountsBookParms parms;
 	ofaAccountsPagePrivate *priv;
-
-	chart_book = GTK_NOTEBOOK( gtk_notebook_new());
-	gtk_widget_set_margin_left( GTK_WIDGET( chart_book ), 4 );
-	gtk_widget_set_margin_bottom( GTK_WIDGET( chart_book ), 4 );
-	gtk_notebook_popup_enable( chart_book );
 
 	parms.main_window = ofa_page_get_main_window( page );
 	parms.parent = GTK_CONTAINER( ofa_page_get_grid( page ));
@@ -145,20 +137,13 @@ v_setup_view( ofaPage *page )
 
 	priv = OFA_ACCOUNTS_PAGE( page )->priv;
 	priv->book_child = ofa_accounts_book_new( &parms );
-
-	return( GTK_WIDGET( chart_book ));
-}
-
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
-{
-	return( NULL );
 }
 
 static void
 v_init_view( ofaPage *page )
 {
-	ofa_accounts_book_init_view( OFA_ACCOUNTS_PAGE( page )->priv->book_child, NULL );
+	ofa_accounts_book_init_view(
+			OFA_ACCOUNTS_PAGE( page )->priv->book_child, NULL );
 }
 
 static GtkWidget *

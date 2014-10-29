@@ -45,6 +45,9 @@
  * ||                                                |               ||
  * |+------------------------------------------------+---------------+|
  * +------------------------------------------------------------------+
+ *
+ * The box takes care of allocating a top spacer at the top of the box,
+ * before the first button.
  */
 
 #include <gtk/gtk.h>
@@ -62,7 +65,7 @@ typedef struct _myButtonsBoxPrivate        myButtonsBoxPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBox               parent;
+	GtkButtonBox         parent;
 
 	/*< private members >*/
 	myButtonsBoxPrivate *priv;
@@ -71,13 +74,41 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GtkBoxClass parent;
+	GtkButtonBoxClass parent;
 }
 	myButtonsBoxClass;
 
-GType         my_buttons_box_get_type( void ) G_GNUC_CONST;
+/**
+ * #myButtonsBox class provides typical used identifiers.
+ *
+ * The user may use other identifiers, starting with BUTTONS_BOX_LAST+1.
+ */
+enum {
+	BUTTONS_BOX_FIRST = 1,
+	BUTTONS_BOX_NEW,
+	BUTTONS_BOX_PROPERTIES,
+	BUTTONS_BOX_DELETE,
+	BUTTONS_BOX_IMPORT,
+	BUTTONS_BOX_EXPORT,
+	BUTTONS_BOX_PRINT,
+	BUTTONS_BOX_LAST
+};
 
-myButtonsBox *my_buttons_box_new     ( void );
+GType         my_buttons_box_get_type         ( void ) G_GNUC_CONST;
+
+myButtonsBox *my_buttons_box_new              ( void );
+
+void          my_buttons_box_pack_button      ( myButtonsBox *box, GtkWidget *button,
+														gboolean sensitive,
+														GCallback callback, void *user_data );
+
+GtkWidget    *my_buttons_box_pack_button_by_id( myButtonsBox *box, guint id,
+														gboolean sensitive,
+														GCallback callback, void *user_data );
+
+void          my_buttons_box_inc_top_spacer   ( myButtonsBox *box );
+
+void          my_buttons_box_add_spacer       ( myButtonsBox *box );
 
 G_END_DECLS
 

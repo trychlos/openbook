@@ -36,6 +36,7 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
+#include "ui/my-buttons-box.h"
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-accounts-book.h"
 #include "ui/ofa-page.h"
@@ -65,11 +66,19 @@ struct _ofaAccountsBookPrivate {
 
 	/* UI
 	 */
-	GtkGrid          *top_grid;
+	GtkGrid          *grid;
 	GtkNotebook      *book;
-	GtkButton        *btn_update;
-	GtkButton        *btn_delete;
-	GtkButton        *btn_consult;
+	myButtonsBox     *buttons_box;
+	GtkWidget        *btn_update;
+	GtkWidget        *btn_delete;
+	GtkWidget        *btn_consult;
+};
+
+/*
+ * buttons identifiers
+ */
+enum {
+	BUTTON_VIEW_ENTRIES = BUTTONS_BOX_LAST + 1
 };
 
 /* column ordering in the listview
@@ -105,9 +114,6 @@ static const gchar  *st_class_labels[] = {
 #define DATA_PAGE_CLASS         "ofa-data-page-class"
 #define DATA_COLUMN_ID          "ofa-data-column-id"
 
-static const gchar *st_ui_xml = PKGUIDIR "/ofa-accounts-book.ui";
-static const gchar *st_ui_id  = "AccountsBookWindow";
-
 G_DEFINE_TYPE( ofaAccountsBook, ofa_accounts_book, G_TYPE_OBJECT )
 
 static void       on_parent_window_finalized( ofaAccountsBook *self, gpointer this_was_the_dialog );
@@ -117,7 +123,6 @@ static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountsBook *self );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountsBook *self );
 static void       init_ui( ofaAccountsBook *self );
-static void       reparent_from_window( ofaAccountsBook *self );
 static void       setup_account_book( ofaAccountsBook *self );
 static void       setup_buttons( ofaAccountsBook *self );
 static void       on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsBook *self );
@@ -228,19 +233,21 @@ ofa_accounts_book_class_init( ofaAccountsBookClass *klass )
  *
  * Creates the structured content, i.e. one notebook with one page per
  * account class.
- * The notebook must be created and provided by the parent dialog.
  *
  * Does NOT insert the data (see: ofa_accounts_book_init_view).
  *
  * +-----------------------------------------------------------------------+
- * | grid (this is the grid main page)                                     |
- * | +-----------------------------------------------+-------------------+ |
- * | | book                                          |                   | |
- * | |  (provided by the parent dialog)              |                   | |
- * | |                                               |                   | |
- * | | each page of the book contains accounts for   |                   | |
- * | | the corresponding class (if any)              |                   | |
- * | +-----------------------------------------------+-------------------+ |
+ * | parent container:                                                     |
+ * |   this is the grid of the main page,                                  |
+ * |   or any another container (i.e. a frame)                             |
+ * | +-------------------------------------------------------------------+ |
+ * | | creates a grid which will contain the book and the buttons        | |
+ * | | +---------------------------------------------+-----------------+ + |
+ * | | | creates a notebook where each page contains | creates         | | |
+ * | | |   the account of the corresponding class    |   a buttons box | | |
+ * | | |                                             |                 | | |
+ * | | +---------------------------------------------+-----------------+ | |
+ * | +-------------------------------------------------------------------+ |
  * +-----------------------------------------------------------------------+
  */
 ofaAccountsBook *
@@ -270,7 +277,7 @@ ofa_accounts_book_new( ofsAccountsBookParms *parms  )
 	priv->pfnViewEntries = parms->pfnViewEntries;
 	priv->user_data = parms->user_data;
 
-	/* setup a weak reference on the dialog to auto-unref */
+	/* setup a weak reference on the parent container to auto-unref */
 	g_object_weak_ref( G_OBJECT( priv->parent ), ( GWeakNotify ) on_parent_window_finalized, self );
 
 	/* connect to the dossier in order to get advertised on updates */
@@ -413,47 +420,33 @@ on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountsBook *self )
 static void
 init_ui( ofaAccountsBook *self )
 {
-	/* load our UI and attach it to the provided parent container */
-	reparent_from_window( self );
+	ofaAccountsBookPrivate *priv;
+
+	priv = self->priv;
+
+	priv->grid = GTK_GRID( gtk_grid_new());
+	gtk_container_add( priv->parent, GTK_WIDGET( priv->grid ));
 
 	/* setup and connect the notebook */
 	setup_account_book( self );
+	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->book ), 0, 0, 1, 1 );
 
 	/* setup and connect the buttons */
 	setup_buttons( self );
-}
-
-static void
-reparent_from_window( ofaAccountsBook *self )
-{
-	GtkWidget *window;
-	GtkWidget *grid;
-
-	/* load our window */
-	window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
-	g_return_if_fail( window && GTK_IS_WINDOW( window ));
-
-	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-grid" );
-	g_return_if_fail( grid && GTK_IS_GRID( grid ));
-	self->priv->top_grid = GTK_GRID( grid );
-
-	/* attach our grid to the parent's frame */
-	gtk_widget_reparent( grid, GTK_WIDGET( self->priv->parent ));
+	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->buttons_box ), 1, 0, 1, 1 );
 }
 
 static void
 setup_account_book( ofaAccountsBook *self )
 {
 	ofaAccountsBookPrivate *priv;
-	GtkWidget *book;
 
 	priv = self->priv;
 
-	book = my_utils_container_get_child_by_type(
-						GTK_CONTAINER( priv->top_grid ), GTK_TYPE_NOTEBOOK );
-	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
-
-	priv->book = GTK_NOTEBOOK( book );
+	priv->book = GTK_NOTEBOOK( gtk_notebook_new());
+	gtk_widget_set_margin_left( GTK_WIDGET( priv->book ), 4 );
+	gtk_widget_set_margin_bottom( GTK_WIDGET( priv->book ), 4 );
+	gtk_notebook_popup_enable( priv->book );
 
 	g_signal_connect(
 			G_OBJECT( priv->book ),
@@ -464,49 +457,36 @@ setup_account_book( ofaAccountsBook *self )
 			"key-press-event", G_CALLBACK( on_key_pressed_event ), self );
 }
 
-/*
- * buttons are provided by the main page for a first part
- * to which we add the 'View entries' button
- */
 static void
 setup_buttons( ofaAccountsBook *self )
 {
 	ofaAccountsBookPrivate *priv;
-	GtkBox *buttons_box;
-	GtkWidget *button;
-	GtkFrame *frame;
 
 	priv = self->priv;
 
-	/* get the standard buttons and connect our signals */
-	buttons_box = ofa_page_get_buttons_box_new( priv->has_import, priv->has_export );
+	priv->buttons_box = my_buttons_box_new();
+	my_buttons_box_inc_top_spacer( priv->buttons_box );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_NEW );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_new_clicked ), self );
+	my_buttons_box_pack_button_by_id( priv->buttons_box,
+			BUTTONS_BOX_NEW,
+			TRUE, G_CALLBACK( on_new_clicked ), self );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_UPDATE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_update_clicked ), self );
-	priv->btn_update = GTK_BUTTON( button );
+	priv->btn_update = my_buttons_box_pack_button_by_id( priv->buttons_box,
+								BUTTONS_BOX_PROPERTIES,
+								FALSE, G_CALLBACK( on_update_clicked ), self );
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( buttons_box ), PAGE_BUTTON_DELETE );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_delete_clicked ), self );
-	priv->btn_delete = GTK_BUTTON( button );
+	priv->btn_delete = my_buttons_box_pack_button_by_id( priv->buttons_box,
+								BUTTONS_BOX_DELETE,
+								FALSE, G_CALLBACK( on_delete_clicked ), self );
 
-	/* add our account-specific buttons */
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
-	gtk_box_pack_start( buttons_box, GTK_WIDGET( frame ), FALSE, FALSE, 8 );
+	my_buttons_box_add_spacer( priv->buttons_box );
 
 	if( priv->has_view_entries ){
-		button = gtk_button_new_with_mnemonic( _( "View _entries..." ));
-		gtk_widget_set_sensitive( button, FALSE );
-		g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_view_entries ), self );
-		gtk_box_pack_start( buttons_box, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-		priv->btn_consult = GTK_BUTTON( button );
+		priv->btn_consult = gtk_button_new_with_mnemonic( _( "View _entries..." ));
+		my_buttons_box_pack_button( priv->buttons_box,
+				priv->btn_consult,
+				FALSE, G_CALLBACK( on_view_entries ), self );
 	}
-
-	/* attach the buttons box to the parent grid */
-	gtk_grid_attach( priv->top_grid, GTK_WIDGET( buttons_box ), 1, 0, 1, 1 );
 }
 
 static void
@@ -518,7 +498,6 @@ on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsB
 	tview = ( GtkTreeView * )
 					my_utils_container_get_child_by_type(
 							GTK_CONTAINER( wpage ), GTK_TYPE_TREE_VIEW );
-
 	if( tview ){
 		g_return_if_fail( GTK_IS_TREE_VIEW( tview ));
 		select = gtk_tree_view_get_selection( tview );
@@ -1016,17 +995,21 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 static void
 update_buttons_sensitivity( ofaAccountsBook *self, ofoAccount *account )
 {
+	ofaAccountsBookPrivate *priv;
+
+	priv = self->priv;
+
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->priv->btn_update ),
+			priv->btn_update,
 			account && OFO_IS_ACCOUNT( account ));
 
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( self->priv->btn_delete ),
+			priv->btn_delete,
 			account && OFO_IS_ACCOUNT( account ) && ofo_account_is_deletable( account ));
 
 	if( self->priv->btn_consult ){
 		gtk_widget_set_sensitive(
-				GTK_WIDGET( self->priv->btn_consult ),
+				priv->btn_consult,
 				account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account ));
 	}
 }

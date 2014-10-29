@@ -380,7 +380,10 @@
                 main notebook page, with a theme id attached.
                 Buttons are to be created via a separated class.
 
- 411
+ 411 2014-10-29 have a preference to allow the deletion of root accounts
+                which have detail accounts ?
+
+ 412
 
 -----------------------------------------------------------------------
  DONE

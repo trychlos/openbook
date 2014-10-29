@@ -75,7 +75,7 @@ typedef struct {
 	 * #setup_view() and #setup_buttons_box() virtual methods,
 	 * attaching the two returned widgets respectively on columns 0
 	 * and 1 of the main grid of the page.
-	 * It ends up by calling #init_view() virtual method.
+	 * It ends up by calling gtk_widget_show_all() on the page.
 	 */
 	void        ( *setup_page )              ( ofaPage *page );
 
@@ -98,10 +98,8 @@ typedef struct {
 	 * This virtual function is called by #setup_page() default
 	 * implementation of the base class virtual method.
 	 *
-	 * The base class default implementation defines three 'New',
-	 * 'Update' and 'Delete' buttons, attaching respectively to
-	 * 'on_new_clicked', 'on_update_clicked' and 'on_delete_clicked'
-	 * virtual methods.
+	 * The base class default implementation just creates a new, empty,
+	 * #myButtonsBox object, to be attached in the right of the view.
 	 */
 	GtkWidget * ( *setup_buttons )           ( ofaPage *page );
 
@@ -109,8 +107,8 @@ typedef struct {
 	 * init_view:
 	 * @page: this #ofaPage object.
 	 *
-	 * This virtual function is called by #setup_page() implementation
-	 * of the base class virtual method.
+	 * This virtual function is called after the page has been set up.
+	 *
 	 * This is a pure virtual function, that the child class should
 	 * implement.
 	 */

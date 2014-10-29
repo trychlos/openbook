@@ -111,8 +111,6 @@ G_BEGIN_DECLS
 #define PAGE_BUTTON_IMPORT              "btn-import"
 #define PAGE_BUTTON_EXPORT              "btn-export"
 
-void           ofa_page_pre_remove              ( ofaPage *page );
-
 ofaMainWindow *ofa_page_get_main_window         ( const ofaPage *page );
 ofoDossier    *ofa_page_get_dossier             ( const ofaPage *page );
 gint           ofa_page_get_theme               ( const ofaPage *page );
@@ -127,6 +125,8 @@ GtkWidget     *ofa_page_get_export_btn          ( const ofaPage *page );
 GtkWidget     *ofa_page_get_top_focusable_widget( ofaPage *page );
 
 GtkBox        *ofa_page_get_buttons_box_new     ( gboolean has_import, gboolean has_export );
+
+void           ofa_page_pre_remove              ( ofaPage *page );
 
 G_END_DECLS
 
