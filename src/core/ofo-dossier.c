@@ -54,7 +54,7 @@ struct _ofoDossierPrivate {
 
 	/* internals
 	 */
-	gchar      *name;
+	gchar      *name;					/* the name of the dossier in settings */
 	ofoSgbd    *sgbd;
 	gchar      *userid;
 
@@ -388,6 +388,9 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 
 /**
  * ofo_dossier_open:
+ * @dossier: is expected to have been initialized with the label
+ * @account:
+ * @password:
  */
 gboolean
 ofo_dossier_open( ofoDossier *dossier, const gchar *account, const gchar *password )

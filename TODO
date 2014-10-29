@@ -338,7 +338,7 @@
                 the display of corresponding column in ViewEntries
 
  331 2014-10-17 clearing the display BAT lines in Reconciliation : what
-                it is supposed to do ?
+                is it supposed to do ?
 
  332 2014-10-17 Reconciliation: should not accept Enter to annulate the
                 reconciliation on an entry, as it is too easy to make
@@ -368,9 +368,6 @@
  337 2014-10-19 ofaAccountsChart: should be a tree store
 
  342 2014-10-26 document signals + callbacks should be signals
-
- 406 2014-10-26 review application startup, making sure when and how
-                startup/activate/open methods are called
 
  411 2014-10-29 have a preference to allow the deletion of root accounts
                 which have detail accounts ?
@@ -1723,6 +1720,10 @@
                 + rename private to priv
                 ofaViewEntries
      2014-10-26 done - svn #3925
+
+ 406 2014-10-26 review application startup, making sure when and how
+                startup/activate/open methods are called
+     2014-10-29 done - svn #4004
 
  407 2014-10-26 only ofaMainWindow should keep a ofoDossier pointer,
                 not the ofaPage

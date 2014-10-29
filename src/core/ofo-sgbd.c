@@ -59,6 +59,7 @@ G_DEFINE_TYPE( ofoSgbd, ofo_sgbd, G_TYPE_OBJECT )
 static void     sgbd_connect_static( ofoSgbd *sgbd, gboolean with_dbname, const gchar *dbname, const gchar *account, const gchar *password, gboolean display_error );
 static void     error_module_not_found( const gchar *provider );
 static void     error_already_connected( const ofoSgbd *sgbd );
+static void     error_dossier_not_exists( const ofoSgbd *sgbd );
 static void     error_provider_not_defined( const ofoSgbd *sgbd );
 static void     error_connect( const ofoSgbd *sgbd, const gchar *account );
 static void     error_query( const ofoSgbd *sgbd, const gchar *query );
@@ -141,7 +142,8 @@ ofo_sgbd_class_init( ofoSgbdClass *klass )
 
 /**
  * ofo_sgbd_new:
- * @label: the label of the dossier.
+ * @label: the label of the dossier, which is expected to also be the
+ *  name of the keys group in settings.
  *
  * Allocates a new #ofoSgbd object intended to connect to the specified
  * dossier.
@@ -158,7 +160,6 @@ ofo_sgbd_new( const gchar *label )
 	g_debug( "%s: label=%s", thisfn, label );
 
 	sgbd = g_object_new( OFO_TYPE_SGBD, NULL );
-
 	sgbd->priv->label = g_strdup( label );
 
 	return( sgbd );
@@ -199,8 +200,7 @@ error_module_not_found( const gchar *provider )
  * Returns: %TRUE if the connection is successful, %FALSE else.
  */
 gboolean
-ofo_sgbd_connect( ofoSgbd *sgbd, const gchar *account, const gchar *password,
-				gboolean display_error )
+ofo_sgbd_connect( ofoSgbd *sgbd, const gchar *account, const gchar *password, gboolean display_error )
 {
 	static const gchar *thisfn = "ofo_sgbd_connect";
 
@@ -257,7 +257,8 @@ ofo_sgbd_connect_ex( ofoSgbd *sgbd, const gchar *dbname, const gchar *account, c
  * Open a connection either to the specified database using the
  * connection properties described for the specified dossier.
  *
- * Returns: %TRUE if the connection is successful, %FALSE else.
+ * Whether a connection has been successfully established is set by
+ * positionning the 'connected' private variable to %TRUE.
  */
 static void
 sgbd_connect_static( ofoSgbd *sgbd,
@@ -285,6 +286,15 @@ sgbd_connect_static( ofoSgbd *sgbd,
 	}
 
 	g_return_if_fail( priv->label && g_utf8_strlen( priv->label, -1 ));
+
+	if( !ofa_settings_has_dossier( priv->label )){
+		if( display_error ){
+			error_dossier_not_exists( sgbd );
+		} else {
+			g_warning( "%s: label=%s: provider not defined", thisfn, priv->label );
+		}
+		return;
+	}
 
 	provider_name = ofa_settings_get_dossier_provider( priv->label );
 	if( !provider_name || !g_utf8_strlen( provider_name, -1 )){
@@ -353,6 +363,26 @@ error_already_connected( const ofoSgbd *sgbd )
 	gtk_message_dialog_format_secondary_text( dlg, "%s", str->str );
 	g_string_free( str, TRUE );
 
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( GTK_WIDGET( dlg ));
+}
+
+static void
+error_dossier_not_exists( const ofoSgbd *sgbd )
+{
+	GtkMessageDialog *dlg;
+	gchar *str;
+
+	str = g_strdup_printf(
+				_( "The '%s' dossier doesn't exist" ), sgbd->priv->label );
+
+	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
+				NULL,
+				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_WARNING,
+				GTK_BUTTONS_OK,
+				"%s", str ));
+	g_free( str );
 	gtk_dialog_run( GTK_DIALOG( dlg ));
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
 }

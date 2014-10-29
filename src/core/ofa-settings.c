@@ -345,6 +345,27 @@ ofa_settings_remove_dossier( const gchar *name )
 }
 
 /**
+ * ofa_settings_has_dossier:
+ * @name: the name of the dossier
+ *
+ * Returns %TRUE if the dossier exists.
+ */
+gboolean
+ofa_settings_has_dossier( const gchar *name )
+{
+	gboolean exists;
+	gchar *group;
+
+	settings_new();
+
+	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
+	exists = g_key_file_has_group( st_settings->priv->keyfile, group );
+	g_free( group );
+
+	return( exists );
+}
+
+/**
  * ofa_settings_get_dossier_provider:
  * @name: the name of the dossier
  *
