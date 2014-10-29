@@ -494,17 +494,18 @@ manage_options( ofaApplication *application )
 
 	} else if( st_dossier_name_opt || st_dossier_user_opt || st_dossier_passwd_opt ){
 
-		if( !g_utf8_strlen( st_dossier_name_opt, -1 ) ||
-				!g_utf8_strlen( st_dossier_user_opt, -1 ) ||
-				!g_utf8_strlen( st_dossier_passwd_opt, -1 )){
-			g_warning( "%s: ioncomplete arguments: dossier=%s, user=%s, password=%s",
-					thisfn, st_dossier_name_opt, st_dossier_user_opt, st_dossier_passwd_opt );
+		if( st_dossier_name_opt && g_utf8_strlen( st_dossier_name_opt, -1 ) &&
+				st_dossier_user_opt && g_utf8_strlen( st_dossier_user_opt, -1 ) &&
+				st_dossier_passwd_opt && g_utf8_strlen( st_dossier_passwd_opt, -1 )){
 
-		} else {
 			priv->sdo = g_new0( ofsDossierOpen, 1 );
 			priv->sdo->label = g_strdup( st_dossier_name_opt );
 			priv->sdo->account = g_strdup( st_dossier_user_opt );
 			priv->sdo->password = g_strdup( st_dossier_passwd_opt );
+
+		} else {
+			g_warning( "%s: incomplete arguments: dossier=%s, user=%s, password=%s",
+					thisfn, st_dossier_name_opt, st_dossier_user_opt, st_dossier_passwd_opt );
 		}
 	}
 
