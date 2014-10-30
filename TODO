@@ -29,11 +29,6 @@
 
    8 2014- 5- 2 ofa_application_on_about: to be written
 
-  18 2014- 5- 4 preference: ask confirmation when quitting the
-                 application
-     2014- 5- 5 ofa-application.c: variable 'pref_confirm_on_quit'
-                ofa-main-window.c: variable 'pref_confirm_on_altf4'
-
   21 2014- 5- 6 DossierNew: let the user be able to choose to
                 create a new database (if the data provider allows it)
                 or to use an existing one
@@ -405,6 +400,12 @@
                 an assistant
      2014- 5- 5 ofa-dossier-new.c: variable 'pref_confirm_on_escape'
      2014- 6-30 done
+
+  18 2014- 5- 4 preference: ask confirmation when quitting the
+                 application
+     2014- 5- 5 ofa-application.c: variable 'pref_confirm_on_quit'
+                ofa-main-window.c: variable 'pref_confirm_on_altf4'
+     2014-10-30 done - svn #4012
 
   19 2014- 5- 4 Dossier/New - page p1: provider selection: fix the order
                 of the focus of the fields (provider selector is the first
