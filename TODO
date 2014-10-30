@@ -352,12 +352,10 @@
  412 2014-10-30 bug: when changing a ledger mnemo, all ope templates 
                 are reclassed under 'unclassed'
 
- 413 2014-10-30 Review use of (quasi empty) dlgboxes:
-                - ofa-bat-select.ui
-                - ofa-bat-properties.ui
-                - ofa-account-select.ui
+ 414 2014-10-30 backup and restore default commands should be provided
+                by the dbms provider
 
- 414
+ 415
 
 -----------------------------------------------------------------------
  DONE
@@ -1762,6 +1760,12 @@
  411 2014-10-29 have a preference to allow the deletion of root accounts
                 which have detail accounts ?
      2014-10-29 done - svn #4008
+
+ 413 2014-10-30 Review use of (quasi empty) dlgboxes:
+                - ofa-bat-select.ui: a frame handled by ofaBatCommon
+                - ofa-bat-properties.ui: a frame handled by ofaBatCommon
+                - ofa-account-select.ui: a container handled by ofaAccountsBook
+     2014-10-30
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

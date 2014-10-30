@@ -275,6 +275,7 @@ static GtkWidget       *main_book_get_page( const ofaMainWindow *window, GtkNote
 static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
+static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
 
 static void
 main_window_finalize( GObject *instance )
@@ -862,6 +863,9 @@ add_empty_notebook_to_pane_right( ofaMainWindow *window )
 	gtk_notebook_set_scrollable( book, TRUE );
 	gtk_notebook_popup_enable( book );
 
+	g_signal_connect(
+			G_OBJECT( book ), "page-removed", G_CALLBACK( on_page_removed ), window );
+
 	gtk_paned_pack2( window->priv->pane, GTK_WIDGET( book ), TRUE, FALSE );
 }
 
@@ -1360,8 +1364,22 @@ on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid )
 	page_num = gtk_notebook_page_num( book, GTK_WIDGET( grid ));
 	g_return_if_fail( page_num >= 0 );
 
-	ofa_page_pre_remove( handler );
 	gtk_notebook_remove_page( book, page_num );
+}
+
+static void
+on_page_removed( GtkNotebook *book, GtkWidget *page_w, guint page_num, ofaMainWindow *main_window )
+{
+	static const gchar *thisfn = "ofa_main_window_on_page_removed";
+	ofaPage *handler;
+
+	g_debug( "%s: book=%p, page_w=%p, page_num=%u, main_window=%p",
+			thisfn, ( void * ) book, ( void * ) page_w, page_num, ( void * ) main_window );
+
+	handler = ( ofaPage * ) g_object_get_data( G_OBJECT( page_w ), OFA_DATA_HANDLER );
+	g_return_if_fail( handler && OFA_IS_PAGE( handler ));
+
+	ofa_page_pre_remove( handler );
 }
 
 /**

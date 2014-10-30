@@ -228,7 +228,11 @@ v_setup_view( ofaPage *page )
 static void
 pane_restore_position( GtkPaned *pane )
 {
-	gtk_paned_set_position( pane, ofa_settings_get_uint( "GuidedInputExDlg-pane" ));
+	gint pos;
+
+	pos = ofa_settings_get_uint( "GuidedInputExDlg-pane" );
+	g_debug( "ofa_guided_ex_pane_restore_position: pos=%d", pos );
+	gtk_paned_set_position( pane, pos );
 }
 
 static GtkWidget *
@@ -993,5 +997,9 @@ v_pre_remove( ofaPage *page )
 static void
 pane_save_position( GtkPaned *pane )
 {
-	ofa_settings_set_uint( "GuidedInputExDlg-pane", gtk_paned_get_position( pane ));
+	guint pos;
+
+	pos = gtk_paned_get_position( pane );
+	g_debug( "ofa_guided_ex_pane_save_position: pos=%d", pos );
+	ofa_settings_set_uint( "GuidedInputExDlg-pane", pos );
 }
