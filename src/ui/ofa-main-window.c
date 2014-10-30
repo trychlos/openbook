@@ -35,6 +35,8 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-preferences.h"
+
 #include "ui/my-tab-label.h"
 #include "ui/ofa-accounts-page.h"
 #include "ui/ofa-application.h"
@@ -57,8 +59,6 @@
 #include "ui/ofa-rates-page.h"
 #include "ui/ofa-reconciliation.h"
 #include "ui/ofa-view-entries.h"
-
-static gboolean pref_confirm_on_altf4 = FALSE;
 
 /* private instance data
  */
@@ -554,7 +554,8 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 			( void * ) event,
 			( void * ) user_data );
 
-	ok_to_quit = !pref_confirm_on_altf4 || ofa_main_window_is_willing_to_quit( OFA_MAIN_WINDOW( toplevel ));
+	ok_to_quit = !ofa_prefs_appli_confirm_on_altf4() ||
+					ofa_main_window_is_willing_to_quit( OFA_MAIN_WINDOW( toplevel ));
 
 	return( !ok_to_quit );
 }

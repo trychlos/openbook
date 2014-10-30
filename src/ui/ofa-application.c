@@ -35,6 +35,7 @@
 #include "api/ofo-sgbd.h"
 
 #include "core/ofa-plugin.h"
+#include "core/ofa-preferences.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-main-window.h"
@@ -78,8 +79,6 @@ enum {
 	OFA_PROP_DESCRIPTION_ID,
 	OFA_PROP_ICON_NAME_ID,
 };
-
-static gboolean pref_confirm_on_quit = FALSE;
 
 static const gchar            *st_application_id     = "org.trychlos.openbook.ui";
 
@@ -767,7 +766,7 @@ on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	windows = gtk_application_get_windows( GTK_APPLICATION( application ));
 	if( windows ){
 		window = OFA_MAIN_WINDOW( windows->data );
-		if( !pref_confirm_on_quit || ofa_main_window_is_willing_to_quit( window )){
+		if( !ofa_prefs_appli_confirm_on_quit() || ofa_main_window_is_willing_to_quit( window )){
 			gtk_widget_destroy( GTK_WIDGET( window ));
 		}
 	} else {

@@ -58,7 +58,7 @@ struct _ofaPreferencesPrivate {
 	ofaPlugin             *plugin;
 	GtkWidget             *object_page;
 
-	/* UI - Quit assistant page
+	/* UI - Quitting
 	 */
 	GtkCheckButton        *confirm_on_escape_btn;
 
@@ -85,12 +85,12 @@ struct _ofaPreferencesPrivate {
 static const gchar *st_assistant_quit_on_escape       = "AssistantQuitOnEscape";
 static const gchar *st_assistant_confirm_on_escape    = "AssistantConfirmOnEscape";
 static const gchar *st_assistant_confirm_on_cancel    = "AssistantConfirmOnCancel";
-
+static const gchar *st_appli_confirm_on_quit          = "ApplicationConfirmOnQuit";
+static const gchar *st_appli_confirm_on_altf4         = "ApplicationConfirmOnAltF4";
 static const gchar *st_account_delete_root_with_child = "AssistantConfirmOnCancel";
 
 static const gchar *st_ui_xml                         = PKGUIDIR "/ofa-preferences.ui";
 static const gchar *st_ui_id                          = "PreferencesDlg";
-
 static const gchar *st_delete_dossier_xml             = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
 static const gchar *st_delete_dossier_id              = "DossierDeleteWindow";
 
@@ -130,7 +130,7 @@ typedef void ( *pfnPlugin )( ofaPreferences *, ofaIPreferences * );
 G_DEFINE_TYPE( ofaPreferences, ofa_preferences, MY_TYPE_DIALOG )
 
 static void       v_init_dialog( myDialog *dialog );
-static void       init_quit_assistant_page( ofaPreferences *self );
+static void       init_quitting_page( ofaPreferences *self );
 static void       init_dossier_delete_page( ofaPreferences *self );
 static void       init_account_page( ofaPreferences *self );
 static void       init_locales_page( ofaPreferences *self );
@@ -148,7 +148,7 @@ static void       on_decimal_toggled( GtkToggleButton *check, ofaPreferences *se
 static void       on_sep_changed( GtkCellEditable *editable, ofaPreferences *self );*/
 static gboolean   v_quit_on_ok( myDialog *dialog );
 static gboolean   do_update( ofaPreferences *self );
-static void       do_update_assistant_page( ofaPreferences *self );
+static void       do_update_quitting_page( ofaPreferences *self );
 static void       do_update_account_page( ofaPreferences *self );
 static void       do_update_locales_page( ofaPreferences *self );
 static void       update_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
@@ -273,7 +273,7 @@ v_init_dialog( myDialog *dialog )
 	OFA_PREFERENCES( dialog )->priv->book =
 			my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "notebook" );
 
-	init_quit_assistant_page( OFA_PREFERENCES( dialog ));
+	init_quitting_page( OFA_PREFERENCES( dialog ));
 	init_dossier_delete_page( OFA_PREFERENCES( dialog ));
 	init_account_page( OFA_PREFERENCES( dialog ));
 	init_locales_page( OFA_PREFERENCES( dialog ));
@@ -281,7 +281,7 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-init_quit_assistant_page( ofaPreferences *self )
+init_quitting_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkContainer *container;
@@ -311,6 +311,16 @@ init_quit_assistant_page( ofaPreferences *self )
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	bvalue = ofa_prefs_assistant_confirm_on_cancel();
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), !bvalue );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+
+	button = my_utils_container_get_child_by_name( container, "p1-confirm-altf4" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	bvalue = ofa_prefs_appli_confirm_on_altf4();
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
+
+	button = my_utils_container_get_child_by_name( container, "p1-confirm-quit" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	bvalue = ofa_prefs_appli_confirm_on_quit();
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 }
 
@@ -648,7 +658,7 @@ do_update( ofaPreferences *self )
 
 	priv = self->priv;
 
-	do_update_assistant_page( self );
+	do_update_quitting_page( self );
 	ofa_dossier_delete_prefs_set_settings( priv->dd_prefs );
 	do_update_account_page( self );
 	do_update_locales_page( self );
@@ -660,7 +670,7 @@ do_update( ofaPreferences *self )
 }
 
 static void
-do_update_assistant_page( ofaPreferences *self )
+do_update_quitting_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkContainer *container;
@@ -683,6 +693,18 @@ do_update_assistant_page( ofaPreferences *self )
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	ofa_settings_set_boolean(
 			st_assistant_confirm_on_cancel,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
+
+	button = my_utils_container_get_child_by_name( container, "p1-confirm-altf4" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	ofa_settings_set_boolean(
+			st_appli_confirm_on_altf4,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
+
+	button = my_utils_container_get_child_by_name( container, "p1-confirm-quit" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	ofa_settings_set_boolean(
+			st_appli_confirm_on_quit,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button )));
 }
 
@@ -711,6 +733,24 @@ gboolean
 ofa_prefs_assistant_confirm_on_cancel( void )
 {
 	return( ofa_settings_get_boolean( st_assistant_confirm_on_cancel ));
+}
+
+/**
+ * ofa_prefs_appli_confirm_on_altf4:
+ */
+gboolean
+ofa_prefs_appli_confirm_on_altf4( void )
+{
+	return( ofa_settings_get_boolean( st_appli_confirm_on_altf4 ));
+}
+
+/**
+ * ofa_prefs_appli_confirm_on_quit:
+ */
+gboolean
+ofa_prefs_appli_confirm_on_quit( void )
+{
+	return( ofa_settings_get_boolean( st_appli_confirm_on_quit ));
 }
 
 static void
