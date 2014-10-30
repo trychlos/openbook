@@ -93,6 +93,10 @@
       <attribute name="label" translatable="yes">_Printings</attribute>
       <section>
         <item>
+          <attribute name="label" translatable="yes">Accounts _balance...</attribute>
+          <attribute name="action">win.prt-balance</attribute>
+        </item>
+        <item>
           <attribute name="label" translatable="yes">_Reconciliation...</attribute>
           <attribute name="action">win.prt-reconcil</attribute>
         </item>

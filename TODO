@@ -288,21 +288,30 @@
  321 2014-10- 8 Ledger properties balance: should have '€' sign like
                 account properties balance
 
- 322 2014-10- 8 GuidedInputEx: pane restore position doesn't work
-
  323 2014-10- 9 review the setters as most probably only properties
                 setters are useful, while others may be only internally
                 used
-                - ofoAccount
-                - ofoBat
-                - ofoBatLine
-                - ofoClass
-                - ofoCurrency
-                - ofoDossier
-                - ofoEntry
-                - ofoLedger
-                - ofoOpeTemplate
-                - ofoRate
+                command is:
+                grep _set_ src/api/ofo-*.h | while read l; do \
+                fi="$(echo "$l" | awk -F: '{ print $1 }' | \
+                sed -e 's/src\/api\///' | sed -e 's/\.h//')"; \
+                fn="$(echo "$l" | awk '{ print $2 }' | \
+                sed -e 's/(//')"; echo $fi $fn; grep $fn src/*/* | \
+                grep -vE "src/api/$fi.h|src/core/$fi.c" ; done
+                - ofo_bat_set_id
+                - ofo_bat_line_set_id
+                - ofo_dossier_set_current_exe_id
+                - ofo_entry_set_number
+                - ofo_entry_set_ope_template
+                - ofo_entry_set_status
+                - ofo_entry_set_concil_user
+                - ofo_entry_set_concil_stamp
+                - ofo_ledger_set_clo_deb
+                - ofo_ledger_set_clo_cre
+                - ofo_ledger_set_deb
+                - ofo_ledger_set_deb_date
+                - ofo_ledger_set_cre
+                - ofo_ledger_set_cre_date
 
  325 2014-10-12 DossierManage Properties: to be written
 
@@ -1391,6 +1400,9 @@
                 the top right part, as the operation templates are 
                 already sorted by ledgers
      2014-10-13 cancelled: permit the ledger be modified by the user
+
+ 322 2014-10- 8 GuidedInputEx: pane restore position doesn't work
+     2014-10-30 done - svn #4016
 
  324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
      2014-10-13 cancelled as myDate class has been obsoleted

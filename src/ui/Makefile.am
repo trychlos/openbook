@@ -137,6 +137,8 @@ openbook_SOURCES = \
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
 	ofa-preferences.c									\
+	ofa-print-balance.c									\
+	ofa-print-balance.h									\
 	ofa-print-reconcil.c								\
 	ofa-print-reconcil.h								\
 	ofa-rate-properties.c								\
