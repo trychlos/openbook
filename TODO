@@ -43,10 +43,6 @@
                 dossier
      2014- 5-22 see also TODO #42
 
-  36 2014- 5-11 win.close action should only be enabled when a dossier 
-                is opened
-     2014- 5-22 see also TODO #42
-
   40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
 
   41 2014- 5-12 ofaMainWindow: set menu tooltips
@@ -359,7 +355,12 @@
 
  342 2014-10-26 document signals + callbacks should be signals
 
- 412
+ 412 2014-10-30 bug: when changing a ledger mnemo, all ope templates 
+                are reclassed under 'unclassed'
+
+ 413
+
+ 414
 
 -----------------------------------------------------------------------
  DONE
@@ -469,6 +470,13 @@
   34 2014- 5- 9 DossierNew: move the settings key names to ofa_settings
                 (as ofa_settings_get_dossier)
      2014- 5-10 Done
+
+  36 2014- 5-11 win.close action should only be enabled when a dossier 
+                is opened
+     2014- 5-22 see also TODO #42
+     2014-10-30 cancelled as the option is only defined in the main
+                window menu, and so doesn't even appear when no dossier
+                is opened
 
   37 2014- 5-11 DossierNew: fix the order of the focus on pages p2 and
                 p3 (a try with gtk_container_set_focus_chain is not

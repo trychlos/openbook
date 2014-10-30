@@ -103,6 +103,7 @@ static void       on_new_clicked( GtkButton *button, ofaPage *page );
 static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self );
 static void       on_update_clicked( GtkButton *button, ofaPage *page );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplatesPage *self );
+static void       do_update_ledger_label( ofaOpeTemplatesPage *self, ofoLedger *ledger );
 static void       on_delete_clicked( GtkButton *button, ofaPage *page );
 static gboolean   delete_confirmed( ofaOpeTemplatesPage *self, ofoOpeTemplate *model );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self );
@@ -733,8 +734,27 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 		/* managed by the button clic handle */
 
 	} else if( OFO_IS_LEDGER( object )){
-		/* a ledger has changed */
+		do_update_ledger_label( self, OFO_LEDGER( object ));
+	}
+}
 
+/*
+ * only takes care here of the change of the ledger label
+ * if the mnemo has been changed, then the whole dataset is to be
+ * reloaded
+ */
+static void
+do_update_ledger_label( ofaOpeTemplatesPage *self, ofoLedger *ledger )
+{
+	gint page_num;
+	GtkWidget *page_w;
+
+	page_num = book_get_page_by_ledger( self, ofo_ledger_get_mnemo( ledger ));
+	if( page_num >= 0 ){
+		page_w = gtk_notebook_get_nth_page( self->priv->book, page_num );
+		g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
+		gtk_notebook_set_tab_label_text(
+				self->priv->book, page_w, ofo_ledger_get_label( ledger ));
 	}
 }
 
