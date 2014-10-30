@@ -39,7 +39,6 @@
 #include "api/ofo-entry.h"
 
 #include "ui/my-editable-date.h"
-#include "ui/ofa-main-window.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-print-reconcil.h"

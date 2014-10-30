@@ -189,6 +189,7 @@ ui_files = \
 	ofa-ope-template-properties.ui						\
 	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\
+	ofa-print-balance.ui								\
 	ofa-print-reconcil.ui								\
 	ofa-rate-properties.ui								\
 	ofa-view-entries.piece.ui							\

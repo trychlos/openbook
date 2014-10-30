@@ -32,17 +32,10 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
-#include "api/my-utils.h"
-#include "api/ofo-account.h"
-#include "api/ofo-currency.h"
-#include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
 #include "ui/my-editable-date.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-account-select.h"
-#include "ui/ofa-main-window.h"
-#include "ui/ofa-print-reconcil.h"
+#include "ui/ofa-print-balance.h"
 
 /* private instance data
  */
@@ -52,6 +45,9 @@ struct _ofaPrintBalancePrivate {
 	/* input data
 	 */
 	ofaMainWindow *main_window;
+
+	/* ... */
+
 	ofoDossier    *dossier;
 
 	/* internals
