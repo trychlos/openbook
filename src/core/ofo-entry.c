@@ -479,6 +479,58 @@ GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *
 }
 
 /**
+ * ofo_entry_get_dataset_for_print_balance:
+ * @dossier: the current dossier.
+ * @from_account: the starting account.
+ * @to_account: the ending account.
+ * @from_date: the starting effect date.
+ * @to_date: the ending effect date.
+ *
+ * Returns the dataset of entries for the given accounts, between the
+ * specified effect dates.
+ *
+ * The returned dataset doesn't contain deleted entries.
+ */
+GList *
+ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
+											const gchar *from_account, const gchar *to_account,
+											const GDate *from_date, const GDate *to_date )
+{
+	GList *dataset;
+	GString *where;
+	gchar *str;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( from_account && g_utf8_strlen( from_account, -1 ), NULL );
+	g_return_val_if_fail( to_account && g_utf8_strlen( to_account, -1 ), NULL );
+	g_return_val_if_fail( from_date, NULL );
+	g_return_val_if_fail( to_date, NULL );
+
+	where = g_string_new( "" );
+	g_string_append_printf( where, "ENT_ACCOUNT>='%s' ", from_account );
+	g_string_append_printf( where, "AND ENT_ACCOUNT<='%s' ", to_account );
+
+	if( my_date_is_valid( from_date )){
+		str = my_date_to_str( from_date, MY_DATE_SQL );
+		g_string_append_printf( where, "AND ENT_DEFFECT>='%s' ", str );
+		g_free( str );
+	}
+	if( my_date_is_valid( to_date )){
+		str = my_date_to_str( to_date, MY_DATE_SQL );
+		g_string_append_printf( where, "AND ENT_DEFFECT<='%s' ", str );
+		g_free( str );
+	}
+
+	g_string_append_printf( where, " AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
+
+	dataset = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), where->str );
+
+	g_string_free( where, TRUE );
+
+	return( dataset );
+}
+
+/**
  * ofo_entry_get_dataset_for_print_reconcil:
  * @dossier: the current dossier.
  * @account: the reconciliated account.

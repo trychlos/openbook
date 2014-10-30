@@ -42,9 +42,21 @@
 struct _ofaPrintBalancePrivate {
 	gboolean       dispose_has_run;
 
-	/* input data
+	/* initialization data
 	 */
 	ofaMainWindow *main_window;
+
+	/* UI
+	 */
+	GtkWidget     *from_account_entry;
+	GtkWidget     *to_account_entry;
+	GtkWidget     *from_date_entry;
+	GtkWidget     *to_date_entry;
+	GtkWidget     *root_grouping_box;
+
+	/* internals
+	 */
+	GList         *entries;
 
 	/* ... */
 
@@ -55,15 +67,7 @@ struct _ofaPrintBalancePrivate {
 	ofoAccount    *account;
 	ofoCurrency   *currency;
 	GDate          date;
-	GList         *entries;
 	gdouble        account_solde;
-
-	/* UI
-	 */
-	GtkEntry      *account_entry;
-	GtkLabel      *account_label;
-	GtkWidget     *date_entry;
-	GtkLabel      *date_label;
 
 	/* other datas
 	 */
