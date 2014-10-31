@@ -33,6 +33,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -41,6 +42,7 @@
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-print.h"
 #include "ui/ofa-print-reconcil.h"
 
 /* private instance data
@@ -48,13 +50,13 @@
 struct _ofaPrintReconcilPrivate {
 	gboolean       dispose_has_run;
 
-	/* input data
+	/* initialization data
 	 */
 	ofaMainWindow *main_window;
-	ofoDossier    *dossier;
 
 	/* internals
 	 */
+	ofoDossier    *dossier;
 	ofoAccount    *account;
 	ofoCurrency   *currency;
 	GDate          date;
@@ -70,60 +72,45 @@ struct _ofaPrintReconcilPrivate {
 
 	/* other datas
 	 */
-	gdouble        context_width;
-	gdouble        context_height;
 	gdouble        page_width;
 	gdouble        page_height;
-	gint           lines_per_page_first;
-	gint           lines_per_page_other;
 	gint           pages_count;
-	PangoLayout   *header_layout;
-	gdouble        header_height_first;
-	gdouble        header_height_other;
-	PangoLayout   *body_layout;
-	gdouble        body_effect_tab;
-	gdouble        body_journal_tab;
-	gdouble        body_ref_tab;
+	PangoLayout   *layout;
+	gdouble        body_count_rtab;
+	gdouble        body_effect_ltab;
+	gdouble        body_ledger_ltab;
+	gdouble        body_ref_ltab;
 	gint           body_ref_max_size;		/* Pango units */
-	gdouble        body_label_tab;
+	gdouble        body_label_ltab;
 	gint           body_label_max_size;		/* Pango units */
-	gdouble        body_debit_tab;
-	gdouble        body_credit_tab;
-	gdouble        body_solde_tab;
-	PangoLayout   *footer_layout;
+	gdouble        body_debit_rtab;
+	gdouble        body_credit_rtab;
+	gdouble        body_solde_rtab;
 	gdouble        last_y;
+	gint           last_entry;				/* last printed entry, from zero */
 };
 
-static const gchar  *st_ui_xml      = PKGUIDIR "/ofa-print-reconcil.ui";
+static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-print-reconcil.ui";
+
+static const gchar  *st_pref_account = "PrintReconciliationAccount";
+static const gchar  *st_pref_date    = "PrintReconciliationDate";
 
 /* these are parms which describe the page layout
  */
 /* makes use of the same font family for all fields */
-static const gchar  *st_font_family = "Sans";
-static const gint    st_header_dossier_name_font_size  = 24;
-#define st_header_dossier_name_spacing                 st_header_dossier_name_font_size*.25
-static const gint    st_header_dossier_label_font_size = 14;
-/* we put after the dossier label the same spacing that after the print title
- * or also: put before and after the title the same spacing */
-/*#define st_header_dossier_label_spacing   = st_header_dossier_label_font_size*.5;*/
-static const gint    st_header_print_title_font_size   = 18;
-#define st_header_print_title_spacing                  st_header_print_title_font_size*.5
+static const gchar  *st_font_family                    = "Sans";
 static const gint    st_body_font_size                 = 9;
 /* the space between body lines */
-#define st_body_line_spacing                           st_body_font_size*.5
+#define st_body_line_spacing                             st_body_font_size*.5
 /* as we use a white-on-cyan columns header, we keep a 2px left and right margins */
-static const gint    st_page_left_margin               = 2;
-static const gint    st_page_right_margin              = 2;
-
-static const gdouble st_header_part = 80/297.0;		/* env. 20% */
-static const gdouble st_footer_part = 30/297.0;		/* env. 10% */
+static const gint    st_page_margin                    = 2;
 
 /* the columns of the body */
 #define st_effect_width                                56/9*st_body_font_size
 #define st_journal_width                               37/9*st_body_font_size
 #define st_ref_width                                   64/9*st_body_font_size
 #define st_amount_width                                66/9*st_body_font_size
-#define st_column_spacing                              9/9*st_body_font_size
+#define st_column_spacing                              7
 /*
 (openbook:29799): OFA-DEBUG: '99/99/9999   ' width=61
 (openbook:29799): OFA-DEBUG: 'XXXXXX   ' width=46   -> 107
@@ -140,25 +127,26 @@ static const gdouble st_footer_part = 30/297.0;		/* env. 10% */
 #define COLOR_DARK_RED              0.5,    0,      0
 #define COLOR_DARK_CYAN             0,      0.5156, 0.5156
 #define COLOR_LIGHT_GRAY            0.9375, 0.9375, 0.9375
+#define COLOR_GRAY                  0.6,    0.6,    0.6
 
 
 G_DEFINE_TYPE( ofaPrintReconcil, ofa_print_reconcil, G_TYPE_OBJECT )
 
+static gboolean     print_reconciliation_operate( ofaPrintReconcil *self );
 static GObject     *on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self );
 static void         on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintReconcil *self );
+static void         widget_error( ofaPrintReconcil *self, const gchar *msg );
 static void         on_account_changed( GtkEntry *entry, ofaPrintReconcil *self );
 static void         on_account_select( GtkButton *button, ofaPrintReconcil *self );
 static void         on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self );
+static void         build_body_layout( ofaPrintReconcil *self, GtkPrintContext *context );
 static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaPrintReconcil *self );
-static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self );
-static PangoLayout *build_header_layout( ofaPrintReconcil *self, GtkPrintContext *context, PangoLayout *layout );
-static PangoLayout *build_body_layout( ofaPrintReconcil *self, GtkPrintContext *context, PangoLayout *layout );
-static PangoLayout *build_footer_layout( ofaPrintReconcil *self, GtkPrintContext *context, PangoLayout *layout );
-static void         draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
-static gchar       *display_account_solde( ofaPrintReconcil *self, gdouble amount );
+static void         draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, gboolean is_last );
+static void         draw_reconciliation_start( ofaPrintReconcil *self, GtkPrintContext *context );
 static void         draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, gint line_num, ofoEntry *entry );
-static void         draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context );
-static void         draw_footer( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
+static void         draw_reconciliation_end( ofaPrintReconcil *self, GtkPrintContext *context );
+static gchar       *display_account_solde( ofaPrintReconcil *self, gdouble amount );
+static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self );
 
 static void
 print_reconcil_finalize( GObject *instance )
@@ -194,6 +182,9 @@ print_reconcil_dispose( GObject *instance )
 			ofo_entry_free_dataset( priv->entries );
 			priv->entries = NULL;
 		}
+		if( priv->layout ){
+			g_clear_object( &priv->layout );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -211,10 +202,9 @@ ofa_print_reconcil_init( ofaPrintReconcil *self )
 	g_return_if_fail( self && OFA_IS_PRINT_RECONCIL( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PRINT_RECONCIL, ofaPrintReconcilPrivate );
-
 	self->priv->dispose_has_run = FALSE;
-
 	self->priv->entries = NULL;
+	self->priv->last_entry = -1;
 	my_date_clear( &self->priv->date );
 }
 
@@ -242,6 +232,31 @@ ofa_print_reconcil_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_print_reconcil_run";
 	ofaPrintReconcil *self;
+	gboolean printed;
+
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+
+	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+
+	self = g_object_new( OFA_TYPE_PRINT_RECONCIL, NULL );
+	self->priv->main_window = main_window;
+	self->priv->dossier = ofa_main_window_get_dossier( main_window );
+	printed = print_reconciliation_operate( self );
+	g_object_unref( self );
+
+	return( printed );
+}
+
+/*
+ * print_reconciliation_operate:
+ *
+ * run the GtkPrintOperation operation
+ * returns %TRUE if the print has been successful
+ */
+static gboolean
+print_reconciliation_operate( ofaPrintReconcil *self )
+{
+	ofaPrintReconcilPrivate *priv;
 	GtkPrintOperation *print;
 	GtkPrintOperationResult res;
 	gboolean printed;
@@ -251,17 +266,9 @@ ofa_print_reconcil_run( ofaMainWindow *main_window )
 	GtkPageSetup *psetup;
 	GtkPaperSize *psize;
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
-
-	self = g_object_new(
-					OFA_TYPE_PRINT_RECONCIL,
-					NULL );
-
-	self->priv->main_window = main_window;
-	self->priv->dossier = ofa_main_window_get_dossier( main_window );
-
+	priv = self->priv;
+	printed = FALSE;
+	error = NULL;
 	print = gtk_print_operation_new ();
 
 	g_signal_connect( print, "create-custom-widget", G_CALLBACK( on_create_custom_widget ), self );
@@ -269,9 +276,6 @@ ofa_print_reconcil_run( ofaMainWindow *main_window )
 	g_signal_connect( print, "begin-print", G_CALLBACK( on_begin_print ), self );
 	g_signal_connect( print, "draw-page", G_CALLBACK( on_draw_page ), self );
 	g_signal_connect( print, "end-print", G_CALLBACK( on_end_print ), self );
-
-	error = NULL;
-	printed = FALSE;
 
 	psize = gtk_paper_size_new( GTK_PAPER_NAME_A4 );
 	psetup = gtk_page_setup_new();
@@ -284,49 +288,51 @@ ofa_print_reconcil_run( ofaMainWindow *main_window )
 	res = gtk_print_operation_run(
 					print,
 					GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG,
-	                GTK_WINDOW( main_window ),
+	                GTK_WINDOW( priv->main_window ),
 	                &error );
 
 	if( res == GTK_PRINT_OPERATION_RESULT_ERROR ){
+
 		str = g_strdup_printf( _( "Error while printing document:\n%s" ), error->message );
 		dialog = gtk_message_dialog_new(
-							GTK_WINDOW( main_window ),
+							GTK_WINDOW( priv->main_window ),
 							GTK_DIALOG_DESTROY_WITH_PARENT,
 							GTK_MESSAGE_ERROR,
 							GTK_BUTTONS_CLOSE,
 							"%s", str );
+		g_free( str );
 		g_signal_connect( dialog, "response", G_CALLBACK( gtk_widget_destroy ), NULL );
 		gtk_widget_show( dialog );
 		g_error_free( error );
 
 	} else if( res == GTK_PRINT_OPERATION_RESULT_APPLY ){
-	      /*if (settings != NULL)
-	        g_object_unref (settings);
-	      settings = g_object_ref (gtk_print_operation_get_print_settings (print));
-	    }*/
+
+		if( priv->pages_count <= 1 ){
+			str = g_strdup_printf(
+					_( "The Account Reconciliation Summary has been successfully printed\n"
+							"(%u printed page)" ), priv->pages_count );
+		} else {
+			str = g_strdup_printf(
+					_( "The Account Reconciliation Summary has been successfully printed\n"
+							"(%u printed pages)" ), priv->pages_count );
+		}
+		dialog = gtk_message_dialog_new(
+							GTK_WINDOW( priv->main_window ),
+							GTK_DIALOG_DESTROY_WITH_PARENT,
+							GTK_MESSAGE_INFO,
+							GTK_BUTTONS_CLOSE,
+							"%s", str );
+		g_free( str );
+		g_signal_connect( dialog, "response", G_CALLBACK( gtk_widget_destroy ), NULL );
+		gtk_widget_show( dialog );
+
 		printed = TRUE;
 	}
 
-	g_object_unref( self );
+	g_object_unref( print );
 
 	return( printed );
 }
-
-#if 0
-static void
-setup_page( ofaPrintReconcil *self, GtkPrintOperation *operation )
-{
-	GtkPageSetup *setup;
-
-	setup = gtk_page_setup_new();
-	gtk_page_setup_set_orientation( setup, GTK_PAGE_ORIENTATION_PORTRAIT );
-	gtk_page_setup_set_paper_size( setup, GTK_PAPER_NAME_A4 );
-	gtk_print_operation_set_default_page_setup( operation, setup );
-	g_object_unref( setup );
-
-	gtk_print_operation_set_unit( operation, GTK_UNIT_MM );
-}
-#endif
 
 static GObject*
 on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
@@ -335,6 +341,7 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	ofaPrintReconcilPrivate *priv;
 	GtkWidget *box, *frame;
 	GtkWidget *entry, *button, *label;
+	gchar *text;
 
 	g_debug( "%s: operation=%p, self=%p",
 			thisfn, ( void * ) operation, ( void * ) self );
@@ -350,6 +357,11 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "account-entry" );
 	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), self );
+	text = ofa_settings_get_string( st_pref_account );
+	if( text && g_utf8_strlen( text, -1 )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), text );
+	}
+	g_free( text );
 	priv->account_entry = GTK_ENTRY( entry );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "account-select" );
@@ -363,7 +375,12 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintReconcil *self )
 	priv->date_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-entry" );
 	my_editable_date_init( GTK_EDITABLE( priv->date_entry ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->date_entry ), MY_DATE_DMYY );
-	my_editable_date_set_date( GTK_EDITABLE( priv->date_entry ), &priv->date );
+	text = ofa_settings_get_string( st_pref_date );
+	my_date_set_from_sql( &priv->date, text );
+	if( my_date_is_valid( &priv->date )){
+		my_editable_date_set_date( GTK_EDITABLE( priv->date_entry ), &priv->date );
+	}
+	g_free( text );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "date-label" );
 	my_editable_date_set_label( GTK_EDITABLE( priv->date_entry ), label, MY_DATE_DMMM );
 
@@ -407,14 +424,29 @@ on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrin
 {
 	ofaPrintReconcilPrivate *priv;
 	const gchar *mnemo;
+	gchar *sdate;
 
 	priv = self->priv;
 
 	my_date_set_from_date( &priv->date,
 			my_editable_date_get_date( GTK_EDITABLE( priv->date_entry ), NULL ));
 
-	if( my_date_is_valid( &priv->date ) &&
-			priv->account && OFO_IS_ACCOUNT( priv->account )){
+	if( !priv->account || !OFO_IS_ACCOUNT( priv->account )){
+		widget_error( self, _( "Invalid account\n"
+				"The print operation will be canceled" ));
+		gtk_print_operation_cancel( operation );
+
+	} else if( !my_date_is_valid( &priv->date )){
+		widget_error( self, _( "Invalid reconciliation date\n"
+				"The print operation will be canceled" ));
+		gtk_print_operation_cancel( operation );
+
+	} else {
+		sdate = my_date_to_str( &priv->date, MY_DATE_SQL );
+		ofa_settings_set_string( st_pref_date, sdate );
+		g_free( sdate );
+
+		ofa_settings_set_string( st_pref_account, ofo_account_get_number( priv->account ));
 
 		priv->entries = ofo_entry_get_dataset_for_print_reconcil(
 								priv->dossier,
@@ -427,90 +459,109 @@ on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrin
 }
 
 static void
+widget_error( ofaPrintReconcil *self, const gchar *msg )
+{
+	GtkWidget *dialog;
+
+	dialog = gtk_message_dialog_new(
+						GTK_WINDOW( self->priv->main_window ),
+						GTK_DIALOG_DESTROY_WITH_PARENT,
+						GTK_MESSAGE_ERROR,
+						GTK_BUTTONS_CLOSE,
+						"%s", msg );
+	g_signal_connect( dialog, "response", G_CALLBACK( gtk_widget_destroy ), NULL );
+	gtk_widget_show( dialog );
+}
+
+/*
+ * mainly here: compute the count of printed pages, knowing that:
+ * - the first page will display the starting reconciliation summary
+ * - the last page (maybe the same) will display the ending summary
+ */
+static void
 on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self )
 {
 	static const gchar *thisfn = "ofa_print_reconcil_on_begin_print";
 	ofaPrintReconcilPrivate *priv;
-	gint entries_count, other_count, last_count;
-	PangoLayout *layout;
-	gdouble footer_height, reconcil_height, last_height, header_height;
+	gdouble reconcil_height_first, reconcil_height_last;
+	gdouble header_height, header_height_other;
+	gdouble line_height, footer_height;
+	gint entries_count;
+	gdouble need_height, avail_height;
+	gint lpp_first, lpp_other, lines_rest;
 
 	g_debug( "%s: operation=%p, context=%p, self=%p",
 			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );
 
 	priv = self->priv;
 
-	priv->context_width = gtk_print_context_get_width( context );
-	priv->page_width = priv->context_width - st_page_left_margin - st_page_right_margin;
-	priv->context_height = gtk_print_context_get_height( context );
-	priv->page_height = priv->context_height;
+	priv->page_width = gtk_print_context_get_width( context ) - 2*st_page_margin;
+	priv->page_height = gtk_print_context_get_height( context );
 
 	g_debug( "%s; context_width=%lf, context_height=%lf, page_width=%lf, page_height=%lf",
 			thisfn,
-			priv->context_width, priv->context_height,
+			gtk_print_context_get_width( context ), gtk_print_context_get_height( context ),
 			priv->page_width, priv->page_height );
 
-	priv->header_height_other =
-			st_header_dossier_name_font_size + st_header_dossier_name_spacing
-			+ st_header_dossier_label_font_size + st_header_print_title_spacing
-			+ st_header_print_title_font_size + st_header_print_title_spacing
-			+ st_body_font_size + 2*st_body_line_spacing
-			+ 0.5*st_body_font_size
-			+ st_body_font_size + 2*st_body_line_spacing;
+	reconcil_height_first =
+			st_body_line_spacing
+			+ st_body_font_size+1
+			+ st_body_line_spacing;
 
-	priv->header_height_first =
-			priv->header_height_other
+	reconcil_height_last =
+			reconcil_height_first
 			+ st_body_line_spacing
-			+ st_body_font_size + st_body_line_spacing;
+			+ 3*st_body_font_size;
 
-	footer_height =
-			st_body_font_size + 2*st_body_line_spacing;
+	header_height =
+			ofa_print_header_dossier_get_height( 1, FALSE )
+			+ ofa_print_header_title_get_height( 1, FALSE )
+			+ ofa_print_header_subtitle_get_height( 1, FALSE )
+			+ 2*st_body_font_size;						/* column headers */
 
-	reconcil_height =
-			st_body_font_size + 2*st_body_line_spacing
-			+ 3*( st_body_font_size ) + st_body_line_spacing;
+	header_height_other = header_height + st_body_line_spacing/2;
+	line_height = st_body_font_size + st_body_line_spacing;
+	footer_height = ofa_print_footer_get_height( 1, FALSE );
 
 	entries_count = g_list_length( self->priv->entries );
+	g_debug( "%s: entries_count=%u", thisfn, entries_count );
 
-	priv->lines_per_page_first =
-			( priv->page_height - priv->header_height_first - footer_height )
-			/ ( st_body_font_size+st_body_line_spacing );
+	/* do we can print all entries and reconciliation summaries on a
+	 * single page ? */
+	need_height =
+			entries_count * line_height
+			+ reconcil_height_first
+			+ reconcil_height_last;
 
-	priv->lines_per_page_other =
-			( priv->page_height - priv->header_height_other - footer_height )
-			/ ( st_body_font_size+st_body_line_spacing );
+	avail_height =
+			priv->page_height
+			- header_height
+			- footer_height;
 
-	if( entries_count <= priv->lines_per_page_first ){
-		priv->pages_count = 1;
-		last_count = entries_count;
-		header_height = priv->header_height_first;
-	} else {
-		other_count = entries_count - priv->lines_per_page_first;
-		priv->pages_count = 1 + ( other_count / priv->lines_per_page_other );
-		last_count = other_count % priv->lines_per_page_other;
-		if( last_count ){
+	priv->pages_count = 1;
+
+	/* if we have more than one page:
+	 *  remove the 'lpp_first' lines displayed on first page
+	 *  recompute the available height on a standard page
+	 *  compute the maximum line per page on a standard page */
+	if( need_height > avail_height ){
+		lpp_first = ( avail_height - reconcil_height_first ) / line_height;
+		avail_height += header_height - header_height_other;
+		lpp_other = avail_height / line_height;
+		lines_rest = entries_count - lpp_first;
+		while( TRUE ){
 			priv->pages_count += 1;
-		}
-		header_height = priv->header_height_other;
-	}
-
-	if( last_count == 0 ){
-		if( entries_count > 0 ){
-			priv->pages_count += 1;
-		}
-	} else {
-		last_height = last_count * ( st_body_font_size+st_body_line_spacing );
-		if( last_height + reconcil_height > priv->page_height - header_height - footer_height ){
-			priv->pages_count += 1;
+			if( lines_rest < lpp_other ){
+				need_height = ( lines_rest * line_height ) + reconcil_height_last;
+				if( need_height <= avail_height ){
+					break;
+				}
+			}
+			lines_rest -= lpp_other;
 		}
 	}
 
 	gtk_print_operation_set_n_pages( operation, priv->pages_count );
-
-	g_debug( "%s: entries_count=%u, st_header_part=%lf, st_footer_part=%lf, st_body_font_size=%u, st_body_line_spacing=%lf",
-			thisfn,
-			entries_count, st_header_part, st_footer_part,
-			st_body_font_size, st_body_line_spacing );
 
 	/*g_debug( "%s: context_height=%lf, st_body_font_size=%d, st_header_part=%lf, st_footer_part=%lf, st_body_line_spacing=%lf, lines_per_page=%d",
 				thisfn, context_height, st_body_font_size, st_header_part, st_footer_part, st_body_line_spacing, priv->lines_per_page );
@@ -519,20 +570,40 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 	entries_count=70, pages_count=2
 	*/
 
-	layout = gtk_print_context_create_pango_layout( context );
-
-	/*g_debug( "%s: context_height=%lf", thisfn, gtk_print_context_get_height( context ));
-	g_debug( "%s: lines_per_page=%d", thisfn, self->priv->lines_per_page );
-	context_height = 783,569764
-	lines_per_page = 32 */
-	/*g_debug( "%s: context_width=%u, pango_layout_width=%u", thisfn, width, pango_layout_get_width( priv->layout ));*/
+	priv->layout = gtk_print_context_create_pango_layout( context );
 	/* context_width=559, pango_layout_width=572416 */
+	build_body_layout( self, context );
+}
 
-	priv->header_layout = build_header_layout( self, context, layout );
-	priv->body_layout = build_body_layout( self, context, layout );
-	priv->footer_layout = build_footer_layout( self, context, layout );
+static void
+build_body_layout( ofaPrintReconcil *self, GtkPrintContext *context )
+{
+	ofaPrintReconcilPrivate *priv;
+	gint digits;
+	gchar *str;
 
-	g_object_unref( layout );
+	priv = self->priv;
+
+	/* keep the leftest column to display a line number */
+	str = g_strdup_printf( "%d", g_list_length( priv->entries ));
+	digits = g_utf8_strlen( str, -1 );
+	g_free( str );
+	priv->body_count_rtab = st_page_margin + digits * 6*7/9;
+
+	/* starting from the left : body_effect_ltab on the left margin */
+	priv->body_effect_ltab = priv->body_count_rtab + st_column_spacing;
+	priv->body_ledger_ltab = priv->body_effect_ltab+ st_effect_width + st_column_spacing;
+	priv->body_ref_ltab = priv->body_ledger_ltab + st_journal_width + st_column_spacing;
+	priv->body_label_ltab = priv->body_ref_ltab + st_ref_width + st_column_spacing;
+
+	/* starting from the right */
+	priv->body_solde_rtab = gtk_print_context_get_width( context ) - st_page_margin;
+	priv->body_credit_rtab = priv->body_solde_rtab - st_amount_width - st_column_spacing;
+	priv->body_debit_rtab = priv->body_credit_rtab - st_amount_width - st_column_spacing;
+
+	/* max size in Pango units */
+	priv->body_ref_max_size = st_ref_width*PANGO_SCALE;
+	priv->body_label_max_size = ( priv->body_debit_rtab - st_amount_width - st_column_spacing - priv->body_label_ltab )*PANGO_SCALE;
 }
 
 static void
@@ -540,282 +611,122 @@ on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_
 {
 	static const gchar *thisfn = "ofa_print_reconcil_on_draw_page";
 	ofaPrintReconcilPrivate *priv;
-	gint first, count, max;
+	gboolean is_first, is_last;
+	gdouble max_y;
 	GList *ent;
+	gint count;
 
-	g_debug( "%s: operation=%p, context=%p, self=%p",
-			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );
+	g_debug( "%s: operation=%p, context=%p, page_num=%d, self=%p",
+			thisfn, ( void * ) operation, ( void * ) context, page_num, ( void * ) self );
 
 	priv = self->priv;
 
-	draw_header( self, operation, context, page_num );
+	is_first = ( page_num == 0 );
+	is_last = ( page_num == priv->pages_count-1 );
 
-	if( page_num == 0 ){
-		first = 0;
-		max = priv->lines_per_page_first;
+	draw_header( self, operation, context, page_num, is_last );
+
+	if( is_first ){
+		draw_reconciliation_start( self, context );
 	} else {
-		first = priv->lines_per_page_first + priv->lines_per_page_other*( page_num-1 );
-		max = priv->lines_per_page_other;
+		/* keep a small line spacing after column headers */
+		priv->last_y += st_body_line_spacing/2;
 	}
 
-	for( count=0, ent=g_list_nth( priv->entries, first ) ;
-								ent && count<max ; ent=ent->next, count++ ){
+	max_y = priv->page_height
+				- ofa_print_footer_get_height( 1, FALSE );
+
+	for( count=0, ent=g_list_nth( priv->entries, priv->last_entry+1 ) ;
+								ent && priv->last_y<max_y ; ent=ent->next, count++ ){
 
 		draw_line( self, operation, context, page_num, count, OFO_ENTRY( ent->data ));
 	}
 
+	priv->last_entry += count;
+
 	/* last page: display the reconciliated solde */
-	if( page_num == priv->pages_count - 1 ){
-		draw_reconciliated( self, context );
+	if( is_last ){
+		draw_reconciliation_end( self, context );
 	}
 
-	draw_footer( self, operation, context, page_num );
+	ofa_print_footer_render( context, priv->layout, page_num, is_last, priv->pages_count );
 }
 
 static void
-on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self )
-{
-	static const gchar *thisfn = "ofa_print_reconcil_on_end_print";
-	ofaPrintReconcilPrivate *priv;
-
-	g_debug( "%s: operation=%p, context=%p, self=%p",
-			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );
-
-	priv = self->priv;
-
-	g_clear_object( &priv->header_layout );
-	g_clear_object( &priv->body_layout );
-	g_clear_object( &priv->footer_layout );
-}
-
-static PangoLayout *
-build_header_layout( ofaPrintReconcil *self, GtkPrintContext *context, PangoLayout *layout )
-{
-	PangoLayout *h_layout;
-
-	h_layout = pango_layout_copy( layout );
-
-	return( h_layout );
-}
-
-static PangoLayout *
-build_body_layout( ofaPrintReconcil *self, GtkPrintContext *context, PangoLayout *layout )
+draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, gboolean is_last )
 {
 	ofaPrintReconcilPrivate *priv;
-	PangoLayout *b_layout;
-	PangoFontDescription *desc;
-	gchar *str;
-
-	b_layout = pango_layout_copy( layout );
-
-	priv = self->priv;
-
-	/* we are uning a unique font to draw the lines */
-	str = g_strdup_printf( "%s %d", st_font_family, st_body_font_size );
-	desc = pango_font_description_from_string( str );
-	g_free( str );
-	pango_layout_set_font_description( b_layout, desc );
-	pango_font_description_free( desc );
-
-	/* starting from the left : body_effect_tab on the left margin */
-	priv->body_effect_tab = st_page_left_margin;
-	priv->body_journal_tab = priv->body_effect_tab+ st_effect_width + st_column_spacing;
-	priv->body_ref_tab = priv->body_journal_tab + st_journal_width + st_column_spacing;
-	priv->body_label_tab = priv->body_ref_tab + st_ref_width + st_column_spacing;
-
-	/* starting from the right */
-	priv->body_solde_tab = priv->page_width + st_page_left_margin;
-	priv->body_credit_tab = priv->body_solde_tab - st_amount_width - st_column_spacing;
-	priv->body_debit_tab = priv->body_credit_tab - st_amount_width - st_column_spacing;
-
-	/* max size in Pango units */
-	priv->body_ref_max_size = st_ref_width*PANGO_SCALE;
-	priv->body_label_max_size = ( priv->body_debit_tab - st_amount_width - st_column_spacing - priv->body_label_tab )*PANGO_SCALE;
-
-	return( b_layout );
-}
-
-/*
- * the tabulations should be set for this layout
- * but - as of 2014- 6-20, only left tabs are supported :(
- * as we are using only one font in the footer, set also it here
- */
-static PangoLayout *
-build_footer_layout( ofaPrintReconcil *self, GtkPrintContext *context, PangoLayout *layout )
-{
-	PangoLayout *f_layout;
-	PangoFontDescription *desc;
-	/*PangoTabArray *array;*/
-	gchar *str;
-
-	f_layout = pango_layout_copy( layout );
-
-	str = g_strdup_printf( "%s %d", st_font_family, st_body_font_size-2 );
-	desc = pango_font_description_from_string( str );
-	g_free( str );
-	pango_font_description_set_style( desc, PANGO_STYLE_ITALIC );
-	pango_layout_set_font_description( f_layout, desc );
-	pango_font_description_free( desc );
-
-	return( f_layout );
-}
-
-static void
-draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
-{
-	ofaPrintReconcilPrivate *priv;
-	PangoFontDescription *desc;
 	cairo_t *cr;
-	PangoRectangle rc;
-	const GDate *date;
-	gchar *str, *str_solde, *sdate;
-	gdouble y;
+	gchar *str;
+	gdouble y, width;
 
 	priv = self->priv;
 
-	cr = gtk_print_context_get_cairo_context( context );
-
-	/* the dark red used for PWI Consultants */
-	cairo_set_source_rgb( cr, COLOR_DARK_RED );
-
-	/* dossier name on line 1 */
 	y = 0;
-	str = g_strdup_printf( "%s Bold Italic %d", st_font_family, st_header_dossier_name_font_size );
-	desc = pango_font_description_from_string( str );
-	g_free( str );
-	pango_font_description_set_variant( desc, PANGO_VARIANT_SMALL_CAPS );
-	pango_layout_set_font_description( priv->header_layout, desc );
-	pango_font_description_free( desc );
-	pango_layout_set_text( priv->header_layout, ofo_dossier_get_name( priv->dossier ), -1 );
-	cairo_move_to( cr, st_page_left_margin, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
-	y += st_header_dossier_name_font_size + st_header_dossier_name_spacing;
 
-	/* dossier label on line 2 */
-	str = g_strdup_printf( "%s Bold %d", st_font_family, st_header_dossier_label_font_size );
-	desc = pango_font_description_from_string( str );
-	pango_layout_set_font_description( priv->header_layout, desc );
-	pango_font_description_free( desc );
-	pango_layout_set_text( priv->header_layout, ofo_dossier_get_label( priv->dossier ), -1 );
-	cairo_move_to( cr, st_page_left_margin, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
-	y += st_header_dossier_label_font_size + st_header_print_title_spacing;
+	/* dossier header */
+	ofa_print_header_dossier_render(
+			context, priv->layout, page_num, is_last, y,
+			ofa_main_window_get_dossier( priv->main_window ));
+	y += ofa_print_header_dossier_get_height( page_num, is_last );
 
 	/* print title in line 3 */
-	str = g_strdup_printf( "%s Bold %d", st_font_family, st_header_print_title_font_size );
-	desc = pango_font_description_from_string( str );
-	pango_layout_set_font_description( priv->header_layout, desc );
-	pango_font_description_free( desc );
-	/* a dark cyan used for summary title */
-	cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
-	pango_layout_set_text( priv->header_layout, _( "Account Reconciliation Summary"), -1 );
-	pango_layout_get_pixel_extents( priv->header_layout, NULL, &rc );
-	cairo_move_to( cr, ( priv->context_width-rc.width )/2, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
-	y += st_header_print_title_font_size + st_header_print_title_spacing;
+	ofa_print_header_title_render(
+			context, priv->layout, page_num, is_last, y,
+			_( "Account Reconciliation Summary" ));
+	y+= ofa_print_header_title_get_height( page_num, is_last );
 
 	/* account number and label in line 4 */
-	str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
-	desc = pango_font_description_from_string( str );
-	pango_layout_set_font_description( priv->header_layout, desc );
-	pango_font_description_free( desc );
-	/* a dark cyan used for summary title */
-	/*cairo_set_source_rgb( cr, COLOR_BLACK );*/
-	str = g_strdup_printf( "%s %s - %s", _( "Account"),
-			ofo_account_get_number( priv->account ),
-			ofo_account_get_label( priv->account ));
-	pango_layout_set_text( priv->header_layout, str, -1 );
-	pango_layout_get_pixel_extents( priv->header_layout, NULL, &rc );
-	cairo_move_to( cr, ( priv->context_width-rc.width )/2, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
-	y += st_body_font_size + 2*st_body_line_spacing;
+	str = g_strdup_printf(
+				_( "Account %s - %s" ),
+				ofo_account_get_number( priv->account ),
+				ofo_account_get_label( priv->account ));
+	ofa_print_header_subtitle_render(
+			context, priv->layout, page_num, is_last, y, str );
+	g_free( str );
+	y+= ofa_print_header_subtitle_get_height( page_num, is_last );
 
-	/* columns headers in line 5 */
-	cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
-	cairo_rectangle( cr,
-				0, y,
-				priv->context_width, 2*st_body_font_size );
+	/* column headers
+	 * draw a rectangle for one line with spacings as:
+	 * spacing(bfs/2) + line(bfs) + spacing(bfs/2) */
+	ofa_print_header_title_set_color( context, priv->layout );
+	cr = gtk_print_context_get_cairo_context( context );
+	width = gtk_print_context_get_width( context );
+	cairo_rectangle( cr, 0, y, width, 2*st_body_font_size );
 	cairo_fill( cr );
-	y += 0.5*st_body_font_size;
 
-	str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size-1 );
-	desc = pango_font_description_from_string( str );
-	pango_layout_set_font_description( priv->header_layout, desc );
-	pango_font_description_free( desc );
 	/* columns title are white on same dark cyan background */
 	cairo_set_source_rgb( cr, COLOR_WHITE );
-	pango_layout_set_text( priv->header_layout, _( "Effect date" ), -1 );
-	cairo_move_to( cr, priv->body_effect_tab, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
 
-	pango_layout_set_text( priv->header_layout, _( "Journal" ), -1 );
-	cairo_move_to( cr, priv->body_journal_tab, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
+	str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size-1 );
+	ofa_print_set_font( context, priv->layout, str );
+	g_free( str );
 
-	pango_layout_set_text( priv->header_layout, _( "Piece" ), -1 );
-	cairo_move_to( cr, priv->body_ref_tab, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
+	y += 0.5*st_body_font_size;
 
-	pango_layout_set_text( priv->header_layout, _( "Label" ), -1 );
-	cairo_move_to( cr, priv->body_label_tab, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
+	ofa_print_set_text( context, priv->layout,
+			priv->body_effect_ltab, y, _( "Effect date" ), PANGO_ALIGN_LEFT );
 
-	pango_layout_set_text( priv->header_layout, _( "Debit" ), -1 );
-	pango_layout_get_pixel_extents( priv->header_layout, NULL, &rc );
-	cairo_move_to( cr, priv->body_debit_tab-rc.width, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
+	ofa_print_set_text( context, priv->layout,
+			priv->body_ledger_ltab, y, _( "Ledger" ), PANGO_ALIGN_LEFT );
 
-	pango_layout_set_text( priv->header_layout, _( "Credit" ), -1 );
-	pango_layout_get_pixel_extents( priv->header_layout, NULL, &rc );
-	cairo_move_to( cr, priv->body_credit_tab-rc.width, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
+	ofa_print_set_text( context, priv->layout,
+			priv->body_ref_ltab, y, _( "Piece" ), PANGO_ALIGN_LEFT );
 
-	pango_layout_set_text( priv->header_layout, _( "Solde" ), -1 );
-	pango_layout_get_pixel_extents( priv->header_layout, NULL, &rc );
-	cairo_move_to( cr, priv->body_solde_tab-rc.width, y );
-	pango_cairo_update_layout( cr, priv->header_layout );
-	pango_cairo_show_layout( cr, priv->header_layout );
+	ofa_print_set_text( context, priv->layout,
+			priv->body_label_ltab, y, _( "Label" ), PANGO_ALIGN_LEFT );
 
-	y += st_body_font_size + st_body_line_spacing;
+	ofa_print_set_text( context, priv->layout,
+			priv->body_debit_rtab, y, _( "Debit" ), PANGO_ALIGN_RIGHT );
 
-	if( page_num == 0 ){
-		y += st_body_line_spacing;
-		cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
-		str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
-		desc = pango_font_description_from_string( str );
-		g_free( str );
-		pango_layout_set_font_description( priv->header_layout, desc );
-		pango_font_description_free( desc );
+	ofa_print_set_text( context, priv->layout,
+			priv->body_credit_rtab, y, _( "Credit" ), PANGO_ALIGN_RIGHT );
 
-		date = ofo_account_get_global_deffect( priv->account );
-		if( !my_date_is_valid( date )){
-			date = ( const GDate * ) &priv->date;
-		}
-		sdate = my_date_to_str( date, MY_DATE_DMYY );
-		priv->account_solde = ofo_account_get_global_solde( priv->account );
-		str_solde = display_account_solde( self, priv->account_solde );
-		str = g_strdup_printf( _( "Account solde on %s is %s" ), sdate, str_solde );
-		g_free( sdate );
-		g_free( str_solde );
-		pango_layout_set_text( priv->header_layout, str, -1 );
-		g_free( str );
-		pango_layout_get_pixel_extents( priv->header_layout, NULL, &rc );
-		cairo_move_to( cr, priv->body_solde_tab-rc.width, y );
-		pango_cairo_update_layout( cr, priv->header_layout );
-		pango_cairo_show_layout( cr, priv->header_layout );
+	ofa_print_set_text( context, priv->layout,
+			priv->body_solde_rtab, y, _( "Solde" ), PANGO_ALIGN_RIGHT );
 
-		y += st_body_font_size + 2*st_body_line_spacing;
-	}
+	/* this set the 'y' height just after the column headers */
+	y += 1.5*st_body_font_size;
 
 	priv->last_y = y;
 
@@ -825,22 +736,45 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 (openbook:27358): OFA-DEBUG: draw_header: final y=116,00000 */
 }
 
-static gchar *
-display_account_solde( ofaPrintReconcil *self, gdouble amount )
+static void
+draw_reconciliation_start( ofaPrintReconcil *self, GtkPrintContext *context )
 {
-	gint decimals;
-	gchar *str, *str_amount;
+	ofaPrintReconcilPrivate *priv;
+	const GDate *date;
+	gchar *str, *str_solde, *sdate;
+	gdouble y;
 
-	decimals = ofo_currency_get_digits( self->priv->currency );
-	str_amount = my_double_to_str_ex( amount, decimals );
-	str = g_strdup_printf( "%s %s", str_amount, ofo_currency_get_symbol( self->priv->currency ));
-	g_free( str_amount );
+	priv = self->priv;
 
-	return( str );
+	y = priv->last_y;
+	y += st_body_line_spacing;
+
+	ofa_print_header_title_set_color( context, priv->layout );
+	str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
+	ofa_print_set_font( context, priv->layout, str );
+	g_free( str );
+
+	date = ofo_account_get_global_deffect( priv->account );
+	if( !my_date_is_valid( date )){
+		date = ( const GDate * ) &priv->date;
+	}
+	sdate = my_date_to_str( date, MY_DATE_DMYY );
+	priv->account_solde = ofo_account_get_global_solde( priv->account );
+	str_solde = display_account_solde( self, priv->account_solde );
+	str = g_strdup_printf( _( "Account solde on %s is %s" ), sdate, str_solde );
+	g_free( sdate );
+	g_free( str_solde );
+	ofa_print_set_text( context, priv->layout, priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+	g_free( str );
+
+	y += st_body_font_size+1 + st_body_line_spacing;
+
+	priv->last_y = y;
 }
 
 /*
  * num_line is counted from 0 in the page
+ * line number is last_entry + count + 2
  *
  * (printable)width(A4)=559
  * date  journal  piece    label      debit   credit   solde
@@ -853,136 +787,123 @@ draw_line( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext
 	gchar *str;
 	cairo_t *cr;
 	gdouble y;
-	PangoRectangle rc;
 	const gchar *conststr;
 	gdouble amount;
 
 	priv = self->priv;
 
-	cr = gtk_print_context_get_cairo_context( context );
+	y = priv->last_y;
 
-	if( page_num == 0 ){
-		y = priv->header_height_first;
-	} else {
-		y = priv->header_height_other;
-	}
-	y += line_num * ( st_body_font_size + st_body_line_spacing );
+	cr = gtk_print_context_get_cairo_context( context );
 
 	/* have a rubber every other line */
 	if( line_num % 2 ){
-		cairo_set_source_rgb( cr, COLOR_LIGHT_GRAY );
-		cairo_rectangle( cr,
-					0, y - 0.5*st_body_line_spacing,
-					priv->context_width, st_body_font_size+st_body_line_spacing );
-		cairo_fill( cr );
+		ofa_print_rubber( context, priv->layout,
+				y-0.5*st_body_line_spacing, st_body_font_size+st_body_line_spacing );
 	}
 
+	/* display the line number starting from 1 */
+	cairo_set_source_rgb( cr, COLOR_GRAY );
+	str = g_strdup_printf( "%s %u", st_font_family, 7 );
+	ofa_print_set_font( context, priv->layout, str );
+	g_free( str );
+	str = g_strdup_printf( "%d", priv->last_entry+2+line_num );
+	ofa_print_set_text( context, priv->layout, priv->body_count_rtab, y+1, str, PANGO_ALIGN_RIGHT );
+	g_free( str );
+
+	/* reset color and font */
 	cairo_set_source_rgb( cr, COLOR_BLACK );
+	str = g_strdup_printf( "%s %u", st_font_family, st_body_font_size );
+	ofa_print_set_font( context, priv->layout, str );
+	g_free( str );
 
 	/* 0 is not really the edge of the sheet, but includes the printer margin */
 	/* y is in context units
 	 * add 20% to get some visual spaces between lines */
 
 	str = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
-	pango_layout_set_text( priv->body_layout, str, -1 );
+	ofa_print_set_text( context, priv->layout,
+			priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
-	cairo_move_to( cr, priv->body_effect_tab, y );
-	pango_cairo_update_layout( cr, priv->body_layout );
-	pango_cairo_show_layout( cr, priv->body_layout );
 
-	pango_layout_set_text( priv->body_layout, ofo_entry_get_ledger( entry ), -1 );
-	cairo_move_to( cr, priv->body_journal_tab, y );
-	pango_cairo_update_layout( cr, priv->body_layout );
-	pango_cairo_show_layout( cr, priv->body_layout );
+	ofa_print_set_text( context, priv->layout,
+			priv->body_ledger_ltab, y, ofo_entry_get_ledger( entry ), PANGO_ALIGN_LEFT );
 
 	conststr = ofo_entry_get_ref( entry );
-	if( conststr ){
+	if( conststr && g_utf8_strlen( conststr, -1 )){
 		/* width is in Pango units = pixels*scale = device_units*scale */
 		/* text-width-ellipsize: doesn't work */
-		pango_layout_set_text( priv->body_layout, conststr, -1 );
-		/*pango_layout_set_width( priv->body_layout, priv->body_ref_max_size );
-		pango_layout_set_ellipsize( priv->body_layout, PANGO_ELLIPSIZE_END );*/
+		pango_layout_set_text( priv->layout, conststr, -1 );
+		/*pango_layout_set_width( priv->layout, priv->body_ref_max_size );
+		pango_layout_set_ellipsize( priv->layout, PANGO_ELLIPSIZE_END );*/
 		/*g_debug( "ref: is_wrapped=%s, is_ellipsized=%s",
-				pango_layout_is_wrapped( priv->body_layout )?"True":"False",
-				pango_layout_is_ellipsized( priv->body_layout )?"True":"False" ); */
-		my_utils_pango_layout_ellipsize( priv->body_layout, priv->body_ref_max_size );
-		cairo_move_to( cr, priv->body_ref_tab, y );
-		pango_cairo_update_layout( cr, priv->body_layout );
-		pango_cairo_show_layout( cr, priv->body_layout );
-		pango_layout_set_width( priv->body_layout, -1 );
+				pango_layout_is_wrapped( priv->layout )?"True":"False",
+				pango_layout_is_ellipsized( priv->layout )?"True":"False" ); */
+		my_utils_pango_layout_ellipsize( priv->layout, priv->body_ref_max_size );
+		cairo_move_to( cr, priv->body_ref_ltab, y );
+		pango_cairo_update_layout( cr, priv->layout );
+		pango_cairo_show_layout( cr, priv->layout );
+		pango_layout_set_width( priv->layout, -1 );
 	}
 
-	pango_layout_set_text( priv->body_layout, ofo_entry_get_label( entry ), -1 );
-	/*pango_layout_set_width( priv->body_layout, priv->body_label_max_size );
-	pango_layout_set_ellipsize( priv->body_layout, PANGO_ELLIPSIZE_END );*/
+	pango_layout_set_text( priv->layout, ofo_entry_get_label( entry ), -1 );
+	/*pango_layout_set_width( priv->layout, priv->body_label_max_size );
+	pango_layout_set_ellipsize( priv->layout, PANGO_ELLIPSIZE_END );*/
 	/*g_debug( "label: is_wrapped=%s, is_ellipsized=%s",
-			pango_layout_is_wrapped( priv->body_layout )?"True":"False",
-			pango_layout_is_ellipsized( priv->body_layout )?"True":"False" );*/
-	my_utils_pango_layout_ellipsize( priv->body_layout, priv->body_label_max_size );
-	cairo_move_to( cr, priv->body_label_tab, y );
-	pango_cairo_update_layout( cr, priv->body_layout );
-	pango_cairo_show_layout( cr, priv->body_layout );
-	pango_layout_set_width( priv->body_layout, -1 );
+			pango_layout_is_wrapped( priv->layout )?"True":"False",
+			pango_layout_is_ellipsized( priv->layout )?"True":"False" );*/
+	my_utils_pango_layout_ellipsize( priv->layout, priv->body_label_max_size );
+	cairo_move_to( cr, priv->body_label_ltab, y );
+	pango_cairo_update_layout( cr, priv->layout );
+	pango_cairo_show_layout( cr, priv->layout );
+	pango_layout_set_width( priv->layout, -1 );
 
 	amount = ofo_entry_get_debit( entry );
 	if( amount ){
-		str = g_strdup_printf( "%'.2lf", amount );
-		pango_layout_set_text( priv->body_layout, str, -1 );
+		str = my_double_to_str( amount );
+		ofa_print_set_text( context, priv->layout, priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
-		pango_layout_get_pixel_extents( priv->body_layout, NULL, &rc );
-		cairo_move_to( cr, priv->body_debit_tab-rc.width, y );
-		pango_cairo_update_layout( cr, priv->body_layout );
-		pango_cairo_show_layout( cr, priv->body_layout );
 		priv->account_solde -= amount;
 	}
 
 	amount = ofo_entry_get_credit( entry );
 	if( amount ){
-		str = g_strdup_printf( "%'.2lf", amount );
-		pango_layout_set_text( priv->body_layout, str, -1 );
+		str = my_double_to_str( amount );
+		ofa_print_set_text( context, priv->layout, priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
-		pango_layout_get_pixel_extents( priv->body_layout, NULL, &rc );
-		cairo_move_to( cr, priv->body_credit_tab-rc.width, y );
-		pango_cairo_update_layout( cr, priv->body_layout );
-		pango_cairo_show_layout( cr, priv->body_layout );
 		priv->account_solde += amount;
 	}
 
 	cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
-	str = g_strdup_printf( "%'.2lf", priv->account_solde );
-	pango_layout_set_text( priv->body_layout, str, -1 );
+	str = my_double_to_str( priv->account_solde );
+	ofa_print_set_text( context, priv->layout, priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 	g_free( str );
-	pango_layout_get_pixel_extents( priv->body_layout, NULL, &rc );
-	cairo_move_to( cr, priv->body_solde_tab-rc.width, y );
-	pango_cairo_update_layout( cr, priv->body_layout );
-	pango_cairo_show_layout( cr, priv->body_layout );
+
+	y += st_body_font_size + st_body_line_spacing;
 
 	priv->last_y = y;
 }
 
 static void
-draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
+draw_reconciliation_end( ofaPrintReconcil *self, GtkPrintContext *context )
 {
 	ofaPrintReconcilPrivate *priv;
-	PangoFontDescription *desc;
 	cairo_t *cr;
 	const GDate *date;
 	gchar *str, *sdate, *str_amount;
-	PangoRectangle rc;
 	gdouble y;
 
 	priv = self->priv;
 
-	cr = gtk_print_context_get_cairo_context( context );
+	y = priv->last_y;
+	y += st_body_line_spacing;
 
-	y = priv->last_y + st_body_font_size + 2*st_body_line_spacing;
+	cr = gtk_print_context_get_cairo_context( context );
 	cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
 
 	str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
-	desc = pango_font_description_from_string( str );
+	ofa_print_set_font( context, priv->layout, str );
 	g_free( str );
-	pango_layout_set_font_description( priv->body_layout, desc );
-	pango_font_description_free( desc );
 
 	date = ofo_account_get_global_deffect( priv->account );
 	if( !my_date_is_valid( date ) || my_date_compare( date, &priv->date ) < 0 ){
@@ -993,70 +914,58 @@ draw_reconciliated( ofaPrintReconcil *self, GtkPrintContext *context )
 	str = g_strdup_printf( _( "Reconciliated account solde on %s is %s" ), sdate, str_amount );
 	g_free( sdate );
 	g_free( str_amount );
-	pango_layout_set_text( priv->body_layout, str, -1 );
+	ofa_print_set_text( context, priv->layout, priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 	g_free( str );
-	pango_layout_get_pixel_extents( priv->body_layout, NULL, &rc );
-	cairo_move_to( cr, priv->body_solde_tab-rc.width, y );
-	pango_cairo_update_layout( cr, priv->body_layout );
-	pango_cairo_show_layout( cr, priv->body_layout );
 
-	y += st_body_font_size + 2*st_body_line_spacing;
+	y += st_body_font_size+1 + st_body_line_spacing;
+
 	cairo_set_source_rgb( cr, COLOR_BLACK );
 
-	str = g_strdup_printf( "%s %d", st_font_family, st_body_font_size );
-	desc = pango_font_description_from_string( str );
-	g_free( str );
-	pango_layout_set_font_description( priv->body_layout, desc );
-	pango_font_description_free( desc );
+	y += st_body_line_spacing;
 
-	pango_layout_set_text( priv->body_layout, _(
-			"This reconciliated solde "
-			"should be the same, though inversed, "
-			"that the one of the account extraction sent par your bank.\n"
-			"If this is note the case, then you have forgotten to reconciliate "
-			"some of the above entries, or some other entries have been recorded "
-			"by your bank, are present in your account extraction, but are not "
-			"found in your journals." ), -1 );
-	pango_layout_set_width( priv->body_layout, priv->page_width*PANGO_SCALE );
-	pango_layout_set_wrap( priv->body_layout, PANGO_WRAP_WORD );
-	cairo_move_to( cr, st_page_left_margin, y );
-	pango_cairo_update_layout( cr, priv->body_layout );
-	pango_cairo_show_layout( cr, priv->body_layout );
+	str = g_strdup_printf( "%s %d", st_font_family, st_body_font_size );
+	ofa_print_set_font( context, priv->layout, str );
+	g_free( str );
+
+	pango_layout_set_width( priv->layout, priv->page_width*PANGO_SCALE );
+	pango_layout_set_wrap( priv->layout, PANGO_WRAP_WORD );
+	ofa_print_set_text( context, priv->layout, st_page_margin, y,
+			_( "This reconciliated solde "
+				"should be the same, though inversed, "
+				"that the one of the account extraction sent by your bank.\n"
+				"If this is note the case, then you have most probably "
+				"forgotten to reconciliate "
+				"some of the above entries, or some other entries have been recorded "
+				"by your bank, are present in your account extraction, but are not "
+				"found in your ledgers." ), PANGO_ALIGN_LEFT );
+
+	y += 3*st_body_font_size;
+
+	priv->last_y = y;
 }
 
-/*
- * page_num is counted from zero
- */
-static void
-draw_footer( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
+static gchar *
+display_account_solde( ofaPrintReconcil *self, gdouble amount )
 {
 	ofaPrintReconcilPrivate *priv;
-	cairo_t *cr;
-	gchar *str, *stamp_str;
-	GTimeVal stamp;
-	PangoRectangle rc;
-	gdouble y;
+	gint decimals;
+	gchar *str, *str_amount;
 
 	priv = self->priv;
 
-	cr = gtk_print_context_get_cairo_context( context );
-	cairo_set_source_rgb( cr, 0.5, 0.5, 0.5 );
+	decimals = ofo_currency_get_digits( priv->currency );
+	str_amount = my_double_to_str_ex( amount, decimals );
+	str = g_strdup_printf( "%s %s", str_amount, ofo_currency_get_symbol( priv->currency ));
+	g_free( str_amount );
 
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_DMYYHM );
-	str = g_strdup_printf( "Printed on %s - Page %d/%d", stamp_str, 1+page_num, priv->pages_count );
-	g_free( stamp_str );
-	pango_layout_set_text( priv->footer_layout, str, -1 );
-	g_free( str );
-	pango_layout_get_pixel_extents( priv->footer_layout, NULL, &rc );
-	y = priv->context_height;
-	cairo_move_to( cr, priv->page_width-rc.width, y );
-	pango_cairo_update_layout( cr, priv->footer_layout );
-	pango_cairo_show_layout( cr, priv->footer_layout );
+	return( str );
+}
 
-	y -= st_body_font_size - st_body_line_spacing;
-	cairo_set_line_width( cr, 0.5 );
-	cairo_move_to( cr, 0, y );
-	cairo_line_to( cr, priv->context_width, y );
-	cairo_stroke( cr );
+static void
+on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintReconcil *self )
+{
+	static const gchar *thisfn = "ofa_print_reconcil_on_end_print";
+
+	g_debug( "%s: operation=%p, context=%p, self=%p",
+			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );
 }

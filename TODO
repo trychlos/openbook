@@ -364,7 +364,8 @@
  414 2014-10-30 backup and restore default commands should be provided
                 by the dbms provider
 
- 415
+ 415 2014-11- 1 need the account soldes at the beginning of the exercice
+                use case: print a balance of the exercice
 
 -----------------------------------------------------------------------
  DONE

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
 <interface>
-  <!-- interface-requires gtk+ 3.6 -->
+  <requires lib="gtk+" version="3.6"/>
   <object class="GtkDialog" id="Dialog1">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -52,7 +53,7 @@
                     <property name="left_padding">8</property>
                     <property name="right_padding">4</property>
                     <child>
-                      <object class="GtkGrid" id="grid-reconcil">
+                      <object class="GtkGrid" id="grid1">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="row_spacing">3</property>
@@ -80,7 +81,6 @@
                             <property name="max_length">20</property>
                             <property name="invisible_char">●</property>
                             <property name="width_chars">10</property>
-                            <property name="invisible_char_set">True</property>
                             <property name="caps_lock_warning">False</property>
                           </object>
                           <packing>
@@ -147,7 +147,6 @@
                             <property name="max_length">10</property>
                             <property name="invisible_char">●</property>
                             <property name="width_chars">10</property>
-                            <property name="invisible_char_set">True</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>

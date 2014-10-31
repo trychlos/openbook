@@ -496,38 +496,76 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
 											const gchar *from_account, const gchar *to_account,
 											const GDate *from_date, const GDate *to_date )
 {
+	static const gchar *thisfn = "ofo_entry_get_dataset_for_print_balance";
 	GList *dataset;
-	GString *where;
+	GString *query;
+	gboolean first;
 	gchar *str;
+	GSList *result, *irow, *icol;
+	ofsAccountBalance *sbal;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( from_account && g_utf8_strlen( from_account, -1 ), NULL );
-	g_return_val_if_fail( to_account && g_utf8_strlen( to_account, -1 ), NULL );
-	g_return_val_if_fail( from_date, NULL );
-	g_return_val_if_fail( to_date, NULL );
 
-	where = g_string_new( "" );
-	g_string_append_printf( where, "ENT_ACCOUNT>='%s' ", from_account );
-	g_string_append_printf( where, "AND ENT_ACCOUNT<='%s' ", to_account );
+	query = g_string_new(
+				"SELECT ENT_ACCOUNT,SUM(ENT_DEBIT),SUM(ENT_CREDIT) "
+				"FROM OFA_T_ENTRIES WHERE " );
+	first = FALSE;
+	dataset = NULL;
 
+	if( from_account && g_utf8_strlen( from_account, -1 )){
+		g_string_append_printf( query, "ENT_ACCOUNT>='%s' ", from_account );
+		first = TRUE;
+	}
+	if( to_account && g_utf8_strlen( to_account, -1 )){
+		if( first ){
+			query = g_string_append( query, "AND " );
+		}
+		g_string_append_printf( query, "ENT_ACCOUNT<='%s' ", to_account );
+		first = TRUE;
+	}
 	if( my_date_is_valid( from_date )){
+		if( first ){
+			query = g_string_append( query, "AND " );
+		}
 		str = my_date_to_str( from_date, MY_DATE_SQL );
-		g_string_append_printf( where, "AND ENT_DEFFECT>='%s' ", str );
+		g_string_append_printf( query, "ENT_DEFFECT>='%s' ", str );
 		g_free( str );
+		first = TRUE;
 	}
 	if( my_date_is_valid( to_date )){
+		if( first ){
+			query = g_string_append( query, "AND " );
+		}
 		str = my_date_to_str( to_date, MY_DATE_SQL );
-		g_string_append_printf( where, "AND ENT_DEFFECT<='%s' ", str );
+		g_string_append_printf( query, "ENT_DEFFECT<='%s' ", str );
 		g_free( str );
+		first = TRUE;
+	}
+	if( first ){
+		query = g_string_append( query, "AND " );
+	}
+	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
+	query = g_string_append( query, "GROUP BY ENT_ACCOUNT ORDER BY ENT_ACCOUNT ASC " );
+	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
+	g_string_free( query, TRUE );
+
+	if( result ){
+		for( irow=result ; irow ; irow=irow->next ){
+			sbal = g_new0( ofsAccountBalance, 1 );
+			icol = ( GSList * ) irow->data;
+			sbal->account = g_strdup(( const gchar * ) icol->data );
+			icol = icol->next;
+			sbal->debit = my_double_set_from_sql(( const gchar * ) icol->data );
+			icol = icol->next;
+			sbal->credit = my_double_set_from_sql(( const gchar * ) icol->data );
+			g_debug( "%s: account=%s, debit=%lf, credit=%lf",
+					thisfn, sbal->account, sbal->debit, sbal->credit );
+			dataset = g_list_prepend( dataset, sbal );
+		}
+		ofo_sgbd_free_result( result );
 	}
 
-	g_string_append_printf( where, " AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
-
-	dataset = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), where->str );
-
-	g_string_free( where, TRUE );
-
-	return( dataset );
+	return( g_list_reverse( dataset ));
 }
 
 /**

@@ -162,6 +162,24 @@ ofo_account_class_init( ofoAccountClass *klass )
 	g_type_class_add_private( klass, sizeof( ofoAccountPrivate ));
 }
 
+static void
+free_account_balance( ofsAccountBalance *sbal )
+{
+	g_free( sbal->account );
+	g_free( sbal );
+}
+
+/**
+ * ofo_account_free_balances:
+ *
+ * Free a list of dynamically allocated ofsAccountBalance structures.
+ */
+void
+ofo_account_free_balances( GList *balances )
+{
+	g_list_free_full( balances, ( GDestroyNotify ) free_account_balance );
+}
+
 /**
  * ofo_account_connect_handlers:
  *

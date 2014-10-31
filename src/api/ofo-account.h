@@ -41,8 +41,20 @@
 
 G_BEGIN_DECLS
 
+/**
+ * ofsAccountBalance
+ */
+typedef struct {
+	gchar  *account;
+	gdouble debit;
+	gdouble credit;
+}
+	ofsAccountBalance;
+
 #define         ACCOUNT_TYPE_ROOT                "R"
 #define         ACCOUNT_TYPE_DETAIL              "D"
+
+void            ofo_account_free_balances        ( GList *balances );
 
 void            ofo_account_connect_handlers     ( const ofoDossier *dossier );
 
