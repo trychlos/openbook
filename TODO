@@ -241,8 +241,6 @@
 
  264 2014- 6-27 review MySQL data types against C data types
 
- 269 2014- 6-27 lettrage des comptes de tiers
-
  271 2014- 6-27 ViewEntries: set a default effect date with the ope date
 
  273 2014- 6-29 ofa.css: hack ofaTabLabel/GtkGrid/GtkButton/GtkImage 
@@ -367,6 +365,11 @@
      2014-11- 1 no: the balance of the exercice is just a balance which
                 starts at 01/01 of the exercice: it includes the 'report
                 à nouveau' entries ?
+     2014-11- 1 it appears that EBP Compta historize plenty of balances,
+                but doesn't care to use them to display an exercice 
+                balance - so have to store the account balances just 
+                after exercice opening - this will let us edit this
+                exercice balance...
 
 -----------------------------------------------------------------------
  DONE
@@ -1238,6 +1241,9 @@
                 currency on the currently edited line if not already
                 set
      2014- 6-27 done - svn #3752
+
+ 269 2014- 6-27 lettrage des comptes de tiers
+     2014-11- 1 done - svn #4034
 
  270 2014- 6-27 ViewEntries: compute_balances() doesn't know how to
                 parse an amount with a space thousand separator

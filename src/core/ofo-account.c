@@ -69,6 +69,12 @@ struct _ofoAccountPrivate {
 	gint       day_cre_entry;
 	GDate      day_cre_date;
 	gdouble    day_cre_amount;
+	gint       open_deb_entry;
+	GDate      open_deb_date;
+	gdouble    open_deb_amount;
+	gint       open_cre_entry;
+	GDate      open_cre_date;
+	gdouble    open_cre_amount;
 };
 
 G_DEFINE_TYPE( ofoAccount, ofo_account, OFO_TYPE_BASE )
@@ -147,6 +153,8 @@ ofo_account_init( ofoAccount *self )
 	my_date_clear( &self->priv->cre_date );
 	my_date_clear( &self->priv->day_deb_date );
 	my_date_clear( &self->priv->day_cre_date );
+	my_date_clear( &self->priv->open_deb_date );
+	my_date_clear( &self->priv->open_cre_date );
 }
 
 static void
@@ -451,7 +459,9 @@ account_load_dataset( void )
 			"	ACC_DEB_ENTRY,ACC_DEB_DATE,ACC_DEB_AMOUNT,"
 			"	ACC_CRE_ENTRY,ACC_CRE_DATE,ACC_CRE_AMOUNT,"
 			"	ACC_DAY_DEB_ENTRY,ACC_DAY_DEB_DATE,ACC_DAY_DEB_AMOUNT,"
-			"	ACC_DAY_CRE_ENTRY,ACC_DAY_CRE_DATE,ACC_DAY_CRE_AMOUNT "
+			"	ACC_DAY_CRE_ENTRY,ACC_DAY_CRE_DATE,ACC_DAY_CRE_AMOUNT,"
+			"	ACC_OPEN_DEB_ENTRY,ACC_OPEN_DEB_DATE,ACC_OPEN_DEB_AMOUNT,"
+			"	ACC_OPEN_CRE_ENTRY,ACC_OPEN_CRE_DATE,ACC_OPEN_CRE_AMOUNT "
 			"	FROM OFA_T_ACCOUNTS "
 			"	ORDER BY ACC_NUMBER ASC", TRUE );
 
@@ -529,6 +539,30 @@ account_load_dataset( void )
 		icol = icol->next;
 		if( icol->data ){
 			priv->day_cre_amount = my_double_set_from_sql(( const gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			priv->open_deb_entry = atoi(( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			my_date_set_from_sql( &priv->open_deb_date, ( const gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			priv->open_deb_amount = my_double_set_from_sql(( const gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			priv->open_cre_entry = atoi(( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			my_date_set_from_sql( &priv->open_cre_date, ( const gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			priv->open_cre_amount = my_double_set_from_sql(( const gchar * ) icol->data );
 		}
 
 		dataset = g_list_prepend( dataset, account );
