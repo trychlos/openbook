@@ -68,6 +68,9 @@ struct _ofoEntryPrivate {
 	GDate          concil_dval;
 	gchar         *concil_user;
 	GTimeVal       concil_stamp;
+	gint           stlmt_number;
+	gchar         *stlmt_user;
+	GTimeVal       stlmt_stamp;
 };
 
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
@@ -86,6 +89,9 @@ static gint         entry_count_for_ope_template( const ofoSgbd *sgbd, const gch
 static gint         entry_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
+static void         entry_set_settlement_number( ofoEntry *entry, gint number );
+static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
+static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static gboolean     entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 static void         error_ledger( const gchar *ledger );
 static void         error_ope_template( const gchar *model );
@@ -97,6 +103,7 @@ static void         error_amounts( gdouble debit, gdouble credit );
 static void         error_entry( const gchar *message );
 static gboolean     entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd );
+static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, gint number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 
 static void
@@ -120,6 +127,8 @@ entry_finalize( GObject *instance )
 	g_free( priv->model );
 	g_free( priv->ref );
 	g_free( priv->upd_user );
+	g_free( priv->concil_user );
+	g_free( priv->stlmt_user );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_entry_parent_class )->finalize( instance );
@@ -659,7 +668,8 @@ entry_list_columns( void )
 			"	ENT_CURRENCY,ENT_LEDGER,ENT_OPE_TEMPLATE,"
 			"	ENT_DEBIT,ENT_CREDIT,"
 			"	ENT_STATUS,ENT_UPD_USER,ENT_UPD_STAMP,"
-			"	ENT_CONCIL_DVAL,ENT_CONCIL_USER,ENT_CONCIL_STAMP " );
+			"	ENT_CONCIL_DVAL,ENT_CONCIL_USER,ENT_CONCIL_STAMP,"
+			"	ENT_STLMT_NUMBER,ENT_STLMT_USER,ENT_STLMT_STAMP " );
 }
 
 static ofoEntry *
@@ -719,6 +729,19 @@ entry_parse_result( const GSList *row )
 		icol = icol->next;
 		if( icol->data ){
 			ofo_entry_set_concil_stamp( entry,
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+		}
+		icol = icol->next;
+		if( icol->data ){
+			entry->priv->stlmt_number = atoi(( const gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			entry_set_settlement_user( entry, ( gchar * ) icol->data );
+		}
+		icol = icol->next;
+		if( icol->data ){
+			entry_set_settlement_stamp( entry,
 					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 		}
 	}
@@ -1095,6 +1118,57 @@ ofo_entry_get_concil_stamp( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_settlement_number:
+ */
+gint
+ofo_entry_get_settlement_number( const ofoEntry *entry )
+{
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return( entry->priv->stlmt_number );
+	}
+
+	g_assert_not_reached();
+	return( -1 );
+}
+
+/**
+ * ofo_entry_get_settlement_user:
+ */
+const gchar *
+ofo_entry_get_settlement_user( const ofoEntry *entry )
+{
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return(( const gchar * ) entry->priv->stlmt_user );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
+ * ofo_entry_get_settlement_stamp:
+ */
+const GTimeVal *
+ofo_entry_get_settlement_stamp( const ofoEntry *entry )
+{
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return(( const GTimeVal * ) &entry->priv->stlmt_stamp );
+	}
+
+	g_assert_not_reached();
+	return( NULL );
+}
+
+/**
  * ofo_entry_set_number:
  */
 void
@@ -1326,14 +1400,14 @@ ofo_entry_set_concil_dval( ofoEntry *entry, const GDate *drappro )
  * ofo_entry_set_concil_user:
  */
 void
-ofo_entry_set_concil_user( ofoEntry *entry, const gchar *concil_user )
+ofo_entry_set_concil_user( ofoEntry *entry, const gchar *user )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		g_free( entry->priv->concil_user );
-		entry->priv->concil_user = g_strdup( concil_user );
+		entry->priv->concil_user = g_strdup( user );
 	}
 }
 
@@ -1341,13 +1415,58 @@ ofo_entry_set_concil_user( ofoEntry *entry, const gchar *concil_user )
  * ofo_entry_set_concil_stamp:
  */
 void
-ofo_entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *concil_stamp )
+ofo_entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *stamp )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		my_utils_stamp_set_from_stamp( &entry->priv->concil_stamp, concil_stamp );
+		my_utils_stamp_set_from_stamp( &entry->priv->concil_stamp, stamp );
+	}
+}
+
+/*
+ * ofo_entry_set_settlement_number:
+ *
+ * The reconciliation may be unset by setting @number to 0.
+ */
+static void
+entry_set_settlement_number( ofoEntry *entry, gint number )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		entry->priv->stlmt_number = number;
+	}
+}
+
+/*
+ * ofo_entry_set_settlement_user:
+ */
+static void
+entry_set_settlement_user( ofoEntry *entry, const gchar *user )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		g_free( entry->priv->stlmt_user );
+		entry->priv->stlmt_user = g_strdup( user );
+	}
+}
+
+/*
+ * ofo_entry_set_settlement_stamp:
+ */
+static void
+entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp )
+{
+	g_return_if_fail( OFO_IS_ENTRY( entry ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		my_utils_stamp_set_from_stamp( &entry->priv->stlmt_stamp, stamp );
 	}
 }
 
@@ -1817,6 +1936,72 @@ do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd )
 	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	g_free( where );
+	g_string_free( query, TRUE );
+
+	return( ok );
+}
+
+/**
+ * ofo_entry_update_settlement:
+ *
+ * A group of entries has been flagged for settlement (resp. unsettlement).
+ * The exact operation is indicated by @number:
+ * - if >0, then settle with this number
+ * - if <= 0, then unsettle
+ *
+ * We simultaneously update the ofoEntry object, and the DBMS.
+ */
+gboolean
+ofo_entry_update_settlement( ofoEntry *entry, const ofoDossier *dossier, gint number )
+{
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		return( do_update_settlement(
+						entry,
+						ofo_dossier_get_user( dossier ),
+						ofo_dossier_get_sgbd( dossier ),
+						number ));
+	}
+
+	return( FALSE );
+}
+
+static gboolean
+do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, gint number )
+{
+	GString *query;
+	gchar *stamp_str;
+	GTimeVal stamp;
+	gboolean ok;
+
+	query = g_string_new( "UPDATE OFA_T_ENTRIES SET " );
+
+	if( number > 0 ){
+		entry_set_settlement_number( entry, number );
+		entry_set_settlement_user( entry, user );
+		entry_set_settlement_stamp( entry, my_utils_stamp_set_now( &stamp ));
+
+		stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+		g_string_append_printf( query,
+				"ENT_STLMT_NUMBER=%u,ENT_STLMT_USER='%s',ENT_STLMT_STAMP='%s' ",
+				number, user, stamp_str );
+		g_free( stamp_str );
+
+	} else {
+		entry_set_settlement_number( entry, -1 );
+		entry_set_settlement_user( entry, NULL );
+		entry_set_settlement_stamp( entry, NULL );
+
+		g_string_append_printf( query,
+				"ENT_STLMT_NUMBER=NULL,ENT_STLMT_USER=NULL,ENT_STLMT_STAMP=NULL " );
+	}
+
+	g_string_append_printf( query, "WHERE ENT_NUMBER=%d", ofo_entry_get_number( entry ));
+	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
+
 	g_string_free( query, TRUE );
 
 	return( ok );

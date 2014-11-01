@@ -85,6 +85,7 @@ struct _sDetailExe {
 	gint             last_entry;
 	gint             last_bat;
 	gint             last_batline;
+	gint             last_settlement;
 	ofaDossierStatus status;
 };
 
@@ -783,14 +784,15 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_EXE ("
-			"	DOS_ID               INTEGER      NOT NULL    COMMENT 'Row identifier',"
-			"	DOS_EXE_ID           INTEGER      NOT NULL    COMMENT 'Exercice identifier',"
-			"	DOS_EXE_BEGIN        DATE                     COMMENT 'Exercice beginning date',"
-			"	DOS_EXE_END          DATE                     COMMENT 'Exercice ending date',"
-			"	DOS_EXE_LAST_ENTRY   INTEGER DEFAULT 0        COMMENT 'Last entry number used',"
-			"	DOS_EXE_LAST_BAT     INTEGER DEFAULT 0        COMMENT 'Last BAT file number used',"
-			"	DOS_EXE_LAST_BATLINE INTEGER DEFAULT 0        COMMENT 'Last BAT line number used',"
-			"	DOS_EXE_STATUS       INTEGER      NOT NULL    COMMENT 'Status of this exercice',"
+			"	DOS_ID                  INTEGER      NOT NULL COMMENT 'Row identifier',"
+			"	DOS_EXE_ID              INTEGER      NOT NULL COMMENT 'Exercice identifier',"
+			"	DOS_EXE_BEGIN           DATE                  COMMENT 'Exercice beginning date',"
+			"	DOS_EXE_END             DATE                  COMMENT 'Exercice ending date',"
+			"	DOS_EXE_LAST_ENTRY      INTEGER DEFAULT 0     COMMENT 'Last entry number used',"
+			"	DOS_EXE_LAST_BAT        INTEGER DEFAULT 0     COMMENT 'Last BAT file number used',"
+			"	DOS_EXE_LAST_BATLINE    INTEGER DEFAULT 0     COMMENT 'Last BAT line number used',"
+			"	DOS_EXE_LAST_SETTLEMENT INTEGER DEFAULT 0     COMMENT 'Last settlement number used',"
+			"	DOS_EXE_STATUS          INTEGER      NOT NULL COMMENT 'Status of this exercice',"
 			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_ID)"
 			")", TRUE )){
 		return( FALSE );
@@ -821,6 +823,9 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ENT_CONCIL_DVAL  DATE                     COMMENT 'Reconciliation value date',"
 			"	ENT_CONCIL_USER  VARCHAR(20)              COMMENT 'User responsible of the reconciliation',"
 			"	ENT_CONCIL_STAMP TIMESTAMP                COMMENT 'Reconciliation timestamp',"
+			"	ENT_STLMT_NUMBER INTEGER                  COMMENT 'Settlement number',"
+			"	ENT_STLMT_USER   VARCHAR(20)              COMMENT 'User responsible of the settlement',"
+			"	ENT_STLMT_STAMP  TIMESTAMP                COMMENT 'Settlement timestamp',"
 			"	CONSTRAINT PRIMARY KEY (ENT_DEFFECT,ENT_NUMBER),"
 			"	INDEX (ENT_NUMBER)"
 			")", TRUE )){
@@ -1543,6 +1548,30 @@ ofo_dossier_get_next_batline_number( const ofoDossier *dossier )
 	return( next_number );
 }
 
+/**
+ * ofo_dossier_get_next_settlement_number:
+ */
+gint
+ofo_dossier_get_next_settlement_number( const ofoDossier *dossier )
+{
+	sDetailExe *current;
+	gint next_number;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	next_number = 0;
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		current = get_current_exe( dossier );
+		current->last_settlement += 1;
+		next_number = current->last_settlement;
+		dossier_update_next_number( dossier, "DOS_EXE_LAST_SETTLEMENT", next_number );
+	}
+
+	return( next_number );
+}
+
 /*
  * ofo_dossier_update_next_number:
  */
@@ -1887,7 +1916,7 @@ dossier_read_exercices( ofoDossier *dossier )
 	query = g_strdup_printf(
 			"SELECT DOS_EXE_ID,DOS_EXE_BEGIN,DOS_EXE_END,"
 			"	DOS_EXE_LAST_ENTRY,DOS_EXE_LAST_BAT,DOS_EXE_LAST_BATLINE,"
-			"	DOS_EXE_STATUS "
+			"	DOS_EXE_LAST_SETTLEMENT,DOS_EXE_STATUS "
 			"	FROM OFA_T_DOSSIER_EXE "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
 
@@ -1911,6 +1940,8 @@ dossier_read_exercices( ofoDossier *dossier )
 			sexe->last_bat = atoi(( gchar * ) icol->data );
 			icol = icol->next;
 			sexe->last_batline = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			sexe->last_settlement = atoi(( gchar * ) icol->data );
 			icol = icol->next;
 			if( icol->data ){
 				sexe->status = atoi(( gchar * ) icol->data );

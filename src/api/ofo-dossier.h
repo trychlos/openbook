@@ -90,6 +90,7 @@ GDate          *ofo_dossier_get_last_closed_exercice  ( const ofoDossier *dossie
 gint            ofo_dossier_get_next_entry_number     ( const ofoDossier *dossier );
 gint            ofo_dossier_get_next_bat_number       ( const ofoDossier *dossier );
 gint            ofo_dossier_get_next_batline_number   ( const ofoDossier *dossier );
+gint            ofo_dossier_get_next_settlement_number( const ofoDossier *dossier );
 
 gboolean        ofo_dossier_is_valid                  ( const gchar *label,
 															gint nb_months, const gchar *currency,

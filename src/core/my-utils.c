@@ -134,7 +134,11 @@ my_utils_stamp_set_from_sql( GTimeVal *timeval, const gchar *str )
 GTimeVal *
 my_utils_stamp_set_from_stamp( GTimeVal *timeval, const GTimeVal *orig )
 {
-	memcpy( timeval, orig, sizeof( GTimeVal ));
+	if( orig ){
+		memcpy( timeval, orig, sizeof( GTimeVal ));
+	} else {
+		memset( timeval, '\0', sizeof( GTimeVal ));
+	}
 
 	return( timeval );
 }
