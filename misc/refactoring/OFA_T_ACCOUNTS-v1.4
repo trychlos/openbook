@@ -1,0 +1,11 @@
+# $Id$
+
+ALTER TABLE OFA_T_ACCOUNTS ADD COLUMN ACC_OPEN_DEB_ENTRY  INTEGER                      COMMENT 'Number of the most recent debit entry at the exercice opening';
+ALTER TABLE OFA_T_ACCOUNTS ADD COLUMN ACC_OPEN_DEB_DATE   DATE                         COMMENT 'Effect date of the most recent debit entry at the exercice opening';
+ALTER TABLE OFA_T_ACCOUNTS ADD COLUMN ACC_OPEN_DEB_AMOUNT DECIMAL(15,5)                COMMENT 'Debit balance at the exercice opening';
+ALTER TABLE OFA_T_ACCOUNTS ADD COLUMN ACC_OPEN_CRE_ENTRY  INTEGER                      COMMENT 'Number of the most recent credit entry at the exercice opening';
+ALTER TABLE OFA_T_ACCOUNTS ADD COLUMN ACC_OPEN_CRE_DATE   DATE                         COMMENT 'Effect date of the most recent credit entry at the exercice opening';
+ALTER TABLE OFA_T_ACCOUNTS ADD COLUMN ACC_OPEN_CRE_AMOUNT DECIMAL(15,5)                COMMENT 'Credit balance at the exercice opening';
+
+DESCRIBE OFA_T_ACCOUNTS;
+
