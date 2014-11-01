@@ -364,6 +364,9 @@
 
  415 2014-11- 1 need the account soldes at the beginning of the exercice
                 use case: print a balance of the exercice
+     2014-11- 1 no: the balance of the exercice is just a balance which
+                starts at 01/01 of the exercice: it includes the 'report
+                à nouveau' entries ?
 
 -----------------------------------------------------------------------
  DONE

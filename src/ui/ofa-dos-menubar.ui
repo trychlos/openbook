@@ -77,6 +77,10 @@
           <attribute name="label" translatable="yes">Intermediate _closing...</attribute>
           <attribute name="action">win.iclosing</attribute>
         </item>
+        <item>
+          <attribute name="label" translatable="yes">E_xercice closing...</attribute>
+          <attribute name="action">win.execlosing</attribute>
+        </item>
       </section>
       <section>
         <item>

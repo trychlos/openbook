@@ -100,6 +100,8 @@ openbook_SOURCES = \
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
 	ofa-dossier-properties.h							\
+	ofa-exe-closing.c									\
+	ofa-exe-closing.h									\
 	ofa-export.c										\
 	ofa-export.h										\
 	ofa-guided-common.c									\
@@ -183,6 +185,7 @@ ui_files = \
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
+	ofa-exe-closing.ui									\
 	ofa-export.ui										\
 	ofa-guided-input.ui									\
 	ofa-import.ui										\
