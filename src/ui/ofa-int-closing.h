@@ -32,7 +32,7 @@
  * @short_description: #ofaIntClosing class definition.
  * @include: ui/ofa-int-closing.h
  *
- * Run an intermediate closing on the selected journals.
+ * Run an intermediate closing on the selected ledgers.
  */
 
 #include "api/ofo-ledger-def.h"

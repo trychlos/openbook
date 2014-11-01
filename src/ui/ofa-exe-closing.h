@@ -30,12 +30,58 @@
 /**
  * SECTION: ofa_exe_closing
  * @short_description: #ofaExeClosing class definition.
- * @include: ui/ofa-int-closing.h
+ * @include: ui/ofa-exe-closing.h
  *
- * Run an intermediate closing on the selected journals.
+ * Close the current exercice.
+ *
+ * Closing an exercice involves following steps:
+ * - clear personal accounts: they must have a nul balance
+ * - clear third party accounts, reconducting non pointed entries
+ *   option: keep non settled third party entries
+ *   option: keep non reconciliated entries
+ *
+ * Some of the accounts must be balanced for closing the exercice:
+ * -> this is an account property
+ *    if yes, then we must have a balance account for recording debit
+ *    and credit entries
+ *
+ * Some of the accounts may benefit of the reconciliation process:
+ * -> if yes, then the "keep non reconciliated entries" option applies
+ *
+ * Some of the accounts may benefit of the settling (settlement,
+ * settled) process:
+ * -> if yes, then the "keep non settled third party entries" option
+ *    applies
+ *
+ * From "EBP Compta Fr":
+ *   La clôture de l'exercice a pour but de calculer le résultat de
+ *   l'exercice en soldant les comptes de charge et de produit, et de
+ *   générer les écritures de report à nouveau pour tous les comptes
+ *   d'actif et de passif (classes 1 à 5).
+ *   Les opérations suivantes doivent avoir été effectuées au préalable:
+ *   - lettrer tous les comptes de tiers
+ *   - valider les écritures de simulation que vous souhaitez conserver
+ *   - éditer tous les états comptables de fin d'exercice
+ *   - procéder à une sauvegarde des données.
+ *
+ * From Openbook point of view:
+ * 1 - recall the prerequired operation as above
+ * 2 - after confirmation, and for all accounts:
+ *     a) do the security and integrity checks
+ *        entries and ledgers are sane (equilibrated)
+ *        ledgers are closed ?
+ *        all detail accounts may be set in a closing category
+ * 3 - enter required parameters (which may have been configured):
+ *     date of the end of current exercice
+ *     dates of the beginning and the end of the next exercice
+ *     the operation template for balancing entries, or
+ *      the account and the ledger
+ * 4 - after a new user confirmation:
+ *     b1) balancing the account (so no balance carried forward), or
+ *     b2) generate a balance entry for the new exercice
+ *     c) archive all tables so that we may reaccess them later when
+ *        consulting a closed exercice
  */
-
-#include "api/ofo-ledger-def.h"
 
 #include "core/my-dialog.h"
 
