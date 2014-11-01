@@ -153,6 +153,8 @@ openbook_SOURCES = \
 	ofa-reconciliation.h								\
 	ofa-restore.c										\
 	ofa-restore.h										\
+	ofa-settlement.c									\
+	ofa-settlement.h									\
 	ofa-view-entries.c									\
 	ofa-view-entries.h									\
 	$(NULL)

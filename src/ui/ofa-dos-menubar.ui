@@ -68,6 +68,10 @@
       </section>
       <section>
         <item>
+          <attribute name="label" translatable="yes">Account _settlement...</attribute>
+          <attribute name="action">win.settlement</attribute>
+        </item>
+        <item>
           <attribute name="label" translatable="yes">Account _reconciliation...</attribute>
           <attribute name="action">win.concil</attribute>
         </item>

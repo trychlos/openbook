@@ -60,6 +60,7 @@
 #include "ui/ofa-print-reconcil.h"
 #include "ui/ofa-rates-page.h"
 #include "ui/ofa-reconciliation.h"
+#include "ui/ofa-settlement.h"
 #include "ui/ofa-view-entries.h"
 
 /* private instance data
@@ -95,6 +96,7 @@ static void on_close            ( GSimpleAction *action, GVariant *parameter, gp
 static void on_ope_guided       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_view_entries ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_concil       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_settlement   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_int_closing  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_exe_closing  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -116,6 +118,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "guided",        on_ope_guided,        NULL, NULL, NULL },
 		{ "entries",       on_ope_view_entries,  NULL, NULL, NULL },
 		{ "concil",        on_ope_concil,        NULL, NULL, NULL },
+		{ "settlement",    on_ope_settlement,    NULL, NULL, NULL },
 		{ "iclosing",      on_ope_int_closing,   NULL, NULL, NULL },
 		{ "execlosing",    on_ope_exe_closing,   NULL, NULL, NULL },
 		{ "import",        on_ope_import,        NULL, NULL, NULL },
@@ -148,8 +151,6 @@ typedef struct {
 	gint         theme_id;
 	const gchar *label;
 	GType      (*fn_get_type)( void );
-	gboolean     has_import;
-	gboolean     has_export;
 }
 	sThemeDef;
 
@@ -157,64 +158,49 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_ACCOUNTS,
 				N_( "Chart of accounts" ),
-				ofa_accounts_page_get_type,
-				FALSE,
-				FALSE },
-
+				ofa_accounts_page_get_type
+		},
 		{ THM_BATFILES,
 				N_( "Imported BAT files" ),
-				ofa_bats_page_get_type,
-				FALSE,
-				FALSE },
+				ofa_bats_page_get_type
+		},
 
 		{ THM_CLASSES,
 				N_( "Account classes" ),
-				ofa_classes_page_get_type,
-				FALSE,
-				FALSE },
-
+				ofa_classes_page_get_type
+		},
 		{ THM_CURRENCIES,
 				N_( "Currencies" ),
-				ofa_currencies_page_get_type,
-				FALSE,
-				FALSE },
-
+				ofa_currencies_page_get_type
+		},
 		{ THM_GUIDED_INPUT,
 				N_( "Guided input" ),
-				ofa_guided_ex_get_type,
-				FALSE,
-				FALSE },
-
+				ofa_guided_ex_get_type
+		},
 		{ THM_LEDGERS,
 				N_( "Ledgers" ),
-				ofa_ledgers_page_get_type,
-				FALSE,
-				FALSE },
-
+				ofa_ledgers_page_get_type
+		},
 		{ THM_OPE_TEMPLATES,
 				N_( "Operation templates" ),
-				ofa_ope_templates_page_get_type,
-				FALSE,
-				FALSE },
-
+				ofa_ope_templates_page_get_type
+		},
 		{ THM_RATES,
 				N_( "Rates" ),
-				ofa_rates_page_get_type,
-				FALSE,
-				FALSE },
-
+				ofa_rates_page_get_type
+		},
 		{ THM_RECONCIL,
 				N_( "Reconciliation" ),
-				ofa_reconciliation_get_type,
-				FALSE,
-				FALSE },
-
+				ofa_reconciliation_get_type
+		},
+		{ THM_SETTLEMENT,
+				N_( "Settlement" ),
+				ofa_settlement_get_type
+		},
 		{ THM_VIEW_ENTRIES,
 				N_( "View entries" ),
-				ofa_view_entries_get_type,
-				FALSE,
-				FALSE },
-
+				ofa_view_entries_get_type
+		},
 		{ 0 }
 };
 
@@ -1030,6 +1016,19 @@ on_ope_concil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RECONCIL );
+}
+
+static void
+on_ope_settlement( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_settlement";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_SETTLEMENT );
 }
 
 static void
