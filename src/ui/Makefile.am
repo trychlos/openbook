@@ -199,6 +199,7 @@ ui_files = \
 	ofa-print-balance.ui								\
 	ofa-print-reconcil.ui								\
 	ofa-rate-properties.ui								\
+	ofa-settlement.piece.ui								\
 	ofa-view-entries.piece.ui							\
 	$(NULL)
 
