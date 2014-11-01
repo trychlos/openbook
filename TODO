@@ -281,8 +281,6 @@
 
  317 2014-10- 5 view_entries: let the user select an operation template
 
- 318 2014-10- 6 print the balance for a periode
-
  319 2014-10- 7 review ofo_entry_get_csv()
 
  321 2014-10- 8 Ledger properties balance: should have '€' sign like
@@ -1396,6 +1394,9 @@
 
  316 2014-10- 4 ofo_entry.c: optimize entry_count_for_xxx() methods
      2014-10- 5 done - svn #3883
+
+ 318 2014-10- 6 print the balance for a periode
+     2014-11- 1 done - svn #4022
 
  320 2014-10- 8 ofaGuidedEx: there is no need to display the ledger in
                 the top right part, as the operation templates are 
