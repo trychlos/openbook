@@ -367,9 +367,6 @@
  417 2014-11- 3 when inserting a new account, reorder the children
                 under the new root
 
- 418 2014-11- 3 new account: if root, then 'currency' label should be
-                disabled (not only the combo box)
-
  419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
                 book, but most probably also in other treeviews)
 
@@ -1809,6 +1806,10 @@
                 after exercice opening - this will let us edit this
                 exercice balance...
      2014-11- 3 done - svn #4042
+
+ 418 2014-11- 3 new account: if root, then 'currency' label should be
+                disabled (not only the combo box)
+     2014-11- 3 done - svn #4044 
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

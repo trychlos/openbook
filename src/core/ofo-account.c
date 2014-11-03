@@ -1294,6 +1294,35 @@ ofo_account_has_children( const ofoAccount *account )
 }
 
 /**
+ * ofo_account_is_child_of:
+ * @account: the #ofoAccount account
+ * @candidate: another account to be compared relatively to @account
+ *
+ * Returns: %TRUE if the @number should logically be a child of @æccount.
+ */
+gboolean
+ofo_account_is_child_of( const ofoAccount *account, const ofoAccount *candidate )
+{
+	const gchar *account_number;
+	const gchar *candidate_number;
+	gboolean is_child;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( candidate && OFO_IS_ACCOUNT( candidate ), FALSE );
+
+	is_child = FALSE;
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		account_number = ofo_account_get_number( account );
+		candidate_number = ofo_account_get_number( candidate );
+		is_child = g_str_has_prefix( candidate_number, account_number );
+	}
+
+	return( is_child );
+}
+
+/**
  * ofo_account_histo_valid_to_open:
  * @account: the #ofoAccount account
  *

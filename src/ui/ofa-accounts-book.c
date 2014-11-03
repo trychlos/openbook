@@ -102,6 +102,14 @@ static const gchar  *st_class_labels[] = {
 		NULL
 };
 
+/* a structure used when moving a subtree to another place
+ */
+typedef struct {
+	ofoAccount          *account;
+	GtkTreeRowReference *ref;
+}
+	sChild;
+
 /* data attached to each page of the classes notebook
  */
 #define DATA_PAGE_CLASS         "ofa-data-page-class"
@@ -126,6 +134,11 @@ static void       expand_node( ofaAccountsBook *self, GtkWidget *widget );
 static void       insert_dataset( ofaAccountsBook *self );
 static void       insert_row( ofaAccountsBook *self, ofoAccount *account, gboolean with_selection );
 static gboolean   find_parent_iter( ofaAccountsBook *self, const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *parent_iter );
+static void       realign_children( ofaAccountsBook *self, const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *parent_iter );
+static GList     *realign_children_read( const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter, GList *children );
+static void       realign_children_remove( sChild *child_str, GtkTreeModel *tmodel );
+static void       realign_children_insert( sChild *child_str, ofaAccountsBook *self );
+static void       child_free( sChild *child_str );
 static gint       book_get_page_by_class( ofaAccountsBook *self, gint class_num, gboolean create, GtkTreeView **tview, GtkTreeModel **tmodel );
 static gint       book_create_page( ofaAccountsBook *self, GtkNotebook *book, gint class, GtkWidget **page );
 static void       expand_all_pages( ofaAccountsBook *self );
@@ -692,7 +705,7 @@ insert_dataset( ofaAccountsBook *self )
 }
 
 /*
- * insert a new row in the ad-hoc page of the notebooc, creating the
+ * insert a new row in the ad-hoc page of the notebook, creating the
  * page as needed
  */
 static void
@@ -704,6 +717,7 @@ insert_row( ofaAccountsBook *self, ofoAccount *account, gboolean with_selection 
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter, parent_iter;
 	gboolean parent_found;
+	GtkTreePath *path;
 
 	page_num = book_get_page_by_class(
 						self, ofo_account_get_class( account ), TRUE, &tview, &tmodel );
@@ -720,6 +734,13 @@ insert_row( ofaAccountsBook *self, ofoAccount *account, gboolean with_selection 
 				-1 );
 
 		set_row_by_iter( self, account, tmodel, &iter );
+		realign_children( self, account, tmodel, &iter );
+
+		if( parent_found ){
+			path = gtk_tree_model_get_path( tmodel, &parent_iter );
+			gtk_tree_view_expand_row( tview, path, TRUE );
+			gtk_tree_path_free( path );
+		}
 
 		if( with_selection ){
 			gtk_notebook_set_current_page( self->priv->book, page_num );
@@ -757,6 +778,93 @@ find_parent_iter( ofaAccountsBook *self, const ofoAccount *account, GtkTreeModel
 	g_free( candidate_number );
 
 	return( found );
+}
+
+/*
+ * the @account has just come inserted at @parent_iter
+ * its possible children have to be reinserted under it
+ * when entering here, @parent_iter should not have yet any child iter
+ */
+static void
+realign_children( ofaAccountsBook *self, const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *parent_iter )
+{
+	static const gchar *thisfn = "ofa_accounts_book_realign_children";
+	GList *children;
+	GtkTreeIter iter;
+
+	if( gtk_tree_model_iter_has_child( tmodel, parent_iter )){
+		g_warning( "%s: newly inserted row already has at least one child", thisfn );
+
+	} else {
+		children = NULL;
+		iter = *parent_iter;
+		children = realign_children_read( account, tmodel, &iter, children );
+		g_list_foreach( children, ( GFunc ) realign_children_remove, tmodel );
+		g_list_foreach( children, ( GFunc ) realign_children_insert, self );
+		g_list_free_full( children, ( GDestroyNotify ) child_free );
+	}
+}
+
+/*
+ * realign_children_read:
+ * copy into 'children' GList all children accounts, along with their
+ * row reference - it will so be easy to remove them from the model,
+ * then reinsert these same accounts
+ */
+static GList *
+realign_children_read( const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter, GList *children )
+{
+	ofoAccount *candidate;
+	GtkTreeIter child_iter;
+	GtkTreePath *path;
+	sChild *child_str;
+
+	while( gtk_tree_model_iter_next( tmodel, iter )){
+		gtk_tree_model_get( tmodel, iter, COL_OBJECT, &candidate, -1 );
+		g_object_unref( candidate );
+
+		if( ofo_account_is_child_of( account, candidate )){
+			child_str = g_new0( sChild, 1 );
+			path = gtk_tree_model_get_path( tmodel, iter );
+			child_str->account = g_object_ref( candidate );
+			child_str->ref = gtk_tree_row_reference_new( tmodel, path );
+			children = g_list_prepend( children, child_str );
+			gtk_tree_path_free( path );
+
+			if( gtk_tree_model_iter_children( tmodel, &child_iter, iter )){
+				children = realign_children_read( account, tmodel, &child_iter, children );
+			}
+		}
+	}
+
+	return( children );
+}
+
+static void
+realign_children_remove( sChild *child_str, GtkTreeModel *tmodel )
+{
+	GtkTreePath *path;
+	GtkTreeIter iter;
+
+	path = gtk_tree_row_reference_get_path( child_str->ref );
+	if( path && gtk_tree_model_get_iter( tmodel, &iter, path )){
+		gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter );
+		gtk_tree_path_free( path );
+	}
+}
+
+static void
+realign_children_insert( sChild *child_str, ofaAccountsBook *self )
+{
+	insert_row( self, child_str->account, FALSE );
+}
+
+static void
+child_free( sChild *child_str )
+{
+	g_object_unref( child_str->account );
+	gtk_tree_row_reference_free( child_str->ref );
+	g_free( child_str );
 }
 
 /*
