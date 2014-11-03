@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
+#include "api/ofa-boxed.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-sgbd.h"
 
@@ -352,6 +353,7 @@ ofa_application_new( void )
 			OFA_PROP_ICON_NAME,        gettext( st_icon_name ),
 			NULL );
 
+	ofa_boxed_register_types();
 	ofa_plugin_load_modules();
 
 	return( application );

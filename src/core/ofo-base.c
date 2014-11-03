@@ -27,8 +27,10 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-boxed.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
+#include "api/ofo-sgbd.h"
 
 /* private instance data
  */
@@ -41,10 +43,17 @@ G_DEFINE_TYPE( ofoBase, ofo_base, G_TYPE_OBJECT )
 static void
 ofo_base_finalize( GObject *instance )
 {
-	ofoBase *self = OFO_BASE( instance );
+	ofoBaseProtected *prot;
 
 	/* free data members here */
-	g_free( self->prot );
+	prot = OFO_BASE( instance )->prot;
+
+	/* only free ofaBoxed fields list here so that it is left available
+	 * in finalize method of the child classes */
+	ofa_boxed_free_fields_list( prot->fields );
+	prot->fields = NULL;
+
+	g_free( prot );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_base_parent_class )->finalize( instance );
@@ -132,4 +141,41 @@ ofo_base_get_global( ofsBaseGlobal *ptr, ofoBase *dossier, GWeakNotify fn, gpoin
 	}
 
 	return( new_ptr );
+}
+
+/**
+ * ofo_base_load_dataset:
+ * @defs: the #ofsBoxedDefs list of field definitions for this object
+ * @sgbd: the connection object
+ * @from: the 'from' part of the query
+ * @type: the #GType of the #ofoBase -derived object to be allocated
+ *
+ * Load the full dataset for the specified @type class.
+ *
+ * Returns: the ordered list of loaded objects.
+ */
+GList *
+ofo_base_load_dataset( const ofsBoxedDef *defs, const ofoSgbd *sgbd, const gchar *from, GType type )
+{
+	gchar *columns, *query;
+	GSList *result, *irow;
+	ofoBase *object;
+	GList *dataset;
+
+	dataset = NULL;
+	columns = ofa_boxed_get_dbms_columns( defs );
+	query = g_strdup_printf( "SELECT %s FROM %s", columns, from );
+	g_free( columns );
+
+	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
+	g_free( query );
+
+	for( irow=result ; irow ; irow=irow->next ){
+		object = g_object_new( type, NULL );
+		object->prot->fields = ofa_boxed_parse_dbms_result( defs, irow );
+		dataset = g_list_prepend( dataset, object );
+	}
+	ofo_sgbd_free_result( result );
+
+	return( g_list_reverse( dataset ));
 }

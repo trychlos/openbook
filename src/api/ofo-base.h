@@ -35,15 +35,22 @@
  * The ofoBase class is the class base for application objects.
  */
 
+#include "api/ofa-boxed.h"
 #include "api/ofo-base-def.h"
+#include "api/ofo-sgbd-def.h"
 
 G_BEGIN_DECLS
 
 /**
  * ofsBaseGlobal:
+ * @dataset: maintains the list of all the #ofoBase -derived objects.
+ * @dossier: a pointer to the #ofoDossier object.
+ * @send_signal_new: whether to send the corresponding signal when
+ *  inserting a new record in DBMS.
  *
- * This structure is used by every derived class (but ofoDossier which
- * doesn't need it), in order to store its own global data.
+ * This structure is used by every derived class (apart from
+ * #ofoDossier which doesn't need it), in order to store its own global
+ * data.
  *
  * It is the responsability of the user child class to manage its own
  * version of this structure, usually through a static pointer to a
@@ -72,12 +79,13 @@ typedef struct {
  * This macro is to be invoked at the toplevel, once in each source
  * file.
  */
-#define OFO_BASE_DEFINE_GLOBAL( V,T )   static ofsBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer \
-											user_data, GObject *finalizing_dossier ){ \
-											g_debug( "ofo_" #T "_clear_global: " #V "=%p, count=%u", ( void * )(V), \
-											((V) && (V)->dataset) ? g_list_length((V)->dataset) : 0 ); \
-											if(V){ g_list_foreach((V)->dataset, (GFunc) g_object_unref, NULL ); \
-											g_list_free((V)->dataset ); g_free(V); (V)=NULL; }}
+#define OFO_BASE_DEFINE_GLOBAL( V,T )	\
+		static ofsBaseGlobal *(V)=NULL; static void T ## _clear_global( gpointer \
+		user_data, GObject *finalizing_dossier ){ \
+		g_debug( "ofo_" #T "_clear_global: " #V "=%p, count=%u", ( void * )(V), \
+		((V) && (V)->dataset) ? g_list_length((V)->dataset) : 0 ); \
+		if(V){ g_list_foreach((V)->dataset, (GFunc) g_object_unref, NULL ); \
+		g_list_free((V)->dataset ); g_free(V); (V)=NULL; }}
 
 /**
  * OFO_BASE_SET_GLOBAL:
@@ -103,8 +111,9 @@ typedef struct {
  * order to be sure the global structure is available.
  * It is safe to invoke it many times, as it is auto-protected.
  */
-#define OFO_BASE_SET_GLOBAL( V,D,T )    ({ (V)=ofo_base_get_global((V),OFO_BASE(D),(GWeakNotify)(T ## _clear_global), \
-											NULL); if(!(V)->dataset){ (V)->dataset=(T ## _load_dataset)();} })
+#define OFO_BASE_SET_GLOBAL( V,D,T )	\
+		({ (V)=ofo_base_get_global((V),OFO_BASE(D),(GWeakNotify)(T ## _clear_global), \
+		NULL); if(!(V)->dataset){ (V)->dataset=(T ## _load_dataset)();} })
 
 /**
  * OFO_BASE_ADD_TO_DATASET:
@@ -121,9 +130,10 @@ typedef struct {
  * b) send a OFA_SIGNAL_NEW_OBJECT signal to the opened dossier,
  *    associated to the <T> object
  */
-#define OFO_BASE_ADD_TO_DATASET( P,T )  ({ (P)->dataset=g_list_prepend((P)->dataset,(T)); if((P)->send_signal_new) \
-											{ g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_NEW_OBJECT, \
-											g_object_ref(T)); }})
+#define OFO_BASE_ADD_TO_DATASET( P,T )	\
+		({ (P)->dataset=g_list_prepend((P)->dataset,(T)); if((P)->send_signal_new) \
+		{ g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_NEW_OBJECT, \
+		g_object_ref(T)); }})
 
 /**
  * OFO_BASE_REMOVE_FROM_DATASET:
@@ -141,8 +151,9 @@ typedef struct {
  * b) send a OFA_SIGNAL_DELETED_OBJECT signal to the opened dossier,
  *    associated to the <T> object
  */
-#define OFO_BASE_REMOVE_FROM_DATASET( P,T ) ({ (P)->dataset=g_list_remove((P)->dataset,(T)); g_signal_emit_by_name( \
-											G_OBJECT((P)->dossier), OFA_SIGNAL_DELETED_OBJECT, (T)); })
+#define OFO_BASE_REMOVE_FROM_DATASET( P,T )	\
+		({ (P)->dataset=g_list_remove((P)->dataset,(T)); g_signal_emit_by_name( \
+		G_OBJECT((P)->dossier), OFA_SIGNAL_DELETED_OBJECT, (T)); })
 
 /**
  * OFO_BASE_UPDATE_DATASET:
@@ -158,13 +169,48 @@ typedef struct {
  *    associated to the <T> object; the previous identifier is passed
  *    as an argument for tree views updates
  */
-#define OFO_BASE_UPDATE_DATASET( P,T,I )    ({ g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_UPDATED_OBJECT, \
-												g_object_ref(T),(I)); })
+#define OFO_BASE_UPDATE_DATASET( P,T,I )	\
+		({ g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_UPDATED_OBJECT, \
+		g_object_ref(T),(I)); })
 
 #define OFO_BASE_UNSET_ID                   -1
 
 ofsBaseGlobal *ofo_base_get_global( ofsBaseGlobal *ptr,
 										ofoBase *dossier, GWeakNotify fn, gpointer user_data );
+
+/**
+ * ofo_base_getter:
+ * @C: the class mnemonic (e.g. 'ACCOUNT')
+ * @V: the variable name (e.g. 'account')
+ * @T: the type of required data (e.g. 'amount')
+ * @R: the returned data in case of an error (e.g. '0')
+ * @I: the identifier of the required field (e.g. 'ACC_DEB_AMOUNT')
+ *
+ * A convenience macro to get the value of an identified field from an
+ * #ofoBase object.
+ */
+#define ofo_base_getter(C,V,T,R,I)			\
+		g_return_val_if_fail( OFO_IS_ ## C(V),(R)); \
+		if( OFO_BASE(V)->prot->dispose_has_run) return(R); \
+		return(ofa_boxed_get_ ## T(OFO_BASE(V)->prot->fields,(I)))
+
+/**
+ * ofo_base_setter:
+ * @C: the class mnemonic (e.g. 'ACCOUNT')
+ * @V: the variable name (e.g. 'account')
+ * @T: the type of required data (e.g. 'amount')
+ * @I: the identifier of the required field (e.g. 'ACC_DEB_AMOUNT')
+ * @D: the data value to be set
+ *
+ * A convenience macro to set the value of an identified field from an
+ * #ofoBase object.
+ */
+#define ofo_base_setter(C,V,T,I,D)			\
+		g_return_if_fail( OFO_IS_ ## C(V)); \
+		if( OFO_BASE(V)->prot->dispose_has_run) return; \
+		ofa_boxed_set_ ## T(OFO_BASE(V)->prot->fields,(I),(D))
+
+GList *ofo_base_load_dataset( const ofsBoxedDef *defs, const ofoSgbd *sgbd, const gchar *from, GType type );
 
 G_END_DECLS
 

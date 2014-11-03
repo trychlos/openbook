@@ -86,6 +86,12 @@ gdouble         ofo_account_get_day_deb_amount   ( const ofoAccount *account );
 gint            ofo_account_get_day_cre_entry    ( const ofoAccount *account );
 const GDate    *ofo_account_get_day_cre_date     ( const ofoAccount *account );
 gdouble         ofo_account_get_day_cre_amount   ( const ofoAccount *account );
+gint            ofo_account_get_open_deb_entry   ( const ofoAccount *account );
+const GDate    *ofo_account_get_open_deb_date    ( const ofoAccount *account );
+gdouble         ofo_account_get_open_deb_amount  ( const ofoAccount *account );
+gint            ofo_account_get_open_cre_entry   ( const ofoAccount *account );
+const GDate    *ofo_account_get_open_cre_date    ( const ofoAccount *account );
+gdouble         ofo_account_get_open_cre_amount  ( const ofoAccount *account );
 
 gboolean        ofo_account_is_deletable         ( const ofoAccount *account );
 gboolean        ofo_account_is_root              ( const ofoAccount *account );
@@ -95,6 +101,7 @@ gint            ofo_account_get_level_from_number( const gchar *number );
 const GDate    *ofo_account_get_global_deffect   ( const ofoAccount *account );
 gdouble         ofo_account_get_global_solde     ( const ofoAccount *account );
 gboolean        ofo_account_has_children         ( const ofoAccount *account );
+gboolean        ofo_account_histo_valid_to_open  ( ofoAccount *account );
 
 void            ofo_account_set_number           ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label            ( ofoAccount *account, const gchar *label );

@@ -40,10 +40,11 @@
 G_BEGIN_DECLS
 
 /* protected instance data
- * freely available to all derived classes
+ * these are freely available to all derived classes
  */
 struct _ofoBaseProtected {
 	gboolean dispose_has_run;
+	GList   *fields;
 };
 
 G_END_DECLS

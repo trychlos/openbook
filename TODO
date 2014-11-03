@@ -371,6 +371,12 @@
                 after exercice opening - this will let us edit this
                 exercice balance...
 
+ 416 2014-11- 2 this must be a user locale preference to export csv
+                with a decimal comma or a decimal dot - default is
+                decimal dot
+
+ 417
+
 -----------------------------------------------------------------------
  DONE
  ====

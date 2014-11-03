@@ -31,11 +31,12 @@ api_include_HEADERS = \
 	ofa-iimporter.h										\
 	ofa-ipreferences.h									\
 	\
-	ofa-settings.h										\
-	\
 	my-date.h											\
 	my-double.h											\
 	my-utils.h											\
+	ofa-boxed.h											\
+	ofa-settings.h										\
+	\
 	ofo-account.h										\
 	ofo-account-def.h									\
 	ofo-base.h											\
