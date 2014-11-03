@@ -59,6 +59,8 @@ struct _ofaAccountPropertiesPrivate {
 	GtkEntry       *w_number;
 	GtkRadioButton *w_root;
 	GtkRadioButton *w_detail;
+	GtkWidget      *currency_etiq;
+	GtkWidget      *currency_combo;
 
 	/* account data
 	 */
@@ -298,6 +300,9 @@ v_init_dialog( myDialog *dialog )
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->w_detail ), TRUE );
 	}
 
+	priv->currency_etiq = my_utils_container_get_child_by_name( container, "p1-label3" );
+	priv->currency_combo = my_utils_container_get_child_by_name( container, "p1-currency" );
+
 	set_amount( self, &priv->deb_amount, ofo_account_get_deb_amount, "p2-deb-amount" );
 	set_entry_number( self, &priv->deb_entry, ofo_account_get_deb_entry, "p2-deb-entry" );
 	set_entry_date( self, &priv->deb_date, ofo_account_get_deb_date, "p2-deb-date" );
@@ -429,7 +434,6 @@ check_for_enable_dlg( ofaAccountProperties *self )
 	ofaAccountPropertiesPrivate *priv;
 	gboolean vierge;
 	gboolean is_root;
-	GtkComboBox *combo;
 	GtkWidget *button;
 	gboolean ok_enabled;
 
@@ -452,11 +456,9 @@ check_for_enable_dlg( ofaAccountProperties *self )
 		}
 	}
 
-	combo = GTK_COMBO_BOX(
-				my_utils_container_get_child_by_name(
-						GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "p1-currency" ));
-	if( combo ){
-		gtk_widget_set_sensitive( GTK_WIDGET( combo ), vierge && !is_root );
+	if( priv->currency_combo ){
+		gtk_widget_set_sensitive( priv->currency_etiq, vierge && !is_root );
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->currency_combo ), vierge && !is_root );
 	}
 
 	ok_enabled = is_dialog_validable( self );
