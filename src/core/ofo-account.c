@@ -186,7 +186,7 @@ struct _ofoAccountPrivate {
 #define account_get_amount(I)           ofo_base_getter(ACCOUNT,account,amount,0,(I))
 #define account_get_counter(I)          ofo_base_getter(ACCOUNT,account,counter,0,(I))
 #define account_get_date(I)             ofo_base_getter(ACCOUNT,account,date,NULL,(I))
-#define account_get_string(I)           return(ofa_boxed_get_string(OFO_BASE(account)->prot->fields,(I)))
+#define account_get_string(I)           ofo_base_getter(ACCOUNT,account,string,NULL,(I))
 #define account_get_timestamp(I)        ofo_base_getter(ACCOUNT,account,timestamp,NULL,(I))
 
 #define account_set_amount(I,V)         ofo_base_setter(ACCOUNT,account,amount,(I),(V))
@@ -677,6 +677,7 @@ ofo_account_new( void )
 	ofoAccount *account;
 
 	account = g_object_new( OFO_TYPE_ACCOUNT, NULL );
+	ofo_base_init_fields_list( st_boxed_defs, OFO_BASE( account ));
 
 	return( account );
 }

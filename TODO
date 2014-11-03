@@ -360,22 +360,24 @@
  414 2014-10-30 backup and restore default commands should be provided
                 by the dbms provider
 
- 415 2014-11- 1 need the account soldes at the beginning of the exercice
-                use case: print a balance of the exercice
-     2014-11- 1 no: the balance of the exercice is just a balance which
-                starts at 01/01 of the exercice: it includes the 'report
-                à nouveau' entries ?
-     2014-11- 1 it appears that EBP Compta historize plenty of balances,
-                but doesn't care to use them to display an exercice 
-                balance - so have to store the account balances just 
-                after exercice opening - this will let us edit this
-                exercice balance...
-
  416 2014-11- 2 this must be a user locale preference to export csv
                 with a decimal comma or a decimal dot - default is
                 decimal dot
 
- 417
+ 417 2014-11- 3 when inserting a new account, reorder the children
+                under the new root
+
+ 418 2014-11- 3 new account: if root, then 'currency' label should be
+                disabled (not only the combo box)
+
+ 419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
+                book, but most probably also in other treeviews)
+
+ 420 2014-11- 3 when deleting a root with children, and corresponding
+                user preference is set, then the rows 'seem' to be
+                deleted, but the account is not
+
+ 421
 
 -----------------------------------------------------------------------
  DONE
@@ -1795,6 +1797,18 @@
                 - ofa-bat-properties.ui: a frame handled by ofaBatCommon
                 - ofa-account-select.ui: a container handled by ofaAccountsBook
      2014-10-30
+
+ 415 2014-11- 1 need the account soldes at the beginning of the exercice
+                use case: print a balance of the exercice
+     2014-11- 1 no: the balance of the exercice is just a balance which
+                starts at 01/01 of the exercice: it includes the 'report
+                à nouveau' entries ?
+     2014-11- 1 it appears that EBP Compta historize plenty of balances,
+                but doesn't care to use them to display an exercice 
+                balance - so have to store the account balances just 
+                after exercice opening - this will let us edit this
+                exercice balance...
+     2014-11- 3 done - svn #4042
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

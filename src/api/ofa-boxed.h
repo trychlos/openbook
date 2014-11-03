@@ -97,11 +97,13 @@ typedef struct {
 
 void          ofa_boxed_register_types       ( void );
 
-gchar        *ofa_boxed_get_dbms_columns     ( const ofsBoxedDef *boxed );
+GList        *ofa_boxed_init_fields_list     ( const ofsBoxedDef *defs );
 
-GList        *ofa_boxed_parse_dbms_result    ( const ofsBoxedDef *boxed, GSList *row );
+gchar        *ofa_boxed_get_dbms_columns     ( const ofsBoxedDef *defs );
 
-gchar        *ofa_boxed_get_csv_header       ( const ofsBoxedDef *boxed, gchar field_sep );
+GList        *ofa_boxed_parse_dbms_result    ( const ofsBoxedDef *defs, GSList *row );
+
+gchar        *ofa_boxed_get_csv_header       ( const ofsBoxedDef *defs, gchar field_sep );
 
 gchar        *ofa_boxed_get_csv_line         ( const GList *fields_list, gchar field_sep, gchar decimal_sep );
 
@@ -115,11 +117,11 @@ gconstpointer ofa_boxed_get_value            ( const GList *fields_list, gint id
 
 void          ofa_boxed_set_value            ( const GList *fields_list, gint id, gconstpointer value );
 
-#define       ofa_boxed_set_amount(F,I,V)    (ofa_boxed_set_value((F),(I),GDOUBLE_TO_POINTER(V)))
-#define       ofa_boxed_set_counter(F,I,V)   (ofa_boxed_set_value((F),(I),GINT_TO_POINTER(V)))
-#define       ofa_boxed_set_date(F,I,V)      (ofa_boxed_set_value((F),(I),(const GDate *)(V)))
-#define       ofa_boxed_set_string(F,I,V)    (ofa_boxed_set_value((F),(I),(const gchar *)(V)))
-#define       ofa_boxed_set_timestamp(F,I,V) (ofa_boxed_set_value((F),(I),(const GTimeVal *)(V)))
+#define       ofa_boxed_set_amount(F,I,V)    ofa_boxed_set_value((F),(I),GDOUBLE_TO_POINTER(V))
+#define       ofa_boxed_set_counter(F,I,V)   ofa_boxed_set_value((F),(I),GINT_TO_POINTER(V))
+#define       ofa_boxed_set_date(F,I,V)      ofa_boxed_set_value((F),(I),(const GDate *)(V))
+#define       ofa_boxed_set_string(F,I,V)    ofa_boxed_set_value((F),(I),(const gchar *)(V))
+#define       ofa_boxed_set_timestamp(F,I,V) ofa_boxed_set_value((F),(I),(const GTimeVal *)(V))
 
 void          ofa_boxed_free_fields_list     ( GList *fields_list );
 

@@ -207,10 +207,12 @@ ofsBaseGlobal *ofo_base_get_global( ofsBaseGlobal *ptr,
  */
 #define ofo_base_setter(C,V,T,I,D)			\
 		g_return_if_fail( OFO_IS_ ## C(V)); \
-		if( OFO_BASE(V)->prot->dispose_has_run) return; \
+		if( OFO_BASE(V)->prot->dispose_has_run ) return; \
 		ofa_boxed_set_ ## T(OFO_BASE(V)->prot->fields,(I),(D))
 
-GList *ofo_base_load_dataset( const ofsBoxedDef *defs, const ofoSgbd *sgbd, const gchar *from, GType type );
+void   ofo_base_init_fields_list(const ofsBoxedDef *defs, ofoBase *object );
+
+GList *ofo_base_load_dataset    ( const ofsBoxedDef *defs, const ofoSgbd *sgbd, const gchar *from, GType type );
 
 G_END_DECLS
 

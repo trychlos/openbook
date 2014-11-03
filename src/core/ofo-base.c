@@ -84,6 +84,7 @@ ofo_base_init( ofoBase *self )
 {
 	self->prot = g_new0( ofoBaseProtected, 1 );
 	self->prot->dispose_has_run = FALSE;
+	self->prot->fields = NULL;
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_BASE, ofoBasePrivate );
 }
@@ -141,6 +142,19 @@ ofo_base_get_global( ofsBaseGlobal *ptr, ofoBase *dossier, GWeakNotify fn, gpoin
 	}
 
 	return( new_ptr );
+}
+
+/**
+ * ofo_base_init_fields_list:
+ * @defs: the #ofsBoxedDefs list of field definitions for this object
+ * @object: the new #ofoBase object to be initialized.
+ *
+ * Initialize the list of data fields when allocating a new object.
+ */
+void
+ofo_base_init_fields_list( const ofsBoxedDef *defs, ofoBase *object )
+{
+	object->prot->fields = ofa_boxed_init_fields_list( defs );
 }
 
 /**

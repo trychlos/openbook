@@ -52,6 +52,10 @@ typedef struct {
 }
 	sBoxed;
 
+/*
+ * boxed_new:
+ * @def: the field definition.
+ */
 static sBoxed *
 boxed_new( const ofsBoxedDef *def )
 {
@@ -174,7 +178,7 @@ date_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
 	if( str && g_utf8_strlen( str, -1 )){
 		box->is_null = FALSE;
 		my_date_set_from_sql( &box->date, str );
-		g_debug( "date_new_from_dbms_str: date=%s", my_date_to_str( &box->date, MY_DATE_DMYY ));
+		/*g_debug( "date_new_from_dbms_str: date=%s", my_date_to_str( &box->date, MY_DATE_DMYY ));*/
 	}
 
 	return( box );
@@ -265,6 +269,7 @@ string_get_fn( const sBoxed *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
+	/*g_debug( "string_get_fn: is_null=%s, value=%s", box->is_null ? "True":"False", box->string );*/
 	return(( const gchar * ) box->string );
 }
 
@@ -274,6 +279,7 @@ string_set_fn( sBoxed *box, const gchar *value )
 	g_return_if_fail( box->def->type == OFA_TYPE_STRING );
 
 	g_free( box->string );
+	/*g_debug( "string_set_fn: value=%s", value );*/
 
 	if( value && g_utf8_strlen( value, -1 )){
 		box->is_null = FALSE;
@@ -426,7 +432,33 @@ boxed_get_helper_for_type( eBoxedType type )
 	return( NULL );
 }
 
-/*
+/**
+ * ofa_boxed_init_fields_list:
+ * @defs: the definition of ofaBoxed elementary data of the object
+ *
+ * Returns the list of fields for the object. All fields are allocated
+ * in the same order than the definitions, and all are empty.
+ */
+GList *
+ofa_boxed_init_fields_list( const ofsBoxedDef *defs )
+{
+	GList *fields_list;
+	const ofsBoxedDef *idef;
+
+	fields_list = NULL;
+
+	if( defs ){
+		idef = defs;
+		while( idef->id ){
+			fields_list = g_list_prepend( fields_list, boxed_new( idef ));
+			idef++;
+		}
+	}
+
+	return( g_list_reverse( fields_list ));
+}
+
+/**
  * ofa_boxed_get_dbms_columns:
  * @defs: the definition of ofaBoxed elementary data of the object
  *
@@ -445,7 +477,6 @@ ofa_boxed_get_dbms_columns( const ofsBoxedDef *defs )
 
 	if( defs ){
 		idef = defs;
-
 		while( idef->id ){
 			if( idef->dbms && g_utf8_strlen( idef->dbms, -1 )){
 				if( query->len ){
@@ -472,13 +503,13 @@ ofa_boxed_get_dbms_columns( const ofsBoxedDef *defs )
 GList *
 ofa_boxed_parse_dbms_result( const ofsBoxedDef *defs, GSList *row )
 {
-	GList *data;
+	GList *fields_list;
 	GSList *icol;
 	const ofsBoxedDef *idef;
 	const sBoxedHelpers *ihelper;
 	gboolean first;
 
-	data = NULL;
+	fields_list = NULL;
 	first = TRUE;
 
 	if( row && defs ){
@@ -487,13 +518,13 @@ ofa_boxed_parse_dbms_result( const ofsBoxedDef *defs, GSList *row )
 			ihelper = boxed_get_helper_for_type( idef->type );
 			g_return_val_if_fail( ihelper, NULL );
 			icol = ( GSList * )( first ? row->data : icol->next );
-			data = g_list_prepend( data, ihelper->new_from_dbms_fn( idef, icol->data ));
+			fields_list = g_list_prepend( fields_list, ihelper->new_from_dbms_fn( idef, icol->data ));
 			idef++;
 			first = FALSE;
 		}
 	}
 
-	return( g_list_reverse( data ));
+	return( g_list_reverse( fields_list ));
 }
 
 /**
@@ -685,20 +716,30 @@ ofa_boxed_get_value( const GList *fields_list, gint id )
 void
 ofa_boxed_set_value( const GList *fields_list, gint id, gconstpointer value )
 {
+	static const gchar *thisfn = "ofa_boxed_set_value";
 	const GList *it;
 	const ofsBoxedDef *def;
 	const sBoxedHelpers *ihelper;
+	gboolean found;
 
-	for( it=fields_list ; it ; it=it->next ){
+	/*g_debug( "ofa_boxed_set_value: fields_list=%p, count=%d, id=%d, value=%p",
+			( void * ) fields_list, g_list_length(( GList * ) fields_list ), id, value );*/
+
+	for( it=fields_list, found=FALSE ; it ; it=it->next ){
 		def = (( sBoxed * ) it->data )->def;
 		g_return_if_fail( def );
 
 		if( def->id == id ){
 			ihelper = boxed_get_helper_for_type( def->type );
 			g_return_if_fail( ihelper );
-
 			ihelper->set_fn( it->data, value );
+			found = TRUE;
+			break;
 		}
+	}
+
+	if( !found ){
+		g_warning( "%s: data identifier=%d: not found", thisfn, id );
 	}
 }
 

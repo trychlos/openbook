@@ -358,7 +358,6 @@ set_entry_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gch
 	GtkLabel *label;
 	gchar *str;
 
-	g_debug( "ofa_account_properties_set_entry_date: wname=%s", wname );
 	my_date_set_from_date( date, ( *fn )( self->priv->account ));
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));

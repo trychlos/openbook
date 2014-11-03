@@ -327,7 +327,7 @@
                             <property name="margin_bottom">4</property>
                             <child>
                               <object class="GtkCheckButton" id="p4-delete-with-child">
-                                <property name="label" translatable="yes">_Delete root account with children</property>
+                                <property name="label" translatable="yes">Also _delete all its children when deleting a root account</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
