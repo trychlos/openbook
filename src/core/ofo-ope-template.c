@@ -80,27 +80,28 @@ G_DEFINE_TYPE( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, model )
 
-static void              on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
-static gboolean          do_update_ledger_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
-static gboolean          do_update_rate_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
-static GList            *model_load_dataset( void );
+static void            on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
+static gboolean        do_update_ledger_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
+static gboolean        do_update_rate_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
+static GList          *model_load_dataset( void );
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint              model_count_for_ledger( const ofoSgbd *sgbd, const gchar *ledger );
-static gint              model_count_for_rate( const ofoSgbd *sgbd, const gchar *mnemo );
-static void              ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *upd_user );
-static void              ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp );
-static gboolean          model_do_insert( ofoOpeTemplate *model, const ofoSgbd *sgbd, const gchar *user );
-static gboolean          model_insert_main( ofoOpeTemplate *model, const ofoSgbd *sgbd, const gchar *user );
-static gboolean          model_delete_details( ofoOpeTemplate *model, const ofoSgbd *sgbd );
-static gboolean          model_insert_details_ex( ofoOpeTemplate *model, const ofoSgbd *sgbd );
-static gboolean          model_insert_details( ofoOpeTemplate *model, const ofoSgbd *sgbd, gint rang, sModDetail *detail );
-static gboolean          model_do_update( ofoOpeTemplate *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
-static gboolean          model_update_main( ofoOpeTemplate *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
-static gboolean          model_do_delete( ofoOpeTemplate *model, const ofoSgbd *sgbd );
-static gint              model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo );
+static gint            model_count_for_ledger( const ofoSgbd *sgbd, const gchar *ledger );
+static gint            model_count_for_rate( const ofoSgbd *sgbd, const gchar *mnemo );
+static void            ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *upd_user );
+static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp );
+static gboolean        model_do_insert( ofoOpeTemplate *model, const ofoSgbd *sgbd, const gchar *user );
+static gboolean        model_insert_main( ofoOpeTemplate *model, const ofoSgbd *sgbd, const gchar *user );
+static gboolean        model_delete_details( ofoOpeTemplate *model, const ofoSgbd *sgbd );
+static gboolean        model_insert_details_ex( ofoOpeTemplate *model, const ofoSgbd *sgbd );
+static gboolean        model_insert_details( ofoOpeTemplate *model, const ofoSgbd *sgbd, gint rang, sModDetail *detail );
+static gboolean        model_do_update( ofoOpeTemplate *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
+static gboolean        model_update_main( ofoOpeTemplate *model, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_mnemo );
+static gboolean        model_do_delete( ofoOpeTemplate *model, const ofoSgbd *sgbd );
+static gint            model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo );
+static gint            model_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b );
 static ofoOpeTemplate *model_import_csv_model( GSList *fields, gint count, gint *errors );
-static sModDetail       *model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo );
-static gboolean          model_do_drop_content( const ofoSgbd *sgbd );
+static sModDetail     *model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo );
+static gboolean        model_do_drop_content( const ofoSgbd *sgbd );
 
 static void
 details_list_free_detail( sModDetail *detail )
@@ -1520,6 +1521,12 @@ static gint
 model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo )
 {
 	return( g_utf8_collate( ofo_ope_template_get_mnemo( a ), mnemo ));
+}
+
+static gint
+model_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b )
+{
+	return( model_cmp_by_mnemo( a, ofo_ope_template_get_mnemo( b )));
 }
 
 /**

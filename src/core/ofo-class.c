@@ -63,6 +63,7 @@ static gboolean   class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const g
 static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar *user );
 static gboolean   class_do_delete( ofoClass *class, const ofoSgbd *sgbd );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
+static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
 static gboolean   class_do_drop_content( const ofoSgbd *sgbd );
 
 static void
@@ -672,6 +673,15 @@ class_cmp_by_number( const ofoClass *a, gpointer pnum )
 		return( 1 );
 	}
 	return( 0 );
+}
+
+static gint
+class_cmp_by_ptr( const ofoClass *a, const ofoClass *b )
+{
+	gint bnum;
+
+	bnum = ofo_class_get_number( b );
+	return( class_cmp_by_number( a, GINT_TO_POINTER( bnum )));
 }
 
 /**

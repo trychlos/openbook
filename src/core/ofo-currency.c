@@ -70,6 +70,7 @@ static gboolean     currency_insert_main( ofoCurrency *currency, const ofoSgbd *
 static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofoSgbd *sgbd, const gchar *user );
 static gboolean     currency_do_delete( ofoCurrency *currency, const ofoSgbd *sgbd );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
+static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b );
 static gboolean     currency_do_drop_content( const ofoSgbd *sgbd );
 
 static void
@@ -731,6 +732,12 @@ static gint
 currency_cmp_by_code( const ofoCurrency *a, const gchar *code )
 {
 	return( g_utf8_collate( ofo_currency_get_code( a ), code ));
+}
+
+static gint
+currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b )
+{
+	return( currency_cmp_by_code( a, ofo_currency_get_code( b )));
 }
 
 /**

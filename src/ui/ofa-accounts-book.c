@@ -30,11 +30,14 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-preferences.h"
 
 #include "ui/my-buttons-box.h"
 #include "ui/ofa-account-properties.h"
@@ -122,6 +125,7 @@ static void       dossier_signals_connect( ofaAccountsBook *self );
 static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountsBook *self );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountsBook *self );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountsBook *self );
+static void       on_deleted_account( ofaAccountsBook *self, const ofoAccount *account );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountsBook *self );
 static void       init_ui( ofaAccountsBook *self );
 static void       setup_account_book( ofaAccountsBook *self );
@@ -135,7 +139,7 @@ static void       insert_dataset( ofaAccountsBook *self );
 static void       insert_row( ofaAccountsBook *self, ofoAccount *account, gboolean with_selection );
 static gboolean   find_parent_iter( ofaAccountsBook *self, const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *parent_iter );
 static void       realign_children( ofaAccountsBook *self, const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *parent_iter );
-static GList     *realign_children_read( const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter, GList *children );
+static GList     *realign_children_rec( const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter, GList *children );
 static void       realign_children_remove( sChild *child_str, GtkTreeModel *tmodel );
 static void       realign_children_insert( sChild *child_str, ofaAccountsBook *self );
 static void       child_free( sChild *child_str );
@@ -403,11 +407,29 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountsBook *self )
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), ( void * ) self );
 
 	if( OFO_IS_ACCOUNT( object )){
-		remove_row_by_number( self, ofo_account_get_number( OFO_ACCOUNT( object )));
+		on_deleted_account( self, OFO_ACCOUNT( object ));
 
 	} else if( OFO_IS_CLASS( object )){
 		on_deleted_class_label( self, OFO_CLASS( object ));
 	}
+}
+
+static void
+on_deleted_account( ofaAccountsBook *self, const ofoAccount *account )
+{
+	GList *children, *it;
+
+	children = ofo_account_get_children( account );
+	remove_row_by_number( self, ofo_account_get_number( account ));
+	for( it=children ; it ; it=it->next ){
+		remove_row_by_number( self, ofo_account_get_number( OFO_ACCOUNT( it->data )));
+	}
+	 if( !ofa_prefs_account_delete_root_with_children()){
+			for( it=children ; it ; it=it->next ){
+				insert_row( self, OFO_ACCOUNT( it->data ), FALSE );
+			}
+	 }
+	 g_list_free( children );
 }
 
 /*
@@ -657,6 +679,7 @@ void
 ofa_accounts_book_init_view( ofaAccountsBook *self, const gchar *number )
 {
 	static const gchar *thisfn = "ofa_accounts_book_init_view";
+	ofaAccountsBookPrivate *priv;
 	GtkWidget *page_w;
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
@@ -666,7 +689,9 @@ ofa_accounts_book_init_view( ofaAccountsBook *self, const gchar *number )
 
 	g_debug( "%s: self=%p, number=%s", thisfn, ( void * ) self, number );
 
-	if( !self->priv->dispose_has_run ){
+	priv = self->priv;
+
+	if( !priv->dispose_has_run ){
 
 		insert_dataset( self );
 
@@ -675,7 +700,8 @@ ofa_accounts_book_init_view( ofaAccountsBook *self, const gchar *number )
 
 		} else {
 			expand_all_pages( self );
-			page_w = gtk_notebook_get_nth_page( self->priv->book, 0 );
+			g_debug( "%s: all pages expanded", thisfn );
+			page_w = gtk_notebook_get_nth_page( priv->book, 0 );
 			if( page_w ){
 				tview = ( GtkTreeView * ) my_utils_container_get_child_by_type( GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
 				g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
@@ -695,6 +721,7 @@ ofa_accounts_book_init_view( ofaAccountsBook *self, const gchar *number )
 static void
 insert_dataset( ofaAccountsBook *self )
 {
+	static const gchar *thisfn = "ofa_accounts_book_insert_dataset";
 	GList *chart, *ic;
 
 	chart = ofo_account_get_dataset( self->priv->dossier );
@@ -702,6 +729,8 @@ insert_dataset( ofaAccountsBook *self )
 	for( ic=chart ; ic ; ic=ic->next ){
 		insert_row( self, OFO_ACCOUNT( ic->data ), FALSE );
 	}
+
+	g_debug( "%s: dataset inserted", thisfn );
 }
 
 /*
@@ -771,9 +800,7 @@ find_parent_iter( ofaAccountsBook *self, const ofoAccount *account, GtkTreeModel
 	found = FALSE;
 	while( !found && g_utf8_strlen( candidate_number, -1 ) > 1 ){
 		candidate_number[g_utf8_strlen( candidate_number, -1 )-1] = '\0';
-		if( find_row_by_number( self, candidate_number, tmodel, parent_iter, NULL )){
-			found = TRUE;
-		}
+		found = find_row_by_number( self, candidate_number, tmodel, parent_iter, NULL );
 	}
 	g_free( candidate_number );
 
@@ -798,21 +825,23 @@ realign_children( ofaAccountsBook *self, const ofoAccount *account, GtkTreeModel
 	} else {
 		children = NULL;
 		iter = *parent_iter;
-		children = realign_children_read( account, tmodel, &iter, children );
-		g_list_foreach( children, ( GFunc ) realign_children_remove, tmodel );
-		g_list_foreach( children, ( GFunc ) realign_children_insert, self );
-		g_list_free_full( children, ( GDestroyNotify ) child_free );
+		children = realign_children_rec( account, tmodel, &iter, children );
+		if( children ){
+			g_list_foreach( children, ( GFunc ) realign_children_remove, tmodel );
+			g_list_foreach( children, ( GFunc ) realign_children_insert, self );
+			g_list_free_full( children, ( GDestroyNotify ) child_free );
+		}
 	}
 }
 
 /*
- * realign_children_read:
+ * realign_children_rec:
  * copy into 'children' GList all children accounts, along with their
  * row reference - it will so be easy to remove them from the model,
  * then reinsert these same accounts
  */
 static GList *
-realign_children_read( const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter, GList *children )
+realign_children_rec( const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeIter *iter, GList *children )
 {
 	ofoAccount *candidate;
 	GtkTreeIter child_iter;
@@ -832,7 +861,7 @@ realign_children_read( const ofoAccount *account, GtkTreeModel *tmodel, GtkTreeI
 			gtk_tree_path_free( path );
 
 			if( gtk_tree_model_iter_children( tmodel, &child_iter, iter )){
-				children = realign_children_read( account, tmodel, &child_iter, children );
+				children = realign_children_rec( account, tmodel, &child_iter, children );
 			}
 		}
 	}
@@ -1255,11 +1284,12 @@ set_row_by_iter( ofaAccountsBook *self,
 		cdev = g_strdup( "" );
 
 	} else {
-		sdeb = g_strdup_printf( "%'.2f",
+		sdeb = my_double_to_str(
 				ofo_account_get_deb_amount( account )+ofo_account_get_day_deb_amount( account ));
-		scre = g_strdup_printf( "%'.2f",
+		scre = my_double_to_str(
 				ofo_account_get_cre_amount( account )+ofo_account_get_day_cre_amount( account ));
-		currency = ofo_currency_get_by_code( self->priv->dossier, ofo_account_get_currency( account ));
+		currency =
+				ofo_currency_get_by_code( self->priv->dossier, ofo_account_get_currency( account ));
 		if( currency ){
 			cdev = g_strdup( ofo_currency_get_code( currency ));
 		} else {
@@ -1287,6 +1317,7 @@ select_row_by_iter( ofaAccountsBook *self, GtkTreeView *tview, GtkTreeModel *tmo
 	GtkTreePath *path;
 
 	path = gtk_tree_model_get_path( tmodel, iter );
+	g_debug( "ofa_accounts_book_select_row_by_iter: path=%s", gtk_tree_path_to_string( path ));
 	gtk_tree_view_set_cursor( GTK_TREE_VIEW( tview ), path, NULL, FALSE );
 	gtk_tree_path_free( path );
 	gtk_widget_grab_focus( GTK_WIDGET( tview ));
@@ -1743,17 +1774,40 @@ on_delete_clicked( ofaAccountsBook *self )
 	}
 }
 
+/*
+ * - this is a root account with children and the preference is set so
+ *   that all accounts will be deleted
+ * - this is a root account and the preference is not set
+ * - this is a detail account
+ */
 static gboolean
 delete_confirmed( ofaAccountsBook *self, ofoAccount *account )
 {
 	gchar *msg;
 	gboolean delete_ok;
 
-	msg = g_strdup_printf( _( "Are you sure you want delete the '%s - %s' account ?" ),
-			ofo_account_get_number( account ),
-			ofo_account_get_label( account ));
+	if( ofo_account_is_root( account )){
+		if( ofo_account_has_children( account ) && ofa_prefs_account_delete_root_with_children()){
+			msg = g_strdup_printf( _(
+					"You are about to delete the %s - %s account.\n"
+					"This is a root account which has children.\n"
+					"Are you sure ?" ),
+					ofo_account_get_number( account ),
+					ofo_account_get_label( account ));
+		} else {
+			msg = g_strdup_printf( _(
+					"You are about to delete the %s - %s account.\n"
+					"This is a root account. Are you sure ?" ),
+					ofo_account_get_number( account ),
+					ofo_account_get_label( account ));
+		}
+	} else {
+		msg = g_strdup_printf( _( "Are you sure you want delete the '%s - %s' account ?" ),
+					ofo_account_get_number( account ),
+					ofo_account_get_label( account ));
+	}
 
-	delete_ok = ofa_main_window_confirm_deletion( NULL, msg );
+	delete_ok = ofa_main_window_confirm_deletion( self->priv->main_window, msg );
 
 	g_free( msg );
 

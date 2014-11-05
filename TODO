@@ -364,9 +364,6 @@
                 with a decimal comma or a decimal dot - default is
                 decimal dot
 
- 417 2014-11- 3 when inserting a new account, reorder the children
-                under the new root
-
  419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
                 book, but most probably also in other treeviews)
 
@@ -374,7 +371,15 @@
                 user preference is set, then the rows 'seem' to be
                 deleted, but the account is not
 
- 421
+ 421 2014-11- 5 GuidedInput: when selecting an account after having
+                began to enter a prefix, should open the dialog with
+                the closest account selected 
+
+ 422 2014-11- 5 GuidedInput: it is possible to enter an operation with
+                an amount on accounts which do not have the same 
+                currency, but should not be
+
+ 423
 
 -----------------------------------------------------------------------
  DONE
@@ -1806,6 +1811,10 @@
                 after exercice opening - this will let us edit this
                 exercice balance...
      2014-11- 3 done - svn #4042
+
+ 417 2014-11- 3 when inserting a new account, reorder the children
+                under the new root
+     2014-11- 3 done - svn #4045
 
  418 2014-11- 3 new account: if root, then 'currency' label should be
                 disabled (not only the combo box)

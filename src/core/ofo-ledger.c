@@ -102,6 +102,7 @@ static gboolean    ledger_do_update_detail_cur( const ofoLedger *ledger, sDetail
 static gboolean    ledger_do_update_detail_exe( const ofoLedger *ledger, sDetailExe *detail, const ofoSgbd *sgbd );
 static gboolean    ledger_do_delete( ofoLedger *ledger, const ofoSgbd *sgbd );
 static gint        ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
+static gint        ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
 static gboolean    ledger_do_drop_content( const ofoSgbd *sgbd );
 
 static void
@@ -1751,6 +1752,12 @@ static gint
 ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo )
 {
 	return( g_utf8_collate( ofo_ledger_get_mnemo( a ), mnemo ));
+}
+
+static gint
+ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b )
+{
+	return( ledger_cmp_by_mnemo( a, ofo_ledger_get_mnemo( b )));
 }
 
 /**

@@ -75,6 +75,7 @@ static gboolean    bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gcha
 static gboolean    bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    bat_do_delete_main( ofoBat *bat, const ofoSgbd *sgbd );
 static gboolean    bat_do_delete_lines( ofoBat *bat, const ofoSgbd *sgbd );
+static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
 
 static void
 bat_finalize( GObject *instance )
@@ -1036,4 +1037,15 @@ bat_do_delete_lines( ofoBat *bat, const ofoSgbd *sgbd )
 	g_free( query );
 
 	return( ok );
+}
+
+static gint
+bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b )
+{
+	gint id_a, id_b;
+
+	id_a = ofo_bat_get_id( a );
+	id_b = ofo_bat_get_id( b );
+
+	return( id_a > id_b ? 1 : ( id_a < id_b ? -1 : 0 ));
 }

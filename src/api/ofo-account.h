@@ -101,6 +101,7 @@ gint            ofo_account_get_level_from_number( const gchar *number );
 const GDate    *ofo_account_get_global_deffect   ( const ofoAccount *account );
 gdouble         ofo_account_get_global_solde     ( const ofoAccount *account );
 gboolean        ofo_account_has_children         ( const ofoAccount *account );
+GList          *ofo_account_get_children         ( const ofoAccount *account );
 gboolean        ofo_account_is_child_of          ( const ofoAccount *account, const ofoAccount *candidate );
 
 gboolean        ofo_account_histo_valid_to_open  ( ofoAccount *account );

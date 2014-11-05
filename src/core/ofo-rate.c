@@ -73,6 +73,7 @@ static gboolean         rate_do_update( ofoRate *rate, const gchar *prev_mnemo, 
 static gboolean         rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
 static gboolean         rate_do_delete( ofoRate *rate, const ofoSgbd *sgbd );
 static gint             rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
+static gint             rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
 static gint             rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent );
 static ofoRate         *rate_import_csv_rate( GSList *fields, gint count, gint *errors );
 static ofsRateValidity *rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnemo );
@@ -1055,6 +1056,12 @@ static gint
 rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo )
 {
 	return( g_utf8_collate( ofo_rate_get_mnemo( a ), mnemo ));
+}
+
+static gint
+rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b )
+{
+	return( rate_cmp_by_mnemo( a, ofo_rate_get_mnemo( b )));
 }
 
 /*

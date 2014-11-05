@@ -195,6 +195,15 @@ struct _ofoAccountPrivate {
 #define account_set_string(I,V)         ofo_base_setter(ACCOUNT,account,string,(I),(V))
 #define account_set_timestamp(I,V)      ofo_base_setter(ACCOUNT,account,timestamp,(I),(V))
 
+/* whether a root account has children, and wich are they ?
+ */
+typedef struct {
+	const gchar *number;
+	gint         children_count;
+	GList       *children_list;
+}
+	sChildren;
+
 G_DEFINE_TYPE( ofoAccount, ofo_account, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, account )
@@ -208,6 +217,8 @@ static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
 static gint        account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
 static gint        account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
+static void        account_get_children( const ofoAccount *account, sChildren *child_str );
+static void        account_iter_children( const ofoAccount *account, sChildren *child_str );
 static void        account_set_upd_user( ofoAccount *account, const gchar *user );
 static void        account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static void        account_set_deb_entry( ofoAccount *account, gint number );
@@ -233,6 +244,7 @@ static gboolean    account_do_update( ofoAccount *account, const ofoSgbd *sgbd, 
 static gboolean    account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );
 static gboolean    account_do_delete( ofoAccount *account, const ofoSgbd *sgbd );
 static gint        account_cmp_by_number( const ofoAccount *a, const gchar *number );
+static gint        account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
 static gboolean    account_do_drop_content( const ofoSgbd *sgbd );
 
 static void
@@ -1050,28 +1062,34 @@ ofo_account_get_open_cre_amount( const ofoAccount *account )
  * @account: the #ofoAccount account
  *
  * A account is considered to be deletable if no entry has been recorded
- * during the current exercice - This means that all its amounts must be
- * nuls.
+ * during the current exercice - This means that all its entry numbers
+ * must be nuls.
  *
- * Whether a root account with children is deletable is a user preference
- * (todo #411).
+ * Whether a root account with children is deletable is a user preference.
+ * To be deletable, all children must also be deletable.
  */
 gboolean
 ofo_account_is_deletable( const ofoAccount *account )
 {
 	gboolean deletable;
+	GList *children, *it;
 
 	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		deletable = !ofo_account_get_deb_amount( account ) &&
-					!ofo_account_get_cre_amount( account ) &&
-					!ofo_account_get_day_deb_amount( account ) &&
-					!ofo_account_get_day_cre_amount( account );
+		deletable = ofo_account_get_deb_entry( account ) == 0 &&
+					ofo_account_get_cre_entry( account ) == 0 &&
+					ofo_account_get_day_deb_entry( account ) == 0 &&
+					ofo_account_get_day_cre_entry( account ) == 0;
 
-		if( ofo_account_is_root( account ) && ofo_account_has_children( account )){
-			deletable &= ofa_prefs_account_delete_root_with_children();
+		if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children()){
+
+			children = ofo_account_get_children( account );
+			for( it=children ; it ; it=it->next ){
+				deletable &= ofo_account_is_deletable( OFO_ACCOUNT( it->data ));
+			}
+			g_list_free( children );
 		}
 
 		return( deletable );
@@ -1266,31 +1284,69 @@ ofo_account_get_global_solde( const ofoAccount *account )
 gboolean
 ofo_account_has_children( const ofoAccount *account )
 {
-	gchar *query;
-	GSList *result, *icol;
-	gint count;
+	sChildren child_str;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		query = g_strdup_printf(
-					"SELECT COUNT(*) FROM OFA_T_ACCOUNTS "
-					"	WHERE ACC_NUMBER LIKE '%s%%'", ofo_account_get_number( account ));
+		account_get_children( account, &child_str );
+		g_list_free( child_str.children_list );
 
-		count = 0;
-		result = ofo_sgbd_query_ex(
-						ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query, TRUE );
-		if( result ){
-			icol = ( GSList * ) result->data;
-			count = atoi( icol->data );
-		}
-		ofo_sgbd_free_result( result );
-
-		return( count > 1 );
+		return( child_str.children_count > 0 );
 	}
 
 	return( FALSE );
+}
+
+/**
+ * ofo_account_get_children:
+ * @account: the #ofoAccount account
+ *
+ * Returns: the list of children accounts.
+ *
+ * The list may be freed with g_list_free().
+ */
+GList *
+ofo_account_get_children( const ofoAccount *account )
+{
+	sChildren child_str;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		account_get_children( account, &child_str );
+
+		return( child_str.children_list );
+	}
+
+	return( NULL );
+}
+
+static void
+account_get_children( const ofoAccount *account, sChildren *child_str )
+{
+	memset( child_str, '\0' ,sizeof( sChildren ));
+	child_str->number = ofo_account_get_number( account );
+	child_str->children_count = 0;
+	child_str->children_list = NULL;
+
+	g_list_foreach( st_global->dataset, ( GFunc ) account_iter_children, child_str );
+}
+
+static void
+account_iter_children( const ofoAccount *account, sChildren *child_str )
+{
+	const gchar *number;
+
+	number = ofo_account_get_number( account );
+	if( g_str_has_prefix( number, child_str->number ) &&
+			g_utf8_collate( number, child_str->number ) > 0 ){
+
+		child_str->children_count += 1;
+		child_str->children_list = g_list_append( child_str->children_list, ( gpointer ) account );
+	}
 }
 
 /**
@@ -1352,7 +1408,7 @@ ofo_account_histo_valid_to_open( ofoAccount *account )
 		query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
 		has_comma = FALSE;
 
-		if( my_date_is_valid( ofo_account_get_deb_date( account ))){
+		if( ofo_account_get_deb_entry( account ) > 0 ){
 
 			account_set_open_deb_entry( account, ofo_account_get_deb_entry( account ));
 			account_set_open_deb_date( account, ofo_account_get_deb_date( account ));
@@ -1370,7 +1426,7 @@ ofo_account_histo_valid_to_open( ofoAccount *account )
 			g_free( samount );
 		}
 
-		if( my_date_is_valid( ofo_account_get_cre_date( account ))){
+		if( ofo_account_get_cre_entry( account ) > 0 ){
 
 			account_set_open_cre_entry( account, ofo_account_get_cre_entry( account ));
 			account_set_open_cre_date( account, ofo_account_get_cre_date( account ));
@@ -1975,6 +2031,12 @@ static gint
 account_cmp_by_number( const ofoAccount *a, const gchar *number )
 {
 	return( g_utf8_collate( ofo_account_get_number( a ), number ));
+}
+
+static gint
+account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b )
+{
+	return( account_cmp_by_number( a, ofo_account_get_number( b )));
 }
 
 /**

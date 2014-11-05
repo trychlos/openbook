@@ -125,13 +125,15 @@ typedef struct {
  * ex: OFO_BASE_ADD_TO_DATASET( st_global, class )
  *
  * a) insert the 'T' object (named <T> and of type OFO_TYPE_<T>) in the
- *    global dataset
+ *    global dataset, keeping it sorted by calling the <T>_cmp_by_ptr()
+ *    method
  *
  * b) send a OFA_SIGNAL_NEW_OBJECT signal to the opened dossier,
  *    associated to the <T> object
  */
 #define OFO_BASE_ADD_TO_DATASET( P,T )	\
-		({ (P)->dataset=g_list_prepend((P)->dataset,(T)); if((P)->send_signal_new) \
+		({ (P)->dataset=g_list_insert_sorted((P)->dataset,(T), (GCompareFunc) T ## _cmp_by_ptr); \
+		if((P)->send_signal_new) \
 		{ g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_NEW_OBJECT, \
 		g_object_ref(T)); }})
 
@@ -144,9 +146,8 @@ typedef struct {
  *
  * ex: OFO_BASE_REMOVE_FROM_DATASET( st_global, class )
  *
- * a) insert the 'T' object (named <T> and of type OFO_TYPE_<T>) in the
- *    global dataset, keeping it sorted by calling the <T>_cmp_by_ptr()
- *    method
+ * a) remove the 'T' object (named <T> and of type OFO_TYPE_<T>) from
+ *    the global dataset.
  *
  * b) send a OFA_SIGNAL_DELETED_OBJECT signal to the opened dossier,
  *    associated to the <T> object
