@@ -353,6 +353,7 @@
                 and the current width should be kept in settings
 
  342 2014-10-26 document signals + callbacks should be signals
+                - ofaAccountsBook
 
  412 2014-10-30 bug: when changing a ledger mnemo, all ope templates 
                 are reclassed under 'unclassed'
@@ -366,10 +367,6 @@
 
  419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
                 book, but most probably also in other treeviews)
-
- 420 2014-11- 3 when deleting a root with children, and corresponding
-                user preference is set, then the rows 'seem' to be
-                deleted, but the account is not
 
  421 2014-11- 5 GuidedInput: when selecting an account after having
                 began to enter a prefix, should open the dialog with
@@ -1819,6 +1816,11 @@
  418 2014-11- 3 new account: if root, then 'currency' label should be
                 disabled (not only the combo box)
      2014-11- 3 done - svn #4044 
+
+ 420 2014-11- 3 when deleting a root with children, and corresponding
+                user preference is set, then the rows 'seem' to be
+                deleted, but the account is not
+     2014-11- 5 done - svn #4046
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

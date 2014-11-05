@@ -488,13 +488,17 @@ is_dialog_validable( ofaAccountProperties *self )
 	 * => we are refusing a new number which already exists and is for
 	 *    another account
 	 */
-	if( ok && !self->priv->number_ok ){
+	if( ok && !priv->number_ok ){
 
 		dossier = MY_WINDOW( self )->prot->dossier;
-		exists = ofo_account_get_by_number( dossier, self->priv->number );
-		prev = ofo_account_get_number( priv->account );
-		self->priv->number_ok = !exists || !g_utf8_collate( prev, priv->number );
-		ok &= self->priv->number_ok;
+		exists = ofo_account_get_by_number( dossier, priv->number );
+		if( exists ){
+			prev = ofo_account_get_number( priv->account );
+			priv->number_ok = prev && g_utf8_collate( prev, priv->number ) == 0;
+		} else {
+			priv->number_ok = TRUE;
+		}
+		ok &= priv->number_ok;
 	}
 
 	return( ok );
