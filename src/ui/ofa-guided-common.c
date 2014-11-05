@@ -85,7 +85,7 @@ struct _ofaGuidedCommonPrivate {
 	gboolean         deffect_changed_while_focus;
 	GtkGrid         *entries_grid;		/* entries view container */
 	gint             entries_count;
-	GtkEntry        *comment;
+	GtkWidget       *comment;
 	GtkButton       *ok_btn;
 
 	/* check that on_entry_changed is not recursively called */
@@ -451,7 +451,7 @@ setup_misc( ofaGuidedCommon *self )
 
 	widget = my_utils_container_get_child_by_name( priv->parent, "p1-comment" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	priv->comment = GTK_ENTRY( widget );
+	priv->comment = widget;
 
 	view = my_utils_container_get_child_by_name( priv->parent, "p1-entries" );
 	g_return_if_fail( view && GTK_IS_GRID( view ));
@@ -536,39 +536,37 @@ setup_entries_grid( ofaGuidedCommon *self )
 	}
 
 	label = GTK_LABEL( gtk_label_new( _( "Total :" )));
-	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	gtk_widget_set_margin_top( GTK_WIDGET( label ), TOTAUX_TOP_MARGIN );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( label ), COL_LABEL, count+1, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	my_editable_amount_init( GTK_EDITABLE( entry ));
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
+	gtk_widget_set_can_focus( GTK_WIDGET( entry ), FALSE );
 	gtk_widget_set_margin_top( GTK_WIDGET( entry ), TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( entry ), COL_DEBIT, count+1, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	my_editable_amount_init( GTK_EDITABLE( entry ));
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
+	gtk_widget_set_can_focus( GTK_WIDGET( entry ), FALSE );
 	gtk_widget_set_margin_top( GTK_WIDGET( entry ), TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( entry ), COL_CREDIT, count+1, 1, 1 );
 
 	label = GTK_LABEL( gtk_label_new( _( "Diff :" )));
-	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( label ), COL_LABEL, count+2, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	my_editable_amount_init( GTK_EDITABLE( entry ));
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
+	gtk_widget_set_can_focus( GTK_WIDGET( entry ), FALSE );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( entry ), COL_DEBIT, count+2, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	my_editable_amount_init( GTK_EDITABLE( entry ));
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
+	gtk_widget_set_can_focus( GTK_WIDGET( entry ), FALSE );
 	gtk_entry_set_width_chars( entry, AMOUNTS_WIDTH );
 	gtk_grid_attach( priv->entries_grid, GTK_WIDGET( entry ), COL_CREDIT, count+2, 1, 1 );
 
@@ -578,18 +576,18 @@ setup_entries_grid( ofaGuidedCommon *self )
 static void
 add_entry_row( ofaGuidedCommon *self, gint i )
 {
-	GtkEntry *entry;
+	GtkWidget *label;
 	gchar *str;
 
 	/* col #0: rang: number of the entry */
 	str = g_strdup_printf( "%2d", i+1 );
-	entry = GTK_ENTRY( gtk_entry_new());
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
-	gtk_entry_set_alignment( entry, 1 );
-	gtk_entry_set_text( entry, str );
-	gtk_entry_set_width_chars( entry, RANG_WIDTH );
-	gtk_grid_attach( self->priv->entries_grid, GTK_WIDGET( entry ), COL_RANG, i+1, 1, 1 );
+	label = gtk_label_new( str );
 	g_free( str );
+	gtk_widget_set_margin_right( label, 4 );
+	gtk_widget_set_margin_bottom( label, 2 );
+	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
+	gtk_grid_attach( self->priv->entries_grid, label, COL_RANG, i+1, 1, 1 );
 
 	/* other columns starting with COL_ACCOUNT=1 */
 	add_entry_row_set( self, COL_ACCOUNT, i+1 );
@@ -1064,7 +1062,7 @@ set_date_comment( ofaGuidedCommon *self, const gchar *label, const GDate *date )
 static void
 set_comment( ofaGuidedCommon *self, const gchar *comment )
 {
-	gtk_entry_set_text( self->priv->comment, comment );
+	gtk_entry_set_text( GTK_ENTRY( self->priv->comment ), comment );
 }
 
 static const sColumnDef *

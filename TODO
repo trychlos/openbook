@@ -168,6 +168,10 @@
      2014- 6-18 not exactly: a multi-currency journal may be balanced
                 per currency depending of the way the operations are
                 entered (and this way should maybe be forced)
+     2014-11- 5 Having a multi-currencies operation involves:
+                - defining operation with multi currencies
+                - have shadow accounts in both currencies
+                - entering balanced entries in both currencies.
 
  195 2014- 6-11 optimize the usage of SELECT COUNT(*) FROM 
                 OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
@@ -367,6 +371,7 @@
 
  419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
                 book, but most probably also in other treeviews)
+     2014-11- 5 ofaAccountsBook: done - svn #4047
 
  421 2014-11- 5 GuidedInput: when selecting an account after having
                 began to enter a prefix, should open the dialog with
@@ -375,6 +380,8 @@
  422 2014-11- 5 GuidedInput: it is possible to enter an operation with
                 an amount on accounts which do not have the same 
                 currency, but should not be
+     2014-11- 5 Actually, which is incorrect is that we do not have 
+                a good balance per currency
 
  423
 
