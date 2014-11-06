@@ -1001,13 +1001,13 @@ on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self )
 static gboolean
 on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedCommon *self )
 {
-	gint left;
+	sEntryData *sdata;
 
 	/* check the entry we are leaving
 	 */
-	left = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( widget ), DATA_COLUMN ));
+	sdata = g_object_get_data( G_OBJECT( widget ), DATA_ENTRY_DATA );
 
-	switch( left ){
+	switch( sdata->column_id ){
 		case COL_ACCOUNT:
 			if( event->state == 0 && event->keyval == GDK_KEY_Tab ){
 				check_for_account( self, GTK_ENTRY( widget ));
