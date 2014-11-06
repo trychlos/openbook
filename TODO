@@ -217,10 +217,6 @@
                   but this value of ULONG_MAX is only available in
                   64 bits compilers 
 
- 220 2014- 6-16 GuidedInput-Comment: replace the insensitive entry with
-                a normal label + move it to the right in order to be
-                aligned with account entry
-
  224 2014- 6-16 DossierProperties: add a tab for the archived exercices
 
  229 2014- 6-16 Entry model: duplicate a line
@@ -1063,6 +1059,11 @@
  218 2014- 6-15 this is an error if entry number is not strictly 
                 increasing when we update the account balance
      2014- 6-20 done - svn #3745
+
+ 220 2014- 6-16 GuidedInput-Comment: replace the insensitive entry with
+                a normal label + move it to the right in order to be
+                aligned with account entry
+     2014-11- 5 done - svn #4048
 
  221 2014- 6-16 GuidedInput: the dialog box has two rows Cancel-OK
      2014- 6-16 done - svn #3717

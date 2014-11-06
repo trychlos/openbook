@@ -48,7 +48,7 @@ struct _ofaGuidedInputPrivate {
 	/* internals
 	 */
 	const ofoOpeTemplate  *model;
-	ofaGuidedCommon *common;
+	ofaGuidedCommon       *common;
 };
 
 static const gchar  *st_ui_xml    = PKGUIDIR "/ofa-guided-input.ui";
@@ -79,11 +79,17 @@ guided_input_finalize( GObject *instance )
 static void
 guided_input_dispose( GObject *instance )
 {
+	ofaGuidedInputPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = OFA_GUIDED_INPUT( instance )->priv;
+		if( priv->common ){
+			g_clear_object( &priv->common );
+		}
 	}
 
 	/* chain up to the parent class */
