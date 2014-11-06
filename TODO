@@ -373,12 +373,6 @@
                 began to enter a prefix, should open the dialog with
                 the closest account selected 
 
- 422 2014-11- 5 GuidedInput: it is possible to enter an operation with
-                an amount on accounts which do not have the same 
-                currency, but should not be
-     2014-11- 5 Actually, which is incorrect is that we do not have 
-                a good balance per currency
-
  423
 
 -----------------------------------------------------------------------
@@ -1829,6 +1823,13 @@
                 user preference is set, then the rows 'seem' to be
                 deleted, but the account is not
      2014-11- 5 done - svn #4046
+
+ 422 2014-11- 5 GuidedInput: it is possible to enter an operation with
+                an amount on accounts which do not have the same 
+                currency, but should not be
+     2014-11- 5 Actually, which is incorrect is that we do not have 
+                a good balance per currency
+     2014-11- 7 done - svn #4049
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
