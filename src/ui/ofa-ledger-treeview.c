@@ -74,6 +74,9 @@ G_DEFINE_TYPE( ofaLedgerTreeview, ofa_ledger_treeview, G_TYPE_OBJECT )
 
 static void        on_parent_container_finalized( ofaLedgerTreeview *self, gpointer this_was_the_container );
 static void        setup_treeview( ofaLedgerTreeview *self );
+static gboolean    on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaLedgerTreeview *self );
+static void        on_tview_key_insert( ofaLedgerTreeview *page );
+static void        on_tview_key_delete( ofaLedgerTreeview *page );
 static void        dossier_signal_connect( ofaLedgerTreeview *self );
 static void        insert_dataset( ofaLedgerTreeview *self, const gchar *initial_selection );
 static void        insert_new_row( ofaLedgerTreeview *self, ofoLedger *ledger, gboolean with_selection );
@@ -227,7 +230,10 @@ setup_treeview( ofaLedgerTreeview *self )
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect(
+			G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect(
+			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
@@ -279,6 +285,41 @@ setup_treeview( ofaLedgerTreeview *self )
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	self->priv->tview = tview;
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaLedgerTreeview *self )
+{
+	gboolean stop;
+
+	stop = FALSE;
+
+	if( event->state == 0 ){
+		if( event->keyval == GDK_KEY_Insert ){
+			on_tview_key_insert( self );
+		} else if( event->keyval == GDK_KEY_Delete ){
+			on_tview_key_delete( self );
+		}
+	}
+
+	return( stop );
+}
+
+static void
+on_tview_key_insert( ofaLedgerTreeview *page )
+{
+
+}
+
+static void
+on_tview_key_delete( ofaLedgerTreeview *page )
+{
+
 }
 
 static void
