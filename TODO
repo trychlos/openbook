@@ -369,10 +369,6 @@
                 book, but most probably also in other treeviews)
      2014-11- 5 ofaAccountsBook: done - svn #4047
 
- 421 2014-11- 5 GuidedInput: when selecting an account after having
-                began to enter a prefix, should open the dialog with
-                the closest account selected 
-
  423
 
 -----------------------------------------------------------------------
@@ -1823,6 +1819,11 @@
                 user preference is set, then the rows 'seem' to be
                 deleted, but the account is not
      2014-11- 5 done - svn #4046
+
+ 421 2014-11- 5 GuidedInput: when selecting an account after having
+                began to enter a prefix, should open the dialog with
+                the closest account selected
+     2014-11- 7 done - svn #4051 
 
  422 2014-11- 5 GuidedInput: it is possible to enter an operation with
                 an amount on accounts which do not have the same 

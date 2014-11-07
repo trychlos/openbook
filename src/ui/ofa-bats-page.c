@@ -61,6 +61,7 @@ enum {
 G_DEFINE_TYPE( ofaBatsPage, ofa_bats_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
+static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaBatsPage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
@@ -72,7 +73,9 @@ static void       on_row_selected( GtkTreeSelection *selection, ofaBatsPage *sel
 static void       v_on_button_clicked( ofaPage *page, guint button_id );
 static void       on_update_clicked( ofaBatsPage *page );
 static void       on_delete_clicked( ofaBatsPage *page );
+static void       try_to_delete_current_row( ofaBatsPage *page );
 static gboolean   delete_confirmed( ofaBatsPage *self, ofoBat *bat );
+static void       do_delete( ofaBatsPage *page, ofoBat *bat, GtkTreeModel *tmodel, GtkTreeIter *iter );
 
 static void
 bats_page_finalize( GObject *instance )
@@ -165,7 +168,10 @@ v_setup_view( ofaPage *page )
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect(
+			G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect(
+			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), page );
 	priv->tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
@@ -194,6 +200,27 @@ v_setup_view( ofaPage *page )
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	return( GTK_WIDGET( frame ));
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaBatsPage *self )
+{
+	gboolean stop;
+
+	stop = FALSE;
+
+	if( event->state == 0 ){
+		if( event->keyval == GDK_KEY_Delete ){
+			try_to_delete_current_row( self );
+		}
+	}
+
+	return( stop );
 }
 
 static GtkWidget *
@@ -350,6 +377,26 @@ v_on_button_clicked( ofaPage *page, guint button_id )
 	}
 }
 
+static ofoBat *
+get_current_selection( ofaBatsPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
+{
+	ofaBatsPagePrivate *priv;
+	GtkTreeSelection *select;
+	ofoBat *bat;
+
+	priv = page->priv;
+	bat = NULL;
+
+	select = gtk_tree_view_get_selection( priv->tview );
+	if( gtk_tree_selection_get_selected( select, tmodel, iter )){
+
+		gtk_tree_model_get( *tmodel, iter, COL_OBJECT, &bat, -1 );
+		g_object_unref( bat );
+	}
+
+	return( bat );
+}
+
 /*
  * only notes can be updated
  */
@@ -357,18 +404,13 @@ static void
 on_update_clicked( ofaBatsPage *page )
 {
 	ofaBatsPagePrivate *priv;
-	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoBat *bat;
 
 	priv = page->priv;
-	select = gtk_tree_view_get_selection( priv->tview );
-
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &bat, -1 );
-		g_object_unref( bat );
+	bat = get_current_selection( page, &tmodel, &iter );
+	if( bat ){
 		ofa_bat_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), bat );
 	}
 
@@ -379,31 +421,44 @@ static void
 on_delete_clicked( ofaBatsPage *page )
 {
 	ofaBatsPagePrivate *priv;
-	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoBat *bat;
 
 	priv = page->priv;
-	select = gtk_tree_view_get_selection( priv->tview );
-
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &bat, -1 );
-		g_object_unref( bat );
-
+	bat = get_current_selection( page, &tmodel, &iter );
+	if( bat ){
 		g_return_if_fail( ofo_bat_is_deletable( bat ));
-
-		if( delete_confirmed( page, bat ) &&
-				ofo_bat_delete( bat, ofa_page_get_dossier( OFA_PAGE( page )))){
-
-			/* remove the row from the tmodel
-			 * this will cause an automatic new selection */
-			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-		}
+		do_delete( page, bat, tmodel, &iter );
+		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 	}
+}
 
-	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
+static void
+try_to_delete_current_row( ofaBatsPage *page )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoBat *bat;
+
+	bat = get_current_selection( page, &tmodel, &iter );
+	if( bat && ofo_bat_is_deletable( bat )){
+		do_delete( page, bat, tmodel, &iter );
+	}
+}
+
+static void
+do_delete( ofaBatsPage *page, ofoBat *bat, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	g_return_if_fail( ofo_bat_is_deletable( bat ));
+
+	if( delete_confirmed( page, bat ) &&
+			ofo_bat_delete( bat, ofa_page_get_dossier( OFA_PAGE( page )))){
+
+		/* remove the row from the tmodel
+		 * this will cause an automatic new selection */
+		gtk_list_store_remove( GTK_LIST_STORE( tmodel ), iter );
+	}
 }
 
 static gboolean
