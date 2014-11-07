@@ -67,25 +67,29 @@ enum {
 
 G_DEFINE_TYPE( ofaCurrenciesPage, ofa_currencies_page, OFA_TYPE_PAGE )
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_tree_view( ofaCurrenciesPage *self );
-static void       v_init_view( ofaPage *page );
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       insert_dataset( ofaCurrenciesPage *self );
-static void       insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_selection );
-static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenciesPage *self );
-static void       setup_first_selection( ofaCurrenciesPage *self );
-static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
-static void       on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self );
-static void       v_on_button_clicked( ofaPage *page, guint button_id );
-static void       on_new_clicked( ofaCurrenciesPage *page );
-static void       on_update_clicked( ofaCurrenciesPage *page );
-static void       on_delete_clicked( ofaCurrenciesPage *page );
-static gboolean   delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *currency );
-static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self );
-static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrenciesPage *self );
-static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self );
-static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesPage *self );
+static GtkWidget   *v_setup_view( ofaPage *page );
+static GtkWidget   *setup_tree_view( ofaCurrenciesPage *self );
+static gboolean     on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaCurrenciesPage *self );
+static ofoCurrency *tview_get_selected( ofaCurrenciesPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void         v_init_view( ofaPage *page );
+static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
+static void         insert_dataset( ofaCurrenciesPage *self );
+static void         insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_selection );
+static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenciesPage *self );
+static void         setup_first_selection( ofaCurrenciesPage *self );
+static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
+static void         on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self );
+static void         v_on_button_clicked( ofaPage *page, guint button_id );
+static void         on_new_clicked( ofaCurrenciesPage *page );
+static void         on_update_clicked( ofaCurrenciesPage *page );
+static void         on_delete_clicked( ofaCurrenciesPage *page );
+static void         try_to_delete_current_row( ofaCurrenciesPage *page );
+static gboolean     delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *currency );
+static void         do_delete( ofaCurrenciesPage *page, ofoCurrency *currency, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void         on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self );
+static void         on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrenciesPage *self );
+static void         on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self );
+static void         on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesPage *self );
 
 static void
 currencies_page_finalize( GObject *instance )
@@ -229,7 +233,10 @@ setup_tree_view( ofaCurrenciesPage *self )
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect(G_OBJECT( tview ),
+			"row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect(
+			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
 	priv->tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
@@ -272,6 +279,49 @@ setup_tree_view( ofaCurrenciesPage *self )
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	return( GTK_WIDGET( frame ));
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaCurrenciesPage *self )
+{
+	gboolean stop;
+
+	stop = FALSE;
+
+	if( event->state == 0 ){
+		if( event->keyval == GDK_KEY_Insert ){
+			on_new_clicked( self );
+		} else if( event->keyval == GDK_KEY_Delete ){
+			try_to_delete_current_row( self );
+		}
+	}
+
+	return( stop );
+}
+
+static ofoCurrency *
+tview_get_selected( ofaCurrenciesPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
+{
+	ofaCurrenciesPagePrivate *priv;
+	GtkTreeSelection *select;
+	ofoCurrency *currency;
+
+	priv = page->priv;
+	currency = NULL;
+
+	select = gtk_tree_view_get_selection( priv->tview );
+	if( gtk_tree_selection_get_selected( select, tmodel, iter )){
+
+		gtk_tree_model_get( *tmodel, iter, COL_OBJECT, &currency, -1 );
+		g_object_unref( currency );
+	}
+
+	return( currency );
 }
 
 static void
@@ -391,6 +441,8 @@ on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self )
 	GtkTreeIter iter;
 	ofoCurrency *currency;
 
+	currency = NULL;
+
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &currency, -1 );
 		g_object_unref( currency );
@@ -488,31 +540,30 @@ static void
 on_delete_clicked( ofaCurrenciesPage *page )
 {
 	ofaCurrenciesPagePrivate *priv;
-	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoCurrency *currency;
 
 	priv = page->priv;
-	select = gtk_tree_view_get_selection( priv->tview );
-
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &currency, -1 );
-		g_object_unref( currency );
-
-		g_return_if_fail( ofo_currency_is_deletable( currency ));
-
-		if( delete_confirmed( page, currency ) &&
-				ofo_currency_delete( currency )){
-
-			/* remove the row from the tmodel
-			 * this will cause an automatic new selection */
-			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-		}
+	currency = tview_get_selected( page, &tmodel, &iter );
+	if( currency ){
+		do_delete( page, currency, tmodel, &iter );
 	}
 
 	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
+}
+
+static void
+try_to_delete_current_row( ofaCurrenciesPage *page )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoCurrency *currency;
+
+	currency = tview_get_selected( page, &tmodel, &iter );
+	if( currency && ofo_currency_is_deletable( currency )){
+		do_delete( page, currency, tmodel, &iter );
+	}
 }
 
 static gboolean
@@ -531,6 +582,20 @@ delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *currency )
 	g_free( msg );
 
 	return( delete_ok );
+}
+
+static void
+do_delete( ofaCurrenciesPage *page, ofoCurrency *currency, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	g_return_if_fail( ofo_currency_is_deletable( currency ));
+
+	if( delete_confirmed( page, currency ) &&
+			ofo_currency_delete( currency )){
+
+		/* remove the row from the tmodel
+		 * this will cause an automatic new selection */
+		gtk_list_store_remove( GTK_LIST_STORE( tmodel ), iter );
+	}
 }
 
 /*
