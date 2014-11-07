@@ -74,7 +74,7 @@ class_finalize( GObject *instance )
 
 	priv = OFO_CLASS( instance )->priv;
 
-	g_debug( "%s: instance=%p (%s): [%d] %s",
+	g_debug( "%s: instance=%p (%s): %d - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			priv->number,
 			priv->label );

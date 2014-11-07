@@ -368,6 +368,7 @@
  419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
                 book, but most probably also in other treeviews)
      2014-11- 5 ofaAccountsBook: done - svn #4047
+     2014-11- 7 ofaBatsPage:     done - svn #4052
 
  423
 
