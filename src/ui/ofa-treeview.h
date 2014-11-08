@@ -38,6 +38,9 @@
  *
  * In the provided parent container, this class defines a GtkTreeView
  * embedded in a GtkScrolledWindow.
+ *
+ * In other words, #ofaTreeview object is a particulaer
+ * GtkScrolledWindow which embeds a GtkTreeview.
  */
 
 #include "core/ofa-main-window-def.h"
@@ -56,23 +59,55 @@ typedef struct _ofaTreeviewPrivate       ofaTreeviewPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkTreeView           parent;
+	GtkScrolledWindow      parent;
 
 	/*< protected members >*/
-	ofaTreeviewProtected *prot;
+	ofaTreeviewProtected  *prot;
 
 	/*< private members >*/
-	ofaTreeviewPrivate   *priv;
+	ofaTreeviewPrivate    *priv;
 }
 	ofaTreeview;
 
 typedef struct {
 	/*< public members >*/
-	GtkTreeViewClass      parent;
+	GtkScrolledWindowClass parent;
+
+	/* protected virtual functions */
+
+	/**
+	 * treemodel_new:
+	 * @instance: this #ofaTreeview instance.
+	 *
+	 * Returns: a GtkTreeModel object suitable for display in our
+	 *  GtkTreeView.
+	 *
+	 * This is a pure virtual function that the derived class should
+	 * implement.
+	 */
+	GtkTreeModel * ( *tree_model_new )( ofaTreeview *instance );
 }
 	ofaTreeviewClass;
 
-GType              ofa_treeview_get_type                ( void ) G_GNUC_CONST;
+/**
+ * Properties set against the #ofaTreeview class:
+ * @TREEVIEW_PROP_USE_BOXES: whether the derived class makes use of the
+ *  #ofaBoxes class for defining its field datas.
+ *  Defaults to %FALSE.
+ */
+#define TREEVIEW_PROP_USE_BOXES         "ofa-treeview-prop-use-boxes"
+
+/**
+ * Signals emitted by the #ofaTreeview:
+ * @TREEVIEW_SIGNAL_ROW_SELECTED: the selection has changed.
+ * @TREEVIEW_SIGNAL_ROW_ACTIVATED: a row has been activated.
+ * @TREEVIEW_SIGNAL_KEY_PRESSED: a key shortcut has been pressed.
+ */
+#define TREEVIEW_SIGNAL_ROW_SELECTED    "ofa-treeview-signal-row-selected"
+#define TREEVIEW_SIGNAL_ROW_ACTIVATED   "ofa-treeview-signal-row-activated"
+#define TREEVIEW_SIGNAL_KEY_PRESSED     "ofa-treeview-signal-key-pressed"
+
+GType  ofa_treeview_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
