@@ -128,6 +128,8 @@ openbook_SOURCES = \
 	ofa-ledgers-page.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
+	ofa-misc-arcaccopebal.c								\
+	ofa-misc-arcaccopebal.h								\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
 	ofa-ope-templates-page.c							\

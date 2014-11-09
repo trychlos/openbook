@@ -33,7 +33,6 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
-#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-preferences.h"
@@ -55,6 +54,7 @@
 #include "ui/ofa-int-closing.h"
 #include "ui/ofa-ledgers-page.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-misc-arcaccopebal.h"
 #include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-print-balance.h"
@@ -1213,7 +1213,7 @@ on_misc_arc_acc_ope_bal( GSimpleAction *action, GVariant *parameter, gpointer us
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofo_account_archive_open_balances( OFA_MAIN_WINDOW( user_data )->priv->dossier );
+	ofa_misc_arcaccopebal_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 /**
