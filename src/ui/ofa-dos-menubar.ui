@@ -156,7 +156,7 @@
       <section>
         <item>
           <attribute name="label" translatable="yes">_Archive accounts to opening balances...</attribute>
-          <attribute name="action">app.arcaccopebal</attribute>
+          <attribute name="action">win.arcaccopebal</attribute>
         </item>
       </section>
     </submenu>
