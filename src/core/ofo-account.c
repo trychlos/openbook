@@ -217,6 +217,7 @@ static GList      *account_load_dataset( void );
 static ofoAccount *account_find_by_number( GList *set, const gchar *number );
 static gint        account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
 static gint        account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
+static void        archive_open_balances( ofoAccount *account, void *empty );
 static void        account_get_children( const ofoAccount *account, sChildren *child_str );
 static void        account_iter_children( const ofoAccount *account, sChildren *child_str );
 static void        account_set_upd_user( ofoAccount *account, const gchar *user );
@@ -710,6 +711,49 @@ ofo_account_dump_chart( GList *chart )
 				thisfn,
 				ofo_account_get_number( account ),
 				ofo_account_get_label( account ));
+	}
+}
+
+/**
+ * ofo_account_archive_open_balances:
+ * @dossier: the currently opened dossier.
+ *
+ * As part of the close of the exercice N, we archive the balances of
+ * the accounts at the beginning of the exercice N+1. These balances
+ * take into account the carried forward entries (fr: reports à
+ * nouveau).
+ *
+ * At this time, all ledgers on exercice N should have been closed, and
+ * no entries should have been recorded in ledgers for exercice N+1.
+ */
+void
+ofo_account_archive_open_balances( const ofoDossier *dossier )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+
+	g_list_foreach( st_global->dataset, ( GFunc ) archive_open_balances, NULL );
+}
+
+static void
+archive_open_balances( ofoAccount *account, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_archive_open_balances";
+	gdouble amount;
+
+	if( !ofo_account_is_root( account )){
+		account_set_open_deb_entry( account, ofo_account_get_deb_entry( account ));
+		account_set_open_deb_date( account, ofo_account_get_deb_date( account ));
+		account_set_open_deb_amount( account, ofo_account_get_deb_amount( account ));
+		account_set_open_cre_entry( account, ofo_account_get_cre_entry( account ));
+		account_set_open_cre_date( account, ofo_account_get_cre_date( account ));
+		account_set_open_cre_amount( account, ofo_account_get_cre_amount( account ));
+		amount = ofo_account_get_day_deb_amount( account ) + ofo_account_get_day_cre_amount( account );
+		if( amount != 0 ){
+			g_warning( "%s: account=%s: daily balance is not zero",
+					thisfn, ofo_account_get_number( account ));
+		}
 	}
 }
 

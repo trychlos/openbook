@@ -33,6 +33,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
+#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-preferences.h"
@@ -90,48 +91,50 @@ enum {
 	N_SIGNALS
 };
 
-static void on_properties       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_backup           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_close            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_guided       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_view_entries ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_concil       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_settlement   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_int_closing  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_exe_closing  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_import       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_export       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_print_balance    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_print_reconcil   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_accounts     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_ledgers      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_ope_templates( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_currencies   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_rates        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_classes      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ref_batfiles     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_properties          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_backup              ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_close               ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_guided          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_view_entries    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_concil          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_settlement      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_int_closing     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_exe_closing     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_import          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_export          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_print_balance       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_print_reconcil      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_accounts        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_ledgers         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_ope_templates   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_currencies      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_rates           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_classes         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_batfiles        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_misc_arc_acc_ope_bal( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
 static const GActionEntry st_dos_entries[] = {
-		{ "properties",    on_properties,        NULL, NULL, NULL },
-		{ "backup",        on_backup,            NULL, NULL, NULL },
-		{ "close",         on_close,             NULL, NULL, NULL },
-		{ "guided",        on_ope_guided,        NULL, NULL, NULL },
-		{ "entries",       on_ope_view_entries,  NULL, NULL, NULL },
-		{ "concil",        on_ope_concil,        NULL, NULL, NULL },
-		{ "settlement",    on_ope_settlement,    NULL, NULL, NULL },
-		{ "iclosing",      on_ope_int_closing,   NULL, NULL, NULL },
-		{ "execlosing",    on_ope_exe_closing,   NULL, NULL, NULL },
-		{ "import",        on_ope_import,        NULL, NULL, NULL },
-		{ "export",        on_ope_export,        NULL, NULL, NULL },
-		{ "prt-balance",   on_print_balance,     NULL, NULL, NULL },
-		{ "prt-reconcil",  on_print_reconcil,    NULL, NULL, NULL },
-		{ "accounts",      on_ref_accounts,      NULL, NULL, NULL },
-		{ "ledgers",       on_ref_ledgers,       NULL, NULL, NULL },
-		{ "ope-templates", on_ref_ope_templates, NULL, NULL, NULL },
-		{ "currencies",    on_ref_currencies,    NULL, NULL, NULL },
-		{ "rates",         on_ref_rates,         NULL, NULL, NULL },
-		{ "classes",       on_ref_classes,       NULL, NULL, NULL },
-		{ "batfiles",      on_ref_batfiles,      NULL, NULL, NULL },
+		{ "properties",    on_properties,           NULL, NULL, NULL },
+		{ "backup",        on_backup,               NULL, NULL, NULL },
+		{ "close",         on_close,                NULL, NULL, NULL },
+		{ "guided",        on_ope_guided,           NULL, NULL, NULL },
+		{ "entries",       on_ope_view_entries,     NULL, NULL, NULL },
+		{ "concil",        on_ope_concil,           NULL, NULL, NULL },
+		{ "settlement",    on_ope_settlement,       NULL, NULL, NULL },
+		{ "iclosing",      on_ope_int_closing,      NULL, NULL, NULL },
+		{ "execlosing",    on_ope_exe_closing,      NULL, NULL, NULL },
+		{ "import",        on_ope_import,           NULL, NULL, NULL },
+		{ "export",        on_ope_export,           NULL, NULL, NULL },
+		{ "prt-balance",   on_print_balance,        NULL, NULL, NULL },
+		{ "prt-reconcil",  on_print_reconcil,       NULL, NULL, NULL },
+		{ "accounts",      on_ref_accounts,         NULL, NULL, NULL },
+		{ "ledgers",       on_ref_ledgers,          NULL, NULL, NULL },
+		{ "ope-templates", on_ref_ope_templates,    NULL, NULL, NULL },
+		{ "currencies",    on_ref_currencies,       NULL, NULL, NULL },
+		{ "rates",         on_ref_rates,            NULL, NULL, NULL },
+		{ "classes",       on_ref_classes,          NULL, NULL, NULL },
+		{ "batfiles",      on_ref_batfiles,         NULL, NULL, NULL },
+		{ "arcaccopebal",  on_misc_arc_acc_ope_bal, NULL, NULL, NULL },
 };
 
 /* This structure handles the functions which manage the pages of the
@@ -1198,6 +1201,19 @@ on_ref_batfiles( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_BATFILES );
+}
+
+static void
+on_misc_arc_acc_ope_bal( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_misc_arc_acc_ope_bal";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofo_account_archive_open_balances( OFA_MAIN_WINDOW( user_data )->priv->dossier );
 }
 
 /**

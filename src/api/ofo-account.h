@@ -65,6 +65,7 @@ gboolean        ofo_account_use_currency         ( const ofoDossier *dossier, co
 ofoAccount     *ofo_account_new                  ( void );
 
 void            ofo_account_dump_chart           ( GList *chart );
+void            ofo_account_archive_open_balances( const ofoDossier *dossier );
 
 gint            ofo_account_get_class            ( const ofoAccount *account );
 const gchar    *ofo_account_get_number           ( const ofoAccount *account );
