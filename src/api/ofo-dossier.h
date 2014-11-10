@@ -79,7 +79,6 @@ GList           *ofo_dossier_get_exercices_list        ( const ofoDossier *dossi
 GDate           *ofo_dossier_get_last_closed_exercice  ( const ofoDossier *dossier );
 
 gint             ofo_dossier_get_current_exe_id        ( const ofoDossier *dossier );
-const GDate     *ofo_dossier_get_current_exe_begin     ( const ofoDossier *dossier );
 const GDate     *ofo_dossier_get_current_exe_end       ( const ofoDossier *dossier );
 
 gint             ofo_dossier_get_exe_by_date           ( const ofoDossier *dossier, const GDate *date );

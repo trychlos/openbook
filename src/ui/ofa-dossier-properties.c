@@ -309,10 +309,10 @@ init_exercices_page( ofaDossierProperties *self )
 
 	priv->exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
 
-	my_date_set_from_date( &priv->begin, ofo_dossier_get_current_exe_begin( priv->dossier ));
+	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier, priv->exe_id ));
 	priv->begin_empty = !my_date_is_valid( &priv->begin );
 
-	my_date_set_from_date( &priv->end, ofo_dossier_get_current_exe_end( priv->dossier ));
+	my_date_set_from_date( &priv->end, ofo_dossier_get_exe_end( priv->dossier, priv->exe_id ));
 	priv->end_empty = !my_date_is_valid( &priv->end );
 
 	priv->notes = g_strdup( ofo_dossier_get_exe_notes( priv->dossier, priv->exe_id ));

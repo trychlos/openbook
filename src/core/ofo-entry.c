@@ -257,13 +257,15 @@ on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_i
 	GString *query;
 	const GDate *date;
 	gchar *str;
+	gint exe_id;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
 	g_string_append_printf(
 			query,
 			"SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
 
-	date = ofo_dossier_get_current_exe_begin( dossier );
+	exe_id = ofo_dossier_get_current_exe_id( dossier );
+	date = ofo_dossier_get_exe_begin( dossier, exe_id );
 	if( my_date_is_valid( date )){
 		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
@@ -281,13 +283,15 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 	GString *query;
 	const GDate *date;
 	gchar *str;
+	gint exe_id;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
 	g_string_append_printf(
 			query,
 			"SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
 
-	date = ofo_dossier_get_current_exe_begin( dossier );
+	exe_id = ofo_dossier_get_current_exe_id( dossier );
+	date = ofo_dossier_get_exe_begin( dossier, exe_id );
 	if( my_date_is_valid( date )){
 		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
@@ -305,13 +309,15 @@ on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id,
 	GString *query;
 	const GDate *date;
 	gchar *str;
+	gint exe_id;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
 	g_string_append_printf(
 			query,
 			"SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
 
-	date = ofo_dossier_get_current_exe_begin( dossier );
+	exe_id = ofo_dossier_get_current_exe_id( dossier );
+	date = ofo_dossier_get_exe_begin( dossier, exe_id );
 	if( my_date_is_valid( date )){
 		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
@@ -329,13 +335,15 @@ on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, 
 	GString *query;
 	const GDate *date;
 	gchar *str;
+	gint exe_id;
 
 	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
 	g_string_append_printf(
 			query,
 			"SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
 
-	date = ofo_dossier_get_current_exe_begin( dossier );
+	exe_id = ofo_dossier_get_current_exe_id( dossier );
+	date = ofo_dossier_get_exe_begin( dossier, exe_id );
 	if( my_date_is_valid( date )){
 		str = my_date_to_str( date, MY_DATE_SQL );
 		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );

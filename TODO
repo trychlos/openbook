@@ -375,10 +375,6 @@
                 ofaOpeTemplatesPage:
                 ofaRatesPage:
 
- 423 2014-11- 8 Settlement: should be able to unselect a row
-
- 424 2014-11- 9 add exercice notes
-
  425 2014-11-10 ofaDossierProperties: doesn't take into account
                 'changed' signal on exercice notes - so unable to
                 have this field updated
@@ -1845,6 +1841,12 @@
      2014-11- 5 Actually, which is incorrect is that we do not have 
                 a good balance per currency
      2014-11- 7 done - svn #4049
+
+ 423 2014-11- 8 Settlement: should be able to unselect a row
+     2014-11-10 this is ok with Ctrl key
+
+ 424 2014-11- 9 add exercice notes
+     2014-11-10 done - svn #4070
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
