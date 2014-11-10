@@ -1359,29 +1359,6 @@ ofo_dossier_get_current_exe_id( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_current_exe_end:
- *
- * Returns: the ending date of the current exercice.
- */
-const GDate *
-ofo_dossier_get_current_exe_end( const ofoDossier *dossier )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_current_exe( dossier );
-		if( sexe ){
-			return(( const GDate * ) &sexe->exe_end );
-		}
-	}
-
-	return( NULL );
-}
-
-/**
  * ofo_dossier_get_exe_by_date:
  *
  * Returns the exercice id which contains the specified date.
