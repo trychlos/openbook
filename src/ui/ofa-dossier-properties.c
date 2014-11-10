@@ -39,6 +39,7 @@
 
 #include "ui/my-editable-date.h"
 #include "ui/ofa-currency-combo.h"
+#include "ui/ofa-dosexe-combo.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-main-window.h"
 
@@ -48,23 +49,29 @@ struct _ofaDossierPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoDossier    *dossier;
-	gboolean       is_new;
-	gboolean       updated;
-	GDate         *last_closed;		/* may be NULL */
+	ofoDossier      *dossier;
+	gboolean         is_new;
+	gboolean         updated;
 
 	/* data
 	 */
-	gchar         *label;
-	gint           duree;
-	gchar         *currency;
-	GDate          begin;
-	GDate          end;
+	gchar           *label;
+	gint             duree;
+	gchar           *currency;
+	const GDate     *last_closed;
 
 	/* UI
 	 */
-	GtkWidget     *begin_entry;
-	GtkWidget     *end_entry;
+	ofaDosexeCombo  *dosexe_combo;
+
+	/* current exercice data
+	 */
+	gint             exe_id;			/* id of the current exercice */
+	GDate            begin;
+	gboolean         begin_empty;
+	GDate            end;
+	gboolean         end_empty;
+	gchar           *notes;
 };
 
 static const gchar *st_ui_xml = PKGUIDIR "/ofa-dossier-properties.ui";
@@ -74,10 +81,15 @@ G_DEFINE_TYPE( ofaDossierProperties, ofa_dossier_properties, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
 static void      init_properties_page( ofaDossierProperties *self );
-static void      init_current_exe_page( ofaDossierProperties *self );
+static void      init_exercices_page( ofaDossierProperties *self );
+static void      on_exercice_changed( ofaDosexeCombo *combo, gint exe_id, ofaDossierProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_currency_changed( const gchar *code, ofaDossierProperties *self );
+static void      on_begin_changed( GtkEditable *editable, ofaDossierProperties *self );
+static void      on_end_changed( GtkEditable *editable, ofaDossierProperties *self );
+static void      on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty );
+static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  is_dialog_valid( ofaDossierProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -98,7 +110,7 @@ dossier_properties_finalize( GObject *instance )
 	priv = OFA_DOSSIER_PROPERTIES( instance )->priv;
 	g_free( priv->label );
 	g_free( priv->currency );
-	g_free( priv->last_closed );
+	g_free( priv->notes );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_properties_parent_class )->finalize( instance );
@@ -132,6 +144,8 @@ ofa_dossier_properties_init( ofaDossierProperties *self )
 						self, OFA_TYPE_DOSSIER_PROPERTIES, ofaDossierPropertiesPrivate );
 
 	self->priv->updated = FALSE;
+	my_date_clear( &self->priv->begin );
+	my_date_clear( &self->priv->end );
 }
 
 static void
@@ -198,7 +212,8 @@ v_init_dialog( myDialog *dialog )
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	init_properties_page( self );
-	init_current_exe_page( self );
+	init_exercices_page( self );
+	priv->last_closed = ofo_dossier_get_last_closed_exercice( priv->dossier );
 
 	my_utils_init_notes_ex( container, dossier );
 	my_utils_init_upd_user_stamp_ex( container, dossier );
@@ -245,53 +260,143 @@ init_properties_page( ofaDossierProperties *self )
 	parms.pfnSelected = ( ofaCurrencyComboCb ) on_currency_changed;
 	parms.user_data = self;
 	parms.initial_code = ofo_dossier_get_default_currency( priv->dossier );
+
 	ofa_currency_combo_new( &parms );
 }
 
+/*
+ * - initialize exercices combobox
+ * - connect signals (our entry after having initialized myEditableDate)
+ * - store current exercice datas
+ */
 static void
-init_current_exe_page( ofaDossierProperties *self )
+init_exercices_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkContainer *container;
-	GtkWidget *label;
-	gchar *str;
+	ofaDosexeComboParms parms;
+	GtkWidget *widget;
+	GtkTextBuffer *buffer;
 
 	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
-	priv->last_closed = ofo_dossier_get_last_closed_exercice( priv->dossier );
+	parms.container = container;
+	parms.combo_name = "pexe-combobox";
+	parms.main_window = MY_WINDOW( self )->prot->main_window;
+	parms.exe_id = -1;
 
-	priv->begin_entry = my_utils_container_get_child_by_name( container, "p2-begin" );
-	my_editable_date_init( GTK_EDITABLE( priv->begin_entry ));
-	my_editable_date_set_mandatory( GTK_EDITABLE( priv->begin_entry ), FALSE );
-	label = my_utils_container_get_child_by_name( container, "p2-begin-label" );
-	my_editable_date_set_label( GTK_EDITABLE( priv->begin_entry ), label, MY_DATE_DMMM );
+	priv->dosexe_combo = ofa_dosexe_combo_new( &parms );
+
+	g_signal_connect(
+			G_OBJECT( priv->dosexe_combo ),
+			DOSEXE_SIGNAL_EXE_SELECTED, G_CALLBACK( on_exercice_changed ), self );
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-begin" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	my_editable_date_init( GTK_EDITABLE( widget ));
+	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_begin_changed ), self );
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-end" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	my_editable_date_init( GTK_EDITABLE( widget ));
+	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_end_changed ), self );
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-notes" );
+	g_return_if_fail( widget && GTK_IS_TEXT_VIEW( widget ));
+	buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( widget ));
+	g_signal_connect( G_OBJECT( buffer ), "changed", G_CALLBACK( on_notes_changed ), self );
+
+	priv->exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
+
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_current_exe_begin( priv->dossier ));
-	my_editable_date_set_date( GTK_EDITABLE( priv->begin_entry ), &priv->begin );
+	priv->begin_empty = !my_date_is_valid( &priv->begin );
 
-	priv->end_entry = my_utils_container_get_child_by_name( container, "p2-end" );
-	my_editable_date_init( GTK_EDITABLE( priv->end_entry ));
-	my_editable_date_set_mandatory( GTK_EDITABLE( priv->end_entry ), FALSE );
-	label = my_utils_container_get_child_by_name( container, "p2-end-label" );
-	my_editable_date_set_label( GTK_EDITABLE( priv->end_entry ), label, MY_DATE_DMMM );
 	my_date_set_from_date( &priv->end, ofo_dossier_get_current_exe_end( priv->dossier ));
-	my_editable_date_set_date( GTK_EDITABLE( priv->end_entry ), &priv->end );
+	priv->end_empty = !my_date_is_valid( &priv->end );
 
-	label = my_utils_container_get_child_by_name( container, "p2-id" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%u", ofo_dossier_get_current_exe_id( priv->dossier ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
+	priv->notes = g_strdup( ofo_dossier_get_exe_notes( priv->dossier, priv->exe_id ));
+}
+
+static void
+on_exercice_changed( ofaDosexeCombo *combo, gint exe_id, ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	GtkContainer *container;
+	GtkWidget *widget;
+	ofaDossierStatus status;
+	gboolean readonly;
+	gchar *str;
+
+	priv = self->priv;
+	status = ofo_dossier_get_exe_status( priv->dossier, exe_id );
+	readonly = ( status == DOS_STATUS_CLOSED );
+
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-id" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	str = g_strdup_printf( "%d", exe_id );
+	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "p2-last-entry" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%u", ofo_dossier_get_current_exe_last_entry( priv->dossier ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
+	widget = my_utils_container_get_child_by_name( container, "pexe-begin" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	if( readonly ){
+		str = my_date_to_str( ofo_dossier_get_exe_begin( priv->dossier, exe_id ), MY_DATE_DMYY );
+		gtk_entry_set_text( GTK_ENTRY( widget ), str );
+		g_free( str );
+	} else {
+		my_editable_date_set_mandatory( GTK_EDITABLE( widget ), FALSE );
+		my_editable_date_set_date( GTK_EDITABLE( widget ), &priv->begin );
+	}
+	gtk_widget_set_can_focus( widget, !readonly );
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-end" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	if( readonly ){
+		str = my_date_to_str( ofo_dossier_get_exe_end( priv->dossier, exe_id ), MY_DATE_DMYY );
+		gtk_entry_set_text( GTK_ENTRY( widget ), str );
+		g_free( str );
+	} else {
+		my_editable_date_set_mandatory( GTK_EDITABLE( widget ), FALSE );
+		my_editable_date_set_date( GTK_EDITABLE( widget ), &priv->end );
+	}
+	gtk_widget_set_can_focus( widget, !readonly );
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-status" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	gtk_label_set_text( GTK_LABEL( widget ), ofo_dossier_get_status_label( status ));
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-last-entry" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	str = g_strdup_printf( "%'d", ofo_dossier_get_exe_last_entry( priv->dossier, exe_id ));
+	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( container, "p2-status" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), ofo_dossier_get_exe_status_label( DOS_STATUS_OPENED ));
+	widget = my_utils_container_get_child_by_name( container, "pexe-last-settlement" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	str = g_strdup_printf( "%'d", ofo_dossier_get_exe_last_settlement( priv->dossier, exe_id ));
+	gtk_label_set_text( GTK_LABEL( widget ), str );
+	g_free( str );
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-last-bat" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	str = g_strdup_printf( "%'d", ofo_dossier_get_exe_last_bat( priv->dossier, exe_id ));
+	gtk_label_set_text( GTK_LABEL( widget ), str );
+	g_free( str );
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-last-bat-line" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	str = g_strdup_printf( "%'d", ofo_dossier_get_exe_last_bat_line( priv->dossier, exe_id ));
+	gtk_label_set_text( GTK_LABEL( widget ), str );
+	g_free( str );
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-notes" );
+	my_utils_init_notes(
+			container, "pexe-notes",
+			readonly ? ofo_dossier_get_exe_notes( priv->dossier, exe_id ) : priv->notes );
+	gtk_widget_set_can_focus( widget, !readonly );
 }
 
 static void
@@ -329,6 +434,51 @@ on_currency_changed( const gchar *code, ofaDossierProperties *self )
 }
 
 static void
+on_begin_changed( GtkEditable *editable, ofaDossierProperties *self )
+{
+	on_date_changed( self, editable, &self->priv->begin, &self->priv->begin_empty );
+}
+
+static void
+on_end_changed( GtkEditable *editable, ofaDossierProperties *self )
+{
+	on_date_changed( self, editable, &self->priv->end, &self->priv->end_empty );
+}
+
+static void
+on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty )
+{
+	gchar *content;
+	gboolean valid;
+
+	content = gtk_editable_get_chars( editable, 0, -1 );
+	if( content && g_utf8_strlen( content, -1 )){
+		*is_empty = FALSE;
+		my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( editable ), &valid ));
+		/*g_debug( "ofa_dossier_properties_on_date_changed: is_empty=False, valid=%s", valid ? "True":"False" );*/
+
+	} else {
+		*is_empty = TRUE;
+	}
+	g_free( content );
+
+	check_for_enable_dlg( self );
+}
+
+static void
+on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self )
+{
+	GtkTextIter start, end;
+
+	gtk_text_buffer_get_start_iter( buffer, &start );
+	gtk_text_buffer_get_end_iter( buffer, &end );
+	g_free( self->priv->notes );
+	self->priv->notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
+
+	g_debug( "on_notes_changed: notes='%s'", self->priv->notes );
+}
+
+static void
 check_for_enable_dlg( ofaDossierProperties *self )
 {
 	GtkWidget *button;
@@ -351,18 +501,15 @@ is_dialog_valid( ofaDossierProperties *self )
 
 	priv = self->priv;
 
-	if( priv->begin_entry ){
-		my_date_set_from_date( &priv->begin,
-				my_editable_date_get_date( GTK_EDITABLE( priv->begin_entry ), NULL ));
-	}
-	if( priv->end_entry ){
-		my_date_set_from_date( &priv->end,
-				my_editable_date_get_date( GTK_EDITABLE( priv->end_entry ), NULL ));
-	}
+	ok = priv->begin_empty ||
+			( my_date_is_valid( &priv->begin ) &&
+				( !my_date_is_valid( priv->last_closed ) ||
+					my_date_compare( &priv->begin, priv->last_closed ) > 0 ));
 
-	ok = !my_date_is_valid( &priv->begin ) ||
-			!my_date_is_valid( priv->last_closed ) ||
-			my_date_compare( &priv->begin, priv->last_closed ) > 0;
+	ok &= priv->end_empty ||
+			( my_date_is_valid( &priv->end ) &&
+				( !my_date_is_valid( &priv->begin ) ||
+					my_date_compare( &priv->end, &priv->begin ) > 0 ));
 
 	ok &= ofo_dossier_is_valid( priv->label, priv->duree, priv->currency, &priv->begin, &priv->end );
 
@@ -379,19 +526,22 @@ static gboolean
 do_update( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
+	GtkContainer *container;
 
 	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
 
 	priv = self->priv;
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	ofo_dossier_set_label( priv->dossier, priv->label );
 	ofo_dossier_set_exercice_length( priv->dossier, priv->duree );
 	ofo_dossier_set_default_currency( priv->dossier, priv->currency );
 
+	my_utils_getback_notes_ex( container, dossier );
+
 	ofo_dossier_set_current_exe_begin( priv->dossier, &priv->begin );
 	ofo_dossier_set_current_exe_end( priv->dossier, &priv->end );
-
-	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), dossier );
+	ofo_dossier_set_current_exe_notes( priv->dossier, priv->notes );
 
 	priv->updated = ofo_dossier_update( priv->dossier );
 

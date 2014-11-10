@@ -53,6 +53,8 @@ enum {
 	ACC_CURRENCY,
 	ACC_NOTES,
 	ACC_TYPE,
+	ACC_SETTLEABLE,
+	ACC_RECONCILIABLE,
 	ACC_UPD_USER,
 	ACC_UPD_STAMP,
 	ACC_DEB_ENTRY,
@@ -93,6 +95,14 @@ static const ofsBoxedDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOXED_CSV( ACC_TYPE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOXED_CSV( ACC_SETTLEABLE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOXED_CSV( ACC_RECONCILIABLE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -195,6 +205,11 @@ struct _ofoAccountPrivate {
 #define account_set_string(I,V)         ofo_base_setter(ACCOUNT,account,string,(I),(V))
 #define account_set_timestamp(I,V)      ofo_base_setter(ACCOUNT,account,timestamp,(I),(V))
 
+static const gchar *st_type_detail      = "D";
+static const gchar *st_type_root        = "R";
+static const gchar *st_settleable       = "S";
+static const gchar *st_reconciliable    = "R";
+
 /* whether a root account has children, and wich are they ?
  */
 typedef struct {
@@ -208,45 +223,46 @@ G_DEFINE_TYPE( ofoAccount, ofo_account, OFO_TYPE_BASE )
 
 OFO_BASE_DEFINE_GLOBAL( st_global, account )
 
-static void        on_new_object( const ofoDossier *dossier, ofoBase *object, gpointer user_data );
-static void        on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry );
-static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
-static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
-static void        on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
-static GList      *account_load_dataset( void );
-static ofoAccount *account_find_by_number( GList *set, const gchar *number );
-static gint        account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
-static gint        account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
-static void        archive_open_balances( ofoAccount *account, void *empty );
-static void        account_get_children( const ofoAccount *account, sChildren *child_str );
-static void        account_iter_children( const ofoAccount *account, sChildren *child_str );
-static void        account_set_upd_user( ofoAccount *account, const gchar *user );
-static void        account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
-static void        account_set_deb_entry( ofoAccount *account, gint number );
-static void        account_set_deb_date( ofoAccount *account, const GDate *effect );
-static void        account_set_deb_amount( ofoAccount *account, gdouble amount );
-static void        account_set_cre_entry( ofoAccount *account, gint number );
-static void        account_set_cre_date( ofoAccount *account, const GDate *effect );
-static void        account_set_cre_amount( ofoAccount *account, gdouble amount );
-static void        account_set_day_deb_entry( ofoAccount *account, gint number );
-static void        account_set_day_deb_date( ofoAccount *account, const GDate *effect );
-static void        account_set_day_deb_amount( ofoAccount *account, gdouble amount );
-static void        account_set_day_cre_entry( ofoAccount *account, gint number );
-static void        account_set_day_cre_date( ofoAccount *account, const GDate *effect );
-static void        account_set_day_cre_amount( ofoAccount *account, gdouble amount );
-static void        account_set_open_deb_entry( ofoAccount *account, gint number );
-static void        account_set_open_deb_date( ofoAccount *account, const GDate *effect );
-static void        account_set_open_deb_amount( ofoAccount *account, gdouble amount );
-static void        account_set_open_cre_entry( ofoAccount *account, gint number );
-static void        account_set_open_cre_date( ofoAccount *account, const GDate *effect );
-static void        account_set_open_cre_amount( ofoAccount *account, gdouble amount );
-static gboolean    account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
-static gboolean    account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );
-static gboolean    account_do_delete( ofoAccount *account, const ofoSgbd *sgbd );
-static gint        account_cmp_by_number( const ofoAccount *a, const gchar *number );
-static gint        account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
-static gboolean    account_do_drop_content( const ofoSgbd *sgbd );
+static void         on_new_object( const ofoDossier *dossier, ofoBase *object, gpointer user_data );
+static void         on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry );
+static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
+static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
+static void         on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
+static GList       *account_load_dataset( void );
+static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
+static gint         account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
+static gint         account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
+static void         archive_open_balances( ofoAccount *account, void *empty );
+static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
+static void         account_get_children( const ofoAccount *account, sChildren *child_str );
+static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
+static void         account_set_upd_user( ofoAccount *account, const gchar *user );
+static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
+static void         account_set_deb_entry( ofoAccount *account, gint number );
+static void         account_set_deb_date( ofoAccount *account, const GDate *effect );
+static void         account_set_deb_amount( ofoAccount *account, gdouble amount );
+static void         account_set_cre_entry( ofoAccount *account, gint number );
+static void         account_set_cre_date( ofoAccount *account, const GDate *effect );
+static void         account_set_cre_amount( ofoAccount *account, gdouble amount );
+static void         account_set_day_deb_entry( ofoAccount *account, gint number );
+static void         account_set_day_deb_date( ofoAccount *account, const GDate *effect );
+static void         account_set_day_deb_amount( ofoAccount *account, gdouble amount );
+static void         account_set_day_cre_entry( ofoAccount *account, gint number );
+static void         account_set_day_cre_date( ofoAccount *account, const GDate *effect );
+static void         account_set_day_cre_amount( ofoAccount *account, gdouble amount );
+static void         account_set_open_deb_entry( ofoAccount *account, gint number );
+static void         account_set_open_deb_date( ofoAccount *account, const GDate *effect );
+static void         account_set_open_deb_amount( ofoAccount *account, gdouble amount );
+static void         account_set_open_cre_entry( ofoAccount *account, gint number );
+static void         account_set_open_cre_date( ofoAccount *account, const GDate *effect );
+static void         account_set_open_cre_amount( ofoAccount *account, gdouble amount );
+static gboolean     account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user );
+static gboolean     account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
+static gboolean     account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );
+static gboolean     account_do_delete( ofoAccount *account, const ofoSgbd *sgbd );
+static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
+static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
+static gboolean     account_do_drop_content( const ofoSgbd *sgbd );
 
 static void
 account_finalize( GObject *instance )
@@ -882,7 +898,23 @@ ofo_account_get_notes( const ofoAccount *account )
 const gchar *
 ofo_account_get_type_account( const ofoAccount *account )
 {
-	account_get_string( ACC_TYPE );
+	static const gchar *thisfn = "ofo_account_get_type_account";
+	const gchar *str;
+
+	str = account_get_string_ex( account, ACC_TYPE );
+
+	if(  str && g_utf8_strlen( str, -1 )){
+
+		if( !g_utf8_collate( str, st_type_root ) || !g_utf8_collate( str, st_type_detail )){
+			return( str );
+		}
+
+		g_warning( "%s: invalid type account: %s", thisfn, str );
+		return( st_type_detail );
+	}
+
+	/* default is detail account */
+	return( st_type_detail );
 }
 
 /**
@@ -1167,6 +1199,57 @@ ofo_account_is_root( const ofoAccount *account )
 	}
 
 	return( is_root );
+}
+
+/**
+ * ofo_account_is_settleable:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if the account is settleable
+ *
+ * All accounts are actually settleable, i.e. all entries may be
+ * settled. But only unsettled entries written on settleable accounts
+ * will be reported on next exercice at closing time.
+ */
+gboolean
+ofo_account_is_settleable( const ofoAccount *account )
+{
+	gboolean is_settleable;
+	const gchar *str;
+
+	str = account_get_string_ex( account, ACC_SETTLEABLE );
+	is_settleable = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, st_settleable );
+
+	return( is_settleable );
+}
+
+/**
+ * ofo_account_is_reconciliable:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if the account is reconciliable
+ *
+ * All accounts are actually reconciliable, i.e. all entries may be
+ * reconciliated. But only unreconciliated entries written on
+ * reconciliable accounts will be reported on next exercice at closing
+ * time.
+ */
+gboolean
+ofo_account_is_reconciliable( const ofoAccount *account )
+{
+	gboolean is_reconciliable;
+	const gchar *str;
+
+	str = account_get_string_ex( account, ACC_RECONCILIABLE );
+	is_reconciliable = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, st_reconciliable );
+
+	return( is_reconciliable );
+}
+
+static const gchar *
+account_get_string_ex( const ofoAccount *account, gint data_id )
+{
+	account_get_string( data_id );
 }
 
 /**
@@ -1543,13 +1626,45 @@ ofo_account_set_notes( ofoAccount *account, const gchar *notes )
 }
 
 /**
- * ofo_account_set_type:
+ * ofo_account_set_type_account:
  * @account: the #ofoAccount account
+ * @type: either "R" for a root account or "D" for a detail account.
  */
 void
-ofo_account_set_type( ofoAccount *account, const gchar *type )
+ofo_account_set_type_account( ofoAccount *account, const gchar *type )
 {
-	account_set_string( ACC_TYPE, type );
+	const gchar *validated;
+
+	validated = st_type_detail;
+	if( type && g_utf8_strlen( type, -1 ) &&
+			( !g_utf8_collate( type, st_type_detail ) || !g_utf8_collate( type, st_type_root ))){
+
+			validated = type;
+	}
+
+	account_set_string( ACC_TYPE, validated );
+}
+
+/**
+ * ofo_account_set_settleable:
+ * @account: the #ofoAccount account
+ * @settleable: %TRUE if the account is to be set settleable
+ */
+void
+ofo_account_set_settleable( ofoAccount *account, gboolean settleable )
+{
+	account_set_string( ACC_SETTLEABLE, settleable ? st_settleable : NULL );
+}
+
+/**
+ * ofo_account_set_reconciliable:
+ * @account: the #ofoAccount account
+ * @reconciliable: %TRUE if the account is to be set reconciliable
+ */
+void
+ofo_account_set_reconciliable( ofoAccount *account, gboolean reconciliable )
+{
+	account_set_string( ACC_RECONCILIABLE, reconciliable ? st_reconciliable : NULL );
 }
 
 /*
@@ -1808,7 +1923,8 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_ACCOUNTS" );
 
 	g_string_append_printf( query,
-			"	(ACC_NUMBER,ACC_LABEL,ACC_CURRENCY,ACC_NOTES,ACC_TYPE,"
+			"	(ACC_NUMBER,ACC_LABEL,ACC_CURRENCY,ACC_NOTES,"
+			"	ACC_TYPE,ACC_SETTLEABLE,ACC_RECONCILIABLE,"
 			"	ACC_UPD_USER, ACC_UPD_STAMP)"
 			"	VALUES ('%s','%s',",
 					ofo_account_get_number( account ),
@@ -1826,10 +1942,21 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query,
-			"'%s','%s','%s')",
-			ofo_account_get_type_account( account ),
-			user, stamp_str );
+	g_string_append_printf( query, "'%s',", ofo_account_get_type_account( account ));
+
+	if( ofo_account_is_settleable( account )){
+		g_string_append_printf( query, "'%s',", st_settleable );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	if( ofo_account_is_reconciliable( account )){
+		g_string_append_printf( query, "'%s',", st_reconciliable );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
 	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 		account_set_upd_user( account, user );
@@ -1920,6 +2047,18 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 	g_string_append_printf( query,
 			"	ACC_TYPE='%s',",
 					ofo_account_get_type_account( account ));
+
+	if( ofo_account_is_settleable( account )){
+		g_string_append_printf( query, "ACC_SETTLEABLE='%s',", st_settleable );
+	} else {
+		query = g_string_append( query, "ACC_SETTLEABLE=NULL," );
+	}
+
+	if( ofo_account_is_reconciliable( account )){
+		g_string_append_printf( query, "ACC_RECONCILIABLE='%s',", st_reconciliable );
+	} else {
+		query = g_string_append( query, "ACC_RECONCILIABLE=NULL," );
+	}
 
 	g_string_append_printf( query,
 			"	ACC_UPD_USER='%s',ACC_UPD_STAMP='%s'"
@@ -2204,7 +2343,7 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 			} else {
 				type = g_strdup( str );
 			}
-			ofo_account_set_type( account, type );
+			ofo_account_set_type_account( account, type );
 
 			if( !strcmp( type, "D" )){
 				if( !dev_code || !g_utf8_strlen( str, -1 )){

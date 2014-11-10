@@ -82,6 +82,7 @@ struct _sDetailExe {
 	gint             exe_id;
 	GDate            exe_begin;
 	GDate            exe_end;
+	gchar           *exe_notes;
 	gint             last_entry;
 	gint             last_bat;
 	gint             last_batline;
@@ -114,6 +115,7 @@ static void        on_updated_object( const ofoDossier *dossier, ofoBase *object
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account );
+/*static gint        cmp_exe_id( gconstpointer a gconstpointer b );*/
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
 static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
 static sDetailExe *get_exe_by_date( const ofoDossier *dossier, const GDate *date );
@@ -131,6 +133,13 @@ static gboolean    dossier_read_exercices( ofoDossier *dossier );
 static gboolean    dossier_do_update( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd );
+
+static void
+free_exercice( sDetailExe *sexe )
+{
+	g_free( sexe->exe_notes );
+	g_free( sexe );
+}
 
 static void
 dossier_finalize( GObject *instance )
@@ -153,7 +162,7 @@ dossier_finalize( GObject *instance )
 	g_free( priv->notes );
 	g_free( priv->upd_user );
 
-	g_list_free_full( priv->exes, ( GDestroyNotify ) g_free );
+	g_list_free_full( priv->exes, ( GDestroyNotify ) free_exercice );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_dossier_parent_class )->finalize( instance );
@@ -571,6 +580,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ACC_CURRENCY        VARCHAR(3)                   COMMENT 'ISO 3A identifier of the currency of the account',"
 			"	ACC_NOTES           VARCHAR(4096)                COMMENT 'Account notes',"
 			"	ACC_TYPE            CHAR(1)                      COMMENT 'Account type, values R/D',"
+			"	ACC_SETTLEABLE      CHAR(1)                      COMMENT 'Whether the account is settleable',"
+			"	ACC_RECONCILIABLE   CHAR(1)                      COMMENT 'Whether the account is reconciliable',"
 			"	ACC_UPD_USER        VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
 			"	ACC_UPD_STAMP       TIMESTAMP                    COMMENT 'Properties last update timestamp',"
 			"	ACC_DEB_ENTRY       INTEGER                      COMMENT 'Number of the most recent validated debit entry',"
@@ -794,6 +805,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	DOS_EXE_ID              INTEGER      NOT NULL COMMENT 'Exercice identifier',"
 			"	DOS_EXE_BEGIN           DATE                  COMMENT 'Exercice beginning date',"
 			"	DOS_EXE_END             DATE                  COMMENT 'Exercice ending date',"
+			"	DOS_EXE_NOTES           VARCHAR(4096)         COMMENT 'Notes',"
 			"	DOS_EXE_LAST_ENTRY      INTEGER DEFAULT 0     COMMENT 'Last entry number used',"
 			"	DOS_EXE_LAST_BAT        INTEGER DEFAULT 0     COMMENT 'Last BAT file number used',"
 			"	DOS_EXE_LAST_BATLINE    INTEGER DEFAULT 0     COMMENT 'Last BAT line number used',"
@@ -1198,6 +1210,74 @@ ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 	return( NULL );
 }
 
+/**
+ * ofo_dossier_get_exercices_list:
+ *
+ * Returns: the list of known exercices identifiers, sorted from most
+ * recent to most old.
+ * The returned list should be g_list_free() by the caller.
+ * The exercice identifiers must be accessed via the
+ * GPOINTER_TO_INT( it->data ) macro.
+ */
+GList *
+ofo_dossier_get_exercices_list( const ofoDossier *dossier )
+{
+	GList *list, *exe;
+	sDetailExe *sexe;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		list = NULL;
+		for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
+			sexe = ( sDetailExe * ) exe->data;
+			list = g_list_prepend( list, GINT_TO_POINTER( sexe->exe_id ));
+		}
+		return( g_list_reverse( list ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_last_closed_exercice:
+ *
+ * Returns: the last exercice closing date, as a newly allocated
+ * #GDate structure which should be g_free() by the caller,
+ * or %NULL if the dossier has never been closed.
+ */
+GDate *
+ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
+{
+	GList *exe;
+	sDetailExe *sexe;
+	GDate *dmax;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	dmax = NULL;
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
+			sexe = ( sDetailExe * ) exe->data;
+			if( my_date_is_valid( &sexe->exe_end )){
+				if( dmax ){
+					if( my_date_compare( &sexe->exe_end, dmax ) > 0 ){
+						my_date_set_from_date( dmax, &sexe->exe_end );
+					}
+				} else {
+					dmax = g_new0( GDate, 1 );
+					my_date_set_from_date( dmax, &sexe->exe_end );
+				}
+			}
+		}
+	}
+
+	return( dmax );
+}
+
 static sDetailExe *
 get_current_exe( const ofoDossier *dossier )
 {
@@ -1325,29 +1405,6 @@ ofo_dossier_get_current_exe_end( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_current_exe_last_entry:
- *
- * Returns: the last entry number allocated in the current exercice.
- */
-gint
-ofo_dossier_get_current_exe_last_entry( const ofoDossier *dossier )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_current_exe( dossier );
-		if( sexe ){
-			return( sexe->last_entry );
-		}
-	}
-
-	return( 0 );
-}
-
-/**
  * ofo_dossier_get_exe_by_date:
  *
  * Returns the exercice id which contains the specified date.
@@ -1421,65 +1478,141 @@ ofo_dossier_get_exe_end( const ofoDossier *dossier, gint exe_id )
 }
 
 /**
- * ofo_dossier_get_exe_status_label:
- */
-const gchar *
-ofo_dossier_get_exe_status_label( ofaDossierStatus status )
-{
-	gchar *str;
-
-	switch( status ){
-
-		case DOS_STATUS_OPENED:
-			return( _( "Opened" ));
-			break;
-
-		case DOS_STATUS_CLOSED:
-			return( _( "Closed" ));
-			break;
-	}
-
-	/* memory leak, but don't know how to prevent it if I want
-	 * return the erroneous status */
-	str = g_strdup_printf( "%s: %d", _( "Unknown status" ), status );
-	return( str );
-}
-/**
- * ofo_dossier_get_last_closed_exercice:
+ * ofo_dossier_get_exe_status:
  *
- * Returns: the last exercice closing date, as a newly allocated
- * #GDate structure which should be g_free() by the caller,
- * or %NULL if the dossier has never been closed.
+ * Returns: the status of the specified exercice.
  */
-GDate *
-ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
+ofaDossierStatus
+ofo_dossier_get_exe_status( const ofoDossier *dossier, gint exe_id )
 {
-	GList *exe;
 	sDetailExe *sexe;
-	GDate *dmax;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	dmax = NULL;
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
-			sexe = ( sDetailExe * ) exe->data;
-			if( my_date_is_valid( &sexe->exe_end )){
-				if( dmax ){
-					if( my_date_compare( &sexe->exe_end, dmax ) > 0 ){
-						my_date_set_from_date( dmax, &sexe->exe_end );
-					}
-				} else {
-					dmax = g_new0( GDate, 1 );
-					my_date_set_from_date( dmax, &sexe->exe_end );
-				}
-			}
+		sexe = get_exe_by_id( dossier, exe_id );
+		if( sexe ){
+			return( sexe->status );
 		}
 	}
 
-	return( dmax );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_exe_last_entry:
+ *
+ * Returns: the last entry number allocated in the specified exercice.
+ */
+gint
+ofo_dossier_get_exe_last_entry( const ofoDossier *dossier, gint exe_id )
+{
+	sDetailExe *sexe;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sexe = get_exe_by_id( dossier, exe_id );
+		if( sexe ){
+			return( sexe->last_entry );
+		}
+	}
+
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_exe_last_settlement:
+ *
+ * Returns: the last settlement number allocated in the specified exercice.
+ */
+gint
+ofo_dossier_get_exe_last_settlement( const ofoDossier *dossier, gint exe_id )
+{
+	sDetailExe *sexe;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sexe = get_exe_by_id( dossier, exe_id );
+		if( sexe ){
+			return( sexe->last_settlement );
+		}
+	}
+
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_exe_last_bat:
+ *
+ * Returns: the last bat number allocated in the specified exercice.
+ */
+gint
+ofo_dossier_get_exe_last_bat( const ofoDossier *dossier, gint exe_id )
+{
+	sDetailExe *sexe;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sexe = get_exe_by_id( dossier, exe_id );
+		if( sexe ){
+			return( sexe->last_bat );
+		}
+	}
+
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_exe_last_bat_line:
+ *
+ * Returns: the last bat_line number allocated in the specified exercice.
+ */
+gint
+ofo_dossier_get_exe_last_bat_line( const ofoDossier *dossier, gint exe_id )
+{
+	sDetailExe *sexe;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sexe = get_exe_by_id( dossier, exe_id );
+		if( sexe ){
+			return( sexe->last_batline );
+		}
+	}
+
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_exe_notes:
+ *
+ * Returns: the notes associated to the specified exercice.
+ */
+const gchar *
+ofo_dossier_get_exe_notes( const ofoDossier *dossier, gint exe_id )
+{
+	sDetailExe *sexe;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sexe = get_exe_by_id( dossier, exe_id );
+		if( sexe ){
+			return(( const gchar * ) sexe->exe_notes );
+		}
+	}
+
+	return( NULL );
 }
 
 /**
@@ -1594,6 +1727,35 @@ dossier_update_next_number( const ofoDossier *dossier, const gchar *field, gint 
 
 	ofo_sgbd_query( dossier->priv->sgbd, query, TRUE );
 	g_free( query );
+}
+
+/**
+ * ofo_dossier_get_status_label:
+ */
+const gchar *
+ofo_dossier_get_status_label( ofaDossierStatus status )
+{
+	gchar *str;
+
+	switch( status ){
+
+		case DOS_STATUS_OPENED:
+			return( _( "Opened" ));
+			break;
+
+		case DOS_STATUS_CLOSED:
+			return( _( "Closed" ));
+			break;
+
+		default:
+			break;
+	}
+
+	/* memory leak, but don't know how to prevent it if I want
+	 * return the erroneous status while keeping the const gchar *
+	 * returned type in usual case */
+	str = g_strdup_printf( _( "Unknown status: %d" ), status );
+	return( str );
 }
 
 /**
@@ -1742,7 +1904,6 @@ ofo_dossier_set_current_exe_begin( const ofoDossier *dossier, const GDate *date 
 		sexe = get_current_exe( dossier );
 		if( sexe ){
 			my_date_set_from_date( &sexe->exe_begin, date );
-			g_debug( "ofo_dossier_set_current_exe_begin: date is %s", my_date_is_valid( &sexe->exe_begin ) ? "valid":"invalid" );
 		}
 	}
 }
@@ -1762,6 +1923,30 @@ ofo_dossier_set_current_exe_end( const ofoDossier *dossier, const GDate *date )
 		sexe = get_current_exe( dossier );
 		if( sexe ){
 			my_date_set_from_date( &sexe->exe_end, date );
+		}
+	}
+}
+
+/**
+ * ofo_dossier_set_current_exe_notes:
+ * @dossier: the currently opened dossier
+ * @notes : the notes to be set
+ *
+ * Attach the given @notes to the current exercice.
+ */
+void
+ofo_dossier_set_current_exe_notes( const ofoDossier *dossier, const gchar *notes )
+{
+	sDetailExe *sexe;
+
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sexe = get_current_exe( dossier );
+		if( sexe ){
+			g_free( sexe->exe_notes );
+			sexe->exe_notes = g_strdup( notes );
 		}
 	}
 }
@@ -1921,8 +2106,10 @@ dossier_read_exercices( ofoDossier *dossier )
 
 	query = g_strdup_printf(
 			"SELECT DOS_EXE_ID,DOS_EXE_BEGIN,DOS_EXE_END,"
+			"	DOS_EXE_NOTES,"
 			"	DOS_EXE_LAST_ENTRY,DOS_EXE_LAST_BAT,DOS_EXE_LAST_BATLINE,"
-			"	DOS_EXE_LAST_SETTLEMENT,DOS_EXE_STATUS "
+			"	DOS_EXE_LAST_SETTLEMENT,"
+			"	DOS_EXE_STATUS "
 			"	FROM OFA_T_DOSSIER_EXE "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
 
@@ -1940,6 +2127,10 @@ dossier_read_exercices( ofoDossier *dossier )
 			my_date_set_from_sql( &sexe->exe_begin, ( const gchar * ) icol->data );
 			icol = icol->next;
 			my_date_set_from_sql( &sexe->exe_end, ( const gchar * ) icol->data );
+			icol = icol->next;
+			if( icol->data ){
+				sexe->exe_notes = g_strdup(( const gchar * ) icol->data );
+			}
 			icol = icol->next;
 			sexe->last_entry = atoi(( gchar * ) icol->data );
 			icol = icol->next;
@@ -2051,7 +2242,7 @@ static gboolean
 do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 {
 	GString *query;
-	gchar *sdeb, *sfin;
+	gchar *sdeb, *sfin, *notes;
 	gboolean ok;
 	const GDate *date;
 
@@ -2071,11 +2262,19 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 	date = ( const GDate * ) &dossier->priv->current->exe_end;
 	if( my_date_is_valid( date )){
 		sfin = my_date_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( query, "DOS_EXE_END='%s' ", sfin );
+		g_string_append_printf( query, "DOS_EXE_END='%s',", sfin );
 		g_free( sfin );
 	} else {
-		query = g_string_append( query, "DOS_EXE_END=NULL " );
+		query = g_string_append( query, "DOS_EXE_END=NULL," );
 	}
+
+	notes = my_utils_quote( ofo_dossier_get_exe_notes( dossier, dossier->priv->current->exe_id ));
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "DOS_EXE_NOTES='%s' ", notes );
+	} else {
+		query = g_string_append( query, "DOS_EXE_NOTES=NULL " );
+	}
+	g_free( notes );
 
 	g_string_append_printf( query,
 				"WHERE DOS_ID=%d AND DOS_EXE_ID=%d",
@@ -2106,7 +2305,7 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	str = g_strdup_printf( "1;Label;Notes;MajUser;MajStamp;ExeLength;DefaultCurrency" );
 	lines = g_slist_prepend( lines, str );
 
-	str = g_strdup_printf( "2;ExeBegin;ExeEnd;LastEntry;Status" );
+	str = g_strdup_printf( "2;ExeBegin;ExeEnd;ExeNotes;LastEntry;Status" );
 	lines = g_slist_prepend( lines, str );
 
 	notes = my_utils_export_multi_lines( ofo_dossier_get_notes( dossier ));
@@ -2133,13 +2332,16 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 
 		sbegin = my_date_to_str( &sexe->exe_begin, MY_DATE_SQL );
 		send = my_date_to_str( &sexe->exe_end, MY_DATE_SQL );
+		notes = my_utils_quote( sexe->exe_notes );
 
-		str = g_strdup_printf( "2:%s;%s;%d;%d",
+		str = g_strdup_printf( "2:%s;%s;%s;%d;%d",
 				sbegin,
 				send,
+				notes,
 				sexe->last_entry,
 				sexe->status );
 
+		g_free( notes );
 		g_free( sbegin );
 		g_free( send );
 

@@ -377,7 +377,13 @@
 
  423 2014-11- 8 Settlement: should be able to unselect a row
 
- 424
+ 424 2014-11- 9 add exercice notes
+
+ 425 2014-11-10 ofaDossierProperties: doesn't take into account
+                'changed' signal on exercice notes - so unable to
+                have this field updated
+
+ 426
 
 -----------------------------------------------------------------------
  DONE

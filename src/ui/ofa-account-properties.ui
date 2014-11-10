@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
 <interface>
-  <!-- interface-requires gtk+ 3.6 -->
+  <requires lib="gtk+" version="3.6"/>
   <object class="GtkDialog" id="AccountPropertiesDlg">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -92,8 +93,7 @@
                       <object class="GtkEntry" id="p1-number">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="tooltip_text" translatable="yes">Numéro de compte
-Il doit commencer par un chiffre entre 1 et 9, plus au moins un autre caractère</property>
+                        <property name="tooltip_text" translatable="yes">The number of the account : it must begin with a class digit, and have at least one more character.</property>
                         <property name="halign">start</property>
                         <property name="max_length">20</property>
                         <property name="invisible_char">●</property>
@@ -126,7 +126,7 @@ Il doit commencer par un chiffre entre 1 et 9, plus au moins un autre caractère
                       <object class="GtkEntry" id="p1-label">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="tooltip_text" translatable="yes">Intitulé du compte</property>
+                        <property name="tooltip_text" translatable="yes">The label of the account</property>
                         <property name="hexpand">True</property>
                         <property name="max_length">80</property>
                         <property name="invisible_char">●</property>
@@ -150,7 +150,7 @@ Il doit commencer par un chiffre entre 1 et 9, plus au moins un autre caractère
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">3</property>
+                        <property name="top_attach">4</property>
                         <property name="width">1</property>
                         <property name="height">1</property>
                       </packing>
@@ -159,13 +159,12 @@ Il doit commencer par un chiffre entre 1 et 9, plus au moins un autre caractère
                       <object class="GtkComboBox" id="p1-currency">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="tooltip_text" translatable="yes">Devise d'imputation du compte
-Seules les écritures libellées dans cette devise pourront être imputées sur le compte</property>
+                        <property name="tooltip_text" translatable="yes">The currency of the account : only entries in this currency may be imputed on this account.</property>
                         <property name="halign">start</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
-                        <property name="top_attach">3</property>
+                        <property name="top_attach">4</property>
                         <property name="width">1</property>
                         <property name="height">1</property>
                       </packing>
@@ -180,7 +179,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                           <object class="GtkAlignment" id="alignment3">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="left_padding">6</property>
+                            <property name="left_padding">8</property>
                             <child>
                               <object class="GtkGrid" id="grid5">
                                 <property name="visible">True</property>
@@ -192,7 +191,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
-                                    <property name="tooltip_text" translatable="yes">On ne peut pas imputer d'écritures sur un compte de regroupement</property>
+                                    <property name="tooltip_text" translatable="yes">A gathering (or root) account is an account which has zero to more children accounts. It is just a presentation facility, and no entry may be imputed on it.</property>
                                     <property name="use_underline">True</property>
                                     <property name="xalign">0</property>
                                     <property name="active">True</property>
@@ -211,7 +210,7 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
-                                    <property name="tooltip_text" translatable="yes">On ne peut imputer des écritures que sur un compte de détail</property>
+                                    <property name="tooltip_text" translatable="yes">A detail account is just a standard account on which entries may be imputed. A detail account cannot have any child account.</property>
                                     <property name="use_underline">True</property>
                                     <property name="xalign">0</property>
                                     <property name="draw_indicator">True</property>
@@ -243,6 +242,57 @@ Seules les écritures libellées dans cette devise pourront être imputées sur 
                         <property name="width">1</property>
                         <property name="height">1</property>
                       </packing>
+                    </child>
+                    <child>
+                      <object class="GtkGrid" id="grid6">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkCheckButton" id="p1-settleable">
+                            <property name="label" translatable="yes">Account is _settleable</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">False</property>
+                            <property name="tooltip_text" translatable="yes">All entries on all accounts may actually be settled. But only unsettled entries written on settleable accounts will be reported on next exercice at closing time.</property>
+                            <property name="use_underline">True</property>
+                            <property name="xalign">0</property>
+                            <property name="draw_indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">0</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="p1-reconciliable">
+                            <property name="label" translatable="yes">Account is _reconciliable</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">False</property>
+                            <property name="tooltip_text" translatable="yes">All entries on all accounts may actually be settled. But only unreconciliated entries written on reconciliable accounts will be reported on next exercice at closing time.</property>
+                            <property name="use_underline">True</property>
+                            <property name="xalign">0</property>
+                            <property name="draw_indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">1</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">3</property>
+                        <property name="width">1</property>
+                        <property name="height">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <placeholder/>
                     </child>
                     <child>
                       <placeholder/>

@@ -86,6 +86,8 @@ openbook_SOURCES = \
 	ofa-currency-combo.h								\
 	ofa-currency-properties.c							\
 	ofa-currency-properties.h							\
+	ofa-dosexe-combo.c									\
+	ofa-dosexe-combo.h									\
 	ofa-dossier-manager.c								\
 	ofa-dossier-manager.h								\
 	ofa-dossier-delete.c								\

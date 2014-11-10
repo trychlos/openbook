@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
@@ -49,39 +50,31 @@ struct _ofaAccountPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoAccount     *account;
-	gboolean        is_new;
-	gboolean        updated;
-	gboolean        number_ok;
+	ofoAccount      *account;
+	gboolean         is_new;
+	gboolean         updated;
+	gboolean         number_ok;
 
 	/* UI
 	 */
-	GtkEntry       *w_number;
-	GtkRadioButton *w_root;
-	GtkRadioButton *w_detail;
-	GtkWidget      *currency_etiq;
-	GtkWidget      *currency_combo;
+	GtkEntry        *w_number;
+	GtkRadioButton  *w_root;
+	GtkRadioButton  *w_detail;
+	GtkToggleButton *settleable_btn;
+	GtkToggleButton *reconciliable_btn;
+	GtkWidget       *currency_etiq;
+	GtkWidget       *currency_combo;
 
 	/* account data
 	 */
-	gchar          *number;
-	gchar          *label;
-	gchar          *currency;
-	gchar          *type;
-	gchar          *upd_user;
-	GTimeVal        upd_stamp;
-	gint            deb_entry;
-	GDate           deb_date;
-	gdouble         deb_amount;
-	gint            cre_entry;
-	GDate           cre_date;
-	gdouble         cre_amount;
-	gint            day_deb_entry;
-	GDate           day_deb_date;
-	gdouble         day_deb_amount;
-	gint            day_cre_entry;
-	GDate           day_cre_date;
-	gdouble         day_cre_amount;
+	gchar           *number;
+	gchar           *label;
+	gchar           *currency;
+	gint             cur_digits;
+	const gchar     *cur_symbol;
+	gchar           *type;
+	gchar           *upd_user;
+	GTimeVal         upd_stamp;
 };
 
 typedef gdouble       ( *fnGetDouble )( const ofoAccount * );
@@ -94,9 +87,9 @@ static const gchar  *st_ui_id  = "AccountPropertiesDlg";
 G_DEFINE_TYPE( ofaAccountProperties, ofa_account_properties, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      set_amount( ofaAccountProperties *self, gdouble *amount, fnGetDouble fn, const gchar *wname );
-static void      set_entry_number( ofaAccountProperties *self, gint *num, fnGetInt fn, const gchar *wname );
-static void      set_entry_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar *wname );
+static void      set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname );
+static void      set_entry_number( ofaAccountProperties *self, gint num, const gchar *wname );
+static void      set_entry_date( ofaAccountProperties *self, const GDate *date, const gchar *wname );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_currency_changed( const gchar *code, ofaAccountProperties *self );
@@ -159,11 +152,6 @@ ofa_account_properties_init( ofaAccountProperties *self )
 	self->priv->account = NULL;
 	self->priv->is_new = FALSE;
 	self->priv->updated = FALSE;
-
-	my_date_clear( &self->priv->deb_date );
-	my_date_clear( &self->priv->cre_date );
-	my_date_clear( &self->priv->day_deb_date );
-	my_date_clear( &self->priv->day_cre_date );
 }
 
 static void
@@ -300,24 +288,30 @@ v_init_dialog( myDialog *dialog )
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->w_detail ), TRUE );
 	}
 
+	priv->settleable_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-settleable" ));
+	gtk_toggle_button_set_active( priv->settleable_btn, ofo_account_is_settleable( priv->account ));
+
+	priv->reconciliable_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-reconciliable" ));
+	gtk_toggle_button_set_active( priv->reconciliable_btn, ofo_account_is_reconciliable( priv->account ));
+
 	priv->currency_etiq = my_utils_container_get_child_by_name( container, "p1-label3" );
 	priv->currency_combo = my_utils_container_get_child_by_name( container, "p1-currency" );
 
-	set_amount( self, &priv->deb_amount, ofo_account_get_deb_amount, "p2-deb-amount" );
-	set_entry_number( self, &priv->deb_entry, ofo_account_get_deb_entry, "p2-deb-entry" );
-	set_entry_date( self, &priv->deb_date, ofo_account_get_deb_date, "p2-deb-date" );
+	set_amount( self, ofo_account_get_deb_amount( priv->account ), "p2-deb-amount" );
+	set_entry_number( self, ofo_account_get_deb_entry( priv->account ), "p2-deb-entry" );
+	set_entry_date( self, ofo_account_get_deb_date( priv->account ), "p2-deb-date" );
 
-	set_amount( self, &priv->cre_amount, ofo_account_get_cre_amount, "p2-cre-amount" );
-	set_entry_number( self, &priv->cre_entry, ofo_account_get_cre_entry, "p2-cre-entry" );
-	set_entry_date( self, &priv->cre_date, ofo_account_get_cre_date, "p2-cre-date" );
+	set_amount( self, ofo_account_get_cre_amount( priv->account ), "p2-cre-amount" );
+	set_entry_number( self, ofo_account_get_cre_entry( priv->account ), "p2-cre-entry" );
+	set_entry_date( self, ofo_account_get_cre_date( priv->account ), "p2-cre-date" );
 
-	set_amount( self, &priv->day_deb_amount, ofo_account_get_day_deb_amount, "p2-day-deb-amount" );
-	set_entry_number( self, &priv->day_deb_entry, ofo_account_get_day_deb_entry, "p2-day-deb-entry" );
-	set_entry_date( self, &priv->day_deb_date, ofo_account_get_day_deb_date, "p2-day-deb-date" );
+	set_amount( self, ofo_account_get_day_deb_amount( priv->account ), "p2-day-deb-amount" );
+	set_entry_number( self, ofo_account_get_day_deb_entry( priv->account ), "p2-day-deb-entry" );
+	set_entry_date( self, ofo_account_get_day_deb_date( priv->account ), "p2-day-deb-date" );
 
-	set_amount( self, &priv->day_cre_amount, ofo_account_get_day_cre_amount, "p2-day-cre-amount" );
-	set_entry_number( self, &priv->day_cre_entry, ofo_account_get_day_cre_entry, "p2-day-cre-entry" );
-	set_entry_date( self, &priv->day_cre_date, ofo_account_get_day_cre_date, "p2-day-cre-date" );
+	set_amount( self, ofo_account_get_day_cre_amount( priv->account ), "p2-day-cre-amount" );
+	set_entry_number( self, ofo_account_get_day_cre_entry( priv->account ), "p2-day-cre-entry" );
+	set_entry_date( self, ofo_account_get_day_cre_date( priv->account ), "p2-day-cre-date" );
 
 	my_utils_init_notes_ex( container, account );
 	my_utils_init_upd_user_stamp_ex( container, account );
@@ -326,30 +320,36 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-set_amount( ofaAccountProperties *self, gdouble *amount, fnGetDouble fn, const gchar *wname )
+set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname )
 {
+	ofaAccountPropertiesPrivate *priv;
 	GtkLabel *label;
-	gchar *str;
+	gchar *str, *text;
 
-	*amount = ( *fn )( self->priv->account );
+	priv = self->priv;
+
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
-	str = g_strdup_printf( "%'.2lf €", *amount );
-	gtk_label_set_text( label, str );
+
+	str = my_double_to_str_ex( amount, priv->cur_digits );
+	text = g_strdup_printf( "%s %s", str, priv->cur_symbol );
+
+	gtk_label_set_text( label, text );
+
 	g_free( str );
+	g_free( text );
 }
 
 static void
-set_entry_number( ofaAccountProperties *self, gint *num, fnGetInt fn, const gchar *wname )
+set_entry_number( ofaAccountProperties *self, gint num, const gchar *wname )
 {
 	GtkLabel *label;
 	gchar *str;
 
-	*num = ( *fn )( self->priv->account );
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
 				GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
-	if( *num ){
-		str = g_strdup_printf( "%u", *num );
+	if( num ){
+		str = g_strdup_printf( "%u", num );
 	} else {
 		str = g_strdup( "" );
 	}
@@ -358,12 +358,11 @@ set_entry_number( ofaAccountProperties *self, gint *num, fnGetInt fn, const gcha
 }
 
 static void
-set_entry_date( ofaAccountProperties *self, GDate *date, fnGetDate fn, const gchar *wname )
+set_entry_date( ofaAccountProperties *self, const GDate *date, const gchar *wname )
 {
 	GtkLabel *label;
 	gchar *str;
 
-	my_date_set_from_date( date, ( *fn )( self->priv->account ));
 	label = GTK_LABEL( my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), wname ));
 	str = my_date_to_str( date, MY_DATE_DMMM );
@@ -396,8 +395,27 @@ on_label_changed( GtkEntry *entry, ofaAccountProperties *self )
 static void
 on_currency_changed( const gchar *code, ofaAccountProperties *self )
 {
-	g_free( self->priv->currency );
-	self->priv->currency = g_strdup( code );
+	ofaAccountPropertiesPrivate *priv;
+	ofoCurrency *cur_obj;
+	const gchar *iso3a;
+
+	priv = self->priv;
+
+	g_free( priv->currency );
+	priv->currency = g_strdup( code );
+
+	cur_obj = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, code );
+
+	if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
+		iso3a = ofo_dossier_get_default_currency( MY_WINDOW( self )->prot->dossier );
+		cur_obj = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, iso3a );
+	}
+	priv->cur_digits = 2;
+	priv->cur_symbol = NULL;
+	if( cur_obj && OFO_IS_CURRENCY( cur_obj )){
+		priv->cur_digits = ofo_currency_get_digits( cur_obj );
+		priv->cur_symbol = ofo_currency_get_symbol( cur_obj );
+	}
 
 	check_for_enable_dlg( self );
 }
@@ -440,7 +458,10 @@ check_for_enable_dlg( ofaAccountProperties *self )
 	priv = self->priv;
 
 	/* has this account already add some imputation ? */
-	vierge = !priv->deb_amount && !priv->cre_amount && !priv->day_deb_amount && !priv->day_cre_amount;
+	vierge = ofo_account_get_deb_entry( priv->account ) +
+			ofo_account_get_cre_entry( priv->account ) +
+			ofo_account_get_day_deb_entry( priv->account ) +
+			ofo_account_get_day_cre_entry( priv->account ) == 0;
 
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->w_number ), vierge );
 
@@ -523,7 +544,9 @@ do_update( ofaAccountProperties *self )
 
 	ofo_account_set_number( priv->account, priv->number );
 	ofo_account_set_label( priv->account, priv->label );
-	ofo_account_set_type( priv->account, priv->type );
+	ofo_account_set_type_account( priv->account, priv->type );
+	ofo_account_set_settleable( priv->account, gtk_toggle_button_get_active( priv->settleable_btn ));
+	ofo_account_set_reconciliable( priv->account, gtk_toggle_button_get_active( priv->reconciliable_btn ));
 	ofo_account_set_currency( priv->account, priv->currency );
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), account );
 

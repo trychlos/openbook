@@ -96,6 +96,8 @@ gdouble         ofo_account_get_open_cre_amount  ( const ofoAccount *account );
 
 gboolean        ofo_account_is_deletable         ( const ofoAccount *account );
 gboolean        ofo_account_is_root              ( const ofoAccount *account );
+gboolean        ofo_account_is_settleable        ( const ofoAccount *account );
+gboolean        ofo_account_is_reconciliable     ( const ofoAccount *account );
 gboolean        ofo_account_is_valid_data        ( const gchar *number, const gchar *label, const gchar *devise, const gchar *type );
 gint            ofo_account_get_class_from_number( const gchar *number );
 gint            ofo_account_get_level_from_number( const gchar *number );
@@ -111,7 +113,9 @@ void            ofo_account_set_number           ( ofoAccount *account, const gc
 void            ofo_account_set_label            ( ofoAccount *account, const gchar *label );
 void            ofo_account_set_currency         ( ofoAccount *account, const gchar *devise );
 void            ofo_account_set_notes            ( ofoAccount *account, const gchar *notes );
-void            ofo_account_set_type             ( ofoAccount *account, const gchar *type );
+void            ofo_account_set_type_account     ( ofoAccount *account, const gchar *type );
+void            ofo_account_set_settleable       ( ofoAccount *account, gboolean settleable );
+void            ofo_account_set_reconciliable    ( ofoAccount *account, gboolean reconciliable );
 
 gboolean        ofo_account_insert               ( ofoAccount *account );
 gboolean        ofo_account_update               ( ofoAccount *account, const gchar *prev_number );
