@@ -62,6 +62,7 @@ struct _ofaAccountPropertiesPrivate {
 	GtkRadioButton  *w_detail;
 	GtkToggleButton *settleable_btn;
 	GtkToggleButton *reconciliable_btn;
+	GtkToggleButton *forward_btn;
 	GtkWidget       *currency_etiq;
 	GtkWidget       *currency_combo;
 
@@ -293,6 +294,9 @@ v_init_dialog( myDialog *dialog )
 
 	priv->reconciliable_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-reconciliable" ));
 	gtk_toggle_button_set_active( priv->reconciliable_btn, ofo_account_is_reconciliable( priv->account ));
+
+	priv->forward_btn = GTK_TOGGLE_BUTTON( my_utils_container_get_child_by_name( container, "p1-forward" ));
+	gtk_toggle_button_set_active( priv->forward_btn, ofo_account_is_forward( priv->account ));
 
 	priv->currency_etiq = my_utils_container_get_child_by_name( container, "p1-label3" );
 	priv->currency_combo = my_utils_container_get_child_by_name( container, "p1-currency" );
@@ -547,6 +551,7 @@ do_update( ofaAccountProperties *self )
 	ofo_account_set_type_account( priv->account, priv->type );
 	ofo_account_set_settleable( priv->account, gtk_toggle_button_get_active( priv->settleable_btn ));
 	ofo_account_set_reconciliable( priv->account, gtk_toggle_button_get_active( priv->reconciliable_btn ));
+	ofo_account_set_forward( priv->account, gtk_toggle_button_get_active( priv->forward_btn ));
 	ofo_account_set_currency( priv->account, priv->currency );
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), account );
 

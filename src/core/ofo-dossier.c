@@ -64,6 +64,7 @@ struct _ofoDossierPrivate {
 	gint        exe_length;				/* exercice length (in month) */
 	gchar      *currency;
 	gchar      *notes;					/* notes */
+	gint        last_exe_id;
 	gchar      *upd_user;
 	GTimeVal    upd_stamp;
 
@@ -125,6 +126,7 @@ static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBa
 static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
 static void        on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry );
 static void        dossier_update_next_number( const ofoDossier *dossier, const gchar *field, gint next_number );
+static void        dossier_set_last_exe_id( ofoDossier *dossier, gint exe_id );
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
 static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
 static gboolean    dossier_do_read( ofoDossier *dossier );
@@ -582,6 +584,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ACC_TYPE            CHAR(1)                      COMMENT 'Account type, values R/D',"
 			"	ACC_SETTLEABLE      CHAR(1)                      COMMENT 'Whether the account is settleable',"
 			"	ACC_RECONCILIABLE   CHAR(1)                      COMMENT 'Whether the account is reconciliable',"
+			"	ACC_FORWARD         CHAR(1)                      COMMENT 'Whether the account supports carried forwards',"
 			"	ACC_UPD_USER        VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
 			"	ACC_UPD_STAMP       TIMESTAMP                    COMMENT 'Properties last update timestamp',"
 			"	ACC_DEB_ENTRY       INTEGER                      COMMENT 'Number of the most recent validated debit entry',"
@@ -780,6 +783,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID           INTEGER   NOT NULL UNIQUE    COMMENT 'Row identifier',"
 			"	DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
+			"	DOS_LAST_EXE_ID  INTEGER                      COMMENT 'Last exercice identifier opened for the dossier',"
 			"	DOS_NOTES        VARCHAR(4096)                COMMENT 'Notes',"
 			"	DOS_EXE_LENGTH   INTEGER                      COMMENT 'Exercice length in months',"
 			"	DOS_DEF_CURRENCY VARCHAR(3)                   COMMENT 'Default currency identifier',"
@@ -791,8 +795,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
-			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY) "
-			"	VALUES (1,'%s',%u,'%s')", name, DOS_DEFAULT_LENGTH, "EUR" );
+			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,DOS_LAST_EXE_ID) "
+			"	VALUES (1,'%s',%u,'%s',1)", name, DOS_DEFAULT_LENGTH, "EUR" );
 	if( !ofo_sgbd_query( sgbd, query, TRUE )){
 		g_free( query );
 		return( FALSE );
@@ -1170,6 +1174,24 @@ ofo_dossier_get_notes( const ofoDossier *dossier )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_last_exe_id:
+ *
+ * Returns: the last exercice identifier used in the dossier.
+ */
+gint
+ofo_dossier_get_last_exe_id( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->last_exe_id );
+	}
+
+	return( 0 );
 }
 
 /**
@@ -1793,6 +1815,20 @@ ofo_dossier_set_notes( ofoDossier *dossier, const gchar *notes )
 }
 
 /*
+ * ofo_dossier_set_last_exe_id:
+ */
+static void
+dossier_set_last_exe_id( ofoDossier *dossier, gint exe_id )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		dossier->priv->last_exe_id = exe_id;
+	}
+}
+
+/*
  * ofo_dossier_set_upd_user:
  */
 static void
@@ -2000,6 +2036,7 @@ dossier_read_properties( ofoDossier *dossier )
 
 	query = g_strdup_printf(
 			"SELECT DOS_LABEL,DOS_EXE_LENGTH,DOS_NOTES,DOS_DEF_CURRENCY,"
+			"	DOS_LAST_EXE_ID,"
 			"	DOS_UPD_USER,DOS_UPD_STAMP "
 			"	FROM OFA_T_DOSSIER "
 			"	WHERE DOS_ID=%d", THIS_DOS_ID );
@@ -2028,6 +2065,11 @@ dossier_read_properties( ofoDossier *dossier )
 		str = icol->data;
 		if( str && g_utf8_strlen( str, -1 )){
 			ofo_dossier_set_default_currency( dossier, str );
+		}
+		icol = icol->next;
+		str = icol->data;
+		if( str && g_utf8_strlen( str, -1 )){
+			dossier_set_last_exe_id( dossier, atoi( str ));
 		}
 		icol = icol->next;
 		str = icol->data;
@@ -2157,9 +2199,8 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
 
 	g_string_append_printf( query,
-			"	DOS_LABEL='%s',DOS_EXE_LENGTH=%d,",
-					label,
-					ofo_dossier_get_exercice_length( dossier ));
+			"DOS_LABEL='%s',DOS_EXE_LENGTH=%d,",
+			label, ofo_dossier_get_exercice_length( dossier ));
 
 	currency = ofo_dossier_get_default_currency( dossier );
 	if( currency && g_utf8_strlen( currency, -1 )){
@@ -2167,6 +2208,10 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 	} else {
 		query = g_string_append( query, "DOS_DEF_CURRENCY=NULL," );
 	}
+
+	g_string_append_printf( query,
+			"DOS_LAST_EXE_ID=%d,",
+			ofo_dossier_get_last_exe_id( dossier ));
 
 	if( notes && g_utf8_strlen( notes, -1 )){
 		g_string_append_printf( query, "DOS_NOTES='%s',", notes );

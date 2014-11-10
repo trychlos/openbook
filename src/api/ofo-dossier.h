@@ -72,6 +72,7 @@ const gchar     *ofo_dossier_get_label                 ( const ofoDossier *dossi
 gint             ofo_dossier_get_exercice_length       ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_default_currency      ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_notes                 ( const ofoDossier *dossier );
+gint             ofo_dossier_get_last_exe_id           ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_upd_user              ( const ofoDossier *dossier );
 const GTimeVal  *ofo_dossier_get_upd_stamp             ( const ofoDossier *dossier );
 

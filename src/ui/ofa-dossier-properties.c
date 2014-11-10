@@ -226,7 +226,7 @@ init_properties_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkContainer *container;
-	GtkWidget *entry;
+	GtkWidget *entry, *label;
 	gchar *str;
 	ofsCurrencyComboParms parms;
 	const gchar *costr;
@@ -262,6 +262,12 @@ init_properties_page( ofaDossierProperties *self )
 	parms.initial_code = ofo_dossier_get_default_currency( priv->dossier );
 
 	ofa_currency_combo_new( &parms );
+
+	label = my_utils_container_get_child_by_name( container, "p1-last-exe-id" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	str = g_strdup_printf( "%'d", ofo_dossier_get_last_exe_id( priv->dossier ));
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
 }
 
 /*

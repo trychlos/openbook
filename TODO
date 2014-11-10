@@ -216,6 +216,17 @@
                   C ULONG_MAX          +18,446,744,073,709,551,615
                   but this value of ULONG_MAX is only available in
                   64 bits compilers 
+     2014-11-10 Mysql signed INT (4 bytes): 2 147 483 647
+                limits.h INT_MAX:          +2,147,483,647
+                Mysql signed BIGINT (8 bytes): 9223372036854775807
+                limits.h LONG_MAX: +9,223,372,036,854,775,807 	
+                GLib: 
+                - gint64: a signed integer guaranteed to be 64 bits on all platforms
+                - G_MAXINT64
+                - G_GINT64_MODIFIER to be used for printing
+                - G_GINT64_FORMAT to be used for printing
+                PostgreSQL: also defines BIGINT
+                see: http://www.postgresql.org/docs/9.3/static/datatype-numeric.html
 
  224 2014- 6-16 DossierProperties: add a tab for the archived exercices
 

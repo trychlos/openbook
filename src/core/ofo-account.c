@@ -55,6 +55,7 @@ enum {
 	ACC_TYPE,
 	ACC_SETTLEABLE,
 	ACC_RECONCILIABLE,
+	ACC_FORWARD,
 	ACC_UPD_USER,
 	ACC_UPD_STAMP,
 	ACC_DEB_ENTRY,
@@ -103,6 +104,10 @@ static const ofsBoxedDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOXED_CSV( ACC_RECONCILIABLE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOXED_CSV( ACC_FORWARD ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -209,6 +214,7 @@ static const gchar *st_type_detail      = "D";
 static const gchar *st_type_root        = "R";
 static const gchar *st_settleable       = "S";
 static const gchar *st_reconciliable    = "R";
+static const gchar *st_forward          = "F";
 
 /* whether a root account has children, and wich are they ?
  */
@@ -1246,6 +1252,24 @@ ofo_account_is_reconciliable( const ofoAccount *account )
 	return( is_reconciliable );
 }
 
+/**
+ * ofo_account_is_forward:
+ * @account: the #ofoAccount account
+ *
+ * Returns: %TRUE if the account supports carried forward entries.
+ */
+gboolean
+ofo_account_is_forward( const ofoAccount *account )
+{
+	gboolean is_forward;
+	const gchar *str;
+
+	str = account_get_string_ex( account, ACC_FORWARD );
+	is_forward = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, st_forward );
+
+	return( is_forward );
+}
+
 static const gchar *
 account_get_string_ex( const ofoAccount *account, gint data_id )
 {
@@ -1667,6 +1691,17 @@ ofo_account_set_reconciliable( ofoAccount *account, gboolean reconciliable )
 	account_set_string( ACC_RECONCILIABLE, reconciliable ? st_reconciliable : NULL );
 }
 
+/**
+ * ofo_account_set_forward:
+ * @account: the #ofoAccount account
+ * @forward: %TRUE if the account supports carried forward entries
+ */
+void
+ofo_account_set_forward( ofoAccount *account, gboolean forward )
+{
+	account_set_string( ACC_FORWARD, forward ? st_forward : NULL );
+}
+
 /*
  * ofo_account_set_upd_user:
  * @account: the #ofoAccount account
@@ -1924,7 +1959,7 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	(ACC_NUMBER,ACC_LABEL,ACC_CURRENCY,ACC_NOTES,"
-			"	ACC_TYPE,ACC_SETTLEABLE,ACC_RECONCILIABLE,"
+			"	ACC_TYPE,ACC_SETTLEABLE,ACC_RECONCILIABLE,ACC_FORWARD,"
 			"	ACC_UPD_USER, ACC_UPD_STAMP)"
 			"	VALUES ('%s','%s',",
 					ofo_account_get_number( account ),
@@ -1952,6 +1987,12 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 
 	if( ofo_account_is_reconciliable( account )){
 		g_string_append_printf( query, "'%s',", st_reconciliable );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	if( ofo_account_is_forward( account )){
+		g_string_append_printf( query, "'%s',", st_forward );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
@@ -2058,6 +2099,12 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 		g_string_append_printf( query, "ACC_RECONCILIABLE='%s',", st_reconciliable );
 	} else {
 		query = g_string_append( query, "ACC_RECONCILIABLE=NULL," );
+	}
+
+	if( ofo_account_is_forward( account )){
+		g_string_append_printf( query, "ACC_FORWARD='%s',", st_forward );
+	} else {
+		query = g_string_append( query, "ACC_FORWARD=NULL," );
 	}
 
 	g_string_append_printf( query,
