@@ -98,7 +98,7 @@ struct _ofaPrintBalancePrivate {
 	gint           last_entry;
 };
 
-static const gchar  *st_ui_xml              = PKGUIDIR "/ofa-print-balance.ui";
+static const gchar  *st_ui_xml              = PKGUIDIR "/ofa-print-balance.piece.ui";
 
 static const gchar  *st_pref_from_account   = "PrintBalanceFromAccount";
 static const gchar  *st_pref_to_account     = "PrintBalanceToAccount";
@@ -150,8 +150,8 @@ static const gint    st_page_margin                    = 2;
 
 /* the columns of the body */
 #define st_number_width                                60/9*st_body_font_size
-#define st_amount_width                                72/9*st_body_font_size
-#define st_column_spacing                              7
+#define st_amount_width                                90/9*st_body_font_size
+#define st_column_spacing                              4
 
 /*
 (openbook:29799): OFA-DEBUG: '99/99/9999   ' width=61
@@ -757,7 +757,7 @@ on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_
 		draw_page_end_summary( self, context );
 	}
 
-	ofa_print_footer_render( context, priv->layout, page_num, is_last, priv->pages_count );
+	ofa_print_footer_render( context, priv->layout, page_num, priv->pages_count );
 }
 
 static void
@@ -990,7 +990,7 @@ draw_page_end_summary( ofaPrintBalance *self, GtkPrintContext *context )
 {
 	ofaPrintBalancePrivate *priv;
 	cairo_t *cr;
-	gdouble y, width;
+	gdouble y, top, bottom, width;
 	gchar *str;
 
 	priv = self->priv;
@@ -998,33 +998,35 @@ draw_page_end_summary( ofaPrintBalance *self, GtkPrintContext *context )
 	cr = gtk_print_context_get_cairo_context( context );
 	cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
 
-	y = priv->page_height
-			- ofa_print_footer_get_height( 1, FALSE )
-			- st_body_line_spacing;
+	/* bottom of the rectangle */
+	bottom = priv->page_height - ofa_print_footer_get_height( 1, FALSE );
+	/* top of the rectangle */
+	top = bottom - ( st_body_font_size+1+2*st_body_line_spacing );
 
 	width = gtk_print_context_get_width( context );
 	cairo_set_line_width( cr, 0.5 );
 
-	cairo_move_to( cr, 0, y-st_body_line_spacing );
-	cairo_line_to( cr, width, y-st_body_line_spacing );
+	cairo_move_to( cr, 0, top );
+	cairo_line_to( cr, width, top );
 	cairo_stroke( cr );
 
-	cairo_move_to( cr, 0, y+st_body_font_size+st_body_line_spacing );
-	cairo_line_to( cr, width, y+st_body_font_size+st_body_line_spacing );
+	cairo_move_to( cr, 0, bottom );
+	cairo_line_to( cr, width, bottom );
 	cairo_stroke( cr );
 
-	cairo_move_to( cr, 0, y-st_body_line_spacing );
-	cairo_line_to( cr, 0, y+st_body_font_size+st_body_line_spacing );
+	cairo_move_to( cr, 0, top );
+	cairo_line_to( cr, 0, bottom );
 	cairo_stroke( cr );
 
-	cairo_move_to( cr, width, y-st_body_line_spacing );
-	cairo_line_to( cr, width, y+st_body_font_size+st_body_line_spacing );
+	cairo_move_to( cr, width, top );
+	cairo_line_to( cr, width, bottom );
 	cairo_stroke( cr );
 
 	str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size );
 	ofa_print_set_font( context, priv->layout, str );
 	g_free( str );
 
+	y = top + st_body_line_spacing;
 	ofa_print_set_text( context, priv->layout,
 			priv->body_debit_period_rtab-st_amount_width, y, _( "Total:" ), PANGO_ALIGN_RIGHT );
 

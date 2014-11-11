@@ -108,6 +108,10 @@
           <attribute name="label" translatable="yes">_Reconciliation...</attribute>
           <attribute name="action">win.prt-reconcil</attribute>
         </item>
+        <item>
+          <attribute name="label" translatable="yes">_General ledger...</attribute>
+          <attribute name="action">win.prt-genledger</attribute>
+        </item>
       </section>
     </submenu>
     <submenu>

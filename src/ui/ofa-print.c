@@ -56,14 +56,13 @@ static const gint   st_summary_subtitle_font_size        = 10;
 #define             st_summary_subtitle_line_spacing       st_summary_subtitle_font_size
 
 static const gint   st_footer_font_size                  = 7;
-static const gint   st_footer_line_spacing               = 1;
+#define             st_footer_before_line_vspacing         2 /*st_footer_font_size*/
+static const gint   st_footer_after_line_vspacing        = 1;
 
 static const gint   st_margin                            = 2;
 
 static void    header_dossier_page1_line1_render( GtkPrintContext *context, PangoLayout *layout, gdouble y, const ofoDossier *dossier );
 static void    header_dossier_page1_line2_render( GtkPrintContext *context, PangoLayout *layout, gdouble y, const ofoDossier *dossier );
-static gdouble footer_line1_get_height( void );
-static gdouble footer_line2_get_height( void );
 
 /**
  * ofa_print_header_dossier_render:
@@ -89,6 +88,8 @@ static void
 header_dossier_page1_line1_render( GtkPrintContext *context, PangoLayout *layout,
 										gdouble y, const ofoDossier *dossier )
 {
+	cairo_t *cr;
+	gdouble width;
 	gchar *str;
 
 	/* dossier name on line 1 */
@@ -99,7 +100,28 @@ header_dossier_page1_line1_render( GtkPrintContext *context, PangoLayout *layout
 	ofa_print_set_color( context, layout, COLOR_HEADER_DOSSIER );
 
 	ofa_print_set_text( context, layout, 0, y, ofo_dossier_get_name( dossier ), PANGO_ALIGN_LEFT );
-	/*ofa_print_set_text( context, layout, 0, y, "ABCDEFAZERTYUIOPQSDFGHJKLMWXCVBN1234567890AZSDFGHUIOPMLKJHGVCDSERTYUIKJHGFD", PANGO_ALIGN_LEFT );*/
+
+	if( 0 ){
+		cr = gtk_print_context_get_cairo_context( context );
+		width = gtk_print_context_get_width( context );
+		cairo_set_line_width( cr, 0.25 );
+
+		cairo_move_to( cr, 0, y );
+		cairo_line_to( cr, width, y );
+		cairo_stroke( cr );
+
+		cairo_move_to( cr, 0, y+st_header_dossier_name_font_size );
+		cairo_line_to( cr, width, y+st_header_dossier_name_font_size );
+		cairo_stroke( cr );
+
+		cairo_move_to( cr, 0, y );
+		cairo_line_to( cr, 0, y+st_header_dossier_name_font_size );
+		cairo_stroke( cr );
+
+		cairo_move_to( cr, width, y );
+		cairo_line_to( cr, width, y+st_header_dossier_name_font_size );
+		cairo_stroke( cr );
+	}
 }
 
 static void
@@ -145,6 +167,7 @@ void
 ofa_print_header_title_render( GtkPrintContext *context, PangoLayout *layout,
 									gint page_num, gboolean is_last, gdouble y, const gchar *title )
 {
+	cairo_t *cr;
 	gchar *str;
 	gdouble width;
 
@@ -158,6 +181,27 @@ ofa_print_header_title_render( GtkPrintContext *context, PangoLayout *layout,
 	y += st_summary_title_line_spacing_before;
 
 	ofa_print_set_text( context, layout, width/2, y, title, PANGO_ALIGN_CENTER );
+
+	if( 0 ){
+		cr = gtk_print_context_get_cairo_context( context );
+		cairo_set_line_width( cr, 0.25 );
+
+		cairo_move_to( cr, 0, y );
+		cairo_line_to( cr, width, y );
+		cairo_stroke( cr );
+
+		cairo_move_to( cr, 0, y+st_summary_title_font_size );
+		cairo_line_to( cr, width, y+st_summary_title_font_size );
+		cairo_stroke( cr );
+
+		cairo_move_to( cr, 0, y );
+		cairo_line_to( cr, 0, y+st_summary_title_font_size );
+		cairo_stroke( cr );
+
+		cairo_move_to( cr, width, y );
+		cairo_line_to( cr, width, y+st_summary_title_font_size );
+		cairo_stroke( cr );
+	}
 }
 
 /**
@@ -222,56 +266,51 @@ ofa_print_header_title_set_color( GtkPrintContext *context, PangoLayout *layout 
 
 /**
  * ofa_print_footer_render:
+ * @page_num: page number, counted from zero
+ *
+ * The footer is built with:
+ * - a vertical space between the bottom of the body and the separator
+ * - a line separator
+ * - one or more lines which are the said footer
+ *
+ * The last line of the footer is printable at y=page_height.
  */
 void
-ofa_print_footer_render( GtkPrintContext *context, PangoLayout *layout,
-								gint page_num, gboolean is_last, gint pages_count )
+ofa_print_footer_render( GtkPrintContext *context,
+								PangoLayout *layout, gint page_num, gint pages_count )
 {
 	gchar *str, *stamp_str;
 	GTimeVal stamp;
 	gdouble width, y;
 	cairo_t *cr;
 
+	width = gtk_print_context_get_width( context );
+	y = gtk_print_context_get_height( context );
+
 	str = g_strdup_printf( "%s Italic %d", st_font_family, st_footer_font_size );
 	ofa_print_set_font( context, layout, str );
 	g_free( str );
-	ofa_print_set_color( context, layout, COLOR_FOOTER );
 
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_DMYYHM );
-	str = g_strdup_printf( _( "Printed on %s - Page %d/%d" ), stamp_str, 1+page_num, pages_count );
-	g_free( stamp_str );
-	width = gtk_print_context_get_width( context );
-	y = gtk_print_context_get_height( context );
-	ofa_print_set_text( context, layout, width-st_margin, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+	ofa_print_set_color( context, layout, COLOR_FOOTER );
 
 	str = g_strdup_printf( "%s v %s", PACKAGE_NAME, PACKAGE_VERSION );
 	ofa_print_set_text( context, layout, st_margin, y, str, PANGO_ALIGN_LEFT );
 	g_free( str );
 
-	y -= footer_line1_get_height();
+	my_utils_stamp_set_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_DMYYHM );
+	str = g_strdup_printf( _( "Printed on %s - Page %d/%d" ), stamp_str, 1+page_num, pages_count );
+	g_free( stamp_str );
+	ofa_print_set_text( context, layout, width-st_margin, y, str, PANGO_ALIGN_RIGHT );
+	g_free( str );
+
+	y -= st_footer_after_line_vspacing;
+
 	cr = gtk_print_context_get_cairo_context( context );
 	cairo_set_line_width( cr, 0.5 );
 	cairo_move_to( cr, 0, y );
 	cairo_line_to( cr, width, y );
 	cairo_stroke( cr );
-}
-
-static gdouble
-footer_line1_get_height( void )
-{
-	return( st_footer_line_spacing );
-}
-
-/*
- * this set the spacing between the bottom of the body and the footer
- * line separator
- */
-static gdouble
-footer_line2_get_height( void )
-{
-	return( 2*st_footer_font_size );
 }
 
 /**
@@ -287,10 +326,43 @@ ofa_print_footer_get_height( gint page_num, gboolean is_last )
 	gdouble y;
 
 	y = 0;
-	y += footer_line1_get_height();
-	y += footer_line2_get_height();
+	y += st_footer_before_line_vspacing;
+	y += st_footer_after_line_vspacing;
 
 	return( y );
+}
+
+/**
+ * ofa_print_ruler:
+ */
+void
+ofa_print_ruler( GtkPrintContext *context, PangoLayout *layout, gdouble y )
+{
+	cairo_t *cr;
+	gdouble x, width;
+	gchar *str;
+
+	str = g_strdup_printf( "%s %d", st_font_family, st_footer_font_size );
+	ofa_print_set_font( context, layout, str );
+	g_free( str );
+
+	ofa_print_set_color( context, layout, COLOR_FOOTER );
+
+	cr = gtk_print_context_get_cairo_context( context );
+	width = gtk_print_context_get_width( context );
+	cairo_set_line_width( cr, 0.25 );
+
+	cairo_move_to( cr, 0, y );
+	cairo_line_to( cr, width, y );
+	cairo_stroke( cr );
+
+	x = 0;
+	while( x < width ){
+		cairo_move_to( cr, x, y );
+		cairo_line_to( cr, x, y+10 );
+		cairo_stroke( cr );
+		x += 10;
+	}
 }
 
 /**

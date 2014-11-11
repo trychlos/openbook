@@ -90,7 +90,7 @@ struct _ofaPrintReconcilPrivate {
 	gint           last_entry;				/* last printed entry, from zero */
 };
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-print-reconcil.ui";
+static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-print-reconcil.piece.ui";
 
 static const gchar  *st_pref_account = "PrintReconciliationAccount";
 static const gchar  *st_pref_date    = "PrintReconciliationDate";
@@ -106,11 +106,11 @@ static const gint    st_body_font_size                 = 9;
 static const gint    st_page_margin                    = 2;
 
 /* the columns of the body */
-#define st_effect_width                                56/9*st_body_font_size
-#define st_journal_width                               37/9*st_body_font_size
+#define st_effect_width                                54/9*st_body_font_size
+#define st_journal_width                               36/9*st_body_font_size
 #define st_ref_width                                   64/9*st_body_font_size
-#define st_amount_width                                66/9*st_body_font_size
-#define st_column_spacing                              7
+#define st_amount_width                                90/9*st_body_font_size
+#define st_column_spacing                              4
 /*
 (openbook:29799): OFA-DEBUG: '99/99/9999   ' width=61
 (openbook:29799): OFA-DEBUG: 'XXXXXX   ' width=46   -> 107
@@ -633,8 +633,8 @@ on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_
 		priv->last_y += st_body_line_spacing/2;
 	}
 
-	max_y = priv->page_height
-				- ofa_print_footer_get_height( 1, FALSE );
+	max_y = priv->page_height - ofa_print_footer_get_height( 1, FALSE );
+	max_y -= st_body_font_size+st_body_line_spacing;
 
 	for( count=0, ent=g_list_nth( priv->entries, priv->last_entry+1 ) ;
 								ent && priv->last_y<max_y ; ent=ent->next, count++ ){
@@ -649,7 +649,7 @@ on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_
 		draw_reconciliation_end( self, context );
 	}
 
-	ofa_print_footer_render( context, priv->layout, page_num, is_last, priv->pages_count );
+	ofa_print_footer_render( context, priv->layout, page_num, priv->pages_count );
 }
 
 static void

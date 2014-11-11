@@ -68,10 +68,12 @@ gdouble  ofa_print_header_subtitle_get_height( gint page_num, gboolean is_last )
 void     ofa_print_header_title_set_color    ( GtkPrintContext *context, PangoLayout *layout );
 
 void     ofa_print_footer_render             ( GtkPrintContext *context, PangoLayout *layout,
-													gint page_num, gboolean is_last,
-													gint pages_count );
+													gint page_num, gint pages_count );
 
 gdouble  ofa_print_footer_get_height         ( gint page_num, gboolean is_last );
+
+void     ofa_print_ruler                     ( GtkPrintContext *context, PangoLayout *layout,
+													gdouble y );
 
 void     ofa_print_rubber                    ( GtkPrintContext *context, PangoLayout *layout,
 													gdouble top, gdouble height );

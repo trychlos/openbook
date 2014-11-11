@@ -117,6 +117,9 @@ GList         *ofo_entry_get_dataset_by_ledger         ( const ofoDossier *dossi
 GList         *ofo_entry_get_dataset_for_print_balance ( const ofoDossier *dossier,
 															const gchar *from_account, const gchar *to_account,
 															const GDate *from_date, const GDate *to_date );
+GList         *ofo_entry_get_dataset_for_print_gen_ledger( const ofoDossier *dossier,
+															const gchar *from_account, const gchar *to_account,
+															const GDate *from_date, const GDate *to_date );
 GList         *ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 															const gchar *account,
 															const GDate *date );

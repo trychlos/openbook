@@ -140,7 +140,7 @@
                 character set of the imported file, so that we are
                 able to convert to UTF-8
 
- 179 2014- 6- 9 ofaModelsSet: manage delete journal (reclass in 
+ 179 2014- 6- 9 ofaModelsSet: manage ledger deletion (reclass in 
                 'Unclassed')
 
  182 2014- 6-10 configure at the dossier level the default import journal 
@@ -162,16 +162,6 @@
                 end date desc (most recent first)
      2014- 6-13 no: this should be left sorted as the user entered the
                 data - so let him reorder the lines
-
- 191 2014- 6-11 Note that a multi-currency journal is not balanced per
-                currency, and so its global balance cannot be checked
-     2014- 6-18 not exactly: a multi-currency journal may be balanced
-                per currency depending of the way the operations are
-                entered (and this way should maybe be forced)
-     2014-11- 5 Having a multi-currencies operation involves:
-                - defining operation with multi currencies
-                - have shadow accounts in both currencies
-                - entering balanced entries in both currencies.
 
  195 2014- 6-11 optimize the usage of SELECT COUNT(*) FROM 
                 OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
@@ -195,8 +185,6 @@
  217 2014- 6-13 tableau de trésorerie
      2014-10- 6 this may require the balance be printed
      2014-10- 6 this should be implemented as a plugin
-
- 224 2014- 6-16 DossierProperties: add a tab for the archived exercices
 
  229 2014- 6-16 Entry model: duplicate a line
 
@@ -356,11 +344,17 @@
                 'changed' signal on exercice notes - so unable to
                 have this field updated
 
- 426 2014-11-10 compare ofo_account_archive_open_balances() vs.
-                ofo_account_histo_valid_to_open()
-     2014-11-10 same functions: remove ofo_account_histo_valid_to_open.
+ 427 2014-11-11 print general ledger
 
- 427
+ 428 2014-11-11 implement export to PDF for printed summaries (let us
+                set the export filename)
+
+ 429 2014-11-11 implement print preview inside of Openbook
+
+ 430 2014-11-11 print_balance: add currency on each line + have a
+                general total per currency 
+
+ 431
 
 -----------------------------------------------------------------------
  DONE
@@ -931,6 +925,17 @@
  190 2014- 6-10 Have a display of journal balances
      2014- 6-13 done
 
+ 191 2014- 6-11 Note that a multi-currency journal is not balanced per
+                currency, and so its global balance cannot be checked
+     2014- 6-18 not exactly: a multi-currency journal may be balanced
+                per currency depending of the way the operations are
+                entered (and this way should maybe be forced)
+     2014-11- 5 Having a multi-currencies operation involves:
+                - defining operation with multi currencies
+                - have shadow accounts in both currencies
+                - entering balanced entries in both currencies.
+     2014-11- 5 done (operation template must be balanced per currency)
+
  192 2014- 6-11 save database:
                 mysqldump pwi_consultants -uwieser -pwieser | gzip -c 
                  >/tmp/pwi_consultants-20140611.gz
@@ -1089,6 +1094,10 @@
  223 2014- 6-16 DossierProperties: add a tab for the current exercice
                 enter begin and end dates, display last entry number
      2014- 6-20 done - svn #3744
+
+ 224 2014- 6-16 DossierProperties: add a tab for the archived exercices
+     2014-11-11 exercice is selected through a combo box
+     2014-11-11 done
 
  225 2014- 6-16 When selecting an account, should be able to create a
                 new account
@@ -1864,6 +1873,11 @@
 
  424 2014-11- 9 add exercice notes
      2014-11-10 done - svn #4070
+
+ 426 2014-11-10 compare ofo_account_archive_open_balances() vs.
+                ofo_account_histo_valid_to_open()
+     2014-11-10 same functions: remove ofo_account_histo_valid_to_open.
+     2014-11-10 done - svn #4084
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
