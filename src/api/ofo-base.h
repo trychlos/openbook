@@ -56,7 +56,16 @@ G_BEGIN_DECLS
  * version of this structure, usually through a static pointer to a
  * dynamically allocated structure (but see the macros below which may
  * greatly help in this matter).
+ *
+ * Data types are:
+ *   Specifications  SQL            C                   Max value
+ *   --------------  -------------  ------------------  --------------------------
+ *   INTEGER         INTEGER        int
+ *   NUMBER          BIGINT         gint64 aka ofxCounter  +9,223,372,036,854,775,807
+ *   MONTANT         DECIMAL(20,5)  gdouble aka ofxAmount  1.79769e+308
+ *
  */
+
 typedef struct {
 	GList    *dataset;
 	ofoBase  *dossier;

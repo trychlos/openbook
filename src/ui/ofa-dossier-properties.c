@@ -376,25 +376,25 @@ on_exercice_changed( ofaDosexeCombo *combo, gint exe_id, ofaDossierProperties *s
 
 	widget = my_utils_container_get_child_by_name( container, "pexe-last-entry" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	str = g_strdup_printf( "%'d", ofo_dossier_get_exe_last_entry( priv->dossier, exe_id ));
+	str = g_strdup_printf( "%'ld", ofo_dossier_get_exe_last_entry( priv->dossier, exe_id ));
 	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );
 
 	widget = my_utils_container_get_child_by_name( container, "pexe-last-settlement" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	str = g_strdup_printf( "%'d", ofo_dossier_get_exe_last_settlement( priv->dossier, exe_id ));
+	str = g_strdup_printf( "%'ld", ofo_dossier_get_exe_last_settlement( priv->dossier, exe_id ));
 	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );
 
 	widget = my_utils_container_get_child_by_name( container, "pexe-last-bat" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	str = g_strdup_printf( "%'d", ofo_dossier_get_exe_last_bat( priv->dossier, exe_id ));
+	str = g_strdup_printf( "%'ld", ofo_dossier_get_exe_last_bat( priv->dossier, exe_id ));
 	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );
 
 	widget = my_utils_container_get_child_by_name( container, "pexe-last-bat-line" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	str = g_strdup_printf( "%'d", ofo_dossier_get_exe_last_bat_line( priv->dossier, exe_id ));
+	str = g_strdup_printf( "%'ld", ofo_dossier_get_exe_last_bat_line( priv->dossier, exe_id ));
 	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );
 

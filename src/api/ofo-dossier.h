@@ -36,6 +36,7 @@
  * DB definition.
  */
 
+#include "api/ofa-boxed.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofo-sgbd-def.h"
 
@@ -84,16 +85,16 @@ gint             ofo_dossier_get_exe_by_date           ( const ofoDossier *dossi
 const GDate     *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier, gint exe_id );
 const GDate     *ofo_dossier_get_exe_end               ( const ofoDossier *dossier, gint exe_id );
 ofaDossierStatus ofo_dossier_get_exe_status            ( const ofoDossier *dossier, gint exe_id );
-gint             ofo_dossier_get_exe_last_entry        ( const ofoDossier *dossier, gint exe_id );
-gint             ofo_dossier_get_exe_last_settlement   ( const ofoDossier *dossier, gint exe_id );
-gint             ofo_dossier_get_exe_last_bat          ( const ofoDossier *dossier, gint exe_id );
-gint             ofo_dossier_get_exe_last_bat_line     ( const ofoDossier *dossier, gint exe_id );
+ofxCounter       ofo_dossier_get_exe_last_entry        ( const ofoDossier *dossier, gint exe_id );
+ofxCounter       ofo_dossier_get_exe_last_settlement   ( const ofoDossier *dossier, gint exe_id );
+ofxCounter       ofo_dossier_get_exe_last_bat          ( const ofoDossier *dossier, gint exe_id );
+ofxCounter       ofo_dossier_get_exe_last_bat_line     ( const ofoDossier *dossier, gint exe_id );
 const gchar     *ofo_dossier_get_exe_notes             ( const ofoDossier *dossier, gint exe_id );
 
-gint             ofo_dossier_get_next_entry_number     ( const ofoDossier *dossier );
-gint             ofo_dossier_get_next_bat_number       ( const ofoDossier *dossier );
-gint             ofo_dossier_get_next_batline_number   ( const ofoDossier *dossier );
-gint             ofo_dossier_get_next_settlement_number( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_next_entry_number     ( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_next_bat_number       ( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_next_batline_number   ( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_next_settlement_number( const ofoDossier *dossier );
 
 const gchar     *ofo_dossier_get_status_label          ( ofaDossierStatus status );
 
@@ -110,7 +111,7 @@ void             ofo_dossier_set_current_exe_id        ( const ofoDossier *dossi
 void             ofo_dossier_set_current_exe_begin     ( const ofoDossier *dossier, const GDate *date );
 void             ofo_dossier_set_current_exe_end       ( const ofoDossier *dossier, const GDate *date );
 void             ofo_dossier_set_current_exe_notes     ( const ofoDossier *dossier, const gchar *notes );
-void             ofo_dossier_set_current_exe_last_entry( const ofoDossier *dossier, gint number );
+void             ofo_dossier_set_current_exe_last_entry( const ofoDossier *dossier, ofxCounter number );
 
 gboolean         ofo_dossier_dbmodel_update            ( ofoSgbd *sgbd, const gchar *name, const gchar *account );
 

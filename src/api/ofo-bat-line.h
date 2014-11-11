@@ -36,6 +36,7 @@
  * imported bank account transaction lines.
  */
 
+#include "api/ofa-boxed.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofo-dossier-def.h"
 
@@ -71,26 +72,26 @@ ofoBatLine     *ofo_bat_line_new          ( gint bat_id );
 
 GList          *ofo_bat_line_get_dataset  ( const ofoDossier *dossier, gint bat_id );
 
-gint            ofo_bat_line_get_id       ( const ofoBatLine *batline );
-gint            ofo_bat_line_get_bat_id   ( const ofoBatLine *batline );
+ofxCounter      ofo_bat_line_get_bat_id   ( const ofoBatLine *batline );
+ofxCounter      ofo_bat_line_get_line_id  ( const ofoBatLine *batline );
 const GDate    *ofo_bat_line_get_deffect  ( const ofoBatLine *batline );
 const GDate    *ofo_bat_line_get_dope     ( const ofoBatLine *batline );
 const gchar    *ofo_bat_line_get_ref      ( const ofoBatLine *batline );
 const gchar    *ofo_bat_line_get_label    ( const ofoBatLine *batline );
 const gchar    *ofo_bat_line_get_currency ( const ofoBatLine *batline );
-gdouble         ofo_bat_line_get_amount   ( const ofoBatLine *batline );
-gint            ofo_bat_line_get_entry    ( const ofoBatLine *batline );
+ofxAmount       ofo_bat_line_get_amount   ( const ofoBatLine *batline );
+ofxCounter      ofo_bat_line_get_entry    ( const ofoBatLine *batline );
 const gchar    *ofo_bat_line_get_upd_user ( const ofoBatLine *batline );
 const GTimeVal *ofo_bat_line_get_upd_stamp( const ofoBatLine *batline );
 
-void            ofo_bat_line_set_id       ( ofoBatLine *batline, gint id );
+void            ofo_bat_line_set_line_id  ( ofoBatLine *batline, ofxCounter id );
 void            ofo_bat_line_set_deffect  ( ofoBatLine *batline, const GDate *date );
 void            ofo_bat_line_set_dope     ( ofoBatLine *batline, const GDate *date );
 void            ofo_bat_line_set_ref      ( ofoBatLine *batline, const gchar *ref );
 void            ofo_bat_line_set_label    ( ofoBatLine *batline, const gchar *label );
 void            ofo_bat_line_set_currency ( ofoBatLine *batline, const gchar *currency );
-void            ofo_bat_line_set_amount   ( ofoBatLine *batline, gdouble montant );
-void            ofo_bat_line_set_entry    ( ofoBatLine *batline, gint number );
+void            ofo_bat_line_set_amount   ( ofoBatLine *batline, ofxAmount montant );
+void            ofo_bat_line_set_entry    ( ofoBatLine *batline, ofxCounter number );
 
 gboolean        ofo_bat_line_insert       ( ofoBatLine *batline, const ofoDossier *dossier );
 gboolean        ofo_bat_line_update       ( ofoBatLine *batline, const ofoDossier *dossier );

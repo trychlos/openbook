@@ -511,7 +511,7 @@ ofo_rate_get_val_end( const ofoRate *rate, gint idx )
 /**
  * ofo_rate_get_val_rate:
  */
-gdouble
+ofxAmount
 ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
 {
 	GList *nth;
@@ -539,7 +539,7 @@ ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
  *
  * Returns the value of the rate at the given date, or zero.
  */
-gdouble
+ofxAmount
 ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 {
 	GList *iva;
@@ -720,7 +720,7 @@ ofo_rate_free_all_val( ofoRate *rate )
  * Add a validity record to the rate.
  */
 void
-ofo_rate_add_val( ofoRate *rate, const GDate *begin, const GDate *end, gdouble value )
+ofo_rate_add_val( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value )
 {
 	ofsRateValidity *sval;
 

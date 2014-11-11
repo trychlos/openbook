@@ -43,8 +43,9 @@ typedef struct {
 	const ofsBoxedDef *def;
 	gboolean           is_null;
 	union {
-		gdouble  amount;
-		gint     counter;
+		ofxAmount   amount;
+		ofxCounter  counter;
+		gint     integer;
 		GDate    date;
 		gchar   *string;
 		GTimeVal timestamp;
@@ -78,7 +79,7 @@ amount_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
 
 	if( str && g_utf8_strlen( str, -1 )){
 		box->is_null = FALSE;
-		box->amount = my_double_set_from_sql( str );
+		box->amount = ( ofxAmount ) my_double_set_from_sql( str );
 	}
 
 	return( box );
@@ -105,11 +106,11 @@ amount_get_fn( const sBoxed *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_AMOUNT, 0 );
 
-	return( GDOUBLE_TO_POINTER( box->amount ));
+	return( AMOUNT_TO_GPOINTER( box->amount ));
 }
 
 static void
-amount_set_fn( sBoxed *box, gdouble value )
+amount_set_fn( sBoxed *box, ofxAmount value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_AMOUNT );
 
@@ -127,7 +128,7 @@ counter_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
 
 	if( str && g_utf8_strlen( str, -1 )){
 		box->is_null = FALSE;
-		box->counter = atoi( str );
+		box->counter = atol( str );
 	}
 
 	return( box );
@@ -141,7 +142,7 @@ counter_to_csv_str( const sBoxed *box )
 	g_return_val_if_fail( box->def->type == OFA_TYPE_COUNTER, NULL );
 
 	if( box->counter || !box->def->csv_zero_as_empty ){
-		str = g_strdup_printf( "%d", box->counter );
+		str = g_strdup_printf( "%ld", box->counter );
 	} else {
 		str = g_strdup( "" );
 	}
@@ -149,7 +150,7 @@ counter_to_csv_str( const sBoxed *box )
 	return( str );
 }
 
-static gint
+static ofxCounter
 counter_get_fn( const sBoxed *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_COUNTER, 0 );
@@ -158,12 +159,61 @@ counter_get_fn( const sBoxed *box )
 }
 
 static void
-counter_set_fn( sBoxed *box, gint value )
+counter_set_fn( sBoxed *box, ofxCounter value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_COUNTER );
 
 	box->is_null = FALSE;
 	box->counter = value;
+}
+
+static sBoxed *
+int_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
+{
+	sBoxed *box;
+
+	box = boxed_new( def );
+	g_return_val_if_fail( box->def->type == OFA_TYPE_INTEGER, NULL );
+
+	if( str && g_utf8_strlen( str, -1 )){
+		box->is_null = FALSE;
+		box->integer = atoi( str );
+	}
+
+	return( box );
+}
+
+static gchar *
+int_to_csv_str( const sBoxed *box )
+{
+	gchar *str;
+
+	g_return_val_if_fail( box->def->type == OFA_TYPE_INTEGER, NULL );
+
+	if( box->counter || !box->def->csv_zero_as_empty ){
+		str = g_strdup_printf( "%d", box->integer );
+	} else {
+		str = g_strdup( "" );
+	}
+
+	return( str );
+}
+
+static gint
+int_get_fn( const sBoxed *box )
+{
+	g_return_val_if_fail( box->def->type == OFA_TYPE_INTEGER, 0 );
+
+	return( box->integer );
+}
+
+static void
+int_set_fn( sBoxed *box, gint value )
+{
+	g_return_if_fail( box->def->type == OFA_TYPE_INTEGER );
+
+	box->is_null = FALSE;
+	box->integer = value;
 }
 
 static sBoxed *
@@ -378,6 +428,12 @@ static const sBoxedHelpers st_boxed_helpers[] = {
 				( ExportToCSVStrFn ) counter_to_csv_str,
 				( GetFn )            counter_get_fn,
 				( SetFn )            counter_set_fn },
+		{ OFA_TYPE_INTEGER,
+				( NewFromDBMSStrFn ) int_new_from_dbms_str,
+				( FreeFn )           g_free,
+				( ExportToCSVStrFn ) int_to_csv_str,
+				( GetFn )            int_get_fn,
+				( SetFn )            int_set_fn },
 		{ OFA_TYPE_DATE,
 				( NewFromDBMSStrFn ) date_new_from_dbms_str,
 				( FreeFn )           g_free,

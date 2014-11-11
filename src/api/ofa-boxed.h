@@ -37,9 +37,13 @@
 
 G_BEGIN_DECLS
 
+typedef gint64  ofxCounter;
+typedef gdouble ofxAmount;
+
 typedef enum {
 	OFA_TYPE_AMOUNT = 1,
 	OFA_TYPE_COUNTER,
+	OFA_TYPE_INTEGER,
 	OFA_TYPE_DATE,
 	OFA_TYPE_STRING,
 	OFA_TYPE_TIMESTAMP,
@@ -91,10 +95,13 @@ typedef struct {
  * A macro which adds to the previous definition those of the csv
  * column name
  */
-#define OFA_BOXED_CSV(N)                (N), "" #N "", NULL
+#define OFA_BOXED_CSV(N)                OFA_BOXED_DBMS(N), NULL
 
-#define GPOINTER_TO_DOUBLE(P)           ((gdouble)(glong)(P))
-#define GDOUBLE_TO_POINTER(D)           ((gpointer)(glong)(D))
+#define GPOINTER_TO_AMOUNT(P)           ((ofxAmount)(glong)(P))
+#define AMOUNT_TO_GPOINTER(D)           ((gpointer)(glong)(ofxAmount)(D))
+
+#define GPOINTER_TO_COUNTER(P)          ((ofxCounter)(glong)(P))
+#define COUNTER_TO_GPOINTER(D)          ((gpointer)(ofxCounter)(D))
 
 void          ofa_boxed_register_types       ( void );
 
@@ -110,16 +117,18 @@ gchar        *ofa_boxed_get_csv_line         ( const GList *fields_list, gchar f
 
 gconstpointer ofa_boxed_get_value            ( const GList *fields_list, gint id );
 
-#define       ofa_boxed_get_amount(F,I)      (GPOINTER_TO_DOUBLE(ofa_boxed_get_value((F),(I))))
-#define       ofa_boxed_get_counter(F,I)     (GPOINTER_TO_INT(ofa_boxed_get_value((F),(I))))
+#define       ofa_boxed_get_amount(F,I)      (GPOINTER_TO_AMOUNT(ofa_boxed_get_value((F),(I))))
+#define       ofa_boxed_get_counter(F,I)     (GPOINTER_TO_COUNTER(ofa_boxed_get_value((F),(I))))
+#define       ofa_boxed_get_int(F,I)         (GPOINTER_TO_INT(ofa_boxed_get_value((F),(I))))
 #define       ofa_boxed_get_date(F,I)        ((const GDate *)ofa_boxed_get_value((F),(I)))
 #define       ofa_boxed_get_string(F,I)      ((const gchar *)ofa_boxed_get_value((F),(I)))
 #define       ofa_boxed_get_timestamp(F,I)   ((const GTimeVal *)ofa_boxed_get_value((F),(I)))
 
 void          ofa_boxed_set_value            ( const GList *fields_list, gint id, gconstpointer value );
 
-#define       ofa_boxed_set_amount(F,I,V)    ofa_boxed_set_value((F),(I),GDOUBLE_TO_POINTER(V))
-#define       ofa_boxed_set_counter(F,I,V)   ofa_boxed_set_value((F),(I),GINT_TO_POINTER(V))
+#define       ofa_boxed_set_amount(F,I,V)    ofa_boxed_set_value((F),(I),AMOUNT_TO_GPOINTER(V))
+#define       ofa_boxed_set_counter(F,I,V)   ofa_boxed_set_value((F),(I),COUNTER_TO_GPOINTER(V))
+#define       ofa_boxed_set_int(F,I,V)       ofa_boxed_set_value((F),(I),GINT_TO_POINTER(V))
 #define       ofa_boxed_set_date(F,I,V)      ofa_boxed_set_value((F),(I),(const GDate *)(V))
 #define       ofa_boxed_set_string(F,I,V)    ofa_boxed_set_value((F),(I),(const gchar *)(V))
 #define       ofa_boxed_set_timestamp(F,I,V) ofa_boxed_set_value((F),(I),(const GTimeVal *)(V))

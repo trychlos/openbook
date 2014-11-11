@@ -35,6 +35,7 @@
  * This file defines the #ofoEntry public API.
  */
 
+#include "api/ofa-boxed.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-dossier-def.h"
 
@@ -126,7 +127,7 @@ gboolean       ofo_entry_use_currency         ( const ofoDossier *dossier, const
 gboolean       ofo_entry_use_ledger           ( const ofoDossier *dossier, const gchar *journal );
 gboolean       ofo_entry_use_ope_template     ( const ofoDossier *dossier, const gchar *model );
 
-gint           ofo_entry_get_number           ( const ofoEntry *entry );
+ofxCounter     ofo_entry_get_number           ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_label            ( const ofoEntry *entry );
 const GDate   *ofo_entry_get_deffect          ( const ofoEntry *entry );
 const GDate   *ofo_entry_get_dope             ( const ofoEntry *entry );
@@ -135,19 +136,19 @@ const gchar   *ofo_entry_get_account          ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_currency         ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_ledger           ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_ope_template     ( const ofoEntry *entry );
-gdouble        ofo_entry_get_debit            ( const ofoEntry *entry );
-gdouble        ofo_entry_get_credit           ( const ofoEntry *entry );
+ofxAmount      ofo_entry_get_debit            ( const ofoEntry *entry );
+ofxAmount      ofo_entry_get_credit           ( const ofoEntry *entry );
 ofaEntryStatus ofo_entry_get_status           ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_upd_user         ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_upd_stamp        ( const ofoEntry *entry );
 const GDate   *ofo_entry_get_concil_dval      ( const ofoEntry *entry );
 const gchar   *ofo_entry_get_concil_user      ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_concil_stamp     ( const ofoEntry *entry );
-gint           ofo_entry_get_settlement_number( const ofoEntry *entry );
+ofxCounter     ofo_entry_get_settlement_number( const ofoEntry *entry );
 const gchar   *ofo_entry_get_settlement_user  ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_settlement_stamp ( const ofoEntry *entry );
 
-void           ofo_entry_set_number           ( ofoEntry *entry, gint number );
+void           ofo_entry_set_number           ( ofoEntry *entry, ofxCounter number );
 void           ofo_entry_set_label            ( ofoEntry *entry, const gchar *label );
 void           ofo_entry_set_deffect          ( ofoEntry *entry, const GDate *date );
 void           ofo_entry_set_dope             ( ofoEntry *entry, const GDate *date );
@@ -156,8 +157,8 @@ void           ofo_entry_set_account          ( ofoEntry *entry, const gchar *nu
 void           ofo_entry_set_currency         ( ofoEntry *entry, const gchar *currency );
 void           ofo_entry_set_ledger           ( ofoEntry *entry, const gchar *journal );
 void           ofo_entry_set_ope_template     ( ofoEntry *entry, const gchar *model );
-void           ofo_entry_set_debit            ( ofoEntry *entry, gdouble amount );
-void           ofo_entry_set_credit           ( ofoEntry *entry, gdouble amount );
+void           ofo_entry_set_debit            ( ofoEntry *entry, ofxAmount amount );
+void           ofo_entry_set_credit           ( ofoEntry *entry, ofxAmount amount );
 void           ofo_entry_set_status           ( ofoEntry *entry, ofaEntryStatus status );
 void           ofo_entry_set_concil_dval      ( ofoEntry *entry, const GDate *date );
 void           ofo_entry_set_concil_user      ( ofoEntry *entry, const gchar *user );
@@ -168,19 +169,19 @@ gboolean       ofo_entry_is_valid             ( const ofoDossier *dossier,
 													const gchar *label,
 													const gchar *account, const gchar *currency,
 													const gchar *ledger, const gchar *model,
-													gdouble debit, gdouble credit );
+													ofxAmount debit, ofxAmount credit );
 
 ofoEntry      *ofo_entry_new_with_data        ( const ofoDossier *dossier,
 													const GDate *deffect, const GDate *dope,
 													const gchar *label, const gchar *ref,
 													const gchar *account, const gchar *currency,
 													const gchar *ledger, const gchar *model,
-													gdouble debit, gdouble credit );
+													ofxAmount debit, ofxAmount credit );
 
 gboolean       ofo_entry_insert               ( ofoEntry *entry, ofoDossier *dossier );
 gboolean       ofo_entry_update               ( ofoEntry *entry, const ofoDossier *dossier );
 gboolean       ofo_entry_update_concil        ( ofoEntry *entry, const ofoDossier *dossier );
-gboolean       ofo_entry_update_settlement    ( ofoEntry *entry, const ofoDossier *dossier, gint number );
+gboolean       ofo_entry_update_settlement    ( ofoEntry *entry, const ofoDossier *dossier, ofxCounter number );
 gboolean       ofo_entry_validate             ( ofoEntry *entry, const ofoDossier *dossier );
 
 gboolean       ofo_entry_validate_by_ledger     ( const ofoDossier *dossier,

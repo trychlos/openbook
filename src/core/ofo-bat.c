@@ -47,7 +47,7 @@ struct _ofoBatPrivate {
 
 	/* sgbd data
 	 */
-	gint       id;						/* bat (imported file) id */
+	ofxCounter id;						/* bat (imported file) id */
 	gchar     *uri;
 	gchar     *format;
 	gint       count;
@@ -55,7 +55,7 @@ struct _ofoBatPrivate {
 	GDate      end;
 	gchar     *rib;
 	gchar     *currency;
-	gdouble    solde;
+	ofxAmount  solde;
 	gboolean   solde_set;
 	gchar     *notes;
 	gchar     *upd_user;
@@ -208,7 +208,7 @@ bat_load_dataset( void )
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
 		bat = ofo_bat_new();
-		ofo_bat_set_id( bat, atoi(( gchar * ) icol->data ));
+		ofo_bat_set_id( bat, atol(( gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_bat_set_uri( bat, ( gchar * ) icol->data );
 		icol = icol->next;
@@ -262,7 +262,7 @@ bat_load_dataset( void )
 /**
  * ofo_bat_get_id:
  */
-gint
+ofxCounter
 ofo_bat_get_id( const ofoBat *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT( bat ), OFO_BASE_UNSET_ID );
@@ -398,7 +398,7 @@ ofo_bat_get_currency( const ofoBat *bat )
 /**
  * ofo_bat_get_solde:
  */
-gdouble
+ofxAmount
 ofo_bat_get_solde( const ofoBat *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT( bat ), 0 );
@@ -578,7 +578,7 @@ ofo_bat_is_deletable( const ofoBat *bat )
  * ofo_bat_set_id:
  */
 void
-ofo_bat_set_id( ofoBat *bat, gint id )
+ofo_bat_set_id( ofoBat *bat, ofxCounter id )
 {
 	g_return_if_fail( OFO_IS_BAT( bat ));
 
@@ -694,7 +694,7 @@ ofo_bat_set_currency( ofoBat *bat, const gchar *currency )
  * ofo_bat_set_solde:
  */
 void
-ofo_bat_set_solde( ofoBat *bat, gdouble solde )
+ofo_bat_set_solde( ofoBat *bat, ofxAmount solde )
 {
 	g_return_if_fail( OFO_IS_BAT( bat ));
 
@@ -822,7 +822,7 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"	(BAT_ID,BAT_URI,BAT_FORMAT,BAT_COUNT,BAT_BEGIN,BAT_END,"
 			"	 BAT_RIB,BAT_CURRENCY,BAT_SOLDE,"
-			"	 BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP) VALUES (%d,'%s',",
+			"	 BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP) VALUES (%ld,'%s',",
 					ofo_bat_get_id( bat ),
 					ofo_bat_get_uri( bat ));
 
@@ -957,7 +957,7 @@ bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query,
 			"	BAT_UPD_USER='%s',BAT_UPD_STAMP='%s'"
-			"	WHERE BAT_ID=%d", user, stamp_str, ofo_bat_get_id( bat ));
+			"	WHERE BAT_ID=%ld", user, stamp_str, ofo_bat_get_id( bat ));
 
 	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 		bat_set_upd_user( bat, user );
@@ -1011,7 +1011,7 @@ bat_do_delete_main( ofoBat *bat, const ofoSgbd *sgbd )
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_BAT"
-			"	WHERE BAT_ID=%d",
+			"	WHERE BAT_ID=%ld",
 					ofo_bat_get_id( bat ));
 
 	ok = ofo_sgbd_query( sgbd, query, TRUE );
@@ -1029,7 +1029,7 @@ bat_do_delete_lines( ofoBat *bat, const ofoSgbd *sgbd )
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_BAT_LINES"
-			"	WHERE BAT_ID=%d",
+			"	WHERE BAT_ID=%ld",
 					ofo_bat_get_id( bat ));
 
 	ok = ofo_sgbd_query( sgbd, query, TRUE );

@@ -84,10 +84,10 @@ struct _sDetailExe {
 	GDate            exe_begin;
 	GDate            exe_end;
 	gchar           *exe_notes;
-	gint             last_entry;
-	gint             last_bat;
-	gint             last_batline;
-	gint             last_settlement;
+	ofxCounter          last_entry;
+	ofxCounter          last_bat;
+	ofxCounter          last_batline;
+	ofxCounter          last_settlement;
 	ofaDossierStatus status;
 };
 
@@ -116,7 +116,6 @@ static void        on_updated_object( const ofoDossier *dossier, ofoBase *object
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account );
-/*static gint        cmp_exe_id( gconstpointer a gconstpointer b );*/
 static sDetailExe *get_current_exe( const ofoDossier *dossier );
 static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
 static sDetailExe *get_exe_by_date( const ofoDossier *dossier, const GDate *date );
@@ -125,7 +124,7 @@ static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBa
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
 static void        on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry );
-static void        dossier_update_next_number( const ofoDossier *dossier, const gchar *field, gint next_number );
+static void        dossier_update_next_number( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static void        dossier_set_last_exe_id( ofoDossier *dossier, gint exe_id );
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
 static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
@@ -587,24 +586,24 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ACC_FORWARD         CHAR(1)                      COMMENT 'Whether the account supports carried forwards',"
 			"	ACC_UPD_USER        VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
 			"	ACC_UPD_STAMP       TIMESTAMP                    COMMENT 'Properties last update timestamp',"
-			"	ACC_DEB_ENTRY       INTEGER                      COMMENT 'Number of the most recent validated debit entry',"
+			"	ACC_DEB_ENTRY       BIGINT                       COMMENT 'Number of the most recent validated debit entry',"
 			"	ACC_DEB_DATE        DATE                         COMMENT 'Effect date of the most recent validated debit entry',"
-			"	ACC_DEB_AMOUNT      DECIMAL(15,5)                COMMENT 'Debit balance of validated entries',"
-			"	ACC_CRE_ENTRY       INTEGER                      COMMENT 'Number of the most recent validated credit entry',"
+			"	ACC_DEB_AMOUNT      DECIMAL(20,5)                COMMENT 'Debit balance of validated entries',"
+			"	ACC_CRE_ENTRY       BIGINT                       COMMENT 'Number of the most recent validated credit entry',"
 			"	ACC_CRE_DATE        DATE                         COMMENT 'Effect date of the most recent validated credit entry',"
-			"	ACC_CRE_AMOUNT      DECIMAL(15,5)                COMMENT 'Credit balance of validated entries',"
-			"	ACC_DAY_DEB_ENTRY   INTEGER                      COMMENT 'Number of the most recent rough debit entry',"
+			"	ACC_CRE_AMOUNT      DECIMAL(20,5)                COMMENT 'Credit balance of validated entries',"
+			"	ACC_DAY_DEB_ENTRY   BIGINT                       COMMENT 'Number of the most recent rough debit entry',"
 			"	ACC_DAY_DEB_DATE    DATE                         COMMENT 'Effect date of the most recent rough debit entry',"
-			"	ACC_DAY_DEB_AMOUNT  DECIMAL(15,5)                COMMENT 'Debit balance of rough entries',"
-			"	ACC_DAY_CRE_ENTRY   INTEGER                      COMMENT 'Number of the most recent rough credit entry',"
+			"	ACC_DAY_DEB_AMOUNT  DECIMAL(20,5)                COMMENT 'Debit balance of rough entries',"
+			"	ACC_DAY_CRE_ENTRY   BIGINT                       COMMENT 'Number of the most recent rough credit entry',"
 			"	ACC_DAY_CRE_DATE    DATE                         COMMENT 'Effect date of the most recent rough credit entry',"
-			"	ACC_DAY_CRE_AMOUNT  DECIMAL(15,5)                COMMENT 'Credit balance of rough entries'"
-			"	ACC_OPEN_DEB_ENTRY  INTEGER                      COMMENT 'Number of the most recent debit entry at the exercice opening',"
+			"	ACC_DAY_CRE_AMOUNT  DECIMAL(20,5)                COMMENT 'Credit balance of rough entries',"
+			"	ACC_OPEN_DEB_ENTRY  BIGINT                       COMMENT 'Number of the most recent debit entry at the exercice opening',"
 			"	ACC_OPEN_DEB_DATE   DATE                         COMMENT 'Effect date of the most recent debit entry at the exercice opening',"
-			"	ACC_OPEN_DEB_AMOUNT DECIMAL(15,5)                COMMENT 'Debit balance at the exercice opening',"
-			"	ACC_OPEN_CRE_ENTRY  INTEGER                      COMMENT 'Number of the most recent credit entry at the exercice opening',"
+			"	ACC_OPEN_DEB_AMOUNT DECIMAL(20,5)                COMMENT 'Debit balance at the exercice opening',"
+			"	ACC_OPEN_CRE_ENTRY  BIGINT                       COMMENT 'Number of the most recent credit entry at the exercice opening',"
 			"	ACC_OPEN_CRE_DATE   DATE                         COMMENT 'Effect date of the most recent credit entry at the exercice opening',"
-			"	ACC_OPEN_CRE_AMOUNT DECIMAL(15,5)                COMMENT 'Credit balance at the exercice opening',"
+			"	ACC_OPEN_CRE_AMOUNT DECIMAL(20,5)                COMMENT 'Credit balance at the exercice opening'"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -615,13 +614,13 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ASS_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern asset identifier',"
 			"	ASS_LABEL     VARCHAR(80)                 COMMENT 'Asset label',"
 			"	ASS_DATE_IN   DATE                        COMMENT 'Entry date',"
-			"	ASS_TOTAL     DECIMAL(15,5)               COMMENT 'Total payed (TVA inc.)',"
-			"	ASS_IMMO      DECIMAL(15,5)               COMMENT 'Montant immobilisé',"
+			"	ASS_TOTAL     DECIMAL(20,5)               COMMENT 'Total payed (TVA inc.)',"
+			"	ASS_IMMO      DECIMAL(20,5)               COMMENT 'Montant immobilisé',"
 			"	ASS_IMMO_FISC INTEGER                     COMMENT 'Montant fiscal immobilisé (à amortir)',"
 			"	ASS_DUREE     INTEGER                     COMMENT 'Durée d\\'amortissement',"
 			"	ASS_TYPE      VARCHAR(1)                  COMMENT 'Type d\\'amortissement',"
-			"	ASS_COEF_DEG  DECIMAL(15,5)               COMMENT 'Coefficient degressif',"
-			"	ASS_RATE      DECIMAL(15,5)               COMMENT 'Taux d\\'amortissement',"
+			"	ASS_COEF_DEG  DECIMAL(20,5)               COMMENT 'Coefficient degressif',"
+			"	ASS_RATE      DECIMAL(20,5)               COMMENT 'Taux d\\'amortissement',"
 			"	ASS_DATE_OUT  DATE                        COMMENT 'Outgoing date',"
 			"	ASS_NOTES     VARCHAR(4096)               COMMENT 'Notes',"
 			"	ASS_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
@@ -637,8 +636,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ASS_EXE_NUM      INTEGER                  COMMENT 'Numéro d\\'annuité',"
 			"	ASS_EXE_DUREE    INTEGER                  COMMENT 'Duree (en mois)',"
 			"	ASS_EXE_PREV     INTEGER                  COMMENT 'Total des amortissements antérieurs',"
-			"	ASS_EXE_TAUX_LIN DECIMAL(15,5)            COMMENT 'Taux lineaire',"
-			"	ASS_EXE_TAUX_DEG DECIMAL(15,5)            COMMENT 'Taux degressif',"
+			"	ASS_EXE_TAUX_LIN DECIMAL(20,5)            COMMENT 'Taux lineaire',"
+			"	ASS_EXE_TAUX_DEG DECIMAL(20,5)            COMMENT 'Taux degressif',"
 			"	ASS_EXE_AMORT    INTEGER                  COMMENT 'Montant de l\\'annuite',"
 			"	ASS_EXE_REST     INTEGER                  COMMENT 'Valeur residuelle',"
 			"	CONSTRAINT PRIMARY KEY (ASS_ID,ASS_EXE_NUM)"
@@ -648,7 +647,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
-			"	BAT_ID        INTEGER     NOT NULL UNIQUE COMMENT 'Intern import identifier',"
+			"	BAT_ID        BIGINT      NOT NULL UNIQUE COMMENT 'Intern import identifier',"
 			"	BAT_URI       VARCHAR(128)                COMMENT 'Imported URI',"
 			"	BAT_FORMAT    VARCHAR(80)                 COMMENT 'Identified file format',"
 			"	BAT_COUNT     INTEGER                     COMMENT 'Imported lines count',"
@@ -656,7 +655,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	BAT_END       DATE                        COMMENT 'End date of the transaction list',"
 			"	BAT_RIB       VARCHAR(80)                 COMMENT 'Bank provided RIB',"
 			"	BAT_CURRENCY  VARCHAR(3)                  COMMENT 'Account currency',"
-			"	BAT_SOLDE     DECIMAL(15,5)               COMMENT 'Signed balance of the account',"
+			"	BAT_SOLDE     DECIMAL(20,5)               COMMENT 'Signed balance of the account',"
 			"	BAT_NOTES     VARCHAR(4096)               COMMENT 'Import notes',"
 			"	BAT_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of import',"
 			"	BAT_UPD_STAMP TIMESTAMP                   COMMENT 'Import timestamp'"
@@ -666,15 +665,15 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
-			"	BAT_ID             INTEGER  NOT NULL      COMMENT 'Intern import identifier',"
-			"	BAT_LINE_ID        INTEGER  NOT NULL UNIQUE COMMENT 'Intern imported line identifier',"
+			"	BAT_ID             BIGINT   NOT NULL      COMMENT 'Intern import identifier',"
+			"	BAT_LINE_ID        BIGINT   NOT NULL UNIQUE COMMENT 'Intern imported line identifier',"
 			"	BAT_LINE_DEFFECT   DATE                   COMMENT 'Effect date',"
 			"	BAT_LINE_DOPE      DATE                   COMMENT 'Operation date',"
 			"	BAT_LINE_REF       VARCHAR(80)            COMMENT 'Bank reference',"
 			"	BAT_LINE_LABEL     VARCHAR(80)            COMMENT 'Line label',"
 			"	BAT_LINE_CURRENCY  VARCHAR(3)             COMMENT 'Line currency',"
-			"	BAT_LINE_AMOUNT    DECIMAL(15,5)          COMMENT 'Signed amount of the line',"
-			"	BAT_LINE_ENTRY     INTEGER                COMMENT 'Reciliated entry',"
+			"	BAT_LINE_AMOUNT    DECIMAL(20,5)          COMMENT 'Signed amount of the line',"
+			"	BAT_LINE_ENTRY     BIGINT                 COMMENT 'Reciliated entry',"
 			"	BAT_LINE_UPD_USER  VARCHAR(20)            COMMENT 'User responsible of the reconciliation',"
 			"	BAT_LINE_UPD_STAMP TIMESTAMP              COMMENT 'Reconciliation timestamp'"
 			")", TRUE )){
@@ -752,8 +751,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	CPT_NUMBER       VARCHAR(20) BINARY NOT NULL   COMMENT 'Account number',"
 			"	CPT_CLOSING      DATE                          COMMENT 'Closing date',"
 			"	CPT_EXE_ID       INTEGER                       COMMENT 'Exercice identifier',"
-			"	CPT_DEB_MNT      DECIMAL(15,5)                 COMMENT 'Validated entries debit balance',"
-			"	CPT_CRE_MNT      DECIMAL(15,5)                 COMMENT 'Validated entries credit balance',"
+			"	CPT_DEB_MNT      DECIMAL(20,5)                 COMMENT 'Validated entries debit balance',"
+			"	CPT_CRE_MNT      DECIMAL(20,5)                 COMMENT 'Validated entries credit balance',"
 			"	CONSTRAINT PRIMARY KEY (CPT_NUMBER,CPT_CLOSING)"
 			")", TRUE )){
 		return( FALSE );
@@ -810,10 +809,10 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	DOS_EXE_BEGIN           DATE                  COMMENT 'Exercice beginning date',"
 			"	DOS_EXE_END             DATE                  COMMENT 'Exercice ending date',"
 			"	DOS_EXE_NOTES           VARCHAR(4096)         COMMENT 'Notes',"
-			"	DOS_EXE_LAST_ENTRY      INTEGER DEFAULT 0     COMMENT 'Last entry number used',"
-			"	DOS_EXE_LAST_BAT        INTEGER DEFAULT 0     COMMENT 'Last BAT file number used',"
-			"	DOS_EXE_LAST_BATLINE    INTEGER DEFAULT 0     COMMENT 'Last BAT line number used',"
-			"	DOS_EXE_LAST_SETTLEMENT INTEGER DEFAULT 0     COMMENT 'Last settlement number used',"
+			"	DOS_EXE_LAST_ENTRY      BIGINT  DEFAULT 0     COMMENT 'Last entry number used',"
+			"	DOS_EXE_LAST_BAT        BIGINT  DEFAULT 0     COMMENT 'Last BAT file number used',"
+			"	DOS_EXE_LAST_BATLINE    BIGINT  DEFAULT 0     COMMENT 'Last BAT line number used',"
+			"	DOS_EXE_LAST_SETTLEMENT BIGINT  DEFAULT 0     COMMENT 'Last settlement number used',"
 			"	DOS_EXE_STATUS          INTEGER      NOT NULL COMMENT 'Status of this exercice',"
 			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_ID)"
 			")", TRUE )){
@@ -829,14 +828,14 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL            COMMENT 'Imputation effect date',"
-			"	ENT_NUMBER       INTEGER NOT NULL         COMMENT 'Entry number',"
+			"	ENT_NUMBER       BIGINT  NOT NULL UNIQUE  COMMENT 'Entry number',"
 			"	ENT_DOPE         DATE NOT NULL            COMMENT 'Operation date',"
 			"	ENT_LABEL        VARCHAR(80)              COMMENT 'Entry label',"
 			"	ENT_REF          VARCHAR(20)              COMMENT 'Piece reference',"
 			"	ENT_ACCOUNT      VARCHAR(20)              COMMENT 'Account number',"
 			"	ENT_CURRENCY     VARCHAR(3)               COMMENT 'ISO 3A identifier of the currency',"
-			"	ENT_DEBIT        DECIMAL(15,5) DEFAULT 0  COMMENT 'Debiting amount',"
-			"	ENT_CREDIT       DECIMAL(15,5) DEFAULT 0  COMMENT 'Crediting amount',"
+			"	ENT_DEBIT        DECIMAL(20,5) DEFAULT 0  COMMENT 'Debiting amount',"
+			"	ENT_CREDIT       DECIMAL(20,5) DEFAULT 0  COMMENT 'Crediting amount',"
 			"	ENT_LEDGER       VARCHAR(6)               COMMENT 'Mnemonic identifier of the ledger',"
 			"	ENT_OPE_TEMPLATE VARCHAR(6)               COMMENT 'Mnemonic identifier of the operation template',"
 			"	ENT_STATUS       INTEGER       DEFAULT 1  COMMENT 'Is the entry validated or deleted ?',"
@@ -845,11 +844,9 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	ENT_CONCIL_DVAL  DATE                     COMMENT 'Reconciliation value date',"
 			"	ENT_CONCIL_USER  VARCHAR(20)              COMMENT 'User responsible of the reconciliation',"
 			"	ENT_CONCIL_STAMP TIMESTAMP                COMMENT 'Reconciliation timestamp',"
-			"	ENT_STLMT_NUMBER INTEGER                  COMMENT 'Settlement number',"
+			"	ENT_STLMT_NUMBER BIGINT                   COMMENT 'Settlement number',"
 			"	ENT_STLMT_USER   VARCHAR(20)              COMMENT 'User responsible of the settlement',"
-			"	ENT_STLMT_STAMP  TIMESTAMP                COMMENT 'Settlement timestamp',"
-			"	CONSTRAINT PRIMARY KEY (ENT_DEFFECT,ENT_NUMBER),"
-			"	INDEX (ENT_NUMBER)"
+			"	ENT_STLMT_STAMP  TIMESTAMP                COMMENT 'Settlement timestamp'"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -870,11 +867,11 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	LED_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal ledger identifier',"
 			"	LED_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
 			"	LED_CUR_CODE     VARCHAR(3) NOT NULL      COMMENT 'Internal currency identifier',"
-			"	LED_CUR_CLO_DEB  DECIMAL(15,5)            COMMENT 'Debit balance at last closing',"
-			"	LED_CUR_CLO_CRE  DECIMAL(15,5)            COMMENT 'Credit balance at last closing',"
-			"	LED_CUR_DEB      DECIMAL(15,5)            COMMENT 'Current debit balance',"
+			"	LED_CUR_CLO_DEB  DECIMAL(20,5)            COMMENT 'Debit balance at last closing',"
+			"	LED_CUR_CLO_CRE  DECIMAL(20,5)            COMMENT 'Credit balance at last closing',"
+			"	LED_CUR_DEB      DECIMAL(20,5)            COMMENT 'Current debit balance',"
 			"	LED_CUR_DEB_DATE DATE                     COMMENT 'Most recent debit entry effect date',"
-			"	LED_CUR_CRE      DECIMAL(15,5)            COMMENT 'Current credit balance',"
+			"	LED_CUR_CRE      DECIMAL(20,5)            COMMENT 'Current credit balance',"
 			"	LED_CUR_CRE_DATE DATE                     COMMENT 'Most recent credit entry effect date',"
 			"	CONSTRAINT PRIMARY KEY (LED_MNEMO,LED_EXE_ID,LED_CUR_CODE)"
 			")", TRUE )){
@@ -983,7 +980,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL        COMMENT 'Mnemonic identifier of the rate',"
 			"	RAT_VAL_BEG       DATE    DEFAULT NULL              COMMENT 'Validity begin date',"
 			"	RAT_VAL_END       DATE    DEFAULT NULL              COMMENT 'Validity end date',"
-			"	RAT_VAL_RATE      DECIMAL(15,5)                     COMMENT 'Rate value',"
+			"	RAT_VAL_RATE      DECIMAL(20,5)                     COMMENT 'Rate value',"
 			"	ADD UNIQUE INDEX (RAT_MNEMO,RAT_VAL_BEG,RAT_VAL_END)"
 			")", TRUE )){
 		return( FALSE );
@@ -1481,7 +1478,7 @@ ofo_dossier_get_exe_status( const ofoDossier *dossier, gint exe_id )
  *
  * Returns: the last entry number allocated in the specified exercice.
  */
-gint
+ofxCounter
 ofo_dossier_get_exe_last_entry( const ofoDossier *dossier, gint exe_id )
 {
 	sDetailExe *sexe;
@@ -1504,7 +1501,7 @@ ofo_dossier_get_exe_last_entry( const ofoDossier *dossier, gint exe_id )
  *
  * Returns: the last settlement number allocated in the specified exercice.
  */
-gint
+ofxCounter
 ofo_dossier_get_exe_last_settlement( const ofoDossier *dossier, gint exe_id )
 {
 	sDetailExe *sexe;
@@ -1527,7 +1524,7 @@ ofo_dossier_get_exe_last_settlement( const ofoDossier *dossier, gint exe_id )
  *
  * Returns: the last bat number allocated in the specified exercice.
  */
-gint
+ofxCounter
 ofo_dossier_get_exe_last_bat( const ofoDossier *dossier, gint exe_id )
 {
 	sDetailExe *sexe;
@@ -1550,7 +1547,7 @@ ofo_dossier_get_exe_last_bat( const ofoDossier *dossier, gint exe_id )
  *
  * Returns: the last bat_line number allocated in the specified exercice.
  */
-gint
+ofxCounter
 ofo_dossier_get_exe_last_bat_line( const ofoDossier *dossier, gint exe_id )
 {
 	sDetailExe *sexe;
@@ -1594,11 +1591,11 @@ ofo_dossier_get_exe_notes( const ofoDossier *dossier, gint exe_id )
 /**
  * ofo_dossier_get_next_entry_number:
  */
-gint
+ofxCounter
 ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 {
 	sDetailExe *current;
-	gint next_number;
+	ofxCounter next_number;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
 
@@ -1618,11 +1615,11 @@ ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
 /**
  * ofo_dossier_get_next_bat_number:
  */
-gint
+ofxCounter
 ofo_dossier_get_next_bat_number( const ofoDossier *dossier )
 {
 	sDetailExe *current;
-	gint next_number;
+	ofxCounter next_number;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
 
@@ -1642,11 +1639,11 @@ ofo_dossier_get_next_bat_number( const ofoDossier *dossier )
 /**
  * ofo_dossier_get_next_batline_number:
  */
-gint
+ofxCounter
 ofo_dossier_get_next_batline_number( const ofoDossier *dossier )
 {
 	sDetailExe *current;
-	gint next_number;
+	ofxCounter next_number;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
 
@@ -1666,11 +1663,11 @@ ofo_dossier_get_next_batline_number( const ofoDossier *dossier )
 /**
  * ofo_dossier_get_next_settlement_number:
  */
-gint
+ofxCounter
 ofo_dossier_get_next_settlement_number( const ofoDossier *dossier )
 {
 	sDetailExe *current;
-	gint next_number;
+	ofxCounter next_number;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
 
@@ -1691,13 +1688,13 @@ ofo_dossier_get_next_settlement_number( const ofoDossier *dossier )
  * ofo_dossier_update_next_number:
  */
 static void
-dossier_update_next_number( const ofoDossier *dossier, const gchar *field, gint next_number )
+dossier_update_next_number( const ofoDossier *dossier, const gchar *field, ofxCounter next_number )
 {
 	gchar *query;
 
 	query = g_strdup_printf(
 			"UPDATE OFA_T_DOSSIER_EXE "
-			"	SET %s=%d "
+			"	SET %s=%ld "
 			"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
 					field, next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
 
@@ -1945,7 +1942,7 @@ ofo_dossier_set_current_exe_notes( const ofoDossier *dossier, const gchar *notes
  * ofo_dossier_set_current_exe_last_entry:
  */
 void
-ofo_dossier_set_current_exe_last_entry( const ofoDossier *dossier, gint number )
+ofo_dossier_set_current_exe_last_entry( const ofoDossier *dossier, ofxCounter number )
 {
 	sDetailExe *sexe;
 
@@ -2128,13 +2125,13 @@ dossier_read_exercices( ofoDossier *dossier )
 				sexe->exe_notes = g_strdup(( const gchar * ) icol->data );
 			}
 			icol = icol->next;
-			sexe->last_entry = atoi(( gchar * ) icol->data );
+			sexe->last_entry = atol(( gchar * ) icol->data );
 			icol = icol->next;
-			sexe->last_bat = atoi(( gchar * ) icol->data );
+			sexe->last_bat = atol(( gchar * ) icol->data );
 			icol = icol->next;
-			sexe->last_batline = atoi(( gchar * ) icol->data );
+			sexe->last_batline = atol(( gchar * ) icol->data );
 			icol = icol->next;
-			sexe->last_settlement = atoi(( gchar * ) icol->data );
+			sexe->last_settlement = atol(( gchar * ) icol->data );
 			icol = icol->next;
 			if( icol->data ){
 				sexe->status = atoi(( gchar * ) icol->data );
@@ -2301,10 +2298,10 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 
 	lines = NULL;
 
-	str = g_strdup_printf( "1;Label;Notes;MajUser;MajStamp;ExeLength;DefaultCurrency" );
+	str = g_strdup_printf( "1;Label;Notes;MajUser;MajStamp;ExeLength;DefaultCurrency;LastExeId" );
 	lines = g_slist_prepend( lines, str );
 
-	str = g_strdup_printf( "2;ExeBegin;ExeEnd;ExeNotes;LastEntry;Status" );
+	str = g_strdup_printf( "2;ExeBegin;ExeEnd;ExeNotes;LastEntry;LastBat;LastBatLine;LastSettlement;Status" );
 	lines = g_slist_prepend( lines, str );
 
 	notes = my_utils_export_multi_lines( ofo_dossier_get_notes( dossier ));
@@ -2313,13 +2310,14 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	stamp = my_utils_stamp_to_str( ofo_dossier_get_upd_stamp( dossier ), MY_STAMP_YYMDHMS );
 	currency = ofo_dossier_get_default_currency( dossier );
 
-	str = g_strdup_printf( "1;%s;%s;%s;%s;%d;%s",
+	str = g_strdup_printf( "1;%s;%s;%s;%s;%d;%s;%d",
 			ofo_dossier_get_label( dossier ),
 			notes ? notes : "",
 			muser ? muser : "",
 			muser ? stamp : "",
 			ofo_dossier_get_exercice_length( dossier ),
-			currency ? currency : "" );
+			currency ? currency : "",
+			ofo_dossier_get_last_exe_id( dossier ));
 
 	g_free( notes );
 	g_free( stamp );
@@ -2333,11 +2331,14 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 		send = my_date_to_str( &sexe->exe_end, MY_DATE_SQL );
 		notes = my_utils_quote( sexe->exe_notes );
 
-		str = g_strdup_printf( "2:%s;%s;%s;%d;%d",
+		str = g_strdup_printf( "2:%s;%s;%s;%ld;%ld;%ld;%ld;%d",
 				sbegin,
 				send,
 				notes,
 				sexe->last_entry,
+				sexe->last_bat,
+				sexe->last_batline,
+				sexe->last_settlement,
 				sexe->status );
 
 		g_free( notes );

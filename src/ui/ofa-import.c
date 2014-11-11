@@ -937,7 +937,7 @@ import_currency_csv( ofaImport *self )
 
 /*
  * columns:
- *  - Dope;Deffect;Label;Ref;Currency;Journal;Account;Amount
+ *  - Dope;Deffect;Label;Ref;Currency;Journal;Account;ofxAmount
  *    amount is negative for a credit, positive for a debit
  * header : yes
  */

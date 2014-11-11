@@ -867,10 +867,10 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
 		case COL_NUMBER:
 			int_a = OFO_IS_ENTRY( object_a ) ?
 						ofo_entry_get_number( OFO_ENTRY( object_a )) :
-							ofo_bat_line_get_id( OFO_BAT_LINE( object_a ));
+							ofo_bat_line_get_line_id( OFO_BAT_LINE( object_a ));
 			int_b = OFO_IS_ENTRY( object_b ) ?
 						ofo_entry_get_number( OFO_ENTRY( object_b )) :
-							ofo_bat_line_get_id( OFO_BAT_LINE( object_b ));
+							ofo_bat_line_get_line_id( OFO_BAT_LINE( object_b ));
 			cmp = int_a > int_b ? 1 : ( int_a < int_b ? -1 : 0 );
 			break;
 		case COL_LABEL:
@@ -1308,7 +1308,7 @@ do_fetch_entries( ofaReconciliation *self )
 		scre = my_double_to_str( ofo_entry_get_credit( entry ));
 		dconcil = ofo_entry_get_concil_dval( entry );
 		sdrap = my_date_to_str( dconcil, MY_DATE_DMYY );
-		snum = g_strdup_printf( "%u", ofo_entry_get_number( entry ));
+		snum = g_strdup_printf( "%ld", ofo_entry_get_number( entry ));
 
 		gtk_tree_store_insert_with_values(
 				GTK_TREE_STORE( tmodel ),
@@ -1660,7 +1660,7 @@ insert_bat_line( ofaReconciliation *self, ofoBatLine *batline,
 		dope = ofo_bat_line_get_deffect( batline );
 	}
 	sdope = my_date_to_str( dope, MY_DATE_DMYY );
-	snum = g_strdup_printf( "%u", ofo_bat_line_get_id( batline ));
+	snum = g_strdup_printf( "%ld", ofo_bat_line_get_line_id( batline ));
 
 	/* set the bat line as a hint */
 	gtk_tree_store_insert_with_values(

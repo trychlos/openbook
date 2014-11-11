@@ -52,7 +52,7 @@ struct _ofoEntryPrivate {
 	/* sgbd data
 	 */
 	GDate          deffect;
-	gint           number;
+	ofxCounter     number;
 	GDate          dope;
 	gchar         *label;
 	gchar         *ref;
@@ -60,15 +60,15 @@ struct _ofoEntryPrivate {
 	gchar         *currency;
 	gchar         *ledger;
 	gchar         *model;
-	gdouble        debit;
-	gdouble        credit;
+	ofxAmount      debit;
+	ofxAmount      credit;
 	ofaEntryStatus status;
 	gchar         *upd_user;
 	GTimeVal       upd_stamp;
 	GDate          concil_dval;
 	gchar         *concil_user;
 	GTimeVal       concil_stamp;
-	gint           stlmt_number;
+	ofxCounter     stlmt_number;
 	gchar         *stlmt_user;
 	GTimeVal       stlmt_stamp;
 };
@@ -89,7 +89,7 @@ static gint         entry_count_for_ope_template( const ofoSgbd *sgbd, const gch
 static gint         entry_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
-static void         entry_set_settlement_number( ofoEntry *entry, gint number );
+static void         entry_set_settlement_number( ofoEntry *entry, ofxCounter number );
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static gboolean     entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
@@ -99,11 +99,11 @@ static void         error_currency( const gchar *currency );
 static void         error_acc_number( void );
 static void         error_account( const gchar *number );
 static void         error_acc_currency( const ofoDossier *dossier, const gchar *currency, ofoAccount *account );
-static void         error_amounts( gdouble debit, gdouble credit );
+static void         error_amounts( ofxAmount debit, ofxAmount credit );
 static void         error_entry( const gchar *message );
 static gboolean     entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd );
-static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, gint number );
+static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
 
 static void
@@ -696,7 +696,7 @@ entry_parse_result( const GSList *row )
 		icol = icol->next;
 		my_date_set_from_sql( &entry->priv->deffect, ( const gchar * ) icol->data );
 		icol = icol->next;
-		ofo_entry_set_number( entry, atoi(( gchar * ) icol->data ));
+		ofo_entry_set_number( entry, atol(( gchar * ) icol->data ));
 		icol = icol->next;
 		ofo_entry_set_label( entry, ( gchar * ) icol->data );
 		icol = icol->next;
@@ -741,7 +741,7 @@ entry_parse_result( const GSList *row )
 		}
 		icol = icol->next;
 		if( icol->data ){
-			entry->priv->stlmt_number = atoi(( const gchar * ) icol->data );
+			entry->priv->stlmt_number = atol(( const gchar * ) icol->data );
 		}
 		icol = icol->next;
 		if( icol->data ){
@@ -850,7 +850,7 @@ entry_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo )
 /**
  * ofo_entry_get_number:
  */
-gint
+ofxCounter
 ofo_entry_get_number( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), OFO_BASE_UNSET_ID );
@@ -994,7 +994,7 @@ ofo_entry_get_ope_template( const ofoEntry *entry )
 /**
  * ofo_entry_get_debit:
  */
-gdouble
+ofxAmount
 ofo_entry_get_debit( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), 0.0 );
@@ -1010,7 +1010,7 @@ ofo_entry_get_debit( const ofoEntry *entry )
 /**
  * ofo_entry_get_credit:
  */
-gdouble
+ofxAmount
 ofo_entry_get_credit( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), 0.0 );
@@ -1128,7 +1128,7 @@ ofo_entry_get_concil_stamp( const ofoEntry *entry )
 /**
  * ofo_entry_get_settlement_number:
  */
-gint
+ofxCounter
 ofo_entry_get_settlement_number( const ofoEntry *entry )
 {
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), -1 );
@@ -1180,7 +1180,7 @@ ofo_entry_get_settlement_stamp( const ofoEntry *entry )
  * ofo_entry_set_number:
  */
 void
-ofo_entry_set_number( ofoEntry *entry, gint number )
+ofo_entry_set_number( ofoEntry *entry, ofxCounter number )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 	g_return_if_fail( number > 0 );
@@ -1320,7 +1320,7 @@ ofo_entry_set_ope_template( ofoEntry *entry, const gchar *model )
  * ofo_entry_set_debit:
  */
 void
-ofo_entry_set_debit( ofoEntry *entry, gdouble debit )
+ofo_entry_set_debit( ofoEntry *entry, ofxAmount debit )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 
@@ -1334,7 +1334,7 @@ ofo_entry_set_debit( ofoEntry *entry, gdouble debit )
  * ofo_entry_set_credit:
  */
 void
-ofo_entry_set_credit( ofoEntry *entry, gdouble credit )
+ofo_entry_set_credit( ofoEntry *entry, ofxAmount credit )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 
@@ -1439,7 +1439,7 @@ ofo_entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *stamp )
  * The reconciliation may be unset by setting @number to 0.
  */
 static void
-entry_set_settlement_number( ofoEntry *entry, gint number )
+entry_set_settlement_number( ofoEntry *entry, ofxCounter number )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
 
@@ -1485,7 +1485,7 @@ gboolean
 ofo_entry_is_valid( const ofoDossier *dossier,
 							const GDate *deffect, const GDate *dope, const gchar *label,
 							const gchar *account, const gchar *currency, const gchar *ledger,
-							const gchar *model, gdouble debit, gdouble credit )
+							const gchar *model, ofxAmount debit, ofxAmount credit )
 {
 	ofoAccount *account_obj;
 	gboolean ok;
@@ -1543,7 +1543,7 @@ ofo_entry_new_with_data( const ofoDossier *dossier,
 							const GDate *deffect, const GDate *dope, const gchar *label,
 							const gchar *ref, const gchar *account,
 							const gchar *currency, const gchar *ledger,
-							const gchar *model, gdouble debit, gdouble credit )
+							const gchar *model, ofxAmount debit, ofxAmount credit )
 {
 	ofoEntry *entry;
 
@@ -1632,7 +1632,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 			"	ENT_CURRENCY,ENT_LEDGER,ENT_OPE_TEMPLATE,"
 			"	ENT_DEBIT,ENT_CREDIT,ENT_STATUS,"
 			"	ENT_UPD_USER, ENT_UPD_STAMP) "
-			"	VALUES ('%s',%d,'%s','%s',",
+			"	VALUES ('%s',%ld,'%s','%s',",
 			sdeff,
 			ofo_entry_get_number( entry ),
 			sdope,
@@ -1772,7 +1772,7 @@ error_acc_currency( const ofoDossier *dossier, const gchar *currency, ofoAccount
 }
 
 static void
-error_amounts( gdouble debit, gdouble credit )
+error_amounts( ofxAmount debit, ofxAmount credit )
 {
 	gchar *str;
 
@@ -1870,7 +1870,7 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"	ENT_DEBIT=%s,ENT_CREDIT=%s,"
 			"	ENT_UPD_USER='%s',ENT_UPD_STAMP='%s' "
-			"	WHERE ENT_NUMBER=%u",
+			"	WHERE ENT_NUMBER=%ld",
 			sdeb, scre, user, stamp_str, ofo_entry_get_number( entry ));
 
 	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
@@ -1920,7 +1920,7 @@ do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd )
 
 	rappro = ofo_entry_get_concil_dval( entry );
 	query = g_string_new( "UPDATE OFA_T_ENTRIES SET " );
-	where = g_strdup_printf( "WHERE ENT_NUMBER=%d", ofo_entry_get_number( entry ));
+	where = g_strdup_printf( "WHERE ENT_NUMBER=%ld", ofo_entry_get_number( entry ));
 
 	if( my_date_is_valid( rappro )){
 
@@ -1960,7 +1960,7 @@ do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd )
  * We simultaneously update the ofoEntry object, and the DBMS.
  */
 gboolean
-ofo_entry_update_settlement( ofoEntry *entry, const ofoDossier *dossier, gint number )
+ofo_entry_update_settlement( ofoEntry *entry, const ofoDossier *dossier, ofxCounter number )
 {
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
@@ -1978,7 +1978,7 @@ ofo_entry_update_settlement( ofoEntry *entry, const ofoDossier *dossier, gint nu
 }
 
 static gboolean
-do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, gint number )
+do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, ofxCounter number )
 {
 	GString *query;
 	gchar *stamp_str;
@@ -1994,7 +1994,7 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, g
 
 		stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 		g_string_append_printf( query,
-				"ENT_STLMT_NUMBER=%u,ENT_STLMT_USER='%s',ENT_STLMT_STAMP='%s' ",
+				"ENT_STLMT_NUMBER=%ld,ENT_STLMT_USER='%s',ENT_STLMT_STAMP='%s' ",
 				number, user, stamp_str );
 		g_free( stamp_str );
 
@@ -2007,7 +2007,7 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, g
 				"ENT_STLMT_NUMBER=NULL,ENT_STLMT_USER=NULL,ENT_STLMT_STAMP=NULL " );
 	}
 
-	g_string_append_printf( query, "WHERE ENT_NUMBER=%d", ofo_entry_get_number( entry ));
+	g_string_append_printf( query, "WHERE ENT_NUMBER=%ld", ofo_entry_get_number( entry ));
 	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 
 	g_string_free( query, TRUE );
@@ -2061,7 +2061,7 @@ ofo_entry_validate_by_ledger( const ofoDossier *dossier, const gchar *mnemo, con
 			query = g_strdup_printf(
 							"UPDATE OFA_T_ENTRIES "
 							"	SET ENT_STATUS=%d "
-							"	WHERE ENT_DEFFECT='%s' AND ENT_NUMBER=%d",
+							"	WHERE ENT_DEFFECT='%s' AND ENT_NUMBER=%ld",
 									ENT_STATUS_VALIDATED,
 									str,
 									ofo_entry_get_number( entry ));
@@ -2111,7 +2111,7 @@ do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 
 	query = g_strdup_printf(
 				"UPDATE OFA_T_ENTRIES SET "
-				"	ENT_STATUS=%d WHERE ENT_NUMBER=%u",
+				"	ENT_STATUS=%d WHERE ENT_NUMBER=%ld",
 						ENT_STATUS_DELETED, ofo_entry_get_number( entry ));
 
 	ok = ofo_sgbd_query( sgbd, query, TRUE );
@@ -2139,13 +2139,17 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 	ofoEntry *entry;
 	gchar *str;
 	gchar *sdope, *sdeffect, *sdconcil, *stamp, *concil_stamp;
+	gchar *settle_stamp, *settle_snum;
 	const gchar *sref, *muser, *model, *concil_user;
+	const gchar *settle_user;
+	ofxCounter settle_number;
+	gboolean has_settle;
 
 	result = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), NULL );
 
 	lines = NULL;
 
-	str = g_strdup( "Dope;Deffect;Number;Label;Ref;Currency;Journal;Operation;Account;Debit;Credit;MajUser;MajStamp;Status;RapproValue;RapproUser;RapproStamp" );
+	str = g_strdup( "Dope;Deffect;Number;Label;Ref;Currency;Journal;Operation;Account;Debit;Credit;MajUser;MajStamp;Status;RapproValue;RapproUser;RapproStamp;SettlementNumber;SettlementUser;SettlementStamp" );
 	lines = g_slist_prepend( lines, str );
 
 	for( irow=result ; irow ; irow=irow->next ){
@@ -2160,8 +2164,17 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 		concil_user = ofo_entry_get_concil_user( entry );
 		concil_stamp = my_utils_stamp_to_str( ofo_entry_get_concil_stamp( entry ), MY_STAMP_YYMDHMS );
 		sdconcil = my_date_to_str( ofo_entry_get_concil_dval( entry ), MY_DATE_SQL );
+		has_settle = FALSE;
+		settle_snum = NULL;
+		settle_number = ofo_entry_get_settlement_number( entry );
+		if( settle_number > 0 ){
+			settle_snum = g_strdup_printf( "%ld", settle_number );
+			has_settle = TRUE;
+		}
+		settle_user = ofo_entry_get_settlement_user( entry );
+		settle_stamp = my_utils_stamp_to_str( ofo_entry_get_settlement_stamp( entry ), MY_STAMP_YYMDHMS );
 
-		str = g_strdup_printf( "%s;%s;%d;%s;%s;%s;%s;%s;%s;%.2lf;%.2lf;%s;%s;%d;%s;%s;%s",
+		str = g_strdup_printf( "%s;%s;%ld;%s;%s;%s;%s;%s;%s;%.5lf;%.5lf;%s;%s;%d;%s;%s;%s;%s;%s;%s",
 				sdope,
 				sdeffect,
 				ofo_entry_get_number( entry ),
@@ -2178,10 +2191,15 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 				ofo_entry_get_status( entry ),
 				sdconcil,
 				concil_user ? concil_user : "",
-				concil_stamp ? concil_stamp : "" );
+				concil_stamp ? concil_stamp : "",
+				has_settle ? settle_snum : "",
+				has_settle ? settle_user : "",
+				has_settle ? settle_stamp : "" );
 
 		lines = g_slist_prepend( lines, str );
 
+		g_free( settle_snum );
+		g_free( settle_stamp );
 		g_free( sdconcil );
 		g_free( sdeffect );
 		g_free( sdope );

@@ -35,6 +35,7 @@
  * This file defines the #ofoAccount class public API.
  */
 
+#include "api/ofa-boxed.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-account-def.h"
 #include "api/ofo-dossier-def.h"
@@ -46,8 +47,8 @@ G_BEGIN_DECLS
  */
 typedef struct {
 	gchar  *account;
-	gdouble debit;
-	gdouble credit;
+	ofxAmount  debit;
+	ofxAmount  credit;
 }
 	ofsAccountBalance;
 
@@ -75,24 +76,24 @@ const gchar    *ofo_account_get_notes            ( const ofoAccount *account );
 const gchar    *ofo_account_get_type_account     ( const ofoAccount *account );
 const gchar    *ofo_account_get_upd_user         ( const ofoAccount *account );
 const GTimeVal *ofo_account_get_upd_stamp        ( const ofoAccount *account );
-gint            ofo_account_get_deb_entry        ( const ofoAccount *account );
+ofxCounter      ofo_account_get_deb_entry        ( const ofoAccount *account );
 const GDate    *ofo_account_get_deb_date         ( const ofoAccount *account );
-gdouble         ofo_account_get_deb_amount       ( const ofoAccount *account );
-gint            ofo_account_get_cre_entry        ( const ofoAccount *account );
+ofxAmount       ofo_account_get_deb_amount       ( const ofoAccount *account );
+ofxCounter      ofo_account_get_cre_entry        ( const ofoAccount *account );
 const GDate    *ofo_account_get_cre_date         ( const ofoAccount *account );
-gdouble         ofo_account_get_cre_amount       ( const ofoAccount *account );
-gint            ofo_account_get_day_deb_entry    ( const ofoAccount *account );
+ofxAmount       ofo_account_get_cre_amount       ( const ofoAccount *account );
+ofxCounter      ofo_account_get_day_deb_entry    ( const ofoAccount *account );
 const GDate    *ofo_account_get_day_deb_date     ( const ofoAccount *account );
-gdouble         ofo_account_get_day_deb_amount   ( const ofoAccount *account );
-gint            ofo_account_get_day_cre_entry    ( const ofoAccount *account );
+ofxAmount       ofo_account_get_day_deb_amount   ( const ofoAccount *account );
+ofxCounter      ofo_account_get_day_cre_entry    ( const ofoAccount *account );
 const GDate    *ofo_account_get_day_cre_date     ( const ofoAccount *account );
-gdouble         ofo_account_get_day_cre_amount   ( const ofoAccount *account );
-gint            ofo_account_get_open_deb_entry   ( const ofoAccount *account );
+ofxAmount       ofo_account_get_day_cre_amount   ( const ofoAccount *account );
+ofxCounter      ofo_account_get_open_deb_entry   ( const ofoAccount *account );
 const GDate    *ofo_account_get_open_deb_date    ( const ofoAccount *account );
-gdouble         ofo_account_get_open_deb_amount  ( const ofoAccount *account );
-gint            ofo_account_get_open_cre_entry   ( const ofoAccount *account );
+ofxAmount       ofo_account_get_open_deb_amount  ( const ofoAccount *account );
+ofxCounter      ofo_account_get_open_cre_entry   ( const ofoAccount *account );
 const GDate    *ofo_account_get_open_cre_date    ( const ofoAccount *account );
-gdouble         ofo_account_get_open_cre_amount  ( const ofoAccount *account );
+ofxAmount       ofo_account_get_open_cre_amount  ( const ofoAccount *account );
 
 gboolean        ofo_account_is_deletable         ( const ofoAccount *account );
 gboolean        ofo_account_is_root              ( const ofoAccount *account );

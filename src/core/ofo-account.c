@@ -244,24 +244,24 @@ static void         account_get_children( const ofoAccount *account, sChildren *
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
-static void         account_set_deb_entry( ofoAccount *account, gint number );
+static void         account_set_deb_entry( ofoAccount *account, ofxCounter number );
 static void         account_set_deb_date( ofoAccount *account, const GDate *effect );
-static void         account_set_deb_amount( ofoAccount *account, gdouble amount );
-static void         account_set_cre_entry( ofoAccount *account, gint number );
+static void         account_set_deb_amount( ofoAccount *account, ofxAmount amount );
+static void         account_set_cre_entry( ofoAccount *account, ofxCounter number );
 static void         account_set_cre_date( ofoAccount *account, const GDate *effect );
-static void         account_set_cre_amount( ofoAccount *account, gdouble amount );
-static void         account_set_day_deb_entry( ofoAccount *account, gint number );
+static void         account_set_cre_amount( ofoAccount *account, ofxAmount amount );
+static void         account_set_day_deb_entry( ofoAccount *account, ofxCounter number );
 static void         account_set_day_deb_date( ofoAccount *account, const GDate *effect );
-static void         account_set_day_deb_amount( ofoAccount *account, gdouble amount );
-static void         account_set_day_cre_entry( ofoAccount *account, gint number );
+static void         account_set_day_deb_amount( ofoAccount *account, ofxAmount amount );
+static void         account_set_day_cre_entry( ofoAccount *account, ofxCounter number );
 static void         account_set_day_cre_date( ofoAccount *account, const GDate *effect );
-static void         account_set_day_cre_amount( ofoAccount *account, gdouble amount );
-static void         account_set_open_deb_entry( ofoAccount *account, gint number );
+static void         account_set_day_cre_amount( ofoAccount *account, ofxAmount amount );
+static void         account_set_open_deb_entry( ofoAccount *account, ofxCounter number );
 static void         account_set_open_deb_date( ofoAccount *account, const GDate *effect );
-static void         account_set_open_deb_amount( ofoAccount *account, gdouble amount );
-static void         account_set_open_cre_entry( ofoAccount *account, gint number );
+static void         account_set_open_deb_amount( ofoAccount *account, ofxAmount amount );
+static void         account_set_open_cre_entry( ofoAccount *account, ofxCounter number );
 static void         account_set_open_cre_date( ofoAccount *account, const GDate *effect );
-static void         account_set_open_cre_amount( ofoAccount *account, gdouble amount );
+static void         account_set_open_cre_amount( ofoAccount *account, ofxAmount amount );
 static gboolean     account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user );
 static gboolean     account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
 static gboolean     account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );
@@ -508,9 +508,9 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	static const gchar *thisfn = "ofo_account_on_validated_entry";
 	const gchar *acc_number;
 	ofoAccount *account;
-	gdouble debit, credit, amount;
+	ofxAmount debit, credit, amount;
 	const GDate *ent_deffect, *acc_date;
-	gint number, acc_num;
+	ofxCounter number, acc_num;
 
 	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
 			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
@@ -762,7 +762,7 @@ static void
 archive_open_balances( ofoAccount *account, void *empty )
 {
 	static const gchar *thisfn = "ofo_account_archive_open_balances";
-	gdouble amount;
+	ofxAmount amount;
 
 	if( !ofo_account_is_root( account )){
 		account_set_open_deb_entry( account, ofo_account_get_deb_entry( account ));
@@ -953,7 +953,7 @@ ofo_account_get_upd_stamp( const ofoAccount *account )
  *
  * Returns: the greatest entry number responsible of this debit balance.
  */
-gint
+ofxCounter
 ofo_account_get_deb_entry( const ofoAccount *account )
 {
 	account_get_counter( ACC_DEB_ENTRY );
@@ -977,7 +977,7 @@ ofo_account_get_deb_date( const ofoAccount *account )
  *
  * Returns: the validated debit balance of the @account.
  */
-gdouble
+ofxAmount
 ofo_account_get_deb_amount( const ofoAccount *account )
 {
 	account_get_amount( ACC_DEB_AMOUNT );
@@ -989,7 +989,7 @@ ofo_account_get_deb_amount( const ofoAccount *account )
  *
  * Returns: the greatest entry number responsible of this credit balance.
  */
-gint
+ofxCounter
 ofo_account_get_cre_entry( const ofoAccount *account )
 {
 	account_get_counter( ACC_CRE_ENTRY );
@@ -1013,7 +1013,7 @@ ofo_account_get_cre_date( const ofoAccount *account )
  *
  * Returns: the validated credit balance of the @account.
  */
-gdouble
+ofxAmount
 ofo_account_get_cre_amount( const ofoAccount *account )
 {
 	account_get_amount( ACC_CRE_AMOUNT );
@@ -1023,7 +1023,7 @@ ofo_account_get_cre_amount( const ofoAccount *account )
  * ofo_account_get_day_deb_entry:
  * @account: the #ofoAccount account
  */
-gint
+ofxCounter
 ofo_account_get_day_deb_entry( const ofoAccount *account )
 {
 	account_get_counter( ACC_DAY_DEB_ENTRY );
@@ -1043,7 +1043,7 @@ ofo_account_get_day_deb_date( const ofoAccount *account )
  * ofo_account_get_day_deb_amount:
  * @account: the #ofoAccount account
  */
-gdouble
+ofxAmount
 ofo_account_get_day_deb_amount( const ofoAccount *account )
 {
 	account_get_amount( ACC_DAY_DEB_AMOUNT );
@@ -1053,7 +1053,7 @@ ofo_account_get_day_deb_amount( const ofoAccount *account )
  * ofo_account_get_day_cre_entry:
  * @account: the #ofoAccount account
  */
-gint
+ofxCounter
 ofo_account_get_day_cre_entry( const ofoAccount *account )
 {
 	account_get_counter( ACC_DAY_CRE_ENTRY);
@@ -1073,7 +1073,7 @@ ofo_account_get_day_cre_date( const ofoAccount *account )
  * ofo_account_get_day_cre_amount:
  * @account: the #ofoAccount account
  */
-gdouble
+ofxAmount
 ofo_account_get_day_cre_amount( const ofoAccount *account )
 {
 	account_get_amount( ACC_DAY_CRE_AMOUNT );
@@ -1083,7 +1083,7 @@ ofo_account_get_day_cre_amount( const ofoAccount *account )
  * ofo_account_get_open_deb_entry:
  * @account: the #ofoAccount account
  */
-gint
+ofxCounter
 ofo_account_get_open_deb_entry( const ofoAccount *account )
 {
 	account_get_counter( ACC_OPEN_DEB_ENTRY );
@@ -1103,7 +1103,7 @@ ofo_account_get_open_deb_date( const ofoAccount *account )
  * ofo_account_get_open_deb_amount:
  * @account: the #ofoAccount account
  */
-gdouble
+ofxAmount
 ofo_account_get_open_deb_amount( const ofoAccount *account )
 {
 	account_get_amount( ACC_OPEN_DEB_AMOUNT );
@@ -1113,7 +1113,7 @@ ofo_account_get_open_deb_amount( const ofoAccount *account )
  * ofo_account_get_open_cre_entry:
  * @account: the #ofoAccount account
  */
-gint
+ofxCounter
 ofo_account_get_open_cre_entry( const ofoAccount *account )
 {
 	account_get_counter( ACC_OPEN_CRE_ENTRY);
@@ -1133,7 +1133,7 @@ ofo_account_get_open_cre_date( const ofoAccount *account )
  * ofo_account_get_open_cre_amount:
  * @account: the #ofoAccount account
  */
-gdouble
+ofxAmount
 ofo_account_get_open_cre_amount( const ofoAccount *account )
 {
 	account_get_amount( ACC_OPEN_CRE_AMOUNT );
@@ -1405,14 +1405,14 @@ ofo_account_get_global_deffect( const ofoAccount *account )
  * The returned value is lesser than zero for a debit, or greater than
  * zero for a credit.
  */
-gdouble
+ofxAmount
 ofo_account_get_global_solde( const ofoAccount *account )
 {
-	gdouble amount;
+	ofxAmount amount;
 
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0.0 );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
 
-	amount = 0.0;
+	amount = 0;
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
@@ -1569,7 +1569,7 @@ ofo_account_histo_valid_to_open( ofoAccount *account )
 			samount = my_double_to_sql( ofo_account_get_open_deb_amount( account ));
 
 			g_string_append_printf( query,
-					"ACC_OPEN_DEB_ENTRY=%d,ACC_OPEN_DEB_DATE='%s',ACC_OPEN_DEB_AMOUNT=%s",
+					"ACC_OPEN_DEB_ENTRY=%ld,ACC_OPEN_DEB_DATE='%s',ACC_OPEN_DEB_AMOUNT=%s",
 					ofo_account_get_open_deb_entry( account ), sdate, samount );
 
 			has_comma = TRUE;
@@ -1590,7 +1590,7 @@ ofo_account_histo_valid_to_open( ofoAccount *account )
 				query = g_string_append_c( query, ',' );
 			}
 			g_string_append_printf( query,
-					"ACC_OPEN_CRE_ENTRY=%d,ACC_OPEN_CRE_DATE='%s',ACC_OPEN_CRE_AMOUNT=%s",
+					"ACC_OPEN_CRE_ENTRY=%ld,ACC_OPEN_CRE_DATE='%s',ACC_OPEN_CRE_AMOUNT=%s",
 					ofo_account_get_open_cre_entry( account ), sdate, samount );
 
 			g_free( sdate );
@@ -1727,7 +1727,7 @@ account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp )
  * @account: the #ofoAccount account
  */
 static void
-account_set_deb_entry( ofoAccount *account, gint number )
+account_set_deb_entry( ofoAccount *account, ofxCounter number )
 {
 	account_set_counter( ACC_DEB_ENTRY, number );
 }
@@ -1747,7 +1747,7 @@ account_set_deb_date( ofoAccount *account, const GDate *date )
  * @account: the #ofoAccount account
  */
 static void
-account_set_deb_amount( ofoAccount *account, gdouble amount )
+account_set_deb_amount( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_DEB_AMOUNT, amount );
 }
@@ -1757,7 +1757,7 @@ account_set_deb_amount( ofoAccount *account, gdouble amount )
  * @account: the #ofoAccount account
  */
 static void
-account_set_cre_entry( ofoAccount *account, gint number )
+account_set_cre_entry( ofoAccount *account, ofxCounter number )
 {
 	account_set_counter( ACC_DEB_ENTRY, number );
 }
@@ -1777,7 +1777,7 @@ account_set_cre_date( ofoAccount *account, const GDate *date )
  * @account: the #ofoAccount account
  */
 static void
-account_set_cre_amount( ofoAccount *account, gdouble amount )
+account_set_cre_amount( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_DEB_AMOUNT, amount );
 }
@@ -1787,7 +1787,7 @@ account_set_cre_amount( ofoAccount *account, gdouble amount )
  * @account: the #ofoAccount account
  */
 static void
-account_set_day_deb_entry( ofoAccount *account, gint number )
+account_set_day_deb_entry( ofoAccount *account, ofxCounter number )
 {
 	account_set_counter( ACC_DEB_ENTRY, number );
 }
@@ -1807,7 +1807,7 @@ account_set_day_deb_date( ofoAccount *account, const GDate *date )
  * @account: the #ofoAccount account
  */
 static void
-account_set_day_deb_amount( ofoAccount *account, gdouble amount )
+account_set_day_deb_amount( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_DEB_AMOUNT, amount );
 }
@@ -1817,7 +1817,7 @@ account_set_day_deb_amount( ofoAccount *account, gdouble amount )
  * @account: the #ofoAccount account
  */
 static void
-account_set_day_cre_entry( ofoAccount *account, gint number )
+account_set_day_cre_entry( ofoAccount *account, ofxCounter number )
 {
 	account_set_counter( ACC_DEB_ENTRY, number );
 }
@@ -1837,7 +1837,7 @@ account_set_day_cre_date( ofoAccount *account, const GDate *date )
  * @account: the #ofoAccount account
  */
 static void
-account_set_day_cre_amount( ofoAccount *account, gdouble amount )
+account_set_day_cre_amount( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_DEB_AMOUNT, amount );
 }
@@ -1847,7 +1847,7 @@ account_set_day_cre_amount( ofoAccount *account, gdouble amount )
  * @account: the #ofoAccount account
  */
 static void
-account_set_open_deb_entry( ofoAccount *account, gint number )
+account_set_open_deb_entry( ofoAccount *account, ofxCounter number )
 {
 	account_set_counter( ACC_DEB_ENTRY, number );
 }
@@ -1867,7 +1867,7 @@ account_set_open_deb_date( ofoAccount *account, const GDate *date )
  * @account: the #ofoAccount account
  */
 static void
-account_set_open_deb_amount( ofoAccount *account, gdouble amount )
+account_set_open_deb_amount( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_DEB_AMOUNT, amount );
 }
@@ -1877,7 +1877,7 @@ account_set_open_deb_amount( ofoAccount *account, gdouble amount )
  * @account: the #ofoAccount account
  */
 static void
-account_set_open_cre_entry( ofoAccount *account, gint number )
+account_set_open_cre_entry( ofoAccount *account, ofxCounter number )
 {
 	account_set_counter( ACC_DEB_ENTRY, number );
 }
@@ -1897,7 +1897,7 @@ account_set_open_cre_date( ofoAccount *account, const GDate *date )
  * @account: the #ofoAccount account
  */
 static void
-account_set_open_cre_amount( ofoAccount *account, gdouble amount )
+account_set_open_cre_amount( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_DEB_AMOUNT, amount );
 }

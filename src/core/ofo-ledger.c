@@ -62,11 +62,11 @@ struct _ofoLedgerPrivate {
 typedef struct {
 	gint       exe_id;
 	gchar     *currency;
-	gdouble    clo_deb;
-	gdouble    clo_cre;
-	gdouble    deb;
+	ofxAmount  clo_deb;
+	ofxAmount  clo_cre;
+	ofxAmount  deb;
 	GDate      deb_date;
-	gdouble    cre;
+	ofxAmount  cre;
 	GDate      cre_date;
 }
 	sDetailCur;
@@ -227,7 +227,7 @@ on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 	ofoLedger *ledger;
 	sDetailCur *detail;
 	const GDate *deffect;
-	gdouble debit;
+	ofxAmount debit;
 
 	current = ofo_dossier_get_current_exe_id( dossier );
 	mnemo = ofo_entry_get_ledger( entry );
@@ -325,7 +325,7 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	const gchar *currency, *mnemo;
 	ofoLedger *ledger;
 	sDetailCur *detail;
-	gdouble debit, credit;
+	ofxAmount debit, credit;
 	const GDate *deffect;
 
 	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
@@ -765,7 +765,7 @@ ofo_ledger_get_last_closing( const ofoLedger *ledger )
  * Returns the debit balance of this ledger at the last closing for
  * the currency specified, or zero if not found.
  */
-gdouble
+ofxAmount
 ofo_ledger_get_clo_deb( const ofoLedger *ledger, gint exe_id, const gchar *currency )
 {
 	sDetailCur *sdev;
@@ -792,7 +792,7 @@ ofo_ledger_get_clo_deb( const ofoLedger *ledger, gint exe_id, const gchar *curre
  * Returns the credit balance of this ledger at the last closing for
  * the currency specified, or zero if not found.
  */
-gdouble
+ofxAmount
 ofo_ledger_get_clo_cre( const ofoLedger *ledger, gint exe_id, const gchar *currency )
 {
 	sDetailCur *sdev;
@@ -819,7 +819,7 @@ ofo_ledger_get_clo_cre( const ofoLedger *ledger, gint exe_id, const gchar *curre
  * Returns the current debit balance of this ledger for
  * the currency specified, or zero if not found.
  */
-gdouble
+ofxAmount
 ofo_ledger_get_deb( const ofoLedger *ledger, gint exe_id, const gchar *currency )
 {
 	sDetailCur *sdev;
@@ -873,7 +873,7 @@ ofo_ledger_get_deb_date( const ofoLedger *ledger, gint exe_id, const gchar *curr
  * Returns the current credit balance of this ledger for
  * the currency specified, or zero if not found.
  */
-gdouble
+ofxAmount
 ofo_ledger_get_cre( const ofoLedger *ledger, gint exe_id, const gchar *currency )
 {
 	sDetailCur *sdev;
@@ -1176,7 +1176,7 @@ ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp )
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_clo_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, gdouble amount )
+ofo_ledger_set_clo_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1203,7 +1203,7 @@ ofo_ledger_set_clo_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, g
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_clo_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, gdouble amount )
+ofo_ledger_set_clo_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1230,7 +1230,7 @@ ofo_ledger_set_clo_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, g
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, gdouble amount )
+ofo_ledger_set_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1283,7 +1283,7 @@ ofo_ledger_set_deb_date( ofoLedger *ledger, gint exe_id, const gchar *currency, 
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, gdouble amount )
+ofo_ledger_set_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1837,7 +1837,7 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 							ofo_ledger_get_cre_date( ledger, sdev->exe_id, sdev->currency ),
 							MY_DATE_SQL );
 
-			str = g_strdup_printf( "3;%s;%s;%s;%.2lf;%.2lf;%.2lf;%s;%.2lf;%s",
+			str = g_strdup_printf( "3;%s;%s;%s;%.5lf;%.5lf;%.5lf;%s;%.5lf;%s",
 					ofo_ledger_get_mnemo( ledger ),
 					sdfin,
 					sdev->currency,

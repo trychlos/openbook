@@ -137,7 +137,7 @@ typedef struct {
 	gint            width;
 	float           xalign;					/* managed by myEditableAmout if 'is_double' */
 	gboolean        expand;
-	gboolean        is_double;				/* managed by myEditableAmount */
+	gboolean        is_double;				/* managed by myEditableofxAmount */
 	gboolean        is_entry;				/* TRUE=GtkEntry, else GtkLabel */
 }
 	sColumnDef;

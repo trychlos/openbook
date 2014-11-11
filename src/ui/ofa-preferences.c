@@ -376,12 +376,12 @@ init_locales_page( ofaPreferences *self )
 	init_locale_date( self, "p3-date-display", "PrefDateDisplay", &priv->p3_date_display, MY_DATE_DMYY );
 	init_locale_date( self, "p3-date-check",   "PrefDateCheck",   &priv->p3_date_check,   MY_DATE_DMMM );
 
-	slist = ofa_settings_get_string_list( "AmountDecimalDots" );
+	slist = ofa_settings_get_string_list( "ofxAmountDecimalDots" );
 	init_locale_decimal( self, "p3-decimal-dot", slist, ".", &priv->p3_accept_dot );
 	init_locale_decimal( self, "p3-decimal-comma", slist, ",", &priv->p3_accept_comma );
 
-	init_locale_sep( self, "p3-decimal-sep", "AmountDecimalSep", &priv->p3_decimal_sep, "," );
-	init_locale_sep( self, "p3-thousand-sep", "AmountThousandSep", &priv->p3_thousand_sep, " " );*/
+	init_locale_sep( self, "p3-decimal-sep", "ofxAmountDecimalSep", &priv->p3_decimal_sep, "," );
+	init_locale_sep( self, "p3-thousand-sep", "ofxAmountThousandSep", &priv->p3_thousand_sep, " " );*/
 }
 
 static void
@@ -796,11 +796,11 @@ do_update_locales_page( ofaPreferences *self )
 	if( priv->p3_accept_comma ){
 		g_string_append_printf( text, ",;" );
 	}
-	ofa_settings_set_string( "AmountDecimalDots", text->str );
+	ofa_settings_set_string( "ofxAmountDecimalDots", text->str );
 	g_string_free( text, TRUE );
 
-	ofa_settings_set_string( "AmountDecimalSep", priv->p3_decimal_sep );
-	ofa_settings_set_string( "AmountThousandSep", priv->p3_thousand_sep );*/
+	ofa_settings_set_string( "ofxAmountDecimalSep", priv->p3_decimal_sep );
+	ofa_settings_set_string( "ofxAmountThousandSep", priv->p3_thousand_sep );*/
 }
 
 static void

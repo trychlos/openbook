@@ -429,7 +429,7 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 
 	priv = self->priv;
 
-	str = g_strdup_printf( "%d", ofo_bat_get_id( bat ));
+	str = g_strdup_printf( "%ld", ofo_bat_get_id( bat ));
 	gtk_entry_set_text( priv->id, str );
 	g_free( str );
 

@@ -46,22 +46,22 @@ struct _ofoBatLinePrivate {
 
 	/* sgbd data
 	 */
-	gint       bat_id;						/* bat (imported file) id */
-	gint       id;							/* line id */
+	ofxCounter bat_id;						/* bat (imported file) id */
+	ofxCounter line_id;						/* line id */
 	GDate      deffect;
 	GDate      dope;
 	gchar     *ref;
 	gchar     *label;
 	gchar     *currency;
-	gdouble    amount;
-	gint       entry;
+	ofxAmount  amount;
+	ofxCounter entry;
 	gchar     *upd_user;
 	GTimeVal   upd_stamp;
 };
 
 G_DEFINE_TYPE( ofoBatLine, ofo_bat_line, OFO_TYPE_BASE )
 
-static GList      *bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd );
+static GList      *bat_line_load_dataset( ofxCounter bat_id, const ofoSgbd *sgbd );
 static void        bat_line_set_upd_user( ofoBatLine *bat, const gchar *upd_user );
 static void        bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_line_do_insert( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
@@ -116,7 +116,7 @@ ofo_bat_line_init( ofoBatLine *self )
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_BAT_LINE, ofoBatLinePrivate );
 
 	self->priv->bat_id = OFO_BASE_UNSET_ID;
-	self->priv->id = OFO_BASE_UNSET_ID;
+	self->priv->line_id = OFO_BASE_UNSET_ID;
 	my_date_clear( &self->priv->deffect );
 	my_date_clear( &self->priv->dope );
 }
@@ -168,7 +168,7 @@ ofo_bat_line_get_dataset( const ofoDossier *dossier, gint bat_id )
 }
 
 static GList *
-bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
+bat_line_load_dataset( ofxCounter bat_id, const ofoSgbd *sgbd)
 {
 	GString *query;
 	GSList *result, *irow, *icol;
@@ -185,7 +185,7 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 					"	BAT_LINE_UPD_USER,BAT_LINE_UPD_STAMP "
 					"	FROM OFA_T_BAT_LINES " );
 
-	g_string_append_printf( query, "WHERE BAT_ID=%d ", bat_id );
+	g_string_append_printf( query, "WHERE BAT_ID=%ld ", bat_id );
 
 	query = g_string_append( query, "ORDER BY BAT_LINE_DEFFECT ASC" );
 
@@ -196,7 +196,7 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			line = ofo_bat_line_new( bat_id );
-			ofo_bat_line_set_id( line, atoi(( gchar * ) icol->data ));
+			ofo_bat_line_set_line_id( line, atol(( gchar * ) icol->data ));
 			icol = icol->next;
 			my_date_set_from_sql( &line->priv->deffect, ( const gchar * ) icol->data );
 			icol = icol->next;
@@ -218,7 +218,7 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 					my_double_set_from_sql(( const gchar * ) icol->data ));
 			icol = icol->next;
 			if( icol->data ){
-				ofo_bat_line_set_entry( line, atoi(( gchar * ) icol->data ));
+				ofo_bat_line_set_entry( line, atol(( gchar * ) icol->data ));
 			}
 			icol = icol->next;
 			if( icol->data ){
@@ -240,26 +240,9 @@ bat_line_load_dataset( gint bat_id, const ofoSgbd *sgbd)
 }
 
 /**
- * ofo_bat_line_get_id:
- */
-gint
-ofo_bat_line_get_id( const ofoBatLine *bat )
-{
-	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), OFO_BASE_UNSET_ID );
-
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		return( bat->priv->id );
-	}
-
-	g_assert_not_reached();
-	return( OFO_BASE_UNSET_ID );
-}
-
-/**
  * ofo_bat_line_get_bat_id:
  */
-gint
+ofxCounter
 ofo_bat_line_get_bat_id( const ofoBatLine *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), OFO_BASE_UNSET_ID );
@@ -267,6 +250,23 @@ ofo_bat_line_get_bat_id( const ofoBatLine *bat )
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
 		return( bat->priv->bat_id );
+	}
+
+	g_assert_not_reached();
+	return( OFO_BASE_UNSET_ID );
+}
+
+/**
+ * ofo_bat_line_get_line_id:
+ */
+ofxCounter
+ofo_bat_line_get_line_id( const ofoBatLine *bat )
+{
+	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), OFO_BASE_UNSET_ID );
+
+	if( !OFO_BASE( bat )->prot->dispose_has_run ){
+
+		return( bat->priv->line_id );
 	}
 
 	g_assert_not_reached();
@@ -361,7 +361,7 @@ ofo_bat_line_get_currency( const ofoBatLine *bat )
 /**
  * ofo_bat_line_get_amount:
  */
-gdouble
+ofxAmount
 ofo_bat_line_get_amount( const ofoBatLine *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), 0 );
@@ -378,7 +378,7 @@ ofo_bat_line_get_amount( const ofoBatLine *bat )
 /**
  * ofo_bat_line_get_entry:
  */
-gint
+ofxCounter
 ofo_bat_line_get_entry( const ofoBatLine *bat )
 {
 	g_return_val_if_fail( OFO_IS_BAT_LINE( bat ), 0 );
@@ -427,16 +427,16 @@ ofo_bat_line_get_upd_stamp( const ofoBatLine *bat )
 }
 
 /**
- * ofo_bat_line_set_id:
+ * ofo_bat_line_set_line_id:
  */
 void
-ofo_bat_line_set_id( ofoBatLine *bat, gint id )
+ofo_bat_line_set_line_id( ofoBatLine *bat, ofxCounter id )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		bat->priv->id = id;
+		bat->priv->line_id = id;
 	}
 }
 
@@ -517,7 +517,7 @@ ofo_bat_line_set_currency( ofoBatLine *bat, const gchar *currency )
  * ofo_bat_line_set_amount:
  */
 void
-ofo_bat_line_set_amount( ofoBatLine *bat, gdouble amount )
+ofo_bat_line_set_amount( ofoBatLine *bat, ofxAmount amount )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 
@@ -531,7 +531,7 @@ ofo_bat_line_set_amount( ofoBatLine *bat, gdouble amount )
  * ofo_bat_line_set_entry:
  */
 void
-ofo_bat_line_set_entry( ofoBatLine *bat, gint number )
+ofo_bat_line_set_entry( ofoBatLine *bat, ofxCounter number )
 {
 	g_return_if_fail( OFO_IS_BAT_LINE( bat ));
 
@@ -590,7 +590,7 @@ ofo_bat_line_insert( ofoBatLine *bat_line, const ofoDossier *dossier )
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat_line, ( void * ) dossier );
 
-		bat_line->priv->id = ofo_dossier_get_next_batline_number( dossier );
+		bat_line->priv->line_id = ofo_dossier_get_next_batline_number( dossier );
 
 		if( bat_line_do_insert(
 					bat_line,
@@ -625,9 +625,9 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"	(BAT_ID,BAT_LINE_ID,BAT_LINE_DEFFECT,BAT_LINE_DOPE,BAT_LINE_REF,"
 			"	 BAT_LINE_LABEL,BAT_LINE_CURRENCY,BAT_LINE_AMOUNT) "
-			"	VALUES (%d,%d,'%s',",
+			"	VALUES (%ld,%ld,'%s',",
 					ofo_bat_line_get_bat_id( bat ),
-					ofo_bat_line_get_id( bat ),
+					ofo_bat_line_get_line_id( bat ),
 					str );
 	g_free( str );
 
@@ -713,7 +713,7 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	GString *query;
 	gchar *stamp_str;
 	GTimeVal stamp;
-	gint entry_number;
+	ofxCounter entry_number;
 
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
@@ -724,7 +724,7 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	if( entry_number > 0 ){
 		g_string_append_printf( query,
-				"	BAT_LINE_ENTRY=%d,BAT_LINE_UPD_USER='%s',BAT_LINE_UPD_STAMP='%s' ",
+				"	BAT_LINE_ENTRY=%ld,BAT_LINE_UPD_USER='%s',BAT_LINE_UPD_STAMP='%s' ",
 					entry_number, user, stamp_str );
 	} else {
 		query = g_string_append( query,
@@ -732,7 +732,7 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	}
 
 	g_string_append_printf( query,
-			"	WHERE BAT_LINE_ID=%d", ofo_bat_line_get_id( bat ));
+			"	WHERE BAT_LINE_ID=%ld", ofo_bat_line_get_line_id( bat ));
 
 	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
 

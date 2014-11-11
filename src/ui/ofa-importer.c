@@ -202,8 +202,8 @@ insert_imported_bat_v1( const ofoDossier *dossier,
 			ofo_bat_line_set_currency( batline, str->currency );
 
 			ofo_bat_line_insert( batline, dossier );
-			g_debug( "%s: batline id=%u line_id=%u",
-					thisfn, ofo_bat_line_get_bat_id( batline ), ofo_bat_line_get_id( batline ));
+			g_debug( "%s: batline id=%ld line_id=%ld",
+					thisfn, ofo_bat_line_get_bat_id( batline ), ofo_bat_line_get_line_id( batline ));
 
 			g_object_unref( batline );
 		}
