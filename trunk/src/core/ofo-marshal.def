@@ -1,0 +1,4 @@
+# ofoDossier::OFA_SIGNAL_UPDATED_OBJECT
+VOID:OBJECT,STRING
+#
+# $Id$

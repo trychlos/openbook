@@ -1,0 +1,17 @@
+# $Id$
+
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_DEB_ENTRY       ACC_DEB_ENTRY       BIGINT                       COMMENT 'Number of the most recent validated debit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_DEB_AMOUNT      ACC_DEB_AMOUNT      DECIMAL(20,5)                COMMENT 'Debit balance of validated entries';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_CRE_ENTRY       ACC_CRE_ENTRY       BIGINT                       COMMENT 'Number of the most recent validated credit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_CRE_AMOUNT      ACC_CRE_AMOUNT      DECIMAL(20,5)                COMMENT 'Credit balance of validated entries';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_DAY_DEB_ENTRY   ACC_DAY_DEB_ENTRY   BIGINT                       COMMENT 'Number of the most recent rough debit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_DAY_DEB_AMOUNT  ACC_DAY_DEB_AMOUNT  DECIMAL(20,5)                COMMENT 'Debit balance of rough entries';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_DAY_CRE_ENTRY   ACC_DAY_CRE_ENTRY   BIGINT                       COMMENT 'Number of the most recent rough credit entry';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_DAY_CRE_AMOUNT  ACC_DAY_CRE_AMOUNT  DECIMAL(20,5)                COMMENT 'Credit balance of rough entries';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_OPEN_DEB_ENTRY  ACC_OPEN_DEB_ENTRY  BIGINT                       COMMENT 'Number of the most recent debit entry at the exercice opening';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_OPEN_DEB_AMOUNT ACC_OPEN_DEB_AMOUNT DECIMAL(20,5)                COMMENT 'Debit balance at the exercice opening';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_OPEN_CRE_ENTRY  ACC_OPEN_CRE_ENTRY  BIGINT                       COMMENT 'Number of the most recent credit entry at the exercice opening';
+ALTER TABLE OFA_T_ACCOUNTS CHANGE COLUMN ACC_OPEN_CRE_AMOUNT ACC_OPEN_CRE_AMOUNT DECIMAL(20,5)                COMMENT 'Credit balance at the exercice opening';
+
+DESCRIBE OFA_T_ACCOUNTS;
+

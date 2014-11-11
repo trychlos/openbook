@@ -1,0 +1,7 @@
+# $Id$
+
+ALTER TABLE OFA_T_ACCOUNTS ADD COLUMN ACC_SETTLEABLE      CHAR(1)                      COMMENT 'Whether the account is settleable';
+ALTER TABLE OFA_T_ACCOUNTS ADD COLUMN ACC_RECONCILIABLE   CHAR(1)                      COMMENT 'Whether the account is reconciliable';
+
+DESCRIBE OFA_T_ACCOUNTS;
+
