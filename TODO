@@ -344,8 +344,6 @@
                 'changed' signal on exercice notes - so unable to
                 have this field updated
 
- 427 2014-11-11 print general ledger
-
  428 2014-11-11 implement export to PDF for printed summaries (let us
                 set the export filename)
 
@@ -354,7 +352,9 @@
  430 2014-11-11 print_balance: add currency on each line + have a
                 general total per currency 
 
- 431
+ 431 2014-11-11 print general ledger: have a general total per currency
+
+ 432
 
 -----------------------------------------------------------------------
  DONE
@@ -1878,6 +1878,9 @@
                 ofo_account_histo_valid_to_open()
      2014-11-10 same functions: remove ofo_account_histo_valid_to_open.
      2014-11-10 done - svn #4084
+
+ 427 2014-11-11 print general ledger
+     2014-11-11 done - svn #4088
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

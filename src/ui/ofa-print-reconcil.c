@@ -271,6 +271,10 @@ print_reconciliation_operate( ofaPrintReconcil *self )
 	error = NULL;
 	print = gtk_print_operation_new ();
 
+	/* unit_none gives width=559,2, height=783,5 */
+	gtk_print_operation_set_unit( print, GTK_UNIT_NONE );
+	gtk_print_operation_set_custom_tab_label( print, _( "Reconciliation Summary" ));
+
 	g_signal_connect( print, "create-custom-widget", G_CALLBACK( on_create_custom_widget ), self );
 	g_signal_connect( print, "custom-widget-apply", G_CALLBACK( on_custom_widget_apply ), self );
 	g_signal_connect( print, "begin-print", G_CALLBACK( on_begin_print ), self );

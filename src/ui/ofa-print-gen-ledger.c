@@ -390,6 +390,7 @@ print_gen_ledger_operate( ofaPrintGenLedger *self )
 
 	/* unit_none gives width=559,2, height=783,5 */
 	gtk_print_operation_set_unit( print, GTK_UNIT_NONE );
+	gtk_print_operation_set_custom_tab_label( print, _( "General Ledger Summary" ));
 
 	g_signal_connect( print, "create-custom-widget", G_CALLBACK( on_create_custom_widget ), self );
 	g_signal_connect( print, "custom-widget-apply", G_CALLBACK( on_custom_widget_apply ), self );
