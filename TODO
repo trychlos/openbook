@@ -196,38 +196,6 @@
      2014-10- 6 this may require the balance be printed
      2014-10- 6 this should be implemented as a plugin
 
- 219 2014- 6-15 one should take care of not increasing the entry number
-                until going back to zero during a same exercice (but
-                INT_MAX is a very big number)
-     2014- 6-16 maybe by prefixing the entry number with the exercice id
-                thus having a full entry identifier as '1-1234'
-     2014- 6-16 another way may be to just ignore the issue...
-     2014-10-13 report duplicated #265 here:
-                review ofa_t_ecritures index: should be just ecr_number
-                and check that ecr_number is an unsigned long
-                http://dev.mysql.com/doc/refman/5.0/en/integer-types.html
-                http://en.wikibooks.org/wiki/C_Programming/C_Reference/limits.h
-                describe the limits.
-                Has to choose between
-                - Mysql unsigned int 4 294 967 295
-                  C UINT_MAX        +4,294,967,295
-                - Mysql unsigned bigint 18 446 744 073 709 551 615
-                  but BIGINT in a specific MySQL extension
-                  C ULONG_MAX          +18,446,744,073,709,551,615
-                  but this value of ULONG_MAX is only available in
-                  64 bits compilers 
-     2014-11-10 Mysql signed INT (4 bytes): 2 147 483 647
-                limits.h INT_MAX:          +2,147,483,647
-                Mysql signed BIGINT (8 bytes): 9223372036854775807
-                limits.h LONG_MAX: +9,223,372,036,854,775,807 	
-                GLib: 
-                - gint64: a signed integer guaranteed to be 64 bits on all platforms
-                - G_MAXINT64
-                - G_GINT64_MODIFIER to be used for printing
-                - G_GINT64_FORMAT to be used for printing
-                PostgreSQL: also defines BIGINT
-                see: http://www.postgresql.org/docs/9.3/static/datatype-numeric.html
-
  224 2014- 6-16 DossierProperties: add a tab for the archived exercices
 
  229 2014- 6-16 Entry model: duplicate a line
@@ -390,6 +358,7 @@
 
  426 2014-11-10 compare ofo_account_archive_open_balances() vs.
                 ofo_account_histo_valid_to_open()
+     2014-11-10 same functions: remove ofo_account_histo_valid_to_open.
 
  427
 
@@ -1071,6 +1040,39 @@
  218 2014- 6-15 this is an error if entry number is not strictly 
                 increasing when we update the account balance
      2014- 6-20 done - svn #3745
+
+ 219 2014- 6-15 one should take care of not increasing the entry number
+                until going back to zero during a same exercice (but
+                INT_MAX is a very big number)
+     2014- 6-16 maybe by prefixing the entry number with the exercice id
+                thus having a full entry identifier as '1-1234'
+     2014- 6-16 another way may be to just ignore the issue...
+     2014-10-13 report duplicated #265 here:
+                review ofa_t_ecritures index: should be just ecr_number
+                and check that ecr_number is an unsigned long
+                http://dev.mysql.com/doc/refman/5.0/en/integer-types.html
+                http://en.wikibooks.org/wiki/C_Programming/C_Reference/limits.h
+                describe the limits.
+                Has to choose between
+                - Mysql unsigned int 4 294 967 295
+                  C UINT_MAX        +4,294,967,295
+                - Mysql unsigned bigint 18 446 744 073 709 551 615
+                  but BIGINT in a specific MySQL extension
+                  C ULONG_MAX          +18,446,744,073,709,551,615
+                  but this value of ULONG_MAX is only available in
+                  64 bits compilers 
+     2014-11-10 Mysql signed INT (4 bytes): 2 147 483 647
+                limits.h INT_MAX:          +2,147,483,647
+                Mysql signed BIGINT (8 bytes): 9223372036854775807
+                limits.h LONG_MAX: +9,223,372,036,854,775,807 	
+                GLib: 
+                - gint64: a signed integer guaranteed to be 64 bits on all platforms
+                - G_MAXINT64
+                - G_GINT64_MODIFIER to be used for printing
+                - G_GINT64_FORMAT to be used for printing
+                PostgreSQL: also defines BIGINT
+                see: http://www.postgresql.org/docs/9.3/static/datatype-numeric.html
+     2014-11-10 done - svn #4083
 
  220 2014- 6-16 GuidedInput-Comment: replace the insensitive entry with
                 a normal label + move it to the right in order to be

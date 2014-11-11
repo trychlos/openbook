@@ -210,8 +210,8 @@ struct _ofoAccountPrivate {
 #define account_set_string(I,V)         ofo_base_setter(ACCOUNT,account,string,(I),(V))
 #define account_set_timestamp(I,V)      ofo_base_setter(ACCOUNT,account,timestamp,(I),(V))
 
-static const gchar *st_type_detail      = "D";
-static const gchar *st_type_root        = "R";
+static const gchar *st_type_detail      = ACCOUNT_TYPE_DETAIL;
+static const gchar *st_type_root        = ACCOUNT_TYPE_ROOT;
 static const gchar *st_settleable       = "S";
 static const gchar *st_reconciliable    = "R";
 static const gchar *st_forward          = "F";
@@ -238,10 +238,10 @@ static GList       *account_load_dataset( void );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static gint         account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
 static gint         account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
-static void         archive_open_balances( ofoAccount *account, void *empty );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
+static void         archive_open_balances( ofoAccount *account, void *empty );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static void         account_set_deb_entry( ofoAccount *account, ofxCounter number );
@@ -702,22 +702,6 @@ account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo )
 }
 
 /**
- * ofo_account_new:
- *
- * Returns: a new #ofoAccount object.
- */
-ofoAccount *
-ofo_account_new( void )
-{
-	ofoAccount *account;
-
-	account = g_object_new( OFO_TYPE_ACCOUNT, NULL );
-	ofo_base_init_fields_list( st_boxed_defs, OFO_BASE( account ));
-
-	return( account );
-}
-
-/**
  * ofo_account_dump_chart:
  */
 void
@@ -737,46 +721,19 @@ ofo_account_dump_chart( GList *chart )
 }
 
 /**
- * ofo_account_archive_open_balances:
- * @dossier: the currently opened dossier.
+ * ofo_account_new:
  *
- * As part of the close of the exercice N, we archive the balances of
- * the accounts at the beginning of the exercice N+1. These balances
- * take into account the carried forward entries (fr: reports à
- * nouveau).
- *
- * At this time, all ledgers on exercice N should have been closed, and
- * no entries should have been recorded in ledgers for exercice N+1.
+ * Returns: a new #ofoAccount object.
  */
-void
-ofo_account_archive_open_balances( const ofoDossier *dossier )
+ofoAccount *
+ofo_account_new( void )
 {
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	ofoAccount *account;
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+	account = g_object_new( OFO_TYPE_ACCOUNT, NULL );
+	ofo_base_init_fields_list( st_boxed_defs, OFO_BASE( account ));
 
-	g_list_foreach( st_global->dataset, ( GFunc ) archive_open_balances, NULL );
-}
-
-static void
-archive_open_balances( ofoAccount *account, void *empty )
-{
-	static const gchar *thisfn = "ofo_account_archive_open_balances";
-	ofxAmount amount;
-
-	if( !ofo_account_is_root( account )){
-		account_set_open_deb_entry( account, ofo_account_get_deb_entry( account ));
-		account_set_open_deb_date( account, ofo_account_get_deb_date( account ));
-		account_set_open_deb_amount( account, ofo_account_get_deb_amount( account ));
-		account_set_open_cre_entry( account, ofo_account_get_cre_entry( account ));
-		account_set_open_cre_date( account, ofo_account_get_cre_date( account ));
-		account_set_open_cre_amount( account, ofo_account_get_cre_amount( account ));
-		amount = ofo_account_get_day_deb_amount( account ) + ofo_account_get_day_cre_amount( account );
-		if( amount != 0 ){
-			g_warning( "%s: account=%s: daily balance is not zero",
-					thisfn, ofo_account_get_number( account ));
-		}
-	}
+	return( account );
 }
 
 /**
@@ -1530,31 +1487,37 @@ ofo_account_is_child_of( const ofoAccount *account, const ofoAccount *candidate 
 }
 
 /**
- * ofo_account_histo_valid_to_open:
- * @account: the #ofoAccount account
+ * ofo_account_archive_open_balances:
+ * @dossier: the currently opened dossier.
  *
- * Archive the validated balances of the @account to the opening
- * exercice ones.
+ * As part of the close of the exercice N, we archive the balances of
+ * the accounts at the beginning of the exercice N+1. These balances
+ * take into account the carried forward entries (fr: reports à
+ * nouveau).
  *
- * This function should only be called at the opening of the new
- * exercice, just after having closed the previous one, i.e. at a time
- * where:
- * - there is no rough entries
- * - all carried forward entries have been recorded.
+ * At this time, all ledgers on exercice N should have been closed, and
+ * no entries should have been recorded in ledgers for exercice N+1.
  */
-gboolean
-ofo_account_histo_valid_to_open( ofoAccount *account )
+void
+ofo_account_archive_open_balances( const ofoDossier *dossier )
 {
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+
+	g_list_foreach( st_global->dataset, ( GFunc ) archive_open_balances, NULL );
+}
+
+static void
+archive_open_balances( ofoAccount *account, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_archive_open_balances";
 	GString *query;
 	gboolean has_comma;
-	gboolean ok;
 	gchar *sdate, *samount;
+	ofxAmount amount;
 
-	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-
-	ok = FALSE;
-
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	if( !ofo_account_is_root( account )){
 
 		query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
 		has_comma = FALSE;
@@ -1600,13 +1563,17 @@ ofo_account_histo_valid_to_open( ofoAccount *account )
 		g_string_append_printf( query,
 				" WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 
-		ok = ofo_sgbd_query(
+		ofo_sgbd_query(
 					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query->str, TRUE );
 
 		g_string_free( query, TRUE );
-	}
 
-	return( ok );
+		amount = ofo_account_get_day_deb_amount( account ) + ofo_account_get_day_cre_amount( account );
+		if( amount != 0 ){
+			g_warning( "%s: account=%s: daily balance is not zero",
+					thisfn, ofo_account_get_number( account ));
+		}
+	}
 }
 
 /**
