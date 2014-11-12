@@ -57,6 +57,8 @@ struct _ofaViewEntriesPrivate {
 	/* internals
 	 */
 	ofoDossier        *dossier;			/* dossier */
+	GDate             *dossier_last_closing;
+	const GDate       *dossier_opening;
 	GDate              d_from;
 	GDate              d_to;
 
@@ -226,6 +228,7 @@ static void           on_row_selected( GtkTreeSelection *select, ofaViewEntries 
 static gboolean       check_row_for_valid( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_dope( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static GDate         *get_min_deffect( ofaViewEntries *self, ofoLedger *ledger );
 static gboolean       check_row_for_valid_label( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_ledger( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_account( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -263,6 +266,7 @@ view_entries_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_VIEW_ENTRIES( instance )->priv;
 
+	g_free( priv->dossier_last_closing );
 	g_free( priv->jou_mnemo );
 	g_free( priv->acc_number );
 	reset_balances_hash( OFA_VIEW_ENTRIES( instance ));
@@ -324,10 +328,14 @@ v_setup_view( ofaPage *page )
 {
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *frame;
+	gint exe_id;
 
 	priv = OFA_VIEW_ENTRIES( page )->priv;
 
 	priv->dossier = ofa_page_get_dossier( page );
+	priv->dossier_last_closing = ofo_dossier_get_last_closed_exercice( priv->dossier );
+	exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
+	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier, exe_id );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
@@ -1954,67 +1962,103 @@ check_row_for_valid_dope( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIte
 static gboolean
 check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	gchar *sope, *str, *mnemo, *msg, *msg2, *msg3;
-	GDate dope, deff, last_close, *close_exe, *close_ledger;
+	ofaViewEntriesPrivate *priv;
+	gchar *sdope, *sdeffect, *mnemo, *msg, *msg2, *msg3;
+	GDate dope, deff, deff_min;
 	ofoLedger *ledger;
 	gboolean is_valid;
 
+	priv = self->priv;
 	is_valid = FALSE;
+
 	gtk_tree_model_get( tmodel, iter,
-				ENT_COL_DOPE, &sope, ENT_COL_DEFF, &str, ENT_COL_LEDGER, &mnemo, -1 );
-	if( sope && g_utf8_strlen( sope, -1 ) &&
-			str && g_utf8_strlen( str, -1 ) && mnemo && g_utf8_strlen( mnemo, -1 )){
-
-		my_date_set_from_str( &dope, sope, MY_DATE_DMYY );
-		if( my_date_is_valid( &dope )){
-
-			my_date_set_from_str( &deff, str, MY_DATE_DMYY );
-			if( my_date_is_valid( &deff ) && my_date_compare( &deff, &dope ) >= 0 ){
-				close_exe = ofo_dossier_get_last_closed_exercice( self->priv->dossier );
-				if( my_date_is_valid( close_exe )){
-					my_date_set_from_date( &last_close, close_exe );
-				}
-				ledger = ofo_ledger_get_by_mnemo( self->priv->dossier, mnemo );
-				if( ledger ){
-					close_ledger = ofo_ledger_get_last_closing( ledger );
-					if( my_date_is_valid( close_ledger )){
-						if( !my_date_is_valid( &last_close ) || my_date_compare( close_ledger, &last_close ) > 0 ){
-							my_date_set_from_date( &last_close, close_ledger );
-						}
-					}
-					if( !my_date_is_valid( &last_close ) || my_date_compare( &deff, &last_close ) > 0 ){
+				ENT_COL_DOPE, &sdope, ENT_COL_DEFF, &sdeffect, ENT_COL_LEDGER, &mnemo, -1 );
+	if( !sdope || !g_utf8_strlen( sdope, -1 )){
+		set_comment( self, _( "Empty operation date" ));
+	} else {
+		my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
+		if( !my_date_is_valid( &dope )){
+			set_comment( self, _( "Invalid operation date" ));
+		} else if( !sdeffect || !g_utf8_strlen( sdeffect, -1 )){
+			set_comment( self, _( "Empty effect date" ));
+		} else {
+			my_date_set_from_str( &deff, sdeffect, MY_DATE_DMYY );
+			if( !my_date_is_valid( &deff )){
+				set_comment( self, _( "Invalid effect date" ));
+			} else if( my_date_compare( &deff, &dope ) < 0 ){
+					set_comment( self, _( "Effect date precedes operation date, which is invalid" ));
+			} else if( !mnemo || !g_utf8_strlen( mnemo, -1 )){
+				set_comment( self, _( "Empty ledger" ));
+			} else {
+				ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
+				if( !ledger || !OFO_IS_LEDGER( ledger )){
+					msg = g_strdup_printf( _( "Unknwown ledger: %s" ), mnemo );
+					set_comment( self, msg );
+					g_free( msg );
+				} else {
+					my_date_set_from_date( &deff_min, get_min_deffect( self, ledger ));
+					if( !my_date_is_valid( &deff_min ) || my_date_compare( &deff, &deff_min ) >= 0 ){
 						is_valid = TRUE;
 					} else {
-						msg2 = my_date_to_str( &last_close, MY_DATE_DMYY );
+						msg2 = my_date_to_str( &deff_min, MY_DATE_DMYY );
 						msg3 = my_date_to_str( &deff, MY_DATE_DMYY );
-						msg = g_strdup_printf( _( "Effect date (%s) lesser than last closing date (%s)" ), msg3, msg2 );
+						msg = g_strdup_printf(
+								_( "Effect date (%s) lesser than min effect date (%s)" ), msg3, msg2 );
 						set_comment( self, msg );
 						g_free( msg );
 						g_free( msg2 );
 						g_free( msg3 );
 					}
-				} else {
-					msg = g_strdup_printf( _( "Unknwown ledger: %s" ), mnemo );
-					set_comment( self, msg );
-					g_free( msg );
 				}
-
-			} else {
-				set_comment( self, _( "Invalid effect date, or lesser than operation date" ));
 			}
-
-		} else {
-			set_comment( self, _( "Invalid operation date" ));
 		}
-
-	} else {
-		set_comment( self, _( "Empty operation date, effect date or ledger" ));
 	}
-	g_free( sope );
-	g_free( str );
+
+	g_free( sdope );
+	g_free( sdeffect );
 	g_free( mnemo );
 
 	return( is_valid );
+}
+
+/*
+ * returns the minimal effect date, given :
+ * - the last last closing date of the ledger,
+ * - the possible last closing date of the dossier,
+ * - the possible opening date of the current exercice of the dossier.
+ */
+static GDate *
+get_min_deffect( ofaViewEntries *self, ofoLedger *ledger )
+{
+	ofaViewEntriesPrivate *priv;
+	static GDate date;
+	GDate *ledger_last_closing;
+	gint to_add;
+
+	priv = self->priv;
+	g_date_clear( &date, 1 );
+	to_add = 0;
+
+	if( my_date_is_valid( priv->dossier_opening )){
+		my_date_set_from_date( &date, priv->dossier_opening );
+
+	} else if( my_date_is_valid( priv->dossier_last_closing )){
+		my_date_set_from_date( &date, priv->dossier_last_closing );
+		to_add = 1;
+	}
+	if( my_date_is_valid( &date )){
+		g_date_add_days( &date, to_add );	/* the minimal deffect from the dossier */
+	}
+
+	ledger_last_closing = ofo_ledger_get_last_closing( ledger );
+	if( my_date_is_valid( ledger_last_closing )){
+		g_date_add_days( ledger_last_closing, 1 );
+		if( !my_date_is_valid( &date ) || my_date_compare( &date, ledger_last_closing ) < 0 ){
+			my_date_set_from_date( &date, ledger_last_closing );
+		}
+	}
+
+	return( &date );
 }
 
 static gboolean

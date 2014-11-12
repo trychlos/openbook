@@ -362,10 +362,9 @@
                 "effect date (01/01/2014) lesser than last closing date
                 (31/12/2014)" which is obviously wrong
 
- 435 2014-11-12 view_entries: do not display 'invalild date' when the
-                field is empty
+ 436 2014-11-12 view entries: do not recheck entries which are not new
 
- 436
+ 437
 
 -----------------------------------------------------------------------
  DONE
@@ -1896,6 +1895,10 @@
 
  427 2014-11-11 print general ledger
      2014-11-11 done - svn #4088
+
+ 435 2014-11-12 view_entries: do not display 'invalid date' when the
+                field is empty
+     2014-11-12 done - svn #4095
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

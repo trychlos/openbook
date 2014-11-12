@@ -729,9 +729,11 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger )
 GDate *
 ofo_ledger_get_last_closing( const ofoLedger *ledger )
 {
+	static const gchar *thisfn = "ofo_ledger_get_last_closing";
 	GDate *dlast;
 	sDetailExe *sdetail;
 	GList *idet;
+	gchar *str;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
 
@@ -752,6 +754,10 @@ ofo_ledger_get_last_closing( const ofoLedger *ledger )
 			}
 		}
 	}
+
+	str = my_date_to_str( dlast, MY_DATE_DMYY );
+	g_debug( "%s: mnemo=%s, last_closing=%s", thisfn, ofo_ledger_get_mnemo( ledger ), str );
+	g_free( str );
 
 	return( dlast );
 }

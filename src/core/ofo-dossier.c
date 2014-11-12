@@ -1269,9 +1269,11 @@ ofo_dossier_get_exercices_list( const ofoDossier *dossier )
 GDate *
 ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 {
+	static const gchar *thisfn = "ofo_dossier_get_last_closed_exercice";
 	GList *exe;
 	sDetailExe *sexe;
 	GDate *dmax;
+	gchar *str;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
@@ -1281,7 +1283,8 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 
 		for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
 			sexe = ( sDetailExe * ) exe->data;
-			if( my_date_is_valid( &sexe->exe_end )){
+			if( sexe->status == DOS_STATUS_CLOSED ){
+				g_return_val_if_fail( my_date_is_valid( &sexe->exe_end ), NULL );
 				if( dmax ){
 					if( my_date_compare( &sexe->exe_end, dmax ) > 0 ){
 						my_date_set_from_date( dmax, &sexe->exe_end );
@@ -1293,6 +1296,10 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 			}
 		}
 	}
+
+	str = my_date_to_str( dmax, MY_DATE_DMYY );
+	g_debug( "%s: last_closed_exercice=%s", thisfn, str );
+	g_free( str );
 
 	return( dmax );
 }
