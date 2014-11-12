@@ -455,6 +455,7 @@ setup_dates_selection( ofaViewEntries *self )
 	my_editable_date_set_format( GTK_EDITABLE( priv->we_from ), MY_DATE_DMYY );
 	my_editable_date_set_date( GTK_EDITABLE( priv->we_from ), &priv->d_from );
 	my_editable_date_set_label( GTK_EDITABLE( priv->we_from ), GTK_WIDGET( priv->wl_from ), MY_DATE_DMMM );
+	my_editable_date_set_mandatory( GTK_EDITABLE( priv->we_from ), FALSE );
 
 	g_signal_connect(
 			G_OBJECT( priv->we_from ),
@@ -467,6 +468,7 @@ setup_dates_selection( ofaViewEntries *self )
 	my_editable_date_set_format( GTK_EDITABLE( priv->we_to ), MY_DATE_DMYY );
 	my_editable_date_set_date( GTK_EDITABLE( priv->we_to ), &priv->d_to );
 	my_editable_date_set_label( GTK_EDITABLE( priv->we_to ), GTK_WIDGET( priv->wl_to ), MY_DATE_DMMM );
+	my_editable_date_set_mandatory( GTK_EDITABLE( priv->we_to ), FALSE );
 
 	g_signal_connect(
 			G_OBJECT( priv->we_to ),

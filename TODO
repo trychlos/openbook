@@ -323,9 +323,6 @@
  412 2014-10-30 bug: when changing a ledger mnemo, all ope templates 
                 are reclassed under 'unclassed'
 
- 414 2014-10-30 backup and restore default commands should be provided
-                by the dbms provider
-
  416 2014-11- 2 this must be a user locale preference to export csv
                 with a decimal comma or a decimal dot - default is
                 decimal dot
@@ -1844,6 +1841,10 @@
                 - ofa-bat-properties.ui: a frame handled by ofaBatCommon
                 - ofa-account-select.ui: a container handled by ofaAccountsBook
      2014-10-30
+
+ 414 2014-10-30 backup and restore default commands should be provided
+                by the dbms provider
+     2014-11-12 done - svn #4094
 
  415 2014-11- 1 need the account soldes at the beginning of the exercice
                 use case: print a balance of the exercice
