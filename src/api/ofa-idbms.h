@@ -272,6 +272,16 @@ typedef struct {
 	gboolean      ( *delete_dossier )       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
 
 	/**
+	 * get_def_backup_cmd:
+	 * @instance: the #ofaIDbms provider.
+	 *
+	 * Returns: the default backup command proposed by the DBMS plugin.
+	 *
+	 * Since: version 1
+	 */
+	const gchar * ( *get_def_backup_cmd )   ( const ofaIDbms *instance );
+
+	/**
 	 * backup:
 	 * @instance: the #ofaIDbms provider.
 	 * @handle: the handle returned by the connection.
@@ -284,6 +294,16 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean      ( *backup )               ( const ofaIDbms *instance, void *handle, const gchar *fname );
+
+	/**
+	 * get_def_restore_cmd:
+	 * @instance: the #ofaIDbms provider.
+	 *
+	 * Returns: the default restore command proposed by the DBMS plugin.
+	 *
+	 * Since: version 1
+	 */
+	const gchar * ( *get_def_restore_cmd )  ( const ofaIDbms *instance );
 
 	/**
 	 * restore:
@@ -375,7 +395,11 @@ gchar       *ofa_idbms_error                ( const ofaIDbms *instance, void *ha
 gboolean     ofa_idbms_delete_dossier       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password,
 												gboolean drop_db, gboolean drop_accounts, gboolean with_confirm );
 
+const gchar *ofa_idbms_get_def_backup_cmd   ( const ofaIDbms *instance );
+
 gboolean     ofa_idbms_backup               ( const ofaIDbms *instance, void *handle, const gchar *fname );
+
+const gchar *ofa_idbms_get_def_restore_cmd  ( const ofaIDbms *instance );
 
 gboolean     ofa_idbms_restore              ( const ofaIDbms *instance, const gchar *label, const gchar *fname );
 

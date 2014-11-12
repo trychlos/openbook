@@ -354,7 +354,21 @@
 
  431 2014-11-11 print general ledger: have a general total per currency
 
- 432
+ 432 2014-11-12 on import, do not apply on account nor ledger entries
+                which have an effect date before the beginning of the 
+                exercice (the ledger will stay unbalanced)
+
+ 433 2014-11-12 print ledger
+
+ 434 2014-11-12 bug on pwi: for an entry whose effect date is 1/1/14,
+                view_entries displays an error message like
+                "effect date (01/01/2014) lesser than last closing date
+                (31/12/2014)" which is obviously wrong
+
+ 435 2014-11-12 view_entries: do not display 'invalild date' when the
+                field is empty
+
+ 436
 
 -----------------------------------------------------------------------
  DONE

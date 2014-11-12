@@ -78,6 +78,15 @@ static void        exit_backup_cb( GPid child_pid, gint status, backupInfos *inf
 static void        exit_restore_cb( GPid child_pid, gint status, backupInfos *infos );
 
 /**
+ * ofa_mysql_get_def_backup_cmd:
+ */
+const gchar *
+ofa_mysql_get_def_backup_cmd( const ofaIDbms *instance )
+{
+	return( "mysqldump --verbose %O -u%U -p%P %B | gzip -c > %F" );
+}
+
+/**
  * ofa_mysql_backup:
  *
  * Backup the currently connected database.
@@ -103,6 +112,15 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 				( GChildWatchFunc ) exit_backup_cb );
 
 	return( ok );
+}
+
+/**
+ * ofa_mysql_get_def_restore_cmd:
+ */
+const gchar *
+ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance )
+{
+	return( "mysql %O -u%U -p%P -e 'drop database %B' ; mysql %O -u%U -p%P -e 'create database %B' ; gzip -cd %F | mysql %O -u%U -p%P %B" );
 }
 
 /**

@@ -36,9 +36,13 @@
 
 G_BEGIN_DECLS
 
-gboolean ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname );
+const gchar *ofa_mysql_get_def_backup_cmd ( const ofaIDbms *instance );
 
-gboolean ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password );
+gboolean     ofa_mysql_backup             ( const ofaIDbms *instance, void *handle, const gchar *fname );
+
+const gchar *ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance );
+
+gboolean     ofa_mysql_restore            ( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password );
 
 G_END_DECLS
 

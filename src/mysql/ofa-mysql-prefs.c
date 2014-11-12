@@ -35,6 +35,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
+#include "ofa-mysql-backup.h"
 #include "ofa-mysql-prefs.h"
 
 /*
@@ -124,19 +125,23 @@ page_init_backup( const ofaIPreferences *instance, GtkContainer *page, sPrivate 
 	GtkWidget *entry;
 	gchar *cmdline;
 
+	entry = my_utils_container_get_child_by_name( page, "backup" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	cmdline = ofa_settings_get_string_ex( PREFS_GROUP, PREFS_BACKUP_CMDLINE );
 	if( cmdline && g_utf8_strlen( cmdline, -1 )){
-		entry = my_utils_container_get_child_by_name( page, "backup" );
-		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
+	} else {
+		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_get_def_backup_cmd( OFA_IDBMS( instance )));
 	}
 	g_free( cmdline );
 
+	entry = my_utils_container_get_child_by_name( page, "restore" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	cmdline = ofa_settings_get_string_ex( PREFS_GROUP, PREFS_RESTORE_CMDLINE );
 	if( cmdline && g_utf8_strlen( cmdline, -1 )){
-		entry = my_utils_container_get_child_by_name( page, "restore" );
-		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
+	} else {
+		gtk_entry_set_text( GTK_ENTRY( entry ), ofa_mysql_get_def_restore_cmd( OFA_IDBMS( instance )));
 	}
 	g_free( cmdline );
 }

@@ -488,6 +488,19 @@ confirm_for_deletion( const ofaIDbms *instance, const gchar *label, gboolean dro
 }
 
 /**
+ * ofa_idbms_get_def_backup_cmd:
+ */
+const gchar *
+ofa_idbms_get_def_backup_cmd( const ofaIDbms *instance )
+{
+	if( OFA_IDBMS_GET_INTERFACE( instance )->get_def_backup_cmd ){
+		return( OFA_IDBMS_GET_INTERFACE( instance )->get_def_backup_cmd( instance ));
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_idbms_backup:
  */
 gboolean
@@ -502,6 +515,19 @@ ofa_idbms_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 	}
 
 	return( ok );
+}
+
+/**
+ * ofa_idbms_get_def_restore_cmd:
+ */
+const gchar *
+ofa_idbms_get_def_restore_cmd( const ofaIDbms *instance )
+{
+	if( OFA_IDBMS_GET_INTERFACE( instance )->get_def_restore_cmd ){
+		return( OFA_IDBMS_GET_INTERFACE( instance )->get_def_restore_cmd( instance ));
+	}
+
+	return( NULL );
 }
 
 /**
