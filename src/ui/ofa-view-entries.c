@@ -1910,21 +1910,33 @@ on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
 /*
  * expect to work on the displayed model, i.e. the GtkTreeModelSort
  * with the corresponding iter
+ *
+ * If the entry has already been saved, it is useless to check it again
+ * We know it has been saved if it has an entry number
  */
 static gboolean
 check_row_for_valid( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gboolean is_valid;
+	ofoEntry *entry;
 
 	set_comment( self, "" );
 
-	is_valid = check_row_for_valid_dope( self, tmodel, iter ) &&
-				check_row_for_valid_deffect( self, tmodel, iter ) &&
-				check_row_for_valid_ledger( self, tmodel, iter ) &&
-				check_row_for_valid_account( self, tmodel, iter ) &&
-				check_row_for_valid_label( self, tmodel, iter ) &&
-				check_row_for_valid_amounts( self, tmodel, iter ) &&
-				check_row_for_valid_currency( self, tmodel, iter );
+	gtk_tree_model_get( tmodel, iter, ENT_COL_OBJECT, &entry, -1 );
+	g_object_unref( entry );
+
+	if( ofo_entry_get_number( entry )){
+		is_valid = TRUE;
+
+	} else {
+		is_valid = check_row_for_valid_dope( self, tmodel, iter ) &&
+					check_row_for_valid_deffect( self, tmodel, iter ) &&
+					check_row_for_valid_ledger( self, tmodel, iter ) &&
+					check_row_for_valid_account( self, tmodel, iter ) &&
+					check_row_for_valid_label( self, tmodel, iter ) &&
+					check_row_for_valid_amounts( self, tmodel, iter ) &&
+					check_row_for_valid_currency( self, tmodel, iter );
+	}
 
 	return( is_valid );
 }
@@ -2551,7 +2563,7 @@ insert_new_row( ofaViewEntries *self )
 	ofaViewEntriesPrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
-	GtkTreeIter iter, child_iter, new_iter, filter_iter;
+	GtkTreeIter sort_iter, filter_iter, iter, new_iter;
 	gboolean is_empty;
 	gchar *str;
 	gint pos;
@@ -2563,19 +2575,21 @@ insert_new_row( ofaViewEntries *self )
 	priv = self->priv;
 	is_empty = FALSE;
 	select = gtk_tree_view_get_selection( priv->entries_tview );
+	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 
 	/* find the currently selected position in order to insert a line
 	 * above the current pos. */
-	if( !gtk_tree_selection_get_selected( select, NULL, &iter )){
-		if( !gtk_tree_model_get_iter_first( priv->tfilter, &iter )){
+	if( !gtk_tree_selection_get_selected( select, NULL, &sort_iter )){
+		if( !gtk_tree_model_get_iter_first( priv->tsort, &sort_iter )){
 			is_empty = TRUE;
 		}
 	}
-	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 	if( !is_empty ){
+		gtk_tree_model_sort_convert_iter_to_child_iter(
+				GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
 		gtk_tree_model_filter_convert_iter_to_child_iter(
-				GTK_TREE_MODEL_FILTER( priv->tfilter ), &child_iter, &iter );
-		str = gtk_tree_model_get_string_from_iter( tmodel, &child_iter );
+				GTK_TREE_MODEL_FILTER( priv->tfilter ), &iter, &filter_iter );
+		str = gtk_tree_model_get_string_from_iter( tmodel, &iter );
 		pos = atoi( str );
 		g_free( str );
 	} else {
@@ -2613,8 +2627,10 @@ insert_new_row( ofaViewEntries *self )
 	/* set the selection and the cursor on this new line */
 	gtk_tree_model_filter_convert_child_iter_to_iter(
 			GTK_TREE_MODEL_FILTER( priv->tfilter ), &filter_iter, &new_iter );
-	gtk_tree_selection_select_iter( select, &filter_iter );
-	path = gtk_tree_model_get_path( priv->tfilter, &filter_iter );
+	gtk_tree_model_sort_convert_child_iter_to_iter(
+			GTK_TREE_MODEL_SORT( priv->tsort ), &sort_iter, &filter_iter );
+	gtk_tree_selection_select_iter( select, &sort_iter );
+	path = gtk_tree_model_get_path( priv->tsort, &sort_iter );
 	column = gtk_tree_view_get_column( priv->entries_tview, 0 );
 	gtk_tree_view_set_cursor( priv->entries_tview, path, column, TRUE );
 	gtk_tree_path_free( path );
@@ -2629,28 +2645,31 @@ delete_row( ofaViewEntries *self )
 	ofaViewEntriesPrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
-	GtkTreeIter iter, child_iter;
+	GtkTreeIter sort_iter, filter_iter, iter;
 	ofoEntry *entry;
 	gchar *msg, *label;
 
 	priv = self->priv;
 	select = gtk_tree_view_get_selection( priv->entries_tview );
-	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
+
+	if( gtk_tree_selection_get_selected( select, NULL, &sort_iter )){
 		gtk_tree_model_get(
-				priv->tfilter,
-				&iter,
+				priv->tsort,
+				&sort_iter,
 				ENT_COL_LABEL,    &label,
 				ENT_COL_OBJECT,   &entry,
 				-1 );
-		if( get_entry_status_from_row( self, priv->tfilter, &iter) == ENT_STATUS_ROUGH ){
+		if( get_entry_status_from_row( self, priv->tsort, &sort_iter) == ENT_STATUS_ROUGH ){
 			msg = g_strdup_printf(
 					_( "Are you sure you want to remove the '%s' entry" ),
 					label );
 			if( delete_confirmed( self, msg )){
+				gtk_tree_model_sort_convert_iter_to_child_iter(
+						GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
 				gtk_tree_model_filter_convert_iter_to_child_iter(
-						GTK_TREE_MODEL_FILTER( priv->tfilter ), &child_iter, &iter );
+						GTK_TREE_MODEL_FILTER( priv->tfilter ), &iter, &filter_iter );
 				tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &child_iter );
+				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
 				if( entry ){
 					ofo_entry_delete( entry, priv->dossier );
 				}

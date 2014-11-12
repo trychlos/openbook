@@ -357,14 +357,20 @@
 
  433 2014-11-12 print ledger
 
- 434 2014-11-12 bug on pwi: for an entry whose effect date is 1/1/14,
-                view_entries displays an error message like
-                "effect date (01/01/2014) lesser than last closing date
-                (31/12/2014)" which is obviously wrong
-
  436 2014-11-12 view entries: do not recheck entries which are not new
 
- 437
+ 437 2014-11-12 view entries: insert does not work (add empty lines as
+                we insert more entries)
+
+ 438 2014-11-12 view entries: display in red invalid entries
+
+ 439 2014-11-12 view entries: delete the row even it is not a valid 
+                entry
+
+ 440 2014-11-12 view entries: escape should cancel the new entry being
+                entered
+
+ 441
 
 -----------------------------------------------------------------------
  DONE
@@ -1895,6 +1901,12 @@
 
  427 2014-11-11 print general ledger
      2014-11-11 done - svn #4088
+
+ 434 2014-11-12 bug on pwi: for an entry whose effect date is 1/1/14,
+                view_entries displays an error message like
+                "effect date (01/01/2014) lesser than last closing date
+                (31/12/2014)" which is obviously wrong
+     2014-11-12 done - svn #4096
 
  435 2014-11-12 view_entries: do not display 'invalid date' when the
                 field is empty
