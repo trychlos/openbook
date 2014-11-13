@@ -357,12 +357,11 @@
 
  433 2014-11-12 print ledger
 
- 436 2014-11-12 view entries: do not recheck entries which are not new
-
  437 2014-11-12 view entries: insert does not work (add empty lines as
                 we insert more entries)
 
- 438 2014-11-12 view entries: display in red invalid entries
+ 438 2014-11-12 view entries: display in red invalid entries + in red
+                the error message
 
  439 2014-11-12 view entries: delete the row even it is not a valid 
                 entry
@@ -370,7 +369,43 @@
  440 2014-11-12 view entries: escape should cancel the new entry being
                 entered
 
- 441
+ 441 2014-11-13 general ledger: the from_date and the to_date are set
+                in the dialog box while only the from_date is set in
+                the configuration file 
+
+ 442 2014-11-13 AccountsBook: add a notes indicator
+
+ 442 2014-11-13 General Ledger: rather use settled and reconciliated
+                indicators than the settlement number (either a coche
+                or a colored 'S/R' letter)
+
+ 443 2014-11-13 General Ledger: date is marked invalid when empty (but
+                shouldn't)
+
+ 444 2014-11-13 General Ledger: last account is not taken into account
+
+ 445 2014-11-13 my_date: do not accept two successive '/'
+
+ 446 2014-11-13 General Ledger: account header/footer: font size -= 1
+
+ 447 2014-11-13 my-date.c: line 81 (my_date_compare): should not be reached
+
+ 448 2014-11-13 view entries: when entering an operation date, and if
+                the effect date has not yet been forced by the user, 
+                then set a default effect date 
+
+ 449 2014-11-13 view entries: use my_cell_editable_date
+
+ 450 2014-11-13 view entries: have a status as a mnemonic (e.g. Ro, Va
+                or Del)
+
+ 451 2014-11-13 view entries: one should be able to enter any effect 
+                date -> have a save anyway button
+
+ 452 2014-11-13 view entries: default currency should be set as soon as
+                the account is set
+
+ 453
 
 -----------------------------------------------------------------------
  DONE
@@ -1911,6 +1946,9 @@
  435 2014-11-12 view_entries: do not display 'invalid date' when the
                 field is empty
      2014-11-12 done - svn #4095
+
+ 436 2014-11-12 view entries: do not recheck entries which are not new
+     2014-11-12 done - svn #4097
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

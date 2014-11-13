@@ -850,6 +850,10 @@ entry_parse_result( const GSList *row )
 void
 ofo_entry_free_dataset( GList *dataset )
 {
+	static const gchar *thisfn = "ofo_entry_free_dataset";
+
+	g_debug( "%s: dataset=%p, count=%d", thisfn, ( void * ) dataset, g_list_length( dataset ));
+
 	g_list_free_full( dataset, g_object_unref );
 }
 

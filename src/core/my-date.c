@@ -122,6 +122,35 @@ my_date_compare_ex( const GDate *a, const GDate *b, gboolean clear_is_past_infin
 }
 
 /**
+ * my_date_compare_by_str:
+ *
+ * Compare two strings which are supposed to represent dates
+ */
+gint
+my_date_compare_by_str( const gchar *sda, const gchar *sdb, myDateFormat format )
+{
+	GDate da, db;
+
+	if( !sda || !g_utf8_strlen( sda, -1 )){
+		if( !sdb || !g_utf8_strlen( sdb, -1 )){
+			/* the two dates are both empty */
+			return( 0 );
+		}
+		/* a is empty while b is set */
+		return( -1 );
+	} else if( !sdb || !g_utf8_strlen( sdb, -1 )){
+		/* a is set while b is empty */
+		return( 1 );
+	}
+
+	/* both a and b are set */
+	my_date_set_from_str( &da, sda, format );
+	my_date_set_from_str( &db, sdb, format );
+
+	return( my_date_compare_ex( &da, &db, TRUE ));
+}
+
+/**
  * my_date_set_now:
  * @date: [out]: a not-null pointer to the destination GDate structure
  *

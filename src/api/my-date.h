@@ -65,6 +65,7 @@ gboolean   my_date_is_valid      ( const GDate *date );
 
 gint       my_date_compare       ( const GDate *a, const GDate *b );
 gint       my_date_compare_ex    ( const GDate *a, const GDate *b, gboolean clear_is_past_infinite );
+gint       my_date_compare_by_str( const gchar *a, const gchar *b, myDateFormat format );
 
 GDate     *my_date_set_now       ( GDate *date );
 GDate     *my_date_set_from_date ( GDate *date, const GDate *orig );
