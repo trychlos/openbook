@@ -50,6 +50,8 @@ openbook_SOURCES = \
 	my-buttons-box.h									\
 	my-cell-renderer-amount.c							\
 	my-cell-renderer-amount.h							\
+	my-cell-renderer-date.c								\
+	my-cell-renderer-date.h								\
 	my-editable-amount.c								\
 	my-editable-amount.h								\
 	my-editable-date.c									\

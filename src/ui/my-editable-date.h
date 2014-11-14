@@ -43,6 +43,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/my-date.h"
+
 G_BEGIN_DECLS
 
 void         my_editable_date_init            ( GtkEditable *editable );

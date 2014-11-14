@@ -42,6 +42,7 @@
 #include "api/ofo-ledger.h"
 
 #include "ui/my-cell-renderer-amount.h"
+#include "ui/my-cell-renderer-date.h"
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-ledger-combo.h"
@@ -652,6 +653,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_DOPE;
 	text_cell = gtk_cell_renderer_text_new();
+	my_cell_renderer_date_init( text_cell );
 	st_renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
@@ -679,6 +681,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_DEFF;
 	text_cell = gtk_cell_renderer_text_new();
+	my_cell_renderer_date_init( text_cell );
 	st_renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
@@ -2828,7 +2831,7 @@ delete_row( ofaViewEntries *self )
 		}
 		g_free( label );
 		if( entry && OFO_IS_ENTRY( entry )){
-			g_debug( "delete_row: ref_count=%d", G_OBJECT( entry )->ref_count );
+			/*g_debug( "delete_row: ref_count=%d", G_OBJECT( entry )->ref_count );*/
 			g_object_unref( entry );
 		}
 	}

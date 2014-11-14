@@ -37,7 +37,7 @@ static void on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *edit
  * my_cell_renderer_amount_init:
  * @renderer: this #GtkCellRendererText object
  *
- * Initialiser a cell renderer which is created to enter an amount or
+ * Initialise a cell renderer which is created to enter an amount or
  * a rate. Is thought to be called once at cell renderer creation.
  */
 void
