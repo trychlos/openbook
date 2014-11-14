@@ -143,8 +143,8 @@ enum {
 	ENT_COL_DRECONCIL,
 	ENT_COL_STATUS,
 	ENT_COL_OBJECT,
-	ENT_COL_VALID,
-	ENT_COL_ERRMSG,
+	ENT_COL_MSGERR,
+	ENT_COL_MSGWARN,
 	ENT_COL_DOPE_SET,					/* operation date set by the user */
 	ENT_COL_DEFF_SET,					/* effect date set by the user */
 	ENT_COL_CURRENCY_SET,				/* currency set by the user */
@@ -157,7 +157,7 @@ typedef struct {
 	gdouble debits;
 	gdouble credits;
 }
-	perCurrency;
+	sCurrency;
 
 /* the id of the column is set against some columns of interest,
  * typically whose that we want be able to show/hide */
@@ -177,6 +177,25 @@ typedef struct {
  */
 #define OFA_SORT_ASCENDING    GTK_SORT_DESCENDING
 #define OFA_SORT_DESCENDING   GTK_SORT_ASCENDING
+
+/* when editing an entry, we may have two levels of errors:
+ * fatal error: the entry is not valid and cannot be saved
+ *              (e.g. a mandatory data is empty)
+ * warning: the entry may be valid, but will not be applied in standard
+ *          conditions (e.g. effect date is before the exercice)
+ */
+#define RGBA_NORMAL                     "#000000"		/* black */
+#define RGBA_ERROR                      "#ff0000"		/* full red */
+#define RGBA_WARNING                    "#ff8000"		/* orange */
+
+/* error levels, in ascending order
+ */
+enum {
+	ENT_ERR_NONE = 0,
+	ENT_ERR_WARNING,
+	ENT_ERR_ERROR
+};
+#define RGBA_BALANCE                    PAGE_RGBA_FOOTER
 
 static const gchar           *st_ui_xml                   = PKGUIDIR "/ofa-view-entries.piece.ui";
 static const gchar           *st_ui_id                    = "ViewEntriesWindow";
@@ -218,10 +237,10 @@ static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
 static void           reset_balances_hash( ofaViewEntries *self );
 static void           compute_balances( ofaViewEntries *self );
-static perCurrency   *find_balance_by_currency( ofaViewEntries *self, const gchar *dev_code );
-static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter, gboolean valid );
+static sCurrency     *find_balance_by_currency( ofaViewEntries *self, const gchar *dev_code );
+static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter );
 static GtkWidget     *reset_balances_widgets( ofaViewEntries *self );
-static void           display_balance( const gchar *dev_code, perCurrency *pc, ofaViewEntries *self );
+static void           display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self );
 static gboolean       is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaViewEntries *self );
 static void           on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self );
 static void           on_entry_status_toggled( GtkToggleButton *button, ofaViewEntries *self );
@@ -232,7 +251,7 @@ static void           on_cell_edited( GtkCellRendererText *cell, gchar *path, gc
 static gint           get_data_set_indicator( ofaViewEntries *self, gint column_id );
 static void           set_data_set_indicator( ofaViewEntries *self, gint column_id, GtkTreeIter *iter );
 static void           on_row_selected( GtkTreeSelection *select, ofaViewEntries *self );
-static gboolean       check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter );
+static void           check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_dope( ofaViewEntries *self, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_label( ofaViewEntries *self, GtkTreeIter *iter );
@@ -240,11 +259,14 @@ static gboolean       check_row_for_valid_ledger( ofaViewEntries *self, GtkTreeI
 static gboolean       check_row_for_valid_account( ofaViewEntries *self, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_currency( ofaViewEntries *self, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeIter *iter );
-static gboolean       check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter );
-static void           set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter );
+static void           check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter );
+static gboolean       set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter );
 static GDate         *get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger );
+static GDate         *get_max_past_deffect( ofaViewEntries *self );
 static gboolean       check_row_for_cross_currency( ofaViewEntries *self, GtkTreeIter *iter );
+static void           reset_error_msg( ofaViewEntries *self, GtkTreeIter *iter );
 static void           set_error_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *str );
+static void           set_warning_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *str );
 static void           display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       find_entry_by_number( ofaViewEntries *self, gint number, GtkTreeIter *iter );
@@ -257,8 +279,9 @@ static void           on_dossier_deleted_object( ofoDossier *dossier, ofoBase *o
 static void           do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry );
 static void           on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
 static gboolean       on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *self );
-static ofaEntryStatus get_row_entry_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static GDate         *get_row_entry_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static ofaEntryStatus get_row_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static GDate         *get_row_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gint           get_row_errlevel( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void           insert_new_row( ofaViewEntries *self );
 static void           delete_row( ofaViewEntries *self );
 static gboolean       delete_confirmed( const ofaViewEntries *self, const gchar *message );
@@ -627,8 +650,8 @@ setup_entries_treeview( ofaViewEntries *self )
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ref, label, ledger */
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* account, debit, credit */
 			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* currency, rappro, status */
-			G_TYPE_OBJECT,
-			G_TYPE_BOOLEAN, G_TYPE_STRING,					/* valid, error message */
+			G_TYPE_OBJECT,									/* the entry itself */
+			G_TYPE_STRING, G_TYPE_STRING,					/* error msg, warning msg */
 			G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN	/* dope_set, deff_set, currency_set */
 			));
 
@@ -836,7 +859,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
-			"",
+			_( "Cur." ),
 			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_min_width( column, 32 );	/* "EUR" width */
@@ -881,6 +904,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			_( "St." ),
 			text_cell, "text", column_id,
 			NULL );
+	gtk_tree_view_column_set_alignment( column, 0.5 );
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->status_visible );
@@ -1397,7 +1421,7 @@ display_entries( ofaViewEntries *self, GList *entries )
 
 	for( iset=entries ; iset ; iset=iset->next ){
 		gtk_list_store_insert( GTK_LIST_STORE( priv->tstore ), &iter, -1 );
-		display_entry( self, OFO_ENTRY( iset->data ), &iter, TRUE );
+		display_entry( self, OFO_ENTRY( iset->data ), &iter );
 	}
 
 	compute_balances( self );
@@ -1435,7 +1459,7 @@ compute_balances( ofaViewEntries *self )
 	GtkWidget *box;
 	GtkTreeIter iter;
 	gchar *sdeb, *scre, *dev_code;
-	perCurrency *pc;
+	sCurrency *pc;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1482,17 +1506,17 @@ compute_balances( ofaViewEntries *self )
 /*
  * the hash is used to store the balance per currency
  */
-static perCurrency *
+static sCurrency *
 find_balance_by_currency( ofaViewEntries *self, const gchar *dev_code )
 {
 	ofaViewEntriesPrivate *priv;
-	perCurrency *pc;
+	sCurrency *pc;
 
 	priv = self->priv;
 
-	pc = ( perCurrency * ) g_hash_table_lookup( priv->balances_hash, dev_code );
+	pc = ( sCurrency * ) g_hash_table_lookup( priv->balances_hash, dev_code );
 	if( !pc ){
-		pc = g_new0( perCurrency, 1 );
+		pc = g_new0( sCurrency, 1 );
 		pc->debits = 0;
 		pc->credits = 0;
 		g_hash_table_insert( priv->balances_hash, g_strdup( dev_code ), pc );
@@ -1505,7 +1529,7 @@ find_balance_by_currency( ofaViewEntries *self, const gchar *dev_code )
  * iter is on the list store
  */
 static void
-display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter, gboolean valid )
+display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
 	gchar *sdope, *sdeff, *sdeb, *scre, *srappro;
@@ -1536,7 +1560,10 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter, gboolea
 				ENT_COL_DRECONCIL,    srappro,
 				ENT_COL_STATUS,       ofo_entry_get_abr_status( entry ),
 				ENT_COL_OBJECT,       entry,
-				ENT_COL_VALID,        valid,
+				ENT_COL_MSGERR,       "",
+				ENT_COL_MSGWARN,      "",
+				ENT_COL_DOPE_SET,     FALSE,
+				ENT_COL_DEFF_SET,     FALSE,
 				ENT_COL_CURRENCY_SET, FALSE,
 				-1 );
 
@@ -1560,12 +1587,15 @@ reset_balances_widgets( ofaViewEntries *self )
 }
 
 static void
-display_balance( const gchar *dev_code, perCurrency *pc, ofaViewEntries *self )
+display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self )
 {
 	GtkWidget *box, *row, *label;
 	gchar *str;
+	GdkRGBA color;
 
 	if( pc->debits || pc->credits ){
+
+		gdk_rgba_parse( &color, RGBA_BALANCE );
 
 		box = my_utils_container_get_child_by_name( self->priv->top_box, "pt-box" );
 		g_return_if_fail( box && GTK_IS_BOX( box ));
@@ -1575,11 +1605,13 @@ display_balance( const gchar *dev_code, perCurrency *pc, ofaViewEntries *self )
 
 		label = gtk_label_new( dev_code );
 		gtk_widget_set_margin_right( label, 12 );
+		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 		gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
 		gtk_label_set_text( GTK_LABEL( label ), dev_code );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
 
 		label = gtk_label_new( NULL );
+		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
 		str = g_strdup_printf( "%'.2lf", pc->credits );
@@ -1588,6 +1620,7 @@ display_balance( const gchar *dev_code, perCurrency *pc, ofaViewEntries *self )
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
 
 		label = gtk_label_new( NULL );
+		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
 		str = g_strdup_printf( "%'.2lf", pc->debits );
@@ -1619,7 +1652,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 	if( entry && OFO_IS_ENTRY( entry )){
 		g_object_unref( entry );
 
-		status = get_row_entry_status( self, tmodel, iter );
+		status = get_row_status( self, tmodel, iter );
 
 		switch( status ){
 			case ENT_STATUS_ROUGH:
@@ -1633,7 +1666,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 				break;
 		}
 
-		deffect = get_row_entry_deffect( self, tmodel, iter );
+		deffect = get_row_deffect( self, tmodel, iter );
 		visible &= !my_date_is_valid( &priv->d_from ) || my_date_compare_ex( &priv->d_from, deffect, FALSE ) <= 0;
 		visible &= !my_date_is_valid( &priv->d_to ) || my_date_compare_ex( &priv->d_to, deffect, TRUE ) >= 0;
 	}
@@ -1659,7 +1692,8 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 	gboolean *priv_flag;
 	ofaEntryStatus status;
 	GdkRGBA color;
-	gboolean is_valid;
+	gint err_level;
+	const gchar *color_str;
 
 	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
 
@@ -1671,11 +1705,8 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 		}
 	}
 
-	gtk_tree_model_get( tmodel, iter,
-						ENT_COL_VALID,  &is_valid,
-						-1 );
-
-	status = get_row_entry_status( self, tmodel, iter );
+	err_level = get_row_errlevel( self, tmodel, iter );
+	status = get_row_status( self, tmodel, iter );
 
 	g_object_set( G_OBJECT( cell ),
 						"style-set",      FALSE,
@@ -1691,10 +1722,19 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 			break;
 		case ENT_STATUS_ROUGH:
-			if( !is_valid ){
-				gdk_rgba_parse( &color, "#ff0000" );
-				g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+			switch( err_level ){
+				case ENT_ERR_ERROR:
+					color_str = RGBA_ERROR;
+					break;
+				case ENT_ERR_WARNING:
+					color_str = RGBA_WARNING;
+					break;
+				default:
+					color_str = RGBA_NORMAL;
+					break;
 			}
+			gdk_rgba_parse( &color, color_str );
+			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 			break;
 		default:
 			break;
@@ -1821,7 +1861,6 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 	GtkTreePath *path;
 	GtkTreeIter sort_iter, filter_iter, iter;
 	gchar *str;
-	gboolean is_valid;
 	gdouble amount;
 
 	g_debug( "%s: cell=%p, path=%s, text=%s, self=%p",
@@ -1852,13 +1891,10 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 					GTK_LIST_STORE( priv->tstore ), &iter, column_id, str, -1 );
 			g_free( str );
 
-			is_valid = check_row_for_valid( self, &iter );
-			gtk_list_store_set(
-					GTK_LIST_STORE( priv->tstore ), &iter, ENT_COL_VALID, is_valid, -1 );
-
+			check_row_for_valid( self, &iter );
 			compute_balances( self );
 
-			if( is_valid ){
+			if( get_row_errlevel( self, priv->tstore, &iter ) == ENT_ERR_NONE ){
 				save_entry( self, priv->tstore, &iter );
 			}
 		}
@@ -1923,7 +1959,7 @@ on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
 
 	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
 
-		is_editable = ( get_row_entry_status( self, priv->tsort, &iter ) == ENT_STATUS_ROUGH );
+		is_editable = ( get_row_status( self, priv->tsort, &iter ) == ENT_STATUS_ROUGH );
 		gtk_widget_set_sensitive(  GTK_WIDGET( priv->edit_switch ), is_editable );
 		g_object_get( G_OBJECT( priv->edit_switch ), "active", &is_active, NULL );
 		set_renderers_editable( self, is_editable && is_active );
@@ -1935,55 +1971,53 @@ on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
 
 /*
  * @iter: a valid #GtkTreeIter on the underlying #GtkListStore
+ *
+ * Individual checks in general are only able to detect errors.
  */
-static gboolean
+static void
 check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
-	gboolean v_dope, v_deffect, v_ledger, v_label, v_account, v_currency, v_amounts;
-	gboolean is_valid;
+	gboolean v_dope, v_deffect, v_ledger, v_account, v_currency;
 	gchar *prev_msg;
 
 	priv = self->priv;
-	set_error_msg( self, iter, "" );
+	reset_error_msg( self, iter );
 
 	/* checks begin from right so that the last computed error message
 	 * (for the leftest column) will be displayed first */
-	v_amounts = check_row_for_valid_amounts( self, iter );
-	v_label = check_row_for_valid_label( self, iter );
+	check_row_for_valid_amounts( self, iter );
+	check_row_for_valid_label( self, iter );
 
 	/* check account before currency in order to be able to set a
 	 * suitable default value */
 	v_account = check_row_for_valid_account( self, iter );
 	v_currency = check_row_for_valid_currency( self, iter );
 
+	if( v_account && v_currency ){
+		check_row_for_cross_currency( self, iter );
+	}
+
 	/* check ledger, deffect, dope in sequence in order to be able to
 	 * safely reinit error message after having set default effect date */
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_ERRMSG, &prev_msg, -1 );
+	gtk_tree_model_get( priv->tstore, iter, ENT_COL_MSGERR, &prev_msg, -1 );
 	v_ledger = check_row_for_valid_ledger( self, iter );
 	v_deffect = check_row_for_valid_deffect( self, iter );
 	v_dope = check_row_for_valid_dope( self, iter );
 
 	if( v_dope && !v_deffect && v_ledger ){
-		set_default_deffect( self, iter );
-		v_deffect = TRUE;
-		set_error_msg( self, iter, prev_msg );
+		if( set_default_deffect( self, iter )){
+			v_deffect = TRUE;
+			set_error_msg( self, iter, prev_msg );
+		}
 	}
 	g_free( prev_msg );
 
-	is_valid = v_dope && v_deffect && v_account && v_ledger && v_label && v_amounts && v_currency;
-
 	if( v_dope && v_deffect && v_ledger ){
-		is_valid &= check_row_for_cross_deffect( self, iter );
-	}
-
-	if( v_account && v_currency ){
-		is_valid &= check_row_for_cross_currency( self, iter );
+		check_row_for_cross_deffect( self, iter );
 	}
 
 	display_error_msg( self, priv->tstore, iter );
-
-	return( is_valid );
 }
 
 static gboolean
@@ -2055,8 +2089,8 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 		dope_data = get_data_set_indicator( self, ENT_COL_DOPE );
 		gtk_tree_model_get( priv->tstore, iter, dope_data, &dope_set, -1 );
 		if( !dope_set ){
-			gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter,
-					ENT_COL_DOPE, sdeffect, -1 );
+			gtk_list_store_set(
+					GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_DOPE, sdeffect, -1 );
 		}
 	}
 
@@ -2230,17 +2264,15 @@ check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeIter *iter )
  * - greater than the last closing date of the exercice (if any)
  * - greater than the last closing date of the ledger (if any)
  */
-static gboolean
+static void
 check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
-	gchar *sdope, *sdeffect, *mnemo, *msg, *sdmin, *sdeff;
-	GDate dope, deff, deff_min;
+	gchar *sdope, *sdeffect, *mnemo, *msg, *sdmin, *sdeff, *sdmax;
+	GDate dope, deff, deff_min, dmax_past;
 	ofoLedger *ledger;
-	gboolean is_valid;
 
 	priv = self->priv;
-	is_valid = FALSE;
 
 	gtk_tree_model_get( priv->tstore, iter,
 				ENT_COL_DOPE,   &sdope,
@@ -2249,47 +2281,81 @@ check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 				-1 );
 
 	my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
-	g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
+	g_return_if_fail( my_date_is_valid( &dope ));
 
 	my_date_set_from_str( &deff, sdeffect, MY_DATE_DMYY );
-	g_return_val_if_fail( my_date_is_valid( &deff ), FALSE );
+	g_return_if_fail( my_date_is_valid( &deff ));
 
-	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), FALSE );
+	g_return_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ));
 	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	my_date_set_from_date( &deff_min, get_min_deffect( self, &dope, ledger ));
-	g_return_val_if_fail( my_date_is_valid( &deff_min ), FALSE );
+	g_return_if_fail( my_date_is_valid( &deff_min ));
 
-	if( my_date_compare( &deff, &deff_min ) >= 0 ){
-		is_valid = TRUE;
+	/* if effect date is greater or equal than minimal effect date for
+	 * the row, then it is valid and will normally apply to account and
+	 * ledger */
+	if( my_date_compare( &deff, &deff_min ) < 0 ){
+		/* if max_past is defined and lesser than effect date, then
+		 * this later is invalid */
+		my_date_set_from_date( &dmax_past, get_max_past_deffect( self ));
+		if( my_date_is_valid( &dmax_past )){
 
-	} else {
-		sdmin = my_date_to_str( &deff_min, MY_DATE_DMYY );
-		sdeff = my_date_to_str( &deff, MY_DATE_DMYY );
-		msg = g_strdup_printf(
-				_( "Effect date %s lesser than min effect date %s" ), sdeff, sdmin );
-		set_error_msg( self, iter, msg );
-		g_free( msg );
-		g_free( sdeff );
-		g_free( sdmin );
+			if( my_date_compare( &deff, &dmax_past ) > 0 ){
+				sdmin = my_date_to_str( &deff_min, MY_DATE_DMYY );
+				sdeff = my_date_to_str( &deff, MY_DATE_DMYY );
+				sdmax = my_date_to_str( &dmax_past, MY_DATE_DMYY );
+				msg = g_strdup_printf(
+						_( "Effect date %s is between the max past %s and the min effect date %s" ),
+						sdeff, sdmax, sdmin );
+				set_error_msg( self, iter, msg );
+				g_free( msg );
+				g_free( sdeff );
+				g_free( sdmin );
+				g_free( sdmax );
+
+			} else {
+				/* effect date if lesser than or equal to max past */
+				sdmax = my_date_to_str( &dmax_past, MY_DATE_DMYY );
+				sdeff = my_date_to_str( &deff, MY_DATE_DMYY );
+				msg = g_strdup_printf(
+						_( "Effect date %s lesser than or equal to max past %s (will not apply to account nor ledger)" ),
+						sdeff, sdmax );
+				set_warning_msg( self, iter, msg );
+				g_free( msg );
+				g_free( sdeff );
+				g_free( sdmax );
+			}
+		} else {
+			/* there is no max_past so minimal effect date applies */
+			sdmin = my_date_to_str( &deff_min, MY_DATE_DMYY );
+			sdeff = my_date_to_str( &deff, MY_DATE_DMYY );
+			msg = g_strdup_printf(
+					_( "Effect date %s lesser than mini effect date %s" ), sdeff, sdmin );
+			set_error_msg( self, iter, msg );
+			g_free( msg );
+			g_free( sdeff );
+			g_free( sdmin );
+		}
 	}
 
 	g_free( sdope );
 	g_free( sdeffect );
 	g_free( mnemo );
-
-	return( is_valid );
 }
 
 /*
  * set a default effect date is operation date and ledger are valid
  * => effect date must not have been set by the user
+ *
+ * Returns: %TRUE if a default date has actually been set
  */
-static void
+static gboolean
 set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
+	gboolean set;
 	gboolean deff_set;
 	gint deff_data;
 	gchar *sdope, *mnemo, *sdeff;
@@ -2297,6 +2363,7 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 	ofoLedger *ledger;
 
 	priv = self->priv;
+	set = FALSE;
 
 	deff_data = get_data_set_indicator( self, ENT_COL_DEFF );
 	gtk_tree_model_get( priv->tstore, iter, deff_data, &deff_set, -1 );
@@ -2307,11 +2374,11 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 					-1 );
 
 		my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
-		g_return_if_fail( my_date_is_valid( &dope ));
+		g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 
-		g_return_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ));
+		g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), FALSE );
 		ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
-		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 
 		my_date_set_from_date( &deff_min, get_min_deffect( self, &dope, ledger ));
 		sdeff = my_date_to_str( &deff_min, MY_DATE_DMYY );
@@ -2320,7 +2387,11 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 
 		g_free( sdope );
 		g_free( mnemo );
+
+		set = TRUE;
 	}
+
+	return( set );
 }
 
 /*
@@ -2328,6 +2399,25 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
  * - the last last closing date of the ledger,
  * - the possible last closing date of the dossier,
  * - the possible opening date of the current exercice of the dossier.
+ * - the operation date
+ *
+ * This is the minimal effect date for standard use cases, where entry
+ * will be normally applied to account and ledger:
+ * - for a new dossier where open exercice date has not been set, there
+ *   is no other minimal date than the operation date itself
+ * - at soon as a ledger is closed, the closing date becomes a new
+ *   minimal date
+ * - when the exercice itself is closed, then the open exercice date
+ *   for N+1 becomes the new minimal effect date
+ * - and so on
+ *
+ * Due to the comparison with (supposed valid) operation date, this
+ * function always returns a valid minimal date. Starting with this
+ * minimal effect date, the entry will normally be applied to account
+ * and ledger.
+ *
+ * See get_max_past_deffect() for a maximal date which let the entry be
+ * recorded in books, while not applying it to account nor ledger.
  */
 static GDate *
 get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger )
@@ -2335,13 +2425,13 @@ get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger )
 	ofaViewEntriesPrivate *priv;
 	static GDate dmin;
 	GDate *ledger_last_closing;
-	gint to_add;
+	guint to_add;
 
 	priv = self->priv;
 	g_date_clear( &dmin, 1 );
 	to_add = 0;
 
-	/* minimal effect date from dossier point of view */
+	/* minimal effect date from dossier point of view: may be undefined */
 	if( my_date_is_valid( priv->dossier_opening )){
 		my_date_set_from_date( &dmin, priv->dossier_opening );
 
@@ -2353,7 +2443,7 @@ get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger )
 		g_date_add_days( &dmin, to_add );	/* the minimal deffect from the dossier */
 	}
 
-	/* minimal effect date from ledger point of view */
+	/* minimal effect date from ledger point of view: may be undefined */
 	ledger_last_closing = ofo_ledger_get_last_closing( ledger );
 	if( my_date_is_valid( ledger_last_closing )){
 		g_date_add_days( ledger_last_closing, 1 );
@@ -2369,6 +2459,50 @@ get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger )
 	}
 
 	return( &dmin );
+}
+
+/*
+ * Use case: when opening a new dossier, be able to import unsettled or
+ * unreconciliated entries. They will not be applied to accounts nor
+ * ledgers, but their recording in our books is allowed.
+ *
+ * This is so a maximal date: before this date, entry will be allowed
+ * (though a warning will be emitted, and the user will have to force
+ * the save) and recorded, while not applied.
+ * After this date, entries enter in a normal behavior where they must
+ * satisfy with ledger closing requirements.
+ *
+ * This date may be undefined: all entries are submitted to standard
+ * behavior as long as the situation will stay the same (as it only
+ * depends of the setup of the dossier).
+ *
+ * When defined, this date is strictly lesser than above minimal effect
+ * date.
+ */
+static GDate *
+get_max_past_deffect( ofaViewEntries *self )
+{
+	ofaViewEntriesPrivate *priv;
+	static GDate dmax;
+	guint to_substract;
+
+	priv = self->priv;
+	g_date_clear( &dmax, 1 );
+	to_substract = 0;
+
+	/* minimal effect date from dossier point of view */
+	if( my_date_is_valid( priv->dossier_opening )){
+		my_date_set_from_date( &dmax, priv->dossier_opening );
+		to_substract = 1;
+
+	} else if( my_date_is_valid( priv->dossier_last_closing )){
+		my_date_set_from_date( &dmax, priv->dossier_last_closing );
+	}
+	if( my_date_is_valid( &dmax )){
+		g_date_subtract_days( &dmax, to_substract );	/* the maximal deffect for past entries */
+	}
+
+	return( &dmax );
 }
 
 /*
@@ -2414,30 +2548,80 @@ check_row_for_cross_currency( ofaViewEntries *self, GtkTreeIter *iter )
 /*
  * @iter: a #GtkTreeIter valid on the underlying GtkListStore
  *
- * Set an error message for the current row
+ * Reset error and warning messages
  */
 static void
-set_error_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *error_msg )
+reset_error_msg( ofaViewEntries *self, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
 
 	priv = self->priv;
 
-	gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_ERRMSG, error_msg, -1 );
+	gtk_list_store_set(
+			GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_MSGERR, "", ENT_COL_MSGWARN, "", -1 );
+}
+
+/*
+ * @iter: a #GtkTreeIter valid on the underlying GtkListStore
+ *
+ * Set an error message for the current row
+ */
+static void
+set_error_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *msg )
+{
+	ofaViewEntriesPrivate *priv;
+
+	priv = self->priv;
+
+	gtk_list_store_set(
+			GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_MSGERR, msg, -1 );
+}
+
+/*
+ * @iter: a #GtkTreeIter valid on the underlying GtkListStore
+ *
+ * Set a warning message for the current row
+ */
+static void
+set_warning_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *msg )
+{
+	ofaViewEntriesPrivate *priv;
+
+	priv = self->priv;
+
+	gtk_list_store_set(
+			GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_MSGWARN, msg, -1 );
 }
 
 static void
 display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
-	gchar *str;
+	gchar *msgerr, *msgwarn;
+	GdkRGBA color;
+	const gchar *color_str, *text;
 
 	priv = self->priv;
 
-	gtk_tree_model_get( tmodel, iter, ENT_COL_ERRMSG, &str, -1 );
-	gtk_label_set_text( priv->comment, str );
+	gtk_tree_model_get( tmodel, iter, ENT_COL_MSGERR, &msgerr, ENT_COL_MSGWARN, &msgwarn, -1 );
 
-	g_free( str );
+	if( msgerr && g_utf8_strlen( msgerr, -1 )){
+		text = msgerr;
+		color_str = RGBA_ERROR;
+	} else if( msgwarn && g_utf8_strlen( msgwarn, -1 )){
+		text = msgwarn;
+		color_str = RGBA_WARNING;
+	} else {
+		text = "";
+		color_str = RGBA_NORMAL;
+	}
+
+	gtk_label_set_text( priv->comment, text );
+	gdk_rgba_parse( &color, color_str );
+	gtk_widget_override_color( GTK_WIDGET( priv->comment ), GTK_STATE_FLAG_NORMAL, &color );
+
+	g_free( msgerr );
+	g_free( msgwarn );
 }
 
 /*
@@ -2472,7 +2656,7 @@ save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 			ENT_COL_OBJECT,   &entry,
 			-1 );
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-	g_debug( "save_entry: ref_count=%d", G_OBJECT( entry )->ref_count );
+	/*g_debug( "save_entry: ref_count=%d", G_OBJECT( entry )->ref_count );*/
 	g_object_unref( entry );
 
 	my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
@@ -2722,7 +2906,7 @@ on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *sel
 }
 
 static ofaEntryStatus
-get_row_entry_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+get_row_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *str;
 	ofaEntryStatus status;
@@ -2735,13 +2919,37 @@ get_row_entry_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *i
 }
 
 static GDate *
-get_row_entry_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+get_row_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	static GDate date;
 
 	gtk_tree_model_get( tmodel, iter, ENT_COL_DEFF, &date, -1 );
 
 	return( &date );
+}
+
+static gint
+get_row_errlevel( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	gchar *msgerr, *msgwarn;
+	gint err_level;
+
+	gtk_tree_model_get( tmodel, iter, ENT_COL_MSGERR, &msgerr, ENT_COL_MSGWARN, &msgwarn, -1 );
+
+	if( msgerr && g_utf8_strlen( msgerr, -1 )){
+		err_level = ENT_ERR_ERROR;
+
+	} else if( msgwarn && g_utf8_strlen( msgwarn, -1 )){
+		err_level = ENT_ERR_WARNING;
+
+	} else {
+		err_level = ENT_ERR_NONE;
+	}
+
+	g_free( msgerr );
+	g_free( msgwarn );
+
+	return( err_level );
 }
 
 /*
@@ -2780,7 +2988,7 @@ insert_new_row( ofaViewEntries *self )
 		}
 	}
 
-	display_entry( self, entry, &new_iter, FALSE );
+	display_entry( self, entry, &new_iter );
 	g_object_unref( entry );
 
 	/* set the selection and the cursor on this new line */
@@ -2822,7 +3030,7 @@ delete_row( ofaViewEntries *self )
 				ENT_COL_OBJECT,   &entry,
 				-1 );
 
-		if( get_row_entry_status( self, priv->tsort, &sort_iter) == ENT_STATUS_ROUGH ){
+		if( get_row_status( self, priv->tsort, &sort_iter) == ENT_STATUS_ROUGH ){
 			msg = g_strdup_printf(
 					_( "Are you sure you want to remove the '%s' entry" ),
 					label );

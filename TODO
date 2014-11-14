@@ -359,12 +359,8 @@
 
  438 2014-11-12 view entries: display in red invalid entries + in red
                 the error message
-
- 439 2014-11-12 view entries: delete the row even it is not a valid 
-                entry
-
- 440 2014-11-12 view entries: escape should cancel the new entry being
-                entered
+     2014-11-14 have red for errors, orange for warnings, blue for
+                balance per currency
 
  441 2014-11-13 general ledger: the from_date and the to_date are set
                 in the dialog box while only the from_date is set in
@@ -389,9 +385,6 @@
 
  451 2014-11-13 view entries: one should be able to enter any effect 
                 date -> have a save anyway button
-
- 453 2014-11-14 view entries: debit or credit + currency should be 
-                enough to update the amounts
 
  454
 
@@ -1942,6 +1935,14 @@
                 we insert more entries)
      2014-11-12 done - svn #4098
 
+ 439 2014-11-12 view entries: delete the row even it is not a valid 
+                entry
+     2014-11-14 ok
+
+ 440 2014-11-12 view entries: escape should cancel the new entry being
+                entered
+     2014-11-14 nope: Escape cancel the edition -> cancelled
+
  448 2014-11-13 view entries: when entering an operation date, and if
                 the effect date has not yet been forced by the user, 
                 then set a default effect date
@@ -1957,6 +1958,10 @@
  452 2014-11-13 view entries: default currency should be set as soon as
                 the account is set
      2014-11-14 done - svn #4099
+
+ 453 2014-11-14 view entries: debit or credit + currency should be 
+                enough to update the amounts
+     2014-11-14 done - svn #4106
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

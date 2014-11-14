@@ -108,6 +108,11 @@ G_BEGIN_DECLS
  */
 #define PAGE_HEADER_ROWS_DEFAULT        1
 
+/**
+ * The color of the footer (if any)
+ */
+#define PAGE_RGBA_FOOTER                "#0000ff"	/* blue */
+
 ofaMainWindow *ofa_page_get_main_window           ( const ofaPage *page );
 GtkGrid       *ofa_page_get_top_grid              ( const ofaPage *page );
 gint           ofa_page_get_theme                 ( const ofaPage *page );
