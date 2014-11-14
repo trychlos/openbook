@@ -836,6 +836,8 @@ on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGen
 	priv->pages_count = page_num+1;
 	gtk_print_operation_set_n_pages( operation, priv->pages_count );
 
+	g_list_free_full( priv->total, ( GDestroyNotify ) free_currency );
+	priv->total = NULL;
 	priv->general_summary_printed = FALSE;
 	g_free( priv->prev_account );
 	priv->prev_account = NULL;

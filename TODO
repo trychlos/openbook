@@ -357,10 +357,6 @@
 
  442 2014-11-13 AccountsBook: add a notes indicator
 
- 442 2014-11-13 General Ledger: rather use settled and reconciliated
-                indicators than the settlement number (either a coche
-                or a colored 'S/R' letter)
-
  445 2014-11-13 my_date: do not accept two successive '/'
 
  447 2014-11-13 my-date.c: line 81 (my_date_compare): should not be reached
@@ -1944,6 +1940,11 @@
                 the configuration file
      2014-11-13 same for Accounts Balance
      2014-11-14 done - svn #4113 
+
+ 442 2014-11-13 General Ledger: rather use settled and reconciliated
+                indicators than the settlement number (either a coche
+                or a colored 'S/R' letter)
+     2014-11-14 done - svn #4116
 
  443 2014-11-13 General Ledger: date is marked invalid when empty (but
                 shouldn't)

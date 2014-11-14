@@ -76,10 +76,7 @@ struct _ofaPrintBalancePrivate {
 	GDate          from_date;
 	GDate          to_date;
 	GList         *balances;
-	gdouble        tot_period_d;
-	gdouble        tot_period_c;
-	gdouble        tot_solde_d;
-	gdouble        tot_solde_c;
+	GList         *totals;
 
 	/* print datas
 	 */
@@ -87,6 +84,7 @@ struct _ofaPrintBalancePrivate {
 	gdouble        page_height;
 	gint           pages_count;
 	PangoLayout   *layout;
+	gdouble        amount_width;
 	gdouble        body_number_ltab;
 	gdouble        body_label_ltab;
 	gint           body_label_max_size;		/* Pango units */
@@ -94,9 +92,19 @@ struct _ofaPrintBalancePrivate {
 	gdouble        body_credit_period_rtab;
 	gdouble        body_debit_solde_rtab;
 	gdouble        body_credit_solde_rtab;
+	gdouble        body_currency_rtab;
 	gdouble        last_y;
 	gint           last_entry;
 };
+
+typedef struct {
+	gchar  *currency;
+	gdouble period_d;
+	gdouble period_c;
+	gdouble solde_d;
+	gdouble solde_c;
+}
+	sCurrency;
 
 static const gchar  *st_ui_xml              = PKGUIDIR "/ofa-print-balance.piece.ui";
 
@@ -149,9 +157,10 @@ static const gint    st_body_font_size                 = 8; /*9;*/
 static const gint    st_page_margin                    = 2;
 
 /* the columns of the body */
-#define st_number_width                                60/9*st_body_font_size
-#define st_amount_width                                90/9*st_body_font_size
-#define st_column_spacing                              4
+#define st_number_width                                (gdouble) 60/9*st_body_font_size
+#define st_amount_width                                (gdouble) 90/9*st_body_font_size
+#define st_currency_width                              (gdouble) 20/9*st_body_font_size
+#define st_column_spacing                              (gdouble) 4
 
 /*
 (openbook:29799): OFA-DEBUG: '99/99/9999   ' width=61
@@ -187,8 +196,17 @@ static void         begin_print_build_body_layout( ofaPrintBalance *self, GtkPri
 static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaPrintBalance *self );
 static void         draw_page_header( ofaPrintBalance *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, gboolean is_last );
 static void         draw_page_line( ofaPrintBalance *self, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, gint line_num, ofsAccountBalance *sbal );
+static void         add_account_balance( ofaPrintBalance *self, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
+static gint         cmp_currencies( const sCurrency *a, const sCurrency *b );
 static void         draw_page_end_summary( ofaPrintBalance *self, GtkPrintContext *context );
 static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintBalance *self );
+
+static void
+free_currency( sCurrency *total_per_currency )
+{
+	g_free( total_per_currency->currency );
+	g_free( total_per_currency );
+}
 
 static void
 print_balance_finalize( GObject *instance )
@@ -205,6 +223,7 @@ print_balance_finalize( GObject *instance )
 	priv = OFA_PRINT_BALANCE( instance )->priv;
 	g_free( priv->from_account );
 	g_free( priv->to_account );
+	g_list_free_full( priv->totals, ( GDestroyNotify ) free_currency );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_print_balance_parent_class )->finalize( instance );
@@ -713,13 +732,18 @@ begin_print_build_body_layout( ofaPrintBalance *self, GtkPrintContext *context )
 	priv->body_label_ltab = priv->body_number_ltab+ st_number_width + st_column_spacing;
 
 	/* starting from the right */
-	priv->body_credit_solde_rtab = priv->page_width + st_page_margin;
-	priv->body_debit_solde_rtab = priv->body_credit_solde_rtab - st_amount_width - st_column_spacing;
-	priv->body_credit_period_rtab = priv->body_debit_solde_rtab - st_amount_width - st_column_spacing;
-	priv->body_debit_period_rtab = priv->body_credit_period_rtab - st_amount_width - st_column_spacing;
+	priv->amount_width = (priv->page_width/2 - st_currency_width)/4 - st_column_spacing;
+	/* g_debug( "begin_print_build_body_layout: st_amount_widht=%d, amount_width=%lf", st_amount_width, amount_width );
+	st_amount_widht=80, amount_width=61,409449 */
+
+	priv->body_currency_rtab = priv->page_width + st_page_margin;
+	priv->body_credit_solde_rtab = priv->body_currency_rtab - st_currency_width - st_column_spacing;
+	priv->body_debit_solde_rtab = priv->body_credit_solde_rtab - priv->amount_width - st_column_spacing;
+	priv->body_credit_period_rtab = priv->body_debit_solde_rtab - priv->amount_width - st_column_spacing;
+	priv->body_debit_period_rtab = priv->body_credit_period_rtab - priv->amount_width - st_column_spacing;
 
 	/* max size in Pango units */
-	priv->body_label_max_size = ( priv->body_debit_period_rtab - st_amount_width - st_column_spacing - priv->body_label_ltab )*PANGO_SCALE;
+	priv->body_label_max_size = ( priv->body_debit_period_rtab - priv->amount_width - st_column_spacing - priv->body_label_ltab )*PANGO_SCALE;
 }
 
 /*
@@ -834,21 +858,25 @@ draw_page_header( ofaPrintBalance *self, GtkPrintOperation *operation, GtkPrintC
 	cairo_rectangle( cr, 0, y, gtk_print_context_get_width( context ), height );
 	cairo_fill( cr );
 
-	/* draw two vertical white lines to visually separate the amounts */
+	/* draw three vertical white lines to visually separate the amounts */
 	cairo_set_source_rgb( cr, COLOR_WHITE );
 	cairo_set_line_width( cr, 0.5 );
 
-	cairo_move_to( cr, priv->body_debit_period_rtab-st_amount_width, y );
-	cairo_line_to( cr, priv->body_debit_period_rtab-st_amount_width, y+height );
+	cairo_move_to( cr, priv->body_debit_period_rtab-priv->amount_width, y );
+	cairo_line_to( cr, priv->body_debit_period_rtab-priv->amount_width, y+height );
 	cairo_stroke( cr );
 
 	cairo_move_to( cr, priv->body_credit_period_rtab+st_page_margin, y );
 	cairo_line_to( cr, priv->body_credit_period_rtab+st_page_margin, y+height );
 	cairo_stroke( cr );
 
+	cairo_move_to( cr, priv->body_credit_solde_rtab+st_page_margin, y );
+	cairo_line_to( cr, priv->body_credit_solde_rtab+st_page_margin, y+height );
+	cairo_stroke( cr );
+
 	yh = y+(height/2);
-	cairo_move_to( cr, priv->body_debit_period_rtab-st_amount_width, yh );
-	cairo_line_to( cr, gtk_print_context_get_width( context ), yh );
+	cairo_move_to( cr, priv->body_debit_period_rtab-priv->amount_width, yh );
+	cairo_line_to( cr, priv->body_credit_solde_rtab+st_page_margin, yh );
 	cairo_stroke( cr );
 
 	str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size-1 );
@@ -915,6 +943,7 @@ draw_page_line( ofaPrintBalance *self, GtkPrintOperation *operation, GtkPrintCon
 	gdouble y;
 	ofoAccount *account;
 	gdouble solde;
+	const gchar *currency;
 
 	priv = self->priv;
 
@@ -958,7 +987,6 @@ draw_page_line( ofaPrintBalance *self, GtkPrintOperation *operation, GtkPrintCon
 				priv->body_debit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 		solde -= sbal->debit;
-		priv->tot_period_d += sbal->debit;
 	}
 
 	if( sbal->credit ){
@@ -966,26 +994,72 @@ draw_page_line( ofaPrintBalance *self, GtkPrintOperation *operation, GtkPrintCon
 		ofa_print_set_text( context, priv->layout,
 				priv->body_credit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
 		solde += sbal->credit;
-		priv->tot_period_c += sbal->credit;
 	}
 
-	if( solde <= 0 ){
+	if( solde < 0 ){
 		str = my_double_to_str( -1*solde );
 		ofa_print_set_text( context, priv->layout,
 				priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-		priv->tot_solde_d += -1*solde;
 	}
 
-	if( solde >= 0 ){
+	if( solde > 0 ){
 		str = my_double_to_str( solde );
 		ofa_print_set_text( context, priv->layout,
 				priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-		priv->tot_solde_c += solde;
 	}
 
-	y += st_body_font_size + st_body_line_spacing;
+	currency = ofo_account_get_currency( account );
+	ofa_print_set_text( context, priv->layout,
+			priv->body_currency_rtab, y, currency, PANGO_ALIGN_RIGHT );
 
+	add_account_balance( self, currency, solde, sbal );
+
+	y += st_body_font_size + st_body_line_spacing;
 	priv->last_y = y;
+}
+
+static void
+add_account_balance( ofaPrintBalance *self,
+							const gchar *currency, gdouble solde, ofsAccountBalance *sbal )
+{
+	ofaPrintBalancePrivate *priv;
+	GList *it;
+	sCurrency *scur;
+	gboolean found;
+
+	priv = self->priv;
+
+	for( it=priv->totals, found=FALSE ; it ; it=it->next ){
+		scur = ( sCurrency * ) it->data;
+		if( !g_utf8_collate( scur->currency, currency )){
+			found = TRUE;
+			break;
+		}
+	}
+
+	if( !found ){
+		scur = g_new0( sCurrency, 1 );
+		scur->currency = g_strdup( currency );
+		priv->totals = g_list_insert_sorted( priv->totals, scur, ( GCompareFunc ) cmp_currencies );
+		scur->period_d = 0;
+		scur->period_c = 0;
+		scur->solde_d = 0;
+		scur->solde_c = 0;
+	}
+
+	scur->period_d += sbal->debit;
+	scur->period_c += sbal->credit;
+	if( solde < 0 ){
+		scur->solde_d += -1*solde;
+	} else if( solde > 0 ){
+		scur->solde_c += solde;
+	}
+}
+
+static gint
+cmp_currencies( const sCurrency *a, const sCurrency *b )
+{
+	return( g_utf8_collate( a->currency, b->currency ));
 }
 
 static void
@@ -993,8 +1067,11 @@ draw_page_end_summary( ofaPrintBalance *self, GtkPrintContext *context )
 {
 	ofaPrintBalancePrivate *priv;
 	cairo_t *cr;
-	gdouble y, top, bottom, width;
+	gdouble req_height, y, top, bottom, width;
 	gchar *str;
+	GList *it;
+	gboolean first;
+	sCurrency *scur;
 
 	priv = self->priv;
 
@@ -1004,7 +1081,9 @@ draw_page_end_summary( ofaPrintBalance *self, GtkPrintContext *context )
 	/* bottom of the rectangle */
 	bottom = priv->page_height - ofa_print_footer_get_height( 1, FALSE );
 	/* top of the rectangle */
-	top = bottom - ( st_body_font_size+1+2*st_body_line_spacing );
+	req_height = st_body_line_spacing
+			+ g_list_length( priv->totals )*(st_body_font_size+1+st_body_line_spacing );
+	top = bottom - req_height;
 
 	width = gtk_print_context_get_width( context );
 	cairo_set_line_width( cr, 0.5 );
@@ -1030,28 +1109,43 @@ draw_page_end_summary( ofaPrintBalance *self, GtkPrintContext *context )
 	g_free( str );
 
 	y = top + st_body_line_spacing;
-	ofa_print_set_text( context, priv->layout,
-			priv->body_debit_period_rtab-st_amount_width, y, _( "Total:" ), PANGO_ALIGN_RIGHT );
 
-	str = my_double_to_str( priv->tot_period_d );
-	ofa_print_set_text( context, priv->layout,
-			priv->body_debit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+	for( it=priv->totals, first=TRUE ; it ; it=it->next ){
 
-	str = my_double_to_str( priv->tot_period_c );
-	ofa_print_set_text( context, priv->layout,
-			priv->body_credit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+		if( first ){
+			ofa_print_set_text( context, priv->layout,
+					priv->body_debit_period_rtab-st_amount_width, y,
+					_( "General balance : " ), PANGO_ALIGN_RIGHT );
+			first = FALSE;
+		}
 
-	str = my_double_to_str( priv->tot_solde_d );
-	ofa_print_set_text( context, priv->layout,
-			priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+		scur = ( sCurrency * ) it->data;
 
-	str = my_double_to_str( priv->tot_solde_c );
-	ofa_print_set_text( context, priv->layout,
-			priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-	g_free( str );
+		str = my_double_to_str( scur->period_d );
+		ofa_print_set_text( context, priv->layout,
+				priv->body_debit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+
+		str = my_double_to_str( scur->period_c );
+		ofa_print_set_text( context, priv->layout,
+				priv->body_credit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+
+		str = my_double_to_str( scur->solde_d );
+		ofa_print_set_text( context, priv->layout,
+				priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+
+		str = my_double_to_str( scur->solde_c );
+		ofa_print_set_text( context, priv->layout,
+				priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+
+		ofa_print_set_text( context, priv->layout,
+				priv->body_currency_rtab, y, scur->currency, PANGO_ALIGN_RIGHT );
+
+		y += st_body_font_size+1+st_body_line_spacing;
+	}
 }
 
 static void
