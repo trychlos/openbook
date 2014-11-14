@@ -1062,7 +1062,7 @@ draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean
 	/* display the account header */
 	if( draw ){
 		ofa_print_header_title_set_color( context, priv->layout );
-		str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
+		str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size );
 		ofa_print_set_font( context, priv->layout, str );
 		g_free( str );
 
@@ -1088,7 +1088,7 @@ draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean
 static gdouble
 account_header_height( void )
 {
-	return( st_body_font_size+1 + st_body_line_vspacing );
+	return( st_body_font_size + st_body_line_vspacing );
 }
 
 static void
@@ -1178,7 +1178,7 @@ draw_account_balance( ofaPrintGenLedger *self, GtkPrintContext *context, gboolea
 
 	if( draw ){
 		ofa_print_header_title_set_color( context, priv->layout );
-		str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
+		str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size );
 		ofa_print_set_font( context, priv->layout, str );
 		g_free( str );
 
@@ -1214,7 +1214,7 @@ draw_account_balance( ofaPrintGenLedger *self, GtkPrintContext *context, gboolea
 static gdouble
 account_balance_height( void )
 {
-	return( st_body_font_size+1 + st_body_line_vspacing );
+	return( st_body_font_size + st_body_line_vspacing );
 }
 
 static void
