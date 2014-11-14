@@ -85,12 +85,12 @@ struct _ofaPrintGenLedgerPrivate {
 	 */
 	gdouble        page_width;
 	gdouble        page_height;
-	gdouble        available_height;
 	gdouble        max_y;
 	gint           pages_count;
 	PangoLayout   *layout;
 	gdouble        last_y;
-	gint           last_entry;
+	GList         *last_printed;
+	gboolean       general_summary_printed;
 
 	/* layout for account header line
 	 */
@@ -125,15 +125,22 @@ struct _ofaPrintGenLedgerPrivate {
 	ofxAmount      prev_credit;
 	ofoAccount    *prev_accobj;
 	gboolean       prev_header_printed;
+	gboolean       prev_footer_printed;
 	ofoCurrency   *prev_currency;
 	gint           prev_digits;
 
 	/* total general
 	 */
-	ofxAmount      tot_debit;
-	ofxAmount      tot_credit;
+	GList         *total;				/* list of totals per currency */
 
 };
+
+typedef struct {
+	gchar    *currency;
+	ofxAmount debit;
+	ofxAmount credit;
+}
+	sCurrency;
 
 static const gchar  *st_ui_xml              = PKGUIDIR "/ofa-print-gen-ledger.piece.ui";
 
@@ -234,20 +241,31 @@ static gboolean     on_paginate( GtkPrintOperation *operation, GtkPrintContext *
 static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaPrintGenLedger *self );
 static gboolean     draw_page( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num );
 static void         draw_page_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num, gboolean is_last );
-static void         draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint line_num );
+static gboolean     draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint line_num );
 static gdouble      account_header_height( void );
-static void         draw_account_bop_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw );
+static void         draw_account_top_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw );
 static void         draw_account_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gboolean with_solde );
-static gdouble      account_bop_report_height( void );
-static void         draw_account_eop_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw );
-static gdouble      account_eop_report_height( void );
+static gdouble      account_top_report_height( void );
+static void         draw_account_bottom_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, GList *next );
+static gdouble      account_bottom_report_height( void );
 static void         draw_account_balance( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw );
 static gdouble      account_balance_height( void );
+static void         add_account_balance( ofaPrintGenLedger *self );
+static gint         cmp_currencies( const sCurrency *a, const sCurrency *b );
 static void         draw_account_solde_debit_credit( ofaPrintGenLedger *self, GtkPrintContext *context, gdouble y );
-static gboolean     draw_page_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num, gint line_num, ofoEntry *entry );
-static void         draw_page_summary( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw );
-static gdouble      page_summary_height( ofaPrintGenLedger *self );
+static gboolean     draw_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num, gint line_num, GList *line, GList *next );
+static gboolean     draw_general_summary( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw );
+static gdouble      general_summary_height( ofaPrintGenLedger *self );
+static gboolean     is_new_account( ofaPrintGenLedger *self, ofoEntry *entry );
+static void         setup_new_account( ofaPrintGenLedger *self, ofoEntry *entry );
 static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGenLedger *self );
+
+static void
+free_currency( sCurrency *total_per_currency )
+{
+	g_free( total_per_currency->currency );
+	g_free( total_per_currency );
+}
 
 static void
 print_gen_ledger_finalize( GObject *instance )
@@ -265,6 +283,7 @@ print_gen_ledger_finalize( GObject *instance )
 	g_free( priv->from_account );
 	g_free( priv->to_account );
 	g_free( priv->prev_account );
+	g_list_free_full( priv->total, ( GDestroyNotify ) free_currency );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_print_gen_ledger_parent_class )->finalize( instance );
@@ -312,7 +331,8 @@ ofa_print_gen_ledger_init( ofaPrintGenLedger *self )
 	my_date_clear( &self->priv->from_date );
 	my_date_clear( &self->priv->to_date );
 	self->priv->entries = NULL;
-	self->priv->last_entry = -1;
+	self->priv->general_summary_printed = FALSE;
+	self->priv->last_printed = NULL;
 	self->priv->prev_account = NULL;
 	self->priv->prev_header_printed = FALSE;
 }
@@ -710,11 +730,7 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 {
 	static const gchar *thisfn = "ofa_print_gen_ledger_on_begin_print";
 	ofaPrintGenLedgerPrivate *priv;
-	gdouble context_width, context_height;
 	gdouble header_height, footer_height;
-	/*gdouble summary_height, line_height;
-	gint entries_count, lines;
-	gdouble avail, need;*/
 
 	/*gint entries_count, other_count, last_count;
 	gdouble footer_height, balance_height, last_height, header_height;*/
@@ -723,11 +739,8 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );
 
 	priv = self->priv;
-
-	context_width = gtk_print_context_get_width( context );
-	context_height = gtk_print_context_get_height( context );
-	priv->page_width = context_width;
-	priv->page_height = context_height;
+	priv->page_width = gtk_print_context_get_width( context );
+	priv->page_height = gtk_print_context_get_height( context );
 
 	header_height =
 			ofa_print_header_dossier_get_height( 1, FALSE )
@@ -740,22 +753,16 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 			ofa_print_footer_get_height( 1, FALSE );
 
 	priv->max_y = priv->page_height - footer_height;
-	priv->available_height = priv->max_y - header_height;
 
-	g_debug( "%s; context_width=%.5lf, context_height=%.5lf, page_width=%.5lf, page_height=%.5lf, "
-			"header_height=%.5lf, footer_height=%.5lf, available_height=%.5lf, max_y=%.5lf",
+	g_debug( "%s: page_width=%.5lf, page_height=%.5lf, "
+			"header_height=%.5lf, footer_height=%.5lf, max_y=%.5lf",
 			thisfn,
-			context_width, context_height,
 			priv->page_width, priv->page_height,
-			header_height, footer_height, priv->available_height, priv->max_y );
+			header_height, footer_height, priv->max_y );
 
 	priv->layout = gtk_print_context_create_pango_layout( context );
 	/* context_width=559, pango_layout_width=572416 */
 	begin_print_build_body_layout( self, context );
-
-	/* initialize general balance */
-	priv->tot_debit = 0;
-	priv->tot_credit = 0;
 }
 
 static void
@@ -826,9 +833,10 @@ on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGen
 	priv->pages_count = page_num+1;
 	gtk_print_operation_set_n_pages( operation, priv->pages_count );
 
+	priv->general_summary_printed = FALSE;
 	g_free( priv->prev_account );
 	priv->prev_account = NULL;
-	priv->last_entry = -1;
+	priv->last_printed = NULL;
 
 	return( TRUE );
 }
@@ -852,6 +860,8 @@ on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_
  *
  * Returns: %TRUE while there is still page(s) to be printed,
  * %FALSE at the end
+ *
+ * The returned value is only used while paginating.
  */
 static gboolean
 draw_page( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num )
@@ -860,7 +870,7 @@ draw_page( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gin
 	ofaPrintGenLedgerPrivate *priv;
 	gboolean is_last;
 	gint count;
-	GList *it;
+	GList *line, *next;
 
 	g_debug( "%s: self=%p, context=%p, draw=%s, page_num=%d",
 			thisfn, ( void * ) self, ( void * ) context, draw ? "True":"False", page_num );
@@ -870,20 +880,21 @@ draw_page( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gin
 
 	draw_page_header( self, context, draw, page_num, is_last );
 
-	for( count=0, it=g_list_nth( priv->entries, priv->last_entry+1 ) ; it ; it=it->next, count++ ){
-		if( !draw_page_line( self, context, draw, page_num, count, OFO_ENTRY( it->data ))){
+	/* get the next line to be printed */
+	line = priv->last_printed ? g_list_next( priv->last_printed ) : priv->entries;
+	for( count=0 ; line ; count+=1 ){
+		next = g_list_next( line );
+		if( !draw_line( self, context, draw, page_num, count, line, next )){
 			break;
 		}
+		line = next;
+		priv->last_printed = line;
 	}
-	priv->last_entry += count;
 
 	/* end of the last page */
-	if( !it ){
-		is_last = TRUE;
+	if( !line ){
 		draw_account_balance( self, context, draw );
-	}
-	if( is_last ){
-		draw_page_summary( self, context, draw );
+		is_last = draw_general_summary( self, context, draw );
 	}
 
 	if( draw ){
@@ -1023,25 +1034,57 @@ draw_page_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean dr
 	priv->last_y = y;
 }
 
-static void
+/*
+ * draw account header, taking care of having a new page if asked for
+ *
+ * on a page's bottom, we must have at least:
+ * - the header
+ * - a line
+ * - the bottom of the page, or the account footer
+ *
+ * more, if line_num > 0, we draw a line between the previous account
+ * and this new one
+ */
+static gboolean
 draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint line_num )
 {
 	ofaPrintGenLedgerPrivate *priv;
 	cairo_t *cr;
 	gchar *str;
-	gdouble y;
+	gdouble y, req_height;
 	const gchar *cur_mnemo;
 
 	priv = self->priv;
-	y = 0;
+
+	/* if we must begin the account on a new page, then just return */
+	if( priv->new_page && line_num > 0 ){
+		return( FALSE );
+	}
+
+	/* compute the requested height */
+	req_height =
+			account_header_height()
+			+ st_body_font_size+st_body_line_vspacing
+			+ MAX( account_bottom_report_height(), account_balance_height());
+
+	if( line_num > 0 ){
+		req_height += st_body_line_vspacing;
+	}
+
+	if( priv->last_y + req_height > priv->max_y ){
+		return( FALSE );
+	}
+
+	/* OK, we have the place, so draw the account header */
+	y = priv->last_y;
 	cr = gtk_print_context_get_cairo_context( context );
 
 	if( line_num > 0 ){
 		if( draw ){
 			cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
 			cairo_set_line_width( cr, 1 );
-			cairo_move_to( cr, 0, priv->last_y );
-			cairo_line_to( cr, priv->page_width, priv->last_y );
+			cairo_move_to( cr, 0, y );
+			cairo_line_to( cr, priv->page_width, y );
 			cairo_stroke( cr );
 		}
 		y += st_body_line_vspacing;
@@ -1050,7 +1093,7 @@ draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean
 	/* setup the account properties */
 	priv->prev_accobj = ofo_account_get_by_number(
 							ofa_main_window_get_dossier( priv->main_window ), priv->prev_account );
-	g_return_if_fail( priv->prev_accobj && OFO_IS_ACCOUNT( priv->prev_accobj ));
+	g_return_val_if_fail( priv->prev_accobj && OFO_IS_ACCOUNT( priv->prev_accobj ), TRUE );
 
 	priv->prev_debit = 0;
 	priv->prev_credit = 0;
@@ -1058,9 +1101,11 @@ draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean
 	cur_mnemo = ofo_account_get_currency( priv->prev_accobj );
 	priv->prev_currency = ofo_currency_get_by_code(
 							ofa_main_window_get_dossier( priv->main_window ), cur_mnemo );
-	g_return_if_fail( priv->prev_currency && OFO_IS_CURRENCY( priv->prev_currency ));
+	g_return_val_if_fail( priv->prev_currency && OFO_IS_CURRENCY( priv->prev_currency ), TRUE );
 
 	priv->prev_digits = ofo_currency_get_digits( priv->prev_currency );
+	priv->prev_header_printed = TRUE;
+	priv->prev_footer_printed = FALSE;
 
 	/* display the account header */
 	if( draw ){
@@ -1071,21 +1116,25 @@ draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean
 
 		/* account number */
 		ofa_print_set_text( context, priv->layout,
-				priv->body_accnumber_ltab, y+priv->last_y, ofo_account_get_number( priv->prev_accobj ), PANGO_ALIGN_LEFT );
+				priv->body_accnumber_ltab, y
+				, ofo_account_get_number( priv->prev_accobj ), PANGO_ALIGN_LEFT );
 
 		/* account label */
 		pango_layout_set_text( priv->layout, ofo_account_get_label( priv->prev_accobj ), -1 );
 		my_utils_pango_layout_ellipsize( priv->layout, priv->body_acclabel_max_size );
-		cairo_move_to( cr, priv->body_acclabel_ltab, y+priv->last_y );
+		cairo_move_to( cr, priv->body_acclabel_ltab, y );
 		pango_cairo_update_layout( cr, priv->layout );
 		pango_cairo_show_layout( cr, priv->layout );
 
 		/* account currency */
 		ofa_print_set_text( context, priv->layout,
-				priv->body_acccurrency_rtab, y+priv->last_y, ofo_account_get_currency( priv->prev_accobj ), PANGO_ALIGN_RIGHT );
+				priv->body_acccurrency_rtab, y,
+				ofo_account_get_currency( priv->prev_accobj ), PANGO_ALIGN_RIGHT );
 	}
 	y += account_header_height();
-	priv->last_y += y;
+	priv->last_y = y;
+
+	return( TRUE );
 }
 
 static gdouble
@@ -1095,7 +1144,7 @@ account_header_height( void )
 }
 
 static void
-draw_account_bop_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw )
+draw_account_top_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw )
 {
 	draw_account_report( self, context, draw, TRUE );
 }
@@ -1145,26 +1194,34 @@ draw_account_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean
 			draw_account_solde_debit_credit( self, context, y );
 		}
 	}
-	y += account_bop_report_height();
+	y += account_top_report_height();
 	priv->last_y = y;
 }
 
 static gdouble
-account_bop_report_height( void )
+account_top_report_height( void )
 {
 	return( st_body_line_vspacing + st_body_font_size );
 }
 
+/*
+ * draw the end of page report unless the @next line will be on another
+ * account - is so, then go to account balance report
+ */
 static void
-draw_account_eop_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw )
+draw_account_bottom_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, GList *next )
 {
-	draw_account_report( self, context, draw, FALSE );
+	if( !next || is_new_account( self, OFO_ENTRY( next->data ))){
+		draw_account_balance( self, context, draw );
+	} else {
+		draw_account_report( self, context, draw, FALSE );
+	}
 }
 
 static gdouble
-account_eop_report_height( void )
+account_bottom_report_height( void )
 {
-	return( account_bop_report_height());
+	return( account_top_report_height());
 }
 
 static void
@@ -1186,7 +1243,7 @@ draw_account_balance( ofaPrintGenLedger *self, GtkPrintContext *context, gboolea
 		g_free( str );
 
 		/* label */
-		str = g_strdup_printf( _( "Total for account %s - %s" ),
+		str = g_strdup_printf( _( "Balance for account %s - %s" ),
 				priv->prev_account,
 				ofo_account_get_label( priv->prev_accobj ));
 		pango_layout_set_text( priv->layout, str, -1 );
@@ -1211,8 +1268,8 @@ draw_account_balance( ofaPrintGenLedger *self, GtkPrintContext *context, gboolea
 		draw_account_solde_debit_credit( self, context, y );
 	}
 
-	priv->tot_debit += priv->prev_debit;
-	priv->tot_credit += priv->prev_credit;
+	priv->prev_footer_printed = TRUE;
+	add_account_balance( self );
 
 	y += account_balance_height();
 	priv->last_y = y;
@@ -1222,6 +1279,48 @@ static gdouble
 account_balance_height( void )
 {
 	return( st_body_font_size + st_body_line_vspacing );
+}
+
+/*
+ * add the account balance to the total per currency,
+ * adding a new currency record if needed
+ */
+static void
+add_account_balance( ofaPrintGenLedger *self )
+{
+	ofaPrintGenLedgerPrivate *priv;
+	GList *it;
+	const gchar *currency;
+	sCurrency *scur;
+	gboolean found;
+
+	priv = self->priv;
+	currency = ofo_account_get_currency( priv->prev_accobj );
+
+	for( it=priv->total, found=FALSE ; it ; it=it->next ){
+		scur = ( sCurrency * ) it->data;
+		if( !g_utf8_collate( scur->currency, currency )){
+			found = TRUE;
+			break;
+		}
+	}
+
+	if( !found ){
+		scur = g_new0( sCurrency, 1 );
+		scur->currency = g_strdup( currency );
+		priv->total = g_list_insert_sorted( priv->total, scur, ( GCompareFunc ) cmp_currencies );
+		scur->debit = 0;
+		scur->credit = 0;
+	}
+
+	scur->debit += priv->prev_debit;
+	scur->credit += priv->prev_credit;
+}
+
+static gint
+cmp_currencies( const sCurrency *a, const sCurrency *b )
+{
+	return( g_utf8_collate( a->currency, b->currency ));
 }
 
 static void
@@ -1255,7 +1354,10 @@ draw_account_solde_debit_credit( ofaPrintGenLedger *self, GtkPrintContext *conte
 }
 
 /*
- * num_line is counted from 0 in the page
+ * @num_line: line number in the page, counted from 0
+ * @line: the line candidate to be printed
+ * @next: the next line after this one, may be NULL if we are at the
+ *  end of the list
  *
  * (printable)width(A4)=559
  * date  journal  piece    label      debit   credit   solde
@@ -1267,70 +1369,51 @@ draw_account_solde_debit_credit( ofaPrintGenLedger *self, GtkPrintContext *conte
  * printed.
  */
 static gboolean
-draw_page_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num, gint line_num, ofoEntry *entry )
+draw_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num, gint line_num, GList *line, GList *next )
 {
 	ofaPrintGenLedgerPrivate *priv;
-	const gchar *account_number, *cstr;
-	gboolean have_prev_account;
+	ofoEntry *entry;
+	const gchar *cstr;
 	gchar *str;
 	cairo_t *cr;
-	gdouble y;
+	gdouble req_height, y;
 	ofxAmount amount;
 	ofxCounter counter;
 
 	priv = self->priv;
-
-	y = priv->last_y;
-	cr = gtk_print_context_get_cairo_context( context );
+	entry = OFO_ENTRY( line->data );
 
 	/* does the account change ? */
-	account_number = ofo_entry_get_account( entry );
-	have_prev_account = priv->prev_account && g_utf8_strlen( priv->prev_account, -1 );
-	if( !have_prev_account || g_utf8_collate( priv->prev_account, account_number )){
-		if( have_prev_account ){
-			/* have to change the page before printing the account balance ? */
-			if( y+account_balance_height() > priv->max_y ){
-				return( FALSE );
-			}
+	if( is_new_account( self, entry ) || !priv->prev_header_printed ){
+		if( priv->prev_account && !priv->prev_footer_printed ){
 			draw_account_balance( self, context, draw );
-			y = priv->last_y;
 		}
-		g_free( priv->prev_account );
-		priv->prev_account = g_strdup( account_number );
-		priv->prev_header_printed = FALSE;
-		/* have to change the page before beginning with the new account ? */
-		if( have_prev_account && priv->new_page ){
+		setup_new_account( self, entry );
+		if( !draw_account_header( self, context, draw, line_num )){
 			return( FALSE );
 		}
-	}
-
-	if( !priv->prev_header_printed ){
-		/* have to change the page before printing the new account header
-		 * make sure we are going to be able to print the account header
-		 * and at least one detail line before havint to print the eop
-		 * report */
-		if( y+account_header_height()+st_body_font_size+st_body_line_vspacing+account_eop_report_height() > priv->max_y ){
-			return( FALSE );
-		}
-		draw_account_header( self, context, draw, line_num );
-		y = priv->last_y;
-		priv->prev_header_printed = TRUE;
 
 	} else if( line_num == 0 ){
-		draw_account_bop_report( self, context, draw );
-		y += account_bop_report_height();
+		draw_account_top_report( self, context, draw );
 	}
 
 	/* only print the line if we also have the vertical space to print
 	 * the end-of-page account report */
-	if( y+st_body_font_size+st_body_line_vspacing+account_eop_report_height() > priv->max_y ){
-		draw_account_eop_report( self, context, draw );
+	req_height =
+			st_body_font_size+st_body_line_vspacing
+			+ MAX( account_bottom_report_height(), account_balance_height());
+
+	if( priv->last_y + req_height > priv->max_y ){
+		draw_account_bottom_report( self, context, draw, next );
 		return( FALSE );
 	}
 
 	/* last, draw the line ! */
 	/* we are using a unique font to draw the lines */
+	y = priv->last_y;
 	if( draw ){
+		cr = gtk_print_context_get_cairo_context( context );
+
 		str = g_strdup_printf( "%s %d", st_font_family, st_body_font_size );
 		ofa_print_set_font( context, priv->layout, str );
 		g_free( str );
@@ -1419,68 +1502,128 @@ draw_page_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw
 }
 
 /*
- * print a line per found currency
+ * print a line per found currency at the end of the printing
  */
-static void
-draw_page_summary( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw )
+static gboolean
+draw_general_summary( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw )
 {
 	ofaPrintGenLedgerPrivate *priv;
 	cairo_t *cr;
-	gdouble y, width;
+	gdouble req_height, height, top, width, y;
 	gchar *str;
+	GList *it;
+	sCurrency *scur;
+	gboolean first;
 
 	priv = self->priv;
 
+	/* make sur we have enough place to draw general summary */
+	req_height = general_summary_height( self )
+			+ st_body_line_vspacing;
+	if( priv->last_y + req_height > priv->max_y ){
+		return( FALSE );
+	}
+
+	/* actually print */
 	cr = gtk_print_context_get_cairo_context( context );
 	cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
 
 	/* top of the rectangle */
-	y = priv->max_y - page_summary_height( self );
+	height = general_summary_height( self );
+	top = priv->max_y - height;
+
 	if( draw ){
 		width = gtk_print_context_get_width( context );
 		cairo_set_line_width( cr, 0.5 );
 
-		cairo_move_to( cr, 0, y );
-		cairo_line_to( cr, width, y );
+		cairo_move_to( cr, 0, top );
+		cairo_line_to( cr, width, top );
 		cairo_stroke( cr );
 
 		cairo_move_to( cr, 0, priv->max_y );
 		cairo_line_to( cr, width, priv->max_y );
 		cairo_stroke( cr );
 
-		cairo_move_to( cr, 0, y );
+		cairo_move_to( cr, 0, top );
 		cairo_line_to( cr, 0, priv->max_y );
 		cairo_stroke( cr );
 
-		cairo_move_to( cr, width, y );
+		cairo_move_to( cr, width, top );
 		cairo_line_to( cr, width, priv->max_y );
 		cairo_stroke( cr );
 	}
-	y += st_body_line_vspacing;
+
+	y = top + st_body_line_vspacing;
+
 	if( draw ){
 		str = g_strdup_printf( "%s Bold %d", st_font_family, st_body_font_size+1 );
 		ofa_print_set_font( context, priv->layout, str );
 		g_free( str );
 
-		ofa_print_set_text( context, priv->layout,
-				priv->body_debit_rtab-st_amount_width, y, _( "Total general : " ), PANGO_ALIGN_RIGHT );
+		for( it=priv->total, first=TRUE ; it ; it=it->next ){
+			scur = ( sCurrency * ) it->data;
 
-		str = my_double_to_str( priv->tot_debit );
-		ofa_print_set_text( context, priv->layout,
-				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
+			if( first ){
+				ofa_print_set_text( context, priv->layout,
+						priv->body_debit_rtab-st_amount_width, y,
+						_( "General balance : " ), PANGO_ALIGN_RIGHT );
+				first = FALSE;
+			}
 
-		str = my_double_to_str( priv->tot_credit );
-		ofa_print_set_text( context, priv->layout,
-				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
+			str = my_double_to_str( scur->debit );
+			ofa_print_set_text( context, priv->layout,
+					priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+
+			str = my_double_to_str( scur->credit );
+			ofa_print_set_text( context, priv->layout,
+					priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
+
+			ofa_print_set_text( context, priv->layout,
+					width-st_page_margin, y, scur->currency, PANGO_ALIGN_RIGHT );
+
+			y += st_body_font_size+1+st_body_line_vspacing;
+		}
 	}
+
+	return( TRUE );
 }
 
+/*
+ * one summary line per currency
+ */
 static gdouble
-page_summary_height( ofaPrintGenLedger *self )
+general_summary_height( ofaPrintGenLedger *self )
 {
-	return( st_body_font_size+1+2*st_body_line_vspacing );
+	return( st_body_line_vspacing
+			+ g_list_length( self->priv->total )*(st_body_font_size+1+st_body_line_vspacing ));
+}
+
+/*
+ * just test if the current entry is on the same account than the
+ * previous one
+ */
+static gboolean
+is_new_account( ofaPrintGenLedger *self, ofoEntry *entry )
+{
+	ofaPrintGenLedgerPrivate *priv;
+
+	priv = self->priv;
+	return( !priv->prev_account ||
+				g_utf8_collate( priv->prev_account, ofo_entry_get_account( entry )) != 0 );
+}
+
+static void
+setup_new_account( ofaPrintGenLedger *self, ofoEntry *entry )
+{
+	ofaPrintGenLedgerPrivate *priv;
+
+	priv = self->priv;
+
+	g_free( priv->prev_account );
+	priv->prev_account = g_strdup( ofo_entry_get_account( entry ));
+	priv->prev_header_printed = FALSE;
 }
 
 static void
