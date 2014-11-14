@@ -743,9 +743,9 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 	priv->page_height = gtk_print_context_get_height( context );
 
 	header_height =
-			ofa_print_header_dossier_get_height( 1, FALSE )
-			+ ofa_print_header_title_get_height( 1, FALSE )
-			+ ofa_print_header_subtitle_get_height( 1, FALSE )
+			ofa_print_header_dossier_get_height( 1 )
+			+ ofa_print_header_title_get_height( 1 )
+			+ ofa_print_header_subtitle_get_height( 1 )
 			+ 2*st_body_font_size						/* column headers */
 			+ st_title_cols_header_vspacing;
 
@@ -920,18 +920,18 @@ draw_page_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean dr
 	/* dossier header */
 	if( draw ){
 		ofa_print_header_dossier_render(
-				context, priv->layout, page_num, is_last, y,
+				context, priv->layout, page_num, y,
 				ofa_main_window_get_dossier( priv->main_window ));
 	}
-	y += ofa_print_header_dossier_get_height( page_num, is_last );
+	y += ofa_print_header_dossier_get_height( page_num );
 
 	/* print summary title in line 3 */
 	if( draw ){
 		ofa_print_header_title_render(
-				context, priv->layout, page_num, is_last, y,
+				context, priv->layout, page_num, y,
 				_( "General Ledger Summary"));
 	}
-	y+= ofa_print_header_title_get_height( page_num, is_last );
+	y+= ofa_print_header_title_get_height( page_num );
 
 	/* recall of account and date selections in line 4 */
 	if( draw ){
@@ -968,10 +968,10 @@ draw_page_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean dr
 			g_free( sfrom_date );
 		}
 		ofa_print_header_subtitle_render(
-				context, priv->layout, page_num, is_last, y, stitle->str );
+				context, priv->layout, page_num, y, stitle->str );
 		g_string_free( stitle, TRUE );
 	}
-	y+= ofa_print_header_subtitle_get_height( page_num, is_last );
+	y+= ofa_print_header_subtitle_get_height( page_num );
 
 	/* column headers
 	 * draw a rectangle for one columns header line with spacings as:

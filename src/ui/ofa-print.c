@@ -72,7 +72,7 @@ static void    header_dossier_page1_line2_render( GtkPrintContext *context, Pang
  */
 void
 ofa_print_header_dossier_render( GtkPrintContext *context, PangoLayout *layout,
-										gint page_num, gboolean is_last,
+										gint page_num,
 										gdouble y, const ofoDossier *dossier )
 {
 	header_dossier_page1_line1_render( context, layout, y, dossier );
@@ -145,7 +145,7 @@ header_dossier_page1_line2_render( GtkPrintContext *context, PangoLayout *layout
  * spacing (which will to be prepended when printing the summary title)
  */
 gdouble
-ofa_print_header_dossier_get_height( gint page_num, gboolean is_last )
+ofa_print_header_dossier_get_height( gint page_num )
 {
 	gdouble y;
 
@@ -165,7 +165,7 @@ ofa_print_header_dossier_get_height( gint page_num, gboolean is_last )
  */
 void
 ofa_print_header_title_render( GtkPrintContext *context, PangoLayout *layout,
-									gint page_num, gboolean is_last, gdouble y, const gchar *title )
+									gint page_num, gdouble y, const gchar *title )
 {
 	cairo_t *cr;
 	gchar *str;
@@ -208,7 +208,7 @@ ofa_print_header_title_render( GtkPrintContext *context, PangoLayout *layout,
  * ofa_print_header_title_get_height:
  */
 gdouble
-ofa_print_header_title_get_height( gint page_num, gboolean is_last )
+ofa_print_header_title_get_height( gint page_num )
 {
 	gdouble y;
 
@@ -225,7 +225,7 @@ ofa_print_header_title_get_height( gint page_num, gboolean is_last )
  */
 void
 ofa_print_header_subtitle_render( GtkPrintContext *context, PangoLayout *layout,
-									gint page_num, gboolean is_last, gdouble y, const gchar *title )
+									gint page_num, gdouble y, const gchar *title )
 {
 	gchar *str;
 	gdouble width;
@@ -244,7 +244,7 @@ ofa_print_header_subtitle_render( GtkPrintContext *context, PangoLayout *layout,
  * ofa_print_header_subtitle_get_height:
  */
 gdouble
-ofa_print_header_subtitle_get_height( gint page_num, gboolean is_last )
+ofa_print_header_subtitle_get_height( gint page_num )
 {
 	gdouble y;
 

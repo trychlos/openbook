@@ -48,22 +48,22 @@ enum {
 };
 
 void     ofa_print_header_dossier_render     ( GtkPrintContext *context, PangoLayout *layout,
-													gint page_num, gboolean is_last,
+													gint page_num,
 													gdouble y, const ofoDossier *dossier );
 
-gdouble  ofa_print_header_dossier_get_height ( gint page_num, gboolean is_last );
+gdouble  ofa_print_header_dossier_get_height ( gint page_num );
 
 void     ofa_print_header_title_render       ( GtkPrintContext *context, PangoLayout *layout,
-													gint page_num, gboolean is_last,
+													gint page_num,
 													gdouble y, const gchar *title );
 
-gdouble  ofa_print_header_title_get_height   ( gint page_num, gboolean is_last );
+gdouble  ofa_print_header_title_get_height   ( gint page_num );
 
 void     ofa_print_header_subtitle_render    ( GtkPrintContext *context, PangoLayout *layout,
-													gint page_num, gboolean is_last,
+													gint page_num,
 													gdouble y, const gchar *title );
 
-gdouble  ofa_print_header_subtitle_get_height( gint page_num, gboolean is_last );
+gdouble  ofa_print_header_subtitle_get_height( gint page_num );
 
 void     ofa_print_header_title_set_color    ( GtkPrintContext *context, PangoLayout *layout );
 

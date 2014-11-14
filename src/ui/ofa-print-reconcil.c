@@ -518,9 +518,9 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 			+ 3*st_body_font_size;
 
 	header_height =
-			ofa_print_header_dossier_get_height( 1, FALSE )
-			+ ofa_print_header_title_get_height( 1, FALSE )
-			+ ofa_print_header_subtitle_get_height( 1, FALSE )
+			ofa_print_header_dossier_get_height( 1 )
+			+ ofa_print_header_title_get_height( 1 )
+			+ ofa_print_header_subtitle_get_height( 1 )
 			+ 2*st_body_font_size;						/* column headers */
 
 	header_height_other = header_height + st_body_line_spacing/2;
@@ -670,15 +670,15 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 
 	/* dossier header */
 	ofa_print_header_dossier_render(
-			context, priv->layout, page_num, is_last, y,
+			context, priv->layout, page_num, y,
 			ofa_main_window_get_dossier( priv->main_window ));
-	y += ofa_print_header_dossier_get_height( page_num, is_last );
+	y += ofa_print_header_dossier_get_height( page_num );
 
 	/* print title in line 3 */
 	ofa_print_header_title_render(
-			context, priv->layout, page_num, is_last, y,
+			context, priv->layout, page_num, y,
 			_( "Account Reconciliation Summary" ));
-	y+= ofa_print_header_title_get_height( page_num, is_last );
+	y+= ofa_print_header_title_get_height( page_num );
 
 	/* account number and label in line 4 */
 	str = g_strdup_printf(
@@ -686,9 +686,9 @@ draw_header( ofaPrintReconcil *self, GtkPrintOperation *operation, GtkPrintConte
 				ofo_account_get_number( priv->account ),
 				ofo_account_get_label( priv->account ));
 	ofa_print_header_subtitle_render(
-			context, priv->layout, page_num, is_last, y, str );
+			context, priv->layout, page_num, y, str );
 	g_free( str );
-	y+= ofa_print_header_subtitle_get_height( page_num, is_last );
+	y+= ofa_print_header_subtitle_get_height( page_num );
 
 	/* column headers
 	 * draw a rectangle for one line with spacings as:

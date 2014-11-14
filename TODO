@@ -349,8 +349,6 @@
  430 2014-11-11 print_balance: add currency on each line + have a
                 general total per currency 
 
- 431 2014-11-11 print general ledger: have a general total per currency
-
  432 2014-11-12 on import, do not apply on account nor ledger entries
                 which have an effect date before the beginning of the 
                 exercice (the ledger will stay unbalanced)
@@ -1909,6 +1907,9 @@
 
  427 2014-11-11 print general ledger
      2014-11-11 done - svn #4088
+
+ 431 2014-11-11 print general ledger: have a general total per currency
+     2014-11-14 done - svn #4114
 
  434 2014-11-12 bug on pwi: for an entry whose effect date is 1/1/14,
                 view_entries displays an error message like
