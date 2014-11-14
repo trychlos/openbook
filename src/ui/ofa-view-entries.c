@@ -222,8 +222,6 @@ static perCurrency   *find_balance_by_currency( ofaViewEntries *self, const gcha
 static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter, gboolean valid );
 static GtkWidget     *reset_balances_widgets( ofaViewEntries *self );
 static void           display_balance( const gchar *dev_code, perCurrency *pc, ofaViewEntries *self );
-static void           update_balance_amounts( ofaViewEntries *self, const gchar *sdeb, const gchar *scre, const gchar *dev_code, gint column_id, const gchar *text );
-static void           update_balance_currency( ofaViewEntries *self, const gchar *sdeb, const gchar *scre, const gchar *prev_code, const gchar *text );
 static gboolean       is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaViewEntries *self );
 static void           on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self );
 static void           on_entry_status_toggled( GtkToggleButton *button, ofaViewEntries *self );
@@ -1438,7 +1436,6 @@ compute_balances( ofaViewEntries *self )
 	GtkTreeIter iter;
 	gchar *sdeb, *scre, *dev_code;
 	perCurrency *pc;
-	ofoEntry *entry;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1459,20 +1456,18 @@ compute_balances( ofaViewEntries *self )
 					ENT_COL_DEBIT,    &sdeb,
 					ENT_COL_CREDIT,   &scre,
 					ENT_COL_CURRENCY, &dev_code,
-					ENT_COL_OBJECT,   &entry,
 					-1 );
-			if( entry && OFO_IS_ENTRY( entry )){
-				/*g_debug( "%s: ref_count=%d", thisfn, G_OBJECT( entry )->ref_count );*/
-				g_object_unref( entry );
 
+			if( dev_code && g_utf8_strlen( dev_code, -1 )){
 				pc = find_balance_by_currency( self, dev_code );
 				pc->debits += my_double_set_from_str( sdeb );
 				pc->credits += my_double_set_from_str( scre );
-
-				g_free( sdeb );
-				g_free( scre );
-				g_free( dev_code );
 			}
+
+			g_free( sdeb );
+			g_free( scre );
+			g_free( dev_code );
+
 			if( !gtk_tree_model_iter_next( priv->tsort, &iter )){
 				break;
 			}
@@ -1600,57 +1595,6 @@ display_balance( const gchar *dev_code, perCurrency *pc, ofaViewEntries *self )
 		g_free( str );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
 	}
-}
-
-static void
-update_balance_amounts( ofaViewEntries *self, const gchar *sdeb, const gchar *scre, const gchar *dev_code, gint column_id, const gchar *text )
-{
-	ofaViewEntriesPrivate *priv;
-	perCurrency *pc;
-	GtkWidget *box;
-
-	priv = self->priv;
-
-	pc = find_balance_by_currency( self, dev_code );
-	switch( column_id ){
-		case ENT_COL_DEBIT:
-			pc->debits -= my_double_set_from_str( sdeb );
-			pc->debits += my_double_set_from_str( text );
-			break;
-		case ENT_COL_CREDIT:
-			pc->credits -= my_double_set_from_str( scre );
-			pc->credits += my_double_set_from_str( text );
-			break;
-	}
-
-	box = reset_balances_widgets( self );
-	g_hash_table_foreach( priv->balances_hash, ( GHFunc ) display_balance, self );
-	gtk_widget_show_all( box );
-}
-
-static void
-update_balance_currency( ofaViewEntries *self, const gchar *sdeb, const gchar *scre, const gchar *dev_code, const gchar *text )
-{
-	ofaViewEntriesPrivate *priv;
-	perCurrency *pc;
-	GtkWidget *box;
-	gdouble debit, credit;
-
-	priv = self->priv;
-	debit = my_double_set_from_str( sdeb );
-	credit = my_double_set_from_str( scre );
-
-	pc = find_balance_by_currency( self, dev_code );
-	pc->debits -= debit;
-	pc->credits -= credit;
-
-	pc = find_balance_by_currency( self, text );
-	pc->debits += debit;
-	pc->credits += credit;
-
-	box = reset_balances_widgets( self );
-	g_hash_table_foreach( priv->balances_hash, ( GHFunc ) display_balance, self );
-	gtk_widget_show_all( box );
 }
 
 /*
@@ -1871,13 +1815,17 @@ set_renderers_editable( ofaViewEntries *self, gboolean editable )
 static void
 on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaViewEntries *self )
 {
+	static const gchar *thisfn = "ofa_view_entries_on_cell_edited";
 	ofaViewEntriesPrivate *priv;
 	gint column_id;
 	GtkTreePath *path;
 	GtkTreeIter sort_iter, filter_iter, iter;
-	gchar *sdeb, *scre, *dev_code, *str;
+	gchar *str;
 	gboolean is_valid;
 	gdouble amount;
+
+	g_debug( "%s: cell=%p, path=%s, text=%s, self=%p",
+			thisfn, ( void * ) cell, path_str, text, ( void * ) self );
 
 	priv = self->priv;
 
@@ -1893,27 +1841,7 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 			column_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( cell ), DATA_COLUMN_ID ));
 			set_data_set_indicator( self, column_id, &iter );
 
-			sdeb = NULL;
-			scre = NULL;
-			dev_code = NULL;
-
-			/* needed to update the balances per currency */
-			if( column_id == ENT_COL_DEBIT ||
-					column_id == ENT_COL_CREDIT ||
-					column_id == ENT_COL_CURRENCY ){
-
-				gtk_tree_model_get(
-						priv->tstore,
-						&iter,
-						ENT_COL_DEBIT,    &sdeb,
-						ENT_COL_CREDIT,   &scre,
-						ENT_COL_CURRENCY, &dev_code,
-						-1 );
-			}
-
-			/* reformat amounts */
-			/* need to set store in two passes in order to have the
-			 *  values available when we are checking them */
+			/* reformat amounts before storing them */
 			if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){
 				amount = my_double_set_from_str( text );
 				str = my_double_to_str( amount );
@@ -1925,21 +1853,10 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 			g_free( str );
 
 			is_valid = check_row_for_valid( self, &iter );
-
 			gtk_list_store_set(
 					GTK_LIST_STORE( priv->tstore ), &iter, ENT_COL_VALID, is_valid, -1 );
 
-			if( dev_code ){
-				if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){
-					update_balance_amounts( self, sdeb, scre, dev_code, column_id, text );
-				} else if( column_id == ENT_COL_CURRENCY ){
-					update_balance_currency( self, sdeb, scre, dev_code, text );
-				}
-			}
-
-			g_free( sdeb );
-			g_free( scre );
-			g_free( dev_code );
+			compute_balances( self );
 
 			if( is_valid ){
 				save_entry( self, priv->tstore, &iter );

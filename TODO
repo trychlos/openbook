@@ -387,10 +387,6 @@
 
  447 2014-11-13 my-date.c: line 81 (my_date_compare): should not be reached
 
- 448 2014-11-13 view entries: when entering an operation date, and if
-                the effect date has not yet been forced by the user, 
-                then set a default effect date 
-
  451 2014-11-13 view entries: one should be able to enter any effect 
                 date -> have a save anyway button
 
@@ -1945,6 +1941,11 @@
  437 2014-11-12 view entries: insert does not work (add empty lines as
                 we insert more entries)
      2014-11-12 done - svn #4098
+
+ 448 2014-11-13 view entries: when entering an operation date, and if
+                the effect date has not yet been forced by the user, 
+                then set a default effect date
+     2014-11-14 done - svn #4105 
 
  449 2014-11-13 view entries: use my_cell_editable_date
      2014-11-14 done - svn #4104
