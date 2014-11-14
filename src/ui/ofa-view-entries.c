@@ -144,6 +144,7 @@ enum {
 	ENT_COL_OBJECT,
 	ENT_COL_VALID,
 	ENT_COL_ERRMSG,
+	ENT_COL_CURRENCY_SET,				/* currency set by the user */
 	ENT_N_COLUMNS
 };
 
@@ -228,6 +229,8 @@ static void           on_visible_column_toggled( GtkToggleButton *button, ofaVie
 static void           on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaViewEntries *self );
 static void           set_renderers_editable( ofaViewEntries *self, gboolean editable );
 static void           on_cell_edited( GtkCellRendererText *cell, gchar *path, gchar *text, ofaViewEntries *self );
+static gint           get_data_set_indicator( ofaViewEntries *self, gint column_id );
+static void           set_data_set_indicator( ofaViewEntries *self, gint column_id, GtkTreeIter *iter );
 static void           on_row_selected( GtkTreeSelection *select, ofaViewEntries *self );
 static gboolean       check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_dope( ofaViewEntries *self, GtkTreeIter *iter );
@@ -624,7 +627,9 @@ setup_entries_treeview( ofaViewEntries *self )
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* account, debit, credit */
 			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* currency, rappro, status */
 			G_TYPE_OBJECT,
-			G_TYPE_BOOLEAN, G_TYPE_STRING ));				/* valid, error message */
+			G_TYPE_BOOLEAN, G_TYPE_STRING,					/* valid, error message */
+			G_TYPE_BOOLEAN									/* currency_set */
+			));
 
 	priv->tfilter = gtk_tree_model_filter_new( priv->tstore, NULL );
 	g_object_unref( priv->tstore );
@@ -1542,20 +1547,21 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter, gboolea
 	gtk_list_store_set(
 				GTK_LIST_STORE( priv->tstore ),
 				iter,
-				ENT_COL_DOPE,      sdope,
-				ENT_COL_DEFF,      sdeff,
-				ENT_COL_NUMBER,    ofo_entry_get_number( entry ),
-				ENT_COL_REF,       ofo_entry_get_ref( entry ),
-				ENT_COL_LABEL,     ofo_entry_get_label( entry ),
-				ENT_COL_LEDGER,    ofo_entry_get_ledger( entry ),
-				ENT_COL_ACCOUNT,   ofo_entry_get_account( entry ),
-				ENT_COL_DEBIT,     sdeb,
-				ENT_COL_CREDIT,    scre,
-				ENT_COL_CURRENCY,  ofo_entry_get_currency( entry ),
-				ENT_COL_DRECONCIL, srappro,
-				ENT_COL_STATUS,    status,
-				ENT_COL_OBJECT,    entry,
-				ENT_COL_VALID,     valid,
+				ENT_COL_DOPE,         sdope,
+				ENT_COL_DEFF,         sdeff,
+				ENT_COL_NUMBER,       ofo_entry_get_number( entry ),
+				ENT_COL_REF,          ofo_entry_get_ref( entry ),
+				ENT_COL_LABEL,        ofo_entry_get_label( entry ),
+				ENT_COL_LEDGER,       ofo_entry_get_ledger( entry ),
+				ENT_COL_ACCOUNT,      ofo_entry_get_account( entry ),
+				ENT_COL_DEBIT,        sdeb,
+				ENT_COL_CREDIT,       scre,
+				ENT_COL_CURRENCY,     ofo_entry_get_currency( entry ),
+				ENT_COL_DRECONCIL,    srappro,
+				ENT_COL_STATUS,       status,
+				ENT_COL_OBJECT,       entry,
+				ENT_COL_VALID,        valid,
+				ENT_COL_CURRENCY_SET, FALSE,
 				-1 );
 
 	g_free( status );
@@ -1905,6 +1911,8 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 					GTK_TREE_MODEL_FILTER( priv->tfilter), &iter, &filter_iter );
 
 			column_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( cell ), DATA_COLUMN_ID ));
+			set_data_set_indicator( self, column_id, &iter );
+
 			sdeb = NULL;
 			scre = NULL;
 			dev_code = NULL;
@@ -1961,6 +1969,46 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaView
 	}
 }
 
+/*
+ * a data has been edited by the user: set the corresponding flag (if
+ * any) so that we do not try later to reset a default value
+ */
+static gint
+get_data_set_indicator( ofaViewEntries *self, gint column_id )
+{
+	gint column_data;
+
+	column_data = 0;
+
+	switch( column_id ){
+		case ENT_COL_CURRENCY:
+			column_data = ENT_COL_CURRENCY_SET;
+			break;
+		default:
+			break;
+	}
+
+	return( column_data );
+}
+
+/*
+ * a data has been edited by the user: set the corresponding flag (if
+ * any) so that we do not try later to reset a default value
+ */
+static void
+set_data_set_indicator( ofaViewEntries *self, gint column_id, GtkTreeIter *iter )
+{
+	ofaViewEntriesPrivate *priv;
+	gint column_data;
+
+	priv = self->priv;
+	column_data = get_data_set_indicator( self, column_id );
+
+	if( column_data > 0 ){
+		gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter, column_data, TRUE, -1 );
+	}
+}
+
 static void
 on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
 {
@@ -1997,11 +2045,12 @@ check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter )
 
 	/* checks begin from right so that the last computed error message
 	 * (for the leftest column) will be displayed first */
-	v_currency = check_row_for_valid_currency( self, iter );
 	v_amounts = check_row_for_valid_amounts( self, iter );
 	v_label = check_row_for_valid_label( self, iter );
 	v_ledger = check_row_for_valid_ledger( self, iter );
 	v_account = check_row_for_valid_account( self, iter );
+	/* check currency after account */
+	v_currency = check_row_for_valid_currency( self, iter );
 	v_deffect = check_row_for_valid_deffect( self, iter );
 	v_dope = check_row_for_valid_dope( self, iter );
 
@@ -2115,34 +2164,48 @@ static gboolean
 check_row_for_valid_account( ofaViewEntries *self, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
-	gchar *str, *msg;
+	gchar *acc_number, *cur_code, *msg;
 	gboolean is_valid;
 	ofoAccount *account;
+	gint cur_data;
+	gboolean cur_set;
 
 	priv = self->priv;
 	is_valid = FALSE;
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_ACCOUNT, &str, -1 );
+	gtk_tree_model_get( priv->tstore, iter,
+			ENT_COL_ACCOUNT, &acc_number, ENT_COL_CURRENCY, &cur_code, -1 );
 
-	if( str && g_utf8_strlen( str, -1 )){
-		account = ofo_account_get_by_number( priv->dossier, str );
+	if( acc_number && g_utf8_strlen( acc_number, -1 )){
+		account = ofo_account_get_by_number( priv->dossier, acc_number );
 		if( account ){
 			if( !ofo_account_is_root( account )){
 				is_valid = TRUE;
 
 			} else {
-				msg = g_strdup_printf( _( "Account %s is a root account" ), str );
+				msg = g_strdup_printf( _( "Account %s is a root account" ), acc_number );
 				set_error_msg( self, iter, msg );
 				g_free( msg );
 			}
 		} else {
-			msg = g_strdup_printf( _( "Unknwown account: %s" ), str );
+			msg = g_strdup_printf( _( "Unknwown account: %s" ), acc_number );
 			set_error_msg( self, iter, msg );
 			g_free( msg );
 		}
 	} else {
 		set_error_msg( self, iter, _( "Empty account number" ));
 	}
-	g_free( str );
+	g_free( acc_number );
+
+	/* if account is valid, and currency code has not yet
+	 * been set by the user, then setup the default currency */
+	if( is_valid ){
+		cur_data = get_data_set_indicator( self, ENT_COL_CURRENCY );
+		gtk_tree_model_get( priv->tstore, iter, cur_data, &cur_set, -1 );
+		if( !cur_set ){
+			gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter,
+					ENT_COL_CURRENCY, ofo_account_get_currency( account ), -1 );
+		}
+	}
 
 	return( is_valid );
 }

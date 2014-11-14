@@ -357,9 +357,6 @@
 
  433 2014-11-12 print ledger
 
- 437 2014-11-12 view entries: insert does not work (add empty lines as
-                we insert more entries)
-
  438 2014-11-12 view entries: display in red invalid entries + in red
                 the error message
 
@@ -1949,6 +1946,10 @@
 
  436 2014-11-12 view entries: do not recheck entries which are not new
      2014-11-12 done - svn #4097
+
+ 437 2014-11-12 view entries: insert does not work (add empty lines as
+                we insert more entries)
+     2014-11-12 done - svn #4098
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
