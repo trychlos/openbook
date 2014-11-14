@@ -391,12 +391,13 @@
                 the effect date has not yet been forced by the user, 
                 then set a default effect date 
 
- 449 2014-11-13 view entries: use my_cell_editable_date
-
  451 2014-11-13 view entries: one should be able to enter any effect 
                 date -> have a save anyway button
 
- 453
+ 453 2014-11-14 view entries: debit or credit + currency should be 
+                enough to update the amounts
+
+ 454
 
 -----------------------------------------------------------------------
  DONE
@@ -1944,6 +1945,9 @@
  437 2014-11-12 view entries: insert does not work (add empty lines as
                 we insert more entries)
      2014-11-12 done - svn #4098
+
+ 449 2014-11-13 view entries: use my_cell_editable_date
+     2014-11-14 done - svn #4104
 
  450 2014-11-13 view entries: have a status as a mnemonic (e.g. Ro, Va
                 or Del)

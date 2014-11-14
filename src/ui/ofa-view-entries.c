@@ -145,6 +145,8 @@ enum {
 	ENT_COL_OBJECT,
 	ENT_COL_VALID,
 	ENT_COL_ERRMSG,
+	ENT_COL_DOPE_SET,					/* operation date set by the user */
+	ENT_COL_DEFF_SET,					/* effect date set by the user */
 	ENT_COL_CURRENCY_SET,				/* currency set by the user */
 	ENT_N_COLUMNS
 };
@@ -241,7 +243,8 @@ static gboolean       check_row_for_valid_account( ofaViewEntries *self, GtkTree
 static gboolean       check_row_for_valid_currency( ofaViewEntries *self, GtkTreeIter *iter );
 static gboolean       check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeIter *iter );
 static gboolean       check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter );
-static GDate         *get_min_deffect( ofaViewEntries *self, ofoLedger *ledger );
+static void           set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter );
+static GDate         *get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger );
 static gboolean       check_row_for_cross_currency( ofaViewEntries *self, GtkTreeIter *iter );
 static void           set_error_msg( ofaViewEntries *self, GtkTreeIter *iter, const gchar *str );
 static void           display_error_msg( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -628,7 +631,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* currency, rappro, status */
 			G_TYPE_OBJECT,
 			G_TYPE_BOOLEAN, G_TYPE_STRING,					/* valid, error message */
-			G_TYPE_BOOLEAN									/* currency_set */
+			G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN	/* dope_set, deff_set, currency_set */
 			));
 
 	priv->tfilter = gtk_tree_model_filter_new( priv->tstore, NULL );
@@ -1958,6 +1961,12 @@ get_data_set_indicator( ofaViewEntries *self, gint column_id )
 	column_data = 0;
 
 	switch( column_id ){
+		case ENT_COL_DOPE:
+			column_data = ENT_COL_DOPE_SET;
+			break;
+		case ENT_COL_DEFF:
+			column_data = ENT_COL_DEFF_SET;
+			break;
 		case ENT_COL_CURRENCY:
 			column_data = ENT_COL_CURRENCY_SET;
 			break;
@@ -2016,6 +2025,7 @@ check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter )
 	ofaViewEntriesPrivate *priv;
 	gboolean v_dope, v_deffect, v_ledger, v_label, v_account, v_currency, v_amounts;
 	gboolean is_valid;
+	gchar *prev_msg;
 
 	priv = self->priv;
 	set_error_msg( self, iter, "" );
@@ -2024,12 +2034,25 @@ check_row_for_valid( ofaViewEntries *self, GtkTreeIter *iter )
 	 * (for the leftest column) will be displayed first */
 	v_amounts = check_row_for_valid_amounts( self, iter );
 	v_label = check_row_for_valid_label( self, iter );
-	v_ledger = check_row_for_valid_ledger( self, iter );
+
+	/* check account before currency in order to be able to set a
+	 * suitable default value */
 	v_account = check_row_for_valid_account( self, iter );
-	/* check currency after account */
 	v_currency = check_row_for_valid_currency( self, iter );
+
+	/* check ledger, deffect, dope in sequence in order to be able to
+	 * safely reinit error message after having set default effect date */
+	gtk_tree_model_get( priv->tstore, iter, ENT_COL_ERRMSG, &prev_msg, -1 );
+	v_ledger = check_row_for_valid_ledger( self, iter );
 	v_deffect = check_row_for_valid_deffect( self, iter );
 	v_dope = check_row_for_valid_dope( self, iter );
+
+	if( v_dope && !v_deffect && v_ledger ){
+		set_default_deffect( self, iter );
+		v_deffect = TRUE;
+		set_error_msg( self, iter, prev_msg );
+	}
+	g_free( prev_msg );
 
 	is_valid = v_dope && v_deffect && v_account && v_ledger && v_label && v_amounts && v_currency;
 
@@ -2050,27 +2073,29 @@ static gboolean
 check_row_for_valid_dope( ofaViewEntries *self, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
-	gchar *str, *msg;
+	gchar *sdope, *msg;
 	GDate date;
 	gboolean is_valid;
 
 	priv = self->priv;
 	is_valid = FALSE;
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DOPE, &str, -1 );
+	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DOPE, &sdope, -1 );
 
-	if( str && g_utf8_strlen( str, -1 )){
-		my_date_set_from_str( &date, str, MY_DATE_DMYY );
+	if( sdope && g_utf8_strlen( sdope, -1 )){
+		my_date_set_from_str( &date, sdope, MY_DATE_DMYY );
 		if( my_date_is_valid( &date )){
 			is_valid = TRUE;
 
 		} else {
-			msg = g_strdup_printf( _( "Invalid operation date: %s" ), str );
+			msg = g_strdup_printf( _( "Invalid operation date: %s" ), sdope );
 			set_error_msg( self, iter, msg );
 			g_free( msg );
 		}
 	} else {
 		set_error_msg( self, iter, _( "Empty operation date" ));
 	}
+
+	g_free( sdope );
 
 	return( is_valid );
 }
@@ -2085,6 +2110,8 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 	gchar *sdeffect, *msg;
 	GDate deff;
 	gboolean is_valid;
+	gboolean dope_set;
+	gint dope_data;
 
 	priv = self->priv;
 	is_valid = FALSE;
@@ -2104,6 +2131,18 @@ check_row_for_valid_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 	} else {
 		set_error_msg( self, iter, _( "Empty effect date" ));
 	}
+
+	/* if effect date is valid, and operation date has not been set by
+	 * the user, then set default operation date to effect date */
+	if( is_valid ){
+		dope_data = get_data_set_indicator( self, ENT_COL_DOPE );
+		gtk_tree_model_get( priv->tstore, iter, dope_data, &dope_set, -1 );
+		if( !dope_set ){
+			gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter,
+					ENT_COL_DOPE, sdeffect, -1 );
+		}
+	}
+
 	g_free( sdeffect );
 
 	return( is_valid );
@@ -2302,8 +2341,10 @@ check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 
-	my_date_set_from_date( &deff_min, get_min_deffect( self, ledger ));
-	if( !my_date_is_valid( &deff_min ) || my_date_compare( &deff, &deff_min ) >= 0 ){
+	my_date_set_from_date( &deff_min, get_min_deffect( self, &dope, ledger ));
+	g_return_val_if_fail( my_date_is_valid( &deff_min ), FALSE );
+
+	if( my_date_compare( &deff, &deff_min ) >= 0 ){
 		is_valid = TRUE;
 
 	} else {
@@ -2325,43 +2366,92 @@ check_row_for_cross_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 }
 
 /*
+ * set a default effect date is operation date and ledger are valid
+ * => effect date must not have been set by the user
+ */
+static void
+set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
+{
+	ofaViewEntriesPrivate *priv;
+	gboolean deff_set;
+	gint deff_data;
+	gchar *sdope, *mnemo, *sdeff;
+	GDate dope, deff_min;
+	ofoLedger *ledger;
+
+	priv = self->priv;
+
+	deff_data = get_data_set_indicator( self, ENT_COL_DEFF );
+	gtk_tree_model_get( priv->tstore, iter, deff_data, &deff_set, -1 );
+	if( !deff_set ){
+		gtk_tree_model_get( priv->tstore, iter,
+					ENT_COL_DOPE,   &sdope,
+					ENT_COL_LEDGER, &mnemo,
+					-1 );
+
+		my_date_set_from_str( &dope, sdope, MY_DATE_DMYY );
+		g_return_if_fail( my_date_is_valid( &dope ));
+
+		g_return_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ));
+		ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
+		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+
+		my_date_set_from_date( &deff_min, get_min_deffect( self, &dope, ledger ));
+		sdeff = my_date_to_str( &deff_min, MY_DATE_DMYY );
+		gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_DEFF, sdeff, -1 );
+		g_free( sdeff );
+
+		g_free( sdope );
+		g_free( mnemo );
+	}
+}
+
+/*
  * returns the minimal effect date, given :
  * - the last last closing date of the ledger,
  * - the possible last closing date of the dossier,
  * - the possible opening date of the current exercice of the dossier.
  */
 static GDate *
-get_min_deffect( ofaViewEntries *self, ofoLedger *ledger )
+get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger )
 {
 	ofaViewEntriesPrivate *priv;
-	static GDate date;
+	static GDate dmin;
 	GDate *ledger_last_closing;
 	gint to_add;
 
 	priv = self->priv;
-	g_date_clear( &date, 1 );
+	g_date_clear( &dmin, 1 );
 	to_add = 0;
 
+	/* minimal effect date from dossier point of view */
 	if( my_date_is_valid( priv->dossier_opening )){
-		my_date_set_from_date( &date, priv->dossier_opening );
+		my_date_set_from_date( &dmin, priv->dossier_opening );
 
 	} else if( my_date_is_valid( priv->dossier_last_closing )){
-		my_date_set_from_date( &date, priv->dossier_last_closing );
+		my_date_set_from_date( &dmin, priv->dossier_last_closing );
 		to_add = 1;
 	}
-	if( my_date_is_valid( &date )){
-		g_date_add_days( &date, to_add );	/* the minimal deffect from the dossier */
+	if( my_date_is_valid( &dmin )){
+		g_date_add_days( &dmin, to_add );	/* the minimal deffect from the dossier */
 	}
 
+	/* minimal effect date from ledger point of view */
 	ledger_last_closing = ofo_ledger_get_last_closing( ledger );
 	if( my_date_is_valid( ledger_last_closing )){
 		g_date_add_days( ledger_last_closing, 1 );
-		if( !my_date_is_valid( &date ) || my_date_compare( &date, ledger_last_closing ) < 0 ){
-			my_date_set_from_date( &date, ledger_last_closing );
+		if( !my_date_is_valid( &dmin ) || my_date_compare( &dmin, ledger_last_closing ) < 0 ){
+			my_date_set_from_date( &dmin, ledger_last_closing );
 		}
 	}
+	g_free( ledger_last_closing );
 
-	return( &date );
+	/* minimal effect date from operation point of view */
+	if( !my_date_is_valid( &dmin ) || my_date_compare( &dmin, dope ) < 0 ){
+		my_date_set_from_date( &dmin, dope );
+	}
+
+	return( &dmin );
 }
 
 /*
@@ -2762,11 +2852,15 @@ insert_new_row( ofaViewEntries *self )
 	ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
 
 	if( gtk_toggle_button_get_active( priv->ledger_btn )){
-		ofo_entry_set_ledger( entry, priv->jou_mnemo );
+		if( priv->jou_mnemo && g_utf8_strlen( priv->jou_mnemo, -1 )){
+			ofo_entry_set_ledger( entry, priv->jou_mnemo );
+		}
 	} else {
-		ofo_entry_set_account( entry, priv->acc_number );
-		account_object = ofo_account_get_by_number( priv->dossier, priv->acc_number );
-		ofo_entry_set_currency( entry, ofo_account_get_currency( account_object ));
+		if( priv->acc_number && g_utf8_strlen( priv->acc_number, -1 )){
+			ofo_entry_set_account( entry, priv->acc_number );
+			account_object = ofo_account_get_by_number( priv->dossier, priv->acc_number );
+			ofo_entry_set_currency( entry, ofo_account_get_currency( account_object ));
+		}
 	}
 
 	display_entry( self, entry, &new_iter, FALSE );
