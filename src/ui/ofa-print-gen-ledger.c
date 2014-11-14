@@ -750,6 +750,10 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 	priv->layout = gtk_print_context_create_pango_layout( context );
 	/* context_width=559, pango_layout_width=572416 */
 	begin_print_build_body_layout( self, context );
+
+	/* initialize general balance */
+	priv->tot_debit = 0;
+	priv->tot_credit = 0;
 }
 
 static void
@@ -1046,9 +1050,6 @@ draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean
 							ofa_main_window_get_dossier( priv->main_window ), priv->prev_account );
 	g_return_if_fail( priv->prev_accobj && OFO_IS_ACCOUNT( priv->prev_accobj ));
 
-	priv->tot_debit += priv->prev_debit;
-	priv->tot_credit += priv->prev_credit;
-
 	priv->prev_debit = 0;
 	priv->prev_credit = 0;
 
@@ -1207,6 +1208,10 @@ draw_account_balance( ofaPrintGenLedger *self, GtkPrintContext *context, gboolea
 		/* current account solde */
 		draw_account_solde_debit_credit( self, context, y );
 	}
+
+	priv->tot_debit += priv->prev_debit;
+	priv->tot_credit += priv->prev_credit;
+
 	y += account_balance_height();
 	priv->last_y = y;
 }
