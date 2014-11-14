@@ -357,11 +357,6 @@
 
  433 2014-11-12 print ledger
 
- 438 2014-11-12 view entries: display in red invalid entries + in red
-                the error message
-     2014-11-14 have red for errors, orange for warnings, blue for
-                balance per currency
-
  441 2014-11-13 general ledger: the from_date and the to_date are set
                 in the dialog box while only the from_date is set in
                 the configuration file 
@@ -384,9 +379,14 @@
  447 2014-11-13 my-date.c: line 81 (my_date_compare): should not be reached
 
  451 2014-11-13 view entries: one should be able to enter any effect 
-                date -> have a save anyway button
+                date -> have a save anyway button + take care of 
+                updating ofoEntry to not apply to account nor ledger
 
- 454
+ 454 2014-11-14 view entries: save display configuration as preferences
+
+ 455 2014-11-14 report colored footer in other pages with balances
+
+ 456
 
 -----------------------------------------------------------------------
  DONE
@@ -1934,6 +1934,12 @@
  437 2014-11-12 view entries: insert does not work (add empty lines as
                 we insert more entries)
      2014-11-12 done - svn #4098
+
+ 438 2014-11-12 view entries: display in red invalid entries + in red
+                the error message
+     2014-11-14 have red for errors, orange for warnings, blue for
+                balance per currency
+     2014-11-14 done - svn #4107
 
  439 2014-11-12 view entries: delete the row even it is not a valid 
                 entry

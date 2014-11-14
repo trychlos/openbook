@@ -105,9 +105,8 @@ struct _ofaViewEntriesPrivate {
 	gboolean           ref_visible;
 	gboolean           ledger_visible;
 	gboolean           account_visible;
-	gboolean           rappro_visible;
+	gboolean           dreconcil_visible;
 	gboolean           status_visible;
-	gboolean           currency_visible;
 
 	/* frame 5: edition switch
 	 */
@@ -195,6 +194,10 @@ enum {
 	ENT_ERR_WARNING,
 	ENT_ERR_ERROR
 };
+
+/* other colors */
+#define RGBA_VALIDATED                  "#e6cf00"		/* gold background */
+#define RGBA_DELETED                    "#808080"		/* gray foreground */
 #define RGBA_BALANCE                    PAGE_RGBA_FOOTER
 
 static const gchar           *st_ui_xml                   = PKGUIDIR "/ofa-view-entries.piece.ui";
@@ -222,6 +225,7 @@ static void           setup_footer( ofaViewEntries *self );
 static void           setup_signaling_connect( ofaViewEntries *self );
 static GtkWidget     *v_setup_buttons( ofaPage *page );
 static void           v_init_view( ofaPage *page );
+static void           set_visible_columns( ofaViewEntries *self );
 static GtkWidget     *v_get_top_focusable_widget( const ofaPage *page );
 static void           on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self );
 static void           on_ledger_changed( const gchar *mnemo, ofaViewEntries *self );
@@ -327,6 +331,8 @@ static void
 ofa_view_entries_init( ofaViewEntries *self )
 {
 	static const gchar *thisfn = "ofa_view_entries_init";
+	ofaViewEntriesPrivate *priv;
+	gint i;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
@@ -334,9 +340,25 @@ ofa_view_entries_init( ofaViewEntries *self )
 	g_return_if_fail( OFA_IS_VIEW_ENTRIES( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_VIEW_ENTRIES, ofaViewEntriesPrivate );
+	priv = self->priv;
 
-	my_date_clear( &self->priv->d_from );
-	my_date_clear( &self->priv->d_to );
+	my_date_clear( &priv->d_from );
+	my_date_clear( &priv->d_to );
+
+	/* default visible columns */
+	priv->dope_visible = TRUE;
+	priv->deffect_visible = FALSE;
+	priv->ref_visible = FALSE;
+	priv->ledger_visible = TRUE;
+	priv->account_visible = TRUE;
+	priv->dreconcil_visible = FALSE;
+	priv->status_visible = FALSE;
+
+	/* initialize st_renderers (use case: when reopening the page) */
+	for( i=0 ; i<ENT_N_COLUMNS ; ++i ){
+		st_renderers[i] = 0;
+	}
+
 }
 
 static void
@@ -520,8 +542,11 @@ setup_dates_selection( ofaViewEntries *self )
 static void
 setup_status_selection( ofaViewEntries *self )
 {
+	static const gchar *thisfn = "ofa_view_entries_setup_status_selection";
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *button;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
 
@@ -541,6 +566,8 @@ setup_status_selection( ofaViewEntries *self )
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
 	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_deleted );
+
+	/* for now, do not display deleted entries */
 	gtk_widget_set_sensitive( button, FALSE );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), FALSE );
 }
@@ -548,8 +575,11 @@ setup_status_selection( ofaViewEntries *self )
 static void
 setup_display_columns( ofaViewEntries *self )
 {
+	static const gchar *thisfn = "ofa_view_entries_setup_display_columns";
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *widget;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
 
@@ -557,53 +587,55 @@ setup_display_columns( ofaViewEntries *self )
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->dope_visible );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), TRUE );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->dope_visible );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-deffect" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->deffect_visible );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->deffect_visible );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-ref" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->ref_visible );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->ref_visible );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-ledger" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->ledger_visible );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->ledger_visible );
 	priv->ledger_checkbox = GTK_CHECK_BUTTON( widget );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-account" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->account_visible );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->account_visible );
 	priv->account_checkbox = GTK_CHECK_BUTTON( widget );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-rappro" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
-	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->rappro_visible );
+	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->dreconcil_visible );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->dreconcil_visible );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-status" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->status_visible );
-
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-currency" );
-	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
-	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
-	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->currency_visible );
-	priv->currency_checkbox = GTK_CHECK_BUTTON( widget );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), TRUE );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->status_visible );
 }
 
 static void
 setup_edit_switch( ofaViewEntries *self )
 {
+	static const gchar *thisfn = "ofa_view_entries_setup_edit_switch";
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *widget;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
 
@@ -655,6 +687,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN	/* dope_set, deff_set, currency_set */
 			));
 
+	g_debug( "1" );
 	priv->tfilter = gtk_tree_model_filter_new( priv->tstore, NULL );
 	g_object_unref( priv->tstore );
 	gtk_tree_model_filter_set_visible_func(
@@ -865,7 +898,6 @@ setup_entries_treeview( ofaViewEntries *self )
 	gtk_tree_view_column_set_min_width( column, 32 );	/* "EUR" width */
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->currency_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
@@ -885,7 +917,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->rappro_visible );
+	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->dreconcil_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
@@ -1186,6 +1218,28 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_view_entries_v_init_view";
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+
+	set_visible_columns( OFA_VIEW_ENTRIES( page ));
+}
+
+static void
+set_visible_columns( ofaViewEntries *self )
+{
+	GList *columns, *it;
+	gboolean *priv_flag;
+	gint col_id;
+
+	columns = gtk_tree_view_get_columns( self->priv->entries_tview );
+	for( it=columns ; it ; it=it->next ){
+		col_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( it->data ), DATA_COLUMN_ID ));
+		if( col_id >= 0 ){
+			priv_flag = ( gboolean * ) g_object_get_data( G_OBJECT( it->data ), DATA_PRIV_VISIBLE );
+			gtk_tree_view_column_set_visible( GTK_TREE_VIEW_COLUMN( it->data ), !priv_flag || *priv_flag );
+		}
+	}
 }
 
 static GtkWidget *
@@ -1196,6 +1250,9 @@ v_get_top_focusable_widget( const ofaPage *page )
 	return( GTK_WIDGET( OFA_VIEW_ENTRIES( page )->priv->entries_tview ));
 }
 
+/*
+ * toggle between display per ledger or display per account
+ */
 static void
 on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 {
@@ -1214,7 +1271,6 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 		/* update the default visibility of the columns */
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_checkbox ), !is_active );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_checkbox ), is_active );
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->currency_checkbox ), is_active );
 
 		/* and display the entries */
 		if( is_active ){
@@ -1228,7 +1284,6 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_checkbox ), is_active );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_checkbox ), !is_active );
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->currency_checkbox ), !is_active );
 
 		if( is_active ){
 			display_entries_from_account( self );
@@ -1647,28 +1702,30 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 	priv = self->priv;
 	visible = FALSE;
 
-	gtk_tree_model_get( tmodel, iter, ENT_COL_OBJECT, &entry, -1 );
+	if( priv->entries_tview ){
+		gtk_tree_model_get( tmodel, iter, ENT_COL_OBJECT, &entry, -1 );
 
-	if( entry && OFO_IS_ENTRY( entry )){
-		g_object_unref( entry );
+		if( entry && OFO_IS_ENTRY( entry )){
+			g_object_unref( entry );
 
-		status = get_row_status( self, tmodel, iter );
+			status = get_row_status( self, tmodel, iter );
 
-		switch( status ){
-			case ENT_STATUS_ROUGH:
-				visible = priv->display_rough;
-				break;
-			case ENT_STATUS_VALIDATED:
-				visible = priv->display_validated;
-				break;
-			case ENT_STATUS_DELETED:
-				visible = priv->display_deleted;
-				break;
+			switch( status ){
+				case ENT_STATUS_ROUGH:
+					visible = priv->display_rough;
+					break;
+				case ENT_STATUS_VALIDATED:
+					visible = priv->display_validated;
+					break;
+				case ENT_STATUS_DELETED:
+					visible = priv->display_deleted;
+					break;
+			}
+
+			deffect = get_row_deffect( self, tmodel, iter );
+			visible &= !my_date_is_valid( &priv->d_from ) || my_date_compare_ex( &priv->d_from, deffect, FALSE ) <= 0;
+			visible &= !my_date_is_valid( &priv->d_to ) || my_date_compare_ex( &priv->d_to, deffect, TRUE ) >= 0;
 		}
-
-		deffect = get_row_deffect( self, tmodel, iter );
-		visible &= !my_date_is_valid( &priv->d_from ) || my_date_compare_ex( &priv->d_from, deffect, FALSE ) <= 0;
-		visible &= !my_date_is_valid( &priv->d_to ) || my_date_compare_ex( &priv->d_to, deffect, TRUE ) >= 0;
 	}
 
 	return( visible );
@@ -1688,22 +1745,12 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
 						ofaViewEntries *self )
 {
-	gint column;
-	gboolean *priv_flag;
 	ofaEntryStatus status;
 	GdkRGBA color;
 	gint err_level;
 	const gchar *color_str;
 
 	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
-
-	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( tcolumn ), DATA_COLUMN_ID ));
-	if( column >= 0 && column < ENT_N_COLUMNS ){
-		priv_flag = ( gboolean * ) g_object_get_data( G_OBJECT( tcolumn ), DATA_PRIV_VISIBLE );
-		if( priv_flag ){
-			gtk_tree_view_column_set_visible( tcolumn, *priv_flag );
-		}
-	}
 
 	err_level = get_row_errlevel( self, tmodel, iter );
 	status = get_row_status( self, tmodel, iter );
@@ -1713,14 +1760,20 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						"background-set", FALSE,
 						"foreground-set", FALSE,
 						NULL );
+
 	switch( status ){
+
 		case ENT_STATUS_VALIDATED:
-			gdk_rgba_parse( &color, "#ffffc0" );
+			gdk_rgba_parse( &color, RGBA_VALIDATED );
 			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
 			break;
+
 		case ENT_STATUS_DELETED:
+			gdk_rgba_parse( &color, RGBA_DELETED );
+			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 			break;
+
 		case ENT_STATUS_ROUGH:
 			switch( err_level ){
 				case ENT_ERR_ERROR:
@@ -1736,6 +1789,7 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 			gdk_rgba_parse( &color, color_str );
 			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 			break;
+
 		default:
 			break;
 	}
@@ -1795,13 +1849,16 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 static void
 on_visible_column_toggled( GtkToggleButton *button, ofaViewEntries *self )
 {
+	ofaViewEntriesPrivate *priv;
 	gboolean *priv_flag;
 
+	priv = self->priv;
 	priv_flag = ( gboolean * ) g_object_get_data( G_OBJECT( button ), DATA_PRIV_VISIBLE );
 	*priv_flag = gtk_toggle_button_get_active( button );
 
-	if( self->priv->entries_tview ){
-		gtk_widget_queue_draw( GTK_WIDGET( self->priv->entries_tview ));
+	if( priv->entries_tview ){
+		set_visible_columns( self );
+		gtk_widget_queue_draw( GTK_WIDGET( priv->entries_tview ));
 	}
 }
 
