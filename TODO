@@ -393,9 +393,6 @@
 
  449 2014-11-13 view entries: use my_cell_editable_date
 
- 450 2014-11-13 view entries: have a status as a mnemonic (e.g. Ro, Va
-                or Del)
-
  451 2014-11-13 view entries: one should be able to enter any effect 
                 date -> have a save anyway button
 
@@ -1947,6 +1944,10 @@
  437 2014-11-12 view entries: insert does not work (add empty lines as
                 we insert more entries)
      2014-11-12 done - svn #4098
+
+ 450 2014-11-13 view entries: have a status as a mnemonic (e.g. Ro, Va
+                or Del)
+     2014-11-14 done - svn #4100
 
  452 2014-11-13 view entries: default currency should be set as soon as
                 the account is set
