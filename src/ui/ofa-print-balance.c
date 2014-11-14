@@ -501,7 +501,7 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintBalance *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "to-date-label" );
 	g_return_val_if_fail( widget && GTK_IS_LABEL( widget ), NULL );
 	my_editable_date_set_label( GTK_EDITABLE( priv->to_date_entry ), widget, MY_DATE_DMMM );
-	text = ofa_settings_get_string( st_pref_from_date );
+	text = ofa_settings_get_string( st_pref_to_date );
 	if( text && g_utf8_strlen( text, -1 )){
 		my_date_set_from_sql( &date, text );
 		my_editable_date_set_date( GTK_EDITABLE( priv->to_date_entry ), &date );
