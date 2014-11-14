@@ -346,9 +346,6 @@
 
  429 2014-11-11 implement print preview inside of Openbook
 
- 430 2014-11-11 print_balance: add currency on each line + have a
-                general total per currency 
-
  432 2014-11-12 on import, do not apply on account nor ledger entries
                 which have an effect date before the beginning of the 
                 exercice (the ledger will stay unbalanced)
@@ -368,8 +365,14 @@
  454 2014-11-14 view entries: save display configuration as preferences
 
  455 2014-11-14 report colored footer in other pages with balances
+                (as view entries)
 
- 457
+ 457 2014-11-14 accounts balance: quid if more than one page (not yet
+                tested)
+
+ 458 2014-11-14 have more entries and more accounts in OFAT base of test
+
+ 459
 
 -----------------------------------------------------------------------
  DONE
@@ -1900,6 +1903,10 @@
 
  427 2014-11-11 print general ledger
      2014-11-11 done - svn #4088
+
+ 430 2014-11-11 print_balance: add currency on each line + have a
+                general total per currency 
+     2014-11-14 done - svn #4117
 
  431 2014-11-11 print general ledger: have a general total per currency
      2014-11-14 done - svn #4114

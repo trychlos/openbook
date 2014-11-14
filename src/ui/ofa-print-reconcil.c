@@ -937,7 +937,7 @@ draw_reconciliation_end( ofaPrintReconcil *self, GtkPrintContext *context )
 			_( "This reconciliated solde "
 				"should be the same, though inversed, "
 				"that the one of the account extraction sent by your bank.\n"
-				"If this is note the case, then you have most probably "
+				"If this is not the case, then you have most probably "
 				"forgotten to reconciliate "
 				"some of the above entries, or some other entries have been recorded "
 				"by your bank, are present in your account extraction, but are not "
