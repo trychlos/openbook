@@ -112,7 +112,8 @@ struct _ofaPrintGenLedgerPrivate {
 	gdouble        body_piece_max_size;
 	gdouble        body_label_ltab;
 	gint           body_label_max_size;		/* Pango units */
-	gdouble        body_settlement_ltab;
+	gdouble        body_settlement_ctab;
+	gdouble        body_reconcil_ctab;
 	gdouble        body_debit_rtab;
 	gdouble        body_credit_rtab;
 	gdouble        body_solde_rtab;
@@ -200,7 +201,8 @@ static const gint    st_page_margin                    = 2;
 #define st_date_width                                  54/9*st_body_font_size
 #define st_ledger_width                                36/9*st_body_font_size
 #define st_piece_width                                 64/9*st_body_font_size
-#define st_settlement_width                            20/9*st_body_font_size
+#define st_settlement_width                            8/9*st_body_font_size
+#define st_reconcil_width                              8/9*st_body_font_size
 #define st_amount_width                                90/9*st_body_font_size
 #define st_sens_width                                  18/9*st_body_font_size
 #define st_column_hspacing                             4
@@ -789,13 +791,14 @@ begin_print_build_body_layout( ofaPrintGenLedger *self, GtkPrintContext *context
 	priv->body_solde_rtab = priv->body_solde_sens_rtab - st_sens_width - st_column_hspacing/2;
 	priv->body_credit_rtab = priv->body_solde_rtab - st_amount_width - st_column_hspacing;
 	priv->body_debit_rtab = priv->body_credit_rtab - st_amount_width - st_column_hspacing;
-	priv->body_settlement_ltab = priv->body_debit_rtab - st_amount_width - st_column_hspacing - st_settlement_width;
+	priv->body_reconcil_ctab = priv->body_debit_rtab - st_amount_width - st_column_hspacing - st_reconcil_width/2;
+	priv->body_settlement_ctab = priv->body_reconcil_ctab - st_reconcil_width/2 - st_column_hspacing - st_settlement_width/2;
 
 	/* max size in Pango units */
 	priv->body_acclabel_max_size = ( priv->body_acccurrency_rtab - st_acccurrency_width - st_column_hspacing - priv->body_acclabel_ltab )*PANGO_SCALE;
 	priv->body_acflabel_max_size = ( priv->body_debit_rtab - st_amount_width - st_column_hspacing - st_page_margin )*PANGO_SCALE;
 	priv->body_piece_max_size = st_piece_width*PANGO_SCALE;
-	priv->body_label_max_size = ( priv->body_settlement_ltab - st_column_hspacing - priv->body_label_ltab )*PANGO_SCALE;
+	priv->body_label_max_size = ( priv->body_settlement_ctab - st_column_hspacing - priv->body_label_ltab )*PANGO_SCALE;
 }
 
 /*
@@ -1013,8 +1016,8 @@ draw_page_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean dr
 				_( "Label" ), PANGO_ALIGN_LEFT );
 
 		ofa_print_set_text( context, priv->layout,
-				priv->body_settlement_ltab, y,
-				_( "Sett." ), PANGO_ALIGN_LEFT );
+				(priv->body_settlement_ctab+priv->body_reconcil_ctab)/2, y,
+				_( "Set./Rec." ), PANGO_ALIGN_CENTER );
 
 		ofa_print_set_text( context, priv->layout,
 				priv->body_debit_rtab, y,
@@ -1378,7 +1381,6 @@ draw_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gin
 	cairo_t *cr;
 	gdouble req_height, y;
 	ofxAmount amount;
-	ofxCounter counter;
 
 	priv = self->priv;
 	entry = OFO_ENTRY( line->data );
@@ -1462,13 +1464,16 @@ draw_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gin
 		pango_cairo_update_layout( cr, priv->layout );
 		pango_cairo_show_layout( cr, priv->layout );
 
-		/* settlement number */
-		counter = ofo_entry_get_settlement_number( entry );
-		if( counter ){
-			str = g_strdup_printf( "%ld", counter );
+		/* settlement ? */
+		if( ofo_entry_get_settlement_number( entry ) > 0 ){
 			ofa_print_set_text( context, priv->layout,
-					priv->body_settlement_ltab, y, str, PANGO_ALIGN_LEFT );
-			g_free( str );
+					priv->body_settlement_ctab, y, _( "S" ), PANGO_ALIGN_CENTER );
+		}
+
+		/* reconciliation */
+		if( my_date_is_valid( ofo_entry_get_concil_dval( entry ))){
+			ofa_print_set_text( context, priv->layout,
+					priv->body_reconcil_ctab, y, _( "R" ), PANGO_ALIGN_CENTER );
 		}
 
 		/* debit */

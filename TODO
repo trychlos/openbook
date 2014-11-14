@@ -373,9 +373,6 @@
 
  455 2014-11-14 report colored footer in other pages with balances
 
- 456 2014-11-14 printings: there is no sens to have a special header
-                on last page: remove 'is_last' argument
-
  457
 
 -----------------------------------------------------------------------
@@ -1977,6 +1974,10 @@
  453 2014-11-14 view entries: debit or credit + currency should be 
                 enough to update the amounts
      2014-11-14 done - svn #4106
+
+ 456 2014-11-14 printings: there is no sens to have a special header
+                on last page: remove 'is_last' argument
+     2014-11-14 done - svn #4115
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
