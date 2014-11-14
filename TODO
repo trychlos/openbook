@@ -370,8 +370,6 @@
  443 2014-11-13 General Ledger: date is marked invalid when empty (but
                 shouldn't)
 
- 444 2014-11-13 General Ledger: last account is not taken into account
-
  445 2014-11-13 my_date: do not accept two successive '/'
 
  447 2014-11-13 my-date.c: line 81 (my_date_compare): should not be reached
@@ -1946,6 +1944,9 @@
  440 2014-11-12 view entries: escape should cancel the new entry being
                 entered
      2014-11-14 nope: Escape cancel the edition -> cancelled
+
+ 444 2014-11-13 General Ledger: last account is not taken into account
+     2014-11-13 done - svn #4110
 
  446 2014-11-13 General Ledger: account header/footer: font size -= 1
      2014-11-14 done - svn #4106

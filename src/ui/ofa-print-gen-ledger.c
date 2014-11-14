@@ -541,6 +541,7 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintGenLedger *self )
 	g_return_val_if_fail( widget && GTK_IS_ENTRY( widget ), NULL );
 	my_editable_date_init( GTK_EDITABLE( widget ));
 	my_editable_date_set_format( GTK_EDITABLE( widget ), MY_DATE_DMYY );
+	my_editable_date_set_mandatory( GTK_EDITABLE( widget ), FALSE );
 	priv->from_date_entry = widget;
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "from-date-label" );
@@ -557,6 +558,7 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintGenLedger *self )
 	g_return_val_if_fail( widget && GTK_IS_ENTRY( widget ), NULL );
 	my_editable_date_init( GTK_EDITABLE( widget ));
 	my_editable_date_set_format( GTK_EDITABLE( widget ), MY_DATE_DMYY );
+	my_editable_date_set_mandatory( GTK_EDITABLE( widget ), FALSE );
 	priv->to_date_entry = widget;
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( frame ), "to-date-label" );
