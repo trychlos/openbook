@@ -399,9 +399,6 @@
  451 2014-11-13 view entries: one should be able to enter any effect 
                 date -> have a save anyway button
 
- 452 2014-11-13 view entries: default currency should be set as soon as
-                the account is set
-
  453
 
 -----------------------------------------------------------------------
@@ -1950,6 +1947,10 @@
  437 2014-11-12 view entries: insert does not work (add empty lines as
                 we insert more entries)
      2014-11-12 done - svn #4098
+
+ 452 2014-11-13 view entries: default currency should be set as soon as
+                the account is set
+     2014-11-14 done - svn #4099
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

@@ -142,6 +142,8 @@ const gchar   *ofo_entry_get_ope_template     ( const ofoEntry *entry );
 ofxAmount      ofo_entry_get_debit            ( const ofoEntry *entry );
 ofxAmount      ofo_entry_get_credit           ( const ofoEntry *entry );
 ofaEntryStatus ofo_entry_get_status           ( const ofoEntry *entry );
+const gchar   *ofo_entry_get_abr_status       ( const ofoEntry *entry );
+ofaEntryStatus ofo_entry_get_status_from_abr  ( const gchar *abr_status );
 const gchar   *ofo_entry_get_upd_user         ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_upd_stamp        ( const ofoEntry *entry );
 const GDate   *ofo_entry_get_concil_dval      ( const ofoEntry *entry );

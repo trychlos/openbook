@@ -195,7 +195,6 @@ static GtkTreeView   *setup_entries_treeview( ofaViewEntries *self );
 static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntries *self );
 static gint           cmp_strings( ofaViewEntries *self, const gchar *stra, const gchar *strb );
 static gint           cmp_amounts( ofaViewEntries *self, const gchar *stra, const gchar *strb );
-static gint           cmp_integers( ofaViewEntries *self, const gchar *stra, const gchar *strb );
 static void           on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self );
 static void           setup_footer( ofaViewEntries *self );
 static void           setup_signaling_connect( ofaViewEntries *self );
@@ -846,7 +845,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
-	/* reconciliation status
+	/* reconciliation date
 	 */
 	column_id = ENT_COL_DRECONCIL;
 	text_cell = gtk_cell_renderer_text_new();
@@ -870,11 +869,12 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_STATUS;
 	text_cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( text_cell, 0.5, 0.5 );
 	st_renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Status" ),
+			_( "St." ),
 			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
@@ -986,7 +986,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 			cmp = my_date_compare_by_str( sdcona, sdconb, MY_DATE_DMYY );
 			break;
 		case ENT_COL_STATUS:
-			cmp = cmp_integers( self, sstaa, sstab );
+			cmp = cmp_strings( self, sstaa, sstab );
 			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, sort_column_id );
@@ -1062,30 +1062,6 @@ cmp_amounts( ofaViewEntries *self, const gchar *stra, const gchar *strb )
 	/* both a and b are set */
 	a = my_double_set_from_str( stra );
 	b = my_double_set_from_str( strb );
-
-	return( a < b ? -1 : ( a > b ? 1 : 0 ));
-}
-
-static gint
-cmp_integers( ofaViewEntries *self, const gchar *stra, const gchar *strb )
-{
-	gint a, b;
-
-	if( !stra || !g_utf8_strlen( stra, -1 )){
-		if( !strb || !g_utf8_strlen( strb, -1 )){
-			/* the two strings are both empty */
-			return( 0 );
-		}
-		/* a is empty while b is set */
-		return( -1 );
-	} else if( !strb || !g_utf8_strlen( strb, -1 )){
-		/* a is set while b is empty */
-		return( 1 );
-	}
-
-	/* both a and b are set */
-	a = atoi( stra );
-	b = atoi( strb );
 
 	return( a < b ? -1 : ( a > b ? 1 : 0 ));
 }
@@ -1531,7 +1507,7 @@ static void
 display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter, gboolean valid )
 {
 	ofaViewEntriesPrivate *priv;
-	gchar *sdope, *sdeff, *sdeb, *scre, *srappro, *status;
+	gchar *sdope, *sdeff, *sdeb, *scre, *srappro;
 	const GDate *d;
 
 	priv = self->priv;
@@ -1542,7 +1518,6 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter, gboolea
 	scre = my_double_to_str( ofo_entry_get_credit( entry ));
 	d = ofo_entry_get_concil_dval( entry );
 	srappro = my_date_to_str( d, MY_DATE_DMYY );
-	status = g_strdup_printf( "%d", ofo_entry_get_status( entry ));
 
 	gtk_list_store_set(
 				GTK_LIST_STORE( priv->tstore ),
@@ -1558,13 +1533,12 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter, gboolea
 				ENT_COL_CREDIT,       scre,
 				ENT_COL_CURRENCY,     ofo_entry_get_currency( entry ),
 				ENT_COL_DRECONCIL,    srappro,
-				ENT_COL_STATUS,       status,
+				ENT_COL_STATUS,       ofo_entry_get_abr_status( entry ),
 				ENT_COL_OBJECT,       entry,
 				ENT_COL_VALID,        valid,
 				ENT_COL_CURRENCY_SET, FALSE,
 				-1 );
 
-	g_free( status );
 	g_free( srappro );
 	g_free( scre );
 	g_free( sdeb );
@@ -2696,7 +2670,6 @@ on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries
 {
 	static const gchar *thisfn = "ofa_view_entries_on_dossier_validated_entry";
 	GtkTreeIter iter;
-	gchar *str;
 
 	g_debug( "%s: dossier=%p, object=%p (%s), user_data=%p",
 			thisfn,
@@ -2707,13 +2680,11 @@ on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries
 	g_return_if_fail( object && OFO_IS_ENTRY( object ));
 
 	if( find_entry_by_number( self, ofo_entry_get_number( OFO_ENTRY( object )), &iter )){
-		str = g_strdup_printf( "%d", ofo_entry_get_status( OFO_ENTRY( object )));
 		gtk_list_store_set(
 				GTK_LIST_STORE( self->priv->tstore ),
 				&iter,
-				ENT_COL_STATUS, str,
+				ENT_COL_STATUS, ofo_entry_get_abr_status( OFO_ENTRY( object )),
 				-1 );
-		g_free( str );
 	}
 }
 
@@ -2746,13 +2717,9 @@ get_row_entry_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *i
 	gchar *str;
 	ofaEntryStatus status;
 
-	status = ENT_STATUS_ROUGH;
-
 	gtk_tree_model_get( tmodel, iter, ENT_COL_STATUS, &str, -1 );
-	if( str ){
-		status = atoi( str );
-		g_free( str );
-	}
+	status = ofo_entry_get_status_from_abr( str );
+	g_free( str );
 
 	return( status );
 }

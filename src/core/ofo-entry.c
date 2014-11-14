@@ -73,6 +73,21 @@ struct _ofoEntryPrivate {
 	GTimeVal       stlmt_stamp;
 };
 
+/* manage the abbreviated localized status
+ */
+typedef struct {
+	ofaEntryStatus num;
+	const gchar   *str;
+}
+	sStatus;
+
+static sStatus st_status[] = {
+		{ ENT_STATUS_ROUGH,     N_( "R" ) },
+		{ ENT_STATUS_VALIDATED, N_( "V" ) },
+		{ ENT_STATUS_DELETED,   N_( "D" ) },
+		{ 0 },
+};
+
 G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
 
 static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
@@ -1129,6 +1144,55 @@ ofo_entry_get_status( const ofoEntry *entry )
 	}
 
 	return( OFO_BASE_UNSET_ID );
+}
+
+/**
+ * ofo_entry_get_abr_status:
+ *
+ * Returns an abbreviated localized string for the status.
+ * Use case: view entries.
+ */
+const gchar *
+ofo_entry_get_abr_status( const ofoEntry *entry )
+{
+	ofaEntryStatus status;
+	gint i;
+
+	g_return_val_if_fail( OFO_IS_ENTRY( entry ), NULL );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		status = ofo_entry_get_status( entry );
+		for( i=0 ; st_status[i].num ; ++i ){
+			if( st_status[i].num == status ){
+				return( gettext( st_status[i].str ));
+			}
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_entry_get_status_from_abr:
+ *
+ * Returns an abbreviated localized string for the status.
+ * Use case: view entries.
+ */
+ofaEntryStatus
+ofo_entry_get_status_from_abr( const gchar *abr_status )
+{
+	gint i;
+
+	g_return_val_if_fail( abr_status && g_utf8_strlen( abr_status, -1 ), ENT_STATUS_ROUGH );
+
+	for( i=0 ; st_status[i].num ; ++i ){
+		if( !g_utf8_collate( st_status[i].str, abr_status )){
+			return( st_status[i].num );
+		}
+	}
+
+	return( ENT_STATUS_ROUGH );
 }
 
 /**
