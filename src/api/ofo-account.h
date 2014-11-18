@@ -46,9 +46,10 @@ G_BEGIN_DECLS
  * ofsAccountBalance
  */
 typedef struct {
-	gchar  *account;
+	gchar     *account;
 	ofxAmount  debit;
 	ofxAmount  credit;
+	gchar     *currency;
 }
 	ofsAccountBalance;
 

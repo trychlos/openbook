@@ -541,7 +541,7 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	query = g_string_new(
-				"SELECT ENT_ACCOUNT,SUM(ENT_DEBIT),SUM(ENT_CREDIT) "
+				"SELECT ENT_ACCOUNT,ENT_CURRENCY,SUM(ENT_DEBIT),SUM(ENT_CREDIT) "
 				"FROM OFA_T_ENTRIES WHERE " );
 	first = FALSE;
 	dataset = NULL;
@@ -588,6 +588,8 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
 			sbal = g_new0( ofsAccountBalance, 1 );
 			icol = ( GSList * ) irow->data;
 			sbal->account = g_strdup(( const gchar * ) icol->data );
+			icol = icol->next;
+			sbal->currency = g_strdup(( const gchar * ) icol->data );
 			icol = icol->next;
 			sbal->debit = my_double_set_from_sql(( const gchar * ) icol->data );
 			icol = icol->next;

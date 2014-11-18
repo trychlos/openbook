@@ -37,6 +37,7 @@
  * This is a convenience class around a GtkPrintOperation.
  */
 
+#include "core/my-dialog.h"
 #include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -52,7 +53,7 @@ typedef struct _ofaPrintBalancePrivate        ofaPrintBalancePrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                  parent;
+	myDialog                parent;
 
 	/*< private members >*/
 	ofaPrintBalancePrivate *priv;
@@ -61,7 +62,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	myDialogClass           parent;
 }
 	ofaPrintBalanceClass;
 

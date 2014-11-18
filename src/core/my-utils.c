@@ -720,3 +720,28 @@ position_to_int_list( gint x, gint y, gint width, gint height )
 
 	return( list );
 }
+
+/**
+ * my_utils_file_exists:
+ * @filename: a file pathname
+ *
+ * Returns: %TRUE if the specified file exists, %FALSE else.
+ *
+ * The caller should be conscious and take care of the usual race
+ * condition: anything may happen between this test and the actual
+ * use of its result...
+ */
+gboolean
+my_utils_file_exists( const gchar *filename )
+{
+	GFile *file;
+	gboolean exists;
+
+	file = g_file_new_for_path( filename );
+	exists = g_file_query_exists( file, NULL );
+	g_object_unref( file );
+
+	g_debug( "my_utils_file_exists: the file %s exists : %s", filename, exists ? "True":"False" );
+
+	return( exists );
+}

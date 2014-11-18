@@ -330,6 +330,7 @@ static void
 free_account_balance( ofsAccountBalance *sbal )
 {
 	g_free( sbal->account );
+	g_free( sbal->currency );
 	g_free( sbal );
 }
 

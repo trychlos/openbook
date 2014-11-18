@@ -367,12 +367,14 @@
  455 2014-11-14 report colored footer in other pages with balances
                 (as view entries)
 
- 457 2014-11-14 accounts balance: quid if more than one page (not yet
-                tested)
+ 457 2014-11-14 have more entries and more accounts in OFAT base of test
 
- 458 2014-11-14 have more entries and more accounts in OFAT base of test
+ 458 2014-11-17 view_entries: the st_renderes should not be a static
+                variable, but member of the instance data
 
- 459
+ 459 2014-11-18 print accounts balances : option group by class
+
+ 460
 
 -----------------------------------------------------------------------
  DONE

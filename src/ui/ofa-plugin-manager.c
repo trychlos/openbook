@@ -177,7 +177,6 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_properties_clicked ), dialog );
 	priv->properties_btn = button;
 
-
 	setup_treeview( OFA_PLUGIN_MANAGER( dialog ));
 	load_in_treeview( OFA_PLUGIN_MANAGER( dialog ));
 }

@@ -99,6 +99,8 @@ void       my_utils_pango_layout_ellipsize ( PangoLayout *layout, gint max_width
 void       my_utils_window_restore_position( GtkWindow *window, const gchar *name );
 void       my_utils_window_save_position   ( GtkWindow *window, const gchar *name );
 
+gboolean   my_utils_file_exists            ( const gchar *filename );
+
 G_END_DECLS
 
 #endif /* __MY_UTILS_H__ */

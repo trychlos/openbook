@@ -122,6 +122,8 @@ openbook_SOURCES = \
 	ofa-int-closing.c									\
 	ofa-int-closing.h									\
 	ofa-ipreferences.c									\
+	ofa-iprintable.c									\
+	ofa-iprintable.h									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
 	ofa-ledger-properties.c								\
@@ -207,7 +209,7 @@ ui_files = \
 	ofa-ope-template-properties.ui						\
 	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\
-	ofa-print-balance.piece.ui							\
+	ofa-print-balance.ui								\
 	ofa-print-gen-ledger.piece.ui						\
 	ofa-print-reconcil.piece.ui							\
 	ofa-rate-properties.ui								\

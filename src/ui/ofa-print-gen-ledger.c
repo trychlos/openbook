@@ -822,8 +822,9 @@ on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGen
 	ofaPrintGenLedgerPrivate *priv;
 	gint page_num;
 
-	g_debug( "%s: operation=%p, context=%p, self=%p",
-			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );
+	g_debug( "%s: operation=%p, status=%s, context=%p, self=%p",
+			thisfn, ( void * ) operation, gtk_print_operation_get_status_string( operation ),
+			( void * ) context, ( void * ) self );
 
 	priv = self->priv;
 	page_num = 0;
@@ -854,8 +855,9 @@ on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_
 {
 	static const gchar *thisfn = "ofa_print_gen_ledger_on_draw_page";
 
-	g_debug( "%s: operation=%p, context=%p, page_num=%d, self=%p",
-			thisfn, ( void * ) operation, ( void * ) context, page_num, ( void * ) self );
+	g_debug( "%s: operation=%p, status=%s, context=%p, page_num=%d, self=%p",
+			thisfn, ( void * ) operation, gtk_print_operation_get_status_string( operation ),
+			( void * ) context, page_num, ( void * ) self );
 
 	draw_page( self, context, TRUE, page_num );
 }
