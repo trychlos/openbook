@@ -211,7 +211,7 @@ ui_files = \
 	ofa-preferences.ui									\
 	ofa-print-balance.ui								\
 	ofa-print-gen-ledger.piece.ui						\
-	ofa-print-reconcil.piece.ui							\
+	ofa-print-reconcil.ui								\
 	ofa-rate-properties.ui								\
 	ofa-settlement.piece.ui								\
 	ofa-view-entries.piece.ui							\

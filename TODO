@@ -343,6 +343,7 @@
 
  428 2014-11-11 implement export to PDF for printed summaries (let us
                 set the export filename)
+     2014-11-18 PrintBalance: done - svn #4119
 
  429 2014-11-11 implement print preview inside of Openbook
 

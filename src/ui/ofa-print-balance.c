@@ -51,6 +51,7 @@
 struct _ofaPrintBalancePrivate {
 
 	gboolean       printed;
+
 	/* UI
 	 */
 	GtkWidget     *from_account_etiq;	/* account selection */
@@ -112,14 +113,15 @@ static const gchar *st_pref_to_date      = "PrintBalanceToDate";
 static const gchar *st_def_fname         = "AccountsBalance";
 static const gchar *st_page_header_title = N_( "Accounts Balance Summary" );
 
-/* makes use of the same font family for all fields */
-/* the space between body lines */
-#define              st_page_header_columns_vspace     (gdouble) 2
+/* these are parms which describe the page layout
+ */
+/* the space between columns headers */
+#define st_page_header_columns_vspace    (gdouble) 2
 
 /* the columns of the body */
-#define st_number_width                                (gdouble) 50/9*body_font_size
-#define st_currency_width                              (gdouble) 23/9*body_font_size
-#define st_column_spacing                              (gdouble) 4
+#define st_number_width                  (gdouble) 50/9*body_font_size
+#define st_currency_width                (gdouble) 23/9*body_font_size
+#define st_column_spacing                (gdouble) 4
 
 /*
 (openbook:29799): OFA-DEBUG: '99/99/9999   ' width=61
@@ -132,36 +134,32 @@ static const gchar *st_page_header_title = N_( "Accounts Balance Summary" );
 70 chars = 432 => 1'X' ~ 6.17 px
 */
 
-#define COLOR_BLACK                 0,      0,      0
 #define COLOR_WHITE                 1,      1,      1
-#define COLOR_DARK_RED              0.5,    0,      0
-#define COLOR_DARK_CYAN             0,      0.5156, 0.5156
-#define COLOR_LIGHT_GRAY            0.9375, 0.9375, 0.9375
 
-static void         iprintable_iface_init( ofaIPrintableInterface *iface );
-static guint        iprintable_get_interface_version( const ofaIPrintable *instance );
-static void         v_init_dialog( myDialog *dialog );
-static void         init_filechooser( ofaPrintBalance *self );
-static void         init_account_selection( ofaPrintBalance *self );
-static void         init_date_selection( ofaPrintBalance *self );
-static void         on_from_account_changed( GtkEntry *entry, ofaPrintBalance *self );
-static void         on_from_account_select( GtkButton *button, ofaPrintBalance *self );
-static void         on_to_account_changed( GtkEntry *entry, ofaPrintBalance *self );
-static void         on_to_account_select( GtkButton *button, ofaPrintBalance *self );
-static void         on_account_changed( GtkEntry *entry, ofaPrintBalance *self, GtkWidget *label );
-static void         on_account_select( GtkButton *button, ofaPrintBalance *self, GtkWidget *entry );
-static void         on_all_accounts_toggled( GtkToggleButton *button, ofaPrintBalance *self );
-static gboolean     v_quit_on_ok( myDialog *dialog );
-static gboolean     do_apply( ofaPrintBalance *self );
-static GList       *iprintable_get_dataset( const ofaIPrintable *instance );
-static void         iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static gchar       *iprintable_get_page_header_title( const ofaIPrintable *instance );
-static gchar       *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
-static void         iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void         iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
-static gboolean     iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void         add_account_balance( ofaPrintBalance *self, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
-static gint         cmp_currencies( const sCurrency *a, const sCurrency *b );
+static void     iprintable_iface_init( ofaIPrintableInterface *iface );
+static guint    iprintable_get_interface_version( const ofaIPrintable *instance );
+static void     v_init_dialog( myDialog *dialog );
+static void     init_filechooser( ofaPrintBalance *self );
+static void     init_account_selection( ofaPrintBalance *self );
+static void     init_date_selection( ofaPrintBalance *self );
+static void     on_from_account_changed( GtkEntry *entry, ofaPrintBalance *self );
+static void     on_from_account_select( GtkButton *button, ofaPrintBalance *self );
+static void     on_to_account_changed( GtkEntry *entry, ofaPrintBalance *self );
+static void     on_to_account_select( GtkButton *button, ofaPrintBalance *self );
+static void     on_account_changed( GtkEntry *entry, ofaPrintBalance *self, GtkWidget *label );
+static void     on_account_select( GtkButton *button, ofaPrintBalance *self, GtkWidget *entry );
+static void     on_all_accounts_toggled( GtkToggleButton *button, ofaPrintBalance *self );
+static gboolean v_quit_on_ok( myDialog *dialog );
+static gboolean do_apply( ofaPrintBalance *self );
+static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
+static void     iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static gchar   *iprintable_get_page_header_title( const ofaIPrintable *instance );
+static gchar   *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
+static void     iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void     iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
+static gboolean iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void     add_account_balance( ofaPrintBalance *self, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
+static gint     cmp_currencies( const sCurrency *a, const sCurrency *b );
 
 G_DEFINE_TYPE_EXTENDED( ofaPrintBalance, ofa_print_balance, MY_TYPE_DIALOG, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IPRINTABLE, iprintable_iface_init ));
@@ -316,7 +314,9 @@ init_filechooser( ofaPrintBalance *self )
 	ofa_iprintable_set_default_filename( OFA_IPRINTABLE( self ), st_def_fname );
 
 	text = ofa_settings_get_string( st_pref_fname );
-	ofa_iprintable_set_last_filename( OFA_IPRINTABLE( self ), text );
+	if( text && g_utf8_strlen( text, -1 )){
+		ofa_iprintable_set_last_filename( OFA_IPRINTABLE( self ), text );
+	}
 	g_free( text );
 }
 
@@ -532,13 +532,6 @@ do_apply( ofaPrintBalance *self )
 
 	priv = self->priv;
 
-	/* the export filename is the only mandatory argument */
-	filename = ofa_iprintable_get_filename( OFA_IPRINTABLE( self ));
-	if( !filename || !g_utf8_strlen( filename, -1 )){
-		return( FALSE );
-	}
-	ofa_settings_set_string( st_pref_fname, filename );
-
 	all_accounts = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->all_accounts_btn ));
 	ofa_settings_set_boolean( st_pref_all_accounts, all_accounts );
 
@@ -562,6 +555,13 @@ do_apply( ofaPrintBalance *self )
 	text = my_date_to_str( &priv->to_date, MY_DATE_SQL );
 	ofa_settings_set_string( st_pref_to_date, text );
 	g_free( text );
+
+	/* the export filename is the only mandatory argument */
+	filename = ofa_iprintable_get_filename( OFA_IPRINTABLE( self ));
+	if( !filename || !g_utf8_strlen( filename, -1 )){
+		return( FALSE );
+	}
+	ofa_settings_set_string( st_pref_fname, filename );
 
 	return( TRUE );
 }
@@ -594,6 +594,7 @@ iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation
 			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
 
 	priv = OFA_PRINT_BALANCE( instance )->priv;
+
 	priv->page_margin = ofa_iprintable_get_page_margin( instance );
 	body_font_size = ofa_iprintable_get_default_font_size( instance );
 	page_width = gtk_print_context_get_width( context );
@@ -848,7 +849,7 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 {
 	ofaPrintBalancePrivate *priv;
 	gboolean is_drawing, first;
-	gdouble bottom, top, vspace, req_height, last_y;
+	gdouble bottom, top, vspace, req_height;
 	gint bfs;
 	GList *it;
 	gchar *str;
@@ -869,52 +870,51 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	req_height = vspace + g_list_length( priv->totals )*(bfs+vspace );
 	top = bottom - req_height;
 
-	last_y = ofa_iprintable_get_last_y( instance );
-	if( last_y + req_height > bottom ){
-		return( FALSE );
-	}
-
 	if( is_drawing ){
 		ofa_iprintable_draw_rect( instance, context, 0, top, -1, req_height );
 	}
 
 	top += vspace;
 
-	for( it=priv->totals, first=TRUE ; it ; it=it->next ){
-		if( first ){
+	if( is_drawing ){
+		for( it=priv->totals, first=TRUE ; it ; it=it->next ){
+			if( first ){
+				ofa_iprintable_set_text( instance, context,
+							priv->body_debit_period_rtab-priv->amount_width, top,
+							_( "General balance : " ), PANGO_ALIGN_RIGHT );
+				first = FALSE;
+				}
+
+			scur = ( sCurrency * ) it->data;
+
+			str = my_double_to_str( scur->period_d );
 			ofa_iprintable_set_text( instance, context,
-						priv->body_debit_period_rtab-priv->amount_width, top,
-						_( "General balance : " ), PANGO_ALIGN_RIGHT );
-			first = FALSE;
-			}
+					priv->body_debit_period_rtab, top, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
 
-		scur = ( sCurrency * ) it->data;
+			str = my_double_to_str( scur->period_c );
+			ofa_iprintable_set_text( instance, context,
+					priv->body_credit_period_rtab, top, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
 
-		str = my_double_to_str( scur->period_d );
-		ofa_iprintable_set_text( instance, context,
-				priv->body_debit_period_rtab, top, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
+			str = my_double_to_str( scur->solde_d );
+			ofa_iprintable_set_text( instance, context,
+					priv->body_debit_solde_rtab, top, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
 
-		str = my_double_to_str( scur->period_c );
-		ofa_iprintable_set_text( instance, context,
-				priv->body_credit_period_rtab, top, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
+			str = my_double_to_str( scur->solde_c );
+			ofa_iprintable_set_text( instance, context,
+					priv->body_credit_solde_rtab, top, str, PANGO_ALIGN_RIGHT );
+			g_free( str );
 
-		str = my_double_to_str( scur->solde_d );
-		ofa_iprintable_set_text( instance, context,
-				priv->body_debit_solde_rtab, top, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
+			ofa_iprintable_set_text( instance, context,
+					priv->body_currency_rtab, top, scur->currency, PANGO_ALIGN_RIGHT );
 
-		str = my_double_to_str( scur->solde_c );
-		ofa_iprintable_set_text( instance, context,
-				priv->body_credit_solde_rtab, top, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-
-		ofa_iprintable_set_text( instance, context,
-				priv->body_currency_rtab, top, scur->currency, PANGO_ALIGN_RIGHT );
-
-		top += bfs + vspace;
+			top += bfs + vspace;
+		}
 	}
+
+	ofa_iprintable_set_last_y( instance, ofa_iprintable_get_last_y( instance ) + req_height );
 
 	return( TRUE );
 }
