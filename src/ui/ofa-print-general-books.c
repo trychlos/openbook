@@ -43,11 +43,11 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-print.h"
-#include "ui/ofa-print-gen-ledger.h"
+#include "ui/ofa-print-general-books.h"
 
 /* private instance data
  */
-struct _ofaPrintGenLedgerPrivate {
+struct _ofaPrintGeneralBooksPrivate {
 	gboolean       dispose_has_run;
 
 	/* initialization data
@@ -145,12 +145,12 @@ typedef struct {
 
 static const gchar  *st_ui_xml              = PKGUIDIR "/ofa-print-gen-ledger.piece.ui";
 
-static const gchar  *st_pref_from_account   = "PrintGenLedgerFromAccount";
-static const gchar  *st_pref_to_account     = "PrintGenLedgerToAccount";
-static const gchar  *st_pref_all_accounts   = "PrintGenLedgerAllAccounts";
-static const gchar  *st_pref_from_date      = "PrintGenLedgerFromDate";
-static const gchar  *st_pref_to_date        = "PrintGenLedgerToDate";
-static const gchar  *st_pref_new_page       = "PrintGenLedgerNewPage";
+static const gchar  *st_pref_from_account   = "PrintGeneralBooksFromAccount";
+static const gchar  *st_pref_to_account     = "PrintGeneralBooksToAccount";
+static const gchar  *st_pref_all_accounts   = "PrintGeneralBooksAllAccounts";
+static const gchar  *st_pref_from_date      = "PrintGeneralBooksFromDate";
+static const gchar  *st_pref_to_date        = "PrintGeneralBooksToDate";
+static const gchar  *st_pref_new_page       = "PrintGeneralBooksNewPage";
 
 /* These are parms which describe the page layout
  *
@@ -225,42 +225,42 @@ For 72dpi resolution, we have ~2.835 dots/mm
 #define COLOR_DARK_CYAN             0,      0.5156, 0.5156
 #define COLOR_LIGHT_GRAY            0.9375, 0.9375, 0.9375
 
-G_DEFINE_TYPE( ofaPrintGenLedger, ofa_print_gen_ledger, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaPrintGeneralBooks, ofa_print_general_books, G_TYPE_OBJECT )
 
-static gboolean     print_gen_ledger_operate( ofaPrintGenLedger *self );
-static GObject     *on_create_custom_widget( GtkPrintOperation *operation, ofaPrintGenLedger *self );
-static void         on_from_account_changed( GtkEntry *entry, ofaPrintGenLedger *self );
-static void         on_from_account_select( GtkButton *button, ofaPrintGenLedger *self );
-static void         on_to_account_changed( GtkEntry *entry, ofaPrintGenLedger *self );
-static void         on_to_account_select( GtkButton *button, ofaPrintGenLedger *self );
-static void         on_account_changed( GtkEntry *entry, ofaPrintGenLedger *self, GtkWidget *label );
-static void         on_account_select( GtkButton *button, ofaPrintGenLedger *self, GtkWidget *entry );
-static void         on_all_accounts_toggled( GtkToggleButton *button, ofaPrintGenLedger *self );
-static void         on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintGenLedger *self );
-static void         on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGenLedger *self );
-static void         begin_print_build_body_layout( ofaPrintGenLedger *self, GtkPrintContext *context );
-static gboolean     on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGenLedger *self );
-static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaPrintGenLedger *self );
-static gboolean     draw_page( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num );
-static void         draw_page_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num, gboolean is_last );
-static gboolean     draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint line_num );
+static gboolean     print_general_books_operate( ofaPrintGeneralBooks *self );
+static GObject     *on_create_custom_widget( GtkPrintOperation *operation, ofaPrintGeneralBooks *self );
+static void         on_from_account_changed( GtkEntry *entry, ofaPrintGeneralBooks *self );
+static void         on_from_account_select( GtkButton *button, ofaPrintGeneralBooks *self );
+static void         on_to_account_changed( GtkEntry *entry, ofaPrintGeneralBooks *self );
+static void         on_to_account_select( GtkButton *button, ofaPrintGeneralBooks *self );
+static void         on_account_changed( GtkEntry *entry, ofaPrintGeneralBooks *self, GtkWidget *label );
+static void         on_account_select( GtkButton *button, ofaPrintGeneralBooks *self, GtkWidget *entry );
+static void         on_all_accounts_toggled( GtkToggleButton *button, ofaPrintGeneralBooks *self );
+static void         on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintGeneralBooks *self );
+static void         on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGeneralBooks *self );
+static void         begin_print_build_body_layout( ofaPrintGeneralBooks *self, GtkPrintContext *context );
+static gboolean     on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGeneralBooks *self );
+static void         on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaPrintGeneralBooks *self );
+static gboolean     draw_page( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gint page_num );
+static void         draw_page_header( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gint page_num, gboolean is_last );
+static gboolean     draw_account_header( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gint line_num );
 static gdouble      account_header_height( void );
-static void         draw_account_top_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw );
-static void         draw_account_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gboolean with_solde );
+static void         draw_account_top_report( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw );
+static void         draw_account_report( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gboolean with_solde );
 static gdouble      account_top_report_height( void );
-static void         draw_account_bottom_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, GList *next );
+static void         draw_account_bottom_report( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, GList *next );
 static gdouble      account_bottom_report_height( void );
-static void         draw_account_balance( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw );
+static void         draw_account_balance( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw );
 static gdouble      account_balance_height( void );
-static void         add_account_balance( ofaPrintGenLedger *self );
+static void         add_account_balance( ofaPrintGeneralBooks *self );
 static gint         cmp_currencies( const sCurrency *a, const sCurrency *b );
-static void         draw_account_solde_debit_credit( ofaPrintGenLedger *self, GtkPrintContext *context, gdouble y );
-static gboolean     draw_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num, gint line_num, GList *line, GList *next );
-static gboolean     draw_general_summary( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw );
-static gdouble      general_summary_height( ofaPrintGenLedger *self );
-static gboolean     is_new_account( ofaPrintGenLedger *self, ofoEntry *entry );
-static void         setup_new_account( ofaPrintGenLedger *self, ofoEntry *entry );
-static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGenLedger *self );
+static void         draw_account_solde_debit_credit( ofaPrintGeneralBooks *self, GtkPrintContext *context, gdouble y );
+static gboolean     draw_line( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gint page_num, gint line_num, GList *line, GList *next );
+static gboolean     draw_general_summary( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw );
+static gdouble      general_summary_height( ofaPrintGeneralBooks *self );
+static gboolean     is_new_account( ofaPrintGeneralBooks *self, ofoEntry *entry );
+static void         setup_new_account( ofaPrintGeneralBooks *self, ofoEntry *entry );
+static void         on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGeneralBooks *self );
 
 static void
 free_currency( sCurrency *total_per_currency )
@@ -270,35 +270,35 @@ free_currency( sCurrency *total_per_currency )
 }
 
 static void
-print_gen_ledger_finalize( GObject *instance )
+print_general_books_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_finalize";
-	ofaPrintGenLedgerPrivate *priv;
+	static const gchar *thisfn = "ofa_print_general_books_finalize";
+	ofaPrintGeneralBooksPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_PRINT_GEN_LEDGER( instance ));
+	g_return_if_fail( instance && OFA_IS_PRINT_GENERAL_BOOKS( instance ));
 
 	/* free data members here */
-	priv = OFA_PRINT_GEN_LEDGER( instance )->priv;
+	priv = OFA_PRINT_GENERAL_BOOKS( instance )->priv;
 	g_free( priv->from_account );
 	g_free( priv->to_account );
 	g_free( priv->prev_account );
 	g_list_free_full( priv->total, ( GDestroyNotify ) free_currency );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_print_gen_ledger_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_print_general_books_parent_class )->finalize( instance );
 }
 
 static void
-print_gen_ledger_dispose( GObject *instance )
+print_general_books_dispose( GObject *instance )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_PRINT_GEN_LEDGER( instance ));
+	g_return_if_fail( instance && OFA_IS_PRINT_GENERAL_BOOKS( instance ));
 
-	priv = OFA_PRINT_GEN_LEDGER( instance )->priv;
+	priv = OFA_PRINT_GENERAL_BOOKS( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -315,20 +315,20 @@ print_gen_ledger_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_print_gen_ledger_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_print_general_books_parent_class )->dispose( instance );
 }
 
 static void
-ofa_print_gen_ledger_init( ofaPrintGenLedger *self )
+ofa_print_general_books_init( ofaPrintGeneralBooks *self )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_instance_init";
+	static const gchar *thisfn = "ofa_print_general_books_instance_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_PRINT_GEN_LEDGER( self ));
+	g_return_if_fail( self && OFA_IS_PRINT_GENERAL_BOOKS( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PRINT_GEN_LEDGER, ofaPrintGenLedgerPrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PRINT_GENERAL_BOOKS, ofaPrintGeneralBooksPrivate );
 	self->priv->dispose_has_run = FALSE;
 	my_date_clear( &self->priv->from_date );
 	my_date_clear( &self->priv->to_date );
@@ -340,53 +340,53 @@ ofa_print_gen_ledger_init( ofaPrintGenLedger *self )
 }
 
 static void
-ofa_print_gen_ledger_class_init( ofaPrintGenLedgerClass *klass )
+ofa_print_general_books_class_init( ofaPrintGeneralBooksClass *klass )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_class_init";
+	static const gchar *thisfn = "ofa_print_general_books_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = print_gen_ledger_dispose;
-	G_OBJECT_CLASS( klass )->finalize = print_gen_ledger_finalize;
+	G_OBJECT_CLASS( klass )->dispose = print_general_books_dispose;
+	G_OBJECT_CLASS( klass )->finalize = print_general_books_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaPrintGenLedgerPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaPrintGeneralBooksPrivate ));
 }
 
 /**
- * ofa_print_gen_ledger_run:
+ * ofa_print_general_books_run:
  * @main: the main window of the application.
  *
  * Print the accounts balance
  */
 gboolean
-ofa_print_gen_ledger_run( ofaMainWindow *main_window )
+ofa_print_general_books_run( ofaMainWindow *main_window )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_run";
-	ofaPrintGenLedger *self;
+	static const gchar *thisfn = "ofa_print_general_books_run";
+	ofaPrintGeneralBooks *self;
 	gboolean printed;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
-	self = g_object_new( OFA_TYPE_PRINT_GEN_LEDGER, NULL );
+	self = g_object_new( OFA_TYPE_PRINT_GENERAL_BOOKS, NULL );
 	self->priv->main_window = main_window;
-	printed = print_gen_ledger_operate( self );
+	printed = print_general_books_operate( self );
 	g_object_unref( self );
 
 	return( printed );
 }
 
 /*
- * print_gen_ledger_operate:
+ * print_general_books_operate:
  *
  * run the GtkPrintOperation operation
  * returns %TRUE if the print has been successful
  */
 static gboolean
-print_gen_ledger_operate( ofaPrintGenLedger *self )
+print_general_books_operate( ofaPrintGeneralBooks *self )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	gboolean printed;
 	GtkPrintOperation *print;
 	GtkPrintOperationResult res;
@@ -485,10 +485,10 @@ print_gen_ledger_operate( ofaPrintGenLedger *self )
  *   fail
  */
 static GObject*
-on_create_custom_widget( GtkPrintOperation *operation, ofaPrintGenLedger *self )
+on_create_custom_widget( GtkPrintOperation *operation, ofaPrintGeneralBooks *self )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_on_create_custom_widget";
-	ofaPrintGenLedgerPrivate *priv;
+	static const gchar *thisfn = "ofa_print_general_books_on_create_custom_widget";
+	ofaPrintGeneralBooksPrivate *priv;
 	GtkWidget *box, *frame, *widget;
 	gchar *text;
 	gboolean bvalue;
@@ -604,33 +604,33 @@ on_create_custom_widget( GtkPrintOperation *operation, ofaPrintGenLedger *self )
 }
 
 static void
-on_from_account_changed( GtkEntry *entry, ofaPrintGenLedger *self )
+on_from_account_changed( GtkEntry *entry, ofaPrintGeneralBooks *self )
 {
 	on_account_changed( entry, self, self->priv->from_account_label );
 }
 
 static void
-on_from_account_select( GtkButton *button, ofaPrintGenLedger *self )
+on_from_account_select( GtkButton *button, ofaPrintGeneralBooks *self )
 {
 	on_account_select( button, self, self->priv->from_account_entry );
 }
 
 static void
-on_to_account_changed( GtkEntry *entry, ofaPrintGenLedger *self )
+on_to_account_changed( GtkEntry *entry, ofaPrintGeneralBooks *self )
 {
 	on_account_changed( entry, self, self->priv->to_account_label );
 }
 
 static void
-on_to_account_select( GtkButton *button, ofaPrintGenLedger *self )
+on_to_account_select( GtkButton *button, ofaPrintGeneralBooks *self )
 {
 	on_account_select( button, self, self->priv->to_account_entry );
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaPrintGenLedger *self, GtkWidget *label )
+on_account_changed( GtkEntry *entry, ofaPrintGeneralBooks *self, GtkWidget *label )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	const gchar *str;
 	ofoAccount *account;
 
@@ -645,9 +645,9 @@ on_account_changed( GtkEntry *entry, ofaPrintGenLedger *self, GtkWidget *label )
 }
 
 static void
-on_account_select( GtkButton *button, ofaPrintGenLedger *self, GtkWidget *entry )
+on_account_select( GtkButton *button, ofaPrintGeneralBooks *self, GtkWidget *entry )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	gchar *number;
 
 	priv = self->priv;
@@ -661,9 +661,9 @@ on_account_select( GtkButton *button, ofaPrintGenLedger *self, GtkWidget *entry 
 }
 
 static void
-on_all_accounts_toggled( GtkToggleButton *button, ofaPrintGenLedger *self )
+on_all_accounts_toggled( GtkToggleButton *button, ofaPrintGeneralBooks *self )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	gboolean bvalue;
 
 	priv = self->priv;
@@ -686,9 +686,9 @@ on_all_accounts_toggled( GtkToggleButton *button, ofaPrintGenLedger *self )
  * then load the entries
  */
 static void
-on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintGenLedger *self )
+on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrintGeneralBooks *self )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	gboolean all_accounts;
 	gchar *text;
 
@@ -718,7 +718,7 @@ on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrin
 	ofa_settings_set_string( st_pref_to_date, text );
 	g_free( text );
 
-	priv->entries = ofo_entry_get_dataset_for_print_gen_ledger(
+	priv->entries = ofo_entry_get_dataset_for_print_general_books(
 							ofa_main_window_get_dossier( priv->main_window ),
 							priv->from_account, priv->to_account,
 							&priv->from_date, &priv->to_date );
@@ -728,10 +728,10 @@ on_custom_widget_apply( GtkPrintOperation *operation, GtkWidget *widget, ofaPrin
 }
 
 static void
-on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGenLedger *self )
+on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGeneralBooks *self )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_on_begin_print";
-	ofaPrintGenLedgerPrivate *priv;
+	static const gchar *thisfn = "ofa_print_general_books_on_begin_print";
+	ofaPrintGeneralBooksPrivate *priv;
 	gdouble header_height, footer_height;
 
 	/*gint entries_count, other_count, last_count;
@@ -768,9 +768,9 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrint
 }
 
 static void
-begin_print_build_body_layout( ofaPrintGenLedger *self, GtkPrintContext *context )
+begin_print_build_body_layout( ofaPrintGeneralBooks *self, GtkPrintContext *context )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 
 	priv = self->priv;
 
@@ -816,10 +816,10 @@ begin_print_build_body_layout( ofaPrintGenLedger *self, GtkPrintContext *context
  *    iterate through the entries to simulate the printing
  */
 static gboolean
-on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGenLedger *self )
+on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGeneralBooks *self )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_on_paginate";
-	ofaPrintGenLedgerPrivate *priv;
+	static const gchar *thisfn = "ofa_print_general_books_on_paginate";
+	ofaPrintGeneralBooksPrivate *priv;
 	gint page_num;
 
 	g_debug( "%s: operation=%p, status=%s, context=%p, self=%p",
@@ -851,9 +851,9 @@ on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGen
  * this handler is triggered once for each printed page
  */
 static void
-on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaPrintGenLedger *self )
+on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaPrintGeneralBooks *self )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_on_draw_page";
+	static const gchar *thisfn = "ofa_print_general_books_on_draw_page";
 
 	g_debug( "%s: operation=%p, status=%s, context=%p, page_num=%d, self=%p",
 			thisfn, ( void * ) operation, gtk_print_operation_get_status_string( operation ),
@@ -871,10 +871,10 @@ on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_
  * The returned value is only used while paginating.
  */
 static gboolean
-draw_page( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num )
+draw_page( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gint page_num )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_draw_page";
-	ofaPrintGenLedgerPrivate *priv;
+	static const gchar *thisfn = "ofa_print_general_books_draw_page";
+	ofaPrintGeneralBooksPrivate *priv;
 	gboolean is_last;
 	gint count;
 	GList *line, *next;
@@ -912,9 +912,9 @@ draw_page( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gin
 }
 
 static void
-draw_page_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num, gboolean is_last )
+draw_page_header( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gint page_num, gboolean is_last )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	cairo_t *cr;
 	gchar *str, *sfrom_date, *sto_date;
 	gdouble y, height;
@@ -1053,9 +1053,9 @@ draw_page_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean dr
  * and this new one
  */
 static gboolean
-draw_account_header( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint line_num )
+draw_account_header( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gint line_num )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	cairo_t *cr;
 	gchar *str;
 	gdouble y, req_height;
@@ -1151,15 +1151,15 @@ account_header_height( void )
 }
 
 static void
-draw_account_top_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw )
+draw_account_top_report( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw )
 {
 	draw_account_report( self, context, draw, TRUE );
 }
 
 static void
-draw_account_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gboolean with_solde )
+draw_account_report( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gboolean with_solde )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	cairo_t *cr;
 	gchar *str;
 	gdouble y;
@@ -1216,7 +1216,7 @@ account_top_report_height( void )
  * account - is so, then go to account balance report
  */
 static void
-draw_account_bottom_report( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, GList *next )
+draw_account_bottom_report( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, GList *next )
 {
 	if( !next || is_new_account( self, OFO_ENTRY( next->data ))){
 		draw_account_balance( self, context, draw );
@@ -1232,9 +1232,9 @@ account_bottom_report_height( void )
 }
 
 static void
-draw_account_balance( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw )
+draw_account_balance( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	cairo_t *cr;
 	gchar *str;
 	gdouble y;
@@ -1293,9 +1293,9 @@ account_balance_height( void )
  * adding a new currency record if needed
  */
 static void
-add_account_balance( ofaPrintGenLedger *self )
+add_account_balance( ofaPrintGeneralBooks *self )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	GList *it;
 	const gchar *currency;
 	sCurrency *scur;
@@ -1331,9 +1331,9 @@ cmp_currencies( const sCurrency *a, const sCurrency *b )
 }
 
 static void
-draw_account_solde_debit_credit( ofaPrintGenLedger *self, GtkPrintContext *context, gdouble y )
+draw_account_solde_debit_credit( ofaPrintGeneralBooks *self, GtkPrintContext *context, gdouble y )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	ofxAmount amount;
 	gchar *str;
 
@@ -1376,9 +1376,9 @@ draw_account_solde_debit_credit( ofaPrintGenLedger *self, GtkPrintContext *conte
  * printed.
  */
 static gboolean
-draw_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gint page_num, gint line_num, GList *line, GList *next )
+draw_line( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw, gint page_num, gint line_num, GList *line, GList *next )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	ofoEntry *entry;
 	const gchar *cstr;
 	gchar *str;
@@ -1514,9 +1514,9 @@ draw_line( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw, gin
  * print a line per found currency at the end of the printing
  */
 static gboolean
-draw_general_summary( ofaPrintGenLedger *self, GtkPrintContext *context, gboolean draw )
+draw_general_summary( ofaPrintGeneralBooks *self, GtkPrintContext *context, gboolean draw )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 	cairo_t *cr;
 	gdouble req_height, height, top, width, y;
 	gchar *str;
@@ -1603,7 +1603,7 @@ draw_general_summary( ofaPrintGenLedger *self, GtkPrintContext *context, gboolea
  * one summary line per currency
  */
 static gdouble
-general_summary_height( ofaPrintGenLedger *self )
+general_summary_height( ofaPrintGeneralBooks *self )
 {
 	return( st_body_line_vspacing
 			+ g_list_length( self->priv->total )*(st_body_font_size+1+st_body_line_vspacing ));
@@ -1614,9 +1614,9 @@ general_summary_height( ofaPrintGenLedger *self )
  * previous one
  */
 static gboolean
-is_new_account( ofaPrintGenLedger *self, ofoEntry *entry )
+is_new_account( ofaPrintGeneralBooks *self, ofoEntry *entry )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 
 	priv = self->priv;
 	return( !priv->prev_account ||
@@ -1624,9 +1624,9 @@ is_new_account( ofaPrintGenLedger *self, ofoEntry *entry )
 }
 
 static void
-setup_new_account( ofaPrintGenLedger *self, ofoEntry *entry )
+setup_new_account( ofaPrintGeneralBooks *self, ofoEntry *entry )
 {
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 
 	priv = self->priv;
 
@@ -1636,9 +1636,9 @@ setup_new_account( ofaPrintGenLedger *self, ofoEntry *entry )
 }
 
 static void
-on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGenLedger *self )
+on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaPrintGeneralBooks *self )
 {
-	static const gchar *thisfn = "ofa_print_gen_ledger_on_end_print";
+	static const gchar *thisfn = "ofa_print_general_books_on_end_print";
 
 	g_debug( "%s: operation=%p, context=%p, self=%p",
 			thisfn, ( void * ) operation, ( void * ) context, ( void * ) self );

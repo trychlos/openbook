@@ -58,7 +58,7 @@
 #include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-print-balance.h"
-#include "ui/ofa-print-gen-ledger.h"
+#include "ui/ofa-print-general-books.h"
 #include "ui/ofa-print-reconcil.h"
 #include "ui/ofa-rates-page.h"
 #include "ui/ofa-reconciliation.h"
@@ -104,7 +104,7 @@ static void on_ope_exe_closing     ( GSimpleAction *action, GVariant *parameter,
 static void on_ope_import          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_print_balance       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_print_gen_ledger    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_print_general_books ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_print_reconcil      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_ledgers         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -128,7 +128,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "import",        on_ope_import,           NULL, NULL, NULL },
 		{ "export",        on_ope_export,           NULL, NULL, NULL },
 		{ "prt-balance",   on_print_balance,        NULL, NULL, NULL },
-		{ "prt-genledger", on_print_gen_ledger,     NULL, NULL, NULL },
+		{ "prt-genbooks",  on_print_general_books,  NULL, NULL, NULL },
 		{ "prt-reconcil",  on_print_reconcil,       NULL, NULL, NULL },
 		{ "accounts",      on_ref_accounts,         NULL, NULL, NULL },
 		{ "ledgers",       on_ref_ledgers,          NULL, NULL, NULL },
@@ -1103,7 +1103,7 @@ on_print_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data
 }
 
 static void
-on_print_gen_ledger( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_print_general_books( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_print_balance";
 
@@ -1112,7 +1112,7 @@ on_print_gen_ledger( GSimpleAction *action, GVariant *parameter, gpointer user_d
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_print_gen_ledger_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_print_general_books_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void

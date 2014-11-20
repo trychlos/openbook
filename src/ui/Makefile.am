@@ -151,8 +151,8 @@ openbook_SOURCES = \
 	ofa-print.h											\
 	ofa-print-balance.c									\
 	ofa-print-balance.h									\
-	ofa-print-gen-ledger.c								\
-	ofa-print-gen-ledger.h								\
+	ofa-print-general-books.c							\
+	ofa-print-general-books.h							\
 	ofa-print-reconcil.c								\
 	ofa-print-reconcil.h								\
 	ofa-rate-properties.c								\
@@ -210,7 +210,7 @@ ui_files = \
 	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\
 	ofa-print-balance.ui								\
-	ofa-print-gen-ledger.piece.ui						\
+	ofa-print-general-books.ui							\
 	ofa-print-reconcil.ui								\
 	ofa-rate-properties.ui								\
 	ofa-settlement.piece.ui								\

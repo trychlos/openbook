@@ -619,9 +619,9 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
  * The returned dataset doesn't contain deleted entries.
  */
 GList *
-ofo_entry_get_dataset_for_print_gen_ledger( const ofoDossier *dossier,
-											const gchar *from_account, const gchar *to_account,
-											const GDate *from_date, const GDate *to_date )
+ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
+												const gchar *from_account, const gchar *to_account,
+												const GDate *from_date, const GDate *to_date )
 {
 	GList *dataset;
 	GString *query;

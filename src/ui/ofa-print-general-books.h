@@ -24,12 +24,12 @@
  * $Id$
  */
 
-#ifndef __OFA_PRINT_GEN_LEDGER_H__
-#define __OFA_PRINT_GEN_LEDGER_H__
+#ifndef __OFA_PRINT_GENERAL_BOOKS_H__
+#define __OFA_PRINT_GENERAL_BOOKS_H__
 
 /**
- * SECTION: ofa_print_gen_ledger
- * @short_description: #ofaPrintGenLedger class definition.
+ * SECTION: ofa_print_general_books
+ * @short_description: #ofaPrintGeneralBooks class definition.
  * @include: ui/ofa-print-gen-ledger.h
  *
  * Print the General Ledger summary.
@@ -41,34 +41,34 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_PRINT_GEN_LEDGER                ( ofa_print_gen_ledger_get_type())
-#define OFA_PRINT_GEN_LEDGER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_PRINT_GEN_LEDGER, ofaPrintGenLedger ))
-#define OFA_PRINT_GEN_LEDGER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_PRINT_GEN_LEDGER, ofaPrintGenLedgerClass ))
-#define OFA_IS_PRINT_GEN_LEDGER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_PRINT_GEN_LEDGER ))
-#define OFA_IS_PRINT_GEN_LEDGER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PRINT_GEN_LEDGER ))
-#define OFA_PRINT_GEN_LEDGER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PRINT_GEN_LEDGER, ofaPrintGenLedgerClass ))
+#define OFA_TYPE_PRINT_GENERAL_BOOKS                ( ofa_print_general_books_get_type())
+#define OFA_PRINT_GENERAL_BOOKS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_PRINT_GENERAL_BOOKS, ofaPrintGeneralBooks ))
+#define OFA_PRINT_GENERAL_BOOKS_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_PRINT_GENERAL_BOOKS, ofaPrintGeneralBooksClass ))
+#define OFA_IS_PRINT_GENERAL_BOOKS( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_PRINT_GENERAL_BOOKS ))
+#define OFA_IS_PRINT_GENERAL_BOOKS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PRINT_GENERAL_BOOKS ))
+#define OFA_PRINT_GENERAL_BOOKS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PRINT_GENERAL_BOOKS, ofaPrintGeneralBooksClass ))
 
-typedef struct _ofaPrintGenLedgerPrivate         ofaPrintGenLedgerPrivate;
+typedef struct _ofaPrintGeneralBooksPrivate         ofaPrintGeneralBooksPrivate;
 
 typedef struct {
 	/*< public members >*/
 	GObject                  parent;
 
 	/*< private members >*/
-	ofaPrintGenLedgerPrivate *priv;
+	ofaPrintGeneralBooksPrivate *priv;
 }
-	ofaPrintGenLedger;
+	ofaPrintGeneralBooks;
 
 typedef struct {
 	/*< public members >*/
 	GObjectClass              parent;
 }
-	ofaPrintGenLedgerClass;
+	ofaPrintGeneralBooksClass;
 
-GType    ofa_print_gen_ledger_get_type( void ) G_GNUC_CONST;
+GType    ofa_print_general_books_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_print_gen_ledger_run     ( ofaMainWindow *parent );
+gboolean ofa_print_general_books_run     ( ofaMainWindow *parent );
 
 G_END_DECLS
 
-#endif /* __OFA_PRINT_GEN_LEDGER_H__ */
+#endif /* __OFA_PRINT_GENERAL_BOOKS_H__ */

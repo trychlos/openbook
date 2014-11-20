@@ -109,8 +109,8 @@
           <attribute name="action">win.prt-reconcil</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_General ledger...</attribute>
-          <attribute name="action">win.prt-genledger</attribute>
+          <attribute name="label" translatable="yes">_General books...</attribute>
+          <attribute name="action">win.prt-genbooks</attribute>
         </item>
       </section>
     </submenu>
