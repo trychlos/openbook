@@ -51,6 +51,32 @@
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-view-entries.h"
 
+/* columns in the entries view
+ * declared before the private data in order to be able to dimension
+ * the renderers array
+ */
+enum {
+	ENT_COL_DOPE = 0,
+	ENT_COL_DEFF,
+	ENT_COL_NUMBER,
+	ENT_COL_REF,
+	ENT_COL_LABEL,
+	ENT_COL_LEDGER,
+	ENT_COL_ACCOUNT,
+	ENT_COL_DEBIT,
+	ENT_COL_CREDIT,
+	ENT_COL_CURRENCY,
+	ENT_COL_DRECONCIL,
+	ENT_COL_STATUS,
+	ENT_COL_OBJECT,
+	ENT_COL_MSGERR,
+	ENT_COL_MSGWARN,
+	ENT_COL_DOPE_SET,					/* operation date set by the user */
+	ENT_COL_DEFF_SET,					/* effect date set by the user */
+	ENT_COL_CURRENCY_SET,				/* currency set by the user */
+	ENT_N_COLUMNS
+};
+
 /* priv instance data
  */
 struct _ofaViewEntriesPrivate {
@@ -114,9 +140,10 @@ struct _ofaViewEntriesPrivate {
 
 	/* entries list view
 	 */
+	GtkCellRenderer   *renderers[ENT_N_COLUMNS];
 	GtkTreeView       *entries_tview;
-	GtkTreeModel      *tfilter;				/* GtkTreeModelFilter stacked on the GtkListStore */
-	GtkTreeModel      *tsort;				/* GtkTreeModelSort stacked on the GtkTreeModelFilter */
+	GtkTreeModel      *tfilter;			/* GtkTreeModelFilter stacked on the GtkListStore */
+	GtkTreeModel      *tsort;			/* GtkTreeModelSort stacked on the GtkTreeModelFilter */
 	GtkTreeModel      *tstore;
 	GtkTreeViewColumn *sort_column;
 
@@ -124,30 +151,6 @@ struct _ofaViewEntriesPrivate {
 	 */
 	GtkLabel          *comment;
 	GHashTable        *balances_hash;
-};
-
-/* columns in the entries view
- */
-enum {
-	ENT_COL_DOPE = 0,
-	ENT_COL_DEFF,
-	ENT_COL_NUMBER,
-	ENT_COL_REF,
-	ENT_COL_LABEL,
-	ENT_COL_LEDGER,
-	ENT_COL_ACCOUNT,
-	ENT_COL_DEBIT,
-	ENT_COL_CREDIT,
-	ENT_COL_CURRENCY,
-	ENT_COL_DRECONCIL,
-	ENT_COL_STATUS,
-	ENT_COL_OBJECT,
-	ENT_COL_MSGERR,
-	ENT_COL_MSGWARN,
-	ENT_COL_DOPE_SET,					/* operation date set by the user */
-	ENT_COL_DEFF_SET,					/* effect date set by the user */
-	ENT_COL_CURRENCY_SET,				/* currency set by the user */
-	ENT_N_COLUMNS
 };
 
 /* the balance per currency, mostly useful when displaying per ledger
@@ -174,8 +177,8 @@ typedef struct {
  * we are defining the inverse indicator, and we are going to sort
  * in reverse order to have our own illusion
  */
-#define OFA_SORT_ASCENDING    GTK_SORT_DESCENDING
-#define OFA_SORT_DESCENDING   GTK_SORT_ASCENDING
+#define OFA_SORT_ASCENDING              GTK_SORT_DESCENDING
+#define OFA_SORT_DESCENDING             GTK_SORT_ASCENDING
 
 /* when editing an entry, we may have two levels of errors:
  * fatal error: the entry is not valid and cannot be saved
@@ -200,10 +203,8 @@ enum {
 #define RGBA_DELETED                    "#808080"		/* gray foreground */
 #define RGBA_BALANCE                    PAGE_RGBA_FOOTER
 
-static const gchar           *st_ui_xml                   = PKGUIDIR "/ofa-view-entries.piece.ui";
-static const gchar           *st_ui_id                    = "ViewEntriesWindow";
-
-static       GtkCellRenderer *st_renderers[ENT_N_COLUMNS] = { 0 };
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-view-entries.piece.ui";
+static const gchar *st_ui_id            = "ViewEntriesWindow";
 
 G_DEFINE_TYPE( ofaViewEntries, ofa_view_entries, OFA_TYPE_PAGE )
 
@@ -332,7 +333,6 @@ ofa_view_entries_init( ofaViewEntries *self )
 {
 	static const gchar *thisfn = "ofa_view_entries_init";
 	ofaViewEntriesPrivate *priv;
-	gint i;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
@@ -353,12 +353,6 @@ ofa_view_entries_init( ofaViewEntries *self )
 	priv->account_visible = TRUE;
 	priv->dreconcil_visible = FALSE;
 	priv->status_visible = FALSE;
-
-	/* initialize st_renderers (use case: when reopening the page) */
-	for( i=0 ; i<ENT_N_COLUMNS ; ++i ){
-		st_renderers[i] = 0;
-	}
-
 }
 
 static void
@@ -687,7 +681,6 @@ setup_entries_treeview( ofaViewEntries *self )
 			G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN	/* dope_set, deff_set, currency_set */
 			));
 
-	g_debug( "1" );
 	priv->tfilter = gtk_tree_model_filter_new( priv->tstore, NULL );
 	g_object_unref( priv->tstore );
 	gtk_tree_model_filter_set_visible_func(
@@ -711,7 +704,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	column_id = ENT_COL_DOPE;
 	text_cell = gtk_cell_renderer_text_new();
 	my_cell_renderer_date_init( text_cell );
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
@@ -739,7 +732,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	column_id = ENT_COL_DEFF;
 	text_cell = gtk_cell_renderer_text_new();
 	my_cell_renderer_date_init( text_cell );
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
@@ -759,7 +752,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_REF;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_END, NULL );
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
@@ -782,7 +775,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_LEDGER;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
@@ -802,7 +795,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_ACCOUNT;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
@@ -822,7 +815,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_LABEL;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_END, NULL );
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
@@ -844,7 +837,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_DEBIT;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	my_cell_renderer_amount_init( text_cell );
@@ -866,7 +859,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_CREDIT;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	my_cell_renderer_amount_init( text_cell );
@@ -888,7 +881,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_CURRENCY;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
@@ -908,7 +901,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	 */
 	column_id = ENT_COL_DRECONCIL;
 	text_cell = gtk_cell_renderer_text_new();
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
@@ -929,7 +922,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	column_id = ENT_COL_STATUS;
 	text_cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( text_cell, 0.5, 0.5 );
-	st_renderers[column_id] = text_cell;
+	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
@@ -1900,11 +1893,14 @@ on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaViewEntries *self
 static void
 set_renderers_editable( ofaViewEntries *self, gboolean editable )
 {
+	ofaViewEntriesPrivate *priv;
 	gint i;
 
+	priv = self->priv;
+
 	for( i=0 ; i<ENT_N_COLUMNS ; ++i ){
-		if( st_renderers[i] && i != ENT_COL_DRECONCIL && i != ENT_COL_STATUS ){
-			g_object_set( G_OBJECT( st_renderers[i] ), "editable", editable, NULL );
+		if( priv->renderers[i] && i != ENT_COL_DRECONCIL && i != ENT_COL_STATUS ){
+			g_object_set( G_OBJECT( priv->renderers[i] ), "editable", editable, NULL );
 		}
 	}
 }
