@@ -34,6 +34,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -171,6 +172,10 @@ typedef struct {
  * when actually displaying the columns in on_cell_data_func() */
 #define DATA_PRIV_VISIBLE               "ofa-data-priv-visible"
 
+/* set against status toggle buttons in order to be able to set
+ * the user prefs */
+#define DATA_ROW_STATUS                 "ofa-data-row-status"
+
 /* it appears that Gtk+ displays a counter intuitive sort indicator:
  * when asking for ascending sort, Gtk+ displays a 'v' indicator
  * while we would prefer the '^' version -
@@ -206,6 +211,21 @@ enum {
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-view-entries.piece.ui";
 static const gchar *st_ui_id            = "ViewEntriesWindow";
 
+static const gchar *st_pref_selection   = "ViewEntriesSelection";
+static const gchar *st_pref_ledger      = "ViewEntriesLedger";
+static const gchar *st_pref_account     = "ViewEntriesAccount";
+static const gchar *st_pref_d_from      = "ViewEntriesDFrom";
+static const gchar *st_pref_d_to        = "ViewEntriesDTo";
+static const gchar *st_pref_st_rough    = "ViewEntriesStRough";
+static const gchar *st_pref_st_valid    = "ViewEntriesStValidated";
+static const gchar *st_pref_st_deleted  = "ViewEntriesStDeleted";
+static const gchar *st_pref_columns     = "ViewEntriesColumns";
+static const gchar *st_pref_sort_c      = "ViewEntriesSortC";
+static const gchar *st_pref_sort_s      = "ViewEntriesSortS";
+
+#define SEL_LEDGER                      "Ledger"
+#define SEL_ACCOUNT                     "Account"
+
 G_DEFINE_TYPE( ofaViewEntries, ofa_view_entries, OFA_TYPE_PAGE )
 
 static GtkWidget     *v_setup_view( ofaPage *page );
@@ -216,6 +236,7 @@ static void           setup_account_selection( ofaViewEntries *self );
 static void           setup_dates_selection( ofaViewEntries *self );
 static void           setup_status_selection( ofaViewEntries *self );
 static void           setup_display_columns( ofaViewEntries *self );
+static gboolean       has_column_id( GList *id_list, gint id );
 static void           setup_edit_switch( ofaViewEntries *self );
 static GtkTreeView   *setup_entries_treeview( ofaViewEntries *self );
 static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntries *self );
@@ -236,7 +257,7 @@ static void           on_account_select( GtkButton *button, ofaViewEntries *self
 static void           display_entries_from_account( ofaViewEntries *self );
 static gboolean       on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self );
 static gboolean       on_d_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self );
-static gboolean       on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date );
+static gboolean       on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date, const gchar *pref );
 static gboolean       layout_dates_is_valid( ofaViewEntries *self );
 static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
@@ -434,6 +455,7 @@ setup_gen_selection( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
 	GtkToggleButton *btn;
+	gchar *text;
 
 	priv = self->priv;
 
@@ -441,11 +463,24 @@ setup_gen_selection( ofaViewEntries *self )
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_gen_selection_toggled ), self );
 	priv->ledger_btn = btn;
+	gtk_toggle_button_set_active( priv->ledger_btn, FALSE );
 
 	btn = ( GtkToggleButton * ) my_utils_container_get_child_by_name( priv->top_box, "f1-btn-account" );
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_gen_selection_toggled ), self );
 	priv->account_btn = btn;
+	gtk_toggle_button_set_active( priv->account_btn, FALSE );
+
+	text = ofa_settings_get_string( st_pref_selection );
+	if( text && g_utf8_strlen( text, -1 )){
+		if( !g_utf8_collate( text, SEL_ACCOUNT )){
+			gtk_toggle_button_set_active( priv->account_btn, TRUE );
+		/* default to select by ledger */
+		} else {
+			gtk_toggle_button_set_active( priv->ledger_btn, TRUE );
+		}
+	}
+	g_free( text );
 }
 
 static void
@@ -453,8 +488,11 @@ setup_ledger_selection( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
 	ofaLedgerComboParms parms;
+	gchar *initial_mnemo;
 
 	priv = self->priv;
+
+	initial_mnemo = ofa_settings_get_string( st_pref_ledger );
 
 	parms.container = priv->top_box;
 	parms.dossier = priv->dossier;
@@ -464,12 +502,14 @@ setup_ledger_selection( ofaViewEntries *self )
 	parms.disp_label = TRUE;
 	parms.pfnSelected = ( ofaLedgerComboCb ) on_ledger_changed;
 	parms.user_data = self;
-	parms.initial_mnemo = NULL;
+	parms.initial_mnemo = initial_mnemo;
 
 	priv->ledger_combo = ofa_ledger_combo_new( &parms );
 
 	priv->ledger_box = ( GtkComboBox * ) my_utils_container_get_child_by_name( priv->top_box, "f1-ledger" );
 	g_return_if_fail( priv->ledger_box && GTK_IS_COMBO_BOX( priv->ledger_box ));
+
+	g_free( initial_mnemo );
 }
 
 static void
@@ -479,6 +519,7 @@ setup_account_selection( ofaViewEntries *self )
 	GtkWidget *image;
 	GtkButton *btn;
 	GtkWidget *widget;
+	gchar *text;
 
 	priv = self->priv;
 
@@ -497,12 +538,19 @@ setup_account_selection( ofaViewEntries *self )
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f1-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->f1_label = GTK_LABEL( widget );
+
+	text = ofa_settings_get_string( st_pref_account );
+	if( text && g_utf8_strlen( text, -1 )){
+		gtk_entry_set_text( priv->account_entry, text );
+	}
+	g_free( text );
 }
 
 static void
 setup_dates_selection( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
+	gchar *text;
 
 	priv = self->priv;
 
@@ -511,7 +559,6 @@ setup_dates_selection( ofaViewEntries *self )
 
 	my_editable_date_init( GTK_EDITABLE( priv->we_from ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->we_from ), MY_DATE_DMYY );
-	my_editable_date_set_date( GTK_EDITABLE( priv->we_from ), &priv->d_from );
 	my_editable_date_set_label( GTK_EDITABLE( priv->we_from ), GTK_WIDGET( priv->wl_from ), MY_DATE_DMMM );
 	my_editable_date_set_mandatory( GTK_EDITABLE( priv->we_from ), FALSE );
 
@@ -519,18 +566,31 @@ setup_dates_selection( ofaViewEntries *self )
 			G_OBJECT( priv->we_from ),
 			"focus-out-event", G_CALLBACK( on_d_from_focus_out ), self );
 
+	text = ofa_settings_get_string( st_pref_d_from );
+	if( text && g_utf8_strlen( text, -1 )){
+		my_date_set_from_sql( &priv->d_from, text );
+	}
+	g_free( text );
+	my_editable_date_set_date( GTK_EDITABLE( priv->we_from ), &priv->d_from );
+
 	priv->we_to = GTK_ENTRY( my_utils_container_get_child_by_name( priv->top_box, "f2-to" ));
 	priv->wl_to = GTK_LABEL( my_utils_container_get_child_by_name( priv->top_box, "f2-to-label" ));
 
 	my_editable_date_init( GTK_EDITABLE( priv->we_to ));
 	my_editable_date_set_format( GTK_EDITABLE( priv->we_to ), MY_DATE_DMYY );
-	my_editable_date_set_date( GTK_EDITABLE( priv->we_to ), &priv->d_to );
 	my_editable_date_set_label( GTK_EDITABLE( priv->we_to ), GTK_WIDGET( priv->wl_to ), MY_DATE_DMMM );
 	my_editable_date_set_mandatory( GTK_EDITABLE( priv->we_to ), FALSE );
 
 	g_signal_connect(
 			G_OBJECT( priv->we_to ),
 			"focus-out-event", G_CALLBACK( on_d_to_focus_out ), self );
+
+	text = ofa_settings_get_string( st_pref_d_to );
+	if( text && g_utf8_strlen( text, -1 )){
+		my_date_set_from_sql( &priv->d_to, text );
+	}
+	g_free( text );
+	my_editable_date_set_date( GTK_EDITABLE( priv->we_to ), &priv->d_to );
 }
 
 static void
@@ -539,6 +599,7 @@ setup_status_selection( ofaViewEntries *self )
 	static const gchar *thisfn = "ofa_view_entries_setup_status_selection";
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *button;
+	gboolean brough, bvalid, bdeleted;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -548,22 +609,28 @@ setup_status_selection( ofaViewEntries *self )
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
 	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_rough );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), TRUE );
+	g_object_set_data( G_OBJECT( button ), DATA_ROW_STATUS, ( gpointer ) st_pref_st_rough );
+	brough = ofa_settings_get_boolean( st_pref_st_rough );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), brough );
 
 	button = my_utils_container_get_child_by_name( priv->top_box, "f3-validated" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
 	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_validated );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), TRUE );
+	g_object_set_data( G_OBJECT( button ), DATA_ROW_STATUS, ( gpointer ) st_pref_st_valid );
+	bvalid = ofa_settings_get_boolean( st_pref_st_valid );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalid );
 
 	button = my_utils_container_get_child_by_name( priv->top_box, "f3-deleted" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
 	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_deleted );
+	g_object_set_data( G_OBJECT( button ), DATA_ROW_STATUS, ( gpointer ) st_pref_st_deleted );
+	bdeleted = ofa_settings_get_boolean( st_pref_st_deleted );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bdeleted );
 
 	/* for now, do not display deleted entries */
 	gtk_widget_set_sensitive( button, FALSE );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), FALSE );
 }
 
 static void
@@ -572,32 +639,39 @@ setup_display_columns( ofaViewEntries *self )
 	static const gchar *thisfn = "ofa_view_entries_setup_display_columns";
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *widget;
+	GList *id_list;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
 
+	id_list = ofa_settings_get_uint_list( st_pref_columns );
+
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-dope" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
+	priv->dope_visible = has_column_id( id_list, ENT_COL_DOPE );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->dope_visible );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->dope_visible );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-deffect" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
+	priv->deffect_visible = has_column_id( id_list, ENT_COL_DEFF );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->deffect_visible );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->deffect_visible );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-ref" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
+	priv->ref_visible = has_column_id( id_list, ENT_COL_REF );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->ref_visible );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->ref_visible );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-ledger" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
+	priv->ledger_visible = has_column_id( id_list, ENT_COL_LEDGER );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->ledger_visible );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->ledger_visible );
 	priv->ledger_checkbox = GTK_CHECK_BUTTON( widget );
@@ -605,6 +679,7 @@ setup_display_columns( ofaViewEntries *self )
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-account" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
+	priv->account_visible = has_column_id( id_list, ENT_COL_ACCOUNT );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->account_visible );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->account_visible );
 	priv->account_checkbox = GTK_CHECK_BUTTON( widget );
@@ -612,14 +687,37 @@ setup_display_columns( ofaViewEntries *self )
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-rappro" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
+	priv->dreconcil_visible = has_column_id( id_list, ENT_COL_DRECONCIL );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->dreconcil_visible );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->dreconcil_visible );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-status" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
+	priv->status_visible = has_column_id( id_list, ENT_COL_STATUS );
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->status_visible );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->status_visible );
+
+	g_list_free( id_list );
+}
+
+/*
+ * is the column identifier found in the list read from user prefs ?
+ */
+static gboolean
+has_column_id( GList *id_list, gint id )
+{
+	gboolean found;
+	GList *it;
+
+	for( it=id_list, found=FALSE ; it ; it=it->next ){
+		if( GPOINTER_TO_INT( it->data ) == id ){
+			found = TRUE;
+			break;
+		}
+	}
+
+	return( found );
 }
 
 static void
@@ -664,6 +762,8 @@ setup_entries_treeview( ofaViewEntries *self )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 	gint column_id;
+	gint sort_id, sort_sens;
+	GtkTreeViewColumn *sort_column;
 
 	priv = self->priv;
 
@@ -699,6 +799,18 @@ setup_entries_treeview( ofaViewEntries *self )
 			thisfn, ( void * ) self, ( void * ) tview,
 					( void * ) priv->tstore, ( void * ) priv->tfilter, ( void * ) priv->tsort );
 
+	/* default is to sort by ascending operation date
+	 */
+	sort_column = NULL;
+	sort_id = ofa_settings_get_uint( st_pref_sort_c );
+	if( sort_id < 0 ){
+		sort_id = ENT_COL_DOPE;
+	}
+	sort_sens = ofa_settings_get_uint( st_pref_sort_s );
+	if( sort_sens < 0 ){
+		sort_sens = OFA_SORT_ASCENDING;
+	}
+
 	/* operation date
 	 */
 	column_id = ENT_COL_DOPE;
@@ -719,13 +831,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-
-	/* default is to sort by ascending operation date
-	 */
-	gtk_tree_view_column_set_sort_indicator( column, TRUE );
-	priv->sort_column = column;
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, OFA_SORT_ASCENDING );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* effect date
 	 */
@@ -747,6 +855,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* piece's reference
 	 */
@@ -770,6 +881,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* ledger
 	 */
@@ -790,6 +904,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* account
 	 */
@@ -810,6 +927,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* label
 	 */
@@ -832,6 +952,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* debit
 	 */
@@ -854,6 +977,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* credit
 	 */
@@ -876,6 +1002,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* currency
 	 */
@@ -896,6 +1025,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* reconciliation date
 	 */
@@ -916,6 +1048,9 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	/* entry status
 	 */
@@ -938,10 +1073,21 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
+
+	/* default is to sort by ascending operation date
+	 */
+	g_return_val_if_fail( sort_column && GTK_IS_TREE_VIEW_COLUMN( sort_column ), NULL );
+	gtk_tree_view_column_set_sort_indicator( sort_column, TRUE );
+	priv->sort_column = sort_column;
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( priv->tsort ), sort_id, sort_sens );
 
 	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_key_pressed_event ), self );
 
@@ -1148,21 +1294,14 @@ on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self )
 
 	new_column_id = gtk_tree_view_column_get_sort_column_id( column );
 
-	/*if( new_column_id == sort_column_id ){
-		if( sort_order == GTK_SORT_ASCENDING ){
-			sort_order = GTK_SORT_DESCENDING;
-		} else {
-			sort_order = GTK_SORT_ASCENDING;
-		}
-	} else {
-		sort_order = GTK_SORT_ASCENDING;
-	}*/
-
 	gtk_tree_sortable_set_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), new_column_id, sort_order );
 
 	g_debug( "%s: setting new_column_id=%u, new_sort_order=%s",
 			thisfn, new_column_id,
 			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
+
+	ofa_settings_set_uint( st_pref_sort_c, new_column_id );
+	ofa_settings_set_uint( st_pref_sort_s, sort_order );
 }
 
 static void
@@ -1222,17 +1361,26 @@ static void
 set_visible_columns( ofaViewEntries *self )
 {
 	GList *columns, *it;
-	gboolean *priv_flag;
+	gboolean *priv_flag, is_visible;
 	gint col_id;
+	GList *id_list;
 
+	id_list = NULL;
 	columns = gtk_tree_view_get_columns( self->priv->entries_tview );
 	for( it=columns ; it ; it=it->next ){
 		col_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( it->data ), DATA_COLUMN_ID ));
 		if( col_id >= 0 ){
 			priv_flag = ( gboolean * ) g_object_get_data( G_OBJECT( it->data ), DATA_PRIV_VISIBLE );
-			gtk_tree_view_column_set_visible( GTK_TREE_VIEW_COLUMN( it->data ), !priv_flag || *priv_flag );
+			is_visible = !priv_flag || *priv_flag;
+			gtk_tree_view_column_set_visible( GTK_TREE_VIEW_COLUMN( it->data ), is_visible );
+			if( is_visible ){
+				id_list = g_list_prepend( id_list, GINT_TO_POINTER( col_id ));
+			}
 		}
 	}
+
+	ofa_settings_set_uint_list( st_pref_columns, id_list );
+	g_list_free( id_list );
 }
 
 static GtkWidget *
@@ -1268,6 +1416,7 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 		/* and display the entries */
 		if( is_active ){
 			display_entries_from_ledger( self );
+			ofa_settings_set_string( st_pref_selection, SEL_LEDGER );
 		}
 
 	} else {
@@ -1280,6 +1429,7 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 
 		if( is_active ){
 			display_entries_from_account( self );
+			ofa_settings_set_string( st_pref_selection, SEL_ACCOUNT );
 		}
 	}
 }
@@ -1296,6 +1446,7 @@ on_ledger_changed( const gchar *mnemo, ofaViewEntries *self )
 
 	g_free( priv->jou_mnemo );
 	priv->jou_mnemo = g_strdup( mnemo );
+	ofa_settings_set_string( st_pref_ledger, mnemo );
 
 	display_entries_from_ledger( self );
 }
@@ -1335,10 +1486,13 @@ on_account_changed( GtkEntry *entry, ofaViewEntries *self )
 		gtk_label_set_text( priv->f1_label, str );
 		g_free( str );
 		display_entries_from_account( self );
+		ofa_settings_set_string( st_pref_account, priv->acc_number );
 
 	} else {
 		gtk_label_set_text( priv->f1_label, "" );
+		ofa_settings_set_string( st_pref_account, "" );
 	}
+
 }
 
 static void
@@ -1382,7 +1536,7 @@ display_entries_from_account( ofaViewEntries *self )
 static gboolean
 on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
 {
-	return( on_date_focus_out( self, entry, &self->priv->d_from ));
+	return( on_date_focus_out( self, entry, &self->priv->d_from, st_pref_d_from ));
 }
 
 /*
@@ -1393,15 +1547,22 @@ on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
 static gboolean
 on_d_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self )
 {
-	return( on_date_focus_out( self, entry, &self->priv->d_to ));
+	return( on_date_focus_out( self, entry, &self->priv->d_to, st_pref_d_to ));
 }
 
 static gboolean
-on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date )
+on_date_focus_out( ofaViewEntries *self, GtkEntry *entry, GDate *date, const gchar *pref )
 {
-	my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( entry ), NULL ));
+	gchar *sdate;
 
+	my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( entry ), NULL ));
 	refresh_display( self );
+
+	if( my_date_is_valid( date )){
+		sdate = my_date_to_str( date, MY_DATE_SQL );
+		ofa_settings_set_string( pref, sdate );
+		g_free( sdate );
+	}
 
 	return( FALSE );
 }
@@ -1418,14 +1579,18 @@ layout_dates_is_valid( ofaViewEntries *self )
 
 	priv = self->priv;
 
-	str = gtk_entry_get_text( priv->we_from );
-	if( str && g_utf8_strlen( str, -1 ) && !my_date_is_valid( &priv->d_from )){
-		return( FALSE );
+	if( priv->we_from ){
+		str = gtk_entry_get_text( priv->we_from );
+		if( str && g_utf8_strlen( str, -1 ) && !my_date_is_valid( &priv->d_from )){
+			return( FALSE );
+		}
 	}
 
-	str = gtk_entry_get_text( priv->we_to );
-	if( str && g_utf8_strlen( str, -1 ) && !my_date_is_valid( &priv->d_to )){
-		return( FALSE );
+	if( priv->we_to ){
+		str = gtk_entry_get_text( priv->we_to );
+		if( str && g_utf8_strlen( str, -1 ) && !my_date_is_valid( &priv->d_to )){
+			return( FALSE );
+		}
 	}
 
 	if( my_date_is_valid( &priv->d_from ) &&
@@ -1465,14 +1630,17 @@ display_entries( ofaViewEntries *self, GList *entries )
 
 	priv = self->priv;
 
-	gtk_list_store_clear( GTK_LIST_STORE( priv->tstore ));
+	if( priv->tstore ){
 
-	for( iset=entries ; iset ; iset=iset->next ){
-		gtk_list_store_insert( GTK_LIST_STORE( priv->tstore ), &iter, -1 );
-		display_entry( self, OFO_ENTRY( iset->data ), &iter );
+		gtk_list_store_clear( GTK_LIST_STORE( priv->tstore ));
+
+		for( iset=entries ; iset ; iset=iset->next ){
+			gtk_list_store_insert( GTK_LIST_STORE( priv->tstore ), &iter, -1 );
+			display_entry( self, OFO_ENTRY( iset->data ), &iter );
+		}
+
+		compute_balances( self );
 	}
-
-	compute_balances( self );
 }
 
 /*
@@ -1863,10 +2031,14 @@ static void
 on_entry_status_toggled( GtkToggleButton *button, ofaViewEntries *self )
 {
 	gboolean *priv_flag;
+	const gchar *pref;
 
 	priv_flag = ( gboolean * ) g_object_get_data( G_OBJECT( button ), DATA_PRIV_VISIBLE );
 	*priv_flag = gtk_toggle_button_get_active( button );
 	refresh_display( self );
+
+	pref = g_object_get_data( G_OBJECT( button ), DATA_ROW_STATUS );
+	ofa_settings_set_boolean( pref, *priv_flag );
 }
 
 /*

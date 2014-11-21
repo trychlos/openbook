@@ -37,7 +37,7 @@
                         <property name="column_spacing">4</property>
                         <child>
                           <object class="GtkRadioButton" id="f1-btn-ledger">
-                            <property name="label" translatable="yes">per _journal</property>
+                            <property name="label" translatable="yes">per _ledger</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">False</property>
