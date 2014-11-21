@@ -102,15 +102,15 @@
       <section>
         <item>
           <attribute name="label" translatable="yes">Accounts _balance...</attribute>
-          <attribute name="action">win.prt-balance</attribute>
+          <attribute name="action">win.pdf-balance</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_Reconciliation...</attribute>
-          <attribute name="action">win.prt-reconcil</attribute>
+          <attribute name="action">win.pdf-reconcil</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_General books...</attribute>
-          <attribute name="action">win.prt-genbooks</attribute>
+          <attribute name="action">win.pdf-books</attribute>
         </item>
       </section>
     </submenu>

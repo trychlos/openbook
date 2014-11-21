@@ -57,9 +57,9 @@
 #include "ui/ofa-misc-arcaccopebal.h"
 #include "ui/ofa-ope-templates-page.h"
 #include "ui/ofa-page.h"
-#include "ui/ofa-print-balance.h"
-#include "ui/ofa-print-general-books.h"
-#include "ui/ofa-print-reconcil.h"
+#include "ui/ofa-pdf-balance.h"
+#include "ui/ofa-pdf-books.h"
+#include "ui/ofa-pdf-reconcil.h"
 #include "ui/ofa-rates-page.h"
 #include "ui/ofa-reconciliation.h"
 #include "ui/ofa-settlement.h"
@@ -103,9 +103,9 @@ static void on_ope_int_closing     ( GSimpleAction *action, GVariant *parameter,
 static void on_ope_exe_closing     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_print_balance       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_print_general_books ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_print_reconcil      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_pdf_balance         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_pdf_books           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_pdf_reconcil        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_ledgers         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_ope_templates   ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -127,9 +127,9 @@ static const GActionEntry st_dos_entries[] = {
 		{ "execlosing",    on_ope_exe_closing,      NULL, NULL, NULL },
 		{ "import",        on_ope_import,           NULL, NULL, NULL },
 		{ "export",        on_ope_export,           NULL, NULL, NULL },
-		{ "prt-balance",   on_print_balance,        NULL, NULL, NULL },
-		{ "prt-genbooks",  on_print_general_books,  NULL, NULL, NULL },
-		{ "prt-reconcil",  on_print_reconcil,       NULL, NULL, NULL },
+		{ "pdf-balance",   on_pdf_balance,          NULL, NULL, NULL },
+		{ "pdf-books",     on_pdf_books,            NULL, NULL, NULL },
+		{ "pdf-reconcil",  on_pdf_reconcil,         NULL, NULL, NULL },
 		{ "accounts",      on_ref_accounts,         NULL, NULL, NULL },
 		{ "ledgers",       on_ref_ledgers,          NULL, NULL, NULL },
 		{ "ope-templates", on_ref_ope_templates,    NULL, NULL, NULL },
@@ -1090,7 +1090,7 @@ on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 }
 
 static void
-on_print_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_pdf_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_print_balance";
 
@@ -1099,11 +1099,11 @@ on_print_balance( GSimpleAction *action, GVariant *parameter, gpointer user_data
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_print_balance_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_pdf_balance_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void
-on_print_general_books( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_pdf_books( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_print_balance";
 
@@ -1112,11 +1112,11 @@ on_print_general_books( GSimpleAction *action, GVariant *parameter, gpointer use
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_print_general_books_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_pdf_books_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void
-on_print_reconcil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_pdf_reconcil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_print_reconcil";
 
@@ -1125,7 +1125,7 @@ on_print_reconcil( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_print_reconcil_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_pdf_reconcil_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void

@@ -45,11 +45,11 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-iprintable.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-print-reconcil.h"
+#include "ui/ofa-pdf-reconcil.h"
 
 /* private instance data
  */
-struct _ofaPrintReconcilPrivate {
+struct _ofaPDFReconcilPrivate {
 
 	gboolean       printed;
 
@@ -91,9 +91,9 @@ struct _ofaPrintReconcilPrivate {
 static const gchar *st_ui_xml              = PKGUIDIR "/ofa-print-reconcil.ui";
 static const gchar *st_ui_id               = "PrintReconciliationDlg";
 
-static const gchar *st_pref_fname          = "PrintReconciliationFilename";
-static const gchar *st_pref_account        = "PrintReconciliationAccount";
-static const gchar *st_pref_date           = "PrintReconciliationDate";
+static const gchar *st_pref_fname          = "PDFReconciliationFilename";
+static const gchar *st_pref_account        = "PDFReconciliationAccount";
+static const gchar *st_pref_date           = "PDFReconciliationDate";
 
 static const gchar *st_def_fname           = "Reconciliation";
 static const gchar *st_page_header_title   = N_( "Account Reconciliation Summary" );
@@ -121,56 +121,54 @@ static const gint   st_default_orientation = GTK_PAGE_ORIENTATION_LANDSCAPE;
 */
 
 #define COLOR_BLACK                 0,      0,      0
-#define COLOR_WHITE                 1,      1,      1
-#define COLOR_DARK_RED              0.5,    0,      0
 #define COLOR_DARK_CYAN             0,      0.5156, 0.5156
-#define COLOR_LIGHT_GRAY            0.9375, 0.9375, 0.9375
 #define COLOR_GRAY                  0.6,    0.6,    0.6
 
 static void     iprintable_iface_init( ofaIPrintableInterface *iface );
 static guint    iprintable_get_interface_version( const ofaIPrintable *instance );
 static void     v_init_dialog( myDialog *dialog );
-static void     init_filechooser( ofaPrintReconcil *self );
-static void     init_account_selection( ofaPrintReconcil *self );
-static void     init_date_selection( ofaPrintReconcil *self );
-static void     on_account_changed( GtkEntry *entry, ofaPrintReconcil *self );
-static void     on_account_select( GtkButton *button, ofaPrintReconcil *self );
+static void     init_account_selection( ofaPDFReconcil *self );
+static void     init_date_selection( ofaPDFReconcil *self );
+static void     on_account_changed( GtkEntry *entry, ofaPDFReconcil *self );
+static void     on_account_select( GtkButton *button, ofaPDFReconcil *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
-static gboolean do_apply( ofaPrintReconcil *self );
-static void     widget_error( ofaPrintReconcil *self, const gchar *msg );
+static gboolean do_apply( ofaPDFReconcil *self );
+static void     widget_error( ofaPDFReconcil *self, const gchar *msg );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
+static void     iprintable_reset_runtime( ofaIPrintable *instance );
+static void     iprintable_free_dataset( GList *dataset );
 static void     iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static gchar   *iprintable_get_page_header_title( const ofaIPrintable *instance );
 static gchar   *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
 static void     iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void     iprintable_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void     iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
-static gboolean iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static gchar   *account_solde_to_str( ofaPrintReconcil *self, gdouble amount );
+static void     iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static gchar   *account_solde_to_str( ofaPDFReconcil *self, gdouble amount );
 
-G_DEFINE_TYPE_EXTENDED( ofaPrintReconcil, ofa_print_reconcil, MY_TYPE_DIALOG, 0, \
+G_DEFINE_TYPE_EXTENDED( ofaPDFReconcil, ofa_pdf_reconcil, OFA_TYPE_PDF_DIALOG, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IPRINTABLE, iprintable_iface_init ));
 
 static void
-print_reconcil_finalize( GObject *instance )
+pdf_reconcil_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_print_reconcil_finalize";
+	static const gchar *thisfn = "ofa_pdf_reconcil_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_PRINT_RECONCIL( instance ));
+	g_return_if_fail( instance && OFA_IS_PDF_RECONCIL( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_print_reconcil_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_pdf_reconcil_parent_class )->finalize( instance );
 }
 
 static void
-print_reconcil_dispose( GObject *instance )
+pdf_reconcil_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_PRINT_RECONCIL( instance ));
+	g_return_if_fail( instance && OFA_IS_PDF_RECONCIL( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
@@ -178,38 +176,38 @@ print_reconcil_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_print_reconcil_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_pdf_reconcil_parent_class )->dispose( instance );
 }
 
 static void
-ofa_print_reconcil_init( ofaPrintReconcil *self )
+ofa_pdf_reconcil_init( ofaPDFReconcil *self )
 {
-	static const gchar *thisfn = "ofa_print_reconcil_instance_init";
+	static const gchar *thisfn = "ofa_pdf_reconcil_instance_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_PRINT_RECONCIL( self ));
+	g_return_if_fail( self && OFA_IS_PDF_RECONCIL( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PRINT_RECONCIL, ofaPrintReconcilPrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_PDF_RECONCIL, ofaPDFReconcilPrivate );
 
 	my_date_clear( &self->priv->date );
 }
 
 static void
-ofa_print_reconcil_class_init( ofaPrintReconcilClass *klass )
+ofa_pdf_reconcil_class_init( ofaPDFReconcilClass *klass )
 {
-	static const gchar *thisfn = "ofa_print_reconcil_class_init";
+	static const gchar *thisfn = "ofa_pdf_reconcil_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = print_reconcil_dispose;
-	G_OBJECT_CLASS( klass )->finalize = print_reconcil_finalize;
+	G_OBJECT_CLASS( klass )->dispose = pdf_reconcil_dispose;
+	G_OBJECT_CLASS( klass )->finalize = pdf_reconcil_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 
-	g_type_class_add_private( klass, sizeof( ofaPrintReconcilPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaPDFReconcilPrivate ));
 }
 
 static void
@@ -221,6 +219,8 @@ iprintable_iface_init( ofaIPrintableInterface *iface )
 
 	iface->get_interface_version = iprintable_get_interface_version;
 	iface->get_dataset = iprintable_get_dataset;
+	iface->reset_runtime = iprintable_reset_runtime;
+	iface->free_dataset = iprintable_free_dataset;
 	iface->on_begin_print = iprintable_on_begin_print;
 	iface->get_page_header_title = iprintable_get_page_header_title;
 	iface->get_page_header_subtitle = iprintable_get_page_header_subtitle;
@@ -237,16 +237,16 @@ iprintable_get_interface_version( const ofaIPrintable *instance )
 }
 
 /**
- * ofa_print_reconcil_run:
+ * ofa_pdf_reconcil_run:
  * @main: the main window of the application.
  *
  * Print the reconciliation summary
  */
 gboolean
-ofa_print_reconcil_run( ofaMainWindow *main_window )
+ofa_pdf_reconcil_run( ofaMainWindow *main_window )
 {
-	static const gchar *thisfn = "ofa_print_reconcil_run";
-	ofaPrintReconcil *self;
+	static const gchar *thisfn = "ofa_pdf_reconcil_run";
+	ofaPDFReconcil *self;
 	gboolean printed;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
@@ -254,11 +254,13 @@ ofa_print_reconcil_run( ofaMainWindow *main_window )
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
 	self = g_object_new(
-			OFA_TYPE_PRINT_RECONCIL,
+			OFA_TYPE_PDF_RECONCIL,
 				MY_PROP_MAIN_WINDOW, main_window,
 				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 				MY_PROP_WINDOW_XML,  st_ui_xml,
 				MY_PROP_WINDOW_NAME, st_ui_id,
+				PDF_PROP_DEF_NAME,   st_def_fname,
+				PDF_PROP_PREF_NAME,  st_pref_fname,
 				NULL );
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
@@ -267,41 +269,19 @@ ofa_print_reconcil_run( ofaMainWindow *main_window )
 	g_object_unref( self );
 
 	return( printed );
-
-	return( printed );
 }
 
 static void
 v_init_dialog( myDialog *dialog )
 {
-	init_filechooser( OFA_PRINT_RECONCIL( dialog ));
-	init_account_selection( OFA_PRINT_RECONCIL( dialog ));
-	init_date_selection( OFA_PRINT_RECONCIL( dialog ));
+	init_account_selection( OFA_PDF_RECONCIL( dialog ));
+	init_date_selection( OFA_PDF_RECONCIL( dialog ));
 }
 
 static void
-init_filechooser( ofaPrintReconcil *self )
+init_account_selection( ofaPDFReconcil *self )
 {
-	gchar *text;
-
-	ofa_iprintable_init_dialog( OFA_IPRINTABLE( self ));
-
-	ofa_iprintable_set_default_filename( OFA_IPRINTABLE( self ), st_def_fname );
-
-	text = ofa_settings_get_string( st_pref_fname );
-	if( text && g_utf8_strlen( text, -1 )){
-		ofa_iprintable_set_last_filename( OFA_IPRINTABLE( self ), text );
-	}
-	g_free( text );
-
-	ofa_iprintable_set_paper_orientation( OFA_IPRINTABLE( self ), st_default_orientation );
-	ofa_iprintable_set_default_font_size( OFA_IPRINTABLE( self ), st_default_font_size );
-}
-
-static void
-init_account_selection( ofaPrintReconcil *self )
-{
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
 	gchar *text;
@@ -309,29 +289,30 @@ init_account_selection( ofaPrintReconcil *self )
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
+	/* init account label before set a value in account entry */
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account-label" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	priv->account_label = widget;
+
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account-entry" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	priv->account_entry = widget;
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_account_changed ), self );
 	text = ofa_settings_get_string( st_pref_account );
 	if( text && g_utf8_strlen( text, -1 )){
 		gtk_entry_set_text( GTK_ENTRY( widget ), text );
 	}
 	g_free( text );
-	priv->account_entry = widget;
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_account_select ), self );
-
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account-label" );
-	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	priv->account_label = widget;
 }
 
 static void
-init_date_selection( ofaPrintReconcil *self )
+init_date_selection( ofaPDFReconcil *self )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
 	gchar *text;
@@ -354,9 +335,9 @@ init_date_selection( ofaPrintReconcil *self )
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaPrintReconcil *self )
+on_account_changed( GtkEntry *entry, ofaPDFReconcil *self )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	const gchar *str;
 	ofoCurrency *currency;
 
@@ -368,20 +349,23 @@ on_account_changed( GtkEntry *entry, ofaPrintReconcil *self )
 		gtk_label_set_text(
 				GTK_LABEL( priv->account_label), ofo_account_get_label( priv->account ));
 		priv->currency = ofo_account_get_currency( priv->account );
-		currency = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, priv->currency );
-		if( currency && OFO_IS_CURRENCY( currency )){
-			priv->digits = ofo_currency_get_digits( currency );
+		/* currency code may be empty for root accounts */
+		if( priv->currency && g_utf8_strlen( priv->currency, -1 )){
+			currency = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, priv->currency );
+			if( currency && OFO_IS_CURRENCY( currency )){
+				priv->digits = ofo_currency_get_digits( currency );
+			}
 		}
 
 	} else {
-		gtk_label_set_text( GTK_LABEL( priv->account_label), "" );
+		gtk_label_set_text( GTK_LABEL( priv->account_label ), "" );
 	}
 }
 
 static void
-on_account_select( GtkButton *button, ofaPrintReconcil *self )
+on_account_select( GtkButton *button, ofaPDFReconcil *self )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	gchar *number;
 
 	priv = self->priv;
@@ -397,16 +381,32 @@ on_account_select( GtkButton *button, ofaPrintReconcil *self )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	return( do_apply( OFA_PRINT_RECONCIL( dialog )) &&
-				ofa_iprintable_apply( OFA_IPRINTABLE( dialog )));
+	gboolean ok;
+
+	/* chain up to the parent class */
+	ok = MY_DIALOG_CLASS( ofa_pdf_reconcil_parent_class )->quit_on_ok( dialog );
+
+	if( ok ){
+		ok &= do_apply( OFA_PDF_RECONCIL( dialog ));
+	}
+
+	if( ok ){
+		ofa_iprintable_set_paper_orientation( OFA_IPRINTABLE( dialog ), st_default_orientation );
+		ofa_iprintable_set_default_font_size( OFA_IPRINTABLE( dialog ), st_default_font_size );
+
+		ok &= ofa_iprintable_print_to_pdf(
+					OFA_IPRINTABLE( dialog ),
+					ofa_pdf_dialog_get_filename( OFA_PDF_DIALOG( dialog )));
+	}
+
+	return( ok );
 }
 
 static gboolean
-do_apply( ofaPrintReconcil *self )
+do_apply( ofaPDFReconcil *self )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	gchar *sdate;
-	const gchar *filename;
 
 	priv = self->priv;
 
@@ -428,18 +428,11 @@ do_apply( ofaPrintReconcil *self )
 	ofa_settings_set_string( st_pref_date, sdate );
 	g_free( sdate );
 
-	/* the export filename is the only mandatory argument */
-	filename = ofa_iprintable_get_filename( OFA_IPRINTABLE( self ));
-	if( !filename || !g_utf8_strlen( filename, -1 )){
-		return( FALSE );
-	}
-	ofa_settings_set_string( st_pref_fname, filename );
-
 	return( TRUE );
 }
 
 static void
-widget_error( ofaPrintReconcil *self, const gchar *msg )
+widget_error( ofaPDFReconcil *self, const gchar *msg )
 {
 	GtkWidget *dialog;
 
@@ -457,13 +450,13 @@ widget_error( ofaPrintReconcil *self, const gchar *msg )
 static GList *
 iprintable_get_dataset( const ofaIPrintable *instance )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	GList *dataset;
 
-	priv = OFA_PRINT_RECONCIL( instance )->priv;
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	dataset = ofo_entry_get_dataset_for_print_reconcil(
-					ofa_main_window_get_dossier( MY_WINDOW( instance )->prot->main_window ),
+					MY_WINDOW( instance )->prot->dossier,
 					ofo_account_get_number( priv->account ),
 					&priv->date );
 
@@ -472,14 +465,31 @@ iprintable_get_dataset( const ofaIPrintable *instance )
 	return( dataset );
 }
 
+static void
+iprintable_free_dataset( GList *elements )
+{
+	g_list_free_full( elements, ( GDestroyNotify ) g_object_unref );
+}
+
+static void
+iprintable_reset_runtime( ofaIPrintable *instance )
+{
+	ofaPDFReconcilPrivate *priv;
+
+	priv = OFA_PDF_RECONCIL( instance )->priv;
+
+	priv->line_num = 0;
+	priv->account_solde = 0;
+}
+
 /*
  * mainly here: compute the tab positions
  */
 static void
 iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	static const gchar *thisfn = "ofa_print_reconcil_iprintable_on_begin_print";
-	ofaPrintReconcilPrivate *priv;
+	static const gchar *thisfn = "ofa_pdf_reconcil_iprintable_on_begin_print";
+	ofaPDFReconcilPrivate *priv;
 	gdouble page_width;
 	gint body_font_size;
 	gchar *str;
@@ -488,7 +498,7 @@ iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation
 	g_debug( "%s: instance=%p, operation=%p, context=%p",
 			thisfn, ( void * ) instance, ( void * ) operation, ( void * ) context );
 
-	priv = OFA_PRINT_RECONCIL( instance )->priv;
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	priv->page_margin = ofa_iprintable_get_page_margin( instance );
 	body_font_size = ofa_iprintable_get_default_font_size( instance );
@@ -528,10 +538,10 @@ iprintable_get_page_header_title( const ofaIPrintable *instance )
 static gchar *
 iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	gchar *str;
 
-	priv = OFA_PRINT_RECONCIL( instance )->priv;
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	/* account number and label in line 4 */
 	str = g_strdup_printf(
@@ -545,11 +555,11 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 static void
 iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	gboolean is_drawing;
 	gdouble y, vspace;
 
-	priv = OFA_PRINT_RECONCIL( instance )->priv;
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	is_drawing = ( operation ?
 			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
@@ -590,13 +600,13 @@ iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation 
 static void
 iprintable_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	gboolean is_drawing;
 	const GDate *date;
 	gchar *str, *str_solde, *sdate;
 	gdouble y/*, vspace*/;
 
-	priv = OFA_PRINT_RECONCIL( instance )->priv;
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	is_drawing = ( operation ?
 			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
@@ -613,7 +623,7 @@ iprintable_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operati
 		}
 		sdate = my_date_to_str( date, MY_DATE_DMYY );
 		priv->account_solde = ofo_account_get_global_solde( priv->account );
-		str_solde = account_solde_to_str( OFA_PRINT_RECONCIL( instance ), priv->account_solde );
+		str_solde = account_solde_to_str( OFA_PDF_RECONCIL( instance ), priv->account_solde );
 		str = g_strdup_printf( _( "Account solde on %s is %s" ), sdate, str_solde );
 		g_free( sdate );
 		g_free( str_solde );
@@ -639,7 +649,7 @@ iprintable_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operati
 static void
 iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	gboolean is_drawing;
 	gdouble y;
 	gchar *str;
@@ -647,7 +657,7 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	const gchar *cstr;
 	gdouble amount;
 
-	priv = OFA_PRINT_RECONCIL( instance )->priv;
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	is_drawing = ( operation ?
 			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
@@ -707,23 +717,23 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 		ofa_iprintable_set_text( instance, context, priv->body_count_rtab, y+1, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		/*g_debug( "ofa_print_reconcil_draw_line: quitting line_num=%d", priv->line_num );*/
+		/*g_debug( "ofa_pdf_reconcil_draw_line: quitting line_num=%d", priv->line_num );*/
 	}
 
 	/* restore the default font size so that the line height computing is rigth */
 	ofa_iprintable_set_font( instance, "", ofa_iprintable_get_default_font_size( instance ));
 }
 
-static gboolean
+static void
 iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	gboolean is_drawing;
 	gdouble y;
 	const GDate *date;
 	gchar *str, *sdate, *str_amount;
 
-	priv = OFA_PRINT_RECONCIL( instance )->priv;
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	is_drawing = ( operation ?
 			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
@@ -737,7 +747,7 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	}
 	sdate = my_date_to_str( date, MY_DATE_DMYY );
 
-	str_amount = account_solde_to_str( OFA_PRINT_RECONCIL( instance ), priv->account_solde );
+	str_amount = account_solde_to_str( OFA_PDF_RECONCIL( instance ), priv->account_solde );
 	str = g_strdup_printf( _( "Reconciliated account solde on %s is %s" ), sdate, str_amount );
 	g_free( sdate );
 	g_free( str_amount );
@@ -768,16 +778,14 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 						"found in your books." ), PANGO_ALIGN_LEFT );
 	}
 
-	y += 6*ofa_iprintable_get_current_line_height( instance );
+	y += 3*ofa_iprintable_get_current_line_height( instance );
 	ofa_iprintable_set_last_y( instance, y );
-
-	return( TRUE );
 }
 
 static gchar *
-account_solde_to_str( ofaPrintReconcil *self, gdouble amount )
+account_solde_to_str( ofaPDFReconcil *self, gdouble amount )
 {
-	ofaPrintReconcilPrivate *priv;
+	ofaPDFReconcilPrivate *priv;
 	gchar *str, *str_amount;
 
 	priv = self->priv;

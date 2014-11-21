@@ -144,17 +144,17 @@ openbook_SOURCES = \
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
+	ofa-pdf-balance.c									\
+	ofa-pdf-balance.h									\
+	ofa-pdf-books.c										\
+	ofa-pdf-books.h										\
+	ofa-pdf-dialog.c									\
+	ofa-pdf-dialog.h									\
+	ofa-pdf-reconcil.c									\
+	ofa-pdf-reconcil.h									\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
 	ofa-preferences.c									\
-	ofa-print.c											\
-	ofa-print.h											\
-	ofa-print-balance.c									\
-	ofa-print-balance.h									\
-	ofa-print-general-books.c							\
-	ofa-print-general-books.h							\
-	ofa-print-reconcil.c								\
-	ofa-print-reconcil.h								\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
 	ofa-rates-page.c									\
@@ -210,7 +210,7 @@ ui_files = \
 	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\
 	ofa-print-balance.ui								\
-	ofa-print-general-books.ui							\
+	ofa-print-books.ui									\
 	ofa-print-reconcil.ui								\
 	ofa-rate-properties.ui								\
 	ofa-settlement.piece.ui								\

@@ -24,12 +24,12 @@
  * $Id$
  */
 
-#ifndef __OFA_PRINT_BALANCE_H__
-#define __OFA_PRINT_BALANCE_H__
+#ifndef __OFA_PDF_BALANCE_H__
+#define __OFA_PDF_BALANCE_H__
 
 /**
- * SECTION: ofa_print_balance
- * @short_description: #ofaPrintBalance class definition.
+ * SECTION: ofa_pdf_balance
+ * @short_description: #ofaPDFBalance class definition.
  * @include: ui/ofa-print-reconcil.h
  *
  * Print the reconciliation summary.
@@ -37,39 +37,40 @@
  * This is a convenience class around a GtkPrintOperation.
  */
 
-#include "core/my-dialog.h"
 #include "core/ofa-main-window-def.h"
+
+#include "ui/ofa-pdf-dialog.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_PRINT_BALANCE                ( ofa_print_balance_get_type())
-#define OFA_PRINT_BALANCE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_PRINT_BALANCE, ofaPrintBalance ))
-#define OFA_PRINT_BALANCE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_PRINT_BALANCE, ofaPrintBalanceClass ))
-#define OFA_IS_PRINT_BALANCE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_PRINT_BALANCE ))
-#define OFA_IS_PRINT_BALANCE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PRINT_BALANCE ))
-#define OFA_PRINT_BALANCE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PRINT_BALANCE, ofaPrintBalanceClass ))
+#define OFA_TYPE_PDF_BALANCE                ( ofa_pdf_balance_get_type())
+#define OFA_PDF_BALANCE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_PDF_BALANCE, ofaPDFBalance ))
+#define OFA_PDF_BALANCE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_PDF_BALANCE, ofaPDFBalanceClass ))
+#define OFA_IS_PDF_BALANCE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_PDF_BALANCE ))
+#define OFA_IS_PDF_BALANCE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PDF_BALANCE ))
+#define OFA_PDF_BALANCE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PDF_BALANCE, ofaPDFBalanceClass ))
 
-typedef struct _ofaPrintBalancePrivate        ofaPrintBalancePrivate;
+typedef struct _ofaPDFBalancePrivate        ofaPDFBalancePrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                parent;
+	ofaPDFDialog          parent;
 
 	/*< private members >*/
-	ofaPrintBalancePrivate *priv;
+	ofaPDFBalancePrivate *priv;
 }
-	ofaPrintBalance;
+	ofaPDFBalance;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass           parent;
+	ofaPDFDialogClass     parent;
 }
-	ofaPrintBalanceClass;
+	ofaPDFBalanceClass;
 
-GType    ofa_print_balance_get_type( void ) G_GNUC_CONST;
+GType    ofa_pdf_balance_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_print_balance_run     ( ofaMainWindow *parent );
+gboolean ofa_pdf_balance_run     ( ofaMainWindow *parent );
 
 G_END_DECLS
 
-#endif /* __OFA_PRINT_BALANCE_H__ */
+#endif /* __OFA_PDF_BALANCE_H__ */
