@@ -840,11 +840,12 @@ iprintable_is_new_group( const ofaIPrintable *instance, GList *current, GList *p
 	ofoEntry *current_entry, *prev_entry;
 
 	g_return_val_if_fail( current, FALSE );
-	current_entry = OFO_ENTRY( current->data );
 
 	if( !prev ){
 		return( TRUE );
 	}
+
+	current_entry = OFO_ENTRY( current->data );
 	prev_entry = OFO_ENTRY( prev->data );
 
 	return( g_utf8_collate(
@@ -852,15 +853,7 @@ iprintable_is_new_group( const ofaIPrintable *instance, GList *current, GList *p
 }
 
 /*
- * draw account header, taking care of having a new page if asked for
- *
- * on a page's bottom, we must have at least:
- * - the header
- * - a line
- * - the bottom of the page, or the account footer
- *
- * more, if line_num > 0, we draw a line between the previous account
- * and this new one
+ * draw account header
  */
 static void
 iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
