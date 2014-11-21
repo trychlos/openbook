@@ -158,7 +158,7 @@ static const gint   st_default_orientation = GTK_PAGE_ORIENTATION_LANDSCAPE;
  * - total general at the end of the summary
  */
 /* the columns of the account header line */
-#define st_accnumber_width                 (gdouble) 60/9*st_default_font_size
+/*#define st_accnumber_width                 (gdouble) 60/9*st_default_font_size*/
 #define st_acccurrency_width               (gdouble) 23/10*st_default_font_size
 
 /* the columns of the entry line */
@@ -669,11 +669,6 @@ iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation
 	page_width = gtk_print_context_get_width( context );
 	priv->page_margin = ofa_iprintable_get_page_margin( instance );
 
-	/* account header, starting from the left */
-	priv->body_accnumber_ltab = priv->page_margin;
-	priv->body_acclabel_ltab = priv->body_accnumber_ltab + st_accnumber_width + st_column_hspacing;
-	priv->body_acccurrency_rtab = page_width - priv->page_margin;
-
 	/* entry line, starting from the left */
 	priv->body_dope_ltab = priv->page_margin;
 	priv->body_deffect_ltab = priv->body_dope_ltab + st_date_width + st_column_hspacing;
@@ -688,6 +683,12 @@ iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation
 	priv->body_debit_rtab = priv->body_credit_rtab - st_amount_width - st_column_hspacing;
 	priv->body_reconcil_ctab = priv->body_debit_rtab - st_amount_width - st_column_hspacing - st_reconcil_width/2;
 	priv->body_settlement_ctab = priv->body_reconcil_ctab - st_reconcil_width/2 - st_column_hspacing - st_settlement_width/2;
+
+	/* account header, starting from the left
+	 * computed here because aligned on (and so relying on) body effect date */
+	priv->body_accnumber_ltab = priv->page_margin;
+	priv->body_acclabel_ltab = priv->body_deffect_ltab;
+	priv->body_acccurrency_rtab = page_width - priv->page_margin;
 
 	/* max size in Pango units */
 	priv->body_acclabel_max_size = ( priv->body_acccurrency_rtab - st_acccurrency_width - st_column_hspacing - priv->body_acclabel_ltab )*PANGO_SCALE;
