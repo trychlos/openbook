@@ -369,8 +369,6 @@
  458 2014-11-17 view_entries: the st_renderes should not be a static
                 variable, but member of the instance data
 
- 459 2014-11-18 print accounts balances : option group by class
-
  460
 
 -----------------------------------------------------------------------
@@ -1991,6 +1989,9 @@
  456 2014-11-14 printings: there is no sens to have a special header
                 on last page: remove 'is_last' argument
      2014-11-14 done - svn #4115
+
+ 459 2014-11-18 print accounts balances : option group by class
+     2014-11-21 done - svn #4131
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

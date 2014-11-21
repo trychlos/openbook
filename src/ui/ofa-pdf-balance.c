@@ -69,6 +69,7 @@ struct _ofaPDFBalancePrivate {
 	GtkWidget     *to_date_entry;
 
 	GtkWidget     *per_class_btn;		/* subtotal per class */
+	GtkWidget     *new_page_btn;
 
 	/* internals
 	 */
@@ -78,6 +79,7 @@ struct _ofaPDFBalancePrivate {
 	GDate          from_date;
 	GDate          to_date;
 	gboolean       per_class;
+	gboolean       new_page;
 	GList         *totals;
 
 	/* print datas
@@ -119,6 +121,7 @@ static const gchar *st_pref_all_accounts = "PDFBalanceAllAccounts";
 static const gchar *st_pref_from_date    = "PDFBalanceFromDate";
 static const gchar *st_pref_to_date      = "PDFBalanceToDate";
 static const gchar *st_pref_per_class    = "PDFBalancePerClass";
+static const gchar *st_pref_new_page     = "PDFBalanceNewPage";
 
 static const gchar *st_def_fname         = "AccountsBalance";
 static const gchar *st_page_header_title = N_( "Accounts Balance Summary" );
@@ -159,6 +162,7 @@ static void     on_to_account_select( GtkButton *button, ofaPDFBalance *self );
 static void     on_account_changed( GtkEntry *entry, ofaPDFBalance *self, GtkWidget *label );
 static void     on_account_select( GtkButton *button, ofaPDFBalance *self, GtkWidget *entry );
 static void     on_all_accounts_toggled( GtkToggleButton *button, ofaPDFBalance *self );
+static void     on_per_class_toggled( GtkToggleButton *button, ofaPDFBalance *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFBalance *self );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
@@ -459,9 +463,19 @@ init_others( ofaPDFBalance *self )
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
+	/* setup the new_page btn before the per_class one in order to be
+	 * safely updated when setting the later preference */
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p3-new-page" );
+	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
+	bvalue = ofa_settings_get_boolean( st_pref_new_page );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), bvalue );
+	priv->new_page_btn = widget;
+
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p3-per-class" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
+	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_per_class_toggled ), self );
 	bvalue = ofa_settings_get_boolean( st_pref_per_class );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), !bvalue );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), bvalue );
 	priv->per_class_btn = widget;
 }
@@ -540,6 +554,17 @@ on_all_accounts_toggled( GtkToggleButton *button, ofaPDFBalance *self )
 	gtk_widget_set_sensitive( priv->to_account_label, !bvalue );
 }
 
+static void
+on_per_class_toggled( GtkToggleButton *button, ofaPDFBalance *self )
+{
+	ofaPDFBalancePrivate *priv;
+	gboolean bvalue;
+
+	priv = self->priv;
+	bvalue = gtk_toggle_button_get_active( button );
+	gtk_widget_set_sensitive( priv->new_page_btn, bvalue );
+}
+
 /*
  */
 static gboolean
@@ -602,6 +627,10 @@ do_apply( ofaPDFBalance *self )
 
 	priv->per_class = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->per_class_btn ));
 	ofa_settings_set_boolean( st_pref_per_class, priv->per_class );
+
+	priv->new_page = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->new_page_btn ));
+	ofa_settings_set_boolean( st_pref_new_page, priv->new_page );
+	ofa_iprintable_set_group_on_new_page( OFA_IPRINTABLE( self ), priv->new_page );
 
 	return( TRUE );
 }
