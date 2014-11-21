@@ -111,6 +111,7 @@ AC_CONFIG_FILES([
 	src/Makefile
 	src/api/Makefile
 	src/core/Makefile
+	src/css/Makefile
 	src/import1/Makefile
 	src/mysql/Makefile
 	src/postgre/Makefile

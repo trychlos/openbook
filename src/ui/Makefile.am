@@ -28,12 +28,15 @@ bin_PROGRAMS = \
 
 ui_datadir = $(pkgdatadir)/ui
 
+css_datadir = $(pkgdatadir)/css
+
 AM_CPPFLAGS += \
 	-I $(top_srcdir)									\
 	-I $(top_srcdir)/src								\
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
 	-DG_LOG_DOMAIN=\"OFA\"								\
 	-DPKGUIDIR=\"$(ui_datadir)\"						\
+	-DPKGCSSDIR=\"$(css_datadir)\"						\
 	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
 	-DSYSCONFDIR=\"$(sysconfdir)\"						\
 	$(OPENBOOK_CFLAGS)									\

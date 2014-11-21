@@ -26,12 +26,15 @@ pkglib_LTLIBRARIES = libofa-core.la
 
 core_datadir = $(pkgdatadir)/core
 
+css_datadir = $(pkgdatadir)/core
+
 AM_CPPFLAGS += \
 	-I $(top_srcdir)									\
 	-I $(top_srcdir)/src								\
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
 	-DG_LOG_DOMAIN=\"OFA\"								\
 	-DPKGUIDIR=\"$(core_datadir)\"						\
+	-DPKGCSSDIR=\"$(css_datadir)\"						\
 	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
 	-DSYSCONFDIR=\"$(sysconfdir)\"						\
 	$(OPENBOOK_CFLAGS)									\
@@ -95,16 +98,11 @@ libofa_core_la_LDFLAGS = \
 	-fPIC												\
 	$(NULL)
 
-rc_files = \
-	ofa.css												\
-	$(NULL)
-
 ui_files = \
 	ofa-dblogin.ui										\
 	$(NULL)
 
 core_data_DATA = \
-	$(rc_files)											\
 	$(ui_files)											\
 	$(NULL)
 	
