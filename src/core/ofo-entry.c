@@ -410,7 +410,7 @@ ofo_entry_get_dataset_by_concil( const ofoDossier *dossier, const gchar *account
 			break;
 		case ENT_CONCILED_NO:
 			g_string_append_printf( where,
-				"	AND ENT_CONCIL_DVAL=0" );
+				"	AND (ENT_CONCIL_DVAL=0 OR ENT_CONCIL_DVAL IS NULL)" );
 			break;
 		case ENT_CONCILED_ALL:
 			break;

@@ -1114,7 +1114,7 @@ set_errmsg( ofaGuidedCommon *self, const gchar *errmsg )
 	gtk_label_set_text( GTK_LABEL( self->priv->errmsg ), errmsg );
 
 	if( gdk_rgba_parse(
-			&color, errmsg && g_utf8_strlen( errmsg, -1 ) ? "#FF0000":"#000000" )){
+			&color, errmsg && g_utf8_strlen( errmsg, -1 ) ? "#ff0000":"#000000" )){
 		gtk_widget_override_color( self->priv->errmsg, GTK_STATE_FLAG_NORMAL, &color );
 	}
 }

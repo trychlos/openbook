@@ -254,6 +254,7 @@ v_setup_view( ofaPage *page )
 	gtk_widget_set_margin_left( GTK_WIDGET( grid ), 4 );
 	gtk_widget_set_margin_right( GTK_WIDGET( grid ), 4 );
 	gtk_grid_set_column_spacing( grid, 4 );
+	gtk_grid_set_row_spacing( grid, 3 );
 	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( grid ));
 
 	account = setup_account_selection( page );

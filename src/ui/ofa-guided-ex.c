@@ -48,26 +48,26 @@ struct _ofaGuidedExPrivate {
 
 	/* internals
 	 */
-	ofoDossier            *dossier;			/* dossier */
-	const ofoOpeTemplate  *model;			/* model */
-	ofaGuidedCommon       *common;
+	ofoDossier           *dossier;			/* dossier */
+	const ofoOpeTemplate *model;			/* model */
+	ofaGuidedCommon      *common;
 
 	/* UI - the pane
 	 */
-	GtkPaned              *pane;
+	GtkPaned             *pane;
 
 	/* UI - left part treeview selection of the entry model
 	 */
-	GtkTreeView           *left_tview;
-	GtkButton             *left_select;
+	GtkTreeView          *left_tview;
+	GtkButton            *left_select;
 
 	/* UI - right part guided input
 	 *      most if not all elements are taken from ofa-guided-input.ui
 	 *      dialog box definition
 	 */
-	GtkContainer          *right_box;		/* the reparented container from dialog */
-	GtkButton             *right_ok;
-	GtkButton             *right_cancel;
+	GtkContainer         *right_box;		/* the reparented container from dialog */
+	GtkButton            *right_ok;
+	GtkButton            *right_cancel;
 };
 
 /* columns in the left tree view which handles the entry models
@@ -79,8 +79,8 @@ enum {
 	LEFT_N_COLUMNS
 };
 
-static const gchar  *st_ui_xml    = PKGUIDIR "/ofa-guided-input.ui";
-static const gchar  *st_ui_id     = "GuidedInputDlg";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-guided-input.ui";
+static const gchar *st_ui_id            = "GuidedInputDlg";
 
 G_DEFINE_TYPE( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_PAGE )
 
