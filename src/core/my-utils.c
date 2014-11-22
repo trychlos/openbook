@@ -741,7 +741,7 @@ my_utils_file_exists( const gchar *filename )
 	exists = g_file_query_exists( file, NULL );
 	g_object_unref( file );
 
-	g_debug( "my_utils_file_exists: the file %s exists : %s", filename, exists ? "True":"False" );
+	g_debug( "my_utils_file_exists: the file '%s' exists: %s", filename, exists ? "True":"False" );
 
 	return( exists );
 }

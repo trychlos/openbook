@@ -164,7 +164,7 @@ setup_tree_view( ofaPage *page )
 {
 	ofaLedgersPagePrivate *priv;
 	GtkFrame *frame;
-	ofaLedgerTreeviewParms parms;
+	ofsLedgerTreeviewParms parms;
 
 	priv = OFA_LEDGERS_PAGE( page )->priv;
 

@@ -181,7 +181,7 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaIntClosingPrivate *priv;
-	ofaLedgerTreeviewParms parms;
+	ofsLedgerTreeviewParms parms;
 	GtkContainer *container;
 	GtkButton *button;
 	GtkLabel *label;

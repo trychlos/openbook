@@ -153,6 +153,8 @@ openbook_SOURCES = \
 	ofa-pdf-books.h										\
 	ofa-pdf-dialog.c									\
 	ofa-pdf-dialog.h									\
+	ofa-pdf-ledgers.c									\
+	ofa-pdf-ledgers.h									\
 	ofa-pdf-reconcil.c									\
 	ofa-pdf-reconcil.h									\
 	ofa-plugin-manager.c								\
@@ -214,6 +216,7 @@ ui_files = \
 	ofa-preferences.ui									\
 	ofa-print-balance.ui								\
 	ofa-print-books.ui									\
+	ofa-print-ledgers.ui								\
 	ofa-print-reconcil.ui								\
 	ofa-rate-properties.ui								\
 	ofa-settlement.piece.ui								\

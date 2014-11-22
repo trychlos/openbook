@@ -59,6 +59,7 @@
 #include "ui/ofa-page.h"
 #include "ui/ofa-pdf-balance.h"
 #include "ui/ofa-pdf-books.h"
+#include "ui/ofa-pdf-ledgers.h"
 #include "ui/ofa-pdf-reconcil.h"
 #include "ui/ofa-rates-page.h"
 #include "ui/ofa-reconciliation.h"
@@ -105,6 +106,7 @@ static void on_ope_import          ( GSimpleAction *action, GVariant *parameter,
 static void on_ope_export          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_balance         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_books           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_pdf_ledgers         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_pdf_reconcil        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_accounts        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_ledgers         ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -129,6 +131,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "export",        on_ope_export,           NULL, NULL, NULL },
 		{ "pdf-balance",   on_pdf_balance,          NULL, NULL, NULL },
 		{ "pdf-books",     on_pdf_books,            NULL, NULL, NULL },
+		{ "pdf-ledgers",   on_pdf_ledgers,          NULL, NULL, NULL },
 		{ "pdf-reconcil",  on_pdf_reconcil,         NULL, NULL, NULL },
 		{ "accounts",      on_ref_accounts,         NULL, NULL, NULL },
 		{ "ledgers",       on_ref_ledgers,          NULL, NULL, NULL },
@@ -1113,6 +1116,19 @@ on_pdf_books( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_pdf_books_run( OFA_MAIN_WINDOW( user_data ));
+}
+
+static void
+on_pdf_ledgers( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_print_balance";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_pdf_ledgers_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void

@@ -82,7 +82,7 @@ typedef struct {
 typedef void    ( *ofaLedgerTreeviewCb )           ( GList *, gpointer );
 
 /**
- * ofaLedgerTreeviewParms:
+ * ofsLedgerTreeviewParms:
  *
  * The structure used to initialize this convenience class.
  */
@@ -94,11 +94,11 @@ typedef struct {
 	ofaLedgerTreeviewCb pfnActivated;
 	void               *user_data;
 }
-	ofaLedgerTreeviewParms;
+	ofsLedgerTreeviewParms;
 
 GType              ofa_ledger_treeview_get_type                ( void ) G_GNUC_CONST;
 
-ofaLedgerTreeview *ofa_ledger_treeview_new                     ( const ofaLedgerTreeviewParms *parms );
+ofaLedgerTreeview *ofa_ledger_treeview_new                     ( const ofsLedgerTreeviewParms *parms );
 
 void               ofa_ledger_treeview_init_view               ( ofaLedgerTreeview *view, const gchar *initial_selection );
 

@@ -135,8 +135,8 @@ static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFReconcil *self );
 static void     widget_error( ofaPDFReconcil *self, const gchar *msg );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
-static void     iprintable_reset_runtime( ofaIPrintable *instance );
 static void     iprintable_free_dataset( GList *dataset );
+static void     iprintable_reset_runtime( ofaIPrintable *instance );
 static void     iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static gchar   *iprintable_get_page_header_title( const ofaIPrintable *instance );
 static gchar   *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
@@ -219,8 +219,8 @@ iprintable_iface_init( ofaIPrintableInterface *iface )
 
 	iface->get_interface_version = iprintable_get_interface_version;
 	iface->get_dataset = iprintable_get_dataset;
-	iface->reset_runtime = iprintable_reset_runtime;
 	iface->free_dataset = iprintable_free_dataset;
+	iface->reset_runtime = iprintable_reset_runtime;
 	iface->on_begin_print = iprintable_on_begin_print;
 	iface->get_page_header_title = iprintable_get_page_header_title;
 	iface->get_page_header_subtitle = iprintable_get_page_header_subtitle;
@@ -556,41 +556,36 @@ static void
 iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	ofaPDFReconcilPrivate *priv;
-	gboolean is_drawing;
 	gdouble y, vspace;
 
-	priv = OFA_PDF_RECONCIL( instance )->priv;
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
 	vspace = ofa_iprintable_get_current_line_vspace( instance );
 	y+= vspace;
 
-	if( is_drawing ){
-		ofa_iprintable_set_text( instance, context,
-				priv->body_effect_ltab, y, _( "Effect date" ), PANGO_ALIGN_LEFT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_effect_ltab, y, _( "Effect date" ), PANGO_ALIGN_LEFT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_ledger_ltab, y, _( "Ledger" ), PANGO_ALIGN_LEFT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_ledger_ltab, y, _( "Ledger" ), PANGO_ALIGN_LEFT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_ref_ltab, y, _( "Piece" ), PANGO_ALIGN_LEFT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_ref_ltab, y, _( "Piece" ), PANGO_ALIGN_LEFT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_label_ltab, y, _( "Label" ), PANGO_ALIGN_LEFT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_label_ltab, y, _( "Label" ), PANGO_ALIGN_LEFT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_debit_rtab, y, _( "Debit" ), PANGO_ALIGN_RIGHT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_debit_rtab, y, _( "Debit" ), PANGO_ALIGN_RIGHT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_credit_rtab, y, _( "Credit" ), PANGO_ALIGN_RIGHT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_credit_rtab, y, _( "Credit" ), PANGO_ALIGN_RIGHT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_solde_rtab, y, _( "Solde" ), PANGO_ALIGN_RIGHT );
-	}
+	ofa_iprintable_set_text( instance, context,
+			priv->body_solde_rtab, y, _( "Solde" ), PANGO_ALIGN_RIGHT );
 
 	/* this set the 'y' height just after the column headers */
 	y += ofa_iprintable_get_current_line_height( instance );
@@ -601,38 +596,34 @@ static void
 iprintable_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	ofaPDFReconcilPrivate *priv;
-	gboolean is_drawing;
 	const GDate *date;
 	gchar *str, *str_solde, *sdate;
-	gdouble y/*, vspace*/;
+	gdouble y;
+
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
 	priv = OFA_PDF_RECONCIL( instance )->priv;
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
 	y = ofa_iprintable_get_last_y( instance );
-	/*vspace = ofa_iprintable_get_current_line_vspace( instance );
-	y += vspace;*/
 
-	if( is_drawing ){
-		date = ofo_account_get_global_deffect( priv->account );
-		if( !my_date_is_valid( date )){
-			date = ( const GDate * ) &priv->date;
-		}
-		sdate = my_date_to_str( date, MY_DATE_DMYY );
-		priv->account_solde = ofo_account_get_global_solde( priv->account );
-		str_solde = account_solde_to_str( OFA_PDF_RECONCIL( instance ), priv->account_solde );
-		str = g_strdup_printf( _( "Account solde on %s is %s" ), sdate, str_solde );
-		g_free( sdate );
-		g_free( str_solde );
-
-		ofa_iprintable_set_text( instance, context,
-				priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-
-		g_free( str );
+	date = ofo_account_get_global_deffect( priv->account );
+	if( !my_date_is_valid( date )){
+		date = ( const GDate * ) &priv->date;
 	}
+	sdate = my_date_to_str( date, MY_DATE_DMYY );
+
+	priv->account_solde = ofo_account_get_global_solde( priv->account );
+	str_solde = account_solde_to_str( OFA_PDF_RECONCIL( instance ), priv->account_solde );
+
+	str = g_strdup_printf( _( "Account solde on %s is %s" ), sdate, str_solde );
+
+	g_free( sdate );
+	g_free( str_solde );
+
+	ofa_iprintable_set_text( instance, context,
+			priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+
+	g_free( str );
 
 	y += ofa_iprintable_get_current_line_height( instance );
 	ofa_iprintable_set_last_y( instance, y );
@@ -650,77 +641,69 @@ static void
 iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
 	ofaPDFReconcilPrivate *priv;
-	gboolean is_drawing;
 	gdouble y;
 	gchar *str;
 	ofoEntry *entry;
 	const gchar *cstr;
 	gdouble amount;
 
-	priv = OFA_PDF_RECONCIL( instance )->priv;
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
 	entry = OFO_ENTRY( current->data );
 
-	if( is_drawing ){
-		str = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
-		ofa_iprintable_set_text( instance, context,
-				priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
-		g_free( str );
+	str = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_effect_ltab, y, str, PANGO_ALIGN_LEFT );
+	g_free( str );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_ledger_ltab, y, ofo_entry_get_ledger( entry ), PANGO_ALIGN_LEFT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_ledger_ltab, y, ofo_entry_get_ledger( entry ), PANGO_ALIGN_LEFT );
 
-		cstr = ofo_entry_get_ref( entry );
-		if( cstr && g_utf8_strlen( cstr, -1 )){
-			ofa_iprintable_ellipsize_text( instance, context,
-					priv->body_ref_ltab, y, cstr, priv->body_ref_max_size );
-		}
-
+	cstr = ofo_entry_get_ref( entry );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
 		ofa_iprintable_ellipsize_text( instance, context,
-				priv->body_label_ltab, y, ofo_entry_get_label( entry ), priv->body_label_max_size );
-
-		amount = ofo_entry_get_debit( entry );
-		if( amount ){
-			str = my_double_to_str( amount );
-			ofa_iprintable_set_text( instance, context,
-					priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
-			g_free( str );
-			priv->account_solde -= amount;
-		}
-
-		amount = ofo_entry_get_credit( entry );
-		if( amount ){
-			str = my_double_to_str( amount );
-			ofa_iprintable_set_text( instance, context,
-					priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
-			g_free( str );
-			priv->account_solde += amount;
-		}
-
-		/* current solde */
-		ofa_iprintable_set_color( instance, context, COLOR_DARK_CYAN );
-		str = my_double_to_str( priv->account_solde );
-		ofa_iprintable_set_text( instance, context,
-				priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-
-		/* display the line number starting from 1 */
-		ofa_iprintable_set_color( instance, context, COLOR_GRAY );
-		ofa_iprintable_set_font( instance, "", 7 );
-
-		str = g_strdup_printf( "%d", ++priv->line_num );
-		ofa_iprintable_set_text( instance, context, priv->body_count_rtab, y+1, str, PANGO_ALIGN_RIGHT );
-		g_free( str );
-
-		/*g_debug( "ofa_pdf_reconcil_draw_line: quitting line_num=%d", priv->line_num );*/
+				priv->body_ref_ltab, y, cstr, priv->body_ref_max_size );
 	}
 
-	/* restore the default font size so that the line height computing is rigth */
+	ofa_iprintable_ellipsize_text( instance, context,
+			priv->body_label_ltab, y, ofo_entry_get_label( entry ), priv->body_label_max_size );
+
+	amount = ofo_entry_get_debit( entry );
+	if( amount ){
+		str = my_double_to_str( amount );
+		ofa_iprintable_set_text( instance, context,
+				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+		priv->account_solde -= amount;
+	}
+
+	amount = ofo_entry_get_credit( entry );
+	if( amount ){
+		str = my_double_to_str( amount );
+		ofa_iprintable_set_text( instance, context,
+				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+		priv->account_solde += amount;
+	}
+	/* current solde */
+	ofa_iprintable_set_color( instance, context, COLOR_DARK_CYAN );
+	str = my_double_to_str( priv->account_solde );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+	g_free( str );
+
+	/* display the line number starting from 1 */
+	ofa_iprintable_set_color( instance, context, COLOR_GRAY );
+	ofa_iprintable_set_font( instance, "", 7 );
+
+	str = g_strdup_printf( "%d", ++priv->line_num );
+	ofa_iprintable_set_text( instance, context, priv->body_count_rtab, y+1, str, PANGO_ALIGN_RIGHT );
+	g_free( str );
+
+	/* restore the default font size so that the line height computing is right */
 	ofa_iprintable_set_font( instance, "", ofa_iprintable_get_default_font_size( instance ));
 }
 
@@ -728,16 +711,13 @@ static void
 iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	ofaPDFReconcilPrivate *priv;
-	gboolean is_drawing;
-	gdouble y;
+	gdouble y, width;
 	const GDate *date;
 	gchar *str, *sdate, *str_amount;
 
-	priv = OFA_PDF_RECONCIL( instance )->priv;
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
+	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
 
@@ -752,31 +732,28 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	g_free( sdate );
 	g_free( str_amount );
 
-	if( is_drawing ){
-		ofa_iprintable_set_text( instance, context,
-				priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-	}
+	ofa_iprintable_set_text( instance, context,
+			priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 
 	g_free( str );
 
 	y += ofa_iprintable_get_current_line_height( instance );
 
-	if( is_drawing ){
-		ofa_iprintable_set_color( instance, context, COLOR_BLACK );
-		ofa_iprintable_set_font( instance, "", ofa_iprintable_get_default_font_size( instance ));
+	ofa_iprintable_set_color( instance, context, COLOR_BLACK );
+	ofa_iprintable_set_font( instance, "", ofa_iprintable_get_default_font_size( instance ));
 
-		ofa_iprintable_set_wrapped_text( instance, context,
-					priv->page_margin, y,
-					(gtk_print_context_get_width( context )-priv->page_margin)*PANGO_SCALE,
-					_( "This reconciliated solde "
-						"should be the same, though inversed, "
-						"that the one of the account extraction sent by your bank.\n"
-						"If this is not the case, then you have most probably "
-						"forgotten to reconciliate "
-						"some of the above entries, or some other entries have been recorded "
-						"by your bank, are present in your account extraction, but are not "
-						"found in your books." ), PANGO_ALIGN_LEFT );
-	}
+	width = context ? gtk_print_context_get_width( context ) : 0;
+	ofa_iprintable_set_wrapped_text( instance, context,
+				priv->page_margin, y,
+				(width-priv->page_margin)*PANGO_SCALE,
+				_( "This reconciliated solde "
+					"should be the same, though inversed, "
+					"that the one of the account extraction sent by your bank.\n"
+					"If this is not the case, then you have most probably "
+					"forgotten to reconciliate "
+					"some of the above entries, or some other entries have been recorded "
+					"by your bank, are present in your account extraction, but are not "
+					"found in your books." ), PANGO_ALIGN_LEFT );
 
 	y += 3*ofa_iprintable_get_current_line_height( instance );
 	ofa_iprintable_set_last_y( instance, y );

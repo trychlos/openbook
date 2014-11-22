@@ -109,8 +109,12 @@
           <attribute name="action">win.pdf-reconcil</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">_General books...</attribute>
+          <attribute name="label" translatable="yes">General b_ooks...</attribute>
           <attribute name="action">win.pdf-books</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Ledgers...</attribute>
+          <attribute name="action">win.pdf-ledgers</attribute>
         </item>
       </section>
     </submenu>

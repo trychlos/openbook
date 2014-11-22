@@ -33,6 +33,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
 
 #include "core/my-window.h"
 #include "core/my-window-prot.h"
@@ -57,11 +58,12 @@ typedef struct {
 	gchar             *filename;
 	gint               current_font_size;
 	PangoLayout       *layout;
-	GList             *elements;
+	GList             *dataset;
 	gint               pages_count;
 	gdouble            max_y;
 	gdouble            last_y;
 	GList             *last_printed;
+	gint               count;			/* count of printed lines */
 
 	/* groups management
 	 * @have_groups: is initialized to %FALSE on initialization,
@@ -74,7 +76,6 @@ typedef struct {
 	 */
 	gboolean           have_groups;
 	gboolean           group_footer_printed;
-	gdouble            group_max_end_height;
 }
 	sIPrintable;
 
@@ -85,12 +86,14 @@ typedef struct {
 #define COLOR_WHITE                     1,      1,      1
 #define COLOR_DARK_RED                  0.5,    0,      0
 #define COLOR_DARK_CYAN                 0,      0.5,    0.5
-#define COLOR_GRAY                      0.6,    0.6,    0.6
-#define COLOR_LIGHT_GRAY                0.9375, 0.9375, 0.9375
+#define COLOR_GRAY                      0.6,    0.6,    0.6			/* #999999 */
+#define COLOR_MIDDLE_GRAY               0.7688, 0.7688, 0.7688		/* #c4c4c4 */
+#define COLOR_LIGHT_GRAY                0.9375, 0.9375, 0.9375		/* #f0f0f0 */
 
 #define COLOR_HEADER_DOSSIER            COLOR_DARK_RED
 #define COLOR_HEADER_TITLE              COLOR_DARK_CYAN
 #define COLOR_FOOTER                    COLOR_GRAY
+#define COLOR_NO_DATA                   COLOR_MIDDLE_GRAY
 
 /* These are parms which describe the page layout
  *
@@ -145,23 +148,20 @@ static const gint   st_footer_font_size                      = 7;
 #define             st_footer_before_line_vspace             ( gdouble ) 2
 #define             st_footer_after_line_vspace              ( gdouble ) 1
 #define             st_page_margin                           ( gdouble ) 2
+static const gint   st_no_data_font_size                     = 20;
 
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType              register_type( void );
 static void               interface_base_init( ofaIPrintableInterface *klass );
 static void               interface_base_finalize( ofaIPrintableInterface *klass );
+static void               error_get_dataset( const ofaIPrintable *instance );
 static void               error_printing( const ofaIPrintable *instance, GError *error );
 static void               success_printing( const ofaIPrintable *instance, sIPrintable *sdata );
 static gboolean           do_operate( ofaIPrintable *instance, sIPrintable *sdata );
-static void               v_on_print_operation_new( ofaIPrintable *instance, GtkPrintOperation *operation );
 static void               on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance );
-static GList             *v_get_dataset( ofaIPrintable *instance );
-static void               v_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static gboolean           on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance );
-static void               v_reset_runtime( ofaIPrintable *instance );
-static void               v_on_begin_paginate( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void               v_on_end_paginate( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
+static void               reset_runtime( ofaIPrintable *instance );
 static void               on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, ofaIPrintable *instance );
 static gboolean           draw_page( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata );
 static void               v_draw_page_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
@@ -176,24 +176,23 @@ static gchar             *iprintable_get_page_header_subtitle( const ofaIPrintab
 static void               draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata );
 static gdouble            get_page_header_columns_height( const ofaIPrintable *instance, sIPrintable *sdata );
 static void               draw_page_header_test_fonts( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata );
-static void               v_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gboolean is_drawing, sIPrintable *sdata );
+static void               draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, sIPrintable *sdata );
 static gboolean           v_is_new_group( const ofaIPrintable *instance, GList *current, GList *prev );
-static void               draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint line_num, GList *line, gboolean bdraw, sIPrintable *sdata );
+static void               draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint line_num, GList *line, sIPrintable *sdata );
 static gdouble            get_group_header_height( const ofaIPrintable *instance, gint line_num, GList *line, sIPrintable *sdata );
-static void               draw_group_top_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gboolean is_drawing, sIPrintable *sdata );
+static void               draw_group_top_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, sIPrintable *sdata );
 static gboolean           draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, gint line_num, GList *line, GList *next, sIPrintable *sdata );
 static void               draw_group_bottom_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, sIPrintable *sdata );
 static gdouble            get_group_bottom_report_height( const ofaIPrintable *instance, sIPrintable *sdata );
 static void               draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint line_num, sIPrintable *sdata );
 static gdouble            get_group_footer_height( const ofaIPrintable *instance, sIPrintable *sdata );
-static gdouble            get_max_group_end_height( const ofaIPrintable *instance, gboolean is_drawing, sIPrintable *sdata );
-static void               draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gboolean is_drawing, sIPrintable *sdata );
+static void               draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, sIPrintable *sdata );
 static gdouble            get_bottom_summary_height( ofaIPrintable *instance, sIPrintable *sdata );
-static void               draw_page_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, gboolean is_drawing, sIPrintable *sdata );
+static void               v_draw_page_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
+static void               iprintable_draw_page_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
 static gdouble            get_page_footer_height( const ofaIPrintable *instance );
 static void               on_end_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance );
 static const gchar       *v_get_success_msg( const ofaIPrintable *instance );
-static void               print_set_color( GtkPrintContext *context, double red, double green, double blue );
 
 static void
 on_instance_weak_notify( sIPrintable *sdata, myDialog *finalized_dialog )
@@ -274,6 +273,7 @@ interface_base_init( ofaIPrintableInterface *klass )
 		klass->draw_page_header = iprintable_draw_page_header;
 		klass->get_page_header_title = iprintable_get_page_header_title;
 		klass->get_page_header_subtitle = iprintable_get_page_header_subtitle;
+		klass->draw_page_footer = iprintable_draw_page_footer;
 	}
 }
 
@@ -299,12 +299,6 @@ guint
 ofa_iprintable_get_interface_last_version( const ofaIPrintable *instance )
 {
 	return( IPRINTABLE_LAST_VERSION );
-}
-
-void
-ofa_iprintable_init_dialog( ofaIPrintable *instance )
-{
-	ofa_iprintable_init( instance );
 }
 
 /**
@@ -383,16 +377,6 @@ ofa_iprintable_set_paper_orientation( ofaIPrintable *instance, GtkPageOrientatio
 }
 
 /**
- * ofa_iprintable_apply:
- * @instance: this #ofaIPrintable instance.
- */
-gboolean
-ofa_iprintable_apply( ofaIPrintable *instance )
-{
-	return( ofa_iprintable_print_to_pdf( instance, NULL ));
-}
-
-/**
  * ofa_iprintable_print_to_pdf:
  * @instance: this #ofaIPrintable instance.
  * @filename: the output PDF report.
@@ -410,11 +394,17 @@ ofa_iprintable_print_to_pdf( ofaIPrintable *instance, const gchar *filename )
 
 	sdata->filename = g_strdup( filename );
 
+	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->get_dataset ){
+		sdata->dataset = OFA_IPRINTABLE_GET_INTERFACE( instance )->get_dataset( instance );
+	} else {
+		error_get_dataset( instance );
+		return( FALSE );
+	}
+
 	ok = do_operate( instance, sdata );
-	if( ok ){
-		if( OFA_IPRINTABLE_GET_INTERFACE( instance )->free_dataset ){
-			OFA_IPRINTABLE_GET_INTERFACE( instance )->free_dataset( sdata->elements );
-		}
+
+	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->free_dataset ){
+		OFA_IPRINTABLE_GET_INTERFACE( instance )->free_dataset( sdata->dataset );
 	}
 
 	return( ok );
@@ -432,6 +422,22 @@ ofa_iprintable_set_group_on_new_page( const ofaIPrintable *instance, gboolean ne
 	g_return_if_fail( sdata );
 
 	sdata->group_on_new_page = new_page;
+}
+
+static void
+error_get_dataset( const ofaIPrintable *instance )
+{
+	GtkWidget *dialog;
+
+	dialog = gtk_message_dialog_new(
+						my_window_get_toplevel( MY_WINDOW( instance )),
+						GTK_DIALOG_DESTROY_WITH_PARENT,
+						GTK_MESSAGE_ERROR,
+						GTK_BUTTONS_CLOSE,
+						"%s", _( "get_dataset() virtual not implemented, but is mandatory" ));
+
+	gtk_dialog_run( GTK_DIALOG( dialog ));
+	gtk_widget_destroy( dialog );
 }
 
 static void
@@ -521,9 +527,11 @@ do_operate( ofaIPrintable *instance, sIPrintable *sdata )
 	gtk_print_operation_set_default_page_setup( print, psetup );
 	g_object_unref( psetup );
 
-	v_on_print_operation_new( instance, print );
-
 	gtk_print_operation_set_export_filename( print, sdata->filename );
+
+	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->on_print_operation_new ){
+		OFA_IPRINTABLE_GET_INTERFACE( instance )->on_print_operation_new( instance, print );
+	}
 
 	res = gtk_print_operation_run(
 					print,
@@ -546,18 +554,10 @@ do_operate( ofaIPrintable *instance, sIPrintable *sdata )
 	return( printed );
 }
 
-static void
-v_on_print_operation_new( ofaIPrintable *instance, GtkPrintOperation *operation )
-{
-	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->on_print_operation_new ){
-		OFA_IPRINTABLE_GET_INTERFACE( instance )->on_print_operation_new( instance, operation );
-	}
-}
-
 /*
  * signal handler
- * - compute tha max ordonate in the page
- * - create a new dedicated layout
+ * - compute the max ordonate in the page
+ * - create a new dedicated layout which will be used during drawing operation
  */
 static void
 on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance )
@@ -574,37 +574,24 @@ on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrin
 	sdata->max_y =
 			gtk_print_context_get_height( context )
 			- get_page_footer_height( instance );
+	g_debug( "%s: max_y=%lf", thisfn, sdata->max_y );
 
 	sdata->layout = gtk_print_context_create_pango_layout( context );
-	sdata->elements = v_get_dataset( instance );
 
-	v_on_begin_print( instance, operation, context );
-}
-
-static GList *
-v_get_dataset( ofaIPrintable *instance )
-{
-	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->get_dataset ){
-		return( OFA_IPRINTABLE_GET_INTERFACE( instance )->get_dataset( instance ));
-	}
-
-	return( NULL );
-}
-
-static void
-v_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
-{
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->on_begin_print ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->on_begin_print( instance, operation, context );
 	}
+
+	/* go on now to paginate and drawing phases */
 }
 
 /*
- * signal handler
- * called while not %TRUE
- * returns: %TRUE at the end of the pagination
+ * GtkPrintOperation signal handler
+ * repeatdly called while not %TRUE
  *
- * we implement it so that it is called only once.
+ * Returns: %TRUE at the end of the pagination
+ *
+ * We implement it so that it is called only once.
  */
 static gboolean
 on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance )
@@ -619,20 +606,27 @@ on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintab
 	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
 	g_return_val_if_fail( sdata, FALSE );
 
-	v_reset_runtime( instance );
-	v_on_begin_paginate( instance, operation, context );
+	reset_runtime( instance );
+
+	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->on_begin_paginate ){
+		OFA_IPRINTABLE_GET_INTERFACE( instance )->on_begin_paginate( instance, operation, context );
+	}
 
 	page_num = 0;
-	while( draw_page( instance, operation, context, page_num, sdata )){
+	while( draw_page( instance, NULL, NULL, page_num, sdata )){
 		page_num += 1;
 	}
 
 	/* page_num is counted from zero, so add 1 for count */
 	sdata->pages_count = page_num+1;
+	g_debug( "%s: end of pagination: about to draw %d page(s)", thisfn, sdata->pages_count );
 	gtk_print_operation_set_n_pages( operation, sdata->pages_count );
 
-	v_on_end_paginate( instance, operation, context );
-	v_reset_runtime( instance );
+	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->on_end_paginate ){
+		OFA_IPRINTABLE_GET_INTERFACE( instance )->on_end_paginate( instance, operation, context );
+	}
+
+	reset_runtime( instance );
 
 	return( TRUE );
 }
@@ -643,7 +637,7 @@ on_paginate( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintab
  * whole algorithm, and the application may only add its own code.
  */
 static void
-v_reset_runtime( ofaIPrintable *instance )
+reset_runtime( ofaIPrintable *instance )
 {
 	sIPrintable *sdata;
 
@@ -652,38 +646,15 @@ v_reset_runtime( ofaIPrintable *instance )
 
 	sdata->last_printed = NULL;
 	sdata->group_footer_printed = TRUE;
+	sdata->count = 0;
 
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->reset_runtime ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->reset_runtime( instance );
 	}
 }
 
-static void
-v_on_begin_paginate( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
-{
-	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->on_begin_paginate ){
-		OFA_IPRINTABLE_GET_INTERFACE( instance )->on_begin_paginate( instance, operation, context );
-	}
-}
-
-static void
-v_on_end_paginate( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
-{
-	static const gchar *thisfn = "ofa_iprintable_v_on_end_paginate";
-	sIPrintable *sdata;
-
-	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
-	g_return_if_fail( sdata );
-
-	g_debug( "%s: pages_count=%d", thisfn, sdata->pages_count );
-
-	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->on_end_paginate ){
-		OFA_IPRINTABLE_GET_INTERFACE( instance )->on_end_paginate( instance, operation, context );
-	}
-}
-
 /*
- * signal handler
+ * GtkPrintOperation signal handler
  * call once per page, with a page_num counted from zero
  */
 static void
@@ -703,6 +674,8 @@ on_draw_page( GtkPrintOperation *operation, GtkPrintContext *context, gint page_
 
 /*
  * Used when paginating first, then for actually drawing
+ * @operation: %NULL during pagination phase
+ * @context: %NULL during pagination phase
  *
  * Returns: %TRUE while there is still page(s) to be printed,
  * %FALSE at the end.
@@ -715,22 +688,18 @@ draw_page( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContex
 	GList *line, *next;
 	gint count;
 	gboolean is_last;
-	gboolean is_drawing;
 	gdouble req_height;
 
 	sdata->last_y = 0;
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
 	v_draw_page_header( instance, operation, context, page_num );
+
 	if( page_num == 0 ){
-		v_draw_top_summary( instance, operation, context, is_drawing, sdata );
+		draw_top_summary( instance, operation, context, sdata );
 	}
 
 	line = sdata->last_printed ?
-				g_list_next( sdata->last_printed ) : sdata->elements;
+				g_list_next( sdata->last_printed ) : sdata->dataset;
 
 	for( count=0 ; line ; count+=1 ){
 		next = g_list_next( line );		/* may be %NULL */
@@ -753,12 +722,12 @@ draw_page( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContex
 			is_last = TRUE;
 		}
 		if( is_last ){
-			draw_bottom_summary( instance, operation, context, is_drawing, sdata );
+			draw_bottom_summary( instance, operation, context, sdata );
 			/*g_debug( "draw_page: page_num=%d, is_last=%s", page_num, is_last ? "True":"False" );*/
 		}
 	}
 
-	draw_page_footer( instance, operation, context, page_num, is_drawing, sdata );
+	v_draw_page_footer( instance, operation, context, page_num );
 
 	return( !is_last );
 }
@@ -772,7 +741,7 @@ v_draw_page_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPr
 }
 
 /*
- * default implementation of "draw_page_header" virtual
+ * default implementation of #draw_page_header() virtual
  */
 static void
 iprintable_draw_page_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
@@ -796,60 +765,46 @@ iprintable_draw_page_header( ofaIPrintable *instance, GtkPrintOperation *operati
 }
 
 /*
- * default implementation of "draw_page_header" virtual
- * -> dossier header
+ * default implementation of #draw_page_header() virtual
+ * - dossier name
  */
 static void
 draw_page_header_dossier( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata )
 {
-	gboolean is_drawing;
 	gdouble y;
 	ofoDossier *dossier;
 
 	y = sdata->last_y;
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
+	ofa_iprintable_set_color( instance, context, COLOR_HEADER_DOSSIER );
 	ofa_iprintable_set_font( instance, "Bold Italic", st_page_header_dossier_name_font_size );
 
-	if( is_drawing ){
-		print_set_color( context, COLOR_HEADER_DOSSIER );
-
-		/* dossier name on line 1 */
-		dossier = ofa_main_window_get_dossier( MY_WINDOW( instance )->prot->main_window );
-
-		ofa_iprintable_set_text( instance, context, 0, y,
-				ofo_dossier_get_name( dossier ), PANGO_ALIGN_LEFT );
-	}
+	/* dossier name on line 1 */
+	dossier = ofa_main_window_get_dossier( MY_WINDOW( instance )->prot->main_window );
+	ofa_iprintable_set_text( instance, context,
+			0, y, ofo_dossier_get_name( dossier ), PANGO_ALIGN_LEFT );
 
 	y += sdata->current_font_size + st_page_header_dossier_vspace_after;
 	sdata->last_y = y;
 }
 
 /*
- * default implementation of "draw_page_header" virtual
+ * default implementation of #draw_page_header() virtual
  * - report title
  */
 static void
 draw_page_header_title( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata )
 {
-	gboolean is_drawing;
 	gdouble y, width;
 	gchar *str;
 
 	y = sdata->last_y;
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
+	ofa_iprintable_set_color( instance, context, COLOR_HEADER_TITLE );
 	ofa_iprintable_set_font( instance, "Bold", st_page_header_title_font_size );
 
-	if( is_drawing ){
-		print_set_color( context, COLOR_HEADER_TITLE );
-
+	if( context ){
+		g_return_if_fail( GTK_IS_PRINT_CONTEXT( context ));
 		width = gtk_print_context_get_width( context );
 		str = v_get_page_header_title( instance );
 		ofa_iprintable_set_text( instance, context, width/2, y, str, PANGO_ALIGN_CENTER );
@@ -877,27 +832,22 @@ iprintable_get_page_header_title( const ofaIPrintable *instance )
 }
 
 /*
- * default implementation of "draw_page_header" virtual
+ * default implementation of #draw_page_header() virtual
  * - report subtitle
  */
 static void
 draw_page_header_subtitle( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata )
 {
-	gboolean is_drawing;
 	gdouble y, width;
 	gchar *str;
 
 	y = sdata->last_y;
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
+	ofa_iprintable_set_color( instance, context,COLOR_HEADER_TITLE );
 	ofa_iprintable_set_font( instance, "Bold", st_page_header_subtitle_font_size );
 
-	if( is_drawing ){
-		print_set_color( context,COLOR_HEADER_TITLE );
-
+	if( context ){
+		g_return_if_fail( GTK_IS_PRINT_CONTEXT( context ));
 		width = gtk_print_context_get_width( context );
 		str = v_get_page_header_subtitle( instance );
 		ofa_iprintable_set_text( instance, context, width/2, y,str, PANGO_ALIGN_CENTER );
@@ -925,37 +875,30 @@ iprintable_get_page_header_subtitle( const ofaIPrintable *instance )
 }
 
 /*
- * default implementation of "draw_page_header" virtual
+ * default implementation of #draw_page_header() virtual
  * - columns header
  */
 static void
 draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata )
 {
-	gboolean is_drawing;
 	gdouble width, height;
 	cairo_t *cr;
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
-	if( is_drawing ){
+	if( context ){
+		g_return_if_fail( GTK_IS_PRINT_CONTEXT( context ));
 		width = gtk_print_context_get_width( context );
 		cr = gtk_print_context_get_cairo_context( context );
 
-		/* draw a rectangle
+		/* draw and paint a rectangle
 		 * this must be done before writing the columns headers */
-		print_set_color( context, COLOR_HEADER_TITLE );
+		ofa_iprintable_set_color( instance, context, COLOR_HEADER_TITLE );
 		height = get_page_header_columns_height( instance, sdata );
 		cairo_rectangle( cr, 0, sdata->last_y, width, height );
 		cairo_fill( cr );
 	}
 
+	ofa_iprintable_set_color( instance, context, COLOR_WHITE );
 	ofa_iprintable_set_font( instance, "Bold", sdata->default_font_size-1 );
-
-	if( is_drawing ){
-		print_set_color( context,COLOR_WHITE );
-	}
 
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page_header_columns ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page_header_columns( instance, operation, context );
@@ -1000,7 +943,6 @@ ofa_iprintable_get_page_header_columns_height( const ofaIPrintable *instance )
 static void
 draw_page_header_test_fonts( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num, sIPrintable *sdata )
 {
-	gboolean is_drawing;
 	gint font_size = 12;
 	gdouble y, width, bottom;
 	cairo_t *cr;
@@ -1008,12 +950,9 @@ draw_page_header_test_fonts( ofaIPrintable *instance, GtkPrintOperation *operati
 
 	y = sdata->last_y;
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
-	if( is_drawing ){
-		print_set_color( context, COLOR_HEADER_DOSSIER );
+	if( context ){
+		g_return_if_fail( GTK_IS_PRINT_CONTEXT( context ));
+		ofa_iprintable_set_color( instance, context, COLOR_HEADER_DOSSIER );
 		ofa_iprintable_set_font( instance, "Bold Italic", font_size );
 
 		text = g_strdup_printf(
@@ -1067,7 +1006,6 @@ draw_page_header_test_fonts( ofaIPrintable *instance, GtkPrintOperation *operati
 		cairo_stroke( cr );
 
 		y += font_size + font_size;
-
 		g_free( text );
 	}
 
@@ -1075,13 +1013,10 @@ draw_page_header_test_fonts( ofaIPrintable *instance, GtkPrintOperation *operati
 }
 
 static void
-v_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gboolean is_drawing, sIPrintable *sdata )
+draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, sIPrintable *sdata )
 {
+	ofa_iprintable_set_color( instance, context, COLOR_HEADER_TITLE );
 	ofa_iprintable_set_font( instance, "Bold", sdata->default_font_size+1 );
-
-	if( is_drawing ){
-		print_set_color( context, COLOR_HEADER_TITLE );
-	}
 
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_top_summary ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_top_summary( instance, operation, context );
@@ -1117,11 +1052,12 @@ v_is_new_group( const ofaIPrintable *instance, GList *current, GList *prev )
  */
 static void
 draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context,
-						gint line_num, GList *line, gboolean is_drawing, sIPrintable *sdata )
+						gint line_num, GList *line, sIPrintable *sdata )
 {
 	gdouble y;
 	cairo_t *cr;
 
+	ofa_iprintable_set_color( instance, context, COLOR_HEADER_TITLE );
 	ofa_iprintable_set_font( instance, "Bold", sdata->default_font_size );
 
 	/* separation line */
@@ -1129,15 +1065,14 @@ draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPri
 		cr = context ? gtk_print_context_get_cairo_context( context ) : NULL;
 		y = sdata->last_y;
 		y += 0.5*st_line_vspace;
-		if( is_drawing ){
-			cairo_set_source_rgb( cr, COLOR_DARK_CYAN );
+		if( context ){
 			cairo_set_line_width( cr, 0.5 );
 			cairo_move_to( cr, 0, y );
 			cairo_line_to( cr, gtk_print_context_get_width( context ), y );
 			cairo_stroke( cr );
 		}
 		y += 1.5;
-		if( is_drawing ){
+		if( context ){
 			cairo_move_to( cr, 0, y );
 			cairo_line_to( cr, gtk_print_context_get_width( context ), y );
 			cairo_stroke( cr );
@@ -1147,10 +1082,6 @@ draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPri
 	}
 
 	/* display the group header */
-	if( is_drawing ){
-		print_set_color( context, COLOR_HEADER_TITLE );
-	}
-
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_group_header ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_group_header( instance, operation, context, line );
 	}
@@ -1172,7 +1103,7 @@ get_group_header_height( const ofaIPrintable *instance, gint line_num, GList *li
 	prev_y = sdata->last_y;
 	prev_printed = sdata->group_footer_printed;
 
-	draw_group_header(( ofaIPrintable * ) instance, NULL, NULL, line_num, line, FALSE, sdata );
+	draw_group_header(( ofaIPrintable * ) instance, NULL, NULL, line_num, line, sdata );
 	height = sdata->last_y - prev_y;
 
 	sdata->group_footer_printed = prev_printed;
@@ -1185,13 +1116,10 @@ get_group_header_height( const ofaIPrintable *instance, gint line_num, GList *li
  * draw the report for the group at the top of the next body page
  */
 static void
-draw_group_top_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gboolean is_drawing, sIPrintable *sdata )
+draw_group_top_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, sIPrintable *sdata )
 {
+	ofa_iprintable_set_color( instance, context, COLOR_HEADER_TITLE );
 	ofa_iprintable_set_font( instance, "", sdata->default_font_size );
-
-	if( is_drawing ){
-		print_set_color( context, COLOR_HEADER_TITLE );
-	}
 
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_group_top_report ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_group_top_report( instance, operation, context );
@@ -1212,18 +1140,26 @@ draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContex
 					gint page_num, gint line_num, GList *line, GList *next, sIPrintable *sdata )
 {
 	/*static const gchar *thisfn = "ofa_iprintable_draw_line";*/
-	gboolean is_drawing;
-	cairo_t *cr;
-	gdouble y, req_height;
+	gdouble y, req_height, end_height;
 
 	/*g_debug( "%s: instance=%p, operation=%p, context=%p, page_num=%d, line_num=%d, line=%p, next=%p, sdata=%p",
 			thisfn,
 			( void * ) instance, ( void * ) operation, ( void * ) context,
 			page_num, line_num, ( void * ) line, ( void * ) next, ( void * ) sdata );*/
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
+	/* must be set before any height computing as this is the main
+	 * parameter  */
+	ofa_iprintable_set_color( instance, context, COLOR_BLACK );
+	ofa_iprintable_set_font( instance, NULL, sdata->default_font_size );
+
+	/* this line + a bottom report or a group footer */
+	end_height =
+			st_line_height
+			+ (( !next || v_is_new_group( instance, next, line )) ?
+					get_group_footer_height( instance, sdata ) :
+					get_group_bottom_report_height( instance, sdata ));
+	/*g_debug( "line_height=%lf, group_footer=%lf, bottom_report=%lf",
+			st_line_height, get_group_footer_height( instance, sdata ), get_group_bottom_report_height( instance, sdata ));*/
 
 	/* does the group change ? */
 	if( v_is_new_group( instance, line, sdata->last_printed )){
@@ -1242,49 +1178,49 @@ draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContex
 		 * footer ? */
 		req_height =
 				get_group_header_height( instance, line_num, line, sdata )
-				+ st_line_height
-				+ get_max_group_end_height( instance, is_drawing, sdata );
+				+ end_height;
 		if( sdata->last_y + req_height > sdata->max_y ){
 			return( FALSE );
 		}
 		/* so draw the group header */
-		draw_group_header( instance, operation, context, line_num, line, is_drawing, sdata );
+		draw_group_header( instance, operation, context, line_num, line, sdata );
 
 	} else if( line_num == 0 && sdata->have_groups ){
-			draw_group_top_report( instance, operation, context, is_drawing, sdata );
+			draw_group_top_report( instance, operation, context, sdata );
 
 	} else {
 		/* do we have enough vertical space for this line, and a group
 		 * bottom report or a group footer ? */
-		req_height =
-				st_line_height
-				+ get_max_group_end_height( instance, is_drawing, sdata );
-
+		req_height = end_height;
+		/*g_debug( "draw_line: last_y=%lf, req=%lf", sdata->last_y, req_height );*/
 		if( sdata->last_y + req_height > sdata->max_y ){
-			if( !next || v_is_new_group( instance, line, next )){
+			draw_group_bottom_report( instance, operation, context, sdata );
+			/*if( !next || v_is_new_group( instance, line, next )){
+				g_debug( "draw_line: count=%d, line_debit=%lf, line_credit=%lf, next=%p", sdata->count, ofo_entry_get_debit( OFO_ENTRY( line->data )), ofo_entry_get_credit( OFO_ENTRY( line->data )), ( void * ) next );
 				draw_group_footer( instance, operation, context, line_num, sdata );
 			} else {
 				draw_group_bottom_report( instance, operation, context, sdata );
-			}
+			}*/
 			return( FALSE );
 		}
 	}
 
 	/* so, we are OK to draw the line ! */
 	/* we are using a unique font to draw the lines */
-	ofa_iprintable_set_font( instance, "", sdata->default_font_size );
+	sdata->count += 1;
 	y = sdata->last_y;
 
-	if( is_drawing ){
+	if( context ){
 		/* have a rubber every other line */
 		if( line_num % 2 ){
 			ofa_iprintable_draw_rubber( instance, context,
 					y - (0.5*st_line_vspace - sdata->current_font_size/6),
 					sdata->current_font_size+st_line_vspace );
 		}
-		cr = gtk_print_context_get_cairo_context( context );
-		cairo_set_source_rgb( cr, COLOR_BLACK );
 	}
+
+	ofa_iprintable_set_color( instance, context, COLOR_BLACK );
+	ofa_iprintable_set_font( instance, NULL, sdata->default_font_size );
 
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_line ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_line( instance, operation, context, line );
@@ -1302,17 +1238,8 @@ draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContex
 static void
 draw_group_bottom_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, sIPrintable *sdata )
 {
-	gboolean is_drawing;
-
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
+	ofa_iprintable_set_color( instance, context, COLOR_HEADER_TITLE );
 	ofa_iprintable_set_font( instance, "", sdata->default_font_size );
-
-	if( is_drawing ){
-		print_set_color( context, COLOR_HEADER_TITLE );
-	}
 
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_group_bottom_report ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_group_bottom_report( instance, operation, context );
@@ -1343,19 +1270,10 @@ get_group_bottom_report_height( const ofaIPrintable *instance, sIPrintable *sdat
 static void
 draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint line_num, sIPrintable *sdata )
 {
-	gboolean is_drawing;
-
 	g_return_if_fail( line_num );
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
+	ofa_iprintable_set_color( instance, context, COLOR_HEADER_TITLE );
 	ofa_iprintable_set_font( instance, "Bold", sdata->default_font_size );
-
-	if( is_drawing ){
-		print_set_color( context, COLOR_HEADER_TITLE );
-	}
 
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_group_footer ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_group_footer( instance, operation, context );
@@ -1364,9 +1282,6 @@ draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPri
 	sdata->group_footer_printed = TRUE;
 }
 
-/*
- * Only called during pagination phase
- */
 static gdouble
 get_group_footer_height( const ofaIPrintable *instance, sIPrintable *sdata )
 {
@@ -1386,53 +1301,14 @@ get_group_footer_height( const ofaIPrintable *instance, sIPrintable *sdata )
 }
 
 /*
- * Returns: the max of group bottom report and footer heights
- *
- * This is computed during pagination phase, and then cached for use
- * during data generation.
- */
-static gdouble
-get_max_group_end_height( const ofaIPrintable *instance, gboolean is_drawing, sIPrintable *sdata )
-{
-	gdouble height;
-
-	if( is_drawing ){
-		return( sdata->group_max_end_height );
-	}
-
-	height = MAX( get_group_bottom_report_height( instance, sdata ),
-					get_group_footer_height( instance, sdata ));
-
-	if( height > sdata->group_max_end_height ){
-		sdata->group_max_end_height = height;
-	}
-
-	return( height );
-}
-
-/*
  * Returns %TRUE if we have been able to print the bottom summary,
  * %FALSE else (and we need another page)
  */
 static void
-draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gboolean is_drawing, sIPrintable *sdata )
+draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, sIPrintable *sdata )
 {
-#if 0
-	gdouble req_height;
-
-	req_height = get_bottom_summary_height( instance, sdata );
-	/*g_debug( "draw_bottom_summary: last_y=%lf, req_height=%lf, max_y=%lf",
-			sdata->last_y, req_height, sdata->max_y );*/
-
-	if( sdata->last_y + req_height > sdata->max_y ){
-		return( FALSE );
-	}
-#endif
+	ofa_iprintable_set_color( instance, context, COLOR_HEADER_TITLE );
 	ofa_iprintable_set_font( instance, "Bold", sdata->default_font_size+1 );
-
-	if( is_drawing ){
-		print_set_color( context, COLOR_HEADER_TITLE );
-	}
 
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_bottom_summary ){
 		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_bottom_summary( instance, operation, context );
@@ -1445,7 +1321,7 @@ get_bottom_summary_height( ofaIPrintable *instance, sIPrintable *sdata )
 	gdouble prev_y, height;
 
 	prev_y = sdata->last_y;
-	draw_bottom_summary( instance, NULL, NULL, FALSE, sdata );
+	draw_bottom_summary( instance, NULL, NULL, sdata );
 	height = sdata->last_y - prev_y;
 	sdata->last_y = prev_y;
 
@@ -1453,21 +1329,35 @@ get_bottom_summary_height( ofaIPrintable *instance, sIPrintable *sdata )
 }
 
 static void
-draw_page_footer( ofaIPrintable *instance, GtkPrintOperation *operation,
-						GtkPrintContext *context, gint page_num, gboolean is_drawing, sIPrintable *sdata )
+v_draw_page_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
 {
+	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page_footer ){
+		OFA_IPRINTABLE_GET_INTERFACE( instance )->draw_page_footer( instance, operation, context, page_num );
+	}
+}
+
+static void
+iprintable_draw_page_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num )
+{
+	sIPrintable *sdata;
 	gchar *str, *stamp_str;
 	GTimeVal stamp;
 	gdouble width, y;
 	cairo_t *cr;
 
+	g_return_if_fail( OFA_IS_IPRINTABLE( instance ));
+
+	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
+	g_return_if_fail( sdata );
+
+	ofa_iprintable_set_color( instance, context, COLOR_FOOTER );
 	ofa_iprintable_set_font( instance, "Italic", st_footer_font_size );
 
-	if( is_drawing ){
+	if( context ){
+		g_return_if_fail( GTK_IS_PRINT_CONTEXT( context ));
 		width = gtk_print_context_get_width( context );
 		y = gtk_print_context_get_height( context );
 
-		print_set_color( context, COLOR_FOOTER );
 
 		str = g_strdup_printf( "%s v %s", PACKAGE_NAME, PACKAGE_VERSION );
 		ofa_iprintable_set_text( instance, context, st_page_margin, y, str, PANGO_ALIGN_LEFT );
@@ -1553,7 +1443,7 @@ ofa_iprintable_set_font( ofaIPrintable *instance, const gchar *font_desc, gint s
 	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
 	g_return_if_fail( sdata );
 
-	str = g_strdup_printf( "%s %s %d", st_font_family, font_desc, size );
+	str = g_strdup_printf( "%s %s %d", st_font_family, font_desc ? font_desc : "", size );
 	desc = pango_font_description_from_string( str );
 	g_free( str );
 	pango_layout_set_font_description( sdata->layout, desc );
@@ -1737,7 +1627,7 @@ ofa_iprintable_get_pages_count( const ofaIPrintable *instance )
 {
 	sIPrintable *sdata;
 
-	g_return_val_if_fail( MY_IS_DIALOG( instance ), 0 );
+	g_return_val_if_fail( G_IS_OBJECT( instance ), 0 );
 
 	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
 	g_return_val_if_fail( sdata, 0 );
@@ -1754,13 +1644,15 @@ ofa_iprintable_draw_rubber( ofaIPrintable *instance, GtkPrintContext *context, g
 	cairo_t *cr;
 	gdouble width;
 
-	g_return_if_fail( GTK_IS_PRINT_CONTEXT( context ));
+	if( context ){
+		g_return_if_fail( GTK_IS_PRINT_CONTEXT( context ));
 
-	cr = gtk_print_context_get_cairo_context( context );
-	cairo_set_source_rgb( cr, COLOR_LIGHT_GRAY );
-	width = gtk_print_context_get_width( context );
-	cairo_rectangle( cr, 0, top, width, height );
-	cairo_fill( cr );
+		cr = gtk_print_context_get_cairo_context( context );
+		cairo_set_source_rgb( cr, COLOR_LIGHT_GRAY );
+		width = gtk_print_context_get_width( context );
+		cairo_rectangle( cr, 0, top, width, height );
+		cairo_fill( cr );
+	}
 }
 
 /**
@@ -1772,28 +1664,55 @@ ofa_iprintable_draw_rect( ofaIPrintable *instance, GtkPrintContext *context, gdo
 	cairo_t *cr;
 	gdouble cx;
 
-	g_return_if_fail( GTK_IS_PRINT_CONTEXT( context ));
+	if( context ){
+		g_return_if_fail( GTK_IS_PRINT_CONTEXT( context ));
 
-	cx = width < 0 ? gtk_print_context_get_width( context ) : width;
+		cx = width < 0 ? gtk_print_context_get_width( context ) : width;
 
-	cr = gtk_print_context_get_cairo_context( context );
-	cairo_set_line_width( cr, 0.5 );
+		cr = gtk_print_context_get_cairo_context( context );
+		cairo_set_line_width( cr, 0.5 );
 
-	cairo_move_to( cr, x, y );				/* ---- */
-	cairo_line_to( cr, x+cx, y );
-	cairo_stroke( cr );
+		cairo_move_to( cr, x, y );				/* ---- */
+		cairo_line_to( cr, x+cx, y );
+		cairo_stroke( cr );
 
-	cairo_move_to( cr, x, y );				/* +---- */
-	cairo_line_to( cr, x, y+height );		/* |     */
-	cairo_stroke( cr );
+		cairo_move_to( cr, x, y );				/* +---- */
+		cairo_line_to( cr, x, y+height );		/* |     */
+		cairo_stroke( cr );
 
-	cairo_move_to( cr, x+cx, y );			/* +---+ */
-	cairo_line_to( cr, x+cx, y+height );	/* |   | */
-	cairo_stroke( cr );
+		cairo_move_to( cr, x+cx, y );			/* +---+ */
+		cairo_line_to( cr, x+cx, y+height );	/* |   | */
+		cairo_stroke( cr );
 
-	cairo_move_to( cr, x, y+height );		/* +---+ */
-	cairo_line_to( cr, x+cx, y+height );	/* +---+ */
-	cairo_stroke( cr );
+		cairo_move_to( cr, x, y+height );		/* +---+ */
+		cairo_line_to( cr, x+cx, y+height );	/* +---+ */
+		cairo_stroke( cr );
+	}
+}
+
+/**
+ * ofa_iprintable_draw_no_data:
+ */
+void
+ofa_iprintable_draw_no_data( ofaIPrintable *instance, GtkPrintContext *context )
+{
+	sIPrintable *sdata;
+	gdouble y, width;
+
+	g_return_if_fail( G_IS_OBJECT( instance ));
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
+	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
+	g_return_if_fail( sdata );
+
+	ofa_iprintable_set_color( instance, context, COLOR_NO_DATA );
+	ofa_iprintable_set_font( instance, "Bold", st_no_data_font_size );
+
+	/* vertically centered */
+	y = sdata->last_y + (sdata->max_y-sdata->last_y-st_no_data_font_size)/2;
+	width = context ? gtk_print_context_get_width( context ) : 0;
+	ofa_iprintable_set_text( instance, context, width/2, y, _( "Empty dataset" ), PANGO_ALIGN_CENTER );
+	sdata->last_y = y+st_line_height;
 }
 
 /**
@@ -1803,22 +1722,15 @@ void
 ofa_iprintable_set_color( const ofaIPrintable *instance, GtkPrintContext *context,
 									double r, double g, double b )
 {
-	g_return_if_fail( instance && OFA_IS_IPRINTABLE( instance ));
-	g_return_if_fail( context && GTK_IS_PRINT_CONTEXT( context ));
-
-	print_set_color( context, r, g, b );
-}
-
-/*
- * ofa_print_set_color:
- */
-static void
-print_set_color( GtkPrintContext *context, double red, double green, double blue )
-{
 	cairo_t *cr;
 
-	cr = gtk_print_context_get_cairo_context( context );
-	cairo_set_source_rgb( cr, red, green, blue );
+	g_return_if_fail( instance && OFA_IS_IPRINTABLE( instance ));
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
+	if( context ){
+		cr = gtk_print_context_get_cairo_context( context );
+		cairo_set_source_rgb( cr, r, g, b );
+	}
 }
 
 /**
@@ -1838,29 +1750,34 @@ ofa_iprintable_set_text( const ofaIPrintable *instance, GtkPrintContext *context
 	cairo_t *cr;
 	PangoRectangle rc;
 
+	g_return_if_fail( OFA_IS_IPRINTABLE( instance ));
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
 	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
 	g_return_if_fail( sdata );
 
-	pango_layout_set_text( sdata->layout, text, -1 );
-	cr = gtk_print_context_get_cairo_context( context );
+	if( context ){
+		pango_layout_set_text( sdata->layout, text, -1 );
+		cr = gtk_print_context_get_cairo_context( context );
 
-	if( align == PANGO_ALIGN_LEFT ){
-		cairo_move_to( cr, x, y );
+		if( align == PANGO_ALIGN_LEFT ){
+			cairo_move_to( cr, x, y );
 
-	} else if( align == PANGO_ALIGN_RIGHT ){
-		pango_layout_get_pixel_extents( sdata->layout, NULL, &rc );
-		cairo_move_to( cr, x-rc.width, y );
+		} else if( align == PANGO_ALIGN_RIGHT ){
+			pango_layout_get_pixel_extents( sdata->layout, NULL, &rc );
+			cairo_move_to( cr, x-rc.width, y );
 
-	} else if( align == PANGO_ALIGN_CENTER ){
-		pango_layout_get_pixel_extents( sdata->layout, NULL, &rc );
-		cairo_move_to( cr, x-rc.width/2, y );
+		} else if( align == PANGO_ALIGN_CENTER ){
+			pango_layout_get_pixel_extents( sdata->layout, NULL, &rc );
+			cairo_move_to( cr, x-rc.width/2, y );
 
-	} else {
-		g_warning( "%s: %d: unknown print alignment indicator", thisfn, align );
+		} else {
+			g_warning( "%s: %d: unknown print alignment indicator", thisfn, align );
+		}
+
+		pango_cairo_update_layout( cr, sdata->layout );
+		pango_cairo_show_layout( cr, sdata->layout );
 	}
-
-	pango_cairo_update_layout( cr, sdata->layout );
-	pango_cairo_show_layout( cr, sdata->layout );
 }
 
 /**
@@ -1875,16 +1792,19 @@ ofa_iprintable_ellipsize_text( const ofaIPrintable *instance, GtkPrintContext *c
 	cairo_t *cr;
 
 	g_return_if_fail( OFA_IS_IPRINTABLE( instance ));
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
 	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
 	g_return_if_fail( sdata );
 
-	cr = gtk_print_context_get_cairo_context( context );
-	pango_layout_set_text( sdata->layout, text, -1 );
-	my_utils_pango_layout_ellipsize( sdata->layout, max_size );
-	cairo_move_to( cr, x, y );
-	pango_cairo_update_layout( cr, sdata->layout );
-	pango_cairo_show_layout( cr, sdata->layout );
+	if( context ){
+		cr = gtk_print_context_get_cairo_context( context );
+		pango_layout_set_text( sdata->layout, text, -1 );
+		my_utils_pango_layout_ellipsize( sdata->layout, max_size );
+		cairo_move_to( cr, x, y );
+		pango_cairo_update_layout( cr, sdata->layout );
+		pango_cairo_show_layout( cr, sdata->layout );
+	}
 }
 
 /**
@@ -1906,6 +1826,7 @@ ofa_iprintable_set_wrapped_text( const ofaIPrintable *instance, GtkPrintContext 
 	sIPrintable *sdata;
 
 	g_return_if_fail( OFA_IS_IPRINTABLE( instance ));
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
 	sdata = ( sIPrintable * ) g_object_get_data( G_OBJECT( instance ), IPRINTABLE_DATA );
 	g_return_if_fail( sdata );

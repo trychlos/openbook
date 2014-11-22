@@ -81,6 +81,7 @@ struct _ofaPDFBalancePrivate {
 	gboolean       per_class;
 	gboolean       new_page;
 	GList         *totals;
+	gint           count;				/* count of returned entries */
 
 	/* print datas
 	 */
@@ -166,8 +167,8 @@ static void     on_per_class_toggled( GtkToggleButton *button, ofaPDFBalance *se
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFBalance *self );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
-static void     iprintable_reset_runtime( ofaIPrintable *instance );
 static void     iprintable_free_dataset( GList *elements );
+static void     iprintable_reset_runtime( ofaIPrintable *instance );
 static void     iprintable_on_begin_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static gchar   *iprintable_get_page_header_title( const ofaIPrintable *instance );
 static gchar   *iprintable_get_page_header_subtitle( const ofaIPrintable *instance );
@@ -274,8 +275,8 @@ iprintable_iface_init( ofaIPrintableInterface *iface )
 
 	iface->get_interface_version = iprintable_get_interface_version;
 	iface->get_dataset = iprintable_get_dataset;
-	iface->reset_runtime = iprintable_reset_runtime;
 	iface->free_dataset = iprintable_free_dataset;
+	iface->reset_runtime = iprintable_reset_runtime;
 	iface->on_begin_print = iprintable_on_begin_print;
 	iface->get_page_header_title = iprintable_get_page_header_title;
 	iface->get_page_header_subtitle = iprintable_get_page_header_subtitle;
@@ -639,13 +640,24 @@ static GList *
 iprintable_get_dataset( const ofaIPrintable *instance )
 {
 	ofaPDFBalancePrivate *priv;
+	GList *dataset;
 
 	priv = OFA_PDF_BALANCE( instance )->priv;
 
-	return( ofo_entry_get_dataset_for_print_balance(
+	dataset = ofo_entry_get_dataset_for_print_balance(
 						MY_WINDOW( instance )->prot->dossier,
 						priv->from_account, priv->to_account,
-						&priv->from_date, &priv->to_date ));
+						&priv->from_date, &priv->to_date );
+
+	priv->count = g_list_length( dataset );
+
+	return( dataset );
+}
+
+static void
+iprintable_free_dataset( GList *elements )
+{
+	ofo_account_free_balances( elements );
 }
 
 static void
@@ -657,12 +669,6 @@ iprintable_reset_runtime( ofaIPrintable *instance )
 
 	g_list_free_full( priv->totals, ( GDestroyNotify ) free_currency );
 	priv->totals = NULL;
-}
-
-static void
-iprintable_free_dataset( GList *elements )
-{
-	ofo_account_free_balances( elements );
 }
 
 static void
@@ -769,10 +775,11 @@ static void
 iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	ofaPDFBalancePrivate *priv;
-	gboolean is_drawing;
 	cairo_t *cr;
 	gdouble y, height, yh, hline, vspace;
 	gint bfs;
+
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
 	priv = OFA_PDF_BALANCE( instance )->priv;
 
@@ -780,11 +787,7 @@ iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation 
 	bfs = ofa_iprintable_get_current_font_size( instance );
 	vspace = ofa_iprintable_get_current_line_vspace( instance );
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
-
-	if( is_drawing ){
+	if( context ){
 		cr = gtk_print_context_get_cairo_context( context );
 
 		/* draw three vertical white lines to visually separate the amounts */
@@ -813,37 +816,33 @@ iprintable_draw_page_header_columns( ofaIPrintable *instance, GtkPrintOperation 
 	y += vspace;
 	hline = bfs + vspace;
 
-	if( is_drawing ){
-		ofa_iprintable_set_text( instance, context,
-				priv->body_number_ltab, y+(hline+st_page_header_columns_vspace)/2,
-				_( "Account" ), PANGO_ALIGN_LEFT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_number_ltab, y+(hline+st_page_header_columns_vspace)/2,
+			_( "Account" ), PANGO_ALIGN_LEFT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_label_ltab, y+(hline+st_page_header_columns_vspace)/2,
-				_( "Label" ), PANGO_ALIGN_LEFT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_label_ltab, y+(hline+st_page_header_columns_vspace)/2,
+			_( "Label" ), PANGO_ALIGN_LEFT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_debit_period_rtab, y-1, _( "Period balance" ), PANGO_ALIGN_CENTER );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_debit_period_rtab, y-1, _( "Period balance" ), PANGO_ALIGN_CENTER );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_debit_solde_rtab, y-1, _( "Solde balance" ), PANGO_ALIGN_CENTER );
-	}
+	ofa_iprintable_set_text( instance, context,
+			priv->body_debit_solde_rtab, y-1, _( "Solde balance" ), PANGO_ALIGN_CENTER );
 
 	y += hline + st_page_header_columns_vspace;
 
-	if( is_drawing ){
-		ofa_iprintable_set_text( instance, context,
-				priv->body_debit_period_rtab, y, _( "Debit" ), PANGO_ALIGN_RIGHT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_debit_period_rtab, y, _( "Debit" ), PANGO_ALIGN_RIGHT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_credit_period_rtab, y, _( "Credit" ), PANGO_ALIGN_RIGHT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_credit_period_rtab, y, _( "Credit" ), PANGO_ALIGN_RIGHT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_debit_solde_rtab, y, _( "Debit" ), PANGO_ALIGN_RIGHT );
+	ofa_iprintable_set_text( instance, context,
+			priv->body_debit_solde_rtab, y, _( "Debit" ), PANGO_ALIGN_RIGHT );
 
-		ofa_iprintable_set_text( instance, context,
-				priv->body_credit_solde_rtab, y, _( "Credit" ), PANGO_ALIGN_RIGHT );
-	}
+	ofa_iprintable_set_text( instance, context,
+			priv->body_credit_solde_rtab, y, _( "Credit" ), PANGO_ALIGN_RIGHT );
 
 	y += hline;
 
@@ -891,16 +890,13 @@ static void
 iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current )
 {
 	ofaPDFBalancePrivate *priv;
-	gboolean is_drawing;
 	ofsAccountBalance *sbal;
 	gdouble y;
 	gchar *str;
 
-	priv = OFA_PDF_BALANCE( instance )->priv;
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
+	priv = OFA_PDF_BALANCE( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
 
@@ -915,14 +911,12 @@ iprintable_draw_group_header( ofaIPrintable *instance, GtkPrintOperation *operat
 	priv->subtotals = NULL;
 
 	/* display the class header */
-	if( is_drawing ){
-		/* label */
-		str = g_strdup_printf(
-					_( "Class %u - %s" ),
-					priv->class_num, ofo_class_get_label( priv->class_object ));
-		ofa_iprintable_set_text( instance, context, priv->page_margin, y, str, PANGO_ALIGN_LEFT );
-		g_free( str );
-	}
+	/* label */
+	str = g_strdup_printf(
+				_( "Class %u - %s" ),
+				priv->class_num, ofo_class_get_label( priv->class_object ));
+	ofa_iprintable_set_text( instance, context, priv->page_margin, y, str, PANGO_ALIGN_LEFT );
+	g_free( str );
 
 	y += ofa_iprintable_get_current_line_height( instance );
 	ofa_iprintable_set_last_y( instance, y );
@@ -946,19 +940,16 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 {
 	ofaPDFBalancePrivate *priv;
 	gdouble y;
-	gboolean is_drawing;
 	ofsAccountBalance *sbal;
 	ofoAccount *account;
 	gchar *str;
 	gdouble solde;
 
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
 	priv = OFA_PDF_BALANCE( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
-
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
 
 	sbal = ( ofsAccountBalance * ) current->data;
 
@@ -968,44 +959,42 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 
 	solde = 0;
 
-	if( is_drawing ){
+	ofa_iprintable_set_text( instance, context,
+			priv->body_number_ltab, y, sbal->account, PANGO_ALIGN_LEFT );
+
+	ofa_iprintable_ellipsize_text( instance, context,
+			priv->body_label_ltab, y,
+			ofo_account_get_label( account ), priv->body_label_max_size );
+
+	if( sbal->debit ){
+		str = my_double_to_str( sbal->debit );
 		ofa_iprintable_set_text( instance, context,
-				priv->body_number_ltab, y, sbal->account, PANGO_ALIGN_LEFT );
-
-		ofa_iprintable_ellipsize_text( instance, context,
-				priv->body_label_ltab, y,
-				ofo_account_get_label( account ), priv->body_label_max_size );
-
-		if( sbal->debit ){
-			str = my_double_to_str( sbal->debit );
-			ofa_iprintable_set_text( instance, context,
-					priv->body_debit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
-			g_free( str );
-			solde -= sbal->debit;
-		}
-
-		if( sbal->credit ){
-			str = my_double_to_str( sbal->credit );
-			ofa_iprintable_set_text( instance, context,
-					priv->body_credit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
-			solde += sbal->credit;
-		}
-
-		if( solde < 0 ){
-			str = my_double_to_str( -1*solde );
-			ofa_iprintable_set_text( instance, context,
-					priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-		}
-
-		if( solde > 0 ){
-			str = my_double_to_str( solde );
-			ofa_iprintable_set_text( instance, context,
-					priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
-		}
-
-		ofa_iprintable_set_text( instance, context,
-				priv->body_currency_rtab, y, sbal->currency, PANGO_ALIGN_RIGHT );
+				priv->body_debit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
+		g_free( str );
+		solde -= sbal->debit;
 	}
+
+	if( sbal->credit ){
+		str = my_double_to_str( sbal->credit );
+		ofa_iprintable_set_text( instance, context,
+				priv->body_credit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
+		solde += sbal->credit;
+	}
+
+	if( solde < 0 ){
+		str = my_double_to_str( -1*solde );
+		ofa_iprintable_set_text( instance, context,
+				priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+	}
+
+	if( solde > 0 ){
+		str = my_double_to_str( solde );
+		ofa_iprintable_set_text( instance, context,
+				priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
+	}
+
+	ofa_iprintable_set_text( instance, context,
+			priv->body_currency_rtab, y, sbal->currency, PANGO_ALIGN_RIGHT );
 
 	priv->subtotals = add_account_balance(
 						OFA_PDF_BALANCE( instance ), priv->subtotals, sbal->currency, solde, sbal );
@@ -1030,7 +1019,14 @@ iprintable_draw_group_bottom_report( ofaIPrintable *instance, GtkPrintOperation 
 static void
 iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
-	draw_subtotals_balance( instance, operation, context, _( "Class balance : " ));
+	ofaPDFBalancePrivate *priv;
+	gchar *str;
+
+	priv = OFA_PDF_BALANCE( instance )->priv;
+
+	str = g_strdup_printf( _( "Class %d balance : "), priv->class_num );
+	draw_subtotals_balance( instance, operation, context, str );
+	g_free( str );
 }
 
 /*
@@ -1041,15 +1037,17 @@ static void
 iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	ofaPDFBalancePrivate *priv;
-	gboolean is_drawing;
 	gdouble bottom, top, vspace, req_height;
 	gint bfs;
 
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
+
 	priv = OFA_PDF_BALANCE( instance )->priv;
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
+	if( !priv->count ){
+		ofa_iprintable_draw_no_data( instance, context );
+		return;
+	}
 
 	/* bottom of the rectangle */
 	bottom = ofa_iprintable_get_max_y( instance );
@@ -1060,15 +1058,11 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	req_height = vspace + g_list_length( priv->totals )*(bfs+vspace );
 	top = bottom - req_height;
 
-	if( is_drawing ){
-		ofa_iprintable_draw_rect( instance, context, 0, top, -1, req_height );
-	}
+	ofa_iprintable_draw_rect( instance, context, 0, top, -1, req_height );
 
 	top += vspace;
 
-	if( is_drawing ){
-		draw_account_balance( instance, context, priv->totals, top, _( "General balance : " ));
-	}
+	draw_account_balance( instance, context, priv->totals, top, _( "General balance : " ));
 
 	ofa_iprintable_set_last_y( instance, ofa_iprintable_get_last_y( instance ) + req_height );
 }
@@ -1077,15 +1071,12 @@ static void
 draw_subtotals_balance( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, const gchar *title )
 {
 	ofaPDFBalancePrivate *priv;
-	gboolean is_drawing;
 	gdouble vspace, req_height, last_y;
 	gint bfs;
 
-	priv = OFA_PDF_BALANCE( instance )->priv;
+	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
-	is_drawing = ( operation ?
-			gtk_print_operation_get_status( operation ) == GTK_PRINT_STATUS_GENERATING_DATA :
-			FALSE );
+	priv = OFA_PDF_BALANCE( instance )->priv;
 
 	/* top of the rectangle */
 	bfs = ofa_iprintable_get_current_font_size( instance );
@@ -1093,9 +1084,7 @@ draw_subtotals_balance( ofaIPrintable *instance, GtkPrintOperation *operation, G
 	req_height = g_list_length( priv->subtotals )*(bfs+vspace );
 	last_y = ofa_iprintable_get_last_y( instance );
 
-	if( is_drawing ){
-		draw_account_balance( instance, context, priv->subtotals, last_y, title );
-	}
+	draw_account_balance( instance, context, priv->subtotals, last_y, title );
 
 	ofa_iprintable_set_last_y( instance, last_y+req_height );
 }

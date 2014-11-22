@@ -359,14 +359,15 @@
                 date -> have a save anyway button + take care of 
                 updating ofoEntry to not apply to account nor ledger
 
- 454 2014-11-14 view entries: save display configuration as preferences
-
  455 2014-11-14 report colored footer in other pages with balances
                 (as view entries)
 
  457 2014-11-14 have more entries and more accounts in OFAT base of test
 
- 460
+ 460 2014-11-21 ViewEntries: in order to keep debit/credit/currency 
+                aligned, have other columns (reconcil) on the left
+
+ 461
 
 -----------------------------------------------------------------------
  DONE
@@ -1982,6 +1983,9 @@
  453 2014-11-14 view entries: debit or credit + currency should be 
                 enough to update the amounts
      2014-11-14 done - svn #4106
+
+ 454 2014-11-14 view entries: save display configuration as preferences
+     2014-11-21 done - svn #4138
 
  456 2014-11-14 printings: there is no sens to have a special header
                 on last page: remove 'is_last' argument

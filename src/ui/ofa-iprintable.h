@@ -99,7 +99,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint              ( *get_interface_version )         ( const ofaIPrintable *instance );
+	guint    ( *get_interface_version )   ( const ofaIPrintable *instance );
 
 	/**
 	 * on_print_operation_new:
@@ -110,8 +110,8 @@ typedef struct {
 	 * new #GtkPrintOperation, and having set on it the default page
 	 * setup.
 	 */
-	void               ( *on_print_operation_new )        ( const ofaIPrintable *instance,
-																GtkPrintOperation *operation );
+	void     ( *on_print_operation_new )  ( const ofaIPrintable *instance,
+												GtkPrintOperation *operation );
 
 	/**
 	 * get_dataset:
@@ -119,8 +119,11 @@ typedef struct {
 	 *
 	 * This method is called by the interface in order to get the
 	 * #GList list of elements to be printed.
+	 *
+	 * It is an error for the implementation to not provide this method,
+	 * even if it returns an empty dataset.
 	 */
-	GList *            ( *get_dataset )                   ( const ofaIPrintable *instance );
+	GList *  ( *get_dataset )             ( const ofaIPrintable *instance );
 
 	/**
 	 * on_begin_print:
@@ -132,9 +135,9 @@ typedef struct {
 	 * "begin-print" message, before the beginning of the pagination
 	 * process.
 	 */
-	void               ( *on_begin_print )                ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *on_begin_print )          ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
 
 	/**
 	 * reset_runtime:
@@ -147,7 +150,7 @@ typedef struct {
 	 * The interface code take advantage of this virtual to reset its
 	 * own runtime data.
 	 */
-	void               ( *reset_runtime )                 ( ofaIPrintable *instance );
+	void     ( *reset_runtime )           ( ofaIPrintable *instance );
 
 	/**
 	 * on_begin_paginate:
@@ -158,9 +161,9 @@ typedef struct {
 	 * This method is called by the interface when beginning the
 	 * pagination process.
 	 */
-	void               ( *on_begin_paginate )             ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *on_begin_paginate )       ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
 
 	/**
 	 * on_end_paginate:
@@ -171,16 +174,18 @@ typedef struct {
 	 * This method is called by the interface at the end of the
 	 * pagination process, after the pages count has been computed.
 	 */
-	void               ( *on_end_paginate )               ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *on_end_paginate )         ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
 
 	/**
 	 * draw_page_header:
 	 * @instance: the #ofaIPrintable provider.
-	 * @operation: a #GtkPrintOperation operation.
-	 * @context: a #GtkPrintContext context.
-	 * @page_num: the page number, counted from 1.
+	 * @operation: a #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: a #GtkPrintContext context, %NULL while pagination
+	 *  phase.
+	 * @page_num: the page number, counted from zero.
 	 *
 	 * The page header is drawn on top of each page.
 	 *
@@ -193,10 +198,10 @@ typedef struct {
 	 * See infra get_page_header_title() and get_page_header_subtitle()
 	 * virtuals.
 	 */
-	void               ( *draw_page_header )              ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context,
-																gint page_num );
+	void     ( *draw_page_header )        ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context,
+												gint page_num );
 
 	/**
 	 * get_page_header_title:
@@ -211,7 +216,7 @@ typedef struct {
 	 * - g_free-ing() the returned string
 	 * - updating the 'last_y' ordonate at the end of the drawing.
 	 */
-	gchar *            ( *get_page_header_title )         ( const ofaIPrintable *instance );
+	gchar *  ( *get_page_header_title )   ( const ofaIPrintable *instance );
 
 	/**
 	 * get_page_header_subtitle:
@@ -226,13 +231,15 @@ typedef struct {
 	 * - g_free-ing() the returned string
 	 * - updating the 'last_y' ordonate at the end of the drawing.
 	 */
-	gchar *            ( *get_page_header_subtitle )      ( const ofaIPrintable *instance );
+	gchar *  ( *get_page_header_subtitle )( const ofaIPrintable *instance );
 
 	/**
 	 * draw_page_header_columns:
 	 * @instance: the #ofaIPrintable provider.
-	 * @operation: the #GtkPrintOperation operation.
-	 * @context: the #GtkPrintContext context.
+	 * @operation: the #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: the #GtkPrintContext context, %NULL while pagination
+	 *  phase.
 	 *
 	 * If implemented, should write the column headers.
 	 *
@@ -245,15 +252,17 @@ typedef struct {
 	 * according to the count of lines it has been printed, and of the
 	 * vertical space it may have added between these rows.
 	 */
-	void               ( *draw_page_header_columns )      ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *draw_page_header_columns )( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
 
 	/**
 	 * draw_top_summary:
 	 * @instance: the #ofaIPrintable provider.
-	 * @operation: the #GtkPrintOperation operation.
-	 * @context: a #GtkPrintContext context.
+	 * @operation: the #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: a #GtkPrintContext context, %NULL while pagination
+	 *  phase.
 	 *
 	 * If implemented, this method must draw the top summary on the
 	 * provided @context.
@@ -264,9 +273,9 @@ typedef struct {
 	 * according to the vertical space it has used, and depending of the
 	 * vertical space it wants to set before the first line.
 	 */
-	void               ( *draw_top_summary )              ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *draw_top_summary )        ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
 
 	/**
 	 * is_new_group:
@@ -280,15 +289,17 @@ typedef struct {
 	 *
 	 * Defaults to FALSE (no group).
 	 */
-	gboolean           ( *is_new_group )                  ( const ofaIPrintable *instance,
+	gboolean ( *is_new_group )            ( const ofaIPrintable *instance,
 																GList *current,
 																GList *prev );
 
 	/**
 	 * draw_group_header:
 	 * @instance: the #ofaIPrintable provider.
-	 * @operation: a #GtkPrintOperation operation.
-	 * @context: a #GtkPrintContext context.
+	 * @operation: a #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: a #GtkPrintContext context, %NULL while pagination
+	 *  phase.
 	 * @current: the first element of the group.
 	 *
 	 * If implemented, this method must draw the group header on the
@@ -302,16 +313,18 @@ typedef struct {
 	 * ordonate according to the vertical space it has used in order
 	 * for the interface to auto-detect its height.
 	 */
-	void               ( *draw_group_header )             ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context,
-																GList *current );
+	void     ( *draw_group_header )       ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context,
+												GList *current );
 
 	/**
 	 * draw_group_top_report:
 	 * @instance: the #ofaIPrintable provider.
-	 * @operation: a #GtkPrintOperation operation.
-	 * @context: a #GtkPrintContext context.
+	 * @operation: a #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: a #GtkPrintContext context, %NULL while pagination
+	 * phase.
 	 *
 	 * If implemented, this method must draw the top report for
 	 * the group on the provided @context.
@@ -323,15 +336,17 @@ typedef struct {
 	 * The application must take care itself of updating the 'last_y'
 	 * ordonate according to the vertical space it has used.
 	 */
-	void               ( *draw_group_top_report )         ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *draw_group_top_report )   ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
 
 	/**
 	 * draw_line:
 	 * @instance: the #ofaIPrintable provider.
-	 * @operation: a #GtkPrintOperation operation.
-	 * @context: a #GtkPrintContext context.
+	 * @operation: a #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: a #GtkPrintContext context, %NULL while pagination
+	 *  phase.
 	 * @current: the element to be printed on this line.
 	 *
 	 * If implemented, this method must draw the line on the provided
@@ -340,16 +355,18 @@ typedef struct {
 	 * The interface code takes care itself of upating the 'last_y'
 	 * coordinate of the height of one standard line.
 	 */
-	void               ( *draw_line )                     ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context,
-																GList *current );
+	void     ( *draw_line )               ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context,
+												GList *current );
 
 	/**
 	 * draw_group_bottom_report:
 	 * @instance: the #ofaIPrintable provider.
-	 * @operation: a #GtkPrintOperation operation.
-	 * @context: a #GtkPrintContext context.
+	 * @operation: a #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: a #GtkPrintContext context, %NULL while pagination
+	 *  phase.
 	 *
 	 * If implemented, this method must draw the bottom report for
 	 * the group on the provided @context.
@@ -361,15 +378,17 @@ typedef struct {
 	 * The application must take care itself of updating the 'last_y'
 	 * ordonate according to the vertical space it has used.
 	 */
-	void               ( *draw_group_bottom_report )      ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *draw_group_bottom_report )( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
 
 	/**
 	 * draw_group_footer:
 	 * @instance: the #ofaIPrintable provider.
-	 * @operation: a #GtkPrintOperation operation.
-	 * @context: a #GtkPrintContext context.
+	 * @operation: a #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: a #GtkPrintContext context, %NULL while pagination
+	 *  phase.
 	 *
 	 * If implemented, this method must draw the footer summary for
 	 * the current group.
@@ -380,28 +399,44 @@ typedef struct {
 	 * The application must take care itself of updating the 'last_y'
 	 * ordonate according to the vertical space it has used.
 	 */
-	void               ( *draw_group_footer )             ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *draw_group_footer )       ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
 
 	/**
 	 * draw_bottom_summary:
 	 * @instance: the #ofaIPrintable provider.
-	 * @operation: a #GtkPrintOperation operation.
-	 * @context: a #GtkPrintContext context.
+	 * @operation: a #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: a #GtkPrintContext context, %NULL while pagination
+	 *  phase.
 	 *
 	 * If implemented, this method must draw the bottom summary on the
 	 * provided @context.
 	 *
 	 * The bottom summary is drawn of the last page, at the end of the
 	 * report.
-	 *
-	 * Returns: %TRUE if the summary can be printed on this page,
-	 * %FALSE if a new page must be added.
 	 */
-	void               ( *draw_bottom_summary )           ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *draw_bottom_summary )     ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
+
+	/**
+	 * draw_page_footer:
+	 * @instance: the #ofaIPrintable provider.
+	 * @operation: a #GtkPrintOperation operation, %NULL while
+	 *  pagination phase.
+	 * @context: a #GtkPrintContext context, %NULL while pagination
+	 *  phase.
+	 * @page_num: the current page number, counted from zero.
+	 *
+	 * If implemented, this method must draw the page footer on the
+	 * provided @context.
+	 */
+	void     ( *draw_page_footer )        ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context,
+												gint page_num );
 
 	/**
 	 * on_end_print:
@@ -411,9 +446,9 @@ typedef struct {
 	 *
 	 * This method is called by the interface on end printing.
 	 */
-	void               ( *on_end_print )                  ( ofaIPrintable *instance,
-																GtkPrintOperation *operation,
-																GtkPrintContext *context );
+	void     ( *on_end_print )            ( ofaIPrintable *instance,
+												GtkPrintOperation *operation,
+												GtkPrintContext *context );
 
 	/**
 	 * get_success_msg:
@@ -443,15 +478,11 @@ GType        ofa_iprintable_get_type             ( void );
 guint        ofa_iprintable_get_interface_last_version
                                                  ( const ofaIPrintable *instance );
 
-void         ofa_iprintable_init_dialog          ( ofaIPrintable *instance );
-
 void         ofa_iprintable_init                 ( ofaIPrintable *instance );
 
 void         ofa_iprintable_set_paper_size       ( ofaIPrintable *instance, const gchar *size );
 
 void         ofa_iprintable_set_paper_orientation( ofaIPrintable *instance, GtkPageOrientation orientation );
-
-gboolean     ofa_iprintable_apply                ( ofaIPrintable *instance );
 
 gboolean     ofa_iprintable_print_to_pdf         ( ofaIPrintable *instance, const gchar *filename );
 
@@ -490,7 +521,7 @@ gdouble      ofa_iprintable_get_last_y           ( const ofaIPrintable *instance
 void         ofa_iprintable_set_last_y           ( ofaIPrintable *instance,
 														gdouble y );
 
-gdouble      ofa_iprintable_get_max_y           ( const ofaIPrintable *instance );
+gdouble      ofa_iprintable_get_max_y            ( const ofaIPrintable *instance );
 
 gint         ofa_iprintable_get_pages_count      ( const ofaIPrintable *instance );
 
@@ -502,6 +533,9 @@ void         ofa_iprintable_draw_rect            ( ofaIPrintable *instance,
 														GtkPrintContext *context,
 														gdouble x, gdouble y,
 														gdouble width, gdouble height );
+
+void         ofa_iprintable_draw_no_data         ( ofaIPrintable *instance,
+														GtkPrintContext *context );
 
 void         ofa_iprintable_set_text             ( const ofaIPrintable *instance,
 														GtkPrintContext *context,

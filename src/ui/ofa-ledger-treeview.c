@@ -175,7 +175,7 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
  * ofa_ledger_treeview_new
  */
 ofaLedgerTreeview *
-ofa_ledger_treeview_new( const ofaLedgerTreeviewParms *parms )
+ofa_ledger_treeview_new( const ofsLedgerTreeviewParms *parms )
 {
 	ofaLedgerTreeview *view;
 
@@ -618,6 +618,11 @@ get_selected( ofaLedgerTreeview *self )
 
 /**
  * ofa_ledger_treeview_get_selected:
+ *
+ * Returns: the list of #ofoLedger ledgers selected objects.
+ *
+ * The returned list should be g_list_free() by the caller, as the
+ * returned objects are owned by the #ofaLedgerTreeview.
  */
 GList *
 ofa_ledger_treeview_get_selected( ofaLedgerTreeview *self )

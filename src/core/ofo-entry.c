@@ -605,7 +605,7 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
 }
 
 /**
- * ofo_entry_get_dataset_for_print_gen_ledger:
+ * ofo_entry_get_dataset_for_print_general_books:
  * @dossier: the current dossier.
  * @from_account: the starting account.
  * @to_account: the ending account.
@@ -673,6 +673,79 @@ ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
 
 	query = g_string_append( query, "ORDER BY "
 			"ENT_ACCOUNT ASC, ENT_DOPE ASC, ENT_DEFFECT ASC, ENT_NUMBER ASC " );
+
+	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
+	g_string_free( query, TRUE );
+
+	if( result ){
+		for( irow=result ; irow ; irow=irow->next ){
+			entry = entry_parse_result( irow );
+			if( entry ){
+				dataset = g_list_prepend( dataset, entry );
+			}
+		}
+		ofo_sgbd_free_result( result );
+	}
+
+	return( g_list_reverse( dataset ));
+}
+
+/**
+ * ofo_entry_get_dataset_for_print_ledgers:
+ * @dossier: the current dossier.
+ * @mnemos: a list of requested ledger mnemos.
+ * @from_date: the starting effect date.
+ * @to_date: the ending effect date.
+ *
+ * Returns the dataset of entries for the given ledgers, between the
+ * specified effect dates, as a GList of #ofoEntry, that the user
+ * should g_list_free_full( list, ( GDestroyNotify ) g_object_unref ).
+ *
+ * The returned dataset doesn't contain deleted entries.
+ */
+GList *
+ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
+												const GSList *mnemos,
+												const GDate *from_date, const GDate *to_date )
+{
+	GList *dataset;
+	GString *query;
+	gboolean first;
+	gchar *str;
+	const GSList *it;
+	GSList *result, *irow;
+	ofoEntry *entry;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	query = g_string_new( "" );
+	g_string_append_printf( query, "SELECT %s FROM OFA_T_ENTRIES WHERE ", entry_list_columns());
+	dataset = NULL;
+
+	/* (ENT_LEDGER=xxxx or ENT_LEDGER=xxx or ENT_LEDGER=xxx) */
+	query = g_string_append_c( query, '(' );
+	for( it=mnemos, first=TRUE ; it ; it=it->next ){
+		if( !first ){
+			query = g_string_append( query, "OR " );
+		}
+		g_string_append_printf( query, "ENT_LEDGER='%s' ", ( const gchar * ) it->data );
+		first = FALSE;
+	}
+	query = g_string_append( query, ") " );
+	if( my_date_is_valid( from_date )){
+		str = my_date_to_str( from_date, MY_DATE_SQL );
+		g_string_append_printf( query, "AND ENT_DEFFECT>='%s' ", str );
+		g_free( str );
+	}
+	if( my_date_is_valid( to_date )){
+		str = my_date_to_str( to_date, MY_DATE_SQL );
+		g_string_append_printf( query, "AND ENT_DEFFECT<='%s' ", str );
+		g_free( str );
+	}
+	g_string_append_printf( query, "AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
+
+	query = g_string_append( query, "ORDER BY "
+			"ENT_LEDGER ASC, ENT_DOPE ASC, ENT_DEFFECT ASC, ENT_NUMBER ASC " );
 
 	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
 	g_string_free( query, TRUE );
