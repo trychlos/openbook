@@ -59,16 +59,17 @@
 enum {
 	ENT_COL_DOPE = 0,
 	ENT_COL_DEFF,
-	ENT_COL_NUMBER,
+	ENT_COL_NUMBER,						/* entry number */
 	ENT_COL_REF,
-	ENT_COL_LABEL,
 	ENT_COL_LEDGER,
 	ENT_COL_ACCOUNT,
+	ENT_COL_LABEL,
+	ENT_COL_DRECONCIL,
 	ENT_COL_DEBIT,
 	ENT_COL_CREDIT,
 	ENT_COL_CURRENCY,
-	ENT_COL_DRECONCIL,
 	ENT_COL_STATUS,
+										/*  below columns are not visible */
 	ENT_COL_OBJECT,
 	ENT_COL_MSGERR,
 	ENT_COL_MSGWARN,
@@ -267,6 +268,8 @@ static sCurrency     *find_balance_by_currency( ofaViewEntries *self, const gcha
 static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter );
 static GtkWidget     *reset_balances_widgets( ofaViewEntries *self );
 static void           display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self );
+static void           set_balance_currency_label_position( ofaViewEntries *self );
+static void           set_balance_currency_label_margin( GtkWidget *widget, ofaViewEntries *self );
 static gboolean       is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaViewEntries *self );
 static void           on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self );
 static void           on_entry_status_toggled( GtkToggleButton *button, ofaViewEntries *self );
@@ -773,9 +776,10 @@ setup_entries_treeview( ofaViewEntries *self )
 	priv->tstore = GTK_TREE_MODEL( gtk_list_store_new(
 			ENT_N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* dope, deff, number */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ref, label, ledger */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* account, debit, credit */
-			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* currency, rappro, status */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ref, ledger, account */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, dreconcil, debit */
+			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* credit, currency, status */
+			/* below columns are not visible */
 			G_TYPE_OBJECT,									/* the entry itself */
 			G_TYPE_STRING, G_TYPE_STRING,					/* error msg, warning msg */
 			G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN	/* dope_set, deff_set, currency_set */
@@ -956,6 +960,29 @@ setup_entries_treeview( ofaViewEntries *self )
 		sort_column = column;
 	}
 
+	/* reconciliation date
+	 */
+	column_id = ENT_COL_DRECONCIL;
+	text_cell = gtk_cell_renderer_text_new();
+	priv->renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Reconcil." ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_append_column( tview, column );
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->dreconcil_visible );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
+
 	/* debit
 	 */
 	column_id = ENT_COL_DEBIT;
@@ -1020,29 +1047,6 @@ setup_entries_treeview( ofaViewEntries *self )
 	gtk_tree_view_column_set_min_width( column, 32 );	/* "EUR" width */
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-
-	/* reconciliation date
-	 */
-	column_id = ENT_COL_DRECONCIL;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Reconcil." ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->dreconcil_visible );
 	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
@@ -1716,6 +1720,7 @@ compute_balances( ofaViewEntries *self )
 
 	box = reset_balances_widgets( self );
 	g_hash_table_foreach( priv->balances_hash, ( GHFunc ) display_balance, self );
+	set_balance_currency_label_position( self );
 	gtk_widget_show_all( box );
 }
 
@@ -1805,22 +1810,23 @@ reset_balances_widgets( ofaViewEntries *self )
 static void
 display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self )
 {
+	ofaViewEntriesPrivate *priv;
 	GtkWidget *box, *row, *label;
 	gchar *str;
 	GdkRGBA color;
 
 	if( pc->debits || pc->credits ){
 
+		priv = self->priv;
 		gdk_rgba_parse( &color, RGBA_BALANCE );
 
-		box = my_utils_container_get_child_by_name( self->priv->top_box, "pt-box" );
+		box = my_utils_container_get_child_by_name( priv->top_box, "pt-box" );
 		g_return_if_fail( box && GTK_IS_BOX( box ));
 
 		row = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
 		gtk_box_pack_start( GTK_BOX( box ), row, FALSE, FALSE, 0 );
 
 		label = gtk_label_new( dev_code );
-		gtk_widget_set_margin_right( label, 12 );
 		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 		gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
 		gtk_label_set_text( GTK_LABEL( label ), dev_code );
@@ -1830,7 +1836,7 @@ display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self )
 		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
-		str = g_strdup_printf( "%'.2lf", pc->credits );
+		str = my_double_to_str( pc->credits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
@@ -1839,10 +1845,32 @@ display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self )
 		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
-		str = g_strdup_printf( "%'.2lf", pc->debits );
+		str = my_double_to_str( pc->debits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
+	}
+}
+
+static void
+set_balance_currency_label_position( ofaViewEntries *self )
+{
+	GtkWidget *box;
+
+	box = my_utils_container_get_child_by_name( self->priv->top_box, "pt-box" );
+	g_return_if_fail( box && GTK_IS_BOX( box ));
+	gtk_container_foreach( GTK_CONTAINER( box ), ( GtkCallback ) set_balance_currency_label_margin, self );
+}
+
+static void
+set_balance_currency_label_margin( GtkWidget *widget, ofaViewEntries *self )
+{
+	/* this returns 0 :( */
+	/*width = gtk_tree_view_column_get_width( priv->currency_column );
+	g_debug( "display_balance: width=%d", width );*/
+	/* 30 is less of 1 char, 40 is more of 1/2 char */
+	if( GTK_IS_BOX( widget )){
+		gtk_widget_set_margin_right( widget, 36 + (self->priv->status_visible ? 48 : 0));
 	}
 }
 
@@ -2019,6 +2047,7 @@ on_visible_column_toggled( GtkToggleButton *button, ofaViewEntries *self )
 
 	if( priv->entries_tview ){
 		set_visible_columns( self );
+		set_balance_currency_label_position( self );
 		gtk_widget_queue_draw( GTK_WIDGET( priv->entries_tview ));
 	}
 }

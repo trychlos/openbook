@@ -347,8 +347,6 @@
                 which have an effect date before the beginning of the 
                 exercice (the ledger will stay unbalanced)
 
- 433 2014-11-12 print ledger
-
  442 2014-11-13 AccountsBook: add a notes indicator
 
  445 2014-11-13 my_date: do not accept two successive '/'
@@ -1911,6 +1909,9 @@
 
  431 2014-11-11 print general ledger: have a general total per currency
      2014-11-14 done - svn #4114
+
+ 433 2014-11-12 print ledgers
+     2014-11-22 done - svn #4142
 
  434 2014-11-12 bug on pwi: for an entry whose effect date is 1/1/14,
                 view_entries displays an error message like
