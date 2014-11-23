@@ -320,9 +320,6 @@
  342 2014-10-26 document signals + callbacks should be signals
                 - ofaAccountsBook
 
- 412 2014-10-30 bug: when changing a ledger mnemo, all ope templates 
-                are reclassed under 'unclassed'
-
  416 2014-11- 2 this must be a user locale preference to export csv
                 with a decimal comma or a decimal dot - default is
                 decimal dot
@@ -1826,6 +1823,10 @@
  411 2014-10-29 have a preference to allow the deletion of root accounts
                 which have detail accounts ?
      2014-10-29 done - svn #4008
+
+ 412 2014-10-30 bug: when changing a ledger mnemo, all ope templates 
+                are reclassed under 'unclassed'
+     2014-11-23 done - svn #4148
 
  413 2014-10-30 Review use of (quasi empty) dlgboxes:
                 - ofa-bat-select.ui: a frame handled by ofaBatCommon
