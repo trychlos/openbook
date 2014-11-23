@@ -40,7 +40,7 @@
 #include "core/ofa-plugin.h"
 
 #include "ui/ofa-dossier-delete-prefs.h"
-#include "ui/ofa-export-settings.h"
+#include "ui/ofa-export-settings-prefs.h"
 #include "ui/ofa-main-window.h"
 #include "core/ofa-preferences.h"
 
@@ -48,43 +48,43 @@
  */
 struct _ofaPreferencesPrivate {
 
-	GtkWidget             *book;			/* main notebook of the dialog */
+	GtkWidget              *book;			/* main notebook of the dialog */
 
 	/* whether the dialog has been validated
 	 */
-	gboolean               updated;
+	gboolean                updated;
 
 	/* when opening the preferences from the plugin manager
 	 */
-	ofaPlugin             *plugin;
-	GtkWidget             *object_page;
+	ofaPlugin              *plugin;
+	GtkWidget              *object_page;
 
 	/* UI - Quitting
 	 */
-	GtkCheckButton        *confirm_on_escape_btn;
+	GtkCheckButton         *confirm_on_escape_btn;
 
 	/* UI - Dossier delete page
 	 */
-	ofaDossierDeletePrefs *dd_prefs;
+	ofaDossierDeletePrefs  *dd_prefs;
 
 	/* UI - Account delete page
 	 */
 
 	/* UI - Locales
 	 */
-	gchar                 *p3_decimal_sep;
-	gboolean               p3_accept_dot;
-	gint                   p3_date_enter;
-	gint                   p3_date_display;
-	gint                   p3_date_check;
+	gchar                  *p3_decimal_sep;
+	gboolean                p3_accept_dot;
+	gint                    p3_date_enter;
+	gint                    p3_date_display;
+	gint                    p3_date_check;
 
 	/* Export settings
 	 */
-	ofaExportSettings     *export_settings;
+	ofaExportSettingsPrefs *export_settings;
 
 	/* UI - Plugin pages
 	 */
-	GList                 *plugs;
+	GList                  *plugs;
 };
 
 static const gchar *st_assistant_quit_on_escape       = "AssistantQuitOnEscape";
@@ -553,12 +553,12 @@ init_export_page( ofaPreferences *self )
 	priv = self->priv;
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
-	target = my_utils_container_get_child_by_name( container, "p5-top-grid" );
+	target = my_utils_container_get_child_by_name( container, "alignment5-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	priv->export_settings = ofa_export_settings_new();
-	ofa_export_settings_attach_to( priv->export_settings, GTK_CONTAINER( target ));
-	ofa_export_settings_init_dlg( priv->export_settings );
+	priv->export_settings = ofa_export_settings_prefs_new();
+	ofa_export_settings_prefs_attach_to( priv->export_settings, GTK_CONTAINER( target ));
+	ofa_export_settings_prefs_init_dlg( priv->export_settings );
 }
 
 static void
@@ -690,7 +690,7 @@ do_update( ofaPreferences *self )
 	ofa_dossier_delete_prefs_set_settings( priv->dd_prefs );
 	do_update_account_page( self );
 	do_update_locales_page( self );
-	ofa_export_settings_apply( priv->export_settings );
+	ofa_export_settings_prefs_apply( priv->export_settings );
 	enumerate_prefs_plugins( self, update_prefs_plugin );
 
 	priv->updated = TRUE;

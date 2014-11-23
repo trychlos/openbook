@@ -252,7 +252,52 @@ my_assistant_run( myAssistant *assistant )
 
 	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
 
+		gtk_widget_show_all( GTK_WIDGET( my_window_get_toplevel( MY_WINDOW( assistant ))));
 		gtk_main();
+	}
+}
+
+/**
+ * my_assistant_signal_connect:
+ */
+gulong
+my_assistant_signal_connect( myAssistant *assistant, const gchar *signal, GCallback cb )
+{
+	g_return_val_if_fail( assistant && MY_IS_ASSISTANT( assistant ), 0 );
+	g_return_val_if_fail( signal && g_utf8_strlen( signal, -1 ), 0 );
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		return( g_signal_connect(
+						G_OBJECT( my_window_get_toplevel( MY_WINDOW( assistant ))),
+						signal, cb, assistant ));
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * my_assistant_set_page_complete:
+ */
+void
+my_assistant_set_page_complete( myAssistant *assistant, gint page_num, gboolean complete )
+{
+	GtkWidget *page_widget;
+
+	g_return_if_fail( assistant && MY_IS_ASSISTANT( assistant ));
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		page_widget = gtk_assistant_get_nth_page(
+								GTK_ASSISTANT( my_window_get_toplevel( MY_WINDOW( assistant ))),
+								page_num );
+		if( page_widget ){
+			g_return_if_fail( GTK_IS_WIDGET( page_widget ));
+			gtk_assistant_set_page_complete(
+					GTK_ASSISTANT( my_window_get_toplevel( MY_WINDOW( assistant ))),
+					page_widget, complete );
+		}
 	}
 }
 

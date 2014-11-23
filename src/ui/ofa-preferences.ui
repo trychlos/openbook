@@ -68,14 +68,14 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkFrame" id="frame3">
+                      <object class="GtkFrame" id="frame11">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="valign">start</property>
                         <property name="label_xalign">0</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkGrid" id="grid9">
+                          <object class="GtkGrid" id="grid11">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">12</property>
@@ -155,14 +155,14 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkFrame" id="frame4">
+                      <object class="GtkFrame" id="frame12">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="valign">start</property>
                         <property name="label_xalign">0</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkGrid" id="grid10">
+                          <object class="GtkGrid" id="grid12">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">12</property>
@@ -267,7 +267,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label4">
+                      <object class="GtkLabel" id="label21">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
@@ -300,7 +300,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkAlignment" id="alignment5">
+              <object class="GtkAlignment" id="alignment4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="top_padding">4</property>
@@ -368,7 +368,7 @@
               </packing>
             </child>
             <child type="tab">
-              <object class="GtkLabel" id="label10">
+              <object class="GtkLabel" id="label4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Account</property>
@@ -393,13 +393,13 @@
                     <property name="row_spacing">3</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkFrame" id="frame1">
+                      <object class="GtkFrame" id="frame3">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label_xalign">0</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkAlignment" id="alignment4">
+                          <object class="GtkAlignment" id="alignment31">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="hexpand">True</property>
@@ -408,13 +408,13 @@
                             <property name="left_padding">12</property>
                             <property name="right_padding">4</property>
                             <child>
-                              <object class="GtkGrid" id="grid4">
+                              <object class="GtkGrid" id="grid31">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="row_spacing">3</property>
                                 <property name="column_spacing">4</property>
                                 <child>
-                                  <object class="GtkLabel" id="label5">
+                                  <object class="GtkLabel" id="label35">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="xalign">1</property>
@@ -429,7 +429,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkLabel" id="label6">
+                                  <object class="GtkLabel" id="label36">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="xalign">1</property>
@@ -468,7 +468,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkLabel" id="label11">
+                                  <object class="GtkLabel" id="label31">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="xalign">1</property>
@@ -564,7 +564,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkLabel" id="label9">
+                                  <object class="GtkLabel" id="label39">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="xalign">1</property>
@@ -661,13 +661,13 @@
               </packing>
             </child>
             <child>
-              <object class="GtkGrid" id="p5-top-grid">
+              <object class="GtkAlignment" id="alignment5-parent">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">4</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="top_padding">4</property>
+                <property name="bottom_padding">4</property>
+                <property name="left_padding">4</property>
+                <property name="right_padding">4</property>
                 <child>
                   <placeholder/>
                 </child>
@@ -677,7 +677,7 @@
               </packing>
             </child>
             <child type="tab">
-              <object class="GtkLabel" id="label15">
+              <object class="GtkLabel" id="label5">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Export</property>

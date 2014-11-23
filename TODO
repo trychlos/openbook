@@ -132,10 +132,6 @@
  167 2014- 6- 5 ExportAssistant: pre-positionning a default uri as
                 output filename doesn't work
 
- 174 2014- 6- 6 ExportAssistant: change character set to ISO-8859-15
-     2014- 6- 7 the exported character set should be a choice of the 
-                user (default is UTF-8)
-
  176 2014- 6- 6 ImportAssistant: let the user select the encoding
                 character set of the imported file, so that we are
                 able to convert to UTF-8
@@ -319,10 +315,6 @@
 
  342 2014-10-26 document signals + callbacks should be signals
                 - ofaAccountsBook
-
- 416 2014-11- 2 this must be a user locale preference to export csv
-                with a decimal comma or a decimal dot - default is
-                decimal dot
 
  419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
                 book, but most probably also in other treeviews)
@@ -883,6 +875,11 @@
  173 2014- 6- 6 When importing a reference, the main page must be 
                 reloaded
      2014- 6- 7 done with OFA_SIGNAL_RELOADED_DATASET signal handler
+
+ 174 2014- 6- 6 ExportAssistant: change character set to ISO-8859-15
+     2014- 6- 7 the exported character set should be a choice of the 
+                user (default is UTF-8)
+     2014-11-23 done - see ExportSettings
 
  175 2014- 6- 6 When opening a dossier in response to 
                 OFA_SIGNAL_OPEN_DOSSIER signal, one should 
@@ -1849,6 +1846,11 @@
                 after exercice opening - this will let us edit this
                 exercice balance...
      2014-11- 3 done - svn #4042
+
+ 416 2014-11- 2 this must be a user locale preference to export csv
+                with a decimal comma or a decimal dot - default is
+                decimal dot
+     2014-11-23 done - svn #4154
 
  417 2014-11- 3 when inserting a new account, reorder the children
                 under the new root

@@ -35,26 +35,27 @@
 #include "api/ofa-settings.h"
 
 #include "ui/ofa-export-settings.h"
+#include "ui/ofa-export-settings-prefs.h"
 
 /* private instance data
  */
-struct _ofaExportSettingsPrivate {
-	gboolean      dispose_has_run;
+struct _ofaExportSettingsPrefsPrivate {
+	gboolean           dispose_has_run;
 
 	/* runtime data
 	 */
-	gchar        *user_pref;
-	gboolean      initialized;
+	ofaExportSettings *settings;
 
 	/* UI
 	 */
-	GtkContainer *parent;				/* from the hosting dialog */
-	GtkContainer *container;			/* our top container */
+	GtkContainer      *parent;			/* from the hosting dialog */
+	GtkContainer      *container;		/* our top container */
 
-	GtkWidget    *encoding_combo;
-	GtkWidget    *date_combo;
-	GtkWidget    *decimal_combo;
-	GtkWidget    *fieldsep_combo;
+	GtkWidget         *encoding_combo;
+	GtkWidget         *date_combo;
+	GtkWidget         *decimal_combo;
+	GtkWidget         *fieldsep_combo;
+	GtkWidget         *folder_btn;
 };
 
 /* column ordering in the output encoding combobox
@@ -125,125 +126,109 @@ static const sFieldSep st_field_sep[] = {
 };
 
 static const gchar *st_window_xml       = PKGUIDIR "/ofa-export-settings.piece.ui";
-static const gchar *st_window_id        = "ExportSettingsWindow";
+static const gchar *st_window_id        = "ExportSettingsPrefsWindow";
 
-static const gchar *st_pref_charmap     = "ExportSettingsCharmap";
-static const gchar *st_pref_date        = "ExportSettingsDate";
-static const gchar *st_pref_decimal     = "ExportSettingsDecimalSep";
-static const gchar *st_pref_field_sep   = "ExportSettingsFieldSep";
+G_DEFINE_TYPE( ofaExportSettingsPrefs, ofa_export_settings_prefs, G_TYPE_OBJECT )
 
-static const gchar *st_def_charmap      = "UTF-8";
-static const gint   st_def_date         = MY_DATE_SQL;
-static const gchar *st_def_decimal      = ".";
-static const gchar *st_def_field_sep    = ";";
-
-G_DEFINE_TYPE( ofaExportSettings, ofa_export_settings, G_TYPE_OBJECT )
-
-static void     init_encoding( ofaExportSettings *self );
-static void     init_date_format( ofaExportSettings *self );
-static void     init_decimal_dot( ofaExportSettings *self );
-static void     init_field_separator( ofaExportSettings *self );
-static gboolean do_apply( ofaExportSettings *self );
+static void     init_encoding( ofaExportSettingsPrefs *self );
+static void     init_date_format( ofaExportSettingsPrefs *self );
+static void     init_decimal_dot( ofaExportSettingsPrefs *self );
+static void     init_field_separator( ofaExportSettingsPrefs *self );
+static void     init_folder( ofaExportSettingsPrefs *self );
+static gboolean do_apply( ofaExportSettingsPrefs *self );
 static GList   *get_available_charmaps( void );
-static gchar   *settings_get_string_ex( const gchar *name, const gchar *default_pref );
-static void     settings_set_string_ex( const gchar *name, const gchar *default_pref, const gchar *value );
-static gint     settings_get_uint_ex( const gchar *name, const gchar *default_pref );
-static void     settings_set_uint_ex( const gchar *name, const gchar *default_pref, gint value );
 
 static void
-export_settings_finalize( GObject *instance )
+export_settings_prefs_finalize( GObject *instance )
 {
-	ofaExportSettingsPrivate *priv;
-
-	static const gchar *thisfn = "ofa_export_settings_finalize";
+	static const gchar *thisfn = "ofa_export_settings_prefs_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_EXPORT_SETTINGS( instance ));
+	g_return_if_fail( instance && OFA_IS_EXPORT_SETTINGS_PREFS( instance ));
 
 	/* free data members here */
-	priv = OFA_EXPORT_SETTINGS( instance )->priv;
-
-	g_free( priv->user_pref );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_export_settings_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_export_settings_prefs_parent_class )->finalize( instance );
 }
 
 static void
-export_settings_dispose( GObject *instance )
+export_settings_prefs_dispose( GObject *instance )
 {
-	ofaExportSettingsPrivate *priv;
+	ofaExportSettingsPrefsPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_EXPORT_SETTINGS( instance ));
+	g_return_if_fail( instance && OFA_IS_EXPORT_SETTINGS_PREFS( instance ));
 
-	priv = OFA_EXPORT_SETTINGS( instance )->priv;
+	priv = OFA_EXPORT_SETTINGS_PREFS( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
+		priv->dispose_has_run = TRUE;
+
 		/* unref object members here */
+		g_clear_object( &priv->settings );
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_export_settings_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_export_settings_prefs_parent_class )->dispose( instance );
 }
 
 static void
-ofa_export_settings_init( ofaExportSettings *self )
+ofa_export_settings_prefs_init( ofaExportSettingsPrefs *self )
 {
-	static const gchar *thisfn = "ofa_export_settings_init";
+	static const gchar *thisfn = "ofa_export_settings_prefs_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_EXPORT_SETTINGS( self ));
+	g_return_if_fail( self && OFA_IS_EXPORT_SETTINGS_PREFS( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_EXPORT_SETTINGS, ofaExportSettingsPrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_EXPORT_SETTINGS_PREFS, ofaExportSettingsPrefsPrivate );
 
 	self->priv->dispose_has_run = FALSE;
-	self->priv->initialized = FALSE;
 }
 
 static void
-ofa_export_settings_class_init( ofaExportSettingsClass *klass )
+ofa_export_settings_prefs_class_init( ofaExportSettingsPrefsClass *klass )
 {
-	static const gchar *thisfn = "ofa_export_settings_class_init";
+	static const gchar *thisfn = "ofa_export_settings_prefs_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = export_settings_dispose;
-	G_OBJECT_CLASS( klass )->finalize = export_settings_finalize;
+	G_OBJECT_CLASS( klass )->dispose = export_settings_prefs_dispose;
+	G_OBJECT_CLASS( klass )->finalize = export_settings_prefs_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaExportSettingsPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaExportSettingsPrefsPrivate ));
 }
 
 /**
- * ofa_export_settings_new:
+ * ofa_export_settings_prefs_new:
  */
-ofaExportSettings *
-ofa_export_settings_new( void )
+ofaExportSettingsPrefs *
+ofa_export_settings_prefs_new( void )
 {
-	ofaExportSettings *self;
+	ofaExportSettingsPrefs *self;
 
-	self = g_object_new( OFA_TYPE_EXPORT_SETTINGS, NULL );
+	self = g_object_new( OFA_TYPE_EXPORT_SETTINGS_PREFS, NULL );
 
 	return( self );
 }
 
 /**
- * ofa_export_settings_attach_to:
+ * ofa_export_settings_prefs_attach_to:
  *
  * This attach the widgets to the designed parent.
  * This must be called only once, at initialization time.
  */
 void
-ofa_export_settings_attach_to( ofaExportSettings *settings, GtkContainer *new_parent )
+ofa_export_settings_prefs_attach_to( ofaExportSettingsPrefs *settings, GtkContainer *new_parent )
 {
-	ofaExportSettingsPrivate *priv;
+	ofaExportSettingsPrefsPrivate *priv;
 	GtkWidget *window, *widget;
 
-	g_return_if_fail( settings && OFA_IS_EXPORT_SETTINGS( settings ));
+	g_return_if_fail( settings && OFA_IS_EXPORT_SETTINGS_PREFS( settings ));
 	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
 
 	priv = settings->priv;
@@ -255,7 +240,7 @@ ofa_export_settings_attach_to( ofaExportSettings *settings, GtkContainer *new_pa
 		window = my_utils_builder_load_from_path( st_window_xml, st_window_id );
 		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p5-top-frame" );
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p5-top-grid" );
 		g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
 		gtk_widget_reparent( widget, GTK_WIDGET( new_parent ));
@@ -265,17 +250,17 @@ ofa_export_settings_attach_to( ofaExportSettings *settings, GtkContainer *new_pa
 }
 
 /**
- * ofa_export_settings_init_dlg:
+ * ofa_export_settings_prefs_init_dlg:
  *
  * This initializes the combo boxes. This must be done after having
  * attached the widgets to the containing parent.
  */
 void
-ofa_export_settings_init_dlg( ofaExportSettings *settings )
+ofa_export_settings_prefs_init_dlg( ofaExportSettingsPrefs *settings )
 {
-	ofaExportSettingsPrivate *priv;
+	ofaExportSettingsPrefsPrivate *priv;
 
-	g_return_if_fail( settings && OFA_IS_EXPORT_SETTINGS( settings ));
+	g_return_if_fail( settings && OFA_IS_EXPORT_SETTINGS_PREFS( settings ));
 
 	priv = settings->priv;
 
@@ -284,26 +269,26 @@ ofa_export_settings_init_dlg( ofaExportSettings *settings )
 
 	if( !priv->dispose_has_run ){
 
+		priv->settings = ofa_export_settings_new( NULL );
+
 		init_encoding( settings );
 		init_date_format( settings );
 		init_decimal_dot( settings );
 		init_field_separator( settings );
-
-		priv->initialized = TRUE;
+		init_folder( settings );
 	}
 }
 
 static void
-init_encoding( ofaExportSettings *self )
+init_encoding( ofaExportSettingsPrefs *self )
 {
-	ofaExportSettingsPrivate *priv;
+	ofaExportSettingsPrefsPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
 	GList *charmaps, *it;
 	gint i, idx;
-	gchar *text;
-	const gchar *cstr;
+	const gchar *cstr, *svalue;
 
 	priv = self->priv;
 
@@ -322,12 +307,7 @@ init_encoding( ofaExportSettings *self )
 	gtk_cell_layout_add_attribute(
 			GTK_CELL_LAYOUT( priv->encoding_combo ), cell, "text", ENC_COL_CODE );
 
-	text = settings_get_string_ex( priv->user_pref, st_pref_charmap );
-	if( !text || !g_utf8_strlen( text, -1 )){
-		g_free( text );
-		text = g_strdup( st_def_charmap );
-	}
-
+	svalue = ofa_export_settings_get_charmap( priv->settings );
 	charmaps = get_available_charmaps();
 	idx = -1;
 
@@ -339,7 +319,7 @@ init_encoding( ofaExportSettings *self )
 				-1,
 				ENC_COL_CODE, cstr,
 				-1 );
-		if( !g_utf8_collate( text, cstr )){
+		if( !g_utf8_collate( svalue, cstr )){
 			idx = i;
 		}
 	}
@@ -348,18 +328,18 @@ init_encoding( ofaExportSettings *self )
 		gtk_combo_box_set_active( GTK_COMBO_BOX( priv->encoding_combo ), idx );
 	}
 
-	g_free( text );
 	g_list_free_full( charmaps, ( GDestroyNotify ) g_free );
 }
 
 static void
-init_date_format( ofaExportSettings *self )
+init_date_format( ofaExportSettingsPrefs *self )
 {
-	ofaExportSettingsPrivate *priv;
+	ofaExportSettingsPrefsPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
-	gint i, idx, fmt;
+	gint i, idx;
+	myDateFormat fmt;
 
 	priv = self->priv;
 
@@ -378,11 +358,7 @@ init_date_format( ofaExportSettings *self )
 	gtk_cell_layout_add_attribute(
 			GTK_CELL_LAYOUT( priv->date_combo ), cell, "text", DATE_COL_LABEL );
 
-	fmt = settings_get_uint_ex( priv->user_pref, st_pref_date );
-	if( fmt < 0 ){
-		fmt = st_def_date;
-	}
-
+	fmt = ofa_export_settings_get_date_format( priv->settings );
 	idx = -1;
 
 	for( i=0 ; st_date_format[i].code ; ++i ){
@@ -404,14 +380,14 @@ init_date_format( ofaExportSettings *self )
 }
 
 static void
-init_decimal_dot( ofaExportSettings *self )
+init_decimal_dot( ofaExportSettingsPrefs *self )
 {
-	ofaExportSettingsPrivate *priv;
+	ofaExportSettingsPrefsPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
 	gint i, idx;
-	gchar *text;
+	gchar value;
 
 	priv = self->priv;
 
@@ -430,12 +406,7 @@ init_decimal_dot( ofaExportSettings *self )
 	gtk_cell_layout_add_attribute(
 			GTK_CELL_LAYOUT( priv->decimal_combo ), cell, "text", DEC_COL_LABEL );
 
-	text = settings_get_string_ex( priv->user_pref, st_pref_decimal );
-	if( !text || !g_utf8_strlen( text, -1 )){
-		g_free( text );
-		text = g_strdup( st_def_decimal );
-	}
-
+	value = ofa_export_settings_get_decimal_sep( priv->settings );
 	idx = -1;
 
 	for( i=0 ; st_dec[i].code ; ++i ){
@@ -446,7 +417,7 @@ init_decimal_dot( ofaExportSettings *self )
 				DEC_COL_CODE,  st_dec[i].code,
 				DEC_COL_LABEL, st_dec[i].label,
 				-1 );
-		if( !g_utf8_collate( text, st_dec[i].code )){
+		if( value == st_dec[i].code[0] ){
 			idx = i;
 		}
 	}
@@ -454,19 +425,17 @@ init_decimal_dot( ofaExportSettings *self )
 	if( idx != -1 ){
 		gtk_combo_box_set_active( GTK_COMBO_BOX( priv->decimal_combo ), idx );
 	}
-
-	g_free( text );
 }
 
 static void
-init_field_separator( ofaExportSettings *self )
+init_field_separator( ofaExportSettingsPrefs *self )
 {
-	ofaExportSettingsPrivate *priv;
+	ofaExportSettingsPrefsPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
 	gint i, idx;
-	gchar *text;
+	gchar value;
 
 	priv = self->priv;
 
@@ -485,12 +454,7 @@ init_field_separator( ofaExportSettings *self )
 	gtk_cell_layout_add_attribute(
 			GTK_CELL_LAYOUT( priv->fieldsep_combo ), cell, "text", SEP_COL_LABEL );
 
-	text = settings_get_string_ex( priv->user_pref, st_pref_field_sep );
-	if( !text || !g_utf8_strlen( text, -1 )){
-		g_free( text );
-		text = g_strdup( st_def_field_sep );
-	}
-
+	value = ofa_export_settings_get_field_sep( priv->settings );
 	idx = -1;
 
 	for( i=0 ; st_field_sep[i].code ; ++i ){
@@ -501,7 +465,7 @@ init_field_separator( ofaExportSettings *self )
 				SEP_COL_CODE,  st_field_sep[i].code,
 				SEP_COL_LABEL, st_field_sep[i].label,
 				-1 );
-		if( !g_utf8_collate( text, st_field_sep[i].code )){
+		if( value == st_field_sep[i].code[0] ){
 			idx = i;
 		}
 	}
@@ -509,12 +473,26 @@ init_field_separator( ofaExportSettings *self )
 	if( idx != -1 ){
 		gtk_combo_box_set_active( GTK_COMBO_BOX( priv->fieldsep_combo ), idx );
 	}
+}
 
-	g_free( text );
+static void
+init_folder( ofaExportSettingsPrefs *self )
+{
+	ofaExportSettingsPrefsPrivate *priv;
+	const gchar *svalue;
+
+	priv = self->priv;
+
+	priv->folder_btn =
+			my_utils_container_get_child_by_name( priv->container, "p5-folder" );
+
+	svalue = ofa_export_settings_get_folder( priv->settings );
+
+	gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER( priv->folder_btn ), svalue );
 }
 
 /**
- * ofa_export_settings_apply:
+ * ofa_export_settings_prefs_apply:
  *
  * This take the current selection out of the dialog box, setting the
  * user preferences.
@@ -522,17 +500,16 @@ init_field_separator( ofaExportSettings *self )
  * Returns: %TRUE if selection is ok
  */
 gboolean
-ofa_export_settings_apply( ofaExportSettings *settings )
+ofa_export_settings_prefs_apply( ofaExportSettingsPrefs *settings )
 {
-	ofaExportSettingsPrivate *priv;
+	ofaExportSettingsPrefsPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_EXPORT_SETTINGS( settings ), FALSE );
+	g_return_val_if_fail( settings && OFA_IS_EXPORT_SETTINGS_PREFS( settings ), FALSE );
 
 	priv = settings->priv;
 
 	g_return_val_if_fail( priv->parent && GTK_IS_CONTAINER( priv->parent ), FALSE );
 	g_return_val_if_fail( priv->container && GTK_IS_CONTAINER( priv->container ), FALSE );
-	g_return_val_if_fail( priv->initialized, FALSE );
 
 	if( !priv->dispose_has_run ){
 
@@ -544,12 +521,12 @@ ofa_export_settings_apply( ofaExportSettings *settings )
 }
 
 static gboolean
-do_apply( ofaExportSettings *self )
+do_apply( ofaExportSettingsPrefs *self )
 {
-	ofaExportSettingsPrivate *priv;
+	ofaExportSettingsPrefsPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	gchar *charmap, *decimal_sep, *field_sep;
+	gchar *charmap, *decimal_sep, *field_sep, *folder;
 	gint ivalue;
 
 	priv = self->priv;
@@ -561,8 +538,6 @@ do_apply( ofaExportSettings *self )
 	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->encoding_combo ));
 	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
 	gtk_tree_model_get( tmodel, &iter, ENC_COL_CODE, &charmap, -1 );
-	settings_set_string_ex( priv->user_pref, st_pref_charmap, charmap );
-	g_free( charmap );
 
 	/* date format */
 	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->date_combo ), &iter )){
@@ -571,7 +546,6 @@ do_apply( ofaExportSettings *self )
 	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->date_combo ));
 	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
 	gtk_tree_model_get( tmodel, &iter, DATE_COL_CODE, &ivalue, -1 );
-	settings_set_uint_ex( priv->user_pref, st_pref_date, ivalue );
 
 	/* decimal separator */
 	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->decimal_combo ), &iter )){
@@ -580,8 +554,6 @@ do_apply( ofaExportSettings *self )
 	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->decimal_combo ));
 	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
 	gtk_tree_model_get( tmodel, &iter, DEC_COL_CODE, &decimal_sep, -1 );
-	settings_set_string_ex( priv->user_pref, st_pref_decimal, decimal_sep );
-	g_free( decimal_sep );
 
 	/* field separator */
 	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->fieldsep_combo ), &iter )){
@@ -590,8 +562,16 @@ do_apply( ofaExportSettings *self )
 	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->fieldsep_combo ));
 	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
 	gtk_tree_model_get( tmodel, &iter, SEP_COL_CODE, &field_sep, -1 );
-	settings_set_string_ex( priv->user_pref, st_pref_field_sep, field_sep );
+
+	/* folder */
+	folder = gtk_file_chooser_get_current_folder( GTK_FILE_CHOOSER( priv->folder_btn ));
+
+	ofa_export_settings_set( priv->settings, charmap, ivalue, decimal_sep[0], field_sep[0], folder );
+
+	g_free( folder );
 	g_free( field_sep );
+	g_free( decimal_sep );
+	g_free( charmap );
 
 	return( TRUE );
 }
@@ -603,7 +583,7 @@ do_apply( ofaExportSettings *self )
 static GList *
 get_available_charmaps( void )
 {
-	static const gchar *thisfn = "ofa_export_settings_get_available_charmaps";
+	static const gchar *thisfn = "ofa_export_settings_prefs_get_available_charmaps";
 	gchar *stdout, *stderr;
 	gint exit_status;
 	GError *error;
@@ -637,154 +617,4 @@ get_available_charmaps( void )
 	}
 
 	return( g_list_reverse( charmaps ));
-}
-
-/*
- * Rationale: we may store user preferences both for the default export
- * settings and for each particular export settings (e.g. for accounts,
- * ledgers, and so on.)
- * So the caller of this convenience class may say that preferences must
- * be first searched for this particular object, only then searching for
- * the default.
- */
-static gchar *
-settings_get_string_ex( const gchar *name, const gchar *default_pref )
-{
-	gchar *pref_name, *text;
-
-	text = NULL;
-
-	if( name && g_utf8_strlen( name, -1 )){
-		pref_name = g_strdup_printf( "%s%s", name, default_pref );
-		text = ofa_settings_get_string( pref_name );
-		g_free( pref_name );
-	}
-
-	if( !text || !g_utf8_strlen( text, -1 )){
-		text = ofa_settings_get_string( default_pref );
-	}
-
-	return( text );
-}
-
-static void
-settings_set_string_ex( const gchar *name, const gchar *default_pref, const gchar *value )
-{
-	gchar *pref_name;
-
-	if( name && g_utf8_strlen( name, -1 )){
-		pref_name = g_strdup_printf( "%s%s", name, default_pref );
-	} else {
-		pref_name = g_strdup( default_pref );
-	}
-
-	ofa_settings_set_string( pref_name, value );
-	g_free( pref_name );
-}
-
-static gint
-settings_get_uint_ex( const gchar *name, const gchar *default_pref )
-{
-	gchar *pref_name;
-	gint value;
-
-	value = -1;
-
-	if( name && g_utf8_strlen( name, -1 )){
-		pref_name = g_strdup_printf( "%s%s", name, default_pref );
-		value = ofa_settings_get_uint( pref_name );
-		g_free( pref_name );
-	}
-
-	if( value < 0 ){
-		value = ofa_settings_get_uint( default_pref );
-	}
-
-	return( value );
-}
-
-static void
-settings_set_uint_ex( const gchar *name, const gchar *default_pref, gint value )
-{
-	gchar *pref_name;
-
-	if( name && g_utf8_strlen( name, -1 )){
-		pref_name = g_strdup_printf( "%s%s", name, default_pref );
-	} else {
-		pref_name = g_strdup( default_pref );
-	}
-
-	ofa_settings_set_uint( pref_name, value );
-	g_free( pref_name );
-}
-
-/**
- * ofa_export_settings_get_settings:
- * @name: [allow-none]: the name of this particular export settings.
- *
- * Returns: a newly allocated #ofsExportSettings structure, which
- * contains suitable settings for the export operation.
- *
- * If @name is %NULL or empty, then settings are default settings set
- * from user preferences dialog. Else settings are those selected on
- * the previous export operation for this particular name.
- */
-ofsExportSettings *
-ofa_export_settings_get_settings( const gchar *name )
-{
-	ofsExportSettings *settings;
-	gchar *text;
-	gint value;
-
-	settings = g_new0( ofsExportSettings, 1 );
-
-	/* charmap */
-	text = settings_get_string_ex( name, st_pref_charmap );
-	if( !text || !g_utf8_strlen( text, -1 )){
-		g_free( text );
-		text = g_strdup( st_def_charmap );
-	}
-	settings->charmap = text;
-
-	/* date format */
-	value = settings_get_uint_ex( name, st_pref_date );
-	if( value < 0 ){
-		value = st_def_date;
-	}
-	settings->date_format = value;
-
-	/* decimal separator */
-	text = settings_get_string_ex( name, st_pref_decimal );
-	if( !text || !g_utf8_strlen( text, -1 )){
-		g_free( text );
-		text = g_strdup( st_def_decimal );
-	}
-	settings->decimal_sep = text;
-
-	/* field separator */
-	text = settings_get_string_ex( name, st_pref_field_sep );
-	if( !text || !g_utf8_strlen( text, -1 )){
-		g_free( text );
-		text = g_strdup( st_def_field_sep );
-	}
-	settings->field_sep = text;
-
-	return( settings );
-}
-
-/**
- * ofa_export_settings_free_settings:
- *
- * Free the #ofsExportSettings returned from
- * #ofa_export_settings_get_settings() method.
- */
-void
-ofa_export_settings_free_settings( ofsExportSettings *settings )
-{
-	g_return_if_fail( settings );
-
-	g_free( settings->field_sep );
-	g_free( settings->decimal_sep );
-	g_free( settings->charmap );
-	g_free( settings );
 }

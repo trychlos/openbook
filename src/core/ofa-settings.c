@@ -525,6 +525,8 @@ ofa_settings_set_dossier( const gchar *name, ... )
  * Returns a newly allocated GSList of string, which should be
  * g_slist_free_full( GSList *, ( GDestroyNotify ) g_free ) by the
  * caller.
+ *
+ * Returns %NULL if the key was not found.
  */
 GSList *
 ofa_settings_get_string_list( const gchar *key )

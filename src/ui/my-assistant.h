@@ -63,11 +63,15 @@ typedef struct {
 }
 	myAssistantClass;
 
-GType my_assistant_get_type    ( void ) G_GNUC_CONST;
+GType  my_assistant_get_type         ( void ) G_GNUC_CONST;
 
-void  my_assistant_run         ( myAssistant *assistant );
+void   my_assistant_run              ( myAssistant *assistant );
 
-gint  my_assistant_get_page_num( myAssistant *assistant, GtkWidget *page );
+gulong my_assistant_signal_connect   ( myAssistant *assistant, const gchar *signal, GCallback cb );
+
+void   my_assistant_set_page_complete( myAssistant *assistant, gint page_num, gboolean complete );
+
+gint   my_assistant_get_page_num     ( myAssistant *assistant, GtkWidget *page );
 
 G_END_DECLS
 
