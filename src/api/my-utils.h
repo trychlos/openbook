@@ -71,7 +71,7 @@ void       my_utils_entry_set_valid        ( GtkEntry *entry, gboolean valid );
 GtkWidget *my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name );
 GtkWidget *my_utils_container_get_child_by_type( GtkContainer *container, GType type );
 
-void       my_utils_init_notes             ( GtkContainer *container,
+GObject   *my_utils_init_notes             ( GtkContainer *container,
 													const gchar *widget_name,
 													const gchar *notes );
 

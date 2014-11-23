@@ -282,7 +282,6 @@ init_exercices_page( ofaDossierProperties *self )
 	GtkContainer *container;
 	ofaDosexeComboParms parms;
 	GtkWidget *widget;
-	GtkTextBuffer *buffer;
 
 	priv = self->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
@@ -308,11 +307,6 @@ init_exercices_page( ofaDossierProperties *self )
 	my_editable_date_init( GTK_EDITABLE( widget ));
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_end_changed ), self );
 
-	widget = my_utils_container_get_child_by_name( container, "pexe-notes" );
-	g_return_if_fail( widget && GTK_IS_TEXT_VIEW( widget ));
-	buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( widget ));
-	g_signal_connect( G_OBJECT( buffer ), "changed", G_CALLBACK( on_notes_changed ), self );
-
 	priv->exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
 
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier, priv->exe_id ));
@@ -333,6 +327,7 @@ on_exercice_changed( ofaDosexeCombo *combo, gint exe_id, ofaDossierProperties *s
 	ofaDossierStatus status;
 	gboolean readonly;
 	gchar *str;
+	GObject *buffer;
 
 	priv = self->priv;
 	status = ofo_dossier_get_exe_status( priv->dossier, exe_id );
@@ -398,10 +393,15 @@ on_exercice_changed( ofaDosexeCombo *combo, gint exe_id, ofaDossierProperties *s
 	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );
 
-	widget = my_utils_container_get_child_by_name( container, "pexe-notes" );
-	my_utils_init_notes(
+	buffer = my_utils_init_notes(
 			container, "pexe-notes",
 			readonly ? ofo_dossier_get_exe_notes( priv->dossier, exe_id ) : priv->notes );
+	g_return_if_fail( buffer && GTK_IS_TEXT_BUFFER( buffer ));
+	if( !readonly ){
+		g_signal_connect( buffer, "changed", G_CALLBACK( on_notes_changed ), self );
+	}
+
+	widget = my_utils_container_get_child_by_name( container, "pexe-notes" );
 	gtk_widget_set_can_focus( widget, !readonly );
 }
 
@@ -474,14 +474,15 @@ on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date,
 static void
 on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self )
 {
+	ofaDossierPropertiesPrivate *priv;
 	GtkTextIter start, end;
+
+	priv = self->priv;
 
 	gtk_text_buffer_get_start_iter( buffer, &start );
 	gtk_text_buffer_get_end_iter( buffer, &end );
-	g_free( self->priv->notes );
-	self->priv->notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
-
-	g_debug( "on_notes_changed: notes='%s'", self->priv->notes );
+	g_free( priv->notes );
+	priv->notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
 }
 
 static void

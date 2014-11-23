@@ -349,8 +349,6 @@
 
  442 2014-11-13 AccountsBook: add a notes indicator
 
- 445 2014-11-13 my_date: do not accept two successive '/'
-
  451 2014-11-13 view entries: one should be able to enter any effect 
                 date -> have a save anyway button + take care of 
                 updating ofoEntry to not apply to account nor ledger
@@ -1958,6 +1956,9 @@
 
  444 2014-11-13 General Ledger: last account is not taken into account
      2014-11-13 done - svn #4110
+
+ 445 2014-11-13 my_date: do not accept two successive '/'
+     2014-11-23 done - svn #4145
 
  446 2014-11-13 General Ledger: account header/footer: font size -= 1
      2014-11-14 done - svn #4106

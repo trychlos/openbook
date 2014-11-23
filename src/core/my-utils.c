@@ -35,6 +35,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
+static void    on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static void    int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList  *position_to_int_list( gint x, gint y, gint width, gint height );
 
@@ -482,7 +483,7 @@ my_utils_container_get_child_by_type( GtkContainer *container, GType type )
  * This function is mostly used through the "my_utils_init_notes_ex()"
  * macro.
  */
-void
+GObject *
 my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gchar *notes )
 {
 	GtkTextView *text;
@@ -499,9 +500,24 @@ my_utils_init_notes( GtkContainer *container, const gchar *widget_name, const gc
 	buffer = gtk_text_buffer_new( NULL );
 	gtk_text_buffer_set_text( buffer, str, -1 );
 	gtk_text_view_set_buffer( text, buffer );
+	g_signal_connect( G_OBJECT( buffer ), "changed", G_CALLBACK( on_notes_changed ), NULL );
 
 	g_object_unref( buffer );
 	g_free( str );
+
+	return( G_OBJECT( buffer ));
+}
+
+static void
+on_notes_changed( GtkTextBuffer *buffer, void *user_data )
+{
+	/*GtkTextIter start, end;
+	gchar *notes;
+
+	gtk_text_buffer_get_start_iter( buffer, &start );
+	gtk_text_buffer_get_end_iter( buffer, &end );
+	notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
+	g_free( notes );*/
 }
 
 /**
