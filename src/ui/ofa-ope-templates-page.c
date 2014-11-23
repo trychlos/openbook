@@ -83,11 +83,12 @@ enum {
 G_DEFINE_TYPE( ofaOpeTemplatesPage, ofa_ope_templates_page, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
+static void       insert_ledger_dataset( ofaOpeTemplatesPage *self, GtkNotebook *book );
 static void       setup_dossier_signaling( ofaOpeTemplatesPage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       insert_dataset( ofaOpeTemplatesPage *self );
+static void       insert_ope_templates_dataset( ofaOpeTemplatesPage *self );
 static GtkWidget *book_create_page( ofaOpeTemplatesPage *self, GtkNotebook *book, const gchar *ledger, const gchar *ledger_label );
 static gboolean   book_activate_page_by_ledger( ofaOpeTemplatesPage *self, const gchar *ledger );
 static gint       book_get_page_by_ledger( ofaOpeTemplatesPage *self, const gchar *ledger );
@@ -193,11 +194,11 @@ static GtkWidget *
 v_setup_view( ofaPage *page )
 {
 	ofaOpeTemplatesPage *self;
+	ofaOpeTemplatesPagePrivate *priv;
 	GtkNotebook *book;
-	GList *dataset, *iset;
-	ofoLedger *ledger;
 
 	self = OFA_OPE_TEMPLATES_PAGE( page );
+	priv = self->priv;
 
 	setup_dossier_signaling( self );
 
@@ -208,19 +209,28 @@ v_setup_view( ofaPage *page )
 	gtk_notebook_set_scrollable( book, TRUE );
 	gtk_notebook_popup_enable( book );
 
-	self->priv->book = GTK_NOTEBOOK( book );
+	priv->book = GTK_NOTEBOOK( book );
 
-	dataset = ofo_ledger_get_dataset( ofa_page_get_dossier( page ));
-
-	for( iset=dataset ; iset ; iset=iset->next ){
-		ledger = OFO_LEDGER( iset->data );
-		book_create_page( self, book, ofo_ledger_get_mnemo( ledger ), ofo_ledger_get_label( ledger ));
-	}
+	insert_ledger_dataset( OFA_OPE_TEMPLATES_PAGE( page ), priv->book );
 
 	/* connect after the pages have been created */
 	g_signal_connect( G_OBJECT( book ), "switch-page", G_CALLBACK( on_page_switched ), self );
 
 	return( GTK_WIDGET( book ));
+}
+
+static void
+insert_ledger_dataset( ofaOpeTemplatesPage *self, GtkNotebook *book )
+{
+	GList *dataset, *iset;
+	ofoLedger *ledger;
+
+	dataset = ofo_ledger_get_dataset( ofa_page_get_dossier( OFA_PAGE( self )));
+
+	for( iset=dataset ; iset ; iset=iset->next ){
+		ledger = OFO_LEDGER( iset->data );
+		book_create_page( self, book, ofo_ledger_get_mnemo( ledger ), ofo_ledger_get_label( ledger ));
+	}
 }
 
 static void
@@ -295,7 +305,7 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	insert_dataset( OFA_OPE_TEMPLATES_PAGE( page ));
+	insert_ope_templates_dataset( OFA_OPE_TEMPLATES_PAGE( page ));
 }
 
 static GtkWidget *
@@ -307,7 +317,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 static void
-insert_dataset( ofaOpeTemplatesPage *self )
+insert_ope_templates_dataset( ofaOpeTemplatesPage *self )
 {
 	GList *dataset, *iset;
 
@@ -910,14 +920,18 @@ static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplatesPage *self )
 {
 	static const gchar *thisfn = "ofa_ope_templates_page_on_reloaded_dataset";
+	ofaOpeTemplatesPagePrivate *priv;
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
+	priv = self->priv;
+
 	if( type == OFO_TYPE_OPE_TEMPLATE || type == OFO_TYPE_LEDGER ){
-		while( gtk_notebook_get_n_pages( self->priv->book )){
-			gtk_notebook_remove_page( self->priv->book, 0 );
+		while( gtk_notebook_get_n_pages( priv->book )){
+			gtk_notebook_remove_page( priv->book, 0 );
 		}
-		insert_dataset( self );
+		insert_ledger_dataset( self, priv->book );
+		insert_ope_templates_dataset( self );
 	}
 }
