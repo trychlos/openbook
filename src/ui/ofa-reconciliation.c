@@ -856,6 +856,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
 			date_b = OFO_IS_ENTRY( object_b ) ?
 						ofo_entry_get_dope( OFO_ENTRY( object_b )) :
 							ofo_bat_line_get_dope( OFO_BAT_LINE( object_b ));
+			g_return_val_if_fail( my_date_is_valid( date_a ), 0 );
+			g_return_val_if_fail( my_date_is_valid( date_b ), 0 );
 			cmp = my_date_compare( date_a, date_b );
 			break;
 		case COL_PIECE:
@@ -918,6 +920,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcil
 						ofo_entry_get_concil_dval( OFO_ENTRY( object_a )) : NULL;
 			date_b = OFO_IS_ENTRY( object_b ) ?
 						ofo_entry_get_concil_dval( OFO_ENTRY( object_b )) : NULL;
+			g_return_val_if_fail( my_date_is_valid( date_a ), 0 );
+			g_return_val_if_fail( my_date_is_valid( date_b ), 0 );
 			cmp = my_date_compare( date_a, date_b );
 			break;
 		default:

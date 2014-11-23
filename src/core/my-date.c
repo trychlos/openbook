@@ -70,6 +70,12 @@ my_date_is_valid( const GDate *date )
  * or greater than @b.
  *
  * Returns: -1, 0 or 1.
+ *
+ * It is to the caller to make sure that @a and @b are two valid dates,
+ * because it is the only one to have an idea of what must be done is
+ * such a case...
+ * So all calls to #my_date_compare() must be protected by a previous
+ * #my_date_is_valid() call.
  */
 gint
 my_date_compare( const GDate *a, const GDate *b )

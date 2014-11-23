@@ -744,6 +744,7 @@ ofo_ledger_get_last_closing( const ofoLedger *ledger )
 		for( idet=ledger->priv->exes ; idet ; idet=idet->next ){
 			sdetail = ( sDetailExe * ) idet->data;
 			if( dlast ){
+				g_return_val_if_fail( my_date_is_valid( dlast ), NULL );
 				if( my_date_is_valid( &sdetail->last_clo ) &&
 						my_date_compare( &sdetail->last_clo, dlast ) > 0 ){
 					my_date_set_from_date( dlast, &sdetail->last_clo );

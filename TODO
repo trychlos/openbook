@@ -356,14 +356,13 @@
  451 2014-11-13 view entries: one should be able to enter any effect 
                 date -> have a save anyway button + take care of 
                 updating ofoEntry to not apply to account nor ledger
+     2014-11-22 have a rationale (other than unreconciliated on 
+                unsettled entries from a previous exercice) ?
 
  455 2014-11-14 report colored footer in other pages with balances
                 (as view entries)
 
  457 2014-11-14 have more entries and more accounts in OFAT base of test
-
- 460 2014-11-21 ViewEntries: in order to keep debit/credit/currency 
-                aligned, have other columns (reconcil) on the left
 
  461
 
@@ -1998,6 +1997,10 @@
 
  459 2014-11-18 print accounts balances : option group by class
      2014-11-21 done - svn #4131
+
+ 460 2014-11-21 ViewEntries: in order to keep debit/credit/currency 
+                aligned, have other columns (reconcil) on the left
+     2014-11-22 done - svn #4143
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

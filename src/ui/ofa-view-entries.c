@@ -2708,7 +2708,8 @@ get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger )
 	g_free( ledger_last_closing );
 
 	/* minimal effect date from operation point of view */
-	if( !my_date_is_valid( &dmin ) || my_date_compare( &dmin, dope ) < 0 ){
+	if( !my_date_is_valid( &dmin ) ||
+			( my_date_is_valid( dope ) && my_date_compare( &dmin, dope ) < 0 )){
 		my_date_set_from_date( &dmin, dope );
 	}
 

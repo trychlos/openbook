@@ -719,6 +719,8 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 
 	priv = OFA_PDF_RECONCIL( instance )->priv;
 
+	g_return_if_fail( my_date_is_valid( &priv->date ));
+
 	y = ofa_iprintable_get_last_y( instance );
 
 	date = ofo_account_get_global_deffect( priv->account );

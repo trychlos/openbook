@@ -1286,6 +1286,7 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 			if( sexe->status == DOS_STATUS_CLOSED ){
 				g_return_val_if_fail( my_date_is_valid( &sexe->exe_end ), NULL );
 				if( dmax ){
+					g_return_val_if_fail( my_date_is_valid( dmax ), NULL );
 					if( my_date_compare( &sexe->exe_end, dmax ) > 0 ){
 						my_date_set_from_date( dmax, &sexe->exe_end );
 					}
@@ -1345,6 +1346,8 @@ get_exe_by_date( const ofoDossier *dossier, const GDate *date )
 {
 	GList *exe;
 	sDetailExe *sexe;
+
+	g_return_val_if_fail( my_date_is_valid( date ), NULL );
 
 	for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
 		sexe = ( sDetailExe * ) exe->data;

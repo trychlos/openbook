@@ -1139,6 +1139,9 @@ rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consiste
 		}
 	}
 
+	g_return_val_if_fail( my_date_is_valid( &a->begin ), 0 );
+	g_return_val_if_fail( my_date_is_valid( &a->end ), 0 );
+
 	return( my_date_compare( &a->begin, &a->end ));
 }
 

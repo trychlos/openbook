@@ -253,15 +253,20 @@ on_date_changed( GtkEditable *entry, ofaIntClosing *self )
 	my_date_set_from_date( &priv->closing,
 			my_editable_date_get_date( GTK_EDITABLE( priv->closing_entry ), NULL ));
 
-	/* the date must be less or equal that the end of exercice */
-	exe_id = ofo_dossier_get_current_exe_id( MY_WINDOW( self )->prot->dossier );
-	exe_end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier, exe_id );
-	if( !my_date_is_valid( exe_end ) || my_date_compare( &priv->closing, exe_end ) <= 0 ){
-		priv->valid = TRUE;
-		gtk_label_set_text( priv->message_label, "" );
+	if( !my_date_is_valid( &priv->closing )){
+		gtk_label_set_text( priv->message_label, _( "Invalid closing date" ));
 
 	} else {
-		gtk_label_set_text( priv->message_label, _( "Closing date is after the end of exercice" ));
+		/* the date must be less or equal that the end of exercice */
+		exe_id = ofo_dossier_get_current_exe_id( MY_WINDOW( self )->prot->dossier );
+		exe_end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier, exe_id );
+		if( !my_date_is_valid( exe_end ) || my_date_compare( &priv->closing, exe_end ) <= 0 ){
+			priv->valid = TRUE;
+			gtk_label_set_text( priv->message_label, "" );
+
+		} else {
+			gtk_label_set_text( priv->message_label, _( "Closing date is after the end of exercice" ));
+		}
 	}
 
 	check_for_enable_dlg( self, NULL );
@@ -326,6 +331,8 @@ check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 	priv->count += 1;
 
 	last = ofo_ledger_get_last_closing( ledger );
+
+	g_return_if_fail( my_date_is_valid( &priv->closing ));
 
 	if( !my_date_is_valid( last ) || my_date_compare( &priv->closing, last ) > 0 ){
 		priv->closeable += 1;
