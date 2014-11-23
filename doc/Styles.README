@@ -1,0 +1,68 @@
+ Open Freelance Accounting
+ $Id$
+
+ Summary
+ =======
+
+   Liminaries
+   GuidedInputEx
+   ViewEntries
+   AccountsPage
+
+-----------------------------------------------------------------------
+ Liminaries
+ ==========
+
+ This document describes the different styles used in the application.
+
+-----------------------------------------------------------------------
+ GuidedInputEx
+ =============
+
+ LedgerTreeview:
+
+ - ledger label:
+   background color: #ffffb0 pale yellow
+   font style:       italic
+
+ - error message:
+   font color:       #ff0000 red
+
+-----------------------------------------------------------------------
+ ViewEntries
+ ===========
+
+ - validated entries:
+   background color: #e6cf00 gold
+
+ - deleted entries:
+   font color:       #808080 gray
+   font style:       italic
+
+ - rough invalid entries:
+   font color:       #ff0000 red
+
+ - rough warning entries:
+   font color:       #ff8000 orange
+
+ - balance:
+   font color:       #0000ff blue
+
+-----------------------------------------------------------------------
+ AccountsPage
+ ============
+
+ - level 2 account:
+   background color: #c0ffff cyan
+   font style:       bold
+
+ - level 3 account:
+   font color:       #0000ff blue
+   font style:       bold
+
+ - level 4 account:
+   font color:       #0000ff blue
+   font style:       italic
+
+-----------------------------------------------------------------------
+ P. Wieser - Last updated on 2014, nov. 21st

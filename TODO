@@ -337,10 +337,6 @@
                 ofaOpeTemplatesPage:
                 ofaRatesPage:
 
- 425 2014-11-10 ofaDossierProperties: doesn't take into account
-                'changed' signal on exercice notes - so unable to
-                have this field updated
-
  429 2014-11-11 implement print preview inside of Openbook
 
  432 2014-11-12 on import, do not apply on account nor ledger entries
@@ -1883,6 +1879,11 @@
 
  424 2014-11- 9 add exercice notes
      2014-11-10 done - svn #4070
+
+ 425 2014-11-10 ofaDossierProperties: doesn't take into account
+                'changed' signal on exercice notes - so unable to
+                have this field updated
+     2014-11-10 done - svn #4146
 
  426 2014-11-10 compare ofo_account_archive_open_balances() vs.
                 ofo_account_histo_valid_to_open()
