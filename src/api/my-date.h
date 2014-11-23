@@ -50,7 +50,7 @@ G_BEGIN_DECLS
  * --------------+------------+---------+-------+-----+----------+
  */
 typedef enum {
-	MY_DATE_FIRST = 0,
+	MY_DATE_FIRST = 0,					/* formats must be greater than zero */
 	MY_DATE_DMMM,
 	MY_DATE_DMYY,
 	MY_DATE_SQL,

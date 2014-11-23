@@ -40,6 +40,7 @@
 #include "core/ofa-plugin.h"
 
 #include "ui/ofa-dossier-delete-prefs.h"
+#include "ui/ofa-export-settings.h"
 #include "ui/ofa-main-window.h"
 #include "core/ofa-preferences.h"
 
@@ -76,6 +77,10 @@ struct _ofaPreferencesPrivate {
 	gint                   p3_date_enter;
 	gint                   p3_date_display;
 	gint                   p3_date_check;
+
+	/* Export settings
+	 */
+	ofaExportSettings     *export_settings;
 
 	/* UI - Plugin pages
 	 */
@@ -139,6 +144,7 @@ static void       get_locales( void );
 static void       init_locale_decimal( ofaPreferences *self, const gchar *wname, GSList *slist, const gchar *sep, gboolean *pdata );
 static gint       find_str( const gchar *a, const gchar *b );
 static void       init_locale_sep( ofaPreferences *self, const gchar *wname, const gchar *pref, gchar **pdata, const gchar *def_value );*/
+static void       init_export_page( ofaPreferences *self );
 static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
 static void       init_plugin_page( ofaPreferences *self, ofaIPreferences *plugin );
 static void       activate_first_page( ofaPreferences *self );
@@ -183,6 +189,7 @@ preferences_dispose( GObject *instance )
 		priv = OFA_PREFERENCES( instance )->priv;
 
 		g_clear_object( &priv->dd_prefs );
+		g_clear_object( &priv->export_settings );
 
 		g_list_free_full( priv->plugs, ( GDestroyNotify ) g_free );
 		priv->plugs = NULL;
@@ -267,16 +274,19 @@ ofa_preferences_run( ofaMainWindow *main_window, ofaPlugin *plugin )
 static void
 v_init_dialog( myDialog *dialog )
 {
+	ofaPreferencesPrivate *priv;
 	GtkWindow *toplevel;
 
+	priv = OFA_PREFERENCES( dialog )->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	OFA_PREFERENCES( dialog )->priv->book =
+	priv->book =
 			my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "notebook" );
 
 	init_quitting_page( OFA_PREFERENCES( dialog ));
 	init_dossier_delete_page( OFA_PREFERENCES( dialog ));
 	init_account_page( OFA_PREFERENCES( dialog ));
 	init_locales_page( OFA_PREFERENCES( dialog ));
+	init_export_page( OFA_PREFERENCES( dialog ));
 	enumerate_prefs_plugins( OFA_PREFERENCES( dialog ), init_plugin_page );
 }
 
@@ -534,6 +544,24 @@ init_locale_sep( ofaPreferences *self, const gchar *wname, const gchar *pref, gc
 #endif
 
 static void
+init_export_page( ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+	GtkContainer *container;
+	GtkWidget *target;
+
+	priv = self->priv;
+
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+	target = my_utils_container_get_child_by_name( container, "p5-top-grid" );
+	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
+
+	priv->export_settings = ofa_export_settings_new();
+	ofa_export_settings_attach_to( priv->export_settings, GTK_CONTAINER( target ));
+	ofa_export_settings_init_dlg( priv->export_settings );
+}
+
+static void
 enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn )
 {
 	GList *list, *it;
@@ -662,6 +690,7 @@ do_update( ofaPreferences *self )
 	ofa_dossier_delete_prefs_set_settings( priv->dd_prefs );
 	do_update_account_page( self );
 	do_update_locales_page( self );
+	ofa_export_settings_apply( priv->export_settings );
 	enumerate_prefs_plugins( self, update_prefs_plugin );
 
 	priv->updated = TRUE;
