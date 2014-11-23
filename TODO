@@ -351,8 +351,6 @@
 
  445 2014-11-13 my_date: do not accept two successive '/'
 
- 447 2014-11-13 my-date.c: line 81 (my_date_compare): should not be reached
-
  451 2014-11-13 view entries: one should be able to enter any effect 
                 date -> have a save anyway button + take care of 
                 updating ofoEntry to not apply to account nor ledger
@@ -1963,6 +1961,9 @@
 
  446 2014-11-13 General Ledger: account header/footer: font size -= 1
      2014-11-14 done - svn #4106
+
+ 447 2014-11-13 my-date.c: line 81 (my_date_compare): should not be reached
+     2014-11-24 done - svn #4144
 
  448 2014-11-13 view entries: when entering an operation date, and if
                 the effect date has not yet been forced by the user, 

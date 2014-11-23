@@ -246,10 +246,11 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 	GString *str_result, *str_insert;
 	gchar **components;
 	gint day, month, new_num, len_day;
-	gboolean have_year, shortcut_millenary, done;
+	gboolean have_year, shortcut_millenary, done, have_two_slashes;
 	gint ival;
 
 	shortcut_millenary = TRUE;
+	have_two_slashes = FALSE;
 
 	/* 'str_result' is initialized with the initial content of the
 	 * GtkEditable, will be incremented with each validated char */
@@ -291,6 +292,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 						month = atoi( *( components+1 ));
 					}
 					if( *( components+2 )){
+						have_two_slashes = TRUE;
 						if( g_utf8_strlen( *( components+2 ), -1 )){
 							have_year = TRUE;
 						}
@@ -354,7 +356,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 			 * in order to be able to insert a digit */
 			} else if( pos >= 2 && pos <= 4 ){
 				if( pos == 2 ){
-					if( str_result->str[pos] != '/' ){
+					if( str_result->str[pos] != '/' && !have_two_slashes ){
 						str_insert = g_string_append_c( str_insert, '/' );
 						str_result = g_string_insert_c( str_result, pos, '/' );
 						pos += 1;
@@ -383,7 +385,9 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 					pos += 1;
 					g_debug( "%s: str_insert=%s, position=%u, str_result=%s, pos=%u",
 							thisfn, str_insert->str, *position, str_result->str, pos );
-					if( pos == 5 && str_result->str[pos] != '/' && ( i == new_text_length-1 || new_text[i+1] != '/' )){
+					if( pos == 5 && str_result->str[pos] != '/' &&
+							( i == new_text_length-1 || new_text[i+1] != '/' ) &&
+							!have_two_slashes ){
 						str_insert = g_string_append_c( str_insert, '/' );
 						str_result = g_string_insert_c( str_result, pos, '/' );
 						pos += 1;
@@ -400,7 +404,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 			 * we have dd/mm/yyyy */
 			} else if( pos >= 5 && pos <= 9 ){
 				if( pos == 5 ){
-					if( str_result->str[pos] != '/' ){
+					if( str_result->str[pos] != '/' && !have_two_slashes ){
 						str_insert = g_string_append_c( str_insert, '/' );
 						str_result = g_string_insert_c( str_result, pos, '/' );
 						pos += 1;
@@ -435,7 +439,7 @@ on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_len
 		 * only slashes are accepted
 		 * unable to enter again a separator if we already have our
 		 * three components */
-		} else if( ithchar == '/' && !have_year ){
+		} else if( ithchar == '/' && !have_two_slashes && !have_year ){
 
 			done = FALSE;
 
