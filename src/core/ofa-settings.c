@@ -520,6 +520,36 @@ ofa_settings_set_dossier( const gchar *name, ... )
 }
 
 /**
+ * Returns: the list of keys which have the specified common prefix.
+ *
+ * The returned list should be
+ * g_slist_free_full( list, ( GDestroyNotify ) g_free ) by the caller.
+ */
+GSList *
+ofa_settings_get_prefixed_keys( const gchar *prefix )
+{
+	GSList *list;
+	gchar **array, **i;
+
+	settings_new();
+	list = NULL;
+
+	array = g_key_file_get_keys( st_settings->priv->keyfile, GROUP_GENERAL, NULL, NULL );
+	if( array ){
+		i = ( gchar ** ) array;
+		while( *i ){
+			if( g_str_has_prefix(( const gchar * ) *i, prefix )){
+				list = g_slist_prepend( list, g_strdup( *i ));
+			}
+			i++;
+		}
+	}
+	g_strfreev( array );
+
+	return( g_slist_reverse( list ));
+}
+
+/**
  * ofa_settings_get_string_list:
  *
  * Returns a newly allocated GSList of string, which should be

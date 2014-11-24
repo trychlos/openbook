@@ -64,16 +64,19 @@ typedef struct {
 }
 	ofaExportSettingsPrefsClass;
 
-GType                   ofa_export_settings_prefs_get_type ( void ) G_GNUC_CONST;
+GType                   ofa_export_settings_prefs_get_type   ( void ) G_GNUC_CONST;
 
-ofaExportSettingsPrefs *ofa_export_settings_prefs_new      ( void );
+ofaExportSettingsPrefs *ofa_export_settings_prefs_new        ( void );
 
-void                    ofa_export_settings_prefs_attach_to( ofaExportSettingsPrefs *settings,
+void                    ofa_export_settings_prefs_attach_to  ( ofaExportSettingsPrefs *settings,
 																		GtkContainer *parent );
 
-void                    ofa_export_settings_prefs_init_dlg ( ofaExportSettingsPrefs *settings );
+void                    ofa_export_settings_prefs_init_dialog( ofaExportSettingsPrefs *settings );
 
-gboolean                ofa_export_settings_prefs_apply    ( ofaExportSettingsPrefs *settings );
+void                    ofa_export_settings_prefs_show_folder( ofaExportSettingsPrefs *settings,
+																		gboolean show );
+
+gboolean                ofa_export_settings_prefs_apply      ( ofaExportSettingsPrefs *settings );
 
 G_END_DECLS
 

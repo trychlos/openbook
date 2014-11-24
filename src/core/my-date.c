@@ -35,6 +35,20 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 
+typedef struct {
+	gint         code;
+	const gchar *label;
+}
+	sDateFormat;
+
+static const sDateFormat st_date_format[] = {
+		{ MY_DATE_DMMM, N_( "D MMM YYYY" )},
+		{ MY_DATE_DMYY, N_( "DD/MM/YYYY" )},
+		{ MY_DATE_SQL,  N_( "YYYY-MM-DD" )},
+		{ MY_DATE_YYMD, N_( "YYYYMMDD" )},
+		{ 0 }
+};
+
 static gboolean parse_ddmmyyyy_string( GDate *date, const gchar *string );
 
 /**
@@ -392,4 +406,25 @@ my_date_to_str( const GDate *date, myDateFormat format )
 	}
 
 	return( str );
+}
+
+/**
+ * my_date_get_format_str:
+ *
+ * Returns: a localized string which describes the specified format.
+ */
+const gchar *
+my_date_get_format_str( myDateFormat format )
+{
+	static const gchar *thisfn = "my_date_get_format_str";
+	gint i;
+
+	for( i=0 ; st_date_format[i].code ; ++i ){
+		if( st_date_format[i].code == format ){
+			return( gettext( st_date_format[i].label ));
+		}
+	}
+
+	g_warning( "%s: unknown date format: %d", thisfn, format );
+	return( NULL );
 }

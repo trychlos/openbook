@@ -47,7 +47,7 @@
 #include "ui/ofa-dossier-login.h"
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-exe-closing.h"
-#include "ui/ofa-export.h"
+#include "ui/ofa-export-assistant.h"
 #include "ui/ofa-guided-ex.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-import.h"
@@ -252,7 +252,7 @@ static const gchar *st_main_window_name = "MainWindow";
 static const gchar *st_dosmenu_xml      = PKGUIDIR "/ofa-dos-menubar.ui";
 static const gchar *st_dosmenu_id       = "dos-menu";
 
-static gint         st_signals[ N_SIGNALS ] = { 0 };
+static guint        st_signals[ N_SIGNALS ] = { 0 };
 
 G_DEFINE_TYPE( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW )
 
@@ -1089,7 +1089,7 @@ on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_export_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_export_assistant_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void

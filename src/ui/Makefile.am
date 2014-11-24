@@ -109,8 +109,8 @@ openbook_SOURCES = \
 	ofa-dossier-properties.h							\
 	ofa-exe-closing.c									\
 	ofa-exe-closing.h									\
-	ofa-export.c										\
-	ofa-export.h										\
+	ofa-export-assistant.c								\
+	ofa-export-assistant.h								\
 	ofa-export-settings.c								\
 	ofa-export-settings.h								\
 	ofa-export-settings-prefs.c							\
@@ -210,7 +210,7 @@ ui_files = \
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
 	ofa-exe-closing.ui									\
-	ofa-export.ui										\
+	ofa-export-assistant.ui								\
 	ofa-export-settings.piece.ui						\
 	ofa-guided-input.ui									\
 	ofa-import.ui										\

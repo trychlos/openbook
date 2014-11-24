@@ -61,6 +61,7 @@ gchar     *my_utils_import_multi_lines     ( const gchar *str );
 gboolean   my_utils_boolean_from_str       ( const gchar *str );
 
 gchar     *my_utils_str_remove_suffix      ( const gchar *string, const gchar *suffix );
+gchar     *my_utils_str_remove_underlines  ( const gchar *string );
 gchar     *my_utils_str_replace            ( const gchar *string, const gchar *old, const gchar *new );
 
 GtkWidget *my_utils_builder_load_from_path ( const gchar *path_xml, const gchar *widget_name );
@@ -92,7 +93,7 @@ void       my_utils_init_upd_user_stamp    ( GtkContainer *container,
 														GTK_CONTAINER(C), "px-last-update", ofo_ ## T ## _get_upd_stamp( priv->T ), \
 														ofo_ ## T ## _get_upd_user( priv->T )); }
 
-gboolean   my_utils_output_stream_new      ( const gchar *uri, GFile **file, GOutputStream **stream );
+gboolean   my_utils_output_stream_new      ( const gchar *filename, GFile **file, GOutputStream **stream );
 
 void       my_utils_pango_layout_ellipsize ( PangoLayout *layout, gint max_width );
 

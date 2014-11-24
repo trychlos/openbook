@@ -62,6 +62,8 @@ gchar   *ofa_settings_get_dossier_key_string( const gchar *name, const gchar *ke
 gint     ofa_settings_get_dossier_key_uint  ( const gchar *name, const gchar *key );
 void     ofa_settings_set_dossier_key_string( const gchar *name, const gchar *key, const gchar *value );
 
+GSList  *ofa_settings_get_prefixed_keys     ( const gchar *prefix );
+
 GSList  *ofa_settings_get_string_list       ( const gchar *key );
 void     ofa_settings_set_string_list       ( const gchar *key, const GSList *str_list );
 

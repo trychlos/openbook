@@ -63,11 +63,15 @@ G_DEFINE_TYPE( myWindow, my_window, G_TYPE_OBJECT )
 static void
 window_finalize( GObject *instance )
 {
+	static const gchar *thisfn = "my_window_finalize";
 	myWindow *self;
 
-	self = MY_WINDOW( instance );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
+	self = MY_WINDOW( instance );
+
 	g_free( self->priv->window_xml );
 	g_free( self->priv->window_name );
 	g_free( self->prot );

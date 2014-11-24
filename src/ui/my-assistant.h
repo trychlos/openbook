@@ -63,6 +63,18 @@ typedef struct {
 }
 	myAssistantClass;
 
+/**
+ * Signals defined by #myAssistant class:
+ * @ASSISTANT_SIGNAL_PAGE_CREATE:  sent before first displaying the page
+ * @ASSISTANT_SIGNAL_PAGE_DISPLAY: sent each time the page is about to
+ *                                 be displayed
+ * @ASSISTANT_SIGNAL_PAGE_FORWARD: sent when the user has clicked on the
+ *                                 'forward' button
+ */
+#define MY_SIGNAL_PAGE_CREATE           "my-assistant-signal-page-create"
+#define MY_SIGNAL_PAGE_DISPLAY          "my-assistant-signal-page-display"
+#define MY_SIGNAL_PAGE_FORWARD          "my-assistant-signal-page-forward"
+
 GType  my_assistant_get_type         ( void ) G_GNUC_CONST;
 
 void   my_assistant_run              ( myAssistant *assistant );

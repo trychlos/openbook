@@ -558,7 +558,7 @@ init_export_page( ofaPreferences *self )
 
 	priv->export_settings = ofa_export_settings_prefs_new();
 	ofa_export_settings_prefs_attach_to( priv->export_settings, GTK_CONTAINER( target ));
-	ofa_export_settings_prefs_init_dlg( priv->export_settings );
+	ofa_export_settings_prefs_init_dialog( priv->export_settings );
 }
 
 static void

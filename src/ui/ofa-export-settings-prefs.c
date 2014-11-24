@@ -75,14 +75,13 @@ enum {
 
 typedef struct {
 	gint         code;
-	const gchar *label;
 }
 	sDateFormat;
 
 static const sDateFormat st_date_format[] = {
-		{ MY_DATE_DMYY, N_( "DD/MM/YYYY" )},
-		{ MY_DATE_YYMD, N_( "YYYYMMDD" )},
-		{ MY_DATE_SQL,  N_( "YYYY-MM-DD" )},
+		{ MY_DATE_DMYY },
+		{ MY_DATE_YYMD },
+		{ MY_DATE_SQL },
 		{ 0 }
 };
 
@@ -250,13 +249,13 @@ ofa_export_settings_prefs_attach_to( ofaExportSettingsPrefs *settings, GtkContai
 }
 
 /**
- * ofa_export_settings_prefs_init_dlg:
+ * ofa_export_settings_prefs_init_dialog:
  *
  * This initializes the combo boxes. This must be done after having
  * attached the widgets to the containing parent.
  */
 void
-ofa_export_settings_prefs_init_dlg( ofaExportSettingsPrefs *settings )
+ofa_export_settings_prefs_init_dialog( ofaExportSettingsPrefs *settings )
 {
 	ofaExportSettingsPrefsPrivate *priv;
 
@@ -367,7 +366,7 @@ init_date_format( ofaExportSettingsPrefs *self )
 				&iter,
 				-1,
 				DATE_COL_CODE,  st_date_format[i].code,
-				DATE_COL_LABEL, st_date_format[i].label,
+				DATE_COL_LABEL, my_date_get_format_str( st_date_format[i].code ),
 				-1 );
 		if( fmt == st_date_format[i].code ){
 			idx = i;
@@ -489,6 +488,35 @@ init_folder( ofaExportSettingsPrefs *self )
 	svalue = ofa_export_settings_get_folder( priv->settings );
 
 	gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER( priv->folder_btn ), svalue );
+}
+
+/**
+ * ofa_export_settings_show_folder:
+ *
+ * Show or hide the folder frame.
+ */
+void
+ofa_export_settings_prefs_show_folder( ofaExportSettingsPrefs *settings, gboolean show )
+{
+	ofaExportSettingsPrefsPrivate *priv;
+	GtkWidget *frame;
+
+	g_return_if_fail( settings && OFA_IS_EXPORT_SETTINGS_PREFS( settings ));
+
+	priv = settings->priv;
+
+	g_return_if_fail( priv->parent && GTK_IS_CONTAINER( priv->parent ));
+	g_return_if_fail( priv->container && GTK_IS_CONTAINER( priv->container ));
+
+	if( !priv->dispose_has_run ){
+
+		frame = my_utils_container_get_child_by_name( priv->container, "p5-frame-folder" );
+		if( show ){
+			gtk_widget_show( frame );
+		} else {
+			gtk_widget_hide( frame );
+		}
+	}
 }
 
 /**

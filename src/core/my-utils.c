@@ -350,6 +350,34 @@ my_utils_str_remove_suffix( const gchar *string, const gchar *suffix )
 }
 
 /**
+ * my_utils_str_remove_underline:
+ * @string: source string.
+ *
+ * Returns: a newly allocated string as a copy of the source @string,
+ * minus the present underlines '_'.
+ *
+ * The returned string should be g_free() by the caller.
+ */
+gchar *
+my_utils_str_remove_underlines( const gchar *string )
+{
+	gchar **array, **iter;
+	GString *result;
+
+	array = g_strsplit( string, "_", -1 );
+	result = g_string_new( "" );
+
+	iter = array;
+	while( *iter ){
+		result = g_string_append( result, *iter );
+		iter++;
+	}
+	g_strfreev( array );
+
+	return( g_string_free( result, FALSE ));
+}
+
+/**
  * my_utils_str_replace:
  *
  * Replace 'old' string with 'new' in string, returning a newly
@@ -549,16 +577,16 @@ my_utils_init_upd_user_stamp( GtkContainer *container,
  * my_utils_output_stream_new:
  */
 gboolean
-my_utils_output_stream_new( const gchar *uri, GFile **file, GOutputStream **stream )
+my_utils_output_stream_new( const gchar *filename, GFile **file, GOutputStream **stream )
 {
 	static const gchar *thisfn = "my_utils_output_stream_new";
 	GError *error;
 
-	g_return_val_if_fail( uri && g_utf8_strlen( uri, -1 ), FALSE );
+	g_return_val_if_fail( filename && g_utf8_strlen( filename, -1 ), FALSE );
 	g_return_val_if_fail( file, FALSE );
 	g_return_val_if_fail( stream, FALSE );
 
-	*file = g_file_new_for_uri( uri );
+	*file = g_file_new_for_path( filename );
 	error = NULL;
 	*stream = ( GOutputStream * ) g_file_create( *file, G_FILE_CREATE_REPLACE_DESTINATION, NULL, &error );
 	if( !*stream ){
