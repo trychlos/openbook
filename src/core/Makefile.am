@@ -26,7 +26,7 @@ pkglib_LTLIBRARIES = libofa-core.la
 
 core_datadir = $(pkgdatadir)/core
 
-css_datadir = $(pkgdatadir)/core
+css_datadir = $(pkgdatadir)/css
 
 AM_CPPFLAGS += \
 	-I $(top_srcdir)									\

@@ -56,6 +56,13 @@ typedef enum {
 }
 	ofaDossierStatus;
 
+/**
+ * Dossier signals:
+ * @OFA_SIGNAL_DOSSIER_BEGIN: sent on the dossier when the exercice
+ *                            beginning date is modified.
+ */
+#define OFA_SIGNAL_DOSSIER_BEGIN        "ofa-signal-dossier-begin"
+
 ofoDossier      *ofo_dossier_new                       ( const gchar *name );
 
 gboolean         ofo_dossier_open                      ( ofoDossier *dossier,

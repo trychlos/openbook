@@ -2214,6 +2214,8 @@ on_row_selected( GtkTreeSelection *select, ofaViewEntries *self )
 	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
 
 		is_editable = ( get_row_status( self, priv->tsort, &iter ) == ENT_STATUS_ROUGH );
+		is_editable &= ofo_dossier_is_entries_allowed( priv->dossier );
+
 		gtk_widget_set_sensitive(  GTK_WIDGET( priv->edit_switch ), is_editable );
 		g_object_get( G_OBJECT( priv->edit_switch ), "active", &is_active, NULL );
 		set_renderers_editable( self, is_editable && is_active );

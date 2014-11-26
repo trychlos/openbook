@@ -418,6 +418,7 @@ void
 my_utils_entry_set_valid( GtkEntry *entry, gboolean valid )
 {
 	static const gchar *thisfn = "my_utils_entry_set_valid";
+	static const gchar *cssfile = PKGCSSDIR "/ofa.css";
 	static GtkCssProvider *css_provider = NULL;
 	GError *error;
 	GtkStyleContext *style;
@@ -425,8 +426,8 @@ my_utils_entry_set_valid( GtkEntry *entry, gboolean valid )
 	if( !css_provider ){
 		css_provider = gtk_css_provider_new();
 		error = NULL;
-		/*g_debug( "%s: css=%s", thisfn, PKGUIDIR "/ofa.css" );*/
-		if( !gtk_css_provider_load_from_path( css_provider, PKGCSSDIR "/ofa.css", &error )){
+		g_debug( "%s: css=%s", thisfn, cssfile );
+		if( !gtk_css_provider_load_from_path( css_provider, cssfile, &error )){
 			g_warning( "%s: %s", thisfn, error->message );
 			g_error_free( error );
 			g_clear_object( &css_provider );

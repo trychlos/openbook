@@ -109,6 +109,7 @@ static void       on_delete_clicked( GtkButton *button, ofaPage *page );
 static gboolean   delete_confirmed( ofaOpeTemplatesPage *self, ofoOpeTemplate *model );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self );
 static void       on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self );
+static void       on_dossier_begin_changed( ofoDossier *dossier, GDate *begin, ofaOpeTemplatesPage *self );
 static void       on_guided_input( GtkButton *button, ofaOpeTemplatesPage *self );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplatesPage *self );
 
@@ -274,6 +275,8 @@ v_setup_buttons( ofaPage *page )
 	ofaOpeTemplatesPagePrivate *priv;
 	myButtonsBox *box;
 	GtkWidget *button;
+	ofoDossier *dossier;
+	gulong handler;
 
 	priv = OFA_OPE_TEMPLATES_PAGE( page )->priv;
 	box = my_buttons_box_new();
@@ -298,6 +301,14 @@ v_setup_buttons( ofaPage *page )
 	my_buttons_box_pack_button( box,
 			button, FALSE, G_CALLBACK( on_guided_input ), page );
 	priv->guided_input_btn = button;
+
+	dossier = ofa_page_get_dossier( page );
+	on_dossier_begin_changed( dossier, NULL, OFA_OPE_TEMPLATES_PAGE( page ));
+
+	handler = g_signal_connect(
+						G_OBJECT( dossier ),
+						OFA_SIGNAL_DOSSIER_BEGIN, G_CALLBACK( on_dossier_begin_changed ), page );
+	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	return( GTK_WIDGET( box ));
 }
@@ -625,7 +636,8 @@ enable_buttons( ofaOpeTemplatesPage *self, GtkTreeSelection *selection )
 	}
 
 	gtk_widget_set_sensitive( priv->duplicate_btn, select_ok );
-	gtk_widget_set_sensitive( priv->guided_input_btn, select_ok );
+	gtk_widget_set_sensitive( priv->guided_input_btn,
+				select_ok && ofo_dossier_is_entries_allowed( ofa_page_get_dossier( OFA_PAGE( self ))));
 }
 
 static void
@@ -881,6 +893,16 @@ on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self )
 			g_object_unref( duplicate );
 		}
 	}
+}
+
+static void
+on_dossier_begin_changed( ofoDossier *dossier, GDate *begin, ofaOpeTemplatesPage *self )
+{
+	ofaOpeTemplatesPagePrivate *priv;
+
+	priv = self->priv;
+
+	gtk_widget_set_sensitive( priv->guided_input_btn, ofo_dossier_is_entries_allowed( dossier ));
 }
 
 static void

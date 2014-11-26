@@ -93,8 +93,7 @@ struct _ofaMainWindowPrivate {
 /* signals defined here
  */
 enum {
-	DOSSIER_BEGIN = 0,
-	ENABLED_UPDATES,
+	ENABLED_UPDATES = 0,
 	DOSSIER_OPEN,
 	DOSSIER_PROPERTIES,
 	N_SIGNALS
@@ -169,6 +168,7 @@ typedef struct {
 	gint         theme_id;
 	const gchar *label;
 	GType      (*fn_get_type)( void );
+	gboolean     if_entries_allowed;
 }
 	sThemeDef;
 
@@ -176,48 +176,59 @@ static sThemeDef st_theme_defs[] = {
 
 		{ THM_ACCOUNTS,
 				N_( "Chart of accounts" ),
-				ofa_accounts_page_get_type
+				ofa_accounts_page_get_type,
+				FALSE
 		},
 		{ THM_BATFILES,
 				N_( "Imported BAT files" ),
-				ofa_bats_page_get_type
+				ofa_bats_page_get_type,
+				FALSE
 		},
 
 		{ THM_CLASSES,
 				N_( "Account classes" ),
-				ofa_classes_page_get_type
+				ofa_classes_page_get_type,
+				FALSE
 		},
 		{ THM_CURRENCIES,
 				N_( "Currencies" ),
-				ofa_currencies_page_get_type
+				ofa_currencies_page_get_type,
+				FALSE
 		},
 		{ THM_GUIDED_INPUT,
 				N_( "Guided input" ),
-				ofa_guided_ex_get_type
+				ofa_guided_ex_get_type,
+				TRUE
 		},
 		{ THM_LEDGERS,
 				N_( "Ledgers" ),
-				ofa_ledgers_page_get_type
+				ofa_ledgers_page_get_type,
+				FALSE
 		},
 		{ THM_OPE_TEMPLATES,
 				N_( "Operation templates" ),
-				ofa_ope_templates_page_get_type
+				ofa_ope_templates_page_get_type,
+				FALSE
 		},
 		{ THM_RATES,
 				N_( "Rates" ),
-				ofa_rates_page_get_type
+				ofa_rates_page_get_type,
+				FALSE
 		},
 		{ THM_RECONCIL,
 				N_( "Reconciliation" ),
-				ofa_reconciliation_get_type
+				ofa_reconciliation_get_type,
+				FALSE
 		},
 		{ THM_SETTLEMENT,
 				N_( "Settlement" ),
-				ofa_settlement_get_type
+				ofa_settlement_get_type,
+				FALSE
 		},
 		{ THM_VIEW_ENTRIES,
 				N_( "View entries" ),
-				ofa_view_entries_get_type
+				ofa_view_entries_get_type,
+				FALSE
 		},
 		{ 0 }
 };
@@ -269,9 +280,9 @@ static void             pane_save_position( GtkPaned *pane );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
-static void             connect_for_enabled_updates( ofaMainWindow *window );
+static void             connect_window_for_enabled_updates( ofaMainWindow *window );
 static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
-static void             warning_exercice_begin_empty( ofaMainWindow *window );
+static void             connect_dossier_for_enabled_updates( ofaMainWindow *window );
 static void             on_dossier_properties( ofaMainWindow *window, gpointer user_data );
 static gboolean         check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo );
 static void             pane_restore_position( GtkPaned *pane );
@@ -288,7 +299,7 @@ static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook 
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
-static void             on_dossier_begin( ofaMainWindow *window, GDate *begin, void *user_data );
+static void             on_dossier_begin( ofoDossier *dossier, GDate *begin, ofaMainWindow *window );
 static void             on_enabled_updates( ofaMainWindow *window, void *empty );
 
 static void
@@ -465,29 +476,6 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	g_type_class_add_private( klass, sizeof( ofaMainWindowPrivate ));
 
 	/**
-	 * ofaMainWindow::ofa-signal-dossier-begin:
-	 *
-	 * This signal must be sent to the main window when the exercice
-	 * beginning date of the opened dossier changes.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaMainWindow *window,
-	 *                      GDate   *begin_date,
-	 * 						gpointer user_data );
-	 */
-	st_signals[ DOSSIER_BEGIN ] = g_signal_new_class_handler(
-				OFA_SIGNAL_DOSSIER_BEGIN,
-				OFA_TYPE_MAIN_WINDOW,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
-
-	/**
 	 * ofaMainWindow::ofa-signal-enabled-updates:
 	 *
 	 * This signal is sent by the main Window to the main window after
@@ -587,7 +575,7 @@ ofa_main_window_new( const ofaApplication *application )
 			NULL );
 
 	set_menubar( window, ofa_application_get_menu_model( application ));
-	connect_for_enabled_updates( window );
+	connect_window_for_enabled_updates( window );
 
 	return( window );
 }
@@ -744,15 +732,9 @@ extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *acc
  *   items
  */
 static void
-connect_for_enabled_updates( ofaMainWindow *window )
+connect_window_for_enabled_updates( ofaMainWindow *window )
 {
-	/* connect to signals which are sent when an element which may
-	 * modify the enabled status of a menu item is itself updated
-	 */
-	g_signal_connect(
-			G_OBJECT( window ), OFA_SIGNAL_DOSSIER_BEGIN, G_CALLBACK( on_dossier_begin ), NULL );
-
-	/* also connect to the signal which will be sent after each
+	/* connect to the signal which will be sent after each
 	 * indiviual update by the above functions, in order to actually
 	 * update the enabled status of menu items
 	 */
@@ -813,16 +795,47 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 
 	set_menubar( window, window->priv->menu );
 	set_window_title( window );
+	connect_dossier_for_enabled_updates( window );
 
 	exe_id = ofo_dossier_get_current_exe_id( window->priv->dossier );
 	begin = ofo_dossier_get_exe_begin( window->priv->dossier, exe_id );
 	if( !my_date_is_valid( begin )){
-		warning_exercice_begin_empty( window );
+		ofa_main_window_warning_no_entry( window );
 	}
 }
 
+/*
+ * As some menu items are enabled or not depending of the current
+ * status of one thing or another, then the following behavior is
+ * coded :
+ * - each time a thing which may have an impact o,n iten enable status
+ *   occurs, then it is its responsability to send an appropriate
+ *   signal
+ * - we connect here to this signal, thus computing the new enabled
+ *   status of items
+ * - we send then to ourself a 'ENABLED_UPDATES' dedicated signal which
+ *   we will use to actually updates the enabled status of all menu
+ *   items
+ */
 static void
-warning_exercice_begin_empty( ofaMainWindow *window )
+connect_dossier_for_enabled_updates( ofaMainWindow *window )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = window->priv;
+
+	/* connect to signals which are sent when an element which may
+	 * modify the enabled status of a menu item is itself updated
+	 */
+	g_signal_connect(
+			G_OBJECT( priv->dossier ), OFA_SIGNAL_DOSSIER_BEGIN, G_CALLBACK( on_dossier_begin ), window );
+}
+
+/**
+ * ofa_main_window_warning_no_entry:
+ */
+void
+ofa_main_window_warning_no_entry( const ofaMainWindow *window )
 {
 	GtkWidget *dialog;
 	gchar *str;
@@ -1394,6 +1407,7 @@ ofaPage *
 ofa_main_window_activate_theme( ofaMainWindow *main_window, gint theme )
 {
 	static const gchar *thisfn = "ofa_main_window_activate_theme";
+	ofaMainWindowPrivate *priv;
 	GtkNotebook *main_book;
 	GtkWidget *page;
 	ofaPage *handler;
@@ -1402,8 +1416,9 @@ ofa_main_window_activate_theme( ofaMainWindow *main_window, gint theme )
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
 	handler = NULL;
+	priv = main_window->priv;
 
-	if( !main_window->priv->dispose_has_run ){
+	if( !priv->dispose_has_run ){
 
 		g_debug( "%s: main_window=%p, theme=%d", thisfn, ( void * ) main_window, theme );
 
@@ -1413,6 +1428,13 @@ ofa_main_window_activate_theme( ofaMainWindow *main_window, gint theme )
 		theme_def = get_theme_def_from_id( theme );
 		g_return_val_if_fail( theme_def, NULL );
 		g_return_val_if_fail( theme_def->fn_get_type, NULL );
+
+		if( theme_def->if_entries_allowed ){
+			if( !ofo_dossier_is_entries_allowed( priv->dossier )){
+				ofa_main_window_warning_no_entry( main_window );
+				return( NULL );
+			}
+		}
 
 		page = main_book_get_page( main_window, main_book, theme );
 		if( !page ){
@@ -1619,7 +1641,7 @@ ofa_main_window_confirm_deletion( const ofaMainWindow *window, const gchar *mess
  * all imputations are forbidden while this date is not valid
  */
 static void
-on_dossier_begin( ofaMainWindow *window, GDate *begin, void *user_data )
+on_dossier_begin( ofoDossier *dossier, GDate *begin, ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
 

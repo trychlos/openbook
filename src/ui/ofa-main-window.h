@@ -89,8 +89,6 @@ enum {
 	THM_VIEW_ENTRIES
 };
 
-#define OFA_SIGNAL_DOSSIER_BEGIN        "ofa-signal-dossier-begin"
-
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
 
 ofaPage       *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );
@@ -100,6 +98,8 @@ gboolean       ofa_main_window_is_willing_to_quit( ofaMainWindow *window );
 ofoDossier    *ofa_main_window_get_dossier       ( const ofaMainWindow *window );
 
 void           ofa_main_window_close_dossier     ( ofaMainWindow *window );
+
+void           ofa_main_window_warning_no_entry  ( const ofaMainWindow *window );
 
 gboolean       ofa_main_window_confirm_deletion  ( const ofaMainWindow *window, const gchar *message );
 
