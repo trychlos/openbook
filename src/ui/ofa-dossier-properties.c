@@ -300,6 +300,8 @@ init_exercices_page( ofaDossierProperties *self )
 			G_OBJECT( priv->dosexe_combo ),
 			DOSEXE_SIGNAL_EXE_SELECTED, G_CALLBACK( on_exercice_changed ), self );
 
+	priv->exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
+
 	widget = my_utils_container_get_child_by_name( container, "pexe-begin" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	my_editable_date_init( GTK_EDITABLE( widget ));
@@ -310,8 +312,6 @@ init_exercices_page( ofaDossierProperties *self )
 	my_editable_date_init( GTK_EDITABLE( widget ));
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_end_changed ), self );
 
-	priv->exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
-
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier, priv->exe_id ));
 	priv->begin_empty = !my_date_is_valid( &priv->begin );
 
@@ -319,6 +319,8 @@ init_exercices_page( ofaDossierProperties *self )
 	priv->end_empty = !my_date_is_valid( &priv->end );
 
 	priv->notes = g_strdup( ofo_dossier_get_exe_notes( priv->dossier, priv->exe_id ));
+
+	ofa_dosexe_combo_set_active( priv->dosexe_combo, priv->exe_id );
 }
 
 static void

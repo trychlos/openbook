@@ -92,6 +92,8 @@ GType           ofa_dosexe_combo_get_type     ( void ) G_GNUC_CONST;
 
 ofaDosexeCombo *ofa_dosexe_combo_new          ( const ofaDosexeComboParms *parms );
 
+void            ofa_dosexe_combo_set_active   ( ofaDosexeCombo *instance, gint exe_id );
+
 G_END_DECLS
 
 #endif /* __OFA_DOSEXE_COMBO_H__ */

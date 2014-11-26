@@ -306,3 +306,35 @@ on_selection_changed( GtkComboBox *box, ofaDosexeCombo *self )
 		g_signal_emit_by_name( self, DOSEXE_SIGNAL_EXE_SELECTED, exe_id );
 	}
 }
+
+/**
+ * ofa_dosexe_combo_set_active:
+ * @instance:
+ * @exe_id: the exercice identifier to select.
+ */
+void
+ofa_dosexe_combo_set_active( ofaDosexeCombo *instance, gint exe_id )
+{
+	ofaDosexeComboPrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gint id;
+
+	g_return_if_fail( instance && OFA_IS_DOSEXE_COMBO( instance ));
+
+	priv = instance->priv;
+
+	tmodel = gtk_combo_box_get_model( priv->combo );
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, EXE_COL_ID, &id, -1 );
+			if( id == exe_id ){
+				gtk_combo_box_set_active_iter( priv->combo, &iter );
+				break;
+			}
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
+		}
+	}
+}
