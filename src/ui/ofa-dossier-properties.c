@@ -274,6 +274,9 @@ init_properties_page( ofaDossierProperties *self )
  * - initialize exercices combobox
  * - connect signals (our entry after having initialized myEditableDate)
  * - store current exercice datas
+ *
+ * We display all available exercices, but only track changes for the
+ * current exercice.
  */
 static void
 init_exercices_page( ofaDossierProperties *self )
@@ -465,6 +468,7 @@ on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date,
 
 	} else {
 		*is_empty = TRUE;
+		my_date_clear( date );
 	}
 	g_free( content );
 

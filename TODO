@@ -325,12 +325,6 @@
 
  442 2014-11-13 AccountsBook: add a notes indicator
 
- 451 2014-11-13 view entries: one should be able to enter any effect 
-                date -> have a save anyway button + take care of 
-                updating ofoEntry to not apply to account nor ledger
-     2014-11-22 have a rationale (other than unreconciliated on 
-                unsettled entries from a previous exercice) ?
-
  455 2014-11-14 report colored footer in other pages with balances
                 (as view entries)
 
@@ -1999,6 +1993,14 @@
  450 2014-11-13 view entries: have a status as a mnemonic (e.g. Ro, Va
                 or Del)
      2014-11-14 done - svn #4100
+
+ 451 2014-11-13 view entries: one should be able to enter any effect 
+                date -> have a save anyway button + take care of 
+                updating ofoEntry to not apply to account nor ledger
+     2014-11-22 have a rationale (other than unreconciliated on 
+                unsettled entries from a previous exercice) ?
+     2014-11-26 no other use case, and this one must only be dealt
+                with via a dedicated ledger -> cancelled
 
  452 2014-11-13 view entries: default currency should be set as soon as
                 the account is set
