@@ -125,13 +125,6 @@
  163 2014- 6- 5 move the table definition from ofo-dossier to the
                 corresponding classes
 
- 164 2014- 6- 5 ExportAssistant: improve the entering of the output file
-
- 165 2014- 6- 5 ExportAssistant: overwrite confirmation doesn't work 
-
- 167 2014- 6- 5 ExportAssistant: pre-positionning a default uri as
-                output filename doesn't work
-
  176 2014- 6- 6 ImportAssistant: let the user select the encoding
                 character set of the imported file, so that we are
                 able to convert to UTF-8
@@ -849,6 +842,16 @@
 
  160 2014- 6- 4 print a reconciliation page (as a pdf)
      2014- 6-21 done
+
+ 164 2014- 6- 5 ExportAssistant: improve the entering of the output file
+     2014-11-26 done - svn #4149
+
+ 165 2014- 6- 5 ExportAssistant: overwrite confirmation doesn't work 
+     2014-11-26 done - svn #4149
+
+ 167 2014- 6- 5 ExportAssistant: pre-positionning a default uri as
+                output filename doesn't work
+     2014-11-26 done - svn #4149
 
  166 2014- 6- 5 Have an audit table which records _all_ sql queries
                 This may be managed by ofoSgbd class

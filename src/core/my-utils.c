@@ -449,6 +449,9 @@ my_utils_entry_set_valid( GtkEntry *entry, gboolean valid )
 
 /**
  * my_utils_container_get_buildable_by_name:
+ *
+ * This has been written to be able to get back a GtkSizeGroup from
+ * Glade via the builder - but this doesn't work out of the box..
  */
 GtkBuildable *
 my_utils_container_get_buildable_by_name( GtkContainer *container, const gchar *name )
