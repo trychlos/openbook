@@ -558,5 +558,9 @@ do_update( ofaDossierProperties *self )
 
 	priv->updated = ofo_dossier_update( priv->dossier );
 
+	/* update menu items enabled status */
+	g_signal_emit_by_name(
+			G_OBJECT( MY_WINDOW( self )->prot->main_window ), OFA_SIGNAL_DOSSIER_BEGIN, &priv->begin );
+
 	return( priv->updated );
 }

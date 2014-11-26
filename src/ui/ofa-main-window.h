@@ -89,6 +89,8 @@ enum {
 	THM_VIEW_ENTRIES
 };
 
+#define OFA_SIGNAL_DOSSIER_BEGIN        "ofa-signal-dossier-begin"
+
 ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
 
 ofaPage       *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );

@@ -1764,6 +1764,30 @@ ofo_dossier_get_status_label( ofaDossierStatus status )
 }
 
 /**
+ * ofo_dossier_is_entries_allowed:
+ *
+ * No new entry is allowed in the dossier while the exercice beginning
+ * date is not set (and valid)
+ */
+gboolean
+ofo_dossier_is_entries_allowed( const ofoDossier *dossier )
+{
+	gint exe_id;
+	const GDate *begin;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		exe_id = ofo_dossier_get_current_exe_id( dossier );
+		begin = ofo_dossier_get_exe_begin( dossier, exe_id );
+		return( my_date_is_valid( begin ));
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofo_dossier_is_valid:
  */
 gboolean

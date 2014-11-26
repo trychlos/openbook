@@ -98,6 +98,8 @@ ofxCounter       ofo_dossier_get_next_settlement_number( const ofoDossier *dossi
 
 const gchar     *ofo_dossier_get_status_label          ( ofaDossierStatus status );
 
+gboolean         ofo_dossier_is_entries_allowed        ( const ofoDossier *dossier );
+
 gboolean         ofo_dossier_is_valid                  ( const gchar *label,
 															gint nb_months, const gchar *currency,
 															const GDate *begin, const GDate *end );

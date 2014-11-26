@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -83,15 +84,23 @@ struct _ofaMainWindowPrivate {
 	GMenuModel    *menu;				/* the menu model when a dossier is opened */
 	GtkPaned      *pane;
 	ofoDossier    *dossier;
+
+	/* menu items enabled status
+	 */
+	gboolean       dossier_begin;
 };
 
 /* signals defined here
  */
 enum {
+	DOSSIER_BEGIN = 0,
+	ENABLED_UPDATES,
 	DOSSIER_OPEN,
 	DOSSIER_PROPERTIES,
 	N_SIGNALS
 };
+
+#define SIGNAL_ENABLED_UPDATES          "ofa-signal-enabled-updates"
 
 static void on_properties          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_backup              ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -260,6 +269,7 @@ static void             pane_save_position( GtkPaned *pane );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
+static void             connect_for_enabled_updates( ofaMainWindow *window );
 static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
 static void             on_dossier_properties( ofaMainWindow *window, gpointer user_data );
 static gboolean         check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo );
@@ -277,6 +287,8 @@ static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook 
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
+static void             on_dossier_begin( ofaMainWindow *window, GDate *begin, void *user_data );
+static void             on_enabled_updates( ofaMainWindow *window, void *empty );
 
 static void
 main_window_finalize( GObject *instance )
@@ -452,6 +464,51 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	g_type_class_add_private( klass, sizeof( ofaMainWindowPrivate ));
 
 	/**
+	 * ofaMainWindow::ofa-signal-dossier-begin:
+	 *
+	 * This signal must be sent to the main window when the exercice
+	 * beginning date of the opened dossier changes.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMainWindow *window,
+	 *                      GDate   *begin_date,
+	 * 						gpointer user_data );
+	 */
+	st_signals[ DOSSIER_BEGIN ] = g_signal_new_class_handler(
+				OFA_SIGNAL_DOSSIER_BEGIN,
+				OFA_TYPE_MAIN_WINDOW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_POINTER );
+
+	/**
+	 * ofaMainWindow::ofa-signal-enabled-updates:
+	 *
+	 * This signal is sent by the main Window to the main window after
+	 * having updated one or another enabled status flags.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaMainWindow *window,
+	 * 						gpointer user_data );
+	 */
+	st_signals[ ENABLED_UPDATES ] = g_signal_new_class_handler(
+				SIGNAL_ENABLED_UPDATES,
+				OFA_TYPE_MAIN_WINDOW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
+
+	/**
 	 * ofaMainWindow::ofa-signal-dossier-open:
 	 *
 	 * This signal is to be sent to the main window when someone asks
@@ -529,6 +586,7 @@ ofa_main_window_new( const ofaApplication *application )
 			NULL );
 
 	set_menubar( window, ofa_application_get_menu_model( application ));
+	connect_for_enabled_updates( window );
 
 	return( window );
 }
@@ -669,6 +727,36 @@ extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *acc
 		}
 		g_object_unref( lter );
 	}
+}
+
+/*
+ * As some menu items are enabled or not depending of the current
+ * status of one thing or another, then the following behavior is
+ * coded :
+ * - each time a thing which may have an impact o,n iten enable status
+ *   occurs, then it is its responsability to send an appropriate
+ *   signal
+ * - we connect here to this signal, thus computing the new enabled
+ *   status of items
+ * - we send then to ourself a 'ENABLED_UPDATES' dedicated signal which
+ *   we will use to actually updates the enabled status of all menu
+ *   items
+ */
+static void
+connect_for_enabled_updates( ofaMainWindow *window )
+{
+	/* connect to signals which are sent when an element which may
+	 * modify the enabled status of a menu item is itself updated
+	 */
+	g_signal_connect(
+			G_OBJECT( window ), OFA_SIGNAL_DOSSIER_BEGIN, G_CALLBACK( on_dossier_begin ), NULL );
+
+	/* also connect to the signal which will be sent after each
+	 * indiviual update by the above functions, in order to actually
+	 * update the enabled status of menu items
+	 */
+	g_signal_connect(
+			G_OBJECT( window ), SIGNAL_ENABLED_UPDATES, G_CALLBACK( on_enabled_updates ), NULL );
 }
 
 static void
@@ -1492,4 +1580,32 @@ ofa_main_window_confirm_deletion( const ofaMainWindow *window, const gchar *mess
 	gtk_widget_destroy( dialog );
 
 	return( response == GTK_RESPONSE_OK );
+}
+
+/*
+ * this signal is sent when the exercice beginning date has changed
+ * (and the new one is provided here)
+ * all imputations are forbidden while this date is not valid
+ */
+static void
+on_dossier_begin( ofaMainWindow *window, GDate *begin, void *user_data )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = window->priv;
+
+	priv->dossier_begin = my_date_is_valid( begin );
+
+	g_signal_emit_by_name( G_OBJECT( window ), SIGNAL_ENABLED_UPDATES, NULL );
+}
+
+/*
+ * when triggered, one of the flags which command the menu item enabled
+ * status has changed
+ * so take this into account and recompute all menu items enabled status
+ */
+static void
+on_enabled_updates( ofaMainWindow *window, void *user_data )
+{
+
 }
