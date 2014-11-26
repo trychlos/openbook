@@ -34,6 +34,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-boxed.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-class.h"
@@ -343,14 +344,22 @@ ofo_class_is_valid_label( const gchar *label )
  *
  * Returns: %TRUE if the provided object may be safely deleted.
  *
- * As the class in only used as tabs title in the accounts notebook,
- * and because we are providing default values, then any class may be
- * safely deleted.
+ * Though the class in only used as tabs title in the accounts notebook,
+ * and though we are providing default values, a class stay a reference
+ * table. A row is only deletable if it is not referenced by any other
+ * object.
  */
 gboolean
 ofo_class_is_deletable( const ofoClass *class )
 {
-	return( TRUE );
+	gboolean used_by_accounts;
+	gboolean deletable;
+
+	used_by_accounts = ofo_account_use_class(
+								OFO_DOSSIER( st_global->dossier ), ofo_class_get_number( class ));
+	deletable = !used_by_accounts;
+
+	return( deletable );
 }
 
 /**

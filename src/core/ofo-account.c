@@ -240,6 +240,7 @@ static GList       *account_load_dataset( void );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static gint         account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
 static gint         account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
+static gint         account_count_for_like( const ofoSgbd *sgbd, const gchar *field, gint number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
@@ -675,6 +676,26 @@ account_find_by_number( GList *set, const gchar *number )
 }
 
 /**
+ * ofo_account_use_class:
+ * @dossier: the currently opened #ofoDossier dossier.
+ * @number: the searched class number
+ *
+ * Returns: %TRUE if at least one recorded account makes use of the
+ * specified class number.
+ *
+ * The whole account dataset is loaded from DBMS if not already done.
+ */
+gboolean
+ofo_account_use_class( const ofoDossier *dossier, gint number )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+
+	return( account_count_for_like( ofo_dossier_get_sgbd( dossier ), "ACC_NUMBER", number ) > 0 );
+}
+
+/**
  * ofo_account_use_currency:
  * @dossier: the currently opened #ofoDossier dossier.
  * @currency: the currency ISO 3A code
@@ -713,6 +734,31 @@ account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo )
 				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS "
 				"	WHERE %s='%s'",
 					field, mnemo );
+
+	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
+	g_free( query );
+
+	if( result ){
+		icol = ( GSList * ) result->data;
+		count = atoi(( gchar * ) icol->data );
+		ofo_sgbd_free_result( result );
+	}
+
+	return( count );
+}
+
+static gint
+account_count_for_like( const ofoSgbd *sgbd, const gchar *field, gint number )
+{
+	gint count;
+	gchar *query;
+	GSList *result, *icol;
+
+	count = 0;
+	query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS "
+				"	WHERE %s LIKE '%d%%'",
+					field, number );
 
 	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
 	g_free( query );

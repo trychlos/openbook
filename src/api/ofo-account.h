@@ -58,6 +58,7 @@ void            ofo_account_connect_handlers     ( const ofoDossier *dossier );
 
 GList          *ofo_account_get_dataset          ( const ofoDossier *dossier );
 ofoAccount     *ofo_account_get_by_number        ( const ofoDossier *dossier, const gchar *number );
+gboolean        ofo_account_use_class            ( const ofoDossier *dossier, gint number );
 gboolean        ofo_account_use_currency         ( const ofoDossier *dossier, const gchar *devise );
 
 void            ofo_account_dump_chart           ( GList *chart );
