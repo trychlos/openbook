@@ -50,6 +50,8 @@ typedef enum {
 }
 	SettingsType;
 
+#define  SETTINGS_EXPORT_FOLDER             "DefaultExportFolder"
+
 void     ofa_settings_free                  ( void );
 
 GSList  *ofa_settings_get_dossiers          ( void );

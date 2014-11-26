@@ -36,7 +36,6 @@
  */
 
 #include "api/ofa-boxed.h"
-#include "api/ofo-base-def.h"
 #include "api/ofo-account-def.h"
 #include "api/ofo-dossier-def.h"
 
@@ -52,9 +51,6 @@ typedef struct {
 	gchar     *currency;
 }
 	ofsAccountBalance;
-
-#define         ACCOUNT_TYPE_ROOT                "R"
-#define         ACCOUNT_TYPE_DETAIL              "D"
 
 void            ofo_account_free_balances        ( GList *balances );
 
@@ -124,7 +120,6 @@ gboolean        ofo_account_insert               ( ofoAccount *account );
 gboolean        ofo_account_update               ( ofoAccount *account, const gchar *prev_number );
 gboolean        ofo_account_delete               ( ofoAccount *account );
 
-GSList         *ofo_account_get_csv              ( const ofoDossier *dossier );
 void            ofo_account_import_csv           ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS

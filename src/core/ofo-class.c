@@ -32,6 +32,8 @@
 #include <string.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-boxed.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-class.h"
@@ -40,21 +42,48 @@
 
 /* priv instance data
  */
-struct _ofoClassPrivate {
-
-	/* sgbd data
-	 */
-	gint       number;
-	gchar     *label;
-	gchar     *notes;
-	gchar     *upd_user;
-	GTimeVal   upd_stamp;
+enum {
+	CLA_NUMBER = 1,
+	CLA_LABEL,
+	CLA_NOTES,
+	CLA_UPD_USER,
+	CLA_UPD_STAMP,
 };
 
-G_DEFINE_TYPE( ofoClass, ofo_class, OFO_TYPE_BASE )
+static const ofsBoxedDef st_boxed_defs[] = {
+		{ OFA_BOXED_CSV( CLA_NUMBER ),
+				OFA_TYPE_INTEGER,
+				TRUE,					/* importable */
+				FALSE },				/* export_csv_zero_as_empty */
+		{ OFA_BOXED_CSV( CLA_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOXED_CSV( CLA_NOTES ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOXED_CSV( CLA_UPD_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOXED_CSV( CLA_UPD_STAMP ),
+				OFA_TYPE_STRING,
+				FALSE,
+				TRUE },
+		{ 0 }
+};
+
+/* priv instance data
+ */
+struct _ofoClassPrivate {
+	void *empty;						/* so that gcc -pedantic is happy */
+};
 
 OFO_BASE_DEFINE_GLOBAL( st_global, class )
 
+static void       iexportable_iface_init( ofaIExportableInterface *iface );
+static guint      iexportable_get_interface_version( const ofaIExportable *instance );
 static GList     *class_load_dataset( void );
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );
@@ -64,26 +93,25 @@ static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofoSgbd 
 static gboolean   class_do_delete( ofoClass *class, const ofoSgbd *sgbd );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
+static gboolean   iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 static gboolean   class_do_drop_content( const ofoSgbd *sgbd );
+
+G_DEFINE_TYPE_EXTENDED( ofoClass, ofo_class, OFO_TYPE_BASE, 0, \
+		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 static void
 class_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_class_finalize";
-	ofoClassPrivate *priv;
-
-	priv = OFO_CLASS( instance )->priv;
 
 	g_debug( "%s: instance=%p (%s): %d - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			priv->number,
-			priv->label );
+			ofa_boxed_get_int( OFO_BASE( instance )->prot->fields, CLA_NUMBER ),
+			ofa_boxed_get_string( OFO_BASE( instance )->prot->fields, CLA_LABEL ));
 
 	g_return_if_fail( instance && OFO_IS_CLASS( instance ));
 
 	/* free data members here */
-	g_free( priv->label );
-	g_free( priv->notes );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_class_parent_class )->finalize( instance );
@@ -112,7 +140,6 @@ ofo_class_init( ofoClass *self )
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFO_TYPE_CLASS, ofoClassPrivate );
-	self->priv->number = OFO_BASE_UNSET_ID;
 }
 
 static void
@@ -128,6 +155,23 @@ ofo_class_class_init( ofoClassClass *klass )
 	g_type_class_add_private( klass, sizeof( ofoClassPrivate ));
 }
 
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_class_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
+}
+
 /**
  * ofo_class_new:
  */
@@ -137,6 +181,7 @@ ofo_class_new( void )
 	ofoClass *class;
 
 	class = g_object_new( OFO_TYPE_CLASS, NULL );
+	ofo_base_init_fields_list( st_boxed_defs, OFO_BASE( class ));
 
 	return( class );
 }
@@ -171,42 +216,12 @@ ofo_class_get_dataset( const ofoDossier *dossier )
 static GList *
 class_load_dataset( void )
 {
-	GSList *result, *irow, *icol;
-	ofoClass *class;
-	GList *dataset;
-	const ofoSgbd *sgbd;
-	GTimeVal timeval;
-
-	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
-
-	result = ofo_sgbd_query_ex( sgbd,
-			"SELECT CLA_NUMBER,CLA_LABEL,"
-			"	CLA_NOTES,CLA_UPD_USER,CLA_UPD_STAMP "
-			"	FROM OFA_T_CLASSES "
-			"	ORDER BY CLA_NUMBER ASC", TRUE );
-
-	dataset = NULL;
-
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = ( GSList * ) irow->data;
-		class = ofo_class_new();
-		ofo_class_set_number( class, atoi(( gchar * ) icol->data ));
-		icol = icol->next;
-		ofo_class_set_label( class, ( gchar * ) icol->data );
-		icol = icol->next;
-		ofo_class_set_notes( class, ( gchar * ) icol->data );
-		icol = icol->next;
-		class_set_upd_user( class, ( gchar * ) icol->data );
-		icol = icol->next;
-		class_set_upd_stamp( class,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
-
-		dataset = g_list_prepend( dataset, class );
-	}
-
-	ofo_sgbd_free_result( result );
-
-	return( g_list_reverse( dataset ));
+	return(
+			ofo_base_load_dataset(
+					st_boxed_defs,
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
+					OFO_TYPE_CLASS ));
 }
 
 /**
@@ -247,15 +262,7 @@ class_find_by_number( GList *set, gint number )
 gint
 ofo_class_get_number( const ofoClass *class )
 {
-	g_return_val_if_fail( OFO_IS_CLASS( class ), OFO_BASE_UNSET_ID );
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		return( class->priv->number );
-	}
-
-	g_assert_not_reached();
-	return( OFO_BASE_UNSET_ID );
+	ofo_base_getter( CLASS, class , int, 0, CLA_NUMBER );
 }
 
 /**
@@ -264,15 +271,7 @@ ofo_class_get_number( const ofoClass *class )
 const gchar *
 ofo_class_get_label( const ofoClass *class )
 {
-	g_return_val_if_fail( OFO_IS_CLASS( class ), NULL );
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		return(( const gchar * ) class->priv->label );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	ofo_base_getter( CLASS, class , string, NULL, CLA_LABEL );
 }
 
 /**
@@ -281,15 +280,7 @@ ofo_class_get_label( const ofoClass *class )
 const gchar *
 ofo_class_get_notes( const ofoClass *class )
 {
-	g_return_val_if_fail( OFO_IS_CLASS( class ), NULL );
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		return(( const gchar * ) class->priv->notes );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	ofo_base_getter( CLASS, class , string, NULL, CLA_NOTES );
 }
 
 /**
@@ -298,15 +289,7 @@ ofo_class_get_notes( const ofoClass *class )
 const gchar *
 ofo_class_get_upd_user( const ofoClass *class )
 {
-	g_return_val_if_fail( OFO_IS_CLASS( class ), NULL );
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		return(( const gchar * ) class->priv->upd_user );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	ofo_base_getter( CLASS, class , string, NULL, CLA_UPD_USER );
 }
 
 /**
@@ -315,15 +298,7 @@ ofo_class_get_upd_user( const ofoClass *class )
 const GTimeVal *
 ofo_class_get_upd_stamp( const ofoClass *class )
 {
-	g_return_val_if_fail( OFO_IS_CLASS( class ), NULL );
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		return(( const GTimeVal * ) &class->priv->upd_stamp );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	ofo_base_getter( CLASS, class, timestamp, NULL, CLA_UPD_STAMP );
 }
 
 /**
@@ -381,40 +356,27 @@ ofo_class_is_deletable( const ofoClass *class )
 /**
  * ofo_class_set_number:
  */
-gboolean
+void
 ofo_class_set_number( ofoClass *class, gint number )
 {
-	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		if( ofo_class_is_valid_number( number )){
-			class->priv->number = number;
-			return( TRUE );
-		}
+	if( !ofo_class_is_valid_number( number )){
+		g_return_if_reached();
 	}
 
-	return( FALSE );
+	ofo_base_setter( CLASS, class, int, CLA_NUMBER, number );
 }
 
 /**
  * ofo_class_set_label:
  */
-gboolean
+void
 ofo_class_set_label( ofoClass *class, const gchar *label )
 {
-	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		if( ofo_class_is_valid_label( label )){
-			g_free( class->priv->label );
-			class->priv->label = g_strdup( label );
-			return( TRUE );
-		}
+	if( !ofo_class_is_valid_label( label )){
+		g_return_if_reached();
 	}
 
-	return( FALSE );
+	ofo_base_setter( CLASS, class, string, CLA_LABEL, label );
 }
 
 /**
@@ -423,13 +385,7 @@ ofo_class_set_label( ofoClass *class, const gchar *label )
 void
 ofo_class_set_notes( ofoClass *class, const gchar *notes )
 {
-	g_return_if_fail( OFO_IS_CLASS( class ));
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		g_free( class->priv->notes );
-		class->priv->notes = g_strdup( notes );
-	}
+	ofo_base_setter( CLASS, class, string, CLA_NOTES, notes );
 }
 
 /*
@@ -438,13 +394,7 @@ ofo_class_set_notes( ofoClass *class, const gchar *notes )
 static void
 class_set_upd_user( ofoClass *class, const gchar *user )
 {
-	g_return_if_fail( OFO_IS_CLASS( class ));
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		g_free( class->priv->upd_user );
-		class->priv->upd_user = g_strdup( user );
-	}
+	ofo_base_setter( CLASS, class, string, CLA_UPD_USER, user );
 }
 
 /*
@@ -453,12 +403,7 @@ class_set_upd_user( ofoClass *class, const gchar *user )
 static void
 class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp )
 {
-	g_return_if_fail( OFO_IS_CLASS( class ));
-
-	if( !OFO_BASE( class )->prot->dispose_has_run ){
-
-		my_utils_stamp_set_from_stamp( &class->priv->upd_stamp, stamp );
-	}
+	ofo_base_setter( CLASS, class, timestamp, CLA_UPD_STAMP, stamp );
 }
 
 /**
@@ -494,8 +439,7 @@ static gboolean
 class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
-	const gchar *notes;
-	gchar *label;
+	gchar *label, *notes;
 	gboolean ok;
 	gchar *stamp_str;
 	GTimeVal stamp;
@@ -503,6 +447,7 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_CLASSES " );
 
 	label = my_utils_quote( ofo_class_get_label( class ));
+	notes = my_utils_quote( ofo_class_get_notes( class ));
 
 	g_string_append_printf( query,
 			"	(CLA_NUMBER,CLA_LABEL,CLA_NOTES,"
@@ -511,7 +456,6 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 					ofo_class_get_number( class ),
 					label );
 
-	notes = ofo_class_get_notes( class );
 	if( notes && g_utf8_strlen( notes, -1 )){
 		g_string_append_printf( query, "'%s',", notes );
 	} else {
@@ -684,46 +628,55 @@ class_cmp_by_ptr( const ofoClass *a, const ofoClass *b )
 	return( class_cmp_by_number( a, GINT_TO_POINTER( bnum )));
 }
 
-/**
- * ofo_class_get_csv:
+/*
+ * iexportable_export:
+ *
+ * Exports the classes line by line.
+ *
+ * Returns: TRUE at the end if no error has been detected
  */
-GSList *
-ofo_class_get_csv( const ofoDossier *dossier )
+static gboolean
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
 {
-	GList *set;
+	GList *it;
 	GSList *lines;
-	gchar *str, *stamp, *notes;
-	const gchar *muser;
-	ofoClass *class;
+	gchar *str;
+	gboolean with_headers, ok;
+	gulong count;
+	gchar field_sep;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, class );
 
-	lines = NULL;
+	with_headers = ofa_export_settings_get_headers( settings );
+	field_sep = ofa_export_settings_get_field_sep( settings );
 
-	str = g_strdup_printf( "Number;Label;Notes;MajUser;MajStamp" );
-	lines = g_slist_prepend( lines, str );
+	count = ( gulong ) g_list_length( st_global->dataset );
+	if( with_headers ){
+		count += 1;
+	}
+	ofa_iexportable_set_count( exportable, count );
 
-	for( set=st_global->dataset ; set ; set=set->next ){
-		class = OFO_CLASS( set->data );
-
-		stamp = my_utils_stamp_to_str( ofo_class_get_upd_stamp( class ), MY_STAMP_YYMDHMS );
-		notes = my_utils_export_multi_lines( ofo_class_get_notes( class ));
-		muser = ofo_class_get_upd_user( class );
-
-		str = g_strdup_printf( "%d;%s;%s;%s;%s",
-				ofo_class_get_number( class ),
-				ofo_class_get_label( class ),
-				notes ? notes : "",
-				muser ? muser : "",
-				muser ? stamp : "" );
-
-		g_free( notes );
-		g_free( stamp );
-
-		lines = g_slist_prepend( lines, str );
+	if( with_headers ){
+		str = ofa_boxed_get_csv_header( st_boxed_defs, field_sep );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 	}
 
-	return( g_slist_reverse( lines ));
+	for( it=st_global->dataset ; it ; it=it->next ){
+		str = ofa_boxed_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, '\0' );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	return( TRUE );
 }
 
 /**

@@ -35,30 +35,44 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
-#include "ui/ofa-export-settings.h"
+#include "core/ofa-export-settings.h"
 
 /* private instance data
  */
 struct _ofaExportSettingsPrivate {
-	gboolean      dispose_has_run;
+	gboolean        dispose_has_run;
 
 	/* runtime data
 	 */
-	gchar       *name;					/* may be %NULL if defaults */
-	gchar       *charmap;
-	myDateFormat date_format;
-	gchar        decimal_sep;
-	gchar        field_sep;
-	gchar       *folder;
+	gchar          *name;				/* may be %NULL if defaults */
+	ofaExportFormat export_format;
+	gchar          *charmap;
+	myDateFormat    date_format;
+	gchar           decimal_sep;
+	gchar           field_sep;			/* csv only */
+	gboolean        with_headers;
+};
+
+typedef struct {
+	ofaExportFormat format;
+	const gchar    *label;
+}
+	sFormat;
+
+static const sFormat st_export_format[] = {
+		{ OFA_EXPORT_CSV,   N_( "CSV-like format" )},
+		{ OFA_EXPORT_FIXED, N_( "Fixed format" )},
+		{ 0 }
 };
 
 static const gchar *st_prefs            = "ExportSettings";
 
+static gint         st_def_format       = OFA_EXPORT_CSV;
 static const gchar *st_def_charmap      = "UTF-8";
 static const gint   st_def_date         = MY_DATE_SQL;
 static const gchar *st_def_decimal      = ".";
 static const gchar *st_def_field_sep    = ";";
-static const gchar *st_def_folder       = "/tmp";
+static const gchar *st_def_headers      = "True";
 
 G_DEFINE_TYPE( ofaExportSettings, ofa_export_settings, G_TYPE_OBJECT )
 
@@ -79,7 +93,6 @@ export_settings_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_EXPORT_SETTINGS( instance )->priv;
 
-	g_free( priv->folder );
 	g_free( priv->charmap );
 	g_free( priv->name );
 
@@ -182,6 +195,14 @@ do_init( ofaExportSettings *self, const gchar *name )
 		prefs_list = ofa_settings_get_string_list( st_prefs );
 	}
 
+	/* export format */
+	it = g_slist_nth( prefs_list, ++nth );
+	text = g_strdup_printf( "%d", st_def_format );
+	cstr = ( it && g_utf8_strlen(( const gchar * ) it->data, -1 )) ?
+								 ( const gchar * ) it->data : text;
+	priv->export_format = atoi( cstr );
+	g_free( text );
+
 	/* charmap */
 	it = g_slist_nth( prefs_list, ++nth );
 	cstr = ( it && g_utf8_strlen(( const gchar * ) it->data, -1 )) ?
@@ -208,14 +229,55 @@ do_init( ofaExportSettings *self, const gchar *name )
 								 ( const gchar * ) it->data : st_def_field_sep;
 	priv->field_sep = atoi( cstr );
 
-	/* export folder */
+	/* with headers */
 	it = g_slist_nth( prefs_list, ++nth );
 	cstr = ( it && g_utf8_strlen(( const gchar * ) it->data, -1 )) ?
-								 ( const gchar * ) it->data : st_def_folder;
-	priv->folder = g_strdup( cstr );
-
+								 ( const gchar * ) it->data : st_def_headers;
+	priv->with_headers = g_utf8_collate( cstr, "True" ) == 0;
 
 	g_slist_free_full( prefs_list, ( GDestroyNotify ) g_free );
+}
+
+/**
+ * ofa_export_settings_get_export_format:
+ */
+ofaExportFormat
+ofa_export_settings_get_export_format( const ofaExportSettings *settings )
+{
+	ofaExportSettingsPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_EXPORT_SETTINGS( settings ), 0 );
+
+	priv = settings->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( priv->export_format );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofa_export_settings_get_export_format_str:
+ */
+const gchar *
+ofa_export_settings_get_export_format_str( ofaExportFormat format )
+{
+	static const gchar *thisfn = "ofa_export_settings_get_export_format_str";
+	gint i;
+
+	for( i=0 ; st_export_format[i].format ; ++i ){
+		if( st_export_format[i].format == format ){
+			return( gettext( st_export_format[i].label ));
+		}
+	}
+
+	/* only a debug message as the overflow of the previous loop is
+	 * used when enumerating valid export formats */
+	g_debug( "%s: unknown file format: %d", thisfn, format );
+	return( NULL );
 }
 
 /**
@@ -303,24 +365,24 @@ ofa_export_settings_get_field_sep( const ofaExportSettings *settings )
 }
 
 /**
- * ofa_export_settings_get_folder:
+ * ofa_export_settings_get_headers:
  */
-const gchar *
-ofa_export_settings_get_folder( const ofaExportSettings *settings )
+gboolean
+ofa_export_settings_get_headers( const ofaExportSettings *settings )
 {
 	ofaExportSettingsPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_EXPORT_SETTINGS( settings ), NULL );
+	g_return_val_if_fail( settings && OFA_IS_EXPORT_SETTINGS( settings ), FALSE );
 
 	priv = settings->priv;
 
 	if( !priv->dispose_has_run ){
 
-		return(( const gchar * ) priv->folder );
+		return( priv->with_headers );
 	}
 
-	g_return_val_if_reached( NULL );
-	return( NULL );
+	g_return_val_if_reached( FALSE );
+	return( FALSE );
 }
 
 /**
@@ -329,16 +391,21 @@ ofa_export_settings_get_folder( const ofaExportSettings *settings )
  * @charmap:
  * @date_format:
  * @decimal_sep:
+ * @with_headers:
  * @field_sep:
  */
 void
 ofa_export_settings_set( ofaExportSettings *settings,
-								const gchar *charmap, myDateFormat date_format,
-								gchar decimal_sep, gchar field_sep, const gchar *folder )
+								ofaExportFormat export_format,
+								const gchar *charmap,
+								myDateFormat date_format,
+								gchar decimal_sep,
+								gchar field_sep,
+								gboolean with_headers )
 {
 	ofaExportSettingsPrivate *priv;
 	GSList *prefs_list;
-	gchar *sdate, *sdecimal, *sfield, *pref_name;
+	gchar *sexport, *sdate, *sdecimal, *sfield, *pref_name, *sheaders;
 
 	g_return_if_fail( settings && OFA_IS_EXPORT_SETTINGS( settings ));
 	g_return_if_fail( charmap && g_utf8_strlen( charmap, -1 ));
@@ -349,6 +416,11 @@ ofa_export_settings_set( ofaExportSettings *settings,
 	prefs_list = NULL;
 
 	if( !priv->dispose_has_run ){
+
+		/* export format */
+		priv->export_format = export_format;
+		sexport = g_strdup_printf( "%d", export_format );
+		prefs_list = g_slist_append( prefs_list, sexport );
 
 		/* charmap */
 		g_free( priv->charmap );
@@ -370,10 +442,10 @@ ofa_export_settings_set( ofaExportSettings *settings,
 		sfield = g_strdup_printf( "%d", field_sep );
 		prefs_list = g_slist_append( prefs_list, sfield );
 
-		/* folder */
-		g_free( priv->folder );
-		priv->folder = g_strdup( folder );
-		prefs_list = g_slist_append( prefs_list, priv->folder );
+		/* with headers */
+		priv->with_headers = with_headers;
+		sheaders = g_strdup_printf( "%s", priv->with_headers ? "True":"False" );
+		prefs_list = g_slist_append( prefs_list, sheaders );
 
 		/* save in user preferences */
 		if( priv->name && g_utf8_strlen( priv->name, -1 )){
@@ -384,8 +456,11 @@ ofa_export_settings_set( ofaExportSettings *settings,
 		ofa_settings_set_string_list( pref_name, prefs_list );
 		g_free( pref_name );
 		g_slist_free( prefs_list );
+
+		g_free( sheaders );
 		g_free( sfield );
 		g_free( sdecimal );
 		g_free( sdate );
+		g_free( sexport );
 	}
 }

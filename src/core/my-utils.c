@@ -38,6 +38,8 @@
 static void    on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static void    int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList  *position_to_int_list( gint x, gint y, gint width, gint height );
+static gchar  *filename_from_utf8( const gchar *filename );
+static void    error_filename_from_utf8( const gchar *filename, GError *error );
 
 /**
  * my_utils_quote:
@@ -446,6 +448,35 @@ my_utils_entry_set_valid( GtkEntry *entry, gboolean valid )
 }
 
 /**
+ * my_utils_container_get_buildable_by_name:
+ */
+GtkBuildable *
+my_utils_container_get_buildable_by_name( GtkContainer *container, const gchar *name )
+{
+	GList *children = gtk_container_get_children( container );
+	GList *ic;
+	GtkBuildable *found = NULL;
+	const gchar *child_name;
+
+	for( ic = children ; ic && !found ; ic = ic->next ){
+
+		if( GTK_IS_BUILDABLE( ic->data )){
+			child_name = gtk_buildable_get_name( GTK_BUILDABLE( ic->data ));
+			if( child_name && strlen( child_name ) && !g_ascii_strcasecmp( name, child_name )){
+				found = GTK_BUILDABLE( ic->data );
+				break;
+			}
+			if( GTK_IS_CONTAINER( ic->data )){
+				found = my_utils_container_get_buildable_by_name( GTK_CONTAINER( ic->data ), name );
+			}
+		}
+	}
+
+	g_list_free( children );
+	return( found );
+}
+
+/**
  * my_utils_container_get_child_by_name:
  */
 GtkWidget *
@@ -575,19 +606,27 @@ my_utils_init_upd_user_stamp( GtkContainer *container,
 
 /**
  * my_utils_output_stream_new:
+ * @filename: the UTF-8 encoded output filename
  */
 gboolean
 my_utils_output_stream_new( const gchar *filename, GFile **file, GOutputStream **stream )
 {
 	static const gchar *thisfn = "my_utils_output_stream_new";
 	GError *error;
+	gchar *sysfname;
 
 	g_return_val_if_fail( filename && g_utf8_strlen( filename, -1 ), FALSE );
 	g_return_val_if_fail( file, FALSE );
 	g_return_val_if_fail( stream, FALSE );
 
-	*file = g_file_new_for_path( filename );
 	error = NULL;
+	sysfname = filename_from_utf8( filename );
+	if( !sysfname ){
+		return( FALSE );
+	}
+	*file = g_file_new_for_path( sysfname );
+	g_free( sysfname );
+
 	*stream = ( GOutputStream * ) g_file_create( *file, G_FILE_CREATE_REPLACE_DESTINATION, NULL, &error );
 	if( !*stream ){
 		if( error->code == G_IO_ERROR_EXISTS ){
@@ -780,12 +819,57 @@ my_utils_file_exists( const gchar *filename )
 {
 	GFile *file;
 	gboolean exists;
+	gchar *sysfname;
 
-	file = g_file_new_for_path( filename );
-	exists = g_file_query_exists( file, NULL );
-	g_object_unref( file );
+	exists = FALSE;
+
+	sysfname = filename_from_utf8( filename );
+	if( sysfname ){
+		file = g_file_new_for_path( sysfname );
+		exists = g_file_query_exists( file, NULL );
+		g_object_unref( file );
+	}
+	g_free( sysfname );
 
 	g_debug( "my_utils_file_exists: the file '%s' exists: %s", filename, exists ? "True":"False" );
 
 	return( exists );
+}
+
+static gchar *
+filename_from_utf8( const gchar *filename )
+{
+	gchar *sysfname;
+	GError *error;
+
+	error = NULL;
+	sysfname = g_filename_from_utf8( filename, -1, NULL, NULL, &error );
+	if( !sysfname ){
+		error_filename_from_utf8( filename, error );
+		g_error_free( error );
+	}
+
+	return( sysfname );
+}
+
+static void
+error_filename_from_utf8( const gchar *filename, GError *error )
+{
+	GtkWidget *dialog;
+	gchar *str;
+
+	str = g_strdup_printf(
+				_( "Unable to convert '%s' filname to filesystem encoding: %s" ),
+				filename, error->message );
+
+	dialog = gtk_message_dialog_new(
+			NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_WARNING,
+			GTK_BUTTONS_CLOSE,
+			"%s", str );
+
+	g_free( str );
+	gtk_dialog_run( GTK_DIALOG( dialog ));
+	gtk_widget_destroy( dialog );
 }

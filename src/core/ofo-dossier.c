@@ -33,6 +33,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -104,13 +105,13 @@ enum {
 
 static gint st_signals[ N_SIGNALS ] = { 0 };
 
-G_DEFINE_TYPE( ofoDossier, ofo_dossier, OFO_TYPE_BASE )
-
 /* the last DB model version
  */
 #define THIS_DBMODEL_VERSION            1
 #define THIS_DOS_ID                     1
 
+static void        iexportable_iface_init( ofaIExportableInterface *iface );
+static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
@@ -134,6 +135,10 @@ static gboolean    dossier_read_exercices( ofoDossier *dossier );
 static gboolean    dossier_do_update( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd );
+static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+
+G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0, \
+		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 static void
 free_exercice( sDetailExe *sexe )
@@ -335,6 +340,23 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_OBJECT );
+}
+
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_dossier_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
 }
 
 /**
@@ -2293,26 +2315,50 @@ do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
 	return( ok );
 }
 
-/**
- * ofo_dossier_get_csv:
+/*
+ * iexportable_export:
+ *
+ * Exports the classes line by line.
+ *
+ * Returns: TRUE at the end if no error has been detected
  */
-GSList *
-ofo_dossier_get_csv( const ofoDossier *dossier )
+static gboolean
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
 {
 	GSList *lines;
 	gchar *str, *stamp;
 	const gchar *currency, *muser;
-	GList *exe;
+	GList *it;
 	sDetailExe *sexe;
 	gchar *sbegin, *send, *notes;
+	gboolean ok, with_headers;
+	gulong count;
 
-	lines = NULL;
+	with_headers = ofa_export_settings_get_headers( settings );
 
-	str = g_strdup_printf( "1;Label;Notes;MajUser;MajStamp;ExeLength;DefaultCurrency;LastExeId" );
-	lines = g_slist_prepend( lines, str );
+	count = ( gulong ) 1+g_list_length( dossier->priv->exes );
+	if( with_headers ){
+		count += 2;
+	}
+	ofa_iexportable_set_count( exportable, count );
 
-	str = g_strdup_printf( "2;ExeBegin;ExeEnd;ExeNotes;LastEntry;LastBat;LastBatLine;LastSettlement;Status" );
-	lines = g_slist_prepend( lines, str );
+	if( with_headers ){
+		str = g_strdup_printf( "1;Label;Notes;MajUser;MajStamp;ExeLength;DefaultCurrency;LastExeId" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
+
+		str = g_strdup_printf( "2;ExeBegin;ExeEnd;ExeNotes;LastEntry;LastBat;LastBatLine;LastSettlement;Status" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
 
 	notes = my_utils_export_multi_lines( ofo_dossier_get_notes( dossier ));
 	g_debug( "notes=%s", notes );
@@ -2332,10 +2378,15 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 	g_free( notes );
 	g_free( stamp );
 
-	lines = g_slist_prepend( lines, str );
+	lines = g_slist_prepend( NULL, str );
+	ok = ofa_iexportable_export_lines( exportable, lines );
+	g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+	if( !ok ){
+		return( FALSE );
+	}
 
-	for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
-		sexe = ( sDetailExe * ) exe->data;
+	for( it=dossier->priv->exes ; it ; it=it->next ){
+		sexe = ( sDetailExe * ) it->data;
 
 		sbegin = my_date_to_str( &sexe->exe_begin, MY_DATE_SQL );
 		send = my_date_to_str( &sexe->exe_end, MY_DATE_SQL );
@@ -2355,10 +2406,15 @@ ofo_dossier_get_csv( const ofoDossier *dossier )
 		g_free( sbegin );
 		g_free( send );
 
-		lines = g_slist_prepend( lines, str );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 	}
 
-	return( g_slist_reverse( lines ));
+	return( TRUE );
 }
 
 /**

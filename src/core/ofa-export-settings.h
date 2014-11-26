@@ -33,6 +33,13 @@
  * @include: ui/ofa-export-settings.h
  *
  * A convenience class which manages the export settings.
+ *
+ * Note that a default export folder may be a user preference, but is
+ * not considered as part as export settings.
+ *
+ * We are planning to manage two main export formats:
+ * 1/ a 'csv'-like format: line-oriented, with a field separator
+ * 2/ a fixed format, where each field has its own fixed format.
  */
 
 #include "api/my-date.h"
@@ -63,26 +70,43 @@ typedef struct {
 }
 	ofaExportSettingsClass;
 
-GType              ofa_export_settings_get_type       ( void ) G_GNUC_CONST;
+/**
+ * ofaExportFormat:
+ * @OFA_EXPORT_CSV:   a csv-like format, line-oriented, with a field
+ *                    separator
+ * @OFA_EXPORT_FIXED: a fixed-format file (without field separator).
+ */
+typedef enum {
+	OFA_EXPORT_CSV = 1,					/* keep this =1 as this is the default */
+	OFA_EXPORT_FIXED
+}
+	ofaExportFormat;
 
-ofaExportSettings *ofa_export_settings_new            ( const gchar *name );
+GType              ofa_export_settings_get_type             ( void ) G_GNUC_CONST;
 
-const gchar       *ofa_export_settings_get_charmap    ( const ofaExportSettings *settings );
+ofaExportSettings *ofa_export_settings_new                  ( const gchar *name );
 
-myDateFormat       ofa_export_settings_get_date_format( const ofaExportSettings *settings );
+ofaExportFormat    ofa_export_settings_get_export_format    ( const ofaExportSettings *settings );
 
-gchar              ofa_export_settings_get_decimal_sep( const ofaExportSettings *settings );
+const gchar       *ofa_export_settings_get_export_format_str( ofaExportFormat format );
 
-gchar              ofa_export_settings_get_field_sep  ( const ofaExportSettings *settings );
+const gchar       *ofa_export_settings_get_charmap          ( const ofaExportSettings *settings );
 
-const gchar       *ofa_export_settings_get_folder     ( const ofaExportSettings *settings );
+myDateFormat       ofa_export_settings_get_date_format      ( const ofaExportSettings *settings );
 
-void               ofa_export_settings_set            ( ofaExportSettings *settings,
-															const gchar *charmap,
-															myDateFormat date_format,
-															gchar decimal_sep,
-															gchar field_sep,
-															const gchar *folder );
+gchar              ofa_export_settings_get_decimal_sep      ( const ofaExportSettings *settings );
+
+gchar              ofa_export_settings_get_field_sep        ( const ofaExportSettings *settings );
+
+gboolean           ofa_export_settings_get_headers          ( const ofaExportSettings *settings );
+
+void               ofa_export_settings_set                  ( ofaExportSettings *settings,
+																	ofaExportFormat export_format,
+																	const gchar *charmap,
+																	myDateFormat date_format,
+																	gchar decimal_sep,
+																	gchar field_sep,
+																	gboolean with_headers );
 
 G_END_DECLS
 

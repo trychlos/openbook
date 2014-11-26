@@ -209,8 +209,6 @@
 
  281 2014- 7-14 move import to myAssistant
 
- 282 2014- 7-14 move export to myAssistant
-
  296 2014- 7-20 creating a new dossier from an existing database needs
                 to insert the new admin user from root account (else
                 the new user will not be able to connect for updating
@@ -1328,6 +1326,9 @@
  280 2014- 7-14 DossierNew: update properties right after having opened
                 the dossier
      2014- 7-14 done - svn #3770
+
+ 282 2014- 7-14 move export to myAssistant
+     2014-11-24 done - svn #4158
 
  283 2014- 7-14 DossierNew: set the default values:
                 - long label should default to dossier short label

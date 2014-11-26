@@ -69,8 +69,9 @@ GtkWidget *my_utils_builder_load_from_path ( const gchar *path_xml, const gchar 
 gboolean   my_utils_entry_get_valid        ( GtkEntry *entry );
 void       my_utils_entry_set_valid        ( GtkEntry *entry, gboolean valid );
 
-GtkWidget *my_utils_container_get_child_by_name( GtkContainer *container, const gchar *name );
-GtkWidget *my_utils_container_get_child_by_type( GtkContainer *container, GType type );
+GtkBuildable *my_utils_container_get_buildable_by_name( GtkContainer *container, const gchar *name );
+GtkWidget    *my_utils_container_get_child_by_name    ( GtkContainer *container, const gchar *name );
+GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container, GType type );
 
 GObject   *my_utils_init_notes             ( GtkContainer *container,
 													const gchar *widget_name,

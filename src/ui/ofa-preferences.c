@@ -81,6 +81,7 @@ struct _ofaPreferencesPrivate {
 	/* Export settings
 	 */
 	ofaExportSettingsPrefs *export_settings;
+	GtkFileChooser         *p5_chooser;
 
 	/* UI - Plugin pages
 	 */
@@ -98,27 +99,6 @@ static const gchar *st_ui_xml                         = PKGUIDIR "/ofa-preferenc
 static const gchar *st_ui_id                          = "PreferencesDlg";
 static const gchar *st_delete_dossier_xml             = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
 static const gchar *st_delete_dossier_id              = "DossierDeleteWindow";
-
-/*
-enum {
-	DATE_COL_CODE = 0,
-	DATE_COL_LABEL,
-	DATE_N_COLUMNS
-};
-
-typedef struct {
-	gint         code;
-	const gchar *label;
-}
-	FmtDate;
-
-static const FmtDate st_fmt_date[] = {
-		{ MY_DATE_DMMM, N_( "D MMM YYYY" )},
-		{ MY_DATE_DMYY, N_( "DD/MM/YYYY" )},
-		{ MY_DATE_SQL,  N_( "YYYY-MM-DD" )},
-		{ 0 }
-};
-*/
 
 #define DATA_DATE                           "ofa-data-date"
 #define DATA_DECIMAL                        "ofa-data-decimal"
@@ -157,6 +137,7 @@ static gboolean   do_update( ofaPreferences *self );
 static void       do_update_quitting_page( ofaPreferences *self );
 static void       do_update_account_page( ofaPreferences *self );
 static void       do_update_locales_page( ofaPreferences *self );
+static void       do_update_export_page( ofaPreferences *self );
 static void       update_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
 static GtkWidget *find_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
 
@@ -548,7 +529,9 @@ init_export_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkContainer *container;
-	GtkWidget *target;
+	GtkWidget *target, *label;
+	gchar *str;
+	GtkSizeGroup *group;
 
 	priv = self->priv;
 
@@ -559,6 +542,35 @@ init_export_page( ofaPreferences *self )
 	priv->export_settings = ofa_export_settings_prefs_new();
 	ofa_export_settings_prefs_attach_to( priv->export_settings, GTK_CONTAINER( target ));
 	ofa_export_settings_prefs_init_dialog( priv->export_settings );
+
+	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( container, "p52-folder" ));
+	str = ofa_settings_get_string( SETTINGS_EXPORT_FOLDER );
+	if( str && g_utf8_strlen( str, -1 )){
+		gtk_file_chooser_set_current_folder( priv->p5_chooser, str );
+	}
+	g_free( str );
+
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+
+	label = my_utils_container_get_child_by_name( container, "label1x" );
+	gtk_size_group_add_widget( group, label );
+
+	label = my_utils_container_get_child_by_name( container, "label2x" );
+	gtk_size_group_add_widget( group, label );
+
+	label = my_utils_container_get_child_by_name( container, "label3x" );
+	gtk_size_group_add_widget( group, label );
+
+	label = my_utils_container_get_child_by_name( container, "label4x" );
+	gtk_size_group_add_widget( group, label );
+
+	label = my_utils_container_get_child_by_name( container, "p5-field-label" );
+	gtk_size_group_add_widget( group, label );
+
+	label = my_utils_container_get_child_by_name( container, "p52-label" );
+	gtk_size_group_add_widget( group, label );
+
+	g_object_unref( group );
 }
 
 static void
@@ -690,7 +702,7 @@ do_update( ofaPreferences *self )
 	ofa_dossier_delete_prefs_set_settings( priv->dd_prefs );
 	do_update_account_page( self );
 	do_update_locales_page( self );
-	ofa_export_settings_prefs_apply( priv->export_settings );
+	do_update_export_page( self );
 	enumerate_prefs_plugins( self, update_prefs_plugin );
 
 	priv->updated = TRUE;
@@ -830,6 +842,21 @@ do_update_locales_page( ofaPreferences *self )
 
 	ofa_settings_set_string( "ofxAmountDecimalSep", priv->p3_decimal_sep );
 	ofa_settings_set_string( "ofxAmountThousandSep", priv->p3_thousand_sep );*/
+}
+
+static void
+do_update_export_page( ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+	gchar *text;
+
+	priv = self->priv;
+
+	ofa_export_settings_prefs_apply( priv->export_settings );
+
+	text = gtk_file_chooser_get_current_folder( priv->p5_chooser );
+	ofa_settings_set_string( SETTINGS_EXPORT_FOLDER, text );
+	g_free( text );
 }
 
 static void

@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -56,10 +57,10 @@ struct _ofoCurrencyPrivate {
 	GTimeVal   upd_stamp;
 };
 
-G_DEFINE_TYPE( ofoCurrency, ofo_currency, OFO_TYPE_BASE )
-
 OFO_BASE_DEFINE_GLOBAL( st_global, currency )
 
+static void         iexportable_iface_init( ofaIExportableInterface *iface );
+static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static GList       *currency_load_dataset( void );
 static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
@@ -71,7 +72,11 @@ static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev
 static gboolean     currency_do_delete( ofoCurrency *currency, const ofoSgbd *sgbd );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 static gboolean     currency_do_drop_content( const ofoSgbd *sgbd );
+
+G_DEFINE_TYPE_EXTENDED( ofoCurrency, ofo_currency, OFO_TYPE_BASE, 0, \
+		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 static void
 currency_finalize( GObject *instance )
@@ -133,6 +138,23 @@ ofo_currency_class_init( ofoCurrencyClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = currency_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoCurrencyPrivate ));
+}
+
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_currency_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
 }
 
 /**
@@ -740,27 +762,46 @@ currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b )
 	return( currency_cmp_by_code( a, ofo_currency_get_code( b )));
 }
 
-/**
- * ofo_currency_get_csv:
+/*
+ * iexportable_export:
+ *
+ * Exports the classes line by line.
+ *
+ * Returns: TRUE at the end if no error has been detected
  */
-GSList *
-ofo_currency_get_csv( const ofoDossier *dossier )
+static gboolean
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
 {
-	GList *set;
+	GList *it;
 	GSList *lines;
 	gchar *str, *stamp, *notes;
 	ofoCurrency *currency;
 	const gchar *muser;
+	gboolean ok, with_headers;
+	gulong count;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, currency );
 
-	lines = NULL;
+	with_headers = ofa_export_settings_get_headers( settings );
 
-	str = g_strdup_printf( "Code;Label;Symbol;Digits;Notes;MajUser;MajStamp" );
-	lines = g_slist_prepend( lines, str );
+	count = ( gulong ) g_list_length( st_global->dataset );
+	if( with_headers ){
+		count += 1;
+	}
+	ofa_iexportable_set_count( exportable, count );
 
-	for( set=st_global->dataset ; set ; set=set->next ){
-		currency = OFO_CURRENCY( set->data );
+	if( with_headers ){
+		str = g_strdup_printf( "Code;Label;Symbol;Digits;Notes;MajUser;MajStamp" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	for( it=st_global->dataset ; it ; it=it->next ){
+		currency = OFO_CURRENCY( it->data );
 
 		notes = my_utils_export_multi_lines( ofo_currency_get_notes( currency ));
 		muser = ofo_currency_get_upd_user( currency );
@@ -778,10 +819,15 @@ ofo_currency_get_csv( const ofoDossier *dossier )
 		g_free( notes );
 		g_free( stamp );
 
-		lines = g_slist_prepend( lines, str );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 	}
 
-	return( g_slist_reverse( lines ));
+	return( TRUE );
 }
 
 /**

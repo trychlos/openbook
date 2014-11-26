@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -76,10 +77,10 @@ typedef struct {
 /* mnemonic max length */
 #define MNEMO_LENGTH                    6
 
-G_DEFINE_TYPE( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE )
-
 OFO_BASE_DEFINE_GLOBAL( st_global, model )
 
+static void            iexportable_iface_init( ofaIExportableInterface *iface );
+static guint           iexportable_get_interface_version( const ofaIExportable *instance );
 static void            on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
 static gboolean        do_update_ledger_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
 static gboolean        do_update_rate_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
@@ -99,9 +100,13 @@ static gboolean        model_update_main( ofoOpeTemplate *model, const ofoSgbd *
 static gboolean        model_do_delete( ofoOpeTemplate *model, const ofoSgbd *sgbd );
 static gint            model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo );
 static gint            model_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b );
+static gboolean        iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 static ofoOpeTemplate *model_import_csv_model( GSList *fields, gint count, gint *errors );
 static sModDetail     *model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo );
 static gboolean        model_do_drop_content( const ofoSgbd *sgbd );
+
+G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0, \
+		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 static void
 details_list_free_detail( sModDetail *detail )
@@ -189,6 +194,23 @@ ofo_ope_template_class_init( ofoOpeTemplateClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ope_template_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoOpeTemplatePrivate ));
+}
+
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ope_template_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
 }
 
 /**
@@ -1529,35 +1551,59 @@ model_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b )
 	return( model_cmp_by_mnemo( a, ofo_ope_template_get_mnemo( b )));
 }
 
-/**
- * ofo_ope_template_get_csv:
+/*
+ * iexportable_export:
  *
- * Prepare for export as a csv file.
+ * Exports the classes line by line.
  *
- * Returns a #GSList of the csv lines.
+ * Returns: TRUE at the end if no error has been detected
  */
-GSList *
-ofo_ope_template_get_csv( const ofoDossier *dossier )
+static gboolean
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
 {
-	GList *set, *det;
+	GList *it, *det;
 	GSList *lines;
 	gchar *str, *notes, *stamp;
 	ofoOpeTemplate *model;
 	const gchar *muser;
 	sModDetail *sdet;
+	gboolean ok, with_headers;
+	gulong count;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
 
-	lines = NULL;
+	with_headers = ofa_export_settings_get_headers( settings );
 
-	str = g_strdup_printf( "1;Mnemo;Label;Journal;JournalLocked;Notes;MajUser;MajStamp" );
-	lines = g_slist_prepend( lines, str );
+	count = ( gulong ) g_list_length( st_global->dataset );
+	if( with_headers ){
+		count += 2;
+	}
+	for( it=st_global->dataset ; it ; it=it->next ){
+		model = OFO_OPE_TEMPLATE( it->data );
+		count += g_list_length( model->priv->details );
+	}
+	ofa_iexportable_set_count( exportable, count );
 
-	str = g_strdup_printf( "2;Mnemo;Comment;Account;AccountLocked;Label;LabelLocked;Debit;DebitLocked;Credit;CreditLocked" );
-	lines = g_slist_prepend( lines, str );
+	if( with_headers ){
+		str = g_strdup_printf( "1;Mnemo;Label;Journal;JournalLocked;Notes;MajUser;MajStamp" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 
-	for( set=st_global->dataset ; set ; set=set->next ){
-		model = OFO_OPE_TEMPLATE( set->data );
+		str = g_strdup_printf( "2;Mnemo;Comment;Account;AccountLocked;Label;LabelLocked;Debit;DebitLocked;Credit;CreditLocked" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	for( it=st_global->dataset ; it ; it=it->next ){
+		model = OFO_OPE_TEMPLATE( it->data );
 
 		notes = my_utils_export_multi_lines( ofo_ope_template_get_notes( model ));
 		muser = ofo_ope_template_get_upd_user( model );
@@ -1575,7 +1621,12 @@ ofo_ope_template_get_csv( const ofoDossier *dossier )
 		g_free( notes );
 		g_free( stamp );
 
-		lines = g_slist_prepend( lines, str );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 
 		for( det=model->priv->details ; det ; det=det->next ){
 			sdet = ( sModDetail * ) det->data;
@@ -1592,11 +1643,16 @@ ofo_ope_template_get_csv( const ofoDossier *dossier )
 					sdet->credit ? sdet->credit : "",
 					sdet->credit_locked ? "True" : "False" );
 
-			lines = g_slist_prepend( lines, str );
+			lines = g_slist_prepend( NULL, str );
+			ok = ofa_iexportable_export_lines( exportable, lines );
+			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+			if( !ok ){
+				return( FALSE );
+			}
 		}
 	}
 
-	return( g_slist_reverse( lines ));
+	return( TRUE );
 }
 
 /**

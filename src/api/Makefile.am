@@ -28,6 +28,7 @@ api_include_HEADERS = \
 	ofa-extension.h										\
 	\
 	ofa-idbms.h											\
+	ofa-iexportable.h									\
 	ofa-iimporter.h										\
 	ofa-ipreferences.h									\
 	\

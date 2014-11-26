@@ -35,6 +35,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-boxed.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -43,6 +44,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-sgbd.h"
 
+#include "core/ofa-export-settings.h"
 #include "core/ofa-preferences.h"
 
 /* priv instance data
@@ -198,6 +200,12 @@ struct _ofoAccountPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
+#define ACCOUNT_TYPE_ROOT               "R"
+#define ACCOUNT_TYPE_DETAIL             "D"
+#define ACCOUNT_SETTLEABLE              "S"
+#define ACCOUNT_RECONCILIABLE           "R"
+#define ACCOUNT_FORWARDABLE             "F"
+
 #define account_get_amount(I)           ofo_base_getter(ACCOUNT,account,amount,0,(I))
 #define account_get_counter(I)          ofo_base_getter(ACCOUNT,account,counter,0,(I))
 #define account_get_date(I)             ofo_base_getter(ACCOUNT,account,date,NULL,(I))
@@ -210,12 +218,6 @@ struct _ofoAccountPrivate {
 #define account_set_string(I,V)         ofo_base_setter(ACCOUNT,account,string,(I),(V))
 #define account_set_timestamp(I,V)      ofo_base_setter(ACCOUNT,account,timestamp,(I),(V))
 
-static const gchar *st_type_detail      = ACCOUNT_TYPE_DETAIL;
-static const gchar *st_type_root        = ACCOUNT_TYPE_ROOT;
-static const gchar *st_settleable       = "S";
-static const gchar *st_reconciliable    = "R";
-static const gchar *st_forward          = "F";
-
 /* whether a root account has children, and wich are they ?
  */
 typedef struct {
@@ -225,10 +227,10 @@ typedef struct {
 }
 	sChildren;
 
-G_DEFINE_TYPE( ofoAccount, ofo_account, OFO_TYPE_BASE )
-
 OFO_BASE_DEFINE_GLOBAL( st_global, account )
 
+static void         iexportable_iface_init( ofaIExportableInterface *iface );
+static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static void         on_new_object( const ofoDossier *dossier, ofoBase *object, gpointer user_data );
 static void         on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry );
 static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
@@ -268,7 +270,11 @@ static gboolean     account_update_amounts( ofoAccount *account, const ofoSgbd *
 static gboolean     account_do_delete( ofoAccount *account, const ofoSgbd *sgbd );
 static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 static gboolean     account_do_drop_content( const ofoSgbd *sgbd );
+
+G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0, \
+		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 static void
 account_finalize( GObject *instance )
@@ -324,6 +330,23 @@ ofo_account_class_init( ofoAccountClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = account_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoAccountPrivate ));
+}
+
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
 }
 
 static void
@@ -599,11 +622,12 @@ ofo_account_get_dataset( const ofoDossier *dossier )
 static GList *
 account_load_dataset( void )
 {
-	return( ofo_base_load_dataset(
-			st_boxed_defs,
-			ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
-			"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
-			OFO_TYPE_ACCOUNT ));
+	return(
+			ofo_base_load_dataset(
+					st_boxed_defs,
+					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
+					OFO_TYPE_ACCOUNT ));
 }
 
 /**
@@ -763,7 +787,8 @@ ofo_account_get_class( const ofoAccount *account )
  *
  * Returns: the class number of this @account_number.
  *
- * TODO: make this UTF8-compliant....
+ * TODO: make this UTF8-compliant as first character (a digit) may not
+ * always be one byte wide (or is it ?)
  */
 gint
 ofo_account_get_class_from_number( const gchar *account_number )
@@ -789,7 +814,8 @@ ofo_account_get_class_from_number( const gchar *account_number )
  * A class is defined as of level 1.
  * Any actual account is at least of level 2.
  *
- * TODO: make this UTF8-compliant....
+ * Note: this is UTF8-compliant as g_utf8_strlen() rightly returns
+ *  the count of characters.
  */
 gint
 ofo_account_get_level_from_number( const gchar *account_number )
@@ -869,16 +895,16 @@ ofo_account_get_type_account( const ofoAccount *account )
 
 	if(  str && g_utf8_strlen( str, -1 )){
 
-		if( !g_utf8_collate( str, st_type_root ) || !g_utf8_collate( str, st_type_detail )){
+		if( !g_utf8_collate( str, ACCOUNT_TYPE_ROOT ) || !g_utf8_collate( str, ACCOUNT_TYPE_DETAIL )){
 			return( str );
 		}
 
 		g_warning( "%s: invalid type account: %s", thisfn, str );
-		return( st_type_detail );
+		return( ACCOUNT_TYPE_DETAIL );
 	}
 
 	/* default is detail account */
-	return( st_type_detail );
+	return( ACCOUNT_TYPE_DETAIL );
 }
 
 /**
@@ -1182,7 +1208,7 @@ ofo_account_is_settleable( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_SETTLEABLE );
-	is_settleable = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, st_settleable );
+	is_settleable = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, ACCOUNT_SETTLEABLE );
 
 	return( is_settleable );
 }
@@ -1205,7 +1231,7 @@ ofo_account_is_reconciliable( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_RECONCILIABLE );
-	is_reconciliable = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, st_reconciliable );
+	is_reconciliable = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, ACCOUNT_RECONCILIABLE );
 
 	return( is_reconciliable );
 }
@@ -1223,7 +1249,7 @@ ofo_account_is_forward( const ofoAccount *account )
 	const gchar *str;
 
 	str = account_get_string_ex( account, ACC_FORWARD );
-	is_forward = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, st_forward );
+	is_forward = str && g_utf8_strlen( str, -1 ) && !g_utf8_collate( str, ACCOUNT_FORWARDABLE );
 
 	return( is_forward );
 }
@@ -1627,9 +1653,9 @@ ofo_account_set_type_account( ofoAccount *account, const gchar *type )
 {
 	const gchar *validated;
 
-	validated = st_type_detail;
+	validated = ACCOUNT_TYPE_DETAIL;
 	if( type && g_utf8_strlen( type, -1 ) &&
-			( !g_utf8_collate( type, st_type_detail ) || !g_utf8_collate( type, st_type_root ))){
+			( !g_utf8_collate( type, ACCOUNT_TYPE_DETAIL ) || !g_utf8_collate( type, ACCOUNT_TYPE_ROOT ))){
 
 			validated = type;
 	}
@@ -1645,7 +1671,7 @@ ofo_account_set_type_account( ofoAccount *account, const gchar *type )
 void
 ofo_account_set_settleable( ofoAccount *account, gboolean settleable )
 {
-	account_set_string( ACC_SETTLEABLE, settleable ? st_settleable : NULL );
+	account_set_string( ACC_SETTLEABLE, settleable ? ACCOUNT_SETTLEABLE : NULL );
 }
 
 /**
@@ -1656,7 +1682,7 @@ ofo_account_set_settleable( ofoAccount *account, gboolean settleable )
 void
 ofo_account_set_reconciliable( ofoAccount *account, gboolean reconciliable )
 {
-	account_set_string( ACC_RECONCILIABLE, reconciliable ? st_reconciliable : NULL );
+	account_set_string( ACC_RECONCILIABLE, reconciliable ? ACCOUNT_RECONCILIABLE : NULL );
 }
 
 /**
@@ -1667,7 +1693,7 @@ ofo_account_set_reconciliable( ofoAccount *account, gboolean reconciliable )
 void
 ofo_account_set_forward( ofoAccount *account, gboolean forward )
 {
-	account_set_string( ACC_FORWARD, forward ? st_forward : NULL );
+	account_set_string( ACC_FORWARD, forward ? ACCOUNT_FORWARDABLE : NULL );
 }
 
 /*
@@ -1948,19 +1974,19 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query, "'%s',", ofo_account_get_type_account( account ));
 
 	if( ofo_account_is_settleable( account )){
-		g_string_append_printf( query, "'%s',", st_settleable );
+		g_string_append_printf( query, "'%s',", ACCOUNT_SETTLEABLE );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
 	if( ofo_account_is_reconciliable( account )){
-		g_string_append_printf( query, "'%s',", st_reconciliable );
+		g_string_append_printf( query, "'%s',", ACCOUNT_RECONCILIABLE );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
 	if( ofo_account_is_forward( account )){
-		g_string_append_printf( query, "'%s',", st_forward );
+		g_string_append_printf( query, "'%s',", ACCOUNT_FORWARDABLE );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
@@ -2058,19 +2084,19 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 					ofo_account_get_type_account( account ));
 
 	if( ofo_account_is_settleable( account )){
-		g_string_append_printf( query, "ACC_SETTLEABLE='%s',", st_settleable );
+		g_string_append_printf( query, "ACC_SETTLEABLE='%s',", ACCOUNT_SETTLEABLE );
 	} else {
 		query = g_string_append( query, "ACC_SETTLEABLE=NULL," );
 	}
 
 	if( ofo_account_is_reconciliable( account )){
-		g_string_append_printf( query, "ACC_RECONCILIABLE='%s',", st_reconciliable );
+		g_string_append_printf( query, "ACC_RECONCILIABLE='%s',", ACCOUNT_RECONCILIABLE );
 	} else {
 		query = g_string_append( query, "ACC_RECONCILIABLE=NULL," );
 	}
 
 	if( ofo_account_is_forward( account )){
-		g_string_append_printf( query, "ACC_FORWARD='%s',", st_forward );
+		g_string_append_printf( query, "ACC_FORWARD='%s',", ACCOUNT_FORWARDABLE );
 	} else {
 		query = g_string_append( query, "ACC_FORWARD=NULL," );
 	}
@@ -2237,39 +2263,56 @@ account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b )
 	return( account_cmp_by_number( a, ofo_account_get_number( b )));
 }
 
-/**
- * ofo_account_get_csv:
+/*
+ * iexportable_export:
  *
- * Returns: an export of the accounts
+ * Exports the accounts line by line.
+ *
+ * Returns: TRUE at the end if no error has been detected
  */
-GSList *
-ofo_account_get_csv( const ofoDossier *dossier )
+static gboolean
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
 {
-	/* these should be parameters of the function, along with the
-	 * character code */
-	static const gchar field_sep = ';';
-	gboolean with_header = TRUE;
-	gchar decimal_sep = '.';
-
 	GSList *lines;
 	gchar *str;
 	GList *it;
+	gchar field_sep, decimal_sep;
+	gboolean with_headers, ok;
+	gulong count;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
-	lines = NULL;
+	with_headers = ofa_export_settings_get_headers( settings );
+	field_sep = ofa_export_settings_get_field_sep( settings );
+	decimal_sep = ofa_export_settings_get_decimal_sep( settings );
 
-	if( with_header ){
+	count = ( gulong ) g_list_length( st_global->dataset );
+	if( with_headers ){
+		count += 1;
+	}
+	ofa_iexportable_set_count( exportable, count );
+
+	if( with_headers ){
 		str = ofa_boxed_get_csv_header( st_boxed_defs, field_sep );
-		lines = g_slist_prepend( lines, str );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 	}
 
 	for( it=st_global->dataset ; it ; it=it->next ){
 		str = ofa_boxed_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
-		lines = g_slist_prepend( lines, str );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 	}
 
-	return( g_slist_reverse( lines ));
+	return( TRUE );
 }
 
 /**

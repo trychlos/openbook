@@ -111,8 +111,6 @@ openbook_SOURCES = \
 	ofa-exe-closing.h									\
 	ofa-export-assistant.c								\
 	ofa-export-assistant.h								\
-	ofa-export-settings.c								\
-	ofa-export-settings.h								\
 	ofa-export-settings-prefs.c							\
 	ofa-export-settings-prefs.h							\
 	ofa-guided-common.c									\

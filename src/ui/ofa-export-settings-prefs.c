@@ -34,7 +34,8 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
-#include "ui/ofa-export-settings.h"
+#include "core/ofa-export-settings.h"
+
 #include "ui/ofa-export-settings-prefs.h"
 
 /* private instance data
@@ -45,17 +46,29 @@ struct _ofaExportSettingsPrefsPrivate {
 	/* runtime data
 	 */
 	ofaExportSettings *settings;
+	ofaExportFormat    format;
 
 	/* UI
 	 */
 	GtkContainer      *parent;			/* from the hosting dialog */
 	GtkContainer      *container;		/* our top container */
 
+	GtkWidget         *export_combo;	/* export format */
 	GtkWidget         *encoding_combo;
 	GtkWidget         *date_combo;
 	GtkWidget         *decimal_combo;
+	GtkWidget         *fieldsep_label;
 	GtkWidget         *fieldsep_combo;
+	GtkWidget         *headers_btn;
 	GtkWidget         *folder_btn;
+};
+
+/* column ordering in the export format combobox
+ */
+enum {
+	EXP_COL_FORMAT = 0,
+	EXP_COL_LABEL,
+	EXP_N_COLUMNS
 };
 
 /* column ordering in the output encoding combobox
@@ -129,11 +142,13 @@ static const gchar *st_window_id        = "ExportSettingsPrefsWindow";
 
 G_DEFINE_TYPE( ofaExportSettingsPrefs, ofa_export_settings_prefs, G_TYPE_OBJECT )
 
+static void     init_export_format( ofaExportSettingsPrefs *self );
+static void     on_export_format_changed( GtkComboBox *box, ofaExportSettingsPrefs *self );
 static void     init_encoding( ofaExportSettingsPrefs *self );
 static void     init_date_format( ofaExportSettingsPrefs *self );
 static void     init_decimal_dot( ofaExportSettingsPrefs *self );
 static void     init_field_separator( ofaExportSettingsPrefs *self );
-static void     init_folder( ofaExportSettingsPrefs *self );
+static void     init_headers( ofaExportSettingsPrefs *self );
 static gboolean do_apply( ofaExportSettingsPrefs *self );
 static GList   *get_available_charmaps( void );
 
@@ -274,8 +289,91 @@ ofa_export_settings_prefs_init_dialog( ofaExportSettingsPrefs *settings )
 		init_date_format( settings );
 		init_decimal_dot( settings );
 		init_field_separator( settings );
-		init_folder( settings );
+		init_headers( settings );
+
+		/* export format at the end so that it is able to rely on
+		   precomputed widgets */
+		init_export_format( settings );
 	}
+}
+
+static void
+init_export_format( ofaExportSettingsPrefs *self )
+{
+	ofaExportSettingsPrefsPrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GtkCellRenderer *cell;
+	gint i, idx;
+	ofaExportFormat fmt;
+	const gchar *cstr;
+
+	priv = self->priv;
+
+	priv->export_combo =
+			my_utils_container_get_child_by_name( priv->container, "p1-export-format" );
+
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+			EXP_N_COLUMNS,
+			G_TYPE_INT, G_TYPE_STRING ));
+	gtk_combo_box_set_model( GTK_COMBO_BOX( priv->export_combo ), tmodel );
+	g_object_unref( tmodel );
+
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start(
+			GTK_CELL_LAYOUT( priv->export_combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute(
+			GTK_CELL_LAYOUT( priv->export_combo ), cell, "text", EXP_COL_LABEL );
+
+	fmt = ofa_export_settings_get_export_format( priv->settings );
+	idx = -1;
+
+	for( i=1 ; TRUE ; ++i ){
+		cstr = ofa_export_settings_get_export_format_str( i );
+		if( cstr ){
+			gtk_list_store_insert_with_values(
+					GTK_LIST_STORE( tmodel ),
+					&iter,
+					-1,
+					EXP_COL_FORMAT, i,
+					EXP_COL_LABEL,  cstr,
+					-1 );
+			if( fmt == i ){
+				idx = i-1;
+			}
+		} else {
+			break;
+		}
+	}
+
+	g_signal_connect(
+			G_OBJECT( priv->export_combo ), "changed", G_CALLBACK( on_export_format_changed ), self );
+
+	/* default to export as csv */
+	if( idx == -1 ){
+		idx = 0;
+	}
+	gtk_combo_box_set_active( GTK_COMBO_BOX( priv->export_combo ), idx );
+}
+
+static void
+on_export_format_changed( GtkComboBox *box, ofaExportSettingsPrefs *self )
+{
+	ofaExportSettingsPrefsPrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	priv = self->priv;
+
+	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->export_combo ), &iter )){
+		g_return_if_reached();
+	}
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->export_combo ));
+	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+	gtk_tree_model_get( tmodel, &iter, EXP_COL_FORMAT, &priv->format, -1 );
+
+	gtk_widget_set_sensitive( priv->fieldsep_label, priv->format == OFA_EXPORT_CSV );
+	gtk_widget_set_sensitive( priv->fieldsep_combo, priv->format == OFA_EXPORT_CSV );
 }
 
 static void
@@ -438,6 +536,9 @@ init_field_separator( ofaExportSettingsPrefs *self )
 
 	priv = self->priv;
 
+	priv->fieldsep_label =
+			my_utils_container_get_child_by_name( priv->container, "p5-field-label" );
+
 	priv->fieldsep_combo =
 			my_utils_container_get_child_by_name( priv->container, "p5-fieldsep" );
 
@@ -475,48 +576,19 @@ init_field_separator( ofaExportSettingsPrefs *self )
 }
 
 static void
-init_folder( ofaExportSettingsPrefs *self )
+init_headers( ofaExportSettingsPrefs *self )
 {
 	ofaExportSettingsPrefsPrivate *priv;
-	const gchar *svalue;
+	gboolean bvalue;
 
 	priv = self->priv;
 
-	priv->folder_btn =
-			my_utils_container_get_child_by_name( priv->container, "p5-folder" );
+	priv->headers_btn =
+			my_utils_container_get_child_by_name( priv->container, "p5-headers" );
 
-	svalue = ofa_export_settings_get_folder( priv->settings );
+	bvalue = ofa_export_settings_get_headers( priv->settings );
 
-	gtk_file_chooser_set_current_folder( GTK_FILE_CHOOSER( priv->folder_btn ), svalue );
-}
-
-/**
- * ofa_export_settings_show_folder:
- *
- * Show or hide the folder frame.
- */
-void
-ofa_export_settings_prefs_show_folder( ofaExportSettingsPrefs *settings, gboolean show )
-{
-	ofaExportSettingsPrefsPrivate *priv;
-	GtkWidget *frame;
-
-	g_return_if_fail( settings && OFA_IS_EXPORT_SETTINGS_PREFS( settings ));
-
-	priv = settings->priv;
-
-	g_return_if_fail( priv->parent && GTK_IS_CONTAINER( priv->parent ));
-	g_return_if_fail( priv->container && GTK_IS_CONTAINER( priv->container ));
-
-	if( !priv->dispose_has_run ){
-
-		frame = my_utils_container_get_child_by_name( priv->container, "p5-frame-folder" );
-		if( show ){
-			gtk_widget_show( frame );
-		} else {
-			gtk_widget_hide( frame );
-		}
-	}
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
 }
 
 /**
@@ -554,10 +626,19 @@ do_apply( ofaExportSettingsPrefs *self )
 	ofaExportSettingsPrefsPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	gchar *charmap, *decimal_sep, *field_sep, *folder;
-	gint ivalue;
+	gchar *charmap, *decimal_sep, *field_sep;
+	gint iexport, ivalue;
+	gboolean bvalue;
 
 	priv = self->priv;
+
+	/* export format */
+	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->export_combo ), &iter )){
+		g_return_val_if_reached( FALSE );
+	}
+	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->export_combo ));
+	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
+	gtk_tree_model_get( tmodel, &iter, EXP_COL_FORMAT, &iexport, -1 );
 
 	/* charmap */
 	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->encoding_combo ), &iter )){
@@ -591,12 +672,12 @@ do_apply( ofaExportSettingsPrefs *self )
 	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
 	gtk_tree_model_get( tmodel, &iter, SEP_COL_CODE, &field_sep, -1 );
 
-	/* folder */
-	folder = gtk_file_chooser_get_current_folder( GTK_FILE_CHOOSER( priv->folder_btn ));
+	/* with headers */
+	bvalue = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
 
-	ofa_export_settings_set( priv->settings, charmap, ivalue, decimal_sep[0], field_sep[0], folder );
+	ofa_export_settings_set( priv->settings,
+								iexport, charmap, ivalue, decimal_sep[0], field_sep[0], bvalue );
 
-	g_free( folder );
 	g_free( field_sep );
 	g_free( decimal_sep );
 	g_free( charmap );

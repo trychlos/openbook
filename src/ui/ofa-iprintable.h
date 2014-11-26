@@ -46,7 +46,7 @@ G_BEGIN_DECLS
 #define OFA_IS_IPRINTABLE( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IPRINTABLE ))
 #define OFA_IPRINTABLE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IPRINTABLE, ofaIPrintableInterface ))
 
-typedef struct _ofaIPrintabe                     ofaIPrintable;
+typedef struct _ofaIPrintable                    ofaIPrintable;
 
 /**
  * ofaIPrintableInterface:

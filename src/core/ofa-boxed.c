@@ -45,10 +45,10 @@ typedef struct {
 	union {
 		ofxAmount   amount;
 		ofxCounter  counter;
-		gint     integer;
-		GDate    date;
-		gchar   *string;
-		GTimeVal timestamp;
+		gint        integer;
+		GDate       date;
+		gchar      *string;
+		GTimeVal    timestamp;
 	};
 }
 	sBoxed;

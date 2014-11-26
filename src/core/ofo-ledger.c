@@ -34,6 +34,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -77,10 +78,10 @@ typedef struct {
 }
 	sDetailExe;
 
-G_DEFINE_TYPE( ofoLedger, ofo_ledger, OFO_TYPE_BASE )
-
 OFO_BASE_DEFINE_GLOBAL( st_global, ledger )
 
+static void        iexportable_iface_init( ofaIExportableInterface *iface );
+static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static void        on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data );
 static void        on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
@@ -103,7 +104,11 @@ static gboolean    ledger_do_update_detail_exe( const ofoLedger *ledger, sDetail
 static gboolean    ledger_do_delete( ofoLedger *ledger, const ofoSgbd *sgbd );
 static gint        ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
 static gint        ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
+static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 static gboolean    ledger_do_drop_content( const ofoSgbd *sgbd );
+
+G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0, \
+		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 static void
 free_detail_cur( sDetailCur *detail )
@@ -180,6 +185,23 @@ ofo_ledger_class_init( ofoLedgerClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ledger_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoLedgerPrivate ));
+}
+
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ledger_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
 }
 
 /**
@@ -1767,13 +1789,17 @@ ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b )
 	return( ledger_cmp_by_mnemo( a, ofo_ledger_get_mnemo( b )));
 }
 
-/**
- * ofo_ledger_get_csv:
+/*
+ * iexportable_export:
+ *
+ * Exports the classes line by line.
+ *
+ * Returns: TRUE at the end if no error has been detected
  */
-GSList *
-ofo_ledger_get_csv( const ofoDossier *dossier )
+static gboolean
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
 {
-	GList *set, *exe, *amount;
+	GList *it, *exe, *amount;
 	GSList *lines;
 	gchar *str, *notes, *stamp, *sdfin, *sdclo;
 	ofoLedger *ledger;
@@ -1781,22 +1807,52 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 	sDetailCur *sdev;
 	const gchar *muser;
 	gchar *sdebd, *scred;
+	gboolean ok, with_headers;
+	gulong count;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, ledger );
 
-	lines = NULL;
+	with_headers = ofa_export_settings_get_headers( settings );
 
-	str = g_strdup_printf( "1;Mnemo;Label;Notes;MajUser;MajStamp" );
-	lines = g_slist_prepend( lines, str );
+	count = ( gulong ) g_list_length( st_global->dataset );
+	if( with_headers ){
+		count += 3;
+	}
+	for( it=st_global->dataset ; it ; it=it->next ){
+		ledger = OFO_LEDGER( it->data );
+		count += g_list_length( ledger->priv->exes );
+		count += g_list_length( ledger->priv->amounts );
+	}
+	ofa_iexportable_set_count( exportable, count );
 
-	str = g_strdup_printf( "2;Mnemo;Exe;Closed" );
-	lines = g_slist_prepend( lines, str );
+	if( with_headers ){
+		str = g_strdup_printf( "1;Mnemo;Label;Notes;MajUser;MajStamp" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 
-	str = g_strdup_printf( "3;Mnemo;Exe;Currency;CloDeb;CloCre;Deb;DebDate;Cre;CreDate" );
-	lines = g_slist_prepend( lines, str );
+		str = g_strdup_printf( "2;Mnemo;Exe;Closed" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 
-	for( set=st_global->dataset ; set ; set=set->next ){
-		ledger = OFO_LEDGER( set->data );
+		str = g_strdup_printf( "3;Mnemo;Exe;Currency;CloDeb;CloCre;Deb;DebDate;Cre;CreDate" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	for( it=st_global->dataset ; it ; it=it->next ){
+		ledger = OFO_LEDGER( it->data );
 
 		notes = my_utils_export_multi_lines( ofo_ledger_get_notes( ledger ));
 		muser = ofo_ledger_get_upd_user( ledger );
@@ -1812,7 +1868,12 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 		g_free( notes );
 		g_free( stamp );
 
-		lines = g_slist_prepend( lines, str );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 
 		for( exe=ledger->priv->exes ; exe ; exe=exe->next ){
 			sexe = ( sDetailExe * ) exe->data;
@@ -1828,7 +1889,12 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 			g_free( sdfin );
 			g_free( sdclo );
 
-			lines = g_slist_prepend( lines, str );
+			lines = g_slist_prepend( NULL, str );
+			ok = ofa_iexportable_export_lines( exportable, lines );
+			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+			if( !ok ){
+				return( FALSE );
+			}
 		}
 
 		for( amount=ledger->priv->amounts ; amount ; amount=amount->next ){
@@ -1859,11 +1925,16 @@ ofo_ledger_get_csv( const ofoDossier *dossier )
 			g_free( sdebd );
 			g_free( scred );
 
-			lines = g_slist_prepend( lines, str );
+			lines = g_slist_prepend( NULL, str );
+			ok = ofa_iexportable_export_lines( exportable, lines );
+			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+			if( !ok ){
+				return( FALSE );
+			}
 		}
 	}
 
-	return( g_slist_reverse( lines ));
+	return( TRUE );
 }
 
 /**

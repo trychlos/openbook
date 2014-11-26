@@ -34,6 +34,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -55,10 +56,10 @@ struct _ofoRatePrivate {
 	GList     *validities;
 };
 
-G_DEFINE_TYPE( ofoRate, ofo_rate, OFO_TYPE_BASE )
-
 OFO_BASE_DEFINE_GLOBAL( st_global, rate )
 
+static void             iexportable_iface_init( ofaIExportableInterface *iface );
+static guint            iexportable_get_interface_version( const ofaIExportable *instance );
 static GList           *rate_load_dataset( void );
 static ofoRate         *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void             rate_set_upd_user( ofoRate *rate, const gchar *user );
@@ -75,9 +76,13 @@ static gboolean         rate_do_delete( ofoRate *rate, const ofoSgbd *sgbd );
 static gint             rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
 static gint             rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
 static gint             rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent );
+static gboolean         iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 static ofoRate         *rate_import_csv_rate( GSList *fields, gint count, gint *errors );
 static ofsRateValidity *rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnemo );
 static gboolean         rate_do_drop_content( const ofoSgbd *sgbd );
+
+G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0, \
+		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 static void
 rate_free_validity( ofsRateValidity *sval )
@@ -154,6 +159,23 @@ ofo_rate_class_init( ofoRateClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = rate_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoRatePrivate ));
+}
+
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_rate_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
 }
 
 /**
@@ -1145,34 +1167,60 @@ rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consiste
 	return( my_date_compare( &a->begin, &a->end ));
 }
 
-/**
- * ofo_rate_get_csv:
+/*
+ * iexportable_export:
  *
- * Export the rates as a #GSList of CSV strings.
+ * Exports the classes line by line.
+ *
+ * Returns: TRUE at the end if no error has been detected
  */
-GSList *
-ofo_rate_get_csv( const ofoDossier *dossier )
+static gboolean
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
 {
-	GList *set, *det;
+	GList *it, *det;
 	GSList *lines;
 	gchar *str, *stamp;
 	ofoRate *rate;
 	const gchar *muser;
 	ofsRateValidity *sdet;
 	gchar *sbegin, *send, *notes;
+	gboolean ok, with_headers;
+	gulong count;
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, rate );
 
-	lines = NULL;
+	with_headers = ofa_export_settings_get_headers( settings );
 
-	str = g_strdup_printf( "1;Mnemo;Label;Notes;MajUser;MajStamp" );
-	lines = g_slist_prepend( lines, str );
+	count = ( gulong ) g_list_length( st_global->dataset );
+	if( with_headers ){
+		count += 2;
+	}
+	for( it=st_global->dataset ; it ; it=it->next ){
+		rate = OFO_RATE( it->data );
+		count += g_list_length( rate->priv->validities );
+	}
+	ofa_iexportable_set_count( exportable, count );
 
-	str = g_strdup_printf( "2;Mnemo;Begin;End;Rate" );
-	lines = g_slist_prepend( lines, str );
+	if( with_headers ){
+		str = g_strdup_printf( "1;Mnemo;Label;Notes;MajUser;MajStamp" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 
-	for( set=st_global->dataset ; set ; set=set->next ){
-		rate = OFO_RATE( set->data );
+		str = g_strdup_printf( "2;Mnemo;Begin;End;Rate" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	for( it=st_global->dataset ; it ; it=it->next ){
+		rate = OFO_RATE( it->data );
 
 		notes = my_utils_export_multi_lines( ofo_rate_get_notes( rate ));
 		muser = ofo_rate_get_upd_user( rate );
@@ -1188,7 +1236,12 @@ ofo_rate_get_csv( const ofoDossier *dossier )
 		g_free( notes );
 		g_free( stamp );
 
-		lines = g_slist_prepend( lines, str );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 
 		for( det=rate->priv->validities ; det ; det=det->next ){
 			sdet = ( ofsRateValidity * ) det->data;
@@ -1205,11 +1258,16 @@ ofo_rate_get_csv( const ofoDossier *dossier )
 			g_free( sbegin );
 			g_free( send );
 
-			lines = g_slist_prepend( lines, str );
+			lines = g_slist_prepend( NULL, str );
+			ok = ofa_iexportable_export_lines( exportable, lines );
+			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+			if( !ok ){
+				return( FALSE );
+			}
 		}
 	}
 
-	return( g_slist_reverse( lines ));
+	return( TRUE );
 }
 
 /**

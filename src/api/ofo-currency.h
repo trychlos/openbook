@@ -66,7 +66,6 @@ gboolean        ofo_currency_insert       ( ofoCurrency *currency );
 gboolean        ofo_currency_update       ( ofoCurrency *currency, const gchar *prev_code );
 gboolean        ofo_currency_delete       ( ofoCurrency *currency );
 
-GSList         *ofo_currency_get_csv      ( const ofoDossier *dossier );
 void            ofo_currency_import_csv   ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS

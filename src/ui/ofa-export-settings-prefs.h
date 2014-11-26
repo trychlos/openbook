@@ -73,9 +73,6 @@ void                    ofa_export_settings_prefs_attach_to  ( ofaExportSettings
 
 void                    ofa_export_settings_prefs_init_dialog( ofaExportSettingsPrefs *settings );
 
-void                    ofa_export_settings_prefs_show_folder( ofaExportSettingsPrefs *settings,
-																		gboolean show );
-
 gboolean                ofa_export_settings_prefs_apply      ( ofaExportSettingsPrefs *settings );
 
 G_END_DECLS

@@ -65,25 +65,20 @@ typedef struct {
 
 /**
  * Signals defined by #myAssistant class:
- * @ASSISTANT_SIGNAL_PAGE_CREATE:  sent before first displaying the page
- * @ASSISTANT_SIGNAL_PAGE_DISPLAY: sent each time the page is about to
- *                                 be displayed
  * @ASSISTANT_SIGNAL_PAGE_FORWARD: sent when the user has clicked on the
  *                                 'forward' button
  */
-#define MY_SIGNAL_PAGE_CREATE           "my-assistant-signal-page-create"
-#define MY_SIGNAL_PAGE_DISPLAY          "my-assistant-signal-page-display"
 #define MY_SIGNAL_PAGE_FORWARD          "my-assistant-signal-page-forward"
 
-GType  my_assistant_get_type         ( void ) G_GNUC_CONST;
+GType    my_assistant_get_type            ( void ) G_GNUC_CONST;
 
-void   my_assistant_run              ( myAssistant *assistant );
+void     my_assistant_run                 ( myAssistant *assistant );
 
-gulong my_assistant_signal_connect   ( myAssistant *assistant, const gchar *signal, GCallback cb );
+gulong   my_assistant_signal_connect      ( myAssistant *assistant, const gchar *signal, GCallback cb );
 
-void   my_assistant_set_page_complete( myAssistant *assistant, gint page_num, gboolean complete );
+gboolean my_assistant_is_page_initialized ( myAssistant *assistant, GtkWidget *page );
 
-gint   my_assistant_get_page_num     ( myAssistant *assistant, GtkWidget *page );
+void     my_assistant_set_page_initialized( myAssistant *assistant, GtkWidget *page, gboolean initialized );
 
 G_END_DECLS
 

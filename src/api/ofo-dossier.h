@@ -117,8 +117,6 @@ gboolean         ofo_dossier_dbmodel_update            ( ofoSgbd *sgbd, const gc
 
 gboolean         ofo_dossier_update                    ( ofoDossier *dossier );
 
-GSList          *ofo_dossier_get_csv                   ( const ofoDossier *dossier );
-
 gboolean         ofo_dossier_backup                    ( const ofoDossier *dossier, const gchar *fname );
 
 G_END_DECLS

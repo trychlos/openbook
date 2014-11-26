@@ -35,6 +35,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -88,8 +89,8 @@ static sStatus st_status[] = {
 		{ 0 },
 };
 
-G_DEFINE_TYPE( ofoEntry, ofo_entry, OFO_TYPE_BASE )
-
+static void         iexportable_iface_init( ofaIExportableInterface *iface );
+static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void         on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number );
 static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
@@ -120,6 +121,10 @@ static gboolean     entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const
 static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd );
 static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+
+G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0, \
+		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 static void
 entry_finalize( GObject *instance )
@@ -188,6 +193,23 @@ ofo_entry_class_init( ofoEntryClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = entry_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoEntryPrivate ));
+}
+
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
 }
 
 /**
@@ -2354,16 +2376,20 @@ do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 }
 
 /*
- * as a first - bad - approach, we load all the entries in memory !!!
+ * iexportable_export:
  *
- * the alternative should be to define here a callback, being called
- * from the exporter until the end...
+ * Exports the classes line by line.
  *
- * another alternative may be to use a cursor - but no doc here at the
- * moment :(
+ * Returns: TRUE at the end if no error has been detected
+ *
+ * As a first - probably bad - approach, we load all the entries in
+ * memory ! An alternative may be to use a cursor, but this later is
+ * only available from a stored program in the DBMS (as for MySQL at
+ * least), and this would imply that the exact list of columns be
+ * written in this stored program ?
  */
-GSList *
-ofo_entry_get_csv( const ofoDossier *dossier )
+static gboolean
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
 {
 	GList *result, *irow;
 	GSList *lines;
@@ -2374,14 +2400,28 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 	const gchar *sref, *muser, *model, *concil_user;
 	const gchar *settle_user;
 	ofxCounter settle_number;
-	gboolean has_settle;
+	gboolean has_settle, ok, with_headers;
+	gulong count;
 
 	result = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), NULL );
 
-	lines = NULL;
+	with_headers = ofa_export_settings_get_headers( settings );
 
-	str = g_strdup( "Dope;Deffect;Number;Label;Ref;Currency;Journal;Operation;Account;Debit;Credit;MajUser;MajStamp;Status;RapproValue;RapproUser;RapproStamp;SettlementNumber;SettlementUser;SettlementStamp" );
-	lines = g_slist_prepend( lines, str );
+	count = ( gulong ) g_list_length( result );
+	if( with_headers ){
+		count += 1;
+	}
+	ofa_iexportable_set_count( exportable, count );
+
+	if( with_headers ){
+		str = g_strdup( "Dope;Deffect;Number;Label;Ref;Currency;Journal;Operation;Account;Debit;Credit;MajUser;MajStamp;Status;RapproValue;RapproUser;RapproStamp;SettlementNumber;SettlementUser;SettlementStamp" );
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
 
 	for( irow=result ; irow ; irow=irow->next ){
 		entry = OFO_ENTRY( irow->data );
@@ -2427,19 +2467,24 @@ ofo_entry_get_csv( const ofoDossier *dossier )
 				has_settle ? settle_user : "",
 				has_settle ? settle_stamp : "" );
 
-		lines = g_slist_prepend( lines, str );
-
 		g_free( settle_snum );
 		g_free( settle_stamp );
 		g_free( sdconcil );
 		g_free( sdeffect );
 		g_free( sdope );
 		g_free( stamp );
+
+		lines = g_slist_prepend( NULL, str );
+		ok = ofa_iexportable_export_lines( exportable, lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		if( !ok ){
+			return( FALSE );
+		}
 	}
 
 	ofo_entry_free_dataset( result );
 
-	return( g_slist_reverse( lines ));
+	return( TRUE );
 }
 
 /**
