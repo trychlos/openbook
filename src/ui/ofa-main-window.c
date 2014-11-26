@@ -271,6 +271,7 @@ static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             connect_for_enabled_updates( ofaMainWindow *window );
 static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
+static void             warning_exercice_begin_empty( ofaMainWindow *window );
 static void             on_dossier_properties( ofaMainWindow *window, gpointer user_data );
 static gboolean         check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo );
 static void             pane_restore_position( GtkPaned *pane );
@@ -780,6 +781,8 @@ static void
 on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_dossier_open";
+	gint exe_id;
+	const GDate *begin;
 
 	g_debug( "%s: window=%p, sdo=%p, label=%s, account=%s, password=%s, user_data=%p",
 			thisfn, ( void * ) window,
@@ -810,6 +813,34 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 
 	set_menubar( window, window->priv->menu );
 	set_window_title( window );
+
+	exe_id = ofo_dossier_get_current_exe_id( window->priv->dossier );
+	begin = ofo_dossier_get_exe_begin( window->priv->dossier, exe_id );
+	if( !my_date_is_valid( begin )){
+		warning_exercice_begin_empty( window );
+	}
+}
+
+static void
+warning_exercice_begin_empty( ofaMainWindow *window )
+{
+	GtkWidget *dialog;
+	gchar *str;
+
+	str = g_strdup_printf(
+				_( "Warning: the exercice beginning date of the dossier is not set.\n\n"
+					"You will be unable to enter any new entry while this is not fixed." ));
+
+	dialog = gtk_message_dialog_new(
+			NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_WARNING,
+			GTK_BUTTONS_CLOSE,
+			"%s", str );
+
+	g_free( str );
+	gtk_dialog_run( GTK_DIALOG( dialog ));
+	gtk_widget_destroy( dialog );
 }
 
 /*
