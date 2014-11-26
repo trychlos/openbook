@@ -338,7 +338,19 @@
 
  461 2014-11-24 ExportAssistant: implement 'on_new_profile'
 
- 462
+ 462 2014-11-26 move ofoBat/ofoBatLine to ofaBoxed
+
+ 463 2014-11-26 move ofoCurrency to ofaBoxed
+
+ 464 2014-11-26 move ofoDossier to ofaBoxed
+
+ 465 2014-11-26 move ofoEntry to ofaBoxed
+
+ 466 2014-11-26 move ofoOpeTemplate to ofaBoxed
+
+ 467 2014-11-26 move ofoRate to ofaBoxed
+
+ 468
 
 -----------------------------------------------------------------------
  DONE
