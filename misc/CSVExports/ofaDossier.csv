@@ -1,0 +1,4 @@
+1;Label;Notes;MajUser;MajStamp;ExeLength;DefaultCurrency;LastExeId
+2;ExeBegin;ExeEnd;ExeNotes;LastEntry;LastBat;LastBatLine;LastSettlement;Status
+1;Raison sociale de la société Test OFAT v0.11 qui peut être arbitrairement lon;Notes for the dossier;ofat;2014-11-23 10:12:07;12;EUR;1
+2:2013-01-01;2013-12-31;Notes de l\'exercice;357;3247;3285;6;1
