@@ -31,10 +31,8 @@
  * @short_description: The Settings Class Definition
  * @include: api/ofa-settings.h
  *
- * The #ofaSettings class manages user preferences.
- *
- * #ofaSettings class defines a singleton object, which allocates itself
- * when needed.
+ * The #ofaSettings class manages both user preferences and dossiers
+ * configuration in two distinct text files.
  */
 
 #include <glib.h>
@@ -42,48 +40,98 @@
 G_BEGIN_DECLS
 
 /**
+ * ofaSettingsType:
  *
+ * We need to publish them in order they are available to plugins.
  */
 typedef enum {
 	SETTINGS_TYPE_STRING = 0,
 	SETTINGS_TYPE_INT
 }
-	SettingsType;
+	ofaSettingsType;
 
+/**
+ * ofaSettingsTarget:
+ */
+typedef enum {
+	SETTINGS_TARGET_USER = 1,
+	SETTINGS_TARGET_DOSSIER
+}
+	ofaSettingsTarget;
+
+/* some used keys */
 #define  SETTINGS_EXPORT_FOLDER             "DefaultExportFolder"
 
+/* this is the group name for user preferences
+ * should not be used by the code, but needed to define following
+ * user preferences macros */
+#define SETTINGS_GROUP_GENERAL              "General"
+
+/* called on application dispose */
 void     ofa_settings_free                  ( void );
 
+/* user preferences management */
+#define  ofa_settings_get_boolean(K)        ofa_settings_get_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_boolean(K,V)      ofa_settings_set_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+
+#define  ofa_settings_get_int(K)            ofa_settings_get_int_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_int(K,V)          ofa_settings_set_int_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+
+#define  ofa_settings_get_int_list(K)       ofa_settings_get_int_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_int_list(K,V)     ofa_settings_set_int_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+
+#define  ofa_settings_get_string(K)         ofa_settings_get_string_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_string(K,V)       ofa_settings_set_string_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+
+#define  ofa_settings_get_string_list(K)    ofa_settings_get_string_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_string_list(K,V)  ofa_settings_set_string_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+
+/* multi-usage functions */
+gboolean ofa_settings_get_boolean_ex        ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key );
+void     ofa_settings_set_boolean_ex        ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key,
+														gboolean bvalue );
+
+gint     ofa_settings_get_int_ex            ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key );
+void     ofa_settings_set_int_ex            ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key,
+														gint ivalue );
+
+GList   *ofa_settings_get_int_list_ex       ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key );
+void     ofa_settings_set_int_list_ex       ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key,
+														const GList *int_list );
+
+gchar   *ofa_settings_get_string_ex         ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key );
+void     ofa_settings_set_string_ex         ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key,
+														const gchar *svalue );
+
+GList   *ofa_settings_get_string_list_ex    ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key );
+void     ofa_settings_set_string_list_ex    ( ofaSettingsTarget target,
+														const gchar *group, const gchar *key,
+														const GList *str_list );
+
+/* dossiers configuration management */
 GSList  *ofa_settings_get_dossiers          ( void );
 
 gboolean ofa_settings_set_dossier           ( const gchar *name, ... );
+
 void     ofa_settings_remove_dossier        ( const gchar *name );
+
 gboolean ofa_settings_has_dossier           ( const gchar *name );
+
 gchar   *ofa_settings_get_dossier_provider  ( const gchar *name );
-gchar   *ofa_settings_get_dossier_key_string( const gchar *name, const gchar *key );
-gint     ofa_settings_get_dossier_key_uint  ( const gchar *name, const gchar *key );
-void     ofa_settings_set_dossier_key_string( const gchar *name, const gchar *key, const gchar *value );
 
-GSList  *ofa_settings_get_prefixed_keys     ( const gchar *prefix );
+gint     ofa_settings_get_dossier_int       ( const gchar *name, const gchar *key );
 
-GSList  *ofa_settings_get_string_list       ( const gchar *key );
-void     ofa_settings_set_string_list       ( const gchar *key, const GSList *str_list );
-
-GList   *ofa_settings_get_uint_list         ( const gchar *key );
-void     ofa_settings_set_uint_list         ( const gchar *key, const GList *uint_list );
-
-gint     ofa_settings_get_uint              ( const gchar *key );
-void     ofa_settings_set_uint              ( const gchar *key, guint value );
-
-gchar   *ofa_settings_get_string            ( const gchar *key );
-void     ofa_settings_set_string            ( const gchar *key, const gchar *value );
-
-gboolean ofa_settings_get_boolean           ( const gchar *key );
-void     ofa_settings_set_boolean           ( const gchar *key, gboolean value );
-
-/* extended usage */
-gchar   *ofa_settings_get_string_ex         ( const gchar *group, const gchar *key );
-void     ofa_settings_set_string_ex         ( const gchar *group, const gchar *key, const gchar *value );
+gchar   *ofa_settings_get_dossier_string    ( const gchar *name, const gchar *key );
+void     ofa_settings_set_dossier_string    ( const gchar *name, const gchar *key, const gchar *svalue );
 
 G_END_DECLS
 

@@ -400,7 +400,7 @@ p1_do_init( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *page )
 			( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = self->priv;
-	last = ofa_settings_get_uint( st_pref_data );
+	last = ofa_settings_get_int( st_pref_data );
 	found = FALSE;
 
 	for( i=0 ; st_types[i].code ; ++i ){
@@ -464,7 +464,7 @@ p1_do_forward( ofaExportAssistant *self, GtkWidget *page )
 
 		priv = self->priv;
 		g_debug( "%s: idx=%d", thisfn, priv->p1_idx );
-		ofa_settings_set_uint( st_pref_data, st_types[priv->p1_idx].code );
+		ofa_settings_set_int( st_pref_data, st_types[priv->p1_idx].code );
 	}
 }
 

@@ -38,7 +38,6 @@
 static void    on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static void    int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList  *position_to_int_list( gint x, gint y, gint width, gint height );
-static gchar  *filename_from_utf8( const gchar *filename );
 static void    error_filename_from_utf8( const gchar *filename, GError *error );
 
 /**
@@ -624,7 +623,7 @@ my_utils_output_stream_new( const gchar *filename, GFile **file, GOutputStream *
 	g_return_val_if_fail( stream, FALSE );
 
 	error = NULL;
-	sysfname = filename_from_utf8( filename );
+	sysfname = my_utils_filename_from_utf8( filename );
 	if( !sysfname ){
 		return( FALSE );
 	}
@@ -719,7 +718,7 @@ my_utils_window_restore_position( GtkWindow *toplevel, const gchar *name )
 			thisfn, ( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ), name );*/
 
 	key = g_strdup_printf( "%s-pos", name );
-	list = ofa_settings_get_uint_list( key );
+	list = ofa_settings_get_int_list( key );
 	g_free( key );
 	/*g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));*/
 
@@ -786,7 +785,7 @@ my_utils_window_save_position( GtkWindow *toplevel, const gchar *name )
 	list = position_to_int_list( x, y, width, height );
 
 	key = g_strdup_printf( "%s-pos", name );
-	ofa_settings_set_uint_list( key, list );
+	ofa_settings_set_int_list( key, list );
 
 	g_free( key );
 	g_list_free( list );
@@ -827,7 +826,7 @@ my_utils_file_exists( const gchar *filename )
 
 	exists = FALSE;
 
-	sysfname = filename_from_utf8( filename );
+	sysfname = my_utils_filename_from_utf8( filename );
 	if( sysfname ){
 		file = g_file_new_for_path( sysfname );
 		exists = g_file_query_exists( file, NULL );
@@ -840,8 +839,11 @@ my_utils_file_exists( const gchar *filename )
 	return( exists );
 }
 
-static gchar *
-filename_from_utf8( const gchar *filename )
+/**
+ * my_utils_filename_from_utf8:
+ */
+gchar *
+my_utils_filename_from_utf8( const gchar *filename )
 {
 	gchar *sysfname;
 	GError *error;

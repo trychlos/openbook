@@ -136,7 +136,7 @@ ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fn
 
 	connect = g_new0( mysqlConnect, 1 );
 	connect = ofa_mysql_get_connect_infos( connect, label );
-	connect->dbname = ofa_settings_get_dossier_key_string( label, "Database" );
+	connect->dbname = ofa_settings_get_dossier_string( label, "Database" );
 	connect->account = g_strdup( account );
 	connect->password = g_strdup( password );
 
@@ -201,7 +201,7 @@ build_cmdline( const mysqlConnect *connect, const gchar *fname, const gchar *pre
 	gchar *newcmd;
 	gchar *quoted;
 
-	cmdline = ofa_settings_get_string_ex( PREFS_GROUP, pref );
+	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_DOSSIER, PREFS_GROUP, pref );
 
 	regex = g_regex_new( "%B", 0, 0, NULL );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, connect->dbname, 0, NULL );

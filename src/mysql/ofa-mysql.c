@@ -229,7 +229,7 @@ idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label )
 {
 	gchar *host;
 
-	host = ofa_settings_get_dossier_key_string( label, "Host" );
+	host = ofa_settings_get_dossier_string( label, "Host" );
 
 	return( host );
 }
@@ -239,7 +239,7 @@ idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label )
 {
 	gchar *dbname;
 
-	dbname = ofa_settings_get_dossier_key_string( label, "Database" );
+	dbname = ofa_settings_get_dossier_string( label, "Database" );
 
 	return( dbname );
 }
@@ -253,7 +253,7 @@ idbms_connect( const ofaIDbms *instance, const gchar *label, const gchar *dbname
 	if( with_dbname ){
 		infos->connect.dbname = g_strdup( dbname );
 	} else {
-		infos->connect.dbname = ofa_settings_get_dossier_key_string( label, "Database" );
+		infos->connect.dbname = ofa_settings_get_dossier_string( label, "Database" );
 	}
 
 	return( idbms_connect_conv( instance, infos, label, account, password ));
@@ -272,9 +272,9 @@ idbms_connect( const ofaIDbms *instance, const gchar *label, const gchar *dbname
 mysqlConnect *
 ofa_mysql_get_connect_infos( mysqlConnect *cnt, const gchar *label )
 {
-	cnt->host = ofa_settings_get_dossier_key_string( label, "Host" );
-	cnt->socket = ofa_settings_get_dossier_key_string( label, "Socket" );
-	cnt->port = ofa_settings_get_dossier_key_uint( label, "Port" );
+	cnt->host = ofa_settings_get_dossier_string( label, "Host" );
+	cnt->socket = ofa_settings_get_dossier_string( label, "Socket" );
+	cnt->port = ofa_settings_get_dossier_int( label, "Port" );
 	if( cnt->port == -1 ){
 		cnt->port = 0;
 	}
@@ -488,7 +488,7 @@ idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar 
 	}
 
 	g_free( infos->connect.dbname );
-	infos->connect.dbname = ofa_settings_get_dossier_key_string( label, "Database" );
+	infos->connect.dbname = ofa_settings_get_dossier_string( label, "Database" );
 
 	/* #303: unable to delete accounts without cross-checking with
 	 * other dossiers */
@@ -544,7 +544,7 @@ idbms_display_connect_infos( const ofaIDbms *instance, GtkWidget *container, con
 
 	wlabel = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "host" );
 	g_return_if_fail( wlabel && GTK_IS_LABEL( wlabel ));
-	text = ofa_settings_get_dossier_key_string( label, "Host" );
+	text = ofa_settings_get_dossier_string( label, "Host" );
 	if( !text || !g_utf8_strlen( text, -1 )){
 		g_free( text );
 		text = g_strdup( "localhost" );
@@ -554,7 +554,7 @@ idbms_display_connect_infos( const ofaIDbms *instance, GtkWidget *container, con
 
 	wlabel = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "socket" );
 	g_return_if_fail( wlabel && GTK_IS_LABEL( wlabel ));
-	text = ofa_settings_get_dossier_key_string( label, "Socket" );
+	text = ofa_settings_get_dossier_string( label, "Socket" );
 	if( text && g_utf8_strlen( text, -1 )){
 		gtk_label_set_text( GTK_LABEL( wlabel ), text );
 	}
@@ -562,13 +562,13 @@ idbms_display_connect_infos( const ofaIDbms *instance, GtkWidget *container, con
 
 	wlabel = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "database" );
 	g_return_if_fail( wlabel && GTK_IS_LABEL( wlabel ));
-	text = ofa_settings_get_dossier_key_string( label, "Database" );
+	text = ofa_settings_get_dossier_string( label, "Database" );
 	gtk_label_set_text( GTK_LABEL( wlabel ), text );
 	g_free( text );
 
 	wlabel = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "port" );
 	g_return_if_fail( wlabel && GTK_IS_LABEL( wlabel ));
-	port_num = ofa_settings_get_dossier_key_uint( label, "Port" );
+	port_num = ofa_settings_get_dossier_int( label, "Port" );
 	if( port_num > 0 ){
 		text = g_strdup_printf( "%d", port_num );
 		gtk_label_set_text( GTK_LABEL( wlabel ), text );

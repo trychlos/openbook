@@ -643,7 +643,7 @@ setup_display_columns( ofaViewEntries *self )
 
 	priv = self->priv;
 
-	id_list = ofa_settings_get_uint_list( st_pref_columns );
+	id_list = ofa_settings_get_int_list( st_pref_columns );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-dope" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
@@ -801,11 +801,11 @@ setup_entries_treeview( ofaViewEntries *self )
 	/* default is to sort by ascending operation date
 	 */
 	sort_column = NULL;
-	sort_id = ofa_settings_get_uint( st_pref_sort_c );
+	sort_id = ofa_settings_get_int( st_pref_sort_c );
 	if( sort_id < 0 ){
 		sort_id = ENT_COL_DOPE;
 	}
-	sort_sens = ofa_settings_get_uint( st_pref_sort_s );
+	sort_sens = ofa_settings_get_int( st_pref_sort_s );
 	if( sort_sens < 0 ){
 		sort_sens = OFA_SORT_ASCENDING;
 	}
@@ -1299,8 +1299,8 @@ on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self )
 			thisfn, new_column_id,
 			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
 
-	ofa_settings_set_uint( st_pref_sort_c, new_column_id );
-	ofa_settings_set_uint( st_pref_sort_s, sort_order );
+	ofa_settings_set_int( st_pref_sort_c, new_column_id );
+	ofa_settings_set_int( st_pref_sort_s, sort_order );
 }
 
 static void
@@ -1378,7 +1378,7 @@ set_visible_columns( ofaViewEntries *self )
 		}
 	}
 
-	ofa_settings_set_uint_list( st_pref_columns, id_list );
+	ofa_settings_set_int_list( st_pref_columns, id_list );
 	g_list_free( id_list );
 }
 

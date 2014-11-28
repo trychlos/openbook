@@ -230,7 +230,7 @@ pane_restore_position( GtkPaned *pane )
 {
 	gint pos;
 
-	pos = ofa_settings_get_uint( "GuidedInputExDlg-pane" );
+	pos = ofa_settings_get_int( "GuidedInputExDlg-pane" );
 	g_debug( "ofa_guided_ex_pane_restore_position: pos=%d", pos );
 	gtk_paned_set_position( pane, pos );
 }
@@ -1001,5 +1001,5 @@ pane_save_position( GtkPaned *pane )
 
 	pos = gtk_paned_get_position( pane );
 	g_debug( "ofa_guided_ex_pane_save_position: pos=%d", pos );
-	ofa_settings_set_uint( "GuidedInputExDlg-pane", pos );
+	ofa_settings_set_int( "GuidedInputExDlg-pane", pos );
 }

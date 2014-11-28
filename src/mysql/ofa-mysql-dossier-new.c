@@ -192,7 +192,7 @@ window_init_entries( const ofaIDbms *instance, GtkContainer *parent, sPrivate *p
 	entry = my_utils_container_get_child_by_name( parent, "p2-port" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_port_changed ), priv );
-	ivalue = ofa_settings_get_uint( "DossierNewDlg-MySQL-port" );
+	ivalue = ofa_settings_get_int( "DossierNewDlg-MySQL-port" );
 	if( ivalue > 0 ){
 		value = g_strdup_printf( "%u", ivalue );
 		gtk_entry_set_text( GTK_ENTRY( entry ), value );
@@ -372,7 +372,7 @@ window_init_db( const ofaIDbms *instance, GtkContainer *parent, sPrivate *priv )
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", DB_COL_LABEL );
 
 	idx = -1;
-	value = ofa_settings_get_uint( "DossierNewDlg-dbexists_mode" );
+	value = ofa_settings_get_int( "DossierNewDlg-dbexists_mode" );
 	if( value < 0 ){
 		value = DBMODE_REINIT;
 	}
@@ -515,7 +515,7 @@ ofa_mysql_properties_new_apply( const ofaIDbms *instance, GtkContainer *parent,
 			ofa_settings_set_string( "DossierNewDlg-MySQL-host", cnt->host );
 		}
 		if( cnt->port > 0 ){
-			ofa_settings_set_uint( "DossierNewDlg-MySQL-port", cnt->port );
+			ofa_settings_set_int( "DossierNewDlg-MySQL-port", cnt->port );
 		}
 		if( cnt->socket && g_utf8_strlen( cnt->socket, -1 )){
 			ofa_settings_set_string( "DossierNewDlg-MySQL-socket", cnt->socket );
@@ -524,7 +524,7 @@ ofa_mysql_properties_new_apply( const ofaIDbms *instance, GtkContainer *parent,
 			ofa_settings_set_string( "DossierNewDlg-MySQL-account", cnt->account );
 		}
 		if( priv->db_exists_mode > DBMODE_EMPTY ){
-			ofa_settings_set_uint( "DossierNewDlg-dbexists_mode", priv->db_exists_mode );
+			ofa_settings_set_int( "DossierNewDlg-dbexists_mode", priv->db_exists_mode );
 		}
 	}
 

@@ -166,7 +166,7 @@ window_get_property( GObject *object, guint property_id, GValue *value, GParamSp
 				break;
 
 			case PROP_WINDOW_XML_ID:
-				g_value_set_string( value, self->priv->window_xml);
+				g_value_set_string( value, self->priv->window_xml );
 				break;
 
 			case PROP_WINDOW_NAME_ID:

@@ -434,7 +434,7 @@ init_locale_date( ofaPreferences *self, const gchar *wname, const gchar *pref, g
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", DATE_COL_LABEL );
 
-	ivalue = ofa_settings_get_uint( pref );
+	ivalue = ofa_settings_get_int( pref );
 	if( ivalue == -1 ){
 		ivalue = def_value;
 	}
@@ -826,9 +826,9 @@ do_update_locales_page( ofaPreferences *self )
 
 	priv = self->priv;
 
-	ofa_settings_set_uint( "PrefDateEnter",   priv->p3_date_enter );
-	ofa_settings_set_uint( "PrefDateDisplay", priv->p3_date_display );
-	ofa_settings_set_uint( "PrefDateCheck",   priv->p3_date_check );
+	ofa_settings_set_int( "PrefDateEnter",   priv->p3_date_enter );
+	ofa_settings_set_int( "PrefDateDisplay", priv->p3_date_display );
+	ofa_settings_set_int( "PrefDateCheck",   priv->p3_date_check );
 
 	text = g_string_new( "" );
 	if( priv->p3_accept_dot ){

@@ -173,7 +173,7 @@ do_init( ofaExportSettings *self, const gchar *name )
 {
 	ofaExportSettingsPrivate *priv;
 	gchar *pref_name;
-	GSList *prefs_list, *it;
+	GList *prefs_list, *it;
 	gchar *text;
 	gint nth;
 	const gchar *cstr;
@@ -196,7 +196,7 @@ do_init( ofaExportSettings *self, const gchar *name )
 	}
 
 	/* export format */
-	it = g_slist_nth( prefs_list, ++nth );
+	it = g_list_nth( prefs_list, ++nth );
 	text = g_strdup_printf( "%d", st_def_format );
 	cstr = ( it && g_utf8_strlen(( const gchar * ) it->data, -1 )) ?
 								 ( const gchar * ) it->data : text;
@@ -204,13 +204,13 @@ do_init( ofaExportSettings *self, const gchar *name )
 	g_free( text );
 
 	/* charmap */
-	it = g_slist_nth( prefs_list, ++nth );
+	it = g_list_nth( prefs_list, ++nth );
 	cstr = ( it && g_utf8_strlen(( const gchar * ) it->data, -1 )) ?
 								 ( const gchar * ) it->data : st_def_charmap;
 	priv->charmap = g_strdup( cstr );
 
 	/* date format */
-	it = g_slist_nth( prefs_list, ++nth );
+	it = g_list_nth( prefs_list, ++nth );
 	text = g_strdup_printf( "%d", st_def_date );
 	cstr = ( it && g_utf8_strlen(( const gchar * ) it->data, -1 )) ?
 								 ( const gchar * ) it->data : text;
@@ -218,24 +218,24 @@ do_init( ofaExportSettings *self, const gchar *name )
 	g_free( text );
 
 	/* decimal separator */
-	it = g_slist_nth( prefs_list, ++nth );
+	it = g_list_nth( prefs_list, ++nth );
 	cstr = ( it && g_utf8_strlen(( const gchar * ) it->data, -1 )) ?
 								 ( const gchar * ) it->data : st_def_decimal;
 	priv->decimal_sep = atoi( cstr );
 
 	/* field separator */
-	it = g_slist_nth( prefs_list, ++nth );
+	it = g_list_nth( prefs_list, ++nth );
 	cstr = ( it && g_utf8_strlen(( const gchar * ) it->data, -1 )) ?
 								 ( const gchar * ) it->data : st_def_field_sep;
 	priv->field_sep = atoi( cstr );
 
 	/* with headers */
-	it = g_slist_nth( prefs_list, ++nth );
+	it = g_list_nth( prefs_list, ++nth );
 	cstr = ( it && g_utf8_strlen(( const gchar * ) it->data, -1 )) ?
 								 ( const gchar * ) it->data : st_def_headers;
 	priv->with_headers = g_utf8_collate( cstr, "True" ) == 0;
 
-	g_slist_free_full( prefs_list, ( GDestroyNotify ) g_free );
+	g_list_free_full( prefs_list, ( GDestroyNotify ) g_free );
 }
 
 /**
@@ -404,7 +404,7 @@ ofa_export_settings_set( ofaExportSettings *settings,
 								gboolean with_headers )
 {
 	ofaExportSettingsPrivate *priv;
-	GSList *prefs_list;
+	GList *prefs_list;
 	gchar *sexport, *sdate, *sdecimal, *sfield, *pref_name, *sheaders;
 
 	g_return_if_fail( settings && OFA_IS_EXPORT_SETTINGS( settings ));
@@ -420,32 +420,32 @@ ofa_export_settings_set( ofaExportSettings *settings,
 		/* export format */
 		priv->export_format = export_format;
 		sexport = g_strdup_printf( "%d", export_format );
-		prefs_list = g_slist_append( prefs_list, sexport );
+		prefs_list = g_list_append( prefs_list, sexport );
 
 		/* charmap */
 		g_free( priv->charmap );
 		priv->charmap = g_strdup( charmap );
-		prefs_list = g_slist_append( prefs_list, priv->charmap );
+		prefs_list = g_list_append( prefs_list, priv->charmap );
 
 		/* date format */
 		priv->date_format = date_format;
 		sdate = g_strdup_printf( "%d", date_format );
-		prefs_list = g_slist_append( prefs_list, sdate );
+		prefs_list = g_list_append( prefs_list, sdate );
 
 		/* decimal separator */
 		priv->decimal_sep = decimal_sep;
 		sdecimal = g_strdup_printf( "%d", decimal_sep );
-		prefs_list = g_slist_append( prefs_list, sdecimal );
+		prefs_list = g_list_append( prefs_list, sdecimal );
 
 		/* field separator */
 		priv->field_sep = field_sep;
 		sfield = g_strdup_printf( "%d", field_sep );
-		prefs_list = g_slist_append( prefs_list, sfield );
+		prefs_list = g_list_append( prefs_list, sfield );
 
 		/* with headers */
 		priv->with_headers = with_headers;
 		sheaders = g_strdup_printf( "%s", priv->with_headers ? "True":"False" );
-		prefs_list = g_slist_append( prefs_list, sheaders );
+		prefs_list = g_list_append( prefs_list, sheaders );
 
 		/* save in user preferences */
 		if( priv->name && g_utf8_strlen( priv->name, -1 )){
@@ -455,7 +455,7 @@ ofa_export_settings_set( ofaExportSettings *settings,
 		}
 		ofa_settings_set_string_list( pref_name, prefs_list );
 		g_free( pref_name );
-		g_slist_free( prefs_list );
+		g_list_free( prefs_list );
 
 		g_free( sheaders );
 		g_free( sfield );

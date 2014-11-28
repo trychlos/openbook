@@ -127,7 +127,7 @@ page_init_backup( const ofaIPreferences *instance, GtkContainer *page, sPrivate 
 
 	entry = my_utils_container_get_child_by_name( page, "backup" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	cmdline = ofa_settings_get_string_ex( PREFS_GROUP, PREFS_BACKUP_CMDLINE );
+	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
 	if( cmdline && g_utf8_strlen( cmdline, -1 )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	} else {
@@ -137,7 +137,7 @@ page_init_backup( const ofaIPreferences *instance, GtkContainer *page, sPrivate 
 
 	entry = my_utils_container_get_child_by_name( page, "restore" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	cmdline = ofa_settings_get_string_ex( PREFS_GROUP, PREFS_RESTORE_CMDLINE );
+	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
 	if( cmdline && g_utf8_strlen( cmdline, -1 )){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	} else {
@@ -175,10 +175,12 @@ ofa_mysql_prefs_apply( const ofaIPreferences *instance, GtkWidget *page )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "backup" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	ofa_settings_set_string_ex(
-			PREFS_GROUP, PREFS_BACKUP_CMDLINE, gtk_entry_get_text( GTK_ENTRY( entry )));
+			SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE,
+			gtk_entry_get_text( GTK_ENTRY( entry )));
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "restore" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	ofa_settings_set_string_ex(
-			PREFS_GROUP, PREFS_RESTORE_CMDLINE, gtk_entry_get_text( GTK_ENTRY( entry )));
+			SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE,
+			gtk_entry_get_text( GTK_ENTRY( entry )));
 }

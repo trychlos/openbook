@@ -62,28 +62,56 @@ typedef struct {
 	ofaSettingsClass;
 
 /* private instance data
+ *
+ * The #ofaSettings class manages the user and dossier settings as two
+ * distinct singleton objects, with are both instanciated on the first
+ * demand (see #settings_new()).
+ *
+ * In order to get the API as simple as possible, the one which
+ * addresses the user preferences doesn't specifiy it: it is considered
+ * the default use (and the more frequent).
+ *
+ * Contrarily, the API which addresses dossier configuration is always
+ * qualified by at least the dossier name.
  */
 struct _ofaSettingsPrivate {
 	gboolean   dispose_has_run;
 
+	/* properties
+	 */
+	gchar     *bname;
+
+	/* user preferences or dossier configuration
+	 */
 	GKeyFile  *keyfile;
-	gchar     *kf_name;
+	gchar     *kf_name;					/* settings filename, UTF-8 encoded */
 };
 
-#define GROUP_GENERAL             "General"
-#define GROUP_DOSSIER             "Dossier"
+/* properties
+ */
+#define PROP_BNAME                      "ofa-settings-prop-bname"
+
+enum {
+	PROP_BNAME_ID = 1,
+};
+
+#define GROUP_DOSSIER                   "Dossier"
+#define BNAME_DOSSIER                   "dossier"
 
 GType ofa_settings_get_type( void ) G_GNUC_CONST;
 
-static ofaSettings *st_settings = NULL;
+static ofaSettings *st_user_settings    = NULL;
+static ofaSettings *st_dossier_settings = NULL;
 
 G_DEFINE_TYPE( ofaSettings, ofa_settings, G_TYPE_OBJECT )
 
-static void     settings_new( void );
-static gint     settings_get_uint( const gchar *group, const gchar *key );
-static void     load_key_file( ofaSettings *settings );
-static gboolean write_key_file( ofaSettings *settings );
-static gchar  **string_to_array( const gchar *string );
+static void         settings_new( void );
+static void         load_key_file( ofaSettings *settings );
+static gboolean     write_key_file( ofaSettings *settings );
+static GKeyFile    *get_keyfile_from_target( ofaSettingsTarget target );
+static ofaSettings *get_settings_from_target( ofaSettingsTarget target );
+static gchar      **str_to_array( const gchar *str );
+static gchar       *get_dossier_group_from_name( const gchar *name );
 
 static void
 settings_finalize( GObject *object )
@@ -98,6 +126,8 @@ settings_finalize( GObject *object )
 
 	/* free data members here */
 	priv = OFA_SETTINGS( object )->priv;
+
+	g_free( priv->bname );
 	g_key_file_free( priv->keyfile );
 	g_free( priv->kf_name );
 
@@ -151,6 +181,53 @@ settings_constructed( GObject *object )
 }
 
 static void
+settings_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
+{
+	ofaSettingsPrivate *priv;
+
+	g_return_if_fail( object && OFA_IS_SETTINGS( object ));
+
+	priv = OFA_SETTINGS( object )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		switch( property_id ){
+			case PROP_BNAME_ID:
+				g_value_set_string( value, priv->bname );
+				break;
+
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
+				break;
+		}
+	}
+}
+
+static void
+settings_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
+{
+	ofaSettingsPrivate *priv;
+
+	g_return_if_fail( object && OFA_IS_SETTINGS( object ));
+
+	priv = OFA_SETTINGS( object )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		switch( property_id ){
+			case PROP_BNAME_ID:
+				g_free( priv->bname );
+				priv->bname = g_value_dup_string( value );
+				break;
+
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
+				break;
+		}
+	}
+}
+
+static void
 ofa_settings_init( ofaSettings *self )
 {
 	static const gchar *thisfn = "ofa_settings_init";
@@ -172,10 +249,22 @@ ofa_settings_class_init( ofaSettingsClass *klass )
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
 	G_OBJECT_CLASS( klass )->constructed = settings_constructed;
+	G_OBJECT_CLASS( klass )->get_property = settings_get_property;
+	G_OBJECT_CLASS( klass )->set_property = settings_set_property;
 	G_OBJECT_CLASS( klass )->dispose = settings_dispose;
 	G_OBJECT_CLASS( klass )->finalize = settings_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaSettingsPrivate ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_BNAME_ID,
+			g_param_spec_string(
+					PROP_BNAME,
+					"Basename",
+					"The basename of this settings file",
+					"",
+					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 }
 
 /**
@@ -187,8 +276,11 @@ ofa_settings_class_init( ofaSettingsClass *klass )
 static void
 settings_new( void )
 {
-	if( !st_settings ){
-		st_settings = g_object_new( OFA_TYPE_SETTINGS, NULL );
+	if( !st_user_settings ){
+		st_user_settings = g_object_new( OFA_TYPE_SETTINGS, PROP_BNAME, PACKAGE, NULL );
+	}
+	if( !st_dossier_settings ){
+		st_dossier_settings = g_object_new( OFA_TYPE_SETTINGS, PROP_BNAME, BNAME_DOSSIER, NULL );
 	}
 }
 
@@ -196,22 +288,29 @@ static void
 load_key_file( ofaSettings *settings )
 {
 	static const gchar *thisfn = "ofa_settings_load_key_file";
-	gchar *dir;
+	ofaSettingsPrivate *priv;
+	gchar *dir, *fname;
 	GError *error;
 
 	g_debug( "%s: settings=%p", thisfn, ( void * ) settings );
 
-	settings->priv->keyfile = g_key_file_new();
+	priv = settings->priv;
+
+	priv->keyfile = g_key_file_new();
 
 	dir = g_build_filename( g_get_home_dir(), ".config", PACKAGE, NULL );
 	g_mkdir_with_parents( dir, 0750 );
-	settings->priv->kf_name = g_strdup_printf( "%s/%s.conf", dir, PACKAGE );
+
+	fname = g_strdup_printf( "%s.conf", priv->bname );
+	priv->kf_name = g_build_filename( dir, fname, NULL );
+
+	g_free( fname );
 	g_free( dir );
 
 	error = NULL;
 	if( !g_key_file_load_from_file(
-			settings->priv->keyfile,
-			settings->priv->kf_name, G_KEY_FILE_KEEP_COMMENTS, &error )){
+			priv->keyfile,
+			priv->kf_name, G_KEY_FILE_KEEP_COMMENTS, &error )){
 		if( error->code != G_FILE_ERROR_NOENT ){
 			g_warning( "%s: %s (%d) %s",
 					thisfn, settings->priv->kf_name, error->code, error->message );
@@ -226,65 +325,431 @@ static gboolean
 write_key_file( ofaSettings *settings )
 {
 	static const gchar *thisfn = "ofa_settings_write_key_file";
-	gchar *data;
+	ofaSettingsPrivate *priv;
+	gchar *sysfname, *data;
 	GFile *file;
 	GFileOutputStream *stream;
 	GError *error;
+	gssize written;
 	gsize length;
+	gboolean ok;
 
 	error = NULL;
-	data = g_key_file_to_data( settings->priv->keyfile, &length, NULL );
-	file = g_file_new_for_path( settings->priv->kf_name );
+	ok = FALSE;
+	priv = settings->priv;
+	data = g_key_file_to_data( priv->keyfile, &length, NULL );
+
+	sysfname = my_utils_filename_from_utf8( priv->kf_name );
+	if( !sysfname ){
+		g_free( data );
+		return( FALSE );
+	}
+
+	file = g_file_new_for_path( sysfname );
+	g_free( sysfname );
 
 	stream = g_file_replace( file, NULL, FALSE, G_FILE_CREATE_NONE, NULL, &error );
-	if( error ){
-		g_warning( "%s: g_file_replace: %s", thisfn, error->message );
+	if( !stream ){
+		g_return_val_if_fail( error, FALSE );
+		g_warning( "%s: bname=%s, g_file_replace: %s", thisfn, priv->bname, error->message );
 		g_error_free( error );
-		if( stream ){
-			g_object_unref( stream );
+
+	} else {
+		written = g_output_stream_write( G_OUTPUT_STREAM( stream ), data, length, NULL, &error );
+		if( written == -1 ){
+			g_return_val_if_fail( error, FALSE );
+			g_warning( "%s: bname=%s, g_output_stream_write: %s", thisfn, priv->bname, error->message );
+			g_error_free( error );
+
+		} else if( !g_output_stream_close( G_OUTPUT_STREAM( stream ), NULL, &error )){
+			g_return_val_if_fail( error, FALSE );
+			g_warning( "%s: bname=%s, g_output_stream_close: %s", thisfn, priv->bname, error->message );
+			g_error_free( error );
+
+		} else {
+			ok = TRUE;
 		}
-		g_object_unref( file );
-		g_free( data );
-		return( FALSE );
-	}
-
-	g_output_stream_write( G_OUTPUT_STREAM( stream ), data, length, NULL, &error );
-	if( error ){
-		g_warning( "%s: g_output_stream_write: %s", thisfn, error->message );
-		g_error_free( error );
 		g_object_unref( stream );
-		g_object_unref( file );
-		g_free( data );
-		return( FALSE );
 	}
 
-	g_output_stream_close( G_OUTPUT_STREAM( stream ), NULL, &error );
-	if( error ){
-		g_warning( "%s: g_output_stream_close: %s", thisfn, error->message );
-		g_error_free( error );
-		g_object_unref( stream );
-		g_object_unref( file );
-		g_free( data );
-		return( FALSE );
-	}
-
-	g_object_unref( stream );
 	g_object_unref( file );
 	g_free( data );
 
-	return( TRUE );
+	return( ok );
 }
 
 /**
  * ofa_settings_free:
+ *
+ * Called on application dispose.
  */
 void
 ofa_settings_free( void )
 {
-	if( st_settings ){
-		g_object_unref( st_settings );
-		st_settings = NULL;
+	if( st_user_settings ){
+		g_clear_object( &st_user_settings );
 	}
+	if( st_dossier_settings ){
+		g_clear_object( &st_dossier_settings );
+	}
+}
+
+/**
+ * ofa_settings_get_boolean_ex:
+ *
+ * Returns the specified integer value.
+ */
+gboolean
+ofa_settings_get_boolean_ex( ofaSettingsTarget target, const gchar *group, const gchar *key )
+{
+	GKeyFile *kfile;
+	gboolean result;
+	gchar *str;
+
+	settings_new();
+
+	result = FALSE;
+
+	kfile = get_keyfile_from_target( target );
+	if( kfile ){
+		str = g_key_file_get_string( kfile, group, key, NULL );
+		result = my_utils_boolean_from_str( str );
+		g_free( str );
+	}
+
+	return( result );
+}
+
+/**
+ * ofa_settings_set_boolean_ex:
+ */
+void
+ofa_settings_set_boolean_ex( ofaSettingsTarget target, const gchar *group, const gchar *key, gboolean bvalue )
+{
+	gchar *str;
+	ofaSettings *settings;
+
+	settings_new();
+
+	settings = get_settings_from_target( target );
+	if( settings ){
+		g_return_if_fail( OFA_IS_SETTINGS( settings ));
+
+		str = g_strdup_printf( "%s", bvalue ? "True":"False" );
+		g_key_file_set_string( settings->priv->keyfile, group, key, str );
+		g_free( str );
+
+		write_key_file( settings );
+	}
+}
+
+/**
+ * ofa_settings_get_int_ex:
+ *
+ * Returns the specified integer value.
+ */
+gint
+ofa_settings_get_int_ex( ofaSettingsTarget target, const gchar *group, const gchar *key )
+{
+	GKeyFile *kfile;
+	gint result;
+	gchar *str;
+
+	settings_new();
+
+	result = -1;
+
+	kfile = get_keyfile_from_target( target );
+	if( kfile ){
+		str = g_key_file_get_string( kfile, group, key, NULL );
+		if( str && g_utf8_strlen( str, -1 )){
+			result = atoi( str );
+		}
+
+		g_free( str );
+	}
+
+	return( result );
+}
+
+/**
+ * ofa_settings_set_int_ex:
+ */
+void
+ofa_settings_set_int_ex( ofaSettingsTarget target, const gchar *group, const gchar *key, gint ivalue )
+{
+	gchar *str;
+	ofaSettings *settings;
+
+	settings_new();
+
+	settings = get_settings_from_target( target );
+	if( settings ){
+		g_return_if_fail( OFA_IS_SETTINGS( settings ));
+
+		str = g_strdup_printf( "%d", ivalue );
+		g_key_file_set_string( settings->priv->keyfile, group, key, str );
+		g_free( str );
+
+		write_key_file( settings );
+	}
+}
+
+/**
+ * ofa_settings_get_int_list_ex:
+ *
+ * Returns a newly allocated GList of int, which should be
+ * g_list_free() by the caller.
+ */
+GList *
+ofa_settings_get_int_list_ex( ofaSettingsTarget target, const gchar *group, const gchar *key )
+{
+	GKeyFile *kfile;
+	GList *list;
+	gchar *str;
+	gchar **array, **iter;
+
+	settings_new();
+
+	list = NULL;
+
+	kfile = get_keyfile_from_target( target );
+	if( kfile ){
+		str = g_key_file_get_string( kfile, group, key, NULL );
+
+		if( str && g_utf8_strlen( str, -1 )){
+			array = str_to_array( str );
+			if( array ){
+				iter = ( gchar ** ) array;
+				while( *iter ){
+					list = g_list_prepend( list, GINT_TO_POINTER( atoi( *iter )));
+					iter++;
+				}
+			}
+			g_strfreev( array );
+		}
+
+		g_free( str );
+	}
+
+	return( g_list_reverse( list ));
+}
+
+/**
+ * ofa_settings_set_int_list_ex:
+ */
+void
+ofa_settings_set_int_list_ex( ofaSettingsTarget target, const gchar *group, const gchar *key, const GList *int_list )
+{
+	GString *str;
+	const GList *it;
+	ofaSettings *settings;
+
+	settings_new();
+
+	settings = get_settings_from_target( target );
+	if( settings ){
+		g_return_if_fail( OFA_IS_SETTINGS( settings ));
+
+		str = g_string_new( "" );
+		for( it=int_list ; it ; it=it->next ){
+			g_string_append_printf( str, "%d;", GPOINTER_TO_INT( it->data ));
+		}
+
+		g_key_file_set_string( settings->priv->keyfile, group, key, str->str );
+		g_string_free( str, TRUE );
+
+		write_key_file( settings );
+	}
+}
+
+/**
+ * ofa_settings_get_string_ex:
+ *
+ * Returns the specified string value as a newly allocated string which
+ * should be g_free() by the caller.
+ */
+gchar *
+ofa_settings_get_string_ex( ofaSettingsTarget target, const gchar *group, const gchar *key )
+{
+	GKeyFile *kfile;
+	gchar *str;
+
+	settings_new();
+
+	str = NULL;
+	kfile = get_keyfile_from_target( target );
+
+	if( kfile ){
+		str = g_key_file_get_string( kfile, group, key, NULL );
+	}
+
+	return( str );
+}
+
+/**
+ * ofa_settings_set_string_ex:
+ */
+void
+ofa_settings_set_string_ex( ofaSettingsTarget target, const gchar *group, const gchar *key, const gchar *svalue )
+{
+	ofaSettings *settings;
+
+	settings_new();
+
+	settings = get_settings_from_target( target );
+	if( settings ){
+		g_return_if_fail( OFA_IS_SETTINGS( settings ));
+
+		g_key_file_set_string( settings->priv->keyfile, group, key, svalue );
+		write_key_file( settings );
+	}
+}
+
+/**
+ * ofa_settings_get_string_list_ex:
+ *
+ * Returns a newly allocated GList of int, which should be
+ * g_list_free_full( str_list, ( GDestroyNotify ) g_free ) by the
+ * caller.
+ */
+GList *
+ofa_settings_get_string_list_ex( ofaSettingsTarget target, const gchar *group, const gchar *key )
+{
+	GKeyFile *kfile;
+	GList *list;
+	gchar *str;
+	gchar **array, **iter;
+
+	settings_new();
+
+	list = NULL;
+
+	kfile = get_keyfile_from_target( target );
+	if( kfile ){
+		str = g_key_file_get_string( kfile, group, key, NULL );
+
+		if( str && g_utf8_strlen( str, -1 )){
+			array = str_to_array( str );
+			if( array ){
+				iter = ( gchar ** ) array;
+				while( *iter ){
+					list = g_list_prepend( list, g_strdup( *iter ));
+					iter++;
+				}
+			}
+			g_strfreev( array );
+		}
+
+		g_free( str );
+	}
+
+	return( g_list_reverse( list ));
+}
+
+/**
+ * ofa_settings_set_string_list_ex:
+ */
+void
+ofa_settings_set_string_list_ex( ofaSettingsTarget target, const gchar *group, const gchar *key, const GList *str_list )
+{
+	GString *str;
+	const GList *it;
+	ofaSettings *settings;
+
+	settings_new();
+
+	settings = get_settings_from_target( target );
+	if( settings ){
+		g_return_if_fail( OFA_IS_SETTINGS( settings ));
+
+		str = g_string_new( "" );
+		for( it=str_list ; it ; it=it->next ){
+			g_string_append_printf( str, "%s;", ( const gchar * ) it->data );
+		}
+
+		g_key_file_set_string( settings->priv->keyfile, group, key, str->str );
+		g_string_free( str, TRUE );
+
+		write_key_file( settings );
+	}
+}
+
+static GKeyFile *
+get_keyfile_from_target( ofaSettingsTarget target )
+{
+	ofaSettings *settings;
+
+	settings = get_settings_from_target( target );
+	if( settings ){
+		g_return_val_if_fail( OFA_IS_SETTINGS( settings ), NULL );
+		return( settings->priv->keyfile );
+	}
+
+	return( NULL );
+}
+
+static ofaSettings *
+get_settings_from_target( ofaSettingsTarget target )
+{
+	static const gchar *thisfn = "ofa_settings_get_settings_from_target";
+
+	switch( target ){
+		case SETTINGS_TARGET_USER:
+			return( st_user_settings );
+			break;
+
+		case SETTINGS_TARGET_DOSSIER:
+			return( st_dossier_settings );
+			break;
+
+		default:
+			break;
+	}
+
+	g_warning( "%s: unknown target: %d", thisfn, target );
+	return( NULL );
+}
+
+/*
+ * converts a string to an array of strings
+ * accepts both:
+ * - a semi-comma-separated list of strings (the last separator, if any, is not counted)
+ * - a comma-separated list of strings between square brackets (à la GConf)
+ *
+ */
+static gchar **
+str_to_array( const gchar *str )
+{
+	gchar *sdup;
+	gchar **array;
+
+	array = NULL;
+
+	if( str && g_utf8_strlen( str, -1 )){
+		sdup = g_strstrip( g_strdup( str ));
+
+		/* GConf-style string list [value,value]
+		 */
+		if( sdup[0] == '[' && sdup[strlen(sdup)-1] == ']' ){
+			sdup[0] = ' ';
+			sdup[strlen(sdup)-1] = ' ';
+			sdup = g_strstrip( sdup );
+			array = g_strsplit( sdup, ",", -1 );
+
+		/* semi-comma-separated list of strings
+		 */
+		} else {
+			if( g_str_has_suffix( str, ";" )){
+				sdup[strlen(sdup)-1] = ' ';
+				sdup = g_strstrip( sdup );
+			}
+			array = g_strsplit( sdup, ";", -1 );
+		}
+		g_free( sdup );
+	}
+
+	return( array );
 }
 
 /**
@@ -292,7 +757,7 @@ ofa_settings_free( void )
  *
  * Returns the list of all defined dossiers as a newly allocated #GSList
  * list of newly allocated strings. The returned list should be
- * #g_slist_free_full() by the caller.
+ * #g_slist_free_full( list, ( GDestroyNotify ) g_free ) by the caller.
  */
 GSList *
 ofa_settings_get_dossiers( void )
@@ -309,7 +774,7 @@ ofa_settings_get_dossiers( void )
 
 	prefix = g_strdup_printf( "%s ", GROUP_DOSSIER );
 	spfx = g_utf8_strlen( prefix, -1 );
-	array = g_key_file_get_groups( st_settings->priv->keyfile, NULL );
+	array = g_key_file_get_groups( st_user_settings->priv->keyfile, NULL );
 	slist = NULL;
 	idx = array;
 
@@ -339,8 +804,8 @@ ofa_settings_remove_dossier( const gchar *name )
 
 	settings_new();
 
-	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
-	g_key_file_remove_group( st_settings->priv->keyfile, group, NULL );
+	group = get_dossier_group_from_name( name );
+	g_key_file_remove_group( st_user_settings->priv->keyfile, group, NULL );
 	g_free( group );
 }
 
@@ -358,8 +823,8 @@ ofa_settings_has_dossier( const gchar *name )
 
 	settings_new();
 
-	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
-	exists = g_key_file_has_group( st_settings->priv->keyfile, group );
+	group = get_dossier_group_from_name( name );
+	exists = g_key_file_has_group( st_user_settings->priv->keyfile, group );
 	g_free( group );
 
 	return( exists );
@@ -375,11 +840,37 @@ ofa_settings_has_dossier( const gchar *name )
 gchar *
 ofa_settings_get_dossier_provider( const gchar *name )
 {
-	return( ofa_settings_get_dossier_key_string( name, "Provider" ));
+	return( ofa_settings_get_dossier_string( name, "Provider" ));
 }
 
 /**
- * ofa_settings_get_dossier_key_string:
+ * ofa_settings_get_dossier_int:
+ * @name: the name of the dossier
+ * @key: the searched key
+ *
+ * Returns the key integer for the dossier.
+ *
+ * But for the "Provider" key that is directly implemented by the
+ * ofaIDbms interface, all other keys are supposed to be used only by
+ * the DBMS providers.
+ */
+gint
+ofa_settings_get_dossier_int( const gchar *name, const gchar *key )
+{
+	gchar *group;
+	gint ivalue;
+
+	settings_new();
+
+	group = get_dossier_group_from_name( name );
+	ivalue = ofa_settings_get_int_ex( SETTINGS_TARGET_DOSSIER, group, key );
+	g_free( group );
+
+	return( ivalue );
+}
+
+/**
+ * ofa_settings_get_dossier_string:
  * @name: the name of the dossier
  * @key: the searched key
  *
@@ -391,52 +882,24 @@ ofa_settings_get_dossier_provider( const gchar *name )
  * the DBMS providers.
  */
 gchar *
-ofa_settings_get_dossier_key_string( const gchar *name, const gchar *key )
+ofa_settings_get_dossier_string( const gchar *name, const gchar *key )
 {
-	static const gchar *thisfn = "ofa_settings_get_dossier_key_string";
-	gchar *group, *value;
+	static const gchar *thisfn = "ofa_settings_get_dossier_string";
+	gchar *group, *svalue;
 
 	g_debug( "%s: name=%s, key=%s", thisfn, name, key );
 
 	settings_new();
 
-	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
-	value = g_key_file_get_string( st_settings->priv->keyfile, group, key, NULL );
+	group = get_dossier_group_from_name( name );
+	svalue = ofa_settings_get_string_ex( SETTINGS_TARGET_DOSSIER, group, key );
 	g_free( group );
 
-	return( value );
+	return( svalue );
 }
 
 /**
- * ofa_settings_get_dossier_key_uint:
- * @name: the name of the dossier
- * @key: the searched key
- *
- * Returns the key integer for the dossier.
- *
- * But for the "Provider" key that is directly implemented by the
- * ofaIDbms interface, all other keys are supposed to be used only by
- * the DBMS providers.
- */
-gint
-ofa_settings_get_dossier_key_uint( const gchar *name, const gchar *key )
-{
-	gchar *group;
-	gint result;
-
-	settings_new();
-
-	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
-
-	result = settings_get_uint( group, key );
-
-	g_free( group );
-
-	return( result );
-}
-
-/**
- * ofa_settings_set_dossier_key_string:
+ * ofa_settings_set_dossier_string:
  * @name: the name of the dossier
  * @key: the searched key
  * @value: the value to be set
@@ -444,17 +907,17 @@ ofa_settings_get_dossier_key_uint( const gchar *name, const gchar *key )
  * Set the value for the key in the dossier group.
  */
 void
-ofa_settings_set_dossier_key_string( const gchar *name, const gchar *key, const gchar *value )
+ofa_settings_set_dossier_string( const gchar *name, const gchar *key, const gchar *svalue )
 {
-	static const gchar *thisfn = "ofa_settings_set_dossier_key_string";
+	static const gchar *thisfn = "ofa_settings_set_dossier_string";
 	gchar *group;
 
 	g_debug( "%s: name=%s, key=%s", thisfn, name, key );
 
 	settings_new();
 
-	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
-	ofa_settings_set_string_ex( group, key, value );
+	group = get_dossier_group_from_name( name );
+	ofa_settings_set_string_ex( SETTINGS_TARGET_DOSSIER, group, key, svalue );
 	g_free( group );
 }
 
@@ -479,7 +942,7 @@ ofa_settings_set_dossier( const gchar *name, ... )
 
 	settings_new();
 
-	group = g_strdup_printf( "%s %s", GROUP_DOSSIER, name );
+	group = get_dossier_group_from_name( name );
 
 	va_start( ap, name );
 	while( TRUE ){
@@ -494,10 +957,10 @@ ofa_settings_set_dossier( const gchar *name, ... )
 				scontent = va_arg( ap, const gchar * );
 				if( scontent && g_utf8_strlen( scontent, -1 )){
 					g_debug( "%s: setting key group=%s, key=%s, content=%s", thisfn, group, key, scontent );
-					g_key_file_set_string( st_settings->priv->keyfile, group, key, scontent );
+					g_key_file_set_string( st_user_settings->priv->keyfile, group, key, scontent );
 				} else {
 					g_debug( "%s: removing key group=%s, key=%s", thisfn, group, key );
-					g_key_file_remove_key( st_settings->priv->keyfile, group, key, NULL );
+					g_key_file_remove_key( st_user_settings->priv->keyfile, group, key, NULL );
 				}
 				break;
 
@@ -505,10 +968,10 @@ ofa_settings_set_dossier( const gchar *name, ... )
 				icontent = va_arg( ap, gint );
 				if( icontent > 0 ){
 					g_debug( "%s: setting key group=%s, key=%s, content=%d", thisfn, group, key, icontent );
-					g_key_file_set_integer( st_settings->priv->keyfile, group, key, icontent );
+					g_key_file_set_integer( st_user_settings->priv->keyfile, group, key, icontent );
 				} else {
 					g_debug( "%s: removing key group=%s, key=%s", thisfn, group, key );
-					g_key_file_remove_key( st_settings->priv->keyfile, group, key, NULL );
+					g_key_file_remove_key( st_user_settings->priv->keyfile, group, key, NULL );
 				}
 				break;
 		}
@@ -516,9 +979,10 @@ ofa_settings_set_dossier( const gchar *name, ... )
 	va_end( ap );
 	g_free( group );
 
-	return( write_key_file( st_settings ));
+	return( write_key_file( st_user_settings ));
 }
 
+#if 0
 /**
  * Returns: the list of keys which have the specified common prefix.
  *
@@ -534,7 +998,7 @@ ofa_settings_get_prefixed_keys( const gchar *prefix )
 	settings_new();
 	list = NULL;
 
-	array = g_key_file_get_keys( st_settings->priv->keyfile, GROUP_GENERAL, NULL, NULL );
+	array = g_key_file_get_keys( st_user_settings->priv->keyfile, SETTINGS_GROUP_GENERAL, NULL, NULL );
 	if( array ){
 		i = ( gchar ** ) array;
 		while( *i ){
@@ -548,296 +1012,10 @@ ofa_settings_get_prefixed_keys( const gchar *prefix )
 
 	return( g_slist_reverse( list ));
 }
+#endif
 
-/**
- * ofa_settings_get_string_list:
- *
- * Returns a newly allocated GSList of string, which should be
- * g_slist_free_full( GSList *, ( GDestroyNotify ) g_free ) by the
- * caller.
- *
- * Returns %NULL if the key was not found.
- */
-GSList *
-ofa_settings_get_string_list( const gchar *key )
+static gchar *
+get_dossier_group_from_name( const gchar *name )
 {
-	GSList *list;
-	gchar **array, **i;
-
-	settings_new();
-
-	list = NULL;
-
-	array = g_key_file_get_string_list( st_settings->priv->keyfile, GROUP_GENERAL, key, NULL, NULL );
-	if( array ){
-		i = ( gchar ** ) array;
-		while( *i ){
-			list = g_slist_prepend( list, g_strdup( *i ));
-			i++;
-		}
-	}
-	g_strfreev( array );
-
-	return( g_slist_reverse( list ));
-}
-
-/**
- * ofa_settings_set_string_list:
- */
-void
-ofa_settings_set_string_list( const gchar *key, const GSList *str_list )
-{
-	GString *string;
-	const GSList *it;
-
-	settings_new();
-
-	string = g_string_new( "" );
-	for( it = str_list ; it ; it = it->next ){
-		g_string_append_printf( string, "%s;", ( const gchar * ) it->data );
-	}
-	g_key_file_set_string( st_settings->priv->keyfile, GROUP_GENERAL, key, string->str );
-	g_string_free( string, TRUE );
-
-	write_key_file( st_settings );
-}
-
-/**
- * ofa_settings_get_uint_list:
- *
- * Returns a newly allocated GList of int, which should be
- * g_list_free() by the caller.
- */
-GList *
-ofa_settings_get_uint_list( const gchar *key )
-{
-	GList *list;
-	gchar *str;
-	gchar **array, **i;
-
-	settings_new();
-
-	list = NULL;
-
-	str = g_key_file_get_string( st_settings->priv->keyfile, GROUP_GENERAL, key, NULL );
-
-	if( str && g_utf8_strlen( str, -1 )){
-		array = string_to_array( str );
-		if( array ){
-			i = ( gchar ** ) array;
-			while( *i ){
-				list = g_list_prepend( list, GINT_TO_POINTER( atoi( *i )));
-				i++;
-			}
-		}
-		g_strfreev( array );
-	}
-
-	g_free( str );
-
-	return( g_list_reverse( list ));
-}
-
-/**
- * ofa_settings_set_uint_list:
- */
-void
-ofa_settings_set_uint_list( const gchar *key, const GList *uint_list )
-{
-	GString *string;
-	const GList *it;
-
-	settings_new();
-
-	string = g_string_new( "" );
-	for( it = uint_list ; it ; it = it->next ){
-		g_string_append_printf( string, "%u;", GPOINTER_TO_UINT( it->data ));
-	}
-	g_key_file_set_string( st_settings->priv->keyfile, GROUP_GENERAL, key, string->str );
-	g_string_free( string, TRUE );
-
-	write_key_file( st_settings );
-}
-
-/*
- * converts a string to an array of strings
- * accepts both:
- * - a semi-comma-separated list of strings (the last separator, if any, is not counted)
- * - a comma-separated list of strings between square brackets (à la GConf)
- *
- */
-static gchar **
-string_to_array( const gchar *string )
-{
-	gchar *sdup;
-	gchar **array;
-
-	array = NULL;
-
-	if( string && strlen( string )){
-		sdup = g_strstrip( g_strdup( string ));
-
-		/* GConf-style string list [value,value]
-		 */
-		if( sdup[0] == '[' && sdup[strlen(sdup)-1] == ']' ){
-			sdup[0] = ' ';
-			sdup[strlen(sdup)-1] = ' ';
-			sdup = g_strstrip( sdup );
-			array = g_strsplit( sdup, ",", -1 );
-
-		/* semi-comma-separated list of strings
-		 */
-		} else {
-			if( g_str_has_suffix( string, ";" )){
-				sdup[strlen(sdup)-1] = ' ';
-				sdup = g_strstrip( sdup );
-			}
-			array = g_strsplit( sdup, ";", -1 );
-		}
-		g_free( sdup );
-	}
-
-	return( array );
-}
-
-/**
- * ofa_settings_get_uint:
- *
- * Returns the specified integer value.
- */
-gint
-ofa_settings_get_uint( const gchar *key )
-{
-	settings_new();
-	return( settings_get_uint( GROUP_GENERAL, key ));
-}
-
-/**
- * ofa_settings_get_uint:
- *
- * Returns the specified integer value.
- */
-static gint
-settings_get_uint( const gchar *group, const gchar *key )
-{
-	gint result;
-	gchar *str;
-
-	result = -1;
-
-	str = g_key_file_get_string( st_settings->priv->keyfile, group, key, NULL );
-	if( str && g_utf8_strlen( str, -1 )){
-		result = atoi( str );
-	}
-
-	g_free( str );
-
-	return( result );
-}
-
-/**
- * ofa_settings_set_uint:
- */
-void
-ofa_settings_set_uint( const gchar *key, guint value )
-{
-	gchar *string;
-
-	settings_new();
-
-	string = g_strdup_printf( "%u", value );
-	g_key_file_set_string( st_settings->priv->keyfile, GROUP_GENERAL, key, string );
-	g_free( string );
-
-	write_key_file( st_settings );
-}
-
-/**
- * ofa_settings_get_string:
- *
- * Returns the specified string value as a newly allocated string which
- * must be g_free() by the caller.
- */
-gchar *
-ofa_settings_get_string( const gchar *key )
-{
-	return( ofa_settings_get_string_ex( GROUP_GENERAL, key ));
-}
-
-/**
- * ofa_settings_set_string:
- */
-void
-ofa_settings_set_string( const gchar *key, const gchar *value )
-{
-	ofa_settings_set_string_ex( GROUP_GENERAL, key, value );
-}
-
-/**
- * ofa_settings_get_boolean:
- *
- * Returns the specified boolean value.
- */
-gboolean
-ofa_settings_get_boolean( const gchar *key )
-{
-	gboolean result;
-	gchar *str;
-
-	settings_new();
-
-	result = FALSE;
-	str = g_key_file_get_string( st_settings->priv->keyfile, GROUP_GENERAL, key, NULL );
-	result = my_utils_boolean_from_str( str );
-	g_free( str );
-
-	return( result );
-}
-
-/**
- * ofa_settings_set_boolean:
- */
-void
-ofa_settings_set_boolean( const gchar *key, gboolean value )
-{
-	gchar *string;
-
-	settings_new();
-
-	string = g_strdup_printf( "%s", value ? "True":"False" );
-	g_key_file_set_string( st_settings->priv->keyfile, GROUP_GENERAL, key, string );
-	g_free( string );
-
-	write_key_file( st_settings );
-}
-
-/**
- * ofa_settings_get_string_ex:
- *
- * Returns the specified string value as a newly allocated string which
- * must be g_free() by the caller.
- */
-gchar *
-ofa_settings_get_string_ex( const gchar *group, const gchar *key )
-{
-	gchar *str;
-
-	settings_new();
-
-	str = g_key_file_get_string( st_settings->priv->keyfile, group, key, NULL );
-
-	return( str );
-}
-
-/**
- * ofa_settings_set_string_ex:
- */
-void
-ofa_settings_set_string_ex( const gchar *group, const gchar *key, const gchar *value )
-{
-	settings_new();
-
-	g_key_file_set_string( st_settings->priv->keyfile, group, key, value );
-
-	write_key_file( st_settings );
+	return( g_strdup_printf( "%s %s", GROUP_DOSSIER, name ));
 }

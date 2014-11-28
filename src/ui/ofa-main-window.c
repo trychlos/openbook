@@ -360,7 +360,7 @@ pane_save_position( GtkPaned *pane )
 	gchar *key;
 
 	key = g_strdup_printf( "%s-pane", st_main_window_name );
-	ofa_settings_set_uint( key, gtk_paned_get_position( pane ));
+	ofa_settings_set_int( key, gtk_paned_get_position( pane ));
 	g_free( key );
 }
 
@@ -880,7 +880,7 @@ pane_restore_position( GtkPaned *pane )
 	gchar *key;
 
 	key = g_strdup_printf( "%s-pane", st_main_window_name );
-	gtk_paned_set_position( pane, ofa_settings_get_uint( key ));
+	gtk_paned_set_position( pane, ofa_settings_get_int( key ));
 	g_free( key );
 }
 

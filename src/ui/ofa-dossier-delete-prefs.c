@@ -170,7 +170,7 @@ ofa_dossier_delete_prefs_init_dialog( ofaDossierDeletePrefs *prefs, GtkContainer
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( radio ), TRUE );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( radio ), FALSE );
 
-		ivalue = ofa_settings_get_uint( "DossierDeletePrefsDlg-db_mode" );
+		ivalue = ofa_settings_get_int( "DossierDeletePrefsDlg-db_mode" );
 		if( ivalue < 0 ){
 			ivalue = DBMODE_REINIT;
 		}
@@ -267,7 +267,7 @@ ofa_dossier_delete_prefs_set_settings( ofaDossierDeletePrefs *prefs )
 
 	if( !priv->dispose_has_run ){
 
-		ofa_settings_set_uint( "DossierDeletePrefsDlg-db_mode", priv->db_mode );
+		ofa_settings_set_int( "DossierDeletePrefsDlg-db_mode", priv->db_mode );
 		ofa_settings_set_boolean( "DossierDeletePrefsDlg-account_mode", priv->account_mode );
 	}
 }

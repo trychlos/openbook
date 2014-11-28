@@ -103,6 +103,8 @@ void       my_utils_window_save_position   ( GtkWindow *window, const gchar *nam
 
 gboolean   my_utils_file_exists            ( const gchar *filename );
 
+gchar     *my_utils_filename_from_utf8     ( const gchar *filename );
+
 G_END_DECLS
 
 #endif /* __MY_UTILS_H__ */
