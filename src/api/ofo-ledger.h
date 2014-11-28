@@ -60,20 +60,13 @@ const gchar    *ofo_ledger_get_label       ( const ofoLedger *ledger );
 const gchar    *ofo_ledger_get_notes       ( const ofoLedger *ledger );
 const gchar    *ofo_ledger_get_upd_user    ( const ofoLedger *ledger );
 const GTimeVal *ofo_ledger_get_upd_stamp   ( const ofoLedger *ledger );
-
+const GDate    *ofo_ledger_get_last_close  ( const ofoLedger *ledger );
 GDate          *ofo_ledger_get_last_entry  ( const ofoLedger *ledger );
-GDate          *ofo_ledger_get_last_closing( const ofoLedger *ledger );
 
-ofxAmount       ofo_ledger_get_clo_deb     ( const ofoLedger *ledger, gint exe_id, const gchar *currency );
-ofxAmount       ofo_ledger_get_clo_cre     ( const ofoLedger *ledger, gint exe_id, const gchar *currency );
-ofxAmount       ofo_ledger_get_deb         ( const ofoLedger *ledger, gint exe_id, const gchar *currency );
-const GDate    *ofo_ledger_get_deb_date    ( const ofoLedger *ledger, gint exe_id, const gchar *currency );
-ofxAmount       ofo_ledger_get_cre         ( const ofoLedger *ledger, gint exe_id, const gchar *currency );
-const GDate    *ofo_ledger_get_cre_date    ( const ofoLedger *ledger, gint exe_id, const gchar *currency );
-
-GList          *ofo_ledger_get_exe_list    ( const ofoLedger *ledger );
-
-const GDate    *ofo_ledger_get_exe_closing ( const ofoLedger *ledger, gint exe_id );
+ofxAmount       ofo_ledger_get_clo_deb     ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_clo_cre     ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_deb         ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_cre         ( const ofoLedger *ledger, const gchar *currency );
 
 gboolean        ofo_ledger_has_entries     ( const ofoLedger *ledger );
 gboolean        ofo_ledger_is_deletable    ( const ofoLedger *ledger, const ofoDossier *dossier );
@@ -83,12 +76,10 @@ void            ofo_ledger_set_mnemo       ( ofoLedger *ledger, const gchar *num
 void            ofo_ledger_set_label       ( ofoLedger *ledger, const gchar *label );
 void            ofo_ledger_set_notes       ( ofoLedger *ledger, const gchar *notes );
 
-void            ofo_ledger_set_clo_deb     ( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount );
-void            ofo_ledger_set_clo_cre     ( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount );
-void            ofo_ledger_set_deb         ( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount );
-void            ofo_ledger_set_deb_date    ( ofoLedger *ledger, gint exe_id, const gchar *currency, const GDate *date );
-void            ofo_ledger_set_cre         ( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount );
-void            ofo_ledger_set_cre_date    ( ofoLedger *ledger, gint exe_id, const gchar *currency, const GDate *date );
+void            ofo_ledger_set_clo_deb     ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
+void            ofo_ledger_set_clo_cre     ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
+void            ofo_ledger_set_deb         ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
+void            ofo_ledger_set_cre         ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
 
 gboolean        ofo_ledger_close           ( ofoLedger *ledger, const GDate *closing );
 

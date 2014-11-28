@@ -64,7 +64,6 @@ struct _ofaGuidedCommonPrivate {
 	/* from dossier
 	 */
 	const gchar     *def_currency;
-	GDate           *last_closed_exe;	/* last closed exercice of the dossier, may be NULL */
 	GList           *handlers;
 
 	/* when selecting a model
@@ -293,8 +292,8 @@ guided_common_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_GUIDED_COMMON( instance )->priv;
+
 	g_free( priv->ledger );
-	g_free( priv->last_closed_exe );
 	if( priv->currency_list ){
 		g_list_free_full( priv->currency_list, ( GDestroyNotify) list_currency_free );
 	}
@@ -426,8 +425,6 @@ setup_from_dossier( ofaGuidedCommon *self )
 	priv = self->priv;
 
 	priv->def_currency = ofo_dossier_get_default_currency( priv->dossier );
-	priv->last_closed_exe = ofo_dossier_get_last_closed_exercice( priv->dossier );
-	g_debug( "ofa_guided_common_setup_from_dossier: last_closed_exe=%p", ( void * ) priv->last_closed_exe );
 
 	handler = g_signal_connect(
 					G_OBJECT( priv->dossier ),
@@ -739,8 +736,7 @@ on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 	ofoLedger *ledger;
-	gint exe_id;
-	const GDate *date;
+	const GDate *last_clo;
 
 	priv = self->priv;
 
@@ -748,19 +744,18 @@ on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
 	priv->ledger = g_strdup( mnemo );
 
 	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
-	my_date_set_from_date( &priv->deffect_min, priv->last_closed_exe );
+	my_date_set_from_date( &priv->deffect_min, ofo_dossier_get_exe_begin( priv->dossier ));
 
 	if( ledger ){
-		exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
-		date = ofo_ledger_get_exe_closing( ledger, exe_id );
-		if( my_date_is_valid( date )){
-			if( my_date_is_valid( priv->last_closed_exe )){
-				if( my_date_compare( date, priv->last_closed_exe ) > 0 ){
-					my_date_set_from_date( &priv->deffect_min, date );
+		last_clo = ofo_ledger_get_last_close( ledger );
+		if( my_date_is_valid( &priv->deffect_min )){
+			if( my_date_is_valid( last_clo )){
+				if( my_date_compare( &priv->deffect_min, last_clo ) < 0 ){
+					my_date_set_from_date( &priv->deffect_min, last_clo );
 				}
-			} else {
-				my_date_set_from_date( &priv->deffect_min, date );
 			}
+		} else if( my_date_is_valid( last_clo )){
+			my_date_set_from_date( &priv->deffect_min, last_clo );
 		}
 	}
 

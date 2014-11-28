@@ -578,7 +578,7 @@ bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp )
  *  these fields
  */
 gboolean
-ofo_bat_line_insert( ofoBatLine *bat_line, const ofoDossier *dossier )
+ofo_bat_line_insert( ofoBatLine *bat_line, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_bat_line_insert";
 
@@ -590,7 +590,7 @@ ofo_bat_line_insert( ofoBatLine *bat_line, const ofoDossier *dossier )
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat_line, ( void * ) dossier );
 
-		bat_line->priv->line_id = ofo_dossier_get_next_batline_number( dossier );
+		bat_line->priv->line_id = ofo_dossier_get_next_batline( dossier );
 
 		if( bat_line_do_insert(
 					bat_line,

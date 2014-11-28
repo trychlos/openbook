@@ -763,7 +763,6 @@ static void
 on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_dossier_open";
-	gint exe_id;
 	const GDate *begin;
 
 	g_debug( "%s: window=%p, sdo=%p, label=%s, account=%s, password=%s, user_data=%p",
@@ -797,8 +796,7 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 	set_window_title( window );
 	connect_dossier_for_enabled_updates( window );
 
-	exe_id = ofo_dossier_get_current_exe_id( window->priv->dossier );
-	begin = ofo_dossier_get_exe_begin( window->priv->dossier, exe_id );
+	begin = ofo_dossier_get_exe_begin( window->priv->dossier );
 	if( !my_date_is_valid( begin )){
 		ofa_main_window_warning_no_entry( window );
 	}

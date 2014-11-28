@@ -61,35 +61,23 @@ struct _ofoDossierPrivate {
 
 	/* row id 1
 	 */
-	gchar      *label;					/* raison sociale */
-	gint        exe_length;				/* exercice length (in month) */
 	gchar      *currency;
+	GDate       exe_begin;
+	GDate       exe_end;
+	gint        exe_length;				/* exercice length (in month) */
+	gchar      *exe_notes;
+	gchar      *label;					/* raison sociale */
 	gchar      *notes;					/* notes */
-	gint        last_exe_id;
+	gchar      *siren;
 	gchar      *upd_user;
 	GTimeVal    upd_stamp;
-
-	/* all found exercices are loaded on opening
-	 * as a GList * of sDetailExe structures
-	 */
-	GList      *exes;
-
-	/* a pointer to the current exercice
-	 * it is specially kept as we often need these infos
-	 */
-	sDetailExe *current;
-};
-
-struct _sDetailExe {
-	gint             exe_id;
-	GDate            exe_begin;
-	GDate            exe_end;
-	gchar           *exe_notes;
-	ofxCounter          last_entry;
-	ofxCounter          last_bat;
-	ofxCounter          last_batline;
-	ofxCounter          last_settlement;
-	ofaDossierStatus status;
+	gint        exe_id;
+	gint        last_exe_id;
+	ofxCounter  last_bat;
+	ofxCounter  last_batline;
+	ofxCounter  last_entry;
+	ofxCounter  last_settlement;
+	gchar      *status;
 };
 
 /* signals defined here
@@ -111,6 +99,11 @@ static gint st_signals[ N_SIGNALS ] = { 0 };
 #define THIS_DBMODEL_VERSION            1
 #define THIS_DOS_ID                     1
 
+/* dossier status
+ */
+#define DOSSIER_CURRENT                 "C"
+#define DOSSIER_ARCHIVED                "A"
+
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static void        connect_objects_handlers( const ofoDossier *dossier );
@@ -118,35 +111,29 @@ static void        on_updated_object( const ofoDossier *dossier, ofoBase *object
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static gint        dbmodel_get_version( ofoSgbd *sgbd );
 static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account );
-static sDetailExe *get_current_exe( const ofoDossier *dossier );
-static sDetailExe *get_exe_by_id( const ofoDossier *dossier, gint exe_id );
-static sDetailExe *get_exe_by_date( const ofoDossier *dossier, const GDate *date );
+static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
+static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
+static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
+static void        dossier_set_this_exe_id( ofoDossier *dossier, gint exe_id );
+static void        dossier_set_last_exe_id( ofoDossier *dossier, gint exe_id );
+static void        dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter );
+static void        dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter );
+static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter );
+static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
+static void        dossier_set_status( ofoDossier *dossier, const gchar *status );
 static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GType type );
 static void        on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry );
-static void        dossier_update_next_number( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
-static void        dossier_set_last_exe_id( ofoDossier *dossier, gint exe_id );
-static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
-static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
-static gboolean    dossier_read_exercices( ofoDossier *dossier );
 static gboolean    dossier_do_update( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
-
-static void
-free_exercice( sDetailExe *sexe )
-{
-	g_free( sexe->exe_notes );
-	g_free( sexe );
-}
 
 static void
 dossier_finalize( GObject *instance )
@@ -167,9 +154,10 @@ dossier_finalize( GObject *instance )
 
 	g_free( priv->label );
 	g_free( priv->notes );
+	g_free( priv->siren );
 	g_free( priv->upd_user );
-
-	g_list_free_full( priv->exes, ( GDestroyNotify ) free_exercice );
+	g_free( priv->exe_notes );
+	g_free( priv->status );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_dossier_parent_class )->finalize( instance );
@@ -826,50 +814,37 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
-			"	DOS_ID           INTEGER   NOT NULL UNIQUE    COMMENT 'Row identifier',"
-			"	DOS_LABEL        VARCHAR(80)                  COMMENT 'Raison sociale',"
-			"	DOS_LAST_EXE_ID  INTEGER                      COMMENT 'Last exercice identifier opened for the dossier',"
-			"	DOS_NOTES        VARCHAR(4096)                COMMENT 'Notes',"
-			"	DOS_EXE_LENGTH   INTEGER                      COMMENT 'Exercice length in months',"
-			"	DOS_DEF_CURRENCY VARCHAR(3)                   COMMENT 'Default currency identifier',"
-			"	DOS_UPD_USER     VARCHAR(20)                  COMMENT 'User responsible of properties last update',"
-			"	DOS_UPD_STAMP    TIMESTAMP NOT NULL           COMMENT 'Properties last update timestamp'"
+			"	DOS_ID              INTEGER   NOT NULL UNIQUE COMMENT 'Row identifier',"
+			"	DOS_DEF_CURRENCY    VARCHAR(3)                COMMENT 'Default currency identifier',"
+			"	DOS_EXE_BEGIN       DATE                      COMMENT 'Exercice beginning date',"
+			"	DOS_EXE_END         DATE                      COMMENT 'Exercice ending date',"
+			"	DOS_EXE_LENGTH      INTEGER                   COMMENT 'Exercice length in months',"
+			"	DOS_EXE_NOTES       VARCHAR(4096)             COMMENT 'Exercice notes',"
+			"	DOS_LABEL           VARCHAR(80)               COMMENT 'Raison sociale',"
+			"	DOS_NOTES           VARCHAR(4096)             COMMENT 'Dossier notes',"
+			"	DOS_SIREN           VARCHAR(20)               COMMENT 'Siren identifier',"
+			"	DOS_UPD_USER        VARCHAR(20)               COMMENT 'User responsible of properties last update',"
+			"	DOS_UPD_STAMP       TIMESTAMP                 COMMENT 'Properties last update timestamp',"
+			"	DOS_EXE_ID          INTEGER                   COMMENT 'Exercice identifier',"
+			"	DOS_LAST_EXE_ID     INTEGER                   COMMENT 'Last exercice identifier opened for the dossier',"
+			"	DOS_LAST_BAT        BIGINT  DEFAULT 0         COMMENT 'Last BAT file number used',"
+			"	DOS_LAST_BATLINE    BIGINT  DEFAULT 0         COMMENT 'Last BAT line number used',"
+			"	DOS_LAST_ENTRY      BIGINT  DEFAULT 0         COMMENT 'Last entry number used',"
+			"	DOS_LAST_SETTLEMENT BIGINT  DEFAULT 0         COMMENT 'Last settlement number used',"
+			"	DOS_STATUS          CHAR(1)                   COMMENT 'Status of this exercice'"
 			")", TRUE )){
 		return( FALSE );
 	}
 
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
-			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,DOS_LAST_EXE_ID) "
-			"	VALUES (1,'%s',%u,'%s',1)", name, DOS_DEFAULT_LENGTH, "EUR" );
+			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,DOS_LAST_EXE_ID,DOS_EXE_ID,DOS_STATUS) "
+			"	VALUES (1,'%s',%u,'EUR',1,1,'C')", name, DOS_DEFAULT_LENGTH );
 	if( !ofo_sgbd_query( sgbd, query, TRUE )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
-
-	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_EXE ("
-			"	DOS_ID                  INTEGER      NOT NULL COMMENT 'Row identifier',"
-			"	DOS_EXE_ID              INTEGER      NOT NULL COMMENT 'Exercice identifier',"
-			"	DOS_EXE_BEGIN           DATE                  COMMENT 'Exercice beginning date',"
-			"	DOS_EXE_END             DATE                  COMMENT 'Exercice ending date',"
-			"	DOS_EXE_NOTES           VARCHAR(4096)         COMMENT 'Notes',"
-			"	DOS_EXE_LAST_ENTRY      BIGINT  DEFAULT 0     COMMENT 'Last entry number used',"
-			"	DOS_EXE_LAST_BAT        BIGINT  DEFAULT 0     COMMENT 'Last BAT file number used',"
-			"	DOS_EXE_LAST_BATLINE    BIGINT  DEFAULT 0     COMMENT 'Last BAT line number used',"
-			"	DOS_EXE_LAST_SETTLEMENT BIGINT  DEFAULT 0     COMMENT 'Last settlement number used',"
-			"	DOS_EXE_STATUS          INTEGER      NOT NULL COMMENT 'Status of this exercice',"
-			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_EXE_ID)"
-			")", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofo_sgbd_query( sgbd,
-			"INSERT IGNORE INTO OFA_T_DOSSIER_EXE "
-			"	(DOS_ID,DOS_EXE_ID,DOS_EXE_STATUS) VALUE (1,1,1)", TRUE )){
-		return( FALSE );
-	}
 
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
@@ -903,7 +878,8 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 			"	LED_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Ledger label',"
 			"	LED_NOTES     VARCHAR(4096)               COMMENT 'Ledger notes',"
 			"	LED_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
-			"	LED_UPD_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp'"
+			"	LED_UPD_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
+			"	LED_LAST_CLO  DATE                        COMMENT 'Last closing date'"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -911,25 +887,12 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	if( !ofo_sgbd_query( sgbd,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_CUR ("
 			"	LED_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal ledger identifier',"
-			"	LED_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
 			"	LED_CUR_CODE     VARCHAR(3) NOT NULL      COMMENT 'Internal currency identifier',"
 			"	LED_CUR_CLO_DEB  DECIMAL(20,5)            COMMENT 'Debit balance at last closing',"
 			"	LED_CUR_CLO_CRE  DECIMAL(20,5)            COMMENT 'Credit balance at last closing',"
 			"	LED_CUR_DEB      DECIMAL(20,5)            COMMENT 'Current debit balance',"
-			"	LED_CUR_DEB_DATE DATE                     COMMENT 'Most recent debit entry effect date',"
 			"	LED_CUR_CRE      DECIMAL(20,5)            COMMENT 'Current credit balance',"
-			"	LED_CUR_CRE_DATE DATE                     COMMENT 'Most recent credit entry effect date',"
-			"	CONSTRAINT PRIMARY KEY (LED_MNEMO,LED_EXE_ID,LED_CUR_CODE)"
-			")", TRUE )){
-		return( FALSE );
-	}
-
-	if( !ofo_sgbd_query( sgbd,
-			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_EXE ("
-			"	LED_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal ledger identifier',"
-			"	LED_EXE_ID       INTEGER    NOT NULL      COMMENT 'Internal exercice identifier',"
-			"	LED_EXE_LAST_CLO DATE                     COMMENT 'Last closing date of the exercice',"
-			"	CONSTRAINT PRIMARY KEY (LED_MNEMO,LED_EXE_ID)"
+			"	CONSTRAINT PRIMARY KEY (LED_MNEMO,LED_CUR_CODE)"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -1046,7 +1009,9 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 /**
  * ofo_dossier_get_name:
  *
- * Returns: the name (short label) of the dossier.
+ * Returns: the name (short label) of the dossier as it appeats in the
+ * selection dialogs. The name is not stored in the DBMS, but at an
+ * external level by the program.
  */
 const gchar *
 ofo_dossier_get_name( const ofoDossier *dossier )
@@ -1058,6 +1023,7 @@ ofo_dossier_get_name( const ofoDossier *dossier )
 		return(( const gchar * ) dossier->priv->name );
 	}
 
+	g_return_val_if_reached( NULL );
 	return( NULL );
 }
 
@@ -1076,6 +1042,7 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 		return(( const gchar * ) dossier->priv->userid );
 	}
 
+	g_return_val_if_reached( NULL );
 	return( NULL );
 }
 
@@ -1094,6 +1061,7 @@ ofo_dossier_get_sgbd( const ofoDossier *dossier )
 		return(( const ofoSgbd * ) dossier->priv->sgbd );
 	}
 
+	g_return_val_if_reached( NULL );
 	return( NULL );
 }
 
@@ -1119,6 +1087,7 @@ ofo_dossier_get_dbname( const ofoDossier *dossier )
 		}
 	}
 
+	g_return_val_if_reached( NULL );
 	return( NULL );
 }
 
@@ -1148,42 +1117,6 @@ ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 }
 
 /**
- * ofo_dossier_get_label:
- *
- * Returns: the label of the dossier.
- */
-const gchar *
-ofo_dossier_get_label( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		return(( const gchar * ) dossier->priv->label );
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_exercice_length:
- *
- * Returns: the length of the exercice, in months.
- */
-gint
-ofo_dossier_get_exercice_length( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), -1 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		return( dossier->priv->exe_length );
-	}
-
-	return( -1 );
-}
-
-/**
  * ofo_dossier_get_default_currency:
  *
  * Returns: the default currency of the dossier.
@@ -1198,6 +1131,103 @@ ofo_dossier_get_default_currency( const ofoDossier *dossier )
 		return(( const gchar * ) dossier->priv->currency );
 	}
 
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_exe_begin:
+ *
+ * Returns: the date of the beginning of the exercice.
+ */
+const GDate *
+ofo_dossier_get_exe_begin( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const GDate * ) &dossier->priv->exe_begin );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_exe_end:
+ *
+ * Returns: the date of the end of the exercice.
+ */
+const GDate *
+ofo_dossier_get_exe_end( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const GDate * ) &dossier->priv->exe_end );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_exe_length:
+ *
+ * Returns: the length of the exercice, in months.
+ */
+gint
+ofo_dossier_get_exe_length( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), -1 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->exe_length );
+	}
+
+	g_return_val_if_reached( -1 );
+	return( -1 );
+}
+
+/**
+ * ofo_dossier_get_exe_notes:
+ *
+ * Returns: the notes associated to the exercice.
+ */
+const gchar *
+ofo_dossier_get_exe_notes( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->exe_notes );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_label:
+ *
+ * Returns: the label of the dossier. This is the 'raison sociale' for
+ * the dossier.
+ */
+const gchar *
+ofo_dossier_get_label( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->label );
+	}
+
+	g_return_val_if_reached( NULL );
 	return( NULL );
 }
 
@@ -1216,25 +1246,27 @@ ofo_dossier_get_notes( const ofoDossier *dossier )
 		return(( const gchar * ) dossier->priv->notes );
 	}
 
+	g_return_val_if_reached( NULL );
 	return( NULL );
 }
 
 /**
- * ofo_dossier_get_last_exe_id:
+ * ofo_dossier_get_siren:
  *
- * Returns: the last exercice identifier used in the dossier.
+ * Returns: the siren of the dossier.
  */
-gint
-ofo_dossier_get_last_exe_id( const ofoDossier *dossier )
+const gchar *
+ofo_dossier_get_siren( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( dossier->priv->last_exe_id );
+		return(( const gchar * ) dossier->priv->siren );
 	}
 
-	return( 0 );
+	g_return_val_if_reached( NULL );
+	return( NULL );
 }
 
 /**
@@ -1253,6 +1285,7 @@ ofo_dossier_get_upd_user( const ofoDossier *dossier )
 		return(( const gchar * ) dossier->priv->upd_user );
 	}
 
+	g_return_val_if_reached( NULL );
 	return( NULL );
 }
 
@@ -1272,7 +1305,269 @@ ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 		return(( const GTimeVal * ) &dossier->priv->upd_stamp );
 	}
 
+	g_return_val_if_reached( NULL );
 	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_status:
+ */
+const gchar *
+ofo_dossier_get_status( const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_get_status";
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+
+		if( !g_utf8_collate( priv->status, DOSSIER_CURRENT )){
+			return( _( "Opened" ));
+		}
+		if( !g_utf8_collate( priv->status, DOSSIER_ARCHIVED )){
+			return( _( "Archived" ));
+		}
+		g_warning( "%s: unknown status: %s", thisfn, priv->status );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_this_exe_id:
+ *
+ * Returns: the exercice identifier for this exercice.
+ */
+gint
+ofo_dossier_get_this_exe_id( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->exe_id );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_last_exe_id:
+ *
+ * Returns: the last exercice identifier used in the dossier.
+ */
+gint
+ofo_dossier_get_last_exe_id( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->last_exe_id );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_last_bat:
+ *
+ * Returns: the last bat number allocated in the exercice.
+ */
+ofxCounter
+ofo_dossier_get_last_bat( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->last_bat );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_last_batline:
+ *
+ * Returns: the last bat_line number allocated in the exercice.
+ */
+ofxCounter
+ofo_dossier_get_last_batline( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->last_batline );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_last_entry:
+ *
+ * Returns: the last entry number allocated in the exercice.
+ */
+ofxCounter
+ofo_dossier_get_last_entry( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->last_entry );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_last_settlement:
+ *
+ * Returns: the last settlement number allocated in the exercice.
+ */
+ofxCounter
+ofo_dossier_get_last_settlement( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return( dossier->priv->last_settlement );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_next_bat:
+ */
+ofxCounter
+ofo_dossier_get_next_bat( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+	ofxCounter next;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		priv->last_bat += 1;
+		next = priv->last_bat;
+		dossier_update_next( dossier, "DOS_LAST_BAT", next );
+		return( next );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_next_batline:
+ */
+ofxCounter
+ofo_dossier_get_next_batline( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+	ofxCounter next;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		priv->last_batline += 1;
+		next = priv->last_batline;
+		dossier_update_next( dossier, "DOS_LAST_BATLINE", next );
+		return( next );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_next_entry:
+ *
+ * Returns: the next entry number to be allocated in the dossier.
+ */
+ofxCounter
+ofo_dossier_get_next_entry( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+	ofxCounter next;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		priv->last_entry += 1;
+		next = priv->last_entry;
+		dossier_update_next( dossier, "DOS_LAST_ENTRY", next );
+		return( next );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/**
+ * ofo_dossier_get_next_settlement:
+ */
+ofxCounter
+ofo_dossier_get_next_settlement( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+	ofxCounter next;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		priv->last_settlement += 1;
+		next = priv->last_settlement;
+		dossier_update_next( dossier, "DOS_LAST_SETTLEMENT", next );
+		return( next );
+	}
+
+	g_return_val_if_reached( 0 );
+	return( 0 );
+}
+
+/*
+ * ofo_dossier_update_next_number:
+ */
+static void
+dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_DOSSIER "
+			"	SET %s=%ld "
+			"	WHERE DOS_ID=%d",
+					field, next_number, THIS_DOS_ID );
+
+	ofo_sgbd_query( dossier->priv->sgbd, query, TRUE );
+	g_free( query );
 }
 
 /**
@@ -1287,6 +1582,7 @@ ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 GList *
 ofo_dossier_get_exercices_list( const ofoDossier *dossier )
 {
+#if 0
 	GList *list, *exe;
 	sDetailExe *sexe;
 
@@ -1301,7 +1597,7 @@ ofo_dossier_get_exercices_list( const ofoDossier *dossier )
 		}
 		return( g_list_reverse( list ));
 	}
-
+#endif
 	return( NULL );
 }
 
@@ -1312,6 +1608,7 @@ ofo_dossier_get_exercices_list( const ofoDossier *dossier )
  * #GDate structure which should be g_free() by the caller,
  * or %NULL if the dossier has never been closed.
  */
+/*
 GDate *
 ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 {
@@ -1350,441 +1647,25 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 
 	return( dmax );
 }
-
-static sDetailExe *
-get_current_exe( const ofoDossier *dossier )
-{
-	GList *exe;
-	sDetailExe *sexe;
-
-	if( !dossier->priv->current ){
-		for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
-			sexe = ( sDetailExe * ) exe->data;
-			if( sexe->status == DOS_STATUS_OPENED ){
-				dossier->priv->current = sexe;
-				break;
-			}
-		}
-	}
-
-	return( dossier->priv->current );
-}
-
-static sDetailExe *
-get_exe_by_id( const ofoDossier *dossier, gint exe_id )
-{
-	GList *exe;
-	sDetailExe *sexe;
-
-	for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
-		sexe = ( sDetailExe * ) exe->data;
-		if( sexe->exe_id == exe_id ){
-			return( sexe );
-		}
-	}
-
-	/* non existant */
-	return( NULL );
-}
-
-static sDetailExe *
-get_exe_by_date( const ofoDossier *dossier, const GDate *date )
-{
-	GList *exe;
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( my_date_is_valid( date ), NULL );
-
-	for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
-		sexe = ( sDetailExe * ) exe->data;
-		if( !my_date_is_valid( &sexe->exe_begin ) || my_date_compare( &sexe->exe_begin, date ) > 0 ){
-			continue;
-		}
-		if( !my_date_is_valid( &sexe->exe_end ) || my_date_compare( &sexe->exe_end, date ) < 0 ){
-			continue;
-		}
-		return( sexe );
-	}
-
-	/* non existant */
-	return( NULL );
-}
+*/
 
 /**
- * ofo_dossier_get_current_exe_id:
+ * ofo_dossier_is_current:
  *
- * Returns: the internal identifier of the current exercice.
+ * Returns: %TRUE if the exercice if the current one.
  */
-gint
-ofo_dossier_get_current_exe_id( const ofoDossier *dossier )
+gboolean
+ofo_dossier_is_current( const ofoDossier *dossier )
 {
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), OFO_BASE_UNSET_ID );
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		sexe = get_current_exe( dossier );
-		if( sexe ){
-			return( sexe->exe_id );
-		}
+		return( g_utf8_collate( dossier->priv->status, DOSSIER_CURRENT ) == 0 );
 	}
 
-	return( OFO_BASE_UNSET_ID );
-}
-
-/**
- * ofo_dossier_get_exe_by_date:
- *
- * Returns the exercice id which contains the specified date.
- *
- * Default to the current exercice identifier.
- */
-gint
-ofo_dossier_get_exe_by_date( const ofoDossier *dossier, const GDate *date )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-	g_return_val_if_fail( my_date_is_valid( date ), 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_exe_by_date( dossier, date );
-		if( !sexe ){
-			sexe = get_current_exe( dossier );
-		}
-		return( sexe->exe_id );
-	}
-
-	return( 0 );
-}
-
-/**
- * ofo_dossier_get_exe_end:
- *
- * Returns: the date of the beginning of the specified exercice.
- */
-const GDate *
-ofo_dossier_get_exe_begin( const ofoDossier *dossier, gint exe_id )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_exe_by_id( dossier, exe_id );
-		if( sexe ){
-			return(( const GDate * ) &sexe->exe_begin );
-		}
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_exe_end:
- *
- * Returns: the date of the end of the specified exercice.
- */
-const GDate *
-ofo_dossier_get_exe_end( const ofoDossier *dossier, gint exe_id )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_exe_by_id( dossier, exe_id );
-		if( sexe ){
-			return(( const GDate * ) &sexe->exe_end );
-		}
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_exe_status:
- *
- * Returns: the status of the specified exercice.
- */
-ofaDossierStatus
-ofo_dossier_get_exe_status( const ofoDossier *dossier, gint exe_id )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_exe_by_id( dossier, exe_id );
-		if( sexe ){
-			return( sexe->status );
-		}
-	}
-
-	return( 0 );
-}
-
-/**
- * ofo_dossier_get_exe_last_entry:
- *
- * Returns: the last entry number allocated in the specified exercice.
- */
-ofxCounter
-ofo_dossier_get_exe_last_entry( const ofoDossier *dossier, gint exe_id )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_exe_by_id( dossier, exe_id );
-		if( sexe ){
-			return( sexe->last_entry );
-		}
-	}
-
-	return( 0 );
-}
-
-/**
- * ofo_dossier_get_exe_last_settlement:
- *
- * Returns: the last settlement number allocated in the specified exercice.
- */
-ofxCounter
-ofo_dossier_get_exe_last_settlement( const ofoDossier *dossier, gint exe_id )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_exe_by_id( dossier, exe_id );
-		if( sexe ){
-			return( sexe->last_settlement );
-		}
-	}
-
-	return( 0 );
-}
-
-/**
- * ofo_dossier_get_exe_last_bat:
- *
- * Returns: the last bat number allocated in the specified exercice.
- */
-ofxCounter
-ofo_dossier_get_exe_last_bat( const ofoDossier *dossier, gint exe_id )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_exe_by_id( dossier, exe_id );
-		if( sexe ){
-			return( sexe->last_bat );
-		}
-	}
-
-	return( 0 );
-}
-
-/**
- * ofo_dossier_get_exe_last_bat_line:
- *
- * Returns: the last bat_line number allocated in the specified exercice.
- */
-ofxCounter
-ofo_dossier_get_exe_last_bat_line( const ofoDossier *dossier, gint exe_id )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_exe_by_id( dossier, exe_id );
-		if( sexe ){
-			return( sexe->last_batline );
-		}
-	}
-
-	return( 0 );
-}
-
-/**
- * ofo_dossier_get_exe_notes:
- *
- * Returns: the notes associated to the specified exercice.
- */
-const gchar *
-ofo_dossier_get_exe_notes( const ofoDossier *dossier, gint exe_id )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		sexe = get_exe_by_id( dossier, exe_id );
-		if( sexe ){
-			return(( const gchar * ) sexe->exe_notes );
-		}
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_next_entry_number:
- */
-ofxCounter
-ofo_dossier_get_next_entry_number( const ofoDossier *dossier )
-{
-	sDetailExe *current;
-	ofxCounter next_number;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	next_number = 0;
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		current = get_current_exe( dossier );
-		current->last_entry += 1;
-		next_number = current->last_entry;
-		dossier_update_next_number( dossier, "DOS_EXE_LAST_ENTRY", next_number );
-	}
-
-	return( next_number );
-}
-
-/**
- * ofo_dossier_get_next_bat_number:
- */
-ofxCounter
-ofo_dossier_get_next_bat_number( const ofoDossier *dossier )
-{
-	sDetailExe *current;
-	ofxCounter next_number;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	next_number = 0;
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		current = get_current_exe( dossier );
-		current->last_bat += 1;
-		next_number = current->last_bat;
-		dossier_update_next_number( dossier, "DOS_EXE_LAST_BAT", next_number );
-	}
-
-	return( next_number );
-}
-
-/**
- * ofo_dossier_get_next_batline_number:
- */
-ofxCounter
-ofo_dossier_get_next_batline_number( const ofoDossier *dossier )
-{
-	sDetailExe *current;
-	ofxCounter next_number;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	next_number = 0;
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		current = get_current_exe( dossier );
-		current->last_batline += 1;
-		next_number = current->last_batline;
-		dossier_update_next_number( dossier, "DOS_EXE_LAST_BATLINE", next_number );
-	}
-
-	return( next_number );
-}
-
-/**
- * ofo_dossier_get_next_settlement_number:
- */
-ofxCounter
-ofo_dossier_get_next_settlement_number( const ofoDossier *dossier )
-{
-	sDetailExe *current;
-	ofxCounter next_number;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	next_number = 0;
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		current = get_current_exe( dossier );
-		current->last_settlement += 1;
-		next_number = current->last_settlement;
-		dossier_update_next_number( dossier, "DOS_EXE_LAST_SETTLEMENT", next_number );
-	}
-
-	return( next_number );
-}
-
-/*
- * ofo_dossier_update_next_number:
- */
-static void
-dossier_update_next_number( const ofoDossier *dossier, const gchar *field, ofxCounter next_number )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_DOSSIER_EXE "
-			"	SET %s=%ld "
-			"	WHERE DOS_ID=%d AND DOS_EXE_STATUS=%d",
-					field, next_number, THIS_DOS_ID, DOS_STATUS_OPENED );
-
-	ofo_sgbd_query( dossier->priv->sgbd, query, TRUE );
-	g_free( query );
-}
-
-/**
- * ofo_dossier_get_status_label:
- */
-const gchar *
-ofo_dossier_get_status_label( ofaDossierStatus status )
-{
-	gchar *str;
-
-	switch( status ){
-
-		case DOS_STATUS_OPENED:
-			return( _( "Opened" ));
-			break;
-
-		case DOS_STATUS_CLOSED:
-			return( _( "Closed" ));
-			break;
-
-		default:
-			break;
-	}
-
-	/* memory leak, but don't know how to prevent it if I want
-	 * return the erroneous status while keeping the const gchar *
-	 * returned type in usual case */
-	str = g_strdup_printf( _( "Unknown status: %d" ), status );
-	return( str );
+	g_return_val_if_reached( FALSE );
+	return( FALSE );
 }
 
 /**
@@ -1796,18 +1677,17 @@ ofo_dossier_get_status_label( ofaDossierStatus status )
 gboolean
 ofo_dossier_is_entries_allowed( const ofoDossier *dossier )
 {
-	gint exe_id;
 	const GDate *begin;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		exe_id = ofo_dossier_get_current_exe_id( dossier );
-		begin = ofo_dossier_get_exe_begin( dossier, exe_id );
+		begin = ofo_dossier_get_exe_begin( dossier );
 		return( my_date_is_valid( begin ));
 	}
 
+	g_return_val_if_reached( FALSE );
 	return( FALSE );
 }
 
@@ -1815,7 +1695,8 @@ ofo_dossier_is_entries_allowed( const ofoDossier *dossier )
  * ofo_dossier_is_valid:
  */
 gboolean
-ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency, const GDate *begin, const GDate *end )
+ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency,
+								const GDate *begin, const GDate *end )
 {
 	gboolean valid;
 
@@ -1828,6 +1709,86 @@ ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency,
 	}
 
 	return( valid );
+}
+
+/**
+ * ofo_dossier_set_default_currency:
+ */
+void
+ofo_dossier_set_default_currency( ofoDossier *dossier, const gchar *currency )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->currency );
+		dossier->priv->currency = g_strdup( currency );
+	}
+}
+
+/**
+ * ofo_dossier_set_exe_begin:
+ */
+void
+ofo_dossier_set_exe_begin( const ofoDossier *dossier, const GDate *date )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		my_date_set_from_date( &dossier->priv->exe_begin, date );
+	}
+}
+
+/**
+ * ofo_dossier_set_exe_end:
+ */
+void
+ofo_dossier_set_exe_end( const ofoDossier *dossier, const GDate *date )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		my_date_set_from_date( &dossier->priv->exe_end, date );
+	}
+}
+
+/**
+ * ofo_dossier_set_exe_length:
+ */
+void
+ofo_dossier_set_exe_length( ofoDossier *dossier, gint nb_months )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( nb_months > 0 );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		dossier->priv->exe_length = nb_months;
+	}
+}
+
+/**
+ * ofo_dossier_set_exe_notes:
+ * @dossier: this dossier
+ * @notes : the notes to be set
+ *
+ * Attach the given @notes to the exercice.
+ */
+void
+ofo_dossier_set_exe_notes( const ofoDossier *dossier, const gchar *notes )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		g_free( priv->exe_notes );
+		priv->exe_notes = g_strdup( notes );
+	}
 }
 
 /**
@@ -1847,36 +1808,6 @@ ofo_dossier_set_label( ofoDossier *dossier, const gchar *label )
 }
 
 /**
- * ofo_dossier_set_exercice_length:
- */
-void
-ofo_dossier_set_exercice_length( ofoDossier *dossier, gint nb_months )
-{
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	g_return_if_fail( nb_months > 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		dossier->priv->exe_length = nb_months;
-	}
-}
-
-/**
- * ofo_dossier_set_default_currency:
- */
-void
-ofo_dossier_set_default_currency( ofoDossier *dossier, const gchar *currency )
-{
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		g_free( dossier->priv->currency );
-		dossier->priv->currency = g_strdup( currency );
-	}
-}
-
-/**
  * ofo_dossier_set_notes:
  */
 void
@@ -1891,17 +1822,18 @@ ofo_dossier_set_notes( ofoDossier *dossier, const gchar *notes )
 	}
 }
 
-/*
- * ofo_dossier_set_last_exe_id:
+/**
+ * ofo_dossier_set_siren:
  */
-static void
-dossier_set_last_exe_id( ofoDossier *dossier, gint exe_id )
+void
+ofo_dossier_set_siren( ofoDossier *dossier, const gchar *siren )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		dossier->priv->last_exe_id = exe_id;
+		g_free( dossier->priv->siren );
+		dossier->priv->siren = g_strdup( siren );
 	}
 }
 
@@ -1936,103 +1868,93 @@ dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp )
 	}
 }
 
-/**
- * ofo_dossier_set_current_exe_id:
- */
-void
-ofo_dossier_set_current_exe_id( const ofoDossier *dossier, gint exe_id )
+static void
+dossier_set_this_exe_id( ofoDossier *dossier, gint exe_id )
 {
-	sDetailExe *sexe;
-
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	g_return_if_fail( exe_id > 0 );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		sexe = get_current_exe( dossier );
-		if( sexe ){
-			sexe->exe_id = exe_id;
-		}
+		dossier->priv->exe_id = exe_id;
 	}
 }
 
-/**
- * ofo_dossier_set_current_exe_begin:
- */
-void
-ofo_dossier_set_current_exe_begin( const ofoDossier *dossier, const GDate *date )
+static void
+dossier_set_last_exe_id( ofoDossier *dossier, gint exe_id )
 {
-	sDetailExe *sexe;
-
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		sexe = get_current_exe( dossier );
-		if( sexe ){
-			my_date_set_from_date( &sexe->exe_begin, date );
-		}
+		dossier->priv->last_exe_id = exe_id;
 	}
 }
 
-/**
- * ofo_dossier_set_current_exe_end:
- */
-void
-ofo_dossier_set_current_exe_end( const ofoDossier *dossier, const GDate *date )
+static void
+dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter )
 {
-	sDetailExe *sexe;
-
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		sexe = get_current_exe( dossier );
-		if( sexe ){
-			my_date_set_from_date( &sexe->exe_end, date );
-		}
+		dossier->priv->last_bat = counter;
 	}
 }
 
-/**
- * ofo_dossier_set_current_exe_notes:
- * @dossier: the currently opened dossier
- * @notes : the notes to be set
- *
- * Attach the given @notes to the current exercice.
- */
-void
-ofo_dossier_set_current_exe_notes( const ofoDossier *dossier, const gchar *notes )
+static void
+dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter )
 {
-	sDetailExe *sexe;
-
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		sexe = get_current_exe( dossier );
-		if( sexe ){
-			g_free( sexe->exe_notes );
-			sexe->exe_notes = g_strdup( notes );
-		}
+		dossier->priv->last_batline = counter;
 	}
 }
 
-/**
- * ofo_dossier_set_current_exe_last_entry:
- */
-void
-ofo_dossier_set_current_exe_last_entry( const ofoDossier *dossier, ofxCounter number )
+static void
+dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter )
 {
-	sDetailExe *sexe;
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		dossier->priv->last_entry = counter;
+	}
+}
+
+static void
+dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		dossier->priv->last_settlement = counter;
+	}
+}
+
+static void
+dossier_set_status( ofoDossier *dossier, const gchar *status )
+{
+	static const gchar *thisfn = "ofo_dossier_set_status";
+	ofoDossierPrivate *priv;
 
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		sexe = get_current_exe( dossier );
-		if( sexe ){
-			sexe->last_entry = number;
+		priv = dossier->priv;
+		g_free( priv->status );
+		priv->status = NULL;
+
+		if( !g_utf8_collate( status, DOSSIER_CURRENT ) ||
+			!g_utf8_collate( status, DOSSIER_ARCHIVED )){
+
+			priv->status = g_strdup( status );
+
+		} else {
+			g_warning( "%s: unknown status: %s", thisfn, status );
 		}
 	}
 }
@@ -2096,8 +2018,7 @@ on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry )
 static gboolean
 dossier_do_read( ofoDossier *dossier )
 {
-	return( dossier_read_properties( dossier ) &&
-			dossier_read_exercices( dossier ));
+	return( dossier_read_properties( dossier ));
 }
 
 static gboolean
@@ -2106,17 +2027,22 @@ dossier_read_properties( ofoDossier *dossier )
 	gchar *query;
 	GSList *result, *icol;
 	gboolean ok;
-	const gchar *str;
+	const gchar *cstr;
 	GTimeVal timeval;
+	GDate date;
 
 	ok = FALSE;
 
 	query = g_strdup_printf(
-			"SELECT DOS_LABEL,DOS_EXE_LENGTH,DOS_NOTES,DOS_DEF_CURRENCY,"
-			"	DOS_LAST_EXE_ID,"
-			"	DOS_UPD_USER,DOS_UPD_STAMP "
-			"	FROM OFA_T_DOSSIER "
-			"	WHERE DOS_ID=%d", THIS_DOS_ID );
+			"SELECT DOS_DEF_CURRENCY,"
+			"	DOS_EXE_BEGIN,DOS_EXE_END,DOS_EXE_LENGTH,DOS_EXE_NOTES,"
+			"	DOS_LABEL,DOS_NOTES,DOS_SIREN,"
+			"	DOS_UPD_USER,DOS_UPD_STAMP,"
+			"	DOS_EXE_ID,DOS_LAST_EXE_ID,"
+			"	DOS_LAST_BAT,DOS_LAST_BATLINE,DOS_LAST_ENTRY,DOS_LAST_SETTLEMENT,"
+			"	DOS_STATUS "
+			"FROM OFA_T_DOSSIER "
+			"WHERE DOS_ID=%d", THIS_DOS_ID );
 
 	result = ofo_sgbd_query_ex( dossier->priv->sgbd, query, TRUE );
 
@@ -2124,104 +2050,93 @@ dossier_read_properties( ofoDossier *dossier )
 
 	if( result ){
 		icol = ( GSList * ) result->data;
-		str = icol->data;
-		if( str && g_utf8_strlen( str, -1 )){
-			ofo_dossier_set_label( dossier, str );
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_default_currency( dossier, cstr );
 		}
 		icol = icol->next;
-		str = icol->data;
-		if( str && g_utf8_strlen( str, -1 )){
-			ofo_dossier_set_exercice_length( dossier, atoi( str ));
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_exe_begin( dossier, my_date_set_from_sql( &date, cstr ));
 		}
 		icol = icol->next;
-		str = icol->data;
-		if( str && g_utf8_strlen( str, -1 )){
-			ofo_dossier_set_notes( dossier, str );
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_exe_end( dossier, my_date_set_from_sql( &date, cstr ));
 		}
 		icol = icol->next;
-		str = icol->data;
-		if( str && g_utf8_strlen( str, -1 )){
-			ofo_dossier_set_default_currency( dossier, str );
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_exe_length( dossier, atoi( cstr ));
 		}
 		icol = icol->next;
-		str = icol->data;
-		if( str && g_utf8_strlen( str, -1 )){
-			dossier_set_last_exe_id( dossier, atoi( str ));
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_exe_notes( dossier, cstr );
 		}
 		icol = icol->next;
-		str = icol->data;
-		if( str && g_utf8_strlen( str, -1 )){
-			dossier_set_upd_user( dossier, str );
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_label( dossier, cstr );
 		}
 		icol = icol->next;
-		str = icol->data;
-		if( str && g_utf8_strlen( str, -1 )){
-			dossier_set_upd_stamp( dossier,
-					my_utils_stamp_set_from_sql( &timeval, str ));
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_notes( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_siren( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dossier_set_upd_user( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dossier_set_upd_stamp( dossier, my_utils_stamp_set_from_sql( &timeval, cstr ));
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dossier_set_this_exe_id( dossier, atoi( cstr ));
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dossier_set_last_exe_id( dossier, atoi( cstr ));
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dossier_set_last_bat( dossier, atol( cstr ));
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dossier_set_last_batline( dossier, atol( cstr ));
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dossier_set_last_entry( dossier, atol( cstr ));
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dossier_set_last_settlement( dossier, atol( cstr ));
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dossier_set_status( dossier, cstr );
 		}
 
 		ok = TRUE;
 		ofo_sgbd_free_result( result );
-	}
-
-	return( ok );
-}
-
-static gboolean
-dossier_read_exercices( ofoDossier *dossier )
-{
-	gchar *query;
-	GSList *result, *irow, *icol;
-	gboolean ok;
-	sDetailExe *sexe;
-
-	ok = FALSE;
-
-	query = g_strdup_printf(
-			"SELECT DOS_EXE_ID,DOS_EXE_BEGIN,DOS_EXE_END,"
-			"	DOS_EXE_NOTES,"
-			"	DOS_EXE_LAST_ENTRY,DOS_EXE_LAST_BAT,DOS_EXE_LAST_BATLINE,"
-			"	DOS_EXE_LAST_SETTLEMENT,"
-			"	DOS_EXE_STATUS "
-			"	FROM OFA_T_DOSSIER_EXE "
-			"	WHERE DOS_ID=%d", THIS_DOS_ID );
-
-	result = ofo_sgbd_query_ex( dossier->priv->sgbd, query, TRUE );
-
-	g_free( query );
-
-	if( result ){
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			sexe = g_new0( sDetailExe, 1 );
-
-			sexe->exe_id = atoi(( gchar * ) icol->data );
-			icol = icol->next;
-			my_date_set_from_sql( &sexe->exe_begin, ( const gchar * ) icol->data );
-			icol = icol->next;
-			my_date_set_from_sql( &sexe->exe_end, ( const gchar * ) icol->data );
-			icol = icol->next;
-			if( icol->data ){
-				sexe->exe_notes = g_strdup(( const gchar * ) icol->data );
-			}
-			icol = icol->next;
-			sexe->last_entry = atol(( gchar * ) icol->data );
-			icol = icol->next;
-			sexe->last_bat = atol(( gchar * ) icol->data );
-			icol = icol->next;
-			sexe->last_batline = atol(( gchar * ) icol->data );
-			icol = icol->next;
-			sexe->last_settlement = atol(( gchar * ) icol->data );
-			icol = icol->next;
-			if( icol->data ){
-				sexe->status = atoi(( gchar * ) icol->data );
-			}
-
-			dossier->priv->exes = g_list_append( dossier->priv->exes, sexe );
-		}
-
-		ofo_sgbd_free_result( result );
-		ok = TRUE;
 	}
 
 	return( ok );
@@ -2254,51 +2169,87 @@ ofo_dossier_update( ofoDossier *dossier )
 static gboolean
 dossier_do_update( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user )
 {
-	return( do_update_properties( dossier, sgbd, user ) &&
-			do_update_current_exe( dossier, sgbd ));
+	return( do_update_properties( dossier, sgbd, user ));
 }
 
 static gboolean
 do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user )
 {
 	GString *query;
-	gchar *label, *notes, *stamp_str;
+	gchar *label, *notes, *stamp_str, *sdate;
 	GTimeVal stamp;
 	gboolean ok;
-	const gchar *currency;
+	const gchar *cstr;
+	const GDate *date;
 
 	ok = FALSE;
-	label = my_utils_quote( ofo_dossier_get_label( dossier ));
-	notes = my_utils_quote( ofo_dossier_get_notes( dossier ));
-	my_utils_stamp_set_now( &stamp );
-	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
-
 	query = g_string_new( "UPDATE OFA_T_DOSSIER SET " );
 
-	g_string_append_printf( query,
-			"DOS_LABEL='%s',DOS_EXE_LENGTH=%d,",
-			label, ofo_dossier_get_exercice_length( dossier ));
-
-	currency = ofo_dossier_get_default_currency( dossier );
-	if( currency && g_utf8_strlen( currency, -1 )){
-		g_string_append_printf( query, "DOS_DEF_CURRENCY='%s',", currency );
+	cstr = ofo_dossier_get_default_currency( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_DEF_CURRENCY='%s',", cstr );
 	} else {
 		query = g_string_append( query, "DOS_DEF_CURRENCY=NULL," );
 	}
 
-	g_string_append_printf( query,
-			"DOS_LAST_EXE_ID=%d,",
-			ofo_dossier_get_last_exe_id( dossier ));
+	date = ofo_dossier_get_exe_begin( dossier );
+	if( my_date_is_valid( date )){
+		sdate = my_date_to_str( date, MY_DATE_SQL );
+		g_string_append_printf( query, "DOS_EXE_BEGIN='%s',", sdate );
+		g_free( sdate );
+	} else {
+		query = g_string_append( query, "DOS_EXE_BEGIN=NULL," );
+	}
 
+	date = ofo_dossier_get_exe_end( dossier );
+	if( my_date_is_valid( date )){
+		sdate = my_date_to_str( date, MY_DATE_SQL );
+		g_string_append_printf( query, "DOS_EXE_END='%s',", sdate );
+		g_free( sdate );
+	} else {
+		query = g_string_append( query, "DOS_EXE_END=NULL," );
+	}
+
+	g_string_append_printf( query,
+			"DOS_EXE_LENGTH=%d,", ofo_dossier_get_exe_length( dossier ));
+
+	label = my_utils_quote( ofo_dossier_get_label( dossier ));
+	if( label && g_utf8_strlen( label, -1 )){
+		g_string_append_printf( query, "DOS_LABEL='%s',", label );
+	} else {
+		query = g_string_append( query, "DOS_LABEL=NULL," );
+	}
+	g_free( label );
+
+	notes = my_utils_quote( ofo_dossier_get_notes( dossier ));
 	if( notes && g_utf8_strlen( notes, -1 )){
 		g_string_append_printf( query, "DOS_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "DOS_NOTES=NULL," );
 	}
+	g_free( notes );
+
+	cstr = ofo_dossier_get_siren( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_SIREN='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_SIREN=NULL," );
+	}
+
+	my_utils_stamp_set_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+	g_string_append_printf( query,
+			"DOS_UPD_USER='%s',DOS_UPD_STAMP='%s',", user, stamp_str );
+	g_free( stamp_str );
 
 	g_string_append_printf( query,
-			"	DOS_UPD_USER='%s',DOS_UPD_STAMP='%s'"
-			"	WHERE DOS_ID=%d", user, stamp_str, THIS_DOS_ID );
+			"DOS_EXE_ID=%d,DOS_LAST_EXE_ID=%d,"
+			"DOS_LAST_BAT=%ld,DOS_LAST_BATLINE=%ld,DOS_LAST_ENTRY=%ld,DOS_LAST_SETTLEMENT=%ld ",
+				ofo_dossier_get_this_exe_id( dossier ), ofo_dossier_get_last_exe_id( dossier ),
+				ofo_dossier_get_last_bat( dossier ), ofo_dossier_get_last_batline( dossier ),
+				ofo_dossier_get_last_entry( dossier ), ofo_dossier_get_last_settlement( dossier ));
+
+	g_string_append_printf( query, "WHERE DOS_ID=%d", THIS_DOS_ID );
 
 	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
 		dossier_set_upd_user( dossier, user );
@@ -2307,59 +2258,6 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 	}
 
 	g_string_free( query, TRUE );
-	g_free( label );
-	g_free( notes );
-	g_free( stamp_str );
-
-	return( ok );
-}
-
-static gboolean
-do_update_current_exe( ofoDossier *dossier, const ofoSgbd *sgbd )
-{
-	GString *query;
-	gchar *sdeb, *sfin, *notes;
-	gboolean ok;
-	const GDate *date;
-
-	ok = FALSE;
-
-	query = g_string_new( "UPDATE OFA_T_DOSSIER_EXE SET " );
-
-	date = ( const GDate * ) &dossier->priv->current->exe_begin;
-	if( my_date_is_valid( date )){
-		sdeb = my_date_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( query, "DOS_EXE_BEGIN='%s',", sdeb );
-		g_free( sdeb );
-	} else {
-		query = g_string_append( query, "DOS_EXE_BEGIN=NULL," );
-	}
-
-	date = ( const GDate * ) &dossier->priv->current->exe_end;
-	if( my_date_is_valid( date )){
-		sfin = my_date_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( query, "DOS_EXE_END='%s',", sfin );
-		g_free( sfin );
-	} else {
-		query = g_string_append( query, "DOS_EXE_END=NULL," );
-	}
-
-	notes = my_utils_quote( ofo_dossier_get_exe_notes( dossier, dossier->priv->current->exe_id ));
-	if( notes && g_utf8_strlen( notes, -1 )){
-		g_string_append_printf( query, "DOS_EXE_NOTES='%s' ", notes );
-	} else {
-		query = g_string_append( query, "DOS_EXE_NOTES=NULL " );
-	}
-	g_free( notes );
-
-	g_string_append_printf( query,
-				"WHERE DOS_ID=%d AND DOS_EXE_ID=%d",
-					THIS_DOS_ID, dossier->priv->current->exe_id );
-
-	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
-
-	g_string_free( query, TRUE );
-
 	return( ok );
 }
 
@@ -2375,31 +2273,21 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 {
 	GSList *lines;
 	gchar *str, *stamp;
-	const gchar *currency, *muser;
-	GList *it;
-	sDetailExe *sexe;
-	gchar *sbegin, *send, *notes;
+	const gchar *currency, *muser, *siren;
+	gchar *sbegin, *send, *notes, *exenotes, *label;
 	gboolean ok, with_headers;
 	gulong count;
 
 	with_headers = ofa_export_settings_get_headers( settings );
 
-	count = ( gulong ) 1+g_list_length( dossier->priv->exes );
+	count = ( gulong ) 1;
 	if( with_headers ){
-		count += 2;
+		count += 1;
 	}
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = g_strdup_printf( "1;Label;Notes;MajUser;MajStamp;ExeLength;DefaultCurrency;LastExeId" );
-		lines = g_slist_prepend( NULL, str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
-		if( !ok ){
-			return( FALSE );
-		}
-
-		str = g_strdup_printf( "2;ExeBegin;ExeEnd;ExeNotes;LastEntry;LastBat;LastBatLine;LastSettlement;Status" );
+		str = g_strdup_printf( "DefCurrency;ExeBegin;ExeEnd;ExeLength;ExeNotes;Label;Notes;Siren;MajUser;MajStamp;ThisExeId;LastExeId;LastBat;LastBatLine;LastEntry;LastSettlement;Status" );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -2408,21 +2296,38 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 		}
 	}
 
+	sbegin = my_date_to_str( ofo_dossier_get_exe_begin( dossier ), MY_DATE_SQL );
+	send = my_date_to_str( ofo_dossier_get_exe_end( dossier ), MY_DATE_SQL );
+	exenotes = my_utils_export_multi_lines( ofo_dossier_get_exe_notes( dossier ));
 	notes = my_utils_export_multi_lines( ofo_dossier_get_notes( dossier ));
-	g_debug( "notes=%s", notes );
+	label = my_utils_quote( ofo_dossier_get_label( dossier ));
 	muser = ofo_dossier_get_upd_user( dossier );
 	stamp = my_utils_stamp_to_str( ofo_dossier_get_upd_stamp( dossier ), MY_STAMP_YYMDHMS );
 	currency = ofo_dossier_get_default_currency( dossier );
+	siren = ofo_dossier_get_siren( dossier );
 
-	str = g_strdup_printf( "1;%s;%s;%s;%s;%d;%s;%d",
-			ofo_dossier_get_label( dossier ),
+	str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s;%s;%s;%s;%d;%d;%ld;%ld;%ld;%ld",
+			currency ? currency : "",
+			sbegin,
+			send,
+			ofo_dossier_get_exe_length( dossier ),
+			exenotes ? exenotes : "",
+			label ? label : "",
 			notes ? notes : "",
+			siren ? siren : "",
 			muser ? muser : "",
 			muser ? stamp : "",
-			ofo_dossier_get_exercice_length( dossier ),
-			currency ? currency : "",
-			ofo_dossier_get_last_exe_id( dossier ));
+			ofo_dossier_get_this_exe_id( dossier ),
+			ofo_dossier_get_last_exe_id( dossier ),
+			ofo_dossier_get_last_bat( dossier ),
+			ofo_dossier_get_last_batline( dossier ),
+			ofo_dossier_get_last_entry( dossier ),
+			ofo_dossier_get_last_settlement( dossier ));
 
+	g_free( sbegin );
+	g_free( send );
+	g_free( label );
+	g_free( exenotes );
 	g_free( notes );
 	g_free( stamp );
 
@@ -2431,35 +2336,6 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 	if( !ok ){
 		return( FALSE );
-	}
-
-	for( it=dossier->priv->exes ; it ; it=it->next ){
-		sexe = ( sDetailExe * ) it->data;
-
-		sbegin = my_date_to_str( &sexe->exe_begin, MY_DATE_SQL );
-		send = my_date_to_str( &sexe->exe_end, MY_DATE_SQL );
-		notes = my_utils_quote( sexe->exe_notes );
-
-		str = g_strdup_printf( "2:%s;%s;%s;%ld;%ld;%ld;%ld;%d",
-				sbegin,
-				send,
-				notes,
-				sexe->last_entry,
-				sexe->last_bat,
-				sexe->last_batline,
-				sexe->last_settlement,
-				sexe->status );
-
-		g_free( notes );
-		g_free( sbegin );
-		g_free( send );
-
-		lines = g_slist_prepend( NULL, str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
-		if( !ok ){
-			return( FALSE );
-		}
 	}
 
 	return( TRUE );

@@ -288,108 +288,76 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 	}
 }
 
+/*
+ * an account number has been modified
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
 static void
 on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number )
 {
-	GString *query;
-	const GDate *date;
-	gchar *str;
-	gint exe_id;
+	gchar *query;
 
-	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
-	g_string_append_printf(
-			query,
-			"SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES "
+			"	SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
 
-	exe_id = ofo_dossier_get_current_exe_id( dossier );
-	date = ofo_dossier_get_exe_begin( dossier, exe_id );
-	if( my_date_is_valid( date )){
-		str = my_date_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
-		g_free( str );
-	}
-
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
-
-	g_string_free( query, TRUE );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	g_free( query );
 }
 
+/*
+ * a currency iso code has been modified (should be very rare)
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
 static void
 on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
 {
-	GString *query;
-	const GDate *date;
-	gchar *str;
-	gint exe_id;
+	gchar *query;
 
-	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
-	g_string_append_printf(
-			query,
-			"SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES "
+			"	SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
 
-	exe_id = ofo_dossier_get_current_exe_id( dossier );
-	date = ofo_dossier_get_exe_begin( dossier, exe_id );
-	if( my_date_is_valid( date )){
-		str = my_date_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
-		g_free( str );
-	}
-
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
-
-	g_string_free( query, TRUE );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	g_free( query );
 }
 
+/*
+ * a ledger mnemonic has been modified
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
 static void
 on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
 {
-	GString *query;
-	const GDate *date;
-	gchar *str;
-	gint exe_id;
+	gchar *query;
 
-	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
-	g_string_append_printf(
-			query,
-			"SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES"
+			"	SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
 
-	exe_id = ofo_dossier_get_current_exe_id( dossier );
-	date = ofo_dossier_get_exe_begin( dossier, exe_id );
-	if( my_date_is_valid( date )){
-		str = my_date_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
-		g_free( str );
-	}
-
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
-
-	g_string_free( query, TRUE );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	g_free( query );
 }
 
+/*
+ * an operation template mnemonic has been modified
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
 static void
 on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo )
 {
-	GString *query;
-	const GDate *date;
-	gchar *str;
-	gint exe_id;
+	gchar *query;
 
-	query = g_string_new( "UPDATE OFA_T_ENTRIES " );
-	g_string_append_printf(
-			query,
-			"SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES"
+			"	SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
 
-	exe_id = ofo_dossier_get_current_exe_id( dossier );
-	date = ofo_dossier_get_exe_begin( dossier, exe_id );
-	if( my_date_is_valid( date )){
-		str = my_date_to_str( date, MY_DATE_SQL );
-		g_string_append_printf( query, "AND ENT_DEFFECT>='%s'", str );
-		g_free( str );
-	}
-
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
-
-	g_string_free( query, TRUE );
+	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	g_free( query );
 }
 
 /**
@@ -1842,7 +1810,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		entry->priv->number = ofo_dossier_get_next_entry_number( dossier );
+		entry->priv->number = ofo_dossier_get_next_entry( dossier );
 
 		if( entry_do_insert( entry,
 					ofo_dossier_get_sgbd( dossier ),

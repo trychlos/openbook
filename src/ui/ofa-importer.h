@@ -37,9 +37,9 @@
 
 G_BEGIN_DECLS
 
-gint   ofa_importer_import_from_uri ( const ofoDossier *dossier, gint type, const gchar *uri );
+gint   ofa_importer_import_from_uri ( ofoDossier *dossier, gint type, const gchar *uri );
 
-guint  ofa_importer_import_from_uris( const ofoDossier *dossier, gint type, GSList *uris );
+guint  ofa_importer_import_from_uris( ofoDossier *dossier, gint type, GSList *uris );
 
 G_END_DECLS
 

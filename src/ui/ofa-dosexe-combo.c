@@ -230,10 +230,11 @@ ofa_dosexe_combo_new( const ofaDosexeComboParms *parms )
 static void
 setup_dataset( ofaDosexeCombo *self, gint initial_id )
 {
+#if 0
 	ofaDosexeComboPrivate *priv;
 	ofoDossier *dossier;
 	GList *set, *elt;
-	gint exe_id, idx, i;
+	gint  idx, i;
 	ofaDossierStatus status;
 	const GDate *dbegin, *dend;
 	GtkTreeIter iter;
@@ -291,6 +292,7 @@ setup_dataset( ofaDosexeCombo *self, gint initial_id )
 	}
 
 	g_list_free( set );
+#endif
 }
 
 static void

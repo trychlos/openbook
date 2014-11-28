@@ -36,6 +36,7 @@
 
 #include "core/my-window-prot.h"
 
+#include "ui/my-assistant.h"
 #include "ui/my-editable-date.h"
 #include "ui/ofa-exe-closing.h"
 #include "ui/ofa-main-window.h"
@@ -48,16 +49,9 @@ struct _ofaExeClosingPrivate {
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-exe-closing.ui";
-static const gchar  *st_ui_id  = "ExeClosingDlg";
+static const gchar  *st_ui_id  = "ExeClosingAssistant";
 
-G_DEFINE_TYPE( ofaExeClosing, ofa_exe_closing, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
-static void      check_for_enable_dlg( ofaExeClosing *self );
-static gboolean  is_dialog_validable( ofaExeClosing *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_close( ofaExeClosing *self );
-static void      do_end_close( ofaExeClosing *self );
+G_DEFINE_TYPE( ofaExeClosing, ofa_exe_closing, MY_TYPE_ASSISTANT )
 
 static void
 exe_closing_finalize( GObject *instance )
@@ -112,9 +106,6 @@ ofa_exe_closing_class_init( ofaExeClosingClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = exe_closing_dispose;
 	G_OBJECT_CLASS( klass )->finalize = exe_closing_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
 	g_type_class_add_private( klass, sizeof( ofaExeClosingPrivate ));
 }
 
@@ -124,14 +115,13 @@ ofa_exe_closing_class_init( ofaExeClosingClass *klass )
  *
  * Run an intermediate closing on selected ledgers
  */
-gboolean
+void
 ofa_exe_closing_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_exe_closing_run";
 	ofaExeClosing *self;
-	gboolean done;
 
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
 
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
@@ -143,70 +133,11 @@ ofa_exe_closing_run( ofaMainWindow *main_window )
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
+	/*g_signal_connect(
+			G_OBJECT( self ), MY_SIGNAL_PAGE_FORWARD, G_CALLBACK( on_page_forward ), NULL );
 
-	done = self->priv->success;
+	my_assistant_signal_connect( MY_ASSISTANT( self ), "prepare", G_CALLBACK( on_prepare ));
+	my_assistant_signal_connect( MY_ASSISTANT( self ), "apply", G_CALLBACK( on_apply ));*/
 
-	g_object_unref( self );
-
-	return( done );
-}
-
-static void
-v_init_dialog( myDialog *dialog )
-{
-	/*ofaExeClosingPrivate *priv;*/
-	GtkContainer *container;
-
-	/*priv = OFA_EXE_CLOSING( dialog )->priv;*/
-
-	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-
-	check_for_enable_dlg( OFA_EXE_CLOSING( dialog ));
-}
-
-static void
-check_for_enable_dlg( ofaExeClosing *self )
-{
-	is_dialog_validable( self );
-}
-
-static gboolean
-is_dialog_validable( ofaExeClosing *self )
-{
-	ofaExeClosingPrivate *priv;
-	gboolean ok;
-
-	priv = self->priv;
-
-	ok = priv->success;
-
-	return( ok );
-}
-
-static gboolean
-v_quit_on_ok( myDialog *dialog )
-{
-	return( do_close( OFA_EXE_CLOSING( dialog )));
-}
-
-static gboolean
-do_close( ofaExeClosing *self )
-{
-	/*ofaExeClosingPrivate *priv;*/
-	gboolean ok;
-
-	/*priv = self->priv;*/
-
-	ok = is_dialog_validable( self );
-
-	do_end_close( self );
-
-	return( ok );
-}
-
-static void
-do_end_close( ofaExeClosing *self )
-{
+	my_assistant_run( MY_ASSISTANT( self ));
 }

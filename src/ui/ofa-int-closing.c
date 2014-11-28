@@ -246,7 +246,6 @@ on_date_changed( GtkEditable *entry, ofaIntClosing *self )
 {
 	ofaIntClosingPrivate *priv;
 	const GDate *exe_end;
-	gint exe_id;
 
 	priv = self->priv;
 	priv->valid = FALSE;
@@ -258,8 +257,7 @@ on_date_changed( GtkEditable *entry, ofaIntClosing *self )
 
 	} else {
 		/* the date must be less or equal that the end of exercice */
-		exe_id = ofo_dossier_get_current_exe_id( MY_WINDOW( self )->prot->dossier );
-		exe_end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier, exe_id );
+		exe_end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier );
 		if( !my_date_is_valid( exe_end ) || my_date_compare( &priv->closing, exe_end ) <= 0 ){
 			priv->valid = TRUE;
 			gtk_label_set_text( priv->message_label, "" );
@@ -325,20 +323,18 @@ static void
 check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 {
 	ofaIntClosingPrivate *priv;
-	GDate *last;
+	const GDate *last;
 
 	priv = self->priv;
 	priv->count += 1;
 
-	last = ofo_ledger_get_last_closing( ledger );
+	last = ofo_ledger_get_last_close( ledger );
 
 	g_return_if_fail( my_date_is_valid( &priv->closing ));
 
 	if( !my_date_is_valid( last ) || my_date_compare( &priv->closing, last ) > 0 ){
 		priv->closeable += 1;
 	}
-
-	g_free( last );
 }
 
 static gboolean

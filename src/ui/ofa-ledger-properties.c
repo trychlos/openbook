@@ -31,7 +31,9 @@
 #include <glib/gi18n.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 
@@ -53,8 +55,8 @@ struct _ofaLedgerPropertiesPrivate {
 
 	/* page 2: balances display
 	 */
-	gint            exe_id;
 	gchar          *currency;
+	gint            digits;
 
 	/* UI
 	 */
@@ -74,7 +76,6 @@ struct _ofaLedgerPropertiesPrivate {
 enum {
 	EXE_COL_BEGIN = 0,
 	EXE_COL_END,
-	EXE_COL_EXE_ID,
 	EXE_N_COLUMNS
 };
 
@@ -87,7 +88,6 @@ static void      v_init_dialog( myDialog *dialog );
 static void      init_balances_page( ofaLedgerProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaLedgerProperties *self );
-static void      on_exe_changed( GtkComboBox *box, ofaLedgerProperties *self );
 static void      on_currency_changed( const gchar *currency, ofaLedgerProperties *self );
 static void      display_balances( ofaLedgerProperties *self );
 static void      check_for_enable_dlg( ofaLedgerProperties *self );
@@ -206,10 +206,11 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaLedgerPropertiesPrivate *priv;
-	gchar *title;
+	gchar *title, *str;
 	const gchar *jou_mnemo;
 	GtkEntry *entry;
 	GtkContainer *container;
+	GtkWidget *label;
 
 	priv = OFA_LEDGER_PROPERTIES( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
@@ -237,6 +238,13 @@ v_init_dialog( myDialog *dialog )
 	}
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
 
+	my_date_set_from_date( &priv->closing, ofo_ledger_get_last_close( priv->ledger ));
+	label = my_utils_container_get_child_by_name( container, "p1-last-close" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	str = my_date_to_str( &priv->closing, MY_DATE_DMYY );
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
 	init_balances_page( OFA_LEDGER_PROPERTIES( dialog ));
 
 	my_utils_init_notes_ex( container, ledger );
@@ -250,15 +258,6 @@ init_balances_page( ofaLedgerProperties *self )
 {
 	GtkContainer *container;
 	ofsCurrencyComboParms parms;
-	GtkComboBox *exe_box;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *text_cell;
-	gint current_exe_id;
-	GList *list, *ili;
-	gint exe_id, idx, i;
-	const GDate *begin, *end;
-	gchar *sbegin, *send;
-	GtkTreeIter iter;
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
@@ -266,76 +265,13 @@ init_balances_page( ofaLedgerProperties *self )
 	parms.dossier = MY_WINDOW( self )->prot->dossier;
 	parms.combo_name = "p2-dev-combo";
 	parms.label_name = NULL;
-	parms.disp_code = FALSE;
-	parms.disp_label = TRUE;
+	parms.disp_code = TRUE;
+	parms.disp_label = FALSE;
 	parms.pfnSelected = ( ofaCurrencyComboCb ) on_currency_changed;
 	parms.user_data = self;
 	parms.initial_code = ofo_dossier_get_default_currency( MY_WINDOW( self )->prot->dossier );
 
 	self->priv->dev_combo = ofa_currency_combo_new( &parms );
-
-	exe_box = ( GtkComboBox * ) my_utils_container_get_child_by_name( container, "p2-exe-combo" );
-	g_return_if_fail( exe_box && GTK_IS_COMBO_BOX( exe_box ));
-
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			EXE_N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT ));
-	gtk_combo_box_set_model( exe_box, tmodel );
-	g_object_unref( tmodel );
-
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( exe_box ), text_cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( exe_box ), text_cell, "text", EXE_COL_BEGIN );
-
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( exe_box ), text_cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( exe_box ), text_cell, "text", EXE_COL_END );
-
-	list = ofo_ledger_get_exe_list( self->priv->ledger );
-	idx = -1;
-	current_exe_id = ofo_dossier_get_current_exe_id( MY_WINDOW( self )->prot->dossier );
-
-	for( ili=list, i=0 ; ili ; ili=ili->next, ++i ){
-		exe_id = GPOINTER_TO_INT( ili->data );
-		if( exe_id == current_exe_id ){
-			idx = i;
-		}
-		begin = ofo_dossier_get_exe_begin( MY_WINDOW( self )->prot->dossier, exe_id );
-		end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier, exe_id );
-		if( !my_date_is_valid( begin )){
-			sbegin = g_strdup( "" );
-			if( !my_date_is_valid( end )){
-				send = g_strdup( _( "Current exercice" ));
-			} else {
-				send = my_date_to_str( end, MY_DATE_DMMM );
-			}
-		} else {
-			sbegin = my_date_to_str( begin, MY_DATE_DMMM );
-			if( !my_date_is_valid( end )){
-				send = g_strdup( "" );
-			} else {
-				send = my_date_to_str( end, MY_DATE_DMMM );
-			}
-		}
-
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				EXE_COL_BEGIN,  sbegin,
-				EXE_COL_END,    send,
-				EXE_COL_EXE_ID, exe_id,
-				-1 );
-
-		g_free( sbegin );
-		g_free( send );
-	}
-
-	g_signal_connect( G_OBJECT( exe_box ), "changed", G_CALLBACK( on_exe_changed ), self );
-
-	if( idx != -1 ){
-		gtk_combo_box_set_active( exe_box, idx );
-	}
 }
 
 static void
@@ -356,27 +292,26 @@ on_label_changed( GtkEntry *entry, ofaLedgerProperties *self )
 	check_for_enable_dlg( self );
 }
 
-static void
-on_exe_changed( GtkComboBox *box, ofaLedgerProperties *self )
-{
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-
-	if( gtk_combo_box_get_active_iter( box, &iter )){
-		tmodel = gtk_combo_box_get_model( box );
-		gtk_tree_model_get( tmodel, &iter, EXE_COL_EXE_ID, &self->priv->exe_id, -1 );
-		display_balances( self );
-	}
-}
-
 /*
  * ofaCurrencyComboCb
  */
 static void
 on_currency_changed( const gchar *currency, ofaLedgerProperties *self )
 {
-	g_free( self->priv->currency );
-	self->priv->currency = g_strdup( currency );
+	ofaLedgerPropertiesPrivate *priv;
+	ofoCurrency *obj;
+
+	priv = self->priv;
+
+	g_free( priv->currency );
+	priv->currency = NULL;
+
+	obj = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, currency );
+	if( obj && OFO_IS_CURRENCY( obj )){
+		priv->currency = g_strdup( currency );
+		priv->digits = ofo_currency_get_digits( obj );
+	}
+
 	display_balances( self );
 }
 
@@ -390,7 +325,7 @@ display_balances( ofaLedgerProperties *self )
 
 	priv = self->priv;
 
-	if( priv->exe_id <= 0 || !priv->currency || !g_utf8_strlen( priv->currency, -1 )){
+	if( !priv->currency || !g_utf8_strlen( priv->currency, -1 )){
 		return;
 	}
 
@@ -398,32 +333,22 @@ display_balances( ofaLedgerProperties *self )
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-clo-deb" ));
-	str = g_strdup_printf( "%'.2lf", ofo_ledger_get_clo_deb( priv->ledger, priv->exe_id, priv->currency ));
+	str = my_double_to_str_ex( ofo_ledger_get_clo_deb( priv->ledger, priv->currency ), priv->digits );
 	gtk_label_set_text( label, str );
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-clo-cre" ));
-	str = g_strdup_printf( "%'.2lf", ofo_ledger_get_clo_cre( priv->ledger, priv->exe_id, priv->currency ));
+	str = my_double_to_str_ex( ofo_ledger_get_clo_cre( priv->ledger, priv->currency ), priv->digits );
 	gtk_label_set_text( label, str );
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-deb" ));
-	str = g_strdup_printf( "%'.2lf", ofo_ledger_get_deb( priv->ledger, priv->exe_id, priv->currency ));
-	gtk_label_set_text( label, str );
-	g_free( str );
-
-	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-deb-date" ));
-	str = my_date_to_str( ofo_ledger_get_deb_date( priv->ledger, priv->exe_id, priv->currency ), MY_DATE_DMYY );
+	str = my_double_to_str_ex( ofo_ledger_get_deb( priv->ledger, priv->currency ), priv->digits );
 	gtk_label_set_text( label, str );
 	g_free( str );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-cre" ));
-	str = g_strdup_printf( "%'.2lf", ofo_ledger_get_cre( priv->ledger, priv->exe_id, priv->currency ));
-	gtk_label_set_text( label, str );
-	g_free( str );
-
-	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-cre-date" ));
-	str = my_date_to_str( ofo_ledger_get_cre_date( priv->ledger, priv->exe_id, priv->currency ), MY_DATE_DMYY );
+	str = my_double_to_str_ex( ofo_ledger_get_cre( priv->ledger, priv->currency ), priv->digits );
 	gtk_label_set_text( label, str );
 	g_free( str );
 }

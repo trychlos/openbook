@@ -34,6 +34,12 @@
  *
  * This file defines the #ofoDossier public API, including the general
  * DB definition.
+ *
+ * Terminology:
+ * - dbname: the name of the subjacent database
+ * - name: the name of the dossier as recorded in the global
+ *   configuration, which appears in combo boxes
+ * - label: the 'raison sociale' of the dossier, recorded in DBMS
  */
 
 #include "api/ofa-boxed.h"
@@ -44,11 +50,6 @@ G_BEGIN_DECLS
 
 /**
  * ofaDossierStatus:
- *
- * Status of the exercice.
- *
- * The system makes sure there is at most one opened exercice at any
- * time.
  */
 typedef enum {
 	DOS_STATUS_OPENED = 1,
@@ -59,68 +60,69 @@ typedef enum {
 /**
  * Dossier signals:
  * @OFA_SIGNAL_DOSSIER_BEGIN: sent on the dossier when the exercice
- *                            beginning date is modified.
+ *                            beginning date is modified. This only
+ *                            may happen on the current exercice and
+ *                            in small limits if entries have already
+ *                            been recorded.
  */
 #define OFA_SIGNAL_DOSSIER_BEGIN        "ofa-signal-dossier-begin"
 
 ofoDossier      *ofo_dossier_new                       ( const gchar *name );
 
 gboolean         ofo_dossier_open                      ( ofoDossier *dossier,
-														const gchar *account, const gchar *password );
+																const gchar *account,
+																const gchar *password );
 
 const gchar     *ofo_dossier_get_name                  ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_user                  ( const ofoDossier *dossier );
 const ofoSgbd   *ofo_dossier_get_sgbd                  ( const ofoDossier *dossier );
-
 gchar           *ofo_dossier_get_dbname                ( const ofoDossier *dossier );
 
-gboolean         ofo_dossier_use_currency              ( const ofoDossier *dossier, const gchar *currency );
+gboolean         ofo_dossier_use_currency              ( const ofoDossier *dossier,
+																const gchar *currency );
 
-const gchar     *ofo_dossier_get_label                 ( const ofoDossier *dossier );
-gint             ofo_dossier_get_exercice_length       ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_default_currency      ( const ofoDossier *dossier );
+const GDate     *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier );
+const GDate     *ofo_dossier_get_exe_end               ( const ofoDossier *dossier );
+gint             ofo_dossier_get_exe_length            ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_exe_notes             ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_label                 ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_notes                 ( const ofoDossier *dossier );
-gint             ofo_dossier_get_last_exe_id           ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_siren                 ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_upd_user              ( const ofoDossier *dossier );
 const GTimeVal  *ofo_dossier_get_upd_stamp             ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_status                ( const ofoDossier *dossier );
+gint             ofo_dossier_get_this_exe_id           ( const ofoDossier *dossier );
+gint             ofo_dossier_get_last_exe_id           ( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_last_bat              ( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_last_batline          ( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_last_entry            ( const ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_last_settlement       ( const ofoDossier *dossier );
+
+ofxCounter       ofo_dossier_get_next_bat              ( ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_next_batline          ( ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_next_entry            ( ofoDossier *dossier );
+ofxCounter       ofo_dossier_get_next_settlement       ( ofoDossier *dossier );
 
 GList           *ofo_dossier_get_exercices_list        ( const ofoDossier *dossier );
-GDate           *ofo_dossier_get_last_closed_exercice  ( const ofoDossier *dossier );
-gint             ofo_dossier_get_current_exe_id        ( const ofoDossier *dossier );
+/*GDate           *ofo_dossier_get_last_closed_exercice  ( const ofoDossier *dossier );*/
 
-gint             ofo_dossier_get_exe_by_date           ( const ofoDossier *dossier, const GDate *date );
-const GDate     *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier, gint exe_id );
-const GDate     *ofo_dossier_get_exe_end               ( const ofoDossier *dossier, gint exe_id );
-ofaDossierStatus ofo_dossier_get_exe_status            ( const ofoDossier *dossier, gint exe_id );
-ofxCounter       ofo_dossier_get_exe_last_entry        ( const ofoDossier *dossier, gint exe_id );
-ofxCounter       ofo_dossier_get_exe_last_settlement   ( const ofoDossier *dossier, gint exe_id );
-ofxCounter       ofo_dossier_get_exe_last_bat          ( const ofoDossier *dossier, gint exe_id );
-ofxCounter       ofo_dossier_get_exe_last_bat_line     ( const ofoDossier *dossier, gint exe_id );
-const gchar     *ofo_dossier_get_exe_notes             ( const ofoDossier *dossier, gint exe_id );
-
-ofxCounter       ofo_dossier_get_next_entry_number     ( const ofoDossier *dossier );
-ofxCounter       ofo_dossier_get_next_bat_number       ( const ofoDossier *dossier );
-ofxCounter       ofo_dossier_get_next_batline_number   ( const ofoDossier *dossier );
-ofxCounter       ofo_dossier_get_next_settlement_number( const ofoDossier *dossier );
-
-const gchar     *ofo_dossier_get_status_label          ( ofaDossierStatus status );
-
+gboolean         ofo_dossier_is_current                ( const ofoDossier *dossier );
 gboolean         ofo_dossier_is_entries_allowed        ( const ofoDossier *dossier );
-
 gboolean         ofo_dossier_is_valid                  ( const gchar *label,
-															gint nb_months, const gchar *currency,
-															const GDate *begin, const GDate *end );
+																gint nb_months,
+																const gchar *currency,
+																const GDate *begin,
+																const GDate *end );
 
-void             ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
-void             ofo_dossier_set_exercice_length       ( ofoDossier *dossier, gint nb_months );
 void             ofo_dossier_set_default_currency      ( ofoDossier *dossier, const gchar *currency );
+void             ofo_dossier_set_exe_begin             ( const ofoDossier *dossier, const GDate *date );
+void             ofo_dossier_set_exe_end               ( const ofoDossier *dossier, const GDate *date );
+void             ofo_dossier_set_exe_length            ( ofoDossier *dossier, gint nb_months );
+void             ofo_dossier_set_exe_notes             ( const ofoDossier *dossier, const gchar *notes );
+void             ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
 void             ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
-
-void             ofo_dossier_set_current_exe_id        ( const ofoDossier *dossier, gint exe_id );
-void             ofo_dossier_set_current_exe_begin     ( const ofoDossier *dossier, const GDate *date );
-void             ofo_dossier_set_current_exe_end       ( const ofoDossier *dossier, const GDate *date );
-void             ofo_dossier_set_current_exe_notes     ( const ofoDossier *dossier, const gchar *notes );
-void             ofo_dossier_set_current_exe_last_entry( const ofoDossier *dossier, ofxCounter number );
+void             ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );
 
 gboolean         ofo_dossier_dbmodel_update            ( ofoSgbd *sgbd, const gchar *name, const gchar *account );
 

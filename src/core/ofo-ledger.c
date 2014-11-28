@@ -56,27 +56,18 @@ struct _ofoLedgerPrivate {
 	gchar     *notes;
 	gchar     *upd_user;
 	GTimeVal   upd_stamp;
-	GList     *exes;					/* exercices */
+	GDate      last_clo;
 	GList     *amounts;					/* balances per currency */
 };
 
 typedef struct {
-	gint       exe_id;
 	gchar     *currency;
 	ofxAmount  clo_deb;
 	ofxAmount  clo_cre;
 	ofxAmount  deb;
-	GDate      deb_date;
 	ofxAmount  cre;
-	GDate      cre_date;
 }
 	sDetailCur;
-
-typedef struct {
-	gint       exe_id;
-	GDate      last_clo;
-}
-	sDetailExe;
 
 OFO_BASE_DEFINE_GLOBAL( st_global, ledger )
 
@@ -91,16 +82,15 @@ static GList      *ledger_load_dataset( void );
 static ofoLedger  *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint        ledger_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
 static gint        ledger_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
-static sDetailCur *ledger_find_cur_by_code( const ofoLedger *ledger, gint exe_id, const gchar *currency );
-static sDetailExe *ledger_find_exe_by_id( const ofoLedger *ledger, gint exe_id );
+static sDetailCur *ledger_find_cur_by_code( const ofoLedger *ledger, const gchar *currency );
 static void        ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user );
 static void        ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp );
-static sDetailCur *ledger_new_cur_with_code( ofoLedger *ledger, gint exe_id, const gchar *currency );
+static void        ledger_set_last_clo( ofoLedger *ledger, const GDate *date );
+static sDetailCur *ledger_new_cur_with_code( ofoLedger *ledger, const gchar *currency );
 static gboolean    ledger_do_insert( ofoLedger *ledger, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    ledger_insert_main( ofoLedger *ledger, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
 static gboolean    ledger_do_update_detail_cur( const ofoLedger *ledger, sDetailCur *detail, const ofoSgbd *sgbd );
-static gboolean    ledger_do_update_detail_exe( const ofoLedger *ledger, sDetailExe *detail, const ofoSgbd *sgbd );
 static gboolean    ledger_do_delete( ofoLedger *ledger, const ofoSgbd *sgbd );
 static gint        ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
 static gint        ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
@@ -114,12 +104,6 @@ static void
 free_detail_cur( sDetailCur *detail )
 {
 	g_free( detail->currency );
-	g_free( detail );
-}
-
-static void
-free_detail_exe( sDetailExe *detail )
-{
 	g_free( detail );
 }
 
@@ -142,7 +126,6 @@ ledger_finalize( GObject *instance )
 	g_free( priv->label );
 	g_free( priv->notes );
 	g_free( priv->upd_user );
-	g_list_free_full( priv->exes, ( GDestroyNotify ) free_detail_exe );
 	g_list_free_full( priv->amounts, ( GDestroyNotify ) free_detail_cur );
 
 	/* chain up to the parent class */
@@ -244,38 +227,25 @@ static void
 on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 {
 	static const gchar *thisfn = "ofo_ledger_on_new_ledger_entry";
-	gint current;
 	const gchar *mnemo, *currency;
 	ofoLedger *ledger;
 	sDetailCur *detail;
-	const GDate *deffect;
 	ofxAmount debit;
 
-	current = ofo_dossier_get_current_exe_id( dossier );
 	mnemo = ofo_entry_get_ledger( entry );
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
 
 	if( ledger ){
 		currency = ofo_entry_get_currency( entry );
-		detail = ledger_new_cur_with_code( ledger, current, currency );
+		detail = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( detail );
 
 		debit = ofo_entry_get_debit( entry );
-		deffect = ofo_entry_get_deffect( entry );
-
 		if( debit ){
 			detail->deb += debit;
-			if( !my_date_is_valid( &detail->deb_date ) ||
-					my_date_compare( &detail->deb_date, deffect ) < 0 ){
-				ofo_ledger_set_deb_date( ledger, detail->exe_id, detail->currency, deffect );
-			}
 
 		} else {
 			detail->cre += ofo_entry_get_credit( entry );
-			if( !my_date_is_valid( &detail->cre_date ) ||
-					my_date_compare( &detail->cre_date, deffect ) < 0 ){
-				ofo_ledger_set_cre_date( ledger, detail->exe_id, detail->currency, deffect );
-			}
 		}
 
 		if( ledger_do_update_detail_cur( ledger, detail, ofo_dossier_get_sgbd( dossier ))){
@@ -313,18 +283,18 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 	}
 }
 
+/*
+ * a currency iso code has been modified (this should be very rare)
+ * so update our ledger records
+ */
 static void
 on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
-	gint exe_id;
-
-	exe_id = ofo_dossier_get_current_exe_id( dossier );
 
 	query = g_strdup_printf(
 					"UPDATE OFA_T_LEDGERS_CUR "
-					"	SET LED_CUR_CODE='%s' WHERE LED_CUR_CODE='%s' AND LED_EXE_ID=%d",
-						code, prev_id, exe_id );
+					"	SET LED_CUR_CODE='%s' WHERE LED_CUR_CODE='%s'", code, prev_id );
 
 	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
 
@@ -343,12 +313,10 @@ static void
 on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 {
 	static const gchar *thisfn = "ofo_ledger_on_validated_entry";
-	gint exe_id;
 	const gchar *currency, *mnemo;
 	ofoLedger *ledger;
 	sDetailCur *detail;
 	ofxAmount debit, credit;
-	const GDate *deffect;
 
 	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
 			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
@@ -357,12 +325,9 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
 	if( ledger ){
 
-		deffect = ofo_entry_get_deffect( entry );
-		exe_id = ofo_dossier_get_exe_by_date( dossier, deffect );
 		currency = ofo_entry_get_currency( entry );
-		detail = ledger_find_cur_by_code( ledger, exe_id, currency );
-		/* the entry has necessarily be already recorded while in rough
-		 * status */
+		detail = ledger_find_cur_by_code( ledger, currency );
+		/* the entry has necessarily be already recorded while in rough * status */
 		g_return_if_fail( detail );
 
 		debit = ofo_entry_get_debit( entry );
@@ -419,14 +384,14 @@ ledger_load_dataset( void )
 	GList *dataset, *iset;
 	gchar *query;
 	sDetailCur *balance;
-	sDetailExe *exercice;
 	GTimeVal timeval;
+	GDate date;
 
 	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
 
 	result = ofo_sgbd_query_ex( sgbd,
 			"SELECT LED_MNEMO,LED_LABEL,LED_NOTES,"
-			"	LED_UPD_USER,LED_UPD_STAMP "
+			"	LED_UPD_USER,LED_UPD_STAMP,LED_LAST_CLO "
 			"	FROM OFA_T_LEDGERS", TRUE );
 
 	dataset = NULL;
@@ -444,6 +409,8 @@ ledger_load_dataset( void )
 		icol = icol->next;
 		ledger_set_upd_stamp( ledger,
 				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+		icol = icol->next;
+		ledger_set_last_clo( ledger, my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 
 		dataset = g_list_prepend( dataset, ledger );
 	}
@@ -457,11 +424,10 @@ ledger_load_dataset( void )
 		ledger = OFO_LEDGER( iset->data );
 
 		query = g_strdup_printf(
-				"SELECT LED_EXE_ID,LED_CUR_CODE,"
+				"SELECT LED_CUR_CODE,"
 				"	LED_CUR_CLO_DEB,LED_CUR_CLO_CRE,"
-				"	LED_CUR_DEB,LED_CUR_DEB_DATE,LED_CUR_CRE,LED_CUR_CRE_DATE "
-				"	FROM OFA_T_LEDGERS_CUR "
-				"	WHERE LED_MNEMO='%s'",
+				"	LED_CUR_DEB,LED_CUR_CRE "
+				"FROM OFA_T_LEDGERS_CUR WHERE LED_MNEMO='%s'",
 						ofo_ledger_get_mnemo( ledger ));
 
 		result = ofo_sgbd_query_ex( sgbd, query, TRUE );
@@ -470,51 +436,20 @@ ledger_load_dataset( void )
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			balance = g_new0( sDetailCur, 1 );
-			balance->exe_id = atoi(( gchar * ) icol->data );
-			icol = icol->next;
 			balance->currency = g_strdup(( gchar * ) icol->data );
 			icol = icol->next;
 			balance->clo_deb = my_double_set_from_sql(( const gchar * ) icol->data );
-			/*g_debug( "clo_deb=%lf", balance->clo_deb );*/
 			icol = icol->next;
 			balance->clo_cre = my_double_set_from_sql(( const gchar * ) icol->data );
-			/*g_debug( "clo_cre=%lf", balance->clo_cre );*/
 			icol = icol->next;
 			balance->deb = my_double_set_from_sql(( const gchar * ) icol->data );
-			/*g_debug( "deb=%lf", balance->deb );*/
-			icol = icol->next;
-			my_date_set_from_sql( &balance->deb_date, ( const gchar * ) icol->data );
 			icol = icol->next;
 			balance->cre = my_double_set_from_sql(( const gchar * ) icol->data );
-			/*g_debug( "cre=%lf", balance->cre );*/
-			icol = icol->next;
-			my_date_set_from_sql( &balance->cre_date, ( const gchar * ) icol->data );
 
-			g_debug( "ledger_load_dataset: adding ledger=%s, exe_id=%d, currency=%s",
-					ofo_ledger_get_mnemo( ledger ), balance->exe_id, balance->currency );
+			g_debug( "ledger_load_dataset: adding ledger=%s, currency=%s",
+					ofo_ledger_get_mnemo( ledger ), balance->currency );
 
 			ledger->priv->amounts = g_list_prepend( ledger->priv->amounts, balance );
-		}
-
-		ofo_sgbd_free_result( result );
-
-		query = g_strdup_printf(
-				"SELECT LED_EXE_ID,LED_EXE_LAST_CLO "
-				"	FROM OFA_T_LEDGERS_EXE "
-				"	WHERE LED_MNEMO='%s'",
-						ofo_ledger_get_mnemo( ledger ));
-
-		result = ofo_sgbd_query_ex( sgbd, query, TRUE );
-		g_free( query );
-
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			exercice = g_new0( sDetailExe, 1 );
-			exercice->exe_id = atoi(( gchar * ) icol->data );
-			icol = icol->next;
-			my_date_set_from_sql( &exercice->last_clo, ( const gchar * ) icol->data );
-
-			ledger->priv->exes = g_list_prepend( ledger->priv->exes, exercice );
 		}
 
 		ofo_sgbd_free_result( result );
@@ -701,6 +636,26 @@ ofo_ledger_get_upd_stamp( const ofoLedger *ledger )
 }
 
 /**
+ * ofo_ledger_get_last_close:
+ *
+ * Returns the last closing date for this ledger.
+ * The returned date is not %NULL, but may be invalid if the ledger
+ * has not been closed yet during the exercice.
+ */
+const GDate *
+ofo_ledger_get_last_close( const ofoLedger *ledger )
+{
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
+
+	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+
+		return(( const GDate * ) &ledger->priv->last_clo );
+	}
+
+	return( NULL );
+}
+
+/**
  * ofo_ledger_get_last_entry:
  *
  * Returns the effect date of the most recent entry written in this
@@ -741,61 +696,15 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger )
 }
 
 /**
- * ofo_ledger_get_last_closing:
- *
- * Returns the most recent closing date, all exercices considered, for
- * this ledger, as a newly allocated #GDate structure which should be
- * g_free() by the caller,
- * or %NULL if the ledger has never been closed.
- */
-GDate *
-ofo_ledger_get_last_closing( const ofoLedger *ledger )
-{
-	static const gchar *thisfn = "ofo_ledger_get_last_closing";
-	GDate *dlast;
-	sDetailExe *sdetail;
-	GList *idet;
-	gchar *str;
-
-	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
-
-	dlast = NULL;
-
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		for( idet=ledger->priv->exes ; idet ; idet=idet->next ){
-			sdetail = ( sDetailExe * ) idet->data;
-			if( dlast ){
-				g_return_val_if_fail( my_date_is_valid( dlast ), NULL );
-				if( my_date_is_valid( &sdetail->last_clo ) &&
-						my_date_compare( &sdetail->last_clo, dlast ) > 0 ){
-					my_date_set_from_date( dlast, &sdetail->last_clo );
-				}
-			} else if( my_date_is_valid( &sdetail->last_clo )){
-				dlast = g_new0( GDate, 1 );
-				my_date_set_from_date( dlast, &sdetail->last_clo );
-			}
-		}
-	}
-
-	str = my_date_to_str( dlast, MY_DATE_DMYY );
-	g_debug( "%s: mnemo=%s, last_closing=%s", thisfn, ofo_ledger_get_mnemo( ledger ), str );
-	g_free( str );
-
-	return( dlast );
-}
-
-/**
  * ofo_ledger_get_clo_deb:
  * @ledger:
- * @exe_id:
  * @currency:
  *
  * Returns the debit balance of this ledger at the last closing for
  * the currency specified, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_clo_deb( const ofoLedger *ledger, gint exe_id, const gchar *currency )
+ofo_ledger_get_clo_deb( const ofoLedger *ledger, const gchar *currency )
 {
 	sDetailCur *sdev;
 
@@ -803,7 +712,7 @@ ofo_ledger_get_clo_deb( const ofoLedger *ledger, gint exe_id, const gchar *curre
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_find_cur_by_code( ledger, exe_id, currency );
+		sdev = ledger_find_cur_by_code( ledger, currency );
 		if( sdev ){
 			return( sdev->clo_deb );
 		}
@@ -815,14 +724,13 @@ ofo_ledger_get_clo_deb( const ofoLedger *ledger, gint exe_id, const gchar *curre
 /**
  * ofo_ledger_get_clo_cre:
  * @ledger:
- * @exe_id:
  * @currency:
  *
  * Returns the credit balance of this ledger at the last closing for
  * the currency specified, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_clo_cre( const ofoLedger *ledger, gint exe_id, const gchar *currency )
+ofo_ledger_get_clo_cre( const ofoLedger *ledger, const gchar *currency )
 {
 	sDetailCur *sdev;
 
@@ -830,7 +738,7 @@ ofo_ledger_get_clo_cre( const ofoLedger *ledger, gint exe_id, const gchar *curre
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_find_cur_by_code( ledger, exe_id, currency );
+		sdev = ledger_find_cur_by_code( ledger, currency );
 		if( sdev ){
 			return( sdev->clo_cre );
 		}
@@ -842,14 +750,13 @@ ofo_ledger_get_clo_cre( const ofoLedger *ledger, gint exe_id, const gchar *curre
 /**
  * ofo_ledger_get_deb:
  * @ledger:
- * @exe_id:
  * @currency:
  *
  * Returns the current debit balance of this ledger for
  * the currency specified, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_deb( const ofoLedger *ledger, gint exe_id, const gchar *currency )
+ofo_ledger_get_deb( const ofoLedger *ledger, const gchar *currency )
 {
 	sDetailCur *sdev;
 
@@ -857,7 +764,7 @@ ofo_ledger_get_deb( const ofoLedger *ledger, gint exe_id, const gchar *currency 
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_find_cur_by_code( ledger, exe_id, currency );
+		sdev = ledger_find_cur_by_code( ledger, currency );
 		if( sdev ){
 			return( sdev->deb );
 		}
@@ -867,43 +774,15 @@ ofo_ledger_get_deb( const ofoLedger *ledger, gint exe_id, const gchar *currency 
 }
 
 /**
- * ofo_ledger_get_deb_date:
- * @ledger:
- * @exe_id:
- * @currency:
- *
- * Returns the most recent entry effect date written at the debit of
- * this ledger
- */
-const GDate *
-ofo_ledger_get_deb_date( const ofoLedger *ledger, gint exe_id, const gchar *currency )
-{
-	sDetailCur *sdev;
-
-	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), NULL );
-
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_find_cur_by_code( ledger, exe_id, currency );
-		if( sdev ){
-			return(( const GDate * ) &sdev->deb_date );
-		}
-	}
-
-	return( NULL );
-}
-
-/**
  * ofo_ledger_get_cre:
  * @ledger:
- * @exe_id:
  * @currency:
  *
  * Returns the current credit balance of this ledger for
  * the currency specified, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_cre( const ofoLedger *ledger, gint exe_id, const gchar *currency )
+ofo_ledger_get_cre( const ofoLedger *ledger, const gchar *currency )
 {
 	sDetailCur *sdev;
 
@@ -911,7 +790,7 @@ ofo_ledger_get_cre( const ofoLedger *ledger, gint exe_id, const gchar *currency 
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_find_cur_by_code( ledger, exe_id, currency );
+		sdev = ledger_find_cur_by_code( ledger, currency );
 		if( sdev ){
 			return( sdev->cre );
 		}
@@ -920,86 +799,8 @@ ofo_ledger_get_cre( const ofoLedger *ledger, gint exe_id, const gchar *currency 
 	return( 0.0 );
 }
 
-/**
- * ofo_ledger_get_cre_date:
- * @ledger:
- * @exe_id:
- * @currency:
- *
- * Returns the most recent entry effect date written at the credit of
- * this ledger, or NULL.
- */
-const GDate *
-ofo_ledger_get_cre_date( const ofoLedger *ledger, gint exe_id, const gchar *currency )
-{
-	sDetailCur *sdev;
-
-	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), NULL );
-
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_find_cur_by_code( ledger, exe_id, currency );
-		if( sdev ){
-			return(( const GDate * ) &sdev->cre_date );
-		}
-	}
-
-	return( NULL );
-}
-
-/**
- * ofo_ledger_get_exe_list:
- *
- * The returned list should be g_list_free() by the caller.
- */
-GList *
-ofo_ledger_get_exe_list( const ofoLedger *ledger )
-{
-	GList *list;
-	GList *iam;
-	sDetailCur *sdev;
-
-	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), NULL );
-
-	list = NULL;
-
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		for( iam=ledger->priv->amounts ; iam ; iam=iam->next ){
-			sdev = ( sDetailCur * ) iam->data;
-			list = g_list_prepend( list, GINT_TO_POINTER( sdev->exe_id ));
-		}
-	}
-
-	return( list );
-}
-
-/**
- * ofo_ledger_get_exe_closing:
- *
- * Returns the most recent closing date for the specified exercice.
- * The returned date is not null, but may be invalid.
- */
-const GDate *
-ofo_ledger_get_exe_closing( const ofoLedger *ledger, gint exe_id )
-{
-	sDetailExe *sexe;
-
-	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), NULL );
-
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sexe = ledger_find_exe_by_id( ledger, exe_id );
-		if( sexe ){
-			return(( const GDate * ) &sexe->last_clo );
-		}
-	}
-
-	return( NULL );
-}
-
 static sDetailCur *
-ledger_find_cur_by_code( const ofoLedger *ledger, gint exe_id, const gchar *currency )
+ledger_find_cur_by_code( const ofoLedger *ledger, const gchar *currency )
 {
 	static const gchar *thisfn = "ofo_ledger_ledger_find_cur_by_code";
 	GList *idet;
@@ -1007,31 +808,37 @@ ledger_find_cur_by_code( const ofoLedger *ledger, gint exe_id, const gchar *curr
 
 	for( idet=ledger->priv->amounts ; idet ; idet=idet->next ){
 		sdet = ( sDetailCur * ) idet->data;
-		if( sdet->exe_id == exe_id && !g_utf8_collate( sdet->currency, currency )){
+		if( !g_utf8_collate( sdet->currency, currency )){
 			return( sdet );
 		}
 	}
 
-	g_debug( "%s: ledger=%s, exe_id=%d, currency=%s not found",
-			thisfn, ofo_ledger_get_mnemo( ledger ), exe_id, currency );
+	g_debug( "%s: ledger=%s, currency=%s not found",
+			thisfn, ofo_ledger_get_mnemo( ledger ), currency );
 
 	return( NULL );
 }
 
-static sDetailExe *
-ledger_find_exe_by_id( const ofoLedger *ledger, gint exe_id )
+static sDetailCur *
+ledger_new_cur_with_code( ofoLedger *ledger, const gchar *currency )
 {
-	GList *idet;
-	sDetailExe *sdet;
+	sDetailCur *sdet;
 
-	for( idet=ledger->priv->exes ; idet ; idet=idet->next ){
-		sdet = ( sDetailExe * ) idet->data;
-		if( sdet->exe_id == exe_id ){
-			return( sdet );
-		}
+	sdet = ledger_find_cur_by_code( ledger, currency );
+
+	if( !sdet ){
+		sdet = g_new0( sDetailCur, 1 );
+
+		sdet->clo_deb = 0.0;
+		sdet->clo_cre = 0.0;
+		sdet->deb = 0.0;
+		sdet->cre = 0.0;
+		sdet->currency = g_strdup( currency );
+
+		ledger->priv->amounts = g_list_prepend( ledger->priv->amounts, sdet );
 	}
 
-	return( NULL );
+	return( sdet );
 }
 
 /**
@@ -1074,7 +881,6 @@ ofo_ledger_is_deletable( const ofoLedger *ledger, const ofoDossier *dossier )
 {
 	gboolean ok;
 	GList *ic;
-	gint exe_id;
 	sDetailCur *detail;
 	const gchar *mnemo;
 
@@ -1083,14 +889,11 @@ ofo_ledger_is_deletable( const ofoLedger *ledger, const ofoDossier *dossier )
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
 		ok = TRUE;
-		exe_id = ofo_dossier_get_current_exe_id( dossier );
 
 		for( ic=ledger->priv->amounts ; ic && ok ; ic=ic->next ){
 			detail = ( sDetailCur * ) ic->data;
-			if( detail->exe_id == exe_id ){
 				ok &= detail->clo_deb == 0.0 && detail->clo_cre == 0.0 &&
 						detail->deb == 0.0 && detail->cre == 0.0;
-			}
 		}
 
 		mnemo = ofo_ledger_get_mnemo( ledger );
@@ -1193,10 +996,26 @@ ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp )
 	}
 }
 
+/*
+ * ledger_set_last_clo:
+ * @ledger:
+ *
+ * Set the closing date for the ledger.
+ */
+static void
+ledger_set_last_clo( ofoLedger *ledger, const GDate *date )
+{
+	g_return_if_fail( OFO_IS_LEDGER( ledger ));
+
+	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+
+		my_date_set_from_date( &ledger->priv->last_clo, date );
+	}
+}
+
 /**
  * ofo_ledger_set_clo_deb:
  * @ledger:
- * @exe_id:
  * @currency:
  *
  * Set the debit balance of this ledger at the last closing for
@@ -1205,7 +1024,7 @@ ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp )
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_clo_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount )
+ofo_ledger_set_clo_deb( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1213,7 +1032,7 @@ ofo_ledger_set_clo_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, o
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_cur_with_code( ledger, exe_id, currency );
+		sdev = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( sdev );
 
 		sdev->clo_deb += amount;
@@ -1223,7 +1042,6 @@ ofo_ledger_set_clo_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, o
 /**
  * ofo_ledger_set_clo_cre:
  * @ledger:
- * @exe_id:
  * @currency:
  *
  * Set the credit balance of this ledger at the last closing for
@@ -1232,7 +1050,7 @@ ofo_ledger_set_clo_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, o
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_clo_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount )
+ofo_ledger_set_clo_cre( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1240,7 +1058,7 @@ ofo_ledger_set_clo_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, o
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_cur_with_code( ledger, exe_id, currency );
+		sdev = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( sdev );
 
 		sdev->clo_cre += amount;
@@ -1250,7 +1068,6 @@ ofo_ledger_set_clo_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, o
 /**
  * ofo_ledger_set_deb:
  * @ledger:
- * @exe_id:
  * @currency:
  *
  * Set the current debit balance of this ledger for
@@ -1259,7 +1076,7 @@ ofo_ledger_set_clo_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, o
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount )
+ofo_ledger_set_deb( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1267,7 +1084,7 @@ ofo_ledger_set_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAm
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_cur_with_code( ledger, exe_id, currency );
+		sdev = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( sdev );
 
 		sdev->deb += amount;
@@ -1275,35 +1092,8 @@ ofo_ledger_set_deb( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAm
 }
 
 /**
- * ofo_ledger_set_deb_date:
- * @ledger:
- * @exe_id:
- * @currency:
- *
- * Set the most recent entry effect date at the debit of the ledger
- *
- * Creates an occurrence of the detail record if it didn't exist yet.
- */
-void
-ofo_ledger_set_deb_date( ofoLedger *ledger, gint exe_id, const gchar *currency, const GDate *date )
-{
-	sDetailCur *sdev;
-
-	g_return_if_fail( OFO_IS_LEDGER( ledger ));
-
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_new_cur_with_code( ledger, exe_id, currency );
-		g_return_if_fail( sdev );
-
-		my_date_set_from_date( &sdev->deb_date, date );
-	}
-}
-
-/**
  * ofo_ledger_set_cre:
  * @ledger:
- * @exe_id:
  * @currency:
  *
  * Set the current credit balance of this ledger for
@@ -1312,7 +1102,7 @@ ofo_ledger_set_deb_date( ofoLedger *ledger, gint exe_id, const gchar *currency, 
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
 void
-ofo_ledger_set_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAmount amount )
+ofo_ledger_set_cre( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1320,62 +1110,11 @@ ofo_ledger_set_cre( ofoLedger *ledger, gint exe_id, const gchar *currency, ofxAm
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		sdev = ledger_new_cur_with_code( ledger, exe_id, currency );
+		sdev = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( sdev );
 
 		sdev->cre += amount;
 	}
-}
-
-/**
- * ofo_ledger_set_cre_date:
- * @ledger:
- * @exe_id:
- * @currency:
- *
- * Set the most recent entry effect date at the debit of the ledger
- *
- * Creates an occurrence of the detail record if it didn't exist yet.
- */
-void
-ofo_ledger_set_cre_date( ofoLedger *ledger, gint exe_id, const gchar *currency, const GDate *date )
-{
-	sDetailCur *sdev;
-
-	g_return_if_fail( OFO_IS_LEDGER( ledger ));
-
-	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
-
-		sdev = ledger_new_cur_with_code( ledger, exe_id, currency );
-		g_return_if_fail( sdev );
-
-		my_date_set_from_date( &sdev->cre_date, date );
-	}
-}
-
-static sDetailCur *
-ledger_new_cur_with_code( ofoLedger *ledger, gint exe_id, const gchar *currency )
-{
-	sDetailCur *sdet;
-
-	sdet = ledger_find_cur_by_code( ledger, exe_id, currency );
-
-	if( !sdet ){
-		sdet = g_new0( sDetailCur, 1 );
-
-		sdet->clo_deb = 0.0;
-		sdet->clo_cre = 0.0;
-		sdet->deb = 0.0;
-		my_date_clear( &sdet->deb_date );
-		sdet->cre = 0.0;
-		my_date_clear( &sdet->cre_date );
-		sdet->exe_id = exe_id;
-		sdet->currency = g_strdup( currency );
-
-		ledger->priv->amounts = g_list_prepend( ledger->priv->amounts, sdet );
-	}
-
-	return( sdet );
 }
 
 /**
@@ -1390,8 +1129,6 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 {
 	static const gchar *thisfn = "ofo_ledger_close";
 	gboolean ok;
-	gint exe_id;
-	sDetailExe *sexe;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( closing && my_date_is_valid( closing ), FALSE );
@@ -1407,28 +1144,13 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 						ofo_ledger_get_mnemo( ledger ),
 						closing )){
 
-			exe_id = ofo_dossier_get_current_exe_id( OFO_DOSSIER( st_global->dossier ));
-			sexe = ledger_find_exe_by_id( ledger, exe_id );
+			ledger_set_last_clo( ledger, closing );
 
-			if( !sexe ){
-				sexe = g_new0( sDetailExe, 1 );
-				sexe->exe_id = exe_id;
-				my_date_clear( &sexe->last_clo );
-				ledger->priv->exes = g_list_prepend( ledger->priv->exes, sexe );
-			}
-
-			my_date_set_from_date( &sexe->last_clo, closing );
-
-			if( ledger_do_update_detail_exe(
-						ledger,
-						sexe,
-						ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
+			if( ofo_ledger_update( ledger, ofo_ledger_get_mnemo( ledger ))){
 
 				g_signal_emit_by_name(
 						G_OBJECT( st_global->dossier ),
-						OFA_SIGNAL_UPDATED_OBJECT,
-						g_object_ref( ledger ),
-						NULL );
+						OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
 
 				ok = TRUE;
 			}
@@ -1564,8 +1286,9 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofoSgbd *sgb
 	GString *query;
 	gchar *label, *notes;
 	gboolean ok;
-	gchar *stamp_str;
+	gchar *stamp_str, *sdate;
 	GTimeVal stamp;
+	const GDate *last_clo;
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_ledger_get_label( ledger ));
@@ -1584,6 +1307,15 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofoSgbd *sgb
 		query = g_string_append( query, "LED_NOTES=NULL," );
 	}
 
+	last_clo = ofo_ledger_get_last_close( ledger );
+	if( my_date_is_valid( last_clo )){
+		sdate = my_date_to_str( last_clo, MY_DATE_SQL );
+		g_string_append_printf( query, "LED_LAST_CLO='%s',", sdate );
+		g_free( sdate );
+	} else {
+		query = g_string_append( query, "LED_LAST_CLO=NULL," );
+	}
+
 	g_string_append_printf( query,
 			"	LED_UPD_USER='%s',LED_UPD_STAMP='%s'"
 			"	WHERE LED_MNEMO='%s'", user, stamp_str, prev_mnemo );
@@ -1599,16 +1331,8 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofoSgbd *sgb
 	g_free( label );
 	g_free( stamp_str );
 
-	if( ok ){
+	if( ok && g_utf8_collate( prev_mnemo, ofo_ledger_get_mnemo( ledger ))){
 		query = g_string_new( "UPDATE OFA_T_LEDGERS_CUR SET " );
-		g_string_append_printf( query,
-				"LED_MNEMO='%s' WHERE LED_MNEMO='%s'", ofo_ledger_get_mnemo( ledger ), prev_mnemo );
-		ok &= ofo_sgbd_query( sgbd, query->str, TRUE );
-		g_string_free( query, TRUE );
-	}
-
-	if( ok ){
-		query = g_string_new( "UPDATE OFA_T_LEDGERS_EXE SET " );
 		g_string_append_printf( query,
 				"LED_MNEMO='%s' WHERE LED_MNEMO='%s'", ofo_ledger_get_mnemo( ledger ), prev_mnemo );
 		ok &= ofo_sgbd_query( sgbd, query->str, TRUE );
@@ -1623,87 +1347,41 @@ ledger_do_update_detail_cur( const ofoLedger *ledger, sDetailCur *detail, const 
 {
 	gchar *query;
 	gchar *deb, *cre, *clo_deb, *clo_cre;
-	gchar *sdebd, *scred;
 	gboolean ok;
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_LEDGERS_CUR "
-			"	WHERE LED_MNEMO='%s' AND LED_EXE_ID=%d AND LED_CUR_CODE='%s'",
+			"	WHERE LED_MNEMO='%s' AND LED_CUR_CODE='%s'",
 					ofo_ledger_get_mnemo( ledger ),
-					detail->exe_id,
 					detail->currency );
 
 	ofo_sgbd_query( sgbd, query, FALSE );
 	g_free( query );
 
-	deb = my_double_to_sql( ofo_ledger_get_deb( ledger, detail->exe_id, detail->currency ));
-	cre = my_double_to_sql( ofo_ledger_get_cre( ledger, detail->exe_id, detail->currency ));
-	clo_deb = my_double_to_sql( ofo_ledger_get_clo_deb( ledger, detail->exe_id, detail->currency ));
-	clo_cre = my_double_to_sql( ofo_ledger_get_clo_cre( ledger, detail->exe_id, detail->currency ));
-	sdebd = my_date_to_str(
-					ofo_ledger_get_deb_date( ledger, detail->exe_id, detail->currency ), MY_DATE_SQL );
-	scred = my_date_to_str(
-					ofo_ledger_get_cre_date( ledger, detail->exe_id, detail->currency ), MY_DATE_SQL );
+	deb = my_double_to_sql( ofo_ledger_get_deb( ledger, detail->currency ));
+	cre = my_double_to_sql( ofo_ledger_get_cre( ledger, detail->currency ));
+	clo_deb = my_double_to_sql( ofo_ledger_get_clo_deb( ledger, detail->currency ));
+	clo_cre = my_double_to_sql( ofo_ledger_get_clo_cre( ledger, detail->currency ));
 
 	query = g_strdup_printf(
 					"INSERT INTO OFA_T_LEDGERS_CUR "
-					"	(LED_MNEMO,LED_EXE_ID,LED_CUR_CODE,"
+					"	(LED_MNEMO,LED_CUR_CODE,"
 					"	LED_CUR_CLO_DEB,LED_CUR_CLO_CRE,"
-					"	LED_CUR_DEB,LED_CUR_DEB_DATE,LED_CUR_CRE,LED_CUR_CRE_DATE) VALUES "
-					"	('%s',%d,'%s',%s,%s,%s,'%s',%s,'%s')",
+					"	LED_CUR_DEB,LED_CUR_CRE) VALUES "
+					"	('%s','%s',%s,%s,%s,%s)",
 							ofo_ledger_get_mnemo( ledger ),
-							detail->exe_id,
 							detail->currency,
 							clo_deb,
 							clo_cre,
 							deb,
-							sdebd,
-							cre,
-							scred );
+							cre );
 
 	ok = ofo_sgbd_query( sgbd, query, TRUE );
 
-	g_free( scred );
-	g_free( sdebd );
 	g_free( deb );
 	g_free( cre );
 	g_free( clo_deb );
 	g_free( clo_cre );
-	g_free( query );
-
-	return( ok );
-}
-
-static gboolean
-ledger_do_update_detail_exe( const ofoLedger *ledger, sDetailExe *detail, const ofoSgbd *sgbd )
-{
-	gchar *query;
-	gchar *sdate;
-	gboolean ok;
-
-	query = g_strdup_printf(
-			"DELETE FROM OFA_T_LEDGERS_EXE "
-			"	WHERE LED_MNEMO='%s' AND LED_EXE_ID=%d",
-					ofo_ledger_get_mnemo( ledger ),
-					detail->exe_id );
-
-	ofo_sgbd_query( sgbd, query, FALSE );
-	g_free( query );
-
-	sdate = my_date_to_str( &detail->last_clo, MY_DATE_SQL );
-
-	query = g_strdup_printf(
-					"INSERT INTO OFA_T_LEDGERS_EXE "
-					"	(LED_MNEMO,LED_EXE_ID,LED_EXE_LAST_CLO) "
-					"	VALUES "
-					"	('%s',%d,'%s')",
-							ofo_ledger_get_mnemo( ledger ),
-							detail->exe_id,
-							sdate );
-
-	ok = ofo_sgbd_query( sgbd, query, TRUE );
-
-	g_free( sdate );
 	g_free( query );
 
 	return( ok );
@@ -1766,14 +1444,6 @@ ledger_do_delete( ofoLedger *ledger, const ofoSgbd *sgbd )
 
 	g_free( query );
 
-	query = g_strdup_printf(
-			"DELETE FROM OFA_T_LEDGERS_EXE WHERE LED_MNEMO='%s'",
-					ofo_ledger_get_mnemo( ledger ));
-
-	ok &= ofo_sgbd_query( sgbd, query, TRUE );
-
-	g_free( query );
-
 	return( ok );
 }
 
@@ -1799,14 +1469,12 @@ ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b )
 static gboolean
 iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
 {
-	GList *it, *exe, *amount;
+	GList *it, *amount;
 	GSList *lines;
-	gchar *str, *notes, *stamp, *sdfin, *sdclo;
+	gchar *str, *notes, *stamp, *sdclo;
 	ofoLedger *ledger;
-	sDetailExe *sexe;
 	sDetailCur *sdev;
 	const gchar *muser;
-	gchar *sdebd, *scred;
 	gboolean ok, with_headers;
 	gulong count;
 
@@ -1816,17 +1484,16 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 
 	count = ( gulong ) g_list_length( st_global->dataset );
 	if( with_headers ){
-		count += 3;
+		count += 2;
 	}
 	for( it=st_global->dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
-		count += g_list_length( ledger->priv->exes );
 		count += g_list_length( ledger->priv->amounts );
 	}
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = g_strdup_printf( "1;Mnemo;Label;Notes;MajUser;MajStamp" );
+		str = g_strdup_printf( "1;Mnemo;Label;Notes;MajUser;MajStamp;LastClo" );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1834,15 +1501,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 			return( FALSE );
 		}
 
-		str = g_strdup_printf( "2;Mnemo;Exe;Closed" );
-		lines = g_slist_prepend( NULL, str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
-		if( !ok ){
-			return( FALSE );
-		}
-
-		str = g_strdup_printf( "3;Mnemo;Exe;Currency;CloDeb;CloCre;Deb;DebDate;Cre;CreDate" );
+		str = g_strdup_printf( "2;Mnemo;Currency;CloDeb;CloCre;Deb;Cre" );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1857,14 +1516,17 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 		notes = my_utils_export_multi_lines( ofo_ledger_get_notes( ledger ));
 		muser = ofo_ledger_get_upd_user( ledger );
 		stamp = my_utils_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_YYMDHMS );
+		sdclo = my_date_to_str( ofo_ledger_get_last_close( ledger ), MY_DATE_SQL );
 
-		str = g_strdup_printf( "1;%s;%s;%s;%s;%s",
+		str = g_strdup_printf( "1;%s;%s;%s;%s;%s;%s",
 				ofo_ledger_get_mnemo( ledger ),
 				ofo_ledger_get_label( ledger ),
 				notes ? notes : "",
 				muser ? muser : "",
-				muser ? stamp : "" );
+				muser ? stamp : "",
+				sdclo );
 
+		g_free( sdclo );
 		g_free( notes );
 		g_free( stamp );
 
@@ -1875,55 +1537,16 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 			return( FALSE );
 		}
 
-		for( exe=ledger->priv->exes ; exe ; exe=exe->next ){
-			sexe = ( sDetailExe * ) exe->data;
-
-			sdfin = my_date_to_str( ofo_dossier_get_exe_end( dossier, sexe->exe_id ), MY_DATE_SQL );
-			sdclo = my_date_to_str( &sexe->last_clo, MY_DATE_SQL );
-
-			str = g_strdup_printf( "2;%s;%s;%s",
-					ofo_ledger_get_mnemo( ledger ),
-					sdfin,
-					sdclo );
-
-			g_free( sdfin );
-			g_free( sdclo );
-
-			lines = g_slist_prepend( NULL, str );
-			ok = ofa_iexportable_export_lines( exportable, lines );
-			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
-			if( !ok ){
-				return( FALSE );
-			}
-		}
-
 		for( amount=ledger->priv->amounts ; amount ; amount=amount->next ){
 			sdev = ( sDetailCur * ) amount->data;
 
-			sdfin = my_date_to_str(
-							ofo_dossier_get_exe_end( dossier, sdev->exe_id ),
-							MY_DATE_SQL );
-			sdebd = my_date_to_str(
-							ofo_ledger_get_deb_date( ledger, sdev->exe_id, sdev->currency ),
-							MY_DATE_SQL );
-			scred = my_date_to_str(
-							ofo_ledger_get_cre_date( ledger, sdev->exe_id, sdev->currency ),
-							MY_DATE_SQL );
-
-			str = g_strdup_printf( "3;%s;%s;%s;%.5lf;%.5lf;%.5lf;%s;%.5lf;%s",
+			str = g_strdup_printf( "2;%s;%s;%.5lf;%.5lf;%.5lf;%.5lf",
 					ofo_ledger_get_mnemo( ledger ),
-					sdfin,
 					sdev->currency,
-					ofo_ledger_get_clo_deb( ledger, sdev->exe_id, sdev->currency ),
-					ofo_ledger_get_clo_cre( ledger, sdev->exe_id, sdev->currency ),
-					ofo_ledger_get_deb( ledger, sdev->exe_id, sdev->currency ),
-					sdebd,
-					ofo_ledger_get_cre( ledger, sdev->exe_id, sdev->currency ),
-					scred );
-
-			g_free( sdfin );
-			g_free( sdebd );
-			g_free( scred );
+					ofo_ledger_get_clo_deb( ledger, sdev->currency ),
+					ofo_ledger_get_clo_cre( ledger, sdev->currency ),
+					ofo_ledger_get_deb( ledger, sdev->currency ),
+					ofo_ledger_get_cre( ledger, sdev->currency ));
 
 			lines = g_slist_prepend( NULL, str );
 			ok = ofa_iexportable_export_lines( exportable, lines );
@@ -2043,6 +1666,5 @@ static gboolean
 ledger_do_drop_content( const ofoSgbd *sgbd )
 {
 	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_LEDGERS", TRUE ) &&
-			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_LEDGERS_CUR", TRUE ) &&
-			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_LEDGERS_EXE", TRUE ));
+			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_LEDGERS_CUR", TRUE ));
 }

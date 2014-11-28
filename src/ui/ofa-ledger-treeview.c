@@ -417,14 +417,15 @@ insert_new_row( ofaLedgerTreeview *self, ofoLedger *ledger, gboolean with_select
 static void
 set_row_by_iter( ofaLedgerTreeview *self, ofoLedger *ledger, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	GDate *dlast_entry, *dlast_closing;
-	gchar *slast_entry, *slast_closing;
+	GDate *dlast_entry;
+	const GDate *dlast_close;
+	gchar *slast_entry, *slast_close;
 
 	dlast_entry = ofo_ledger_get_last_entry( ledger );
 	slast_entry = my_date_to_str( dlast_entry, MY_DATE_DMYY );
 
-	dlast_closing = ofo_ledger_get_last_closing( ledger );
-	slast_closing = my_date_to_str( dlast_closing, MY_DATE_DMYY );
+	dlast_close = ofo_ledger_get_last_close( ledger );
+	slast_close = my_date_to_str( dlast_close, MY_DATE_DMYY );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( tmodel ),
@@ -432,12 +433,10 @@ set_row_by_iter( ofaLedgerTreeview *self, ofoLedger *ledger, GtkTreeModel *tmode
 			COL_MNEMO,        ofo_ledger_get_mnemo( ledger ),
 			COL_LABEL,        ofo_ledger_get_label( ledger ),
 			COL_LAST_ENTRY,   slast_entry,
-			COL_LAST_CLOSING, slast_closing,
+			COL_LAST_CLOSING, slast_close,
 			-1 );
 
-	g_free( slast_closing );
-	g_free( dlast_closing );
-
+	g_free( slast_close );
 	g_free( slast_entry );
 	g_free( dlast_entry );
 }

@@ -83,7 +83,7 @@
  *        consulting a closed exercice
  */
 
-#include "core/my-dialog.h"
+#include "ui/my-assistant.h"
 
 G_BEGIN_DECLS
 
@@ -98,7 +98,7 @@ typedef struct _ofaExeClosingPrivate        ofaExeClosingPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog              parent;
+	myAssistant           parent;
 
 	/*< private members >*/
 	ofaExeClosingPrivate *priv;
@@ -107,13 +107,13 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	myAssistantClass      parent;
 }
 	ofaExeClosingClass;
 
-GType    ofa_exe_closing_get_type( void ) G_GNUC_CONST;
+GType  ofa_exe_closing_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_exe_closing_run     ( ofaMainWindow *parent );
+void   ofa_exe_closing_run     ( ofaMainWindow *parent );
 
 G_END_DECLS
 

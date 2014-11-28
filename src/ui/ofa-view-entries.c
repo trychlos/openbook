@@ -86,7 +86,6 @@ struct _ofaViewEntriesPrivate {
 	/* internals
 	 */
 	ofoDossier        *dossier;			/* dossier */
-	GDate             *dossier_last_closing;
 	const GDate       *dossier_opening;
 	GDate              d_from;
 	GDate              d_to;
@@ -329,7 +328,6 @@ view_entries_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFA_VIEW_ENTRIES( instance )->priv;
 
-	g_free( priv->dossier_last_closing );
 	g_free( priv->jou_mnemo );
 	g_free( priv->acc_number );
 	reset_balances_hash( OFA_VIEW_ENTRIES( instance ));
@@ -402,14 +400,11 @@ v_setup_view( ofaPage *page )
 {
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *frame;
-	gint exe_id;
 
 	priv = OFA_VIEW_ENTRIES( page )->priv;
 
 	priv->dossier = ofa_page_get_dossier( page );
-	priv->dossier_last_closing = ofo_dossier_get_last_closed_exercice( priv->dossier );
-	exe_id = ofo_dossier_get_current_exe_id( priv->dossier );
-	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier, exe_id );
+	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
@@ -2517,7 +2512,7 @@ check_row_for_valid_amounts( ofaViewEntries *self, GtkTreeIter *iter )
 
 /*
  * effect date of any new entry must be:
- * - greater than the last closing date of the exercice (if any)
+ * - greater than the opening date of the exercice (should)
  * - greater than the last closing date of the ledger (if any)
  */
 static void
@@ -2653,14 +2648,13 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
 /*
  * returns the minimal effect date, given :
  * - the last last closing date of the ledger,
- * - the possible last closing date of the dossier,
  * - the possible opening date of the current exercice of the dossier.
  * - the operation date
  *
  * This is the minimal effect date for standard use cases, where entry
  * will be normally applied to account and ledger:
- * - for a new dossier where open exercice date has not been set, there
- *   is no other minimal date than the operation date itself
+ * - for a new dossier where open exercice date has not been set, no
+ *   entry is allowed here
  * - at soon as a ledger is closed, the closing date becomes a new
  *   minimal date
  * - when the exercice itself is closed, then the open exercice date
@@ -2671,16 +2665,12 @@ set_default_deffect( ofaViewEntries *self, GtkTreeIter *iter )
  * function always returns a valid minimal date. Starting with this
  * minimal effect date, the entry will normally be applied to account
  * and ledger.
- *
- * See get_max_past_deffect() for a maximal date which let the entry be
- * recorded in books, while not applying it to account nor ledger.
  */
 static GDate *
 get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger )
 {
 	ofaViewEntriesPrivate *priv;
-	static GDate dmin;
-	GDate *ledger_last_closing;
+	static GDate dmin, last_close;
 	guint to_add;
 
 	priv = self->priv;
@@ -2690,24 +2680,19 @@ get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger )
 	/* minimal effect date from dossier point of view: may be undefined */
 	if( my_date_is_valid( priv->dossier_opening )){
 		my_date_set_from_date( &dmin, priv->dossier_opening );
-
-	} else if( my_date_is_valid( priv->dossier_last_closing )){
-		my_date_set_from_date( &dmin, priv->dossier_last_closing );
-		to_add = 1;
 	}
 	if( my_date_is_valid( &dmin )){
 		g_date_add_days( &dmin, to_add );	/* the minimal deffect from the dossier */
 	}
 
 	/* minimal effect date from ledger point of view: may be undefined */
-	ledger_last_closing = ofo_ledger_get_last_closing( ledger );
-	if( my_date_is_valid( ledger_last_closing )){
-		g_date_add_days( ledger_last_closing, 1 );
-		if( !my_date_is_valid( &dmin ) || my_date_compare( &dmin, ledger_last_closing ) < 0 ){
-			my_date_set_from_date( &dmin, ledger_last_closing );
+	my_date_set_from_date( &last_close, ofo_ledger_get_last_close( ledger ));
+	if( my_date_is_valid( &last_close )){
+		g_date_add_days( &last_close, 1 );
+		if( !my_date_is_valid( &dmin ) || my_date_compare( &dmin, &last_close ) < 0 ){
+			my_date_set_from_date( &dmin, &last_close );
 		}
 	}
-	g_free( ledger_last_closing );
 
 	/* minimal effect date from operation point of view */
 	if( !my_date_is_valid( &dmin ) ||
@@ -2724,8 +2709,7 @@ get_min_deffect( ofaViewEntries *self, const GDate *dope, ofoLedger *ledger )
  * ledgers, but their recording in our books is allowed.
  *
  * This is so a maximal date: before this date, entry will be allowed
- * (though a warning will be emitted, and the user will have to force
- * the save) and recorded, while not applied.
+ * to be imported, while not applied.
  * After this date, entries enter in a normal behavior where they must
  * satisfy with ledger closing requirements.
  *
@@ -2751,9 +2735,6 @@ get_max_past_deffect( ofaViewEntries *self )
 	if( my_date_is_valid( priv->dossier_opening )){
 		my_date_set_from_date( &dmax, priv->dossier_opening );
 		to_substract = 1;
-
-	} else if( my_date_is_valid( priv->dossier_last_closing )){
-		my_date_set_from_date( &dmax, priv->dossier_last_closing );
 	}
 	if( my_date_is_valid( &dmax )){
 		g_date_subtract_days( &dmax, to_substract );	/* the maximal deffect for past entries */

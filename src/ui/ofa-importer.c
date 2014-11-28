@@ -39,8 +39,8 @@
 
 #include "ui/ofa-importer.h"
 
-static gint try_to_import_uri( const ofoDossier *dossier, GList *modules, ofaIImporterParms *parms );
-static gint insert_imported_bat_v1( const ofoDossier *dossier, const gchar *uri, const gchar *format, ofaIImporterBatv1 *batv1 );
+static gint try_to_import_uri( ofoDossier *dossier, GList *modules, ofaIImporterParms *parms );
+static gint insert_imported_bat_v1( ofoDossier *dossier, const gchar *uri, const gchar *format, ofaIImporterBatv1 *batv1 );
 
 /**
  * ofa_importer_import_from_uri:
@@ -50,7 +50,7 @@ static gint insert_imported_bat_v1( const ofoDossier *dossier, const gchar *uri,
  * OFA_T_IMPORT_BAT table
  */
 gint
-ofa_importer_import_from_uri( const ofoDossier *dossier, gint type, const gchar *uri )
+ofa_importer_import_from_uri( ofoDossier *dossier, gint type, const gchar *uri )
 {
 	static const gchar *thisfn = "ofa_importer_import_from_uri";
 	GList *modules;
@@ -85,7 +85,7 @@ ofa_importer_import_from_uri( const ofoDossier *dossier, gint type, const gchar 
  * Returns: the count of successfully imported URIs
  */
 guint
-ofa_importer_import_from_uris( const ofoDossier *dossier, gint type, GSList *uris )
+ofa_importer_import_from_uris( ofoDossier *dossier, gint type, GSList *uris )
 {
 	static const gchar *thisfn = "ofa_importer_import_from_uris";
 	GList *modules;
@@ -121,7 +121,7 @@ ofa_importer_import_from_uris( const ofoDossier *dossier, gint type, GSList *uri
  * Returns the internal id of the imported file, or -1.
  */
 static gint
-try_to_import_uri( const ofoDossier *dossier, GList *modules, ofaIImporterParms *parms )
+try_to_import_uri( ofoDossier *dossier, GList *modules, ofaIImporterParms *parms )
 {
 	static const gchar *thisfn = "ofa_importer_try_to_import_uri";
 	GList *im;
@@ -155,7 +155,7 @@ try_to_import_uri( const ofoDossier *dossier, GList *modules, ofaIImporterParms 
 }
 
 static gint
-insert_imported_bat_v1( const ofoDossier *dossier,
+insert_imported_bat_v1( ofoDossier *dossier,
 							const gchar *uri, const gchar *format, ofaIImporterBatv1 *batv1 )
 {
 	static const gchar *thisfn = "ofa_importer_insert_imported_bat_v1";

@@ -93,7 +93,7 @@ void            ofo_bat_line_set_currency ( ofoBatLine *batline, const gchar *cu
 void            ofo_bat_line_set_amount   ( ofoBatLine *batline, ofxAmount montant );
 void            ofo_bat_line_set_entry    ( ofoBatLine *batline, ofxCounter number );
 
-gboolean        ofo_bat_line_insert       ( ofoBatLine *batline, const ofoDossier *dossier );
+gboolean        ofo_bat_line_insert       ( ofoBatLine *batline, ofoDossier *dossier );
 gboolean        ofo_bat_line_update       ( ofoBatLine *batline, const ofoDossier *dossier );
 
 G_END_DECLS

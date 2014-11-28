@@ -768,7 +768,7 @@ bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp )
  *
  */
 gboolean
-ofo_bat_insert( ofoBat *bat, const ofoDossier *dossier )
+ofo_bat_insert( ofoBat *bat, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_bat_insert";
 
@@ -782,7 +782,7 @@ ofo_bat_insert( ofoBat *bat, const ofoDossier *dossier )
 
 		init_global_handlers( dossier );
 
-		bat->priv->id = ofo_dossier_get_next_bat_number( dossier );
+		bat->priv->id = ofo_dossier_get_next_bat( dossier );
 
 		if( bat_do_insert(
 					bat,

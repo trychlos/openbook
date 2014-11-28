@@ -77,7 +77,7 @@ void            ofo_bat_set_solde    ( ofoBat *bat, ofxAmount solde );
 void            ofo_bat_set_solde_set( ofoBat *bat, gboolean set );
 void            ofo_bat_set_notes    ( ofoBat *bat, const gchar *notes );
 
-gboolean        ofo_bat_insert       ( ofoBat *bat, const ofoDossier *dossier );
+gboolean        ofo_bat_insert       ( ofoBat *bat, ofoDossier *dossier );
 gboolean        ofo_bat_update       ( ofoBat *bat, const ofoDossier *dossier );
 gboolean        ofo_bat_delete       ( ofoBat *bat, const ofoDossier *dossier );
 

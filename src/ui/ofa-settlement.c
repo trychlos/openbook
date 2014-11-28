@@ -848,7 +848,7 @@ update_selection( ofaSettlement *self, gboolean settle )
 	memset( &ses, '\0', sizeof( sEnumSelected ));
 	ses.self = self;
 	if( settle ){
-		ses.set_number = ofo_dossier_get_next_settlement_number( priv->dossier );
+		ses.set_number = ofo_dossier_get_next_settlement( priv->dossier );
 	} else {
 		ses.set_number = -1;
 	}
