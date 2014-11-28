@@ -344,7 +344,10 @@
 
  467 2014-11-26 move ofoRate to ofaBoxed
 
- 469
+ 469 2014-11-28 ExportSettings: the field separator should be free 
+                instead of having to select among predefined values
+
+ 470
 
 -----------------------------------------------------------------------
  DONE
