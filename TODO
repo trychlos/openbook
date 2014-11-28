@@ -344,13 +344,6 @@
 
  467 2014-11-26 move ofoRate to ofaBoxed
 
- 468 2014-11-27 have one database per exercice
-                merge OFA_T_DOSSIER & OFA_T_DOSSIER_EXE
-                merge OFA_T_LEDGERS & OFA_T_LEDGERS_EXE
-                change status indicator from int to char(1)
-                remove LED_CUR_DEB_DATE & LED_CUR_CRE_DATE
-                add DOS_SIREN
-
  469
 
 -----------------------------------------------------------------------
@@ -2034,6 +2027,14 @@
  460 2014-11-21 ViewEntries: in order to keep debit/credit/currency 
                 aligned, have other columns (reconcil) on the left
      2014-11-22 done - svn #4143
+
+ 468 2014-11-27 have one database per exercice
+                merge OFA_T_DOSSIER & OFA_T_DOSSIER_EXE
+                merge OFA_T_LEDGERS & OFA_T_LEDGERS_EXE
+                change status indicator from int to char(1)
+                remove LED_CUR_DEB_DATE & LED_CUR_CRE_DATE
+                add DOS_SIREN
+     2014-11-28 done - svn #4172
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
