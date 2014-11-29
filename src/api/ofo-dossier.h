@@ -43,8 +43,8 @@
  */
 
 #include "api/ofa-boxed.h"
+#include "api/ofa-dbms-def.h"
 #include "api/ofo-dossier-def.h"
-#include "api/ofo-sgbd-def.h"
 
 G_BEGIN_DECLS
 
@@ -59,24 +59,24 @@ typedef enum {
 
 /**
  * Dossier signals:
- * @OFA_SIGNAL_DOSSIER_BEGIN: sent on the dossier when the exercice
- *                            beginning date is modified. This only
- *                            may happen on the current exercice and
- *                            in small limits if entries have already
- *                            been recorded.
+ * @OFA_SIGNAL_DOSSIER_DATES_CHANGED: sent on the dossier when the
+ *  exercice beginning or ending dates are modified. This only may
+ *  happen on the current exercice and, regarding the beginning date,
+ *  in small limits if entries have already been recorded.
  */
-#define OFA_SIGNAL_DOSSIER_BEGIN        "ofa-signal-dossier-begin"
+#define OFA_SIGNAL_DOSSIER_DATES_CHANGED "ofa-signal-dossier-dates_changed"
 
-ofoDossier      *ofo_dossier_new                       ( const gchar *name );
+ofoDossier      *ofo_dossier_new                       ( void );
 
 gboolean         ofo_dossier_open                      ( ofoDossier *dossier,
+																const gchar *dname,
+																const gchar *dbname,
 																const gchar *account,
 																const gchar *password );
 
 const gchar     *ofo_dossier_get_name                  ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_user                  ( const ofoDossier *dossier );
-const ofoSgbd   *ofo_dossier_get_sgbd                  ( const ofoDossier *dossier );
-gchar           *ofo_dossier_get_dbname                ( const ofoDossier *dossier );
+const ofaDbms   *ofo_dossier_get_dbms                  ( const ofoDossier *dossier );
 
 gboolean         ofo_dossier_use_currency              ( const ofoDossier *dossier,
 																const gchar *currency );
@@ -123,8 +123,6 @@ void             ofo_dossier_set_exe_notes             ( const ofoDossier *dossi
 void             ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
 void             ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
 void             ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );
-
-gboolean         ofo_dossier_dbmodel_update            ( ofoSgbd *sgbd, const gchar *name, const gchar *account );
 
 gboolean         ofo_dossier_update                    ( ofoDossier *dossier );
 

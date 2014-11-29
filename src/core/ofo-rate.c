@@ -34,19 +34,19 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-dbms.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
-#include "api/ofo-sgbd.h"
 
 /* priv instance data
  */
 struct _ofoRatePrivate {
 
-	/* sgbd data
+	/* dbms data
 	 */
 	gchar     *mnemo;
 	gchar     *label;
@@ -65,21 +65,21 @@ static ofoRate         *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void             rate_set_upd_user( ofoRate *rate, const gchar *user );
 static void             rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
 static void             rate_val_add_detail( ofoRate *rate, ofsRateValidity *detail );
-static gboolean         rate_do_insert( ofoRate *rate, const ofoSgbd *sgbd, const gchar *user );
-static gboolean         rate_insert_main( ofoRate *rate, const ofoSgbd *sgbd, const gchar *user );
-static gboolean         rate_delete_validities( ofoRate *rate, const ofoSgbd *sgbd );
-static gboolean         rate_insert_validities( ofoRate *rate, const ofoSgbd *sgbd );
-static gboolean         rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofoSgbd *sgbd );
-static gboolean         rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
-static gboolean         rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user );
-static gboolean         rate_do_delete( ofoRate *rate, const ofoSgbd *sgbd );
+static gboolean         rate_do_insert( ofoRate *rate, const ofaDbms *dbms, const gchar *user );
+static gboolean         rate_insert_main( ofoRate *rate, const ofaDbms *dbms, const gchar *user );
+static gboolean         rate_delete_validities( ofoRate *rate, const ofaDbms *dbms );
+static gboolean         rate_insert_validities( ofoRate *rate, const ofaDbms *dbms );
+static gboolean         rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofaDbms *dbms );
+static gboolean         rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user );
+static gboolean         rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user );
+static gboolean         rate_do_delete( ofoRate *rate, const ofaDbms *dbms );
 static gint             rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
 static gint             rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
 static gint             rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent );
 static gboolean         iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 static ofoRate         *rate_import_csv_rate( GSList *fields, gint count, gint *errors );
 static ofsRateValidity *rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnemo );
-static gboolean         rate_do_drop_content( const ofoSgbd *sgbd );
+static gboolean         rate_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
@@ -203,7 +203,7 @@ ofo_rate_get_dataset( const ofoDossier *dossier )
 static GList *
 rate_load_dataset( void )
 {
-	const ofoSgbd *sgbd;
+	const ofaDbms *dbms;
 	GSList *result, *irow, *icol;
 	ofoRate *rate;
 	GList *dataset, *it;
@@ -212,9 +212,9 @@ rate_load_dataset( void )
 	GTimeVal timeval;
 
 	dataset = NULL;
-	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
+	dbms = ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier ));
 
-	result = ofo_sgbd_query_ex( sgbd,
+	result = ofa_dbms_query_ex( dbms,
 			"SELECT RAT_MNEMO,RAT_LABEL,RAT_NOTES,"
 			"	RAT_UPD_USER,RAT_UPD_STAMP"
 			"	FROM OFA_T_RATES", TRUE );
@@ -236,7 +236,7 @@ rate_load_dataset( void )
 		dataset = g_list_prepend( dataset, rate );
 	}
 
-	ofo_sgbd_free_result( result );
+	ofa_dbms_free_results( result );
 
 	for( it=dataset ; it ; it=it->next ){
 
@@ -249,7 +249,7 @@ rate_load_dataset( void )
 					"	WHERE RAT_MNEMO='%s'",
 					ofo_rate_get_mnemo( rate ));
 
-		result = ofo_sgbd_query_ex( sgbd, query, TRUE );
+		result = ofa_dbms_query_ex( dbms, query, TRUE );
 
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
@@ -262,7 +262,7 @@ rate_load_dataset( void )
 			rate_val_add_detail( rate, valid );
 		}
 
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 		g_free( query );
 	}
 
@@ -718,7 +718,7 @@ rate_set_upd_stamp( ofoRate *rate, const GTimeVal *upd_stamp )
  *
  * Clear all validities of the rate object.
  * This is normally done just before adding new validities, when
- * preparing for a sgbd update.
+ * preparing for a dbms update.
  */
 void
 ofo_rate_free_all_val( ofoRate *rate )
@@ -785,7 +785,7 @@ ofo_rate_insert( ofoRate *rate )
 
 		if( rate_do_insert(
 					rate,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, rate );
@@ -798,15 +798,15 @@ ofo_rate_insert( ofoRate *rate )
 }
 
 static gboolean
-rate_do_insert( ofoRate *rate, const ofoSgbd *sgbd, const gchar *user )
+rate_do_insert( ofoRate *rate, const ofaDbms *dbms, const gchar *user )
 {
-	return( rate_insert_main( rate, sgbd, user ) &&
-			rate_delete_validities( rate, sgbd ) &&
-			rate_insert_validities( rate, sgbd ));
+	return( rate_insert_main( rate, dbms, user ) &&
+			rate_delete_validities( rate, dbms ) &&
+			rate_insert_validities( rate, dbms ));
 }
 
 static gboolean
-rate_insert_main( ofoRate *rate, const ofoSgbd *sgbd, const gchar *user )
+rate_insert_main( ofoRate *rate, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -815,7 +815,7 @@ rate_insert_main( ofoRate *rate, const ofoSgbd *sgbd, const gchar *user )
 	GTimeVal stamp;
 
 	g_return_val_if_fail( OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFA_IS_DBMS( dbms ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_rate_get_label( rate ));
@@ -839,7 +839,7 @@ rate_insert_main( ofoRate *rate, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 
 		rate_set_upd_user( rate, user );
 		rate_set_upd_stamp( rate, &stamp );
@@ -855,7 +855,7 @@ rate_insert_main( ofoRate *rate, const ofoSgbd *sgbd, const gchar *user )
 }
 
 static gboolean
-rate_delete_validities( ofoRate *rate, const ofoSgbd *sgbd )
+rate_delete_validities( ofoRate *rate, const ofaDbms *dbms )
 {
 	gboolean ok;
 	gchar *query;
@@ -864,7 +864,7 @@ rate_delete_validities( ofoRate *rate, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_RATES_VAL WHERE RAT_MNEMO='%s'",
 					ofo_rate_get_mnemo( rate ));
 
-	ok = ofo_sgbd_query( sgbd, query, TRUE );
+	ok = ofa_dbms_query( dbms, query, TRUE );
 
 	g_free( query );
 
@@ -872,7 +872,7 @@ rate_delete_validities( ofoRate *rate, const ofoSgbd *sgbd )
 }
 
 static gboolean
-rate_insert_validities( ofoRate *rate, const ofoSgbd *sgbd )
+rate_insert_validities( ofoRate *rate, const ofaDbms *dbms )
 {
 	gboolean ok;
 	GList *idet;
@@ -881,14 +881,14 @@ rate_insert_validities( ofoRate *rate, const ofoSgbd *sgbd )
 	ok = TRUE;
 	for( idet=rate->priv->validities ; idet ; idet=idet->next ){
 		sdet = ( ofsRateValidity * ) idet->data;
-		ok &= rate_insert_validity( rate, sdet, sgbd );
+		ok &= rate_insert_validity( rate, sdet, dbms );
 	}
 
 	return( ok );
 }
 
 static gboolean
-rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofoSgbd *sgbd )
+rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofaDbms *dbms )
 {
 	gboolean ok;
 	GString *query;
@@ -920,7 +920,7 @@ rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofoSgbd *sgbd 
 
 	g_string_append_printf( query, "%s)", amount );
 
-	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
+	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 	g_free( dbegin );
@@ -951,7 +951,7 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 		if( rate_do_update(
 					rate,
 					prev_mnemo,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_UPDATE_DATASET( st_global, rate, prev_mnemo );
@@ -964,15 +964,15 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 }
 
 static gboolean
-rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user )
+rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user )
 {
-	return( rate_update_main( rate, prev_mnemo, sgbd, user ) &&
-			rate_delete_validities( rate, sgbd ) &&
-			rate_insert_validities( rate, sgbd ));
+	return( rate_update_main( rate, prev_mnemo, dbms, user ) &&
+			rate_delete_validities( rate, dbms ) &&
+			rate_insert_validities( rate, dbms ));
 }
 
 static gboolean
-rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofoSgbd *sgbd, const gchar *user )
+rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -981,7 +981,7 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofoSgbd *sgbd, c
 	GTimeVal stamp;
 
 	g_return_val_if_fail( OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFA_IS_DBMS( dbms ), FALSE );
 
 	ok = FALSE;
 	label = my_utils_quote( ofo_rate_get_label( rate ));
@@ -1005,7 +1005,7 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofoSgbd *sgbd, c
 			"	WHERE RAT_MNEMO='%s'",
 					user, stamp_str, prev_mnemo );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 
 		rate_set_upd_user( rate, user );
 		rate_set_upd_stamp( rate, &stamp );
@@ -1038,7 +1038,7 @@ ofo_rate_delete( ofoRate *rate )
 
 		if( rate_do_delete(
 					rate,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, rate );
 
@@ -1050,7 +1050,7 @@ ofo_rate_delete( ofoRate *rate )
 }
 
 static gboolean
-rate_do_delete( ofoRate *rate, const ofoSgbd *sgbd )
+rate_do_delete( ofoRate *rate, const ofaDbms *dbms )
 {
 	gboolean ok;
 	gchar *query;
@@ -1059,7 +1059,7 @@ rate_do_delete( ofoRate *rate, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_RATES WHERE RAT_MNEMO='%s'",
 					ofo_rate_get_mnemo( rate ));
 
-	ok = ofo_sgbd_query( sgbd, query, TRUE );
+	ok = ofa_dbms_query( dbms, query, TRUE );
 
 	g_free( query );
 
@@ -1067,7 +1067,7 @@ rate_do_delete( ofoRate *rate, const ofoSgbd *sgbd )
 			"DELETE FROM OFA_T_RATES_VAL WHERE RAT_MNEMO='%s'",
 					ofo_rate_get_mnemo( rate ));
 
-	ok &= ofo_sgbd_query( sgbd, query, TRUE );
+	ok &= ofa_dbms_query( dbms, query, TRUE );
 
 	g_free( query );
 
@@ -1357,12 +1357,12 @@ ofo_rate_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 	if( !errors ){
 		st_global->send_signal_new = FALSE;
 
-		rate_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+		rate_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
 			rate_do_insert(
 					OFO_RATE( ise->data ),
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 		}
 
@@ -1466,8 +1466,8 @@ rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnem
 }
 
 static gboolean
-rate_do_drop_content( const ofoSgbd *sgbd )
+rate_do_drop_content( const ofaDbms *dbms )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_RATES", TRUE ) &&
-			ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_RATES_VAL", TRUE ));
+	return( ofa_dbms_query( dbms, "DELETE FROM OFA_T_RATES", TRUE ) &&
+			ofa_dbms_query( dbms, "DELETE FROM OFA_T_RATES_VAL", TRUE ));
 }

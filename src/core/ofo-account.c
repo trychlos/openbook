@@ -35,6 +35,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-boxed.h"
+#include "api/ofa-dbms.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -42,7 +43,6 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-#include "api/ofo-sgbd.h"
 
 #include "core/ofa-export-settings.h"
 #include "core/ofa-preferences.h"
@@ -238,9 +238,9 @@ static void         on_updated_object_currency_code( const ofoDossier *dossier, 
 static void         on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
 static GList       *account_load_dataset( void );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
-static gint         account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
-static gint         account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
-static gint         account_count_for_like( const ofoSgbd *sgbd, const gchar *field, gint number );
+static gint         account_count_for_currency( const ofaDbms *dbms, const gchar *currency );
+static gint         account_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
+static gint         account_count_for_like( const ofaDbms *dbms, const gchar *field, gint number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
@@ -265,14 +265,14 @@ static void         account_set_open_deb_amount( ofoAccount *account, ofxAmount 
 static void         account_set_open_cre_entry( ofoAccount *account, ofxCounter number );
 static void         account_set_open_cre_date( ofoAccount *account, const GDate *effect );
 static void         account_set_open_cre_amount( ofoAccount *account, ofxAmount amount );
-static gboolean     account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user );
-static gboolean     account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number );
-static gboolean     account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd );
-static gboolean     account_do_delete( ofoAccount *account, const ofoSgbd *sgbd );
+static gboolean     account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user );
+static gboolean     account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, const gchar *prev_number );
+static gboolean     account_update_amounts( ofoAccount *account, const ofaDbms *dbms );
+static gboolean     account_do_delete( ofoAccount *account, const ofaDbms *dbms );
 static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
-static gboolean     account_do_drop_content( const ofoSgbd *sgbd );
+static gboolean     account_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
@@ -470,7 +470,7 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 			account_set_day_cre_amount( account, prev+credit );
 		}
 
-		if( account_update_amounts( account, ofo_dossier_get_sgbd( dossier ))){
+		if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
 			g_signal_emit_by_name(
 					G_OBJECT( dossier ),
 					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( account ), NULL );
@@ -513,7 +513,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 					"UPDATE OFA_T_ACCOUNTS SET ACC_CURRENCY='%s' WHERE ACC_CURRENCY='%s'",
 						code, prev_id );
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
 
 	g_free( query );
 
@@ -588,7 +588,7 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 		}
 	}
 
-	if( account_update_amounts( account, ofo_dossier_get_sgbd( dossier ))){
+	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ),
 				OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( account ), NULL );
@@ -626,7 +626,7 @@ account_load_dataset( void )
 	return(
 			ofo_base_load_dataset(
 					st_boxed_defs,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
 					OFO_TYPE_ACCOUNT ));
 }
@@ -692,7 +692,7 @@ ofo_account_use_class( const ofoDossier *dossier, gint number )
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
-	return( account_count_for_like( ofo_dossier_get_sgbd( dossier ), "ACC_NUMBER", number ) > 0 );
+	return( account_count_for_like( ofo_dossier_get_dbms( dossier ), "ACC_NUMBER", number ) > 0 );
 }
 
 /**
@@ -713,17 +713,17 @@ ofo_account_use_currency( const ofoDossier *dossier, const gchar *currency )
 
 	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
-	return( account_count_for_currency( ofo_dossier_get_sgbd( dossier ), currency ) > 0 );
+	return( account_count_for_currency( ofo_dossier_get_dbms( dossier ), currency ) > 0 );
 }
 
 static gint
-account_count_for_currency( const ofoSgbd *sgbd, const gchar *currency )
+account_count_for_currency( const ofaDbms *dbms, const gchar *currency )
 {
-	return( account_count_for( sgbd, "ACC_CURRENCY", currency ));
+	return( account_count_for( dbms, "ACC_CURRENCY", currency ));
 }
 
 static gint
-account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo )
+account_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
@@ -735,20 +735,20 @@ account_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo )
 				"	WHERE %s='%s'",
 					field, mnemo );
 
-	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
+	result = ofa_dbms_query_ex( dbms, query, TRUE );
 	g_free( query );
 
 	if( result ){
 		icol = ( GSList * ) result->data;
 		count = atoi(( gchar * ) icol->data );
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	return( count );
 }
 
 static gint
-account_count_for_like( const ofoSgbd *sgbd, const gchar *field, gint number )
+account_count_for_like( const ofaDbms *dbms, const gchar *field, gint number )
 {
 	gint count;
 	gchar *query;
@@ -760,13 +760,13 @@ account_count_for_like( const ofoSgbd *sgbd, const gchar *field, gint number )
 				"	WHERE %s LIKE '%d%%'",
 					field, number );
 
-	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
+	result = ofa_dbms_query_ex( dbms, query, TRUE );
 	g_free( query );
 
 	if( result ){
 		icol = ( GSList * ) result->data;
 		count = atoi(( gchar * ) icol->data );
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	return( count );
@@ -1636,8 +1636,8 @@ archive_open_balances( ofoAccount *account, void *empty )
 		g_string_append_printf( query,
 				" WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 
-		ofo_sgbd_query(
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )), query->str, TRUE );
+		ofa_dbms_query(
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )), query->str, TRUE );
 
 		g_string_free( query, TRUE );
 
@@ -1967,7 +1967,7 @@ ofo_account_insert( ofoAccount *account )
 
 		if( account_do_insert(
 					account,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, account );
@@ -1980,7 +1980,7 @@ ofo_account_insert( ofoAccount *account )
 }
 
 static gboolean
-account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
+account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -2039,7 +2039,7 @@ account_do_insert( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 		account_set_upd_user( account, user );
 		account_set_upd_stamp( account, &stamp );
 		ok = TRUE;
@@ -2074,7 +2074,7 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 
 		if( account_do_update(
 					account,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )),
 					prev_number )){
 
@@ -2088,7 +2088,7 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 }
 
 static gboolean
-account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, const gchar *prev_number )
+account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, const gchar *prev_number )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -2154,7 +2154,7 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 					stamp_str,
 					prev_number );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 		account_set_upd_user( account, user );
 		account_set_upd_stamp( account, &stamp );
 
@@ -2170,7 +2170,7 @@ account_do_update( ofoAccount *account, const ofoSgbd *sgbd, const gchar *user, 
 }
 
 static gboolean
-account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
+account_update_amounts( ofoAccount *account, const ofaDbms *dbms )
 {
 	GString *query;
 	gboolean ok;
@@ -2243,7 +2243,7 @@ account_update_amounts( ofoAccount *account, const ofoSgbd *sgbd )
 				"	WHERE ACC_NUMBER='%s'",
 						ofo_account_get_number( account ));
 
-	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
+	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -2268,7 +2268,7 @@ ofo_account_delete( ofoAccount *account )
 
 		if( account_do_delete(
 					account,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, account );
 
@@ -2280,7 +2280,7 @@ ofo_account_delete( ofoAccount *account )
 }
 
 static gboolean
-account_do_delete( ofoAccount *account, const ofoSgbd *sgbd )
+account_do_delete( ofoAccount *account, const ofaDbms *dbms )
 {
 	gchar *query;
 	gboolean ok;
@@ -2290,7 +2290,7 @@ account_do_delete( ofoAccount *account, const ofoSgbd *sgbd )
 			"	WHERE ACC_NUMBER='%s'",
 					ofo_account_get_number( account ));
 
-	ok = ofo_sgbd_query( sgbd, query, TRUE );
+	ok = ofa_dbms_query( dbms, query, TRUE );
 
 	g_free( query );
 
@@ -2483,12 +2483,12 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 	if( !errors ){
 		st_global->send_signal_new = FALSE;
 
-		account_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+		account_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
 			account_do_insert(
 					OFO_ACCOUNT( ise->data ),
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 		}
 
@@ -2505,7 +2505,7 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 }
 
 static gboolean
-account_do_drop_content( const ofoSgbd *sgbd )
+account_do_drop_content( const ofaDbms *dbms )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_ACCOUNTS", TRUE ));
+	return( ofa_dbms_query( dbms, "DELETE FROM OFA_T_ACCOUNTS", TRUE ));
 }

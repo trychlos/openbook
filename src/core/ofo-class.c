@@ -33,13 +33,13 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-boxed.h"
+#include "api/ofa-dbms.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-sgbd.h"
 
 /* priv instance data
  */
@@ -89,13 +89,13 @@ static GList     *class_load_dataset( void );
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );
 static void       class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp );
-static gboolean   class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user );
-static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar *user );
-static gboolean   class_do_delete( ofoClass *class, const ofoSgbd *sgbd );
+static gboolean   class_do_insert( ofoClass *class, const ofaDbms *dbms, const gchar *user );
+static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaDbms *dbms, const gchar *user );
+static gboolean   class_do_delete( ofoClass *class, const ofaDbms *dbms );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
 static gboolean   iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
-static gboolean   class_do_drop_content( const ofoSgbd *sgbd );
+static gboolean   class_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoClass, ofo_class, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
@@ -220,7 +220,7 @@ class_load_dataset( void )
 	return(
 			ofo_base_load_dataset(
 					st_boxed_defs,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
 					OFO_TYPE_CLASS ));
 }
@@ -432,7 +432,7 @@ ofo_class_insert( ofoClass *class )
 
 		if( class_do_insert(
 					class,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, class );
@@ -445,7 +445,7 @@ ofo_class_insert( ofoClass *class )
 }
 
 static gboolean
-class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
+class_do_insert( ofoClass *class, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes;
@@ -475,7 +475,7 @@ class_do_insert( ofoClass *class, const ofoSgbd *sgbd, const gchar *user )
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
+	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
 	if( ok ){
 		class_set_upd_user( class, user );
@@ -507,7 +507,7 @@ ofo_class_update( ofoClass *class, gint prev_id )
 		if( class_do_update(
 					class,
 					prev_id,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			str = g_strdup_printf( "%d", prev_id );
@@ -522,7 +522,7 @@ ofo_class_update( ofoClass *class, gint prev_id )
 }
 
 static gboolean
-class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar *user )
+class_do_update( ofoClass *class, gint prev_id, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str;
@@ -550,7 +550,7 @@ class_do_update( ofoClass *class, gint prev_id, const ofoSgbd *sgbd, const gchar
 			"	CLA_UPD_USER='%s',CLA_UPD_STAMP='%s'"
 			"	WHERE CLA_NUMBER=%d", user, stamp_str, prev_id );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 		class_set_upd_user( class, user );
 		class_set_upd_stamp( class, &stamp );
 		ok = TRUE;
@@ -582,7 +582,7 @@ ofo_class_delete( ofoClass *class )
 
 		if( class_do_delete(
 					class,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, class );
 
@@ -594,7 +594,7 @@ ofo_class_delete( ofoClass *class )
 }
 
 static gboolean
-class_do_delete( ofoClass *class, const ofoSgbd *sgbd )
+class_do_delete( ofoClass *class, const ofaDbms *dbms )
 {
 	gchar *query;
 	gboolean ok;
@@ -604,7 +604,7 @@ class_do_delete( ofoClass *class, const ofoSgbd *sgbd )
 			"	WHERE CLA_NUMBER=%d",
 					ofo_class_get_number( class ));
 
-	ok = ofo_sgbd_query( sgbd, query, TRUE );
+	ok = ofa_dbms_query( dbms, query, TRUE );
 
 	g_free( query );
 
@@ -771,12 +771,12 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 	if( !errors ){
 		st_global->send_signal_new = FALSE;
 
-		class_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+		class_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
 			class_do_insert(
 					OFO_CLASS( ise->data ),
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 		}
 
@@ -793,7 +793,7 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 }
 
 static gboolean
-class_do_drop_content( const ofoSgbd *sgbd )
+class_do_drop_content( const ofaDbms *dbms )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_CLASSES", TRUE ));
+	return( ofa_dbms_query( dbms, "DELETE FROM OFA_T_CLASSES", TRUE ));
 }

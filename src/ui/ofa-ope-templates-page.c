@@ -109,7 +109,7 @@ static void       on_delete_clicked( GtkButton *button, ofaPage *page );
 static gboolean   delete_confirmed( ofaOpeTemplatesPage *self, ofoOpeTemplate *model );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesPage *self );
 static void       on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self );
-static void       on_dossier_begin_changed( ofoDossier *dossier, GDate *begin, ofaOpeTemplatesPage *self );
+static void       on_dossier_dates_changed( ofoDossier *dossier, const GDate *begin, const GDate *end, ofaOpeTemplatesPage *self );
 static void       on_guided_input( GtkButton *button, ofaOpeTemplatesPage *self );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplatesPage *self );
 
@@ -303,11 +303,11 @@ v_setup_buttons( ofaPage *page )
 	priv->guided_input_btn = button;
 
 	dossier = ofa_page_get_dossier( page );
-	on_dossier_begin_changed( dossier, NULL, OFA_OPE_TEMPLATES_PAGE( page ));
+	on_dossier_dates_changed( dossier, NULL, NULL, OFA_OPE_TEMPLATES_PAGE( page ));
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_DOSSIER_BEGIN, G_CALLBACK( on_dossier_begin_changed ), page );
+						OFA_SIGNAL_DOSSIER_DATES_CHANGED, G_CALLBACK( on_dossier_dates_changed ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	return( GTK_WIDGET( box ));
@@ -896,7 +896,7 @@ on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self )
 }
 
 static void
-on_dossier_begin_changed( ofoDossier *dossier, GDate *begin, ofaOpeTemplatesPage *self )
+on_dossier_dates_changed( ofoDossier *dossier, const GDate *begin, const GDate *end, ofaOpeTemplatesPage *self )
 {
 	ofaOpeTemplatesPagePrivate *priv;
 

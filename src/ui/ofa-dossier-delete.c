@@ -34,7 +34,6 @@
 #include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-sgbd.h"
 
 #include "core/my-window-prot.h"
 
@@ -318,7 +317,7 @@ static void
 check_for_dbserver_connection( ofaDossierDelete *self )
 {
 	ofaDossierDeletePrivate *priv;
-	ofoSgbd *sgbd;
+	/*ofoSgbd *sgbd;*/
 	const gchar *msg;
 	GdkRGBA color;
 
@@ -327,11 +326,11 @@ check_for_dbserver_connection( ofaDossierDelete *self )
 	if( !priv->connect_ok ){
 
 		/* test a connexion without the database */
-		sgbd = ofo_sgbd_new( priv->label );
+		/*sgbd = ofo_sgbd_new( priv->label );
 		if( ofo_sgbd_connect_ex( sgbd, "mysql", priv->p2_account, priv->p2_password, FALSE )){
 			priv->connect_ok = TRUE;
 		}
-		g_object_unref( sgbd );
+		g_object_unref( sgbd );*/
 
 		msg = priv->connect_ok ?
 				_( "DB server connection is OK" ) : _( "Unable to connect to DB server" );

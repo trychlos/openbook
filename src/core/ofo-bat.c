@@ -35,17 +35,17 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-dbms.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-bat.h"
-#include "api/ofo-sgbd.h"
 
 /* priv instance data
  */
 struct _ofoBatPrivate {
 
-	/* sgbd data
+	/* dbms data
 	 */
 	ofxCounter id;						/* bat (imported file) id */
 	gchar     *uri;
@@ -70,11 +70,11 @@ static void        init_global_handlers( const ofoDossier *dossier );
 static GList      *bat_load_dataset( void );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
-static gboolean    bat_do_insert( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    bat_do_delete_main( ofoBat *bat, const ofoSgbd *sgbd );
-static gboolean    bat_do_delete_lines( ofoBat *bat, const ofoSgbd *sgbd );
+static gboolean    bat_do_insert( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
+static gboolean    bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
+static gboolean    bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
+static gboolean    bat_do_delete_main( ofoBat *bat, const ofaDbms *dbms );
+static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaDbms *dbms );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
 
 static void
@@ -188,15 +188,15 @@ ofo_bat_get_dataset( const ofoDossier *dossier )
 static GList *
 bat_load_dataset( void )
 {
-	const ofoSgbd *sgbd;
+	const ofaDbms *dbms;
 	GSList *result, *irow, *icol;
 	ofoBat *bat;
 	GList *dataset;
 	GTimeVal timeval;
 
-	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
+	dbms = ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier ));
 
-	result = ofo_sgbd_query_ex( sgbd,
+	result = ofa_dbms_query_ex( dbms,
 			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_COUNT,"
 			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE,"
 			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
@@ -254,7 +254,7 @@ bat_load_dataset( void )
 		dataset = g_list_prepend( dataset, bat );
 	}
 
-	ofo_sgbd_free_result( result );
+	ofa_dbms_free_results( result );
 
 	return( g_list_reverse( dataset ));
 }
@@ -522,7 +522,7 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 		g_string_append_printf( query, "AND BAT_END=NULL" );
 	}
 
-	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
+	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
 	if( result ){
 		icol = ( GSList * ) result->data;
 		count = atoi(( gchar * ) icol->data );
@@ -547,7 +547,7 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 			g_free( secondary );
 			g_free( primary );
 		}
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	g_string_free( query, TRUE );
@@ -786,7 +786,7 @@ ofo_bat_insert( ofoBat *bat, ofoDossier *dossier )
 
 		if( bat_do_insert(
 					bat,
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, bat );
@@ -798,13 +798,13 @@ ofo_bat_insert( ofoBat *bat, ofoDossier *dossier )
 }
 
 static gboolean
-bat_do_insert( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
+bat_do_insert( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 {
-	return( bat_insert_main( bat, sgbd, user ));
+	return( bat_insert_main( bat, dbms, user ));
 }
 
 static gboolean
-bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
+bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *str;
@@ -886,7 +886,7 @@ bat_insert_main( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	g_string_append_printf( query, "'%s','%s')", user, stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 		bat_set_upd_user( bat, user );
 		bat_set_upd_stamp( bat, &stamp );
 		ok = TRUE;
@@ -918,7 +918,7 @@ ofo_bat_update( ofoBat *bat, const ofoDossier *dossier )
 
 		if( bat_do_update(
 					bat,
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			OFO_BASE_UPDATE_DATASET( st_global, bat, NULL );
@@ -934,7 +934,7 @@ ofo_bat_update( ofoBat *bat, const ofoDossier *dossier )
  * only notes may be updated
  */
 static gboolean
-bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
+bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *notes;
@@ -959,7 +959,7 @@ bat_do_update( ofoBat *bat, const ofoSgbd *sgbd, const gchar *user )
 			"	BAT_UPD_USER='%s',BAT_UPD_STAMP='%s'"
 			"	WHERE BAT_ID=%ld", user, stamp_str, ofo_bat_get_id( bat ));
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 		bat_set_upd_user( bat, user );
 		bat_set_upd_stamp( bat, &stamp );
 		ok = TRUE;
@@ -991,9 +991,9 @@ ofo_bat_delete( ofoBat *bat, const ofoDossier *dossier )
 
 		OFO_BASE_SET_GLOBAL( st_global, dossier, bat );
 
-		if( bat_do_delete_main( bat, ofo_dossier_get_sgbd( dossier ))){
+		if( bat_do_delete_main( bat, ofo_dossier_get_dbms( dossier ))){
 
-			bat_do_delete_lines( bat, ofo_dossier_get_sgbd( dossier ));
+			bat_do_delete_lines( bat, ofo_dossier_get_dbms( dossier ));
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, bat );
 			return( TRUE );
 		}
@@ -1004,7 +1004,7 @@ ofo_bat_delete( ofoBat *bat, const ofoDossier *dossier )
 }
 
 static gboolean
-bat_do_delete_main( ofoBat *bat, const ofoSgbd *sgbd )
+bat_do_delete_main( ofoBat *bat, const ofaDbms *dbms )
 {
 	gchar *query;
 	gboolean ok;
@@ -1014,7 +1014,7 @@ bat_do_delete_main( ofoBat *bat, const ofoSgbd *sgbd )
 			"	WHERE BAT_ID=%ld",
 					ofo_bat_get_id( bat ));
 
-	ok = ofo_sgbd_query( sgbd, query, TRUE );
+	ok = ofa_dbms_query( dbms, query, TRUE );
 
 	g_free( query );
 
@@ -1022,7 +1022,7 @@ bat_do_delete_main( ofoBat *bat, const ofoSgbd *sgbd )
 }
 
 static gboolean
-bat_do_delete_lines( ofoBat *bat, const ofoSgbd *sgbd )
+bat_do_delete_lines( ofoBat *bat, const ofaDbms *dbms )
 {
 	gchar *query;
 	gboolean ok;
@@ -1032,7 +1032,7 @@ bat_do_delete_lines( ofoBat *bat, const ofoSgbd *sgbd )
 			"	WHERE BAT_ID=%ld",
 					ofo_bat_get_id( bat ));
 
-	ok = ofo_sgbd_query( sgbd, query, TRUE );
+	ok = ofa_dbms_query( dbms, query, TRUE );
 
 	g_free( query );
 

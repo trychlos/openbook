@@ -143,6 +143,50 @@ typedef struct {
 	GSList *      ( *get_exercices )        ( const ofaIDbms *instance,
 														const gchar *dname );
 
+	/**
+	 * query:
+	 * @instance: the #ofaIDbms provider.
+	 * @handle: the handle returned by the connection.
+	 * @query: the SQL query to be executed.
+	 *
+	 * Execute a modification query (INSERT, UPDATE, DELETE, DROP,
+	 * TRUNCATE)on the DBMS.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *query )                ( const ofaIDbms *instance,
+														void *handle, const gchar *query );
+
+	/**
+	 * query_ex:
+	 * @instance: the #ofaIDbms provider.
+	 * @handle: the handle returned by the connection.
+	 * @query: the SQL query to be executed.
+	 *
+	 * Execute a SELECT query on the DBMS.
+	 *
+	 * Returns: a list of rows, or %NULL if an error has occured.
+	 *
+	 * The returned list is free with ofo_sgbd_free_result().
+	 *
+	 * Since: version 1
+	 */
+	GSList      * ( *query_ex )             ( const ofaIDbms *instance,
+														void *handle, const gchar *query );
+
+	/**
+	 * last_error:
+	 * @instance: the #ofaIDbms provider.
+	 * @handle: the handle returned by the connection.
+	 *
+	 * Returns: the last error message as a newly allocated string
+	 * which should be g_free() by the caller.
+	 *
+	 * Since: version 1
+	 */
+	gchar       * ( *last_error )           ( const ofaIDbms *instance,
+														void *handle );
+
 	/* ... */
 
 	/**
@@ -239,47 +283,6 @@ typedef struct {
 	 */
 	GSList *      ( *get_dbnames_list )     ( const ofaIDbms *instance,
 														const gchar *name );
-
-	/**
-	 * query:
-	 * @instance: the #ofaIDbms provider.
-	 * @handle: the handle returned by the connection.
-	 * @query: the SQL query to be executed.
-	 *
-	 * Execute a modification query (INSERT, UPDATE, DELETE, DROP,
-	 * TRUNCATE)on the DBMS.
-	 *
-	 * Since: version 1
-	 */
-	gboolean      ( *query )                ( const ofaIDbms *instance, void *handle, const gchar *query );
-
-	/**
-	 * query_ex:
-	 * @instance: the #ofaIDbms provider.
-	 * @handle: the handle returned by the connection.
-	 * @query: the SQL query to be executed.
-	 *
-	 * Execute a SELECT query on the DBMS.
-	 *
-	 * Returns: a list of rows, or %NULL if an error has occured.
-	 *
-	 * The returned list is free with ofo_sgbd_free_result().
-	 *
-	 * Since: version 1
-	 */
-	GSList      * ( *query_ex )             ( const ofaIDbms *instance, void *handle, const gchar *query );
-
-	/**
-	 * error:
-	 * @instance: the #ofaIDbms provider.
-	 * @handle: the handle returned by the connection.
-	 *
-	 * Returns: the last error message as a newly allocated string
-	 * which should be g_free() by the caller.
-	 *
-	 * Since: version 1
-	 */
-	gchar       * ( *error )                ( const ofaIDbms *instance, void *handle );
 
 	/**
 	 * delete_dossier:
@@ -408,6 +411,12 @@ GSList      *ofa_idbms_get_exercices        ( const ofaIDbms *instance,
 														const gchar *dname );
 #define      ofa_idbms_free_exercices(L)    g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
+gboolean     ofa_idbms_query                ( const ofaIDbms *instance,
+														void *handle, const gchar *query );
+
+gchar       *ofa_idbms_last_error           ( const ofaIDbms *instance,
+														void *handle );
+
 /* .... */
 
 GSList      *ofa_idbms_get_providers_list   ( void );
@@ -426,11 +435,7 @@ gchar       *ofa_idbms_get_dossier_host     ( const ofaIDbms *instance, const gc
 
 gchar       *ofa_idbms_get_dossier_dbname   ( const ofaIDbms *instance, const gchar *label );
 
-gboolean     ofa_idbms_query                ( const ofaIDbms *instance, void *handle, const gchar *query );
-
 GSList      *ofa_idbms_query_ex             ( const ofaIDbms *instance, void *handle, const gchar *query );
-
-gchar       *ofa_idbms_error                ( const ofaIDbms *instance, void *handle );
 
 gboolean     ofa_idbms_delete_dossier       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password,
 												gboolean drop_db, gboolean drop_accounts, gboolean with_confirm );

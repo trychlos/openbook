@@ -38,17 +38,26 @@
 
 G_BEGIN_DECLS
 
-ofaDbms *ofa_dbms_new               ( void );
+ofaDbms     *ofa_dbms_new               ( void );
 
-gboolean ofa_dbms_connect           ( ofaDbms *dbms,
+gboolean     ofa_dbms_connect           ( ofaDbms *dbms,
 											const gchar *dname, const gchar *dbname,
 											const gchar *account, const gchar *password,
 											gboolean display_error );
 
-GSList  *ofa_dbms_get_exercices     ( ofaDbms *dbms,
+GSList      *ofa_dbms_get_exercices     ( ofaDbms *dbms,
 											const gchar *dname );
+#define      ofa_dbms_free_exercices(L) ofa_idbms_free_exercices( L )
 
-#define  ofa_dbms_free_exercices(L) ofa_idbms_free_exercices( L )
+gboolean     ofa_dbms_query             ( const ofaDbms *dbms,
+											const gchar *query,
+											gboolean display_error );
+
+GSList      *ofa_dbms_query_ex          ( const ofaDbms *dbms,
+											const gchar *query,
+											gboolean display_error );
+
+#define      ofa_dbms_free_results(R)   g_slist_foreach(( R ), ( GFunc ) g_slist_free_full, g_free )
 
 G_END_DECLS
 

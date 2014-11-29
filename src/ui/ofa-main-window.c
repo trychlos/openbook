@@ -87,7 +87,7 @@ struct _ofaMainWindowPrivate {
 
 	/* menu items enabled status
 	 */
-	gboolean       dossier_begin;
+	gboolean       dossier_begin;		/* whether the exercice beginning date is valid */
 };
 
 /* signals defined here
@@ -99,6 +99,7 @@ enum {
 	N_SIGNALS
 };
 
+/* an internal signal to update the sensitivity of the menu items */
 #define SIGNAL_ENABLED_UPDATES          "ofa-signal-enabled-updates"
 
 static void on_properties          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -299,7 +300,7 @@ static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook 
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
-static void             on_dossier_begin( ofoDossier *dossier, GDate *begin, ofaMainWindow *window );
+static void             on_dossier_dates_changed( ofoDossier *dossier, const GDate *begin, const GDate *end, ofaMainWindow *window );
 static void             on_enabled_updates( ofaMainWindow *window, void *empty );
 
 static void
@@ -441,9 +442,9 @@ main_window_constructed( GObject *instance )
 		/* connect the action signals
 		 */
 		g_signal_connect( instance,
-				OFA_SIGNAL_ACTION_DOSSIER_OPEN, G_CALLBACK( on_dossier_open ), NULL );
+				OFA_SIGNAL_DOSSIER_OPEN, G_CALLBACK( on_dossier_open ), NULL );
 		g_signal_connect( instance,
-				OFA_SIGNAL_ACTION_DOSSIER_PROPERTIES, G_CALLBACK( on_dossier_properties ), NULL );
+				OFA_SIGNAL_DOSSIER_PROPERTIES, G_CALLBACK( on_dossier_properties ), NULL );
 	}
 }
 
@@ -519,7 +520,7 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	 * 						gpointer user_data );
 	 */
 	st_signals[ DOSSIER_OPEN ] = g_signal_new_class_handler(
-				OFA_SIGNAL_ACTION_DOSSIER_OPEN,
+				OFA_SIGNAL_DOSSIER_OPEN,
 				OFA_TYPE_MAIN_WINDOW,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_dossier_open_cleanup_handler ),
@@ -541,7 +542,7 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	 * 						gpointer user_data );
 	 */
 	st_signals[ DOSSIER_PROPERTIES ] = g_signal_new_class_handler(
-				OFA_SIGNAL_ACTION_DOSSIER_PROPERTIES,
+				OFA_SIGNAL_DOSSIER_PROPERTIES,
 				OFA_TYPE_MAIN_WINDOW,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_dossier_properties_cleanup_handler ),
@@ -763,6 +764,7 @@ static void
 on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_dossier_open";
+	ofaMainWindowPrivate *priv;
 	const GDate *begin;
 
 	g_debug( "%s: window=%p, sdo=%p, dname=%s, dbname=%s, account=%s, password=%s, user_data=%p",
@@ -770,33 +772,35 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 			( void * ) sdo, sdo->dname, sdo->dbname, sdo->account, sdo->password,
 			( void * ) user_data );
 
+	priv = window->priv;
+
 	if( !check_for_account( window, sdo )){
 		return;
 	}
 
-	if( window->priv->dossier ){
-		g_return_if_fail( OFO_IS_DOSSIER( window->priv->dossier ));
+	if( priv->dossier ){
+		g_return_if_fail( OFO_IS_DOSSIER( priv->dossier ));
 		do_close_dossier( window );
 	}
 
-	window->priv->dossier = ofo_dossier_new( sdo->dname );
+	priv->dossier = ofo_dossier_new();
 
-	if( !ofo_dossier_open( window->priv->dossier, sdo->account, sdo->password )){
-		g_clear_object( &window->priv->dossier );
+	if( !ofo_dossier_open( priv->dossier, sdo->dname, sdo->dbname, sdo->account, sdo->password )){
+		g_clear_object( &priv->dossier );
 		return;
 	}
 
-	window->priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
-	gtk_grid_attach( window->priv->grid, GTK_WIDGET( window->priv->pane ), 0, 1, 1, 1 );
-	pane_restore_position( window->priv->pane );
+	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
+	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
+	pane_restore_position( priv->pane );
 	add_treeview_to_pane_left( window );
 	add_empty_notebook_to_pane_right( window );
 
-	set_menubar( window, window->priv->menu );
+	set_menubar( window, priv->menu );
 	set_window_title( window );
 	connect_dossier_for_enabled_updates( window );
 
-	begin = ofo_dossier_get_exe_begin( window->priv->dossier );
+	begin = ofo_dossier_get_exe_begin( priv->dossier );
 	if( !my_date_is_valid( begin )){
 		ofa_main_window_warning_no_entry( window );
 	}
@@ -826,7 +830,8 @@ connect_dossier_for_enabled_updates( ofaMainWindow *window )
 	 * modify the enabled status of a menu item is itself updated
 	 */
 	g_signal_connect(
-			G_OBJECT( priv->dossier ), OFA_SIGNAL_DOSSIER_BEGIN, G_CALLBACK( on_dossier_begin ), window );
+			G_OBJECT( priv->dossier ),
+			OFA_SIGNAL_DOSSIER_DATES_CHANGED, G_CALLBACK( on_dossier_dates_changed ), window );
 }
 
 /**
@@ -1635,12 +1640,12 @@ ofa_main_window_confirm_deletion( const ofaMainWindow *window, const gchar *mess
 }
 
 /*
- * this signal is sent when the exercice beginning date has changed
- * (and the new one is provided here)
- * all imputations are forbidden while this date is not valid
+ * this signal is sent when the exercice beginning or ending dates have
+ * changed (and the new ones are provided here)
+ * all imputations are forbidden while the beginning date is not valid
  */
 static void
-on_dossier_begin( ofoDossier *dossier, GDate *begin, ofaMainWindow *window )
+on_dossier_dates_changed( ofoDossier *dossier, const GDate *begin, const GDate *end, ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
 

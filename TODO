@@ -350,9 +350,18 @@
  470 2014-11-28 when entering a new database name, only accepts
                 [A..Z,a..z,0..9,_] characters
 
- 471
+ 471 2014-11-29 migrate to ofaDbms
 
- 472
+ 472 2014-11-29 set dialogs readonly if not current exercice
+
+ 473 2014-11-29 DossierDelete should be just a sub part of the manager
+                + review: delete exercice vs. delete dossier
+
+ 474 2014-11-29 st_global datasets should be owned by the dossier
+
+ 475 2014-11-29 review backup and restore: have a dedicated interface
+
+ 476
 
 -----------------------------------------------------------------------
  DONE

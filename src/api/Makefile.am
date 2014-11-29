@@ -61,6 +61,4 @@ api_include_HEADERS = \
 	ofo-ope-template-def.h								\
 	ofo-rate.h											\
 	ofo-rate-def.h										\
-	ofo-sgbd.h											\
-	ofo-sgbd-def.h										\
 	$(NULL)

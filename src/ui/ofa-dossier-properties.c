@@ -51,7 +51,7 @@ struct _ofaDossierPropertiesPrivate {
 	ofoDossier      *dossier;
 	gboolean         is_new;
 	gboolean         updated;
-	gboolean         readonly;
+	gboolean         is_current;
 
 	/* data
 	 */
@@ -206,7 +206,7 @@ v_init_dialog( myDialog *dialog )
 
 	self = OFA_DOSSIER_PROPERTIES( dialog );
 	priv = self->priv;
-	priv->readonly = !ofo_dossier_is_current( priv->dossier );
+	priv->is_current = ofo_dossier_is_current( priv->dossier );
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
@@ -240,7 +240,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
 	}
-	gtk_widget_set_can_focus( entry, !priv->readonly );
+	gtk_widget_set_can_focus( entry, priv->is_current );
 
 	entry = my_utils_container_get_child_by_name( container, "p1-siren" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -249,7 +249,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 		gtk_entry_set_text( GTK_ENTRY( entry ), priv->siren );
 	}
 	priv->siren_entry = entry;
-	gtk_widget_set_can_focus( entry, !priv->readonly );
+	gtk_widget_set_can_focus( entry, priv->is_current );
 
 	parms.container = container;
 	parms.dossier = priv->dossier;
@@ -274,7 +274,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	str = g_strdup_printf( "%d", ivalue );
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
-	gtk_widget_set_can_focus( entry, !priv->readonly );
+	gtk_widget_set_can_focus( entry, priv->is_current );
 
 	entry = my_utils_container_get_child_by_name( container, "pexe-begin" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -282,15 +282,15 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier ));
 	priv->begin_empty = !my_date_is_valid( &priv->begin );
-	if( priv->readonly ){
+	if( priv->is_current ){
+		my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+		my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin );
+	} else {
 		str = my_date_to_str( &priv->begin, MY_DATE_DMYY );
 		gtk_entry_set_text( GTK_ENTRY( entry ), str );
 		g_free( str );
-	} else {
-		my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-		my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin );
 	}
-	gtk_widget_set_can_focus( entry, !priv->readonly );
+	gtk_widget_set_can_focus( entry, priv->is_current );
 
 	entry = my_utils_container_get_child_by_name( container, "pexe-end" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -298,15 +298,15 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
 	my_date_set_from_date( &priv->end, ofo_dossier_get_exe_end( priv->dossier ));
 	priv->end_empty = !my_date_is_valid( &priv->end );
-	if( priv->readonly ){
+	if( priv->is_current ){
+		my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+		my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
+	} else {
 		str = my_date_to_str( &priv->end, MY_DATE_DMYY );
 		gtk_entry_set_text( GTK_ENTRY( entry ), str );
 		g_free( str );
-	} else {
-		my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-		my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
 	}
-	gtk_widget_set_can_focus( entry, !priv->readonly );
+	gtk_widget_set_can_focus( entry, priv->is_current );
 }
 
 static void
@@ -321,12 +321,12 @@ init_exe_notes_page( ofaDossierProperties *self, GtkContainer *container )
 	buffer = my_utils_init_notes( container, "pexe-notes", priv->exe_notes );
 	g_return_if_fail( buffer && GTK_IS_TEXT_BUFFER( buffer ));
 
-	if( !priv->readonly ){
+	if( priv->is_current ){
 		g_signal_connect( buffer, "changed", G_CALLBACK( on_notes_changed ), self );
 	}
 
 	widget = my_utils_container_get_child_by_name( container, "pexe-notes" );
-	gtk_widget_set_can_focus( widget, !priv->readonly );
+	gtk_widget_set_can_focus( widget, priv->is_current );
 }
 
 static void
@@ -523,7 +523,7 @@ do_update( ofaDossierProperties *self )
 
 	/* update menu items enabled status */
 	g_signal_emit_by_name(
-			G_OBJECT( priv->dossier ), OFA_SIGNAL_DOSSIER_BEGIN, &priv->begin );
+			G_OBJECT( priv->dossier ), OFA_SIGNAL_DOSSIER_DATES_CHANGED, &priv->begin, &priv->end );
 
 	return( priv->updated );
 }

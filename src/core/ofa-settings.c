@@ -886,8 +886,11 @@ ofa_settings_get_dossier_provider( const gchar *name )
 gint
 ofa_settings_dossier_get_int( const gchar *dname, const gchar *key )
 {
+	static const gchar *thisfn = "ofa_settings_dossier_get_int";
 	gchar *group;
 	gint ivalue;
+
+	g_debug( "%s: dname=%s, key=%s", thisfn, dname, key );
 
 	settings_new();
 

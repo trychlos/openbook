@@ -406,7 +406,7 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 
 	if( sdo ){
 		g_signal_emit_by_name(
-				MY_WINDOW( self )->prot->main_window, OFA_SIGNAL_ACTION_DOSSIER_OPEN, sdo );
+				MY_WINDOW( self )->prot->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
 		gtk_dialog_response(
 				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
 				GTK_RESPONSE_CANCEL );

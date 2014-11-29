@@ -35,6 +35,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-dbms.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -44,13 +45,12 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
-#include "api/ofo-sgbd.h"
 
 /* priv instance data
  */
 struct _ofoEntryPrivate {
 
-	/* sgbd data
+	/* dbms data
 	 */
 	GDate          deffect;
 	ofxCounter     number;
@@ -96,19 +96,19 @@ static void         on_updated_object_account_number( const ofoDossier *dossier,
 static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void         on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
 static void         on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
-static GList       *entry_load_dataset( const ofoSgbd *sgbd, const gchar *where );
+static GList       *entry_load_dataset( const ofaDbms *dbms, const gchar *where );
 static const gchar *entry_list_columns( void );
 static ofoEntry    *entry_parse_result( const GSList *row );
-static gint         entry_count_for_currency( const ofoSgbd *sgbd, const gchar *currency );
-static gint         entry_count_for_ledger( const ofoSgbd *sgbd, const gchar *ledger );
-static gint         entry_count_for_ope_template( const ofoSgbd *sgbd, const gchar *model );
-static gint         entry_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo );
+static gint         entry_count_for_currency( const ofaDbms *dbms, const gchar *currency );
+static gint         entry_count_for_ledger( const ofaDbms *dbms, const gchar *ledger );
+static gint         entry_count_for_ope_template( const ofaDbms *dbms, const gchar *model );
+static gint         entry_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
 static void         entry_set_settlement_number( ofoEntry *entry, ofxCounter number );
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
-static gboolean     entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
+static gboolean     entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
 static void         error_ledger( const gchar *ledger );
 static void         error_ope_template( const gchar *model );
 static void         error_currency( const gchar *currency );
@@ -117,10 +117,10 @@ static void         error_account( const gchar *number );
 static void         error_acc_currency( const ofoDossier *dossier, const gchar *currency, ofoAccount *account );
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
 static void         error_entry( const gchar *message );
-static gboolean     entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
-static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd );
-static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, ofxCounter number );
-static gboolean     do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user );
+static gboolean     entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
+static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofaDbms *dbms );
+static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number );
+static gboolean     do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0, \
@@ -302,7 +302,7 @@ on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_i
 			"UPDATE OFA_T_ENTRIES "
 			"	SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
 	g_free( query );
 }
 
@@ -320,7 +320,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 			"UPDATE OFA_T_ENTRIES "
 			"	SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
 	g_free( query );
 }
 
@@ -338,7 +338,7 @@ on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id,
 			"UPDATE OFA_T_ENTRIES"
 			"	SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
 	g_free( query );
 }
 
@@ -356,7 +356,7 @@ on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, 
 			"UPDATE OFA_T_ENTRIES"
 			"	SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
 	g_free( query );
 }
 
@@ -410,7 +410,7 @@ ofo_entry_get_dataset_by_concil( const ofoDossier *dossier, const gchar *account
 
 	g_string_append_printf( where, " AND ENT_STATUS!=%d ", ENT_STATUS_DELETED );
 
-	dataset = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), where->str );
+	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
 
 	g_string_free( where, TRUE );
 
@@ -452,7 +452,7 @@ ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *accoun
 		g_free( str );
 	}
 
-	dataset = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), where->str );
+	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
 
 	g_string_free( where, TRUE );
 
@@ -493,7 +493,7 @@ GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *
 		g_free( str );
 	}
 
-	dataset = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), where->str );
+	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
 
 	g_string_free( where, TRUE );
 
@@ -570,7 +570,7 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
 	}
 	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 	query = g_string_append( query, "GROUP BY ENT_ACCOUNT ORDER BY ENT_ACCOUNT ASC " );
-	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
+	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
 	g_string_free( query, TRUE );
 
 	if( result ){
@@ -588,7 +588,7 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
 					thisfn, sbal->account, sbal->debit, sbal->credit );
 			dataset = g_list_prepend( dataset, sbal );
 		}
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -664,7 +664,7 @@ ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
 	query = g_string_append( query, "ORDER BY "
 			"ENT_ACCOUNT ASC, ENT_DOPE ASC, ENT_DEFFECT ASC, ENT_NUMBER ASC " );
 
-	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
+	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
 	g_string_free( query, TRUE );
 
 	if( result ){
@@ -674,7 +674,7 @@ ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
 				dataset = g_list_prepend( dataset, entry );
 			}
 		}
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -737,7 +737,7 @@ ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
 	query = g_string_append( query, "ORDER BY "
 			"ENT_LEDGER ASC, ENT_DOPE ASC, ENT_DEFFECT ASC, ENT_NUMBER ASC " );
 
-	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query->str, TRUE );
+	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
 	g_string_free( query, TRUE );
 
 	if( result ){
@@ -747,7 +747,7 @@ ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
 				dataset = g_list_prepend( dataset, entry );
 			}
 		}
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -787,7 +787,7 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 
 	g_string_append_printf( where, " AND ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 
-	dataset = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), where->str );
+	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
 
 	g_string_free( where, TRUE );
 
@@ -798,7 +798,7 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
  * returns a GList * of ofoEntries
  */
 static GList *
-entry_load_dataset( const ofoSgbd *sgbd, const gchar *where )
+entry_load_dataset( const ofaDbms *dbms, const gchar *where )
 {
 	GList *dataset;
 	GString *query;
@@ -819,7 +819,7 @@ entry_load_dataset( const ofoSgbd *sgbd, const gchar *where )
 	query = g_string_append( query,
 					"ORDER BY ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
 
-	result = ofo_sgbd_query_ex( sgbd, query->str, TRUE );
+	result = ofa_dbms_query_ex( dbms, query->str, TRUE );
 	g_string_free( query, TRUE );
 
 	if( result ){
@@ -830,7 +830,7 @@ entry_load_dataset( const ofoSgbd *sgbd, const gchar *where )
 			}
 		}
 
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -947,13 +947,13 @@ ofo_entry_use_currency( const ofoDossier *dossier, const gchar *currency )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( entry_count_for_currency( ofo_dossier_get_sgbd( dossier ), currency ) > 0 );
+	return( entry_count_for_currency( ofo_dossier_get_dbms( dossier ), currency ) > 0 );
 }
 
 static gint
-entry_count_for_currency( const ofoSgbd *sgbd, const gchar *currency )
+entry_count_for_currency( const ofaDbms *dbms, const gchar *currency )
 {
-	return( entry_count_for( sgbd, "ENT_CURRENCY", currency ));
+	return( entry_count_for( dbms, "ENT_CURRENCY", currency ));
 }
 
 /**
@@ -966,13 +966,13 @@ ofo_entry_use_ledger( const ofoDossier *dossier, const gchar *ledger )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( entry_count_for_ledger( ofo_dossier_get_sgbd( dossier ), ledger ) > 0 );
+	return( entry_count_for_ledger( ofo_dossier_get_dbms( dossier ), ledger ) > 0 );
 }
 
 static gint
-entry_count_for_ledger( const ofoSgbd *sgbd, const gchar *ledger )
+entry_count_for_ledger( const ofaDbms *dbms, const gchar *ledger )
 {
-	return( entry_count_for( sgbd, "ENT_LEDGER", ledger ));
+	return( entry_count_for( dbms, "ENT_LEDGER", ledger ));
 }
 
 /**
@@ -986,17 +986,17 @@ ofo_entry_use_ope_template( const ofoDossier *dossier, const gchar *model )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( entry_count_for_ope_template( ofo_dossier_get_sgbd( dossier ), model ) > 0 );
+	return( entry_count_for_ope_template( ofo_dossier_get_dbms( dossier ), model ) > 0 );
 }
 
 static gint
-entry_count_for_ope_template( const ofoSgbd *sgbd, const gchar *model )
+entry_count_for_ope_template( const ofaDbms *dbms, const gchar *model )
 {
-	return( entry_count_for( sgbd, "ENT_OPE_TEMPLATE", model ));
+	return( entry_count_for( dbms, "ENT_OPE_TEMPLATE", model ));
 }
 
 static gint
-entry_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo )
+entry_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
@@ -1007,13 +1007,13 @@ entry_count_for( const ofoSgbd *sgbd, const gchar *field, const gchar *mnemo )
 				field, mnemo );
 
 	count = 0;
-	result = ofo_sgbd_query_ex( sgbd, query, TRUE );
+	result = ofa_dbms_query_ex( dbms, query, TRUE );
 	g_free( query );
 
 	if( result ){
 		icol = ( GSList * ) result->data;
 		count = atoi(( gchar * ) icol->data );
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	return( count );
@@ -1793,7 +1793,7 @@ ofo_entry_new_with_data( const ofoDossier *dossier,
  * ofo_entry_insert:
  *
  * Allocates a sequential number to the entry, and records it in the
- * sgbd. Send the corresponding advertising messages if no error occurs.
+ * dbms. Send the corresponding advertising messages if no error occurs.
  */
 gboolean
 ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
@@ -1813,7 +1813,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 		entry->priv->number = ofo_dossier_get_next_entry( dossier );
 
 		if( entry_do_insert( entry,
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_NEW_OBJECT, g_object_ref( entry ));
@@ -1826,7 +1826,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 }
 
 static gboolean
-entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
+entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *label, *ref;
@@ -1837,7 +1837,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	const gchar *model;
 
 	g_return_val_if_fail( OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( OFO_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( OFA_IS_DBMS( dbms ), FALSE );
 
 	label = my_utils_quote( ofo_entry_get_label( entry ));
 	ref = my_utils_quote( ofo_entry_get_ref( entry ));
@@ -1889,7 +1889,7 @@ entry_do_insert( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 				user,
 				stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 
 		entry_set_upd_user( entry, user );
 		entry_set_upd_stamp( entry, &stamp );
@@ -2036,7 +2036,7 @@ ofo_entry_update( ofoEntry *entry, const ofoDossier *dossier )
 	ok = FALSE;
 
 	if( entry_do_update( entry,
-				ofo_dossier_get_sgbd( dossier ),
+				ofo_dossier_get_dbms( dossier ),
 				ofo_dossier_get_user( dossier ))){
 
 		g_signal_emit_by_name(
@@ -2050,7 +2050,7 @@ ofo_entry_update( ofoEntry *entry, const ofoDossier *dossier )
 }
 
 static gboolean
-entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
+entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *sdeff, *sdope, *sdeb, *scre;
@@ -2060,7 +2060,7 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 	const gchar *model;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( sgbd && OFO_IS_SGBD( sgbd ), FALSE );
+	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
@@ -2094,7 +2094,7 @@ entry_do_update( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 			"	WHERE ENT_NUMBER=%ld",
 			sdeb, scre, user, stamp_str, ofo_entry_get_number( entry ));
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 		entry_set_upd_user( entry, user );
 		entry_set_upd_stamp( entry, &stamp );
 		ok = TRUE;
@@ -2124,14 +2124,14 @@ ofo_entry_update_concil( ofoEntry *entry, const ofoDossier *dossier )
 		return( do_update_concil(
 						entry,
 						ofo_dossier_get_user( dossier ),
-						ofo_dossier_get_sgbd( dossier )));
+						ofo_dossier_get_dbms( dossier )));
 	}
 
 	return( FALSE );
 }
 
 static gboolean
-do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd )
+do_update_concil( ofoEntry *entry, const gchar *user, const ofaDbms *dbms )
 {
 	GString *query;
 	gchar *where, *sdrappro, *stamp_str;
@@ -2162,7 +2162,7 @@ do_update_concil( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd )
 	}
 
 	g_string_append_printf( query, " %s", where );
-	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
+	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
 	g_free( where );
 	g_string_free( query, TRUE );
@@ -2191,7 +2191,7 @@ ofo_entry_update_settlement( ofoEntry *entry, const ofoDossier *dossier, ofxCoun
 		return( do_update_settlement(
 						entry,
 						ofo_dossier_get_user( dossier ),
-						ofo_dossier_get_sgbd( dossier ),
+						ofo_dossier_get_dbms( dossier ),
 						number ));
 	}
 
@@ -2199,7 +2199,7 @@ ofo_entry_update_settlement( ofoEntry *entry, const ofoDossier *dossier, ofxCoun
 }
 
 static gboolean
-do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, ofxCounter number )
+do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number )
 {
 	GString *query;
 	gchar *stamp_str;
@@ -2229,7 +2229,7 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofoSgbd *sgbd, o
 	}
 
 	g_string_append_printf( query, "WHERE ENT_NUMBER=%ld", ofo_entry_get_number( entry ));
-	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
+	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -2269,7 +2269,7 @@ ofo_entry_validate_by_ledger( const ofoDossier *dossier, const gchar *mnemo, con
 	query = g_strdup_printf(
 					"SELECT %s FROM OFA_T_ENTRIES %s", entry_list_columns(), where );
 
-	result = ofo_sgbd_query_ex( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query, TRUE );
 	g_free( query );
 
 	if( result ){
@@ -2287,7 +2287,7 @@ ofo_entry_validate_by_ledger( const ofoDossier *dossier, const gchar *mnemo, con
 									str,
 									ofo_entry_get_number( entry ));
 			g_free( str );
-			ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+			ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
 			g_free( query );
 
 			/* use the dossier signaling system to update the account */
@@ -2310,7 +2310,7 @@ ofo_entry_delete( ofoEntry *entry, const ofoDossier *dossier )
 
 		if( do_delete_entry(
 					entry,
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			g_signal_emit_by_name(
@@ -2325,7 +2325,7 @@ ofo_entry_delete( ofoEntry *entry, const ofoDossier *dossier )
 }
 
 static gboolean
-do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
+do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 {
 	gchar *query;
 	gboolean ok;
@@ -2335,7 +2335,7 @@ do_delete_entry( ofoEntry *entry, const ofoSgbd *sgbd, const gchar *user )
 				"	ENT_STATUS=%d WHERE ENT_NUMBER=%ld",
 						ENT_STATUS_DELETED, ofo_entry_get_number( entry ));
 
-	ok = ofo_sgbd_query( sgbd, query, TRUE );
+	ok = ofa_dbms_query( dbms, query, TRUE );
 
 	g_free( query );
 
@@ -2371,7 +2371,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	gboolean has_settle, ok, with_headers;
 	gulong count;
 
-	result = entry_load_dataset( ofo_dossier_get_sgbd( dossier ), NULL );
+	result = entry_load_dataset( ofo_dossier_get_dbms( dossier ), NULL );
 
 	with_headers = ofa_export_settings_get_headers( settings );
 

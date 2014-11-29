@@ -36,8 +36,8 @@
  */
 
 #include "api/ofa-boxed.h"
+#include "api/ofa-dbms-def.h"
 #include "api/ofo-base-def.h"
-#include "api/ofo-sgbd-def.h"
 
 G_BEGIN_DECLS
 
@@ -222,7 +222,7 @@ ofsBaseGlobal *ofo_base_get_global( ofsBaseGlobal *ptr,
 
 void   ofo_base_init_fields_list(const ofsBoxedDef *defs, ofoBase *object );
 
-GList *ofo_base_load_dataset    ( const ofsBoxedDef *defs, const ofoSgbd *sgbd, const gchar *from, GType type );
+GList *ofo_base_load_dataset    ( const ofsBoxedDef *defs, const ofaDbms *dbms, const gchar *from, GType type );
 
 G_END_DECLS
 

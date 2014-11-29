@@ -516,7 +516,7 @@ do_restore( ofaRestore *self )
 	if( ok && open ){
 		sdo = g_new0( ofsDossierOpen, 1 );
 		sdo->dname = g_strdup( priv->label );
-		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_ACTION_DOSSIER_OPEN, sdo );
+		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
 	}
 
 	return( ok );

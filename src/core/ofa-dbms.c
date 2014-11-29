@@ -66,6 +66,9 @@ static void      error_provider_not_defined( const ofaDbms *dbms, const gchar *n
 static void      error_module_not_found( const ofaDbms *dbms, const gchar *name, const gchar *provider );
 static void      error_connect( const ofaDbms *dbms, const gchar *name, const gchar *dbname, const gchar *account );
 static void      error_with_infos( const ofaDbms *dbms, const gchar *name, const gchar *dbname, const gchar *account, const gchar *provider, const gchar *msg );
+static void      error_query( const ofaDbms *dbms, const gchar *query );
+static void      audit_query( const ofaDbms *dbms, const gchar *query );
+static gchar    *quote_query( const gchar *query );
 
 static void
 dbms_finalize( GObject *instance )
@@ -234,6 +237,7 @@ dbms_connect( ofaDbms *dbms,
 	priv->dbname = g_strdup( dbname );
 	priv->account = g_strdup( account );
 	priv->pmodule = module;
+	priv->phandle = handle;
 
 	priv->connected = TRUE;
 
@@ -471,4 +475,163 @@ ofa_dbms_get_exercices( ofaDbms *dbms, const gchar *dname )
 	}
 
 	return( list );
+}
+
+/**
+ * ofa_dbms_query:
+ * @dbms: this #ofaDbms object
+ * @query: the query
+ * @display_error: whether the error should be published in a dialog box
+ *
+ * Executes the specified @query query.
+ *
+ * As this query doesn't return results, it is most probably an update.
+ * It is so written in the audit table.
+ */
+gboolean
+ofa_dbms_query( const ofaDbms *dbms, const gchar *query, gboolean display_error )
+{
+	static const gchar *thisfn = "ofa_dbms_query";
+	ofaDbmsPrivate *priv;
+	gboolean query_ok;
+
+	g_debug( "%s: dbms=%p, query='%s', display_error=%s",
+			thisfn, ( void * ) dbms, query, display_error ? "True":"False" );
+
+	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
+
+	priv = dbms->priv;
+	query_ok = FALSE;
+
+	g_return_val_if_fail( priv->pmodule && OFA_IS_IDBMS( priv->pmodule ), FALSE );
+	g_return_val_if_fail( priv->phandle, FALSE );
+
+	if( !priv->dispose_has_run ){
+
+		query_ok = ofa_idbms_query( priv->pmodule, priv->phandle, query );
+
+		if( !query_ok ){
+			if( display_error ){
+				error_query( dbms, query );
+			}
+		} else {
+			audit_query( dbms, query );
+		}
+	}
+
+	return( query_ok );
+}
+
+/**
+ * ofa_dbms_query_ex:
+ * @dbms: this #ofaDbms object
+ * @query: the query to be executed
+ * @display_error: whether the error should be published in a dialog box
+ *
+ * Returns a GSList or ordered rows of the result set.
+ * Each GSList->data is a pointer to a GSList of ordered columns
+ * A field is so the GSList[column] data, is always allocated
+ * (but maybe of a zero length), or NULL (SQL-NULL translation).
+ *
+ * Returns NULL is case of an error.
+ *
+ * The returned GSList should be freed with #ofa_dbms_free_results().
+ */
+GSList *
+ofa_dbms_query_ex( const ofaDbms *dbms, const gchar *query, gboolean display_error )
+{
+	static const gchar *thisfn = "ofa_dbms_query_ex";
+	ofaDbmsPrivate *priv;
+	GSList *result;
+
+	g_debug( "%s: dbms=%p, query='%s', display_error=%s",
+			thisfn, ( void * ) dbms, query, display_error ? "True":"False" );
+
+	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), NULL );
+
+	priv = dbms->priv;
+	result = NULL;
+
+	g_return_val_if_fail( priv->pmodule && OFA_IS_IDBMS( priv->pmodule ), NULL );
+	g_return_val_if_fail( priv->phandle, NULL );
+
+	if( !priv->dispose_has_run ){
+
+		result = ofa_idbms_query_ex( priv->pmodule, priv->phandle, query );
+
+		if( !result ){
+			if( display_error ){
+				error_query( dbms, query );
+			}
+		}
+	}
+
+	return( result );
+}
+
+static void
+error_query( const ofaDbms *dbms, const gchar *query )
+{
+	ofaDbmsPrivate *priv;
+	GtkWidget *dlg;
+	gchar *str;
+
+	priv = dbms->priv;
+
+	dlg = gtk_message_dialog_new(
+				NULL,
+				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+				GTK_MESSAGE_WARNING,
+				GTK_BUTTONS_OK,
+				"%s", query );
+
+	str = ofa_idbms_last_error( priv->pmodule, priv->phandle );
+
+	/* query_ex returns NULL if the result is empty: this is not an error */
+	if( str && g_utf8_strlen( str, -1 )){
+		gtk_message_dialog_format_secondary_text( GTK_MESSAGE_DIALOG( dlg ), "%s", str );
+	}
+	g_free( str );
+
+	gtk_dialog_run( GTK_DIALOG( dlg ));
+	gtk_widget_destroy( dlg );
+}
+
+static void
+audit_query( const ofaDbms *dbms, const gchar *query )
+{
+	ofaDbmsPrivate *priv;
+	gchar *quoted;
+	gchar *audit;
+
+	priv = dbms->priv;
+
+	quoted = quote_query( query );
+	audit = g_strdup_printf( "INSERT INTO OFA_T_AUDIT (AUD_QUERY) VALUES ('%s')", quoted );
+	ofa_idbms_query( priv->pmodule, priv->phandle, audit );
+
+	g_free( quoted );
+	g_free( audit );
+}
+
+static gchar *
+quote_query( const gchar *query )
+{
+	gchar *quoted;
+	GRegex *regex;
+	gchar *new_str;
+
+	new_str = g_strdup( query );
+
+	regex = g_regex_new( "\\\\", 0, 0, NULL );
+	if( regex ){
+		g_free( new_str );
+		new_str = g_regex_replace_literal( regex, query, -1, 0, "", 0, NULL );
+		g_regex_unref( regex );
+	}
+
+	quoted = my_utils_quote( new_str );
+	g_free( new_str );
+
+	return( quoted );
 }

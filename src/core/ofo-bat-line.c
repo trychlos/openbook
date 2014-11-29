@@ -34,17 +34,17 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-dbms.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-bat-line.h"
-#include "api/ofo-sgbd.h"
 
 /* priv instance data
  */
 struct _ofoBatLinePrivate {
 
-	/* sgbd data
+	/* dbms data
 	 */
 	ofxCounter bat_id;						/* bat (imported file) id */
 	ofxCounter line_id;						/* line id */
@@ -61,12 +61,12 @@ struct _ofoBatLinePrivate {
 
 G_DEFINE_TYPE( ofoBatLine, ofo_bat_line, OFO_TYPE_BASE )
 
-static GList      *bat_line_load_dataset( ofxCounter bat_id, const ofoSgbd *sgbd );
+static GList      *bat_line_load_dataset( ofxCounter bat_id, const ofaDbms *dbms );
 static void        bat_line_set_upd_user( ofoBatLine *bat, const gchar *upd_user );
 static void        bat_line_set_upd_stamp( ofoBatLine *bat, const GTimeVal *upd_stamp );
-static gboolean    bat_line_do_insert( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    bat_line_do_insert( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user );
+static gboolean    bat_line_insert_main( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user );
+static gboolean    bat_line_do_update( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user );
 
 static void
 bat_line_finalize( GObject *instance )
@@ -164,11 +164,11 @@ ofo_bat_line_get_dataset( const ofoDossier *dossier, gint bat_id )
 
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	return( bat_line_load_dataset( bat_id, ofo_dossier_get_sgbd( dossier )));
+	return( bat_line_load_dataset( bat_id, ofo_dossier_get_dbms( dossier )));
 }
 
 static GList *
-bat_line_load_dataset( ofxCounter bat_id, const ofoSgbd *sgbd)
+bat_line_load_dataset( ofxCounter bat_id, const ofaDbms *dbms)
 {
 	GString *query;
 	GSList *result, *irow, *icol;
@@ -189,7 +189,7 @@ bat_line_load_dataset( ofxCounter bat_id, const ofoSgbd *sgbd)
 
 	query = g_string_append( query, "ORDER BY BAT_LINE_DEFFECT ASC" );
 
-	result = ofo_sgbd_query_ex( sgbd, query->str, TRUE );
+	result = ofa_dbms_query_ex( dbms, query->str, TRUE );
 	g_string_free( query, TRUE );
 
 	if( result ){
@@ -233,7 +233,7 @@ bat_line_load_dataset( ofxCounter bat_id, const ofoSgbd *sgbd)
 			dataset = g_list_prepend( dataset, line );
 		}
 
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -594,7 +594,7 @@ ofo_bat_line_insert( ofoBatLine *bat_line, ofoDossier *dossier )
 
 		if( bat_line_do_insert(
 					bat_line,
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			return( TRUE );
@@ -605,13 +605,13 @@ ofo_bat_line_insert( ofoBatLine *bat_line, ofoDossier *dossier )
 }
 
 static gboolean
-bat_line_do_insert( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
+bat_line_do_insert( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user )
 {
-	return( bat_line_insert_main( bat, sgbd, user ));
+	return( bat_line_insert_main( bat, dbms, user ));
 }
 
 static gboolean
-bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
+bat_line_insert_main( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *str;
@@ -669,7 +669,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 
 	query = g_string_append( query, ")" );
 
-	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
+	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 
@@ -696,7 +696,7 @@ ofo_bat_line_update( ofoBatLine *bat_line, const ofoDossier *dossier )
 
 		if( bat_line_do_update(
 					bat_line,
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
 			return( TRUE );
@@ -707,7 +707,7 @@ ofo_bat_line_update( ofoBatLine *bat_line, const ofoDossier *dossier )
 }
 
 static gboolean
-bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
+bat_line_do_update( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user )
 {
 	gboolean ok;
 	GString *query;
@@ -734,7 +734,7 @@ bat_line_do_update( ofoBatLine *bat, const ofoSgbd *sgbd, const gchar *user )
 	g_string_append_printf( query,
 			"	WHERE BAT_LINE_ID=%ld", ofo_bat_line_get_line_id( bat ));
 
-	ok = ofo_sgbd_query( sgbd, query->str, TRUE );
+	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );

@@ -254,6 +254,56 @@ ofa_idbms_get_exercices( const ofaIDbms *instance, const gchar *dname )
 }
 
 /**
+ * ofa_idbms_query:
+ */
+gboolean
+ofa_idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
+{
+	g_return_val_if_fail( OFA_IS_IDBMS( instance ), FALSE );
+	g_return_val_if_fail( handle, FALSE );
+	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), FALSE );
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->query ){
+		return( OFA_IDBMS_GET_INTERFACE( instance )->query( instance, handle, query ));
+	}
+
+	return( FALSE );
+}
+
+/**
+ * ofa_idbms_query_ex:
+ */
+GSList *
+ofa_idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query )
+{
+	g_return_val_if_fail( OFA_IS_IDBMS( instance ), NULL );
+	g_return_val_if_fail( handle, NULL );
+	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), NULL );
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->query_ex ){
+		return( OFA_IDBMS_GET_INTERFACE( instance )->query_ex( instance, handle, query ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_idbms_last_error:
+ */
+gchar *
+ofa_idbms_last_error( const ofaIDbms *instance, void *handle )
+{
+	g_return_val_if_fail( OFA_IS_IDBMS( instance ), NULL );
+	g_return_val_if_fail( handle, NULL );
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->last_error ){
+		return( OFA_IDBMS_GET_INTERFACE( instance )->last_error( instance, handle ));
+	}
+
+	return( NULL );
+}
+
+/**
  * ofa_idbms_get_providers_list:
  *
  * Returns the list of ISgbd provider names, as a newly allocated list
@@ -397,57 +447,6 @@ ofa_idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label )
 	}
 
 	return( dbname );
-}
-
-/**
- * ofa_idbms_query:
- */
-gboolean
-ofa_idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
-{
-	gboolean query_ok;
-
-	query_ok = FALSE;
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->query ){
-		query_ok = OFA_IDBMS_GET_INTERFACE( instance )->query( instance, handle, query );
-	}
-
-	return( query_ok );
-}
-
-/**
- * ofa_idbms_query_ex:
- */
-GSList *
-ofa_idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query )
-{
-	GSList *result;
-
-	result = NULL;
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->query_ex ){
-		result = OFA_IDBMS_GET_INTERFACE( instance )->query_ex( instance, handle, query );
-	}
-
-	return( result );
-}
-
-/**
- * ofa_idbms_error:
- */
-gchar *
-ofa_idbms_error( const ofaIDbms *instance, void *handle )
-{
-	gchar *msg;
-
-	msg = NULL;
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->error ){
-		msg = OFA_IDBMS_GET_INTERFACE( instance )->error( instance, handle );
-	}
-
-	return( msg );
 }
 
 /**

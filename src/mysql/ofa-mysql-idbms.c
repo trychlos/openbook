@@ -56,13 +56,13 @@ static void         idbms_close( const ofaIDbms *instance, void *handle );
 static const gchar *idbms_get_provider_name( const ofaIDbms *instance );
 static GSList      *idbms_get_exercices( const ofaIDbms *instance, const gchar *dname );
 static gint         cmp_exercices( const gchar *line_a, const gchar *line_b );
+static gboolean     idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
+static GSList      *idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query );
+static gchar       *idbms_last_error( const ofaIDbms *instance, void *handle );
 
 static gchar       *idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label );
 static gchar       *idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label );
 /*static void        *idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *label, const gchar *account, const gchar *password );*/
-static gboolean     idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
-static GSList      *idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query );
-static gchar       *idbms_error( const ofaIDbms *instance, void *handle );
 static gboolean     idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
 /*static void         idbms_drop_database( const mysqlInfos *infos );*/
 static gboolean     local_get_db_exists( MYSQL *mysql, const gchar *dbname );
@@ -83,15 +83,15 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->connect = idbms_connect;
 	iface->close = idbms_close;
 	iface->get_exercices = idbms_get_exercices;
+	iface->query = idbms_query;
+	iface->query_ex = idbms_query_ex;
+	iface->last_error = idbms_last_error;
 
 	iface->properties_new_init = ofa_mysql_properties_new_init;
 	iface->properties_new_check = ofa_mysql_properties_new_check;
 	iface->properties_new_apply = ofa_mysql_properties_new_apply;
 	iface->get_dossier_host = idbms_get_dossier_host;
 	iface->get_dossier_dbname = idbms_get_dossier_dbname;
-	iface->query = idbms_query;
-	iface->query_ex = idbms_query_ex;
-	iface->error = idbms_error;
 	iface->delete_dossier = idbms_delete_dossier;
 	iface->backup = ofa_mysql_backup;
 	iface->restore = ofa_mysql_restore;
@@ -182,6 +182,7 @@ connect_with_infos( const ofaIDbms *instance, sMySQLInfos *infos, const gchar *p
 		return( FALSE );
 	}
 
+	g_debug( "%s: connect OK", thisfn );
 	infos->mysql = mysql;
 
 	return( TRUE );
@@ -316,6 +317,78 @@ cmp_exercices( const gchar *line_a, const gchar *line_b )
 	return( -1*g_utf8_collate( line_a, line_b ));
 }
 
+static gboolean
+idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
+{
+	static const gchar *thisfn = "ofa_mysql_idbms_query";
+	gboolean query_ok;
+	sMySQLInfos *infos;
+
+	query_ok = FALSE;
+	infos = ( sMySQLInfos * ) handle;
+
+	if( infos && infos->mysql ){
+		query_ok = ( mysql_query( infos->mysql, query ) == 0 );
+	} else {
+		g_warning( "%s: trying to querying a non-opened connection", thisfn );
+	}
+
+	return( query_ok );
+}
+
+static GSList *
+idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query )
+{
+	GSList *result;
+	sMySQLInfos *infos;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	gint fields_count, i;
+
+	result = NULL;
+
+	if( idbms_query( instance, handle, query )){
+
+		infos = ( sMySQLInfos * ) handle;
+		res = mysql_store_result( infos->mysql );
+		if( res ){
+			fields_count = mysql_num_fields( res );
+			while(( row = mysql_fetch_row( res ))){
+				GSList *col = NULL;
+				for( i=0 ; i<fields_count ; ++i ){
+					col = g_slist_prepend( col, row[i] ? g_strdup( row[i] ) : NULL );
+				}
+				col = g_slist_reverse( col );
+				result = g_slist_prepend( result, col );
+			}
+			result = g_slist_reverse( result );
+		}
+	}
+
+	return( result );
+}
+
+static gchar *
+idbms_last_error( const ofaIDbms *instance, void *handle )
+{
+	static const gchar *thisfn = "ofa_mysql_idbms_error";
+	gchar *msg;
+	sMySQLInfos *infos;
+
+	msg = NULL;
+	infos = ( sMySQLInfos * ) handle;
+
+	if( infos && infos->mysql ){
+		msg = g_strdup( mysql_error( infos->mysql ));
+	} else {
+		g_warning( "%s: trying to querying a non-opened connection", thisfn );
+	}
+
+	return( msg );
+}
+
+/* ... */
+
 static gchar *
 idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label )
 {
@@ -390,76 +463,6 @@ idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *la
 	return( infos );
 }
 #endif
-
-static gboolean
-idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
-{
-	static const gchar *thisfn = "ofa_mysql_idbms_query";
-	gboolean query_ok;
-	mysqlInfos *infos;
-
-	query_ok = FALSE;
-	infos = ( mysqlInfos * ) handle;
-
-	if( infos && infos->mysql ){
-		query_ok = ( mysql_query( infos->mysql, query ) == 0 );
-	} else {
-		g_warning( "%s: trying to query a non-opened connection", thisfn );
-	}
-
-	return( query_ok );
-}
-
-static GSList *
-idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query )
-{
-	GSList *result;
-	mysqlInfos *infos;
-	MYSQL_RES *res;
-	MYSQL_ROW row;
-	gint fields_count, i;
-
-	result = NULL;
-
-	if( idbms_query( instance, handle, query )){
-
-		infos = ( mysqlInfos * ) handle;
-		res = mysql_store_result( infos->mysql );
-		if( res ){
-			fields_count = mysql_num_fields( res );
-			while(( row = mysql_fetch_row( res ))){
-				GSList *col = NULL;
-				for( i=0 ; i<fields_count ; ++i ){
-					col = g_slist_prepend( col, row[i] ? g_strdup( row[i] ) : NULL );
-				}
-				col = g_slist_reverse( col );
-				result = g_slist_prepend( result, col );
-			}
-			result = g_slist_reverse( result );
-		}
-	}
-
-	return( result );
-}
-
-static gchar *
-idbms_error( const ofaIDbms *instance, void *handle )
-{
-	static const gchar *thisfn = "ofa_mysql_idbms_error";
-	gchar *msg;
-	mysqlInfos *infos;
-
-	msg = NULL;
-	infos = ( mysqlInfos * ) handle;
-
-	if( infos && infos->mysql ){
-		msg = g_strdup( mysql_error( infos->mysql ));
-	} else {
-		g_warning( "%s: trying to query a non-opened connection", thisfn );
-	}
-
-	return( msg );
-}
 
 static gboolean
 local_get_db_exists( MYSQL *mysql, const gchar *dbname )

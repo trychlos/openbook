@@ -44,21 +44,17 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
-#include "api/ofo-sgbd.h"
 
 #include "core/ofo-marshal.h"
 
 /* priv instance data
  */
-typedef struct _sDetailExe              sDetailExe;
-
 struct _ofoDossierPrivate {
 
 	/* internals
 	 */
-	gchar      *name;					/* the name of the dossier in settings */
+	gchar      *dname;					/* the name of the dossier in settings */
 	ofaDbms    *dbms;
-	ofoSgbd    *sgbd;
 	gchar      *userid;
 
 	/* row id 1
@@ -90,7 +86,7 @@ enum {
 	DELETED_OBJECT,
 	RELOAD_DATASET,
 	VALIDATED_ENTRY,
-	DOSSIER_BEGIN,
+	DATES_CHANGED,
 	N_SIGNALS
 };
 
@@ -111,8 +107,9 @@ static guint       iexportable_get_interface_version( const ofaIExportable *inst
 static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
-static gint        dbmodel_get_version( ofoSgbd *sgbd );
-static gboolean    dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account );
+static gboolean    dbmodel_update( const ofoDossier *dossier );
+static gint        dbmodel_get_version( const ofoDossier *dossier );
+static gboolean    dbmodel_to_v1( const ofoDossier *dossier );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
 static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
@@ -130,8 +127,8 @@ static void        on_reloaded_dataset_cleanup_handler( ofoDossier *dossier, GTy
 static void        on_validated_entry_cleanup_handler( ofoDossier *dossier, ofoEntry *entry );
 static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
-static gboolean    dossier_do_update( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
-static gboolean    do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user );
+static gboolean    dossier_do_update( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
+static gboolean    do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0, \
@@ -151,7 +148,7 @@ dossier_finalize( GObject *instance )
 	/* free data members here */
 	priv = OFO_DOSSIER( instance )->priv;
 
-	g_free( priv->name );
+	g_free( priv->dname );
 	g_free( priv->userid );
 
 	g_free( priv->label );
@@ -179,8 +176,8 @@ dossier_dispose( GObject *instance )
 		/* unref object members here */
 		priv = OFO_DOSSIER( instance )->priv;
 
-		if( priv->sgbd ){
-			g_clear_object( &priv->sgbd );
+		if( priv->dbms ){
+			g_clear_object( &priv->dbms );
 		}
 	}
 
@@ -215,7 +212,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * ofoDossier::ofa-signal-new-object:
 	 *
 	 * The signal is emitted after a new object has been successfully
-	 * inserted in the SGBD. A connected handler may take advantage of
+	 * inserted in the DBMS. A connected handler may take advantage of
 	 * this signal e.g. to update its own list of displayed objects.
 	 *
 	 * Handler is of type:
@@ -239,7 +236,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * ofoDossier::ofa-signal-updated-object:
 	 *
 	 * The signal is emitted just after an object has been successfully
-	 * updated in the SGBD. A connected handler may take advantage of
+	 * updated in the DBMS. A connected handler may take advantage of
 	 * this signal e.g. for updating its own list of displayed objects,
 	 * or for updating its internal links, or so.
 	 *
@@ -265,7 +262,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * ofoDossier::ofa-signal-deleted-object:
 	 *
 	 * The signal is emitted just after an object has been successfully
-	 * deleted from the SGBD. A connected handler may take advantage of
+	 * deleted from the DBMS. A connected handler may take advantage of
 	 * this signal e.g. for updating its own list of displayed objects.
 	 *
 	 * Handler is of type:
@@ -289,7 +286,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * ofoDossier::ofa-signal-reload-dataset:
 	 *
 	 * The signal is emitted when such an update has been made in the
-	 * SGBD that it is considered easier for a connected handler just
+	 * DBMS that it is considered easier for a connected handler just
 	 * to reload the whole dataset if this later whishes keep
 	 * synchronized with the database.
 	 *
@@ -333,18 +330,19 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_OBJECT );
 
 	/**
-	 * ofoDossier::ofa-signal-dossier-begin:
+	 * ofoDossier::ofa-signal-dossier-dates-changed:
 	 *
 	 * This signal is sent on the dossier when its exercice
-	 * beginning date changes.
+	 * beginning or ending dates have changed.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofoDossier *dossier,
-	 *                      GDate    *begin_date,
+	 *                      GDate    *new_begin_date,
+	 *                      GDate    *new_end_date,
 	 * 						gpointer  user_data );
 	 */
-	st_signals[ DOSSIER_BEGIN ] = g_signal_new_class_handler(
-				OFA_SIGNAL_DOSSIER_BEGIN,
+	st_signals[ DATES_CHANGED ] = g_signal_new_class_handler(
+				OFA_SIGNAL_DOSSIER_DATES_CHANGED,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -352,8 +350,8 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
+				2,
+				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
 static void
@@ -377,19 +375,18 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * ofo_dossier_new:
  */
 ofoDossier *
-ofo_dossier_new( const gchar *name )
+ofo_dossier_new( void )
 {
 	ofoDossier *dossier;
 
 	dossier = g_object_new( OFO_TYPE_DOSSIER, NULL );
-	dossier->priv->name = g_strdup( name );
 
 	return( dossier );
 }
 
 #if 0
 static gboolean
-check_user_exists( ofoSgbd *sgbd, const gchar *account )
+check_user_exists( ofaDbms *dbms, const gchar *account )
 {
 	gchar *query;
 	GSList *res;
@@ -397,13 +394,13 @@ check_user_exists( ofoSgbd *sgbd, const gchar *account )
 
 	exists = FALSE;
 	query = g_strdup_printf( "SELECT ROL_USER FROM OFA_T_ROLES WHERE ROL_USER='%s'", account );
-	res = ofo_sgbd_query_ex( sgbd, query );
+	res = ofa_dbms_query_ex( dbms, query );
 	if( res ){
 		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
 		if( !g_utf8_collate( account, s )){
 			exists = TRUE;
 		}
-		ofo_sgbd_free_result( res );
+		ofa_dbms_free_results( res );
 	}
 	g_free( query );
 
@@ -418,7 +415,7 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 
 	str = g_strdup_printf(
 			_( "'%s' account is not allowed to connect to '%s' dossier" ),
-			account, dossier->priv->name );
+			account, dossier->priv->dname );
 
 	dlg = GTK_MESSAGE_DIALOG( gtk_message_dialog_new(
 				NULL,
@@ -435,40 +432,49 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 
 /**
  * ofo_dossier_open:
- * @dossier: is expected to have been initialized with the label
+ * @dossier: this #ofoDossier object
+ * @dname: the name of the dossier, as read from settings
+ * @dbname: the exercice database to be selected
  * @account:
  * @password:
  */
 gboolean
-ofo_dossier_open( ofoDossier *dossier, const gchar *account, const gchar *password )
+ofo_dossier_open( ofoDossier *dossier,
+						const gchar *dname, const gchar *dbname,
+						const gchar *account, const gchar *password )
 {
-#if 0
 	static const gchar *thisfn = "ofo_dossier_open";
 	ofoDossierPrivate *priv;
 	ofaDbms *dbms;
+	gboolean ok;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), FALSE );
+	g_return_val_if_fail( dbname && g_utf8_strlen( dbname, -1 ), FALSE );
+	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), FALSE );
+	g_return_val_if_fail( password && g_utf8_strlen( password, -1 ), FALSE );
 
-	g_debug( "%s: dossier=%p, account=%s, password=%s",
+	g_debug( "%s: dossier=%p, dname=%s, dbname=%s, account=%s, password=%s",
 			thisfn,
-			( void * ) dossier, account, password );
+			( void * ) dossier, dname, dbname, account, password );
 
 	priv = dossier->priv;
 
 	dbms = ofa_dbms_new();;
-	if( !ofa_dbms_connect( sgbd, account, password, TRUE )){
-		g_object_unref( sgbd );
+	if( !ofa_dbms_connect( dbms, dname, dbname, account, password, TRUE )){
+		g_object_unref( dbms );
 		return( FALSE );
 	}
 
-	priv->sgbd = sgbd;
+	priv->dname = g_strdup( dname );
+	priv->dbms = dbms;
 	priv->userid = g_strdup( account );
 
-	ofo_dossier_dbmodel_update( sgbd, dossier->priv->name, account );
-#endif
+	dbmodel_update( dossier );
 	connect_objects_handlers( dossier );
+	ok = dossier_do_read( dossier );
 
-	return( dossier_do_read( dossier ));
+	return( ok );
 }
 
 /*
@@ -476,8 +482,8 @@ ofo_dossier_open( ofoDossier *dossier, const gchar *account, const gchar *passwo
  * system, as they may be needed before the class has the opportunity
  * to initialize itself
  *
- * use case: the intermediate closing by ledger may be run without
- * having first loaded the accounts, but the accounts should be
+ * example of a use case: the intermediate closing by ledger may be run
+ * without having first loaded the accounts, but the accounts should be
  * connected in order to update themselves.
  */
 static void
@@ -528,34 +534,32 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 					"UPDATE OFA_T_DOSSIER "
 					"	SET DOS_DEF_CURRENCY='%s' WHERE DOS_DEF_CURRENCY='%s'", code, prev_id );
 
-	ofo_sgbd_query( ofo_dossier_get_sgbd( dossier ), query, TRUE );
+	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
 
 	g_free( query );
 }
 
 /**
  * ofo_dossier_dbmodel_update:
- * @sgbd: an already opened connection
- * @name: the name of the dossier
- * @account: the account which has opened this connection; it will be checked
- *  against its permissions when trying to update the data model
+ * @dossier: this #ofoDossier instance, with an already opened
+ *  connection
  *
- * Update the DB model in the SGBD
+ * Update the DB model in the DBMS
  */
-gboolean
-ofo_dossier_dbmodel_update( ofoSgbd *sgbd, const gchar *name, const gchar *account )
+static gboolean
+dbmodel_update( const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_update";
 	gint cur_version;
 
-	g_debug( "%s: sgbd=%p, name=%s, account=%s", thisfn, ( void * ) sgbd, name, account );
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
-	cur_version = dbmodel_get_version( sgbd );
+	cur_version = dbmodel_get_version( dossier );
 	g_debug( "%s: cur_version=%d, THIS_DBMODEL_VERSION=%d", thisfn, cur_version, THIS_DBMODEL_VERSION );
 
 	if( cur_version < THIS_DBMODEL_VERSION ){
 		if( cur_version < 1 ){
-			dbmodel_to_v1( sgbd, name, account );
+			dbmodel_to_v1( dossier );
 		}
 	}
 
@@ -567,19 +571,19 @@ ofo_dossier_dbmodel_update( ofoSgbd *sgbd, const gchar *name, const gchar *accou
  * i.e. une version where the version date is set
  */
 static gint
-dbmodel_get_version( ofoSgbd *sgbd )
+dbmodel_get_version( const ofoDossier *dossier )
 {
 	GSList *res;
 	gint vmax = 0;
 
-	res = ofo_sgbd_query_ex( sgbd,
+	res = ofa_dbms_query_ex( dossier->priv->dbms,
 			"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0", FALSE );
 	if( res ){
 		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
 		if( s ){
 			vmax = atoi( s );
 		}
-		ofo_sgbd_free_result( res );
+		ofa_dbms_free_results( res );
 	}
 
 	return( vmax );
@@ -587,17 +591,24 @@ dbmodel_get_version( ofoSgbd *sgbd )
 
 /**
  * ofo_dossier_dbmodel_to_v1:
+ * @dbms: an already opened #ofaDbms connection
+ * @dname: the name of the dossier from settings, will be used as
+ *  default label
+ * @account: the current connected account.
  */
 static gboolean
-dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
+dbmodel_to_v1( const ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_dossier_dbmodel_to_v1";
+	ofoDossierPrivate *priv;
 	gchar *query;
 
-	g_debug( "%s: sgbd=%p, account=%s", thisfn, ( void * ) sgbd, account );
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+	priv = dossier->priv;
 
 	/* default value for timestamp cannot be null */
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
 			"	VER_NUMBER INTEGER NOT NULL UNIQUE DEFAULT 0     COMMENT 'DB model version number',"
 			"	VER_DATE   TIMESTAMP DEFAULT 0                   COMMENT 'Version application timestamp')",
@@ -605,14 +616,14 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_VERSION "
 			"	(VER_NUMBER, VER_DATE) VALUES (1, 0)",
 			TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
 			"	ACC_NUMBER          VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
 			"	ACC_LABEL           VARCHAR(80)   NOT NULL       COMMENT 'Account label',"
@@ -647,7 +658,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	}
 
 	/* defined post v1 */
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ASSETS ("
 			"	ASS_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern asset identifier',"
 			"	ASS_LABEL     VARCHAR(80)                 COMMENT 'Asset label',"
@@ -668,7 +679,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	}
 
 	/* defined post v1 */
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ASSETS_EXE ("
 			"	ASS_ID           INTEGER                  COMMENT 'Intern asset identifier',"
 			"	ASS_EXE_NUM      INTEGER                  COMMENT 'Numéro d\\'annuité',"
@@ -683,7 +694,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE COMMENT 'Intern import identifier',"
 			"	BAT_URI       VARCHAR(128)                COMMENT 'Imported URI',"
@@ -701,7 +712,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             BIGINT   NOT NULL      COMMENT 'Intern import identifier',"
 			"	BAT_LINE_ID        BIGINT   NOT NULL UNIQUE COMMENT 'Intern imported line identifier',"
@@ -718,7 +729,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CLASSES ("
 			"	CLA_NUMBER       INTEGER     NOT NULL UNIQUE   COMMENT 'Class number',"
 			"	CLA_LABEL        VARCHAR(80) NOT NULL          COMMENT 'Class label',"
@@ -729,62 +740,62 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (1,'Comptes de capitaux')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (2,'Comptes d\\'immobilisations')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (3,'Comptes de stocks et en-cours')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (4,'Comptes de tiers')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (5,'Comptes financiers')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (6,'Comptes de charges')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (7,'Comptes de produits')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (8,'Comptes spéciaux')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CLASSES "
 			"	(CLA_NUMBER,CLA_LABEL) VALUES (9,'Comptes analytiques')", TRUE )){
 		return( FALSE );
 	}
 
 	/*
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACC_CLOSINGS ("
 			"	CPT_NUMBER       VARCHAR(20) BINARY NOT NULL   COMMENT 'Account number',"
 			"	CPT_CLOSING      DATE                          COMMENT 'Closing date',"
@@ -797,7 +808,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	}
 	*/
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CURRENCIES ("
 			"	CUR_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
 			"	CUR_LABEL     VARCHAR(80) NOT NULL                   COMMENT 'Currency label',"
@@ -810,13 +821,13 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CURRENCIES "
 			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES ('EUR','Euro','€')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID              INTEGER   NOT NULL UNIQUE COMMENT 'Row identifier',"
 			"	DOS_DEF_CURRENCY    VARCHAR(3)                COMMENT 'Default currency identifier',"
@@ -843,14 +854,14 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,DOS_LAST_EXE_ID,DOS_EXE_ID,DOS_STATUS) "
-			"	VALUES (1,'%s',%u,'EUR',1,1,'C')", name, DOS_DEFAULT_LENGTH );
-	if( !ofo_sgbd_query( sgbd, query, TRUE )){
+			"	VALUES (1,'%s',%u,'EUR',1,1,'C')", priv->dname, DOS_DEFAULT_LENGTH );
+	if( !ofa_dbms_query( priv->dbms, query, TRUE )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL            COMMENT 'Imputation effect date',"
 			"	ENT_NUMBER       BIGINT  NOT NULL UNIQUE  COMMENT 'Entry number',"
@@ -876,7 +887,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS ("
 			"	LED_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE COMMENT 'Mnemonic identifier of the ledger',"
 			"	LED_LABEL     VARCHAR(80) NOT NULL        COMMENT 'Ledger label',"
@@ -888,7 +899,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_CUR ("
 			"	LED_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal ledger identifier',"
 			"	LED_CUR_CODE     VARCHAR(3) NOT NULL      COMMENT 'Internal currency identifier',"
@@ -901,37 +912,37 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('ACH','Journal des achats','Default')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('VEN','Journal des ventes','Default')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('EXP','Journal de l\\'exploitant','Default')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('OD','Journal des opérations diverses','Default')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_LEDGERS (LED_MNEMO, LED_LABEL, LED_UPD_USER) "
 			"	VALUES ('BQ','Journal de banque','Default')", TRUE )){
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE COMMENT 'Operation template mnemonic',"
 			"	OTE_LABEL      VARCHAR(80)       NOT NULL        COMMENT 'Template label',"
@@ -944,7 +955,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES_DET ("
 			"	OTE_MNEMO              VARCHAR(6) NOT NULL     COMMENT 'Operation template menmonic',"
 			"	OTE_DET_ROW            INTEGER    NOT NULL     COMMENT 'Detail line number',"
@@ -963,7 +974,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	}
 
 	/* defined post v1 */
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RECURRENT ("
 			"	REC_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Internal identifier',"
 			"	REC_MOD_MNEMO VARCHAR(6)                  COMMENT 'Entry model mnemmonic',"
@@ -977,7 +988,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES ("
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL UNIQUE COMMENT 'Mnemonic identifier of the rate',"
 			"	RAT_LABEL         VARCHAR(80)       NOT NULL        COMMENT 'Rate label',"
@@ -988,7 +999,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 		return( FALSE );
 	}
 
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES_VAL ("
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL        COMMENT 'Mnemonic identifier of the rate',"
 			"	RAT_VAL_BEG       DATE    DEFAULT NULL              COMMENT 'Validity begin date',"
@@ -1002,7 +1013,7 @@ dbmodel_to_v1( ofoSgbd *sgbd, const gchar *name, const gchar *account )
 	/* we do this only at the end of the model creation
 	 * as a mark that all has been successfully done
 	 */
-	if( !ofo_sgbd_query( sgbd,
+	if( !ofa_dbms_query( priv->dbms,
 			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=1", TRUE )){
 		return( FALSE );
 	}
@@ -1024,7 +1035,7 @@ ofo_dossier_get_name( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const gchar * ) dossier->priv->name );
+		return(( const gchar * ) dossier->priv->dname );
 	}
 
 	g_return_val_if_reached( NULL );
@@ -1051,44 +1062,18 @@ ofo_dossier_get_user( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_sgbd:
+ * ofo_dossier_get_dbms:
  *
- * Returns: the current sgbd handler.
+ * Returns: the current DBMS handler.
  */
-const ofoSgbd *
-ofo_dossier_get_sgbd( const ofoDossier *dossier )
+const ofaDbms *
+ofo_dossier_get_dbms( const ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return(( const ofoSgbd * ) dossier->priv->sgbd );
-	}
-
-	g_return_val_if_reached( NULL );
-	return( NULL );
-}
-
-/**
- * ofo_dossier_get_dbname:
- *
- * Returns: the name of the database of the opened dossier.
- */
-gchar *
-ofo_dossier_get_dbname( const ofoDossier *dossier )
-{
-	ofoDossierPrivate *priv;
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		priv = dossier->priv;
-
-		if( priv->sgbd && OFO_IS_SGBD( priv->sgbd )){
-
-			return( ofo_sgbd_get_dbname( priv->sgbd ));
-		}
+		return(( const ofaDbms * ) dossier->priv->dbms );
 	}
 
 	g_return_val_if_reached( NULL );
@@ -1570,7 +1555,7 @@ dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter n
 			"	WHERE DOS_ID=%d",
 					field, next_number, THIS_DOS_ID );
 
-	ofo_sgbd_query( dossier->priv->sgbd, query, TRUE );
+	ofa_dbms_query( dossier->priv->dbms, query, TRUE );
 	g_free( query );
 }
 
@@ -2048,7 +2033,7 @@ dossier_read_properties( ofoDossier *dossier )
 			"FROM OFA_T_DOSSIER "
 			"WHERE DOS_ID=%d", THIS_DOS_ID );
 
-	result = ofo_sgbd_query_ex( dossier->priv->sgbd, query, TRUE );
+	result = ofa_dbms_query_ex( dossier->priv->dbms, query, TRUE );
 
 	g_free( query );
 
@@ -2140,7 +2125,7 @@ dossier_read_properties( ofoDossier *dossier )
 		}
 
 		ok = TRUE;
-		ofo_sgbd_free_result( result );
+		ofa_dbms_free_results( result );
 	}
 
 	return( ok );
@@ -2163,7 +2148,7 @@ ofo_dossier_update( ofoDossier *dossier )
 		g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 		return( dossier_do_update(
-					dossier, dossier->priv->sgbd, dossier->priv->userid ));
+					dossier, dossier->priv->dbms, dossier->priv->userid ));
 	}
 
 	g_assert_not_reached();
@@ -2171,13 +2156,13 @@ ofo_dossier_update( ofoDossier *dossier )
 }
 
 static gboolean
-dossier_do_update( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user )
+dossier_do_update( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user )
 {
-	return( do_update_properties( dossier, sgbd, user ));
+	return( do_update_properties( dossier, dbms, user ));
 }
 
 static gboolean
-do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *user )
+do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str, *sdate;
@@ -2255,7 +2240,7 @@ do_update_properties( ofoDossier *dossier, const ofoSgbd *sgbd, const gchar *use
 
 	g_string_append_printf( query, "WHERE DOS_ID=%d", THIS_DOS_ID );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 		dossier_set_upd_user( dossier, user );
 		dossier_set_upd_stamp( dossier, &stamp );
 		ok = TRUE;
@@ -2353,6 +2338,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 gboolean
 ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname )
 {
+#if 0
 	ofoDossierPrivate *priv;
 	gboolean ok;
 
@@ -2365,8 +2351,10 @@ ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname )
 
 		priv = dossier->priv;
 
-		ok = ofo_sgbd_backup( priv->sgbd, fname );
+		ok = ofa_dbms_backup( priv->dbms, fname );
 	}
 
 	return( ok );
+#endif
+	return( FALSE );
 }

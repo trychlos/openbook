@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-dbms.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -40,13 +41,12 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
-#include "api/ofo-sgbd.h"
 
 /* priv instance data
  */
 struct _ofoCurrencyPrivate {
 
-	/* sgbd data
+	/* dbms data
 	 */
 	gchar     *code;
 	gchar     *label;
@@ -66,14 +66,14 @@ static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static void         currency_set_upd_user( ofoCurrency *currency, const gchar *user );
 static void         currency_set_upd_stamp( ofoCurrency *currency, const GTimeVal *stamp );
-static gboolean     currency_do_insert( ofoCurrency *currency, const ofoSgbd *sgbd, const gchar *user );
-static gboolean     currency_insert_main( ofoCurrency *currency, const ofoSgbd *sgbd, const gchar *user );
-static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofoSgbd *sgbd, const gchar *user );
-static gboolean     currency_do_delete( ofoCurrency *currency, const ofoSgbd *sgbd );
+static gboolean     currency_do_insert( ofoCurrency *currency, const ofaDbms *dbms, const gchar *user );
+static gboolean     currency_insert_main( ofoCurrency *currency, const ofaDbms *dbms, const gchar *user );
+static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaDbms *dbms, const gchar *user );
+static gboolean     currency_do_delete( ofoCurrency *currency, const ofaDbms *dbms );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
-static gboolean     currency_do_drop_content( const ofoSgbd *sgbd );
+static gboolean     currency_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoCurrency, ofo_currency, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
@@ -185,12 +185,12 @@ currency_load_dataset( void )
 	GSList *result, *irow, *icol;
 	ofoCurrency *currency;
 	GList *dataset;
-	const ofoSgbd *sgbd;
+	const ofaDbms *dbms;
 	GTimeVal timeval;
 
-	sgbd = ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier ));
+	dbms = ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier ));
 
-	result = ofo_sgbd_query_ex( sgbd,
+	result = ofa_dbms_query_ex( dbms,
 			"SELECT CUR_CODE,CUR_LABEL,CUR_SYMBOL,CUR_DIGITS,"
 			"	CUR_NOTES,CUR_UPD_USER,CUR_UPD_STAMP "
 			"	FROM OFA_T_CURRENCIES", TRUE );
@@ -218,7 +218,7 @@ currency_load_dataset( void )
 		dataset = g_list_prepend( dataset, currency );
 	}
 
-	ofo_sgbd_free_result( result );
+	ofa_dbms_free_results( result );
 
 	return( g_list_reverse( dataset ));
 }
@@ -554,7 +554,7 @@ ofo_currency_insert( ofoCurrency *currency )
 
 		if( currency_do_insert(
 					currency,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_ADD_TO_DATASET( st_global, currency );
@@ -568,13 +568,13 @@ ofo_currency_insert( ofoCurrency *currency )
 }
 
 static gboolean
-currency_do_insert( ofoCurrency *currency, const ofoSgbd *sgbd, const gchar *user )
+currency_do_insert( ofoCurrency *currency, const ofaDbms *dbms, const gchar *user )
 {
-	return( currency_insert_main( currency, sgbd, user ));
+	return( currency_insert_main( currency, dbms, user ));
 }
 
 static gboolean
-currency_insert_main( ofoCurrency *currency, const ofoSgbd *sgbd, const gchar *user )
+currency_insert_main( ofoCurrency *currency, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str;
@@ -610,7 +610,7 @@ currency_insert_main( ofoCurrency *currency, const ofoSgbd *sgbd, const gchar *u
 			"'%s','%s')",
 			user, stamp_str );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 		currency_set_upd_user( currency, user );
 		currency_set_upd_stamp( currency, &stamp );
 		ok = TRUE;
@@ -642,7 +642,7 @@ ofo_currency_update( ofoCurrency *currency, const gchar *prev_code )
 		if( currency_do_update(
 					currency,
 					prev_code,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_UPDATE_DATASET( st_global, currency, prev_code );
@@ -656,7 +656,7 @@ ofo_currency_update( ofoCurrency *currency, const gchar *prev_code )
 }
 
 static gboolean
-currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofoSgbd *sgbd, const gchar *user )
+currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *label, *notes, *stamp_str;
@@ -688,7 +688,7 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofoSgbd
 			"	CUR_MAJ_USER='%s',CUR_MAJ_STAMP='%s'"
 			"	WHERE CUR_CODE='%s'", user, stamp_str, prev_code );
 
-	if( ofo_sgbd_query( sgbd, query->str, TRUE )){
+	if( ofa_dbms_query( dbms, query->str, TRUE )){
 		currency_set_upd_user( currency, user );
 		currency_set_upd_stamp( currency, &stamp );
 		ok = TRUE;
@@ -720,7 +720,7 @@ ofo_currency_delete( ofoCurrency *currency )
 
 		if( currency_do_delete(
 					currency,
-					ofo_dossier_get_sgbd( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )))){
 
 			OFO_BASE_REMOVE_FROM_DATASET( st_global, currency );
 
@@ -733,7 +733,7 @@ ofo_currency_delete( ofoCurrency *currency )
 }
 
 static gboolean
-currency_do_delete( ofoCurrency *currency, const ofoSgbd *sgbd )
+currency_do_delete( ofoCurrency *currency, const ofaDbms *dbms )
 {
 	gchar *query;
 	gboolean ok;
@@ -743,7 +743,7 @@ currency_do_delete( ofoCurrency *currency, const ofoSgbd *sgbd )
 			"	WHERE CUR_CODE='%s'",
 					ofo_currency_get_code( currency ));
 
-	ok = ofo_sgbd_query( sgbd, query, TRUE );
+	ok = ofa_dbms_query( dbms, query, TRUE );
 
 	g_free( query );
 
@@ -929,12 +929,12 @@ ofo_currency_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with
 	if( !errors ){
 		st_global->send_signal_new = FALSE;
 
-		currency_do_drop_content( ofo_dossier_get_sgbd( dossier ));
+		currency_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
 		for( ise=new_set ; ise ; ise=ise->next ){
 			currency_do_insert(
 					OFO_CURRENCY( ise->data ),
-					ofo_dossier_get_sgbd( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 		}
 
@@ -951,7 +951,7 @@ ofo_currency_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with
 }
 
 static gboolean
-currency_do_drop_content( const ofoSgbd *sgbd )
+currency_do_drop_content( const ofaDbms *dbms )
 {
-	return( ofo_sgbd_query( sgbd, "DELETE FROM OFA_T_CURRENCIES", TRUE ));
+	return( ofa_dbms_query( dbms, "DELETE FROM OFA_T_CURRENCIES", TRUE ));
 }
