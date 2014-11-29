@@ -350,8 +350,6 @@
  470 2014-11-28 when entering a new database name, only accepts
                 [A..Z,a..z,0..9,_] characters
 
- 471 2014-11-29 migrate to ofaDbms
-
  472 2014-11-29 set dialogs readonly if not current exercice
 
  473 2014-11-29 DossierDelete should be just a sub part of the manager
@@ -2052,6 +2050,9 @@
                 remove LED_CUR_DEB_DATE & LED_CUR_CRE_DATE
                 add DOS_SIREN
      2014-11-28 done - svn #4172
+
+ 471 2014-11-29 migrate to ofaDbms
+     2014-11-29 done - svn #4192
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

@@ -36,7 +36,6 @@
 #include "api/ofa-ipreferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-sgbd.h"
 
 #include "core/my-window-prot.h"
 #include "core/ofa-plugin.h"

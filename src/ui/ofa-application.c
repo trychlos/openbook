@@ -33,7 +33,6 @@
 
 #include "api/ofa-boxed.h"
 #include "api/ofa-settings.h"
-#include "api/ofo-sgbd.h"
 
 #include "core/ofa-plugin.h"
 #include "core/ofa-preferences.h"

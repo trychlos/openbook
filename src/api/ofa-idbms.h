@@ -39,8 +39,6 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofo-sgbd-def.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_IDBMS                      ( ofa_idbms_get_type())

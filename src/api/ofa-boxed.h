@@ -27,7 +27,7 @@
 #ifndef __OFA_BOXED_H__
 #define __OFA_BOXED_H__
 
-#include "api/ofo-sgbd-def.h"
+#include <glib.h>
 
 /**
  * SECTION: ofa_boxed
