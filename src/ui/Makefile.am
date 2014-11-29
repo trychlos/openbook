@@ -91,22 +91,28 @@ openbook_SOURCES = \
 	ofa-currency-combo.h								\
 	ofa-currency-properties.c							\
 	ofa-currency-properties.h							\
-	ofa-dossier-manager.c								\
-	ofa-dossier-manager.h								\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
 	ofa-dossier-delete-prefs.c							\
 	ofa-dossier-delete-prefs.h							\
 	ofa-dossier-login.c									\
 	ofa-dossier-login.h									\
+	ofa-dossier-manager.c								\
+	ofa-dossier-manager.h								\
+	ofa-dossier-misc.c									\
+	ofa-dossier-misc.h									\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-dossier-open.c									\
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
 	ofa-dossier-properties.h							\
+	ofa-dossier-treeview.c								\
+	ofa-dossier-treeview.h								\
 	ofa-exe-closing.c									\
 	ofa-exe-closing.h									\
+	ofa-exercice-combo.c								\
+	ofa-exercice-combo.h								\
 	ofa-export-assistant.c								\
 	ofa-export-assistant.h								\
 	ofa-export-settings-prefs.c							\
@@ -205,6 +211,7 @@ ui_files = \
 	ofa-dossier-new.ui									\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
+	ofa-dossier-treeview.piece.ui						\
 	ofa-exe-closing.ui									\
 	ofa-export-assistant.ui								\
 	ofa-export-settings.piece.ui						\

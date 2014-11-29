@@ -44,6 +44,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-backup.h								\
 	ofa-mysql-dossier-new.c							\
 	ofa-mysql-dossier-new.h							\
+	ofa-mysql-idbms.c								\
+	ofa-mysql-idbms.h								\
 	ofa-mysql-prefs.c								\
 	ofa-mysql-prefs.h								\
 	ofa-module.c									\

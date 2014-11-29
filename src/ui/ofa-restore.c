@@ -35,6 +35,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
+#include "ui/ofa-dossier-misc.h"
 #include "ui/ofa-restore.h"
 #include "ui/ofa-main-window.h"
 
@@ -381,7 +382,7 @@ setup_existing_dossier( ofaRestore *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( treeview ), column );
 
-	list = ofa_settings_get_dossiers();
+	list = ofa_dossier_misc_get_dossiers();
 
 	for( it=list ; it ; it=it->next ){
 		gtk_list_store_insert_with_values(
@@ -392,7 +393,7 @@ setup_existing_dossier( ofaRestore *self )
 				-1 );
 	}
 
-	g_slist_free_full( list, ( GDestroyNotify ) g_free );
+	ofa_dossier_misc_free_dossiers( list );
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( treeview ));
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
@@ -514,7 +515,7 @@ do_restore( ofaRestore *self )
 
 	if( ok && open ){
 		sdo = g_new0( ofsDossierOpen, 1 );
-		sdo->label = g_strdup( priv->label );
+		sdo->dname = g_strdup( priv->label );
 		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_ACTION_DOSSIER_OPEN, sdo );
 	}
 

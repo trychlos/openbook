@@ -60,78 +60,92 @@ typedef enum {
 	ofaSettingsTarget;
 
 /* some used keys */
-#define  SETTINGS_EXPORT_FOLDER             "DefaultExportFolder"
+#define  SETTINGS_DBMS_PROVIDER         "DBMSProvider"
+#define  SETTINGS_EXPORT_FOLDER         "DefaultExportFolder"
 
 /* this is the group name for user preferences
  * should not be used by the code, but needed to define following
  * user preferences macros */
-#define SETTINGS_GROUP_GENERAL              "General"
+#define SETTINGS_GROUP_GENERAL          "General"
+
+/* this is the group name for dossiers configuration */
+#define SETTINGS_GROUP_DOSSIER          "Dossier"
 
 /* called on application dispose */
-void     ofa_settings_free                  ( void );
+void     ofa_settings_free                   ( void );
 
 /* user preferences management */
-#define  ofa_settings_get_boolean(K)        ofa_settings_get_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
-#define  ofa_settings_set_boolean(K,V)      ofa_settings_set_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+#define  ofa_settings_get_boolean(K)         ofa_settings_get_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_boolean(K,V)       ofa_settings_set_boolean_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
 
-#define  ofa_settings_get_int(K)            ofa_settings_get_int_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
-#define  ofa_settings_set_int(K,V)          ofa_settings_set_int_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+#define  ofa_settings_get_int(K)             ofa_settings_get_int_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_int(K,V)           ofa_settings_set_int_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
 
-#define  ofa_settings_get_int_list(K)       ofa_settings_get_int_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
-#define  ofa_settings_set_int_list(K,V)     ofa_settings_set_int_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+#define  ofa_settings_get_int_list(K)        ofa_settings_get_int_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_int_list(K,V)      ofa_settings_set_int_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
 
-#define  ofa_settings_get_string(K)         ofa_settings_get_string_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
-#define  ofa_settings_set_string(K,V)       ofa_settings_set_string_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+#define  ofa_settings_get_string(K)          ofa_settings_get_string_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_string(K,V)        ofa_settings_set_string_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
 
-#define  ofa_settings_get_string_list(K)    ofa_settings_get_string_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
-#define  ofa_settings_set_string_list(K,V)  ofa_settings_set_string_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
+#define  ofa_settings_get_string_list(K)     ofa_settings_get_string_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
+#define  ofa_settings_set_string_list(K,V)   ofa_settings_set_string_list_ex(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
 
 /* multi-usage functions */
-gboolean ofa_settings_get_boolean_ex        ( ofaSettingsTarget target,
+gboolean ofa_settings_get_boolean_ex         ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key );
-void     ofa_settings_set_boolean_ex        ( ofaSettingsTarget target,
+void     ofa_settings_set_boolean_ex         ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key,
 														gboolean bvalue );
 
-gint     ofa_settings_get_int_ex            ( ofaSettingsTarget target,
+gint     ofa_settings_get_int_ex             ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key );
-void     ofa_settings_set_int_ex            ( ofaSettingsTarget target,
+void     ofa_settings_set_int_ex             ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key,
 														gint ivalue );
 
-GList   *ofa_settings_get_int_list_ex       ( ofaSettingsTarget target,
+GList   *ofa_settings_get_int_list_ex        ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key );
-void     ofa_settings_set_int_list_ex       ( ofaSettingsTarget target,
+void     ofa_settings_set_int_list_ex        ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key,
 														const GList *int_list );
+#define  ofa_settings_free_int_list(L)       g_list_free( L )
 
-gchar   *ofa_settings_get_string_ex         ( ofaSettingsTarget target,
+gchar   *ofa_settings_get_string_ex          ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key );
-void     ofa_settings_set_string_ex         ( ofaSettingsTarget target,
+void     ofa_settings_set_string_ex          ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key,
 														const gchar *svalue );
 
-GList   *ofa_settings_get_string_list_ex    ( ofaSettingsTarget target,
+GList   *ofa_settings_get_string_list_ex     ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key );
-void     ofa_settings_set_string_list_ex    ( ofaSettingsTarget target,
+void     ofa_settings_set_string_list_ex     ( ofaSettingsTarget target,
 														const gchar *group, const gchar *key,
 														const GList *str_list );
+#define  ofa_settings_free_string_list(L)    g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+
+GSList  *ofa_settings_get_groups             ( ofaSettingsTarget target );
+#define  ofa_settings_free_groups(L)         g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
 /* dossiers configuration management */
-GSList  *ofa_settings_get_dossiers          ( void );
 
-gboolean ofa_settings_set_dossier           ( const gchar *name, ... );
+GSList  *ofa_settings_dossier_get_keys       ( const gchar *dname );
+#define  ofa_settings_dossier_free_keys(L)   g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
-void     ofa_settings_remove_dossier        ( const gchar *name );
+gboolean ofa_settings_create_dossier         ( const gchar *dname, ... );
 
-gboolean ofa_settings_has_dossier           ( const gchar *name );
+void     ofa_settings_remove_dossier         ( const gchar *dname );
 
-gchar   *ofa_settings_get_dossier_provider  ( const gchar *name );
+gboolean ofa_settings_has_dossier            ( const gchar *dname );
 
-gint     ofa_settings_get_dossier_int       ( const gchar *name, const gchar *key );
+gchar   *ofa_settings_get_dossier_provider   ( const gchar *dname );
 
-gchar   *ofa_settings_get_dossier_string    ( const gchar *name, const gchar *key );
-void     ofa_settings_set_dossier_string    ( const gchar *name, const gchar *key, const gchar *svalue );
+gint     ofa_settings_dossier_get_int        ( const gchar *dname, const gchar *key );
+
+gchar   *ofa_settings_dossier_get_string     ( const gchar *dname, const gchar *key );
+void     ofa_settings_dossier_set_string     ( const gchar *dname, const gchar *key, const gchar *svalue );
+
+GList   *ofa_settings_dossier_get_string_list( const gchar *dname, const gchar *key );
+void     ofa_settings_dossier_set_string_list( const gchar *dname, const gchar *key, const GList *list );
 
 G_END_DECLS
 

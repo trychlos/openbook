@@ -41,6 +41,7 @@
 
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-manager.h"
+#include "ui/ofa-dossier-misc.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-main-window.h"
@@ -286,7 +287,7 @@ load_in_treeview( ofaDossierManager *self )
 	tmodel = gtk_tree_view_get_model( self->priv->tview );
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
-	dossiers = ofa_settings_get_dossiers();
+	dossiers = ofa_dossier_misc_get_dossiers();
 
 	for( id=dossiers ; id ; id=id->next ){
 		name = ( const gchar * ) id->data;
@@ -311,7 +312,7 @@ load_in_treeview( ofaDossierManager *self )
 		g_free( provider );
 	}
 
-	g_slist_free_full( dossiers, ( GDestroyNotify ) g_free );
+	ofa_dossier_misc_free_dossiers( dossiers );
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 		select = gtk_tree_view_get_selection( self->priv->tview );

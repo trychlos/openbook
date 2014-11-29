@@ -52,15 +52,8 @@ typedef struct _ofaIDbms                    ofaIDbms;
 
 /**
  * ofaIDbmsInterface:
- * @get_interface_version: [should] returns the version of this
- *                                  interface that the plugin implements.
  *
  * This defines the interface that an #ofaIDbms should implement.
- *
- * The DBMS backend presents two sets of functions:
- * - a first one which addresses the DB server itself,
- * - the second one which manages the inside dossier through the opened
- *   DB server connexion.
  */
 typedef struct {
 	/*< private >*/
@@ -86,6 +79,37 @@ typedef struct {
 	guint         ( *get_interface_version )( const ofaIDbms *instance );
 
 	/**
+	 * connect:
+	 * @instance: the #ofaIDbms provider.
+	 * @dname: the name of the dossier in settings.
+	 * @dbname: the database to be used as the default.
+	 * @account: the connection account.
+	 * @password: the password of the connection account.
+	 *
+	 * Connect to the DBMS.
+	 *
+	 * Return value: a non-NULL handle on the connection data provided
+	 * by the DBMS provider, or %NULL.
+	 *
+	 * Since: version 1
+	 */
+	void        * ( *connect )              ( const ofaIDbms *instance,
+														const gchar *dname, const gchar *dbname,
+														const gchar *account, const gchar *password );
+
+	/**
+	 * close:
+	 * @instance: the #ofaIDbms provider.
+	 * @handle: the handle returned by the connection.
+	 *
+	 * Close the connection to the DBMS.
+	 *
+	 * Since: version 1
+	 */
+	void          ( *close )                ( const ofaIDbms *instance,
+														void *handle );
+
+	/**
 	 * get_provider_name:
 	 * @instance: the #ofaIDbms provider.
 	 *
@@ -100,6 +124,26 @@ typedef struct {
 	 * Since: version 1
 	 */
 	const gchar * ( *get_provider_name )    ( const ofaIDbms *instance );
+
+	/**
+	 * get_exercices:
+	 * @instance: the #ofaIDbms provider.
+	 * @dname: the name of the dossier from settings.
+	 *
+	 * Returns the list of the known exercices as a semi-colon separated
+	 * list of strings:
+	 * - a displayable label
+	 * - the corresponding database.
+	 *
+	 * The returned list should be #ofa_idbms_free_exercices() by the
+	 * caller.
+	 *
+	 * Since: version 1
+	 */
+	GSList *      ( *get_exercices )        ( const ofaIDbms *instance,
+														const gchar *dname );
+
+	/* ... */
 
 	/**
 	 * properties_new_init:
@@ -176,35 +220,25 @@ typedef struct {
 	gchar *       ( *get_dossier_dbname )   ( const ofaIDbms *instance, const gchar *label );
 
 	/**
-	 * connect:
+	 * get_dbnames_list:
 	 * @instance: the #ofaIDbms provider.
-	 * @label: the label of the dossier.
-	 * @dbname: the database to be used as the default.
-	 * @with_dbname: whether to connect to the specified database (if
-	 *  %TRUE), or to connect to the dossier's default database (if
-	 *  %FALSE).
-	 * @account: the connection account.
-	 * @password: the password of the connection account.
+	 * @name: the name of the dossier.
 	 *
-	 * Connect to the DBMS.
+	 * Returns the list of database names (one for each known exercice)
+	 * recorded for the dossier is the settings.
 	 *
-	 * Return value: a non-NULL handle on the connection data provided
-	 * by the DBMS provider, or %NULL.
+	 * Return value: a #GList of semi-colon separated strings which are
+	 * built as:
+	 * - a displayable label (e.g. "Archived exercice from 01/01/1980 to 31/12/1980")
+	 * - the corresponding database name
+	 *
+	 * The caller should #g_slist_free_full( list, ( GDestroyNotify ) g_free )
+	 * the returned list.
 	 *
 	 * Since: version 1
 	 */
-	void        * ( *connect )              ( const ofaIDbms *instance, const gchar *label, const gchar *dbname, gboolean with_dbname, const gchar *account, const gchar *password );
-
-	/**
-	 * close:
-	 * @instance: the #ofaIDbms provider.
-	 * @handle: the handle returned by the connection.
-	 *
-	 * Close the connection to the DBMS.
-	 *
-	 * Since: version 1
-	 */
-	void          ( *close )                ( const ofaIDbms *instance, void *handle );
+	GSList *      ( *get_dbnames_list )     ( const ofaIDbms *instance,
+														const gchar *name );
 
 	/**
 	 * query:
@@ -250,7 +284,7 @@ typedef struct {
 	/**
 	 * delete_dossier:
 	 * @instance: the #ofaIDbms provider.
-	 * @label: the label of the dossier.
+	 * @name: the name of the dossier.
 	 * @account: the connection account.
 	 * @password: the password of the connection account.
 	 * @drop_db: whether to drop the database
@@ -269,7 +303,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *delete_dossier )       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
+	gboolean      ( *delete_dossier )       ( const ofaIDbms *instance, const gchar *name, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
 
 	/**
 	 * get_def_backup_cmd:
@@ -360,13 +394,25 @@ typedef enum {
 
 GType        ofa_idbms_get_type             ( void );
 
+void        *ofa_idbms_connect              ( const ofaIDbms *instance,
+														const gchar *dname, const gchar *dbname,
+														const gchar *account, const gchar *password );
+
+void         ofa_idbms_close                ( const ofaIDbms *instance, void *handle );
+
+ofaIDbms    *ofa_idbms_get_provider_by_name ( const gchar *pname );
+
+const gchar *ofa_idbms_get_provider_name    ( const ofaIDbms *instance );
+
+GSList      *ofa_idbms_get_exercices        ( const ofaIDbms *instance,
+														const gchar *dname );
+#define      ofa_idbms_free_exercices(L)    g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
+
+/* .... */
+
 GSList      *ofa_idbms_get_providers_list   ( void );
 
 void         ofa_idbms_free_providers_list  ( GSList *list );
-
-ofaIDbms    *ofa_idbms_get_provider_by_name ( const gchar *name );
-
-const gchar *ofa_idbms_get_provider_name    ( const ofaIDbms *instance );
 
 void         ofa_idbms_properties_new_init  ( const ofaIDbms *instance, GtkContainer *parent,
 												GtkSizeGroup *group );
@@ -379,12 +425,6 @@ gboolean     ofa_idbms_properties_new_apply ( const ofaIDbms *instance, GtkConta
 gchar       *ofa_idbms_get_dossier_host     ( const ofaIDbms *instance, const gchar *label );
 
 gchar       *ofa_idbms_get_dossier_dbname   ( const ofaIDbms *instance, const gchar *label );
-
-void        *ofa_idbms_connect              ( const ofaIDbms *instance, const gchar *label,
-												const gchar *dbname, gboolean with_dbname,
-												const gchar *account, const gchar *password );
-
-void         ofa_idbms_close                ( const ofaIDbms *instance, void *handle );
 
 gboolean     ofa_idbms_query                ( const ofaIDbms *instance, void *handle, const gchar *query );
 

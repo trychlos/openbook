@@ -36,6 +36,8 @@ api_include_HEADERS = \
 	my-double.h											\
 	my-utils.h											\
 	ofa-boxed.h											\
+	ofa-dbms.h											\
+	ofa-dbms-def.h										\
 	ofa-settings.h										\
 	\
 	ofo-account.h										\

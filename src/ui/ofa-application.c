@@ -88,13 +88,17 @@ static const gchar            *st_description        = N_( "Une comptabilité en
 static const gchar            *st_icon_name          = N_( "openbook" );
 
 static       gboolean          st_version_opt        = FALSE;
+
 static       gchar            *st_dossier_name_opt   = NULL;
+static       gchar            *st_dossier_dbname_opt = NULL;
 static       gchar            *st_dossier_user_opt   = NULL;
 static       gchar            *st_dossier_passwd_opt = NULL;
 
 static       GOptionEntry      st_option_entries[]  = {
 	{ "dossier",  'd', 0, G_OPTION_ARG_STRING, &st_dossier_name_opt,
 			N_( "open the specified dossier []" ), NULL },
+	{ "database", 'b', 0, G_OPTION_ARG_STRING, &st_dossier_dbname_opt,
+			N_( "open the specified database []" ), NULL },
 	{ "user",     'u', 0, G_OPTION_ARG_STRING, &st_dossier_user_opt,
 			N_( "username to be used on opening the dossier []" ), NULL },
 	{ "password", 'p', 0, G_OPTION_ARG_STRING, &st_dossier_passwd_opt,
@@ -500,7 +504,8 @@ manage_options( ofaApplication *application )
 				st_dossier_passwd_opt && g_utf8_strlen( st_dossier_passwd_opt, -1 )){
 
 			priv->sdo = g_new0( ofsDossierOpen, 1 );
-			priv->sdo->label = g_strdup( st_dossier_name_opt );
+			priv->sdo->dname = g_strdup( st_dossier_name_opt );
+			priv->sdo->dbname = g_strdup( st_dossier_dbname_opt );
 			priv->sdo->account = g_strdup( st_dossier_user_opt );
 			priv->sdo->password = g_strdup( st_dossier_passwd_opt );
 

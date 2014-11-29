@@ -39,8 +39,10 @@ G_BEGIN_DECLS
 
 ofoSgbd     *ofo_sgbd_new          ( const gchar *label );
 
+#if 0
 gboolean     ofo_sgbd_connect      ( ofoSgbd *sgbd, const gchar *account, const gchar *password,
 										gboolean display_error );
+#endif
 
 gboolean     ofo_sgbd_connect_ex   ( ofoSgbd *sgbd, const gchar *dbname, const gchar *account, const gchar *password,
 										gboolean display_error );

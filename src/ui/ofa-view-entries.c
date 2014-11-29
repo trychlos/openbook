@@ -696,7 +696,7 @@ setup_display_columns( ofaViewEntries *self )
 	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->status_visible );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->status_visible );
 
-	g_list_free( id_list );
+	ofa_settings_free_int_list( id_list );
 }
 
 /*

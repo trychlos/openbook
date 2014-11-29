@@ -564,13 +564,13 @@ setup_new_dossier( sPrivate *priv )
 {
 	gboolean setup_ok;
 
-	setup_ok = ofa_settings_set_dossier(
+	setup_ok = ofa_settings_create_dossier(
 						priv->label,
-						"Provider",    SETTINGS_TYPE_STRING, ofa_mysql_get_provider_name( NULL ),
-						"Host",        SETTINGS_TYPE_STRING, priv->sNew.sConnect.host,
-						"Port",        SETTINGS_TYPE_INT,    priv->sNew.sConnect.port,
-						"Socket",      SETTINGS_TYPE_STRING, priv->sNew.sConnect.socket,
-						"Database",    SETTINGS_TYPE_STRING, priv->sNew.sConnect.dbname,
+						SETTINGS_DBMS_PROVIDER, SETTINGS_TYPE_STRING, ofa_mysql_get_provider_name( NULL ),
+						"MySQLHost",            SETTINGS_TYPE_STRING, priv->sNew.sConnect.host,
+						"MySQLPort",            SETTINGS_TYPE_INT,    priv->sNew.sConnect.port,
+						"MySQLSocket",          SETTINGS_TYPE_STRING, priv->sNew.sConnect.socket,
+						"MySQLDatabase",        SETTINGS_TYPE_STRING, priv->sNew.sConnect.dbname,
 						NULL );
 
 	return( setup_ok );

@@ -29,13 +29,15 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-dbms.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-sgbd.h"
 
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-dossier-open.h"
+#include "ui/ofa-dossier-treeview.h"
+#include "ui/ofa-exercice-combo.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -44,32 +46,33 @@ struct _ofaDossierOpenPrivate {
 
 	/* data
 	 */
-	gchar          *name;
-	gchar          *account;
-	gchar          *password;
+	gchar              *dname;			/* name of the dossier (from settings) */
+	gchar              *label;			/* label of the exercice (from settings) */
+	char               *dbname;
+	gchar              *account;
+	gchar              *password;
+
+	/* UI
+	 */
+	ofaDossierTreeview *dossier_tview;
+	ofaExerciceCombo   *exercice_combo;
+	GtkWidget          *ok_btn;
 
 	/* return value
 	 * the structure itself, along with its datas, will be freed by the
 	 * MainWindow signal final handler
 	 */
-	ofsDossierOpen *sdo;
+	ofsDossierOpen     *sdo;
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-dossier-open.ui";
 static const gchar  *st_ui_id  = "DossierOpenDlg";
 
-/* column ordering in the selection listview
- */
-enum {
-	COL_NAME = 0,
-	N_COLUMNS
-};
-
 G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static gint      on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
-static void      on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self );
+static void      on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, ofaDossierOpen *self );
+static void      on_exercice_changed( ofaExerciceCombo *combo, const gchar *label, const gchar *dbname, ofaDossierOpen *self );
 static void      on_account_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      on_password_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
@@ -89,7 +92,10 @@ dossier_open_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_DOSSIER_OPEN( instance )->priv;
-	g_free( priv->name );
+
+	g_free( priv->dbname );
+	g_free( priv->label );
+	g_free( priv->dname );
 	g_free( priv->account );
 	g_free( priv->password );
 
@@ -175,118 +181,81 @@ ofa_dossier_open_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
-	GtkContainer *container;
-	GtkTreeView *listview;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *text_cell;
-	GtkTreeViewColumn *column;
-	GtkTreeIter iter;
-	GSList *dossiers, *id;
-	GtkTreeSelection *select;
-	GtkEntry *entry;
-	GList *focus;
+	ofaDossierOpenPrivate *priv;
+	GtkWindow *toplevel;
+	GtkWidget *container, *entry, *button;
 
-	focus = NULL;
+	priv = OFA_DOSSIER_OPEN( dialog )->priv;
 
-	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( dialog ));
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+
+	/* do this first to be available as soon as the first signal
+	 * triggers */
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-open" );
+	priv->ok_btn = button;
+
+	/* setup exercice combobox (before dossier) */
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent-exercice" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	priv->exercice_combo = ofa_exercice_combo_new();
+	ofa_exercice_combo_attach_to( priv->exercice_combo, GTK_CONTAINER( container ));
+	g_signal_connect(
+			G_OBJECT( priv->exercice_combo ), "changed", G_CALLBACK( on_exercice_changed ), dialog );
 
-	dossiers = ofa_settings_get_dossiers();
+	/* setup dossier treeview */
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent-dossier" );
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	priv->dossier_tview = ofa_dossier_treeview_new();
+	ofa_dossier_treeview_attach_to( priv->dossier_tview, GTK_CONTAINER( container ));
+	g_signal_connect(
+			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), dialog );
 
-	listview = GTK_TREE_VIEW(
-					my_utils_container_get_child_by_name( container, "treeview" ));
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new( N_COLUMNS, G_TYPE_STRING ));
-	gtk_tree_view_set_model( listview, tmodel );
-	g_object_unref( tmodel );
-	focus = g_list_append( focus, listview );
+	ofa_dossier_treeview_init_view( priv->dossier_tview, NULL );
 
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ),
-			( GtkTreeIterCompareFunc ) on_sort_model, NULL, NULL );
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tmodel ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
-			GTK_SORT_ASCENDING );
-
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			"label",
-			text_cell,
-			"text", COL_NAME,
-			NULL );
-	gtk_tree_view_append_column( listview, column );
-
-	select = gtk_tree_view_get_selection( listview );
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect(G_OBJECT( select ), "changed", G_CALLBACK( on_dossier_selected ), dialog );
-
-	for( id=dossiers ; id ; id=id->next ){
-		gtk_list_store_append( GTK_LIST_STORE( tmodel ), &iter );
-		gtk_list_store_set(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				COL_NAME, ( const gchar * ) id->data,
-				-1 );
-	}
-
-	g_slist_free_full( dossiers, ( GDestroyNotify ) g_free );
-
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		gtk_tree_selection_select_iter( select, &iter );
-	}
-
-	entry = GTK_ENTRY(
-				my_utils_container_get_child_by_name( container, "account" ));
+	/* setup account and password */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account" );
 	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), dialog );
-	focus = g_list_append( focus, entry );
 
-	entry = GTK_ENTRY(
-				my_utils_container_get_child_by_name( container, "password" ));
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "password" );
 	g_signal_connect(G_OBJECT( entry ), "changed", G_CALLBACK( on_password_changed ), dialog );
-	focus = g_list_append( focus, entry );
-
-	/*  doesn't work: only the first widget of the grid get the focus !
-	grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "grid-open" ));
-	gtk_container_set_focus_chain( GTK_CONTAINER( grid ), focus );*/
-
-	/* doesn't work either: this is as the default
-	 * account -> listview -> password
-	gtk_container_set_focus_chain( GTK_CONTAINER( dialog ), focus );*/
 
 	check_for_enable_dlg( OFA_DOSSIER_OPEN( dialog ));
 }
 
-static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data )
+static void
+on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, ofaDossierOpen *self )
 {
-	gchar *aname, *bname;
-	gint cmp;
+	static const gchar *thisfn = "ofa_dossier_open_on_dossier_changed";
+	ofaDossierOpenPrivate *priv;
 
-	gtk_tree_model_get( tmodel, a, COL_NAME, &aname, -1 );
-	gtk_tree_model_get( tmodel, b, COL_NAME, &bname, -1 );
+	g_debug( "%s: tview=%p, name=%s, self=%p", thisfn, ( void * ) tview, name, ( void * ) self );
 
-	cmp = g_utf8_collate( aname, bname );
+	priv = self->priv;
 
-	g_free( aname );
-	g_free( bname );
+	g_free( priv->dname );
+	priv->dname = g_strdup( name );
 
-	return( cmp );
+	ofa_exercice_combo_init_view( priv->exercice_combo, name );
+
+	check_for_enable_dlg( self );
 }
 
 static void
-on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self )
+on_exercice_changed( ofaExerciceCombo *combo, const gchar *label, const gchar *dbname, ofaDossierOpen *self )
 {
-	static const gchar *thisfn = "ofa_dossier_open_on_dossier_selected";
-	GtkTreeIter iter;
-	GtkTreeModel *model;
+	static const gchar *thisfn = "ofa_exercice_combo_on_exercice_changed";
+	ofaDossierOpenPrivate *priv;
 
-	g_debug( "%s: selection=%p, self=%p", thisfn, ( void * ) selection, ( void * ) self );
+	g_debug( "%s: combo=%p, label=%s, dbname=%s, self=%p",
+			thisfn, ( void * ) combo, label, dbname, ( void * ) self );
 
-	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-		g_free( self->priv->name );
-		gtk_tree_model_get( model, &iter, COL_NAME, &self->priv->name, -1 );
-		g_debug( "%s: name=%s", thisfn, self->priv->name );
-	}
+	priv = self->priv;
+
+	g_free( priv->label );
+	priv->label = g_strdup( label );
+	g_free( priv->dbname );
+	priv->dbname = g_strdup( dbname );
 
 	check_for_enable_dlg( self );
 }
@@ -294,8 +263,12 @@ on_dossier_selected( GtkTreeSelection *selection, ofaDossierOpen *self )
 static void
 on_account_changed( GtkEntry *entry, ofaDossierOpen *self )
 {
-	g_free( self->priv->account );
-	self->priv->account = g_strdup( gtk_entry_get_text( entry ));
+	ofaDossierOpenPrivate *priv;
+
+	priv = self->priv;
+
+	g_free( priv->account );
+	priv->account = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -303,8 +276,12 @@ on_account_changed( GtkEntry *entry, ofaDossierOpen *self )
 static void
 on_password_changed( GtkEntry *entry, ofaDossierOpen *self )
 {
-	g_free( self->priv->password );
-	self->priv->password = g_strdup( gtk_entry_get_text( entry ));
+	ofaDossierOpenPrivate *priv;
+
+	priv = self->priv;
+
+	g_free( priv->password );
+	priv->password = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -312,14 +289,23 @@ on_password_changed( GtkEntry *entry, ofaDossierOpen *self )
 static void
 check_for_enable_dlg( ofaDossierOpen *self )
 {
-	GtkWidget *button;
+	ofaDossierOpenPrivate *priv;
 	gboolean ok_enable;
+	ofaDbms *dbms;
 
-	ok_enable = self->priv->name && self->priv->account && self->priv->password;
+	priv = self->priv;
 
-	button = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-open" );
-	gtk_widget_set_sensitive( button, ok_enable );
+	ok_enable = priv->dname && g_utf8_strlen( priv->dname, -1 ) &&
+				priv->label && g_utf8_strlen( priv->label, -1 ) &&
+				priv->dbname && g_utf8_strlen( priv->dbname, -1 ) &&
+				priv->account && g_utf8_strlen( priv->account, -1 ) &&
+				priv->password && g_utf8_strlen( priv->password, -1 );
+
+	dbms = ofa_dbms_new();
+	ok_enable &= ofa_dbms_connect( dbms, priv->dname, priv->dbname, priv->account, priv->password, FALSE );
+	g_object_unref( dbms );
+
+	gtk_widget_set_sensitive( priv->ok_btn, ok_enable );
 }
 
 static gboolean
@@ -335,27 +321,17 @@ v_quit_on_ok( myDialog *dialog )
 static gboolean
 do_open( ofaDossierOpen *self )
 {
-	static const gchar *thisfn = "ofa_dossier_open_do_open";
 	ofaDossierOpenPrivate *priv;
 	ofsDossierOpen *sdo;
-	ofoSgbd *sgbd;
 
 	priv = self->priv;
 
-	sgbd = ofo_sgbd_new( priv->name );
-	if( !ofo_sgbd_connect( sgbd, priv->account, priv->password, FALSE )){
-		g_object_unref( sgbd );
-		return( FALSE );
-	}
-
-	g_debug( "%s: connection successfully opened", thisfn );
-	g_object_unref( sgbd );
-
 	sdo = g_new0( ofsDossierOpen, 1 );
-	sdo->label = g_strdup( self->priv->name );
-	sdo->account = g_strdup( self->priv->account );
-	sdo->password = g_strdup( self->priv->password );
-	self->priv->sdo = sdo;
+	sdo->dname = g_strdup( priv->dname );
+	sdo->dbname = g_strdup( priv->dbname );
+	sdo->account = g_strdup( priv->account );
+	sdo->password = g_strdup( priv->password );
+	priv->sdo = sdo;
 
 	return( TRUE );
 }

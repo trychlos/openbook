@@ -217,7 +217,8 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 	if( dossier_created ){
 		if( open_dossier ){
 			sdo = g_new0( ofsDossierOpen, 1 );
-			sdo->label = g_strdup( self->priv->p3_label );
+			sdo->dname = g_strdup( self->priv->p3_label );
+			sdo->dbname = NULL;
 			sdo->account = g_strdup( self->priv->p3_account );
 			sdo->password = g_strdup( self->priv->p3_password );
 		}

@@ -60,6 +60,7 @@ libofa_core_la_SOURCES = \
 	ofa-boxed.c											\
 	ofa-dblogin.c										\
 	ofa-dblogin.h										\
+	ofa-dbms.c											\
 	ofa-export-settings.c								\
 	ofa-export-settings.h								\
 	ofa-idbms.c											\

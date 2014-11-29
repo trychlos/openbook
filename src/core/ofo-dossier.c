@@ -33,6 +33,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-dbms.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
@@ -56,6 +57,7 @@ struct _ofoDossierPrivate {
 	/* internals
 	 */
 	gchar      *name;					/* the name of the dossier in settings */
+	ofaDbms    *dbms;
 	ofoSgbd    *sgbd;
 	gchar      *userid;
 
@@ -440,9 +442,10 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
 gboolean
 ofo_dossier_open( ofoDossier *dossier, const gchar *account, const gchar *password )
 {
+#if 0
 	static const gchar *thisfn = "ofo_dossier_open";
 	ofoDossierPrivate *priv;
-	ofoSgbd *sgbd;
+	ofaDbms *dbms;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
@@ -451,9 +454,9 @@ ofo_dossier_open( ofoDossier *dossier, const gchar *account, const gchar *passwo
 			( void * ) dossier, account, password );
 
 	priv = dossier->priv;
-	sgbd = ofo_sgbd_new( priv->name );
 
-	if( !ofo_sgbd_connect( sgbd, account, password, TRUE )){
+	dbms = ofa_dbms_new();;
+	if( !ofa_dbms_connect( sgbd, account, password, TRUE )){
 		g_object_unref( sgbd );
 		return( FALSE );
 	}
@@ -462,6 +465,7 @@ ofo_dossier_open( ofoDossier *dossier, const gchar *account, const gchar *passwo
 	priv->userid = g_strdup( account );
 
 	ofo_dossier_dbmodel_update( sgbd, dossier->priv->name, account );
+#endif
 	connect_objects_handlers( dossier );
 
 	return( dossier_do_read( dossier ));

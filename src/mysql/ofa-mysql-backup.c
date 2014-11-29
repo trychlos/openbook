@@ -136,7 +136,7 @@ ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fn
 
 	connect = g_new0( mysqlConnect, 1 );
 	connect = ofa_mysql_get_connect_infos( connect, label );
-	connect->dbname = ofa_settings_get_dossier_string( label, "Database" );
+	connect->dbname = ofa_settings_dossier_get_string( label, "Database" );
 	connect->account = g_strdup( account );
 	connect->password = g_strdup( password );
 

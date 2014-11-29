@@ -725,7 +725,7 @@ my_utils_window_restore_position( GtkWindow *toplevel, const gchar *name )
 	if( list ){
 		int_list_to_position( list, &x, &y, &width, &height );
 		g_debug( "%s: name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
-		g_list_free( list );
+		ofa_settings_free_int_list( list );
 
 		gtk_window_move( toplevel, x, y );
 		gtk_window_resize( toplevel, width, height );

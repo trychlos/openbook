@@ -235,7 +235,7 @@ do_init( ofaExportSettings *self, const gchar *name )
 								 ( const gchar * ) it->data : st_def_headers;
 	priv->with_headers = g_utf8_collate( cstr, "True" ) == 0;
 
-	g_list_free_full( prefs_list, ( GDestroyNotify ) g_free );
+	ofa_settings_free_string_list( prefs_list );
 }
 
 /**

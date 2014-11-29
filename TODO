@@ -347,7 +347,12 @@
  469 2014-11-28 ExportSettings: the field separator should be free 
                 instead of having to select among predefined values
 
- 470
+ 470 2014-11-28 when entering a new database name, only accepts
+                [A..Z,a..z,0..9,_] characters
+
+ 471
+
+ 472
 
 -----------------------------------------------------------------------
  DONE

@@ -73,7 +73,8 @@ typedef struct {
 
 /**
  * ofsDossierOpen:
- * @label: the label of the dossier, as in the settings.
+ * @dname: the name of the dossier, as in the settings.
+ * @bname: the name of the database.
  * @account: an account authorized to the dossier.
  * @password: the password of the account.
  *
@@ -81,7 +82,8 @@ typedef struct {
  * above signal. It will be freed in the signal cleanup handler.
  */
 typedef struct {
-	gchar *label;
+	gchar *dname;
+	gchar *dbname;
 	gchar *account;
 	gchar *password;
 }

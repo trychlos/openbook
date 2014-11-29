@@ -765,9 +765,9 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 	static const gchar *thisfn = "ofa_main_window_on_dossier_open";
 	const GDate *begin;
 
-	g_debug( "%s: window=%p, sdo=%p, label=%s, account=%s, password=%s, user_data=%p",
+	g_debug( "%s: window=%p, sdo=%p, dname=%s, dbname=%s, account=%s, password=%s, user_data=%p",
 			thisfn, ( void * ) window,
-			( void * ) sdo, sdo->label, sdo->account, sdo->password,
+			( void * ) sdo, sdo->dname, sdo->dbname, sdo->account, sdo->password,
 			( void * ) user_data );
 
 	if( !check_for_account( window, sdo )){
@@ -779,7 +779,7 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 		do_close_dossier( window );
 	}
 
-	window->priv->dossier = ofo_dossier_new( sdo->label );
+	window->priv->dossier = ofo_dossier_new( sdo->dname );
 
 	if( !ofo_dossier_open( window->priv->dossier, sdo->account, sdo->password )){
 		g_clear_object( &window->priv->dossier );
@@ -867,7 +867,7 @@ check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo )
 		g_free( sdo->account );
 		g_free( sdo->password );
 
-		ofa_dossier_login_run( main_window, sdo->label, &sdo->account, &sdo->password );
+		ofa_dossier_login_run( main_window, sdo->dname, &sdo->account, &sdo->password );
 	}
 
 	return( sdo->account && g_utf8_strlen( sdo->account, -1 ) &&
@@ -1005,11 +1005,12 @@ on_dossier_open_cleanup_handler( ofaMainWindow *window, ofsDossierOpen *sdo )
 {
 	static const gchar *thisfn = "ofa_main_window_on_dossier_open_cleanup_handler";
 
-	g_debug( "%s: window=%p, sdo=%p, label=%s, account=%s, password=%s",
+	g_debug( "%s: window=%p, sdo=%p, dname=%s, dbname=%s, account=%s, password=%s",
 			thisfn, ( void * ) window,
-			( void * ) sdo, sdo->label, sdo->account, sdo->password );
+			( void * ) sdo, sdo->dname, sdo->dbname, sdo->account, sdo->password );
 
-	g_free( sdo->label );
+	g_free( sdo->dname );
+	g_free( sdo->dbname );
 	g_free( sdo->account );
 	g_free( sdo->password );
 	g_free( sdo );

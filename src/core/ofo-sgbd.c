@@ -187,6 +187,7 @@ error_module_not_found( const gchar *provider )
 	gtk_widget_destroy( GTK_WIDGET( dlg ));
 }
 
+#if 0
 /**
  * ofo_sgbd_connect:
  * @sgbd: this #ofoSgbd object
@@ -213,6 +214,7 @@ ofo_sgbd_connect( ofoSgbd *sgbd, const gchar *account, const gchar *password, gb
 
 	return( sgbd->priv->connected );
 }
+#endif
 
 /**
  * ofo_sgbd_connect_ex:
@@ -322,7 +324,7 @@ sgbd_connect_static( ofoSgbd *sgbd,
 	priv->provider = provider_name;
 	priv->module = module;
 	priv->handle = ofa_idbms_connect(
-							module, priv->label, dbname, with_dbname, account, password );
+							module, priv->label, dbname, account, password );
 
 	if( !priv->handle ){
 		if( display_error ){

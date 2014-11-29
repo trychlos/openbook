@@ -88,6 +88,7 @@ struct _ofaSettingsPrivate {
 };
 
 /* properties
+ * @PROP_BNAME: the basename of the keyfile.
  */
 #define PROP_BNAME                      "ofa-settings-prop-bname"
 
@@ -95,7 +96,6 @@ enum {
 	PROP_BNAME_ID = 1,
 };
 
-#define GROUP_DOSSIER                   "Dossier"
 #define BNAME_DOSSIER                   "dossier"
 
 GType ofa_settings_get_type( void ) G_GNUC_CONST;
@@ -111,7 +111,7 @@ static gboolean     write_key_file( ofaSettings *settings );
 static GKeyFile    *get_keyfile_from_target( ofaSettingsTarget target );
 static ofaSettings *get_settings_from_target( ofaSettingsTarget target );
 static gchar      **str_to_array( const gchar *str );
-static gchar       *get_dossier_group_from_name( const gchar *name );
+static gchar       *get_dossier_group_from_name( const gchar *dname );
 
 static void
 settings_finalize( GObject *object )
@@ -292,8 +292,6 @@ load_key_file( ofaSettings *settings )
 	gchar *dir, *fname;
 	GError *error;
 
-	g_debug( "%s: settings=%p", thisfn, ( void * ) settings );
-
 	priv = settings->priv;
 
 	priv->keyfile = g_key_file_new();
@@ -303,6 +301,8 @@ load_key_file( ofaSettings *settings )
 
 	fname = g_strdup_printf( "%s.conf", priv->bname );
 	priv->kf_name = g_build_filename( dir, fname, NULL );
+
+	g_debug( "%s: settings=%p, kf_name=%s", thisfn, ( void * ) settings, priv->kf_name );
 
 	g_free( fname );
 	g_free( dir );
@@ -498,8 +498,10 @@ ofa_settings_set_int_ex( ofaSettingsTarget target, const gchar *group, const gch
 /**
  * ofa_settings_get_int_list_ex:
  *
- * Returns a newly allocated GList of int, which should be
- * g_list_free() by the caller.
+ * Returns: a newly allocated GList of int
+ *
+ * The returned list should be #ofa_settings_free_int_list() by the
+ * caller.
  */
 GList *
 ofa_settings_get_int_list_ex( ofaSettingsTarget target, const gchar *group, const gchar *key )
@@ -609,8 +611,10 @@ ofa_settings_set_string_ex( ofaSettingsTarget target, const gchar *group, const 
 /**
  * ofa_settings_get_string_list_ex:
  *
- * Returns a newly allocated GList of int, which should be
- * g_list_free_full( str_list, ( GDestroyNotify ) g_free ) by the
+ * Returns: a newly allocated GList of strings.
+ *
+ * The returned list should be #ofa_settings_free_string_list() by the
+ * caller.
  * caller.
  */
 GList *
@@ -753,42 +757,67 @@ str_to_array( const gchar *str )
 }
 
 /**
- * ofa_settings_get_dossiers:
+ * ofa_settings_get_groups:
  *
- * Returns the list of all defined dossiers as a newly allocated #GSList
- * list of newly allocated strings. The returned list should be
- * #g_slist_free_full( list, ( GDestroyNotify ) g_free ) by the caller.
+ * Returns: the list of all defined groups.
+ *
+ * The returned list should be #ofa_settings_free_groups() by the
+ * caller.
  */
 GSList *
-ofa_settings_get_dossiers( void )
+ofa_settings_get_groups( ofaSettingsTarget target )
 {
-	static const gchar *thisfn = "ofa_settings_get_dossiers";
 	GSList *slist;
-	gchar *prefix;
-	gint spfx;
-	gchar **array, **idx;
-
-	g_debug( "%s", thisfn );
+	gchar **array, **iter;
 
 	settings_new();
 
-	prefix = g_strdup_printf( "%s ", GROUP_DOSSIER );
-	spfx = g_utf8_strlen( prefix, -1 );
-	array = g_key_file_get_groups( st_user_settings->priv->keyfile, NULL );
+	array = g_key_file_get_groups( get_keyfile_from_target( target ), NULL );
 	slist = NULL;
-	idx = array;
+	iter = array;
 
-	while( *idx ){
-		if( g_str_has_prefix( *idx, prefix )){
-			slist = g_slist_prepend( slist, g_strstrip( g_strdup( *idx+spfx )));
-		}
-		idx++;
+	while( *iter ){
+		slist = g_slist_prepend( slist, g_strdup( *iter ));
+		iter++;
 	}
 
 	g_strfreev( array );
-	g_free( prefix );
 
 	return( slist );
+}
+
+/**
+ * ofa_settings_dossier_get_keys:
+ * @dname: the name of the dossier
+ *
+ * Returns: the list of keys defined in the dossier.
+ *
+ * The returned list should be #ofa_settings_dossier_free_keys() by the
+ * caller.
+ */
+GSList *
+ofa_settings_dossier_get_keys( const gchar *dname )
+{
+	static const gchar *thisfn = "ofa_settings_dossier_get_keys";
+	gchar *group;
+	gchar **array, **iter;
+	GSList *list;
+
+	g_debug( "%s: dname=%s", thisfn, dname );
+
+	settings_new();
+
+	list = NULL;
+	group = get_dossier_group_from_name( dname );
+	array = g_key_file_get_keys( get_keyfile_from_target( SETTINGS_TARGET_DOSSIER ), group, NULL, NULL );
+	iter = array;
+	while( *iter ){
+		list = g_slist_prepend( list, g_strdup( *iter ));
+		iter++;
+	}
+	g_strfreev( array );
+
+	return( list );
 }
 
 /**
@@ -811,20 +840,20 @@ ofa_settings_remove_dossier( const gchar *name )
 
 /**
  * ofa_settings_has_dossier:
- * @name: the name of the dossier
+ * @dname: the name of the dossier
  *
  * Returns %TRUE if the dossier exists.
  */
 gboolean
-ofa_settings_has_dossier( const gchar *name )
+ofa_settings_has_dossier( const gchar *dname )
 {
 	gboolean exists;
 	gchar *group;
 
 	settings_new();
 
-	group = get_dossier_group_from_name( name );
-	exists = g_key_file_has_group( st_user_settings->priv->keyfile, group );
+	group = get_dossier_group_from_name( dname );
+	exists = g_key_file_has_group( get_keyfile_from_target( SETTINGS_TARGET_DOSSIER ), group );
 	g_free( group );
 
 	return( exists );
@@ -840,12 +869,12 @@ ofa_settings_has_dossier( const gchar *name )
 gchar *
 ofa_settings_get_dossier_provider( const gchar *name )
 {
-	return( ofa_settings_get_dossier_string( name, "Provider" ));
+	return( ofa_settings_dossier_get_string( name, SETTINGS_DBMS_PROVIDER ));
 }
 
 /**
- * ofa_settings_get_dossier_int:
- * @name: the name of the dossier
+ * ofa_settings_dossier_get_int:
+ * @dname: the name of the dossier
  * @key: the searched key
  *
  * Returns the key integer for the dossier.
@@ -855,14 +884,14 @@ ofa_settings_get_dossier_provider( const gchar *name )
  * the DBMS providers.
  */
 gint
-ofa_settings_get_dossier_int( const gchar *name, const gchar *key )
+ofa_settings_dossier_get_int( const gchar *dname, const gchar *key )
 {
 	gchar *group;
 	gint ivalue;
 
 	settings_new();
 
-	group = get_dossier_group_from_name( name );
+	group = get_dossier_group_from_name( dname );
 	ivalue = ofa_settings_get_int_ex( SETTINGS_TARGET_DOSSIER, group, key );
 	g_free( group );
 
@@ -870,8 +899,8 @@ ofa_settings_get_dossier_int( const gchar *name, const gchar *key )
 }
 
 /**
- * ofa_settings_get_dossier_string:
- * @name: the name of the dossier
+ * ofa_settings_dossier_get_string:
+ * @dname: the name of the dossier
  * @key: the searched key
  *
  * Returns the key string for the dossier, as a newly allocated string
@@ -882,16 +911,16 @@ ofa_settings_get_dossier_int( const gchar *name, const gchar *key )
  * the DBMS providers.
  */
 gchar *
-ofa_settings_get_dossier_string( const gchar *name, const gchar *key )
+ofa_settings_dossier_get_string( const gchar *dname, const gchar *key )
 {
-	static const gchar *thisfn = "ofa_settings_get_dossier_string";
+	static const gchar *thisfn = "ofa_settings_dossier_get_string";
 	gchar *group, *svalue;
 
-	g_debug( "%s: name=%s, key=%s", thisfn, name, key );
+	g_debug( "%s: dname=%s, key=%s", thisfn, dname, key );
 
 	settings_new();
 
-	group = get_dossier_group_from_name( name );
+	group = get_dossier_group_from_name( dname );
 	svalue = ofa_settings_get_string_ex( SETTINGS_TARGET_DOSSIER, group, key );
 	g_free( group );
 
@@ -899,25 +928,76 @@ ofa_settings_get_dossier_string( const gchar *name, const gchar *key )
 }
 
 /**
- * ofa_settings_set_dossier_string:
- * @name: the name of the dossier
+ * ofa_settings_dossier_set_string:
+ * @dname: the name of the dossier
  * @key: the searched key
  * @value: the value to be set
  *
  * Set the value for the key in the dossier group.
  */
 void
-ofa_settings_set_dossier_string( const gchar *name, const gchar *key, const gchar *svalue )
+ofa_settings_dossier_set_string( const gchar *dname, const gchar *key, const gchar *svalue )
 {
-	static const gchar *thisfn = "ofa_settings_set_dossier_string";
+	static const gchar *thisfn = "ofa_settings_dossier_set_string";
 	gchar *group;
 
-	g_debug( "%s: name=%s, key=%s", thisfn, name, key );
+	g_debug( "%s: dname=%s, key=%s", thisfn, dname, key );
 
 	settings_new();
 
-	group = get_dossier_group_from_name( name );
+	group = get_dossier_group_from_name( dname );
 	ofa_settings_set_string_ex( SETTINGS_TARGET_DOSSIER, group, key, svalue );
+	g_free( group );
+}
+
+/**
+ * ofa_settings_dossier_get_string_list:
+ * @dname: the name of the dossier
+ * @key: the searched key
+ *
+ * Returns the key string list for the dossier.
+ *
+ * The returned list should be #ofa_settings_free_string_list()
+ * by the caller.
+ */
+GList *
+ofa_settings_dossier_get_string_list( const gchar *dname, const gchar *key )
+{
+	static const gchar *thisfn = "ofa_settings_dossier_get_string_list";
+	gchar *group;
+	GList *list;
+
+	g_debug( "%s: dname=%s, key=%s", thisfn, dname, key );
+
+	settings_new();
+
+	group = get_dossier_group_from_name( dname );
+	list = ofa_settings_get_string_list_ex( SETTINGS_TARGET_DOSSIER, group, key );
+	g_free( group );
+
+	return( list );
+}
+
+/**
+ * ofa_settings_dossier_set_string_list:
+ * @dname: the name of the dossier
+ * @key: the searched key
+ * @list: the value to be set
+ *
+ * Set the value for the key in the dossier group.
+ */
+void
+ofa_settings_dossier_set_string_list( const gchar *dname, const gchar *key, const GList *list )
+{
+	static const gchar *thisfn = "ofa_settings_dossier_set_string_list";
+	gchar *group;
+
+	g_debug( "%s: dname=%s, key=%s", thisfn, dname, key );
+
+	settings_new();
+
+	group = get_dossier_group_from_name( dname );
+	ofa_settings_set_string_list_ex( SETTINGS_TARGET_DOSSIER, group, key, list );
 	g_free( group );
 }
 
@@ -928,9 +1008,9 @@ ofa_settings_set_dossier_string( const gchar *name, const gchar *key, const gcha
  * Define a new user dossier.
  */
 gboolean
-ofa_settings_set_dossier( const gchar *name, ... )
+ofa_settings_create_dossier( const gchar *name, ... )
 {
-	static const gchar *thisfn = "ofa_settings_set_dossier";
+	static const gchar *thisfn = "ofa_settings_create_dossier";
 	gchar *group;
 	va_list ap;
 	const gchar *key;
@@ -1015,7 +1095,7 @@ ofa_settings_get_prefixed_keys( const gchar *prefix )
 #endif
 
 static gchar *
-get_dossier_group_from_name( const gchar *name )
+get_dossier_group_from_name( const gchar *dname )
 {
-	return( g_strdup_printf( "%s %s", GROUP_DOSSIER, name ));
+	return( g_strdup_printf( "%s %s", SETTINGS_GROUP_DOSSIER, dname ));
 }

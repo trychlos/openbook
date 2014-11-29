@@ -50,6 +50,7 @@ static const sDateFormat st_date_format[] = {
 };
 
 static gboolean parse_ddmmyyyy_string( GDate *date, const gchar *string );
+static gboolean parse_yyyymmdd_string( GDate *date, const gchar *string );
 
 /**
  * my_date_clear:
@@ -280,6 +281,12 @@ my_date_set_from_str( GDate *date, const gchar *fmt_string, myDateFormat format 
 			my_date_set_from_sql( date, fmt_string );
 			break;
 
+		case MY_DATE_YYMD:
+			if( !parse_yyyymmdd_string( date, fmt_string )){
+				my_date_clear( date );
+			}
+			break;
+
 		default:
 			g_warning( "%s: unhandled format code %u", thisfn, format );
 			break;
@@ -317,6 +324,48 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string )
 			}
 		}
 		g_strfreev( tokens );
+	}
+
+	if( g_date_valid_dmy( dd, mm, yy )){
+		g_date_set_dmy( date, dd, mm, yy );
+		valid = TRUE;
+	}
+
+	return( valid );
+}
+
+/*
+ * Returns TRUE if the string parses to a valid 'yyyymmdd' date
+ */
+static gboolean
+parse_yyyymmdd_string( GDate *date, const gchar *string )
+{
+	gboolean valid;
+	gint dd, mm, yy;
+	gchar part[5];
+	const gchar *src;
+
+	dd = mm = yy = 0;
+	valid = FALSE;
+	my_date_clear( date );
+
+	if( string && g_utf8_strlen( string, -1 )){
+		src = string;
+		memset( part, '\0', sizeof( part ));
+		g_utf8_strncpy( part, src, 4 );
+		yy = atoi( part );
+		src = g_utf8_find_next_char( src, NULL );
+		src = g_utf8_find_next_char( src, NULL );
+		src = g_utf8_find_next_char( src, NULL );
+		src = g_utf8_find_next_char( src, NULL );
+		memset( part, '\0', sizeof( part ));
+		g_utf8_strncpy( part, src, 2 );
+		mm = atoi( part );
+		src = g_utf8_find_next_char( src, NULL );
+		src = g_utf8_find_next_char( src, NULL );
+		memset( part, '\0', sizeof( part ));
+		g_utf8_strncpy( part, src, 2 );
+		dd = atoi( part );
 	}
 
 	if( g_date_valid_dmy( dd, mm, yy )){
