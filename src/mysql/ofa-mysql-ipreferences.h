@@ -24,28 +24,22 @@
  * $Id$
  */
 
-#ifndef __OFA_MYSQL_PREFS_H__
-#define __OFA_MYSQL_PREFS_H__
+#ifndef __OFA_MYSQL_IPREFERENCES_H__
+#define __OFA_MYSQL_IPREFERENCES_H__
 
 /**
- * SECTION: ofa_mysql
+ * SECTION: ofa_mysql_ipreferences
  * @short_description: #ofaMysql class definition.
+ *
+ * #ofaIPreferences interface management.
  */
-
-#include <gtk/gtk.h>
 
 #include "api/ofa-ipreferences.h"
 
-#include "ofa-mysql.h"
-
 G_BEGIN_DECLS
 
-GtkWidget *ofa_mysql_prefs_init ( const ofaIPreferences *instance, GtkNotebook *book );
-
-gboolean   ofa_mysql_prefs_check( const ofaIPreferences *instance, GtkWidget *page );
-
-void       ofa_mysql_prefs_apply( const ofaIPreferences *instance, GtkWidget *page );
+void  ofa_mysql_ipreferences_iface_init( ofaIPreferencesInterface *iface );
 
 G_END_DECLS
 
-#endif /* __OFA_MYSQL_PREFS_H__ */
+#endif /* __OFA_MYSQL_IPREFERENCES_H__ */

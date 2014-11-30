@@ -32,7 +32,7 @@
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-idbms.h"
-#include "ofa-mysql-prefs.h"
+#include "ofa-mysql-ipreferences.h"
 
 /* private instance data
  */
@@ -47,9 +47,6 @@ static void         class_init( ofaMysqlClass *klass );
 static void         instance_init( GTypeInstance *instance, gpointer klass );
 static void         instance_dispose( GObject *object );
 static void         instance_finalize( GObject *object );
-
-static void         ipreferences_iface_init( ofaIPreferencesInterface *iface );
-static guint        ipreferences_get_interface_version( const ofaIPreferences *instance );
 
 GType
 ofa_mysql_get_type( void )
@@ -81,7 +78,7 @@ ofa_mysql_register_type( GTypeModule *module )
 	};
 
 	static const GInterfaceInfo ipreferences_iface_info = {
-		( GInterfaceInitFunc ) ipreferences_iface_init,
+		( GInterfaceInitFunc ) ofa_mysql_ipreferences_iface_init,
 		NULL,
 		NULL
 	};
@@ -163,23 +160,4 @@ instance_finalize( GObject *object )
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( st_parent_class )->finalize( object );
-}
-
-static void
-ipreferences_iface_init( ofaIPreferencesInterface *iface )
-{
-	static const gchar *thisfn = "ofa_mysql_ipreferences_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = ipreferences_get_interface_version;
-	iface->run_init = ofa_mysql_prefs_init;
-	iface->run_check = ofa_mysql_prefs_check;
-	iface->run_done = ofa_mysql_prefs_apply;
-}
-
-static guint
-ipreferences_get_interface_version( const ofaIPreferences *instance )
-{
-	return( 1 );
 }

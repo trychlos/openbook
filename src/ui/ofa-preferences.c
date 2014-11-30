@@ -603,7 +603,7 @@ init_plugin_page( ofaPreferences *self, ofaIPreferences *instance )
 
 	priv = self->priv;
 
-	page = ofa_ipreferences_run_init( instance, GTK_NOTEBOOK( priv->book ));
+	page = ofa_ipreferences_do_init( instance, GTK_NOTEBOOK( priv->book ));
 
 	splug = g_new0( sPagePlugin, 1 );
 	splug->object = instance;
@@ -867,7 +867,7 @@ update_prefs_plugin( ofaPreferences *self, ofaIPreferences *instance )
 	page = find_prefs_plugin( self, instance );
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 
-	ofa_ipreferences_run_done( instance, page );
+	ofa_ipreferences_do_apply( instance, page );
 }
 
 static GtkWidget *

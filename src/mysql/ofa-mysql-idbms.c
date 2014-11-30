@@ -53,7 +53,6 @@ static void         setup_infos( sMySQLInfos *infos );
 static gboolean     connect_with_infos( const ofaIDbms *instance, sMySQLInfos *infos, const gchar *password );
 static void         free_infos( sMySQLInfos *infos );
 static void         idbms_close( const ofaIDbms *instance, void *handle );
-static const gchar *idbms_get_provider_name( const ofaIDbms *instance );
 static GSList      *idbms_get_exercices( const ofaIDbms *instance, const gchar *dname );
 static gint         cmp_exercices( const gchar *line_a, const gchar *line_b );
 static gboolean     idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
@@ -79,7 +78,7 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = idbms_get_interface_version;
-	iface->get_provider_name = idbms_get_provider_name;
+	iface->get_provider_name = ofa_mysql_idbms_get_provider_name;
 	iface->connect = idbms_connect;
 	iface->close = idbms_close;
 	iface->get_exercices = idbms_get_exercices;
@@ -110,8 +109,8 @@ idbms_get_interface_version( const ofaIDbms *instance )
 /*
  * the provider name identifier
  */
-static const gchar *
-idbms_get_provider_name( const ofaIDbms *instance )
+const gchar *
+ofa_mysql_idbms_get_provider_name( const ofaIDbms *instance )
 {
 	return( "MySQL" );
 }

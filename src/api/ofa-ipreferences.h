@@ -84,26 +84,28 @@ typedef struct {
 	guint       ( *get_interface_version )( const ofaIPreferences *instance );
 
 	/**
-	 * run_init:
+	 * do_init:
 	 * @instance: the #ofaIPreferences provider.
+	 * @book: the #GtkNotebook to which the new page must be added.
 	 *
 	 * Initialize the Preferences dialog.
 	 *
 	 * The IPreferences provider may use the ofa_settings_xxx_() API to
-	 * get its value to the user's configuration file.
+	 * get its value from the user's configuration file.
+	 * It must append the page to the #GtkNotebook @book.
 	 *
-	 * Returns: the page which has been added to the GtkNotebook to
-	 * handle these preferences.
+	 * Returns: the newly created page.
 	 *
 	 * Since: version 1
 	 */
-	GtkWidget * ( *run_init )             ( const ofaIPreferences *instance, GtkNotebook *book );
+	GtkWidget * ( *do_init )             ( const ofaIPreferences *instance,
+													GtkNotebook *book );
 
 	/**
-	 * run_check:
+	 * do_check:
 	 * @instance: the #ofaIPreferences provider.
 	 * @page: the GtkNotebook page which handles these preferences, as
-	 *  returned by #run_init().
+	 *  returned by #do_init().
 	 *
 	 * Checks for the Preferences dialog.
 	 *
@@ -112,13 +114,14 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean    ( *run_check )            ( const ofaIPreferences *instance, GtkWidget *page );
+	gboolean    ( *do_check )            ( const ofaIPreferences *instance,
+													GtkWidget *page );
 
 	/**
-	 * run_done:
+	 * do_apply:
 	 * @instance: the #ofaIPreferences provider.
 	 * @page: the GtkNotebook page which handles these preferences, as
-	 *  returned by #run_init().
+	 *  returned by #do_init().
 	 *
 	 * Terminate the Preferences dialog.
 	 *
@@ -127,17 +130,20 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void        ( *run_done )             ( const ofaIPreferences *instance, GtkWidget *page );
+	void        ( *do_apply )             ( const ofaIPreferences *instance,
+													GtkWidget *page );
 }
 	ofaIPreferencesInterface;
 
-GType      ofa_ipreferences_get_type ( void );
+GType      ofa_ipreferences_get_type        ( void );
 
-GtkWidget *ofa_ipreferences_run_init ( const ofaIPreferences *instance, GtkNotebook *book );
+guint      ofa_ipreferences_get_interface_last_version( void );
 
-gboolean   ofa_ipreferences_run_check( const ofaIPreferences *instance, GtkWidget *page );
+GtkWidget *ofa_ipreferences_do_init         ( const ofaIPreferences *instance, GtkNotebook *book );
 
-void       ofa_ipreferences_run_done ( const ofaIPreferences *instance, GtkWidget *page );
+gboolean   ofa_ipreferences_do_check        ( const ofaIPreferences *instance, GtkWidget *page );
+
+void       ofa_ipreferences_do_apply        ( const ofaIPreferences *instance, GtkWidget *page );
 
 G_END_DECLS
 

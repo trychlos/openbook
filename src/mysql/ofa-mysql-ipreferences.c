@@ -35,12 +35,14 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
+#include "ofa-mysql.h"
 #include "ofa-mysql-backup.h"
-#include "ofa-mysql-prefs.h"
+#include "ofa-mysql-idbms.h"
+#include "ofa-mysql-ipreferences.h"
 
 /*
  * this structure is attached to the GtkContainer parent (the one which
- * is returned by init() method)
+ * is returned by do_init() method)
  */
 typedef struct {
 	const ofaIPreferences *module;
@@ -52,16 +54,39 @@ typedef struct {
 static const gchar *st_ui_xml   = PROVIDER_DATADIR "/ofa-mysql-prefs.piece.ui";
 static const gchar *st_ui_mysql = "MySQLPrefsWindow";
 
+static guint      ipreferences_get_interface_version( const ofaIPreferences *instance );
+static GtkWidget *ipreferences_do_init ( const ofaIPreferences *instance, GtkNotebook *book );
 static void       on_container_weak_notify( sPrivate *priv, GObject *was_the_container );
 static GtkWidget *window_set_parent( const ofaIPreferences *instance, GtkNotebook *book );
 static void       page_init_backup( const ofaIPreferences *instance, GtkContainer *page, sPrivate *priv );
+static gboolean   ipreferences_do_check( const ofaIPreferences *instance, GtkWidget *page );
+static void       ipreferences_do_apply( const ofaIPreferences *instance, GtkWidget *page );
+
+void
+ofa_mysql_ipreferences_iface_init( ofaIPreferencesInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_ipreferences_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = ipreferences_get_interface_version;
+	iface->do_init = ipreferences_do_init;
+	iface->do_check = ipreferences_do_check;
+	iface->do_apply = ipreferences_do_apply;
+}
+
+static guint
+ipreferences_get_interface_version( const ofaIPreferences *instance )
+{
+	return( 1 );
+}
 
 /*
  * @book: the GtkNotebook in the Preferences dialog box which will
  *  contain our own preferences grid
  */
-GtkWidget *
-ofa_mysql_prefs_init( const ofaIPreferences *instance, GtkNotebook *book )
+static GtkWidget *
+ipreferences_do_init( const ofaIPreferences *instance, GtkNotebook *book )
 {
 	sPrivate *priv;
 	GtkWidget *page;
@@ -109,7 +134,7 @@ window_set_parent( const ofaIPreferences *instance, GtkNotebook *book )
 	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 4, 4, 4, 4 );
 	gtk_widget_reparent( grid, alignment );
 
-	label = gtk_label_new( ofa_mysql_get_provider_name( NULL ));
+	label = gtk_label_new( ofa_mysql_idbms_get_provider_name( NULL ));
 	gtk_notebook_append_page( book, alignment, label );
 
 
@@ -146,22 +171,16 @@ page_init_backup( const ofaIPreferences *instance, GtkContainer *page, sPrivate 
 	g_free( cmdline );
 }
 
-/**
- * ofa_mysql_prefs_check:
- */
-gboolean
-ofa_mysql_prefs_check( const ofaIPreferences *instance, GtkWidget *page )
+static gboolean
+ipreferences_do_check( const ofaIPreferences *instance, GtkWidget *page )
 {
 	return( TRUE );
 }
 
-/**
- * ofa_mysql_prefs_apply:
- */
-void
-ofa_mysql_prefs_apply( const ofaIPreferences *instance, GtkWidget *page )
+static void
+ipreferences_do_apply( const ofaIPreferences *instance, GtkWidget *page )
 {
-	static const gchar *thisfn = "ofa_mysql_prefs_apply";
+	static const gchar *thisfn = "ofa_mysql_ipreferences_do_apply";
 	sPrivate *priv;
 	GtkWidget *entry;
 

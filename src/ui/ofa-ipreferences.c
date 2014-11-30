@@ -30,12 +30,13 @@
 
 #include <api/ofa-ipreferences.h>
 
+#define IPREFERENCES_LAST_VERSION       1
+
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType register_type( void );
 static void  interface_base_init( ofaIPreferencesInterface *klass );
 static void  interface_base_finalize( ofaIPreferencesInterface *klass );
-static guint ipreferences_get_interface_version( const ofaIPreferences *instance );
 
 /**
  * ofa_ipreferences_get_type:
@@ -95,10 +96,7 @@ interface_base_init( ofaIPreferencesInterface *klass )
 
 		g_debug( "%s: klass%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
-		klass->get_interface_version = ipreferences_get_interface_version;
-		klass->run_init = NULL;
-		klass->run_check = NULL;
-		klass->run_done = NULL;
+		/*klass->get_interface_version = ipreferences_get_interface_version;*/
 	}
 
 	st_initializations += 1;
@@ -117,81 +115,89 @@ interface_base_finalize( ofaIPreferencesInterface *klass )
 	}
 }
 
-static guint
-ipreferences_get_interface_version( const ofaIPreferences *instance )
+/**
+ *
+ */
+guint
+ofa_ipreferences_get_interface_last_version( void )
 {
-	return( 1 );
+	return( IPREFERENCES_LAST_VERSION );
 }
 
 /**
- * ofa_ipreferences_run_init:
+ * ofa_ipreferences_do_init:
  * @importer: this #ofaIPreferences instance.
+ * @book: the #GtkNotebook to which the new page will be added.
  *
- * Run the dialog to let the user configure his preferences.
+ * Initialize the page to let the user configure his preferences.
  */
 GtkWidget *
-ofa_ipreferences_run_init( const ofaIPreferences *instance, GtkNotebook *book )
+ofa_ipreferences_do_init( const ofaIPreferences *instance, GtkNotebook *book )
 {
-	static const gchar *thisfn = "ofa_ipreferences_run_init";
+	static const gchar *thisfn = "ofa_ipreferences_do_init";
 	GtkWidget *page;
 
 	g_return_val_if_fail( instance && OFA_IS_IPREFERENCES( instance ), NULL );
+	g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: instance=%p (%s), book=%p",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) book );
 
 	page = NULL;
 
-	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->run_init ){
-		page = OFA_IPREFERENCES_GET_INTERFACE( instance )->run_init( instance, book );
+	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->do_init ){
+		page = OFA_IPREFERENCES_GET_INTERFACE( instance )->do_init( instance, book );
 	}
 
 	return( page );
 }
 
 /**
- * ofa_ipreferences_check:
+ * ofa_ipreferences_do_check:
  * @importer: this #ofaIPreferences instance.
+ * @page: the preferences page.
  *
- * Run the dialog to let the user configure his preferences.
+ * Check that the page is valid.
  */
 gboolean
-ofa_ipreferences_run_check( const ofaIPreferences *instance, GtkWidget *page )
+ofa_ipreferences_do_check( const ofaIPreferences *instance, GtkWidget *page )
 {
-	static const gchar *thisfn = "ofa_ipreferences_run_check";
+	static const gchar *thisfn = "ofa_ipreferences_do_check";
 	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_IPREFERENCES( instance ), FALSE );
+	g_return_val_if_fail( page && GTK_IS_WIDGET( page ), FALSE );
 
 	ok = FALSE;
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: instance=%p (%s), page=%p",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) page );
 
-	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->run_check ){
-		ok = OFA_IPREFERENCES_GET_INTERFACE( instance )->run_check( instance, page );
+	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->do_check ){
+		ok = OFA_IPREFERENCES_GET_INTERFACE( instance )->do_check( instance, page );
 	}
 
 	return( ok );
 }
 
 /**
- * ofa_ipreferences_run_done:
+ * ofa_ipreferences_do_apply:
  * @importer: this #ofaIPreferences instance.
  *
- * Run the dialog to let the user configure his preferences.
+ * Saves the user preferences.
  */
 void
-ofa_ipreferences_run_done( const ofaIPreferences *instance, GtkWidget *page )
+ofa_ipreferences_do_apply( const ofaIPreferences *instance, GtkWidget *page )
 {
-	static const gchar *thisfn = "ofa_ipreferences_run_done";
+	static const gchar *thisfn = "ofa_ipreferences_do_apply";
 
 	g_return_if_fail( instance && OFA_IS_IPREFERENCES( instance ));
+	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: instance=%p (%s), page=%p",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) page );
 
-	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->run_done ){
-		OFA_IPREFERENCES_GET_INTERFACE( instance )->run_done( instance, page );
+	if( OFA_IPREFERENCES_GET_INTERFACE( instance )->do_apply ){
+		OFA_IPREFERENCES_GET_INTERFACE( instance )->do_apply( instance, page );
 	}
 }
