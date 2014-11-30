@@ -34,6 +34,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-boxed.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -81,11 +82,7 @@ struct _ofoClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
-OFO_BASE_DEFINE_GLOBAL( st_global, class )
-
-static void       iexportable_iface_init( ofaIExportableInterface *iface );
-static guint      iexportable_get_interface_version( const ofaIExportable *instance );
-static GList     *class_load_dataset( void );
+static GList     *class_load_dataset( ofoDossier *dossier, GType type );
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );
 static void       class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp );
@@ -94,11 +91,15 @@ static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaDbms 
 static gboolean   class_do_delete( ofoClass *class, const ofaDbms *dbms );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
+static void       iexportable_iface_init( ofaIExportableInterface *iface );
+static guint      iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean   iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static gboolean   class_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoClass, ofo_class, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
+
+OFA_IDATASET_LOAD( CLASS, class );
 
 static void
 class_finalize( GObject *instance )
@@ -156,23 +157,6 @@ ofo_class_class_init( ofoClassClass *klass )
 	g_type_class_add_private( klass, sizeof( ofoClassPrivate ));
 }
 
-static void
-iexportable_iface_init( ofaIExportableInterface *iface )
-{
-	static const gchar *thisfn = "ofo_class_iexportable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
-}
-
-static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
-{
-	return( 1 );
-}
-
 /**
  * ofo_class_new:
  */
@@ -187,43 +171,16 @@ ofo_class_new( void )
 	return( class );
 }
 
-/**
- * ofo_class_get_dataset:
- * @dossier: the currently opened #ofoDossier dossier.
- *
- * Returns: The list of #ofoClass classs, ordered by ascending
- * number. The returned list is owned by the #ofoClass class, and
- * should not be freed by the caller.
- *
- * Note: The list is returned (and maintained) sorted for debug
- * facility only. Any way, the display treeview (#ofoClasssSet class)
- * makes use of a sortable model which doesn't care of the order of the
- * provided dataset.
- */
-GList *
-ofo_class_get_dataset( const ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_class_get_dataset";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, class );
-
-	return( st_global->dataset );
-}
-
 static GList *
-class_load_dataset( void )
+class_load_dataset( ofoDossier *dossier, GType type )
 {
 	return(
 			ofo_base_load_dataset(
 					st_boxed_defs,
-					OFO_BASE( st_global->dossier ),
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
+					OFO_BASE( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
-					OFO_TYPE_CLASS ));
+					type ));
 }
 
 /**
@@ -235,13 +192,13 @@ class_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoClass *
-ofo_class_get_by_number( const ofoDossier *dossier, gint number )
+ofo_class_get_by_number( ofoDossier *dossier, gint number )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, class );
+	OFA_IDATASET_GET( dossier, CLASS, class );
 
-	return( class_find_by_number( st_global->dataset, number ));
+	return( class_find_by_number( class_dataset, number ));
 }
 
 static ofoClass *
@@ -351,16 +308,23 @@ ofo_class_is_valid_label( const gchar *label )
  * object.
  */
 gboolean
-ofo_class_is_deletable( const ofoClass *class )
+ofo_class_is_deletable( const ofoClass *class, ofoDossier *dossier )
 {
 	gboolean used_by_accounts;
 	gboolean deletable;
 
-	used_by_accounts = ofo_account_use_class(
-								OFO_DOSSIER( st_global->dossier ), ofo_class_get_number( class ));
-	deletable = !used_by_accounts;
+	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	return( deletable );
+	if( !OFO_BASE( class )->prot->dispose_has_run ){
+
+		used_by_accounts = ofo_account_use_class( dossier, ofo_class_get_number( class ));
+		deletable = !used_by_accounts;
+
+		return( deletable );
+	}
+
+	return( FALSE );
 }
 
 /**
@@ -420,12 +384,12 @@ class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp )
  * ofo_class_insert:
  */
 gboolean
-ofo_class_insert( ofoClass *class )
+ofo_class_insert( ofoClass *class, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_class_insert";
 
-	g_return_val_if_fail( OFO_IS_CLASS( class ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
@@ -433,10 +397,10 @@ ofo_class_insert( ofoClass *class )
 
 		if( class_do_insert(
 					class,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_ADD_TO_DATASET( st_global, class );
+			OFA_IDATASET_ADD( dossier, CLASS, class );
 
 			return( TRUE );
 		}
@@ -493,13 +457,13 @@ class_do_insert( ofoClass *class, const ofaDbms *dbms, const gchar *user )
  * ofo_class_update:
  */
 gboolean
-ofo_class_update( ofoClass *class, gint prev_id )
+ofo_class_update( ofoClass *class, ofoDossier *dossier, gint prev_id )
 {
 	static const gchar *thisfn = "ofo_class_update";
 	gchar *str;
 
-	g_return_val_if_fail( OFO_IS_CLASS( class ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
@@ -508,11 +472,11 @@ ofo_class_update( ofoClass *class, gint prev_id )
 		if( class_do_update(
 					class,
 					prev_id,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
 			str = g_strdup_printf( "%d", prev_id );
-			OFO_BASE_UPDATE_DATASET( st_global, class, str );
+			OFA_IDATASET_UPDATE( dossier, CLASS, class, str );
 			g_free( str );
 
 			return( TRUE );
@@ -569,13 +533,13 @@ class_do_update( ofoClass *class, gint prev_id, const ofaDbms *dbms, const gchar
  * ofo_class_delete:
  */
 gboolean
-ofo_class_delete( ofoClass *class )
+ofo_class_delete( ofoClass *class, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_class_delete";
 
-	g_return_val_if_fail( OFO_IS_CLASS( class ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
-	g_return_val_if_fail( ofo_class_is_deletable( class ), FALSE );
+	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( ofo_class_is_deletable( class, dossier ), FALSE );
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
@@ -583,9 +547,9 @@ ofo_class_delete( ofoClass *class )
 
 		if( class_do_delete(
 					class,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ))){
 
-			OFO_BASE_REMOVE_FROM_DATASET( st_global, class );
+			OFA_IDATASET_REMOVE( dossier, CLASS, class );
 
 			return( TRUE );
 		}
@@ -639,6 +603,26 @@ class_cmp_by_ptr( const ofoClass *a, const ofoClass *b )
 }
 
 /*
+ * ofaIExportable interface management
+ */
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_class_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
+}
+
+/*
  * iexportable_export:
  *
  * Exports the classes line by line.
@@ -655,12 +639,12 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	gulong count;
 	gchar field_sep;
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, class );
+	OFA_IDATASET_GET( dossier, CLASS, class );
 
 	with_headers = ofa_export_settings_get_headers( settings );
 	field_sep = ofa_export_settings_get_field_sep( settings );
 
-	count = ( gulong ) g_list_length( st_global->dataset );
+	count = ( gulong ) g_list_length( class_dataset );
 	if( with_headers ){
 		count += 1;
 	}
@@ -676,7 +660,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 		}
 	}
 
-	for( it=st_global->dataset ; it ; it=it->next ){
+	for( it=class_dataset ; it ; it=it->next ){
 		str = ofa_boxed_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, '\0' );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -701,7 +685,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
  * Replace the whole table with the provided datas.
  */
 void
-ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+ofo_class_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 {
 	static const gchar *thisfn = "ofo_class_import_csv";
 	ofoClass *class;
@@ -718,8 +702,6 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 			( void * ) dossier,
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, class );
 
 	new_set = NULL;
 	count = 0;
@@ -770,7 +752,7 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 	}
 
 	if( !errors ){
-		st_global->send_signal_new = FALSE;
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CLASS, FALSE );
 
 		class_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
@@ -783,13 +765,12 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 
 		g_list_free( new_set );
 
-		if( st_global ){
-			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-			st_global->dataset = NULL;
-		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_CLASS );
+		ofa_idataset_free_dataset( dossier, OFO_TYPE_CLASS );
 
-		st_global->send_signal_new = TRUE;
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_CLASS );
+
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CLASS, TRUE );
 	}
 }
 

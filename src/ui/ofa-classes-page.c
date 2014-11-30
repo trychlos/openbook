@@ -452,7 +452,8 @@ on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self )
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive(
 				priv->delete_btn,
-				class && OFO_IS_CLASS( class ) && ofo_class_is_deletable( class ));
+				class && OFO_IS_CLASS( class ) &&
+					ofo_class_is_deletable( class, ofa_page_get_dossier( OFA_PAGE( self ))));
 	}
 }
 
@@ -528,7 +529,7 @@ try_to_delete_current_row( ofaClassesPage *self )
 	GtkTreeIter iter;
 
 	class = tview_get_selected( self, &tmodel, &iter );
-	if( ofo_class_is_deletable( class )){
+	if( ofo_class_is_deletable( class, ofa_page_get_dossier( OFA_PAGE( self )))){
 		do_delete( self, class, tmodel, &iter );
 	}
 }
@@ -553,11 +554,15 @@ delete_confirmed( ofaClassesPage *self, ofoClass *class )
 static void
 do_delete( ofaClassesPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	g_return_if_fail( ofo_class_is_deletable( class ));
+	gboolean deletable;
+	ofoDossier *dossier;
+
+	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
+	deletable = ofo_class_is_deletable( class, dossier );
+	g_return_if_fail( deletable );
 
 	if( delete_confirmed( page, class )){
-
-		ofo_class_delete( class );
+		ofo_class_delete( class, dossier );
 
 		/* remove the row from the tmodel
 		 * this will cause an automatic new selection */

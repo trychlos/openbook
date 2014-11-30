@@ -294,9 +294,9 @@ do_update( ofaClassProperties *self )
 	my_utils_getback_notes_ex( toplevel, class );
 
 	if( priv->is_new ){
-		priv->updated = ofo_class_insert( priv->class );
+		priv->updated = ofo_class_insert( priv->class, MY_WINDOW( self )->prot->dossier );
 	} else {
-		priv->updated = ofo_class_update( priv->class, prev_id );
+		priv->updated = ofo_class_update( priv->class, MY_WINDOW( self )->prot->dossier, prev_id );
 	}
 
 	return( priv->updated );
