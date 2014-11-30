@@ -2,7 +2,6 @@
 <!-- Generated with glade 3.16.1 -->
 <interface>
   <requires lib="gtk+" version="3.6"/>
-  <object class="GtkSizeGroup" id="LanguageSizeGroup"/>
   <object class="GtkDialog" id="PreferencesDlg">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -549,21 +548,6 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkEntry" id="p3-decimal-sep">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="halign">start</property>
-                                    <property name="max_length">1</property>
-                                    <property name="width_chars">2</property>
-                                  </object>
-                                  <packing>
-                                    <property name="left_attach">1</property>
-                                    <property name="top_attach">0</property>
-                                    <property name="width">1</property>
-                                    <property name="height">1</property>
-                                  </packing>
-                                </child>
-                                <child>
                                   <object class="GtkEntry" id="p3-thousand-sep">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
@@ -574,6 +558,21 @@
                                   <packing>
                                     <property name="left_attach">1</property>
                                     <property name="top_attach">1</property>
+                                    <property name="width">1</property>
+                                    <property name="height">1</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkAlignment" id="p3-decimal-parent">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <child>
+                                      <placeholder/>
+                                    </child>
+                                  </object>
+                                  <packing>
+                                    <property name="left_attach">1</property>
+                                    <property name="top_attach">0</property>
                                     <property name="width">1</property>
                                     <property name="height">1</property>
                                   </packing>
@@ -750,5 +749,20 @@
       <action-widget response="-6">btn-cancel</action-widget>
       <action-widget response="-5">btn-ok</action-widget>
     </action-widgets>
+  </object>
+  <object class="GtkSizeGroup" id="LanguageComboSizeGroup">
+    <widgets>
+      <widget name="p3-alignment-display"/>
+      <widget name="p3-alignment-check"/>
+      <widget name="p3-decimal-parent"/>
+    </widgets>
+  </object>
+  <object class="GtkSizeGroup" id="LanguageLabelSizeGroup">
+    <widgets>
+      <widget name="label36"/>
+      <widget name="label31"/>
+      <widget name="label39"/>
+      <widget name="label11"/>
+    </widgets>
   </object>
 </interface>

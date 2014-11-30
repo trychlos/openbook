@@ -57,6 +57,8 @@ openbook_SOURCES = \
 	my-cell-renderer-date.h								\
 	my-date-combo.c										\
 	my-date-combo.h										\
+	my-decimal-combo.c									\
+	my-decimal-combo.h									\
 	my-editable-amount.c								\
 	my-editable-amount.h								\
 	my-editable-date.c									\

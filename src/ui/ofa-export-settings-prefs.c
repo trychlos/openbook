@@ -37,6 +37,7 @@
 #include "core/ofa-export-settings.h"
 
 #include "ui/my-date-combo.h"
+#include "ui/my-decimal-combo.h"
 #include "ui/ofa-export-settings-prefs.h"
 
 /* private instance data
@@ -57,7 +58,7 @@ struct _ofaExportSettingsPrefsPrivate {
 	GtkWidget         *export_combo;	/* export format */
 	GtkWidget         *encoding_combo;
 	myDateCombo       *date_combo;
-	GtkWidget         *decimal_combo;
+	myDecimalCombo    *decimal_combo;
 	GtkWidget         *fieldsep_label;
 	GtkWidget         *fieldsep_combo;
 	GtkWidget         *headers_btn;
@@ -77,46 +78,6 @@ enum {
 enum {
 	ENC_COL_CODE = 0,
 	ENC_N_COLUMNS
-};
-
-/* output date format
- */
-enum {
-	DATE_COL_CODE = 0,					/* int */
-	DATE_COL_LABEL,
-	DATE_N_COLUMNS
-};
-
-typedef struct {
-	gint         code;
-}
-	sDateFormat;
-
-static const sDateFormat st_date_format[] = {
-		{ MY_DATE_DMYY },
-		{ MY_DATE_YYMD },
-		{ MY_DATE_SQL },
-		{ 0 }
-};
-
-/* decimal dot
- */
-enum {
-	DEC_COL_CODE,
-	DEC_COL_LABEL,
-	DEC_N_COLUMNS
-};
-
-typedef struct {
-	const gchar *code;
-	const gchar *label;
-}
-	sDec;
-
-static const sDec st_dec[] = {
-		{ ".", N_( ". (dot)" )},
-		{ ",", N_( ", (comma)" )},
-		{ 0 }
 };
 
 /* field separator
@@ -450,48 +411,19 @@ static void
 init_decimal_dot( ofaExportSettingsPrefs *self )
 {
 	ofaExportSettingsPrefsPrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkCellRenderer *cell;
-	gint i, idx;
-	gchar value;
+	GtkWidget *parent;
+	gchar *sep;
 
 	priv = self->priv;
+	priv->decimal_combo = my_decimal_combo_new();
 
-	priv->decimal_combo =
-			my_utils_container_get_child_by_name( priv->container, "p5-decimal" );
+	parent = my_utils_container_get_child_by_name( priv->container, "p5-decimal-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			DEC_N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING ));
-	gtk_combo_box_set_model( GTK_COMBO_BOX( priv->decimal_combo ), tmodel );
-	g_object_unref( tmodel );
-
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start(
-			GTK_CELL_LAYOUT( priv->decimal_combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute(
-			GTK_CELL_LAYOUT( priv->decimal_combo ), cell, "text", DEC_COL_LABEL );
-
-	value = ofa_export_settings_get_decimal_sep( priv->settings );
-	idx = -1;
-
-	for( i=0 ; st_dec[i].code ; ++i ){
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				DEC_COL_CODE,  st_dec[i].code,
-				DEC_COL_LABEL, st_dec[i].label,
-				-1 );
-		if( value == st_dec[i].code[0] ){
-			idx = i;
-		}
-	}
-
-	if( idx != -1 ){
-		gtk_combo_box_set_active( GTK_COMBO_BOX( priv->decimal_combo ), idx );
-	}
+	my_decimal_combo_attach_to( priv->decimal_combo, GTK_CONTAINER( parent ));
+	sep = g_strdup_printf( "%c", ofa_export_settings_get_decimal_sep( priv->settings ));
+	my_decimal_combo_init_view( priv->decimal_combo, sep );
+	g_free( sep );
 }
 
 static void
@@ -622,12 +554,7 @@ do_apply( ofaExportSettingsPrefs *self )
 	ivalue = my_date_combo_get_selected( priv->date_combo );
 
 	/* decimal separator */
-	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->decimal_combo ), &iter )){
-		g_return_val_if_reached( FALSE );
-	}
-	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->decimal_combo ));
-	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
-	gtk_tree_model_get( tmodel, &iter, DEC_COL_CODE, &decimal_sep, -1 );
+	decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
 
 	/* field separator */
 	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->fieldsep_combo ), &iter )){

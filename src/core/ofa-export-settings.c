@@ -276,7 +276,7 @@ ofa_export_settings_get_export_format_str( ofaExportFormat format )
 
 	/* only a debug message as the overflow of the previous loop is
 	 * used when enumerating valid export formats */
-	g_debug( "%s: unknown file format: %d", thisfn, format );
+	g_debug( "%s: unknown file format: %d (may be normal)", thisfn, format );
 	return( NULL );
 }
 

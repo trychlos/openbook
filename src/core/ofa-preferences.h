@@ -86,8 +86,8 @@ gboolean     ofa_prefs_account_delete_root_with_children( void );
 myDateFormat ofa_prefs_date_display                     ( void );
 myDateFormat ofa_prefs_date_check                       ( void );
 
-gchar       *ofa_prefs_amount_decimal_sep               ( void );
-gchar       *ofa_prefs_amount_thousand_sep              ( void );
+const gchar *ofa_prefs_amount_decimal_sep               ( void );
+const gchar *ofa_prefs_amount_thousand_sep              ( void );
 
 G_END_DECLS
 

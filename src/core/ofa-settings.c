@@ -744,9 +744,8 @@ str_to_array( const gchar *str )
 		/* semi-comma-separated list of strings
 		 */
 		} else {
-			if( g_str_has_suffix( str, ";" )){
-				sdup[strlen(sdup)-1] = ' ';
-				sdup = g_strstrip( sdup );
+			if( sdup[strlen(sdup)-1] == ';' ){
+				sdup[strlen(sdup)-1] = '\0';
 			}
 			array = g_strsplit( sdup, ";", -1 );
 		}

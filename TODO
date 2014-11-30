@@ -356,7 +356,10 @@
 
  478 2014-11-30 have a decimal dot combo
 
- 479
+ 479 2014-11-30 get rid of mysqlConnect and mysqlInfos
+                after that rename sMySQLInfos to sMysqlInfos
+
+ 480
 
 -----------------------------------------------------------------------
  DONE

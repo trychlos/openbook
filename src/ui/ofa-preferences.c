@@ -40,6 +40,7 @@
 #include "core/ofa-plugin.h"
 
 #include "ui/my-date-combo.h"
+#include "ui/my-decimal-combo.h"
 #include "ui/ofa-dossier-delete-prefs.h"
 #include "ui/ofa-export-settings-prefs.h"
 #include "ui/ofa-main-window.h"
@@ -75,7 +76,7 @@ struct _ofaPreferencesPrivate {
 	 */
 	myDateCombo            *p3_display_combo;
 	myDateCombo            *p3_check_combo;
-	GtkWidget              *p3_decimal_sep;
+	myDecimalCombo         *p3_decimal_sep;
 	GtkWidget              *p3_thousand_sep;
 
 	/* Export settings
@@ -138,7 +139,9 @@ static gboolean   do_update( ofaPreferences *self );
 static void       do_update_quitting_page( ofaPreferences *self );
 static void       do_update_account_page( ofaPreferences *self );
 static gboolean   do_update_locales_page( ofaPreferences *self );
-static void       error_decimal_sep( ofaPreferences *self );
+/*static void       error_decimal_sep( ofaPreferences *self );*/
+static void       setup_date_formats( void );
+static void       setup_amount_formats( void );
 static void       do_update_export_page( ofaPreferences *self );
 static void       update_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
 static GtkWidget *find_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
@@ -359,6 +362,8 @@ static void
 init_locales_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
+	GtkContainer *container;
+	GtkWidget *parent;
 
 	priv = self->priv;
 
@@ -367,7 +372,14 @@ init_locales_page( ofaPreferences *self )
 	init_locale_date( self, &priv->p3_display_combo, "p3-alignment-display", ofa_prefs_date_display());
 	init_locale_date( self, &priv->p3_check_combo,   "p3-alignment-check",   ofa_prefs_date_check());
 
-	init_locale_sep( self, &priv->p3_decimal_sep,  "p3-decimal-sep",  ofa_prefs_amount_decimal_sep());
+	priv->p3_decimal_sep = my_decimal_combo_new();
+	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( self ));
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	parent = my_utils_container_get_child_by_name( container, "p3-decimal-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	my_decimal_combo_attach_to( priv->p3_decimal_sep, GTK_CONTAINER( parent ));
+	my_decimal_combo_init_view( priv->p3_decimal_sep, ofa_prefs_amount_decimal_sep());
+
 	init_locale_sep( self, &priv->p3_thousand_sep, "p3-thousand-sep", ofa_prefs_amount_thousand_sep());
 }
 
@@ -742,6 +754,7 @@ do_update_locales_page( ofaPreferences *self )
 	ofaPreferencesPrivate *priv;
 	GList *list;
 	const gchar *cstr;
+	gchar *decimal_sep;
 
 	priv = self->priv;
 
@@ -750,12 +763,8 @@ do_update_locales_page( ofaPreferences *self )
 	ofa_settings_set_int_list( SETTINGS_DATE, list );
 	ofa_settings_free_int_list( list );
 
-	cstr = gtk_entry_get_text( GTK_ENTRY( priv->p3_decimal_sep ));
-	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		error_decimal_sep( self );
-		return( FALSE );
-	}
-	list = g_list_append( NULL, g_strdup( cstr ));
+	decimal_sep = my_decimal_combo_get_selected( priv->p3_decimal_sep );
+	list = g_list_append( NULL, decimal_sep );
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( priv->p3_thousand_sep ));
 	list = g_list_append( list, g_strdup( cstr ));
@@ -773,6 +782,7 @@ do_update_locales_page( ofaPreferences *self )
 	return( TRUE );
 }
 
+#if 0
 static void
 error_decimal_sep( ofaPreferences *self )
 {
@@ -788,6 +798,7 @@ error_decimal_sep( ofaPreferences *self )
 	gtk_dialog_run( GTK_DIALOG( dialog ));
 	gtk_widget_destroy( dialog );
 }
+#endif
 
 /**
  * ofa_prefs_date_display:
@@ -797,18 +808,8 @@ error_decimal_sep( ofaPreferences *self )
 myDateFormat
 ofa_prefs_date_display( void )
 {
-	GList *list;
-
 	if( !st_date_display ){
-
-		/* have a suitable default value */
-		st_date_display = MY_DATE_DMYY;
-
-		list = ofa_settings_get_int_list( SETTINGS_DATE );
-		if( list && list->data ){
-			st_date_display = GPOINTER_TO_INT( list->data );
-		}
-		ofa_settings_free_int_list( list );
+		setup_date_formats();
 	}
 
 	return( st_date_display );
@@ -822,25 +823,33 @@ ofa_prefs_date_display( void )
 myDateFormat
 ofa_prefs_date_check( void )
 {
-	GList *list, *it;
-
 	if( !st_date_check ){
-
-		/* have a suitable default value */
-		st_date_check = MY_DATE_DMMM;
-
-		it = NULL;
-		list = ofa_settings_get_int_list( SETTINGS_DATE );
-		if( list ){
-			it = list->next;
-		}
-		if( it && it->data ){
-			st_date_check = GPOINTER_TO_INT( it->data );
-		}
-		ofa_settings_free_int_list( list );
+		setup_date_formats();
 	}
 
 	return( st_date_check );
+}
+
+static void
+setup_date_formats( void )
+{
+	GList *list, *it;
+
+	/* have a suitable default value */
+	st_date_display = MY_DATE_DMYY;
+	st_date_check = MY_DATE_DMMM;
+
+	list = ofa_settings_get_int_list( SETTINGS_DATE );
+	if( list ){
+		if( list->data ){
+			st_date_display = GPOINTER_TO_INT( list->data );
+		}
+		it = list->next;
+		if( it->data ){
+			st_date_check = GPOINTER_TO_INT( it->data );
+		}
+	}
+	ofa_settings_free_int_list( list );
 }
 
 /**
@@ -850,20 +859,11 @@ ofa_prefs_date_check( void )
  *
  * The returned string should be g_free() by the caller.
  */
-gchar *
+const gchar *
 ofa_prefs_amount_decimal_sep( void )
 {
-	GList *list;
-
 	if( !st_amount_decimal ){
-
-		st_amount_decimal = g_strdup( "," );
-		list = ofa_settings_get_string_list( SETTINGS_AMOUNT );
-		if( list && list->data ){
-			g_free( st_amount_decimal );
-			st_amount_decimal = g_strdup(( const gchar * ) list->data );
-		}
-		ofa_settings_free_string_list( list );
+		setup_amount_formats();
 	}
 
 	return( st_amount_decimal );
@@ -876,28 +876,41 @@ ofa_prefs_amount_decimal_sep( void )
  *
  * The returned string should be g_free() by the caller.
  */
-gchar *
+const gchar *
 ofa_prefs_amount_thousand_sep( void )
 {
-	GList *list, *it;
-
 	if( !st_amount_thousand ){
-
-		st_amount_thousand = g_strdup( " " );
-		it = NULL;
-		list = ofa_settings_get_string_list( SETTINGS_AMOUNT );
-		if( list ){
-			g_free( st_amount_thousand );
-			st_amount_thousand = NULL;
-			it = list->next;
-		}
-		if( it && it->data ){
-			st_amount_thousand = g_strdup(( const gchar * ) it->data );
-		}
-		ofa_settings_free_string_list( list );
+		setup_amount_formats();
 	}
 
 	return( st_amount_thousand );
+}
+
+static void
+setup_amount_formats( void )
+{
+	GList *list, *it;
+
+	/* have a suitable default value (fr locale) */
+	st_amount_decimal = g_strdup( "," );
+	st_amount_thousand = g_strdup( " " );
+
+	list = ofa_settings_get_string_list( SETTINGS_AMOUNT );
+	if( list ){
+		g_free( st_amount_decimal );
+		st_amount_decimal = NULL;
+		g_free( st_amount_thousand );
+		st_amount_thousand = NULL;
+
+		if( list->data ){
+			st_amount_decimal = g_strdup(( const gchar * ) list->data );
+		}
+		it = list->next;
+		if( it && it->data ){
+			st_amount_thousand = g_strdup(( const gchar * ) it->data );
+		}
+	}
+	ofa_settings_free_string_list( list );
 }
 
 static void
