@@ -24,7 +24,7 @@
 
 AC_PREREQ([2.53])
 
-AC_INIT([OpenBook],[0.21],[openbook@trychlos.org],,[http://www.trychlos.org])
+AC_INIT([OpenBook],[0.22],[openbook@trychlos.org],,[http://www.trychlos.org])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CANONICAL_TARGET

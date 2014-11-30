@@ -354,8 +354,6 @@
  477 2014-11-30 Dossier Open option should be insensitive when a dossier
                 is already opened
 
- 478 2014-11-30 have a decimal dot combo
-
  479 2014-11-30 get rid of mysqlConnect and mysqlInfos
                 after that rename sMySQLInfos to sMysqlInfos
 
@@ -2066,6 +2064,9 @@
 
  474 2014-11-29 st_global datasets should be owned by the dossier
      2014-11-30 done - svn #4203
+
+ 478 2014-11-30 have a decimal dot combo
+     2014-11-30 done - svn #4215
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
