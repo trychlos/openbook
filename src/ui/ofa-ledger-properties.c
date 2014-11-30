@@ -419,10 +419,10 @@ do_update( ofaLedgerProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_ledger_insert( priv->ledger );
+				ofo_ledger_insert( priv->ledger, MY_WINDOW( self )->prot->dossier );
 	} else {
 		priv->updated =
-				ofo_ledger_update( priv->ledger, prev_mnemo );
+				ofo_ledger_update( priv->ledger, MY_WINDOW( self )->prot->dossier, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

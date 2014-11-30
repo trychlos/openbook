@@ -391,7 +391,7 @@ close_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
 	}
 	g_string_append_printf( priv->ledgers_list, "%s", mnemo );
 
-	ok = ofo_ledger_close( ledger, &priv->closing );
+	ok = ofo_ledger_close( ledger, MY_WINDOW( self )->prot->dossier, &priv->closing );
 
 	return( ok );
 }

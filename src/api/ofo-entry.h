@@ -192,7 +192,7 @@ gboolean       ofo_entry_update_concil        ( ofoEntry *entry, const ofoDossie
 gboolean       ofo_entry_update_settlement    ( ofoEntry *entry, const ofoDossier *dossier, ofxCounter number );
 gboolean       ofo_entry_validate             ( ofoEntry *entry, const ofoDossier *dossier );
 
-gboolean       ofo_entry_validate_by_ledger     ( const ofoDossier *dossier,
+gboolean       ofo_entry_validate_by_ledger   ( ofoDossier *dossier,
 													const gchar *mnemo, const GDate *deffect );
 
 gboolean       ofo_entry_delete               ( ofoEntry *entry, const ofoDossier *dossier );

@@ -35,6 +35,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -69,16 +70,12 @@ typedef struct {
 }
 	sDetailCur;
 
-OFO_BASE_DEFINE_GLOBAL( st_global, ledger )
-
-static void        iexportable_iface_init( ofaIExportableInterface *iface );
-static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static void        on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data );
 static void        on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry );
-static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
-static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
+static void        on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
+static void        on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void        on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
-static GList      *ledger_load_dataset( void );
+static GList      *ledger_load_dataset( ofoDossier *dossier, GType type );
 static ofoLedger  *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint        ledger_count_for_currency( const ofaDbms *dbms, const gchar *currency );
 static gint        ledger_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
@@ -94,11 +91,15 @@ static gboolean    ledger_do_update_detail_cur( const ofoLedger *ledger, sDetail
 static gboolean    ledger_do_delete( ofoLedger *ledger, const ofaDbms *dbms );
 static gint        ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
 static gint        ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
+static void        iexportable_iface_init( ofaIExportableInterface *iface );
+static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static gboolean    ledger_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
+
+OFA_IDATASET_LOAD( LEDGER, ledger );
 
 static void
 free_detail_cur( sDetailCur *detail )
@@ -168,23 +169,6 @@ ofo_ledger_class_init( ofoLedgerClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ledger_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoLedgerPrivate ));
-}
-
-static void
-iexportable_iface_init( ofaIExportableInterface *iface )
-{
-	static const gchar *thisfn = "ofo_ledger_iexportable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
-}
-
-static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
-{
-	return( 1 );
 }
 
 /**
@@ -261,7 +245,7 @@ on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 }
 
 static void
-on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
 {
 	static const gchar *thisfn = "ofo_ledger_on_updated_object";
 	const gchar *code;
@@ -288,7 +272,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
  * so update our ledger records
  */
 static void
-on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
+on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
 
@@ -300,8 +284,8 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 
 	g_free( query );
 
-	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-	st_global->dataset = NULL;
+	ofa_idataset_free_dataset( dossier, OFO_TYPE_LEDGER );
+
 	g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_LEDGER );
 }
 
@@ -348,35 +332,8 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	}
 }
 
-/**
- * ofo_ledger_get_dataset:
- * @dossier: the currently opened #ofoDossier dossier.
- *
- * Returns: The list of #ofoLedger ledgers, ordered by ascending
- * mnemonic. The returned list is owned by the #ofoLedger class, and
- * should not be freed by the caller.
- *
- * Notes:
- * - the list is not sorted
- * - we are loading all the content of the entity, i.e. the list of
- *   ledgers plus all the list of detail rows
- */
-GList *
-ofo_ledger_get_dataset( const ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_ledger_get_dataset";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, ledger );
-
-	return( st_global->dataset );
-}
-
 static GList *
-ledger_load_dataset( void )
+ledger_load_dataset( ofoDossier *dossier, GType type )
 {
 	GSList *result, *irow, *icol;
 	ofoLedger *ledger;
@@ -387,7 +344,7 @@ ledger_load_dataset( void )
 	GTimeVal timeval;
 	GDate date;
 
-	dbms = ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier ));
+	dbms = ofo_dossier_get_dbms( dossier );
 
 	result = ofa_dbms_query_ex( dbms,
 			"SELECT LED_MNEMO,LED_LABEL,LED_NOTES,"
@@ -467,14 +424,14 @@ ledger_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoLedger *
-ofo_ledger_get_by_mnemo( const ofoDossier *dossier, const gchar *mnemo )
+ofo_ledger_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, ledger );
+	OFA_IDATASET_GET( dossier, LEDGER, ledger );
 
-	return( ledger_find_by_mnemo( st_global->dataset, mnemo ));
+	return( ledger_find_by_mnemo( ledger_dataset, mnemo ));
 }
 
 static ofoLedger *
@@ -498,11 +455,11 @@ ledger_find_by_mnemo( GList *set, const gchar *mnemo )
  * currency.
  */
 gboolean
-ofo_ledger_use_currency( const ofoDossier *dossier, const gchar *currency )
+ofo_ledger_use_currency( ofoDossier *dossier, const gchar *currency )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, ledger );
+	OFA_IDATASET_GET( dossier, LEDGER, ledger );
 
 	return( ledger_count_for_currency( ofo_dossier_get_dbms( dossier ), currency ) > 0 );
 }
@@ -681,7 +638,7 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger )
 				"	WHERE ENT_LEDGER='%s'", ofo_ledger_get_mnemo( ledger ));
 
 		result = ofa_dbms_query_ex(
-						ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )), query, TRUE );
+						ofo_dossier_get_dbms( BASE_GET_DOSSIER( ledger )), query, TRUE );
 		g_free( query );
 
 		if( result ){
@@ -855,7 +812,7 @@ ofo_ledger_has_entries( const ofoLedger *ledger )
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
 		mnemo = ofo_ledger_get_mnemo( ledger );
-		ok = ofo_entry_use_ledger( OFO_DOSSIER( st_global->dossier ), mnemo );
+		ok = ofo_entry_use_ledger( BASE_GET_DOSSIER( ledger ), mnemo );
 		return( ok );
 	}
 
@@ -1125,12 +1082,13 @@ ofo_ledger_set_cre( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
  *   validated
  */
 gboolean
-ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
+ofo_ledger_close( ofoLedger *ledger, ofoDossier *dossier, const GDate *closing )
 {
 	static const gchar *thisfn = "ofo_ledger_close";
 	gboolean ok;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( closing && my_date_is_valid( closing ), FALSE );
 
 	g_debug( "%s: ledger=%p, closing=%p", thisfn, ( void * ) ledger, ( void * ) closing );
@@ -1140,16 +1098,16 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
 		if( ofo_entry_validate_by_ledger(
-						OFO_DOSSIER( st_global->dossier ),
+						dossier,
 						ofo_ledger_get_mnemo( ledger ),
 						closing )){
 
 			ledger_set_last_clo( ledger, closing );
 
-			if( ofo_ledger_update( ledger, ofo_ledger_get_mnemo( ledger ))){
+			if( ofo_ledger_update( ledger, dossier, ofo_ledger_get_mnemo( ledger ))){
 
 				g_signal_emit_by_name(
-						G_OBJECT( st_global->dossier ),
+						G_OBJECT( dossier ),
 						SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
 
 				ok = TRUE;
@@ -1166,12 +1124,12 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
  * Only insert here a new ledger, so only the main properties
  */
 gboolean
-ofo_ledger_insert( ofoLedger *ledger )
+ofo_ledger_insert( ofoLedger *ledger, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_ledger_insert";
 
-	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
@@ -1179,16 +1137,15 @@ ofo_ledger_insert( ofoLedger *ledger )
 
 		if( ledger_do_insert(
 					ledger,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_ADD_TO_DATASET( st_global, ledger );
+			OFA_IDATASET_ADD( dossier, LEDGER, ledger );
 
 			return( TRUE );
 		}
 	}
 
-	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -1253,12 +1210,12 @@ ledger_insert_main( ofoLedger *ledger, const ofaDbms *dbms, const gchar *user )
  * details of balances per currency.
  */
 gboolean
-ofo_ledger_update( ofoLedger *ledger, const gchar *prev_mnemo )
+ofo_ledger_update( ofoLedger *ledger, ofoDossier *dossier, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_ledger_update";
 
-	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
@@ -1267,16 +1224,15 @@ ofo_ledger_update( ofoLedger *ledger, const gchar *prev_mnemo )
 		if( ledger_do_update(
 					ledger,
 					prev_mnemo,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_UPDATE_DATASET( st_global, ledger, prev_mnemo );
+			OFA_IDATASET_UPDATE( dossier, LEDGER, ledger, prev_mnemo );
 
 			return( TRUE );
 		}
 	}
 
-	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -1393,13 +1349,13 @@ ledger_do_update_detail_cur( const ofoLedger *ledger, sDetailCur *detail, const 
  * Take care of deleting both main and detail records.
  */
 gboolean
-ofo_ledger_delete( ofoLedger *ledger )
+ofo_ledger_delete( ofoLedger *ledger, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_ledger_delete";
 
-	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
-	g_return_val_if_fail( ofo_ledger_is_deletable( ledger, OFO_DOSSIER( st_global->dossier )), FALSE );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( ofo_ledger_is_deletable( ledger, dossier ), FALSE );
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
@@ -1407,15 +1363,14 @@ ofo_ledger_delete( ofoLedger *ledger )
 
 		if( ledger_do_delete(
 					ledger,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ))){
 
-			OFO_BASE_REMOVE_FROM_DATASET( st_global, ledger );
+			OFA_IDATASET_REMOVE( dossier, LEDGER, ledger );
 
 			return( TRUE );
 		}
 	}
 
-	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -1460,6 +1415,26 @@ ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b )
 }
 
 /*
+ * ofaIExportable interface management
+ */
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ledger_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
+}
+
+/*
  * iexportable_export:
  *
  * Exports the classes line by line.
@@ -1478,15 +1453,15 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	gboolean ok, with_headers;
 	gulong count;
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, ledger );
+	OFA_IDATASET_GET( dossier, LEDGER, ledger );
 
 	with_headers = ofa_export_settings_get_headers( settings );
 
-	count = ( gulong ) g_list_length( st_global->dataset );
+	count = ( gulong ) g_list_length( ledger_dataset );
 	if( with_headers ){
 		count += 2;
 	}
-	for( it=st_global->dataset ; it ; it=it->next ){
+	for( it=ledger_dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
 		count += g_list_length( ledger->priv->amounts );
 	}
@@ -1510,7 +1485,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 		}
 	}
 
-	for( it=st_global->dataset ; it ; it=it->next ){
+	for( it=ledger_dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
 
 		notes = my_utils_export_multi_lines( ofo_ledger_get_notes( ledger ));
@@ -1572,7 +1547,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
  * Replace the whole table with the provided datas.
  */
 void
-ofo_ledger_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+ofo_ledger_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 {
 	static const gchar *thisfn = "ofo_ledger_import_csv";
 	ofoLedger *ledger;
@@ -1588,8 +1563,6 @@ ofo_ledger_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 			( void * ) dossier,
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, ledger );
 
 	new_set = NULL;
 	count = 0;
@@ -1639,7 +1612,7 @@ ofo_ledger_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 	}
 
 	if( !errors ){
-		st_global->send_signal_new = FALSE;
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_LEDGER, FALSE );
 
 		ledger_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
@@ -1652,13 +1625,12 @@ ofo_ledger_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 
 		g_list_free( new_set );
 
-		if( st_global ){
-			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-			st_global->dataset = NULL;
-		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_LEDGER );
+		ofa_idataset_free_dataset( dossier, OFO_TYPE_LEDGER );
 
-		st_global->send_signal_new = TRUE;
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_LEDGER );
+
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_LEDGER, TRUE );
 	}
 }
 

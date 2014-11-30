@@ -360,7 +360,7 @@ on_delete_clicked( ofaLedgersPage *page )
 	g_return_if_fail( ofo_ledger_is_deletable( ledger, dossier ));
 
 	if( delete_confirmed( page, ledger ) &&
-			ofo_ledger_delete( ledger )){
+			ofo_ledger_delete( ledger, ofa_page_get_dossier( OFA_PAGE( page )))){
 
 		/* this is managed by the ofaLedgerTreeview convenience
 		 * class, graceful to the dossier signaling system */

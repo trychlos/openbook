@@ -49,9 +49,9 @@ G_BEGIN_DECLS
 
 void            ofo_ledger_connect_handlers( const ofoDossier *dossier );
 
-GList          *ofo_ledger_get_dataset     ( const ofoDossier *dossier );
-ofoLedger      *ofo_ledger_get_by_mnemo    ( const ofoDossier *dossier, const gchar *mnemo );
-gboolean        ofo_ledger_use_currency    ( const ofoDossier *dossier, const gchar *currency );
+GList          *ofo_ledger_get_dataset     ( ofoDossier *dossier );
+ofoLedger      *ofo_ledger_get_by_mnemo    ( ofoDossier *dossier, const gchar *mnemo );
+gboolean        ofo_ledger_use_currency    ( ofoDossier *dossier, const gchar *currency );
 
 ofoLedger      *ofo_ledger_new             ( void );
 
@@ -81,13 +81,13 @@ void            ofo_ledger_set_clo_cre     ( ofoLedger *ledger, const gchar *cur
 void            ofo_ledger_set_deb         ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
 void            ofo_ledger_set_cre         ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
 
-gboolean        ofo_ledger_close           ( ofoLedger *ledger, const GDate *closing );
+gboolean        ofo_ledger_close           ( ofoLedger *ledger, ofoDossier *dossier, const GDate *closing );
 
-gboolean        ofo_ledger_insert          ( ofoLedger *ledger );
-gboolean        ofo_ledger_update          ( ofoLedger *ledger, const gchar *prev_mnemo );
-gboolean        ofo_ledger_delete          ( ofoLedger *ledger );
+gboolean        ofo_ledger_insert          ( ofoLedger *ledger, ofoDossier *dossier );
+gboolean        ofo_ledger_update          ( ofoLedger *ledger, ofoDossier *dossier, const gchar *prev_mnemo );
+gboolean        ofo_ledger_delete          ( ofoLedger *ledger, ofoDossier *dossier );
 
-void            ofo_ledger_import_csv      ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+void            ofo_ledger_import_csv      ( ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

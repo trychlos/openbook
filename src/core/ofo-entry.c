@@ -2253,7 +2253,7 @@ ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
  * is detected.
  */
 gboolean
-ofo_entry_validate_by_ledger( const ofoDossier *dossier, const gchar *mnemo, const GDate *deffect )
+ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDate *deffect )
 {
 	gchar *where;
 	gchar *query, *str;
