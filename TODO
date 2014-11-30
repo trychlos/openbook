@@ -352,14 +352,16 @@
 
  472 2014-11-29 set dialogs readonly if not current exercice
 
- 473 2014-11-29 DossierDelete should be just a sub part of the manager
-                + review: delete exercice vs. delete dossier
+ 473 2014-11-29 DossierDelete review: delete exercice vs. delete dossier
 
  474 2014-11-29 st_global datasets should be owned by the dossier
 
  475 2014-11-29 review backup and restore: have a dedicated interface
 
- 476
+ 476 2014-11-29 DossierManager review: have a Dossier treeview and an
+                Exercices treeview
+
+ 477
 
 -----------------------------------------------------------------------
  DONE

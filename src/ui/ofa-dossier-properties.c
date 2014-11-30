@@ -523,7 +523,7 @@ do_update( ofaDossierProperties *self )
 
 	/* update menu items enabled status */
 	g_signal_emit_by_name(
-			G_OBJECT( priv->dossier ), OFA_SIGNAL_DOSSIER_DATES_CHANGED, &priv->begin, &priv->end );
+			G_OBJECT( priv->dossier ), SIGNAL_DOSSIER_DATES_CHANGED, &priv->begin, &priv->end );
 
 	return( priv->updated );
 }

@@ -183,22 +183,22 @@ v_setup_view( ofaPage *page )
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
+						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
+						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
+						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
+						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	return( setup_tree_view( OFA_CURRENCIES_PAGE( page )));
@@ -599,7 +599,7 @@ do_delete( ofaCurrenciesPage *page, ofoCurrency *currency, GtkTreeModel *tmodel,
 }
 
 /*
- * OFA_SIGNAL_NEW_OBJECT signal handler
+ * SIGNAL_DOSSIER_NEW_OBJECT signal handler
  */
 static void
 on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self )
@@ -633,7 +633,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 }
 
 /*
- * OFA_SIGNAL_DELETED_OBJECT signal handler
+ * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
  */
 static void
 on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self )
@@ -649,7 +649,7 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrenciesPage *self
 }
 
 /*
- * OFA_SIGNAL_RELOAD_DATASET signal handler
+ * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
  */
 static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesPage *self )

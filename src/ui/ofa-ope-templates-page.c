@@ -246,22 +246,22 @@ setup_dossier_signaling( ofaOpeTemplatesPage *self )
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
@@ -307,7 +307,7 @@ v_setup_buttons( ofaPage *page )
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_DOSSIER_DATES_CHANGED, G_CALLBACK( on_dossier_dates_changed ), page );
+						SIGNAL_DOSSIER_DATES_CHANGED, G_CALLBACK( on_dossier_dates_changed ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	return( GTK_WIDGET( box ));

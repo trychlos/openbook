@@ -34,6 +34,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
@@ -76,6 +77,8 @@ struct _ofoDossierPrivate {
 	ofxCounter  last_entry;
 	ofxCounter  last_settlement;
 	gchar      *status;
+
+	GList      *datasets;				/* a list of datasets managed by ofaIDataset */
 };
 
 /* signals defined here
@@ -102,8 +105,11 @@ static gint st_signals[ N_SIGNALS ] = { 0 };
 #define DOSSIER_CURRENT                 "C"
 #define DOSSIER_ARCHIVED                "A"
 
-static void        iexportable_iface_init( ofaIExportableInterface *iface );
-static guint       iexportable_get_interface_version( const ofaIExportable *instance );
+static ofoBaseClass *ofo_dossier_parent_class = NULL;
+
+static GType       register_type( void );
+static void        dossier_instance_init( ofoDossier *self );
+static void        dossier_class_init( ofoDossierClass *klass );
 static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
@@ -129,10 +135,67 @@ static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
 static gboolean    dossier_do_update( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
 static gboolean    do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
-static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+static void        iexportable_iface_init( ofaIExportableInterface *iface );
+static guint       iexportable_get_interface_version( const ofaIExportable *instance );
+static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
+static void        idataset_iface_init( ofaIDatasetInterface *iface );
+static guint       idataset_get_interface_version( const ofaIDataset *instance );
+static GList      *idataset_get_datasets( const ofaIDataset *instance );
+static void        idataset_set_datasets( ofaIDataset *instance, GList *list );
+static void        free_datasets( GList *datasets );
 
-G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0, \
-		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
+GType
+ofo_dossier_get_type( void )
+{
+	static GType type = 0;
+
+	if( !type ){
+		type = register_type();
+	}
+
+	return( type );
+}
+
+static GType
+register_type( void )
+{
+	static const gchar *thisfn = "ofo_dossier_register_type";
+	GType type;
+
+	static GTypeInfo info = {
+		sizeof( ofoDossierClass ),
+		( GBaseInitFunc ) NULL,
+		( GBaseFinalizeFunc ) NULL,
+		( GClassInitFunc ) dossier_class_init,
+		NULL,
+		NULL,
+		sizeof( ofoDossier ),
+		0,
+		( GInstanceInitFunc ) dossier_instance_init
+	};
+
+	static const GInterfaceInfo iexportable_iface_info = {
+		( GInterfaceInitFunc ) iexportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo idataset_iface_info = {
+		( GInterfaceInitFunc ) idataset_iface_init,
+		NULL,
+		NULL
+	};
+
+	g_debug( "%s", thisfn );
+
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoDossier", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_IDATASET, &idataset_iface_info );
+
+	return( type );
+}
 
 static void
 dossier_finalize( GObject *instance )
@@ -176,6 +239,9 @@ dossier_dispose( GObject *instance )
 		/* unref object members here */
 		priv = OFO_DOSSIER( instance )->priv;
 
+		if( priv->datasets ){
+			free_datasets( priv->datasets );
+		}
 		if( priv->dbms ){
 			g_clear_object( &priv->dbms );
 		}
@@ -186,9 +252,9 @@ dossier_dispose( GObject *instance )
 }
 
 static void
-ofo_dossier_init( ofoDossier *self )
+dossier_instance_init( ofoDossier *self )
 {
-	static const gchar *thisfn = "ofo_dossier_init";
+	static const gchar *thisfn = "ofo_dossier_instance_init";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
@@ -197,11 +263,13 @@ ofo_dossier_init( ofoDossier *self )
 }
 
 static void
-ofo_dossier_class_init( ofoDossierClass *klass )
+dossier_class_init( ofoDossierClass *klass )
 {
 	static const gchar *thisfn = "ofo_dossier_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	ofo_dossier_parent_class = g_type_class_peek_parent( klass );
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_finalize;
@@ -221,7 +289,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * 								gpointer      user_data );
 	 */
 	st_signals[ NEW_OBJECT ] = g_signal_new_class_handler(
-				OFA_SIGNAL_NEW_OBJECT,
+				SIGNAL_DOSSIER_NEW_OBJECT,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_new_object_cleanup_handler ),
@@ -247,7 +315,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * 								gpointer      user_data );
 	 */
 	st_signals[ UPDATED_OBJECT ] = g_signal_new_class_handler(
-				OFA_SIGNAL_UPDATED_OBJECT,
+				SIGNAL_DOSSIER_UPDATED_OBJECT,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_updated_object_cleanup_handler ),
@@ -271,7 +339,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * 								gpointer      user_data );
 	 */
 	st_signals[ DELETED_OBJECT ] = g_signal_new_class_handler(
-				OFA_SIGNAL_DELETED_OBJECT,
+				SIGNAL_DOSSIER_DELETED_OBJECT,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_deleted_object_cleanup_handler ),
@@ -298,7 +366,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * 								gpointer  user_data );
 	 */
 	st_signals[ RELOAD_DATASET ] = g_signal_new_class_handler(
-				OFA_SIGNAL_RELOAD_DATASET,
+				SIGNAL_DOSSIER_RELOAD_DATASET,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_reloaded_dataset_cleanup_handler ),
@@ -318,7 +386,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * 								gpointer  user_data );
 	 */
 	st_signals[ VALIDATED_ENTRY ] = g_signal_new_class_handler(
-				OFA_SIGNAL_VALIDATED_ENTRY,
+				SIGNAL_DOSSIER_VALIDATED_ENTRY,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
 				G_CALLBACK( on_validated_entry_cleanup_handler ),
@@ -336,13 +404,13 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 	 * beginning or ending dates have changed.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofoDossier *dossier,
-	 *                      GDate    *new_begin_date,
-	 *                      GDate    *new_end_date,
-	 * 						gpointer  user_data );
+	 * void ( *handler )( ofoDossier    *dossier,
+	 *                      const GDate *new_begin_date,
+	 *                      const GDate *new_end_date,
+	 * 						gpointer     user_data );
 	 */
 	st_signals[ DATES_CHANGED ] = g_signal_new_class_handler(
-				OFA_SIGNAL_DOSSIER_DATES_CHANGED,
+				SIGNAL_DOSSIER_DATES_CHANGED,
 				OFO_TYPE_DOSSIER,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -352,23 +420,6 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_NONE,
 				2,
 				G_TYPE_POINTER, G_TYPE_POINTER );
-}
-
-static void
-iexportable_iface_init( ofaIExportableInterface *iface )
-{
-	static const gchar *thisfn = "ofo_dossier_iexportable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
-}
-
-static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
-{
-	return( 1 );
 }
 
 /**
@@ -499,7 +550,7 @@ connect_objects_handlers( const ofoDossier *dossier )
 	ofo_ope_template_connect_handlers( dossier );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 }
 
 static void
@@ -2251,6 +2302,26 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 }
 
 /*
+ * ofaIExportable interface management
+ */
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_dossier_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
+}
+
+/*
  * iexportable_export:
  *
  * Exports the classes line by line.
@@ -2258,7 +2329,7 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
 {
 	GSList *lines;
 	gchar *str, *stamp;
@@ -2357,4 +2428,55 @@ ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname )
 	return( ok );
 #endif
 	return( FALSE );
+}
+
+/*
+ * ofaIDataset interface management
+ */
+static void
+idataset_iface_init( ofaIDatasetInterface *iface )
+{
+	static const gchar *thisfn = "ofo_dossier_idataset_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = idataset_get_interface_version;
+	iface->get_datasets = idataset_get_datasets;
+	iface->set_datasets = idataset_set_datasets;
+}
+
+static guint
+idataset_get_interface_version( const ofaIDataset *instance )
+{
+	return( 1 );
+}
+
+static GList *
+idataset_get_datasets( const ofaIDataset *instance )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( instance && OFO_IS_DOSSIER( instance ), NULL );
+
+	priv = OFO_DOSSIER( instance )->priv;
+
+	return( priv->datasets );
+}
+
+static void
+idataset_set_datasets( ofaIDataset *instance, GList *list )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_if_fail( instance && OFO_IS_DOSSIER( instance ));
+
+	priv = OFO_DOSSIER( instance )->priv;
+
+	priv->datasets = list;
+}
+
+static void
+free_datasets( GList *datasets )
+{
+	g_list_free_full( datasets, ( GDestroyNotify ) ofa_idataset_free_full );
 }

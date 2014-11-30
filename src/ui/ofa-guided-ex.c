@@ -208,19 +208,19 @@ v_setup_view( ofaPage *page )
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
+			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
+			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
+			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), page );
+			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), page );
 
 	return( GTK_WIDGET( child ));
 }
@@ -892,7 +892,7 @@ on_right_cancel( GtkButton *button, ofaGuidedEx *self )
 }
 
 /*
- * OFA_SIGNAL_NEW_OBJECT signal handler
+ * SIGNAL_DOSSIER_NEW_OBJECT signal handler
  */
 static void
 on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
@@ -914,7 +914,7 @@ on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *se
 }
 
 /*
- * OFA_SIGNAL_UPDATED_OBJECT signal handler
+ * SIGNAL_DOSSIER_UPDATED_OBJECT signal handler
  */
 static void
 on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self )
@@ -937,7 +937,7 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
 }
 
 /*
- * OFA_SIGNAL_DELETED_OBJECT signal handler
+ * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
  */
 static void
 on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
@@ -959,7 +959,7 @@ on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx
 }
 
 /*
- * OFA_SIGNAL_RELOAD_DATASET signal handler
+ * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
  */
 static void
 on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )

@@ -329,27 +329,27 @@ dossier_signals_connect( ofaAccountsBook *self )
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
-						OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
-						OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
-						OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
-						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
+						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
 /*
- * OFA_SIGNAL_NEW_OBJECT signal handler
+ * SIGNAL_DOSSIER_NEW_OBJECT signal handler
  */
 static void
 on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountsBook *self )
@@ -415,7 +415,7 @@ on_updated_class_label( ofaAccountsBook *self, ofoClass *class )
 }
 
 /*
- * OFA_SIGNAL_DELETED_OBJECT signal handler
+ * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
  */
 static void
 on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountsBook *self )
@@ -469,7 +469,7 @@ on_deleted_class_label( ofaAccountsBook *self, ofoClass *class )
 }
 
 /*
- * OFA_SIGNAL_RELOAD_DATASET signal handler
+ * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
  */
 static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaAccountsBook *self )
@@ -1125,7 +1125,6 @@ ofa_accounts_book_init_view( ofaAccountsBook *self, const gchar *number )
 static void
 insert_dataset( ofaAccountsBook *self )
 {
-	static const gchar *thisfn = "ofa_accounts_book_insert_dataset";
 	GList *chart, *ic;
 
 	chart = ofo_account_get_dataset( self->priv->dossier );
@@ -1133,8 +1132,6 @@ insert_dataset( ofaAccountsBook *self )
 	for( ic=chart ; ic ; ic=ic->next ){
 		tstore_insert_row( self, OFO_ACCOUNT( ic->data ), FALSE );
 	}
-
-	g_debug( "%s: dataset inserted", thisfn );
 }
 
 /*
@@ -1783,7 +1780,7 @@ on_delete_clicked( ofaAccountsBook *self )
 		number = g_strdup( ofo_account_get_number( account ));
 
 		if( delete_confirmed( self, account ) &&
-				ofo_account_delete( account )){
+				ofo_account_delete( account, self->priv->dossier )){
 
 			/* nothing to do here, all being managed by signal handlers
 			 * just reset the selection as this is not managed by the

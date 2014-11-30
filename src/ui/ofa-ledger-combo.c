@@ -266,19 +266,19 @@ setup_signaling_connect( ofaLedgerCombo *self )
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
+			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), self );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), self );
+			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), self );
 }
 
 static void

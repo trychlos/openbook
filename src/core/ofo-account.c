@@ -36,6 +36,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-boxed.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -227,16 +228,12 @@ typedef struct {
 }
 	sChildren;
 
-OFO_BASE_DEFINE_GLOBAL( st_global, account )
-
-static void         iexportable_iface_init( ofaIExportableInterface *iface );
-static guint        iexportable_get_interface_version( const ofaIExportable *instance );
-static void         on_new_object( const ofoDossier *dossier, ofoBase *object, gpointer user_data );
-static void         on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry );
-static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
-static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
+static void         on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data );
+static void         on_new_object_entry( ofoDossier *dossier, ofoEntry *entry );
+static void         on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
+static void         on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void         on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
-static GList       *account_load_dataset( void );
+static GList       *account_load_dataset( ofoDossier *dossier, GType type );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static gint         account_count_for_currency( const ofaDbms *dbms, const gchar *currency );
 static gint         account_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
@@ -244,7 +241,7 @@ static gint         account_count_for_like( const ofaDbms *dbms, const gchar *fi
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static void         archive_open_balances( ofoAccount *account, void *empty );
+static void         archive_open_balances( ofoAccount *account, ofoDossier *dossier );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static void         account_set_deb_entry( ofoAccount *account, ofxCounter number );
@@ -271,11 +268,15 @@ static gboolean     account_update_amounts( ofoAccount *account, const ofaDbms *
 static gboolean     account_do_delete( ofoAccount *account, const ofaDbms *dbms );
 static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
-static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+static void         iexportable_iface_init( ofaIExportableInterface *iface );
+static guint        iexportable_get_interface_version( const ofaIExportable *instance );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static gboolean     account_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
+
+OFA_IDATASET_LOAD( ACCOUNT, account );
 
 static void
 account_finalize( GObject *instance )
@@ -334,23 +335,6 @@ ofo_account_class_init( ofoAccountClass *klass )
 }
 
 static void
-iexportable_iface_init( ofaIExportableInterface *iface )
-{
-	static const gchar *thisfn = "ofo_account_iexportable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
-}
-
-static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
-{
-	return( 1 );
-}
-
-static void
 free_account_balance( ofsAccountBalance *sbal )
 {
 	g_free( sbal->account );
@@ -384,17 +368,17 @@ ofo_account_connect_handlers( const ofoDossier *dossier )
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), NULL );
+				SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), NULL );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				OFA_SIGNAL_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
+				SIGNAL_DOSSIER_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
 }
 
 static void
-on_new_object( const ofoDossier *dossier, ofoBase *object, gpointer user_data )
+on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data )
 {
 	static const gchar *thisfn = "ofo_account_on_new_object";
 
@@ -409,8 +393,11 @@ on_new_object( const ofoDossier *dossier, ofoBase *object, gpointer user_data )
 	}
 }
 
+/*
+ * a new entry has been recorded, so update the daily balances
+ */
 static void
-on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
+on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 {
 	static const gchar *thisfn = "ofo_account_on_new_object_entry";
 	ofoAccount *account;
@@ -473,7 +460,7 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 		if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
 			g_signal_emit_by_name(
 					G_OBJECT( dossier ),
-					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( account ), NULL );
+					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
 		}
 
 	} else {
@@ -482,7 +469,7 @@ on_new_object_entry( const ofoDossier *dossier, ofoEntry *entry )
 }
 
 static void
-on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data )
 {
 	static const gchar *thisfn = "ofo_account_on_updated_object";
 	const gchar *code;
@@ -504,8 +491,12 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 	}
 }
 
+/*
+ * the currency code iso has been modified: update the accounts which
+ * use it
+ */
 static void
-on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code )
+on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
 
@@ -517,10 +508,10 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 
 	g_free( query );
 
-	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-	st_global->dataset = NULL;
-
-	g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_ACCOUNT );
+	if( ofa_idataset_get_dataset( dossier, OFO_TYPE_ACCOUNT )){
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_ACCOUNT );
+	}
 }
 
 /*
@@ -591,44 +582,23 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ),
-				OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( account ), NULL );
+				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
 	}
-}
-
-/**
- * ofo_account_get_dataset:
- * @dossier: the currently opened #ofoDossier dossier.
- *
- * Returns: The list of #ofoAccount accounts, ordered by ascending
- * number. The returned list is owned by the #ofoAccount class, and
- * should not be freed by the caller.
- */
-GList *
-ofo_account_get_dataset( const ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_account_get_dataset";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
-
-	return( st_global->dataset );
 }
 
 /*
  * Loads/reloads the ordered list of accounts
  */
 static GList *
-account_load_dataset( void )
+account_load_dataset( ofoDossier *dossier, GType type )
 {
 	return(
 			ofo_base_load_dataset(
 					st_boxed_defs,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
+					OFO_BASE( dossier ),
+					ofo_dossier_get_dbms( dossier ),
 					"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
-					OFO_TYPE_ACCOUNT ));
+					type ));
 }
 
 /**
@@ -644,21 +614,17 @@ account_load_dataset( void )
  * The whole account dataset is loaded from DBMS if not already done.
  */
 ofoAccount *
-ofo_account_get_by_number( const ofoDossier *dossier, const gchar *number )
+ofo_account_get_by_number( ofoDossier *dossier, const gchar *number )
 {
-	/*static const gchar *thisfn = "ofo_account_get_by_number";*/
-
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	/*g_debug( "%s: dossier=%p, number=%s", thisfn, ( void * ) dossier, number );*/
 
 	if( !number || !g_utf8_strlen( number, -1 )){
 		return( NULL );
 	}
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
-	return( account_find_by_number( st_global->dataset, number ));
+	return( account_find_by_number( account_dataset, number ));
 }
 
 static ofoAccount *
@@ -686,11 +652,11 @@ account_find_by_number( GList *set, const gchar *number )
  * The whole account dataset is loaded from DBMS if not already done.
  */
 gboolean
-ofo_account_use_class( const ofoDossier *dossier, gint number )
+ofo_account_use_class( ofoDossier *dossier, gint number )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
 	return( account_count_for_like( ofo_dossier_get_dbms( dossier ), "ACC_NUMBER", number ) > 0 );
 }
@@ -706,12 +672,12 @@ ofo_account_use_class( const ofoDossier *dossier, gint number )
  * The whole account dataset is loaded from DBMS if not already done.
  */
 gboolean
-ofo_account_use_currency( const ofoDossier *dossier, const gchar *currency )
+ofo_account_use_currency( ofoDossier *dossier, const gchar *currency )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( currency && g_utf8_strlen( currency, -1 ), FALSE );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
 	return( account_count_for_currency( ofo_dossier_get_dbms( dossier ), currency ) > 0 );
 }
@@ -770,25 +736,6 @@ account_count_for_like( const ofaDbms *dbms, const gchar *field, gint number )
 	}
 
 	return( count );
-}
-
-/**
- * ofo_account_dump_chart:
- */
-void
-ofo_account_dump_chart( GList *chart )
-{
-	static const gchar *thisfn = "ofo_account_dump_chart";
-	ofoAccount *account;
-	GList *ic;
-
-	for( ic=chart ; ic ; ic=ic->next ){
-		account = OFO_ACCOUNT( ic->data );
-		g_debug( "%s: account %s - %s",
-				thisfn,
-				ofo_account_get_number( account ),
-				ofo_account_get_label( account ));
-	}
 }
 
 /**
@@ -1513,7 +1460,9 @@ account_get_children( const ofoAccount *account, sChildren *child_str )
 	child_str->children_count = 0;
 	child_str->children_list = NULL;
 
-	g_list_foreach( st_global->dataset, ( GFunc ) account_iter_children, child_str );
+	OFA_IDATASET_GET( BASE_GET_DOSSIER( account ), ACCOUNT, account );
+
+	g_list_foreach( account_dataset, ( GFunc ) account_iter_children, child_str );
 }
 
 static void
@@ -1563,8 +1512,8 @@ ofo_account_is_child_of( const ofoAccount *account, const ofoAccount *candidate 
  * ofo_account_archive_open_balances:
  * @dossier: the currently opened dossier.
  *
- * As part of the close of the exercice N, we archive the balances of
- * the accounts at the beginning of the exercice N+1. These balances
+ * As part of the closing of the exercice N, we archive the balances
+ * of the accounts at the beginning of the exercice N+1. These balances
  * take into account the carried forward entries (fr: reports à
  * nouveau).
  *
@@ -1572,17 +1521,17 @@ ofo_account_is_child_of( const ofoAccount *account, const ofoAccount *candidate 
  * no entries should have been recorded in ledgers for exercice N+1.
  */
 void
-ofo_account_archive_open_balances( const ofoDossier *dossier )
+ofo_account_archive_open_balances( ofoDossier *dossier )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
-	g_list_foreach( st_global->dataset, ( GFunc ) archive_open_balances, NULL );
+	g_list_foreach( account_dataset, ( GFunc ) archive_open_balances, dossier );
 }
 
 static void
-archive_open_balances( ofoAccount *account, void *empty )
+archive_open_balances( ofoAccount *account, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_archive_open_balances";
 	GString *query;
@@ -1636,8 +1585,7 @@ archive_open_balances( ofoAccount *account, void *empty )
 		g_string_append_printf( query,
 				" WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 
-		ofa_dbms_query(
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )), query->str, TRUE );
+		ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
 
 		g_string_free( query, TRUE );
 
@@ -1954,12 +1902,12 @@ account_set_open_cre_amount( ofoAccount *account, ofxAmount amount )
  * Returns: %TRUE if the insertion has been successful.
  */
 gboolean
-ofo_account_insert( ofoAccount *account )
+ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_insert";
 
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
@@ -1967,10 +1915,10 @@ ofo_account_insert( ofoAccount *account )
 
 		if( account_do_insert(
 					account,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_ADD_TO_DATASET( st_global, account );
+			OFA_IDATASET_ADD( dossier, ACCOUNT, account );
 
 			return( TRUE );
 		}
@@ -2060,12 +2008,12 @@ account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user )
  * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_account_update( ofoAccount *account, const gchar *prev_number )
+ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_number )
 {
 	static const gchar *thisfn = "ofo_account_update";
 
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( prev_number && g_utf8_strlen( prev_number, -1 ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
@@ -2074,11 +2022,11 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 
 		if( account_do_update(
 					account,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )),
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ),
 					prev_number )){
 
-			OFO_BASE_UPDATE_DATASET( st_global, account, prev_number );
+			OFA_IDATASET_UPDATE( dossier, ACCOUNT, account, prev_number );
 
 			return( TRUE );
 		}
@@ -2254,12 +2202,12 @@ account_update_amounts( ofoAccount *account, const ofaDbms *dbms )
  * ofo_account_delete:
  */
 gboolean
-ofo_account_delete( ofoAccount *account )
+ofo_account_delete( ofoAccount *account, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_delete";
 
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( ofo_account_is_deletable( account ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
@@ -2268,9 +2216,9 @@ ofo_account_delete( ofoAccount *account )
 
 		if( account_do_delete(
 					account,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ))){
 
-			OFO_BASE_REMOVE_FROM_DATASET( st_global, account );
+			OFA_IDATASET_REMOVE( dossier, ACCOUNT, account );
 
 			return( TRUE );
 		}
@@ -2310,6 +2258,26 @@ account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b )
 }
 
 /*
+ * ofaIExportable interface management
+ */
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
+}
+
+/*
  * iexportable_export:
  *
  * Exports the accounts line by line.
@@ -2317,7 +2285,7 @@ account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
 {
 	GSList *lines;
 	gchar *str;
@@ -2326,13 +2294,13 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	gboolean with_headers, ok;
 	gulong count;
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
+	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
 	with_headers = ofa_export_settings_get_headers( settings );
 	field_sep = ofa_export_settings_get_field_sep( settings );
 	decimal_sep = ofa_export_settings_get_decimal_sep( settings );
 
-	count = ( gulong ) g_list_length( st_global->dataset );
+	count = ( gulong ) g_list_length( account_dataset );
 	if( with_headers ){
 		count += 1;
 	}
@@ -2348,7 +2316,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 		}
 	}
 
-	for( it=st_global->dataset ; it ; it=it->next ){
+	for( it=account_dataset ; it ; it=it->next ){
 		str = ofa_boxed_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
@@ -2377,7 +2345,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
  * All the balances are set to NULL.
  */
 void
-ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+ofo_account_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 {
 	static const gchar *thisfn = "ofo_account_import_csv";
 	ofoAccount *account;
@@ -2396,8 +2364,6 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 			( void * ) dossier,
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, account );
 
 	new_set = NULL;
 	count = 0;
@@ -2481,7 +2447,7 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 	}
 
 	if( !errors ){
-		st_global->send_signal_new = FALSE;
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_ACCOUNT, FALSE );
 
 		account_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
@@ -2494,13 +2460,10 @@ ofo_account_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_
 
 		g_list_free( new_set );
 
-		if( st_global ){
-			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-			st_global->dataset = NULL;
-		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_ACCOUNT );
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_ACCOUNT );
 
-		st_global->send_signal_new = TRUE;
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_ACCOUNT, TRUE );
 	}
 }
 

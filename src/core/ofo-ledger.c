@@ -94,7 +94,7 @@ static gboolean    ledger_do_update_detail_cur( const ofoLedger *ledger, sDetail
 static gboolean    ledger_do_delete( ofoLedger *ledger, const ofaDbms *dbms );
 static gint        ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
 static gint        ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
-static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static gboolean    ledger_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0, \
@@ -202,13 +202,13 @@ ofo_ledger_connect_handlers( const ofoDossier *dossier )
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), NULL );
+				SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), NULL );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				OFA_SIGNAL_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
+				SIGNAL_DOSSIER_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
 }
 
 static void
@@ -251,7 +251,7 @@ on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 		if( ledger_do_update_detail_cur( ledger, detail, ofo_dossier_get_dbms( dossier ))){
 			g_signal_emit_by_name(
 					G_OBJECT( dossier ),
-					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
+					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
 		}
 
 	} else {
@@ -302,7 +302,7 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 
 	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 	st_global->dataset = NULL;
-	g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_LEDGER );
+	g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_LEDGER );
 }
 
 /*
@@ -340,7 +340,7 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 		if( ledger_do_update_detail_cur( ledger, detail, ofo_dossier_get_dbms( dossier ))){
 			g_signal_emit_by_name(
 					G_OBJECT( dossier ),
-					OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( ledger ), mnemo );
+					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), mnemo );
 		}
 
 	} else {
@@ -1150,7 +1150,7 @@ ofo_ledger_close( ofoLedger *ledger, const GDate *closing )
 
 				g_signal_emit_by_name(
 						G_OBJECT( st_global->dossier ),
-						OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
+						SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
 
 				ok = TRUE;
 			}
@@ -1467,7 +1467,7 @@ ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
 {
 	GList *it, *amount;
 	GSList *lines;
@@ -1656,7 +1656,7 @@ ofo_ledger_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_h
 			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 			st_global->dataset = NULL;
 		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_LEDGER );
+		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_LEDGER );
 
 		st_global->send_signal_new = TRUE;
 	}

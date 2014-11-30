@@ -499,6 +499,7 @@ manage_options( ofaApplication *application )
 	} else if( st_dossier_name_opt || st_dossier_user_opt || st_dossier_passwd_opt ){
 
 		if( st_dossier_name_opt && g_utf8_strlen( st_dossier_name_opt, -1 ) &&
+				st_dossier_dbname_opt && g_utf8_strlen( st_dossier_dbname_opt, -1 ) &&
 				st_dossier_user_opt && g_utf8_strlen( st_dossier_user_opt, -1 ) &&
 				st_dossier_passwd_opt && g_utf8_strlen( st_dossier_passwd_opt, -1 )){
 
@@ -509,8 +510,8 @@ manage_options( ofaApplication *application )
 			priv->sdo->password = g_strdup( st_dossier_passwd_opt );
 
 		} else {
-			g_warning( "%s: incomplete arguments: dossier=%s, user=%s, password=%s",
-					thisfn, st_dossier_name_opt, st_dossier_user_opt, st_dossier_passwd_opt );
+			g_warning( "%s: incomplete arguments: dossier=%s, database=%s, user=%s, password=%s",
+					thisfn, st_dossier_name_opt, st_dossier_dbname_opt, st_dossier_user_opt, st_dossier_passwd_opt );
 		}
 	}
 

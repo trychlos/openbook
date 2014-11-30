@@ -62,7 +62,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIExportableInterface *klass );
 static void          interface_base_finalize( ofaIExportableInterface *klass );
-static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const ofaExportSettings *settings, const ofoDossier *dossier );
+static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const ofaExportSettings *settings, ofoDossier *dossier );
 static void          error_convert( const ofaIExportable *exportable, GError *error );
 static void          error_write( const ofaIExportable *exportable, GError *error );
 static sIExportable *get_iexportable_data( ofaIExportable *exportable );
@@ -131,7 +131,7 @@ interface_base_init( ofaIExportableInterface *klass )
 
 	if( st_initializations == 1 ){
 
-		/* declare here the default implentations */
+		/* declare here the default implementations */
 	}
 }
 
@@ -177,7 +177,7 @@ ofa_iexportable_get_interface_last_version( void )
 gboolean
 ofa_iexportable_export_to_path( ofaIExportable *exportable,
 									const gchar *fname, const ofaExportSettings *settings,
-									const ofoDossier *dossier,
+									ofoDossier *dossier,
 									const ofaIExportableFnDouble fn_double,
 									const ofaIExportableFnText fn_text, const void *instance )
 {
@@ -212,7 +212,7 @@ ofa_iexportable_export_to_path( ofaIExportable *exportable,
 static gboolean
 iexportable_export_to_stream( ofaIExportable *exportable,
 									GOutputStream *stream, const ofaExportSettings *settings,
-									const ofoDossier *dossier )
+									ofoDossier *dossier )
 {
 	sIExportable *sdata;
 

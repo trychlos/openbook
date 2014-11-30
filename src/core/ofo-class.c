@@ -94,7 +94,7 @@ static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaDbms 
 static gboolean   class_do_delete( ofoClass *class, const ofaDbms *dbms );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
-static gboolean   iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+static gboolean   iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static gboolean   class_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoClass, ofo_class, OFO_TYPE_BASE, 0, \
@@ -220,6 +220,7 @@ class_load_dataset( void )
 	return(
 			ofo_base_load_dataset(
 					st_boxed_defs,
+					OFO_BASE( st_global->dossier ),
 					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
 					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
 					OFO_TYPE_CLASS ));
@@ -645,7 +646,7 @@ class_cmp_by_ptr( const ofoClass *a, const ofoClass *b )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
 {
 	GList *it;
 	GSList *lines;
@@ -786,7 +787,7 @@ ofo_class_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_he
 			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 			st_global->dataset = NULL;
 		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_CLASS );
+		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_CLASS );
 
 		st_global->send_signal_new = TRUE;
 	}

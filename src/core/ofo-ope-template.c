@@ -100,7 +100,7 @@ static gboolean        model_update_main( ofoOpeTemplate *model, const ofaDbms *
 static gboolean        model_do_delete( ofoOpeTemplate *model, const ofaDbms *dbms );
 static gint            model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo );
 static gint            model_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b );
-static gboolean        iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+static gboolean        iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static ofoOpeTemplate *model_import_csv_model( GSList *fields, gint count, gint *errors );
 static sModDetail     *model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo );
 static gboolean        model_do_drop_content( const ofaDbms *dbms );
@@ -227,7 +227,7 @@ ofo_ope_template_connect_handlers( const ofoDossier *dossier )
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 }
 
 static void
@@ -282,7 +282,7 @@ do_update_ledger_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gch
 
 	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 	st_global->dataset = NULL;
-	g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
+	g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
 
 	return( ok );
 }
@@ -341,7 +341,7 @@ do_update_rate_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar
 
 	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 	st_global->dataset = NULL;
-	g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
+	g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
 
 	return( TRUE );
 }
@@ -1559,7 +1559,7 @@ model_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
 {
 	GList *it, *det;
 	GSList *lines;
@@ -1757,7 +1757,7 @@ ofo_ope_template_import_csv( const ofoDossier *dossier, GSList *lines, gboolean 
 			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 			st_global->dataset = NULL;
 		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
+		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
 
 		g_list_free( new_set );
 

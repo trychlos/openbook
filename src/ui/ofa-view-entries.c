@@ -1325,19 +1325,19 @@ setup_signaling_connect( ofaViewEntries *self )
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_dossier_new_object ), self );
+			SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_dossier_new_object ), self );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_dossier_updated_object ), self );
+			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_dossier_updated_object ), self );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_dossier_deleted_object ), self );
+			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_dossier_deleted_object ), self );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_VALIDATED_ENTRY, G_CALLBACK( on_dossier_validated_entry ), self );
+			SIGNAL_DOSSIER_VALIDATED_ENTRY, G_CALLBACK( on_dossier_validated_entry ), self );
 }
 
 static GtkWidget *

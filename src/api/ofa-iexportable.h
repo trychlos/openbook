@@ -36,7 +36,7 @@
  * The #ofaIExportable interface exports items to the outside world.
  */
 
-#include "api/ofo-dossier.h"
+#include "api/ofo-dossier-def.h"
 
 #include "core/ofa-export-settings.h"
 
@@ -98,7 +98,7 @@ typedef struct {
 	 */
 	gboolean ( *export )               ( ofaIExportable *instance,
 												const ofaExportSettings *settings,
-												const ofoDossier *dossier );
+												ofoDossier *dossier );
 }
 	ofaIExportableInterface;
 
@@ -109,7 +109,7 @@ guint    ofa_iexportable_get_interface_last_version( void );
 gboolean ofa_iexportable_export_to_path            ( ofaIExportable *exportable,
 															const gchar *fname,
 															const ofaExportSettings *settings,
-															const ofoDossier *dossier,
+															ofoDossier *dossier,
 															const ofaIExportableFnDouble fn_double,
 															const ofaIExportableFnText fn_text,
 															const void *instance );

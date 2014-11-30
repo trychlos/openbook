@@ -67,18 +67,6 @@ typedef struct {
 }
 	ofoBaseClass;
 
-/**
- * OFA_SIGNAL_NEW_OBJECT:
- * OFA_SIGNAL_UPDATED_OBJECT:
- * OFA_SIGNAL_DELETED_OBJECT:
- * OFA_SIGNAL_RELOAD_DATASET:
- */
-#define OFA_SIGNAL_NEW_OBJECT           "ofa-signal-new-object"
-#define OFA_SIGNAL_UPDATED_OBJECT       "ofa-signal-updated-object"
-#define OFA_SIGNAL_DELETED_OBJECT       "ofa-signal-deleted-object"
-#define OFA_SIGNAL_RELOAD_DATASET       "ofa-signal-reload-dataset"
-#define OFA_SIGNAL_VALIDATED_ENTRY      "ofa-signal-validated-entry"
-
 GType ofo_base_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS

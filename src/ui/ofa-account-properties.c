@@ -557,10 +557,10 @@ do_update( ofaAccountProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_account_insert( priv->account );
+				ofo_account_insert( priv->account, MY_WINDOW( self )->prot->dossier );
 	} else {
 		priv->updated =
-				ofo_account_update( priv->account, prev_number );
+				ofo_account_update( priv->account, MY_WINDOW( self )->prot->dossier, prev_number );
 	}
 
 	g_free( prev_number );

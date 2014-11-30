@@ -172,14 +172,14 @@ void           ofo_entry_set_concil_dval      ( ofoEntry *entry, const GDate *da
 void           ofo_entry_set_concil_user      ( ofoEntry *entry, const gchar *user );
 void           ofo_entry_set_concil_stamp     ( ofoEntry *entry, const GTimeVal *stamp );
 
-gboolean       ofo_entry_is_valid             ( const ofoDossier *dossier,
+gboolean       ofo_entry_is_valid             ( ofoDossier *dossier,
 													const GDate *deffect, const GDate *dope,
 													const gchar *label,
 													const gchar *account, const gchar *currency,
 													const gchar *ledger, const gchar *model,
 													ofxAmount debit, ofxAmount credit );
 
-ofoEntry      *ofo_entry_new_with_data        ( const ofoDossier *dossier,
+ofoEntry      *ofo_entry_new_with_data        ( ofoDossier *dossier,
 													const GDate *deffect, const GDate *dope,
 													const gchar *label, const gchar *ref,
 													const gchar *account, const gchar *currency,

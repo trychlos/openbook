@@ -37,9 +37,10 @@
  *
  * Terminology:
  * - dbname: the name of the subjacent database
- * - name: the name of the dossier as recorded in the global
+ * - dname: the name of the dossier as recorded in the global
  *   configuration, which appears in combo boxes
  * - label: the 'raison sociale' of the dossier, recorded in DBMS
+ *   at creation time, this label defaults to the dossier name
  */
 
 #include "api/ofa-boxed.h"
@@ -56,15 +57,6 @@ typedef enum {
 	DOS_STATUS_CLOSED
 }
 	ofaDossierStatus;
-
-/**
- * Dossier signals:
- * @OFA_SIGNAL_DOSSIER_DATES_CHANGED: sent on the dossier when the
- *  exercice beginning or ending dates are modified. This only may
- *  happen on the current exercice and, regarding the beginning date,
- *  in small limits if entries have already been recorded.
- */
-#define OFA_SIGNAL_DOSSIER_DATES_CHANGED "ofa-signal-dossier-dates_changed"
 
 ofoDossier      *ofo_dossier_new                       ( void );
 

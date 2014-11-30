@@ -831,7 +831,7 @@ connect_dossier_for_enabled_updates( ofaMainWindow *window )
 	 */
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
-			OFA_SIGNAL_DOSSIER_DATES_CHANGED, G_CALLBACK( on_dossier_dates_changed ), window );
+			SIGNAL_DOSSIER_DATES_CHANGED, G_CALLBACK( on_dossier_dates_changed ), window );
 }
 
 /**

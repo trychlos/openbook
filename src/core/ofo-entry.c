@@ -121,7 +121,7 @@ static gboolean     entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const
 static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofaDbms *dbms );
 static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
-static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
@@ -227,7 +227,7 @@ ofo_entry_connect_handlers( const ofoDossier *dossier )
 	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
 
 	g_signal_connect( G_OBJECT( dossier ),
-				OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 }
 
 /*
@@ -1703,7 +1703,7 @@ entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp )
  * ofo_entry_is_valid:
  */
 gboolean
-ofo_entry_is_valid( const ofoDossier *dossier,
+ofo_entry_is_valid( ofoDossier *dossier,
 							const GDate *deffect, const GDate *dope, const gchar *label,
 							const gchar *account, const gchar *currency, const gchar *ledger,
 							const gchar *model, ofxAmount debit, ofxAmount credit )
@@ -1760,7 +1760,7 @@ ofo_entry_is_valid( const ofoDossier *dossier,
  * Returns: the #ofoEntry entry object, of %NULL in case of an error.
  */
 ofoEntry *
-ofo_entry_new_with_data( const ofoDossier *dossier,
+ofo_entry_new_with_data( ofoDossier *dossier,
 							const GDate *deffect, const GDate *dope, const gchar *label,
 							const gchar *ref, const gchar *account,
 							const gchar *currency, const gchar *ledger,
@@ -1816,7 +1816,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_NEW_OBJECT, g_object_ref( entry ));
+			g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_NEW_OBJECT, g_object_ref( entry ));
 
 			ok = TRUE;
 		}
@@ -2041,7 +2041,7 @@ ofo_entry_update( ofoEntry *entry, const ofoDossier *dossier )
 
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ),
-				OFA_SIGNAL_UPDATED_OBJECT, g_object_ref( entry ), NULL );
+				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( entry ), NULL );
 
 		ok = TRUE;
 	}
@@ -2291,7 +2291,7 @@ ofo_entry_validate_by_ledger( const ofoDossier *dossier, const gchar *mnemo, con
 			g_free( query );
 
 			/* use the dossier signaling system to update the account */
-			g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_VALIDATED_ENTRY, entry );
+			g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_VALIDATED_ENTRY, entry );
 		}
 	}
 	return( TRUE );
@@ -2315,7 +2315,7 @@ ofo_entry_delete( ofoEntry *entry, const ofoDossier *dossier )
 
 			g_signal_emit_by_name(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_DELETED_OBJECT, g_object_ref( entry ));
+						SIGNAL_DOSSIER_DELETED_OBJECT, g_object_ref( entry ));
 
 			return( TRUE );
 		}
@@ -2357,7 +2357,7 @@ do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
  * written in this stored program ?
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
 {
 	GList *result, *irow;
 	GSList *lines;

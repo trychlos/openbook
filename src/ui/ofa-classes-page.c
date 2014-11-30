@@ -184,22 +184,22 @@ v_setup_view( ofaPage *page )
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
+						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
+						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
+						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( dossier ),
-						OFA_SIGNAL_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
+						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), page );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	return( setup_tree_view( page ));
@@ -632,7 +632,7 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaClassesPage *self )
 }
 
 /*
- * OFA_SIGNAL_RELOAD_DATASET signal handler
+ * SIGNAL_DOSSIER_RELOAD_DATASET signal handler
  */
 static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaClassesPage *self )

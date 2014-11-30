@@ -56,12 +56,10 @@ void            ofo_account_free_balances        ( GList *balances );
 
 void            ofo_account_connect_handlers     ( const ofoDossier *dossier );
 
-GList          *ofo_account_get_dataset          ( const ofoDossier *dossier );
-ofoAccount     *ofo_account_get_by_number        ( const ofoDossier *dossier, const gchar *number );
-gboolean        ofo_account_use_class            ( const ofoDossier *dossier, gint number );
-gboolean        ofo_account_use_currency         ( const ofoDossier *dossier, const gchar *devise );
-
-void            ofo_account_dump_chart           ( GList *chart );
+GList          *ofo_account_get_dataset          ( ofoDossier *dossier );
+ofoAccount     *ofo_account_get_by_number        ( ofoDossier *dossier, const gchar *number );
+gboolean        ofo_account_use_class            ( ofoDossier *dossier, gint number );
+gboolean        ofo_account_use_currency         ( ofoDossier *dossier, const gchar *devise );
 
 ofoAccount     *ofo_account_new                  ( void );
 
@@ -106,7 +104,7 @@ gboolean        ofo_account_has_children         ( const ofoAccount *account );
 GList          *ofo_account_get_children         ( const ofoAccount *account );
 gboolean        ofo_account_is_child_of          ( const ofoAccount *account, const ofoAccount *candidate );
 
-void            ofo_account_archive_open_balances( const ofoDossier *dossier );
+void            ofo_account_archive_open_balances( ofoDossier *dossier );
 
 void            ofo_account_set_number           ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label            ( ofoAccount *account, const gchar *label );
@@ -117,11 +115,11 @@ void            ofo_account_set_settleable       ( ofoAccount *account, gboolean
 void            ofo_account_set_reconciliable    ( ofoAccount *account, gboolean reconciliable );
 void            ofo_account_set_forward          ( ofoAccount *account, gboolean forward );
 
-gboolean        ofo_account_insert               ( ofoAccount *account );
-gboolean        ofo_account_update               ( ofoAccount *account, const gchar *prev_number );
-gboolean        ofo_account_delete               ( ofoAccount *account );
+gboolean        ofo_account_insert               ( ofoAccount *account, ofoDossier *dossier );
+gboolean        ofo_account_update               ( ofoAccount *account, ofoDossier *dossier, const gchar *prev_number );
+gboolean        ofo_account_delete               ( ofoAccount *account, ofoDossier *dossier );
 
-void            ofo_account_import_csv           ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+void            ofo_account_import_csv           ( ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

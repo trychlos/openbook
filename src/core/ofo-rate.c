@@ -76,7 +76,7 @@ static gboolean         rate_do_delete( ofoRate *rate, const ofaDbms *dbms );
 static gint             rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
 static gint             rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
 static gint             rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent );
-static gboolean         iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+static gboolean         iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static ofoRate         *rate_import_csv_rate( GSList *fields, gint count, gint *errors );
 static ofsRateValidity *rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnemo );
 static gboolean         rate_do_drop_content( const ofaDbms *dbms );
@@ -1175,7 +1175,7 @@ rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consiste
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
 {
 	GList *it, *det;
 	GSList *lines;
@@ -1370,7 +1370,7 @@ ofo_rate_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 			st_global->dataset = NULL;
 		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_RATE );
+		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_RATE );
 
 		g_list_free( new_set );
 

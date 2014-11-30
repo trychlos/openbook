@@ -72,7 +72,7 @@ static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev
 static gboolean     currency_do_delete( ofoCurrency *currency, const ofaDbms *dbms );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b );
-static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static gboolean     currency_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoCurrency, ofo_currency, OFO_TYPE_BASE, 0, \
@@ -770,7 +770,7 @@ currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, const ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
 {
 	GList *it;
 	GSList *lines;
@@ -944,7 +944,7 @@ ofo_currency_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with
 			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
 			st_global->dataset = NULL;
 		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), OFA_SIGNAL_RELOAD_DATASET, OFO_TYPE_CURRENCY );
+		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_CURRENCY );
 
 		st_global->send_signal_new = TRUE;
 	}

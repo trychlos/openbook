@@ -44,8 +44,15 @@ G_BEGIN_DECLS
  */
 struct _ofoBaseProtected {
 	gboolean dispose_has_run;
+
+	ofoBase *dossier;
+
+	/* the fields loaded from the ofaBoxed definitions
+	 */
 	GList   *fields;
 };
+
+#define BASE_GET_DOSSIER(V)             OFO_DOSSIER( OFO_BASE(V)->prot->dossier )
 
 G_END_DECLS
 

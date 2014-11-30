@@ -428,12 +428,12 @@ setup_from_dossier( ofaGuidedCommon *self )
 
 	handler = g_signal_connect(
 					G_OBJECT( priv->dossier ),
-					OFA_SIGNAL_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
+					SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 					G_OBJECT( priv->dossier ),
-					OFA_SIGNAL_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
+					SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), self );
 	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 }
 
@@ -2111,7 +2111,7 @@ do_reset_entries_rows( ofaGuidedCommon *self )
 }
 
 /*
- * OFA_SIGNAL_UPDATED_OBJECT signal handler
+ * SIGNAL_DOSSIER_UPDATED_OBJECT signal handler
  */
 static void
 on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedCommon *self )
@@ -2133,7 +2133,7 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
 }
 
 /*
- * OFA_SIGNAL_DELETED_OBJECT signal handler
+ * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
  */
 static void
 on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedCommon *self )

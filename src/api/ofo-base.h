@@ -137,13 +137,13 @@ typedef struct {
  *    global dataset, keeping it sorted by calling the <T>_cmp_by_ptr()
  *    method
  *
- * b) send a OFA_SIGNAL_NEW_OBJECT signal to the opened dossier,
+ * b) send a SIGNAL_DOSSIER_NEW_OBJECT signal to the opened dossier,
  *    associated to the <T> object
  */
 #define OFO_BASE_ADD_TO_DATASET( P,T )	\
 		({ (P)->dataset=g_list_insert_sorted((P)->dataset,(T), (GCompareFunc) T ## _cmp_by_ptr); \
 		if((P)->send_signal_new) \
-		{ g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_NEW_OBJECT, \
+		{ g_signal_emit_by_name( G_OBJECT((P)->dossier), SIGNAL_DOSSIER_NEW_OBJECT, \
 		g_object_ref(T)); }})
 
 /**
@@ -158,12 +158,12 @@ typedef struct {
  * a) remove the 'T' object (named <T> and of type OFO_TYPE_<T>) from
  *    the global dataset.
  *
- * b) send a OFA_SIGNAL_DELETED_OBJECT signal to the opened dossier,
+ * b) send a SIGNAL_DOSSIER_DELETED_OBJECT signal to the opened dossier,
  *    associated to the <T> object
  */
 #define OFO_BASE_REMOVE_FROM_DATASET( P,T )	\
 		({ (P)->dataset=g_list_remove((P)->dataset,(T)); g_signal_emit_by_name( \
-		G_OBJECT((P)->dossier), OFA_SIGNAL_DELETED_OBJECT, (T)); })
+		G_OBJECT((P)->dossier), SIGNAL_DOSSIER_DELETED_OBJECT, (T)); })
 
 /**
  * OFO_BASE_UPDATE_DATASET:
@@ -175,12 +175,12 @@ typedef struct {
  *
  * ex: OFO_BASE_UPDATE_DATASET( st_global, class, prev_number )
  *
- * a) send a OFA_SIGNAL_UPDATED_OBJECT signal to the opened dossier,
+ * a) send a SIGNAL_DOSSIER_UPDATED_OBJECT signal to the opened dossier,
  *    associated to the <T> object; the previous identifier is passed
  *    as an argument for tree views updates
  */
 #define OFO_BASE_UPDATE_DATASET( P,T,I )	\
-		({ g_signal_emit_by_name( G_OBJECT((P)->dossier), OFA_SIGNAL_UPDATED_OBJECT, \
+		({ g_signal_emit_by_name( G_OBJECT((P)->dossier), SIGNAL_DOSSIER_UPDATED_OBJECT, \
 		g_object_ref(T),(I)); })
 
 #define OFO_BASE_UNSET_ID                   -1
@@ -222,7 +222,9 @@ ofsBaseGlobal *ofo_base_get_global( ofsBaseGlobal *ptr,
 
 void   ofo_base_init_fields_list(const ofsBoxedDef *defs, ofoBase *object );
 
-GList *ofo_base_load_dataset    ( const ofsBoxedDef *defs, const ofaDbms *dbms, const gchar *from, GType type );
+GList *ofo_base_load_dataset    ( const ofsBoxedDef *defs,
+											ofoBase *dossier,
+											const ofaDbms *dbms, const gchar *from, GType type );
 
 G_END_DECLS
 
