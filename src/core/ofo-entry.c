@@ -114,7 +114,7 @@ static void         error_ope_template( const gchar *model );
 static void         error_currency( const gchar *currency );
 static void         error_acc_number( void );
 static void         error_account( const gchar *number );
-static void         error_acc_currency( const ofoDossier *dossier, const gchar *currency, ofoAccount *account );
+static void         error_acc_currency( ofoDossier *dossier, const gchar *currency, ofoAccount *account );
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
 static void         error_entry( const gchar *message );
 static gboolean     entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
@@ -1965,7 +1965,7 @@ error_account( const gchar *number )
 }
 
 static void
-error_acc_currency( const ofoDossier *dossier, const gchar *currency, ofoAccount *account )
+error_acc_currency( ofoDossier *dossier, const gchar *currency, ofoAccount *account )
 {
 	gchar *str;
 	const gchar *acc_currency;

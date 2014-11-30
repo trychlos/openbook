@@ -2460,6 +2460,8 @@ ofo_account_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header
 
 		g_list_free( new_set );
 
+		ofa_idataset_free_dataset( dossier, OFO_TYPE_ACCOUNT );
+
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_ACCOUNT );
 

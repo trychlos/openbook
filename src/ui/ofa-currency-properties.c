@@ -331,10 +331,10 @@ do_update( ofaCurrencyProperties *self )
 
 	if( priv->is_new ){
 		priv->updated =
-				ofo_currency_insert( priv->currency );
+				ofo_currency_insert( priv->currency, MY_WINDOW( self )->prot->dossier );
 	} else {
 		priv->updated =
-				ofo_currency_update( priv->currency, prev_code );
+				ofo_currency_update( priv->currency, MY_WINDOW( self )->prot->dossier, prev_code );
 	}
 
 	g_free( prev_code );

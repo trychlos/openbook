@@ -590,7 +590,7 @@ do_delete( ofaCurrenciesPage *page, ofoCurrency *currency, GtkTreeModel *tmodel,
 	g_return_if_fail( ofo_currency_is_deletable( currency ));
 
 	if( delete_confirmed( page, currency ) &&
-			ofo_currency_delete( currency )){
+			ofo_currency_delete( currency, ofa_page_get_dossier( OFA_PAGE( page )))){
 
 		/* remove the row from the tmodel
 		 * this will cause an automatic new selection */

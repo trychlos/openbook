@@ -40,8 +40,8 @@
 
 G_BEGIN_DECLS
 
-GList          *ofo_currency_get_dataset  ( const ofoDossier *dossier );
-ofoCurrency    *ofo_currency_get_by_code  ( const ofoDossier *dossier, const gchar *code );
+GList          *ofo_currency_get_dataset  ( ofoDossier *dossier );
+ofoCurrency    *ofo_currency_get_by_code  ( ofoDossier *dossier, const gchar *code );
 
 ofoCurrency    *ofo_currency_new          ( void );
 
@@ -62,11 +62,11 @@ void            ofo_currency_set_symbol   ( ofoCurrency *currency, const gchar *
 void            ofo_currency_set_digits   ( ofoCurrency *currency, gint digits );
 void            ofo_currency_set_notes    ( ofoCurrency *currency, const gchar *notes );
 
-gboolean        ofo_currency_insert       ( ofoCurrency *currency );
-gboolean        ofo_currency_update       ( ofoCurrency *currency, const gchar *prev_code );
-gboolean        ofo_currency_delete       ( ofoCurrency *currency );
+gboolean        ofo_currency_insert       ( ofoCurrency *currency, ofoDossier *dossier );
+gboolean        ofo_currency_update       ( ofoCurrency *currency, ofoDossier *dossier, const gchar *prev_code );
+gboolean        ofo_currency_delete       ( ofoCurrency *currency, ofoDossier *dossier );
 
-void            ofo_currency_import_csv   ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+void            ofo_currency_import_csv   ( ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 
