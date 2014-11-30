@@ -36,6 +36,7 @@
 
 #include "core/ofa-export-settings.h"
 
+#include "ui/my-date-combo.h"
 #include "ui/ofa-export-settings-prefs.h"
 
 /* private instance data
@@ -55,7 +56,7 @@ struct _ofaExportSettingsPrefsPrivate {
 
 	GtkWidget         *export_combo;	/* export format */
 	GtkWidget         *encoding_combo;
-	GtkWidget         *date_combo;
+	myDateCombo       *date_combo;
 	GtkWidget         *decimal_combo;
 	GtkWidget         *fieldsep_label;
 	GtkWidget         *fieldsep_combo;
@@ -432,48 +433,17 @@ static void
 init_date_format( ofaExportSettingsPrefs *self )
 {
 	ofaExportSettingsPrefsPrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkCellRenderer *cell;
-	gint i, idx;
-	myDateFormat fmt;
+	GtkWidget *widget;
 
 	priv = self->priv;
 
-	priv->date_combo =
-			my_utils_container_get_child_by_name( priv->container, "p5-date" );
+	priv->date_combo = my_date_combo_new();
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			DATE_N_COLUMNS,
-			G_TYPE_INT, G_TYPE_STRING ));
-	gtk_combo_box_set_model( GTK_COMBO_BOX( priv->date_combo ), tmodel );
-	g_object_unref( tmodel );
+	widget = my_utils_container_get_child_by_name( priv->container, "p5-parent-date" );
+	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start(
-			GTK_CELL_LAYOUT( priv->date_combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute(
-			GTK_CELL_LAYOUT( priv->date_combo ), cell, "text", DATE_COL_LABEL );
-
-	fmt = ofa_export_settings_get_date_format( priv->settings );
-	idx = -1;
-
-	for( i=0 ; st_date_format[i].code ; ++i ){
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				DATE_COL_CODE,  st_date_format[i].code,
-				DATE_COL_LABEL, my_date_get_format_str( st_date_format[i].code ),
-				-1 );
-		if( fmt == st_date_format[i].code ){
-			idx = i;
-		}
-	}
-
-	if( idx != -1 ){
-		gtk_combo_box_set_active( GTK_COMBO_BOX( priv->date_combo ), idx );
-	}
+	my_date_combo_attach_to( priv->date_combo, GTK_CONTAINER( widget ));
+	my_date_combo_init_view( priv->date_combo, ofa_export_settings_get_date_format( priv->settings ));
 }
 
 static void
@@ -649,12 +619,7 @@ do_apply( ofaExportSettingsPrefs *self )
 	gtk_tree_model_get( tmodel, &iter, ENC_COL_CODE, &charmap, -1 );
 
 	/* date format */
-	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->date_combo ), &iter )){
-		g_return_val_if_reached( FALSE );
-	}
-	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->date_combo ));
-	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
-	gtk_tree_model_get( tmodel, &iter, DATE_COL_CODE, &ivalue, -1 );
+	ivalue = my_date_combo_get_selected( priv->date_combo );
 
 	/* decimal separator */
 	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->decimal_combo ), &iter )){

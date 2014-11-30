@@ -36,6 +36,8 @@
  * i.e. user preferences which are not attached to any dossier.
  */
 
+#include "api/my-date.h"
+
 #include "core/my-dialog.h"
 #include "core/ofa-main-window-def.h"
 #include "core/ofa-plugin.h"
@@ -66,20 +68,26 @@ typedef struct {
 }
 	ofaPreferencesClass;
 
-GType    ofa_preferences_get_type( void ) G_GNUC_CONST;
+GType        ofa_preferences_get_type( void ) G_GNUC_CONST;
 
-gboolean ofa_preferences_run     ( ofaMainWindow *parent, ofaPlugin *plugin );
+gboolean     ofa_preferences_run     (     ofaMainWindow *parent,     ofaPlugin *plugin );
 
 /* these are helpers available to the rest of the application
  */
-gboolean ofa_prefs_assistant_quit_on_escape         ( void );
-gboolean ofa_prefs_assistant_confirm_on_escape      ( void );
-gboolean ofa_prefs_assistant_confirm_on_cancel      ( void );
+gboolean     ofa_prefs_assistant_quit_on_escape         ( void );
+gboolean     ofa_prefs_assistant_confirm_on_escape      ( void );
+gboolean     ofa_prefs_assistant_confirm_on_cancel      ( void );
 
-gboolean ofa_prefs_appli_confirm_on_quit            ( void );
-gboolean ofa_prefs_appli_confirm_on_altf4           ( void );
+gboolean     ofa_prefs_appli_confirm_on_quit            ( void );
+gboolean     ofa_prefs_appli_confirm_on_altf4           ( void );
 
-gboolean ofa_prefs_account_delete_root_with_children( void );
+gboolean     ofa_prefs_account_delete_root_with_children( void );
+
+myDateFormat ofa_prefs_date_display                     ( void );
+myDateFormat ofa_prefs_date_check                       ( void );
+
+gchar       *ofa_prefs_amount_decimal_sep               ( void );
+gchar       *ofa_prefs_amount_thousand_sep              ( void );
 
 G_END_DECLS
 
