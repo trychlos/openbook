@@ -36,6 +36,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-idataset.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -64,10 +65,7 @@ struct _ofoBatPrivate {
 
 G_DEFINE_TYPE( ofoBat, ofo_bat, OFO_TYPE_BASE )
 
-OFO_BASE_DEFINE_GLOBAL( st_global, bat )
-
-static void        init_global_handlers( const ofoDossier *dossier );
-static GList      *bat_load_dataset( void );
+static GList      *bat_load_dataset( ofoDossier *dossier, GType type );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_do_insert( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
@@ -76,6 +74,8 @@ static gboolean    bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar 
 static gboolean    bat_do_delete_main( ofoBat *bat, const ofaDbms *dbms );
 static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaDbms *dbms );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
+
+OFA_IDATASET_LOAD( BAT, bat );
 
 static void
 bat_finalize( GObject *instance )
@@ -144,12 +144,6 @@ ofo_bat_class_init( ofoBatClass *klass )
 	g_type_class_add_private( klass, sizeof( ofoBatPrivate ));
 }
 
-static void
-init_global_handlers( const ofoDossier *dossier )
-{
-	OFO_BASE_SET_GLOBAL( st_global, dossier, bat );
-}
-
 /**
  * ofo_bat_new:
  */
@@ -163,30 +157,8 @@ ofo_bat_new( void )
 	return( bat );
 }
 
-/**
- * ofo_bat_get_dataset:
- * @dossier: the currently opened #ofoDossier dossier.
- *
- * Returns: The list of #ofoBat bats, ordered by ascending
- * import date. The returned list is owned by the #ofoBat class, and
- * should not be freed by the caller.
- */
-GList *
-ofo_bat_get_dataset( const ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_bat_get_dataset";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	init_global_handlers( dossier );
-
-	return( st_global->dataset );
-}
-
 static GList *
-bat_load_dataset( void )
+bat_load_dataset( ofoDossier *dossier, GType type )
 {
 	const ofaDbms *dbms;
 	GSList *result, *irow, *icol;
@@ -194,7 +166,7 @@ bat_load_dataset( void )
 	GList *dataset;
 	GTimeVal timeval;
 
-	dbms = ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier ));
+	dbms = ofo_dossier_get_dbms( dossier );
 
 	result = ofa_dbms_query_ex( dbms,
 			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_COUNT,"
@@ -772,15 +744,13 @@ ofo_bat_insert( ofoBat *bat, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_bat_insert";
 
-	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat, ( void * ) dossier );
-
-		init_global_handlers( dossier );
 
 		bat->priv->id = ofo_dossier_get_next_bat( dossier );
 
@@ -789,7 +759,8 @@ ofo_bat_insert( ofoBat *bat, ofoDossier *dossier )
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_ADD_TO_DATASET( st_global, bat );
+			OFA_IDATASET_ADD( dossier, BAT, bat );
+
 			return( TRUE );
 		}
 	}
@@ -902,31 +873,29 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
  * ofo_bat_update:
  */
 gboolean
-ofo_bat_update( ofoBat *bat, const ofoDossier *dossier )
+ofo_bat_update( ofoBat *bat, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_bat_update";
 
-	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat, ( void * ) dossier );
 
-		OFO_BASE_SET_GLOBAL( st_global, dossier, bat );
-
 		if( bat_do_update(
 					bat,
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_UPDATE_DATASET( st_global, bat, NULL );
+			OFA_IDATASET_UPDATE( dossier, BAT, bat, NULL );
+
 			return( TRUE );
 		}
 	}
 
-	g_assert_not_reached();
 	return( FALSE );
 }
 
@@ -976,12 +945,12 @@ bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
  * ofo_bat_delete:
  */
 gboolean
-ofo_bat_delete( ofoBat *bat, const ofoDossier *dossier )
+ofo_bat_delete( ofoBat *bat, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_bat_delete";
 
-	g_return_val_if_fail( OFO_IS_BAT( bat ), FALSE );
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( ofo_bat_is_deletable( bat ), FALSE );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
@@ -989,17 +958,16 @@ ofo_bat_delete( ofoBat *bat, const ofoDossier *dossier )
 		g_debug( "%s: bat=%p, dossier=%p",
 				thisfn, ( void * ) bat, ( void * ) dossier );
 
-		OFO_BASE_SET_GLOBAL( st_global, dossier, bat );
-
 		if( bat_do_delete_main( bat, ofo_dossier_get_dbms( dossier ))){
 
 			bat_do_delete_lines( bat, ofo_dossier_get_dbms( dossier ));
-			OFO_BASE_REMOVE_FROM_DATASET( st_global, bat );
+
+			OFA_IDATASET_REMOVE( dossier, BAT, bat );
+
 			return( TRUE );
 		}
 	}
 
-	g_assert_not_reached();
 	return( FALSE );
 }
 

@@ -45,7 +45,7 @@ G_BEGIN_DECLS
 
 ofoBat         *ofo_bat_new          ( void );
 
-GList          *ofo_bat_get_dataset  ( const ofoDossier *dossier );
+GList          *ofo_bat_get_dataset  ( ofoDossier *dossier );
 
 ofxCounter      ofo_bat_get_id       ( const ofoBat *bat );
 const gchar    *ofo_bat_get_uri      ( const ofoBat *bat );
@@ -78,8 +78,8 @@ void            ofo_bat_set_solde_set( ofoBat *bat, gboolean set );
 void            ofo_bat_set_notes    ( ofoBat *bat, const gchar *notes );
 
 gboolean        ofo_bat_insert       ( ofoBat *bat, ofoDossier *dossier );
-gboolean        ofo_bat_update       ( ofoBat *bat, const ofoDossier *dossier );
-gboolean        ofo_bat_delete       ( ofoBat *bat, const ofoDossier *dossier );
+gboolean        ofo_bat_update       ( ofoBat *bat, ofoDossier *dossier );
+gboolean        ofo_bat_delete       ( ofoBat *bat, ofoDossier *dossier );
 
 G_END_DECLS
 
