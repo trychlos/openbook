@@ -51,7 +51,7 @@ ofoOpeTemplate *ofo_ope_template_new               ( void );
 ofoOpeTemplate *ofo_ope_template_new_from_template ( const ofoOpeTemplate *model );
 
 const gchar    *ofo_ope_template_get_mnemo         ( const ofoOpeTemplate *model );
-gchar          *ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model );
+gchar          *ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model, ofoDossier *dossier );
 const gchar    *ofo_ope_template_get_label         ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_ledger        ( const ofoOpeTemplate *model );
 gboolean        ofo_ope_template_get_ledger_locked ( const ofoOpeTemplate *model );
@@ -59,7 +59,7 @@ const gchar    *ofo_ope_template_get_notes         ( const ofoOpeTemplate *model
 const gchar    *ofo_ope_template_get_upd_user      ( const ofoOpeTemplate *model );
 const GTimeVal *ofo_ope_template_get_upd_stamp     ( const ofoOpeTemplate *model );
 
-gboolean        ofo_ope_template_is_deletable      ( const ofoOpeTemplate *model );
+gboolean        ofo_ope_template_is_deletable      ( const ofoOpeTemplate *model, ofoDossier *dossier );
 gboolean        ofo_ope_template_is_valid          ( ofoDossier *dossier,
 															const gchar *mnemo,
 															const gchar *label,

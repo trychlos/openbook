@@ -106,7 +106,7 @@ typedef struct {
 #define OFA_IDATASET_GET( D,T,P ) \
 		GList *P ## _dataset = ofa_idataset_get_dataset((D), OFO_TYPE_ ## T ); \
 			if( !P ## _dataset ){ \
-				P ## _dataset = P ## _load_dataset((D), OFO_TYPE_ ## T ); \
+				P ## _dataset = P ## _load_dataset( D ); \
 				ofa_idataset_set_dataset((D), OFO_TYPE_ ## T, P ## _dataset ); \
 			}
 
@@ -155,7 +155,6 @@ typedef struct {
 		OFA_IDATASET_GET(D,T,P); \
 		P ## _dataset = g_list_insert_sorted( P ## _dataset, (P), ( GCompareFunc ) P ## _cmp_by_ptr ); \
 		ofa_idataset_set_dataset((D), OFO_TYPE_ ## T, P ## _dataset ); \
-		OFO_BASE(P)->prot->dossier = OFO_BASE(D); \
 		if( ofa_idataset_is_signal_new_allowed((D), OFO_TYPE_ ## T )){ \
 			g_signal_emit_by_name( G_OBJECT(D), SIGNAL_DOSSIER_NEW_OBJECT, g_object_ref(P)); }
 

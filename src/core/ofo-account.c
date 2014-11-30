@@ -233,13 +233,13 @@ static void         on_new_object_entry( ofoDossier *dossier, ofoEntry *entry );
 static void         on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void         on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void         on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
-static GList       *account_load_dataset( ofoDossier *dossier, GType type );
+static GList       *account_load_dataset( ofoDossier *dossier );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static gint         account_count_for_currency( const ofaDbms *dbms, const gchar *currency );
 static gint         account_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
 static gint         account_count_for_like( const ofaDbms *dbms, const gchar *field, gint number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
-static void         account_get_children( const ofoAccount *account, sChildren *child_str );
+static void         account_get_children( const ofoAccount *account, sChildren *child_str, ofoDossier *dossier );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
 static void         archive_open_balances( ofoAccount *account, ofoDossier *dossier );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
@@ -590,15 +590,14 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
  * Loads/reloads the ordered list of accounts
  */
 static GList *
-account_load_dataset( ofoDossier *dossier, GType type )
+account_load_dataset( ofoDossier *dossier )
 {
 	return(
 			ofo_base_load_dataset(
 					st_boxed_defs,
-					OFO_BASE( dossier ),
 					ofo_dossier_get_dbms( dossier ),
 					"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
-					type ));
+					OFO_TYPE_ACCOUNT ));
 }
 
 /**
@@ -1128,12 +1127,13 @@ ofo_account_get_open_cre_amount( const ofoAccount *account )
  * To be deletable, all children must also be deletable.
  */
 gboolean
-ofo_account_is_deletable( const ofoAccount *account )
+ofo_account_is_deletable( const ofoAccount *account, ofoDossier *dossier )
 {
 	gboolean deletable;
 	GList *children, *it;
 
-	g_return_val_if_fail( OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
@@ -1144,9 +1144,9 @@ ofo_account_is_deletable( const ofoAccount *account )
 
 		if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children()){
 
-			children = ofo_account_get_children( account );
+			children = ofo_account_get_children( account, dossier );
 			for( it=children ; it ; it=it->next ){
-				deletable &= ofo_account_is_deletable( OFO_ACCOUNT( it->data ));
+				deletable &= ofo_account_is_deletable( OFO_ACCOUNT( it->data ), dossier );
 			}
 			g_list_free( children );
 		}
@@ -1410,15 +1410,16 @@ ofo_account_get_global_solde( const ofoAccount *account )
  * (but this is not checked here).
  */
 gboolean
-ofo_account_has_children( const ofoAccount *account )
+ofo_account_has_children( const ofoAccount *account, ofoDossier *dossier )
 {
 	sChildren child_str;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		account_get_children( account, &child_str );
+		account_get_children( account, &child_str, dossier );
 		g_list_free( child_str.children_list );
 
 		return( child_str.children_count > 0 );
@@ -1436,15 +1437,16 @@ ofo_account_has_children( const ofoAccount *account )
  * The list may be freed with g_list_free().
  */
 GList *
-ofo_account_get_children( const ofoAccount *account )
+ofo_account_get_children( const ofoAccount *account, ofoDossier *dossier )
 {
 	sChildren child_str;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		account_get_children( account, &child_str );
+		account_get_children( account, &child_str, dossier );
 
 		return( child_str.children_list );
 	}
@@ -1453,14 +1455,14 @@ ofo_account_get_children( const ofoAccount *account )
 }
 
 static void
-account_get_children( const ofoAccount *account, sChildren *child_str )
+account_get_children( const ofoAccount *account, sChildren *child_str, ofoDossier *dossier )
 {
 	memset( child_str, '\0' ,sizeof( sChildren ));
 	child_str->number = ofo_account_get_number( account );
 	child_str->children_count = 0;
 	child_str->children_list = NULL;
 
-	OFA_IDATASET_GET( BASE_GET_DOSSIER( account ), ACCOUNT, account );
+	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
 	g_list_foreach( account_dataset, ( GFunc ) account_iter_children, child_str );
 }
@@ -1911,7 +1913,8 @@ ofo_account_insert( ofoAccount *account, ofoDossier *dossier )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_debug( "%s: account=%p", thisfn, ( void * ) account );
+		g_debug( "%s: account=%p, dossier=%p",
+				thisfn, ( void * ) account, ( void * ) dossier );
 
 		if( account_do_insert(
 					account,
@@ -2018,7 +2021,8 @@ ofo_account_update( ofoAccount *account, ofoDossier *dossier, const gchar *prev_
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_debug( "%s: account=%p, prev_number=%s", thisfn, ( void * ) account, prev_number );
+		g_debug( "%s: account=%p, dossier=%p, prev_number=%s",
+					thisfn, ( void * ) account, ( void * ) dossier, prev_number );
 
 		if( account_do_update(
 					account,
@@ -2208,11 +2212,12 @@ ofo_account_delete( ofoAccount *account, ofoDossier *dossier )
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( ofo_account_is_deletable( account ), FALSE );
+	g_return_val_if_fail( ofo_account_is_deletable( account, dossier ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		g_debug( "%s: account=%p", thisfn, ( void * ) account );
+		g_debug( "%s: account=%p, dossier=%p",
+				thisfn, ( void * ) account, ( void * ) dossier );
 
 		if( account_do_delete(
 					account,

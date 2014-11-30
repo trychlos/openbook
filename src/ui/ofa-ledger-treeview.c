@@ -417,11 +417,14 @@ insert_new_row( ofaLedgerTreeview *self, ofoLedger *ledger, gboolean with_select
 static void
 set_row_by_iter( ofaLedgerTreeview *self, ofoLedger *ledger, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
+	ofaLedgerTreeviewPrivate *priv;
 	GDate *dlast_entry;
 	const GDate *dlast_close;
 	gchar *slast_entry, *slast_close;
 
-	dlast_entry = ofo_ledger_get_last_entry( ledger );
+	priv = self->priv;
+
+	dlast_entry = ofo_ledger_get_last_entry( ledger, priv->dossier );
 	slast_entry = my_date_to_str( dlast_entry, MY_DATE_DMYY );
 
 	dlast_close = ofo_ledger_get_last_close( ledger );

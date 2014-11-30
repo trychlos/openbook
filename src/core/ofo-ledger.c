@@ -75,7 +75,7 @@ static void        on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry );
 static void        on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void        on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void        on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
-static GList      *ledger_load_dataset( ofoDossier *dossier, GType type );
+static GList      *ledger_load_dataset( ofoDossier *dossier );
 static ofoLedger  *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint        ledger_count_for_currency( const ofaDbms *dbms, const gchar *currency );
 static gint        ledger_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
@@ -333,7 +333,7 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 }
 
 static GList *
-ledger_load_dataset( ofoDossier *dossier, GType type )
+ledger_load_dataset( ofoDossier *dossier )
 {
 	GSList *result, *irow, *icol;
 	ofoLedger *ledger;
@@ -621,13 +621,14 @@ ofo_ledger_get_last_close( const ofoLedger *ledger )
  * or %NULL if no entry has been found for this ledger.
  */
 GDate *
-ofo_ledger_get_last_entry( const ofoLedger *ledger )
+ofo_ledger_get_last_entry( const ofoLedger *ledger, ofoDossier *dossier )
 {
 	GDate *deffect;
 	gchar *query;
 	GSList *result, *icol;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	deffect = NULL;
 
@@ -637,8 +638,8 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger )
 				"SELECT MAX(ENT_DEFFECT) FROM OFA_T_ENTRIES "
 				"	WHERE ENT_LEDGER='%s'", ofo_ledger_get_mnemo( ledger ));
 
-		result = ofa_dbms_query_ex(
-						ofo_dossier_get_dbms( BASE_GET_DOSSIER( ledger )), query, TRUE );
+		result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query, TRUE );
+
 		g_free( query );
 
 		if( result ){
@@ -802,17 +803,18 @@ ledger_new_cur_with_code( ofoLedger *ledger, const gchar *currency )
  * ofo_ledger_has_entries:
  */
 gboolean
-ofo_ledger_has_entries( const ofoLedger *ledger )
+ofo_ledger_has_entries( const ofoLedger *ledger, ofoDossier *dossier )
 {
 	gboolean ok;
 	const gchar *mnemo;
 
-	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
 		mnemo = ofo_ledger_get_mnemo( ledger );
-		ok = ofo_entry_use_ledger( BASE_GET_DOSSIER( ledger ), mnemo );
+		ok = ofo_entry_use_ledger( dossier, mnemo );
 		return( ok );
 	}
 
@@ -1133,7 +1135,8 @@ ofo_ledger_insert( ofoLedger *ledger, ofoDossier *dossier )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		g_debug( "%s: ledger=%p", thisfn, ( void * ) ledger );
+		g_debug( "%s: ledger=%p, dossier=%p",
+				thisfn, ( void * ) ledger, ( void * ) dossier );
 
 		if( ledger_do_insert(
 					ledger,
@@ -1219,7 +1222,8 @@ ofo_ledger_update( ofoLedger *ledger, ofoDossier *dossier, const gchar *prev_mne
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		g_debug( "%s: ledger=%p, prev_mnemo=%s", thisfn, ( void * ) ledger, prev_mnemo );
+		g_debug( "%s: ledger=%p, dossier=%p, prev_mnemo=%s",
+				thisfn, ( void * ) ledger, ( void * ) dossier, prev_mnemo );
 
 		if( ledger_do_update(
 					ledger,
@@ -1359,7 +1363,8 @@ ofo_ledger_delete( ofoLedger *ledger, ofoDossier *dossier )
 
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
-		g_debug( "%s: ledger=%p", thisfn, ( void * ) ledger );
+		g_debug( "%s: ledger=%p, dossier=%p",
+				thisfn, ( void * ) ledger, ( void * ) dossier );
 
 		if( ledger_do_delete(
 					ledger,

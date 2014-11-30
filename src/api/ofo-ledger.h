@@ -61,14 +61,14 @@ const gchar    *ofo_ledger_get_notes       ( const ofoLedger *ledger );
 const gchar    *ofo_ledger_get_upd_user    ( const ofoLedger *ledger );
 const GTimeVal *ofo_ledger_get_upd_stamp   ( const ofoLedger *ledger );
 const GDate    *ofo_ledger_get_last_close  ( const ofoLedger *ledger );
-GDate          *ofo_ledger_get_last_entry  ( const ofoLedger *ledger );
+GDate          *ofo_ledger_get_last_entry  ( const ofoLedger *ledger, ofoDossier *dossier );
 
 ofxAmount       ofo_ledger_get_clo_deb     ( const ofoLedger *ledger, const gchar *currency );
 ofxAmount       ofo_ledger_get_clo_cre     ( const ofoLedger *ledger, const gchar *currency );
 ofxAmount       ofo_ledger_get_deb         ( const ofoLedger *ledger, const gchar *currency );
 ofxAmount       ofo_ledger_get_cre         ( const ofoLedger *ledger, const gchar *currency );
 
-gboolean        ofo_ledger_has_entries     ( const ofoLedger *ledger );
+gboolean        ofo_ledger_has_entries     ( const ofoLedger *ledger, ofoDossier *dossier );
 gboolean        ofo_ledger_is_deletable    ( const ofoLedger *ledger, ofoDossier *dossier );
 gboolean        ofo_ledger_is_valid        ( const gchar *mnemo, const gchar *label );
 

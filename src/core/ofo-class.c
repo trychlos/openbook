@@ -82,7 +82,7 @@ struct _ofoClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
-static GList     *class_load_dataset( ofoDossier *dossier, GType type );
+static GList     *class_load_dataset( ofoDossier *dossier );
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );
 static void       class_set_upd_stamp( ofoClass *class, const GTimeVal *stamp );
@@ -172,15 +172,14 @@ ofo_class_new( void )
 }
 
 static GList *
-class_load_dataset( ofoDossier *dossier, GType type )
+class_load_dataset( ofoDossier *dossier )
 {
 	return(
 			ofo_base_load_dataset(
 					st_boxed_defs,
-					OFO_BASE( dossier ),
 					ofo_dossier_get_dbms( dossier ),
 					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
-					type ));
+					OFO_TYPE_CLASS ));
 }
 
 /**
@@ -393,7 +392,8 @@ ofo_class_insert( ofoClass *class, ofoDossier *dossier )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_debug( "%s: class=%p", thisfn, ( void * ) class );
+		g_debug( "%s: class=%p, dossier=%p",
+				thisfn, ( void * ) class, ( void * ) dossier );
 
 		if( class_do_insert(
 					class,
@@ -467,7 +467,8 @@ ofo_class_update( ofoClass *class, ofoDossier *dossier, gint prev_id )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_debug( "%s: class=%p", thisfn, ( void * ) class );
+		g_debug( "%s: class=%p, dossier=%p, prev_id=%d",
+				thisfn, ( void * ) class, ( void * ) dossier, prev_id );
 
 		if( class_do_update(
 					class,
@@ -543,7 +544,8 @@ ofo_class_delete( ofoClass *class, ofoDossier *dossier )
 
 	if( !OFO_BASE( class )->prot->dispose_has_run ){
 
-		g_debug( "%s: class=%p", thisfn, ( void * ) class );
+		g_debug( "%s: class=%p, dossier=%p",
+				thisfn, ( void * ) class, ( void * ) dossier );
 
 		if( class_do_delete(
 					class,

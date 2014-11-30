@@ -81,7 +81,7 @@ typedef struct {
 static void            on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
 static gboolean        on_update_ledger_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
 static gboolean        on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
-static GList          *ope_template_load_dataset( ofoDossier *dossier, GType type );
+static GList          *ope_template_load_dataset( ofoDossier *dossier );
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint            model_count_for_ledger( const ofaDbms *dbms, const gchar *ledger );
 static gint            model_count_for_rate( const ofaDbms *dbms, const gchar *mnemo );
@@ -333,7 +333,7 @@ on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev
 }
 
 static GList *
-ope_template_load_dataset( ofoDossier *dossier, GType type )
+ope_template_load_dataset( ofoDossier *dossier )
 {
 	const ofaDbms *dbms;
 	GSList *result, *irow, *icol;
@@ -635,22 +635,19 @@ ofo_ope_template_get_mnemo( const ofoOpeTemplate *model )
  * string that the caller should g_free().
  */
 gchar *
-ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model )
+ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model, ofoDossier *dossier )
 {
 	const gchar *mnemo;
 	gint len_mnemo;
 	gchar *str;
 	gint i, maxlen;
-	ofoDossier *dossier;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	str = NULL;
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
-
-		dossier = BASE_GET_DOSSIER( model );
-		g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 		mnemo = ofo_ope_template_get_mnemo( model );
 		len_mnemo = g_utf8_strlen( mnemo, -1 );
@@ -776,16 +773,12 @@ ofo_ope_template_get_upd_stamp( const ofoOpeTemplate *model )
  * ofo_ope_template_is_deletable:
  */
 gboolean
-ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
+ofo_ope_template_is_deletable( const ofoOpeTemplate *model, ofoDossier *dossier )
 {
-	ofoDossier *dossier;
-
-	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
-
-		dossier = BASE_GET_DOSSIER( model );
-		g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 		return( !ofo_entry_use_ope_template( dossier, ofo_ope_template_get_mnemo( model )));
 	}
@@ -1190,7 +1183,8 @@ ofo_ope_template_insert( ofoOpeTemplate *ope_template, ofoDossier *dossier )
 
 	if( !OFO_BASE( ope_template )->prot->dispose_has_run ){
 
-		g_debug( "%s: ope_template=%p", thisfn, ( void * ) ope_template );
+		g_debug( "%s: ope_template=%p, dossier=%p",
+				thisfn, ( void * ) ope_template, ( void * ) dossier );
 
 		if( model_do_insert(
 					ope_template,
@@ -1381,7 +1375,8 @@ ofo_ope_template_update( ofoOpeTemplate *ope_template, ofoDossier *dossier, cons
 
 	if( !OFO_BASE( ope_template )->prot->dispose_has_run ){
 
-		g_debug( "%s: ope_template=%p, prev_mnemo=%s", thisfn, ( void * ) ope_template, prev_mnemo );
+		g_debug( "%s: ope_template=%p, dossier=%p, prev_mnemo=%s",
+				thisfn, ( void * ) ope_template, ( void * ) dossier, prev_mnemo );
 
 		if( model_do_update(
 					ope_template,
@@ -1467,11 +1462,12 @@ ofo_ope_template_delete( ofoOpeTemplate *ope_template, ofoDossier *dossier )
 
 	g_return_val_if_fail( ope_template && OFO_IS_OPE_TEMPLATE( ope_template ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( ofo_ope_template_is_deletable( ope_template ), FALSE );
+	g_return_val_if_fail( ofo_ope_template_is_deletable( ope_template, dossier ), FALSE );
 
 	if( !OFO_BASE( ope_template )->prot->dispose_has_run ){
 
-		g_debug( "%s: ope_template=%p", thisfn, ( void * ) ope_template );
+		g_debug( "%s: ope_template=%p, dossier=%p",
+				thisfn, ( void * ) ope_template, ( void * ) dossier );
 
 		if( model_do_delete(
 					ope_template,

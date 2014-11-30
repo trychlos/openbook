@@ -628,7 +628,8 @@ enable_buttons( ofaOpeTemplatesPage *self, GtkTreeSelection *selection )
 				model && OFO_IS_OPE_TEMPLATE( model ));
 		gtk_widget_set_sensitive(
 				priv->delete_btn,
-				model && OFO_IS_OPE_TEMPLATE( model ) && ofo_ope_template_is_deletable( model ));
+				model && OFO_IS_OPE_TEMPLATE( model ) &&
+					ofo_ope_template_is_deletable( model, ofa_page_get_dossier( OFA_PAGE( self ))));
 
 	} else {
 		gtk_widget_set_sensitive( priv->update_btn, FALSE );
@@ -882,7 +883,7 @@ on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self )
 		g_object_unref( model );
 
 		duplicate = ofo_ope_template_new_from_template( model );
-		str = ofo_ope_template_get_mnemo_new_from( model );
+		str = ofo_ope_template_get_mnemo_new_from( model, ofa_page_get_dossier( OFA_PAGE( self )));
 		ofo_ope_template_set_mnemo( duplicate, str );
 		g_free( str );
 		str = g_strdup_printf( "%s (%s)", ofo_ope_template_get_label( model ), _( "Duplicate" ));

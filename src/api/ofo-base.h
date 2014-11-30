@@ -223,7 +223,6 @@ ofsBaseGlobal *ofo_base_get_global( ofsBaseGlobal *ptr,
 void   ofo_base_init_fields_list(const ofsBoxedDef *defs, ofoBase *object );
 
 GList *ofo_base_load_dataset    ( const ofsBoxedDef *defs,
-											ofoBase *dossier,
 											const ofaDbms *dbms, const gchar *from, GType type );
 
 G_END_DECLS

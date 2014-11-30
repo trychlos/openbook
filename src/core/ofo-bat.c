@@ -65,7 +65,7 @@ struct _ofoBatPrivate {
 
 G_DEFINE_TYPE( ofoBat, ofo_bat, OFO_TYPE_BASE )
 
-static GList      *bat_load_dataset( ofoDossier *dossier, GType type );
+static GList      *bat_load_dataset( ofoDossier *dossier );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_do_insert( ofoBat *bat, const ofaDbms *dbms, const gchar *user );
@@ -158,7 +158,7 @@ ofo_bat_new( void )
 }
 
 static GList *
-bat_load_dataset( ofoDossier *dossier, GType type )
+bat_load_dataset( ofoDossier *dossier )
 {
 	const ofaDbms *dbms;
 	GSList *result, *irow, *icol;

@@ -170,7 +170,7 @@ ofo_base_init_fields_list( const ofsBoxedDef *defs, ofoBase *object )
  * Returns: the ordered list of loaded objects.
  */
 GList *
-ofo_base_load_dataset( const ofsBoxedDef *defs, ofoBase *dossier, const ofaDbms *dbms, const gchar *from, GType type )
+ofo_base_load_dataset( const ofsBoxedDef *defs, const ofaDbms *dbms, const gchar *from, GType type )
 {
 	gchar *columns, *query;
 	GSList *result, *irow;
@@ -187,7 +187,6 @@ ofo_base_load_dataset( const ofsBoxedDef *defs, ofoBase *dossier, const ofaDbms 
 
 	for( irow=result ; irow ; irow=irow->next ){
 		object = g_object_new( type, NULL );
-		object->prot->dossier = dossier;
 		object->prot->fields = ofa_boxed_parse_dbms_result( defs, irow );
 		dataset = g_list_prepend( dataset, object );
 	}

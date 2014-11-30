@@ -464,7 +464,8 @@ on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self )
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive(
 				priv->delete_btn,
-				currency && OFO_IS_CURRENCY( currency ) && ofo_currency_is_deletable( currency ));
+				currency && OFO_IS_CURRENCY( currency ) &&
+					ofo_currency_is_deletable( currency, ofa_page_get_dossier( OFA_PAGE( self ))));
 	}
 }
 
@@ -561,7 +562,8 @@ try_to_delete_current_row( ofaCurrenciesPage *page )
 	ofoCurrency *currency;
 
 	currency = tview_get_selected( page, &tmodel, &iter );
-	if( currency && ofo_currency_is_deletable( currency )){
+	if( currency &&
+			ofo_currency_is_deletable( currency, ofa_page_get_dossier( OFA_PAGE( page )))){
 		do_delete( page, currency, tmodel, &iter );
 	}
 }
@@ -587,10 +589,15 @@ delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *currency )
 static void
 do_delete( ofaCurrenciesPage *page, ofoCurrency *currency, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	g_return_if_fail( ofo_currency_is_deletable( currency ));
+	gboolean deletable;
+	ofoDossier *dossier;
+
+	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
+	deletable = ofo_currency_is_deletable( currency, dossier );
+	g_return_if_fail( deletable );
 
 	if( delete_confirmed( page, currency ) &&
-			ofo_currency_delete( currency, ofa_page_get_dossier( OFA_PAGE( page )))){
+			ofo_currency_delete( currency, dossier )){
 
 		/* remove the row from the tmodel
 		 * this will cause an automatic new selection */

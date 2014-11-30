@@ -265,7 +265,8 @@ on_row_selected( GList *selected, ofaLedgersPage *self )
 
 	gtk_widget_set_sensitive(
 			priv->entries_btn,
-			ledger && OFO_IS_LEDGER( ledger ) && ofo_ledger_has_entries( ledger ));
+			ledger && OFO_IS_LEDGER( ledger ) &&
+				ofo_ledger_has_entries( ledger, ofa_page_get_dossier( OFA_PAGE( self ))));
 }
 
 static void

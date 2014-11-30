@@ -58,7 +58,7 @@ struct _ofoCurrencyPrivate {
 	GTimeVal   upd_stamp;
 };
 
-static GList       *currency_load_dataset( ofoDossier *dossier, GType type );
+static GList       *currency_load_dataset( ofoDossier *dossier );
 static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static void         currency_set_upd_user( ofoCurrency *currency, const gchar *user );
@@ -142,7 +142,7 @@ ofo_currency_class_init( ofoCurrencyClass *klass )
 }
 
 static GList *
-currency_load_dataset( ofoDossier *dossier, GType type )
+currency_load_dataset( ofoDossier *dossier )
 {
 	GSList *result, *irow, *icol;
 	ofoCurrency *currency;
@@ -357,16 +357,15 @@ ofo_currency_get_upd_stamp( const ofoCurrency *currency )
  * account, a journal, an entry.
  */
 gboolean
-ofo_currency_is_deletable( const ofoCurrency *currency )
+ofo_currency_is_deletable( const ofoCurrency *currency, ofoDossier *dossier )
 {
-	ofoDossier *dossier;
 	const gchar *dev_code;
 
-	g_return_val_if_fail( OFO_IS_CURRENCY( currency ), FALSE );
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		dossier = BASE_GET_DOSSIER( currency );
 		dev_code = ofo_currency_get_code( currency );
 
 		return( !ofo_dossier_use_currency( dossier, dev_code ) &&
@@ -512,7 +511,8 @@ ofo_currency_insert( ofoCurrency *currency, ofoDossier *dossier )
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		g_debug( "%s: currency=%p", thisfn, ( void * ) currency );
+		g_debug( "%s: currency=%p, dossier=%p",
+				thisfn, ( void * ) currency, ( void * ) dossier );
 
 		if( currency_do_insert(
 					currency,
@@ -598,7 +598,8 @@ ofo_currency_update( ofoCurrency *currency, ofoDossier *dossier, const gchar *pr
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		g_debug( "%s: currency=%p, prev_code=%s", thisfn, ( void * ) currency, prev_code );
+		g_debug( "%s: currency=%p, dossier=%p, prev_code=%s",
+				thisfn, ( void * ) currency, ( void * ) dossier, prev_code );
 
 		if( currency_do_update(
 					currency,
@@ -672,11 +673,12 @@ ofo_currency_delete( ofoCurrency *currency, ofoDossier *dossier )
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( ofo_currency_is_deletable( currency ), FALSE );
+	g_return_val_if_fail( ofo_currency_is_deletable( currency, dossier ), FALSE );
 
 	if( !OFO_BASE( currency )->prot->dispose_has_run ){
 
-		g_debug( "%s: currency=%p", thisfn, ( void * ) currency );
+		g_debug( "%s: currency=%p, dossier=%p",
+				thisfn, ( void * ) currency, ( void * ) dossier );
 
 		if( currency_do_delete(
 					currency,

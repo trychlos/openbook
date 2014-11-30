@@ -57,7 +57,7 @@ struct _ofoRatePrivate {
 	GList     *validities;
 };
 
-static GList           *rate_load_dataset( ofoDossier *dossier, GType type );
+static GList           *rate_load_dataset( ofoDossier *dossier );
 static ofoRate         *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void             rate_set_upd_user( ofoRate *rate, const gchar *user );
 static void             rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
@@ -163,7 +163,7 @@ ofo_rate_class_init( ofoRateClass *klass )
 }
 
 static GList *
-rate_load_dataset( ofoDossier *dossier, GType type )
+rate_load_dataset( ofoDossier *dossier )
 {
 	const ofaDbms *dbms;
 	GSList *result, *irow, *icol;
@@ -740,7 +740,8 @@ ofo_rate_insert( ofoRate *rate, ofoDossier *dossier )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		g_debug( "%s: rate=%p", thisfn, ( void * ) rate );
+		g_debug( "%s: rate=%p, dossier=%p",
+				thisfn, ( void * ) rate, ( void * ) dossier );
 
 		if( rate_do_insert(
 					rate,
@@ -905,7 +906,8 @@ ofo_rate_update( ofoRate *rate, ofoDossier *dossier, const gchar *prev_mnemo )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		g_debug( "%s: rate=%p, prev_mnemo=%s", thisfn, ( void * ) rate, prev_mnemo );
+		g_debug( "%s: rate=%p, dossier=%p, prev_mnemo=%s",
+				thisfn, ( void * ) rate, ( void * ) dossier, prev_mnemo );
 
 		if( rate_do_update(
 					rate,
@@ -993,7 +995,8 @@ ofo_rate_delete( ofoRate *rate, ofoDossier *dossier )
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		g_debug( "%s: rate=%p", thisfn, ( void * ) rate );
+		g_debug( "%s: rate=%p, dossier=%p",
+				thisfn, ( void * ) rate, ( void * ) dossier );
 
 		if( rate_do_delete(
 					rate,

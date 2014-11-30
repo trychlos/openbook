@@ -437,9 +437,12 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountsBook *self )
 static void
 on_deleted_account( ofaAccountsBook *self, const ofoAccount *account )
 {
+	ofaAccountsBookPrivate *priv;
 	GList *children, *it;
 
-	children = ofo_account_get_children( account );
+	priv = self->priv;
+
+	children = ofo_account_get_children( account, priv->dossier );
 	remove_row_by_number( self, ofo_account_get_number( account ));
 	for( it=children ; it ; it=it->next ){
 		remove_row_by_number( self, ofo_account_get_number( OFO_ACCOUNT( it->data )));
@@ -1475,12 +1478,14 @@ update_buttons_sensitivity( ofaAccountsBook *self, ofoAccount *account )
 
 	gtk_widget_set_sensitive(
 			priv->btn_delete,
-			account && OFO_IS_ACCOUNT( account ) && ofo_account_is_deletable( account ));
+			account && OFO_IS_ACCOUNT( account ) &&
+				ofo_account_is_deletable( account, priv->dossier ));
 
 	if( self->priv->btn_consult ){
 		gtk_widget_set_sensitive(
 				priv->btn_consult,
-				account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account ));
+				account && OFO_IS_ACCOUNT( account ) &&
+					!ofo_account_is_root( account ));
 	}
 }
 
@@ -1769,18 +1774,21 @@ on_update_clicked( ofaAccountsBook *self )
 static void
 on_delete_clicked( ofaAccountsBook *self )
 {
+	ofaAccountsBookPrivate *priv;
 	ofoAccount *account;
 	gchar *number;
 	GtkWidget *tview;
 
+	priv = self->priv;
+
 	account = ofa_accounts_book_get_selected( self );
 	if( account ){
-		g_return_if_fail( ofo_account_is_deletable( account ));
+		g_return_if_fail( ofo_account_is_deletable( account, priv->dossier ));
 
 		number = g_strdup( ofo_account_get_number( account ));
 
 		if( delete_confirmed( self, account ) &&
-				ofo_account_delete( account, self->priv->dossier )){
+				ofo_account_delete( account, priv->dossier )){
 
 			/* nothing to do here, all being managed by signal handlers
 			 * just reset the selection as this is not managed by the
@@ -1804,10 +1812,13 @@ on_delete_clicked( ofaAccountsBook *self )
 static void
 try_to_delete_current_row( ofaAccountsBook *self )
 {
+	ofaAccountsBookPrivate *priv;
 	ofoAccount *account;
 
+	priv = self->priv;
+
 	account = ofa_accounts_book_get_selected( self );
-	if( ofo_account_is_deletable( account )){
+	if( ofo_account_is_deletable( account, priv->dossier )){
 		on_delete_clicked( self );
 	}
 }
@@ -1821,11 +1832,15 @@ try_to_delete_current_row( ofaAccountsBook *self )
 static gboolean
 delete_confirmed( ofaAccountsBook *self, ofoAccount *account )
 {
+	ofaAccountsBookPrivate *priv;
 	gchar *msg;
 	gboolean delete_ok;
 
+	priv = self->priv;
+
 	if( ofo_account_is_root( account )){
-		if( ofo_account_has_children( account ) && ofa_prefs_account_delete_root_with_children()){
+		if( ofo_account_has_children( account, priv->dossier ) &&
+				ofa_prefs_account_delete_root_with_children()){
 			msg = g_strdup_printf( _(
 					"You are about to delete the %s - %s account.\n"
 					"This is a root account which has children.\n"
