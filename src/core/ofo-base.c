@@ -103,48 +103,6 @@ ofo_base_class_init( ofoBaseClass *klass )
 }
 
 /**
- * ofo_base_get_global:
- * @ptr: a pointer to the static variable which is supposed to handle
- *  the global data of the child class.
- * @dossier: the currently opened #ofoDossier dossier.
- * @fn: the #GWeakNotify function which will be called when the @dossier
- *  will be disposed. The #OFO_BASE_DEFINE_GLOBAL macro defines a
- *  <class>_clear_global static function which clears the #GList dataset.
- * @user_data: user data to be passed to @fn. The #OFO_BASE_DEFINE_GLOBAL
- *  macro sets this value to %NULL.
- *
- * Check that the global #ofsBaseGlobal structure is allocated.
- * Allocate it if it is not yet allocated.
- * Install a weak reference of the @dossier, in order to be able to free
- * the objects allocated in #ofoBase Global->#GList dataset list.
- *
- * Returns: the same pointer that @ptr if the structure was already
- * allocated, or a pointer to a newly allocated structure.
- */
-ofsBaseGlobal *
-ofo_base_get_global( ofsBaseGlobal *ptr, ofoBase *dossier, GWeakNotify fn, gpointer user_data )
-{
-	static const gchar *thisfn = "ofa_base_get_global";
-	ofsBaseGlobal *new_ptr;
-
-	new_ptr = ptr;
-
-	if( !ptr ){
-
-		/* allocate a new global structure */
-		new_ptr = g_new0( ofsBaseGlobal, 1 );
-		g_debug( "%s: allocating a new ofsBaseGlobal at %p", thisfn, ( void * ) new_ptr );
-		new_ptr->dossier = dossier;
-		new_ptr->send_signal_new = TRUE;
-
-		/* be advertise when the main object disappears */
-		g_object_weak_ref( G_OBJECT( dossier ), fn, user_data );
-	}
-
-	return( new_ptr );
-}
-
-/**
  * ofo_base_init_fields_list:
  * @defs: the #ofsBoxedDefs list of field definitions for this object
  * @object: the new #ofoBase object to be initialized.
