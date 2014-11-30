@@ -58,6 +58,8 @@ struct _ofaAccountPropertiesPrivate {
 	/* UI
 	 */
 	GtkEntry        *w_number;
+	GtkWidget       *type_frame;
+	GtkWidget       *type_label;
 	GtkRadioButton  *w_root;
 	GtkRadioButton  *w_detail;
 	GtkToggleButton *settleable_btn;
@@ -267,6 +269,9 @@ v_init_dialog( myDialog *dialog )
 
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 
+	priv->type_frame = my_utils_container_get_child_by_name( container, "p1-type-frame" );
+	priv->type_label = my_utils_container_get_child_by_name( container, "p1-type-label" );
+
 	priv->w_root = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name( container, "p1-root-account" ));
 	priv->w_detail = GTK_RADIO_BUTTON( my_utils_container_get_child_by_name( container, "p1-detail-account" ));
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->w_root ), FALSE );
@@ -473,9 +478,13 @@ check_for_enable_dlg( ofaAccountProperties *self )
 
 	if( priv->w_root && priv->w_detail ){
 		if( priv->type && !g_utf8_collate( priv->type, "D" )){
+			gtk_widget_set_sensitive( priv->type_frame, vierge );
+			gtk_widget_set_sensitive( priv->type_label, vierge );
 			gtk_widget_set_sensitive( GTK_WIDGET( priv->w_root ), vierge );
 			gtk_widget_set_sensitive( GTK_WIDGET( priv->w_detail ), vierge );
 		} else {
+			gtk_widget_set_sensitive( priv->type_frame, TRUE );
+			gtk_widget_set_sensitive( priv->type_label, TRUE );
 			gtk_widget_set_sensitive( GTK_WIDGET( priv->w_root ), TRUE );
 			gtk_widget_set_sensitive( GTK_WIDGET( priv->w_detail ), TRUE );
 		}

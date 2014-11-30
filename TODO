@@ -359,7 +359,10 @@
  476 2014-11-29 DossierManager review: have a Dossier treeview and an
                 Exercices treeview
 
- 477
+ 477 2014-11-30 Dossier Open option should be insensitive when a dossier
+                is already opened
+
+ 478
 
 -----------------------------------------------------------------------
  DONE
