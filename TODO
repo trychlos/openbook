@@ -57,9 +57,6 @@
                 that we stop the entering at 512 chars
      2014- 6-21 at 4096 chars now...
 
-  60 2014- 5-19 manage locale as a user preference (format for entering
-                date, amounts and rates)
-
   61 2014- 5-19 manage dataserver locale as a user preference (format 
                 for storing date, amounts and rates) - this is rather
                 a configuration information than actually a user pref..
@@ -212,11 +209,6 @@
                 none of the candidate admin accounts are used in
                 any of the databases of the DB server
                 -> so the dossier manager should take care of that
-
- 310 2014- 9-15 locale user preferences:
-                for amounts, whether to allow the comma as decimal point
-                when entering
-                for dates, entry as d/m/yyyy ?
 
  311 2014- 9-21 editing CA12 VAT declaration
 
@@ -565,6 +557,10 @@
                 only way to enter a date as dd/mm/yyyy is to use the
                 french locale 
      2014- 5-22 done
+
+  60 2014- 5-19 manage locale as a user preference (format for entering
+                date, amounts and rates)
+     2014-11-30 done - svn #4210
 
   62 2014- 5-19 review all the rates management:
                 there should be a master record (the rate) and child
@@ -1457,6 +1453,12 @@
  309 2014- 9-13 when inserting into TAUX: TAX_VAL_DEB cannot be null
                 but should be allowed to
      2014- 9-15 done
+
+ 310 2014- 9-15 locale user preferences:
+                for amounts, whether to allow the comma as decimal point
+                when entering
+                for dates, entry as d/m/yyyy ?
+     2014-11-30 done - svn #4210
 
  315 2014-10- 3 the originating model should be kept in the generated
                 entries
