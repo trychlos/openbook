@@ -118,7 +118,6 @@ static void     application_activate( GApplication *application );
 static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void     on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -129,7 +128,6 @@ static void     on_version( ofaApplication *application );
 
 static const GActionEntry st_app_entries[] = {
 		{ "manage",        on_manage,        NULL, NULL, NULL },
-		{ "new",           on_new,           NULL, NULL, NULL },
 		{ "open",          on_open,          NULL, NULL, NULL },
 		{ "restore",       on_restore,       NULL, NULL, NULL },
 		{ "user_prefs",    on_user_prefs,    NULL, NULL, NULL },
@@ -681,22 +679,6 @@ on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
 	ofa_dossier_manager_run( priv->main_window );
-}
-
-static void
-on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
-{
-	static const gchar *thisfn = "ofa_application_on_new";
-	ofaApplicationPrivate *priv;
-
-	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
-			thisfn, action, parameter, ( void * ) user_data );
-
-	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
-	priv = OFA_APPLICATION( user_data )->priv;
-	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
-
-	ofa_dossier_new_run( priv->main_window );
 }
 
 static void
