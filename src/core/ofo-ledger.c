@@ -834,7 +834,7 @@ ofo_ledger_has_entries( const ofoLedger *ledger )
  * model or an entry.
  */
 gboolean
-ofo_ledger_is_deletable( const ofoLedger *ledger, const ofoDossier *dossier )
+ofo_ledger_is_deletable( const ofoLedger *ledger, ofoDossier *dossier )
 {
 	gboolean ok;
 	GList *ic;

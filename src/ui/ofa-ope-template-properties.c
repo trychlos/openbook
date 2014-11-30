@@ -760,7 +760,8 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 
 	priv = self->priv;
 
-	ok = ofo_ope_template_is_valid( priv->mnemo, priv->label, priv->ledger );
+	ok = ofo_ope_template_is_valid(
+				MY_WINDOW( self )->prot->dossier, priv->mnemo, priv->label, priv->ledger );
 
 	if( ok ){
 		exists = ofo_ope_template_get_by_mnemo(
@@ -810,10 +811,12 @@ do_update( ofaOpeTemplateProperties *self )
 
 	if( !prev_mnemo ){
 		priv->updated =
-				ofo_ope_template_insert( priv->ope_template );
+				ofo_ope_template_insert(
+						priv->ope_template, MY_WINDOW( self )->prot->dossier );
 	} else {
 		priv->updated =
-				ofo_ope_template_update( priv->ope_template, prev_mnemo );
+				ofo_ope_template_update(
+						priv->ope_template, MY_WINDOW( self )->prot->dossier, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );

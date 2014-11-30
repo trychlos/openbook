@@ -33,6 +33,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -77,14 +78,10 @@ typedef struct {
 /* mnemonic max length */
 #define MNEMO_LENGTH                    6
 
-OFO_BASE_DEFINE_GLOBAL( st_global, model )
-
-static void            iexportable_iface_init( ofaIExportableInterface *iface );
-static guint           iexportable_get_interface_version( const ofaIExportable *instance );
-static void            on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
-static gboolean        do_update_ledger_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
-static gboolean        do_update_rate_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
-static GList          *model_load_dataset( void );
+static void            on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
+static gboolean        on_update_ledger_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
+static gboolean        on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
+static GList          *ope_template_load_dataset( ofoDossier *dossier, GType type );
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint            model_count_for_ledger( const ofaDbms *dbms, const gchar *ledger );
 static gint            model_count_for_rate( const ofaDbms *dbms, const gchar *mnemo );
@@ -99,7 +96,9 @@ static gboolean        model_do_update( ofoOpeTemplate *model, const ofaDbms *db
 static gboolean        model_update_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user, const gchar *prev_mnemo );
 static gboolean        model_do_delete( ofoOpeTemplate *model, const ofaDbms *dbms );
 static gint            model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo );
-static gint            model_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b );
+static gint            ope_template_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b );
+static void            iexportable_iface_init( ofaIExportableInterface *iface );
+static guint           iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean        iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static ofoOpeTemplate *model_import_csv_model( GSList *fields, gint count, gint *errors );
 static sModDetail     *model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo );
@@ -107,6 +106,8 @@ static gboolean        model_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
+
+OFA_IDATASET_LOAD( OPE_TEMPLATE, ope_template );
 
 static void
 details_list_free_detail( sModDetail *detail )
@@ -196,23 +197,6 @@ ofo_ope_template_class_init( ofoOpeTemplateClass *klass )
 	g_type_class_add_private( klass, sizeof( ofoOpeTemplatePrivate ));
 }
 
-static void
-iexportable_iface_init( ofaIExportableInterface *iface )
-{
-	static const gchar *thisfn = "ofo_ope_template_iexportable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
-}
-
-static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
-{
-	return( 1 );
-}
-
 /**
  * ofo_ope_template_connect_handlers:
  *
@@ -231,7 +215,7 @@ ofo_ope_template_connect_handlers( const ofoDossier *dossier )
 }
 
 static void
-on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data )
 {
 	static const gchar *thisfn = "ofo_ope_template_on_updated_object";
 	const gchar *mnemo;
@@ -247,7 +231,7 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
 			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				do_update_ledger_mnemo( dossier, mnemo, prev_id );
+				on_update_ledger_mnemo( dossier, mnemo, prev_id );
 			}
 		}
 
@@ -255,14 +239,14 @@ on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev
 		if( prev_id && g_utf8_strlen( prev_id, -1 )){
 			mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				do_update_rate_mnemo( dossier, mnemo, prev_id );
+				on_update_rate_mnemo( dossier, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-do_update_ledger_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id )
+on_update_ledger_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofo_ope_template_do_update_ledger_mnemo";
 	gchar *query;
@@ -280,15 +264,16 @@ do_update_ledger_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gch
 
 	g_free( query );
 
-	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-	st_global->dataset = NULL;
-	g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
+	ofa_idataset_free_dataset( dossier, OFO_TYPE_OPE_TEMPLATE );
+
+	g_signal_emit_by_name(
+			G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
 
 	return( ok );
 }
 
 static gboolean
-do_update_rate_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id )
+on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofo_ope_template_do_update_rate_mnemo";
 	gchar *query;
@@ -339,37 +324,16 @@ do_update_rate_mnemo( const ofoDossier *dossier, const gchar *mnemo, const gchar
 		}
 	}
 
-	g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-	st_global->dataset = NULL;
-	g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
+	ofa_idataset_free_dataset( dossier, OFO_TYPE_OPE_TEMPLATE );
+
+	g_signal_emit_by_name(
+			G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
 
 	return( TRUE );
 }
 
-/**
- * ofo_ope_template_get_dataset:
- * @dossier: the currently opened #ofoDossier dossier.
- *
- * Returns: The list of #ofoOpeTemplate models, ordered by ascending
- * mnemo. The returned list is owned by the #ofoOpeTemplate class, and
- * should not be freed by the caller.
- */
-GList *
-ofo_ope_template_get_dataset( const ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_ope_template_get_dataset";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
-
-	return( st_global->dataset );
-}
-
 static GList *
-model_load_dataset( void )
+ope_template_load_dataset( ofoDossier *dossier, GType type )
 {
 	const ofaDbms *dbms;
 	GSList *result, *irow, *icol;
@@ -380,7 +344,7 @@ model_load_dataset( void )
 	GList *details;
 	GTimeVal timeval;
 
-	dbms = ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier ));
+	dbms = ofo_dossier_get_dbms( dossier );
 
 	result = ofa_dbms_query_ex( dbms,
 			"SELECT OTE_MNEMO,OTE_LABEL,OTE_LED_MNEMO,OTE_LED_LOCKED,OTE_NOTES,"
@@ -481,7 +445,7 @@ model_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoOpeTemplate *
-ofo_ope_template_get_by_mnemo( const ofoDossier *dossier, const gchar *mnemo )
+ofo_ope_template_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
 	/*static const gchar *thisfn = "ofo_ope_template_get_by_mnemo";*/
 
@@ -490,9 +454,9 @@ ofo_ope_template_get_by_mnemo( const ofoDossier *dossier, const gchar *mnemo )
 
 	/*g_debug( "%s: dossier=%p, mnemo=%s", thisfn, ( void * ) dossier, mnemo );*/
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+	OFA_IDATASET_GET( dossier, OPE_TEMPLATE, ope_template );
 
-	return( model_find_by_mnemo( st_global->dataset, mnemo ));
+	return( model_find_by_mnemo( ope_template_dataset, mnemo ));
 }
 
 static ofoOpeTemplate *
@@ -515,12 +479,12 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
  * Returns: %TRUE if a recorded entry makes use of the specified currency.
  */
 gboolean
-ofo_ope_template_use_ledger( const ofoDossier *dossier, const gchar *ledger )
+ofo_ope_template_use_ledger( ofoDossier *dossier, const gchar *ledger )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( ledger && g_utf8_strlen( ledger, -1 ), FALSE );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+	OFA_IDATASET_GET( dossier, OPE_TEMPLATE, ope_template );
 
 	return( model_count_for_ledger( ofo_dossier_get_dbms( dossier ), ledger ) > 0 );
 }
@@ -556,11 +520,11 @@ model_count_for_ledger( const ofaDbms *dbms, const gchar *ledger )
  * Returns: %TRUE if a recorded entry makes use of the specified rate.
  */
 gboolean
-ofo_ope_template_use_rate( const ofoDossier *dossier, const gchar *mnemo )
+ofo_ope_template_use_rate( ofoDossier *dossier, const gchar *mnemo )
 {
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+	OFA_IDATASET_GET( dossier, OPE_TEMPLATE, ope_template );
 
 	return( model_count_for_rate( ofo_dossier_get_dbms( dossier ), mnemo ) > 0 );
 }
@@ -677,13 +641,16 @@ ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model )
 	gint len_mnemo;
 	gchar *str;
 	gint i, maxlen;
+	ofoDossier *dossier;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), NULL );
 
 	str = NULL;
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		dossier = BASE_GET_DOSSIER( model );
+		g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 		mnemo = ofo_ope_template_get_mnemo( model );
 		len_mnemo = g_utf8_strlen( mnemo, -1 );
@@ -697,7 +664,7 @@ ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model )
 			} else {
 				str = g_strdup_printf( "%s%d", mnemo, i );
 			}
-			if( !ofo_ope_template_get_by_mnemo( OFO_DOSSIER( st_global->dossier ), str )){
+			if( !ofo_ope_template_get_by_mnemo( dossier, str )){
 				break;
 			}
 			g_free( str );
@@ -813,11 +780,12 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 {
 	ofoDossier *dossier;
 
-	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( model ), NULL );
+	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( model ), FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		dossier = OFO_DOSSIER( st_global->dossier );
+		dossier = BASE_GET_DOSSIER( model );
+		g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 		return( !ofo_entry_use_ope_template( dossier, ofo_ope_template_get_mnemo( model )));
 	}
@@ -829,14 +797,13 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
  * ofo_ope_template_is_valid:
  */
 gboolean
-ofo_ope_template_is_valid( const gchar *mnemo, const gchar *label, const gchar *ledger )
+ofo_ope_template_is_valid( ofoDossier *dossier, const gchar *mnemo, const gchar *label, const gchar *ledger )
 {
-	g_return_val_if_fail( st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	return( mnemo && g_utf8_strlen( mnemo, -1 ) &&
 			label && g_utf8_strlen( label, -1 ) &&
-			ledger && g_utf8_strlen( ledger, -1 ) &&
-			ofo_ledger_get_by_mnemo( OFO_DOSSIER( st_global->dossier ), ledger ));
+			ledger && g_utf8_strlen( ledger, -1 ));
 }
 
 /**
@@ -1214,23 +1181,23 @@ ofo_ope_template_detail_is_formula( const gchar *str )
  * so it is not needed to check the date of closing
  */
 gboolean
-ofo_ope_template_insert( ofoOpeTemplate *model )
+ofo_ope_template_insert( ofoOpeTemplate *ope_template, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_ope_template_insert";
 
-	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( model ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( ope_template && OFO_IS_OPE_TEMPLATE( ope_template ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	if( !OFO_BASE( ope_template )->prot->dispose_has_run ){
 
-		g_debug( "%s: model=%p", thisfn, ( void * ) model );
+		g_debug( "%s: ope_template=%p", thisfn, ( void * ) ope_template );
 
 		if( model_do_insert(
-					model,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
+					ope_template,
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_ADD_TO_DATASET( st_global, model );
+			OFA_IDATASET_ADD( dossier, OPE_TEMPLATE, ope_template );
 
 			return( TRUE );
 		}
@@ -1404,25 +1371,25 @@ model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, sMo
  * so it is not needed to check debit or credit agregats
  */
 gboolean
-ofo_ope_template_update( ofoOpeTemplate *model, const gchar *prev_mnemo )
+ofo_ope_template_update( ofoOpeTemplate *ope_template, ofoDossier *dossier, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_ope_template_update";
 
-	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( model ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( ope_template && OFO_IS_OPE_TEMPLATE( ope_template ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	if( !OFO_BASE( ope_template )->prot->dispose_has_run ){
 
-		g_debug( "%s: model=%p, prev_mnemo=%s", thisfn, ( void * ) model, prev_mnemo );
+		g_debug( "%s: ope_template=%p, prev_mnemo=%s", thisfn, ( void * ) ope_template, prev_mnemo );
 
 		if( model_do_update(
-					model,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )),
+					ope_template,
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ),
 					prev_mnemo )){
 
-			OFO_BASE_UPDATE_DATASET( st_global, model, prev_mnemo );
+			OFA_IDATASET_UPDATE( dossier, OPE_TEMPLATE, ope_template, prev_mnemo );
 
 			return( TRUE );
 		}
@@ -1494,23 +1461,23 @@ model_update_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user
  * ofo_ope_template_delete:
  */
 gboolean
-ofo_ope_template_delete( ofoOpeTemplate *model )
+ofo_ope_template_delete( ofoOpeTemplate *ope_template, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_ope_template_delete";
 
-	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( model ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
-	g_return_val_if_fail( ofo_ope_template_is_deletable( model ), FALSE );
+	g_return_val_if_fail( ope_template && OFO_IS_OPE_TEMPLATE( ope_template ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( ofo_ope_template_is_deletable( ope_template ), FALSE );
 
-	if( !OFO_BASE( model )->prot->dispose_has_run ){
+	if( !OFO_BASE( ope_template )->prot->dispose_has_run ){
 
-		g_debug( "%s: model=%p", thisfn, ( void * ) model );
+		g_debug( "%s: ope_template=%p", thisfn, ( void * ) ope_template );
 
 		if( model_do_delete(
-					model,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )))){
+					ope_template,
+					ofo_dossier_get_dbms( dossier ))){
 
-			OFO_BASE_REMOVE_FROM_DATASET( st_global, model );
+			OFA_IDATASET_REMOVE( dossier, OPE_TEMPLATE, ope_template );
 
 			return( TRUE );
 		}
@@ -1546,9 +1513,29 @@ model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo )
 }
 
 static gint
-model_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b )
+ope_template_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b )
 {
 	return( model_cmp_by_mnemo( a, ofo_ope_template_get_mnemo( b )));
+}
+
+/*
+ * ofaIExportable interface management
+ */
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ope_template_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
 }
 
 /*
@@ -1570,15 +1557,15 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	gboolean ok, with_headers;
 	gulong count;
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
+	OFA_IDATASET_GET( dossier, OPE_TEMPLATE, ope_template );
 
 	with_headers = ofa_export_settings_get_headers( settings );
 
-	count = ( gulong ) g_list_length( st_global->dataset );
+	count = ( gulong ) g_list_length( ope_template_dataset );
 	if( with_headers ){
 		count += 2;
 	}
-	for( it=st_global->dataset ; it ; it=it->next ){
+	for( it=ope_template_dataset ; it ; it=it->next ){
 		model = OFO_OPE_TEMPLATE( it->data );
 		count += g_list_length( model->priv->details );
 	}
@@ -1602,7 +1589,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 		}
 	}
 
-	for( it=st_global->dataset ; it ; it=it->next ){
+	for( it=ope_template_dataset ; it ; it=it->next ){
 		model = OFO_OPE_TEMPLATE( it->data );
 
 		notes = my_utils_export_multi_lines( ofo_ope_template_get_notes( model ));
@@ -1677,7 +1664,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
  * Replace the whole table with the provided datas.
  */
 void
-ofo_ope_template_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+ofo_ope_template_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 {
 	static const gchar *thisfn = "ofo_ope_template_import_csv";
 	gint type;
@@ -1695,8 +1682,6 @@ ofo_ope_template_import_csv( const ofoDossier *dossier, GSList *lines, gboolean 
 			( void * ) dossier,
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, model );
 
 	new_set = NULL;
 	count = 0;
@@ -1741,7 +1726,7 @@ ofo_ope_template_import_csv( const ofoDossier *dossier, GSList *lines, gboolean 
 	}
 
 	if( !errors ){
-		st_global->send_signal_new = FALSE;
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_OPE_TEMPLATE, FALSE );
 
 		model_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
@@ -1753,15 +1738,14 @@ ofo_ope_template_import_csv( const ofoDossier *dossier, GSList *lines, gboolean 
 			g_debug( "%s: inserting into dbms", thisfn );
 		}
 
-		if( st_global ){
-			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-			st_global->dataset = NULL;
-		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
+		ofa_idataset_free_dataset( dossier, OFO_TYPE_OPE_TEMPLATE );
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
 
 		g_list_free( new_set );
 
-		st_global->send_signal_new = TRUE;
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_OPE_TEMPLATE, TRUE );
 	}
 }
 

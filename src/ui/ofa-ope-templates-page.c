@@ -809,7 +809,7 @@ on_delete_clicked( GtkButton *button, ofaPage *page )
 		g_object_unref( model );
 
 		if( delete_confirmed( OFA_OPE_TEMPLATES_PAGE( page ), model ) &&
-				ofo_ope_template_delete( model )){
+				ofo_ope_template_delete( model, ofa_page_get_dossier( page ))){
 
 			/* remove the row from the model
 			 * this will cause an automatic new selection */
@@ -889,7 +889,7 @@ on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self )
 		ofo_ope_template_set_label( duplicate, str );
 		g_free( str );
 
-		if( !ofo_ope_template_insert( duplicate )){
+		if( !ofo_ope_template_insert( duplicate, ofa_page_get_dossier( OFA_PAGE( self )))){
 			g_object_unref( duplicate );
 		}
 	}

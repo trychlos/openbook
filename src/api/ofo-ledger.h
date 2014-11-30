@@ -69,7 +69,7 @@ ofxAmount       ofo_ledger_get_deb         ( const ofoLedger *ledger, const gcha
 ofxAmount       ofo_ledger_get_cre         ( const ofoLedger *ledger, const gchar *currency );
 
 gboolean        ofo_ledger_has_entries     ( const ofoLedger *ledger );
-gboolean        ofo_ledger_is_deletable    ( const ofoLedger *ledger, const ofoDossier *dossier );
+gboolean        ofo_ledger_is_deletable    ( const ofoLedger *ledger, ofoDossier *dossier );
 gboolean        ofo_ledger_is_valid        ( const gchar *mnemo, const gchar *label );
 
 void            ofo_ledger_set_mnemo       ( ofoLedger *ledger, const gchar *number );

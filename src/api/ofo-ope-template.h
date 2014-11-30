@@ -42,10 +42,10 @@ G_BEGIN_DECLS
 
 void            ofo_ope_template_connect_handlers  ( const ofoDossier *dossier );
 
-GList          *ofo_ope_template_get_dataset       ( const ofoDossier *dossier );
-ofoOpeTemplate *ofo_ope_template_get_by_mnemo      ( const ofoDossier *dossier, const gchar *mnemo );
-gboolean        ofo_ope_template_use_ledger        ( const ofoDossier *dossier, const gchar *ledger );
-gboolean        ofo_ope_template_use_rate          ( const ofoDossier *dossier, const gchar *mnemo );
+GList          *ofo_ope_template_get_dataset       ( ofoDossier *dossier );
+ofoOpeTemplate *ofo_ope_template_get_by_mnemo      ( ofoDossier *dossier, const gchar *mnemo );
+gboolean        ofo_ope_template_use_ledger        ( ofoDossier *dossier, const gchar *ledger );
+gboolean        ofo_ope_template_use_rate          ( ofoDossier *dossier, const gchar *mnemo );
 
 ofoOpeTemplate *ofo_ope_template_new               ( void );
 ofoOpeTemplate *ofo_ope_template_new_from_template ( const ofoOpeTemplate *model );
@@ -60,7 +60,10 @@ const gchar    *ofo_ope_template_get_upd_user      ( const ofoOpeTemplate *model
 const GTimeVal *ofo_ope_template_get_upd_stamp     ( const ofoOpeTemplate *model );
 
 gboolean        ofo_ope_template_is_deletable      ( const ofoOpeTemplate *model );
-gboolean        ofo_ope_template_is_valid          ( const gchar *mnemo, const gchar *label, const gchar *ledger );
+gboolean        ofo_ope_template_is_valid          ( ofoDossier *dossier,
+															const gchar *mnemo,
+															const gchar *label,
+															const gchar *ledger );
 
 void            ofo_ope_template_set_mnemo         ( ofoOpeTemplate *model, const gchar *mnemo );
 void            ofo_ope_template_set_label         ( ofoOpeTemplate *model, const gchar *label );
@@ -89,11 +92,11 @@ gboolean        ofo_ope_template_get_detail_credit_locked ( const ofoOpeTemplate
 
 gboolean        ofo_ope_template_detail_is_formula        ( const gchar *str );
 
-gboolean        ofo_ope_template_insert            ( ofoOpeTemplate *model );
-gboolean        ofo_ope_template_update            ( ofoOpeTemplate *model, const gchar *prev_mnemo );
-gboolean        ofo_ope_template_delete            ( ofoOpeTemplate *model );
+gboolean        ofo_ope_template_insert            ( ofoOpeTemplate *model, ofoDossier *dossier );
+gboolean        ofo_ope_template_update            ( ofoOpeTemplate *model, ofoDossier *dossier, const gchar *prev_mnemo );
+gboolean        ofo_ope_template_delete            ( ofoOpeTemplate *model, ofoDossier *dossier );
 
-void            ofo_ope_template_import_csv        ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+void            ofo_ope_template_import_csv        ( ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 
