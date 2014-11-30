@@ -53,8 +53,8 @@ typedef struct {
 }
 	ofsRateValidity;
 
-GList          *ofo_rate_get_dataset     ( const ofoDossier *dossier );
-ofoRate        *ofo_rate_get_by_mnemo    ( const ofoDossier *dossier, const gchar *mnemo );
+GList          *ofo_rate_get_dataset     ( ofoDossier *dossier );
+ofoRate        *ofo_rate_get_by_mnemo    ( ofoDossier *dossier, const gchar *mnemo );
 
 ofoRate        *ofo_rate_new             ( void );
 
@@ -71,7 +71,7 @@ const GDate    *ofo_rate_get_val_end     ( const ofoRate *rate, gint idx );
 ofxAmount       ofo_rate_get_val_rate    ( const ofoRate *rate, gint idx );
 ofxAmount       ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date );
 
-gboolean        ofo_rate_is_deletable    ( const ofoRate *rate );
+gboolean        ofo_rate_is_deletable    ( const ofoRate *rate, ofoDossier *dossier );
 gboolean        ofo_rate_is_valid        ( const gchar *mnemo, const gchar *label, GList *validities );
 
 void            ofo_rate_set_mnemo       ( ofoRate *rate, const gchar *number );
@@ -80,11 +80,11 @@ void            ofo_rate_set_notes       ( ofoRate *rate, const gchar *notes );
 void            ofo_rate_free_all_val    ( ofoRate *rate );
 void            ofo_rate_add_val         ( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value );
 
-gboolean        ofo_rate_insert          ( ofoRate *rate );
-gboolean        ofo_rate_update          ( ofoRate *rate, const gchar *prev_mnemo );
-gboolean        ofo_rate_delete          ( ofoRate *rate );
+gboolean        ofo_rate_insert          ( ofoRate *rate, ofoDossier *dossier );
+gboolean        ofo_rate_update          ( ofoRate *rate, ofoDossier *dossier, const gchar *prev_mnemo );
+gboolean        ofo_rate_delete          ( ofoRate *rate, ofoDossier *dossier );
 
-void            ofo_rate_import_csv      ( const ofoDossier *dossier, GSList *lines, gboolean with_header );
+void            ofo_rate_import_csv      ( ofoDossier *dossier, GSList *lines, gboolean with_header );
 
 G_END_DECLS
 

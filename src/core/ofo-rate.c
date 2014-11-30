@@ -35,6 +35,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -56,11 +57,7 @@ struct _ofoRatePrivate {
 	GList     *validities;
 };
 
-OFO_BASE_DEFINE_GLOBAL( st_global, rate )
-
-static void             iexportable_iface_init( ofaIExportableInterface *iface );
-static guint            iexportable_get_interface_version( const ofaIExportable *instance );
-static GList           *rate_load_dataset( void );
+static GList           *rate_load_dataset( ofoDossier *dossier, GType type );
 static ofoRate         *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void             rate_set_upd_user( ofoRate *rate, const gchar *user );
 static void             rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
@@ -76,6 +73,8 @@ static gboolean         rate_do_delete( ofoRate *rate, const ofaDbms *dbms );
 static gint             rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
 static gint             rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
 static gint             rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent );
+static void             iexportable_iface_init( ofaIExportableInterface *iface );
+static guint            iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean         iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
 static ofoRate         *rate_import_csv_rate( GSList *fields, gint count, gint *errors );
 static ofsRateValidity *rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnemo );
@@ -83,6 +82,8 @@ static gboolean         rate_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
+
+OFA_IDATASET_LOAD( RATE, rate );
 
 static void
 rate_free_validity( ofsRateValidity *sval )
@@ -161,47 +162,8 @@ ofo_rate_class_init( ofoRateClass *klass )
 	g_type_class_add_private( klass, sizeof( ofoRatePrivate ));
 }
 
-static void
-iexportable_iface_init( ofaIExportableInterface *iface )
-{
-	static const gchar *thisfn = "ofo_rate_iexportable_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
-}
-
-static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
-{
-	return( 1 );
-}
-
-/**
- * ofo_rate_get_dataset:
- * @dossier: the currently opened #ofoDossier dossier.
- *
- * Returns: The list of #ofoRate rates, ordered by ascending
- * mnemonic. The returned list is owned by the #ofoRate class, and
- * should not be freed by the caller.
- */
-GList *
-ofo_rate_get_dataset( const ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_rate_get_dataset";
-
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, rate );
-
-	return( st_global->dataset );
-}
-
 static GList *
-rate_load_dataset( void )
+rate_load_dataset( ofoDossier *dossier, GType type )
 {
 	const ofaDbms *dbms;
 	GSList *result, *irow, *icol;
@@ -212,7 +174,7 @@ rate_load_dataset( void )
 	GTimeVal timeval;
 
 	dataset = NULL;
-	dbms = ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier ));
+	dbms = ofo_dossier_get_dbms( dossier );
 
 	result = ofa_dbms_query_ex( dbms,
 			"SELECT RAT_MNEMO,RAT_LABEL,RAT_NOTES,"
@@ -278,14 +240,14 @@ rate_load_dataset( void )
  * not be unreffed by the caller.
  */
 ofoRate *
-ofo_rate_get_by_mnemo( const ofoDossier *dossier, const gchar *mnemo )
+ofo_rate_get_by_mnemo( ofoDossier *dossier, const gchar *mnemo )
 {
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( mnemo && g_utf8_strlen( mnemo, -1 ), NULL );
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, rate );
+	OFA_IDATASET_GET( dossier, RATE, rate );
 
-	return( rate_find_by_mnemo( st_global->dataset, mnemo ));
+	return( rate_find_by_mnemo( rate_dataset, mnemo ));
 }
 
 static ofoRate *
@@ -593,15 +555,12 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
  * credit formulas of a model detail line.
  */
 gboolean
-ofo_rate_is_deletable( const ofoRate *rate )
+ofo_rate_is_deletable( const ofoRate *rate, ofoDossier *dossier )
 {
-	ofoDossier *dossier;
-
-	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
+	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		dossier = OFO_DOSSIER( st_global->dossier );
 
 		return( !ofo_ope_template_use_rate( dossier, ofo_rate_get_mnemo( rate )));
 	}
@@ -772,12 +731,12 @@ rate_val_add_detail( ofoRate *rate, ofsRateValidity *detail )
  * previously existing old validity rows.
  */
 gboolean
-ofo_rate_insert( ofoRate *rate )
+ofo_rate_insert( ofoRate *rate, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_rate_insert";
 
-	g_return_val_if_fail( OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
@@ -785,10 +744,10 @@ ofo_rate_insert( ofoRate *rate )
 
 		if( rate_do_insert(
 					rate,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_ADD_TO_DATASET( st_global, rate );
+			OFA_IDATASET_ADD( dossier, RATE, rate );
 
 			return( TRUE );
 		}
@@ -936,12 +895,12 @@ rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofaDbms *dbms 
  * Only update here the main properties.
  */
 gboolean
-ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
+ofo_rate_update( ofoRate *rate, ofoDossier *dossier, const gchar *prev_mnemo )
 {
 	static const gchar *thisfn = "ofo_rate_update";
 
-	g_return_val_if_fail( OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
+	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( prev_mnemo && g_utf8_strlen( prev_mnemo, -1 ), FALSE );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
@@ -951,10 +910,10 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 		if( rate_do_update(
 					rate,
 					prev_mnemo,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )),
-					ofo_dossier_get_user( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ))){
 
-			OFO_BASE_UPDATE_DATASET( st_global, rate, prev_mnemo );
+			OFA_IDATASET_UPDATE( dossier, RATE, rate, prev_mnemo );
 
 			return( TRUE );
 		}
@@ -1024,13 +983,13 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, c
  * ofo_rate_delete:
  */
 gboolean
-ofo_rate_delete( ofoRate *rate )
+ofo_rate_delete( ofoRate *rate, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_rate_delete";
 
-	g_return_val_if_fail( OFO_IS_RATE( rate ), FALSE );
-	g_return_val_if_fail( st_global && st_global->dossier && OFO_IS_DOSSIER( st_global->dossier ), FALSE );
-	g_return_val_if_fail( ofo_rate_is_deletable( rate ), FALSE );
+	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+	g_return_val_if_fail( ofo_rate_is_deletable( rate, dossier ), FALSE );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
@@ -1038,9 +997,9 @@ ofo_rate_delete( ofoRate *rate )
 
 		if( rate_do_delete(
 					rate,
-					ofo_dossier_get_dbms( OFO_DOSSIER( st_global->dossier )))){
+					ofo_dossier_get_dbms( dossier ))){
 
-			OFO_BASE_REMOVE_FROM_DATASET( st_global, rate );
+			OFA_IDATASET_REMOVE( dossier, RATE, rate );
 
 			return( TRUE );
 		}
@@ -1168,6 +1127,26 @@ rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consiste
 }
 
 /*
+ * ofaIExportable interface management
+ */
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_rate_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
+}
+
+/*
  * iexportable_export:
  *
  * Exports the classes line by line.
@@ -1187,15 +1166,15 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	gboolean ok, with_headers;
 	gulong count;
 
-	OFO_BASE_SET_GLOBAL( st_global, dossier, rate );
+	OFA_IDATASET_GET( dossier, RATE, rate );
 
 	with_headers = ofa_export_settings_get_headers( settings );
 
-	count = ( gulong ) g_list_length( st_global->dataset );
+	count = ( gulong ) g_list_length( rate_dataset );
 	if( with_headers ){
 		count += 2;
 	}
-	for( it=st_global->dataset ; it ; it=it->next ){
+	for( it=rate_dataset ; it ; it=it->next ){
 		rate = OFO_RATE( it->data );
 		count += g_list_length( rate->priv->validities );
 	}
@@ -1219,7 +1198,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 		}
 	}
 
-	for( it=st_global->dataset ; it ; it=it->next ){
+	for( it=rate_dataset ; it ; it=it->next ){
 		rate = OFO_RATE( it->data );
 
 		notes = my_utils_export_multi_lines( ofo_rate_get_notes( rate ));
@@ -1292,7 +1271,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
  * Replace the whole table with the provided datas.
  */
 void
-ofo_rate_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_header )
+ofo_rate_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 {
 	static const gchar *thisfn = "ofo_rate_import_csv";
 	gint type;
@@ -1310,8 +1289,6 @@ ofo_rate_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 			( void * ) dossier,
 			( void * ) lines, g_slist_length( lines ),
 			with_header ? "True":"False" );
-
-	OFO_BASE_SET_GLOBAL( st_global, dossier, rate );
 
 	new_set = NULL;
 	count = 0;
@@ -1355,7 +1332,7 @@ ofo_rate_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 	}
 
 	if( !errors ){
-		st_global->send_signal_new = FALSE;
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_RATE, FALSE );
 
 		rate_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
@@ -1366,15 +1343,14 @@ ofo_rate_import_csv( const ofoDossier *dossier, GSList *lines, gboolean with_hea
 					ofo_dossier_get_user( dossier ));
 		}
 
-		if( st_global ){
-			g_list_free_full( st_global->dataset, ( GDestroyNotify ) g_object_unref );
-			st_global->dataset = NULL;
-		}
-		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_RATE );
+		ofa_idataset_free_dataset( dossier, OFO_TYPE_RATE );
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_RATE );
 
 		g_list_free( new_set );
 
-		st_global->send_signal_new = TRUE;
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_RATE, TRUE );
 	}
 }
 

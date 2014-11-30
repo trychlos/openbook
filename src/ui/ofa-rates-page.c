@@ -531,7 +531,8 @@ on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self )
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive(
 				priv->delete_btn,
-				rate && OFO_IS_RATE( rate ) && ofo_rate_is_deletable( rate ));
+				rate && OFO_IS_RATE( rate ) &&
+					ofo_rate_is_deletable( rate, ofa_page_get_dossier( OFA_PAGE( self ))));
 	}
 }
 
@@ -656,7 +657,7 @@ on_delete_clicked( ofaRatesPage *page )
 		g_object_unref( rate );
 
 		if( delete_confirmed( page, rate ) &&
-				ofo_rate_delete( rate )){
+				ofo_rate_delete( rate, ofa_page_get_dossier( OFA_PAGE( page )))){
 
 			/* nothing to do here as all is managed by dossier signaling
 			 * system */

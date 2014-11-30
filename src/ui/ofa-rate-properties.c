@@ -602,6 +602,7 @@ do_update( ofaRateProperties *self )
 	const GDate *dbegin, *dend;
 	gchar *prev_mnemo;
 	gdouble rate;
+	ofoDossier *dossier;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -630,12 +631,14 @@ do_update( ofaRateProperties *self )
 		}
 	}
 
+	dossier = MY_WINDOW( self )->prot->dossier;
+
 	if( priv->is_new ){
 		priv->updated =
-				ofo_rate_insert( priv->rate );
+				ofo_rate_insert( priv->rate, dossier );
 	} else {
 		priv->updated =
-				ofo_rate_update( priv->rate, prev_mnemo );
+				ofo_rate_update( priv->rate, dossier, prev_mnemo );
 	}
 
 	g_free( prev_mnemo );
