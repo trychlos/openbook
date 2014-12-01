@@ -176,29 +176,30 @@ rate_load_dataset( ofoDossier *dossier )
 	dataset = NULL;
 	dbms = ofo_dossier_get_dbms( dossier );
 
-	result = ofa_dbms_query_ex( dbms,
+	if( ofa_dbms_query_ex( dbms,
 			"SELECT RAT_MNEMO,RAT_LABEL,RAT_NOTES,"
 			"	RAT_UPD_USER,RAT_UPD_STAMP"
-			"	FROM OFA_T_RATES", TRUE );
+			"	FROM OFA_T_RATES", &result, TRUE )){
 
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = ( GSList * ) irow->data;
-		rate = ofo_rate_new();
-		ofo_rate_set_mnemo( rate, ( gchar * ) icol->data );
-		icol = icol->next;
-		ofo_rate_set_label( rate, ( gchar * ) icol->data );
-		icol = icol->next;
-		ofo_rate_set_notes( rate, ( gchar * ) icol->data );
-		icol = icol->next;
-		rate_set_upd_user( rate, ( gchar * ) icol->data );
-		icol = icol->next;
-		rate_set_upd_stamp( rate,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			rate = ofo_rate_new();
+			ofo_rate_set_mnemo( rate, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_rate_set_label( rate, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_rate_set_notes( rate, ( gchar * ) icol->data );
+			icol = icol->next;
+			rate_set_upd_user( rate, ( gchar * ) icol->data );
+			icol = icol->next;
+			rate_set_upd_stamp( rate,
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
-		dataset = g_list_prepend( dataset, rate );
+			dataset = g_list_prepend( dataset, rate );
+		}
+
+		ofa_dbms_free_results( result );
 	}
-
-	ofa_dbms_free_results( result );
 
 	for( it=dataset ; it ; it=it->next ){
 
@@ -211,21 +212,20 @@ rate_load_dataset( ofoDossier *dossier )
 					"	WHERE RAT_MNEMO='%s'",
 					ofo_rate_get_mnemo( rate ));
 
-		result = ofa_dbms_query_ex( dbms, query, TRUE );
-
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			valid = g_new0( ofsRateValidity, 1 );
-			my_date_set_from_sql( &valid->begin, ( const gchar * ) icol->data );
-			icol = icol->next;
-			my_date_set_from_sql( &valid->end, ( const gchar * ) icol->data );
-			icol = icol->next;
-			valid->rate = my_double_set_from_sql(( const gchar * ) icol->data );
-			rate_val_add_detail( rate, valid );
+		if( ofa_dbms_query_ex( dbms, query, &result, TRUE )){
+			for( irow=result ; irow ; irow=irow->next ){
+				icol = ( GSList * ) irow->data;
+				valid = g_new0( ofsRateValidity, 1 );
+				my_date_set_from_sql( &valid->begin, ( const gchar * ) icol->data );
+				icol = icol->next;
+				my_date_set_from_sql( &valid->end, ( const gchar * ) icol->data );
+				icol = icol->next;
+				valid->rate = my_double_set_from_sql(( const gchar * ) icol->data );
+				rate_val_add_detail( rate, valid );
+			}
+			ofa_dbms_free_results( result );
+			g_free( query );
 		}
-
-		ofa_dbms_free_results( result );
-		g_free( query );
 	}
 
 	return( g_list_reverse( dataset ));

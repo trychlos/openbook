@@ -344,40 +344,39 @@ ledger_load_dataset( ofoDossier *dossier )
 	GTimeVal timeval;
 	GDate date;
 
+	dataset = NULL;
 	dbms = ofo_dossier_get_dbms( dossier );
 
-	result = ofa_dbms_query_ex( dbms,
+	if( ofa_dbms_query_ex( dbms,
 			"SELECT LED_MNEMO,LED_LABEL,LED_NOTES,"
 			"	LED_UPD_USER,LED_UPD_STAMP,LED_LAST_CLO "
-			"	FROM OFA_T_LEDGERS", TRUE );
+			"	FROM OFA_T_LEDGERS", &result, TRUE )){
 
-	dataset = NULL;
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			ledger = ofo_ledger_new();
+			ofo_ledger_set_mnemo( ledger, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_ledger_set_label( ledger, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_ledger_set_notes( ledger, ( gchar * ) icol->data );
+			icol = icol->next;
+			ledger_set_upd_user( ledger, ( gchar * ) icol->data );
+			icol = icol->next;
+			ledger_set_upd_stamp( ledger,
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+			icol = icol->next;
+			ledger_set_last_clo( ledger, my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
 
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = ( GSList * ) irow->data;
-		ledger = ofo_ledger_new();
-		ofo_ledger_set_mnemo( ledger, ( gchar * ) icol->data );
-		icol = icol->next;
-		ofo_ledger_set_label( ledger, ( gchar * ) icol->data );
-		icol = icol->next;
-		ofo_ledger_set_notes( ledger, ( gchar * ) icol->data );
-		icol = icol->next;
-		ledger_set_upd_user( ledger, ( gchar * ) icol->data );
-		icol = icol->next;
-		ledger_set_upd_stamp( ledger,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
-		icol = icol->next;
-		ledger_set_last_clo( ledger, my_date_set_from_sql( &date, ( const gchar * ) icol->data ));
+			dataset = g_list_prepend( dataset, ledger );
+		}
 
-		dataset = g_list_prepend( dataset, ledger );
+		ofa_dbms_free_results( result );
 	}
-
-	ofa_dbms_free_results( result );
 
 	/* then load the details
 	 */
 	for( iset=dataset ; iset ; iset=iset->next ){
-
 		ledger = OFO_LEDGER( iset->data );
 
 		query = g_strdup_printf(
@@ -387,29 +386,28 @@ ledger_load_dataset( ofoDossier *dossier )
 				"FROM OFA_T_LEDGERS_CUR WHERE LED_MNEMO='%s'",
 						ofo_ledger_get_mnemo( ledger ));
 
-		result = ofa_dbms_query_ex( dbms, query, TRUE );
-		g_free( query );
+		if( ofa_dbms_query_ex( dbms, query, &result, TRUE )){
+			for( irow=result ; irow ; irow=irow->next ){
+				icol = ( GSList * ) irow->data;
+				balance = g_new0( sDetailCur, 1 );
+				balance->currency = g_strdup(( gchar * ) icol->data );
+				icol = icol->next;
+				balance->clo_deb = my_double_set_from_sql(( const gchar * ) icol->data );
+				icol = icol->next;
+				balance->clo_cre = my_double_set_from_sql(( const gchar * ) icol->data );
+				icol = icol->next;
+				balance->deb = my_double_set_from_sql(( const gchar * ) icol->data );
+				icol = icol->next;
+				balance->cre = my_double_set_from_sql(( const gchar * ) icol->data );
 
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			balance = g_new0( sDetailCur, 1 );
-			balance->currency = g_strdup(( gchar * ) icol->data );
-			icol = icol->next;
-			balance->clo_deb = my_double_set_from_sql(( const gchar * ) icol->data );
-			icol = icol->next;
-			balance->clo_cre = my_double_set_from_sql(( const gchar * ) icol->data );
-			icol = icol->next;
-			balance->deb = my_double_set_from_sql(( const gchar * ) icol->data );
-			icol = icol->next;
-			balance->cre = my_double_set_from_sql(( const gchar * ) icol->data );
+				g_debug( "ledger_load_dataset: adding ledger=%s, currency=%s",
+						ofo_ledger_get_mnemo( ledger ), balance->currency );
 
-			g_debug( "ledger_load_dataset: adding ledger=%s, currency=%s",
-					ofo_ledger_get_mnemo( ledger ), balance->currency );
-
-			ledger->priv->amounts = g_list_prepend( ledger->priv->amounts, balance );
+				ledger->priv->amounts = g_list_prepend( ledger->priv->amounts, balance );
+			}
+			ofa_dbms_free_results( result );
 		}
-
-		ofa_dbms_free_results( result );
+		g_free( query );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -475,21 +473,13 @@ ledger_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
-	GSList *result, *icol;
 
 	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_LEDGERS_CUR WHERE %s='%s'",
-				field, mnemo );
+				"SELECT COUNT(*) FROM OFA_T_LEDGERS_CUR WHERE %s='%s'", field, mnemo );
 
-	count = 0;
-	result = ofa_dbms_query_ex( dbms, query, TRUE );
+	ofa_dbms_query_int( dbms, query, &count, TRUE );
+
 	g_free( query );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		count = atoi(( gchar * ) icol->data );
-		ofa_dbms_free_results( result );
-	}
 
 	return( count );
 }
@@ -638,16 +628,13 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger, ofoDossier *dossier )
 				"SELECT MAX(ENT_DEFFECT) FROM OFA_T_ENTRIES "
 				"	WHERE ENT_LEDGER='%s'", ofo_ledger_get_mnemo( ledger ));
 
-		result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query, TRUE );
-
-		g_free( query );
-
-		if( result ){
+		if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query, &result, TRUE )){
 			icol = ( GSList * ) result->data;
 			deffect = g_new0( GDate, 1 );
 			my_date_set_from_sql( deffect, ( const gchar * ) icol->data );
 			ofa_dbms_free_results( result );
 		}
+		g_free( query );
 	}
 
 	return( deffect );

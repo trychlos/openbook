@@ -98,7 +98,7 @@ struct _ofaViewEntriesPrivate {
 	 */
 	GtkToggleButton   *ledger_btn;
 	ofaLedgerCombo    *ledger_combo;
-	GtkComboBox       *ledger_box;
+	GtkWidget         *ledger_parent;
 	gchar             *jou_mnemo;
 
 	GtkToggleButton   *account_btn;
@@ -250,7 +250,7 @@ static void           v_init_view( ofaPage *page );
 static void           set_visible_columns( ofaViewEntries *self );
 static GtkWidget     *v_get_top_focusable_widget( const ofaPage *page );
 static void           on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self );
-static void           on_ledger_changed( const gchar *mnemo, ofaViewEntries *self );
+static void           on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaViewEntries *self );
 static void           display_entries_from_ledger( ofaViewEntries *self );
 static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
@@ -485,27 +485,25 @@ static void
 setup_ledger_selection( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
-	ofaLedgerComboParms parms;
 	gchar *initial_mnemo;
 
 	priv = self->priv;
 
 	initial_mnemo = ofa_settings_get_string( st_pref_ledger );
 
-	parms.container = priv->top_box;
-	parms.dossier = priv->dossier;
-	parms.combo_name = "f1-ledger";
-	parms.label_name = NULL;
-	parms.disp_mnemo = FALSE;
-	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaLedgerComboCb ) on_ledger_changed;
-	parms.user_data = self;
-	parms.initial_mnemo = initial_mnemo;
+	priv->ledger_combo = ofa_ledger_combo_new();
 
-	priv->ledger_combo = ofa_ledger_combo_new( &parms );
+	priv->ledger_parent = my_utils_container_get_child_by_name( priv->top_box, "f1-ledger-parent" );
+	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
 
-	priv->ledger_box = ( GtkComboBox * ) my_utils_container_get_child_by_name( priv->top_box, "f1-ledger" );
-	g_return_if_fail( priv->ledger_box && GTK_IS_COMBO_BOX( priv->ledger_box ));
+	ofa_ledger_combo_attach_to(
+			priv->ledger_combo, FALSE, TRUE, GTK_CONTAINER( priv->ledger_parent ));
+
+	g_signal_connect(
+			G_OBJECT( priv->ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), self );
+
+	ofa_ledger_combo_init_view(
+			priv->ledger_combo, priv->dossier, initial_mnemo);
 
 	g_free( initial_mnemo );
 }
@@ -1406,7 +1404,7 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 
 	if( button == priv->ledger_btn ){
 		/* make the selection frame sensitive */
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->ledger_box ), is_active );
+		gtk_widget_set_sensitive( priv->ledger_parent, is_active );
 
 		/* update the default visibility of the columns */
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_checkbox ), !is_active );
@@ -1437,7 +1435,7 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
  * ofaLedgerCombo callback
  */
 static void
-on_ledger_changed( const gchar *mnemo, ofaViewEntries *self )
+on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
 
@@ -2022,7 +2020,7 @@ ofa_view_entries_display_entries( ofaViewEntries *self, GType type, const gchar 
 		} else if( type == OFO_TYPE_LEDGER ){
 
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ), TRUE );
-			ofa_ledger_combo_set_selection( priv->ledger_combo, id );
+			ofa_ledger_combo_set_selected( priv->ledger_combo, id );
 		}
 	}
 }

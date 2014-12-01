@@ -140,15 +140,15 @@ ofo_base_load_dataset( const ofsBoxedDef *defs, const ofaDbms *dbms, const gchar
 	query = g_strdup_printf( "SELECT %s FROM %s", columns, from );
 	g_free( columns );
 
-	result = ofa_dbms_query_ex( dbms, query, TRUE );
-	g_free( query );
-
-	for( irow=result ; irow ; irow=irow->next ){
-		object = g_object_new( type, NULL );
-		object->prot->fields = ofa_boxed_parse_dbms_result( defs, irow );
-		dataset = g_list_prepend( dataset, object );
+	if( ofa_dbms_query_ex( dbms, query, &result, TRUE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			object = g_object_new( type, NULL );
+			object->prot->fields = ofa_boxed_parse_dbms_result( defs, irow );
+			dataset = g_list_prepend( dataset, object );
+		}
+		ofa_dbms_free_results( result );
 	}
-	ofa_dbms_free_results( result );
+	g_free( query );
 
 	return( g_list_reverse( dataset ));
 }

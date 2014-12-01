@@ -44,14 +44,29 @@
 /* private instance data
  */
 struct _ofaExeClosingPrivate {
+	void *empty;
+};
 
-	gboolean  success;
+/* the pages of this assistant
+ */
+enum {
+	PAGE_INTRO = 0,						/* Intro */
+	PAGE_PARMS,							/* Content */
+	PAGE_CONFIRM,						/* Confirm */
+	PAGE_SUMMARY						/* Summary */
 };
 
 static const gchar  *st_ui_xml = PKGUIDIR "/ofa-exe-closing.ui";
 static const gchar  *st_ui_id  = "ExeClosingAssistant";
 
 G_DEFINE_TYPE( ofaExeClosing, ofa_exe_closing, MY_TYPE_ASSISTANT )
+
+static void on_prepare( GtkAssistant *assistant, GtkWidget *page_widget, ofaExeClosing *self );
+static void on_page_forward( ofaExeClosing *self, GtkWidget *page_widget, gint page_num, void *empty );
+static void p1_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
+static void p8_do_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
+static void on_apply( GtkAssistant *assistant, ofaExeClosing *self );
+static void p9_do_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
 
 static void
 exe_closing_finalize( GObject *instance )
@@ -133,11 +148,87 @@ ofa_exe_closing_run( ofaMainWindow *main_window )
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	/*g_signal_connect(
+	g_signal_connect(
 			G_OBJECT( self ), MY_SIGNAL_PAGE_FORWARD, G_CALLBACK( on_page_forward ), NULL );
 
 	my_assistant_signal_connect( MY_ASSISTANT( self ), "prepare", G_CALLBACK( on_prepare ));
-	my_assistant_signal_connect( MY_ASSISTANT( self ), "apply", G_CALLBACK( on_apply ));*/
+	my_assistant_signal_connect( MY_ASSISTANT( self ), "apply", G_CALLBACK( on_apply ));
 
 	my_assistant_run( MY_ASSISTANT( self ));
+}
+
+static void
+on_prepare( GtkAssistant *assistant, GtkWidget *page_widget, ofaExeClosing *self )
+{
+	static const gchar *thisfn = "ofa_exe_closing_on_prepare";
+	gint page_num;
+
+	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+	g_return_if_fail( page_widget && GTK_IS_WIDGET( page_widget ));
+	g_return_if_fail( self && OFA_IS_EXE_CLOSING( self ));
+
+	page_num = gtk_assistant_get_current_page( assistant );
+
+	g_debug( "%s: assistant=%p, page_widget=%p, page_num=%d, self=%p",
+			thisfn, ( void * ) assistant, ( void * ) page_widget, page_num, ( void * ) self );
+
+	switch( page_num ){
+		/* 0 [Intro] Introduction */
+		case PAGE_INTRO:
+			break;
+
+		/* 1 [Content] Check and parms */
+		case PAGE_PARMS:
+			if( !my_assistant_is_page_initialized( MY_ASSISTANT( self ), page_widget )){
+				p1_do_init( self, assistant, page_widget );
+				my_assistant_set_page_initialized( MY_ASSISTANT( self ), page_widget, TRUE );
+			}
+			break;
+
+		/* 8 [Confirm] Confirm the informations before closing */
+		case PAGE_CONFIRM:
+			p8_do_display( self, assistant, page_widget );
+			break;
+
+		/* 9 [Summary] Close the exercice and print the result */
+		case PAGE_SUMMARY:
+			p9_do_display( self, assistant, page_widget );
+			break;
+	}
+}
+
+static void
+on_page_forward( ofaExeClosing *self, GtkWidget *page_widget, gint page_num, void *empty )
+{
+	static const gchar *thisfn = "ofa_exe_closing_on_page_forward";
+
+	g_return_if_fail( self && OFA_IS_EXE_CLOSING( self ));
+	g_return_if_fail( page_widget && GTK_IS_WIDGET( page_widget ));
+
+	g_debug( "%s: self=%p, page_widget=%p, page_num=%d, empty=%p",
+			thisfn, ( void * ) self, ( void * ) page_widget, page_num, ( void * ) empty );
+}
+
+static void
+p1_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+{
+	gtk_assistant_set_page_complete( assistant, page_widget, TRUE );
+}
+
+static void
+p8_do_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+{
+
+}
+
+static void
+on_apply( GtkAssistant *assistant, ofaExeClosing *self )
+{
+
+}
+
+static void
+p9_do_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+{
+
 }

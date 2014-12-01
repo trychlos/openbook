@@ -189,10 +189,7 @@ bat_line_load_dataset( ofxCounter bat_id, const ofaDbms *dbms)
 
 	query = g_string_append( query, "ORDER BY BAT_LINE_DEFFECT ASC" );
 
-	result = ofa_dbms_query_ex( dbms, query->str, TRUE );
-	g_string_free( query, TRUE );
-
-	if( result ){
+	if( ofa_dbms_query_ex( dbms, query->str, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			line = ofo_bat_line_new( bat_id );
@@ -229,12 +226,11 @@ bat_line_load_dataset( ofxCounter bat_id, const ofaDbms *dbms)
 				bat_line_set_upd_stamp( line,
 						my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 			}
-
 			dataset = g_list_prepend( dataset, line );
 		}
-
 		ofa_dbms_free_results( result );
 	}
+	g_string_free( query, TRUE );
 
 	return( g_list_reverse( dataset ));
 }

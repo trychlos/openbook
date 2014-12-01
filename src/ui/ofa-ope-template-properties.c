@@ -65,6 +65,7 @@ struct _ofaOpeTemplatePropertiesPrivate {
 	 */
 	ofoOpeTemplate   *ope_template;
 	ofaLedgerCombo  *ledger_combo;
+	GtkWidget       *ledger_parent;
 	GtkGrid          *grid;				/* detail grid */
 	gint              count;			/* count of added detail lines */
 
@@ -132,7 +133,7 @@ static void      signal_row_added( ofaOpeTemplateProperties *self );
 static void      signal_row_removed( ofaOpeTemplateProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
-static void      on_ledger_changed( const gchar *mnemo, ofaOpeTemplateProperties *self );
+static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaOpeTemplateProperties *self );
 static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
 static void      on_account_selection( ofaOpeTemplateProperties *self, gint row );
 static void      on_button_clicked( GtkButton *button, ofaOpeTemplateProperties *self );
@@ -257,7 +258,6 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaOpeTemplateProperties *self;
 	ofaOpeTemplatePropertiesPrivate *priv;
-	ofaLedgerComboParms parms;
 	const gchar *mnemo;
 	GtkWindow *toplevel;
 
@@ -272,16 +272,20 @@ v_init_dialog( myDialog *dialog )
 	mnemo = ofo_ope_template_get_mnemo( priv->ope_template );
 	priv->is_new = !mnemo || !g_utf8_strlen( mnemo, -1 );
 
-	parms.container = GTK_CONTAINER( toplevel );
-	parms.dossier = MY_WINDOW( dialog )->prot->dossier;
-	parms.combo_name = "p1-ledger";
-	parms.label_name = NULL;
-	parms.disp_mnemo = FALSE;
-	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaLedgerComboCb ) on_ledger_changed;
-	parms.user_data = self;
-	parms.initial_mnemo = priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template );
-	priv->ledger_combo = ofa_ledger_combo_new( &parms );
+	priv->ledger_combo = ofa_ledger_combo_new();
+
+	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ledger-parent" );
+	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
+	ofa_ledger_combo_attach_to(
+			priv->ledger_combo, FALSE, TRUE, GTK_CONTAINER( priv->ledger_parent ));
+
+	g_signal_connect(
+			G_OBJECT( priv->ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), self );
+
+	ofa_ledger_combo_init_view(
+			priv->ledger_combo,
+			MY_WINDOW( dialog )->prot->dossier,
+			priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template ));
 
 	init_dialog_ledger_locked( self );
 
@@ -599,7 +603,7 @@ on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self )
 }
 
 static void
-on_ledger_changed( const gchar *mnemo, ofaOpeTemplateProperties *self )
+on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaOpeTemplateProperties *self )
 {
 	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_PROPERTIES( self ));
 
@@ -612,7 +616,14 @@ on_ledger_changed( const gchar *mnemo, ofaOpeTemplateProperties *self )
 static void
 on_ledger_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 {
-	self->priv->ledger_locked = gtk_toggle_button_get_active( btn );
+	ofaOpeTemplatePropertiesPrivate *priv;
+
+	priv = self->priv;
+
+	priv->ledger_locked = gtk_toggle_button_get_active( btn );
+
+	gtk_widget_set_sensitive( priv->ledger_parent, !priv->ledger_locked );
+
 	check_for_enable_dlg( self );
 }
 

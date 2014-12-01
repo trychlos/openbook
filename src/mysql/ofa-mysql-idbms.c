@@ -44,20 +44,20 @@
 #define SETTINGS_PORT                   "MySQLPort"
 #define SETTINGS_SOCKET                 "MySQLSocket"
 
-static const gchar  *st_ui_xml          = PROVIDER_DATADIR "/ofa-mysql-connect-infos.piece.ui";
-static const gchar  *st_ui_mysql        = "MySQLConnectInfosWindow";
+static const gchar *st_ui_xml           = PROVIDER_DATADIR "/ofa-mysql-connect-infos.piece.ui";
+static const gchar *st_ui_mysql         = "MySQLConnectInfosWindow";
 
-static guint        idbms_get_interface_version( const ofaIDbms *instance );
-static void        *idbms_connect( const ofaIDbms *instance,const gchar *dname, const gchar *dbname, const gchar *account, const gchar *password );
-static void         setup_infos( sMySQLInfos *infos );
-static gboolean     connect_with_infos( const ofaIDbms *instance, sMySQLInfos *infos, const gchar *password );
-static void         free_infos( sMySQLInfos *infos );
-static void         idbms_close( const ofaIDbms *instance, void *handle );
-static GSList      *idbms_get_exercices( const ofaIDbms *instance, const gchar *dname );
-static gint         cmp_exercices( const gchar *line_a, const gchar *line_b );
-static gboolean     idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
-static GSList      *idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query );
-static gchar       *idbms_last_error( const ofaIDbms *instance, void *handle );
+static guint     idbms_get_interface_version( const ofaIDbms *instance );
+static void     *idbms_connect( const ofaIDbms *instance,const gchar *dname, const gchar *dbname, const gchar *account, const gchar *password );
+static void      setup_infos( sMySQLInfos *infos );
+static gboolean  connect_with_infos( const ofaIDbms *instance, sMySQLInfos *infos, const gchar *password );
+static void      free_infos( sMySQLInfos *infos );
+static void      idbms_close( const ofaIDbms *instance, void *handle );
+static GSList   *idbms_get_exercices( const ofaIDbms *instance, const gchar *dname );
+static gint      cmp_exercices( const gchar *line_a, const gchar *line_b );
+static gboolean  idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
+static gboolean  idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result );
+static gchar    *idbms_last_error( const ofaIDbms *instance, void *handle );
 
 static gchar       *idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label );
 static gchar       *idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label );
@@ -227,8 +227,7 @@ idbms_get_exercices( const ofaIDbms *instance, const gchar *dname )
 	GSList *out_list;
 	const gchar *cstr, *sstr;
 	GList *str_list, *is;
-	gchar *dbname, *sdate, *line;
-	GString *label;
+	gchar *dbname, *sbegin, *send, *slabel, *line;
 	GDate date;
 	gchar **array, **iter;
 
@@ -244,17 +243,17 @@ idbms_get_exercices( const ofaIDbms *instance, const gchar *dname )
 			/* database is the first item */
 			dbname = g_strdup(( const gchar * ) is->data );
 			is = is->next;
+			sbegin = g_strdup( "-" );
+			send = g_strdup( "-" );
 
 			/* current exercice : key = database; begin; end; */
 			if( !g_utf8_collate( cstr, SETTINGS_DATABASE )){
-				label = g_string_new( _( "Current exercice" ));
 				sstr = is ? ( const gchar * ) is->data : NULL;
 				if( sstr && g_utf8_strlen( sstr, -1 )){
 					my_date_set_from_str( &date, sstr, MY_DATE_YYMD );
 					if( my_date_is_valid( &date )){
-						sdate = my_date_to_str( &date, MY_DATE_DMYY );
-						g_string_append_printf( label, _( " from %s" ), sdate );
-						g_free( sdate );
+						g_free( sbegin );
+						sbegin = my_date_to_str( &date, MY_DATE_DMYY );
 					}
 				}
 				is = is ? is->next : NULL;
@@ -262,24 +261,22 @@ idbms_get_exercices( const ofaIDbms *instance, const gchar *dname )
 				if( sstr && g_utf8_strlen( sstr, -1 )){
 					my_date_set_from_str( &date, sstr, MY_DATE_YYMD );
 					if( my_date_is_valid( &date )){
-						sdate = my_date_to_str( &date, MY_DATE_DMYY );
-						g_string_append_printf( label, _( " to %s" ), sdate );
-						g_free( sdate );
+						g_free( send );
+						send = my_date_to_str( &date, MY_DATE_DMYY );
 					}
 				}
+				slabel = g_strdup_printf( _( "Current exercice from %s to %s" ), sbegin, send );
 
 			/* archived exercice : key_begin = database; end; */
 			} else {
 				array = g_strsplit( cstr, "_", -1 );
 				iter = array;
 				iter++;
-				label = g_string_new( _( "Archived exercice" ));
 				if( *iter && g_utf8_strlen( *iter, -1 )){
 					my_date_set_from_str( &date, *iter, MY_DATE_YYMD );
 					if( my_date_is_valid( &date )){
-						sdate = my_date_to_str( &date, MY_DATE_DMYY );
-						g_string_append_printf( label, _( " from %s" ), sdate );
-						g_free( sdate );
+						g_free( sbegin );
+						sbegin = my_date_to_str( &date, MY_DATE_DMYY );
 					}
 				}
 				g_strfreev( array );
@@ -287,16 +284,19 @@ idbms_get_exercices( const ofaIDbms *instance, const gchar *dname )
 				if( is->data && g_utf8_strlen( sstr, -1 )){
 					my_date_set_from_str( &date, sstr, MY_DATE_YYMD );
 					if( my_date_is_valid( &date )){
-						sdate = my_date_to_str( &date, MY_DATE_DMYY );
-						g_string_append_printf( label, _( " to %s" ), sdate );
-						g_free( sdate );
+						g_free( send );
+						send = my_date_to_str( &date, MY_DATE_DMYY );
 					}
 				}
+				slabel = g_strdup_printf( _( "Archived exercice from %s to %s" ), sbegin, send );
 			}
-			line = g_strdup_printf( "%s;%s", label->str, dbname );
+
+			g_free( sbegin );
+			g_free( send );
+			line = g_strdup_printf( "%s;%s", slabel, dbname );
 			out_list = g_slist_insert_sorted( out_list, line, ( GCompareFunc ) cmp_exercices );
 
-			g_string_free( label, TRUE );
+			g_free( slabel );
 			g_free( dbname );
 			ofa_settings_free_string_list( str_list );
 		}
@@ -335,19 +335,21 @@ idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
 	return( query_ok );
 }
 
-static GSList *
-idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query )
+static gboolean
+idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result )
 {
-	GSList *result;
+	gboolean ok;
 	sMySQLInfos *infos;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 	gint fields_count, i;
 
-	result = NULL;
+	ok = FALSE;
+	*result = NULL;
 
 	if( idbms_query( instance, handle, query )){
 
+		ok = TRUE;
 		infos = ( sMySQLInfos * ) handle;
 		res = mysql_store_result( infos->mysql );
 		if( res ){
@@ -358,13 +360,14 @@ idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query )
 					col = g_slist_prepend( col, row[i] ? g_strdup( row[i] ) : NULL );
 				}
 				col = g_slist_reverse( col );
-				result = g_slist_prepend( result, col );
+				*result = g_slist_prepend( *result, col );
 			}
-			result = g_slist_reverse( result );
+			*result = g_slist_reverse( *result );
 		}
+		mysql_free_result( res );
 	}
 
-	return( result );
+	return( ok );
 }
 
 static gchar *

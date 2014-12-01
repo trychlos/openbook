@@ -624,18 +624,11 @@ dbmodel_update( const ofoDossier *dossier )
 static gint
 dbmodel_get_version( const ofoDossier *dossier )
 {
-	GSList *res;
-	gint vmax = 0;
+	gint vmax;
 
-	res = ofa_dbms_query_ex( dossier->priv->dbms,
-			"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0", FALSE );
-	if( res ){
-		gchar *s = ( gchar * )(( GSList * ) res->data )->data;
-		if( s ){
-			vmax = atoi( s );
-		}
-		ofa_dbms_free_results( res );
-	}
+	ofa_dbms_query_int(
+			dossier->priv->dbms,
+			"SELECT MAX(VER_NUMBER) FROM OFA_T_VERSION WHERE VER_DATE > 0", &vmax, FALSE );
 
 	return( vmax );
 }
@@ -2084,11 +2077,7 @@ dossier_read_properties( ofoDossier *dossier )
 			"FROM OFA_T_DOSSIER "
 			"WHERE DOS_ID=%d", THIS_DOS_ID );
 
-	result = ofa_dbms_query_ex( dossier->priv->dbms, query, TRUE );
-
-	g_free( query );
-
-	if( result ){
+	if( ofa_dbms_query_ex( dossier->priv->dbms, query, &result, TRUE )){
 		icol = ( GSList * ) result->data;
 		cstr = icol->data;
 		if( cstr && g_utf8_strlen( cstr, -1 )){
@@ -2178,6 +2167,8 @@ dossier_read_properties( ofoDossier *dossier )
 		ok = TRUE;
 		ofa_dbms_free_results( result );
 	}
+
+	g_free( query );
 
 	return( ok );
 }

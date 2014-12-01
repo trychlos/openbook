@@ -35,6 +35,8 @@
  * A class to embed a Ledgers combobox in a dialog.
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -59,60 +61,30 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	GObjectClass           parent;
 }
 	ofaLedgerComboClass;
 
-/**
- * ofaLedgerComboCb:
- *
- * A callback to be triggered when a new journal is selected.
- *
- * Passed parameters are:
- * - mnemo
- * - user_data provided at init_dialog() time
- */
-typedef void ( *ofaLedgerComboCb )            ( const gchar *, gpointer );
+GType           ofa_ledger_combo_get_type    ( void );
 
-GType           ofa_ledger_combo_get_type     ( void ) G_GNUC_CONST;
+ofaLedgerCombo *ofa_ledger_combo_new         ( void );
 
-/**
- * ofaLedgerComboParms
- *
- * The structure passed to the ofa_ledger_combo_new() function.
- *
- * @container: the parent container of the target combo box
- * @dossier: the current opened ofoDossier
- * @combo_name: the name of the GtkComboBox widget
- * @label_name: [allow-none]: the name of a GtkLabel widget which will
- *  receive the label of the selected journal each time the selection
- *  changes
- * @disp_mnemo: whether the combo box should display the mnemo
- * @disp_label: whether the combo box should display the label
- * @pfnSelected: [allow-none]: a user-provided callback which will be
- *  triggered on each selection change
- * @user_data: user-data passed to the callback
- * @initial_mnemo: the journal identifier of the initial selection, or
- *  NULL
- */
-typedef struct {
-	GtkContainer     *container;
-	ofoDossier       *dossier;
-	const gchar      *combo_name;
-	const gchar      *label_name;
-	gboolean          disp_mnemo;
-	gboolean          disp_label;
-	ofaLedgerComboCb pfnSelected;
-	gpointer          user_data;
-	const gchar      *initial_mnemo;
-}
-	ofaLedgerComboParms;
+void            ofa_ledger_combo_attach_to   ( ofaLedgerCombo *combo,
+														gboolean display_mnemo,
+														gboolean display_label,
+														GtkContainer *parent );
 
-ofaLedgerCombo *ofa_ledger_combo_new          ( const ofaLedgerComboParms *parms );
+void            ofa_ledger_combo_attach_label( ofaLedgerCombo *combo,
+														GtkWidget *label );
 
-gint            ofa_ledger_combo_get_selection( ofaLedgerCombo *self, gchar **mnemo, gchar **label );
+void            ofa_ledger_combo_init_view   ( ofaLedgerCombo *combo,
+														ofoDossier *dossier,
+														const gchar *mnemo );
 
-void            ofa_ledger_combo_set_selection( ofaLedgerCombo *self, const gchar *mnemo );
+gchar          *ofa_ledger_combo_get_selected( ofaLedgerCombo *combo );
+
+void            ofa_ledger_combo_set_selected( ofaLedgerCombo *combo,
+														const gchar *mnemo );
 
 G_END_DECLS
 

@@ -81,6 +81,7 @@ struct _ofaGuidedCommonPrivate {
 	 */
 	GtkLabel        *model_label;
 	ofaLedgerCombo *ledger_combo;
+	GtkWidget      *ledger_parent;
 	GtkEntry        *dope_entry;
 	GtkEntry        *deffect_entry;
 	gboolean         deffect_has_focus;
@@ -235,7 +236,7 @@ static void              add_entry_row( ofaGuidedCommon *self, gint i );
 static void              add_entry_row_set( ofaGuidedCommon *self, gint col_id, gint row );
 static void              add_entry_row_button( ofaGuidedCommon *self, const gchar *stock_id, gint column, gint row );
 static void              remove_entry_row( ofaGuidedCommon *self, gint row );
-static void              on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self );
+static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaGuidedCommon *self );
 static gboolean          on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
 static gboolean          on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
 static void              on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self );
@@ -441,21 +442,19 @@ static void
 setup_ledger_combo( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
-	ofaLedgerComboParms parms;
 
 	priv = self->priv;
 
-	parms.container = priv->parent;
-	parms.dossier = priv->dossier;
-	parms.combo_name = "p1-ledger";
-	parms.label_name = NULL;
-	parms.disp_mnemo = FALSE;
-	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaLedgerComboCb ) on_ledger_changed;
-	parms.user_data = self;
-	parms.initial_mnemo = priv->ledger;
+	priv->ledger_combo = ofa_ledger_combo_new();
 
-	priv->ledger_combo = ofa_ledger_combo_new( &parms );
+	priv->ledger_parent = my_utils_container_get_child_by_name( priv->parent, "p1-ledger-parent" );
+	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
+
+	ofa_ledger_combo_attach_to( priv->ledger_combo, FALSE, TRUE, GTK_CONTAINER( priv->ledger_parent ));
+	ofa_ledger_combo_init_view( priv->ledger_combo, priv->dossier, priv->ledger );
+
+	g_signal_connect(
+			G_OBJECT( priv->ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), self );
 }
 
 /*
@@ -570,16 +569,14 @@ static void
 init_ledger_combo( ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
-	GtkWidget *combo;
 
 	priv = self->priv;
+
 	priv->ledger = g_strdup( ofo_ope_template_get_ledger( priv->model ));
+	ofa_ledger_combo_set_selected( priv->ledger_combo, priv->ledger );
 
-	ofa_ledger_combo_set_selection( priv->ledger_combo, priv->ledger );
-
-	combo = my_utils_container_get_child_by_name( priv->parent, "p1-ledger" );
-	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
-	gtk_widget_set_sensitive( combo, !ofo_ope_template_get_ledger_locked( priv->model ));
+	gtk_widget_set_sensitive(
+			priv->ledger_parent, !ofo_ope_template_get_ledger_locked( priv->model ));
 }
 
 static void
@@ -732,7 +729,7 @@ remove_entry_row( ofaGuidedCommon *self, gint row )
  * this last closing date is the lower limit of the effect dates
  */
 static void
-on_ledger_changed( const gchar *mnemo, ofaGuidedCommon *self )
+on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 	ofoLedger *ledger;

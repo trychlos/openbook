@@ -150,37 +150,37 @@ currency_load_dataset( ofoDossier *dossier )
 	const ofaDbms *dbms;
 	GTimeVal timeval;
 
+	dataset = NULL;
 	dbms = ofo_dossier_get_dbms( dossier );
 
-	result = ofa_dbms_query_ex( dbms,
+	if( ofa_dbms_query_ex( dbms,
 			"SELECT CUR_CODE,CUR_LABEL,CUR_SYMBOL,CUR_DIGITS,"
 			"	CUR_NOTES,CUR_UPD_USER,CUR_UPD_STAMP "
-			"	FROM OFA_T_CURRENCIES", TRUE );
+			"	FROM OFA_T_CURRENCIES", &result, TRUE )){
 
-	dataset = NULL;
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			currency = ofo_currency_new();
+			ofo_currency_set_code( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_currency_set_label( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_currency_set_symbol( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_currency_set_digits( currency, icol->data ? atoi(( gchar * ) icol->data ) : CUR_DEFAULT_DIGITS );
+			icol = icol->next;
+			ofo_currency_set_notes( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			currency_set_upd_user( currency, ( gchar * ) icol->data );
+			icol = icol->next;
+			currency_set_upd_stamp( currency,
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = ( GSList * ) irow->data;
-		currency = ofo_currency_new();
-		ofo_currency_set_code( currency, ( gchar * ) icol->data );
-		icol = icol->next;
-		ofo_currency_set_label( currency, ( gchar * ) icol->data );
-		icol = icol->next;
-		ofo_currency_set_symbol( currency, ( gchar * ) icol->data );
-		icol = icol->next;
-		ofo_currency_set_digits( currency, icol->data ? atoi(( gchar * ) icol->data ) : CUR_DEFAULT_DIGITS );
-		icol = icol->next;
-		ofo_currency_set_notes( currency, ( gchar * ) icol->data );
-		icol = icol->next;
-		currency_set_upd_user( currency, ( gchar * ) icol->data );
-		icol = icol->next;
-		currency_set_upd_stamp( currency,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
+			dataset = g_list_prepend( dataset, currency );
+		}
 
-		dataset = g_list_prepend( dataset, currency );
+		ofa_dbms_free_results( result );
 	}
-
-	ofa_dbms_free_results( result );
 
 	return( g_list_reverse( dataset ));
 }

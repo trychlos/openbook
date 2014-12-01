@@ -570,10 +570,8 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
 	}
 	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 	query = g_string_append( query, "GROUP BY ENT_ACCOUNT ORDER BY ENT_ACCOUNT ASC " );
-	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
-	g_string_free( query, TRUE );
 
-	if( result ){
+	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			sbal = g_new0( ofsAccountBalance, 1 );
 			icol = ( GSList * ) irow->data;
@@ -590,6 +588,7 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
 		}
 		ofa_dbms_free_results( result );
 	}
+	g_string_free( query, TRUE );
 
 	return( g_list_reverse( dataset ));
 }
@@ -664,10 +663,7 @@ ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
 	query = g_string_append( query, "ORDER BY "
 			"ENT_ACCOUNT ASC, ENT_DOPE ASC, ENT_DEFFECT ASC, ENT_NUMBER ASC " );
 
-	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
-	g_string_free( query, TRUE );
-
-	if( result ){
+	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			entry = entry_parse_result( irow );
 			if( entry ){
@@ -676,6 +672,7 @@ ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
 		}
 		ofa_dbms_free_results( result );
 	}
+	g_string_free( query, TRUE );
 
 	return( g_list_reverse( dataset ));
 }
@@ -737,10 +734,7 @@ ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
 	query = g_string_append( query, "ORDER BY "
 			"ENT_LEDGER ASC, ENT_DOPE ASC, ENT_DEFFECT ASC, ENT_NUMBER ASC " );
 
-	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
-	g_string_free( query, TRUE );
-
-	if( result ){
+	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			entry = entry_parse_result( irow );
 			if( entry ){
@@ -749,6 +743,7 @@ ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
 		}
 		ofa_dbms_free_results( result );
 	}
+	g_string_free( query, TRUE );
 
 	return( g_list_reverse( dataset ));
 }
@@ -819,19 +814,16 @@ entry_load_dataset( const ofaDbms *dbms, const gchar *where )
 	query = g_string_append( query,
 					"ORDER BY ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC" );
 
-	result = ofa_dbms_query_ex( dbms, query->str, TRUE );
-	g_string_free( query, TRUE );
-
-	if( result ){
+	if( ofa_dbms_query_ex( dbms, query->str, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			entry = entry_parse_result( irow );
 			if( entry ){
 				dataset = g_list_prepend( dataset, entry );
 			}
 		}
-
 		ofa_dbms_free_results( result );
 	}
+	g_string_free( query, TRUE );
 
 	return( g_list_reverse( dataset ));
 }
@@ -1000,21 +992,13 @@ entry_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
-	GSList *result, *icol;
 
 	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE %s='%s'",
-				field, mnemo );
+				"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE %s='%s'", field, mnemo );
 
-	count = 0;
-	result = ofa_dbms_query_ex( dbms, query, TRUE );
+	ofa_dbms_query_int( dbms, query, &count, TRUE );
+
 	g_free( query );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		count = atoi(( gchar * ) icol->data );
-		ofa_dbms_free_results( result );
-	}
 
 	return( count );
 }
@@ -2259,6 +2243,7 @@ ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDa
 	gchar *query, *str;
 	GSList *result, *irow;
 	ofoEntry *entry;
+	gboolean ok;
 
 	str = my_date_to_str( deffect, MY_DATE_SQL );
 	where = g_strdup_printf(
@@ -2269,10 +2254,10 @@ ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDa
 	query = g_strdup_printf(
 					"SELECT %s FROM OFA_T_ENTRIES %s", entry_list_columns(), where );
 
-	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query, TRUE );
+	ok = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query, &result, TRUE );
 	g_free( query );
 
-	if( result ){
+	if( ok ){
 		for( irow=result ; irow ; irow=irow->next ){
 			entry = entry_parse_result( irow );
 
@@ -2294,7 +2279,8 @@ ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDa
 			g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_VALIDATED_ENTRY, entry );
 		}
 	}
-	return( TRUE );
+
+	return( ok );
 }
 
 /**

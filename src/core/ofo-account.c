@@ -692,22 +692,13 @@ account_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
-	GSList *result, *icol;
 
-	count = 0;
 	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS "
-				"	WHERE %s='%s'",
-					field, mnemo );
+				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE %s='%s'", field, mnemo );
 
-	result = ofa_dbms_query_ex( dbms, query, TRUE );
+	ofa_dbms_query_int( dbms, query, &count, TRUE );
+
 	g_free( query );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		count = atoi(( gchar * ) icol->data );
-		ofa_dbms_free_results( result );
-	}
 
 	return( count );
 }
@@ -717,22 +708,14 @@ account_count_for_like( const ofaDbms *dbms, const gchar *field, gint number )
 {
 	gint count;
 	gchar *query;
-	GSList *result, *icol;
 
 	count = 0;
 	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS "
-				"	WHERE %s LIKE '%d%%'",
-					field, number );
+				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE %s LIKE '%d%%'", field, number );
 
-	result = ofa_dbms_query_ex( dbms, query, TRUE );
+	ofa_dbms_query_int( dbms, query, &count, TRUE );
+
 	g_free( query );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		count = atoi(( gchar * ) icol->data );
-		ofa_dbms_free_results( result );
-	}
 
 	return( count );
 }

@@ -150,6 +150,9 @@ typedef struct {
 	 * Execute a modification query (INSERT, UPDATE, DELETE, DROP,
 	 * TRUNCATE)on the DBMS.
 	 *
+	 * Returns: %TRUE if the statement successfully executed, %FALSE
+	 * else.
+	 *
 	 * Since: version 1
 	 */
 	gboolean      ( *query )                ( const ofaIDbms *instance,
@@ -160,17 +163,22 @@ typedef struct {
 	 * @instance: the #ofaIDbms provider.
 	 * @handle: the handle returned by the connection.
 	 * @query: the SQL query to be executed.
+	 * @result: a GSList * which will hold the result set;
+	 *  each item of the returned GSList is itself a GSList of rows,
+	 *  each item of a GSList row being a field.
 	 *
 	 * Execute a SELECT query on the DBMS.
 	 *
-	 * Returns: a list of rows, or %NULL if an error has occured.
+	 * Returns: %TRUE if the statement successfully executed, %FALSE
+	 * else.
 	 *
 	 * The returned list is free with ofo_sgbd_free_result().
 	 *
 	 * Since: version 1
 	 */
-	GSList      * ( *query_ex )             ( const ofaIDbms *instance,
-														void *handle, const gchar *query );
+	gboolean      ( *query_ex )             ( const ofaIDbms *instance,
+														void *handle, const gchar *query,
+														GSList **result );
 
 	/**
 	 * last_error:
@@ -407,10 +415,14 @@ const gchar *ofa_idbms_get_provider_name    ( const ofaIDbms *instance );
 
 GSList      *ofa_idbms_get_exercices        ( const ofaIDbms *instance,
 														const gchar *dname );
-#define      ofa_idbms_free_exercices(L)    g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
+#define      ofa_idbms_free_exercices(L)    g_debug( "ofa_idbms_free_exercices" ); g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
 gboolean     ofa_idbms_query                ( const ofaIDbms *instance,
 														void *handle, const gchar *query );
+
+gboolean     ofa_idbms_query_ex             ( const ofaIDbms *instance,
+														void *handle, const gchar *query,
+														GSList **result );
 
 gchar       *ofa_idbms_last_error           ( const ofaIDbms *instance,
 														void *handle );
@@ -432,8 +444,6 @@ gboolean     ofa_idbms_properties_new_apply ( const ofaIDbms *instance, GtkConta
 gchar       *ofa_idbms_get_dossier_host     ( const ofaIDbms *instance, const gchar *label );
 
 gchar       *ofa_idbms_get_dossier_dbname   ( const ofaIDbms *instance, const gchar *label );
-
-GSList      *ofa_idbms_query_ex             ( const ofaIDbms *instance, void *handle, const gchar *query );
 
 gboolean     ofa_idbms_delete_dossier       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password,
 												gboolean drop_db, gboolean drop_accounts, gboolean with_confirm );

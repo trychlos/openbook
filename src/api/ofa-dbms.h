@@ -38,26 +38,33 @@
 
 G_BEGIN_DECLS
 
-ofaDbms     *ofa_dbms_new               ( void );
+ofaDbms  *ofa_dbms_new               ( void );
 
-gboolean     ofa_dbms_connect           ( ofaDbms *dbms,
-											const gchar *dname, const gchar *dbname,
-											const gchar *account, const gchar *password,
-											gboolean display_error );
+gboolean  ofa_dbms_connect           ( ofaDbms *dbms,
+												const gchar *dname, const gchar *dbname,
+												const gchar *account, const gchar *password,
+												gboolean display_error );
 
-GSList      *ofa_dbms_get_exercices     ( ofaDbms *dbms,
-											const gchar *dname );
-#define      ofa_dbms_free_exercices(L) ofa_idbms_free_exercices( L )
+GSList   *ofa_dbms_get_exercices     ( ofaDbms *dbms,
+												const gchar *dname );
 
-gboolean     ofa_dbms_query             ( const ofaDbms *dbms,
-											const gchar *query,
-											gboolean display_error );
+#define   ofa_dbms_free_exercices(L) ofa_idbms_free_exercices( L )
 
-GSList      *ofa_dbms_query_ex          ( const ofaDbms *dbms,
-											const gchar *query,
-											gboolean display_error );
+gboolean  ofa_dbms_query             ( const ofaDbms *dbms,
+												const gchar *query,
+												gboolean display_error );
 
-#define      ofa_dbms_free_results(R)   g_slist_foreach(( R ), ( GFunc ) g_slist_free_full, g_free )
+gboolean  ofa_dbms_query_ex          ( const ofaDbms *dbms,
+												const gchar *query,
+												GSList **result,
+												gboolean display_error );
+
+gboolean  ofa_dbms_query_int         ( const ofaDbms *dbms,
+												const gchar *query,
+												gint *ivalue,
+												gboolean display_error );
+
+#define   ofa_dbms_free_results(R)   g_debug( "ofa_dbms_free_results" ); g_slist_foreach(( R ), ( GFunc ) g_slist_free_full, g_free )
 
 G_END_DECLS
 

@@ -166,67 +166,67 @@ bat_load_dataset( ofoDossier *dossier )
 	GList *dataset;
 	GTimeVal timeval;
 
+	dataset = NULL;
 	dbms = ofo_dossier_get_dbms( dossier );
 
-	result = ofa_dbms_query_ex( dbms,
+	if( ofa_dbms_query_ex( dbms,
 			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_COUNT,"
 			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE,"
 			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
 			"	FROM OFA_T_BAT "
-			"	ORDER BY BAT_UPD_STAMP ASC", TRUE );
+			"	ORDER BY BAT_UPD_STAMP ASC", &result, TRUE )){
 
-	dataset = NULL;
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			bat = ofo_bat_new();
+			ofo_bat_set_id( bat, atol(( gchar * ) icol->data ));
+			icol = icol->next;
+			ofo_bat_set_uri( bat, ( gchar * ) icol->data );
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_format( bat, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			ofo_bat_set_count( bat, atoi(( gchar * ) icol->data ));
+			icol = icol->next;
+			if( icol->data ){
+				my_date_set_from_sql( &bat->priv->begin, ( const gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				my_date_set_from_sql( &bat->priv->end, ( const gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_rib( bat, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_currency( bat, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_solde( bat,
+						my_double_set_from_sql(( const gchar * ) icol->data ));
+				ofo_bat_set_solde_set( bat, TRUE );
+			} else {
+				ofo_bat_set_solde_set( bat, FALSE );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_bat_set_notes( bat, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			bat_set_upd_user( bat, ( gchar * ) icol->data );
+			icol = icol->next;
+			bat_set_upd_stamp( bat,
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = ( GSList * ) irow->data;
-		bat = ofo_bat_new();
-		ofo_bat_set_id( bat, atol(( gchar * ) icol->data ));
-		icol = icol->next;
-		ofo_bat_set_uri( bat, ( gchar * ) icol->data );
-		icol = icol->next;
-		if( icol->data ){
-			ofo_bat_set_format( bat, ( gchar * ) icol->data );
+			dataset = g_list_prepend( dataset, bat );
 		}
-		icol = icol->next;
-		ofo_bat_set_count( bat, atoi(( gchar * ) icol->data ));
-		icol = icol->next;
-		if( icol->data ){
-			my_date_set_from_sql( &bat->priv->begin, ( const gchar * ) icol->data );
-		}
-		icol = icol->next;
-		if( icol->data ){
-			my_date_set_from_sql( &bat->priv->end, ( const gchar * ) icol->data );
-		}
-		icol = icol->next;
-		if( icol->data ){
-			ofo_bat_set_rib( bat, ( gchar * ) icol->data );
-		}
-		icol = icol->next;
-		if( icol->data ){
-			ofo_bat_set_currency( bat, ( gchar * ) icol->data );
-		}
-		icol = icol->next;
-		if( icol->data ){
-			ofo_bat_set_solde( bat,
-					my_double_set_from_sql(( const gchar * ) icol->data ));
-			ofo_bat_set_solde_set( bat, TRUE );
-		} else {
-			ofo_bat_set_solde_set( bat, FALSE );
-		}
-		icol = icol->next;
-		if( icol->data ){
-			ofo_bat_set_notes( bat, ( gchar * ) icol->data );
-		}
-		icol = icol->next;
-		bat_set_upd_user( bat, ( gchar * ) icol->data );
-		icol = icol->next;
-		bat_set_upd_stamp( bat,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
-		dataset = g_list_prepend( dataset, bat );
+		ofa_dbms_free_results( result );
 	}
-
-	ofa_dbms_free_results( result );
 
 	return( g_list_reverse( dataset ));
 }
@@ -468,7 +468,6 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 	gboolean exists;
 	gchar *sbegin, *send;
 	GString *query;
-	GSList *result, *icol;
 	gint count;
 	gchar *primary, *secondary;
 	GtkWidget *dialog;
@@ -494,32 +493,28 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 		g_string_append_printf( query, "AND BAT_END=NULL" );
 	}
 
-	result = ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
-	if( result ){
-		icol = ( GSList * ) result->data;
-		count = atoi(( gchar * ) icol->data );
-		if( count > 0 ){
-			exists = TRUE;
-			primary = g_strdup(
-					_( "The candidate Bank Account Transaction file has already been imported.\n"
-							"A new import is refused." ));
-			secondary = g_strdup_printf(
-					_( "\tRIB\t\t= '%s'\n"
-							"\tBegin\t= '%s'\n"
-							"\tEnd\t\t= '%s'" ), rib, sbegin, send );
-			dialog = gtk_message_dialog_new(
-							NULL,
-							GTK_DIALOG_DESTROY_WITH_PARENT,
-							GTK_MESSAGE_WARNING,
-							GTK_BUTTONS_CLOSE,
-							"%s", primary );
-			gtk_message_dialog_format_secondary_text( GTK_MESSAGE_DIALOG( dialog ), "%s", secondary );
-			gtk_dialog_run( GTK_DIALOG( dialog ));
-			gtk_widget_destroy( dialog );
-			g_free( secondary );
-			g_free( primary );
-		}
-		ofa_dbms_free_results( result );
+	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query->str, &count, TRUE );
+
+	if( count > 0 ){
+		exists = TRUE;
+		primary = g_strdup(
+				_( "The candidate Bank Account Transaction file has already been imported.\n"
+						"A new import is refused." ));
+		secondary = g_strdup_printf(
+				_( "\tRIB\t\t= '%s'\n"
+						"\tBegin\t= '%s'\n"
+						"\tEnd\t\t= '%s'" ), rib, sbegin, send );
+		dialog = gtk_message_dialog_new(
+						NULL,
+						GTK_DIALOG_DESTROY_WITH_PARENT,
+						GTK_MESSAGE_WARNING,
+						GTK_BUTTONS_CLOSE,
+						"%s", primary );
+		gtk_message_dialog_format_secondary_text( GTK_MESSAGE_DIALOG( dialog ), "%s", secondary );
+		gtk_dialog_run( GTK_DIALOG( dialog ));
+		gtk_widget_destroy( dialog );
+		g_free( secondary );
+		g_free( primary );
 	}
 
 	g_string_free( query, TRUE );

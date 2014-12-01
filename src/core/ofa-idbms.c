@@ -273,18 +273,19 @@ ofa_idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
 /**
  * ofa_idbms_query_ex:
  */
-GSList *
-ofa_idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query )
+gboolean
+ofa_idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result )
 {
-	g_return_val_if_fail( OFA_IS_IDBMS( instance ), NULL );
-	g_return_val_if_fail( handle, NULL );
-	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), NULL );
+	g_return_val_if_fail( OFA_IS_IDBMS( instance ), FALSE );
+	g_return_val_if_fail( handle, FALSE );
+	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), FALSE );
+	g_return_val_if_fail( result, FALSE );
 
 	if( OFA_IDBMS_GET_INTERFACE( instance )->query_ex ){
-		return( OFA_IDBMS_GET_INTERFACE( instance )->query_ex( instance, handle, query ));
+		return( OFA_IDBMS_GET_INTERFACE( instance )->query_ex( instance, handle, query, result ));
 	}
 
-	return( NULL );
+	return( FALSE );
 }
 
 /**

@@ -30,6 +30,7 @@
 
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "api/my-utils.h"
@@ -526,47 +527,84 @@ ofa_dbms_query( const ofaDbms *dbms, const gchar *query, gboolean display_error 
  * ofa_dbms_query_ex:
  * @dbms: this #ofaDbms object
  * @query: the query to be executed
+ * @result: [out]: the result set as a GSList of ordered rows
  * @display_error: whether the error should be published in a dialog box
  *
- * Returns a GSList or ordered rows of the result set.
- * Each GSList->data is a pointer to a GSList of ordered columns
- * A field is so the GSList[column] data, is always allocated
- * (but maybe of a zero length), or NULL (SQL-NULL translation).
+ * Returns: %TRUE if the sentence has been successfully executed,
+ * %FALSE else.
  *
- * Returns NULL is case of an error.
+ * Each GSList->data of the result set is a pointer to a GSList of
+ * ordered columns. A field is so the GSList[column] data ; it is
+ * always allocated (though maybe of a zero length), or NULL (SQL-NULL
+ * translation).
  *
- * The returned GSList should be freed with #ofa_dbms_free_results().
+ * The result set should be freed with #ofa_dbms_free_results().
  */
-GSList *
-ofa_dbms_query_ex( const ofaDbms *dbms, const gchar *query, gboolean display_error )
+gboolean
+ofa_dbms_query_ex( const ofaDbms *dbms, const gchar *query, GSList **result, gboolean display_error )
 {
 	static const gchar *thisfn = "ofa_dbms_query_ex";
 	ofaDbmsPrivate *priv;
-	GSList *result;
+	gboolean ok;
 
-	g_debug( "%s: dbms=%p, query='%s', display_error=%s",
-			thisfn, ( void * ) dbms, query, display_error ? "True":"False" );
+	g_debug( "%s: dbms=%p, query='%s', result=%p, display_error=%s",
+			thisfn, ( void * ) dbms, query, ( void * ) result, display_error ? "True":"False" );
 
-	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), NULL );
+	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
+	g_return_val_if_fail( result, FALSE );
 
+	ok = FALSE;
 	priv = dbms->priv;
-	result = NULL;
 
-	g_return_val_if_fail( priv->pmodule && OFA_IS_IDBMS( priv->pmodule ), NULL );
-	g_return_val_if_fail( priv->phandle, NULL );
+	g_return_val_if_fail( priv->pmodule && OFA_IS_IDBMS( priv->pmodule ), FALSE );
+	g_return_val_if_fail( priv->phandle, FALSE );
 
 	if( !priv->dispose_has_run ){
 
-		result = ofa_idbms_query_ex( priv->pmodule, priv->phandle, query );
-
-		if( !result ){
+		if( !ofa_idbms_query_ex( priv->pmodule, priv->phandle, query, result )){
 			if( display_error ){
 				error_query( dbms, query );
 			}
+		} else {
+			ok = TRUE;
 		}
 	}
 
-	return( result );
+	return( ok );
+}
+
+/**
+ * ofa_dbms_query_int:
+ * @dbms: this #ofaDbms object
+ * @query: the query to be executed
+ * @ivalue: [out]: the returned integer value
+ * @display_error: whether the error should be published in a dialog box
+ *
+ * A simple query for getting a single int.
+ *
+ * Returns: %TRUE if the sentence has been successfully executed,
+ * %FALSE else.
+ */
+gboolean
+ofa_dbms_query_int( const ofaDbms *dbms, const gchar *query, gint *ivalue, gboolean display_error )
+{
+	static const gchar *thisfn = "ofa_dbms_query_int";
+	gboolean ok;
+	GSList *result, *icol;
+
+	g_debug( "%s: dbms=%p, query='%s', ivalue=%p, display_error=%s",
+			thisfn, ( void * ) dbms, query, ( void * ) ivalue, display_error ? "True":"False" );
+
+	*ivalue = 0;
+	ok = ofa_dbms_query_ex( dbms, query, &result, TRUE );
+
+	if( ok ){
+		icol = ( GSList * ) result->data;
+		*ivalue = atoi(( gchar * ) icol->data );
+		ofa_dbms_free_results( result );
+	}
+
+	return( ok );
 }
 
 static void

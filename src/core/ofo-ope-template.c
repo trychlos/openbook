@@ -281,6 +281,7 @@ on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev
 	GSList *result, *irow, *icol;
 	gchar *etp_mnemo, *det_debit, *det_credit;
 	gint det_row;
+	gboolean ok;
 
 	g_debug( "%s: dossier=%p, mnemo=%s, prev_id=%s",
 			thisfn, ( void * ) dossier, mnemo, prev_id );
@@ -293,11 +294,10 @@ on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev
 					"	WHERE OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
 							prev_id, prev_id );
 
-	result = ofa_dbms_query_ex( dbms, query, TRUE );
-
+	ok = ofa_dbms_query_ex( dbms, query, &result, TRUE );
 	g_free( query );
 
-	if( result ){
+	if( ok ){
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = irow->data;
 			etp_mnemo = g_strdup(( gchar * ) icol->data );
@@ -322,14 +322,14 @@ on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev
 			g_free( det_debit );
 			g_free( etp_mnemo );
 		}
+
+		ofa_idataset_free_dataset( dossier, OFO_TYPE_OPE_TEMPLATE );
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
 	}
 
-	ofa_idataset_free_dataset( dossier, OFO_TYPE_OPE_TEMPLATE );
-
-	g_signal_emit_by_name(
-			G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
-
-	return( TRUE );
+	return( ok );
 }
 
 static GList *
@@ -344,44 +344,42 @@ ope_template_load_dataset( ofoDossier *dossier )
 	GList *details;
 	GTimeVal timeval;
 
+	dataset = NULL;
 	dbms = ofo_dossier_get_dbms( dossier );
 
-	result = ofa_dbms_query_ex( dbms,
+	if( ofa_dbms_query_ex( dbms,
 			"SELECT OTE_MNEMO,OTE_LABEL,OTE_LED_MNEMO,OTE_LED_LOCKED,OTE_NOTES,"
 			"	OTE_UPD_USER,OTE_UPD_STAMP "
-			"	FROM OFA_T_OPE_TEMPLATES", TRUE );
+			"	FROM OFA_T_OPE_TEMPLATES", &result, TRUE )){
 
-	dataset = NULL;
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			model = ofo_ope_template_new();
+			ofo_ope_template_set_mnemo( model, ( gchar * ) icol->data );
+			icol = icol->next;
+			ofo_ope_template_set_label( model, ( gchar * ) icol->data );
+			icol = icol->next;
+			if( icol->data ){
+				ofo_ope_template_set_ledger( model, ( gchar * ) icol->data );
+			}
+			icol = icol->next;
+			if( icol->data ){
+				ofo_ope_template_set_ledger_locked( model, atoi(( gchar * ) icol->data ));
+			}
+			icol = icol->next;
+			ofo_ope_template_set_notes( model, ( gchar * ) icol->data );
+			icol = icol->next;
+			ope_template_set_upd_user( model, ( gchar * ) icol->data );
+			icol = icol->next;
+			ope_template_set_upd_stamp( model,
+					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
-	for( irow=result ; irow ; irow=irow->next ){
-		icol = ( GSList * ) irow->data;
-		model = ofo_ope_template_new();
-		ofo_ope_template_set_mnemo( model, ( gchar * ) icol->data );
-		icol = icol->next;
-		ofo_ope_template_set_label( model, ( gchar * ) icol->data );
-		icol = icol->next;
-		if( icol->data ){
-			ofo_ope_template_set_ledger( model, ( gchar * ) icol->data );
+			dataset = g_list_prepend( dataset, model );
 		}
-		icol = icol->next;
-		if( icol->data ){
-			ofo_ope_template_set_ledger_locked( model, atoi(( gchar * ) icol->data ));
-		}
-		icol = icol->next;
-		ofo_ope_template_set_notes( model, ( gchar * ) icol->data );
-		icol = icol->next;
-		ope_template_set_upd_user( model, ( gchar * ) icol->data );
-		icol = icol->next;
-		ope_template_set_upd_stamp( model,
-				my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
-
-		dataset = g_list_prepend( dataset, model );
+		ofa_dbms_free_results( result );
 	}
 
-	ofa_dbms_free_results( result );
-
 	for( im=dataset ; im ; im=im->next ){
-
 		model = OFO_OPE_TEMPLATE( im->data );
 
 		query = g_strdup_printf(
@@ -394,43 +392,43 @@ ope_template_load_dataset( ofoDossier *dossier )
 				"	WHERE OTE_MNEMO='%s' ORDER BY OTE_DET_ROW ASC",
 						ofo_ope_template_get_mnemo( model ));
 
-		result = ofa_dbms_query_ex( dbms, query, TRUE );
-		details = NULL;
+		if( ofa_dbms_query_ex( dbms, query, &result, TRUE )){
+			details = NULL;
 
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			detail = g_new0( sModDetail, 1 );
-			detail->comment = g_strdup(( gchar * ) icol->data );
-			icol = icol->next;
-			detail->account = g_strdup(( gchar * ) icol->data );
-			icol = icol->next;
-			if( icol->data ){
-				detail->account_locked = atoi(( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			detail->label = g_strdup(( gchar * ) icol->data );
-			icol = icol->next;
-			if( icol->data ){
-				detail->label_locked = atoi(( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			detail->debit = g_strdup(( gchar * ) icol->data );
-			icol = icol->next;
-			if( icol->data ){
-				detail->debit_locked = atoi(( gchar * ) icol->data );
-			}
-			icol = icol->next;
-			detail->credit = g_strdup(( gchar * ) icol->data );
-			icol = icol->next;
-			if( icol->data ){
-				detail->credit_locked = atoi(( gchar * ) icol->data );
-			}
+			for( irow=result ; irow ; irow=irow->next ){
+				icol = ( GSList * ) irow->data;
+				detail = g_new0( sModDetail, 1 );
+				detail->comment = g_strdup(( gchar * ) icol->data );
+				icol = icol->next;
+				detail->account = g_strdup(( gchar * ) icol->data );
+				icol = icol->next;
+				if( icol->data ){
+					detail->account_locked = atoi(( gchar * ) icol->data );
+				}
+				icol = icol->next;
+				detail->label = g_strdup(( gchar * ) icol->data );
+				icol = icol->next;
+				if( icol->data ){
+					detail->label_locked = atoi(( gchar * ) icol->data );
+				}
+				icol = icol->next;
+				detail->debit = g_strdup(( gchar * ) icol->data );
+				icol = icol->next;
+				if( icol->data ){
+					detail->debit_locked = atoi(( gchar * ) icol->data );
+				}
+				icol = icol->next;
+				detail->credit = g_strdup(( gchar * ) icol->data );
+				icol = icol->next;
+				if( icol->data ){
+					detail->credit_locked = atoi(( gchar * ) icol->data );
+				}
 
-			details = g_list_prepend( details, detail );
+				details = g_list_prepend( details, detail );
+			}
+			ofa_dbms_free_results( result );
+			model->priv->details = g_list_reverse( details );
 		}
-
-		ofa_dbms_free_results( result );
-		model->priv->details = g_list_reverse( details );
 	}
 
 	return( g_list_reverse( dataset ));
@@ -494,22 +492,13 @@ model_count_for_ledger( const ofaDbms *dbms, const gchar *ledger )
 {
 	gint count;
 	gchar *query;
-	GSList *result, *icol;
 
 	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES "
-				"	WHERE OTE_LED_MNEMO='%s'",
-					ledger );
+				"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES WHERE OTE_LED_MNEMO='%s'", ledger );
 
-	count = 0;
-	result = ofa_dbms_query_ex( dbms, query, TRUE );
+	ofa_dbms_query_int( dbms, query, &count, TRUE );
+
 	g_free( query );
-
-	if( result ){
-		icol = ( GSList * ) result->data;
-		count = atoi(( gchar * ) icol->data );
-		ofa_dbms_free_results( result );
-	}
 
 	return( count );
 }
@@ -534,22 +523,15 @@ model_count_for_rate( const ofaDbms *dbms, const gchar *mnemo )
 {
 	gint count;
 	gchar *query;
-	GSList *result, *icol;
 
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES_DET "
 				"	WHERE OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
 					mnemo, mnemo );
 
-	count = 0;
-	result = ofa_dbms_query_ex( dbms, query, TRUE );
-	g_free( query );
+	ofa_dbms_query_int( dbms, query, &count, TRUE );
 
-	if( result ){
-		icol = ( GSList * ) result->data;
-		count = atoi(( gchar * ) icol->data );
-		ofa_dbms_free_results( result );
-	}
+	g_free( query );
 
 	return( count );
 }

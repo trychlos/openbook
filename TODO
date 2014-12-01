@@ -357,7 +357,12 @@
  479 2014-11-30 get rid of mysqlConnect and mysqlInfos
                 after that rename sMySQLInfos to sMysqlInfos
 
- 480
+ 480 2014-11-30 ofaBoxed class is renamed is ofaBox
+                ofaIBoxed is an interface
+
+ 481 2014-12- 1 review ofaCurrencyCombo
+
+ 482
 
 -----------------------------------------------------------------------
  DONE
