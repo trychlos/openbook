@@ -30,7 +30,7 @@
 /**
  * SECTION: my_decimal_combo
  * @short_description: #myDecimalCombo class definition.
- * @include: ui/ofa-exercice-combo.h
+ * @include: ui/my-decimal-combo.h
  *
  * This class manages a combobox which display the availabel decimal
  * dot separators.

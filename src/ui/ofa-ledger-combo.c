@@ -216,6 +216,7 @@ ofa_ledger_combo_attach_to( ofaLedgerCombo *combo, gboolean display_mnemo, gbool
 		priv->combo = GTK_COMBO_BOX( box );
 
 		setup_combo( combo, display_mnemo, display_label );
+		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 
 }

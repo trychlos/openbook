@@ -80,7 +80,7 @@ static void on_decimal_changed( GtkComboBox *box, myDecimalCombo *self );
 static void on_decimal_changed_cleanup_handler( myDecimalCombo *self, gchar *decimal_sep );
 
 static void
-exercice_combo_finalize( GObject *instance )
+decimal_combo_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "my_decimal_combo_finalize";
 
@@ -96,7 +96,7 @@ exercice_combo_finalize( GObject *instance )
 }
 
 static void
-exercice_combo_dispose( GObject *instance )
+decimal_combo_dispose( GObject *instance )
 {
 	myDecimalComboPrivate *priv;
 
@@ -138,8 +138,8 @@ my_decimal_combo_class_init( myDecimalComboClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = exercice_combo_dispose;
-	G_OBJECT_CLASS( klass )->finalize = exercice_combo_finalize;
+	G_OBJECT_CLASS( klass )->dispose = decimal_combo_dispose;
+	G_OBJECT_CLASS( klass )->finalize = decimal_combo_finalize;
 
 	g_type_class_add_private( klass, sizeof( myDecimalComboPrivate ));
 

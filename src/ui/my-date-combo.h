@@ -30,7 +30,7 @@
 /**
  * SECTION: my_date_combo
  * @short_description: #myDateCombo class definition.
- * @include: ui/ofa-exercice-combo.h
+ * @include: ui/my-date-combo.h
  *
  * This class manages a combobox which display the known date formats.
  */

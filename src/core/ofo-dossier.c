@@ -65,9 +65,17 @@ struct _ofoDossierPrivate {
 	GDate       exe_end;
 	gint        exe_length;				/* exercice length (in month) */
 	gchar      *exe_notes;
+	gchar      *forward_label_close;
+	gchar      *forward_label_open;
+	gchar      *forward_ledger;
+	gchar      *forward_ope;
 	gchar      *label;					/* raison sociale */
 	gchar      *notes;					/* notes */
 	gchar      *siren;
+	gchar      *sld_account;
+	gchar      *sld_label;
+	gchar      *sld_ledger;
+	gchar      *sld_ope;
 	gchar      *upd_user;
 	GTimeVal    upd_stamp;
 	gint        exe_id;
@@ -873,24 +881,32 @@ dbmodel_to_v1( const ofoDossier *dossier )
 
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
-			"	DOS_ID              INTEGER   NOT NULL UNIQUE COMMENT 'Row identifier',"
-			"	DOS_DEF_CURRENCY    VARCHAR(3)                COMMENT 'Default currency identifier',"
-			"	DOS_EXE_BEGIN       DATE                      COMMENT 'Exercice beginning date',"
-			"	DOS_EXE_END         DATE                      COMMENT 'Exercice ending date',"
-			"	DOS_EXE_LENGTH      INTEGER                   COMMENT 'Exercice length in months',"
-			"	DOS_EXE_NOTES       VARCHAR(4096)             COMMENT 'Exercice notes',"
-			"	DOS_LABEL           VARCHAR(80)               COMMENT 'Raison sociale',"
-			"	DOS_NOTES           VARCHAR(4096)             COMMENT 'Dossier notes',"
-			"	DOS_SIREN           VARCHAR(20)               COMMENT 'Siren identifier',"
-			"	DOS_UPD_USER        VARCHAR(20)               COMMENT 'User responsible of properties last update',"
-			"	DOS_UPD_STAMP       TIMESTAMP                 COMMENT 'Properties last update timestamp',"
-			"	DOS_EXE_ID          INTEGER                   COMMENT 'Exercice identifier',"
-			"	DOS_LAST_EXE_ID     INTEGER                   COMMENT 'Last exercice identifier opened for the dossier',"
-			"	DOS_LAST_BAT        BIGINT  DEFAULT 0         COMMENT 'Last BAT file number used',"
-			"	DOS_LAST_BATLINE    BIGINT  DEFAULT 0         COMMENT 'Last BAT line number used',"
-			"	DOS_LAST_ENTRY      BIGINT  DEFAULT 0         COMMENT 'Last entry number used',"
-			"	DOS_LAST_SETTLEMENT BIGINT  DEFAULT 0         COMMENT 'Last settlement number used',"
-			"	DOS_STATUS          CHAR(1)                   COMMENT 'Status of this exercice'"
+			"	DOS_ID               INTEGER   NOT NULL UNIQUE COMMENT 'Row identifier',"
+			"	DOS_DEF_CURRENCY     VARCHAR(3)                COMMENT 'Default currency identifier',"
+			"	DOS_EXE_BEGIN        DATE                      COMMENT 'Exercice beginning date',"
+			"	DOS_EXE_END          DATE                      COMMENT 'Exercice ending date',"
+			"	DOS_EXE_LENGTH       INTEGER                   COMMENT 'Exercice length in months',"
+			"	DOS_EXE_NOTES        VARCHAR(4096)             COMMENT 'Exercice notes',"
+			"	DOS_FORW_LABEL_CLOSE VARCHAR(80)               COMMENT 'Label for closing carried forward entries',"
+			"	DOS_FORW_LABEL_OPEN  VARCHAR(80)               COMMENT 'Label for opening carried forward entries',"
+			"	DOS_FORW_LEDGER      VARCHAR(6)                COMMENT 'Ledger for carried forward entries',"
+			"	DOS_FORW_OPE         VARCHAR(6)                COMMENT 'Operation mnemo for carried forward entries',"
+			"	DOS_LABEL            VARCHAR(80)               COMMENT 'Raison sociale',"
+			"	DOS_NOTES            VARCHAR(4096)             COMMENT 'Dossier notes',"
+			"	DOS_SIREN            VARCHAR(20)               COMMENT 'Siren identifier',"
+			"	DOS_SLD_ACCOUNT      VARCHAR(20)               COMMENT 'Balancing account when closing the exercice',"
+			"	DOS_SLD_LABEL        VARCHAR(80)               COMMENT 'Entry Label for balancing the accounts',"
+			"	DOS_SLD_LEDGER       VARCHAR(6)                COMMENT 'Ledger for balancing entries',"
+			"	DOS_SLD_OPE          VARCHAR(6)                COMMENT 'Operation mnemo for balancing entries',"
+			"	DOS_UPD_USER         VARCHAR(20)               COMMENT 'User responsible of properties last update',"
+			"	DOS_UPD_STAMP        TIMESTAMP                 COMMENT 'Properties last update timestamp',"
+			"	DOS_EXE_ID           INTEGER                   COMMENT 'Exercice identifier',"
+			"	DOS_LAST_EXE_ID      INTEGER                   COMMENT 'Last exercice identifier opened for the dossier',"
+			"	DOS_LAST_BAT         BIGINT  DEFAULT 0         COMMENT 'Last BAT file number used',"
+			"	DOS_LAST_BATLINE     BIGINT  DEFAULT 0         COMMENT 'Last BAT line number used',"
+			"	DOS_LAST_ENTRY       BIGINT  DEFAULT 0         COMMENT 'Last entry number used',"
+			"	DOS_LAST_SETTLEMENT  BIGINT  DEFAULT 0         COMMENT 'Last settlement number used',"
+			"	DOS_STATUS           CHAR(1)                   COMMENT 'Status of this exercice'"
 			")", TRUE )){
 		return( FALSE );
 	}
@@ -1245,6 +1261,82 @@ ofo_dossier_get_exe_notes( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_forward_label_close:
+ *
+ * Returns: the forward account of the dossier.
+ */
+const gchar *
+ofo_dossier_get_forward_label_close( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->forward_label_close );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_forward_label_open:
+ *
+ * Returns: the forward account of the dossier.
+ */
+const gchar *
+ofo_dossier_get_forward_label_open( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->forward_label_open );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_forward_ledger:
+ *
+ * Returns: the forward ledger of the dossier.
+ */
+const gchar *
+ofo_dossier_get_forward_ledger( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->forward_ledger );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_forward_ope:
+ *
+ * Returns: the forward ope of the dossier.
+ */
+const gchar *
+ofo_dossier_get_forward_ope( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->forward_ope );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
  * ofo_dossier_get_label:
  *
  * Returns: the label of the dossier. This is the 'raison sociale' for
@@ -1296,6 +1388,82 @@ ofo_dossier_get_siren( const ofoDossier *dossier )
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return(( const gchar * ) dossier->priv->siren );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_sld_account:
+ *
+ * Returns: the sld account of the dossier.
+ */
+const gchar *
+ofo_dossier_get_sld_account( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->sld_account );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_sld_label:
+ *
+ * Returns: the sld account of the dossier.
+ */
+const gchar *
+ofo_dossier_get_sld_label( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->sld_label );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_sld_ledger:
+ *
+ * Returns: the sld ledger of the dossier.
+ */
+const gchar *
+ofo_dossier_get_sld_ledger( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->sld_ledger );
+	}
+
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_sld_ope:
+ *
+ * Returns: the sld ope of the dossier.
+ */
+const gchar *
+ofo_dossier_get_sld_ope( const ofoDossier *dossier )
+{
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		return(( const gchar * ) dossier->priv->sld_ope );
 	}
 
 	g_return_val_if_reached( NULL );
@@ -1763,7 +1931,7 @@ ofo_dossier_set_default_currency( ofoDossier *dossier, const gchar *currency )
  * ofo_dossier_set_exe_begin:
  */
 void
-ofo_dossier_set_exe_begin( const ofoDossier *dossier, const GDate *date )
+ofo_dossier_set_exe_begin( ofoDossier *dossier, const GDate *date )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
@@ -1777,7 +1945,7 @@ ofo_dossier_set_exe_begin( const ofoDossier *dossier, const GDate *date )
  * ofo_dossier_set_exe_end:
  */
 void
-ofo_dossier_set_exe_end( const ofoDossier *dossier, const GDate *date )
+ofo_dossier_set_exe_end( ofoDossier *dossier, const GDate *date )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
@@ -1810,7 +1978,7 @@ ofo_dossier_set_exe_length( ofoDossier *dossier, gint nb_months )
  * Attach the given @notes to the exercice.
  */
 void
-ofo_dossier_set_exe_notes( const ofoDossier *dossier, const gchar *notes )
+ofo_dossier_set_exe_notes( ofoDossier *dossier, const gchar *notes )
 {
 	ofoDossierPrivate *priv;
 
@@ -1821,6 +1989,74 @@ ofo_dossier_set_exe_notes( const ofoDossier *dossier, const gchar *notes )
 		priv = dossier->priv;
 		g_free( priv->exe_notes );
 		priv->exe_notes = g_strdup( notes );
+	}
+}
+
+/**
+ * ofo_dossier_set_forward_label_close:
+ *
+ * Not mandatory until closing the exercice.
+ */
+void
+ofo_dossier_set_forward_label_close( ofoDossier *dossier, const gchar *label )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->forward_label_close );
+		dossier->priv->forward_label_close = g_strdup( label );
+	}
+}
+
+/**
+ * ofo_dossier_set_forward_label_open:
+ *
+ * Not mandatory until closing the exercice.
+ */
+void
+ofo_dossier_set_forward_label_open( ofoDossier *dossier, const gchar *label )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->forward_label_open );
+		dossier->priv->forward_label_open = g_strdup( label );
+	}
+}
+
+/**
+ * ofo_dossier_set_forward_ledger:
+ *
+ * Not mandatory until closing the exercice.
+ */
+void
+ofo_dossier_set_forward_ledger( ofoDossier *dossier, const gchar *ledger )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->forward_ledger );
+		dossier->priv->forward_ledger = g_strdup( ledger );
+	}
+}
+
+/**
+ * ofo_dossier_set_forward_ope:
+ *
+ * Not mandatory until closing the exercice.
+ */
+void
+ofo_dossier_set_forward_ope( ofoDossier *dossier, const gchar *ope )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->forward_ope );
+		dossier->priv->forward_ope = g_strdup( ope );
 	}
 }
 
@@ -1867,6 +2103,74 @@ ofo_dossier_set_siren( ofoDossier *dossier, const gchar *siren )
 
 		g_free( dossier->priv->siren );
 		dossier->priv->siren = g_strdup( siren );
+	}
+}
+
+/**
+ * ofo_dossier_set_sld_account:
+ *
+ * Not mandatory until closing the exercice.
+ */
+void
+ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *account )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->sld_account );
+		dossier->priv->sld_account = g_strdup( account );
+	}
+}
+
+/**
+ * ofo_dossier_set_sld_label:
+ *
+ * Not mandatory until closing the exercice.
+ */
+void
+ofo_dossier_set_sld_label( ofoDossier *dossier, const gchar *label )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->sld_label );
+		dossier->priv->sld_label = g_strdup( label );
+	}
+}
+
+/**
+ * ofo_dossier_set_sld_ledger:
+ *
+ * Not mandatory until closing the exercice.
+ */
+void
+ofo_dossier_set_sld_ledger( ofoDossier *dossier, const gchar *ledger )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->sld_ledger );
+		dossier->priv->sld_ledger = g_strdup( ledger );
+	}
+}
+
+/**
+ * ofo_dossier_set_sld_ope:
+ *
+ * Not mandatory until closing the exercice.
+ */
+void
+ofo_dossier_set_sld_ope( ofoDossier *dossier, const gchar *ope )
+{
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_free( dossier->priv->sld_ope );
+		dossier->priv->sld_ope = g_strdup( ope );
 	}
 }
 
@@ -2069,7 +2373,9 @@ dossier_read_properties( ofoDossier *dossier )
 	query = g_strdup_printf(
 			"SELECT DOS_DEF_CURRENCY,"
 			"	DOS_EXE_BEGIN,DOS_EXE_END,DOS_EXE_LENGTH,DOS_EXE_NOTES,"
+			"	DOS_FORW_LABEL_CLOSE,DOS_FORW_LABEL_OPEN,DOS_FORW_LEDGER,DOS_FORW_OPE,"
 			"	DOS_LABEL,DOS_NOTES,DOS_SIREN,"
+			"	DOS_SLD_ACCOUNT,DOS_SLD_LABEL,DOS_SLD_LEDGER,DOS_SLD_OPE,"
 			"	DOS_UPD_USER,DOS_UPD_STAMP,"
 			"	DOS_EXE_ID,DOS_LAST_EXE_ID,"
 			"	DOS_LAST_BAT,DOS_LAST_BATLINE,DOS_LAST_ENTRY,DOS_LAST_SETTLEMENT,"
@@ -2106,6 +2412,26 @@ dossier_read_properties( ofoDossier *dossier )
 		icol = icol->next;
 		cstr = icol->data;
 		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_forward_label_close( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_forward_label_open( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_forward_ledger( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_forward_ope( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
 			ofo_dossier_set_label( dossier, cstr );
 		}
 		icol = icol->next;
@@ -2117,6 +2443,26 @@ dossier_read_properties( ofoDossier *dossier )
 		cstr = icol->data;
 		if( cstr && g_utf8_strlen( cstr, -1 )){
 			ofo_dossier_set_siren( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_sld_account( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_sld_label( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_sld_ledger( dossier, cstr );
+		}
+		icol = icol->next;
+		cstr = icol->data;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			ofo_dossier_set_sld_ope( dossier, cstr );
 		}
 		icol = icol->next;
 		cstr = icol->data;
@@ -2244,6 +2590,42 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	g_string_append_printf( query,
 			"DOS_EXE_LENGTH=%d,", ofo_dossier_get_exe_length( dossier ));
 
+	notes = my_utils_quote( ofo_dossier_get_exe_notes( dossier ));
+	if( notes && g_utf8_strlen( notes, -1 )){
+		g_string_append_printf( query, "DOS_EXE_NOTES='%s',", notes );
+	} else {
+		query = g_string_append( query, "DOS_EXE_NOTES=NULL," );
+	}
+	g_free( notes );
+
+	cstr = ofo_dossier_get_forward_label_close( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_FORW_LABEL_CLOSE='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_FORW_LABEL_CLOSE=NULL," );
+	}
+
+	cstr = ofo_dossier_get_forward_label_open( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_FORW_LABEL_OPEN='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_FORW_LABEL_OPEN=NULL," );
+	}
+
+	cstr = ofo_dossier_get_forward_ledger( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_FORW_LEDGER='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_FORW_LEDGER=NULL," );
+	}
+
+	cstr = ofo_dossier_get_forward_ope( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_FORW_OPE='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_FORW_OPE=NULL," );
+	}
+
 	label = my_utils_quote( ofo_dossier_get_label( dossier ));
 	if( label && g_utf8_strlen( label, -1 )){
 		g_string_append_printf( query, "DOS_LABEL='%s',", label );
@@ -2267,18 +2649,39 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 		query = g_string_append( query, "DOS_SIREN=NULL," );
 	}
 
+	cstr = ofo_dossier_get_sld_account( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_SLD_ACCOUNT='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_SLD_ACCOUNT=NULL," );
+	}
+
+	cstr = ofo_dossier_get_sld_label( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_SLD_LABEL='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_SLD_LABEL=NULL," );
+	}
+
+	cstr = ofo_dossier_get_sld_ledger( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_SLD_LEDGER='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_SLD_LEDGER=NULL," );
+	}
+
+	cstr = ofo_dossier_get_sld_ope( dossier );
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_string_append_printf( query, "DOS_SLD_OPE='%s',", cstr );
+	} else {
+		query = g_string_append( query, "DOS_SLD_OPE=NULL," );
+	}
+
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	g_string_append_printf( query,
-			"DOS_UPD_USER='%s',DOS_UPD_STAMP='%s',", user, stamp_str );
+			"DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' ", user, stamp_str );
 	g_free( stamp_str );
-
-	g_string_append_printf( query,
-			"DOS_EXE_ID=%d,DOS_LAST_EXE_ID=%d,"
-			"DOS_LAST_BAT=%ld,DOS_LAST_BATLINE=%ld,DOS_LAST_ENTRY=%ld,DOS_LAST_SETTLEMENT=%ld ",
-				ofo_dossier_get_this_exe_id( dossier ), ofo_dossier_get_last_exe_id( dossier ),
-				ofo_dossier_get_last_bat( dossier ), ofo_dossier_get_last_batline( dossier ),
-				ofo_dossier_get_last_entry( dossier ), ofo_dossier_get_last_settlement( dossier ));
 
 	g_string_append_printf( query, "WHERE DOS_ID=%d", THIS_DOS_ID );
 
@@ -2325,6 +2728,8 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	GSList *lines;
 	gchar *str, *stamp;
 	const gchar *currency, *muser, *siren;
+	const gchar *fledger, *fope, *flabelc, *flabelo;
+	const gchar *baccount, *bledger, *bope, *blabel;
 	gchar *sbegin, *send, *notes, *exenotes, *label;
 	gboolean ok, with_headers;
 	gulong count;
@@ -2338,7 +2743,12 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = g_strdup_printf( "DefCurrency;ExeBegin;ExeEnd;ExeLength;ExeNotes;Label;Notes;Siren;MajUser;MajStamp;ThisExeId;LastExeId;LastBat;LastBatLine;LastEntry;LastSettlement;Status" );
+		str = g_strdup_printf( "DefCurrency;ExeBegin;ExeEnd;ExeLength;ExeNotes;"
+				"ForwardLabelClose;ForwardLabelOpeb;ForwardLedger;ForwardOpe;"
+				"Label;Notes;Siren;"
+				"SldAccount;SldLedger;SldOpe;sldLabel;"
+				"MajUser;MajStamp;ThisExeId;LastExeId;LastBat;LastBatLine;"
+				"LastEntry;LastSettlement;Status" );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -2350,22 +2760,38 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	sbegin = my_date_to_str( ofo_dossier_get_exe_begin( dossier ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_dossier_get_exe_end( dossier ), MY_DATE_SQL );
 	exenotes = my_utils_export_multi_lines( ofo_dossier_get_exe_notes( dossier ));
+	fledger = ofo_dossier_get_forward_ledger( dossier );
+	fope = ofo_dossier_get_forward_ope( dossier );
+	flabelc = ofo_dossier_get_forward_label_close( dossier );
+	flabelo = ofo_dossier_get_forward_label_open( dossier );
 	notes = my_utils_export_multi_lines( ofo_dossier_get_notes( dossier ));
 	label = my_utils_quote( ofo_dossier_get_label( dossier ));
 	muser = ofo_dossier_get_upd_user( dossier );
 	stamp = my_utils_stamp_to_str( ofo_dossier_get_upd_stamp( dossier ), MY_STAMP_YYMDHMS );
 	currency = ofo_dossier_get_default_currency( dossier );
 	siren = ofo_dossier_get_siren( dossier );
+	baccount = ofo_dossier_get_sld_account( dossier );
+	bledger = ofo_dossier_get_sld_ledger( dossier );
+	bope = ofo_dossier_get_sld_ope( dossier );
+	blabel = ofo_dossier_get_sld_label( dossier );
 
-	str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s;%s;%s;%s;%d;%d;%ld;%ld;%ld;%ld",
+	str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%d;%d;%ld;%ld;%ld;%ld",
 			currency ? currency : "",
 			sbegin,
 			send,
 			ofo_dossier_get_exe_length( dossier ),
 			exenotes ? exenotes : "",
+			flabelc ? flabelc : "",
+			flabelo ? flabelo : "",
+			fledger ? fledger : "",
+			fope ? fope : "",
 			label ? label : "",
 			notes ? notes : "",
 			siren ? siren : "",
+			baccount ? baccount : "",
+			bledger ? bledger : "",
+			bope ? bope : "",
+			blabel ? blabel : "",
 			muser ? muser : "",
 			muser ? stamp : "",
 			ofo_dossier_get_this_exe_id( dossier ),

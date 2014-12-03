@@ -167,6 +167,7 @@
  216 2014- 6-13 exercice closing
      2014-10- 6 keep the account balances at the end of the exercice N
                 and at the beginning of exercice N+1
+     2014-12- 3 Checks for entries balance
 
  217 2014- 6-13 tableau de trésorerie
      2014-10- 6 this may require the balance be printed
@@ -337,7 +338,8 @@
  467 2014-11-26 move ofoRate to ofaBoxed
 
  469 2014-11-28 ExportSettings: the field separator should be free 
-                instead of having to select among predefined values
+                (but not empty nor space) instead of having to select
+                among predefined values
 
  470 2014-11-28 when entering a new database name, only accepts
                 [A..Z,a..z,0..9,_] characters
@@ -357,12 +359,31 @@
  479 2014-11-30 get rid of mysqlConnect and mysqlInfos
                 after that rename sMySQLInfos to sMysqlInfos
 
- 480 2014-11-30 ofaBoxed class is renamed is ofaBox
-                ofaIBoxed is an interface
+ 480 2014-11-30 ofaBoxed class is renamed to ofaBox
+                ofaIBoxed becomes the corresponding interface
 
  481 2014-12- 1 review ofaCurrencyCombo
 
- 482
+ 482 2014-12- 2 change BAT_URI to X(256)
+
+ 483 2014-12- 2 add BAT_IMPORT_USER and BAT_IMPORT_STAMP
+
+ 484 2014-12- 2 change DOS_SIREN to X(9)
+
+ 485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
+
+ 486 2014-12- 2 ledger: not deletable if referenced in dossier
+
+ 487 2014-12- 2 ope_template: not deletable if referenced in dossier
+
+ 488 2014-12- 2 when the begin exercice date misses, directly open the
+                dossier properties for updates
+
+ 489 2014-12- 2 Exe Closing: have default for date of next exercice
+
+ 490 2014-12- 2 ExeClosing: implement ledger select, ope select
+
+ 491
 
 -----------------------------------------------------------------------
  DONE

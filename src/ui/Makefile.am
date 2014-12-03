@@ -63,6 +63,8 @@ openbook_SOURCES = \
 	my-editable-amount.h								\
 	my-editable-date.c									\
 	my-editable-date.h									\
+	my-progress-bar.c									\
+	my-progress-bar.h									\
 	my-tab-label.c										\
 	my-tab-label.h										\
 	ofa-account-properties.c							\
@@ -77,6 +79,8 @@ openbook_SOURCES = \
 	ofa-application.h									\
 	ofa-backup.c										\
 	ofa-backup.h										\
+	ofa-balances-grid.c									\
+	ofa-balances-grid.h									\
 	ofa-bat-common.c									\
 	ofa-bat-common.h									\
 	ofa-bat-properties.c								\
@@ -115,6 +119,8 @@ openbook_SOURCES = \
 	ofa-dossier-treeview.h								\
 	ofa-exe-closing.c									\
 	ofa-exe-closing.h									\
+	ofa-exe-forward.c									\
+	ofa-exe-forward.h									\
 	ofa-exercice-combo.c								\
 	ofa-exercice-combo.h								\
 	ofa-export-assistant.c								\
@@ -149,6 +155,8 @@ openbook_SOURCES = \
 	ofa-main-window.h									\
 	ofa-misc-arcaccopebal.c								\
 	ofa-misc-arcaccopebal.h								\
+	ofa-misc-chkentbal.c								\
+	ofa-misc-chkentbal.h								\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
 	ofa-ope-templates-page.c							\
@@ -217,6 +225,7 @@ ui_files = \
 	ofa-dossier-properties.ui							\
 	ofa-dossier-treeview.piece.ui						\
 	ofa-exe-closing.ui									\
+	ofa-exe-forward.piece.ui							\
 	ofa-export-assistant.ui								\
 	ofa-export-settings.piece.ui						\
 	ofa-guided-input.ui									\

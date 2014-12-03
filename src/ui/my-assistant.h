@@ -35,6 +35,8 @@
  * This is a base class for assistants.
  */
 
+#include <gtk/gtk.h>
+
 #include "core/my-window.h"
 
 G_BEGIN_DECLS
@@ -70,15 +72,17 @@ typedef struct {
  */
 #define MY_SIGNAL_PAGE_FORWARD          "my-assistant-signal-page-forward"
 
-GType    my_assistant_get_type            ( void ) G_GNUC_CONST;
+GType         my_assistant_get_type            ( void ) G_GNUC_CONST;
 
-void     my_assistant_run                 ( myAssistant *assistant );
+void          my_assistant_run                 ( myAssistant *assistant );
 
-gulong   my_assistant_signal_connect      ( myAssistant *assistant, const gchar *signal, GCallback cb );
+gulong        my_assistant_signal_connect      ( myAssistant *assistant, const gchar *signal, GCallback cb );
 
-gboolean my_assistant_is_page_initialized ( myAssistant *assistant, GtkWidget *page );
+gboolean      my_assistant_is_page_initialized ( myAssistant *assistant, GtkWidget *page );
 
-void     my_assistant_set_page_initialized( myAssistant *assistant, GtkWidget *page, gboolean initialized );
+void          my_assistant_set_page_initialized( myAssistant *assistant, GtkWidget *page, gboolean initialized );
+
+GtkAssistant *my_assistant_get_assistant       ( myAssistant *assistant );
 
 G_END_DECLS
 

@@ -43,6 +43,7 @@ struct _myAssistantPrivate {
 
 	/* runtime data
 	 */
+	GtkAssistant  *assistant;
 	gint           prev_page_num;
 	gboolean       escape_key_pressed;
 };
@@ -183,28 +184,30 @@ static void
 do_setup_assistant( myAssistant *self )
 {
 	static const gchar *thisfn = "my_assistant_do_setup_assistant";
-	GtkAssistant *assistant;
+	myAssistantPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
+	priv = self->priv;
 
-	gtk_window_set_modal( GTK_WINDOW( assistant ), TRUE );
-	gtk_window_set_transient_for( GTK_WINDOW( assistant ),
+	priv->assistant = ( GtkAssistant * ) my_window_get_toplevel( MY_WINDOW( self ));
+	g_return_if_fail( priv->assistant && GTK_IS_ASSISTANT( priv->assistant ));
+
+	gtk_window_set_modal( GTK_WINDOW( priv->assistant ), TRUE );
+	gtk_window_set_transient_for( GTK_WINDOW( priv->assistant ),
 									GTK_WINDOW( MY_WINDOW( self )->prot->main_window ));
 
 	/* deals with 'Esc' key */
 	g_signal_connect(
-			assistant,
+			priv->assistant,
 			"key-press-event", G_CALLBACK( on_key_pressed_event ), self );
 
-	g_signal_connect( assistant, "prepare",  G_CALLBACK( on_prepare ),  self );
-	g_signal_connect( assistant, "cancel",  G_CALLBACK( on_cancel ),  self );
-	g_signal_connect( assistant, "close",   G_CALLBACK( on_close ),   self );
+	g_signal_connect( priv->assistant, "prepare",  G_CALLBACK( on_prepare ),  self );
+	g_signal_connect( priv->assistant, "cancel",  G_CALLBACK( on_cancel ),  self );
+	g_signal_connect( priv->assistant, "close",   G_CALLBACK( on_close ),   self );
 
-	gtk_widget_show_all( GTK_WIDGET( assistant ));
+	gtk_widget_show_all( GTK_WIDGET( priv->assistant ));
 }
 
 /*
@@ -444,4 +447,25 @@ my_assistant_set_page_initialized( myAssistant *assistant, GtkWidget *page, gboo
 
 		sdata->initialized = initialized;
 	}
+}
+
+/**
+ * my_assistant_get_assistant:
+ */
+GtkAssistant *
+my_assistant_get_assistant( myAssistant *assistant )
+{
+	GtkWindow *toplevel;
+
+	g_return_val_if_fail( assistant && MY_IS_ASSISTANT( assistant ), NULL );
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		toplevel = my_window_get_toplevel( MY_WINDOW( assistant ));
+		g_return_val_if_fail( toplevel && GTK_IS_ASSISTANT( toplevel ), NULL );
+
+		return( GTK_ASSISTANT( toplevel ));
+	}
+
+	return( NULL );
 }

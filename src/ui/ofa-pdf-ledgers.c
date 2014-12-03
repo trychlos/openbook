@@ -153,7 +153,7 @@ static void     v_init_dialog( myDialog *dialog );
 static void     init_ledgers_selection( ofaPDFLedgers *self );
 static void     init_date_selection( ofaPDFLedgers *self );
 static void     init_others( ofaPDFLedgers *self );
-static void     on_ledgers_activated( GList *selected, ofaPDFLedgers *self );
+static void     on_ledgers_activated( ofaLedgerTreeview *view, GList *selected, ofaPDFLedgers *self );
 static void     on_all_ledgers_toggled( GtkToggleButton *button, ofaPDFLedgers *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFLedgers *self );
@@ -336,7 +336,6 @@ init_ledgers_selection( ofaPDFLedgers *self )
 	ofaPDFLedgersPrivate *priv;
 	GtkWindow *toplevel;
 	GtkWidget *widget;
-	ofsLedgerTreeviewParms parms;
 
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
@@ -345,15 +344,14 @@ init_ledgers_selection( ofaPDFLedgers *self )
 	g_return_if_fail( widget && GTK_IS_ALIGNMENT( widget ));
 	priv->alignment = widget;
 
-	parms.main_window = MY_WINDOW( self )->prot->main_window;
-	parms.parent = GTK_CONTAINER( widget );
-	parms.allow_multiple_selection = TRUE;
-	parms.pfnSelected = NULL;
-	parms.pfnActivated = ( ofaLedgerTreeviewCb ) on_ledgers_activated;
-	parms.user_data = self;
+	priv->ledgers_tview = ofa_ledger_treeview_new();
+	ofa_ledger_treeview_attach_to( priv->ledgers_tview, GTK_CONTAINER( widget ),
+			LEDGER_MNEMO | LEDGER_LABEL | LEDGER_ENTRY | LEDGER_CLOSING,
+			GTK_SELECTION_MULTIPLE );
+	ofa_ledger_treeview_init_view( priv->ledgers_tview, MY_WINDOW( self )->prot->dossier, NULL );
 
-	priv->ledgers_tview = ofa_ledger_treeview_new( &parms );
-	ofa_ledger_treeview_init_view( priv->ledgers_tview, NULL );
+	g_signal_connect(
+			G_OBJECT( priv->ledgers_tview ), "activated", G_CALLBACK( on_ledgers_activated ), self );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-all-ledgers" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
@@ -431,7 +429,7 @@ init_others( ofaPDFLedgers *self )
 }
 
 static void
-on_ledgers_activated( GList *selected, ofaPDFLedgers *self )
+on_ledgers_activated( ofaLedgerTreeview *view, GList *selected, ofaPDFLedgers *self )
 {
 	gtk_dialog_response( GTK_DIALOG( self ), GTK_RESPONSE_OK );
 }
@@ -484,6 +482,8 @@ do_apply( ofaPDFLedgers *self )
 	ofaPDFLedgersPrivate *priv;
 	gboolean all_ledgers;
 	gchar *text;
+	GList *list, *it;
+	ofoLedger *ledger;
 
 	priv = self->priv;
 
@@ -493,8 +493,16 @@ do_apply( ofaPDFLedgers *self )
 	if( all_ledgers ){
 		priv->selected = ofo_ledger_get_dataset( MY_WINDOW( self )->prot->dossier );
 	} else {
-		priv->selected = ofa_ledger_treeview_get_selected( priv->ledgers_tview );
+		list = ofa_ledger_treeview_get_selected( priv->ledgers_tview );
+		priv->selected = NULL;
+		for( it=list ; it ; it=it->next ){
+			ledger = ofo_ledger_get_by_mnemo( MY_WINDOW( self )->prot->dossier, ( const gchar * ) it->data );
+			g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
+			priv->selected = g_list_append( priv->selected, ledger );
+		}
+		ofa_ledger_treeview_free_selected( list );
 	}
+
 	if( !g_list_length( priv->selected )){
 		error_empty( self );
 		return( FALSE );

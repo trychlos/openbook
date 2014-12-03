@@ -39,10 +39,9 @@
  * embedded in a GtkScrolledWindow.
  */
 
-#include "api/ofo-dossier-def.h"
-#include "api/ofo-ledger-def.h"
+#include <gtk/gtk.h>
 
-#include "core/ofa-main-window-def.h"
+#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -70,39 +69,32 @@ typedef struct {
 }
 	ofaLedgerTreeviewClass;
 
-/**
- * ofaLedgerTreeviewCb:
- *
- * A callback to be triggered when a row is selected or activated,
- *
- * Passed parameters are:
- * - a GList * of selected #ofoLedger objects
- * - user_data provided at initialization time
+/* which columns are to be displayed in the treeview ?
  */
-typedef void    ( *ofaLedgerTreeviewCb )           ( GList *, gpointer );
-
-/**
- * ofsLedgerTreeviewParms:
- *
- * The structure used to initialize this convenience class.
- */
-typedef struct {
-	ofaMainWindow      *main_window;
-	GtkContainer       *parent;
-	gboolean            allow_multiple_selection;
-	ofaLedgerTreeviewCb pfnSelected;
-	ofaLedgerTreeviewCb pfnActivated;
-	void               *user_data;
+typedef enum {
+	LEDGER_MNEMO   = 1 << 0,
+	LEDGER_LABEL   = 1 << 1,
+	LEDGER_ENTRY   = 1 << 2,
+	LEDGER_CLOSING = 1 << 3
 }
-	ofsLedgerTreeviewParms;
+	ofaLedgerColumns;
 
 GType              ofa_ledger_treeview_get_type                ( void ) G_GNUC_CONST;
 
-ofaLedgerTreeview *ofa_ledger_treeview_new                     ( const ofsLedgerTreeviewParms *parms );
+ofaLedgerTreeview *ofa_ledger_treeview_new                     ( void );
 
-void               ofa_ledger_treeview_init_view               ( ofaLedgerTreeview *view, const gchar *initial_selection );
+void               ofa_ledger_treeview_attach_to               ( ofaLedgerTreeview *view,
+																		GtkContainer *parent,
+																		ofaLedgerColumns columns,
+																		GtkSelectionMode mode );
+
+void               ofa_ledger_treeview_init_view               ( ofaLedgerTreeview *view,
+																		ofoDossier *dossier,
+																		const gchar *initial_selection );
 
 GList             *ofa_ledger_treeview_get_selected            ( ofaLedgerTreeview *view );
+
+#define            ofa_ledger_treeview_free_selected(L)        g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
 GtkWidget         *ofa_ledger_treeview_get_top_focusable_widget( ofaLedgerTreeview *view );
 

@@ -71,12 +71,12 @@ static const gchar  *st_ui_id  = "IntClosingDlg";
 G_DEFINE_TYPE( ofaIntClosing, ofa_int_closing, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_rows_activated( GList *selected, ofaIntClosing *self );
-static void      on_rows_selected( GList *selected, ofaIntClosing *self );
+static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaIntClosing *self );
+static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaIntClosing *self );
 static void      on_date_changed( GtkEditable *entry, ofaIntClosing *self );
 static void      check_for_enable_dlg( ofaIntClosing *self, GList *selected );
 static gboolean  is_dialog_validable( ofaIntClosing *self, GList *selected );
-static void      check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger );
+static void      check_foreach_ledger( ofaIntClosing *self, const gchar *ledger );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_close( ofaIntClosing *self );
 static gboolean  close_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger );
@@ -181,10 +181,10 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaIntClosingPrivate *priv;
-	ofsLedgerTreeviewParms parms;
 	GtkContainer *container;
 	GtkButton *button;
 	GtkLabel *label;
+	GtkWidget *parent;
 
 	priv = OFA_INT_CLOSING( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
@@ -194,16 +194,18 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	priv->do_close_btn = button;
 
-	parms.main_window = MY_WINDOW( dialog )->prot->main_window;
-	parms.parent = GTK_CONTAINER(
-					my_utils_container_get_child_by_name( container, "px-treeview-alignement" ));
-	parms.allow_multiple_selection = TRUE;
-	parms.pfnActivated = ( ofaLedgerTreeviewCb ) on_rows_activated;
-	parms.pfnSelected = ( ofaLedgerTreeviewCb ) on_rows_selected;
-	parms.user_data = dialog;
+	parent = my_utils_container_get_child_by_name( container, "px-treeview-alignement" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->tview = ofa_ledger_treeview_new();
+	ofa_ledger_treeview_attach_to( priv->tview,
+			GTK_CONTAINER( parent ),
+			LEDGER_MNEMO | LEDGER_LABEL | LEDGER_ENTRY | LEDGER_CLOSING,
+			GTK_SELECTION_MULTIPLE );
+	ofa_ledger_treeview_init_view( priv->tview,
+			MY_WINDOW( dialog )->prot->dossier, NULL );
 
-	priv->tview = ofa_ledger_treeview_new( &parms );
-	ofa_ledger_treeview_init_view( priv->tview, NULL );
+	g_signal_connect( G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_rows_selected ), dialog );
+	g_signal_connect( G_OBJECT( priv->tview ), "activated", G_CALLBACK( on_rows_activated ), dialog );
 
 	label = ( GtkLabel * ) my_utils_container_get_child_by_name( container, "p1-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -225,7 +227,7 @@ v_init_dialog( myDialog *dialog )
  * LedgerTreeview callback
  */
 static void
-on_rows_activated( GList *selected, ofaIntClosing *self )
+on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaIntClosing *self )
 {
 	if( is_dialog_validable( self, selected )){
 		do_close( self );
@@ -236,7 +238,7 @@ on_rows_activated( GList *selected, ofaIntClosing *self )
  * LedgerTreeview callback
  */
 static void
-on_rows_selected( GList *selected, ofaIntClosing *self )
+on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaIntClosing *self )
 {
 	check_for_enable_dlg( self, selected );
 }
@@ -304,7 +306,7 @@ is_dialog_validable( ofaIntClosing *self, GList *selected )
 		}
 
 		for( isel=selected ; isel ; isel=isel->next ){
-			check_foreach_ledger( self, OFO_LEDGER( isel->data ));
+			check_foreach_ledger( self, ( const gchar * ) isel->data );
 		}
 
 		if( !priv->closeable ){
@@ -320,13 +322,17 @@ is_dialog_validable( ofaIntClosing *self, GList *selected )
 }
 
 static void
-check_foreach_ledger( ofaIntClosing *self, ofoLedger *ledger )
+check_foreach_ledger( ofaIntClosing *self, const gchar *mnemo )
 {
 	ofaIntClosingPrivate *priv;
+	ofoLedger *ledger;
 	const GDate *last;
 
 	priv = self->priv;
 	priv->count += 1;
+
+	ledger = ofo_ledger_get_by_mnemo( MY_WINDOW( self )->prot->dossier, mnemo );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	last = ofo_ledger_get_last_close( ledger );
 

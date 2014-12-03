@@ -77,8 +77,8 @@ static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       insert_dataset( ofaLedgersPage *self );
-static void       on_row_activated( GList *selected, ofaLedgersPage *self );
-static void       on_row_selected( GList *selected, ofaLedgersPage *self );
+static void       on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
+static void       on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
 static void       v_on_button_clicked( ofaPage *page, guint button_id );
 static void       on_new_clicked( ofaLedgersPage *page );
 static void       on_update_clicked( ofaLedgersPage *page );
@@ -164,7 +164,6 @@ setup_tree_view( ofaPage *page )
 {
 	ofaLedgersPagePrivate *priv;
 	GtkFrame *frame;
-	ofsLedgerTreeviewParms parms;
 
 	priv = OFA_LEDGERS_PAGE( page )->priv;
 
@@ -174,14 +173,14 @@ setup_tree_view( ofaPage *page )
 	gtk_widget_set_margin_bottom( GTK_WIDGET( frame ), 4 );
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
 
-	parms.main_window = ofa_page_get_main_window( page );
-	parms.parent = GTK_CONTAINER( frame );
-	parms.allow_multiple_selection = FALSE;
-	parms.pfnActivated = ( ofaLedgerTreeviewCb ) on_row_activated;
-	parms.pfnSelected = ( ofaLedgerTreeviewCb ) on_row_selected;
-	parms.user_data = page;
+	priv->tview = ofa_ledger_treeview_new();
+	ofa_ledger_treeview_attach_to( priv->tview,
+			GTK_CONTAINER( frame ),
+			LEDGER_MNEMO | LEDGER_LABEL | LEDGER_ENTRY | LEDGER_CLOSING,
+			GTK_SELECTION_BROWSE );
 
-	priv->tview = ofa_ledger_treeview_new( &parms );
+	g_signal_connect( G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_row_selected ), page );
+	g_signal_connect( G_OBJECT( priv->tview ), "activated", G_CALLBACK( on_row_activated ), page );
 
 	return( GTK_WIDGET( frame ));
 }
@@ -229,29 +228,42 @@ v_get_top_focusable_widget( const ofaPage *page )
 static void
 insert_dataset( ofaLedgersPage *self )
 {
-	ofa_ledger_treeview_init_view( self->priv->tview, NULL );
+	ofoDossier *dossier;
+
+	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
+	ofa_ledger_treeview_init_view( self->priv->tview, dossier, NULL );
 }
 
 /*
  * LedgerTreeview callback
  */
 static void
-on_row_activated( GList *selected, ofaLedgersPage *self )
+on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self )
 {
-	do_update( self, OFO_LEDGER( selected->data ));
-}
-
-/*
- * LedgerTreeview callback
- */
-static void
-on_row_selected( GList *selected, ofaLedgersPage *self )
-{
-	ofaLedgersPagePrivate *priv;
+	ofoDossier *dossier;
 	ofoLedger *ledger;
 
-	ledger = OFO_LEDGER( selected->data );
+	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
+	ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+
+	do_update( self, ledger );
+}
+
+/*
+ * LedgerTreeview callback
+ */
+static void
+on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self )
+{
+	ofaLedgersPagePrivate *priv;
+	ofoDossier *dossier;
+	ofoLedger *ledger;
+
 	priv = self->priv;
+	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
+	ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	gtk_widget_set_sensitive(
 			priv->update_btn,
@@ -351,13 +363,15 @@ on_delete_clicked( ofaLedgersPage *page )
 	ofaLedgersPagePrivate *priv;
 	ofoDossier *dossier;
 	ofoLedger *ledger;
+	const gchar *mnemo;
 	GtkWidget *view;
 
 	priv = page->priv;
-
-	ledger = OFO_LEDGER( ofa_ledger_treeview_get_selected( priv->tview )->data );
-
 	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
+
+	mnemo = ofa_ledger_treeview_get_selected( priv->tview )->data;
+	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 	g_return_if_fail( ofo_ledger_is_deletable( ledger, dossier ));
 
 	if( delete_confirmed( page, ledger ) &&

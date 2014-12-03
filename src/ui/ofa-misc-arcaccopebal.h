@@ -28,8 +28,8 @@
 #define __OFA_MISC_ARCACCOPEBAL_H__
 
 /**
- * SECTION: ofa_misc_arcaccopebal
- * @short_description: #ofaMiscArcAccOpeBal class definition.
+ * SECTION: ofa_misc
+ * @short_description: Miscellaneous functions.
  * @include: ui/ofa-misc-arcaccopebal.h
  *
  * Archive accounts balances when opening the exercice.

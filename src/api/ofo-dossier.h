@@ -78,9 +78,17 @@ const GDate     *ofo_dossier_get_exe_begin             ( const ofoDossier *dossi
 const GDate     *ofo_dossier_get_exe_end               ( const ofoDossier *dossier );
 gint             ofo_dossier_get_exe_length            ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_exe_notes             ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_forward_label_close   ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_forward_label_open    ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_forward_ledger        ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_forward_ope           ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_label                 ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_notes                 ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_siren                 ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_sld_account           ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_sld_label             ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_sld_ledger            ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_sld_ope               ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_upd_user              ( const ofoDossier *dossier );
 const GTimeVal  *ofo_dossier_get_upd_stamp             ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_status                ( const ofoDossier *dossier );
@@ -97,7 +105,6 @@ ofxCounter       ofo_dossier_get_next_entry            ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_settlement       ( ofoDossier *dossier );
 
 GList           *ofo_dossier_get_exercices_list        ( const ofoDossier *dossier );
-/*GDate           *ofo_dossier_get_last_closed_exercice  ( const ofoDossier *dossier );*/
 
 gboolean         ofo_dossier_is_current                ( const ofoDossier *dossier );
 gboolean         ofo_dossier_is_entries_allowed        ( const ofoDossier *dossier );
@@ -108,13 +115,21 @@ gboolean         ofo_dossier_is_valid                  ( const gchar *label,
 																const GDate *end );
 
 void             ofo_dossier_set_default_currency      ( ofoDossier *dossier, const gchar *currency );
-void             ofo_dossier_set_exe_begin             ( const ofoDossier *dossier, const GDate *date );
-void             ofo_dossier_set_exe_end               ( const ofoDossier *dossier, const GDate *date );
+void             ofo_dossier_set_exe_begin             ( ofoDossier *dossier, const GDate *date );
+void             ofo_dossier_set_exe_end               ( ofoDossier *dossier, const GDate *date );
 void             ofo_dossier_set_exe_length            ( ofoDossier *dossier, gint nb_months );
-void             ofo_dossier_set_exe_notes             ( const ofoDossier *dossier, const gchar *notes );
+void             ofo_dossier_set_exe_notes             ( ofoDossier *dossier, const gchar *notes );
+void             ofo_dossier_set_forward_label_close   ( ofoDossier *dossier, const gchar *label );
+void             ofo_dossier_set_forward_label_open    ( ofoDossier *dossier, const gchar *label );
+void             ofo_dossier_set_forward_ledger        ( ofoDossier *dossier, const gchar *ledger );
+void             ofo_dossier_set_forward_ope           ( ofoDossier *dossier, const gchar *ope );
 void             ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
 void             ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
 void             ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );
+void             ofo_dossier_set_sld_account           ( ofoDossier *dossier, const gchar *account );
+void             ofo_dossier_set_sld_label             ( ofoDossier *dossier, const gchar *label );
+void             ofo_dossier_set_sld_ledger            ( ofoDossier *dossier, const gchar *ledger );
+void             ofo_dossier_set_sld_ope               ( ofoDossier *dossier, const gchar *ope );
 
 gboolean         ofo_dossier_update                    ( ofoDossier *dossier );
 

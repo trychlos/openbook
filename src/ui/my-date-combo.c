@@ -65,7 +65,7 @@ static void setup_combo( myDateCombo *self );
 static void on_format_changed( GtkComboBox *box, myDateCombo *self );
 
 static void
-exercice_combo_finalize( GObject *instance )
+date_combo_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "my_date_combo_finalize";
 
@@ -81,7 +81,7 @@ exercice_combo_finalize( GObject *instance )
 }
 
 static void
-exercice_combo_dispose( GObject *instance )
+date_combo_dispose( GObject *instance )
 {
 	myDateComboPrivate *priv;
 
@@ -123,8 +123,8 @@ my_date_combo_class_init( myDateComboClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = exercice_combo_dispose;
-	G_OBJECT_CLASS( klass )->finalize = exercice_combo_finalize;
+	G_OBJECT_CLASS( klass )->dispose = date_combo_dispose;
+	G_OBJECT_CLASS( klass )->finalize = date_combo_finalize;
 
 	g_type_class_add_private( klass, sizeof( myDateComboPrivate ));
 

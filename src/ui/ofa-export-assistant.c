@@ -745,7 +745,7 @@ confirm_overwrite( const ofaExportAssistant *self, const gchar *fname )
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_WARNING,
 			GTK_BUTTONS_NONE,
-			"%s", str);
+			"%s", str );
 
 	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
 			_( "Cancel" ), GTK_RESPONSE_CANCEL,

@@ -605,6 +605,8 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
  * specified effect dates, as a GList of #ofoEntry, that the user
  * should g_list_free_full( list, ( GDestroyNotify ) g_object_unref ).
  *
+ * All entries (validated or rough) are considered.
+ *
  * The returned dataset doesn't contain deleted entries.
  */
 GList *

@@ -40,6 +40,7 @@
 #include "ui/my-editable-date.h"
 #include "ui/ofa-currency-combo.h"
 #include "ui/ofa-dossier-properties.h"
+#include "ui/ofa-exe-forward.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -68,6 +69,7 @@ struct _ofaDossierPropertiesPrivate {
 	/* UI
 	 */
 	GtkWidget       *siren_entry;
+	ofaExeForward   *forward;
 };
 
 static const gchar *st_ui_xml = PKGUIDIR "/ofa-dossier-properties.ui";
@@ -77,6 +79,7 @@ G_DEFINE_TYPE( ofaDossierProperties, ofa_dossier_properties, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
 static void      init_properties_page( ofaDossierProperties *self, GtkContainer *container );
+static void      init_forward_page( ofaDossierProperties *self, GtkContainer *container );
 static void      init_exe_notes_page( ofaDossierProperties *self, GtkContainer *container );
 static void      init_counters_page( ofaDossierProperties *self, GtkContainer *container );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
@@ -211,6 +214,7 @@ v_init_dialog( myDialog *dialog )
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	init_properties_page( self, container );
+	init_forward_page( self, container );
 	init_exe_notes_page( self, container );
 	init_counters_page( self, container );
 
@@ -307,6 +311,22 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 		g_free( str );
 	}
 	gtk_widget_set_can_focus( entry, priv->is_current );
+}
+
+static void
+init_forward_page( ofaDossierProperties *self, GtkContainer *container )
+{
+	ofaDossierPropertiesPrivate *priv;
+	GtkWidget *parent;
+
+	priv = self->priv;
+
+	parent = my_utils_container_get_child_by_name( container, "p5-forward-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
+	priv->forward = ofa_exe_forward_new();
+	ofa_exe_forward_attach_to(
+			priv->forward, GTK_CONTAINER( parent ), MY_WINDOW( self )->prot->main_window );
 }
 
 static void
@@ -488,6 +508,10 @@ is_dialog_valid( ofaDossierProperties *self )
 
 	ok &= ofo_dossier_is_valid( priv->label, priv->duree, priv->currency, &priv->begin, &priv->end );
 
+	if( priv->forward ){
+		ok &= ofa_exe_forward_check( priv->forward );
+	}
+
 	return( ok );
 }
 
@@ -515,9 +539,11 @@ do_update( ofaDossierProperties *self )
 	ofo_dossier_set_exe_begin( priv->dossier, &priv->begin );
 	ofo_dossier_set_exe_end( priv->dossier, &priv->end );
 
-	my_utils_getback_notes_ex( container, dossier );
+	ofa_exe_forward_apply( priv->forward );
 
 	ofo_dossier_set_exe_notes( priv->dossier, priv->exe_notes );
+
+	my_utils_getback_notes_ex( container, dossier );
 
 	priv->updated = ofo_dossier_update( priv->dossier );
 
