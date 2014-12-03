@@ -1,0 +1,14 @@
+# $Id$
+
+ALTER TABLE OFA_T_DOSSIER DROP COLUMN DOS_FORW_ACCOUNT;
+ALTER TABLE OFA_T_DOSSIER DROP COLUMN DOS_FORW_TEMPLATE;
+
+ALTER TABLE OFA_T_DOSSIER ADD  COLUMN DOS_FORW_LABEL_CLOSE VARCHAR(80)               COMMENT 'Label for closing carried forward entries';
+ALTER TABLE OFA_T_DOSSIER ADD  COLUMN DOS_FORW_LABEL_OPEN  VARCHAR(80)               COMMENT 'Label for opening carried forward entries';
+ALTER TABLE OFA_T_DOSSIER ADD  COLUMN DOS_FORW_OPE         VARCHAR(6)                COMMENT 'Operation mnemo for carried forward entries';
+ALTER TABLE OFA_T_DOSSIER ADD  COLUMN DOS_SLD_ACCOUNT      VARCHAR(20)               COMMENT 'Balancing account when closing the exercice';
+ALTER TABLE OFA_T_DOSSIER ADD  COLUMN DOS_SLD_LABEL        VARCHAR(80)               COMMENT 'Entry Label for balancing the accounts';
+ALTER TABLE OFA_T_DOSSIER ADD  COLUMN DOS_SLD_LEDGER       VARCHAR(6)                COMMENT 'Ledger for balancing entries';
+ALTER TABLE OFA_T_DOSSIER ADD  COLUMN DOS_SLD_OPE          VARCHAR(6)                COMMENT 'Operation mnemo for balancing entries';
+
+DESCRIBE OFA_T_DOSSIER;
