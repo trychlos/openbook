@@ -63,6 +63,8 @@ const GTimeVal *ofo_ledger_get_upd_stamp   ( const ofoLedger *ledger );
 const GDate    *ofo_ledger_get_last_close  ( const ofoLedger *ledger );
 GDate          *ofo_ledger_get_last_entry  ( const ofoLedger *ledger, ofoDossier *dossier );
 
+GList          *ofo_ledger_get_currencies  ( const ofoLedger *ledger );
+
 ofxAmount       ofo_ledger_get_clo_deb     ( const ofoLedger *ledger, const gchar *currency );
 ofxAmount       ofo_ledger_get_clo_cre     ( const ofoLedger *ledger, const gchar *currency );
 ofxAmount       ofo_ledger_get_deb         ( const ofoLedger *ledger, const gchar *currency );

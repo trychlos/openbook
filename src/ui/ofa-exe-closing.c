@@ -44,7 +44,9 @@
 #include "ui/ofa-exe-closing.h"
 #include "ui/ofa-exe-forward.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-misc-chkaccbal.h"
 #include "ui/ofa-misc-chkentbal.h"
+#include "ui/ofa-misc-chkledbal.h"
 
 /* private instance data
  */
@@ -66,6 +68,7 @@ struct _ofaExeClosingPrivate {
 	gboolean       p3_ledgers_ok;
 	gboolean       p3_accounts_ok;
 	gboolean       p3_all_checks_ok;
+	gboolean       p3_done;
 };
 
 /* the pages of this assistant
@@ -449,6 +452,11 @@ p2_do_forward( ofaExeClosing *self, GtkWidget *page_widget )
 static void
 p3_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
 {
+	ofaExeClosingPrivate *priv;
+
+	priv = self->priv;
+
+	priv->p3_done = FALSE;
 }
 
 /*
@@ -462,17 +470,19 @@ p3_checks( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget 
 
 	priv = self->priv;
 
-	gtk_assistant_set_page_complete( assistant, page_widget, FALSE );
+	if( !priv->p3_done ){
 
-	page_num = gtk_assistant_get_current_page( assistant );
+		gtk_assistant_set_page_complete( assistant, page_widget, FALSE );
+		page_num = gtk_assistant_get_current_page( assistant );
 
-	priv->assistant = assistant;
-	priv->page_widget = gtk_assistant_get_nth_page( assistant, page_num );
-	priv->p3_entries_ok = FALSE;
-	priv->p3_ledgers_ok = FALSE;
-	priv->p3_accounts_ok = FALSE;
+		priv->assistant = assistant;
+		priv->page_widget = gtk_assistant_get_nth_page( assistant, page_num );
+		priv->p3_entries_ok = FALSE;
+		priv->p3_ledgers_ok = FALSE;
+		priv->p3_accounts_ok = FALSE;
 
-	g_idle_add(( GSourceFunc ) p3_check_entries_balance, self );
+		g_idle_add(( GSourceFunc ) p3_check_entries_balance, self );
+	}
 }
 
 static gboolean
@@ -505,7 +515,7 @@ p3_check_ledgers_balance( ofaExeClosing *self )
 
 	bar = get_new_bar( self, "p3-ledger-parent" );
 	grid = p3_get_new_balances( self, "p3-ledger-bals" );
-	priv->p3_ledgers_ok = ofa_misc_chkentbal_run( MY_WINDOW( self )->prot->dossier, bar, grid );
+	priv->p3_ledgers_ok = ofa_misc_chkledbal_run( MY_WINDOW( self )->prot->dossier, bar, grid );
 	p3_display_status( self, priv->p3_ledgers_ok, "p3-ledger-ok" );
 
 	/* do not continue and remove from idle callbacks list */
@@ -524,7 +534,7 @@ p3_check_accounts_balance( ofaExeClosing *self )
 
 	bar = get_new_bar( self, "p3-account-parent" );
 	grid = p3_get_new_balances( self, "p3-account-bals" );
-	priv->p3_accounts_ok = ofa_misc_chkentbal_run( MY_WINDOW( self )->prot->dossier, bar, grid );
+	priv->p3_accounts_ok = ofa_misc_chkaccbal_run( MY_WINDOW( self )->prot->dossier, bar, grid );
 	p3_display_status( self, priv->p3_accounts_ok, "p3-account-ok" );
 
 	/* do not continue and remove from idle callbacks list */
@@ -600,6 +610,7 @@ p3_info_checks( ofaExeClosing *self )
 	priv = self->priv;
 
 	priv->p3_all_checks_ok = priv->p3_entries_ok && priv->p3_ledgers_ok && priv->p3_accounts_ok;
+	priv->p3_done = TRUE;
 
 	if( !priv->p3_all_checks_ok ){
 		dialog = gtk_message_dialog_new(

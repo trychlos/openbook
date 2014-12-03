@@ -641,6 +641,37 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger, ofoDossier *dossier )
 }
 
 /**
+ * ofo_ledger_get_currencies:
+ *
+ * Returns: the list of currency codes ISO 3A used by this ledger.
+ *
+ * The content of returned list is owned by the ledger, and should only
+ * be g_list_free() by the caller.
+ */
+GList *
+ofo_ledger_get_currencies( const ofoLedger *ledger )
+{
+	ofoLedgerPrivate *priv;
+	GList *list, *it;
+	sDetailCur *sdet;
+
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
+
+	list = NULL;
+
+	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+
+		priv = ledger->priv;
+		for( it=priv->amounts ; it ; it=it->next ){
+			sdet = ( sDetailCur * ) it->data;
+			list = g_list_prepend( list, sdet->currency );
+		}
+	}
+
+	return( list );
+}
+
+/**
  * ofo_ledger_get_clo_deb:
  * @ledger:
  * @currency:
