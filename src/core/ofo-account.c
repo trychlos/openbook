@@ -203,8 +203,6 @@ struct _ofoAccountPrivate {
 
 #define ACCOUNT_TYPE_ROOT               "R"
 #define ACCOUNT_TYPE_DETAIL             "D"
-#define ACCOUNT_SETTLEABLE              "S"
-#define ACCOUNT_RECONCILIABLE           "R"
 #define ACCOUNT_FORWARDABLE             "F"
 
 #define account_get_amount(I)           ofo_base_getter(ACCOUNT,account,amount,0,(I))

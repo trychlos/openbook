@@ -288,7 +288,7 @@ static gboolean
 is_dialog_validable( ofaIntClosing *self, GList *selected )
 {
 	ofaIntClosingPrivate *priv;
-	GList *isel;
+	GList *selection, *it;
 	gboolean ok;
 
 	priv = self->priv;
@@ -301,17 +301,23 @@ is_dialog_validable( ofaIntClosing *self, GList *selected )
 		priv->count = 0;
 		priv->closeable = 0;
 
+		selection = NULL;
 		if( !selected ){
-			selected = ofa_ledger_treeview_get_selected( priv->tview );
+			selection = ofa_ledger_treeview_get_selected( priv->tview );
+			selected = selection;
 		}
 
-		for( isel=selected ; isel ; isel=isel->next ){
-			check_foreach_ledger( self, ( const gchar * ) isel->data );
+		for( it=selected ; it ; it=it->next ){
+			check_foreach_ledger( self, ( const gchar * ) it->data );
 		}
 
 		if( !priv->closeable ){
 			gtk_label_set_text( priv->message_label, _( "None of the selected ledgers is closeable at the proposed date" ));
 			ok = FALSE;
+		}
+
+		if( selection ){
+			ofa_ledger_treeview_free_selected( selection );
 		}
 	}
 	if( ok ){
@@ -353,7 +359,7 @@ static gboolean
 do_close( ofaIntClosing *self )
 {
 	ofaIntClosingPrivate *priv;
-	GList *selected, *isel;
+	GList *selected, *it;
 	gboolean ok;
 
 	priv = self->priv;
@@ -365,10 +371,11 @@ do_close( ofaIntClosing *self )
 	priv->count = 0;
 	priv->ledgers_list = g_string_new( "" );
 
-	for( isel=selected ; isel ; isel=isel->next ){
-		close_foreach_ledger( self, OFO_LEDGER( isel->data ));
+	for( it=selected ; it ; it=it->next ){
+		close_foreach_ledger( self, OFO_LEDGER( it->data ));
 	}
 
+	ofa_ledger_treeview_free_selected( selected );
 	do_end_close( self );
 
 	return( TRUE );

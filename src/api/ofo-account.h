@@ -52,6 +52,11 @@ typedef struct {
 }
 	ofsAccountBalance;
 
+/* This is needed by ofoEntry
+ */
+#define ACCOUNT_SETTLEABLE              "S"
+#define ACCOUNT_RECONCILIABLE           "R"
+
 void            ofo_account_free_balances        ( GList *balances );
 
 void            ofo_account_connect_handlers     ( const ofoDossier *dossier );

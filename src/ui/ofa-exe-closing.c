@@ -32,7 +32,10 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
+#include "api/ofo-ledger.h"
 
 #include "core/my-window-prot.h"
 #include "core/ofa-preferences.h"
@@ -44,9 +47,7 @@
 #include "ui/ofa-exe-closing.h"
 #include "ui/ofa-exe-forward.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-misc-chkaccbal.h"
-#include "ui/ofa-misc-chkentbal.h"
-#include "ui/ofa-misc-chkledbal.h"
+#include "ui/ofa-misc-chkbal.h"
 
 /* private instance data
  */
@@ -65,10 +66,18 @@ struct _ofaExeClosingPrivate {
 	GtkAssistant  *assistant;
 	GtkWidget     *page_widget;
 	gboolean       p3_entries_ok;
+	GList         *p3_entries_list;
 	gboolean       p3_ledgers_ok;
+	GList         *p3_ledgers_list;
 	gboolean       p3_accounts_ok;
-	gboolean       p3_all_checks_ok;
+	GList         *p3_accounts_list;
 	gboolean       p3_done;
+
+	/* p5 - close the exercice
+	 */
+	GList         *p5_forwards;
+	GList         *p5_unsettled;
+	GList         *p5_unreconciliated;
 };
 
 /* the pages of this assistant
@@ -104,11 +113,14 @@ static gboolean         p3_check_ledgers_balance( ofaExeClosing *self );
 static gboolean         p3_check_accounts_balance( ofaExeClosing *self );
 static myProgressBar   *get_new_bar( ofaExeClosing *self, const gchar *w_name );
 static ofaBalancesGrid *p3_get_new_balances( ofaExeClosing *self, const gchar *w_name );
-static void             p3_display_status( ofaExeClosing *self, gboolean ok, const gchar *w_name );
-static void             p3_info_checks( ofaExeClosing *self );
-static void             p8_do_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
+static void             p3_check_status( ofaExeClosing *self, gboolean ok, const gchar *w_name );
+static gboolean         p3_info_checks( ofaExeClosing *self );
 static void             on_apply( GtkAssistant *assistant, ofaExeClosing *self );
-static void             p9_do_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
+static void             p5_do_close( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
+static gboolean         p5_validate_entries( ofaExeClosing *self );
+static gboolean         p5_solde_accounts( ofaExeClosing *self );
+static gboolean         p5_close_ledgers( ofaExeClosing *self );
+static gboolean         p5_get_unsettled( ofaExeClosing *self );
 
 static void
 exe_closing_finalize( GObject *instance )
@@ -215,11 +227,11 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page_widget, ofaExeClosing *self
 			thisfn, ( void * ) assistant, ( void * ) page_widget, page_num, ( void * ) self );
 
 	switch( page_num ){
-		/* 0 [Intro] Introduction */
+		/* page_num=0 / p1 [Intro] Introduction */
 		case PAGE_INTRO:
 			break;
 
-		/* 1 [Content] Enter parms */
+		/* page_num=1 / p2  [Content] Enter parms */
 		case PAGE_PARMS:
 			if( !my_assistant_is_page_initialized( MY_ASSISTANT( self ), page_widget )){
 				p2_do_init( self, assistant, page_widget );
@@ -228,7 +240,7 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page_widget, ofaExeClosing *self
 			p2_display( self, assistant, page_widget );
 			break;
 
-		/* 1 [Content] Check books */
+		/* page_num=2 / p3  [Content] Check books */
 		case PAGE_CHECKS:
 			if( !my_assistant_is_page_initialized( MY_ASSISTANT( self ), page_widget )){
 				p3_do_init( self, assistant, page_widget );
@@ -237,14 +249,13 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page_widget, ofaExeClosing *self
 			p3_checks( self, assistant, page_widget );
 			break;
 
-		/* 8 [Confirm] Confirm the informations before closing */
+		/* page_num=3 / p4  [Confirm] confirm closing ope */
 		case PAGE_CONFIRM:
-			p8_do_display( self, assistant, page_widget );
 			break;
 
-		/* 9 [Summary] Close the exercice and print the result */
+		/* page_num=4 / p5  [Summary] Close the exercice and print the result */
 		case PAGE_SUMMARY:
-			p9_do_display( self, assistant, page_widget );
+			p5_do_close( self, assistant, page_widget );
 			break;
 	}
 }
@@ -496,8 +507,9 @@ p3_check_entries_balance( ofaExeClosing *self )
 
 	bar = get_new_bar( self, "p3-entry-parent" );
 	grid = p3_get_new_balances( self, "p3-entry-bals" );
-	priv->p3_entries_ok = ofa_misc_chkentbal_run( MY_WINDOW( self )->prot->dossier, bar, grid );
-	p3_display_status( self, priv->p3_entries_ok, "p3-entry-ok" );
+	priv->p3_entries_ok = ofa_misc_chkbalent_run(
+			MY_WINDOW( self )->prot->dossier, &priv->p3_entries_list, bar, grid );
+	p3_check_status( self, priv->p3_entries_ok, "p3-entry-ok" );
 
 	/* do not continue and remove from idle callbacks list */
 	g_idle_add(( GSourceFunc ) p3_check_ledgers_balance, self );
@@ -515,8 +527,9 @@ p3_check_ledgers_balance( ofaExeClosing *self )
 
 	bar = get_new_bar( self, "p3-ledger-parent" );
 	grid = p3_get_new_balances( self, "p3-ledger-bals" );
-	priv->p3_ledgers_ok = ofa_misc_chkledbal_run( MY_WINDOW( self )->prot->dossier, bar, grid );
-	p3_display_status( self, priv->p3_ledgers_ok, "p3-ledger-ok" );
+	priv->p3_ledgers_ok = ofa_misc_chkballed_run(
+			MY_WINDOW( self )->prot->dossier, &priv->p3_ledgers_list, bar, grid );
+	p3_check_status( self, priv->p3_ledgers_ok, "p3-ledger-ok" );
 
 	/* do not continue and remove from idle callbacks list */
 	g_idle_add(( GSourceFunc ) p3_check_accounts_balance, self );
@@ -529,17 +542,19 @@ p3_check_accounts_balance( ofaExeClosing *self )
 	ofaExeClosingPrivate *priv;
 	myProgressBar *bar;
 	ofaBalancesGrid *grid;
+	gboolean complete;
 
 	priv = self->priv;
 
 	bar = get_new_bar( self, "p3-account-parent" );
 	grid = p3_get_new_balances( self, "p3-account-bals" );
-	priv->p3_accounts_ok = ofa_misc_chkaccbal_run( MY_WINDOW( self )->prot->dossier, bar, grid );
-	p3_display_status( self, priv->p3_accounts_ok, "p3-account-ok" );
+	priv->p3_accounts_ok = ofa_misc_chkbalacc_run(
+			MY_WINDOW( self )->prot->dossier, &priv->p3_accounts_list, bar, grid );
+	p3_check_status( self, priv->p3_accounts_ok, "p3-account-ok" );
 
 	/* do not continue and remove from idle callbacks list */
-	p3_info_checks( self );
-	gtk_assistant_set_page_complete( priv->assistant, priv->page_widget, priv->p3_all_checks_ok );
+	complete = p3_info_checks( self );
+	gtk_assistant_set_page_complete( priv->assistant, priv->page_widget, complete );
 	return( FALSE );
 }
 
@@ -577,8 +592,11 @@ p3_get_new_balances( ofaExeClosing *self, const gchar *w_name )
 	return( grid );
 }
 
+/*
+ * display OK/NOT OK for a single balance check
+ */
 static void
-p3_display_status( ofaExeClosing *self, gboolean ok, const gchar *w_name )
+p3_check_status( ofaExeClosing *self, gboolean ok, const gchar *w_name )
 {
 	ofaExeClosingPrivate *priv;
 	GtkWidget *label;
@@ -601,18 +619,19 @@ p3_display_status( ofaExeClosing *self, gboolean ok, const gchar *w_name )
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 }
 
-static void
+static gboolean
 p3_info_checks( ofaExeClosing *self )
 {
 	ofaExeClosingPrivate *priv;
-	GtkWidget *dialog;
+	gboolean ok;
+	GtkWidget *dialog, *label;
 
 	priv = self->priv;
 
-	priv->p3_all_checks_ok = priv->p3_entries_ok && priv->p3_ledgers_ok && priv->p3_accounts_ok;
+	ok = priv->p3_entries_ok && priv->p3_ledgers_ok && priv->p3_accounts_ok;
 	priv->p3_done = TRUE;
 
-	if( !priv->p3_all_checks_ok ){
+	if( !ok ){
 		dialog = gtk_message_dialog_new(
 				my_window_get_toplevel( MY_WINDOW( self )),
 				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -624,23 +643,326 @@ p3_info_checks( ofaExeClosing *self )
 
 		gtk_dialog_run( GTK_DIALOG( dialog ));
 		gtk_widget_destroy( dialog );
+
+	} else {
+		ok = ofa_misc_chkbalsame_run(
+				priv->p3_entries_list, priv->p3_ledgers_list, priv->p3_accounts_list );
+
+		label = my_utils_container_get_child_by_name(
+						GTK_CONTAINER( priv->page_widget ), "p3-label-end" );
+		g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
+
+		if( ok ){
+			gtk_label_set_text( GTK_LABEL( label ),
+					_( "Your books are rightly balanced. Good !" ));
+
+		} else {
+			gtk_label_set_text( GTK_LABEL( label ),
+					_( "\nThough each book is individually balanced, it appears "
+						"that some distorsion has happended among them.\n"
+						"In this current state, we are unable to close this exercice "
+						"until you fix your balances." ));
+		}
 	}
-}
 
-static void
-p8_do_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
-{
+	ofa_misc_chkbal_free( priv->p3_entries_list );
+	priv->p3_entries_list = NULL;
 
+	ofa_misc_chkbal_free( priv->p3_ledgers_list );
+	priv->p3_ledgers_list = NULL;
+
+	ofa_misc_chkbal_free( priv->p3_accounts_list );
+	priv->p3_accounts_list = NULL;
+
+	ok = TRUE;
+	return( ok );
 }
 
 static void
 on_apply( GtkAssistant *assistant, ofaExeClosing *self )
 {
+	static const gchar *thisfn = "ofa_exe_closing_on_apply";
 
+	g_debug( "%s: assistant=%p, self=%p", thisfn, ( void * ) assistant, ( void * ) self );
 }
 
 static void
-p9_do_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+p5_do_close( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
 {
+	static const gchar *thisfn = "ofa_exe_closing_p5_do_close";
 
+	g_debug( "%s: self=%p, assistant=%p, page_widget=%p",
+			thisfn, ( void * ) self, ( void * ) assistant, ( void * ) page_widget );
+
+	gtk_assistant_set_page_complete( assistant, page_widget, FALSE );
+
+	g_idle_add(( GSourceFunc ) p5_validate_entries, self );
+}
+
+/*
+ * validate rough entries remaining in the exercice
+ */
+static gboolean
+p5_validate_entries( ofaExeClosing *self )
+{
+	static const gchar *thisfn = "ofa_exe_closing_p5_validate_entries";
+	ofoDossier *dossier;
+	GList *entries, *it;
+	myProgressBar *bar;
+	gint count, i;
+	gdouble progress;
+	gchar *text;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	dossier = MY_WINDOW( self )->prot->dossier;
+	entries = ofo_entry_get_dataset_remaining_for_val( dossier );
+	count = g_list_length( entries );
+	bar = get_new_bar( self, "p5-validating" );
+
+	for( i=1, it=entries ; it ; ++i, it=it->next ){
+		ofo_entry_validate( OFO_ENTRY( it->data ), dossier );
+
+		progress = ( gdouble ) i / ( gdouble ) count;
+		g_signal_emit_by_name( bar, "double", progress );
+
+		text = g_strdup_printf( "%u/%u", i, count );
+		g_signal_emit_by_name( bar, "text", text );
+		g_free( text );
+	}
+	if( !entries ){
+		g_signal_emit_by_name( bar, "double", 1.0 );
+		g_signal_emit_by_name( bar, "text", "0/0" );
+	}
+
+	ofo_entry_free_dataset( entries );
+
+	/* do not continue and remove from idle callbacks list */
+	g_idle_add(( GSourceFunc ) p5_solde_accounts, self );
+	return( FALSE );
+}
+
+/*
+ * balance the detail accounts -for validated soldes only
+ *
+ * It shouldn't remain any amount on day soldes, but we do not take
+ * care of that here.
+ */
+static gboolean
+p5_solde_accounts( ofaExeClosing *self )
+{
+	static const gchar *thisfn = "ofa_exe_closing_p5_solde_accounts";
+	ofaExeClosingPrivate *priv;
+	ofoDossier *dossier;
+	GList *accounts, *it;
+	myProgressBar *bar;
+	gint count, i;
+	gdouble progress;
+	gchar *text;
+	ofoAccount *account;
+	const gchar *currency;
+	const gchar *sld_account, *sld_label, *sld_ledger, *sld_ope;
+	const gchar *for_label_c, *for_label_o, *for_ledger, *for_ope;
+	ofxAmount debit, credit;
+	ofoEntry *entry;
+	const GDate *end_cur, *begin_next;
+	gboolean is_ran;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	priv = self->priv;
+	dossier = MY_WINDOW( self )->prot->dossier;
+	accounts = ofo_account_get_dataset( dossier );
+	count = g_list_length( accounts );
+	bar = get_new_bar( self, "p5-balancing" );
+
+	priv->p5_forwards = NULL;
+
+	end_cur = ofo_dossier_get_exe_end( dossier );
+	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p2_begin_next ), NULL );
+	sld_account = ofo_dossier_get_sld_account( dossier );
+	sld_label = ofo_dossier_get_sld_label( dossier );
+	for_label_c = ofo_dossier_get_forward_label_close( dossier );
+	for_label_o = ofo_dossier_get_forward_label_open( dossier );
+	sld_ledger = ofo_dossier_get_sld_ledger( dossier );
+	for_ledger = ofo_dossier_get_forward_ledger( dossier );
+	sld_ope = ofo_dossier_get_sld_ope( dossier );
+	for_ope = ofo_dossier_get_forward_ope( dossier );
+
+	for( i=1, it=accounts ; it ; ++i, it=it->next ){
+		account = OFO_ACCOUNT( it->data );
+
+		if( !ofo_account_is_root( account )){
+			currency = ofo_account_get_currency( account );
+			debit = ofo_account_get_deb_amount( account );
+			credit = ofo_account_get_cre_amount( account );
+			is_ran = ofo_account_is_forward( account );
+			if(( debit || credit ) && debit != credit ){
+
+				/* balance the account */
+				entry = ofo_entry_new();
+				ofo_entry_set_deffect( entry, end_cur );
+				ofo_entry_set_dope( entry, end_cur );
+				ofo_entry_set_label( entry, is_ran ? for_label_c : sld_label );
+				ofo_entry_set_ref( entry, sld_account );
+				ofo_entry_set_account( entry, ofo_account_get_number( account ));
+				ofo_entry_set_currency( entry, currency );
+				ofo_entry_set_ledger( entry, is_ran ? for_ledger : sld_ledger );
+				ofo_entry_set_ope_template( entry, is_ran ? for_ope : sld_ope );
+				if( debit > credit ){
+					ofo_entry_set_credit( entry, debit-credit );
+				} else {
+					ofo_entry_set_debit( entry, credit-debit );
+				}
+				ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
+				ofo_entry_insert( entry, dossier );
+				g_object_unref( entry );
+
+				/* create the entry on the balancing account */
+				entry = ofo_entry_new();
+				ofo_entry_set_deffect( entry, end_cur );
+				ofo_entry_set_dope( entry, end_cur );
+				ofo_entry_set_label( entry, is_ran ? for_label_c : sld_label );
+				ofo_entry_set_ref( entry, ofo_account_get_number( account ));
+				ofo_entry_set_account( entry, sld_account );
+				ofo_entry_set_currency( entry, currency );
+				ofo_entry_set_ledger( entry, is_ran ? for_ledger : sld_ledger );
+				ofo_entry_set_ope_template( entry, is_ran ? for_ope : sld_ope );
+				if( debit > credit ){
+					ofo_entry_set_debit( entry, debit-credit );
+				} else {
+					ofo_entry_set_credit( entry, credit-debit );
+				}
+				ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
+				ofo_entry_insert( entry, dossier );
+				g_object_unref( entry );
+
+				if( is_ran ){
+					/* carried forward entry */
+					entry = ofo_entry_new();
+					ofo_entry_set_deffect( entry, begin_next );
+					ofo_entry_set_dope( entry, begin_next );
+					ofo_entry_set_label( entry, for_label_o );
+					ofo_entry_set_ref( entry, sld_account );
+					ofo_entry_set_account( entry, ofo_account_get_number( account ));
+					ofo_entry_set_currency( entry, currency );
+					ofo_entry_set_ledger( entry, for_ledger );
+					ofo_entry_set_ope_template( entry, for_ope );
+					if( debit > credit ){
+						ofo_entry_set_debit( entry, debit-credit );
+					} else {
+						ofo_entry_set_credit( entry, credit-debit );
+					}
+					ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
+					priv->p5_forwards = g_list_prepend( priv->p5_forwards, entry );
+
+					/* create the entry on the balancing account */
+					entry = ofo_entry_new();
+					ofo_entry_set_deffect( entry, begin_next );
+					ofo_entry_set_dope( entry, begin_next );
+					ofo_entry_set_label( entry, for_label_o );
+					ofo_entry_set_ref( entry, ofo_account_get_number( account ));
+					ofo_entry_set_account( entry, sld_account );
+					ofo_entry_set_currency( entry, currency );
+					ofo_entry_set_ledger( entry, for_ledger );
+					ofo_entry_set_ope_template( entry, for_ope );
+					if( debit > credit ){
+						ofo_entry_set_credit( entry, debit-credit );
+					} else {
+						ofo_entry_set_debit( entry, credit-debit );
+					}
+					ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
+					priv->p5_forwards = g_list_prepend( priv->p5_forwards, entry );
+				}
+			}
+		}
+
+		progress = ( gdouble ) i / ( gdouble ) count;
+		g_signal_emit_by_name( bar, "double", progress );
+
+		text = g_strdup_printf( "%u/%u", i, count );
+		g_signal_emit_by_name( bar, "text", text );
+		g_free( text );
+	}
+
+	/* do not continue and remove from idle callbacks list */
+	g_idle_add(( GSourceFunc ) p5_close_ledgers, self );
+	return( FALSE );
+}
+
+/*
+ * close all the ledgers
+ */
+static gboolean
+p5_close_ledgers( ofaExeClosing *self )
+{
+	static const gchar *thisfn = "ofa_exe_closing_p5_close_ledgers";
+	ofoDossier *dossier;
+	GList *ledgers, *it;
+	myProgressBar *bar;
+	gint count, i;
+	gdouble progress;
+	gchar *text;
+	const GDate *end_cur;
+	ofoLedger *ledger;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	dossier = MY_WINDOW( self )->prot->dossier;
+	ledgers = ofo_ledger_get_dataset( dossier );
+	count = g_list_length( ledgers );
+	bar = get_new_bar( self, "p5-ledgers" );
+
+	end_cur = ofo_dossier_get_exe_end( dossier );
+
+	for( i=1, it=ledgers ; it ; ++i, it=it->next ){
+		ledger = OFO_LEDGER( it->data );
+
+		ofo_ledger_close( ledger, dossier, end_cur );
+
+		progress = ( gdouble ) i / ( gdouble ) count;
+		g_signal_emit_by_name( bar, "double", progress );
+
+		text = g_strdup_printf( "%u/%u", i, count );
+		g_signal_emit_by_name( bar, "text", text );
+		g_free( text );
+	}
+
+	/* do not continue and remove from idle callbacks list */
+	g_idle_add(( GSourceFunc ) p5_get_unsettled, self );
+	return( FALSE );
+}
+
+/*
+ * get unsettled and reconciliated entries
+ */
+static gboolean
+p5_get_unsettled( ofaExeClosing *self )
+{
+	static const gchar *thisfn = "ofa_exe_closing_p5_get_unsettled";
+	ofaExeClosingPrivate *priv;
+	ofoDossier *dossier;
+	myProgressBar *bar;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	priv = self->priv;
+	dossier = MY_WINDOW( self )->prot->dossier;
+	bar = get_new_bar( self, "p5-unsettled" );
+
+	priv->p5_unsettled = ofo_entry_get_unsettled( dossier );
+	g_debug( "%s: unsettled_count=%d", thisfn, g_list_length( priv->p5_unsettled ));
+
+	g_signal_emit_by_name( bar, "double", 0.5 );
+	g_signal_emit_by_name( bar, "text", "1/2" );
+
+	priv->p5_unreconciliated = ofo_entry_get_unreconciliated( dossier );
+	g_debug( "%s: unreconciliated_count=%d", thisfn, g_list_length( priv->p5_unreconciliated ));
+
+	g_signal_emit_by_name( bar, "double", 1.0 );
+	g_signal_emit_by_name( bar, "text", "2/2" );
+
+	/* do not continue and remove from idle callbacks list */
+	/*g_idle_add(( GSourceFunc ) p5_unsettled, self );*/
+	return( FALSE );
 }

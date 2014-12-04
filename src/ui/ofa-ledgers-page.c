@@ -329,6 +329,8 @@ on_update_clicked( ofaLedgersPage *page )
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
 
 	do_update( page, OFO_LEDGER( selected->data ));
+
+	ofa_ledger_treeview_free_selected( selected );
 }
 
 static void
@@ -363,14 +365,18 @@ on_delete_clicked( ofaLedgersPage *page )
 	ofaLedgersPagePrivate *priv;
 	ofoDossier *dossier;
 	ofoLedger *ledger;
+	GList *selected;
 	const gchar *mnemo;
 	GtkWidget *view;
 
 	priv = page->priv;
 	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
 
-	mnemo = ofa_ledger_treeview_get_selected( priv->tview )->data;
+	selected = ofa_ledger_treeview_get_selected( priv->tview );
+	mnemo = selected->data;
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
+	ofa_ledger_treeview_free_selected( selected );
+
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 	g_return_if_fail( ofo_ledger_is_deletable( ledger, dossier ));
 
@@ -409,14 +415,19 @@ static void
 on_view_entries( GtkButton *button, ofaLedgersPage *self )
 {
 	ofaLedgersPagePrivate *priv;
+	GList *list;
 	ofaPage *page;
+	const gchar *mnemo;
 	ofoLedger *ledger;
 
 	g_return_if_fail( OFA_IS_LEDGERS_PAGE( self ));
 
 	priv = self->priv;
 
-	ledger = OFO_LEDGER( ofa_ledger_treeview_get_selected( priv->tview )->data );
+	list = ofa_ledger_treeview_get_selected( priv->tview );
+	mnemo = ( const gchar * ) list->data;
+	ledger = ofo_ledger_get_by_mnemo( ofa_page_get_dossier( OFA_PAGE( self )), mnemo );
+	ofa_ledger_treeview_free_selected( list );
 
 	if( ledger ){
 		page = ofa_main_window_activate_theme(

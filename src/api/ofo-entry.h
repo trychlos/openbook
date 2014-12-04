@@ -126,6 +126,9 @@ GList         *ofo_entry_get_dataset_for_print_ledgers ( const ofoDossier *dossi
 GList         *ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 															const gchar *account,
 															const GDate *date );
+GList         *ofo_entry_get_dataset_remaining_for_val ( const ofoDossier *dossier );
+GList         *ofo_entry_get_unreconciliated           ( const ofoDossier *dossier );
+GList         *ofo_entry_get_unsettled                 ( const ofoDossier *dossier );
 
 void           ofo_entry_free_dataset         ( GList *dataset );
 

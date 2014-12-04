@@ -155,12 +155,8 @@ openbook_SOURCES = \
 	ofa-main-window.h									\
 	ofa-misc-arcaccopebal.c								\
 	ofa-misc-arcaccopebal.h								\
-	ofa-misc-chkaccbal.c								\
-	ofa-misc-chkaccbal.h								\
-	ofa-misc-chkentbal.c								\
-	ofa-misc-chkentbal.h								\
-	ofa-misc-chkledbal.c								\
-	ofa-misc-chkledbal.h								\
+	ofa-misc-chkbal.c									\
+	ofa-misc-chkbal.h									\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
 	ofa-ope-templates-page.c							\

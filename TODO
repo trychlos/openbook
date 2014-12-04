@@ -168,6 +168,8 @@
      2014-10- 6 keep the account balances at the end of the exercice N
                 and at the beginning of exercice N+1
      2014-12- 3 Checks for entries balance - svn #4230
+     2014-12- 3 Checks for ledgers balance - svn #4233
+     2014-12- 3 Checks for accounts balance - svn #4235
 
  217 2014- 6-13 tableau de trésorerie
      2014-10- 6 this may require the balance be printed
@@ -389,7 +391,21 @@
  492 2014-12- 3 check that account is only imputed with entries of the
                 exercice (not before, not after)
 
- 493
+ 493 2014-12- 4 ViewEntries: setting effect dates should refresh the 
+                display (but don't)
+
+ 494 2014-12- 4 ExeClosing: have a dossier option to have only one  
+                centralisation entry when balancing the accounts, or
+                have one entry per account
+
+ 495 2014-12- 4 ExeClosing: have a balancing account per currency
+                these balancing accounts must not be settleable, nor
+                reconciliable
+
+ 496 2014-12- 4 entry_validate_by_ledger: only consider effect date
+                in the current exercice
+
+ 497
 
 -----------------------------------------------------------------------
  DONE

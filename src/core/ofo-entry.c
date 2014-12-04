@@ -96,6 +96,7 @@ static void         on_updated_object_account_number( const ofoDossier *dossier,
 static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
 static void         on_updated_object_ledger_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
 static void         on_updated_object_model_mnemo( const ofoDossier *dossier, const gchar *prev_id, const gchar *mnemo );
+static gchar       *effect_in_exercice( const ofoDossier *dossier );
 static GList       *entry_load_dataset( const ofaDbms *dbms, const gchar *where );
 static const gchar *entry_list_columns( void );
 static ofoEntry    *entry_parse_result( const GSList *row );
@@ -789,6 +790,149 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 	g_string_free( where, TRUE );
 
 	return( dataset );
+}
+
+/**
+ * ofo_entry_get_dataset_remaining_for_val:
+ * @dossier: the current dossier.
+ *
+ * Returns the dataset of rough remaining entries on the exercice.
+ */
+GList *
+ofo_entry_get_dataset_remaining_for_val( const ofoDossier *dossier )
+{
+	GList *dataset;
+	GString *where;
+	gchar *str;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	where = g_string_new( "" );
+
+	str = effect_in_exercice( dossier);
+	g_string_append_printf( where, "%s AND ENT_STATUS=%u ", str, ENT_STATUS_ROUGH );
+	g_free( str );
+
+	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
+
+	g_string_free( where, TRUE );
+
+	return( dataset );
+}
+
+/**
+ * ofo_entry_get_unreconciliated:
+ * @dossier: the current dossier.
+ *
+ * Returns the dataset of unreconciliated entries to be renew in the
+ * next exercice.
+ */
+GList *
+ofo_entry_get_unreconciliated( const ofoDossier *dossier )
+{
+	GList *dataset;
+	GString *query;
+	gchar *str;
+	GSList *result, *irow;
+	ofoEntry *entry;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	dataset = NULL;
+	query = g_string_new( "" );
+
+	str = effect_in_exercice( dossier);
+	g_string_append_printf( query,
+			"SELECT %s FROM OFA_T_ENTRIES,OFA_T_ACCOUNTS "
+			"	WHERE %s "
+			"		AND ENT_CONCIL_DVAL IS NULL "
+			"		AND ENT_ACCOUNT=ACC_NUMBER "
+			"		AND ACC_RECONCILIABLE='%s' ", entry_list_columns(), str, ACCOUNT_RECONCILIABLE );
+	g_free( str );
+
+	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			entry = entry_parse_result( irow );
+			if( entry ){
+				dataset = g_list_prepend( dataset, entry );
+			}
+		}
+		ofa_dbms_free_results( result );
+	}
+	g_string_free( query, TRUE );
+
+	return( dataset );
+}
+
+/**
+ * ofo_entry_get_unsettled:
+ * @dossier: the current dossier.
+ *
+ * Returns the dataset of unsettled entries to be renew in the next
+ * exercice.
+ */
+GList *
+ofo_entry_get_unsettled( const ofoDossier *dossier )
+{
+	GList *dataset;
+	GString *query;
+	gchar *str;
+	GSList *result, *irow;
+	ofoEntry *entry;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	dataset = NULL;
+	query = g_string_new( "" );
+
+	str = effect_in_exercice( dossier);
+	g_string_append_printf( query,
+			"SELECT %s FROM OFA_T_ENTRIES,OFA_T_ACCOUNTS "
+			"	WHERE %s "
+			"		AND (ENT_STLMT_NUMBER=0 OR ENT_STLMT_NUMBER IS NULL) "
+			"		AND ENT_ACCOUNT=ACC_NUMBER "
+			"		AND ACC_SETTLEABLE='%s' ", entry_list_columns(), str, ACCOUNT_SETTLEABLE );
+	g_free( str );
+
+	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			entry = entry_parse_result( irow );
+			if( entry ){
+				dataset = g_list_prepend( dataset, entry );
+			}
+		}
+		ofa_dbms_free_results( result );
+	}
+	g_string_free( query, TRUE );
+
+	return( dataset );
+}
+
+/*
+ * build a where string for the exercice on the effect date
+ */
+static gchar *
+effect_in_exercice( const ofoDossier *dossier )
+{
+	GString *where;
+	const GDate *begin, *end;
+	gchar *str;
+
+	where = g_string_new( "" );
+
+	begin = ofo_dossier_get_exe_begin( dossier );
+	g_return_val_if_fail( my_date_is_valid( begin ), NULL );
+	str = my_date_to_str( begin, MY_DATE_SQL );
+	g_string_append_printf( where, "ENT_DEFFECT>='%s' ", str );
+	g_free( str );
+
+	end = ofo_dossier_get_exe_end( dossier );
+	g_return_val_if_fail( my_date_is_valid( end ), NULL );
+	str = my_date_to_str( end, MY_DATE_SQL );
+	g_string_append_printf( where, " AND ENT_DEFFECT<='%s' ", str );
+	g_free( str );
+
+	return( g_string_free( where, FALSE ));
 }
 
 /*
@@ -2228,7 +2372,43 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, o
 gboolean
 ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
 {
-	g_warning( "ofo_entry_validate: TO BE WRITTEN" );
+	const GDate *effect, *begin, *end;
+	gchar *query;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		begin = ofo_dossier_get_exe_begin( dossier );
+		g_return_val_if_fail( my_date_is_valid( begin ), FALSE );
+
+		end = ofo_dossier_get_exe_end( dossier );
+		g_return_val_if_fail( my_date_is_valid( end ), FALSE );
+
+		effect = ofo_entry_get_deffect( entry );
+		g_return_val_if_fail( my_date_is_valid( effect ), FALSE );
+
+		if( my_date_compare( begin, effect ) <= 0 &&
+				my_date_compare( effect, end ) <= 0 ){
+
+			ofo_entry_set_status( entry, ENT_STATUS_VALIDATED );
+
+			query = g_strdup_printf(
+							"UPDATE OFA_T_ENTRIES "
+							"	SET ENT_STATUS=%d "
+							"	WHERE ENT_NUMBER=%ld",
+									ofo_entry_get_status( entry ),
+									ofo_entry_get_number( entry ));
+
+			ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+			g_free( query );
+
+			/* use the dossier signaling system to update the account */
+			g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_VALIDATED_ENTRY, entry );
+		}
+	}
+
 	return( FALSE );
 }
 
