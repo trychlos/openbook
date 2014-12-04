@@ -193,8 +193,6 @@ typedef struct {
 	gchar       * ( *last_error )           ( const ofaIDbms *instance,
 														void *handle );
 
-	/* ... */
-
 	/**
 	 * properties_new_init:
 	 * @instance: the #ofaIDbms provider.
@@ -206,10 +204,12 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void          ( *properties_new_init )  ( const ofaIDbms *instance, GtkContainer *parent, GtkSizeGroup *group );
+	void          ( *new_attach_to )        ( const ofaIDbms *instance,
+														GtkContainer *parent,
+														GtkSizeGroup *group );
 
 	/**
-	 * properties_new_check:
+	 * new_check:
 	 * @instance: the #ofaIDbms provider.
 	 * @parent: the #GtkContainer which handles the dialog part
 	 *
@@ -219,25 +219,33 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *properties_new_check ) ( const ofaIDbms *instance, GtkContainer *parent );
+	gboolean      ( *new_check )            ( const ofaIDbms *instance,
+														GtkContainer *parent );
 
 	/**
-	 * properties_new_apply:
+	 * new_apply:
 	 * @instance: the #ofaIDbms provider.
 	 * @parent: the #GtkContainer which handles the dialog part
-	 * @label: the label of the new dossier
+	 * @dname: the name of the new dossier
 	 * @account: the administrative account for the dossier
 	 * @password: the password of the administrative account
 	 *
 	 * Try to apply for a new dossier definition.
+	 * This will also create and initializes the database.
 	 *
 	 * Returns: %TRUE is a definition is successful, thus letting the
 	 * dialog box to be closed, %FALSE else. In this later case, the DBMS
-	 * provider should make its best to clean up the database.
+	 * provider makes its best to clean up the database.
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *properties_new_apply ) ( const ofaIDbms *instance, GtkContainer *parent, const gchar *label, const gchar *account, const gchar *password );
+	gboolean      ( *new_apply )            ( const ofaIDbms *instance,
+														GtkContainer *parent,
+														const gchar *dname,
+														const gchar *account,
+														const gchar *password );
+
+	/* ... */
 
 	/**
 	 * get_dossier_host:
@@ -414,8 +422,13 @@ ofaIDbms    *ofa_idbms_get_provider_by_name ( const gchar *pname );
 const gchar *ofa_idbms_get_provider_name    ( const ofaIDbms *instance );
 
 GSList      *ofa_idbms_get_exercices        ( const ofaIDbms *instance,
-														const gchar *dname );
+													const gchar *dname );
+
 #define      ofa_idbms_free_exercices(L)    g_debug( "ofa_idbms_free_exercices" ); g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
+
+GSList      *ofa_idbms_get_providers_list   ( void );
+
+void         ofa_idbms_free_providers_list  ( GSList *list );
 
 gboolean     ofa_idbms_query                ( const ofaIDbms *instance,
 														void *handle, const gchar *query );
@@ -427,19 +440,24 @@ gboolean     ofa_idbms_query_ex             ( const ofaIDbms *instance,
 gchar       *ofa_idbms_last_error           ( const ofaIDbms *instance,
 														void *handle );
 
-/* .... */
-
 GSList      *ofa_idbms_get_providers_list   ( void );
 
 void         ofa_idbms_free_providers_list  ( GSList *list );
 
-void         ofa_idbms_properties_new_init  ( const ofaIDbms *instance, GtkContainer *parent,
-												GtkSizeGroup *group );
+void         ofa_idbms_new_attach_to        ( const ofaIDbms *instance,
+														GtkContainer *parent,
+														GtkSizeGroup *group );
 
-gboolean     ofa_idbms_properties_new_check ( const ofaIDbms *instance, GtkContainer *parent );
+gboolean     ofa_idbms_new_check            ( const ofaIDbms *instance,
+														GtkContainer *parent );
 
-gboolean     ofa_idbms_properties_new_apply ( const ofaIDbms *instance, GtkContainer *parent,
-												const gchar *label, const gchar *account, const gchar *password );
+gboolean     ofa_idbms_new_apply            ( const ofaIDbms *instance,
+														GtkContainer *parent,
+														const gchar *dname,
+														const gchar *account,
+														const gchar *password );
+
+/* .... */
 
 gchar       *ofa_idbms_get_dossier_host     ( const ofaIDbms *instance, const gchar *label );
 

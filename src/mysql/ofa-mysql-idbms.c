@@ -29,9 +29,11 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
@@ -39,32 +41,102 @@
 #include "ofa-mysql-dossier-new.h"
 #include "ofa-mysql-idbms.h"
 
+/*
+ * this structure is attached to the GtkContainer parent of the grid
+ * (i.e. the container from the DossierNewDlg dialog box)
+ */
+typedef struct {
+	const ofaIDbms *module;
+	sMySQLInfos     sInfos;
+	gboolean        success;
+	GtkLabel       *msg;
+	GtkButton      *browse_btn;
+	gboolean        db_is_ok;
+	gboolean        db_exists;
+	gint            db_exists_mode;
+
+	/* setup when appyling
+	 */
+	const gchar    *dname;
+	const gchar    *account;
+	const gchar    *password;
+}
+	sPrivate;
+
+/* columns in DB exists mode combo box
+ */
+enum {
+	DB_COL_MODE = 0,
+	DB_COL_LABEL,
+	DB_N_COLUMNS
+};
+
+typedef struct {
+	gint         mode;
+	const gchar *label;
+}
+	DBMode;
+
+static DBMode st_db_mode[] = {
+		{ DBMODE_REINIT,      N_( "Reinitialize the existing DB" )},
+		{ DBMODE_LEAVE_AS_IS, N_( "Keep the existing DB as is" )},
+		{ 0 },
+};
+
 #define SETTINGS_DATABASE               "MySQLDatabase"
 #define SETTINGS_HOST                   "MySQLHost"
 #define SETTINGS_PORT                   "MySQLPort"
 #define SETTINGS_SOCKET                 "MySQLSocket"
 
+#define IDBMS_DATA                      "mysql-IDBMS-data"
+
 static const gchar *st_ui_xml           = PROVIDER_DATADIR "/ofa-mysql-connect-infos.piece.ui";
 static const gchar *st_ui_mysql         = "MySQLConnectInfosWindow";
 
-static guint     idbms_get_interface_version( const ofaIDbms *instance );
-static void     *idbms_connect( const ofaIDbms *instance,const gchar *dname, const gchar *dbname, const gchar *account, const gchar *password );
-static void      setup_infos( sMySQLInfos *infos );
-static gboolean  connect_with_infos( const ofaIDbms *instance, sMySQLInfos *infos, const gchar *password );
-static void      free_infos( sMySQLInfos *infos );
-static void      idbms_close( const ofaIDbms *instance, void *handle );
-static GSList   *idbms_get_exercices( const ofaIDbms *instance, const gchar *dname );
-static gint      cmp_exercices( const gchar *line_a, const gchar *line_b );
-static gboolean  idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
-static gboolean  idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result );
-static gchar    *idbms_last_error( const ofaIDbms *instance, void *handle );
+static const gchar *st_newui_xml        = PROVIDER_DATADIR "/ofa-mysql-dossier-new.piece.ui";
+static const gchar *st_newui_mysql      = "MySQLWindow";
+
+static guint      idbms_get_interface_version( const ofaIDbms *instance );
+static void      *idbms_connect( const ofaIDbms *instance,const gchar *dname, const gchar *dbname, const gchar *account, const gchar *password );
+static void       setup_infos( sMySQLInfos *infos );
+static gboolean   connect_with_infos( sMySQLInfos *infos );
+static void       idbms_close( const ofaIDbms *instance, void *handle );
+static GSList    *idbms_get_exercices( const ofaIDbms *instance, const gchar *dname );
+static gint       cmp_exercices( const gchar *line_a, const gchar *line_b );
+static gboolean   idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
+static gboolean   idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result );
+static gchar     *idbms_last_error( const ofaIDbms *instance, void *handle );
+static void       idbms_new_attach_to( const ofaIDbms *instance, GtkContainer *parent, GtkSizeGroup *group );
+static void       new_on_parent_weak_notify( sPrivate *priv, GObject *finalized_container );
+static GtkWidget *new_window_set_parent( const ofaIDbms *instance, GtkContainer *parent, GtkSizeGroup *group );
+static void       new_window_new_init_db( const ofaIDbms *instance, GtkContainer *parent, sPrivate *priv );
+static void       new_window_init_entries( const ofaIDbms *instance, GtkContainer *parent, sPrivate *priv );
+static void       new_on_host_changed( GtkEntry *entry, sPrivate *priv );
+static void       new_on_port_changed( GtkEntry *entry, sPrivate *priv );
+static void       new_on_socket_changed( GtkEntry *entry, sPrivate *priv );
+static void       new_on_root_account_changed( GtkEntry *entry, sPrivate *priv );
+static void       new_on_root_password_changed( GtkEntry *entry, sPrivate *priv );
+static void       new_check_for_dbserver_connection( sPrivate *priv );
+static void       new_on_db_name_changed( GtkEntry *entry, sPrivate *priv );
+static void       new_on_db_find_clicked( GtkButton *button, sPrivate *priv );
+static void       new_check_for_db( sPrivate *priv );
+static void       new_on_db_exists_mode_changed( GtkComboBox *combo, sPrivate *priv );
+static gboolean   idbms_new_check( const ofaIDbms *instance, GtkContainer *parent );
+static gboolean   idbms_new_apply( const ofaIDbms *instance, GtkContainer *parent, const gchar *dname, const gchar *account, const gchar *password );
+static gboolean   new_do_apply( sPrivate *priv );
+static gboolean   new_setup_dossier( sPrivate *priv );
+static gboolean   new_create_db_as_root( sPrivate *priv );
+static gboolean   new_create_user_as_root( sPrivate *priv );
+static gboolean   new_init_db( sPrivate *priv );
+static gboolean   confirm_database_reinit( sPrivate *priv, const gchar *dbname );
+static gboolean   mysql_get_db_exists( sMySQLInfos *infos );
+static gboolean   local_get_db_exists( MYSQL *mysql, const gchar *dbname );
 
 static gchar       *idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label );
 static gchar       *idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label );
 /*static void        *idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *label, const gchar *account, const gchar *password );*/
 static gboolean     idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
 /*static void         idbms_drop_database( const mysqlInfos *infos );*/
-static gboolean     local_get_db_exists( MYSQL *mysql, const gchar *dbname );
 static void         idbms_display_connect_infos( const ofaIDbms *instance, GtkWidget *container, const gchar *label );
 
 /*
@@ -85,10 +157,10 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->query = idbms_query;
 	iface->query_ex = idbms_query_ex;
 	iface->last_error = idbms_last_error;
+	iface->new_attach_to = idbms_new_attach_to;
+	iface->new_check = idbms_new_check;
+	iface->new_apply = idbms_new_apply;
 
-	iface->properties_new_init = ofa_mysql_properties_new_init;
-	iface->properties_new_check = ofa_mysql_properties_new_check;
-	iface->properties_new_apply = ofa_mysql_properties_new_apply;
 	iface->get_dossier_host = idbms_get_dossier_host;
 	iface->get_dossier_dbname = idbms_get_dossier_dbname;
 	iface->delete_dossier = idbms_delete_dossier;
@@ -129,10 +201,11 @@ idbms_connect( const ofaIDbms *instance,
 	infos->dname = g_strdup( dname );
 	infos->dbname = g_strdup( dbname );
 	infos->account = g_strdup( account );
+	infos->password = g_strdup( password );
 
 	setup_infos( infos );
-	if( !connect_with_infos( instance, infos, password )){
-		free_infos( infos );
+	if( !connect_with_infos( infos )){
+		ofa_mysql_free_connect_infos( infos );
 		infos = NULL;
 	}
 
@@ -159,7 +232,7 @@ setup_infos( sMySQLInfos *infos )
  * it comes from the dossier
  */
 static gboolean
-connect_with_infos( const ofaIDbms *instance, sMySQLInfos *infos, const gchar *password )
+connect_with_infos( sMySQLInfos *infos )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_with_infos";
 	MYSQL *mysql;
@@ -170,14 +243,14 @@ connect_with_infos( const ofaIDbms *instance, sMySQLInfos *infos, const gchar *p
 	if( !mysql_real_connect( mysql,
 							infos->host,
 							infos->account,
-							password,
+							infos->password,
 							infos->dbname,
 							infos->port,
 							infos->socket,
 							CLIENT_MULTI_RESULTS )){
 		g_free( mysql );
 		g_debug( "%s: dname=%s, dbname=%s, account=%s, password=%s, host=%s, port=%d, socket=%s: unable to connect",
-				thisfn, infos->dname, infos->dbname, infos->account, password, infos->host, infos->port, infos->socket );
+				thisfn, infos->dname, infos->dbname, infos->account, infos->password, infos->host, infos->port, infos->socket );
 		return( FALSE );
 	}
 
@@ -187,12 +260,18 @@ connect_with_infos( const ofaIDbms *instance, sMySQLInfos *infos, const gchar *p
 	return( TRUE );
 }
 
-static void
-free_infos( sMySQLInfos *infos )
+/**
+ * ofa_mysql_free_connect_infos:
+ *
+ * Fully free the sMySQLInfos structure, including the structure iself.
+ */
+void
+ofa_mysql_free_connect_infos( sMySQLInfos *infos )
 {
 	g_free( infos->dname );
 	g_free( infos->dbname );
 	g_free( infos->account );
+	g_free( infos->password );
 	g_free( infos->host );
 	g_free( infos->socket );
 	g_free( infos );
@@ -209,7 +288,7 @@ idbms_close( const ofaIDbms *instance, void *handle )
 	infos = ( sMySQLInfos * ) handle;
 
 	mysql_close( infos->mysql );
-	free_infos( infos );
+	ofa_mysql_free_connect_infos( infos );
 }
 
 /*
@@ -389,82 +468,776 @@ idbms_last_error( const ofaIDbms *instance, void *handle )
 	return( msg );
 }
 
-/* ... */
-
-static gchar *
-idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label )
-{
-	gchar *host;
-
-	host = ofa_settings_dossier_get_string( label, "MySQLHost" );
-
-	return( host );
-}
-
-static gchar *
-idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label )
-{
-	gchar *dbname;
-
-	dbname = ofa_settings_dossier_get_string( label, "MySQLDatabase" );
-
-	return( dbname );
-}
-
-/**
- * ofa_mysql_get_connect_infos:
- * @cnt: the connection structure to be filled.
- * @label: the name of the dossier in user's settings
- *
- * Fill the connection structure with connection informations, but
- * not the database, i.e. for Mysql: host, port and socket.
- *
- * Return: the connection structure itself.
+/*
+ * @parent: the GtkContainer in the DossierNewDlg dialog box which will
+ *  contain the provider properties grid
  */
-mysqlConnect *
-ofa_mysql_get_connect_infos( mysqlConnect *cnt, const gchar *label )
+static void
+idbms_new_attach_to( const ofaIDbms *instance, GtkContainer *parent, GtkSizeGroup *group )
 {
-	cnt->host = ofa_settings_dossier_get_string( label, "MySQLHost" );
-	cnt->socket = ofa_settings_dossier_get_string( label, "MySQLSocket" );
-	cnt->port = ofa_settings_dossier_get_int( label, "MySQLPort" );
-	if( cnt->port == -1 ){
-		cnt->port = 0;
+	sPrivate *priv;
+	GtkWidget *widget;
+
+	priv = g_new0( sPrivate, 1 );
+	g_object_set_data( G_OBJECT( parent ), IDBMS_DATA, priv );
+	g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) new_on_parent_weak_notify, priv );
+
+	priv->module = instance;
+
+	widget = new_window_set_parent( instance, parent, group );
+	if( widget ){
+		new_window_new_init_db( instance, GTK_CONTAINER( widget ), priv );
+		new_window_init_entries( instance, GTK_CONTAINER( widget ), priv );
+	}
+}
+
+static void
+new_on_parent_weak_notify( sPrivate *priv, GObject *finalized_container )
+{
+	static const gchar *thisfn = "ofa_mysql_idbms_new_on_parent_weak_notify";
+
+	g_debug( "%s: priv=%p, finalized_container=%p",
+			thisfn, ( void * ) priv, ( void * ) finalized_container );
+
+	ofa_mysql_free_connect_infos( &priv->sInfos );
+	g_free( priv );
+}
+
+static GtkWidget *
+new_window_set_parent( const ofaIDbms *instance, GtkContainer *parent, GtkSizeGroup *group )
+{
+	GtkWidget *window;
+	GtkWidget *grid;
+	GtkWidget *label;
+
+	/* attach our sgdb provider grid */
+	window = my_utils_builder_load_from_path( st_newui_xml, st_newui_mysql );
+	g_return_val_if_fail( window && GTK_IS_WINDOW( window ), NULL );
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "mysql-properties" );
+	g_return_val_if_fail( grid && GTK_IS_GRID( grid ), NULL );
+	gtk_widget_reparent( grid, GTK_WIDGET( parent ));
+
+	if( group ){
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( grid ), "mysql-label" );
+		g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
+		gtk_size_group_add_widget( group, label );
 	}
 
-	return( cnt );
+	return( grid );
 }
 
 /*
- * dbname is already set, whether it has been explicitely specified or
- * it comes from the dossier
+ * @parent: the provider grid
  */
+static void
+new_window_new_init_db( const ofaIDbms *instance, GtkContainer *parent, sPrivate *priv )
+{
+	GtkWidget *button, *widget;
+	GtkComboBox *combo;
+	GtkTreeModel *tmodel;
+	GtkCellRenderer *cell;
+	GtkTreeIter iter;
+	gint i, value, idx;
+
+	button = my_utils_container_get_child_by_name( parent, "p2-browse" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( new_on_db_find_clicked ), priv );
+	priv->browse_btn = GTK_BUTTON( button );
+
+	widget = my_utils_container_get_child_by_name( parent, "p2-dbname" );
+	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
+	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( new_on_db_name_changed ), priv );
+
+	combo = ( GtkComboBox * ) my_utils_container_get_child_by_name( parent, "p2-db-exists" );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+			DB_N_COLUMNS,
+			G_TYPE_INT, G_TYPE_STRING ));
+	gtk_combo_box_set_model( combo, tmodel );
+	g_object_unref( tmodel );
+
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", DB_COL_LABEL );
+
+	idx = -1;
+	value = ofa_settings_get_int( "DossierNewDlg-dbexists_mode" );
+	if( value < 0 ){
+		value = DBMODE_REINIT;
+	}
+
+	for( i=0 ; st_db_mode[i].mode ; ++i ){
+		gtk_list_store_insert_with_values(
+				GTK_LIST_STORE( tmodel ),
+				&iter,
+				-1,
+				DB_COL_MODE,  st_db_mode[i].mode,
+				DB_COL_LABEL, gettext( st_db_mode[i].label ),
+				-1 );
+		if( value == st_db_mode[i].mode ){
+			idx = i;
+		}
+	}
+
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( new_on_db_exists_mode_changed ), priv );
+
+	if( idx >= 0 ){
+		gtk_combo_box_set_active( combo, idx );
+	}
+}
+
+/*
+ * @parent: the provider grid
+ */
+static void
+new_window_init_entries( const ofaIDbms *instance, GtkContainer *parent, sPrivate *priv )
+{
+	GtkWidget *label, *entry;
+	gchar *value;
+	gint ivalue;
+
+	label = my_utils_container_get_child_by_name( parent, "p2-message" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->msg = GTK_LABEL( label );
+
+	entry = my_utils_container_get_child_by_name( parent, "p2-host" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( new_on_host_changed ), priv );
+	value = ofa_settings_get_string( "DossierNewDlg-MySQL-host" );
+	if( value && g_utf8_strlen( value, -1 )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), value );
+	}
+	g_free( value );
+
+	entry = my_utils_container_get_child_by_name( parent, "p2-port" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( new_on_port_changed ), priv );
+	ivalue = ofa_settings_get_int( "DossierNewDlg-MySQL-port" );
+	if( ivalue > 0 ){
+		value = g_strdup_printf( "%u", ivalue );
+		gtk_entry_set_text( GTK_ENTRY( entry ), value );
+		g_free( value );
+	}
+
+	entry = my_utils_container_get_child_by_name( parent, "p2-socket" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( new_on_socket_changed ), priv );
+	value = ofa_settings_get_string( "DossierNewDlg-MySQL-socket" );
+	if( value && g_utf8_strlen( value, -1 )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), value );
+	}
+	g_free( value );
+
+	entry = my_utils_container_get_child_by_name( parent, "p2-account" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( new_on_root_account_changed ), priv );
+	value = ofa_settings_get_string( "DossierNewDlg-MySQL-account" );
+	if( value && g_utf8_strlen( value, -1 )){
+		gtk_entry_set_text( GTK_ENTRY( entry ), value );
+	}
+	g_free( value );
+
+	entry = my_utils_container_get_child_by_name( parent, "p2-password" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( new_on_root_password_changed ), priv );
+}
+
+static void
+new_on_host_changed( GtkEntry *entry, sPrivate *priv )
+{
+	const gchar *host;
+
+	host = gtk_entry_get_text( entry );
+	g_free( priv->sInfos.host );
+	priv->sInfos.host = g_strdup( host );
+
+	priv->success = FALSE;
+	new_check_for_dbserver_connection( priv );
+}
+
+static void
+new_on_port_changed( GtkEntry *entry, sPrivate *priv )
+{
+	const gchar *port;
+
+	port = gtk_entry_get_text( entry );
+	if( port && g_utf8_strlen( port, -1 )){
+		priv->sInfos.port = atoi( port );
+	} else {
+		priv->sInfos.port = 0;
+	}
+
+	priv->success = FALSE;
+	new_check_for_dbserver_connection( priv );
+}
+
+static void
+new_on_socket_changed( GtkEntry *entry, sPrivate *priv )
+{
+	const gchar *socket;
+
+	socket = gtk_entry_get_text( entry );
+	g_free( priv->sInfos.socket );
+	priv->sInfos.socket = g_strdup( socket );
+
+	priv->success = FALSE;
+	new_check_for_dbserver_connection( priv );
+}
+
+static void
+new_on_root_account_changed( GtkEntry *entry, sPrivate *priv )
+{
+	const gchar *account;
+
+	account = gtk_entry_get_text( entry );
+	g_free( priv->sInfos.account );
+	priv->sInfos.account = g_strdup( account );
+
+	priv->success = FALSE;
+	new_check_for_dbserver_connection( priv );
+}
+
+static void
+new_on_root_password_changed( GtkEntry *entry, sPrivate *priv )
+{
+	const gchar *password;
+
+	password = gtk_entry_get_text( entry );
+	g_free( priv->sInfos.password );
+	priv->sInfos.password = g_strdup( password );
+
+	priv->success = FALSE;
+	new_check_for_dbserver_connection( priv );
+}
+
+static void
+new_check_for_dbserver_connection( sPrivate *priv )
+{
+	sMySQLInfos *infos;
+	const gchar *msg;
+	GdkRGBA color;
+
+	if( !priv->success ){
+
+		/* test a connexion without the database
+		 * this is a short copy, so do not free the strings */
+		infos = g_new0( sMySQLInfos, 1 );
+		memcpy( infos, &priv->sInfos, sizeof( sMySQLInfos ));
+		infos->dbname = NULL;
+		priv->success = connect_with_infos( infos );
+		if( priv->success ){
+			mysql_close( infos->mysql );
+		}
+		g_free( infos );
+
+		msg = priv->success ?
+				_( "DB server connection is OK" ) : _( "Unable to connect to DB server" );
+
+		gtk_label_set_text( priv->msg, msg );
+		if( gdk_rgba_parse( &color, priv->success ? "#000000" : "#FF0000" )){
+			gtk_widget_override_color( GTK_WIDGET( priv->msg ), GTK_STATE_FLAG_NORMAL, &color );
+		}
+	}
+
+	g_return_if_fail( priv->browse_btn && GTK_IS_BUTTON( priv->browse_btn ));
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->browse_btn ), priv->success );
+}
+
+static void
+new_on_db_name_changed( GtkEntry *entry, sPrivate *priv )
+{
+	const gchar *name;
+
+	name = gtk_entry_get_text( entry );
+	g_free( priv->sInfos.dbname );
+	priv->sInfos.dbname = g_strdup( name );
+
+	priv->db_is_ok = FALSE;
+	new_check_for_db( priv );
+}
+
+static void
+new_on_db_find_clicked( GtkButton *button, sPrivate *priv )
+{
+
+}
+
+static void
+new_check_for_db( sPrivate *priv )
+{
+	static const gchar *thisfn = "ofa_mysql_idbms_new_check_for_db";
+	gboolean ok;
+
+	if( !priv->db_is_ok ){
+
+		ok = priv->sInfos.dbname && g_utf8_strlen( priv->sInfos.dbname, -1 );
+
+		priv->db_exists = mysql_get_db_exists( &priv->sInfos );
+
+		ok &= priv->success &&
+				( !priv->db_exists || priv->db_exists_mode > DBMODE_EMPTY );
+
+		priv->db_is_ok = ok;
+	}
+
+	g_debug( "%s: db_is_ok=%s", thisfn, priv->db_is_ok ? "True":"False" );
+}
+
+static void
+new_on_db_exists_mode_changed( GtkComboBox *combo, sPrivate *priv )
+{
+	static const gchar *thisfn = "ofa_mysql_idbms_new_on_db_exists_mode_changed";
+	GtkTreeIter iter;
+	GtkTreeModel *tmodel;
+
+	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) priv );
+
+	priv->db_exists_mode = DBMODE_EMPTY;
+
+	if( gtk_combo_box_get_active_iter( combo, &iter )){
+		tmodel = gtk_combo_box_get_model( combo );
+		gtk_tree_model_get( tmodel, &iter,
+				DB_COL_MODE, &priv->db_exists_mode,
+				-1 );
+	}
+
+	g_debug( "%s: db_exists_mode=%u", thisfn, priv->db_exists_mode );
+	new_check_for_db( priv );
+}
+
+/*
+ * idbms_new_check:
+ */
+static gboolean
+idbms_new_check( const ofaIDbms *instance, GtkContainer *parent )
+{
+	gboolean ok;
+	sPrivate *priv;
+
+	priv = ( sPrivate * ) g_object_get_data( G_OBJECT( parent ), IDBMS_DATA );
+	g_return_val_if_fail( priv, FALSE );
+
+	ok = priv->success && priv->db_is_ok;
+
+	return( ok );
+}
+
+/*
+ * idbms_new_apply:
+ * @instance: this #ofaIDbms instance.
+ * @parent: the #GtkWidget to which we have attached our data structure.
+ * @dname: new dossier name
+ * @account: new dossier administrative account
+ * @password: new dossier administrative password
+ */
+static gboolean
+idbms_new_apply( const ofaIDbms *instance, GtkContainer *parent,
+									const gchar *dname, const gchar *account, const gchar *password )
+{
+	static const gchar *thisfn = "ofa_mysql_properties_new_apply";
+	sPrivate *priv;
+	sMySQLInfos *infos;
+	gboolean ok;
+
+	priv = ( sPrivate * ) g_object_get_data( G_OBJECT( parent ), IDBMS_DATA );
+	infos = &priv->sInfos;
+
+	g_debug( "%s: instance=%p, parent=%p, label=%s, account=%s, priv=%p",
+			thisfn, ( void * ) instance, ( void * ) parent, dname, account, ( void * ) priv );
+
+	g_return_val_if_fail( priv, FALSE );
+
+	priv->dname = dname;
+	priv->account = account;
+	priv->password = password;
+
+	if( priv->db_exists && priv->db_exists_mode == DBMODE_REINIT ){
+		if( !confirm_database_reinit( priv, priv->sInfos.dbname )){
+			return( FALSE );
+		}
+	}
+
+	ok = new_do_apply( priv );
+
+	if( ok ){
+		if( infos->host && g_utf8_strlen( infos->host, -1 )){
+			ofa_settings_set_string( "DossierNewDlg-MySQL-host", infos->host );
+		}
+		if( infos->port > 0 ){
+			ofa_settings_set_int( "DossierNewDlg-MySQL-port", infos->port );
+		}
+		if( infos->socket && g_utf8_strlen( infos->socket, -1 )){
+			ofa_settings_set_string( "DossierNewDlg-MySQL-socket", infos->socket );
+		}
+		if( infos->account && g_utf8_strlen( infos->account, -1 )){
+			ofa_settings_set_string( "DossierNewDlg-MySQL-account", infos->account );
+		}
+		if( priv->db_exists_mode > DBMODE_EMPTY ){
+			ofa_settings_set_int( "DossierNewDlg-dbexists_mode", priv->db_exists_mode );
+		}
+	}
+
+	return( ok );
+}
+
+/*
+ * DB model will be setup at the first connection
+ */
+static gboolean
+new_do_apply( sPrivate *priv )
+{
+	gboolean apply_ok;
+	/*gboolean drop_db, drop_accounts;*/
+
+	/* setup first the dossier in configuration file, so that it will
+	 * later be usable when deleting the dossier in case of error */
+	apply_ok = new_setup_dossier( priv ) &&
+				new_create_db_as_root( priv ) &&
+				new_create_user_as_root( priv ) &&
+				new_init_db( priv );
+
+	if( !apply_ok ){
+		/*drop_db = ( !priv->db_exists || priv->db_exists_mode == DBMODE_REINIT );
+		drop_accounts = TRUE;
+		ofa_idbms_delete_dossier(
+				priv->module,
+				priv->label, priv->sNew.sConnect.account, priv->sNew.sConnect.password,
+				drop_db, drop_accounts, FALSE );*/
+	}
+
+	return( apply_ok );
+}
+
+static gboolean
+new_setup_dossier( sPrivate *priv )
+{
+	gboolean setup_ok;
+
+	setup_ok = ofa_settings_create_dossier(
+						priv->dname,
+						SETTINGS_DBMS_PROVIDER, SETTINGS_TYPE_STRING, ofa_mysql_idbms_get_provider_name( NULL ),
+						"MySQLHost",            SETTINGS_TYPE_STRING, priv->sInfos.host,
+						"MySQLPort",            SETTINGS_TYPE_INT,    priv->sInfos.port,
+						"MySQLSocket",          SETTINGS_TYPE_STRING, priv->sInfos.socket,
+						"MySQLDatabase",        SETTINGS_TYPE_STRING, priv->sInfos.dbname,
+						NULL );
+
+	return( setup_ok );
+}
+
+/*
+ * Create the empty database through a global connection to dataserver
+ * - create database
+ */
+static gboolean
+new_create_db_as_root( sPrivate *priv )
+{
+	static const gchar *thisfn = "ofa_mysql_idbms_new_create_db_as_root";
+	sMySQLInfos *infos;
+	GString *stmt;
+	gboolean db_created;
+
+	g_debug( "%s: priv=%p", thisfn, ( void * ) priv );
+
+	if( priv->db_exists && priv->db_exists_mode == DBMODE_LEAVE_AS_IS ){
+		return( TRUE );
+	}
+
+	infos = g_new0( sMySQLInfos, 1 );
+	memcpy( infos, &priv->sInfos, sizeof( sMySQLInfos ));
+	infos->dbname = "mysql";
+
+	if( !connect_with_infos( infos )){
+		g_warning( "%s: unable to connect to mysql database", thisfn );
+		g_free( infos );
+		return( FALSE );
+	}
+
+	db_created = FALSE;
+	stmt = g_string_new( "" );
+
+	g_string_printf( stmt, "DROP DATABASE %s IF EXISTS", priv->sInfos.dbname );
+	g_debug( "%s: query=%s", thisfn, stmt->str );
+	mysql_query( infos->mysql, stmt->str );
+
+	g_string_printf( stmt, "CREATE DATABASE %s", priv->sInfos.dbname );
+	g_debug( "%s: query=%s", thisfn, stmt->str );
+	if( mysql_query( infos->mysql, stmt->str )){
+		g_warning( "%s: %s", thisfn, mysql_error( infos->mysql ));
+		goto free_stmt;
+	}
+
+	db_created = TRUE;
+
+free_stmt:
+	mysql_close( infos->mysql );
+	g_free( infos );
+	g_string_free( stmt, TRUE );
+
+	g_debug( "%s: db_created=%s", thisfn, db_created ? "True":"False" );
+
+	return( db_created );
+}
+
+/*
+ * Create the empty database with a global connection to dataserver
+ * - create admin user
+ * - grant admin user
+ */
+static gboolean
+new_create_user_as_root( sPrivate *priv )
+{
+	static const gchar *thisfn = "ofa_mysql_idbms_new_create_user_as_root";
+	sMySQLInfos *infos;
+	GString *stmt;
+	gboolean user_created;
+	gchar *hostname;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) priv );
+
+	infos = g_new0( sMySQLInfos, 1 );
+	memcpy( infos, &priv->sInfos, sizeof( sMySQLInfos ));
+	infos->dbname = "mysql";
+
+	if( !connect_with_infos( infos )){
+		g_warning( "%s: unable to connect to mysql database", thisfn );
+		g_free( infos );
+		return( FALSE );
+	}
+
+	user_created = FALSE;
+	stmt = g_string_new( "" );
+
+	hostname = g_strdup( priv->sInfos.host );
+	if( !hostname || !g_utf8_strlen( hostname, -1 )){
+		g_free( hostname );
+		hostname = g_strdup( "localhost" );
+	}
+
+	/* doesn't trap error on create user as the user may already exist */
+	g_string_printf( stmt,
+			"CREATE USER '%s'@'%s' IDENTIFIED BY '%s'",
+				priv->account,
+				hostname,
+				priv->password );
+	g_debug( "%s: query=%s", thisfn, stmt->str );
+	mysql_query( infos->mysql, stmt->str );
+
+	g_string_printf( stmt,
+			"GRANT ALL ON %s.* TO '%s'@'%s' WITH GRANT OPTION",
+				priv->sInfos.dbname,
+				priv->account,
+				hostname );
+	g_debug( "%s: query=%s", thisfn, stmt->str );
+	if( mysql_query( infos->mysql, stmt->str )){
+		g_warning( "%s: %s", thisfn, mysql_error( infos->mysql ));
+		goto free_stmt;
+	}
+
+	g_string_printf( stmt,
+			"GRANT CREATE USER, FILE ON *.* TO '%s'@'%s'",
+				priv->account,
+				hostname );
+	g_debug( "%s: query=%s", thisfn, stmt->str );
+	if( mysql_query( infos->mysql, stmt->str )){
+		g_warning( "%s: %s", thisfn, mysql_error( infos->mysql ));
+		goto free_stmt;
+	}
+
+	user_created = TRUE;
+
+free_stmt:
+	mysql_close( infos->mysql );
+	g_free( infos );
+	g_string_free( stmt, TRUE );
+	g_free( hostname );
+
+	g_debug( "%s: user_created=%s", thisfn, user_created ? "True":"False" );
+
+	return( user_created );
+}
+
+static gboolean
+new_init_db( sPrivate *priv )
+{
+	static const gchar *thisfn = "ofa_mysql_idbms_new_init_db";
+	sMySQLInfos *infos;
+	GString *stmt;
+	gboolean db_initialized;
+
+	g_debug( "%s: priv=%p", thisfn, ( void * ) priv );
+
+	if( priv->db_exists && priv->db_exists_mode == DBMODE_LEAVE_AS_IS ){
+		return( TRUE );
+	}
+
+	infos = g_new0( sMySQLInfos, 1 );
+	memcpy( infos, &priv->sInfos, sizeof( sMySQLInfos ));
+	infos->account = ( gchar * ) priv->account;
+	infos->password = ( gchar * ) priv->password;
+
+	if( !connect_with_infos( infos )){
+		g_warning( "%s: unable to connect to %s database with %s account", thisfn, infos->dbname, infos->account );
+		g_free( infos );
+		return( FALSE );
+	}
+
+	db_initialized = FALSE;
+	stmt = g_string_new( "" );
+
+	g_string_printf( stmt,
+			"CREATE TABLE IF NOT EXISTS %s.OFA_T_AUDIT ("
+			"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"
+			"	AUD_STAMP TIMESTAMP              NOT NULL        COMMENT 'Query actual timestamp',"
+			"	AUD_QUERY VARCHAR(4096)          NOT NULL        COMMENT 'Query')",
+					infos->dbname );
+	g_debug( "%s: query=%s", thisfn, stmt->str );
+	if( mysql_query( infos->mysql, stmt->str )){
+		g_warning( "%s: %s", thisfn, mysql_error( infos->mysql ));
+		goto free_stmt;
+	}
+
+	g_string_printf( stmt,
+			"CREATE TABLE IF NOT EXISTS %s.OFA_T_ROLES ("
+				"ROL_USER     VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'User account',"
+				"ROL_IS_ADMIN INTEGER                            COMMENT 'Whether the user has administration role')",
+				infos->dbname );
+	g_debug( "%s: query=%s", thisfn, stmt->str );
+	if( mysql_query( infos->mysql, stmt->str )){
+		g_warning( "%s: %s", thisfn, mysql_error( infos->mysql ));
+		goto free_stmt;
+	}
+
+	g_string_printf( stmt,
+			"INSERT IGNORE INTO %s.OFA_T_ROLES "
+			"	(ROL_USER, ROL_IS_ADMIN) VALUES ('%s',1)",
+				infos->dbname, priv->account );
+	g_debug( "%s: query=%s", thisfn, stmt->str );
+	if( mysql_query( infos->mysql, stmt->str )){
+		g_warning( "%s: %s", thisfn, mysql_error( infos->mysql ));
+		goto free_stmt;
+	}
+
+	db_initialized = TRUE;
+
+free_stmt:
+	mysql_close( infos->mysql );
+	g_free( infos );
+	g_string_free( stmt, TRUE );
+
+	g_debug( "%s: db_initialized=%s", thisfn, db_initialized ? "True":"False" );
+
+	return( db_initialized );
+}
+
 #if 0
-static void *
-idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *label, const gchar *account, const gchar *password )
+static void
+drop_admin_account( mysqlConnect *connect, const gchar *account )
 {
 	MYSQL *mysql;
 	mysqlConnect *cnt;
 
-	cnt = &infos->connect;
-
-	ofa_mysql_get_connect_infos( cnt, label );
-
-	cnt->account = g_strdup( account );
-	cnt->password = g_strdup( password );
+	cnt = g_new0( mysqlConnect, 1 );
+	cnt->host = connect->host;
+	cnt->port = connect->port;
+	cnt->socket = connect->socket;
+	cnt->dbname = "mysql";
+	cnt->account = connect->account;
+	cnt->password = connect->password;
 
 	mysql = ofa_mysql_connect( cnt );
-	if( !mysql ){
-		ofa_mysql_free_connect( cnt );
-		g_free( infos );
-		return( NULL );
+
+	/* #303: unable to remove administrative accounts */
+	if( mysql && FALSE ){
+		do_drop_account( mysql, cnt->host, account );
+		mysql_close( mysql );
+		g_free( mysql );
 	}
 
-	infos->label = g_strdup( label );
-	infos->mysql = mysql;
+	g_free( cnt );
+}
 
-	return( infos );
+static void
+do_drop_account( MYSQL *mysql, const gchar *host, const gchar *account )
+{
+	gchar *query;
+	gchar *hostname;
+
+	query = g_strdup_printf( "delete from mysql.user where user='%s'", account );
+	mysql_query( mysql, query );
+	g_free( query );
+
+	hostname = g_strdup( host );
+	if( !host || !g_utf8_strlen( host, -1 )){
+		g_free( hostname );
+		hostname = g_strdup( "localhost" );
+	}
+
+	query = g_strdup_printf( "drop user '%s'@'%s'", account, hostname );
+	mysql_query( mysql, query );
+	g_free( query );
+	g_free( hostname );
+
+	mysql_query( mysql, "flush privileges" );
 }
 #endif
+
+static gboolean
+confirm_database_reinit( sPrivate *priv, const gchar *dbname )
+{
+	GtkWidget *dialog;
+	gchar *msg;
+	gint response;
+
+	msg = g_strdup_printf( _( "You are about to reinitialize the '%s' database.\n"
+			"This operation will cannot be recovered.\n"
+			"Are you sure ?" ), dbname );
+
+	dialog = gtk_message_dialog_new(
+			NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE,
+			"%s", msg );
+
+	g_free( msg );
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+			_( "_Reinitialize" ), GTK_RESPONSE_OK,
+			NULL );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
+}
+
+/*
+ * mysql_get_db_exists:
+ */
+static gboolean
+mysql_get_db_exists( sMySQLInfos *infos )
+{
+	gboolean exists;
+	sMySQLInfos *temp;
+
+	exists = FALSE;
+	temp = g_new0( sMySQLInfos, 1 );
+	memcpy( temp, infos, sizeof( sMySQLInfos ));
+	temp->dbname = NULL;
+
+	if( connect_with_infos( temp )){
+		exists = local_get_db_exists( temp->mysql, infos->dbname );
+		mysql_close( temp->mysql );
+	}
+	g_free( temp );
+
+	return( exists );
+}
 
 static gboolean
 local_get_db_exists( MYSQL *mysql, const gchar *dbname )
@@ -486,59 +1259,48 @@ local_get_db_exists( MYSQL *mysql, const gchar *dbname )
 }
 
 /**
- * ofa_mysql_get_db_exists:
+ * ofa_mysql_get_connect_infos:
+ * @infos: the connection structure to be filled.
+ * @dname: the name of the dossier in user's settings
+ *
+ * Fill the connection structure with connection informations for the
+ * current exercice, i.e. for Mysql: host, port and socket, database.
+ *
+ * Return: the connection structure itself.
  */
-gboolean
-ofa_mysql_get_db_exists( mysqlConnect *sConnect )
+sMySQLInfos *
+ofa_mysql_get_connect_infos( sMySQLInfos *infos, const gchar *label )
 {
-	gboolean exists;
-	mysqlConnect *scnt;
-	MYSQL *mysql;
-
-	exists = FALSE;
-	scnt = g_new0( mysqlConnect, 1 );
-	memcpy( scnt, sConnect, sizeof( mysqlConnect ));
-	scnt->dbname = NULL;
-
-	mysql = ofa_mysql_connect( scnt );
-	if( mysql ){
-		exists = local_get_db_exists( mysql, sConnect->dbname );
-		mysql_close( mysql );
-		g_free( mysql );
+	infos->host = ofa_settings_dossier_get_string( label, SETTINGS_HOST );
+	infos->socket = ofa_settings_dossier_get_string( label, SETTINGS_SOCKET );
+	infos->port = ofa_settings_dossier_get_int( label, SETTINGS_PORT );
+	if( infos->port == -1 ){
+		infos->port = 0;
 	}
 
-	return( exists );
+	return( infos );
 }
 
-/**
- * ofa_mysql_connect:
- */
-MYSQL *
-ofa_mysql_connect( mysqlConnect *sConnect )
+/* ... */
+
+static gchar *
+idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label )
 {
-	static const gchar *thisfn = "ofa_mysql_connect";
-	MYSQL *mysql;
+	gchar *host;
 
-	mysql = g_new0( MYSQL, 1 );
-	mysql_init( mysql );
+	host = ofa_settings_dossier_get_string( label, "MySQLHost" );
 
-	if( !mysql_real_connect( mysql,
-							sConnect->host,
-							sConnect->account,
-							sConnect->password,
-							sConnect->dbname,
-							sConnect->port,
-							sConnect->socket,
-							CLIENT_MULTI_RESULTS )){
-		g_free( mysql );
-		g_debug( "%s: host=%s, account=%s, password=%s, dbname=%s, port=%u, socket=%s: unable to connect",
-				thisfn, sConnect->host, sConnect->account, sConnect->password, sConnect->dbname, sConnect->port, sConnect->socket );
-		return( NULL );
-	}
+	return( host );
+}
 
-	g_debug( "%s: host=%s, account=%s, dbname=%s, port=%u, socket=%s: connect ok",
-			thisfn, sConnect->host, sConnect->account, sConnect->dbname, sConnect->port, sConnect->socket );
-	return( mysql );
+static gchar *
+idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label )
+{
+	gchar *dbname;
+
+	dbname = ofa_settings_dossier_get_string( label, "MySQLDatabase" );
+
+	return( dbname );
 }
 
 static gboolean
@@ -647,17 +1409,4 @@ idbms_display_connect_infos( const ofaIDbms *instance, GtkWidget *container, con
 		gtk_label_set_text( GTK_LABEL( wlabel ), text );
 		g_free( text );
 	}
-}
-
-/**
- * ofa_mysql_free_connect:
- */
-void
-ofa_mysql_free_connect( mysqlConnect *sConnect )
-{
-	g_free( sConnect->host );
-	g_free( sConnect->socket );
-	g_free( sConnect->dbname );
-	g_free( sConnect->account );
-	g_free( sConnect->password );
 }

@@ -42,6 +42,12 @@ void         ofa_mysql_idbms_iface_init       ( ofaIDbmsInterface *iface );
 
 const gchar *ofa_mysql_idbms_get_provider_name( const ofaIDbms *instance );
 
+/* MySQL private functions
+ */
+sMySQLInfos *ofa_mysql_get_connect_infos      ( sMySQLInfos *infos, const gchar *dname );
+
+void         ofa_mysql_free_connect_infos     ( sMySQLInfos *infos );
+
 G_END_DECLS
 
 #endif /* __OFA_MYSQL_IDBMS_H__ */

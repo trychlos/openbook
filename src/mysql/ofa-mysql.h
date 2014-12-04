@@ -91,6 +91,7 @@ typedef struct {
 	gchar *socket;
 	gchar *dbname;
 	gchar *account;
+	gchar *password;
 	MYSQL *mysql;
 }
 	sMySQLInfos;
@@ -143,16 +144,6 @@ typedef struct {
 GType         ofa_mysql_get_type         ( void );
 
 void          ofa_mysql_register_type    ( GTypeModule *module );
-
-const gchar  *ofa_mysql_get_provider_name( const ofaIDbms *instance );
-
-MYSQL        *ofa_mysql_connect          ( mysqlConnect *sConnect );
-
-gboolean      ofa_mysql_get_db_exists    ( mysqlConnect *sConnect );
-
-mysqlConnect *ofa_mysql_get_connect_infos( mysqlConnect *sConnect, const gchar *label );
-
-void          ofa_mysql_free_connect     ( mysqlConnect *sConnect );
 
 G_END_DECLS
 

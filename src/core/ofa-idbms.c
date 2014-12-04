@@ -363,54 +363,53 @@ ofa_idbms_free_providers_list( GSList *list )
 }
 
 /**
- * ofa_idbms_properties_new_init:
+ * ofa_idbms_properties_init:
  *
  * Initialize the GtkDialog part which let the user enter properties
  * for a new connection definition
  */
 void
-ofa_idbms_properties_new_init( const ofaIDbms *instance, GtkContainer *parent,
-									GtkSizeGroup *group )
+ofa_idbms_new_attach_to( const ofaIDbms *instance, GtkContainer *parent, GtkSizeGroup *group )
 {
-	if( OFA_IDBMS_GET_INTERFACE( instance )->properties_new_init ){
-		OFA_IDBMS_GET_INTERFACE( instance )->properties_new_init( instance, parent, group );
+	if( OFA_IDBMS_GET_INTERFACE( instance )->new_attach_to ){
+		OFA_IDBMS_GET_INTERFACE( instance )->new_attach_to( instance, parent, group );
 	}
 }
 
 /**
- * ofa_idbms_properties_new_check:
+ * ofa_idbms_new_check:
  *
  * Check that the definition is enough to be validated.
  */
 gboolean
-ofa_idbms_properties_new_check( const ofaIDbms *instance, GtkContainer *parent )
+ofa_idbms_new_check( const ofaIDbms *instance, GtkContainer *parent )
 {
 	gboolean ok;
 
 	ok = FALSE;
 
-	if( OFA_IDBMS_GET_INTERFACE( instance )->properties_new_check ){
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->properties_new_check( instance, parent );
+	if( OFA_IDBMS_GET_INTERFACE( instance )->new_check ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->new_check( instance, parent );
 	}
 
 	return( ok );
 }
 
 /**
- * ofa_idbms_properties_new_apply:
+ * ofa_idbms_new_apply:
  *
  * Try to apply the new definition
  */
 gboolean
-ofa_idbms_properties_new_apply( const ofaIDbms *instance, GtkContainer *parent,
-									const gchar *label, const gchar *account, const gchar *password )
+ofa_idbms_new_apply( const ofaIDbms *instance, GtkContainer *parent,
+									const gchar *dname, const gchar *account, const gchar *password )
 {
 	gboolean ok;
 
 	ok = FALSE;
 
-	if( OFA_IDBMS_GET_INTERFACE( instance )->properties_new_apply ){
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->properties_new_apply( instance, parent, label, account, password );
+	if( OFA_IDBMS_GET_INTERFACE( instance )->new_apply ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->new_apply( instance, parent, dname, account, password );
 	}
 
 	return( ok );

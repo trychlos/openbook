@@ -344,7 +344,7 @@ on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self )
 			g_object_unref( group );
 
 			/* and let the DBMS initialize its own part */
-			ofa_idbms_properties_new_init( priv->p1_module, priv->p1_parent, group );
+			ofa_idbms_new_attach_to( priv->p1_module, priv->p1_parent, group );
 
 		} else {
 			str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), priv->p1_sgdb_provider );
@@ -577,7 +577,7 @@ check_for_enable_dlg( ofaDossierNew *self )
 				priv->p3_password &&
 				priv->p3_bis &&
 				priv->p3_passwd_are_equals &&
-				ofa_idbms_properties_new_check( priv->p1_module, priv->p1_parent );
+				ofa_idbms_new_check( priv->p1_module, priv->p1_parent );
 
 	if( !priv->apply_btn ){
 		priv->apply_btn = my_utils_container_get_child_by_name(
@@ -601,7 +601,7 @@ v_quit_on_ok( myDialog *dialog )
 
 	priv = OFA_DOSSIER_NEW( dialog )->priv;
 
-	ok = ofa_idbms_properties_new_apply(
+	ok = ofa_idbms_new_apply(
 			priv->p1_module, priv->p1_parent,
 			priv->p3_label, priv->p3_account, priv->p3_password );
 

@@ -51,6 +51,7 @@
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-backup.h"
+#include "ofa-mysql-idbms.h"
 
 #define BUFSIZE 4096
 
@@ -64,8 +65,8 @@ typedef struct {
 
 static const gchar *st_window_name = "MySQLBackupWindow";
 
-static gboolean    do_backup_restore( const mysqlConnect *connect, const gchar *fname, const gchar *pref, const gchar *window_title, GChildWatchFunc pfn );
-static gchar      *build_cmdline( const mysqlConnect *connect, const gchar *fname, const gchar *pref );
+static gboolean    do_backup_restore( const sMySQLInfos *infos, const gchar *fname, const gchar *pref, const gchar *window_title, GChildWatchFunc pfn );
+static gchar      *build_cmdline( const sMySQLInfos *infos, const gchar *fname, const gchar *pref );
 static void        create_window( backupInfos *infos, const gchar *window_title );
 static GPid        exec_command( const gchar *cmdline, backupInfos *infos );
 static GIOChannel *set_up_io_channel( gint fd, GIOCondition cond, GIOFunc func, backupInfos *infos );
@@ -97,15 +98,13 @@ ofa_mysql_get_def_backup_cmd( const ofaIDbms *instance )
 gboolean
 ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 {
-	mysqlInfos *infos;
-	const mysqlConnect *connect;
+	const sMySQLInfos *infos;
 	gboolean ok;
 
-	infos = ( mysqlInfos * ) handle;
-	connect = &infos->connect;
+	infos = ( sMySQLInfos * ) handle;
 
 	ok = do_backup_restore(
-				( const mysqlConnect * ) connect,
+				( const sMySQLInfos * ) infos,
 				fname,
 				PREFS_BACKUP_CMDLINE,
 				_( "Openbook backup" ),
@@ -131,30 +130,28 @@ ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance )
 gboolean
 ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password )
 {
-	mysqlConnect *connect;
+	sMySQLInfos *infos;
 	gboolean ok;
 
-	connect = g_new0( mysqlConnect, 1 );
-	connect = ofa_mysql_get_connect_infos( connect, label );
-	connect->dbname = ofa_settings_dossier_get_string( label, "Database" );
-	connect->account = g_strdup( account );
-	connect->password = g_strdup( password );
+	infos = g_new0( sMySQLInfos, 1 );
+	ofa_mysql_get_connect_infos( infos, label );
+	infos->account = g_strdup( account );
+	infos->password = g_strdup( password );
 
 	ok = do_backup_restore(
-				( const mysqlConnect * ) connect,
+				( const sMySQLInfos * ) infos,
 				fname,
 				PREFS_RESTORE_CMDLINE,
 				_( "Openbook restore" ),
 				( GChildWatchFunc ) exit_restore_cb );
 
-	ofa_mysql_free_connect( connect );
-	g_free( connect );
+	ofa_mysql_free_connect_infos( infos );
 
 	return( ok );
 }
 
 static gboolean
-do_backup_restore( const mysqlConnect *connect, const gchar *fname, const gchar *pref, const gchar *window_title, GChildWatchFunc pfn )
+do_backup_restore( const sMySQLInfos *sql_infos, const gchar *fname, const gchar *pref, const gchar *window_title, GChildWatchFunc pfn )
 {
 	static const gchar *thisfn = "ofa_mysql_do_backup_restore";
 	backupInfos *infos;
@@ -162,7 +159,7 @@ do_backup_restore( const mysqlConnect *connect, const gchar *fname, const gchar 
 	GPid child_pid;
 	gboolean ok;
 
-	cmdline = build_cmdline( connect, fname, pref );
+	cmdline = build_cmdline( sql_infos, fname, pref );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
 
 	infos = g_new0( backupInfos, 1 );
@@ -193,7 +190,7 @@ do_backup_restore( const mysqlConnect *connect, const gchar *fname, const gchar 
 }
 
 static gchar *
-build_cmdline( const mysqlConnect *connect, const gchar *fname, const gchar *pref )
+build_cmdline( const sMySQLInfos *sql_infos, const gchar *fname, const gchar *pref )
 {
 	gchar *cmdline;
 	GString *options;
@@ -204,7 +201,7 @@ build_cmdline( const mysqlConnect *connect, const gchar *fname, const gchar *pre
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_DOSSIER, PREFS_GROUP, pref );
 
 	regex = g_regex_new( "%B", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, connect->dbname, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, sql_infos->dbname, 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
 	cmdline = newcmd;
@@ -218,13 +215,13 @@ build_cmdline( const mysqlConnect *connect, const gchar *fname, const gchar *pre
 	cmdline = newcmd;
 
 	options = g_string_new( "" );
-	if( connect->host && g_utf8_strlen( connect->host, -1 )){
-		g_string_append_printf( options, "--host=%s ", connect->host );
+	if( sql_infos->host && g_utf8_strlen( sql_infos->host, -1 )){
+		g_string_append_printf( options, "--host=%s ", sql_infos->host );
 	}
-	if( connect->port > 0 ){
-		g_string_append_printf( options, "--port=%u ", connect->port );
-	} else if( connect->socket && g_utf8_strlen( connect->socket, -1 )){
-		g_string_append_printf( options, "--socket=%s ", connect->socket );
+	if( sql_infos->port > 0 ){
+		g_string_append_printf( options, "--port=%u ", sql_infos->port );
+	} else if( sql_infos->socket && g_utf8_strlen( sql_infos->socket, -1 )){
+		g_string_append_printf( options, "--socket=%s ", sql_infos->socket );
 	}
 
 	regex = g_regex_new( "%O", 0, 0, NULL );
@@ -235,13 +232,13 @@ build_cmdline( const mysqlConnect *connect, const gchar *fname, const gchar *pre
 	g_string_free( options, TRUE );
 
 	regex = g_regex_new( "%P", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, connect->password, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, sql_infos->password, 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
 	cmdline = newcmd;
 
 	regex = g_regex_new( "%U", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, connect->account, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, sql_infos->account, 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
 	cmdline = newcmd;
