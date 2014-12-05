@@ -596,11 +596,13 @@ ofa_dbms_query_int( const ofaDbms *dbms, const gchar *query, gint *ivalue, gbool
 			thisfn, ( void * ) dbms, query, ( void * ) ivalue, display_error ? "True":"False" );
 
 	*ivalue = 0;
-	ok = ofa_dbms_query_ex( dbms, query, &result, TRUE );
+	ok = ofa_dbms_query_ex( dbms, query, &result, display_error );
 
 	if( ok ){
 		icol = ( GSList * ) result->data;
-		*ivalue = atoi(( gchar * ) icol->data );
+		if( icol && icol->data ){
+			*ivalue = atoi(( gchar * ) icol->data );
+		}
 		ofa_dbms_free_results( result );
 	}
 

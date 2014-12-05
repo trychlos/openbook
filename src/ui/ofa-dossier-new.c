@@ -49,9 +49,11 @@ struct _ofaDossierNewPrivate {
 
 	/* p1: SGDB Provider
 	 */
-	gchar         *p1_sgdb_provider;
-	ofaIDbms      *p1_module;
-	GtkContainer  *p1_parent;
+	GtkWidget     *p1_parent;
+
+	gchar         *p1_prov_name;
+	gulong         p1_prov_handler;
+	ofaIDbms      *p1_prov_module;
 
 	/* p3: dossier properties
 	 */
@@ -91,10 +93,12 @@ static const gchar *st_ui_id    = "DossierNewDlg";
 
 G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, MY_TYPE_DIALOG )
 
+static gchar    *get_current_dbname( ofaDossierNew *self );
 static void      v_init_dialog( myDialog *dialog );
-static void      init_p1_sgdb_provider( ofaDossierNew *self );
+static void      init_p1_sgbd_provider( ofaDossierNew *self, GtkContainer *container );
 static void      on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self );
-static void      init_p3_dossier_properties( ofaDossierNew *self );
+static void      on_provider_ui_changed( ofaIDbms *provider, gboolean connect_ok, gboolean db_ok, ofaDossierNew *self );
+static void      init_p3_dossier_properties( ofaDossierNew *self, GtkContainer *container );
 static void      on_db_label_changed( GtkEntry *entry, ofaDossierNew *self );
 static void      on_db_account_changed( GtkEntry *entry, ofaDossierNew *self );
 static gboolean  is_account_ok( ofaDossierNew *self );
@@ -120,7 +124,7 @@ dossier_new_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_DOSSIER_NEW( instance )->priv;
-	g_free( priv->p1_sgdb_provider );
+	g_free( priv->p1_prov_name );
 	g_free( priv->p3_label );
 	g_free( priv->p3_account );
 	g_free( priv->p3_password );
@@ -142,8 +146,11 @@ dossier_new_dispose( GObject *instance )
 		priv = OFA_DOSSIER_NEW( instance )->priv;
 
 		/* unref object members here */
-		if( priv->p1_module ){
-			g_clear_object( &priv->p1_module );
+		if( priv->p1_prov_handler ){
+			g_signal_handler_disconnect( priv->p1_prov_module, priv->p1_prov_handler );
+		}
+		if( priv->p1_prov_module ){
+			g_clear_object( &priv->p1_prov_module );
 		}
 	}
 
@@ -217,7 +224,7 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 		if( open_dossier ){
 			sdo = g_new0( ofsDossierOpen, 1 );
 			sdo->dname = g_strdup( self->priv->p3_label );
-			sdo->dbname = NULL;
+			sdo->dbname = get_current_dbname( self );
 			sdo->account = g_strdup( self->priv->p3_account );
 			sdo->password = g_strdup( self->priv->p3_password );
 		}
@@ -238,28 +245,64 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 	return( dossier_opened );
 }
 
+static gchar *
+get_current_dbname( ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	gchar *line, *dbname;
+	gchar **array, **iter;
+
+	priv = self->priv;
+
+	/* a description of the exercice with the dbname */
+	line = ofa_idbms_get_current( priv->p1_prov_module, priv->p3_label );
+
+	/* split to an array */
+	array = g_strsplit( line, ";", -1 );
+
+	/* first line is the exercice description */
+	iter = array;
+
+	/* second line is the database name */
+	iter++;
+	dbname = g_strdup( *iter );
+
+	g_strfreev( array );
+	g_free( line );
+
+	return( dbname );
+}
+
 /*
  * the provided 'page' is the toplevel widget of the asistant's page
  */
 static void
 v_init_dialog( myDialog *dialog )
 {
-	init_p3_dossier_properties( OFA_DOSSIER_NEW( dialog ));
-	init_p1_sgdb_provider( OFA_DOSSIER_NEW( dialog ));
+	GtkWindow *container;
+
+	g_debug( "v_init_dialog" );
+
+	container = my_window_get_toplevel( MY_WINDOW( dialog ));
+	g_return_if_fail( container && GTK_IS_WINDOW( container ));
+
+	init_p1_sgbd_provider( OFA_DOSSIER_NEW( dialog ), GTK_CONTAINER( container ));
+	init_p3_dossier_properties( OFA_DOSSIER_NEW( dialog ), GTK_CONTAINER( container ));
+
 	check_for_enable_dlg( OFA_DOSSIER_NEW( dialog ));
 }
 
 static void
-init_p1_sgdb_provider( ofaDossierNew *self )
+init_p1_sgbd_provider( ofaDossierNew *self, GtkContainer *container )
 {
-	GtkContainer *container;
+	ofaDossierNewPrivate *priv;
 	GtkComboBox *combo;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeIter iter;
 	GSList *prov_list, *ip;
 
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+	priv = self->priv;
 
 	combo = ( GtkComboBox * ) my_utils_container_get_child_by_name( container, "p1-provider" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
@@ -289,6 +332,11 @@ init_p1_sgdb_provider( ofaDossierNew *self )
 
 	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_sgdb_provider_changed ), self );
 
+	/* take a pointer on the parent container of the DBMS widget before
+	 *  selecting the default */
+	priv->p1_parent = my_utils_container_get_child_by_name( container, "sgdb-container" );
+	g_return_if_fail( priv->p1_parent && GTK_IS_CONTAINER( priv->p1_parent ));
+
 	gtk_combo_box_set_active( combo, 0 );
 }
 
@@ -299,8 +347,7 @@ on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self )
 	ofaDossierNewPrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
-	GtkContainer *container;
-	GtkWidget *parent, *child;
+	GtkWidget *child;
 	gchar *str;
 	GtkSizeGroup *group;
 	GtkWidget *label;
@@ -309,59 +356,79 @@ on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self )
 
 	priv = self->priv;
 
-	/* remove previous provider if any */
-	g_free( priv->p1_sgdb_provider );
-	priv->p1_sgdb_provider = NULL;
-	if( priv->p1_module ){
-		g_clear_object( &priv->p1_module );
-	}
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
-	parent = my_utils_container_get_child_by_name( container, "sgdb-container" );
-	g_return_if_fail( parent && GTK_IS_BIN( parent ));
+	/* do we have finished with the initialization ? */
+	if( priv->p1_parent ){
 
-	priv->p1_parent = GTK_CONTAINER( parent );
+		/* do we had a previous selection ? */
+		if( priv->p1_prov_handler ){
+			g_free( priv->p1_prov_name );
+			g_signal_handler_disconnect( priv->p1_prov_module, priv->p1_prov_handler );
+			g_clear_object( &priv->p1_prov_module );
+			/* last, remove the widget */
+			child = gtk_bin_get_child( GTK_BIN( priv->p1_parent ));
+			if( child ){
+				gtk_container_remove( GTK_CONTAINER( priv->p1_parent ), child );
+			}
+		}
 
-	child = gtk_bin_get_child( GTK_BIN( parent ));
-	if( child ){
-		gtk_container_remove( priv->p1_parent, child );
-	}
+		priv->p1_prov_name = NULL;
+		priv->p1_prov_handler = 0;
 
-	/* setup current provider */
-	if( gtk_combo_box_get_active_iter( combo, &iter )){
-		tmodel = gtk_combo_box_get_model( combo );
-		gtk_tree_model_get( tmodel, &iter,
-				SGDB_COL_PROVIDER, &priv->p1_sgdb_provider,
-				-1 );
+		/* setup current provider */
+		if( gtk_combo_box_get_active_iter( combo, &iter )){
+			tmodel = gtk_combo_box_get_model( combo );
+			gtk_tree_model_get( tmodel, &iter,
+					SGDB_COL_PROVIDER, &priv->p1_prov_name,
+					-1 );
 
-		priv->p1_module = ofa_idbms_get_provider_by_name( priv->p1_sgdb_provider );
+			priv->p1_prov_module = ofa_idbms_get_provider_by_name( priv->p1_prov_name );
 
-		if( priv->p1_module ){
-			/* have a size group */
-			group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-			label = my_utils_container_get_child_by_name( container, "p1-provider-label" );
-			g_return_if_fail( label && GTK_IS_LABEL( label ));
-			gtk_size_group_add_widget( group, label );
-			g_object_unref( group );
+			if( priv->p1_prov_module ){
+				/* have a size group */
+				group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+				label = my_utils_container_get_child_by_name(
+								GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
+								"p1-provider-label" );
+				g_return_if_fail( label && GTK_IS_LABEL( label ));
+				gtk_size_group_add_widget( group, label );
+				g_object_unref( group );
 
-			/* and let the DBMS initialize its own part */
-			ofa_idbms_new_attach_to( priv->p1_module, priv->p1_parent, group );
+				/* and let the DBMS initialize its own part */
+				ofa_idbms_new_attach_to( priv->p1_prov_module, GTK_CONTAINER( priv->p1_parent ), group );
 
-		} else {
-			str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), priv->p1_sgdb_provider );
-			set_message( self, str );
-			g_free( str );
+				priv->p1_prov_handler = g_signal_connect(
+												priv->p1_prov_module,
+												"changed" , G_CALLBACK( on_provider_ui_changed ), self );
+
+			} else {
+				str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), priv->p1_prov_name );
+				set_message( self, str );
+				g_free( str );
+			}
 		}
 	}
 }
 
+/*
+ * something has changed in the part of the UI managed by the provider
+ */
 static void
-init_p3_dossier_properties( ofaDossierNew *self )
+on_provider_ui_changed( ofaIDbms *provider, gboolean connect_ok, gboolean db_ok, ofaDossierNew *self )
 {
-	GtkContainer *container;
+	static const gchar *thisfn = "ofa_dossier_new_on_provider_ui_changed";
+
+	g_debug( "%s: provider=%p, connect_ok=%s, db_ok=%s, self=%p",
+			thisfn, ( void * ) provider,
+			connect_ok ? "True":"False", db_ok ? "True":"False", ( void * ) self );
+
+	check_for_enable_dlg( self );
+}
+
+static void
+init_p3_dossier_properties( ofaDossierNew *self, GtkContainer *container )
+{
 	GtkWidget *widget;
 	gboolean value;
-
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
 	widget = my_utils_container_get_child_by_name( container, "p3-label" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
@@ -566,25 +633,40 @@ set_message( ofaDossierNew *self, const gchar *msg )
 static void
 check_for_enable_dlg( ofaDossierNew *self )
 {
+	static const gchar *thisfn = "ofa_dossier_new_check_for_enable_dlg";
 	ofaDossierNewPrivate *priv;
 	gboolean enabled;
 
 	priv = self->priv;
 
-	/* #288: enable dlg should not depend of connection check */
+	g_debug( "%s: self=%p, p1_parent=%p", thisfn, ( void * ) self, ( void * ) priv->p1_parent );
+
+	/* #288: enable dlg should not depend of connection check
+	 * but actually yes */
 	enabled = priv->p3_label_is_ok &&
 				priv->p3_account_is_ok &&
 				priv->p3_password &&
 				priv->p3_bis &&
 				priv->p3_passwd_are_equals &&
-				ofa_idbms_new_check( priv->p1_module, priv->p1_parent );
+				( priv->p1_parent ?
+						ofa_idbms_new_check( priv->p1_prov_module, GTK_CONTAINER( priv->p1_parent )) :
+						FALSE );
+
+	/*if( !enabled ){
+		g_debug( "%s: label=%s, account=%s, password=%s, bis=%s, equals=%s, idbms_check=%s",
+				thisfn, priv->p3_label_is_ok ? "True":"False",
+				priv->p3_account_is_ok ? "True":"False",
+				priv->p3_password ? "True":"False",
+				priv->p3_bis ? "True":"False",
+				priv->p3_passwd_are_equals ? "True":"False",
+				ofa_idbms_new_check( priv->p1_prov_module, priv->p1_parent ) ? "True":"False" );
+	}*/
 
 	if( !priv->apply_btn ){
 		priv->apply_btn = my_utils_container_get_child_by_name(
 									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
 									"btn-ok" );
 	}
-
 	g_return_if_fail( priv->apply_btn && GTK_IS_BUTTON( priv->apply_btn ));
 	gtk_widget_set_sensitive( priv->apply_btn, enabled );
 
@@ -602,7 +684,7 @@ v_quit_on_ok( myDialog *dialog )
 	priv = OFA_DOSSIER_NEW( dialog )->priv;
 
 	ok = ofa_idbms_new_apply(
-			priv->p1_module, priv->p1_parent,
+			priv->p1_prov_module, GTK_CONTAINER( priv->p1_parent ),
 			priv->p3_label, priv->p3_account, priv->p3_password );
 
 	if( ok ){

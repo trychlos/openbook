@@ -142,6 +142,22 @@ typedef struct {
 														const gchar *dname );
 
 	/**
+	 * get_current:
+	 * @instance: the #ofaIDbms provider.
+	 * @dname: the name of the dossier from settings.
+	 *
+	 * Returns: a semi-colon separated string which contains:
+	 * - a displayable label
+	 * - the database name for the current exercice.
+	 *
+	 * The returned string should be #g_free() by the caller.
+	 *
+	 * Since: version 1
+	 */
+	gchar *       ( *get_current )          ( const ofaIDbms *instance,
+														const gchar *dname );
+
+	/**
 	 * query:
 	 * @instance: the #ofaIDbms provider.
 	 * @handle: the handle returned by the connection.
@@ -403,8 +419,7 @@ typedef struct {
  * dossier.
  */
 typedef enum {
-	DBMODE_EMPTY = 0,
-	DBMODE_REINIT,
+	DBMODE_REINIT = 1,
 	DBMODE_LEAVE_AS_IS
 }
 	ofnDBMode;
@@ -425,6 +440,9 @@ GSList      *ofa_idbms_get_exercices        ( const ofaIDbms *instance,
 													const gchar *dname );
 
 #define      ofa_idbms_free_exercices(L)    g_debug( "ofa_idbms_free_exercices" ); g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
+
+gchar       *ofa_idbms_get_current           ( const ofaIDbms *instance,
+													const gchar *dname );
 
 GSList      *ofa_idbms_get_providers_list   ( void );
 

@@ -36,7 +36,16 @@
 #include "core/ofa-dblogin.h"
 #include "core/ofa-plugin.h"
 
-static guint st_initializations = 0;		/* interface initialization count */
+/* signals defined here
+ */
+enum {
+	CHANGED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
+static guint st_initializations = 0;	/* interface initialization count */
 
 static GType     register_type( void );
 static void      interface_base_init( ofaIDbmsInterface *klass );
@@ -106,6 +115,31 @@ interface_base_init( ofaIDbmsInterface *klass )
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
 		klass->get_interface_version = idbms_get_interface_version;
+
+		/**
+		 * ofaIDbms::changed:
+		 *
+		 * This signal may be sent by a IDbms provider when a change
+		 * occurs in its dialog. The application may take benefit of
+		 * this signal to update the UI.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( ofaIDbms   *instance,
+		 *                      gboolean  connect_ok,
+		 *                      gboolean  db_ok,
+		 * 						gpointer  user_data );
+		 */
+		st_signals[ CHANGED ] = g_signal_new_class_handler(
+					"changed",
+					OFA_TYPE_IDBMS,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					2,
+					G_TYPE_BOOLEAN, G_TYPE_BOOLEAN );
 	}
 
 	st_initializations += 1;
@@ -248,6 +282,30 @@ ofa_idbms_get_exercices( const ofaIDbms *instance, const gchar *dname )
 
 	if( OFA_IDBMS_GET_INTERFACE( instance )->get_exercices ){
 		return( OFA_IDBMS_GET_INTERFACE( instance )->get_exercices( instance, dname ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_idbms_get_current:
+ * @instance: this #ofaIDbms instance.
+ * @dname: the dossier name read from settings.
+ *
+ * Returns: a semi-colon separated string which contains:
+ * - a displayable label
+ * - the database name for the current exercice.
+ *
+ * The returned string should be g_free() by the caller.
+ */
+gchar *
+ofa_idbms_get_current( const ofaIDbms *instance, const gchar *dname )
+{
+	g_return_val_if_fail( OFA_IS_IDBMS( instance ), NULL );
+	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), NULL );
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->get_current ){
+		return( OFA_IDBMS_GET_INTERFACE( instance )->get_current( instance, dname ));
 	}
 
 	return( NULL );

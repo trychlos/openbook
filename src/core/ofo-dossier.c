@@ -493,7 +493,7 @@ error_user_not_exists( ofoDossier *dossier, const gchar *account )
  * ofo_dossier_open:
  * @dossier: this #ofoDossier object
  * @dname: the name of the dossier, as read from settings
- * @dbname: the exercice database to be selected
+ * @dbname: [allow-none]: the exercice database to be selected
  * @account:
  * @password:
  */
@@ -509,7 +509,6 @@ ofo_dossier_open( ofoDossier *dossier,
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), FALSE );
-	g_return_val_if_fail( dbname && g_utf8_strlen( dbname, -1 ), FALSE );
 	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), FALSE );
 	g_return_val_if_fail( password && g_utf8_strlen( password, -1 ), FALSE );
 
@@ -518,6 +517,7 @@ ofo_dossier_open( ofoDossier *dossier,
 			( void * ) dossier, dname, dbname, account, password );
 
 	priv = dossier->priv;
+	ok = FALSE;
 
 	dbms = ofa_dbms_new();;
 	if( !ofa_dbms_connect( dbms, dname, dbname, account, password, TRUE )){
@@ -529,9 +529,10 @@ ofo_dossier_open( ofoDossier *dossier,
 	priv->dbms = dbms;
 	priv->userid = g_strdup( account );
 
-	dbmodel_update( dossier );
-	connect_objects_handlers( dossier );
-	ok = dossier_do_read( dossier );
+	if( dbmodel_update( dossier )){
+		connect_objects_handlers( dossier );
+		ok = dossier_do_read( dossier );
+	}
 
 	return( ok );
 }
@@ -663,7 +664,8 @@ dbmodel_to_v1( const ofoDossier *dossier )
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
 			"	VER_NUMBER INTEGER NOT NULL UNIQUE DEFAULT 0     COMMENT 'DB model version number',"
-			"	VER_DATE   TIMESTAMP DEFAULT 0                   COMMENT 'Version application timestamp')",
+			"	VER_DATE   TIMESTAMP DEFAULT 0                   COMMENT 'Version application timestamp') "
+			"CHARACTER SET utf8",
 			TRUE)){
 		return( FALSE );
 	}
@@ -705,7 +707,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	ACC_OPEN_CRE_ENTRY  BIGINT                       COMMENT 'Number of the most recent credit entry at the exercice opening',"
 			"	ACC_OPEN_CRE_DATE   DATE                         COMMENT 'Effect date of the most recent credit entry at the exercice opening',"
 			"	ACC_OPEN_CRE_AMOUNT DECIMAL(20,5)                COMMENT 'Credit balance at the exercice opening'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -726,7 +728,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	ASS_NOTES     VARCHAR(4096)               COMMENT 'Notes',"
 			"	ASS_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of last update',"
 			"	ASS_UPD_STAMP TIMESTAMP                   COMMENT 'Last update timestamp'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -742,7 +744,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	ASS_EXE_AMORT    INTEGER                  COMMENT 'Montant de l\\'annuite',"
 			"	ASS_EXE_REST     INTEGER                  COMMENT 'Valeur residuelle',"
 			"	CONSTRAINT PRIMARY KEY (ASS_ID,ASS_EXE_NUM)"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -760,7 +762,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	BAT_NOTES     VARCHAR(4096)               COMMENT 'Import notes',"
 			"	BAT_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of import',"
 			"	BAT_UPD_STAMP TIMESTAMP                   COMMENT 'Import timestamp'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -777,7 +779,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	BAT_LINE_ENTRY     BIGINT                 COMMENT 'Reciliated entry',"
 			"	BAT_LINE_UPD_USER  VARCHAR(20)            COMMENT 'User responsible of the reconciliation',"
 			"	BAT_LINE_UPD_STAMP TIMESTAMP              COMMENT 'Reconciliation timestamp'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -788,7 +790,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	CLA_NOTES        VARCHAR(4096)                 COMMENT 'Class notes',"
 			"	CLA_UPD_USER     VARCHAR(20)                   COMMENT 'User responsible of properties last update',"
 			"	CLA_UPD_STAMP    TIMESTAMP                     COMMENT 'Properties last update timestamp'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -869,13 +871,13 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	CUR_NOTES     VARCHAR(4096)                          COMMENT 'Currency notes',"
 			"	CUR_UPD_USER  VARCHAR(20)                            COMMENT 'User responsible of properties last update',"
 			"	CUR_UPD_STAMP TIMESTAMP                              COMMENT 'Properties last update timestamp'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
 	if( !ofa_dbms_query( priv->dbms,
 			"INSERT IGNORE INTO OFA_T_CURRENCIES "
-			"	(DEV_CODE,DEV_LABEL,DEV_SYMBOL) VALUES ('EUR','Euro','€')", TRUE )){
+			"	(CUR_CODE,CUR_LABEL,CUR_SYMBOL,CUR_DIGITS) VALUES ('EUR','Euro','€',2)", TRUE )){
 		return( FALSE );
 	}
 
@@ -907,7 +909,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	DOS_LAST_ENTRY       BIGINT  DEFAULT 0         COMMENT 'Last entry number used',"
 			"	DOS_LAST_SETTLEMENT  BIGINT  DEFAULT 0         COMMENT 'Last settlement number used',"
 			"	DOS_STATUS           CHAR(1)                   COMMENT 'Status of this exercice'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -943,7 +945,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	ENT_STLMT_NUMBER BIGINT                   COMMENT 'Settlement number',"
 			"	ENT_STLMT_USER   VARCHAR(20)              COMMENT 'User responsible of the settlement',"
 			"	ENT_STLMT_STAMP  TIMESTAMP                COMMENT 'Settlement timestamp'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -955,7 +957,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	LED_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	LED_UPD_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
 			"	LED_LAST_CLO  DATE                        COMMENT 'Last closing date'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -968,7 +970,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	LED_CUR_DEB      DECIMAL(20,5)            COMMENT 'Current debit balance',"
 			"	LED_CUR_CRE      DECIMAL(20,5)            COMMENT 'Current credit balance',"
 			"	CONSTRAINT PRIMARY KEY (LED_MNEMO,LED_CUR_CODE)"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -1011,7 +1013,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	OTE_NOTES      VARCHAR(4096)                     COMMENT 'Template notes',"
 			"	OTE_UPD_USER   VARCHAR(20)                       COMMENT 'User responsible of properties last update',"
 			"	OTE_UPD_STAMP  TIMESTAMP                         COMMENT 'Properties last update timestamp'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -1029,7 +1031,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	OTE_DET_CREDIT         VARCHAR(80)             COMMENT 'Credit amount',"
 			"	OTE_DET_CREDIT_LOCKED  INTEGER                 COMMENT 'Credit amount is locked',"
 			"	CONSTRAINT PRIMARY KEY (OTE_MNEMO, OTE_DET_ROW)"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -1044,7 +1046,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	REC_UPD_USER  VARCHAR(20)                 COMMENT 'User responsible of properties last update',"
 			"	REC_UPD_STAMP TIMESTAMP                   COMMENT 'Properties last update timestamp',"
 			"	REC_LAST      DATE                        COMMENT 'Effect date of the last generation'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -1055,7 +1057,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	RAT_NOTES         VARCHAR(4096)                     COMMENT 'Rate notes',"
 			"	RAT_UPD_USER      VARCHAR(20)                       COMMENT 'User responsible of properties last update',"
 			"	RAT_UPD_STAMP     TIMESTAMP                         COMMENT 'Properties last update timestamp'"
-			")", TRUE )){
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 
@@ -1065,8 +1067,8 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	RAT_VAL_BEG       DATE    DEFAULT NULL              COMMENT 'Validity begin date',"
 			"	RAT_VAL_END       DATE    DEFAULT NULL              COMMENT 'Validity end date',"
 			"	RAT_VAL_RATE      DECIMAL(20,5)                     COMMENT 'Rate value',"
-			"	ADD UNIQUE INDEX (RAT_MNEMO,RAT_VAL_BEG,RAT_VAL_END)"
-			")", TRUE )){
+			"	CONSTRAINT PRIMARY KEY (RAT_MNEMO,RAT_VAL_BEG,RAT_VAL_END)"
+			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
 

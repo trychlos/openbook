@@ -1019,12 +1019,14 @@ ofa_settings_create_dossier( const gchar *name, ... )
 	gint type;
 	const gchar *scontent;
 	gint icontent;
+	GKeyFile *kfile;
 
 	g_debug( "%s: name=%s", thisfn, name );
 
 	settings_new();
 
 	group = get_dossier_group_from_name( name );
+	kfile = get_keyfile_from_target( SETTINGS_TARGET_DOSSIER );
 
 	va_start( ap, name );
 	while( TRUE ){
@@ -1039,10 +1041,10 @@ ofa_settings_create_dossier( const gchar *name, ... )
 				scontent = va_arg( ap, const gchar * );
 				if( scontent && g_utf8_strlen( scontent, -1 )){
 					g_debug( "%s: setting key group=%s, key=%s, content=%s", thisfn, group, key, scontent );
-					g_key_file_set_string( st_user_settings->priv->keyfile, group, key, scontent );
+					g_key_file_set_string( kfile, group, key, scontent );
 				} else {
 					g_debug( "%s: removing key group=%s, key=%s", thisfn, group, key );
-					g_key_file_remove_key( st_user_settings->priv->keyfile, group, key, NULL );
+					g_key_file_remove_key( kfile, group, key, NULL );
 				}
 				break;
 
@@ -1050,10 +1052,10 @@ ofa_settings_create_dossier( const gchar *name, ... )
 				icontent = va_arg( ap, gint );
 				if( icontent > 0 ){
 					g_debug( "%s: setting key group=%s, key=%s, content=%d", thisfn, group, key, icontent );
-					g_key_file_set_integer( st_user_settings->priv->keyfile, group, key, icontent );
+					g_key_file_set_integer( kfile, group, key, icontent );
 				} else {
 					g_debug( "%s: removing key group=%s, key=%s", thisfn, group, key );
-					g_key_file_remove_key( st_user_settings->priv->keyfile, group, key, NULL );
+					g_key_file_remove_key( kfile, group, key, NULL );
 				}
 				break;
 		}
@@ -1061,7 +1063,7 @@ ofa_settings_create_dossier( const gchar *name, ... )
 	va_end( ap );
 	g_free( group );
 
-	return( write_key_file( st_user_settings ));
+	return( write_key_file( st_dossier_settings ));
 }
 
 #if 0
