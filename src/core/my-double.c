@@ -35,6 +35,8 @@
 #include "api/my-double.h"
 #include "api/ofa-settings.h"
 
+#include "core/ofa-preferences.h"
+
 static gunichar st_double_thousand_sep   = '\0';
 static gunichar st_double_decimal_sep    = '\0';
 static GRegex  *st_double_thousand_regex = NULL;
@@ -79,6 +81,14 @@ double_set_locale( void )
 {
 	static const gchar *thisfn = "my_double_set_locale";
 	gchar *str, *p, *srev;
+	const gchar *cstr;
+
+	if( !st_double_thousand_sep ){
+		cstr = ofa_prefs_amount_thousand_sep();
+		st_double_thousand_sep = g_utf8_get_char( cstr );
+		cstr = ofa_prefs_amount_decimal_sep();
+		st_double_decimal_sep = g_utf8_get_char( cstr );
+	}
 
 	if( !st_double_thousand_sep ){
 		str = g_strdup_printf( "%'.1lf", 1000.0 );
@@ -87,18 +97,18 @@ double_set_locale( void )
 		srev = g_utf8_strreverse( str, -1 );
 		p = g_utf8_next_char( srev );
 		st_double_decimal_sep = g_utf8_get_char( p );
+	}
 
-		g_debug( "%s: thousand_sep='%c', decimal_sep='%c'",
+	g_debug( "%s: thousand_sep='%c', decimal_sep='%c'",
 					thisfn, st_double_thousand_sep, st_double_decimal_sep );
 
-		str = g_strdup_printf( "%c", st_double_thousand_sep );
-		st_double_thousand_regex = g_regex_new( str, 0, 0, NULL );
-		g_free( str );
+	str = g_strdup_printf( "%c", st_double_thousand_sep );
+	st_double_thousand_regex = g_regex_new( str, 0, 0, NULL );
+	g_free( str );
 
-		str = g_strdup_printf( "%c", st_double_decimal_sep );
-		st_double_decimal_regex = g_regex_new( str, 0, 0, NULL );
-		g_free( str );
-	}
+	str = g_strdup_printf( "%c", st_double_decimal_sep );
+	st_double_decimal_regex = g_regex_new( str, 0, 0, NULL );
+	g_free( str );
 }
 
 /**

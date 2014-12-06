@@ -405,7 +405,15 @@
  496 2014-12- 4 entry_validate_by_ledger: only consider effect date
                 in the current exercice
 
- 497
+ 497 2014-12- 6 bug: ofoRate exports with a decimal dot, doesn't take 
+                into account the settings
+
+ 498 2014-12- 6 on import, display all the errors in a dialog box
+
+ 499 2014-12- 6 entry: import past entries doesn't affect accounts nor
+                ledgers
+
+ 500
 
 -----------------------------------------------------------------------
  DONE

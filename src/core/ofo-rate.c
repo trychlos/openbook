@@ -1165,7 +1165,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	ofoRate *rate;
 	const gchar *muser;
 	ofsRateValidity *sdet;
-	gchar *sbegin, *send, *notes;
+	gchar *sbegin, *send, *notes, *dvalue;
 	gboolean ok, with_headers;
 	gulong count;
 
@@ -1230,13 +1230,15 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 
 			sbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
 			send = my_date_to_str( &sdet->end, MY_DATE_SQL );
+			dvalue = my_double_to_str( sdet->rate );
 
-			str = g_strdup_printf( "2;%s;%s;%s;%.2lf",
+			str = g_strdup_printf( "2;%s;%s;%s;%s",
 					ofo_rate_get_mnemo( rate ),
 					sbegin,
 					send,
-					sdet->rate );
+					dvalue );
 
+			g_free( dvalue );
 			g_free( sbegin );
 			g_free( send );
 

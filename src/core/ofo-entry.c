@@ -72,6 +72,10 @@ struct _ofoEntryPrivate {
 	ofxCounter     stlmt_number;
 	gchar         *stlmt_user;
 	GTimeVal       stlmt_stamp;
+
+	/* runtime data
+	 */
+	gboolean       signaling_ok;
 };
 
 /* manage the abbreviated localized status
@@ -181,6 +185,8 @@ ofo_entry_init( ofoEntry *self )
 	my_date_clear( &self->priv->deffect );
 	my_date_clear( &self->priv->dope );
 	my_date_clear( &self->priv->concil_dval );
+	self->priv->status = ENT_STATUS_ROUGH;
+	self->priv->signaling_ok = TRUE;
 }
 
 static void
@@ -1946,7 +1952,9 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_NEW_OBJECT, g_object_ref( entry ));
+			if( entry->priv->signaling_ok ){
+				g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_NEW_OBJECT, g_object_ref( entry ));
+			}
 
 			ok = TRUE;
 		}
@@ -2633,9 +2641,9 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
  * - label
  * - piece's reference
  * - iso 3a code of the currency, default to those of the account
- * - ledger
- * - operation template
- * - account number, must exist
+ * - ledger, default is IMPORT, must exist
+ * - operation template, default to none
+ * - account number, must exist and be a detail account
  * - debit
  * - credit (only one of the twos must be set)
  *
@@ -2644,6 +2652,14 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
  *
  * Add the imported entries to the content of OFA_T_ENTRIES, while
  * keeping already existing entries.
+ *
+ * If the entry effect date is before the beginning of the exercice (if
+ * set), then accounts and ledgers will not be imputed. The entry will
+ * be set as 'validated'.
+ * If the entry effect date is in the exercice, then it must be after
+ * the last closing date of the ledger.
+ * If the entry effect date is after the end of the exercice (if set),
+ * then accounts and ledgers will not be imputed.
  */
 void
 ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
@@ -2653,13 +2669,16 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 	GSList *ili, *ico;
 	GList *new_set, *ise;
 	gint count;
-	gint errors;
+	gint errors, tot_errors;
 	const gchar *str;
 	GDate date;
 	gchar *currency;
 	ofoAccount *account;
+	ofoLedger *ledger;
 	gdouble debit, credit;
 	gdouble tot_debits, tot_credits;
+	const GDate *exe_begin, *exe_end, *led_close, *deffect;
+	gchar *sdeffect, *sled_close;
 
 	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
 			thisfn,
@@ -2669,13 +2688,21 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 
 	new_set = NULL;
 	count = 0;
-	errors = 0;
+	tot_errors = 0;
 	tot_debits = 0;
 	tot_credits = 0;
+
+	exe_begin = ofo_dossier_get_exe_begin( dossier );
+	exe_end = ofo_dossier_get_exe_end( dossier );
 
 	for( ili=lines ; ili ; ili=ili->next ){
 		count += 1;
 		if( !( count == 1 && with_header )){
+
+			debit = 0;
+			credit = 0;
+			errors = 0;
+
 			entry = ofo_entry_new();
 
 			/* operation date */
@@ -2699,6 +2726,7 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 				continue;
 			}
 			entry->priv->deffect = date;
+			deffect = ofo_entry_get_deffect( entry );
 
 			/* entry label */
 			ico = ico->next;
@@ -2725,14 +2753,16 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 			ico = ico->next;
 			str = ( const gchar * ) ico->data;
 			if( !str || !g_utf8_strlen( str, -1 )){
-				ofo_entry_set_ledger( entry, "IMPORT" );
-			} else if( !ofo_ledger_get_by_mnemo( dossier, str )){
-				g_warning( "%s: import ledger not found: %s", thisfn, str );
+				str = "IMPORT";
+			}
+			ledger = ofo_ledger_get_by_mnemo( dossier, str );
+			if( !ledger ){
+				g_warning( "%s: ledger not found: %s", thisfn, str );
 				errors += 1;
 				continue;
-			} else {
-				ofo_entry_set_ledger( entry, str );
 			}
+			ofo_entry_set_ledger( entry, str );
+			led_close = ofo_ledger_get_last_close( ledger );
 
 			/* operation template */
 			ico = ico->next;
@@ -2772,47 +2802,63 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 			/* debit */
 			ico = ico->next;
 			str = ( const gchar * ) ico->data;
-			if( !str ){
-				g_warning( "%s: (line %d) empty debit", thisfn, count );
-				errors += 1;
-				continue;
+			if( str && g_utf8_strlen( str, -1 )){
+				debit = my_double_set_from_sql( str );
 			}
-			debit = my_double_set_from_sql( str );
-			tot_debits += debit;
 
 			/* credit */
 			ico = ico->next;
 			str = ( const gchar * ) ico->data;
-			if( !str ){
-				g_warning( "%s: (line %d) empty credit", thisfn, count );
-				errors += 1;
-				continue;
+			if( str && g_utf8_strlen( str, -1 )){
+				credit = my_double_set_from_sql( str );
 			}
-			credit = my_double_set_from_sql( str );
-			tot_credits += credit;
 
 			/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/
 			if(( debit && !credit ) || ( !debit && credit )){
 				ofo_entry_set_debit( entry, debit );
 				ofo_entry_set_credit( entry, credit );
 			} else {
-				g_warning( "%s: (line %d) invalid amounts: debit=%.lf, credit=%.lf", thisfn, count, debit, credit );
+				g_warning( "%s: (line %d) invalid amounts: debit=%.5lf, credit=%.5lf", thisfn, count, debit, credit );
 				errors += 1;
 				continue;
 			}
 
-			ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
+			/* what to do regarding the effect date ? */
+			if( my_date_is_valid( exe_begin ) && my_date_compare( deffect, exe_begin ) < 0 ){
+				/* entry is in the past */
+				ofo_entry_set_status( entry, ENT_STATUS_VALIDATED );
+				entry->priv->signaling_ok = FALSE;
+
+			} else if( my_date_is_valid( exe_end ) && my_date_compare( deffect, exe_end ) > 0 ){
+				/* entry is in the future */
+
+			} else if( my_date_is_valid( led_close ) && my_date_compare( deffect, led_close ) <= 0 ){
+				sdeffect = my_date_to_str( deffect, MY_DATE_DMYY );
+				sled_close = my_date_to_str( led_close, MY_DATE_DMYY );
+				g_warning( "%s: (line %d) effect date %s before ledger last closing %s",
+						thisfn, count, sdeffect, sled_close );
+				g_free( sled_close );
+				g_free( sdeffect );
+				errors += 1;
+				continue;
+			}
 
 			new_set = g_list_prepend( new_set, entry );
+			tot_errors += errors;
+			tot_debits += debit;
+			tot_credits += credit;
 		}
 	}
 
-	if( abs( tot_debits - tot_credits ) > 0.000001 ){
-		g_warning( "%s: entries are not balanced: tot_debits=%lf, tot_credits=%lf", thisfn, tot_debits, tot_credits );
-		errors += 1;
+	/* entries must be balanced:
+	 * as we are storing 5 decimal digits in the DBMS, so this is the
+	 * maximal rounding error accepted */
+	if( abs( tot_debits - tot_credits ) > 0.00001 ){
+		g_warning( "%s: entries are not balanced: tot_debits=%.5lf, tot_credits=%.5lf", thisfn, tot_debits, tot_credits );
+		tot_errors += 1;
 	}
 
-	if( !errors ){
+	if( !tot_errors ){
 		for( ise=new_set ; ise ; ise=ise->next ){
 			ofo_entry_insert( OFO_ENTRY( ise->data ), dossier );
 		}

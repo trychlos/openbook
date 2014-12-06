@@ -2428,6 +2428,7 @@ ofo_account_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header
 				continue;
 			}
 
+			g_free( type );
 			new_set = g_list_prepend( new_set, account );
 		}
 	}
