@@ -284,6 +284,7 @@ static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *m
 static void             connect_window_for_enabled_updates( ofaMainWindow *window );
 static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
 static void             connect_dossier_for_enabled_updates( ofaMainWindow *window );
+static void             warning_exercice_unset( const ofaMainWindow *window );
 static void             on_dossier_properties( ofaMainWindow *window, gpointer user_data );
 static gboolean         check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo );
 static void             pane_restore_position( GtkPaned *pane );
@@ -765,7 +766,7 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 {
 	static const gchar *thisfn = "ofa_main_window_on_dossier_open";
 	ofaMainWindowPrivate *priv;
-	const GDate *begin;
+	const GDate *exe_begin, *exe_end;
 
 	g_debug( "%s: window=%p, sdo=%p, dname=%s, dbname=%s, account=%s, password=%s, user_data=%p",
 			thisfn, ( void * ) window,
@@ -800,9 +801,10 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 	set_window_title( window );
 	connect_dossier_for_enabled_updates( window );
 
-	begin = ofo_dossier_get_exe_begin( priv->dossier );
-	if( !my_date_is_valid( begin )){
-		ofa_main_window_warning_no_entry( window );
+	exe_begin = ofo_dossier_get_exe_begin( priv->dossier );
+	exe_end = ofo_dossier_get_exe_end( priv->dossier );
+	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
+		warning_exercice_unset( window );
 	}
 }
 
@@ -834,18 +836,23 @@ connect_dossier_for_enabled_updates( ofaMainWindow *window )
 			SIGNAL_DOSSIER_DATES_CHANGED, G_CALLBACK( on_dossier_dates_changed ), window );
 }
 
-/**
- * ofa_main_window_warning_no_entry:
+/*
+ * warning_exercice_unset:
  */
-void
-ofa_main_window_warning_no_entry( const ofaMainWindow *window )
+static void
+warning_exercice_unset( const ofaMainWindow *window )
 {
 	GtkWidget *dialog;
 	gchar *str;
+	gint resp;
 
 	str = g_strdup_printf(
-				_( "Warning: the exercice beginning date of the dossier is not set.\n\n"
-					"You will be unable to enter any new entry while this is not fixed." ));
+				_( "Warning: the exercice beginning or ending dates of "
+					"the dossier are not set.\n\n"
+					"This may be very problematic and error prone if you "
+					"ever want import past entries, or enter future operations.\n\n"
+					"You are strongly advised to set both beginning and "
+					"ending dates of the current exercice." ));
 
 	dialog = gtk_message_dialog_new(
 			NULL,
@@ -854,9 +861,15 @@ ofa_main_window_warning_no_entry( const ofaMainWindow *window )
 			GTK_BUTTONS_CLOSE,
 			"%s", str );
 
+	gtk_dialog_add_button( GTK_DIALOG( dialog ), "Dossier properties...", 1 );
+
 	g_free( str );
-	gtk_dialog_run( GTK_DIALOG( dialog ));
+	resp = gtk_dialog_run( GTK_DIALOG( dialog ));
 	gtk_widget_destroy( dialog );
+
+	if( resp == 1 ){
+		g_signal_emit_by_name(( gpointer ) window, OFA_SIGNAL_DOSSIER_PROPERTIES );
+	}
 }
 
 /*
@@ -1435,7 +1448,7 @@ ofa_main_window_activate_theme( ofaMainWindow *main_window, gint theme )
 
 		if( theme_def->if_entries_allowed ){
 			if( !ofo_dossier_is_entries_allowed( priv->dossier )){
-				ofa_main_window_warning_no_entry( main_window );
+				warning_exercice_unset( main_window );
 				return( NULL );
 			}
 		}

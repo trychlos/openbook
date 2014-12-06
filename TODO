@@ -410,10 +410,18 @@
 
  498 2014-12- 6 on import, display all the errors in a dialog box
 
- 499 2014-12- 6 entry: import past entries doesn't affect accounts nor
-                ledgers
+ 500 2014-12- 6 warns if begin or end of the exercice are not set
 
- 500
+ 501 2014-12- 6 do not accept entry before the begin of the exercice
+                (or the last close of the ledger)
+
+ 502 2014-12- 6 when entered in the command-line, accept an empty 
+                database (and defaults to the current)
+
+ 503 2014-12- 6 when entered in the command-line, accept empty account 
+                password, and let the user enter them
+
+ 504
 
 -----------------------------------------------------------------------
  DONE
@@ -2123,6 +2131,10 @@
 
  478 2014-11-30 have a decimal dot combo
      2014-11-30 done - svn #4215
+
+ 499 2014-12- 6 entry: import past entries doesn't affect accounts nor
+                ledgers
+     2014-12- 6 done - svn #4239
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
