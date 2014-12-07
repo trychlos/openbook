@@ -428,38 +428,28 @@ ofo_entry_get_dataset_by_concil( const ofoDossier *dossier, const gchar *account
  * ofo_entry_get_dataset_by_account:
  * @dossier: the dossier.
  * @account: the searched account number.
- * @from: an operation date.
- * @to: an operation date.
  *
- * Returns the dataset for the given account, with an operation date
- * between the @from et @to specified
+ * Returns all entries for the given account (if specified).
+ *
+ * The returned dataset is sorted by ascending dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *account, const GDate *from, const GDate *to )
+ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *account )
 {
+	static const gchar *thisfn = "ofo_entry_get_dataset_by_account";
 	GString *where;
-	gchar *str;
 	GList *dataset;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), NULL );
 
 	where = g_string_new( "" );
-	g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
 
-	if( my_date_is_valid( from )){
-		str = my_date_to_str( from, MY_DATE_SQL );
-		g_string_append_printf( where, "AND ENT_DOPE>='%s' ", str );
-		g_free( str );
-	}
-
-	if( my_date_is_valid( to )){
-		str = my_date_to_str( to, MY_DATE_SQL );
-		g_string_append_printf( where, "AND ENT_DOPE<='%s' ", str );
-		g_free( str );
+	if( account && g_utf8_strlen( account, -1 )){
+		g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
 	}
 
 	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
+	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
 
 	g_string_free( where, TRUE );
 
@@ -470,37 +460,27 @@ ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *accoun
  * ofo_entry_get_dataset_by_ledger:
  * @dossier: the dossier.
  * @ledger: the ledger.
- * @from: an operation date.
- * @to: an operation date.
  *
- * Returns the dataset for the given ledger, with operation date between
- * @from and @to.
+ * Returns all entries for the given ledger (if specified).
+ *
+ * The returned dataset is sorted by ascending dope/deffect/number.
  */
-GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *ledger, const GDate *from, const GDate *to )
+GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *ledger )
 {
+	static const gchar *thisfn = "ofo_entry_get_dataset_by_ledger";
 	GString *where;
-	gchar *str;
 	GList *dataset;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( ledger && g_utf8_strlen( ledger, -1 ), NULL );
 
 	where = g_string_new( "" );
-	g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
 
-	if( my_date_is_valid( from )){
-		str = my_date_to_str( from, MY_DATE_SQL );
-		g_string_append_printf( where, "AND ENT_DOPE>='%s' ", str );
-		g_free( str );
-	}
-
-	if( my_date_is_valid( to )){
-		str = my_date_to_str( to, MY_DATE_SQL );
-		g_string_append_printf( where, "AND ENT_DOPE<='%s' ", str );
-		g_free( str );
+	if( ledger && g_utf8_strlen( ledger, -1 )){
+		g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
 	}
 
 	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
+	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
 
 	g_string_free( where, TRUE );
 

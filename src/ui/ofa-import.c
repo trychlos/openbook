@@ -112,19 +112,18 @@ struct _ofaImportPrivate {
 typedef struct {
 	gint         type_id;
 	const gchar *w_name;
-	gboolean     if_entries_allowed;
 }
 	sRadios;
 
 static const sRadios st_radios[] = {
-		{ IMPORTER_TYPE_BAT,      "p2-releve",   FALSE },
-		{ IMPORTER_TYPE_CLASS,    "p2-class",    FALSE },
-		{ IMPORTER_TYPE_ACCOUNT,  "p2-account",  FALSE },
-		{ IMPORTER_TYPE_CURRENCY, "p2-currency", FALSE },
-		{ IMPORTER_TYPE_LEDGER,   "p2-journals", FALSE },
-		{ IMPORTER_TYPE_MODEL,    "p2-model",    FALSE },
-		{ IMPORTER_TYPE_RATE,     "p2-rate",     FALSE },
-		{ IMPORTER_TYPE_ENTRY,    "p2-entries",  TRUE },
+		{ IMPORTER_TYPE_BAT,      "p2-releve" },
+		{ IMPORTER_TYPE_CLASS,    "p2-class" },
+		{ IMPORTER_TYPE_ACCOUNT,  "p2-account" },
+		{ IMPORTER_TYPE_CURRENCY, "p2-currency" },
+		{ IMPORTER_TYPE_LEDGER,   "p2-journals" },
+		{ IMPORTER_TYPE_MODEL,    "p2-model" },
+		{ IMPORTER_TYPE_RATE,     "p2-rate" },
+		{ IMPORTER_TYPE_ENTRY,    "p2-entries" },
 		{ 0 }
 };
 
@@ -558,10 +557,6 @@ do_init_p2_type( ofaImport *self, GtkWidget *page )
 		g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_p2_type_toggled ), self );
 		if( !priv->p2_group ){
 			priv->p2_group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( button ));
-		}
-		if( st_radios[i].if_entries_allowed ){
-			gtk_widget_set_sensitive( button,
-					ofo_dossier_is_entries_allowed( ofa_main_window_get_dossier( priv->main_window )));
 		}
 	}
 }

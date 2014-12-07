@@ -410,8 +410,6 @@
 
  498 2014-12- 6 on import, display all the errors in a dialog box
 
- 500 2014-12- 6 warns if begin or end of the exercice are not set
-
  501 2014-12- 6 do not accept entry before the begin of the exercice
                 (or the last close of the ledger)
 
@@ -421,7 +419,14 @@
  503 2014-12- 6 when entered in the command-line, accept empty account 
                 password, and let the user enter them
 
- 504
+ 504 2014-12- 6 remove dossier_dates_changed signal ?
+
+ 504 2014-12- 7 ViewEntries: update the view when a new entry is created
+
+ 505 2014-12- 7 Account: remove entry, date from balances
+                + add balance for futur
+
+ 506
 
 -----------------------------------------------------------------------
  DONE
@@ -2135,6 +2140,9 @@
  499 2014-12- 6 entry: import past entries doesn't affect accounts nor
                 ledgers
      2014-12- 6 done - svn #4239
+
+ 500 2014-12- 6 warns if begin or end of the exercice are not set
+     2014-12- 6 done - svn #4240
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

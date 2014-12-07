@@ -1774,34 +1774,52 @@ dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter n
 }
 
 /**
- * ofo_dossier_get_exercices_list:
+ * ofo_dossier_get_min_deffect:
+ * @date: [in-out]: the #GDate date to be set.
+ * @dossier: this dossier.
+ * @ledger: [allow-none]: the imputed ledger.
  *
- * Returns: the list of known exercices identifiers, sorted from most
- * recent to most old.
- * The returned list should be g_list_free() by the caller.
- * The exercice identifiers must be accessed via the
- * GPOINTER_TO_INT( it->data ) macro.
+ * Computes the minimal effect date valid for the considered dossier and
+ * ledger.
+ *
+ * Returns: the @date #GDate pointer.
  */
-GList *
-ofo_dossier_get_exercices_list( const ofoDossier *dossier )
+GDate *
+ofo_dossier_get_min_deffect( GDate *date, const ofoDossier *dossier, ofoLedger *ledger )
 {
-#if 0
-	GList *list, *exe;
-	sDetailExe *sexe;
+	const GDate *last_clo;
+	gint to_add;
 
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		list = NULL;
-		for( exe=dossier->priv->exes ; exe ; exe=exe->next ){
-			sexe = ( sDetailExe * ) exe->data;
-			list = g_list_prepend( list, GINT_TO_POINTER( sexe->exe_id ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	if( ledger ){
+		if( !OFO_IS_LEDGER( ledger )){
+			g_return_val_if_reached( NULL );
+			return( NULL );
 		}
-		return( g_list_reverse( list ));
 	}
-#endif
-	return( NULL );
+
+	last_clo = ledger ? ofo_ledger_get_last_close( ledger ) : NULL;
+
+	my_date_set_from_date( date, ofo_dossier_get_exe_begin( dossier ));
+	to_add = 0;
+
+	if( my_date_is_valid( date )){
+		if( my_date_is_valid( last_clo )){
+			if( my_date_compare( date, last_clo ) < 0 ){
+				my_date_set_from_date( date, last_clo );
+				to_add = 1;
+			}
+		}
+	} else if( my_date_is_valid( last_clo )){
+		my_date_set_from_date( date, last_clo );
+		to_add = 1;
+	}
+
+	if( my_date_is_valid( date )){
+		g_date_add_days( date, to_add );
+	}
+
+	return( date );
 }
 
 /**
@@ -1865,29 +1883,6 @@ ofo_dossier_is_current( const ofoDossier *dossier )
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
 		return( g_utf8_collate( dossier->priv->status, DOSSIER_CURRENT ) == 0 );
-	}
-
-	g_return_val_if_reached( FALSE );
-	return( FALSE );
-}
-
-/**
- * ofo_dossier_is_entries_allowed:
- *
- * No new entry is allowed in the dossier while the exercice beginning
- * date is not set (and valid)
- */
-gboolean
-ofo_dossier_is_entries_allowed( const ofoDossier *dossier )
-{
-	const GDate *begin;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		begin = ofo_dossier_get_exe_begin( dossier );
-		return( my_date_is_valid( begin ));
 	}
 
 	g_return_val_if_reached( FALSE );

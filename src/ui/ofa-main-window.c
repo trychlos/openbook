@@ -285,6 +285,7 @@ static void             connect_window_for_enabled_updates( ofaMainWindow *windo
 static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
 static void             connect_dossier_for_enabled_updates( ofaMainWindow *window );
 static void             warning_exercice_unset( const ofaMainWindow *window );
+static void             warning_archived_dossier( const ofaMainWindow *window );
 static void             on_dossier_properties( ofaMainWindow *window, gpointer user_data );
 static gboolean         check_for_account( ofaMainWindow *main_window, ofsDossierOpen *sdo );
 static void             pane_restore_position( GtkPaned *pane );
@@ -873,6 +874,31 @@ warning_exercice_unset( const ofaMainWindow *window )
 }
 
 /*
+ * warning_archived_dossier:
+ */
+static void
+warning_archived_dossier( const ofaMainWindow *window )
+{
+	GtkWidget *dialog;
+	gchar *str;
+
+	str = g_strdup_printf(
+				_( "Warning: this exercice has been archived.\n\n"
+					"No new entry is allowed on an archived exercice." ));
+
+	dialog = gtk_message_dialog_new(
+			NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_WARNING,
+			GTK_BUTTONS_CLOSE,
+			"%s", str );
+
+	g_free( str );
+	gtk_dialog_run( GTK_DIALOG( dialog ));
+	gtk_widget_destroy( dialog );
+}
+
+/*
  * If account and/or user password are empty, then let the user enter
  * a new pair of account/password.
  */
@@ -1447,8 +1473,8 @@ ofa_main_window_activate_theme( ofaMainWindow *main_window, gint theme )
 		g_return_val_if_fail( theme_def->fn_get_type, NULL );
 
 		if( theme_def->if_entries_allowed ){
-			if( !ofo_dossier_is_entries_allowed( priv->dossier )){
-				warning_exercice_unset( main_window );
+			if( !ofo_dossier_is_current( priv->dossier )){
+				warning_archived_dossier( main_window );
 				return( NULL );
 			}
 		}

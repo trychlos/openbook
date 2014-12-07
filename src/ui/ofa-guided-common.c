@@ -73,7 +73,7 @@ struct _ofaGuidedCommonPrivate {
 	/* data
 	 */
 	gchar           *ledger;
-	GDate            deffect_min;		/* max of closed exercice and closed ledger +1 */
+	GDate            deffect_min;		/* max of begin exercice and closed ledger +1 */
 	GDate            dope;
 	GDate            deff;
 
@@ -722,43 +722,24 @@ remove_entry_row( ofaGuidedCommon *self, gint row )
 /*
  * ofaLedgerCombo callback
  *
- * setup the last closing date as the maximum of :
- * - the last exercice closing date
- * - the last ledger closing date
- *
- * this last closing date is the lower limit of the effect dates
+ * setup the minimal effect date as the greater of:
+ * - the begin of the exercice (if set)
+ * - the next day after the last close of the ledger (if any)
  */
 static void
 on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 	ofoLedger *ledger;
-	const GDate *last_clo;
 
 	priv = self->priv;
 
 	g_free( priv->ledger );
 	priv->ledger = g_strdup( mnemo );
-
 	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
-	my_date_set_from_date( &priv->deffect_min, ofo_dossier_get_exe_begin( priv->dossier ));
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
-	if( ledger ){
-		last_clo = ofo_ledger_get_last_close( ledger );
-		if( my_date_is_valid( &priv->deffect_min )){
-			if( my_date_is_valid( last_clo )){
-				if( my_date_compare( &priv->deffect_min, last_clo ) < 0 ){
-					my_date_set_from_date( &priv->deffect_min, last_clo );
-				}
-			}
-		} else if( my_date_is_valid( last_clo )){
-			my_date_set_from_date( &priv->deffect_min, last_clo );
-		}
-	}
-
-	if( my_date_is_valid( &priv->deffect_min )){
-		g_date_add_days( &priv->deffect_min, 1 );
-	}
+	ofo_dossier_get_min_deffect( &priv->deffect_min, priv->dossier, ledger );
 
 	check_for_enable_dlg( self );
 }
@@ -809,7 +790,6 @@ on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self )
 			my_date_compare( &priv->deffect_min, &priv->dope ) > 0 ){
 
 			my_date_set_from_date( &priv->deff, &priv->deffect_min );
-			g_date_add_days( &priv->deff, 1 );
 
 		} else {
 			my_date_set_from_date( &priv->deff, &priv->dope );

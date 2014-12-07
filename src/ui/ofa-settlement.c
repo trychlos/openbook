@@ -682,8 +682,7 @@ try_display_entries( ofaSettlement *self )
 			settlement_status_is_valid( self ) &&
 			priv->tview && GTK_IS_TREE_VIEW( priv->tview )){
 
-		entries = ofo_entry_get_dataset_by_account(
-							priv->dossier, priv->account_number, NULL, NULL );
+		entries = ofo_entry_get_dataset_by_account( priv->dossier, priv->account_number );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
 	}

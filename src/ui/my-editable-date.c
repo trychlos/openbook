@@ -613,7 +613,6 @@ void
 my_editable_date_set_date( GtkEditable *editable, const GDate *date )
 {
 	sEditableDate *data;
-	gchar *text;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
 
@@ -621,16 +620,9 @@ my_editable_date_set_date( GtkEditable *editable, const GDate *date )
 
 	my_date_set_from_date( &data->date, date );
 
-	/* render the date, triggering a 'changed' signal if the string is
-	 * empty
-	 */
+	/* render the date, triggering a 'changed' signal */
 	editable_date_render( editable );
-
-	text = gtk_editable_get_chars( editable, 0, -1 );
-	if( !g_utf8_strlen( text, -1 )){
-		on_changed( editable, data );
-	}
-	g_free( text );
+	on_changed( editable, data );
 }
 
 /**
@@ -726,4 +718,25 @@ editable_date_render( GtkEditable *editable )
 		data->setting_text = FALSE;
 		g_free( text );
 	}
+}
+
+/**
+ * my_editable_date_is_empty:
+ * @editable: this #GtkEditable instance.
+ *
+ * Returns: %TRUE if the #GtkEditable is empty.
+ */
+gboolean
+my_editable_date_is_empty( GtkEditable *editable )
+{
+	gchar *text;
+	gboolean empty;
+
+	g_return_val_if_fail( editable && GTK_IS_EDITABLE( editable ), NULL );
+
+	text = gtk_editable_get_chars( editable, 0, -1 );
+	empty = g_utf8_strlen( text, -1 ) == 0;
+	g_free( text );
+
+	return( empty );
 }

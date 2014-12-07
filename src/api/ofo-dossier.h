@@ -46,6 +46,7 @@
 #include "api/ofa-boxed.h"
 #include "api/ofa-dbms-def.h"
 #include "api/ofo-dossier-def.h"
+#include "api/ofo-ledger-def.h"
 
 G_BEGIN_DECLS
 
@@ -104,10 +105,9 @@ ofxCounter       ofo_dossier_get_next_batline          ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_entry            ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_settlement       ( ofoDossier *dossier );
 
-GList           *ofo_dossier_get_exercices_list        ( const ofoDossier *dossier );
+GDate           *ofo_dossier_get_min_deffect           ( GDate *date, const ofoDossier *dossier, ofoLedger *ledger );
 
 gboolean         ofo_dossier_is_current                ( const ofoDossier *dossier );
-gboolean         ofo_dossier_is_entries_allowed        ( const ofoDossier *dossier );
 gboolean         ofo_dossier_is_valid                  ( const gchar *label,
 																gint nb_months,
 																const gchar *currency,

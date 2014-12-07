@@ -637,8 +637,7 @@ enable_buttons( ofaOpeTemplatesPage *self, GtkTreeSelection *selection )
 	}
 
 	gtk_widget_set_sensitive( priv->duplicate_btn, select_ok );
-	gtk_widget_set_sensitive( priv->guided_input_btn,
-				select_ok && ofo_dossier_is_entries_allowed( ofa_page_get_dossier( OFA_PAGE( self ))));
+	gtk_widget_set_sensitive( priv->guided_input_btn, select_ok );
 }
 
 static void
@@ -899,11 +898,7 @@ on_duplicate( GtkButton *button, ofaOpeTemplatesPage *self )
 static void
 on_dossier_dates_changed( ofoDossier *dossier, const GDate *begin, const GDate *end, ofaOpeTemplatesPage *self )
 {
-	ofaOpeTemplatesPagePrivate *priv;
-
-	priv = self->priv;
-
-	gtk_widget_set_sensitive( priv->guided_input_btn, ofo_dossier_is_entries_allowed( dossier ));
+	/* what to do here (if anything to do..) ? */
 }
 
 static void

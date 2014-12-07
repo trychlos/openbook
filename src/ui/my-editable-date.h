@@ -59,9 +59,7 @@ void         my_editable_date_set_mandatory   ( GtkEditable *editable, gboolean 
 
 const GDate *my_editable_date_get_date        ( GtkEditable *editable, gboolean *valid );
 
-/*gchar       *my_editable_date_get_string( GtkEditable *editable, myDateFormat format );*/
-
-/*void         my_editable_date_render          ( GtkEditable *editable );*/
+gboolean     my_editable_date_is_empty        ( GtkEditable *editable );
 
 G_END_DECLS
 
