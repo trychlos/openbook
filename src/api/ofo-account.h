@@ -54,6 +54,8 @@ typedef struct {
 
 /* This is needed by ofoEntry
  */
+#define ACCOUNT_TYPE_ROOT               "R"
+#define ACCOUNT_TYPE_DETAIL             "D"
 #define ACCOUNT_SETTLEABLE              "S"
 #define ACCOUNT_RECONCILIABLE           "R"
 
@@ -76,24 +78,14 @@ const gchar    *ofo_account_get_notes            ( const ofoAccount *account );
 const gchar    *ofo_account_get_type_account     ( const ofoAccount *account );
 const gchar    *ofo_account_get_upd_user         ( const ofoAccount *account );
 const GTimeVal *ofo_account_get_upd_stamp        ( const ofoAccount *account );
-ofxCounter      ofo_account_get_deb_entry        ( const ofoAccount *account );
-const GDate    *ofo_account_get_deb_date         ( const ofoAccount *account );
-ofxAmount       ofo_account_get_deb_amount       ( const ofoAccount *account );
-ofxCounter      ofo_account_get_cre_entry        ( const ofoAccount *account );
-const GDate    *ofo_account_get_cre_date         ( const ofoAccount *account );
-ofxAmount       ofo_account_get_cre_amount       ( const ofoAccount *account );
-ofxCounter      ofo_account_get_day_deb_entry    ( const ofoAccount *account );
-const GDate    *ofo_account_get_day_deb_date     ( const ofoAccount *account );
-ofxAmount       ofo_account_get_day_deb_amount   ( const ofoAccount *account );
-ofxCounter      ofo_account_get_day_cre_entry    ( const ofoAccount *account );
-const GDate    *ofo_account_get_day_cre_date     ( const ofoAccount *account );
-ofxAmount       ofo_account_get_day_cre_amount   ( const ofoAccount *account );
-ofxCounter      ofo_account_get_open_deb_entry   ( const ofoAccount *account );
-const GDate    *ofo_account_get_open_deb_date    ( const ofoAccount *account );
-ofxAmount       ofo_account_get_open_deb_amount  ( const ofoAccount *account );
-ofxCounter      ofo_account_get_open_cre_entry   ( const ofoAccount *account );
-const GDate    *ofo_account_get_open_cre_date    ( const ofoAccount *account );
-ofxAmount       ofo_account_get_open_cre_amount  ( const ofoAccount *account );
+ofxAmount       ofo_account_get_val_debit        ( const ofoAccount *account );
+ofxAmount       ofo_account_get_val_credit       ( const ofoAccount *account );
+ofxAmount       ofo_account_get_rough_debit      ( const ofoAccount *account );
+ofxAmount       ofo_account_get_rough_credit     ( const ofoAccount *account );
+ofxAmount       ofo_account_get_open_debit       ( const ofoAccount *account );
+ofxAmount       ofo_account_get_open_credit      ( const ofoAccount *account );
+ofxAmount       ofo_account_get_futur_debit      ( const ofoAccount *account );
+ofxAmount       ofo_account_get_futur_credit     ( const ofoAccount *account );
 
 gboolean        ofo_account_is_deletable         ( const ofoAccount *account, ofoDossier *dossier );
 gboolean        ofo_account_is_root              ( const ofoAccount *account );

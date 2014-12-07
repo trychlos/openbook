@@ -61,24 +61,14 @@ enum {
 	ACC_FORWARD,
 	ACC_UPD_USER,
 	ACC_UPD_STAMP,
-	ACC_DEB_ENTRY,
-	ACC_DEB_DATE,
-	ACC_DEB_AMOUNT,
-	ACC_CRE_ENTRY,
-	ACC_CRE_DATE,
-	ACC_CRE_AMOUNT,
-	ACC_DAY_DEB_ENTRY,
-	ACC_DAY_DEB_DATE,
-	ACC_DAY_DEB_AMOUNT,
-	ACC_DAY_CRE_ENTRY,
-	ACC_DAY_CRE_DATE,
-	ACC_DAY_CRE_AMOUNT,
-	ACC_OPEN_DEB_ENTRY,
-	ACC_OPEN_DEB_DATE,
-	ACC_OPEN_DEB_AMOUNT,
-	ACC_OPEN_CRE_ENTRY,
-	ACC_OPEN_CRE_DATE,
-	ACC_OPEN_CRE_AMOUNT,
+	ACC_VAL_DEBIT,
+	ACC_VAL_CREDIT,
+	ACC_ROUGH_DEBIT,
+	ACC_ROUGH_CREDIT,
+	ACC_OPEN_DEBIT,
+	ACC_OPEN_CREDIT,
+	ACC_FUT_DEBIT,
+	ACC_FUT_CREDIT,
 };
 
 static const ofsBoxedDef st_boxed_defs[] = {
@@ -122,75 +112,35 @@ static const ofsBoxedDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				TRUE },
-		{ OFA_BOXED_CSV( ACC_DEB_ENTRY ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				TRUE },
-		{ OFA_BOXED_CSV( ACC_DEB_DATE ),
-				OFA_TYPE_DATE,
-				FALSE,
-				FALSE },
-		{ OFA_BOXED_CSV( ACC_DEB_AMOUNT ),
+		{ OFA_BOXED_CSV( ACC_VAL_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_CRE_ENTRY ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				TRUE },
-		{ OFA_BOXED_CSV( ACC_CRE_DATE ),
-				OFA_TYPE_DATE,
-				FALSE,
-				FALSE },
-		{ OFA_BOXED_CSV( ACC_CRE_AMOUNT ),
+		{ OFA_BOXED_CSV( ACC_VAL_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_DAY_DEB_ENTRY ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				TRUE },
-		{ OFA_BOXED_CSV( ACC_DAY_DEB_DATE ),
-				OFA_TYPE_DATE,
-				FALSE,
-				FALSE },
-		{ OFA_BOXED_CSV( ACC_DAY_DEB_AMOUNT ),
+		{ OFA_BOXED_CSV( ACC_ROUGH_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_DAY_CRE_ENTRY ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				TRUE },
-		{ OFA_BOXED_CSV( ACC_DAY_CRE_DATE ),
-				OFA_TYPE_DATE,
-				FALSE,
-				FALSE },
-		{ OFA_BOXED_CSV( ACC_DAY_CRE_AMOUNT ),
+		{ OFA_BOXED_CSV( ACC_ROUGH_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_OPEN_DEB_ENTRY ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				TRUE },
-		{ OFA_BOXED_CSV( ACC_OPEN_DEB_DATE ),
-				OFA_TYPE_DATE,
-				FALSE,
-				FALSE },
-		{ OFA_BOXED_CSV( ACC_OPEN_DEB_AMOUNT ),
+		{ OFA_BOXED_CSV( ACC_OPEN_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_OPEN_CRE_ENTRY ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				TRUE },
-		{ OFA_BOXED_CSV( ACC_OPEN_CRE_DATE ),
-				OFA_TYPE_DATE,
-				FALSE,
+		{ OFA_BOXED_CSV( ACC_OPEN_CREDIT ),
+				OFA_TYPE_AMOUNT,
+				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_OPEN_CRE_AMOUNT ),
+		{ OFA_BOXED_CSV( ACC_FUT_DEBIT ),
+				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
+		{ OFA_BOXED_CSV( ACC_FUT_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
@@ -201,8 +151,6 @@ struct _ofoAccountPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
-#define ACCOUNT_TYPE_ROOT               "R"
-#define ACCOUNT_TYPE_DETAIL             "D"
 #define ACCOUNT_FORWARDABLE             "F"
 
 #define account_get_amount(I)           ofo_base_getter(ACCOUNT,account,amount,0,(I))
@@ -242,24 +190,14 @@ static void         account_iter_children( const ofoAccount *account, sChildren 
 static void         archive_open_balances( ofoAccount *account, ofoDossier *dossier );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
-static void         account_set_deb_entry( ofoAccount *account, ofxCounter number );
-static void         account_set_deb_date( ofoAccount *account, const GDate *effect );
-static void         account_set_deb_amount( ofoAccount *account, ofxAmount amount );
-static void         account_set_cre_entry( ofoAccount *account, ofxCounter number );
-static void         account_set_cre_date( ofoAccount *account, const GDate *effect );
-static void         account_set_cre_amount( ofoAccount *account, ofxAmount amount );
-static void         account_set_day_deb_entry( ofoAccount *account, ofxCounter number );
-static void         account_set_day_deb_date( ofoAccount *account, const GDate *effect );
-static void         account_set_day_deb_amount( ofoAccount *account, ofxAmount amount );
-static void         account_set_day_cre_entry( ofoAccount *account, ofxCounter number );
-static void         account_set_day_cre_date( ofoAccount *account, const GDate *effect );
-static void         account_set_day_cre_amount( ofoAccount *account, ofxAmount amount );
-static void         account_set_open_deb_entry( ofoAccount *account, ofxCounter number );
-static void         account_set_open_deb_date( ofoAccount *account, const GDate *effect );
-static void         account_set_open_deb_amount( ofoAccount *account, ofxAmount amount );
-static void         account_set_open_cre_entry( ofoAccount *account, ofxCounter number );
-static void         account_set_open_cre_date( ofoAccount *account, const GDate *effect );
-static void         account_set_open_cre_amount( ofoAccount *account, ofxAmount amount );
+static void         account_set_val_debit( ofoAccount *account, ofxAmount amount );
+static void         account_set_val_credit( ofoAccount *account, ofxAmount amount );
+static void         account_set_rough_debit( ofoAccount *account, ofxAmount amount );
+static void         account_set_rough_credit( ofoAccount *account, ofxAmount amount );
+static void         account_set_open_debit( ofoAccount *account, ofxAmount amount );
+static void         account_set_open_credit( ofoAccount *account, ofxAmount amount );
+static void         account_set_futur_debit( ofoAccount *account, ofxAmount amount );
+static void         account_set_futur_credit( ofoAccount *account, ofxAmount amount );
 static gboolean     account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user );
 static gboolean     account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, const gchar *prev_number );
 static gboolean     account_update_amounts( ofoAccount *account, const ofaDbms *dbms );
@@ -399,70 +337,58 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 {
 	static const gchar *thisfn = "ofo_account_on_new_object_entry";
 	ofoAccount *account;
-	gdouble debit, credit;
-	gint number;
-	const GDate *deffect, *prev_deffect;
-	gdouble prev;
-	gint prev_ecr;
+	gdouble debit, credit, prev;
+	const GDate *deffect, *exe_end, *exe_begin;
 
-	if( ofo_entry_get_status( entry ) == ENT_STATUS_ROUGH ){
+	g_return_if_fail( ofo_entry_get_status( entry ) != ENT_STATUS_ROUGH );
 
-		account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
-		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+	deffect = ofo_entry_get_deffect( entry );
+	g_return_if_fail( my_date_is_valid( deffect ));
 
-		debit = ofo_entry_get_debit( entry );
-		credit = ofo_entry_get_credit( entry );
-		number = ofo_entry_get_number( entry );
-		deffect = ofo_entry_get_deffect( entry );
+	account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
+	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
-		/* impute the new entry either to the debit or the credit of
-		 * daily balance
-		 * + update last entry number (this should be always needed)
-		 * + update last entry date (maybe)
-		 */
+	debit = ofo_entry_get_debit( entry );
+	credit = ofo_entry_get_credit( entry );
+
+	exe_begin = ofo_dossier_get_exe_begin( dossier );
+	exe_end = ofo_dossier_get_exe_end( dossier );
+
+	/* impute the new entry either to the debit or the credit of daily
+	 * or futur balances depending of the position of the effect date
+	 * vs. ending date of the exercice
+	 */
+	if( my_date_is_valid( exe_end ) && my_date_compare( exe_end, deffect ) < 0 ){
+		/* entry in the future */
 		if( debit ){
-			prev_ecr = ofo_account_get_day_deb_entry( account );
-			if( prev_ecr >= number ){
-				g_warning(
-						"%s: new entry (%u) has a number less or equal to last entry (%u) imputed on the account",
-						thisfn, number, prev_ecr );
-			} else {
-				account_set_day_deb_entry( account, number );
-			}
-			prev_deffect = ofo_account_get_day_deb_date( account );
-			if( !my_date_is_valid( prev_deffect ) ||
-					my_date_compare( prev_deffect, deffect ) < 0 ){
-				account_set_day_deb_date( account, deffect );
-			}
-			prev = ofo_account_get_day_deb_amount( account );
-			account_set_day_deb_amount( account, prev+debit );
+			prev = ofo_account_get_futur_debit( account );
+			account_set_futur_debit( account, prev+debit );
 
 		} else {
-			prev_ecr = ofo_account_get_day_cre_entry( account );
-			if( prev_ecr >= number ){
-				g_warning(
-						"%s: new entry (%u) has a number less or equal to last entry (%u) imputed on the account",
-						thisfn, number, prev_ecr );
-			} else {
-				account_set_day_cre_entry( account, number );
-			}
-			prev_deffect = ofo_account_get_day_cre_date( account );
-			if( !my_date_is_valid( prev_deffect ) ||
-					my_date_compare( prev_deffect, deffect ) < 0 ){
-				account_set_day_cre_date( account, deffect );
-			}
-			prev = ofo_account_get_day_cre_amount( account );
-			account_set_day_cre_amount( account, prev+credit );
+			prev = ofo_account_get_futur_credit( account );
+			account_set_futur_credit( account, prev+credit );
 		}
 
-		if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
-			g_signal_emit_by_name(
-					G_OBJECT( dossier ),
-					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
-		}
+	} else if( my_date_is_valid( exe_begin ) && my_date_compare( exe_begin, deffect ) > 0 ){
+		g_warning( "%s: entry %ld is in the past", thisfn, ofo_entry_get_number( entry ));
+		g_return_if_reached();
 
 	} else {
-		g_warning( "%s: new entry not in rough status", thisfn );
+		/* entry in the exercice */
+		if( debit ){
+			prev = ofo_account_get_rough_debit( account );
+			account_set_rough_debit( account, prev+debit );
+
+		} else {
+			prev = ofo_account_get_rough_credit( account );
+			account_set_rough_credit( account, prev+credit );
+		}
+	}
+
+	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
 	}
 }
 
@@ -520,61 +446,29 @@ static void
 on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 {
 	static const gchar *thisfn = "ofo_account_on_validated_entry";
-	const gchar *acc_number;
 	ofoAccount *account;
 	ofxAmount debit, credit, amount;
-	const GDate *ent_deffect, *acc_date;
-	ofxCounter number, acc_num;
 
 	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
 			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) user_data );
 
-	acc_number = ofo_entry_get_account( entry );
-	account = ofo_account_get_by_number( dossier, acc_number );
+	account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
 	debit = ofo_entry_get_debit( entry );
 	if( debit ){
-		amount = ofo_account_get_day_deb_amount( account );
-		account_set_day_deb_amount( account, amount-debit );
-		amount = ofo_account_get_deb_amount( account );
-		account_set_deb_amount( account, amount+debit );
+		amount = ofo_account_get_rough_debit( account );
+		account_set_rough_debit( account, amount-debit );
+		amount = ofo_account_get_val_debit( account );
+		account_set_val_debit( account, amount+debit );
 	}
 
 	credit = ofo_entry_get_credit( entry );
 	if( credit ){
-		amount = ofo_account_get_day_cre_amount( account );
-		account_set_day_cre_amount( account, amount-credit );
-		amount = ofo_account_get_cre_amount( account );
-		account_set_cre_amount( account, amount+credit );
-	}
-
-	ent_deffect = ofo_entry_get_deffect( entry );
-	if( debit ){
-		acc_date = ofo_account_get_deb_date( account );
-		if( !my_date_is_valid( acc_date ) ||
-				my_date_compare( acc_date, ent_deffect ) < 0 ){
-			account_set_deb_date( account, ent_deffect );
-		}
-	} else {
-		acc_date = ofo_account_get_cre_date( account );
-		if( !my_date_is_valid( acc_date ) ||
-				my_date_compare( acc_date, ent_deffect ) < 0 ){
-			account_set_cre_date( account, ent_deffect );
-		}
-	}
-
-	number = ofo_entry_get_number( entry );
-	if( debit ){
-		acc_num = ofo_account_get_deb_entry( account );
-		if( number > acc_num ){
-			account_set_deb_entry( account, number );
-		}
-	} else {
-		acc_num = ofo_account_get_cre_entry( account );
-		if( number > acc_num ){
-			account_set_cre_entry( account, number );
-		}
+		amount = ofo_account_get_rough_credit( account );
+		account_set_rough_credit( account, amount-credit );
+		amount = ofo_account_get_val_credit( account );
+		account_set_val_credit( account, amount+credit );
 	}
 
 	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
@@ -905,204 +799,94 @@ ofo_account_get_upd_stamp( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_deb_entry:
- * @account: the #ofoAccount account
- *
- * Returns: the greatest entry number responsible of this debit balance.
- */
-ofxCounter
-ofo_account_get_deb_entry( const ofoAccount *account )
-{
-	account_get_counter( ACC_DEB_ENTRY );
-}
-
-/**
- * ofo_account_get_deb_date:
- * @account: the #ofoAccount account
- *
- * Returns: the most recent effect date for this debit balance.
- */
-const GDate *
-ofo_account_get_deb_date( const ofoAccount *account )
-{
-	account_get_date( ACC_DEB_DATE );
-}
-
-/**
- * ofo_account_get_deb_amount:
+ * ofo_account_get_val_debit:
  * @account: the #ofoAccount account
  *
  * Returns: the validated debit balance of the @account.
  */
 ofxAmount
-ofo_account_get_deb_amount( const ofoAccount *account )
+ofo_account_get_val_debit( const ofoAccount *account )
 {
-	account_get_amount( ACC_DEB_AMOUNT );
+	account_get_amount( ACC_VAL_DEBIT );
 }
 
 /**
- * ofo_account_get_cre_entry:
- * @account: the #ofoAccount account
- *
- * Returns: the greatest entry number responsible of this credit balance.
- */
-ofxCounter
-ofo_account_get_cre_entry( const ofoAccount *account )
-{
-	account_get_counter( ACC_CRE_ENTRY );
-}
-
-/**
- * ofo_account_get_cre_date:
- * @account: the #ofoAccount account
- *
- * Returns: the most recent effect date for this credit balance.
- */
-const GDate *
-ofo_account_get_cre_date( const ofoAccount *account )
-{
-	account_get_date( ACC_CRE_DATE );
-}
-
-/**
- * ofo_account_get_cre_amount:
+ * ofo_account_get_val_credit:
  * @account: the #ofoAccount account
  *
  * Returns: the validated credit balance of the @account.
  */
 ofxAmount
-ofo_account_get_cre_amount( const ofoAccount *account )
+ofo_account_get_val_credit( const ofoAccount *account )
 {
-	account_get_amount( ACC_CRE_AMOUNT );
+	account_get_amount( ACC_VAL_CREDIT );
 }
 
 /**
- * ofo_account_get_day_deb_entry:
- * @account: the #ofoAccount account
- */
-ofxCounter
-ofo_account_get_day_deb_entry( const ofoAccount *account )
-{
-	account_get_counter( ACC_DAY_DEB_ENTRY );
-}
-
-/**
- * ofo_account_get_day_deb_date:
- * @account: the #ofoAccount account
- */
-const GDate *
-ofo_account_get_day_deb_date( const ofoAccount *account )
-{
-	account_get_date( ACC_DAY_DEB_DATE );
-}
-
-/**
- * ofo_account_get_day_deb_amount:
+ * ofo_account_get_rough_debit:
  * @account: the #ofoAccount account
  */
 ofxAmount
-ofo_account_get_day_deb_amount( const ofoAccount *account )
+ofo_account_get_rough_debit( const ofoAccount *account )
 {
-	account_get_amount( ACC_DAY_DEB_AMOUNT );
+	account_get_amount( ACC_ROUGH_DEBIT );
 }
 
 /**
- * ofo_account_get_day_cre_entry:
- * @account: the #ofoAccount account
- */
-ofxCounter
-ofo_account_get_day_cre_entry( const ofoAccount *account )
-{
-	account_get_counter( ACC_DAY_CRE_ENTRY);
-}
-
-/**
- * ofo_account_get_day_cre_date:
- * @account: the #ofoAccount account
- */
-const GDate *
-ofo_account_get_day_cre_date( const ofoAccount *account )
-{
-	account_get_date( ACC_DAY_CRE_DATE );
-}
-
-/**
- * ofo_account_get_day_cre_amount:
+ * ofo_account_get_rough_credit:
  * @account: the #ofoAccount account
  */
 ofxAmount
-ofo_account_get_day_cre_amount( const ofoAccount *account )
+ofo_account_get_rough_credit( const ofoAccount *account )
 {
-	account_get_amount( ACC_DAY_CRE_AMOUNT );
+	account_get_amount( ACC_ROUGH_CREDIT );
 }
 
 /**
- * ofo_account_get_open_deb_entry:
- * @account: the #ofoAccount account
- */
-ofxCounter
-ofo_account_get_open_deb_entry( const ofoAccount *account )
-{
-	account_get_counter( ACC_OPEN_DEB_ENTRY );
-}
-
-/**
- * ofo_account_get_open_deb_date:
- * @account: the #ofoAccount account
- */
-const GDate *
-ofo_account_get_open_deb_date( const ofoAccount *account )
-{
-	account_get_date( ACC_OPEN_DEB_DATE );
-}
-
-/**
- * ofo_account_get_open_deb_amount:
+ * ofo_account_get_open_debit:
  * @account: the #ofoAccount account
  */
 ofxAmount
-ofo_account_get_open_deb_amount( const ofoAccount *account )
+ofo_account_get_open_debit( const ofoAccount *account )
 {
-	account_get_amount( ACC_OPEN_DEB_AMOUNT );
+	account_get_amount( ACC_OPEN_DEBIT );
 }
 
 /**
- * ofo_account_get_open_cre_entry:
- * @account: the #ofoAccount account
- */
-ofxCounter
-ofo_account_get_open_cre_entry( const ofoAccount *account )
-{
-	account_get_counter( ACC_OPEN_CRE_ENTRY);
-}
-
-/**
- * ofo_account_get_open_cre_date:
- * @account: the #ofoAccount account
- */
-const GDate *
-ofo_account_get_open_cre_date( const ofoAccount *account )
-{
-	account_get_date( ACC_OPEN_CRE_DATE );
-}
-
-/**
- * ofo_account_get_open_cre_amount:
+ * ofo_account_get_open_credit:
  * @account: the #ofoAccount account
  */
 ofxAmount
-ofo_account_get_open_cre_amount( const ofoAccount *account )
+ofo_account_get_open_credit( const ofoAccount *account )
 {
-	account_get_amount( ACC_OPEN_CRE_AMOUNT );
+	account_get_amount( ACC_OPEN_CREDIT );
+}
+
+/**
+ * ofo_account_get_futur_debit:
+ * @account: the #ofoAccount account
+ */
+ofxAmount
+ofo_account_get_futur_debit( const ofoAccount *account )
+{
+	account_get_amount( ACC_FUT_DEBIT );
+}
+
+/**
+ * ofo_account_get_futur_credit:
+ * @account: the #ofoAccount account
+ */
+ofxAmount
+ofo_account_get_futur_credit( const ofoAccount *account )
+{
+	account_get_amount( ACC_FUT_CREDIT );
 }
 
 /**
  * ofo_account_is_deletable:
  * @account: the #ofoAccount account
  *
- * A account is considered to be deletable if no entry has been recorded
- * during the current exercice - This means that all its entry numbers
- * must be nuls.
+ * A account is considered to be deletable if no entry is referencing it.
  *
  * Whether a root account with children is deletable is a user preference.
  * To be deletable, all children must also be deletable.
@@ -1118,10 +902,7 @@ ofo_account_is_deletable( const ofoAccount *account, ofoDossier *dossier )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		deletable = ofo_account_get_deb_entry( account ) == 0 &&
-					ofo_account_get_cre_entry( account ) == 0 &&
-					ofo_account_get_day_deb_entry( account ) == 0 &&
-					ofo_account_get_day_cre_entry( account ) == 0;
+		deletable = !ofo_entry_use_account( dossier, ofo_account_get_number( account ));
 
 		if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children()){
 
@@ -1289,12 +1070,14 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 const GDate *
 ofo_account_get_global_deffect( const ofoAccount *account )
 {
-	const GDate *date, *dd;
+	const GDate *date;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
 	date = NULL;
 
+#if 0
+	const GDate *dd;
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
 		date = ofo_account_get_day_deb_date( account );
@@ -1349,7 +1132,7 @@ ofo_account_get_global_deffect( const ofoAccount *account )
 			date = dd;
 		}
 	}
-
+#endif
 	return( date );
 }
 
@@ -1358,7 +1141,7 @@ ofo_account_get_global_deffect( const ofoAccount *account )
  * @account: the #ofoAccount account
  *
  * Returns: the  global balance of the @account, taking into account
- * both validated and rough balances.
+ * both validated, rough and future balances.
  *
  * The returned value is lesser than zero for a debit, or greater than
  * zero for a credit.
@@ -1374,10 +1157,12 @@ ofo_account_get_global_solde( const ofoAccount *account )
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		amount -= ofo_account_get_day_deb_amount( account );
-		amount += ofo_account_get_day_cre_amount( account );
-		amount -= ofo_account_get_deb_amount( account );
-		amount += ofo_account_get_cre_amount( account );
+		amount -= ofo_account_get_val_debit( account );
+		amount += ofo_account_get_val_credit( account );
+		amount -= ofo_account_get_rough_debit( account );
+		amount += ofo_account_get_rough_credit( account );
+		amount -= ofo_account_get_futur_debit( account );
+		amount += ofo_account_get_futur_credit( account );
 	}
 
 	return( amount );
@@ -1518,63 +1303,33 @@ archive_open_balances( ofoAccount *account, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofo_account_archive_open_balances";
 	GString *query;
-	gboolean has_comma;
-	gchar *sdate, *samount;
+	gchar *samount;
 	ofxAmount amount;
 
 	if( !ofo_account_is_root( account )){
 
 		query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
-		has_comma = FALSE;
 
-		if( ofo_account_get_deb_entry( account ) > 0 ){
+		account_set_open_debit( account, ofo_account_get_val_debit( account ));
+		samount = my_double_to_sql( ofo_account_get_open_debit( account ));
+		g_string_append_printf( query, "ACC_OPEN_DEBIT=%s,", samount );
+		g_free( samount );
 
-			account_set_open_deb_entry( account, ofo_account_get_deb_entry( account ));
-			account_set_open_deb_date( account, ofo_account_get_deb_date( account ));
-			account_set_open_deb_amount( account, ofo_account_get_deb_amount( account ));
-
-			sdate = my_date_to_str( ofo_account_get_open_deb_date( account ), MY_DATE_SQL );
-			samount = my_double_to_sql( ofo_account_get_open_deb_amount( account ));
-
-			g_string_append_printf( query,
-					"ACC_OPEN_DEB_ENTRY=%ld,ACC_OPEN_DEB_DATE='%s',ACC_OPEN_DEB_AMOUNT=%s",
-					ofo_account_get_open_deb_entry( account ), sdate, samount );
-
-			has_comma = TRUE;
-			g_free( sdate );
-			g_free( samount );
-		}
-
-		if( ofo_account_get_cre_entry( account ) > 0 ){
-
-			account_set_open_cre_entry( account, ofo_account_get_cre_entry( account ));
-			account_set_open_cre_date( account, ofo_account_get_cre_date( account ));
-			account_set_open_cre_amount( account, ofo_account_get_cre_amount( account ));
-
-			sdate = my_date_to_str( ofo_account_get_open_cre_date( account ), MY_DATE_SQL );
-			samount = my_double_to_sql( ofo_account_get_open_cre_amount( account ));
-
-			if( !has_comma ){
-				query = g_string_append_c( query, ',' );
-			}
-			g_string_append_printf( query,
-					"ACC_OPEN_CRE_ENTRY=%ld,ACC_OPEN_CRE_DATE='%s',ACC_OPEN_CRE_AMOUNT=%s",
-					ofo_account_get_open_cre_entry( account ), sdate, samount );
-
-			g_free( sdate );
-			g_free( samount );
-		}
+		account_set_open_credit( account, ofo_account_get_val_credit( account ));
+		samount = my_double_to_sql( ofo_account_get_open_credit( account ));
+		g_string_append_printf( query, "ACC_OPEN_CREDIT=%s ", samount );
+		g_free( samount );
 
 		g_string_append_printf( query,
-				" WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
+				"WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 
 		ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
 
 		g_string_free( query, TRUE );
 
-		amount = ofo_account_get_day_deb_amount( account ) + ofo_account_get_day_cre_amount( account );
+		amount = ofo_account_get_rough_debit( account ) + ofo_account_get_rough_credit( account );
 		if( amount != 0 ){
-			g_warning( "%s: account=%s: daily balance is not zero",
+			g_warning( "%s: account=%s: rough balance is not zero",
 					thisfn, ofo_account_get_number( account ));
 		}
 	}
@@ -1694,183 +1449,83 @@ account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp )
 }
 
 /*
- * ofo_account_set_deb_entry:
+ * ofo_account_set_val_debit:
  * @account: the #ofoAccount account
  */
 static void
-account_set_deb_entry( ofoAccount *account, ofxCounter number )
+account_set_val_debit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_counter( ACC_DEB_ENTRY, number );
+	account_set_amount( ACC_VAL_DEBIT, amount );
 }
 
 /*
- * ofo_account_set_deb_date:
+ * ofo_account_set_val_credit:
  * @account: the #ofoAccount account
  */
 static void
-account_set_deb_date( ofoAccount *account, const GDate *date )
+account_set_val_credit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_date( ACC_DEB_DATE, date );
+	account_set_amount( ACC_VAL_CREDIT, amount );
 }
 
 /*
- * ofo_account_set_deb_amount:
+ * ofo_account_set_rough_debit:
  * @account: the #ofoAccount account
  */
 static void
-account_set_deb_amount( ofoAccount *account, ofxAmount amount )
+account_set_rough_debit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_DEB_AMOUNT, amount );
+	account_set_amount( ACC_ROUGH_DEBIT, amount );
 }
 
 /*
- * ofo_account_set_cre_entry:
+ * ofo_account_set_rough_credit:
  * @account: the #ofoAccount account
  */
 static void
-account_set_cre_entry( ofoAccount *account, ofxCounter number )
+account_set_rough_credit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_counter( ACC_DEB_ENTRY, number );
+	account_set_amount( ACC_ROUGH_CREDIT, amount );
 }
 
 /*
- * ofo_account_set_cre_date:
+ * ofo_account_set_open_debit:
  * @account: the #ofoAccount account
  */
 static void
-account_set_cre_date( ofoAccount *account, const GDate *date )
+account_set_open_debit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_date( ACC_DEB_DATE, date );
+	account_set_amount( ACC_OPEN_DEBIT, amount );
 }
 
 /*
- * ofo_account_set_cre_amount:
+ * ofo_account_set_open_credit:
  * @account: the #ofoAccount account
  */
 static void
-account_set_cre_amount( ofoAccount *account, ofxAmount amount )
+account_set_open_credit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_DEB_AMOUNT, amount );
+	account_set_amount( ACC_OPEN_CREDIT, amount );
 }
 
 /*
- * ofo_account_set_day_deb_entry:
+ * ofo_account_set_futur_debit:
  * @account: the #ofoAccount account
  */
 static void
-account_set_day_deb_entry( ofoAccount *account, ofxCounter number )
+account_set_futur_debit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_counter( ACC_DEB_ENTRY, number );
+	account_set_amount( ACC_FUT_DEBIT, amount );
 }
 
 /*
- * ofo_account_set_day_deb_date:
+ * ofo_account_set_futur_credit:
  * @account: the #ofoAccount account
  */
 static void
-account_set_day_deb_date( ofoAccount *account, const GDate *date )
+account_set_futur_credit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_date( ACC_DEB_DATE, date );
-}
-
-/*
- * ofo_account_set_day_deb_amount:
- * @account: the #ofoAccount account
- */
-static void
-account_set_day_deb_amount( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_DEB_AMOUNT, amount );
-}
-
-/*
- * ofo_account_set_day_cre_entry:
- * @account: the #ofoAccount account
- */
-static void
-account_set_day_cre_entry( ofoAccount *account, ofxCounter number )
-{
-	account_set_counter( ACC_DEB_ENTRY, number );
-}
-
-/*
- * ofo_account_set_day_cre_date:
- * @account: the #ofoAccount account
- */
-static void
-account_set_day_cre_date( ofoAccount *account, const GDate *date )
-{
-	account_set_date( ACC_DEB_DATE, date );
-}
-
-/*
- * ofo_account_set_day_cre_amount:
- * @account: the #ofoAccount account
- */
-static void
-account_set_day_cre_amount( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_DEB_AMOUNT, amount );
-}
-
-/*
- * ofo_account_set_open_deb_entry:
- * @account: the #ofoAccount account
- */
-static void
-account_set_open_deb_entry( ofoAccount *account, ofxCounter number )
-{
-	account_set_counter( ACC_DEB_ENTRY, number );
-}
-
-/*
- * ofo_account_set_open_deb_date:
- * @account: the #ofoAccount account
- */
-static void
-account_set_open_deb_date( ofoAccount *account, const GDate *date )
-{
-	account_set_date( ACC_DEB_DATE, date );
-}
-
-/*
- * ofo_account_set_open_deb_amount:
- * @account: the #ofoAccount account
- */
-static void
-account_set_open_deb_amount( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_DEB_AMOUNT, amount );
-}
-
-/*
- * ofo_account_set_open_cre_entry:
- * @account: the #ofoAccount account
- */
-static void
-account_set_open_cre_entry( ofoAccount *account, ofxCounter number )
-{
-	account_set_counter( ACC_DEB_ENTRY, number );
-}
-
-/*
- * ofo_account_set_open_cre_date:
- * @account: the #ofoAccount account
- */
-static void
-account_set_open_cre_date( ofoAccount *account, const GDate *date )
-{
-	account_set_date( ACC_DEB_DATE, date );
-}
-
-/*
- * ofo_account_set_open_cre_amount:
- * @account: the #ofoAccount account
- */
-static void
-account_set_open_cre_amount( ofoAccount *account, ofxAmount amount )
-{
-	account_set_amount( ACC_DEB_AMOUNT, amount );
+	account_set_amount( ACC_FUT_CREDIT, amount );
 }
 
 /**
@@ -2107,74 +1762,73 @@ account_update_amounts( ofoAccount *account, const ofaDbms *dbms )
 {
 	GString *query;
 	gboolean ok;
-	gchar *sdate, *samount;
-	gint ecr_number;
+	gchar *samount;
+	ofxAmount amount;
 
 	query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
 
 	/* validated debit */
-	ecr_number = ofo_account_get_deb_entry( account );
-	if( ecr_number ){
-		sdate = my_date_to_str( ofo_account_get_deb_date( account ), MY_DATE_SQL );
-		samount = my_double_to_sql( ofo_account_get_deb_amount( account ));
-		g_string_append_printf( query,
-				"ACC_DEB_ENTRY=%d,ACC_DEB_DATE='%s',ACC_DEB_AMOUNT=%s,",
-					ecr_number, sdate, samount );
-		g_free( sdate );
+	amount = ofo_account_get_val_debit( account );
+	if( amount ){
+		samount = my_double_to_sql( amount );
+		g_string_append_printf( query, "ACC_VAL_DEBIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query,
-				"ACC_DEB_ENTRY=NULL,ACC_DEB_DATE=NULL,ACC_DEB_AMOUNT=NULL," );
+		query = g_string_append( query, "ACC_VAL_DEBIT=NULL," );
 	}
 
 	/* validated credit */
-	ecr_number = ofo_account_get_cre_entry( account );
-	if( ecr_number ){
-		sdate = my_date_to_str( ofo_account_get_cre_date( account ), MY_DATE_SQL );
-		samount = my_double_to_sql( ofo_account_get_cre_amount( account ));
-		g_string_append_printf( query,
-				"ACC_CRE_ENTRY=%d,ACC_CRE_DATE='%s',ACC_CRE_AMOUNT=%s,",
-					ecr_number, sdate, samount );
-		g_free( sdate );
+	amount = ofo_account_get_val_credit( account );
+	if( amount ){
+		samount = my_double_to_sql( amount );
+		g_string_append_printf( query, "ACC_VAL_CREDIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query,
-				"ACC_CRE_ENTRY=NULL,ACC_CRE_DATE=NULL,ACC_CRE_AMOUNT=NULL," );
+		query = g_string_append( query, "ACC_VAL_CREDIT=NULL," );
 	}
 
-	/* brouillard debit */
-	ecr_number = ofo_account_get_day_deb_entry( account );
-	if( ecr_number ){
-		sdate = my_date_to_str( ofo_account_get_day_deb_date( account ), MY_DATE_SQL );
-		samount = my_double_to_sql( ofo_account_get_day_deb_amount( account ));
-		g_string_append_printf( query,
-				"ACC_DAY_DEB_ENTRY=%d,ACC_DAY_DEB_DATE='%s',ACC_DAY_DEB_AMOUNT=%s,",
-					ecr_number, sdate, samount );
-		g_free( sdate );
+	/* rough debit */
+	amount = ofo_account_get_rough_debit( account );
+	if( amount ){
+		samount = my_double_to_sql( amount );
+		g_string_append_printf( query, "ACC_ROUGH_DEBIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query,
-				"ACC_DAY_DEB_ENTRY=NULL,ACC_DAY_DEB_DATE=NULL,ACC_DAY_DEB_AMOUNT=NULL," );
+		query = g_string_append( query, "ACC_ROUGH_DEBIT=NULL," );
 	}
 
-	/* brouillard credit */
-	ecr_number = ofo_account_get_day_cre_entry( account );
-	if( ecr_number ){
-		sdate = my_date_to_str( ofo_account_get_day_cre_date( account ), MY_DATE_SQL );
-		samount = my_double_to_sql( ofo_account_get_day_cre_amount( account ));
-		g_string_append_printf( query,
-				"ACC_DAY_CRE_ENTRY=%d,ACC_DAY_CRE_DATE='%s',ACC_DAY_CRE_AMOUNT=%s ",
-					ecr_number, sdate, samount );
-		g_free( sdate );
+	/* rough credit */
+	amount = ofo_account_get_rough_credit( account );
+	if( amount ){
+		samount = my_double_to_sql( amount );
+		g_string_append_printf( query, "ACC_ROUGH_CREDIT=%s,", samount );
 		g_free( samount );
 	} else {
-		query = g_string_append( query,
-				"ACC_DAY_CRE_ENTRY=NULL,ACC_DAY_CRE_DATE=NULL,ACC_DAY_CRE_AMOUNT=NULL " );
+		query = g_string_append( query, "ACC_ROUGH_CREDIT=NULL," );
+	}
+
+	/* future debit */
+	amount = ofo_account_get_futur_debit( account );
+	if( amount ){
+		samount = my_double_to_sql( amount );
+		g_string_append_printf( query, "ACC_FUT_DEBIT=%s,", samount );
+		g_free( samount );
+	} else {
+		query = g_string_append( query, "ACC_FUT_DEBIT=NULL," );
+	}
+
+	/* future credit */
+	amount = ofo_account_get_futur_credit( account );
+	if( amount ){
+		samount = my_double_to_sql( amount );
+		g_string_append_printf( query, "ACC_FUT_CREDIT=%s ", samount );
+		g_free( samount );
+	} else {
+		query = g_string_append( query, "ACC_FUT_CREDIT=NULL " );
 	}
 
 	g_string_append_printf( query,
-				"	WHERE ACC_NUMBER='%s'",
-						ofo_account_get_number( account ));
+				"WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 
 	ok = ofa_dbms_query( dbms, query->str, TRUE );
 

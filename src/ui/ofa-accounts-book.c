@@ -1217,9 +1217,9 @@ tstore_set_row_by_iter( ofaAccountsBook *self,
 
 	} else {
 		sdeb = my_double_to_str(
-				ofo_account_get_deb_amount( account )+ofo_account_get_day_deb_amount( account ));
+				ofo_account_get_val_debit( account )+ofo_account_get_rough_debit( account ));
 		scre = my_double_to_str(
-				ofo_account_get_cre_amount( account )+ofo_account_get_day_cre_amount( account ));
+				ofo_account_get_val_credit( account )+ofo_account_get_rough_credit( account ));
 		currency =
 				ofo_currency_get_by_code( self->priv->dossier, ofo_account_get_currency( account ));
 		if( currency ){

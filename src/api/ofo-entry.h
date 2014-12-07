@@ -130,6 +130,7 @@ GList         *ofo_entry_get_unsettled                 ( const ofoDossier *dossi
 
 void           ofo_entry_free_dataset         ( GList *dataset );
 
+gboolean       ofo_entry_use_account          ( const ofoDossier *dossier, const gchar *account );
 gboolean       ofo_entry_use_currency         ( const ofoDossier *dossier, const gchar *currency );
 gboolean       ofo_entry_use_ledger           ( const ofoDossier *dossier, const gchar *journal );
 gboolean       ofo_entry_use_ope_template     ( const ofoDossier *dossier, const gchar *model );

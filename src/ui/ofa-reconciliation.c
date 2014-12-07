@@ -1126,12 +1126,12 @@ on_account_changed( GtkEntry *entry, ofaReconciliation *self )
 
 		gtk_label_set_text( priv->account_label, ofo_account_get_label( account ));
 
-		amount = ofo_account_get_deb_amount( account )+ofo_account_get_day_deb_amount( account );
+		amount = ofo_account_get_val_debit( account )+ofo_account_get_rough_debit( account );
 		str = my_double_to_str( amount );
 		gtk_label_set_text( priv->account_debit, str );
 		g_free( str );
 
-		amount = ofo_account_get_cre_amount( account )+ofo_account_get_day_cre_amount( account );
+		amount = ofo_account_get_val_credit( account )+ofo_account_get_rough_credit( account );
 		str = my_double_to_str( amount );
 		gtk_label_set_text( priv->account_credit, str );
 		g_free( str );
@@ -1943,8 +1943,8 @@ set_reconciliated_balance( ofaReconciliation *self )
 						ofa_page_get_dossier( OFA_PAGE( self )), account_number );
 	}
 	if( account ){
-		account_debit = ofo_account_get_deb_amount( account )+ofo_account_get_day_deb_amount( account );
-		account_credit = ofo_account_get_cre_amount( account )+ofo_account_get_day_cre_amount( account );
+		account_debit = ofo_account_get_val_debit( account )+ofo_account_get_rough_debit( account );
+		account_credit = ofo_account_get_val_credit( account )+ofo_account_get_rough_credit( account );
 	}
 
 	debit = account_debit;

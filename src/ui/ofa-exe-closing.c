@@ -794,8 +794,8 @@ p5_solde_accounts( ofaExeClosing *self )
 
 		if( !ofo_account_is_root( account )){
 			currency = ofo_account_get_currency( account );
-			debit = ofo_account_get_deb_amount( account );
-			credit = ofo_account_get_cre_amount( account );
+			debit = ofo_account_get_val_debit( account );
+			credit = ofo_account_get_val_credit( account );
 			is_ran = ofo_account_is_forward( account );
 			if(( debit || credit ) && debit != credit ){
 

@@ -366,8 +366,6 @@
 
  481 2014-12- 1 review ofaCurrencyCombo
 
- 485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
-
  486 2014-12- 2 ledger: not deletable if referenced in dossier
 
  487 2014-12- 2 ope_template: not deletable if referenced in dossier
@@ -420,7 +418,9 @@
  505 2014-12- 7 Account: remove entry, date from balances
                 + add balance for futur
 
- 506
+ 506 2014-12- 7 ofo_account_get_global_deffect ?
+
+ 507
 
 -----------------------------------------------------------------------
  DONE
@@ -2139,6 +2139,9 @@
 
  484 2014-12- 2 change DOS_SIREN to X(9)
      2014-12- 7 done - svn #4250
+
+ 485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
+     2014-12- 7 done - svn #4253
 
  499 2014-12- 6 entry: import past entries doesn't affect accounts nor
                 ledgers

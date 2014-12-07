@@ -104,6 +104,7 @@ static gchar       *effect_in_exercice( const ofoDossier *dossier );
 static GList       *entry_load_dataset( const ofaDbms *dbms, const gchar *where );
 static const gchar *entry_list_columns( void );
 static ofoEntry    *entry_parse_result( const GSList *row );
+static gint         entry_count_for_account( const ofaDbms *dbms, const gchar *account );
 static gint         entry_count_for_currency( const ofaDbms *dbms, const gchar *currency );
 static gint         entry_count_for_ledger( const ofaDbms *dbms, const gchar *ledger );
 static gint         entry_count_for_ope_template( const ofaDbms *dbms, const gchar *model );
@@ -1059,6 +1060,25 @@ ofo_entry_free_dataset( GList *dataset )
 	g_debug( "%s: dataset=%p, count=%d", thisfn, ( void * ) dataset, g_list_length( dataset ));
 
 	g_list_free_full( dataset, g_object_unref );
+}
+
+/**
+ * ofo_entry_use_account:
+ *
+ * Returns: %TRUE if a recorded entry makes use of the specified account.
+ */
+gboolean
+ofo_entry_use_account( const ofoDossier *dossier, const gchar *account )
+{
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	return( entry_count_for_account( ofo_dossier_get_dbms( dossier ), account ) > 0 );
+}
+
+static gint
+entry_count_for_account( const ofaDbms *dbms, const gchar *account )
+{
+	return( entry_count_for( dbms, "ENT_ACCOUNT", account ));
 }
 
 /**

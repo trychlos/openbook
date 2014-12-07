@@ -111,11 +111,11 @@ impute_acc_balance( GList **balances, const ofoAccount *account, const gchar *cu
 
 	sbal = get_balance_for_currency( balances, currency );
 	sbal->debit +=
-			ofo_account_get_deb_amount( account )
-			+ ofo_account_get_day_deb_amount( account );
+			ofo_account_get_val_debit( account )
+			+ ofo_account_get_rough_debit( account );
 	sbal->credit +=
-			ofo_account_get_cre_amount( account )
-			+ ofo_account_get_day_cre_amount( account );
+			ofo_account_get_val_credit( account )
+			+ ofo_account_get_rough_credit( account );
 
 	g_signal_emit_by_name( grid, "update", currency, sbal->debit, sbal->credit );
 }
