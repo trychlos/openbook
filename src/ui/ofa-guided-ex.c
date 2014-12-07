@@ -639,8 +639,10 @@ update_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gboolean found;
+	const gchar *cstr;
 
-	found = find_left_ledger_by_mnemo( self, prev_id, &tmodel, &iter );
+	cstr = prev_id ? prev_id : ofo_ledger_get_mnemo( ledger );
+	found = find_left_ledger_by_mnemo( self, cstr, &tmodel, &iter );
 	if( found ){
 		gtk_tree_store_set(
 				GTK_TREE_STORE( tmodel ),

@@ -300,6 +300,7 @@ static void           display_error_msg( ofaViewEntries *self, GtkTreeModel *tmo
 static gboolean       save_entry( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean       find_entry_by_number( ofaViewEntries *self, gint number, GtkTreeIter *iter );
 static void           on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
+static void           do_new_entry( ofaViewEntries *self, ofoEntry *entry );
 static void           on_dossier_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaViewEntries *self );
 static void           do_update_account_number( ofaViewEntries *self, const gchar *prev, const gchar *number );
 static void           do_update_ledger_mnemo( ofaViewEntries *self, const gchar *prev, const gchar *mnemo );
@@ -2858,6 +2859,35 @@ on_dossier_new_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *sel
 			( void * ) dossier,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
+
+	if( OFO_IS_ENTRY( object )){
+		do_new_entry( self, OFO_ENTRY( object ));
+	}
+}
+
+/*
+ * A new entry has been inserted in another page
+ * update our dataset if the entry should be part of it
+ */
+static void
+do_new_entry( ofaViewEntries *self, ofoEntry *entry )
+{
+	ofaViewEntriesPrivate *priv;
+	GtkTreeIter iter;
+
+	priv = self->priv;
+
+	/* if "by ledger" is selected and this is the ledger of the entry
+	 * or (by account is selected) the required account is those of the
+	 * entry */
+	if(( gtk_toggle_button_get_active( priv->ledger_btn ) &&
+			!g_utf8_collate( priv->jou_mnemo, ofo_entry_get_ledger( entry ))) ||
+				!g_utf8_collate( priv->acc_number, ofo_entry_get_account( entry ))){
+
+		gtk_list_store_insert( GTK_LIST_STORE( priv->tstore ), &iter, -1 );
+		display_entry( self, entry, &iter );
+		compute_balances( self );
+	}
 }
 
 /*

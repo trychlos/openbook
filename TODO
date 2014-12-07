@@ -415,8 +415,6 @@
 
  504 2014-12- 7 ViewEntries: update the view when a new entry is created
 
- 506 2014-12- 7 ofo_account_get_global_deffect ?
-
  507
 
 -----------------------------------------------------------------------
@@ -2150,6 +2148,9 @@
  505 2014-12- 7 Account: remove entry, date from balances
                 + add balance for futur
      2014-12- 7 done - svn #4254
+
+ 506 2014-12- 7 ofo_account_get_global_deffect ?
+     2014-12- 7 done - svn #4256
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
