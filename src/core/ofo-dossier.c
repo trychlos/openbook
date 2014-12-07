@@ -78,8 +78,6 @@ struct _ofoDossierPrivate {
 	gchar      *sld_ope;
 	gchar      *upd_user;
 	GTimeVal    upd_stamp;
-	gint        exe_id;
-	gint        last_exe_id;
 	ofxCounter  last_bat;
 	ofxCounter  last_batline;
 	ofxCounter  last_entry;
@@ -127,8 +125,6 @@ static gboolean    dbmodel_to_v1( const ofoDossier *dossier );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
 static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
-static void        dossier_set_this_exe_id( ofoDossier *dossier, gint exe_id );
-static void        dossier_set_last_exe_id( ofoDossier *dossier, gint exe_id );
 static void        dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter );
@@ -1538,44 +1534,6 @@ ofo_dossier_get_status( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_this_exe_id:
- *
- * Returns: the exercice identifier for this exercice.
- */
-gint
-ofo_dossier_get_this_exe_id( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		return( dossier->priv->exe_id );
-	}
-
-	g_return_val_if_reached( 0 );
-	return( 0 );
-}
-
-/**
- * ofo_dossier_get_last_exe_id:
- *
- * Returns: the last exercice identifier used in the dossier.
- */
-gint
-ofo_dossier_get_last_exe_id( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), 0 );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		return( dossier->priv->last_exe_id );
-	}
-
-	g_return_val_if_reached( 0 );
-	return( 0 );
-}
-
-/**
  * ofo_dossier_get_last_bat:
  *
  * Returns: the last bat number allocated in the exercice.
@@ -2201,28 +2159,6 @@ dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp )
 }
 
 static void
-dossier_set_this_exe_id( ofoDossier *dossier, gint exe_id )
-{
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		dossier->priv->exe_id = exe_id;
-	}
-}
-
-static void
-dossier_set_last_exe_id( ofoDossier *dossier, gint exe_id )
-{
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		dossier->priv->last_exe_id = exe_id;
-	}
-}
-
-static void
 dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter )
 {
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
@@ -2372,7 +2308,6 @@ dossier_read_properties( ofoDossier *dossier )
 			"	DOS_LABEL,DOS_NOTES,DOS_SIREN,"
 			"	DOS_SLD_ACCOUNT,DOS_SLD_LABEL,DOS_SLD_LEDGER,DOS_SLD_OPE,"
 			"	DOS_UPD_USER,DOS_UPD_STAMP,"
-			"	DOS_EXE_ID,DOS_LAST_EXE_ID,"
 			"	DOS_LAST_BAT,DOS_LAST_BATLINE,DOS_LAST_ENTRY,DOS_LAST_SETTLEMENT,"
 			"	DOS_STATUS "
 			"FROM OFA_T_DOSSIER "
@@ -2468,16 +2403,6 @@ dossier_read_properties( ofoDossier *dossier )
 		cstr = icol->data;
 		if( cstr && g_utf8_strlen( cstr, -1 )){
 			dossier_set_upd_stamp( dossier, my_utils_stamp_set_from_sql( &timeval, cstr ));
-		}
-		icol = icol->next;
-		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
-			dossier_set_this_exe_id( dossier, atoi( cstr ));
-		}
-		icol = icol->next;
-		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
-			dossier_set_last_exe_id( dossier, atoi( cstr ));
 		}
 		icol = icol->next;
 		cstr = icol->data;
@@ -2742,8 +2667,9 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 				"ForwardLabelClose;ForwardLabelOpeb;ForwardLedger;ForwardOpe;"
 				"Label;Notes;Siren;"
 				"SldAccount;SldLedger;SldOpe;sldLabel;"
-				"MajUser;MajStamp;ThisExeId;LastExeId;LastBat;LastBatLine;"
-				"LastEntry;LastSettlement;Status" );
+				"MajUser;MajStamp;"
+				"LastBat;LastBatLine;LastEntry;LastSettlement;"
+				"Status" );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -2770,7 +2696,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	bope = ofo_dossier_get_sld_ope( dossier );
 	blabel = ofo_dossier_get_sld_label( dossier );
 
-	str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%d;%d;%ld;%ld;%ld;%ld",
+	str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%ld;%ld;%ld;%ld",
 			currency ? currency : "",
 			sbegin,
 			send,
@@ -2789,8 +2715,6 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 			blabel ? blabel : "",
 			muser ? muser : "",
 			muser ? stamp : "",
-			ofo_dossier_get_this_exe_id( dossier ),
-			ofo_dossier_get_last_exe_id( dossier ),
 			ofo_dossier_get_last_bat( dossier ),
 			ofo_dossier_get_last_batline( dossier ),
 			ofo_dossier_get_last_entry( dossier ),

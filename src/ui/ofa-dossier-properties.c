@@ -358,18 +358,6 @@ init_counters_page( ofaDossierProperties *self, GtkContainer *container )
 
 	priv = self->priv;
 
-	label = my_utils_container_get_child_by_name( container, "p4-exe-id" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%'d", ofo_dossier_get_this_exe_id( priv->dossier ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
-
-	label = my_utils_container_get_child_by_name( container, "p4-last-exe-id" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%'d", ofo_dossier_get_last_exe_id( priv->dossier ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
-
 	label = my_utils_container_get_child_by_name( container, "p4-last-bat" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = g_strdup_printf( "%'ld", ofo_dossier_get_last_bat( priv->dossier ));

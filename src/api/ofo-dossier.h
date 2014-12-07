@@ -93,8 +93,6 @@ const gchar     *ofo_dossier_get_sld_ope               ( const ofoDossier *dossi
 const gchar     *ofo_dossier_get_upd_user              ( const ofoDossier *dossier );
 const GTimeVal  *ofo_dossier_get_upd_stamp             ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_status                ( const ofoDossier *dossier );
-gint             ofo_dossier_get_this_exe_id           ( const ofoDossier *dossier );
-gint             ofo_dossier_get_last_exe_id           ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_bat              ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_batline          ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_entry            ( const ofoDossier *dossier );
