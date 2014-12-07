@@ -85,6 +85,7 @@ struct _ofaPDFReconcilPrivate {
 	/* runtime
 	 */
 	gint           line_num;				/* line number of the full report counted from 1 */
+	GDate          global_deffect;
 	gdouble        account_solde;
 };
 
@@ -596,21 +597,23 @@ static void
 iprintable_draw_top_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context )
 {
 	ofaPDFReconcilPrivate *priv;
-	const GDate *date;
 	gchar *str, *str_solde, *sdate;
 	gdouble y;
+	GDate date;
 
+	g_return_if_fail( instance && MY_IS_WINDOW( instance ));
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
 	priv = OFA_PDF_RECONCIL( instance )->priv;
 
 	y = ofa_iprintable_get_last_y( instance );
 
-	date = ofo_account_get_global_deffect( priv->account );
-	if( !my_date_is_valid( date )){
-		date = ( const GDate * ) &priv->date;
+	ofo_account_get_global_deffect( priv->account, MY_WINDOW( instance )->prot->dossier, &priv->global_deffect );
+	my_date_set_from_date( &date, &priv->global_deffect );
+	if( !my_date_is_valid( &date )){
+		my_date_set_from_date( &date, &priv->date );
 	}
-	sdate = my_date_to_str( date, MY_DATE_DMYY );
+	sdate = my_date_to_str( &date, MY_DATE_DMYY );
 
 	priv->account_solde = ofo_account_get_global_solde( priv->account );
 	str_solde = account_solde_to_str( OFA_PDF_RECONCIL( instance ), priv->account_solde );
@@ -712,7 +715,7 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 {
 	ofaPDFReconcilPrivate *priv;
 	gdouble y, width;
-	const GDate *date;
+	GDate date;
 	gchar *str, *sdate, *str_amount;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
@@ -723,11 +726,11 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 
 	y = ofa_iprintable_get_last_y( instance );
 
-	date = ofo_account_get_global_deffect( priv->account );
-	if( !my_date_is_valid( date ) || my_date_compare( date, &priv->date ) < 0 ){
-		date = ( const GDate * ) &priv->date;
+	my_date_set_from_date( &date, &priv->global_deffect );
+	if( !my_date_is_valid( &date ) || my_date_compare( &date, &priv->date ) < 0 ){
+		my_date_set_from_date( &date, &priv->date );
 	}
-	sdate = my_date_to_str( date, MY_DATE_DMYY );
+	sdate = my_date_to_str( &date, MY_DATE_DMYY );
 
 	str_amount = account_solde_to_str( OFA_PDF_RECONCIL( instance ), priv->account_solde );
 	str = g_strdup_printf( _( "Reconciliated account solde on %s is %s" ), sdate, str_amount );

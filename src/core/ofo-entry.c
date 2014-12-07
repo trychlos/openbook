@@ -1534,6 +1534,144 @@ ofo_entry_get_settlement_stamp( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_max_val_deffect:
+ *
+ * Returns: the greatest effect date of validated entries on the account.
+ *
+ * The returned value may be %NULL.
+ */
+GDate *
+ofo_entry_get_max_val_deffect( ofoDossier *dossier, const gchar *account, GDate *date )
+{
+	gchar *query;
+	GSList *result, *icol;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), NULL );
+	g_return_val_if_fail( date, NULL );
+
+	my_date_clear( date );
+
+	query = g_strdup_printf(
+			"SELECT MAX(ENT_DEFFECT) FROM OFA_T_ENTRIES WHERE "
+			"	ENT_ACCOUNT='%s' AND ENT_STATUS=%d",
+				account, ENT_STATUS_VALIDATED );
+
+	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query, &result, TRUE )){
+		if( result ){
+			icol = ( GSList * ) result->data;
+			if( icol && icol->data ){
+				my_date_set_from_sql( date, ( const gchar * ) icol->data );
+			}
+		}
+		ofa_dbms_free_results( result );
+	}
+	g_free( query );
+
+	return( date );
+}
+
+/**
+ * ofo_entry_get_max_rough_deffect:
+ *
+ * Returns: the greatest effect date of rough entries on the account,
+ * taking care to not consider future entries.
+ *
+ * The returned value may be %NULL.
+ */
+GDate *
+ofo_entry_get_max_rough_deffect( ofoDossier *dossier, const gchar *account, GDate *date )
+{
+	const GDate *exe_end;
+	GString *query;
+	GSList *result, *icol;
+	gchar *sdate;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), NULL );
+	g_return_val_if_fail( date, NULL );
+
+	my_date_clear( date );
+
+	query = g_string_new(
+			"SELECT MAX(ENT_DEFFECT) FROM OFA_T_ENTRIES WHERE " );
+
+	g_string_append_printf( query,
+			"ENT_ACCOUNT='%s' AND ENT_STATUS=%d ", account, ENT_STATUS_ROUGH );
+
+	exe_end = ofo_dossier_get_exe_end( dossier );
+	if( my_date_is_valid( exe_end )){
+		sdate = my_date_to_str( exe_end, MY_DATE_SQL );
+		g_string_append_printf( query,
+				"AND ENT_DEFFECT<='%s'", sdate );
+		g_free( sdate );
+	}
+
+	if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
+		if( result ){
+			icol = ( GSList * ) result->data;
+			if( icol && icol->data ){
+				my_date_set_from_sql( date, ( const gchar * ) icol->data );
+			}
+		}
+		ofa_dbms_free_results( result );
+	}
+	g_string_free( query, TRUE );
+
+	return( date );
+}
+
+/**
+ * ofo_entry_get_max_futur_deffect:
+ *
+ * Returns: the greatest effect date of future entries on the account.
+ *
+ * The returned value may be %NULL.
+ */
+GDate *
+ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gchar *account, GDate *date )
+{
+	const GDate *exe_end;
+	GString *query;
+	GSList *result, *icol;
+	gchar *sdate;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), NULL );
+	g_return_val_if_fail( date, NULL );
+
+	my_date_clear( date );
+
+	exe_end = ofo_dossier_get_exe_end( dossier );
+	if( my_date_is_valid( exe_end )){
+
+		query = g_string_new(
+				"SELECT MAX(ENT_DEFFECT) FROM OFA_T_ENTRIES WHERE " );
+
+		sdate = my_date_to_str( exe_end, MY_DATE_SQL );
+
+		g_string_append_printf( query,
+				"ENT_ACCOUNT='%s' AND ENT_STATUS=%d AND ENT_DEFFECT>'%s'",
+				account, ENT_STATUS_ROUGH, sdate );
+
+		g_free( sdate );
+
+		if( ofa_dbms_query_ex( ofo_dossier_get_dbms( dossier ), query->str, &result, TRUE )){
+			if( result ){
+				icol = ( GSList * ) result->data;
+				if( icol && icol->data ){
+					my_date_set_from_sql( date, ( const gchar * ) icol->data );
+				}
+			}
+			ofa_dbms_free_results( result );
+		}
+		g_string_free( query, TRUE );
+	}
+
+	return( date );
+}
+
+/**
  * ofo_entry_set_number:
  */
 void

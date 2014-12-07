@@ -158,6 +158,10 @@ ofxCounter     ofo_entry_get_settlement_number( const ofoEntry *entry );
 const gchar   *ofo_entry_get_settlement_user  ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_settlement_stamp ( const ofoEntry *entry );
 
+GDate         *ofo_entry_get_max_val_deffect  ( ofoDossier *dossier, const gchar *account, GDate *date );
+GDate         *ofo_entry_get_max_rough_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
+GDate         *ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
+
 void           ofo_entry_set_number           ( ofoEntry *entry, ofxCounter number );
 void           ofo_entry_set_label            ( ofoEntry *entry, const gchar *label );
 void           ofo_entry_set_deffect          ( ofoEntry *entry, const GDate *date );

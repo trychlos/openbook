@@ -1059,80 +1059,46 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 /**
  * ofo_account_get_global_deffect:
  * @account: the #ofoAccount account
+ * @dossier: the current #ofoDossier
+ * @date: [out]: where to store the returned date.
  *
  * Returns the most recent effect date of the account, keeping into
- * account both validated and rough entries. At last, even opening
- * balances may be considered.
+ * account both validated, rough and future entries.
+ *
+ * This is used when printing reconciliation summary to qualify the
+ * starting date of the print.
  *
  * The returned value may be %NULL or not valid if no entry has ever
  * been recorded on this @account.
  */
-const GDate *
-ofo_account_get_global_deffect( const ofoAccount *account )
+GDate *
+ofo_account_get_global_deffect( const ofoAccount *account, ofoDossier *dossier, GDate *date )
 {
-	const GDate *date;
+	GDate max_val, max_rough, max_futur;
 
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
-	date = NULL;
+	ofo_entry_get_max_val_deffect( dossier, ofo_account_get_number( account ), &max_val );
+	ofo_entry_get_max_rough_deffect( dossier, ofo_account_get_number( account ), &max_rough );
+	ofo_entry_get_max_futur_deffect( dossier, ofo_account_get_number( account ), &max_futur );
 
-#if 0
-	const GDate *dd;
-	if( !OFO_BASE( account )->prot->dispose_has_run ){
+	my_date_clear( date );
 
-		date = ofo_account_get_day_deb_date( account );
-		dd = ofo_account_get_day_cre_date( account );
-		if( my_date_is_valid( date )){
-			if( my_date_is_valid( dd )){
-				if( my_date_compare( date, dd ) < 0 ){
-					date = dd;
-				}
-			}
-		} else if( my_date_is_valid( dd )){
-			date = dd;
-		}
-		dd = ofo_account_get_deb_date( account );
-		if( my_date_is_valid( date )){
-			if( my_date_is_valid( dd )){
-				if( my_date_compare( date, dd ) < 0 ){
-					date = dd;
-				}
-			}
-		} else if( my_date_is_valid( dd )){
-			date = dd;
-		}
-		dd = ofo_account_get_cre_date( account );
-		if( my_date_is_valid( date )){
-			if( my_date_is_valid( dd )){
-				if( my_date_compare( date, dd ) < 0 ){
-					date = dd;
-				}
-			}
-		} else if( my_date_is_valid( dd )){
-			date = dd;
-		}
-		dd = ofo_account_get_open_deb_date( account );
-		if( my_date_is_valid( date )){
-			if( my_date_is_valid( dd )){
-				if( my_date_compare( date, dd ) < 0 ){
-					date = dd;
-				}
-			}
-		} else if( my_date_is_valid( dd )){
-			date = dd;
-		}
-		dd = ofo_account_get_open_cre_date( account );
-		if( my_date_is_valid( date )){
-			if( my_date_is_valid( dd )){
-				if( my_date_compare( date, dd ) < 0 ){
-					date = dd;
-				}
-			}
-		} else if( my_date_is_valid( dd )){
-			date = dd;
-		}
+	if( my_date_is_valid( &max_val )){
+		my_date_set_from_date( date, &max_val );
 	}
-#endif
+
+	if( my_date_is_valid( &max_rough ) &&
+			( !my_date_is_valid( date ) || my_date_compare( date, &max_rough ) < 0 )){
+		my_date_set_from_date( date, &max_rough );
+	}
+
+	if( my_date_is_valid( &max_futur ) &&
+			( !my_date_is_valid( date ) || my_date_compare( date, &max_futur ) < 0 )){
+		my_date_set_from_date( date, &max_futur );
+	}
+
 	return( date );
 }
 
@@ -1140,8 +1106,11 @@ ofo_account_get_global_deffect( const ofoAccount *account )
  * ofo_account_get_global_solde:
  * @account: the #ofoAccount account
  *
- * Returns: the  global balance of the @account, taking into account
- * both validated, rough and future balances.
+ * Returns: the current global balance of the @account, taking into
+ * account both validated and rough balances.
+ *
+ * This is used when printing reconciliation summary to qualify the
+ * starting solde of the print.
  *
  * The returned value is lesser than zero for a debit, or greater than
  * zero for a credit.
@@ -1161,8 +1130,6 @@ ofo_account_get_global_solde( const ofoAccount *account )
 		amount += ofo_account_get_val_credit( account );
 		amount -= ofo_account_get_rough_debit( account );
 		amount += ofo_account_get_rough_credit( account );
-		amount -= ofo_account_get_futur_debit( account );
-		amount += ofo_account_get_futur_credit( account );
 	}
 
 	return( amount );

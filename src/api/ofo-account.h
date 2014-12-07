@@ -95,7 +95,7 @@ gboolean        ofo_account_is_forward           ( const ofoAccount *account );
 gboolean        ofo_account_is_valid_data        ( const gchar *number, const gchar *label, const gchar *devise, const gchar *type );
 gint            ofo_account_get_class_from_number( const gchar *number );
 gint            ofo_account_get_level_from_number( const gchar *number );
-const GDate    *ofo_account_get_global_deffect   ( const ofoAccount *account );
+GDate          *ofo_account_get_global_deffect   ( const ofoAccount *account, ofoDossier *dossier, GDate *date );
 gdouble         ofo_account_get_global_solde     ( const ofoAccount *account );
 gboolean        ofo_account_has_children         ( const ofoAccount *account, ofoDossier *dossier );
 GList          *ofo_account_get_children         ( const ofoAccount *account, ofoDossier *dossier );
