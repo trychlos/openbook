@@ -415,9 +415,6 @@
 
  504 2014-12- 7 ViewEntries: update the view when a new entry is created
 
- 505 2014-12- 7 Account: remove entry, date from balances
-                + add balance for futur
-
  506 2014-12- 7 ofo_account_get_global_deffect ?
 
  507
@@ -2149,6 +2146,10 @@
 
  500 2014-12- 6 warns if begin or end of the exercice are not set
      2014-12- 6 done - svn #4240
+
+ 505 2014-12- 7 Account: remove entry, date from balances
+                + add balance for futur
+     2014-12- 7 done - svn #4254
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
