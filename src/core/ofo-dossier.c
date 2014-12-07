@@ -895,7 +895,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	DOS_FORW_OPE         VARCHAR(6)                COMMENT 'Operation mnemo for carried forward entries',"
 			"	DOS_LABEL            VARCHAR(80)               COMMENT 'Raison sociale',"
 			"	DOS_NOTES            VARCHAR(4096)             COMMENT 'Dossier notes',"
-			"	DOS_SIREN            VARCHAR(20)               COMMENT 'Siren identifier',"
+			"	DOS_SIREN            VARCHAR(9)                COMMENT 'Siren identifier',"
 			"	DOS_SLD_ACCOUNT      VARCHAR(20)               COMMENT 'Balancing account when closing the exercice',"
 			"	DOS_SLD_LABEL        VARCHAR(80)               COMMENT 'Entry Label for balancing the accounts',"
 			"	DOS_SLD_LEDGER       VARCHAR(6)                COMMENT 'Ledger for balancing entries',"

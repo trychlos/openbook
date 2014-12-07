@@ -366,10 +366,6 @@
 
  481 2014-12- 1 review ofaCurrencyCombo
 
- 482 2014-12- 2 change BAT_URI to X(256)
-
- 483 2014-12- 2 add BAT_IMPORT_USER and BAT_IMPORT_STAMP
-
  484 2014-12- 2 change DOS_SIREN to X(9)
 
  485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
@@ -2136,6 +2132,12 @@
 
  478 2014-11-30 have a decimal dot combo
      2014-11-30 done - svn #4215
+
+ 482 2014-12- 2 change BAT_URI to X(256)
+     2014-12- 7 done - svn #4248
+
+ 483 2014-12- 2 add BAT_IMPORT_USER and BAT_IMPORT_STAMP
+     2014-12- 7 cancelled (already done)
 
  499 2014-12- 6 entry: import past entries doesn't affect accounts nor
                 ledgers
