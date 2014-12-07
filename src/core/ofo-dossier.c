@@ -751,7 +751,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE COMMENT 'Intern import identifier',"
-			"	BAT_URI       VARCHAR(128)                COMMENT 'Imported URI',"
+			"	BAT_URI       VARCHAR(256)                COMMENT 'Imported URI',"
 			"	BAT_FORMAT    VARCHAR(80)                 COMMENT 'Identified file format',"
 			"	BAT_COUNT     INTEGER                     COMMENT 'Imported lines count',"
 			"	BAT_BEGIN     DATE                        COMMENT 'Begin date of the transaction list',"
