@@ -902,8 +902,6 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	DOS_SLD_OPE          VARCHAR(6)                COMMENT 'Operation mnemo for balancing entries',"
 			"	DOS_UPD_USER         VARCHAR(20)               COMMENT 'User responsible of properties last update',"
 			"	DOS_UPD_STAMP        TIMESTAMP                 COMMENT 'Properties last update timestamp',"
-			"	DOS_EXE_ID           INTEGER                   COMMENT 'Exercice identifier',"
-			"	DOS_LAST_EXE_ID      INTEGER                   COMMENT 'Last exercice identifier opened for the dossier',"
 			"	DOS_LAST_BAT         BIGINT  DEFAULT 0         COMMENT 'Last BAT file number used',"
 			"	DOS_LAST_BATLINE     BIGINT  DEFAULT 0         COMMENT 'Last BAT line number used',"
 			"	DOS_LAST_ENTRY       BIGINT  DEFAULT 0         COMMENT 'Last entry number used',"

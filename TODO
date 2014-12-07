@@ -366,8 +366,6 @@
 
  481 2014-12- 1 review ofaCurrencyCombo
 
- 484 2014-12- 2 change DOS_SIREN to X(9)
-
  485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
 
  486 2014-12- 2 ledger: not deletable if referenced in dossier
@@ -2138,6 +2136,9 @@
 
  483 2014-12- 2 add BAT_IMPORT_USER and BAT_IMPORT_STAMP
      2014-12- 7 cancelled (already done)
+
+ 484 2014-12- 2 change DOS_SIREN to X(9)
+     2014-12- 7 done - svn #4250
 
  499 2014-12- 6 entry: import past entries doesn't affect accounts nor
                 ledgers
