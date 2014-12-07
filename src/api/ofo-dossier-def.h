@@ -80,17 +80,12 @@ typedef struct {
  *  class when the full dataset is reloaded.
  * @SIGNAL_DOSSIER_VALIDATED_ENTRY: sent on the dossier when an entry is
  *  validated.
- * @SIGNAL_DOSSIER_DATES_CHANGED:   sent on the dossier when the exercice
- *  beginning or ending dates are modified. This only may happen on the
- *  current exercice and, regarding the beginning date, in small limits if
- *  entries have already been recorded.
  */
 #define SIGNAL_DOSSIER_NEW_OBJECT       "ofa-signal-dossier-new-object"
 #define SIGNAL_DOSSIER_UPDATED_OBJECT   "ofa-signal-dossier-updated-object"
 #define SIGNAL_DOSSIER_DELETED_OBJECT   "ofa-signal-dossier-deleted-object"
 #define SIGNAL_DOSSIER_RELOAD_DATASET   "ofa-signal-dossier-reload-dataset"
 #define SIGNAL_DOSSIER_VALIDATED_ENTRY  "ofa-signal-dossier-validated-entry"
-#define SIGNAL_DOSSIER_DATES_CHANGED    "ofa-signal-dossier-dates-changed"
 
 /* default length of exercice in months
  */

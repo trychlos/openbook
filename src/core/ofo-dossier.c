@@ -95,7 +95,6 @@ enum {
 	DELETED_OBJECT,
 	RELOAD_DATASET,
 	VALIDATED_ENTRY,
-	DATES_CHANGED,
 	N_SIGNALS
 };
 
@@ -400,30 +399,6 @@ dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_OBJECT );
-
-	/**
-	 * ofoDossier::ofa-signal-dossier-dates-changed:
-	 *
-	 * This signal is sent on the dossier when its exercice
-	 * beginning or ending dates have changed.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofoDossier    *dossier,
-	 *                      const GDate *new_begin_date,
-	 *                      const GDate *new_end_date,
-	 * 						gpointer     user_data );
-	 */
-	st_signals[ DATES_CHANGED ] = g_signal_new_class_handler(
-				SIGNAL_DOSSIER_DATES_CHANGED,
-				OFO_TYPE_DOSSIER,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
 /**

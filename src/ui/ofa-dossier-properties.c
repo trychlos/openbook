@@ -535,9 +535,5 @@ do_update( ofaDossierProperties *self )
 
 	priv->updated = ofo_dossier_update( priv->dossier );
 
-	/* update menu items enabled status */
-	g_signal_emit_by_name(
-			G_OBJECT( priv->dossier ), SIGNAL_DOSSIER_DATES_CHANGED, &priv->begin, &priv->end );
-
 	return( priv->updated );
 }

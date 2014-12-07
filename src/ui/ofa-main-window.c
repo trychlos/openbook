@@ -302,7 +302,6 @@ static GtkWidget       *main_book_create_page( ofaMainWindow *main, GtkNotebook 
 static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, GtkWidget *page );
 static void             on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid );
 static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
-static void             on_dossier_dates_changed( ofoDossier *dossier, const GDate *begin, const GDate *end, ofaMainWindow *window );
 static void             on_enabled_updates( ofaMainWindow *window, void *empty );
 
 static void
@@ -825,16 +824,13 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 static void
 connect_dossier_for_enabled_updates( ofaMainWindow *window )
 {
-	ofaMainWindowPrivate *priv;
+	/*ofaMainWindowPrivate *priv;
 
-	priv = window->priv;
+	priv = window->priv;*/
 
 	/* connect to signals which are sent when an element which may
 	 * modify the enabled status of a menu item is itself updated
 	 */
-	g_signal_connect(
-			G_OBJECT( priv->dossier ),
-			SIGNAL_DOSSIER_DATES_CHANGED, G_CALLBACK( on_dossier_dates_changed ), window );
 }
 
 /*
@@ -1676,23 +1672,6 @@ ofa_main_window_confirm_deletion( const ofaMainWindow *window, const gchar *mess
 	gtk_widget_destroy( dialog );
 
 	return( response == GTK_RESPONSE_OK );
-}
-
-/*
- * this signal is sent when the exercice beginning or ending dates have
- * changed (and the new ones are provided here)
- * all imputations are forbidden while the beginning date is not valid
- */
-static void
-on_dossier_dates_changed( ofoDossier *dossier, const GDate *begin, const GDate *end, ofaMainWindow *window )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = window->priv;
-
-	priv->dossier_begin = my_date_is_valid( begin );
-
-	g_signal_emit_by_name( G_OBJECT( window ), SIGNAL_ENABLED_UPDATES, NULL );
 }
 
 /*

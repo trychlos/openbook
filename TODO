@@ -411,11 +411,9 @@
  503 2014-12- 6 when entered in the command-line, accept empty account 
                 password, and let the user enter them
 
- 504 2014-12- 6 remove dossier_dates_changed signal ?
+ 507 2014-12- 6 remove dossier_dates_changed signal ?
 
- 504 2014-12- 7 ViewEntries: update the view when a new entry is created
-
- 507
+ 508
 
 -----------------------------------------------------------------------
  DONE
@@ -2144,6 +2142,9 @@
 
  500 2014-12- 6 warns if begin or end of the exercice are not set
      2014-12- 6 done - svn #4240
+
+ 504 2014-12- 7 ViewEntries: update the view when a new entry is created
+     2014-12- 7 done - svn #4257
 
  505 2014-12- 7 Account: remove entry, date from balances
                 + add balance for futur
