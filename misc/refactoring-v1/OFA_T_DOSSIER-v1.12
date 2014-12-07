@@ -1,0 +1,5 @@
+# $Id$
+
+ALTER TABLE OFA_T_DOSSIER CHANGE COLUMN DOS_SIREN DOS_SIREN            VARCHAR(9)                COMMENT 'Siren identifier';
+
+DESCRIBE OFA_T_DOSSIER;
