@@ -1,0 +1,11 @@
+# $Id$
+
+ALTER TABLE OFA_T_LEDGERS_CUR CHANGE COLUMN LED_CUR_CLO_DEB LED_CUR_VAL_DEBIT    DECIMAL(20,5)        COMMENT 'Validated debit total for this exercice on this journal';
+ALTER TABLE OFA_T_LEDGERS_CUR CHANGE COLUMN LED_CUR_CLO_CRE LED_CUR_VAL_CREDIT   DECIMAL(20,5)        COMMENT 'Validated credit total for this exercice on this journal';
+ALTER TABLE OFA_T_LEDGERS_CUR CHANGE COLUMN LED_CUR_DEB     LED_CUR_ROUGH_DEBIT  DECIMAL(20,5)        COMMENT 'Rough debit total for this exercice on this journal';
+ALTER TABLE OFA_T_LEDGERS_CUR CHANGE COLUMN LED_CUR_CRE     LED_CUR_ROUGH_CREDIT DECIMAL(20,5)        COMMENT 'Rough credit total for this exercice on this journal';
+
+ALTER TABLE OFA_T_LEDGERS_CUR ADD    COLUMN                 LED_CUR_FUT_DEBIT    DECIMAL(20,5)        COMMENT 'Futur debit total on this journal';
+ALTER TABLE OFA_T_LEDGERS_CUR ADD    COLUMN                 LED_CUR_FUT_CREDIT   DECIMAL(20,5)        COMMENT 'Futur credit total on this journal';
+
+DESCRIBE OFA_T_LEDGERS_CUR;
