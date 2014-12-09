@@ -63,10 +63,12 @@ struct _ofoLedgerPrivate {
 
 typedef struct {
 	gchar     *currency;
-	ofxAmount  clo_deb;
-	ofxAmount  clo_cre;
-	ofxAmount  deb;
-	ofxAmount  cre;
+	ofxAmount  val_debit;
+	ofxAmount  val_credit;
+	ofxAmount  rough_debit;
+	ofxAmount  rough_credit;
+	ofxAmount  futur_debit;
+	ofxAmount  futur_credit;
 }
 	sDetailCur;
 
@@ -80,10 +82,16 @@ static ofoLedger  *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint        ledger_count_for_currency( const ofaDbms *dbms, const gchar *currency );
 static gint        ledger_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
 static sDetailCur *ledger_find_cur_by_code( const ofoLedger *ledger, const gchar *currency );
+static sDetailCur *ledger_new_cur_with_code( ofoLedger *ledger, const gchar *currency );
 static void        ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user );
 static void        ledger_set_upd_stamp( ofoLedger *ledger, const GTimeVal *upd_stamp );
 static void        ledger_set_last_clo( ofoLedger *ledger, const GDate *date );
-static sDetailCur *ledger_new_cur_with_code( ofoLedger *ledger, const gchar *currency );
+/*static void        ledger_set_val_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
+static void        ledger_set_val_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
+static void        ledger_set_rough_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
+static void        ledger_set_rough_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
+static void        ledger_set_futur_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
+static void        ledger_set_futur_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amount );*/
 static gboolean    ledger_do_insert( ofoLedger *ledger, const ofaDbms *dbms, const gchar *user );
 static gboolean    ledger_insert_main( ofoLedger *ledger, const ofaDbms *dbms, const gchar *user );
 static gboolean    ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user );
@@ -213,23 +221,60 @@ on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 	static const gchar *thisfn = "ofo_ledger_on_new_ledger_entry";
 	const gchar *mnemo, *currency;
 	ofoLedger *ledger;
+	const GDate *exe_end, *deffect, *last_close;
+	gchar *sdeffect, *sclose, *str;
 	sDetailCur *detail;
-	ofxAmount debit;
+	ofxAmount amount;
+
+	/* the only case where an entry is created with a 'validated' status
+	 * is an imported entry in the past (before the beginning of the
+	 * exercice) - in this case, the 'new_object' message is not send */
+	g_return_if_fail( ofo_entry_get_status( entry ) == ENT_STATUS_ROUGH );
 
 	mnemo = ofo_entry_get_ledger( entry );
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
 
 	if( ledger ){
+		g_return_if_fail( OFO_IS_LEDGER( ledger ));
+
+		/* it is forbidden to have a new entry on a closed ledger */
+		last_close = ofo_ledger_get_last_close( ledger );
+		deffect = ofo_entry_get_deffect( entry );
+		if( my_date_is_valid( last_close ) && my_date_compare( deffect, last_close ) <= 0 ){
+			sdeffect = my_date_to_str( deffect, MY_DATE_DMYY );
+			sclose = my_date_to_str( last_close, MY_DATE_DMYY );
+			str = g_strdup_printf(
+						"Invalid entry effect %s while ledger was closed on %s", sdeffect, sclose );
+			g_warning( "%s: %s", thisfn, str );
+			g_free( str );
+			g_free( sdeffect );
+			g_free( sclose );
+			g_return_if_reached();
+		}
+
 		currency = ofo_entry_get_currency( entry );
+
 		detail = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( detail );
 
-		debit = ofo_entry_get_debit( entry );
-		if( debit ){
-			detail->deb += debit;
+		amount = ofo_entry_get_debit( entry );
+		exe_end = ofo_dossier_get_exe_end( dossier );
 
+		if( my_date_is_valid( exe_end ) && my_date_compare( deffect, exe_end ) > 0 ){
+			/* entry is in the future */
+			if( amount ){
+				detail->futur_debit += amount;
+			} else {
+				detail->futur_credit += ofo_entry_get_credit( entry );
+			}
 		} else {
-			detail->cre += ofo_entry_get_credit( entry );
+			/* entry is in the exercice */
+			if( amount ){
+				detail->rough_debit += amount;
+
+			} else {
+				detail->rough_credit += ofo_entry_get_credit( entry );
+			}
 		}
 
 		if( ledger_do_update_detail_cur( ledger, detail, ofo_dossier_get_dbms( dossier ))){
@@ -308,18 +353,19 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 	mnemo = ofo_entry_get_ledger( entry );
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
 	if( ledger ){
+		g_return_if_fail( OFO_IS_LEDGER( ledger ));
 
 		currency = ofo_entry_get_currency( entry );
 		detail = ledger_find_cur_by_code( ledger, currency );
-		/* the entry has necessarily be already recorded while in rough * status */
+		/* the entry has necessarily be already recorded while in rough status */
 		g_return_if_fail( detail );
 
 		debit = ofo_entry_get_debit( entry );
-		detail->clo_deb += debit;
-		detail->deb -= debit;
+		detail->val_debit += debit;
+		detail->rough_debit -= debit;
 		credit = ofo_entry_get_credit( entry );
-		detail->clo_cre += credit;
-		detail->cre -= credit;
+		detail->val_credit += credit;
+		detail->rough_credit -= credit;
 
 		if( ledger_do_update_detail_cur( ledger, detail, ofo_dossier_get_dbms( dossier ))){
 			g_signal_emit_by_name(
@@ -381,8 +427,9 @@ ledger_load_dataset( ofoDossier *dossier )
 
 		query = g_strdup_printf(
 				"SELECT LED_CUR_CODE,"
-				"	LED_CUR_CLO_DEB,LED_CUR_CLO_CRE,"
-				"	LED_CUR_DEB,LED_CUR_CRE "
+				"	LED_CUR_VAL_DEBIT,LED_CUR_VAL_CREDIT,"
+				"	LED_CUR_ROUGH_DEBIT,LED_CUR_ROUGH_CREDIT,"
+				"	LED_CUR_FUT_DEBIT,LED_CUR_FUT_CREDIT "
 				"FROM OFA_T_LEDGERS_CUR WHERE LED_MNEMO='%s'",
 						ofo_ledger_get_mnemo( ledger ));
 
@@ -392,13 +439,17 @@ ledger_load_dataset( ofoDossier *dossier )
 				balance = g_new0( sDetailCur, 1 );
 				balance->currency = g_strdup(( gchar * ) icol->data );
 				icol = icol->next;
-				balance->clo_deb = my_double_set_from_sql(( const gchar * ) icol->data );
+				balance->val_debit = my_double_set_from_sql(( const gchar * ) icol->data );
 				icol = icol->next;
-				balance->clo_cre = my_double_set_from_sql(( const gchar * ) icol->data );
+				balance->val_credit = my_double_set_from_sql(( const gchar * ) icol->data );
 				icol = icol->next;
-				balance->deb = my_double_set_from_sql(( const gchar * ) icol->data );
+				balance->rough_debit = my_double_set_from_sql(( const gchar * ) icol->data );
 				icol = icol->next;
-				balance->cre = my_double_set_from_sql(( const gchar * ) icol->data );
+				balance->rough_credit = my_double_set_from_sql(( const gchar * ) icol->data );
+				icol = icol->next;
+				balance->futur_debit = my_double_set_from_sql(( const gchar * ) icol->data );
+				icol = icol->next;
+				balance->futur_credit = my_double_set_from_sql(( const gchar * ) icol->data );
 
 				g_debug( "ledger_load_dataset: adding ledger=%s, currency=%s",
 						ofo_ledger_get_mnemo( ledger ), balance->currency );
@@ -672,15 +723,15 @@ ofo_ledger_get_currencies( const ofoLedger *ledger )
 }
 
 /**
- * ofo_ledger_get_clo_deb:
+ * ofo_ledger_get_val_debit:
  * @ledger:
  * @currency:
  *
- * Returns the debit balance of this ledger at the last closing for
- * the currency specified, or zero if not found.
+ * Returns the debit balance of this ledger for validated entries of
+ * the exercice, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_clo_deb( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_val_debit( const ofoLedger *ledger, const gchar *currency )
 {
 	sDetailCur *sdev;
 
@@ -690,7 +741,7 @@ ofo_ledger_get_clo_deb( const ofoLedger *ledger, const gchar *currency )
 
 		sdev = ledger_find_cur_by_code( ledger, currency );
 		if( sdev ){
-			return( sdev->clo_deb );
+			return( sdev->val_debit );
 		}
 	}
 
@@ -698,15 +749,15 @@ ofo_ledger_get_clo_deb( const ofoLedger *ledger, const gchar *currency )
 }
 
 /**
- * ofo_ledger_get_clo_cre:
+ * ofo_ledger_get_val_credit:
  * @ledger:
  * @currency:
  *
- * Returns the credit balance of this ledger at the last closing for
- * the currency specified, or zero if not found.
+ * Returns the credit balance of this ledger for validated entries of
+ * the exercice, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_clo_cre( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_val_credit( const ofoLedger *ledger, const gchar *currency )
 {
 	sDetailCur *sdev;
 
@@ -716,7 +767,7 @@ ofo_ledger_get_clo_cre( const ofoLedger *ledger, const gchar *currency )
 
 		sdev = ledger_find_cur_by_code( ledger, currency );
 		if( sdev ){
-			return( sdev->clo_cre );
+			return( sdev->val_credit );
 		}
 	}
 
@@ -724,15 +775,15 @@ ofo_ledger_get_clo_cre( const ofoLedger *ledger, const gchar *currency )
 }
 
 /**
- * ofo_ledger_get_deb:
+ * ofo_ledger_get_rough_debit:
  * @ledger:
  * @currency:
  *
  * Returns the current debit balance of this ledger for
- * the currency specified, or zero if not found.
+ * the currency specified in the exercice, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_deb( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_rough_debit( const ofoLedger *ledger, const gchar *currency )
 {
 	sDetailCur *sdev;
 
@@ -742,7 +793,7 @@ ofo_ledger_get_deb( const ofoLedger *ledger, const gchar *currency )
 
 		sdev = ledger_find_cur_by_code( ledger, currency );
 		if( sdev ){
-			return( sdev->deb );
+			return( sdev->rough_debit );
 		}
 	}
 
@@ -750,15 +801,15 @@ ofo_ledger_get_deb( const ofoLedger *ledger, const gchar *currency )
 }
 
 /**
- * ofo_ledger_get_cre:
+ * ofo_ledger_get_rough_credit:
  * @ledger:
  * @currency:
  *
  * Returns the current credit balance of this ledger for
- * the currency specified, or zero if not found.
+ * the currency specified in the exercice, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_cre( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_rough_credit( const ofoLedger *ledger, const gchar *currency )
 {
 	sDetailCur *sdev;
 
@@ -768,7 +819,61 @@ ofo_ledger_get_cre( const ofoLedger *ledger, const gchar *currency )
 
 		sdev = ledger_find_cur_by_code( ledger, currency );
 		if( sdev ){
-			return( sdev->cre );
+			return( sdev->rough_credit );
+		}
+	}
+
+	return( 0.0 );
+}
+
+/**
+ * ofo_ledger_get_futur_debit:
+ * @ledger:
+ * @currency:
+ *
+ * Returns the debit balance of this ledger for
+ * the currency specified from entries in the future, or zero if not
+ * found.
+ */
+ofxAmount
+ofo_ledger_get_futur_debit( const ofoLedger *ledger, const gchar *currency )
+{
+	sDetailCur *sdev;
+
+	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), 0.0 );
+
+	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+
+		sdev = ledger_find_cur_by_code( ledger, currency );
+		if( sdev ){
+			return( sdev->futur_debit );
+		}
+	}
+
+	return( 0.0 );
+}
+
+/**
+ * ofo_ledger_get_futur_credit:
+ * @ledger:
+ * @currency:
+ *
+ * Returns the current credit balance of this ledger for
+ * the currency specified from entries in the future, or zero if not
+ * found.
+ */
+ofxAmount
+ofo_ledger_get_futur_credit( const ofoLedger *ledger, const gchar *currency )
+{
+	sDetailCur *sdev;
+
+	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), 0.0 );
+
+	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+
+		sdev = ledger_find_cur_by_code( ledger, currency );
+		if( sdev ){
+			return( sdev->futur_credit );
 		}
 	}
 
@@ -805,10 +910,12 @@ ledger_new_cur_with_code( ofoLedger *ledger, const gchar *currency )
 	if( !sdet ){
 		sdet = g_new0( sDetailCur, 1 );
 
-		sdet->clo_deb = 0.0;
-		sdet->clo_cre = 0.0;
-		sdet->deb = 0.0;
-		sdet->cre = 0.0;
+		sdet->val_debit = 0.0;
+		sdet->val_credit = 0.0;
+		sdet->rough_debit = 0.0;
+		sdet->rough_credit = 0.0;
+		sdet->futur_debit = 0.0;
+		sdet->futur_credit = 0.0;
 		sdet->currency = g_strdup( currency );
 
 		ledger->priv->amounts = g_list_prepend( ledger->priv->amounts, sdet );
@@ -851,14 +958,12 @@ ofo_ledger_has_entries( const ofoLedger *ledger, ofoDossier *dossier )
  * any entries recorded on the ledger.
  *
  * More: a ledger should not be deleted while it is referenced by a
- * model or an entry.
+ * model or an entry or the dossier itself.
  */
 gboolean
 ofo_ledger_is_deletable( const ofoLedger *ledger, ofoDossier *dossier )
 {
 	gboolean ok;
-	GList *ic;
-	sDetailCur *detail;
 	const gchar *mnemo;
 
 	g_return_val_if_fail( OFO_IS_LEDGER( ledger ), FALSE );
@@ -866,13 +971,6 @@ ofo_ledger_is_deletable( const ofoLedger *ledger, ofoDossier *dossier )
 	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
 
 		ok = TRUE;
-
-		for( ic=ledger->priv->amounts ; ic && ok ; ic=ic->next ){
-			detail = ( sDetailCur * ) ic->data;
-				ok &= detail->clo_deb == 0.0 && detail->clo_cre == 0.0 &&
-						detail->deb == 0.0 && detail->cre == 0.0;
-		}
-
 		mnemo = ofo_ledger_get_mnemo( ledger );
 
 		ok &= !ofo_entry_use_ledger( dossier, mnemo ) &&
@@ -990,18 +1088,19 @@ ledger_set_last_clo( ofoLedger *ledger, const GDate *date )
 	}
 }
 
-/**
- * ofo_ledger_set_clo_deb:
+#if 0
+/*
+ * ofo_ledger_set_val_debit:
  * @ledger:
  * @currency:
  *
- * Set the debit balance of this ledger at the last closing for
+ * Set the debit balance of this ledger from validated entries for
  * the currency specified.
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-void
-ofo_ledger_set_clo_deb( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+static void
+ledger_set_val_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1012,22 +1111,22 @@ ofo_ledger_set_clo_deb( ofoLedger *ledger, const gchar *currency, ofxAmount amou
 		sdev = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( sdev );
 
-		sdev->clo_deb += amount;
+		sdev->val_debit += amount;
 	}
 }
 
-/**
- * ofo_ledger_set_clo_cre:
+/*
+ * ofo_ledger_set_val_credit:
  * @ledger:
  * @currency:
  *
- * Set the credit balance of this ledger at the last closing for
+ * Set the credit balance of this ledger from validated entries for
  * the currency specified.
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-void
-ofo_ledger_set_clo_cre( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+static void
+ledger_set_val_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1038,12 +1137,12 @@ ofo_ledger_set_clo_cre( ofoLedger *ledger, const gchar *currency, ofxAmount amou
 		sdev = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( sdev );
 
-		sdev->clo_cre += amount;
+		sdev->val_credit += amount;
 	}
 }
 
-/**
- * ofo_ledger_set_deb:
+/*
+ * ofo_ledger_set_rough_debit:
  * @ledger:
  * @currency:
  *
@@ -1052,8 +1151,8 @@ ofo_ledger_set_clo_cre( ofoLedger *ledger, const gchar *currency, ofxAmount amou
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-void
-ofo_ledger_set_deb( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+static void
+ledger_set_rough_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1064,12 +1163,12 @@ ofo_ledger_set_deb( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 		sdev = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( sdev );
 
-		sdev->deb += amount;
+		sdev->rough_debit += amount;
 	}
 }
 
-/**
- * ofo_ledger_set_cre:
+/*
+ * ofo_ledger_set_rough_credit:
  * @ledger:
  * @currency:
  *
@@ -1078,8 +1177,8 @@ ofo_ledger_set_deb( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
  *
  * Creates an occurrence of the detail record if it didn't exist yet.
  */
-void
-ofo_ledger_set_cre( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+static void
+ledger_set_rough_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 {
 	sDetailCur *sdev;
 
@@ -1090,9 +1189,62 @@ ofo_ledger_set_cre( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
 		sdev = ledger_new_cur_with_code( ledger, currency );
 		g_return_if_fail( sdev );
 
-		sdev->cre += amount;
+		sdev->rough_credit += amount;
 	}
 }
+
+/*
+ * ofo_ledger_set_futur_debit:
+ * @ledger:
+ * @currency:
+ *
+ * Set the debit balance of this ledger for
+ * the currency specified from future entries.
+ *
+ * Creates an occurrence of the detail record if it didn't exist yet.
+ */
+static void
+ledger_set_futur_debit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+{
+	sDetailCur *sdev;
+
+	g_return_if_fail( OFO_IS_LEDGER( ledger ));
+
+	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+
+		sdev = ledger_new_cur_with_code( ledger, currency );
+		g_return_if_fail( sdev );
+
+		sdev->futur_debit += amount;
+	}
+}
+
+/*
+ * ofo_ledger_set_futur_credit:
+ * @ledger:
+ * @currency:
+ *
+ * Set the credit balance of this ledger for
+ * the currency specified from future entries.
+ *
+ * Creates an occurrence of the detail record if it didn't exist yet.
+ */
+static void
+ledger_set_futur_credit( ofoLedger *ledger, const gchar *currency, ofxAmount amount )
+{
+	sDetailCur *sdev;
+
+	g_return_if_fail( OFO_IS_LEDGER( ledger ));
+
+	if( !OFO_BASE( ledger )->prot->dispose_has_run ){
+
+		sdev = ledger_new_cur_with_code( ledger, currency );
+		g_return_if_fail( sdev );
+
+		sdev->futur_credit += amount;
+	}
+}
+#endif
 
 /**
  * ofo_ledger_close:
@@ -1324,7 +1476,7 @@ static gboolean
 ledger_do_update_detail_cur( const ofoLedger *ledger, sDetailCur *detail, const ofaDbms *dbms )
 {
 	gchar *query;
-	gchar *deb, *cre, *clo_deb, *clo_cre;
+	gchar *sval_debit, *sval_credit, *srough_debit, *srough_credit, *sfutur_debit, *sfutur_credit;
 	gboolean ok;
 
 	query = g_strdup_printf(
@@ -1336,30 +1488,37 @@ ledger_do_update_detail_cur( const ofoLedger *ledger, sDetailCur *detail, const 
 	ofa_dbms_query( dbms, query, FALSE );
 	g_free( query );
 
-	deb = my_double_to_sql( ofo_ledger_get_deb( ledger, detail->currency ));
-	cre = my_double_to_sql( ofo_ledger_get_cre( ledger, detail->currency ));
-	clo_deb = my_double_to_sql( ofo_ledger_get_clo_deb( ledger, detail->currency ));
-	clo_cre = my_double_to_sql( ofo_ledger_get_clo_cre( ledger, detail->currency ));
+	sval_debit = my_double_to_sql( ofo_ledger_get_val_debit( ledger, detail->currency ));
+	sval_credit = my_double_to_sql( ofo_ledger_get_val_credit( ledger, detail->currency ));
+	srough_debit = my_double_to_sql( ofo_ledger_get_rough_debit( ledger, detail->currency ));
+	srough_credit = my_double_to_sql( ofo_ledger_get_rough_credit( ledger, detail->currency ));
+	sfutur_debit = my_double_to_sql( ofo_ledger_get_futur_debit( ledger, detail->currency ));
+	sfutur_credit = my_double_to_sql( ofo_ledger_get_futur_credit( ledger, detail->currency ));
 
 	query = g_strdup_printf(
 					"INSERT INTO OFA_T_LEDGERS_CUR "
 					"	(LED_MNEMO,LED_CUR_CODE,"
-					"	LED_CUR_CLO_DEB,LED_CUR_CLO_CRE,"
-					"	LED_CUR_DEB,LED_CUR_CRE) VALUES "
-					"	('%s','%s',%s,%s,%s,%s)",
+					"	LED_CUR_VAL_DEBIT,LED_CUR_VAL_CREDIT,"
+					"	LED_CUR_ROUGH_DEBIT,LED_CUR_ROUGH_CREDIT,"
+					"	LED_CUR_FUT_DEBIT,LED_CUR_FUT_CREDIT) VALUES "
+					"	('%s','%s',%s,%s,%s,%s,%s,%s)",
 							ofo_ledger_get_mnemo( ledger ),
 							detail->currency,
-							clo_deb,
-							clo_cre,
-							deb,
-							cre );
+							sval_debit,
+							sval_credit,
+							srough_debit,
+							srough_credit,
+							sfutur_debit,
+							sfutur_credit );
 
 	ok = ofa_dbms_query( dbms, query, TRUE );
 
-	g_free( deb );
-	g_free( cre );
-	g_free( clo_deb );
-	g_free( clo_cre );
+	g_free( sval_debit );
+	g_free( sval_credit );
+	g_free( srough_debit );
+	g_free( srough_credit );
+	g_free( sfutur_debit );
+	g_free( sfutur_credit );
 	g_free( query );
 
 	return( ok );
@@ -1499,7 +1658,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 			return( FALSE );
 		}
 
-		str = g_strdup_printf( "2;Mnemo;Currency;CloDeb;CloCre;Deb;Cre" );
+		str = g_strdup_printf( "2;Mnemo;Currency;ValDebit;ValCredit;RoughDebit;RoughCredit;FuturDebit;FuturCredit" );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1538,13 +1697,15 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 		for( amount=ledger->priv->amounts ; amount ; amount=amount->next ){
 			sdev = ( sDetailCur * ) amount->data;
 
-			str = g_strdup_printf( "2;%s;%s;%.5lf;%.5lf;%.5lf;%.5lf",
+			str = g_strdup_printf( "2;%s;%s;%.5lf;%.5lf;%.5lf;%.5lf,%.5lf,%.5lf",
 					ofo_ledger_get_mnemo( ledger ),
 					sdev->currency,
-					ofo_ledger_get_clo_deb( ledger, sdev->currency ),
-					ofo_ledger_get_clo_cre( ledger, sdev->currency ),
-					ofo_ledger_get_deb( ledger, sdev->currency ),
-					ofo_ledger_get_cre( ledger, sdev->currency ));
+					ofo_ledger_get_val_debit( ledger, sdev->currency ),
+					ofo_ledger_get_val_credit( ledger, sdev->currency ),
+					ofo_ledger_get_rough_debit( ledger, sdev->currency ),
+					ofo_ledger_get_rough_credit( ledger, sdev->currency ),
+					ofo_ledger_get_futur_debit( ledger, sdev->currency ),
+					ofo_ledger_get_futur_credit( ledger, sdev->currency ));
 
 			lines = g_slist_prepend( NULL, str );
 			ok = ofa_iexportable_export_lines( exportable, lines );

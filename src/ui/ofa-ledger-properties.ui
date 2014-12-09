@@ -222,133 +222,19 @@
                                 <property name="left_padding">12</property>
                                 <property name="right_padding">4</property>
                                 <child>
-                                  <object class="GtkGrid" id="grid3">
+                                  <object class="GtkGrid" id="p2-grid">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="hexpand">True</property>
                                     <property name="row_spacing">3</property>
                                     <property name="column_spacing">4</property>
-                                    <property name="column_homogeneous">True</property>
-                                    <child>
-                                      <object class="GtkLabel" id="label9">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="xalign">0</property>
-                                        <property name="label" translatable="yes">&lt;b&gt; Closed balance &lt;/b&gt;</property>
-                                        <property name="use_markup">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left_attach">0</property>
-                                        <property name="top_attach">1</property>
-                                        <property name="width">1</property>
-                                        <property name="height">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="label16">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="xalign">1</property>
-                                        <property name="label" translatable="yes">Balance :</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left_attach">0</property>
-                                        <property name="top_attach">2</property>
-                                        <property name="width">1</property>
-                                        <property name="height">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="label12">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="xalign">0</property>
-                                        <property name="label" translatable="yes">&lt;b&gt; Rough balance &lt;/b&gt;</property>
-                                        <property name="use_markup">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left_attach">0</property>
-                                        <property name="top_attach">3</property>
-                                        <property name="width">1</property>
-                                        <property name="height">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="label19">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="xalign">1</property>
-                                        <property name="label" translatable="yes">Balance :</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left_attach">0</property>
-                                        <property name="top_attach">4</property>
-                                        <property name="width">1</property>
-                                        <property name="height">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="p2-clo-deb">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="xalign">1</property>
-                                        <property name="label" translatable="yes">0</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left_attach">1</property>
-                                        <property name="top_attach">2</property>
-                                        <property name="width">1</property>
-                                        <property name="height">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="p2-clo-cre">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="xalign">1</property>
-                                        <property name="label" translatable="yes">0</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left_attach">2</property>
-                                        <property name="top_attach">2</property>
-                                        <property name="width">1</property>
-                                        <property name="height">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="p2-deb">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="xalign">1</property>
-                                        <property name="label" translatable="yes">0</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left_attach">1</property>
-                                        <property name="top_attach">4</property>
-                                        <property name="width">1</property>
-                                        <property name="height">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="p2-cre">
-                                        <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="xalign">1</property>
-                                        <property name="label" translatable="yes">0</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left_attach">2</property>
-                                        <property name="top_attach">4</property>
-                                        <property name="width">1</property>
-                                        <property name="height">1</property>
-                                      </packing>
-                                    </child>
                                     <child>
                                       <object class="GtkLabel" id="label11">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="xalign">1</property>
                                         <property name="label" translatable="yes">Debit</property>
+                                        <property name="width_chars">12</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">1</property>
@@ -363,60 +249,27 @@
                                         <property name="can_focus">False</property>
                                         <property name="xalign">1</property>
                                         <property name="label" translatable="yes">Credit</property>
+                                        <property name="width_chars">12</property>
                                       </object>
                                       <packing>
-                                        <property name="left_attach">2</property>
+                                        <property name="left_attach">3</property>
                                         <property name="top_attach">0</property>
                                         <property name="width">1</property>
                                         <property name="height">1</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkGrid" id="grid4">
+                                      <object class="GtkLabel" id="label7">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
-                                        <property name="row_spacing">3</property>
-                                        <property name="column_spacing">4</property>
-                                        <child>
-                                          <object class="GtkLabel" id="label8">
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">False</property>
-                                            <property name="xalign">1</property>
-                                            <property name="label" translatable="yes">_Devise :</property>
-                                            <property name="use_underline">True</property>
-                                          </object>
-                                          <packing>
-                                            <property name="left_attach">0</property>
-                                            <property name="top_attach">0</property>
-                                            <property name="width">1</property>
-                                            <property name="height">1</property>
-                                          </packing>
-                                        </child>
-                                        <child>
-                                          <object class="GtkAlignment" id="p1-currency-parent">
-                                            <property name="visible">True</property>
-                                            <property name="can_focus">False</property>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                          </object>
-                                          <packing>
-                                            <property name="left_attach">1</property>
-                                            <property name="top_attach">0</property>
-                                            <property name="width">1</property>
-                                            <property name="height">1</property>
-                                          </packing>
-                                        </child>
+                                        <property name="width_chars">5</property>
                                       </object>
                                       <packing>
-                                        <property name="left_attach">0</property>
+                                        <property name="left_attach">5</property>
                                         <property name="top_attach">0</property>
                                         <property name="width">1</property>
                                         <property name="height">1</property>
                                       </packing>
-                                    </child>
-                                    <child>
-                                      <placeholder/>
                                     </child>
                                     <child>
                                       <placeholder/>

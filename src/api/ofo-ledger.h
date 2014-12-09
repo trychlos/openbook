@@ -65,10 +65,12 @@ GDate          *ofo_ledger_get_last_entry  ( const ofoLedger *ledger, ofoDossier
 
 GList          *ofo_ledger_get_currencies  ( const ofoLedger *ledger );
 
-ofxAmount       ofo_ledger_get_clo_deb     ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_clo_cre     ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_deb         ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_cre         ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_val_debit   ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_val_credit  ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_rough_debit ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_rough_credit( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_futur_debit ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_futur_credit( const ofoLedger *ledger, const gchar *currency );
 
 gboolean        ofo_ledger_has_entries     ( const ofoLedger *ledger, ofoDossier *dossier );
 gboolean        ofo_ledger_is_deletable    ( const ofoLedger *ledger, ofoDossier *dossier );
@@ -77,11 +79,6 @@ gboolean        ofo_ledger_is_valid        ( const gchar *mnemo, const gchar *la
 void            ofo_ledger_set_mnemo       ( ofoLedger *ledger, const gchar *number );
 void            ofo_ledger_set_label       ( ofoLedger *ledger, const gchar *label );
 void            ofo_ledger_set_notes       ( ofoLedger *ledger, const gchar *notes );
-
-void            ofo_ledger_set_clo_deb     ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
-void            ofo_ledger_set_clo_cre     ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
-void            ofo_ledger_set_deb         ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
-void            ofo_ledger_set_cre         ( ofoLedger *ledger, const gchar *currency, ofxAmount amount );
 
 gboolean        ofo_ledger_close           ( ofoLedger *ledger, ofoDossier *dossier, const GDate *closing );
 

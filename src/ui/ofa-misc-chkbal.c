@@ -259,11 +259,11 @@ impute_led_balance( GList **balances, const ofoLedger *ledger, const gchar *curr
 
 	sbal = get_balance_for_currency( balances, currency );
 	sbal->debit +=
-			ofo_ledger_get_clo_deb( ledger, currency )
-			+ ofo_ledger_get_deb( ledger, currency );
+			ofo_ledger_get_val_debit( ledger, currency )
+			+ ofo_ledger_get_rough_debit( ledger, currency );
 	sbal->credit +=
-			ofo_ledger_get_clo_cre( ledger, currency )
-			+ ofo_ledger_get_cre( ledger, currency );
+			ofo_ledger_get_val_credit( ledger, currency )
+			+ ofo_ledger_get_rough_credit( ledger, currency );
 
 	g_signal_emit_by_name( grid, "update", currency, sbal->debit, sbal->credit );
 }

@@ -340,6 +340,9 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 	gdouble debit, credit, prev;
 	const GDate *deffect, *exe_end, *exe_begin;
 
+	/* the only case where an entry is created with a 'validated' status
+	 * is an imported entry in the past (before the beginning of the
+	 * exercice) - in this case, the 'new_object' message is not send */
 	g_return_if_fail( ofo_entry_get_status( entry ) == ENT_STATUS_ROUGH );
 
 	deffect = ofo_entry_get_deffect( entry );

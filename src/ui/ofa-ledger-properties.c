@@ -39,7 +39,6 @@
 
 #include "core/my-window-prot.h"
 
-#include "ui/ofa-currency-combo.h"
 #include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-main-window.h"
 
@@ -49,25 +48,17 @@ struct _ofaLedgerPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoLedger      *ledger;
-	gboolean        is_new;
-	gboolean        updated;
-
-	/* page 2: balances display
-	 */
-	gchar          *currency;
-	gint            digits;
-
-	/* UI
-	 */
+	ofoLedger *ledger;
+	gboolean   is_new;
+	gboolean   updated;
 
 	/* data
 	 */
-	gchar          *mnemo;
-	gchar          *label;
-	gchar          *upd_user;
-	GTimeVal        upd_stamp;
-	GDate           closing;
+	gchar      *mnemo;
+	gchar      *label;
+	gchar      *upd_user;
+	GTimeVal    upd_stamp;
+	GDate       closing;
 };
 
 /* columns displayed in the exercice combobox
@@ -87,8 +78,6 @@ static void      v_init_dialog( myDialog *dialog );
 static void      init_balances_page( ofaLedgerProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaLedgerProperties *self );
-static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *currency, ofaLedgerProperties *self );
-static void      display_balances( ofaLedgerProperties *self );
 static void      check_for_enable_dlg( ofaLedgerProperties *self );
 static gboolean  is_dialog_validable( ofaLedgerProperties *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -107,7 +96,6 @@ ledger_properties_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_LEDGER_PROPERTIES( instance )->priv;
-	g_free( priv->currency );
 	g_free( priv->mnemo );
 	g_free( priv->label );
 	g_free( priv->upd_user );
@@ -255,21 +243,132 @@ v_init_dialog( myDialog *dialog )
 static void
 init_balances_page( ofaLedgerProperties *self )
 {
-	GtkContainer *container;
-	ofaCurrencyCombo *combo;
-	GtkWidget *parent;
+	ofaLedgerPropertiesPrivate *priv;
+	GtkWindow *container;
+	GtkWidget *grid, *label;
+	GList *currencies, *it;
+	const gchar *code, *symbol;
+	ofoCurrency *currency;
+	gint i, count, digits;
+	gchar *str;
 
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+	priv = self->priv;
 
-	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	container = my_window_get_toplevel( MY_WINDOW( self ));
 
-	combo = ofa_currency_combo_new();
-	ofa_currency_combo_attach_to( combo,
-			GTK_CONTAINER( parent ), CURRENCY_COL_CODE );
-	ofa_currency_combo_init_view( combo,
-			MY_WINDOW( self )->prot->dossier, ofo_dossier_get_default_currency( MY_WINDOW( self )->prot->dossier ));
-	g_signal_connect( combo, "changed", G_CALLBACK( on_currency_changed ), self );
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( container ), "p2-grid" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+
+	currencies = ofo_ledger_get_currencies( priv->ledger );
+	count = g_list_length( currencies );
+	gtk_grid_insert_row( GTK_GRID( grid ), 3*count );
+
+	for( i=0, it=currencies ; it ; ++i, it=it->next ){
+		code = ( const gchar * ) it->data;
+		currency = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, code );
+		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+		digits = ofo_currency_get_digits( currency );
+		symbol = ofo_currency_get_symbol( currency );
+
+		if( !i ){
+			label = gtk_label_new( _( "Validated balance :" ));
+			gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+			gtk_grid_attach( GTK_GRID( grid ), label, 0, i+1, 1, 1 );
+		}
+
+		label = gtk_label_new( "" );
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 1, i+1, 1, 1 );
+		str = my_double_to_str_ex( ofo_ledger_get_val_debit( priv->ledger, code ), digits );
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
+
+		label = gtk_label_new( "" );
+		gtk_grid_attach( GTK_GRID( grid ), label, 2, i+1, 1, 1 );
+		gtk_label_set_text( GTK_LABEL( label ), symbol );
+
+		label = gtk_label_new( "" );
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 3, i+1, 1, 1 );
+		str = my_double_to_str_ex( ofo_ledger_get_val_credit( priv->ledger, code ), digits );
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
+
+		label = gtk_label_new( "" );
+		gtk_grid_attach( GTK_GRID( grid ), label, 4, i+1, 1, 1 );
+		gtk_label_set_text( GTK_LABEL( label ), symbol );
+
+		label = gtk_label_new( "" );
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 5, i+1, 1, 1 );
+		gtk_label_set_text( GTK_LABEL( label ), code );
+
+		if( !i ){
+			label = gtk_label_new( _( "Rough balance :" ));
+			gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+			gtk_grid_attach( GTK_GRID( grid ), label, 0, count+1, 1, 1 );
+		}
+
+		label = gtk_label_new( "" );
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 1, count+i+1, 1, 1 );
+		str = my_double_to_str_ex( ofo_ledger_get_rough_debit( priv->ledger, code ), digits );
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
+
+		label = gtk_label_new( "" );
+		gtk_grid_attach( GTK_GRID( grid ), label, 2, count+i+1, 1, 1 );
+		gtk_label_set_text( GTK_LABEL( label ), symbol );
+
+		label = gtk_label_new( "" );
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 3, count+i+1, 1, 1 );
+		str = my_double_to_str_ex( ofo_ledger_get_rough_credit( priv->ledger, code ), digits );
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
+
+		label = gtk_label_new( "" );
+		gtk_grid_attach( GTK_GRID( grid ), label, 4, count+i+1, 1, 1 );
+		gtk_label_set_text( GTK_LABEL( label ), symbol );
+
+		label = gtk_label_new( "" );
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 5, count+i+1, 1, 1 );
+		gtk_label_set_text( GTK_LABEL( label ), code );
+
+		if( !i ){
+			label = gtk_label_new( _( "Future balance :" ));
+			gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+			gtk_grid_attach( GTK_GRID( grid ), label, 0, 2*count+1, 1, 1 );
+		}
+
+		label = gtk_label_new( "" );
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 1, 2*count+i+1, 1, 1 );
+		str = my_double_to_str_ex( ofo_ledger_get_futur_debit( priv->ledger, code ), digits );
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
+
+		label = gtk_label_new( "" );
+		gtk_grid_attach( GTK_GRID( grid ), label, 2, 2*count+i+1, 1, 1 );
+		gtk_label_set_text( GTK_LABEL( label ), symbol );
+
+		label = gtk_label_new( "" );
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 3, 2*count+i+1, 1, 1 );
+		str = my_double_to_str_ex( ofo_ledger_get_futur_credit( priv->ledger, code ), digits );
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
+
+		label = gtk_label_new( "" );
+		gtk_grid_attach( GTK_GRID( grid ), label, 4, 2*count+i+1, 1, 1 );
+		gtk_label_set_text( GTK_LABEL( label ), symbol );
+
+		label = gtk_label_new( "" );
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 5, 2*count+i+1, 1, 1 );
+		gtk_label_set_text( GTK_LABEL( label ), code );
+	}
 }
 
 static void
@@ -288,67 +387,6 @@ on_label_changed( GtkEntry *entry, ofaLedgerProperties *self )
 	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
-}
-
-/*
- * ofaCurrencyComboCb
- */
-static void
-on_currency_changed( ofaCurrencyCombo *combo, const gchar *currency, ofaLedgerProperties *self )
-{
-	ofaLedgerPropertiesPrivate *priv;
-	ofoCurrency *obj;
-
-	priv = self->priv;
-
-	g_free( priv->currency );
-	priv->currency = NULL;
-
-	obj = ofo_currency_get_by_code( MY_WINDOW( self )->prot->dossier, currency );
-	if( obj && OFO_IS_CURRENCY( obj )){
-		priv->currency = g_strdup( currency );
-		priv->digits = ofo_currency_get_digits( obj );
-	}
-
-	display_balances( self );
-}
-
-static void
-display_balances( ofaLedgerProperties *self )
-{
-	ofaLedgerPropertiesPrivate *priv;
-	GtkContainer *container;
-	GtkLabel *label;
-	gchar *str;
-
-	priv = self->priv;
-
-	if( !priv->currency || !g_utf8_strlen( priv->currency, -1 )){
-		return;
-	}
-
-	container = ( GtkContainer * ) my_window_get_toplevel( MY_WINDOW( self ));
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-
-	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-clo-deb" ));
-	str = my_double_to_str_ex( ofo_ledger_get_clo_deb( priv->ledger, priv->currency ), priv->digits );
-	gtk_label_set_text( label, str );
-	g_free( str );
-
-	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-clo-cre" ));
-	str = my_double_to_str_ex( ofo_ledger_get_clo_cre( priv->ledger, priv->currency ), priv->digits );
-	gtk_label_set_text( label, str );
-	g_free( str );
-
-	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-deb" ));
-	str = my_double_to_str_ex( ofo_ledger_get_deb( priv->ledger, priv->currency ), priv->digits );
-	gtk_label_set_text( label, str );
-	g_free( str );
-
-	label = GTK_LABEL( my_utils_container_get_child_by_name( container, "p2-cre" ));
-	str = my_double_to_str_ex( ofo_ledger_get_cre( priv->ledger, priv->currency ), priv->digits );
-	gtk_label_set_text( label, str );
-	g_free( str );
 }
 
 static void
