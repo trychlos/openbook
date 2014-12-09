@@ -54,6 +54,8 @@ struct _ofaDossierPropertiesPrivate {
 	gboolean         is_new;
 	gboolean         updated;
 	gboolean         is_current;
+	GDate            begin_init;
+	GDate            end_init;
 
 	/* data
 	 */
@@ -292,6 +294,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 		g_free( str );
 	}
 	gtk_widget_set_can_focus( entry, priv->is_current );
+	my_date_set_from_date( &priv->begin_init, ofo_dossier_get_exe_begin( priv->dossier ));
 
 	entry = my_utils_container_get_child_by_name( container, "pexe-end" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -308,6 +311,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 		g_free( str );
 	}
 	gtk_widget_set_can_focus( entry, priv->is_current );
+	my_date_set_from_date( &priv->end_init, ofo_dossier_get_exe_end( priv->dossier ));
 }
 
 static void
@@ -489,20 +493,20 @@ is_dialog_valid( ofaDossierProperties *self )
 	priv = self->priv;
 
 	ok = priv->begin_empty || ( my_date_is_valid( &priv->begin ));
-	g_debug( "is_dialog_valid 1: ok=%s", ok ? "True":"False" );
+	/*g_debug( "is_dialog_valid 1: ok=%s", ok ? "True":"False" );*/
 
 	ok &= priv->end_empty ||
 			( my_date_is_valid( &priv->end ) &&
 				( !my_date_is_valid( &priv->begin ) ||
 					my_date_compare( &priv->end, &priv->begin ) > 0 ));
-	g_debug( "is_dialog_valid 2: ok=%s", ok ? "True":"False" );
+	/*g_debug( "is_dialog_valid 2: ok=%s", ok ? "True":"False" );*/
 
 	ok &= ofo_dossier_is_valid( priv->label, priv->duree, priv->currency, &priv->begin, &priv->end );
-	g_debug( "is_dialog_valid 3: ok=%s", ok ? "True":"False" );
+	/*g_debug( "is_dialog_valid 3: ok=%s", ok ? "True":"False" );*/
 
 	if( priv->forward ){
 		ok &= ofa_exe_forward_check( priv->forward );
-		g_debug( "is_dialog_valid 4: ok=%s", ok ? "True":"False" );
+		/*g_debug( "is_dialog_valid 4: ok=%s", ok ? "True":"False" );*/
 	}
 
 	return( ok );
@@ -519,6 +523,7 @@ do_update( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
 	GtkContainer *container;
+	gboolean date_has_changed;
 
 	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
 
@@ -539,6 +544,29 @@ do_update( ofaDossierProperties *self )
 	my_utils_getback_notes_ex( container, dossier );
 
 	priv->updated = ofo_dossier_update( priv->dossier );
+
+	/* have begin or end exe dates changed ? */
+	date_has_changed = FALSE;
+
+	if( my_date_is_valid( &priv->begin_init )){
+		if( !my_date_is_valid( &priv->begin ) || my_date_compare( &priv->begin_init, &priv->begin )){
+			date_has_changed = TRUE;
+		}
+	} else if( my_date_is_valid( &priv->begin )){
+		date_has_changed = TRUE;
+	}
+
+	if( my_date_is_valid( &priv->end_init )){
+		if( !my_date_is_valid( &priv->end ) || my_date_compare( &priv->end_init, &priv->end )){
+			date_has_changed = TRUE;
+		}
+	} else if( my_date_is_valid( &priv->end )){
+		date_has_changed = TRUE;
+	}
+
+	if( date_has_changed ){
+		g_signal_emit_by_name( priv->dossier, SIGNAL_DOSSIER_EXE_DATE_CHANGED );
+	}
 
 	return( priv->updated );
 }

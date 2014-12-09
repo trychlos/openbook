@@ -101,6 +101,7 @@ enum {
 	DELETED_OBJECT,
 	RELOAD_DATASET,
 	VALIDATED_ENTRY,
+	EXE_DATE_CHANGED,
 	N_SIGNALS
 };
 
@@ -124,6 +125,7 @@ static void        dossier_class_init( ofoDossierClass *klass );
 static void        connect_objects_handlers( const ofoDossier *dossier );
 static void        on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void        on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
+static void        on_exe_dates_changed( const ofoDossier *dossier, void *empty );
 static gboolean    dbmodel_update( const ofoDossier *dossier );
 static gint        dbmodel_get_version( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v1( const ofoDossier *dossier );
@@ -414,6 +416,25 @@ dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_OBJECT );
+
+	/**
+	 * ofoDossier::ofa-signal-exe-date-changed:
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofoDossier  *dossier,
+	 * 								gpointer user_data );
+	 */
+	st_signals[ EXE_DATE_CHANGED ] = g_signal_new_class_handler(
+				SIGNAL_DOSSIER_EXE_DATE_CHANGED,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
 }
 
 /**
@@ -546,6 +567,9 @@ connect_objects_handlers( const ofoDossier *dossier )
 
 	g_signal_connect( G_OBJECT( dossier ),
 				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
+
+	g_signal_connect( G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_EXE_DATE_CHANGED, G_CALLBACK( on_exe_dates_changed ), NULL );
 }
 
 static void
@@ -583,6 +607,16 @@ on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id
 	ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
 
 	g_free( query );
+}
+
+static void
+on_exe_dates_changed( const ofoDossier *dossier, void *empty )
+{
+	ofa_dbms_set_current_exercice(
+			( ofaDbms * ) ofo_dossier_get_dbms( dossier ),
+			ofo_dossier_get_name( dossier ),
+			ofo_dossier_get_exe_begin( dossier ),
+			ofo_dossier_get_exe_end( dossier ));
 }
 
 /**

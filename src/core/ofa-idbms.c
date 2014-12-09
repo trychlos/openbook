@@ -312,6 +312,27 @@ ofa_idbms_get_current( const ofaIDbms *instance, const gchar *dname )
 }
 
 /**
+ * ofa_idbms_set_current:
+ * @instance: this #ofaIDbms instance.
+ * @dname: the name of the dossier from the settings.
+ * @begin: the new beginning of the exercice
+ * @end: the new end of the exercice
+ *
+ * Ask the DBMS provider to update its settings with the new dates of
+ * the exercice.
+ */
+void
+ofa_idbms_set_current( const ofaIDbms *instance, const gchar *dname, const GDate *begin, const GDate *end )
+{
+	g_return_if_fail( OFA_IS_IDBMS( instance ));
+	g_return_if_fail( dname && g_utf8_strlen( dname, -1 ));
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->set_current ){
+		OFA_IDBMS_GET_INTERFACE( instance )->set_current( instance, dname, begin, end );
+	}
+}
+
+/**
  * ofa_idbms_query:
  */
 gboolean

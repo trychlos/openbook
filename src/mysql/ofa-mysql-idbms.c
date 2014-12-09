@@ -104,6 +104,7 @@ static GSList    *idbms_get_exercices( const ofaIDbms *instance, const gchar *dn
 static gchar     *idbms_get_current( const ofaIDbms *instance, const gchar *dname );
 static gchar     *exercice_get_description( const gchar *dbname, const gchar *sbegin, const gchar *send, gboolean is_current );
 static gint       exercice_cmp( const gchar *line_a, const gchar *line_b );
+static void       idbms_set_current( const ofaIDbms *instance, const gchar *dname, const GDate *begin, const GDate *end );
 static gboolean   idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
 static gboolean   idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result );
 static gchar     *idbms_last_error( const ofaIDbms *instance, void *handle );
@@ -157,6 +158,7 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->close = idbms_close;
 	iface->get_exercices = idbms_get_exercices;
 	iface->get_current = idbms_get_current;
+	iface->set_current = idbms_set_current;
 	iface->query = idbms_query;
 	iface->query_ex = idbms_query_ex;
 	iface->last_error = idbms_last_error;
@@ -420,6 +422,35 @@ static gint
 exercice_cmp( const gchar *line_a, const gchar *line_b )
 {
 	return( -1*g_utf8_collate( line_a, line_b ));
+}
+
+/*
+ * set the settings with the dates of the current exercice
+ */
+static void
+idbms_set_current( const ofaIDbms *instance, const gchar *dname, const GDate *begin, const GDate *end )
+{
+	GList *list, *it;
+	gchar *dbname, *sbegin, *send, *str;
+
+	list = ofa_settings_dossier_get_string_list( dname, SETTINGS_DATABASE );
+	dbname = NULL;
+	it = list;
+	if( it ){
+		dbname = g_strdup(( const gchar * ) it->data );
+	}
+	ofa_settings_free_string_list( list );
+
+	sbegin = my_date_to_str( begin, MY_DATE_YYMD );
+	send = my_date_to_str( end, MY_DATE_YYMD );
+	str = g_strdup_printf( "%s;%s;%s;", dbname, sbegin, send );
+
+	ofa_settings_dossier_set_string( dname, SETTINGS_DATABASE, str );
+
+	g_free( dbname );
+	g_free( str );
+	g_free( sbegin );
+	g_free( send );
 }
 
 static gboolean

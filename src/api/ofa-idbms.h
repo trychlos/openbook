@@ -158,6 +158,21 @@ typedef struct {
 														const gchar *dname );
 
 	/**
+	 * set_current:
+	 * @instance: the #ofaIDbms provider.
+	 * @dname: the name of the dossier from settings.
+	 * @begin: the new beginning of the exercice.
+	 * @end: the new end of the exercice.
+	 *
+	 * Update the settings with the new provided dates.
+	 *
+	 * Since: version 1
+	 */
+	void          ( *set_current )          ( const ofaIDbms *instance,
+														const gchar *dname,
+														const GDate *begin, const GDate *end );
+
+	/**
 	 * query:
 	 * @instance: the #ofaIDbms provider.
 	 * @handle: the handle returned by the connection.
@@ -443,6 +458,10 @@ GSList      *ofa_idbms_get_exercices        ( const ofaIDbms *instance,
 
 gchar       *ofa_idbms_get_current           ( const ofaIDbms *instance,
 													const gchar *dname );
+
+void         ofa_idbms_set_current           ( const ofaIDbms *instance,
+													const gchar *dname,
+													const GDate *begin, const GDate *end );
 
 GSList      *ofa_idbms_get_providers_list   ( void );
 

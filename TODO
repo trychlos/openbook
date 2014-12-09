@@ -421,8 +421,6 @@
 
  514 2014-12- 9 current exercice has no ending date (but should)
 
- 515 2014-12- 9 refactor ledger amount names as account
-
  516
 
 -----------------------------------------------------------------------
@@ -2182,6 +2180,9 @@
 
  507 2014-12- 6 remove dossier_dates_changed signal ?
      2014-12- 7 done - svn #4258
+
+ 515 2014-12- 9 refactor ledger amount names as account
+     2014-12- 9 done - svn #4265
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
