@@ -393,9 +393,12 @@
                                           </packing>
                                         </child>
                                         <child>
-                                          <object class="GtkComboBox" id="p2-dev-combo">
+                                          <object class="GtkAlignment" id="p1-currency-parent">
                                             <property name="visible">True</property>
                                             <property name="can_focus">False</property>
+                                            <child>
+                                              <placeholder/>
+                                            </child>
                                           </object>
                                           <packing>
                                             <property name="left_attach">1</property>

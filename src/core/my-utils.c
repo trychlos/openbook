@@ -540,6 +540,24 @@ my_utils_container_get_child_by_type( GtkContainer *container, GType type )
 }
 
 /**
+ * my_utils_widget_get_toplevel_window:
+ * @widget:
+ *
+ * Returns: the toplevel #GtkWindow parent of the @widget.
+ */
+GtkWindow *
+my_utils_widget_get_toplevel_window( GtkWidget *widget )
+{
+	GtkWidget *parent;
+
+	parent = gtk_widget_get_parent( widget );
+	if( GTK_IS_WINDOW( parent )){
+		return( GTK_WINDOW( parent ));
+	}
+	return( my_utils_widget_get_toplevel_window( parent ));
+}
+
+/**
  * my_utils_init_notes:
  *
  * This function is mostly used through the "my_utils_init_notes_ex()"

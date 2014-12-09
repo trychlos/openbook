@@ -156,20 +156,6 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkComboBox" id="p1-currency">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="tooltip_text" translatable="yes">The currency of the account : only entries in this currency may be imputed on this account.</property>
-                        <property name="halign">start</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">4</property>
-                        <property name="width">1</property>
-                        <property name="height">1</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkFrame" id="p1-type-frame">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -214,6 +200,7 @@
                                     <property name="use_underline">True</property>
                                     <property name="xalign">0</property>
                                     <property name="draw_indicator">True</property>
+                                    <property name="group">p1-root-account</property>
                                   </object>
                                   <packing>
                                     <property name="left_attach">0</property>
@@ -281,7 +268,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
-                                    <property name="tooltip_text" translatable="yes">All entries on all accounts may actually be settled. But only unreconciliated entries written on reconciliable accounts will be reported on next exercice at closing time.</property>
+                                    <property name="tooltip_text" translatable="yes">All entries on all accounts may actually be reconciliated. But only unreconciliated entries written on reconciliable accounts will be reported on next exercice at closing time.</property>
                                     <property name="use_underline">True</property>
                                     <property name="xalign">0</property>
                                     <property name="draw_indicator">True</property>
@@ -326,6 +313,21 @@
                       <packing>
                         <property name="left_attach">1</property>
                         <property name="top_attach">3</property>
+                        <property name="width">1</property>
+                        <property name="height">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkAlignment" id="p1-currency-parent">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">4</property>
                         <property name="width">1</property>
                         <property name="height">1</property>
                       </packing>

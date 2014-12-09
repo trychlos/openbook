@@ -193,6 +193,26 @@ my_double_to_sql( gdouble value )
 }
 
 /**
+ * my_bigint_to_str:
+ * @value:
+ *
+ * Returns: a newly allocated string which represents the specified
+ * value, decorated for display (with thousand separator).
+ */
+gchar *
+my_bigint_to_str( glong value )
+{
+	gchar *text, *deco;
+
+	text = g_strdup_printf( "%'ld", value);
+	deco = double_decorate( text );
+
+	g_free( text );
+
+	return( deco );
+}
+
+/**
  * my_double_to_str:
  * @value:
  *

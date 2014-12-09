@@ -37,6 +37,7 @@
 #include "api/ofo-ope-template.h"
 
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-dossier-cur.h"
 #include "ui/ofa-exe-forward.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
@@ -52,16 +53,11 @@ struct _ofaExeForwardPrivate {
 	ofoDossier     *dossier;
 
 	GtkContainer   *parent;
-	GtkWidget      *account_entry;
 	ofaLedgerCombo *sld_ledger_combo;
-	GtkWidget      *sld_ledger_create;
 	GtkWidget      *sld_ope_entry;
-	GtkWidget      *sld_ope_create;
 	GtkWidget      *sld_label_entry;
 	ofaLedgerCombo *for_ledger_combo;
-	GtkWidget      *for_ledger_create;
 	GtkWidget      *for_ope_entry;
-	GtkWidget      *for_ope_create;
 	GtkWidget      *for_label_close_entry;
 	GtkWidget      *for_label_open_entry;
 };
@@ -89,18 +85,17 @@ G_DEFINE_TYPE( ofaExeForward, ofa_exe_forward, G_TYPE_OBJECT )
 static void     on_parent_finalized( ofaExeForward *self, gpointer finalized_parent );
 static void     setup_solde( ofaExeForward *piece );
 static void     setup_forward( ofaExeForward *piece );
-static void     on_account_select( GtkButton *button, ofaExeForward *piece );
 static void     on_sld_ledger_new( GtkButton *button, ofaExeForward *piece );
 static void     on_sld_ope_select( GtkButton *button, ofaExeForward *piece );
 static void     on_for_ledger_new( GtkButton *button, ofaExeForward *piece );
 static void     on_for_ope_select( GtkButton *button, ofaExeForward *piece );
 static void     on_entry_changed( GtkEditable *editable, ofaExeForward *self );
 static void     on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaExeForward *self );
+static void     on_balance_accounts( GtkButton *button, ofaExeForward *self );
 static void     check_piece( ofaExeForward *piece );
 static gboolean check_for_ledger( ofaExeForward *self, ofaLedgerCombo *combo );
 static gboolean check_for_ope( ofaExeForward *self, GtkWidget *entry );
 static gboolean check_for_label( ofaExeForward *self, GtkWidget *entry );
-static gboolean check_for_account( ofaExeForward *self, GtkWidget *entry );
 
 static void
 exe_forward_finalize( GObject *instance )
@@ -256,27 +251,12 @@ setup_solde( ofaExeForward *piece )
 
 	priv = piece->priv;
 
-	/* balancing account */
-	priv->account_entry = my_utils_container_get_child_by_name( priv->parent, "p2-account" );
-	g_return_if_fail( priv->account_entry && GTK_IS_ENTRY( priv->account_entry ));
-	cstr = ofo_dossier_get_sld_account( priv->dossier );
-	g_signal_connect( G_OBJECT( priv->account_entry ), "changed", G_CALLBACK( on_entry_changed ), piece );
-	if( cstr ){
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
-	}
-
-	widget = my_utils_container_get_child_by_name( priv->parent, "p2-account-select" );
-	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( GTK_BUTTON( widget ), image );
-	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_account_select ), piece );
-
 	/* balancing ledger for closing entries (must exist) */
 	parent = my_utils_container_get_child_by_name( priv->parent, "p2-bledger-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->sld_ledger_combo = ofa_ledger_combo_new();
 	ofa_ledger_combo_attach_to(
-			priv->sld_ledger_combo, TRUE, FALSE, GTK_CONTAINER( parent ));
+			priv->sld_ledger_combo, FALSE, TRUE, GTK_CONTAINER( parent ));
 	ofa_ledger_combo_init_view(
 			priv->sld_ledger_combo, priv->dossier, ofo_dossier_get_sld_ledger( priv->dossier ));
 	g_signal_connect(
@@ -317,6 +297,11 @@ setup_solde( ofaExeForward *piece )
 		cstr = st_def_sld_label;
 	}
 	gtk_entry_set_text( GTK_ENTRY( priv->sld_label_entry ), cstr );
+
+	/* balancing accounts for currencies */
+	widget = my_utils_container_get_child_by_name( priv->parent, "p2-balance-accounts" );
+	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
+	g_signal_connect( widget, "clicked", G_CALLBACK( on_balance_accounts ), piece );
 }
 
 static void
@@ -333,7 +318,7 @@ setup_forward( ofaExeForward *piece )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->for_ledger_combo = ofa_ledger_combo_new();
 	ofa_ledger_combo_attach_to(
-			priv->for_ledger_combo, TRUE, FALSE, GTK_CONTAINER( parent ));
+			priv->for_ledger_combo, FALSE, TRUE, GTK_CONTAINER( parent ));
 	ofa_ledger_combo_init_view(
 			priv->for_ledger_combo, priv->dossier, ofo_dossier_get_forward_ledger( priv->dossier ));
 	g_signal_connect(
@@ -384,6 +369,7 @@ setup_forward( ofaExeForward *piece )
 	gtk_entry_set_text( GTK_ENTRY( priv->for_label_open_entry ), cstr );
 }
 
+#if 0
 static void
 on_account_select( GtkButton *button, ofaExeForward *piece )
 {
@@ -400,6 +386,7 @@ on_account_select( GtkButton *button, ofaExeForward *piece )
 		g_free( acc_number );
 	}
 }
+#endif
 
 static void
 on_sld_ledger_new( GtkButton *button, ofaExeForward *piece )
@@ -490,6 +477,18 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label
 }
 
 static void
+on_balance_accounts( GtkButton *button, ofaExeForward *self )
+{
+	ofaExeForwardPrivate *priv;
+	GtkWindow *parent;
+
+	priv = self->priv;
+
+	parent = my_utils_widget_get_toplevel_window( GTK_WIDGET( button ));
+	ofa_dossier_cur_run( priv->main_window, parent );
+}
+
+static void
 check_piece( ofaExeForward *self )
 {
 	g_signal_emit_by_name( self, "changed" );
@@ -512,7 +511,7 @@ ofa_exe_forward_check( ofaExeForward *piece )
 	if( !priv->dispose_has_run ){
 
 		ok = TRUE;
-		if( ok ) ok &= check_for_account( piece, priv->account_entry );
+		/*if( ok ) ok &= check_for_account( piece, priv->account_entry );*/
 		if( ok ) ok &= check_for_ledger( piece, priv->sld_ledger_combo );
 		if( ok ) ok &= check_for_ope( piece, priv->sld_ope_entry );
 		if( ok ) ok &= check_for_label( piece, priv->sld_label_entry );
@@ -605,6 +604,7 @@ check_for_label( ofaExeForward *self, GtkWidget *entry )
 	return( TRUE );
 }
 
+#if 0
 static gboolean
 check_for_account( ofaExeForward *self, GtkWidget *entry )
 {
@@ -629,6 +629,7 @@ check_for_account( ofaExeForward *self, GtkWidget *entry )
 
 	return( TRUE );
 }
+#endif
 
 /**
  * ofa_exe_forward_apply:
@@ -657,9 +658,6 @@ ofa_exe_forward_apply( ofaExeForward *piece )
 
 		ofo_dossier_set_forward_label_open( priv->dossier,
 					gtk_entry_get_text( GTK_ENTRY( priv->for_label_open_entry )));
-
-		ofo_dossier_set_sld_account( priv->dossier,
-					gtk_entry_get_text( GTK_ENTRY( priv->account_entry )));
 
 		mnemo = ofa_ledger_combo_get_selected( priv->sld_ledger_combo );
 		ofo_dossier_set_sld_ledger( priv->dossier, mnemo );

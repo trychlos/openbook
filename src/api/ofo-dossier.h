@@ -86,7 +86,6 @@ const gchar     *ofo_dossier_get_forward_ope           ( const ofoDossier *dossi
 const gchar     *ofo_dossier_get_label                 ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_notes                 ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_siren                 ( const ofoDossier *dossier );
-const gchar     *ofo_dossier_get_sld_account           ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_sld_label             ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_sld_ledger            ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_sld_ope               ( const ofoDossier *dossier );
@@ -104,6 +103,11 @@ ofxCounter       ofo_dossier_get_next_entry            ( ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_next_settlement       ( ofoDossier *dossier );
 
 GDate           *ofo_dossier_get_min_deffect           ( GDate *date, const ofoDossier *dossier, ofoLedger *ledger );
+
+GSList          *ofo_dossier_get_currencies            ( const ofoDossier *dossier );
+#define          ofo_dossier_free_currencies( L )      g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
+
+const gchar     *ofo_dossier_get_sld_account           ( ofoDossier *dossier, const gchar *currency );
 
 gboolean         ofo_dossier_is_current                ( const ofoDossier *dossier );
 gboolean         ofo_dossier_is_valid                  ( const gchar *label,
@@ -124,12 +128,15 @@ void             ofo_dossier_set_forward_ope           ( ofoDossier *dossier, co
 void             ofo_dossier_set_label                 ( ofoDossier *dossier, const gchar *label );
 void             ofo_dossier_set_notes                 ( ofoDossier *dossier, const gchar *notes );
 void             ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );
-void             ofo_dossier_set_sld_account           ( ofoDossier *dossier, const gchar *account );
 void             ofo_dossier_set_sld_label             ( ofoDossier *dossier, const gchar *label );
 void             ofo_dossier_set_sld_ledger            ( ofoDossier *dossier, const gchar *ledger );
 void             ofo_dossier_set_sld_ope               ( ofoDossier *dossier, const gchar *ope );
 
+void             ofo_dossier_reset_currencies          ( ofoDossier *dossier );
+void             ofo_dossier_set_sld_account           ( ofoDossier *dossier, const gchar *currency, const gchar *account );
+
 gboolean         ofo_dossier_update                    ( ofoDossier *dossier );
+gboolean         ofo_dossier_update_currencies         ( ofoDossier *dossier );
 
 gboolean         ofo_dossier_backup                    ( const ofoDossier *dossier, const gchar *fname );
 

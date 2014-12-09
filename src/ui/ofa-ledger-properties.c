@@ -60,7 +60,6 @@ struct _ofaLedgerPropertiesPrivate {
 
 	/* UI
 	 */
-	ofaCurrencyCombo *dev_combo;
 
 	/* data
 	 */
@@ -88,7 +87,7 @@ static void      v_init_dialog( myDialog *dialog );
 static void      init_balances_page( ofaLedgerProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaLedgerProperties *self );
-static void      on_currency_changed( const gchar *currency, ofaLedgerProperties *self );
+static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *currency, ofaLedgerProperties *self );
 static void      display_balances( ofaLedgerProperties *self );
 static void      check_for_enable_dlg( ofaLedgerProperties *self );
 static gboolean  is_dialog_validable( ofaLedgerProperties *self );
@@ -257,21 +256,20 @@ static void
 init_balances_page( ofaLedgerProperties *self )
 {
 	GtkContainer *container;
-	ofsCurrencyComboParms parms;
+	ofaCurrencyCombo *combo;
+	GtkWidget *parent;
 
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
 
-	parms.container = container;
-	parms.dossier = MY_WINDOW( self )->prot->dossier;
-	parms.combo_name = "p2-dev-combo";
-	parms.label_name = NULL;
-	parms.disp_code = TRUE;
-	parms.disp_label = FALSE;
-	parms.pfnSelected = ( ofaCurrencyComboCb ) on_currency_changed;
-	parms.user_data = self;
-	parms.initial_code = ofo_dossier_get_default_currency( MY_WINDOW( self )->prot->dossier );
+	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	self->priv->dev_combo = ofa_currency_combo_new( &parms );
+	combo = ofa_currency_combo_new();
+	ofa_currency_combo_attach_to( combo,
+			GTK_CONTAINER( parent ), CURRENCY_COL_CODE );
+	ofa_currency_combo_init_view( combo,
+			MY_WINDOW( self )->prot->dossier, ofo_dossier_get_default_currency( MY_WINDOW( self )->prot->dossier ));
+	g_signal_connect( combo, "changed", G_CALLBACK( on_currency_changed ), self );
 }
 
 static void
@@ -296,7 +294,7 @@ on_label_changed( GtkEntry *entry, ofaLedgerProperties *self )
  * ofaCurrencyComboCb
  */
 static void
-on_currency_changed( const gchar *currency, ofaLedgerProperties *self )
+on_currency_changed( ofaCurrencyCombo *combo, const gchar *currency, ofaLedgerProperties *self )
 {
 	ofaLedgerPropertiesPrivate *priv;
 	ofoCurrency *obj;

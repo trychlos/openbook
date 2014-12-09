@@ -72,7 +72,6 @@ struct _ofoDossierPrivate {
 	gchar      *label;					/* raison sociale */
 	gchar      *notes;					/* notes */
 	gchar      *siren;
-	gchar      *sld_account;
 	gchar      *sld_label;
 	gchar      *sld_ledger;
 	gchar      *sld_ope;
@@ -84,8 +83,15 @@ struct _ofoDossierPrivate {
 	ofxCounter  last_settlement;
 	gchar      *status;
 
+	GList      *cur_details;			/* a list of details per currency */
 	GList      *datasets;				/* a list of datasets managed by ofaIDataset */
 };
+
+typedef struct {
+	gchar *currency;
+	gchar *sld_account;
+}
+	sCurrency;
 
 /* signals defined here
  */
@@ -122,6 +128,8 @@ static gboolean    dbmodel_update( const ofoDossier *dossier );
 static gint        dbmodel_get_version( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v1( const ofoDossier *dossier );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
+static sCurrency  *get_currency_detail( ofoDossier *dossier, const gchar *currency, gboolean create );
+static gint        cmp_currency_detail( sCurrency *a, sCurrency *b );
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
 static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
 static void        dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter );
@@ -138,6 +146,8 @@ static gboolean    dossier_do_read( ofoDossier *dossier );
 static gboolean    dossier_read_properties( ofoDossier *dossier );
 static gboolean    dossier_do_update( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
 static gboolean    do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
+static gboolean    dossier_do_update_currencies( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
+static gboolean    do_update_currency_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
@@ -146,6 +156,8 @@ static guint       idataset_get_interface_version( const ofaIDataset *instance )
 static GList      *idataset_get_datasets( const ofaIDataset *instance );
 static void        idataset_set_datasets( ofaIDataset *instance, GList *list );
 static void        free_datasets( GList *datasets );
+static void        free_cur_detail( sCurrency *details );
+static void        free_cur_details( GList *details );
 
 GType
 ofo_dossier_get_type( void )
@@ -242,6 +254,9 @@ dossier_dispose( GObject *instance )
 		/* unref object members here */
 		priv = OFO_DOSSIER( instance )->priv;
 
+		if( priv->cur_details ){
+			free_cur_details( priv->cur_details );
+		}
 		if( priv->datasets ){
 			free_datasets( priv->datasets );
 		}
@@ -857,7 +872,6 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	DOS_LABEL            VARCHAR(80)               COMMENT 'Raison sociale',"
 			"	DOS_NOTES            VARCHAR(4096)             COMMENT 'Dossier notes',"
 			"	DOS_SIREN            VARCHAR(9)                COMMENT 'Siren identifier',"
-			"	DOS_SLD_ACCOUNT      VARCHAR(20)               COMMENT 'Balancing account when closing the exercice',"
 			"	DOS_SLD_LABEL        VARCHAR(80)               COMMENT 'Entry Label for balancing the accounts',"
 			"	DOS_SLD_LEDGER       VARCHAR(6)                COMMENT 'Ledger for balancing entries',"
 			"	DOS_SLD_OPE          VARCHAR(6)                COMMENT 'Operation mnemo for balancing entries',"
@@ -874,13 +888,23 @@ dbmodel_to_v1( const ofoDossier *dossier )
 
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
-			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,DOS_LAST_EXE_ID,DOS_EXE_ID,DOS_STATUS) "
-			"	VALUES (1,'%s',%u,'EUR',1,1,'C')", priv->dname, DOS_DEFAULT_LENGTH );
+			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,DOS_STATUS) "
+			"	VALUES (1,'%s',%u,'EUR','C')", priv->dname, DOS_DEFAULT_LENGTH );
 	if( !ofa_dbms_query( priv->dbms, query, TRUE )){
 		g_free( query );
 		return( FALSE );
 	}
 	g_free( query );
+
+	if( !ofa_dbms_query( priv->dbms,
+			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_CUR ("
+			"	DOS_ID               INTEGER   NOT NULL        COMMENT 'Row identifier',"
+			"	DOS_CURRENCY         VARCHAR(3)                COMMENT 'Currency identifier',"
+			"	DOS_SLD_ACCOUNT      VARCHAR(20)               COMMENT 'Balancing account when closing the exercice',"
+			"	CONSTRAINT PRIMARY KEY (DOS_ID,DOS_CURRENCY)"
+			") CHARACTER SET utf8", TRUE )){
+		return( FALSE );
+	}
 
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
@@ -1356,25 +1380,6 @@ ofo_dossier_get_siren( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_sld_account:
- *
- * Returns: the sld account of the dossier.
- */
-const gchar *
-ofo_dossier_get_sld_account( const ofoDossier *dossier )
-{
-	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		return(( const gchar * ) dossier->priv->sld_account );
-	}
-
-	g_return_val_if_reached( NULL );
-	return( NULL );
-}
-
-/**
  * ofo_dossier_get_sld_label:
  *
  * Returns: the sld account of the dossier.
@@ -1719,28 +1724,131 @@ ofo_dossier_get_min_deffect( GDate *date, const ofoDossier *dossier, ofoLedger *
 		}
 	}
 
-	last_clo = ledger ? ofo_ledger_get_last_close( ledger ) : NULL;
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-	my_date_set_from_date( date, ofo_dossier_get_exe_begin( dossier ));
-	to_add = 0;
+		last_clo = ledger ? ofo_ledger_get_last_close( ledger ) : NULL;
+		my_date_set_from_date( date, ofo_dossier_get_exe_begin( dossier ));
+		to_add = 0;
 
-	if( my_date_is_valid( date )){
-		if( my_date_is_valid( last_clo )){
-			if( my_date_compare( date, last_clo ) < 0 ){
-				my_date_set_from_date( date, last_clo );
-				to_add = 1;
+		if( my_date_is_valid( date )){
+			if( my_date_is_valid( last_clo )){
+				if( my_date_compare( date, last_clo ) < 0 ){
+					my_date_set_from_date( date, last_clo );
+					to_add = 1;
+				}
 			}
+		} else if( my_date_is_valid( last_clo )){
+			my_date_set_from_date( date, last_clo );
+			to_add = 1;
 		}
-	} else if( my_date_is_valid( last_clo )){
-		my_date_set_from_date( date, last_clo );
-		to_add = 1;
+
+		if( my_date_is_valid( date )){
+			g_date_add_days( date, to_add );
+		}
+
+		return( date );
 	}
 
-	if( my_date_is_valid( date )){
-		g_date_add_days( date, to_add );
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_currencies:
+ * @dossier: this dossier.
+ *
+ * Returns: an alphabetically sorted #GSList of the currencies defined
+ * in the subtable.
+ *
+ * The returned list should be #ofo_dossier_free_currencies() by the
+ * caller.
+ */
+GSList *
+ofo_dossier_get_currencies( const ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+	sCurrency *sdet;
+	GSList *list;
+	GList *it;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		list = NULL;
+
+		for( it=priv->cur_details ; it ; it=it->next ){
+			sdet = ( sCurrency * ) it->data;
+			list = g_slist_insert_sorted( list, g_strdup( sdet->currency ), ( GCompareFunc ) g_utf8_collate );
+		}
+
+		return( list );
 	}
 
-	return( date );
+	g_return_val_if_reached( NULL );
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_sld_account:
+ * @dossier: this dossier.
+ * @currency: the serched currency.
+ *
+ * Returns: the account configured as balancing account for this
+ * currency.
+ *
+ * The returned string is owned by the @dossier, and must not be freed
+ * by the caller.
+ */
+const gchar *
+ofo_dossier_get_sld_account( ofoDossier *dossier, const gchar *currency )
+{
+	sCurrency *sdet;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sdet = get_currency_detail( dossier, currency, FALSE );
+		if( sdet ){
+			return(( const gchar * ) sdet->sld_account );
+		}
+	}
+
+	return( NULL );
+}
+
+static sCurrency *
+get_currency_detail( ofoDossier *dossier, const gchar *currency, gboolean create )
+{
+	ofoDossierPrivate *priv;
+	GList *it;
+	sCurrency *sdet;
+
+	priv = dossier->priv;
+	sdet = NULL;
+
+	for( it=priv->cur_details ; it ; it=it->next ){
+		sdet = ( sCurrency * ) it->data;
+		if( !g_utf8_collate( sdet->currency, currency )){
+			return( sdet );
+		}
+	}
+
+	if( create ){
+		sdet = g_new0( sCurrency, 1 );
+		sdet->currency = g_strdup( currency );
+		priv->cur_details = g_list_insert_sorted( priv->cur_details, sdet, ( GCompareFunc ) cmp_currency_detail );
+	}
+
+	return( sdet );
+}
+
+static gint
+cmp_currency_detail( sCurrency *a, sCurrency *b )
+{
+	return( g_utf8_collate( a->currency, b->currency ));
 }
 
 /**
@@ -1820,11 +1928,17 @@ ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency,
 	gboolean valid;
 
 	valid = label && g_utf8_strlen( label, -1 );
+	g_debug( "ofo_dossier_is_valid: label valid=%s", valid ? "True":"False" );
+
 	valid &= nb_months > 0;
+	g_debug( "ofo_dossier_is_valid: nb_months valid=%s", valid ? "True":"False" );
+
 	valid &= currency && g_utf8_strlen( currency, -1 );
+	g_debug( "ofo_dossier_is_valid: currency valid=%s", valid ? "True":"False" );
 
 	if( my_date_is_valid( begin ) && my_date_is_valid( end )){
-		valid &= my_date_compare( begin, end ) < 0;
+		valid &= ( my_date_compare( begin, end ) < 0 );
+		g_debug( "ofo_dossier_is_valid: begin/end valid=%s", valid ? "True":"False" );
 	}
 
 	return( valid );
@@ -2025,23 +2139,6 @@ ofo_dossier_set_siren( ofoDossier *dossier, const gchar *siren )
 }
 
 /**
- * ofo_dossier_set_sld_account:
- *
- * Not mandatory until closing the exercice.
- */
-void
-ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *account )
-{
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
-
-		g_free( dossier->priv->sld_account );
-		dossier->priv->sld_account = g_strdup( account );
-	}
-}
-
-/**
  * ofo_dossier_set_sld_label:
  *
  * Not mandatory until closing the exercice.
@@ -2192,6 +2289,54 @@ dossier_set_status( ofoDossier *dossier, const gchar *status )
 	}
 }
 
+/**
+ * ofo_dossier_reset_currencies:
+ * @dossier: this dossier.
+ *
+ * Reset the currencies (free all).
+ *
+ * This function should be called when updating the currencies
+ * properties, as we are only able to set new elements in the list.
+ */
+void
+ofo_dossier_reset_currencies( ofoDossier *dossier )
+{
+	ofoDossierPrivate *priv;
+
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		free_cur_details( priv->cur_details );
+		priv->cur_details = NULL;
+	}
+}
+
+/**
+ * ofo_dossier_set_sld_account:
+ * @dossier: this dossier.
+ * @currency: the currency.
+ * @account: the account.
+ *
+ * Set the balancing account for the currency.
+ */
+void
+ofo_dossier_set_sld_account( ofoDossier *dossier, const gchar *currency, const gchar *account )
+{
+	sCurrency *sdet;
+
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_if_fail( currency && g_utf8_strlen( currency, -1 ));
+	g_return_if_fail( account && g_utf8_strlen( account, -1 ));
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		sdet = get_currency_detail( dossier, currency, TRUE );
+		sdet->sld_account = g_strdup( account );
+	}
+}
+
 static void
 on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object )
 {
@@ -2258,11 +2403,12 @@ static gboolean
 dossier_read_properties( ofoDossier *dossier )
 {
 	gchar *query;
-	GSList *result, *icol;
+	GSList *result, *irow, *icol;
 	gboolean ok;
-	const gchar *cstr;
+	const gchar *cstr, *currency;
 	GTimeVal timeval;
 	GDate date;
+	sCurrency *sdet;
 
 	ok = FALSE;
 
@@ -2271,7 +2417,7 @@ dossier_read_properties( ofoDossier *dossier )
 			"	DOS_EXE_BEGIN,DOS_EXE_END,DOS_EXE_LENGTH,DOS_EXE_NOTES,"
 			"	DOS_FORW_LABEL_CLOSE,DOS_FORW_LABEL_OPEN,DOS_FORW_LEDGER,DOS_FORW_OPE,"
 			"	DOS_LABEL,DOS_NOTES,DOS_SIREN,"
-			"	DOS_SLD_ACCOUNT,DOS_SLD_LABEL,DOS_SLD_LEDGER,DOS_SLD_OPE,"
+			"	DOS_SLD_LABEL,DOS_SLD_LEDGER,DOS_SLD_OPE,"
 			"	DOS_UPD_USER,DOS_UPD_STAMP,"
 			"	DOS_LAST_BAT,DOS_LAST_BATLINE,DOS_LAST_ENTRY,DOS_LAST_SETTLEMENT,"
 			"	DOS_STATUS "
@@ -2342,11 +2488,6 @@ dossier_read_properties( ofoDossier *dossier )
 		icol = icol->next;
 		cstr = icol->data;
 		if( cstr && g_utf8_strlen( cstr, -1 )){
-			ofo_dossier_set_sld_account( dossier, cstr );
-		}
-		icol = icol->next;
-		cstr = icol->data;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
 			ofo_dossier_set_sld_label( dossier, cstr );
 		}
 		icol = icol->next;
@@ -2400,6 +2541,26 @@ dossier_read_properties( ofoDossier *dossier )
 	}
 
 	g_free( query );
+
+	query = g_strdup_printf(
+			"SELECT DOS_CURRENCY,DOS_SLD_ACCOUNT "
+			"	FROM OFA_T_DOSSIER_CUR "
+			"	WHERE DOS_ID=%d ORDER BY DOS_CURRENCY ASC", THIS_DOS_ID );
+
+	if( ofa_dbms_query_ex( dossier->priv->dbms, query, &result, TRUE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			currency = icol->data;
+			if( currency && g_utf8_strlen( currency, -1 )){
+				icol = icol->next;
+				cstr = icol->data;
+				if( cstr && g_utf8_strlen( cstr, -1 )){
+					sdet = get_currency_detail( dossier, currency, TRUE );
+					sdet->sld_account = g_strdup( cstr );
+				}
+			}
+		}
+	}
 
 	return( ok );
 }
@@ -2534,13 +2695,6 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 		query = g_string_append( query, "DOS_SIREN=NULL," );
 	}
 
-	cstr = ofo_dossier_get_sld_account( dossier );
-	if( cstr && g_utf8_strlen( cstr, -1 )){
-		g_string_append_printf( query, "DOS_SLD_ACCOUNT='%s',", cstr );
-	} else {
-		query = g_string_append( query, "DOS_SLD_ACCOUNT=NULL," );
-	}
-
 	cstr = ofo_dossier_get_sld_label( dossier );
 	if( cstr && g_utf8_strlen( cstr, -1 )){
 		g_string_append_printf( query, "DOS_SLD_LABEL='%s',", cstr );
@@ -2580,6 +2734,82 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	return( ok );
 }
 
+/**
+ * ofo_dossier_update_currencies:
+ *
+ * Update the currency properties of the dossier.
+ */
+gboolean
+ofo_dossier_update_currencies( ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_update_currencies";
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		g_debug( "%s: dossier=%p", thisfn, ( void * ) dossier );
+
+		return( dossier_do_update_currencies(
+					dossier, dossier->priv->dbms, dossier->priv->userid ));
+	}
+
+	g_assert_not_reached();
+	return( FALSE );
+}
+
+static gboolean
+dossier_do_update_currencies( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user )
+{
+	return( do_update_currency_properties( dossier, dbms, user ));
+}
+
+static gboolean
+do_update_currency_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user )
+{
+	ofoDossierPrivate *priv;
+	gchar *query;
+	sCurrency *sdet;
+	gboolean ok;
+	GList *it;
+	GTimeVal stamp;
+	gchar *stamp_str;
+
+	ok = ofa_dbms_query( dbms, "DELETE FROM OFA_T_DOSSIER_CUR", TRUE );
+
+	if( ok ){
+		priv = dossier->priv;
+
+		for( it=priv->cur_details ; it && ok ; it=it->next ){
+			sdet = ( sCurrency * ) it->data;
+			query = g_strdup_printf(
+					"INSERT INTO OFA_T_DOSSIER_CUR (DOS_ID,DOS_CURRENCY,DOS_SLD_ACCOUNT) VALUES "
+					"	(%d,'%s','%s')", THIS_DOS_ID, sdet->currency, sdet->sld_account );
+			ok &= ofa_dbms_query( dbms, query, TRUE );
+			g_free( query );
+		}
+
+		if( ok ){
+			my_utils_stamp_set_now( &stamp );
+			stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+			query = g_strdup_printf(
+					"UPDATE OFA_T_DOSSIER SET "
+					"	DOS_UPD_USER='%s',DOS_UPD_STAMP='%s' "
+					"	WHERE DOS_ID=%d", user, stamp_str, THIS_DOS_ID );
+			g_free( stamp_str );
+
+			if( !ofa_dbms_query( dbms, query, TRUE )){
+				ok = FALSE;
+			} else {
+				dossier_set_upd_user( dossier, user );
+				dossier_set_upd_stamp( dossier, &stamp );
+			}
+		}
+	}
+
+	return( ok );
+}
+
 /*
  * ofaIExportable interface management
  */
@@ -2614,7 +2844,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	gchar *str, *stamp;
 	const gchar *currency, *muser, *siren;
 	const gchar *fledger, *fope, *flabelc, *flabelo;
-	const gchar *baccount, *bledger, *bope, *blabel;
+	const gchar *bledger, *bope, *blabel;
 	gchar *sbegin, *send, *notes, *exenotes, *label;
 	gboolean ok, with_headers;
 	gulong count;
@@ -2629,9 +2859,9 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 
 	if( with_headers ){
 		str = g_strdup_printf( "DefCurrency;ExeBegin;ExeEnd;ExeLength;ExeNotes;"
-				"ForwardLabelClose;ForwardLabelOpeb;ForwardLedger;ForwardOpe;"
+				"ForwardLabelClose;ForwardLabelOpen;ForwardLedger;ForwardOpe;"
 				"Label;Notes;Siren;"
-				"SldAccount;SldLedger;SldOpe;sldLabel;"
+				"SldLedger;SldOpe;SldLabel;"
 				"MajUser;MajStamp;"
 				"LastBat;LastBatLine;LastEntry;LastSettlement;"
 				"Status" );
@@ -2656,12 +2886,11 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	stamp = my_utils_stamp_to_str( ofo_dossier_get_upd_stamp( dossier ), MY_STAMP_YYMDHMS );
 	currency = ofo_dossier_get_default_currency( dossier );
 	siren = ofo_dossier_get_siren( dossier );
-	baccount = ofo_dossier_get_sld_account( dossier );
 	bledger = ofo_dossier_get_sld_ledger( dossier );
 	bope = ofo_dossier_get_sld_ope( dossier );
 	blabel = ofo_dossier_get_sld_label( dossier );
 
-	str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%ld;%ld;%ld;%ld",
+	str = g_strdup_printf( "%s;%s;%s;%d;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%ld;%ld;%ld;%ld;%s",
 			currency ? currency : "",
 			sbegin,
 			send,
@@ -2674,7 +2903,6 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 			label ? label : "",
 			notes ? notes : "",
 			siren ? siren : "",
-			baccount ? baccount : "",
 			bledger ? bledger : "",
 			bope ? bope : "",
 			blabel ? blabel : "",
@@ -2683,7 +2911,8 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 			ofo_dossier_get_last_bat( dossier ),
 			ofo_dossier_get_last_batline( dossier ),
 			ofo_dossier_get_last_entry( dossier ),
-			ofo_dossier_get_last_settlement( dossier ));
+			ofo_dossier_get_last_settlement( dossier ),
+			ofo_dossier_get_status( dossier ));
 
 	g_free( sbegin );
 	g_free( send );
@@ -2780,4 +3009,18 @@ static void
 free_datasets( GList *datasets )
 {
 	g_list_free_full( datasets, ( GDestroyNotify ) ofa_idataset_free_full );
+}
+
+static void
+free_cur_detail( sCurrency *details )
+{
+	g_free( details->currency );
+	g_free( details->sld_account );
+	g_free( details );
+}
+
+static void
+free_cur_details( GList *details )
+{
+	g_list_free_full( details, ( GDestroyNotify ) free_cur_detail );
 }

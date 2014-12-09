@@ -73,6 +73,8 @@ GtkBuildable *my_utils_container_get_buildable_by_name( GtkContainer *container,
 GtkWidget    *my_utils_container_get_child_by_name    ( GtkContainer *container, const gchar *name );
 GtkWidget    *my_utils_container_get_child_by_type    ( GtkContainer *container, GType type );
 
+GtkWindow    *my_utils_widget_get_toplevel_window     ( GtkWidget *widget );
+
 GObject   *my_utils_init_notes             ( GtkContainer *container,
 													const gchar *widget_name,
 													const gchar *notes );

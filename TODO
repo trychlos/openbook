@@ -389,31 +389,38 @@
  494 2014-12- 4 ExeClosing: have a dossier option to have only one  
                 centralisation entry when balancing the accounts, or
                 have one entry per account
+     2014-12- 7 maybe in a next version...
 
  495 2014-12- 4 ExeClosing: have a balancing account per currency
                 these balancing accounts must not be settleable, nor
                 reconciliable
 
- 496 2014-12- 4 entry_validate_by_ledger: only consider effect date
-                in the current exercice
-
  497 2014-12- 6 bug: ofoRate exports with a decimal dot, doesn't take 
                 into account the settings
+     2014-12- 7 have to migrate to ofaBox
 
  498 2014-12- 6 on import, display all the errors in a dialog box
 
- 501 2014-12- 6 do not accept entry before the begin of the exercice
-                (or the last close of the ledger)
-
  502 2014-12- 6 when entered in the command-line, accept an empty 
                 database (and defaults to the current)
+     2014-12- 7 idem for account and password (let the user enter them)
+                + has to with command-line management and maybe also
+                command language
 
- 503 2014-12- 6 when entered in the command-line, accept empty account 
-                password, and let the user enter them
+ 508 2014-12- 8 DossierNew MySQL: set default server account = 'root'
 
- 507 2014-12- 6 remove dossier_dates_changed signal ?
+ 509 2014-12- 8 LedgerCombo: use same column enumeration than Ledger
+                Treeview (instead of two booleans)
 
- 508
+ 510 2014-12- 8 AccountSelect: the pre-selection doesn't work well
+
+ 511 2014-12- 8 AccountProperties: a detail account with entries should
+                have currencies disabled (idem for root account)
+
+ 512 2014-12- 9 have an error message in all dialog box to say why it
+                is not validable
+
+ 513
 
 -----------------------------------------------------------------------
  DONE
@@ -2136,12 +2143,24 @@
  485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
      2014-12- 7 done - svn #4253
 
+ 496 2014-12- 4 entry_validate_by_ledger: only consider effect date
+                in the current exercice
+     2014-12- 7 OK
+
  499 2014-12- 6 entry: import past entries doesn't affect accounts nor
                 ledgers
      2014-12- 6 done - svn #4239
 
  500 2014-12- 6 warns if begin or end of the exercice are not set
      2014-12- 6 done - svn #4240
+
+ 501 2014-12- 6 do not accept entry before the begin of the exercice
+                (or the last close of the ledger)
+     2014-12- 7 OK - done
+
+ 503 2014-12- 6 when entered in the command-line, accept empty account 
+                password, and let the user enter them
+     2014-12- 7 almost the same that #502
 
  504 2014-12- 7 ViewEntries: update the view when a new entry is created
      2014-12- 7 done - svn #4257
@@ -2152,6 +2171,9 @@
 
  506 2014-12- 7 ofo_account_get_global_deffect ?
      2014-12- 7 done - svn #4256
+
+ 507 2014-12- 6 remove dossier_dates_changed signal ?
+     2014-12- 7 done - svn #4258
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

@@ -94,7 +94,7 @@ static void      init_balances_page( ofaAccountProperties *self );
 static void      set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
-static void      on_currency_changed( const gchar *code, ofaAccountProperties *self );
+static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountProperties *self );
 static void      on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void      on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
 static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *type );
@@ -218,9 +218,9 @@ v_init_dialog( myDialog *dialog )
 	gchar *title;
 	const gchar *acc_number;
 	GtkEntry *entry;
-	ofsCurrencyComboParms parms;
+	ofaCurrencyCombo *combo;
 	GtkContainer *container;
-	GtkWidget *w_root, *w_detail;
+	GtkWidget *w_root, *w_detail, *parent;
 
 	self = OFA_ACCOUNT_PROPERTIES( dialog );
 	priv = self->priv;
@@ -259,17 +259,12 @@ v_init_dialog( myDialog *dialog )
 
 	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
 
-	parms.container = container;
-	parms.dossier = MY_WINDOW( dialog )->prot->dossier;
-	parms.combo_name = "p1-currency";
-	parms.label_name = NULL;
-	parms.disp_code = TRUE;
-	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaCurrencyComboCb ) on_currency_changed;
-	parms.user_data = self;
-	parms.initial_code = priv->currency;
-
-	ofa_currency_combo_new( &parms );
+	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	combo = ofa_currency_combo_new();
+	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( parent ), CURRENCY_COL_CODE);
+	g_signal_connect( combo, "changed", G_CALLBACK( on_currency_changed ), dialog );
+	ofa_currency_combo_init_view( combo, MY_WINDOW( dialog )->prot->dossier, priv->currency );
 
 	priv->type_frame = my_utils_container_get_child_by_name( container, "p1-type-frame" );
 	priv->p1_exe_frame = my_utils_container_get_child_by_name( container, "p1-exe-frame" );
@@ -282,7 +277,6 @@ v_init_dialog( myDialog *dialog )
 
 	w_detail = my_utils_container_get_child_by_name( container, "p1-detail-account" );
 	g_return_if_fail( w_detail && GTK_IS_RADIO_BUTTON( w_detail ));
-	gtk_radio_button_join_group( GTK_RADIO_BUTTON( w_root ), GTK_RADIO_BUTTON( w_detail ));
 	g_signal_connect(
 			G_OBJECT( w_detail ), "toggled", G_CALLBACK( on_detail_toggled ), dialog );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), FALSE );
@@ -290,13 +284,16 @@ v_init_dialog( myDialog *dialog )
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 	if( priv->type && g_utf8_strlen( priv->type, -1 )){
 		if( ofo_account_is_root( priv->account )){
+			g_debug( "%s: set root account", thisfn );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), TRUE );
 		} else if( !g_utf8_collate( priv->type, ACCOUNT_TYPE_DETAIL )){
+			g_debug( "%s: set detail account", thisfn );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
 		} else {
 			g_warning( "%s: account has type %s", thisfn, priv->type );
 		}
 	} else {
+		g_debug( "%s: set detail account", thisfn );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
 	}
 
@@ -396,14 +393,18 @@ on_label_changed( GtkEntry *entry, ofaAccountProperties *self )
 }
 
 /*
- * ofaCurrencyComboCb
+ * ofaCurrencyCombo signal
  */
 static void
-on_currency_changed( const gchar *code, ofaAccountProperties *self )
+on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountProperties *self )
 {
+	static const gchar *thisfn = "ofa_account_properties_on_currency_changed";
 	ofaAccountPropertiesPrivate *priv;
 	ofoCurrency *cur_obj;
 	const gchar *iso3a;
+
+	g_debug( "%s: combo=%p, code=%s, self=%p",
+			thisfn, ( void * ) combo, code, ( void * ) self );
 
 	priv = self->priv;
 
@@ -430,12 +431,14 @@ on_currency_changed( const gchar *code, ofaAccountProperties *self )
 static void
 on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self )
 {
+	g_debug( "on_root_toggled" );
 	on_type_toggled( btn, self, ACCOUNT_TYPE_ROOT );
 }
 
 static void
 on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self )
 {
+	g_debug( "on_detail_toggled" );
 	on_type_toggled( btn, self, ACCOUNT_TYPE_DETAIL );
 }
 
@@ -455,6 +458,7 @@ on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *t
 	}
 
 	is_detail = priv->type ? ( g_utf8_collate( priv->type, ACCOUNT_TYPE_DETAIL ) == 0 ) : FALSE;
+	g_debug( "%s: type=%s, is_detail=%s", thisfn, priv->type, is_detail ? "True":"False" );
 
 	if( priv->type_frame ){
 		gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );

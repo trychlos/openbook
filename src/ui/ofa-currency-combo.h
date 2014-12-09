@@ -32,10 +32,17 @@
  * @short_description: #ofaCurrencyCombo class definition.
  * @include: ui/ofa-currency-combo.h
  *
- * A class to embed a Currencys combobox in a dialog.
+ * A class to embed a Currency combobox in a dialog.
+ *
+ * The class defines a "changed" signal which is triggered when the
+ * selected currency changes.
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofo-dossier-def.h"
+
+#include "ui/ofa-currency-columns.h"
 
 G_BEGIN_DECLS
 
@@ -59,58 +66,26 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	GObjectClass             parent;
 }
 	ofaCurrencyComboClass;
 
-/**
- * ofaCurrencyComboCb:
- *
- * A callback to be triggered when a new currency is selected.
- *
- * Passed parameters are:
- * - ISO 3A code
- * - user_data provided at init_dialog() time
- */
-typedef void ( *ofaCurrencyComboCb )( const gchar *, gpointer );
-
-/**
- * ofsCurrencyComboParms
- *
- * The structure passed to the init_dialog() function.
- *
- * @container: the parent container of the target combo box
- * @dossier: the currently opened ofoDossier
- * @combo_name: the name of the GtkComboBox widget
- * @label_name: [allow-none]: the name of a GtkLabel widget which will
- *  receive the label of the selected currency each time the selection
- *  changes
- * @disp_code: whether the combo box should display the ISO 3A code
- * @disp_label: whether the combo box should display the label
- * @pfnSelected: [allow-none]: a user-provided callback which will be
- *  triggered on each selection change
- * @user_data: user-data passed to the callback
- * @initial_code: the ISO 3A identifier of the initially selected
- *  currency, or NULL
- */
-typedef struct {
-	GtkContainer     *container;
-	ofoDossier       *dossier;
-	const gchar      *combo_name;
-	const gchar      *label_name;
-	gboolean          disp_code;
-	gboolean          disp_label;
-	ofaCurrencyComboCb  pfnSelected;
-	gpointer          user_data;
-	const gchar      *initial_code;
-}
-	ofsCurrencyComboParms;
-
 GType             ofa_currency_combo_get_type     ( void ) G_GNUC_CONST;
 
-ofaCurrencyCombo *ofa_currency_combo_new          ( const ofsCurrencyComboParms *parms );
+ofaCurrencyCombo *ofa_currency_combo_new          ( void );
 
-gint              ofa_currency_combo_get_selection( ofaCurrencyCombo *self, gchar **code, gchar **label );
+void              ofa_currency_combo_attach_to    ( ofaCurrencyCombo *combo,
+															GtkContainer *parent,
+															ofaCurrencyColumns columns );
+
+void              ofa_currency_combo_init_view    ( ofaCurrencyCombo *combo,
+															ofoDossier *dossier,
+															const gchar *code );
+
+void              ofa_currency_combo_set_selected ( ofaCurrencyCombo *combo,
+															const gchar *code );
+
+gchar            *ofa_currency_combo_get_selected ( ofaCurrencyCombo *combo );
 
 G_END_DECLS
 

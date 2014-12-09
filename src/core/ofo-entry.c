@@ -1672,6 +1672,40 @@ ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gchar *account, GDat
 }
 
 /**
+ * ofo_entry_get_currencies:
+ *
+ * Returns: a #GSList of currency mnemos used by the entries.
+ *
+ * The returned value should be ofo_entry_free_currencies() by the caller.
+ */
+GSList *
+ofo_entry_get_currencies( const ofoDossier *dossier )
+{
+	GSList *result, *irow, *icol;
+	GSList *list;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( ofa_dbms_query_ex(
+			ofo_dossier_get_dbms( dossier ),
+			"SELECT DISTINCT(ENT_CURRENCY) FROM OFA_T_ENTRIES ORDER BY ENT_CURRENCY ASC",
+			&result, TRUE )){
+
+		list = NULL;
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = ( GSList * ) irow->data;
+			if( icol && icol->data ){
+				list = g_slist_append( list, g_strdup( icol->data ));
+			}
+		}
+		ofa_dbms_free_results( result );
+		return( list );
+	}
+
+	return( NULL );
+}
+
+/**
  * ofo_entry_set_number:
  */
 void

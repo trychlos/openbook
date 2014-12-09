@@ -64,17 +64,18 @@ static void
 window_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "my_window_finalize";
-	myWindow *self;
+	myWindowPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
-	self = MY_WINDOW( instance );
+	priv = MY_WINDOW( instance )->priv;
 
-	g_free( self->priv->window_xml );
-	g_free( self->priv->window_name );
-	g_free( self->prot );
+	g_free( priv->window_xml );
+	g_free( priv->window_name );
+
+	g_free( MY_WINDOW( instance )->prot );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_window_parent_class )->finalize( instance );
@@ -98,7 +99,6 @@ window_dispose( GObject *instance )
 		priv = self->priv;
 
 		if( priv->manage_size_position && priv->toplevel && priv->window_name ){
-
 			my_utils_window_save_position( priv->toplevel, priv->window_name );
 		}
 

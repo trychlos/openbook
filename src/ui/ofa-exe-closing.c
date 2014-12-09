@@ -780,7 +780,7 @@ p5_solde_accounts( ofaExeClosing *self )
 
 	end_cur = ofo_dossier_get_exe_end( dossier );
 	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p2_begin_next ), NULL );
-	sld_account = ofo_dossier_get_sld_account( dossier );
+	sld_account = ""; /*ofo_dossier_get_sld_account( dossier );*/
 	sld_label = ofo_dossier_get_sld_label( dossier );
 	for_label_c = ofo_dossier_get_forward_label_close( dossier );
 	for_label_o = ofo_dossier_get_forward_label_open( dossier );

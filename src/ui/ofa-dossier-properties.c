@@ -32,6 +32,7 @@
 #include <stdlib.h>
 
 #include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-dossier.h"
 
@@ -83,7 +84,7 @@ static void      init_forward_page( ofaDossierProperties *self, GtkContainer *co
 static void      init_exe_notes_page( ofaDossierProperties *self, GtkContainer *container );
 static void      init_counters_page( ofaDossierProperties *self, GtkContainer *container );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
-static void      on_currency_changed( const gchar *code, ofaDossierProperties *self );
+static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierProperties *self );
 static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_begin_changed( GtkEditable *editable, ofaDossierProperties *self );
 static void      on_end_changed( GtkEditable *editable, ofaDossierProperties *self );
@@ -192,6 +193,7 @@ ofa_dossier_properties_run( ofaMainWindow *main_window, ofoDossier *dossier )
 	self->priv->dossier = dossier;
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
+	g_debug( "ofa_dossier_properties_run: return from run" );
 
 	updated = self->priv->updated;
 
@@ -229,9 +231,9 @@ static void
 init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GtkWidget *entry, *label;
+	GtkWidget *entry, *label, *parent;
 	gchar *str;
-	ofsCurrencyComboParms parms;
+	ofaCurrencyCombo *combo;
 	const gchar *cstr;
 	gint ivalue;
 
@@ -255,17 +257,12 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	priv->siren_entry = entry;
 	gtk_widget_set_can_focus( entry, priv->is_current );
 
-	parms.container = container;
-	parms.dossier = priv->dossier;
-	parms.combo_name = "p1-currency";
-	parms.label_name = NULL;
-	parms.disp_code = TRUE;
-	parms.disp_label = TRUE;
-	parms.pfnSelected = ( ofaCurrencyComboCb ) on_currency_changed;
-	parms.user_data = self;
-	parms.initial_code = ofo_dossier_get_default_currency( priv->dossier );
-
-	ofa_currency_combo_new( &parms );
+	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	combo = ofa_currency_combo_new();
+	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( parent ), CURRENCY_COL_CODE );
+	g_signal_connect( combo, "changed", G_CALLBACK( on_currency_changed ), self );
+	ofa_currency_combo_init_view( combo, priv->dossier, ofo_dossier_get_default_currency( priv->dossier ));
 
 	label = my_utils_container_get_child_by_name( container, "p1-status" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -360,25 +357,25 @@ init_counters_page( ofaDossierProperties *self, GtkContainer *container )
 
 	label = my_utils_container_get_child_by_name( container, "p4-last-bat" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%'ld", ofo_dossier_get_last_bat( priv->dossier ));
+	str = my_bigint_to_str( ofo_dossier_get_last_bat( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( container, "p4-last-batline" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%'ld", ofo_dossier_get_last_batline( priv->dossier ));
+	str = my_bigint_to_str( ofo_dossier_get_last_batline( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( container, "p4-last-entry" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%'ld", ofo_dossier_get_last_entry( priv->dossier ));
+	str = my_bigint_to_str( ofo_dossier_get_last_entry( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( container, "p4-last-settlement" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = g_strdup_printf( "%'ld", ofo_dossier_get_last_settlement( priv->dossier ));
+	str = my_bigint_to_str( ofo_dossier_get_last_settlement( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 }
@@ -396,10 +393,14 @@ on_label_changed( GtkEntry *entry, ofaDossierProperties *self )
  * ofaCurrencyComboCb
  */
 static void
-on_currency_changed( const gchar *code, ofaDossierProperties *self )
+on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierProperties *self )
 {
-	g_free( self->priv->currency );
-	self->priv->currency = g_strdup( code );
+	ofaDossierPropertiesPrivate *priv;
+
+	priv = self->priv;
+
+	g_free( priv->currency );
+	priv->currency = g_strdup( code );
 
 	check_for_enable_dlg( self );
 }
@@ -488,16 +489,20 @@ is_dialog_valid( ofaDossierProperties *self )
 	priv = self->priv;
 
 	ok = priv->begin_empty || ( my_date_is_valid( &priv->begin ));
+	g_debug( "is_dialog_valid 1: ok=%s", ok ? "True":"False" );
 
 	ok &= priv->end_empty ||
 			( my_date_is_valid( &priv->end ) &&
 				( !my_date_is_valid( &priv->begin ) ||
 					my_date_compare( &priv->end, &priv->begin ) > 0 ));
+	g_debug( "is_dialog_valid 2: ok=%s", ok ? "True":"False" );
 
 	ok &= ofo_dossier_is_valid( priv->label, priv->duree, priv->currency, &priv->begin, &priv->end );
+	g_debug( "is_dialog_valid 3: ok=%s", ok ? "True":"False" );
 
 	if( priv->forward ){
 		ok &= ofa_exe_forward_check( priv->forward );
+		g_debug( "is_dialog_valid 4: ok=%s", ok ? "True":"False" );
 	}
 
 	return( ok );
