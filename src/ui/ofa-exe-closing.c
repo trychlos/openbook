@@ -780,7 +780,6 @@ p5_solde_accounts( ofaExeClosing *self )
 
 	end_cur = ofo_dossier_get_exe_end( dossier );
 	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p2_begin_next ), NULL );
-	sld_account = ""; /*ofo_dossier_get_sld_account( dossier );*/
 	sld_label = ofo_dossier_get_sld_label( dossier );
 	for_label_c = ofo_dossier_get_forward_label_close( dossier );
 	for_label_o = ofo_dossier_get_forward_label_open( dossier );
@@ -794,6 +793,7 @@ p5_solde_accounts( ofaExeClosing *self )
 
 		if( !ofo_account_is_root( account )){
 			currency = ofo_account_get_currency( account );
+			sld_account = ofo_dossier_get_sld_account( dossier, currency );
 			debit = ofo_account_get_val_debit( account );
 			credit = ofo_account_get_val_credit( account );
 			is_ran = ofo_account_is_forward( account );

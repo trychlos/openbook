@@ -410,9 +410,6 @@
 
  510 2014-12- 8 AccountSelect: the pre-selection doesn't work well
 
- 511 2014-12- 8 AccountProperties: a detail account with entries should
-                have currencies disabled (idem for root account)
-
  512 2014-12- 9 have an error message in all dialog box to say why it
                 is not validable
 
@@ -2181,6 +2178,10 @@
 
  507 2014-12- 6 remove dossier_dates_changed signal ?
      2014-12- 7 done - svn #4258
+
+ 511 2014-12- 8 AccountProperties: a detail account with entries should
+                have currencies disabled (idem for root account)
+     2014-12- 9 done - svn #4267
 
  514 2014-12- 9 current exercice has no ending date (but should)
      2014-12- 9 done - svn #4266
