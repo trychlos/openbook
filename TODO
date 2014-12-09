@@ -391,10 +391,6 @@
                 have one entry per account
      2014-12- 7 maybe in a next version...
 
- 495 2014-12- 4 ExeClosing: have a balancing account per currency
-                these balancing accounts must not be settleable, nor
-                reconciliable
-
  497 2014-12- 6 bug: ofoRate exports with a decimal dot, doesn't take 
                 into account the settings
      2014-12- 7 have to migrate to ofaBox
@@ -420,7 +416,14 @@
  512 2014-12- 9 have an error message in all dialog box to say why it
                 is not validable
 
- 513
+ 513 2014-12- 9 whether balancing accounts are settleable or reconciliable
+                has to be checked when setting these accounts for balance
+
+ 514 2014-12- 9 current exercice has no ending date (but should)
+
+ 515 2014-12- 9 refactor ledger amount names as account
+
+ 516
 
 -----------------------------------------------------------------------
  DONE
@@ -2142,6 +2145,11 @@
 
  485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
      2014-12- 7 done - svn #4253
+
+ 495 2014-12- 4 ExeClosing: have a balancing account per currency
+                these balancing accounts must not be settleable, nor
+                reconciliable
+     2014-12- 9 done - svn #4259
 
  496 2014-12- 4 entry_validate_by_ledger: only consider effect date
                 in the current exercice

@@ -946,12 +946,14 @@ dbmodel_to_v1( const ofoDossier *dossier )
 
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_CUR ("
-			"	LED_MNEMO        VARCHAR(6) NOT NULL      COMMENT 'Internal ledger identifier',"
-			"	LED_CUR_CODE     VARCHAR(3) NOT NULL      COMMENT 'Internal currency identifier',"
-			"	LED_CUR_CLO_DEB  DECIMAL(20,5)            COMMENT 'Debit balance at last closing',"
-			"	LED_CUR_CLO_CRE  DECIMAL(20,5)            COMMENT 'Credit balance at last closing',"
-			"	LED_CUR_DEB      DECIMAL(20,5)            COMMENT 'Current debit balance',"
-			"	LED_CUR_CRE      DECIMAL(20,5)            COMMENT 'Current credit balance',"
+			"	LED_MNEMO            VARCHAR(6) NOT NULL  COMMENT 'Internal ledger identifier',"
+			"	LED_CUR_CODE         VARCHAR(3) NOT NULL  COMMENT 'Internal currency identifier',"
+			"	LED_CUR_VAL_DEBIT    DECIMAL(20,5)        COMMENT 'Validated debit total for this exercice on this journal',"
+			"	LED_CUR_VAL_CREDIT   DECIMAL(20,5)        COMMENT 'Validated credit total for this exercice on this journal',"
+			"	LED_CUR_ROUGH_DEBIT  DECIMAL(20,5)        COMMENT 'Rough debit total for this exercice on this journal',"
+			"	LED_CUR_ROUGH_CREDIT DECIMAL(20,5)        COMMENT 'Rough credit total for this exercice on this journal',"
+			"	LED_CUR_FUT_DEBIT    DECIMAL(20,5)        COMMENT 'Futur debit total on this journal',"
+			"	LED_CUR_FUT_CREDIT   DECIMAL(20,5)        COMMENT 'Futur credit total on this journal',"
 			"	CONSTRAINT PRIMARY KEY (LED_MNEMO,LED_CUR_CODE)"
 			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
