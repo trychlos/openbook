@@ -419,9 +419,10 @@
  513 2014-12- 9 whether balancing accounts are settleable or reconciliable
                 has to be checked when setting these accounts for balance
 
- 514 2014-12- 9 current exercice has no ending date (but should)
+ 516 2014-12- 9 on exe_dates_changed: recompute rough vs. future entries
+                + forbid that an entry becomes in the past before exercice
 
- 516
+ 517
 
 -----------------------------------------------------------------------
  DONE
@@ -2180,6 +2181,9 @@
 
  507 2014-12- 6 remove dossier_dates_changed signal ?
      2014-12- 7 done - svn #4258
+
+ 514 2014-12- 9 current exercice has no ending date (but should)
+     2014-12- 9 done - svn #4266
 
  515 2014-12- 9 refactor ledger amount names as account
      2014-12- 9 done - svn #4265

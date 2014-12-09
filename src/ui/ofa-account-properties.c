@@ -67,6 +67,7 @@ struct _ofaAccountPropertiesPrivate {
 	GtkToggleButton *forward_btn;
 	GtkWidget       *currency_etiq;
 	GtkWidget       *currency_combo;
+	GtkWidget       *btn_ok;
 
 	/* account data
 	 */
@@ -238,6 +239,7 @@ v_init_dialog( myDialog *dialog )
 	gtk_window_set_title( GTK_WINDOW( container ), title );
 
 	priv->has_entries = ofo_entry_use_account( MY_WINDOW( dialog )->prot->dossier, acc_number );
+	g_debug( "%s: has_entries=%s", thisfn, priv->has_entries ? "True":"False" );
 
 	priv->number = g_strdup( acc_number );
 	priv->w_number = GTK_ENTRY( my_utils_container_get_child_by_name( container, "p1-number" ));
@@ -273,27 +275,28 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( w_root && GTK_IS_RADIO_BUTTON( w_root ));
 	g_signal_connect(
 			G_OBJECT( w_root ), "toggled", G_CALLBACK( on_root_toggled ), dialog );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), FALSE );
 
 	w_detail = my_utils_container_get_child_by_name( container, "p1-detail-account" );
 	g_return_if_fail( w_detail && GTK_IS_RADIO_BUTTON( w_detail ));
 	g_signal_connect(
 			G_OBJECT( w_detail ), "toggled", G_CALLBACK( on_detail_toggled ), dialog );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), FALSE );
 
 	priv->type = g_strdup( ofo_account_get_type_account( priv->account ));
 	if( priv->type && g_utf8_strlen( priv->type, -1 )){
 		if( ofo_account_is_root( priv->account )){
 			g_debug( "%s: set root account", thisfn );
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), TRUE );
 		} else if( !g_utf8_collate( priv->type, ACCOUNT_TYPE_DETAIL )){
 			g_debug( "%s: set detail account", thisfn );
+			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), TRUE );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
 		} else {
 			g_warning( "%s: account has type %s", thisfn, priv->type );
 		}
 	} else {
 		g_debug( "%s: set detail account", thisfn );
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_root ), TRUE );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( w_detail ), TRUE );
 	}
 
@@ -307,12 +310,14 @@ v_init_dialog( myDialog *dialog )
 	gtk_toggle_button_set_active( priv->forward_btn, ofo_account_is_forward( priv->account ));
 
 	priv->currency_etiq = my_utils_container_get_child_by_name( container, "p1-label3" );
-	priv->currency_combo = my_utils_container_get_child_by_name( container, "p1-currency" );
+	priv->currency_combo = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
 
 	init_balances_page( self );
 
 	my_utils_init_notes_ex( container, account );
 	my_utils_init_upd_user_stamp_ex( container, account );
+
+	priv->btn_ok = my_utils_container_get_child_by_name( container, "btn-ok" );
 
 	check_for_enable_dlg( OFA_ACCOUNT_PROPERTIES( dialog ));
 }
@@ -431,14 +436,14 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 static void
 on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self )
 {
-	g_debug( "on_root_toggled" );
+	/*g_debug( "on_root_toggled" );*/
 	on_type_toggled( btn, self, ACCOUNT_TYPE_ROOT );
 }
 
 static void
 on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self )
 {
-	g_debug( "on_detail_toggled" );
+	/*g_debug( "on_detail_toggled" );*/
 	on_type_toggled( btn, self, ACCOUNT_TYPE_DETAIL );
 }
 
@@ -447,7 +452,6 @@ on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *t
 {
 	static const gchar *thisfn = "ofa_account_properties_on_type_toggled";
 	ofaAccountPropertiesPrivate *priv;
-	gboolean is_detail;
 
 	priv = self->priv;
 
@@ -455,16 +459,6 @@ on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, const gchar *t
 		g_debug( "%s: setting account type to %s", thisfn, type );
 		g_free( priv->type );
 		priv->type = g_strdup( type );
-	}
-
-	is_detail = priv->type ? ( g_utf8_collate( priv->type, ACCOUNT_TYPE_DETAIL ) == 0 ) : FALSE;
-	g_debug( "%s: type=%s, is_detail=%s", thisfn, priv->type, is_detail ? "True":"False" );
-
-	if( priv->type_frame ){
-		gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );
-	}
-	if( priv->p1_exe_frame ){
-		gtk_widget_set_sensitive( priv->p1_exe_frame, is_detail );
 	}
 
 	check_for_enable_dlg( self );
@@ -475,23 +469,27 @@ check_for_enable_dlg( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
 	gboolean is_root;
-	GtkWidget *button;
 	gboolean ok_enabled;
 
 	priv = self->priv;
 
 	is_root = ( priv->type && !g_utf8_collate( priv->type, ACCOUNT_TYPE_ROOT ));
 
+	if( priv->type_frame ){
+		gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );
+		/*g_debug( "setting type frame to %s", priv->has_entries ? "False":"True" );*/
+	}
+	if( priv->p1_exe_frame ){
+		gtk_widget_set_sensitive( priv->p1_exe_frame, !is_root );
+	}
 	if( priv->currency_combo ){
 		gtk_widget_set_sensitive( priv->currency_etiq, !is_root && !priv->has_entries );
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->currency_combo ), !is_root && !priv->has_entries );
 	}
 
 	ok_enabled = is_dialog_validable( self );
-	button = my_utils_container_get_child_by_name(
-							GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))), "btn-ok" );
-	if( button ){
-		gtk_widget_set_sensitive( button, ok_enabled );
+	if( priv->btn_ok ){
+		gtk_widget_set_sensitive( priv->btn_ok, ok_enabled );
 	}
 }
 
