@@ -40,24 +40,10 @@
 struct _ofaCurrencyComboPrivate {
 	gboolean     dispose_has_run;
 
-	/* input data
+	/* runtime data
 	 */
 	GtkComboBox *combo;
-	ofoDossier  *dossier;
-	GList       *handlers;
-};
-
-/* columns ordering in the combo box
- */
-enum {
-	COL_CODE = 0,
-	COL_LABEL,
-	COL_SYMBOL,
-	COL_DIGITS,
-	COL_NOTES,
-	COL_UPD_USER,
-	COL_UPD_STAMP,
-	N_COLUMNS
+	gint         code_col_number;
 };
 
 /* signals defined here
@@ -69,20 +55,15 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaCurrencyCombo, ofa_currency_combo, G_TYPE_OBJECT )
-
-static void     on_parent_finalized( ofaCurrencyCombo *self, gpointer finalized_parent );
-static void     setup_combo( ofaCurrencyCombo *combo, ofaCurrencyColumns columns );
-static void     load_dataset( ofaCurrencyCombo *combo, ofoDossier *dossier, const gchar *code );
-static void     insert_row( ofaCurrencyCombo *self, GtkTreeModel *tmodel, const ofoCurrency *currency );
+static void     istore_iface_init( ofaCurrencyIStoreInterface *iface );
+static guint    istore_get_interface_version( const ofaCurrencyIStore *instance );
+static void     istore_attach_to( ofaCurrencyIStore *instance, GtkContainer *parent );
+static void     istore_set_columns( ofaCurrencyIStore *instance, GtkListStore *store, ofaCurrencyColumns columns );
 static void     on_currency_changed( GtkComboBox *box, ofaCurrencyCombo *self );
 static void     on_currency_changed_cleanup_handler( ofaCurrencyCombo *combo, gchar *code );
-static void     setup_signaling_connect( ofaCurrencyCombo *self, ofoDossier *dossier );
-static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyCombo *self );
-static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrencyCombo *self );
-static gboolean find_currency_by_code( ofaCurrencyCombo *self, const gchar *code, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyCombo *self );
-static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaCurrencyCombo *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaCurrencyCombo, ofa_currency_combo, G_TYPE_OBJECT, 0, \
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_CURRENCY_ISTORE, istore_iface_init ));
 
 static void
 currency_combo_finalize( GObject *instance )
@@ -104,7 +85,6 @@ static void
 currency_combo_dispose( GObject *instance )
 {
 	ofaCurrencyComboPrivate *priv;
-	GList *it;
 
 	g_return_if_fail( instance && OFA_IS_CURRENCY_COMBO( instance ));
 
@@ -115,11 +95,6 @@ currency_combo_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-			for( it=priv->handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
-			}
-		}
 	}
 
 	/* chain up to the parent class */
@@ -180,16 +155,94 @@ ofa_currency_combo_class_init( ofaCurrencyComboClass *klass )
 }
 
 static void
-on_parent_finalized( ofaCurrencyCombo *self, gpointer finalized_parent )
+istore_iface_init( ofaCurrencyIStoreInterface *iface )
 {
-	static const gchar *thisfn = "ofa_currency_combo_on_parent_finalized";
+	static const gchar *thisfn = "ofa_currency_combo_istore_iface_init";
 
-	g_debug( "%s: self=%p, finalized_parent=%p",
-			thisfn, ( void * ) self, ( void * ) finalized_parent );
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	g_return_if_fail( self && OFA_IS_CURRENCY_COMBO( self ));
+	iface->get_interface_version = istore_get_interface_version;
+	iface->attach_to = istore_attach_to;
+	iface->set_columns = istore_set_columns;
+}
 
-	g_object_unref( self );
+static guint
+istore_get_interface_version( const ofaCurrencyIStore *instance )
+{
+	return( 1 );
+}
+
+static void
+istore_attach_to( ofaCurrencyIStore *instance, GtkContainer *parent )
+{
+	ofaCurrencyComboPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_CURRENCY_COMBO( instance ));
+
+	g_debug( "istore_attach_to: instance=%p (%s), parent=%p (%s)",
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
+
+	priv = OFA_CURRENCY_COMBO( instance )->priv;
+
+	if( !priv->combo ){
+		priv->combo = GTK_COMBO_BOX( gtk_combo_box_new());
+	}
+
+	gtk_container_add( parent, GTK_WIDGET( priv->combo ));
+}
+
+static void
+istore_set_columns( ofaCurrencyIStore *instance, GtkListStore *store, ofaCurrencyColumns columns )
+{
+	ofaCurrencyComboPrivate *priv;
+	GtkCellRenderer *cell;
+	gint col_number;
+
+	priv = OFA_CURRENCY_COMBO( instance )->priv;
+
+	if( !priv->combo ){
+		priv->combo = GTK_COMBO_BOX( gtk_combo_box_new());
+	}
+
+	g_signal_connect(
+			G_OBJECT( priv->combo ), "changed", G_CALLBACK( on_currency_changed ), instance );
+
+	gtk_combo_box_set_model( priv->combo, GTK_TREE_MODEL( store ));
+
+	col_number = ofa_currency_istore_get_column_number( instance, CURRENCY_COL_CODE );
+	priv->code_col_number = col_number;
+	g_debug( "istore_set_columns: code_col_number=%d", priv->code_col_number );
+
+	if( columns & CURRENCY_COL_CODE ){
+		cell = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
+		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", col_number );
+	}
+
+	if( columns & CURRENCY_COL_LABEL ){
+		col_number = ofa_currency_istore_get_column_number( instance, CURRENCY_COL_LABEL );
+		cell = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
+		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", col_number );
+	}
+
+	if( columns & CURRENCY_COL_SYMBOL ){
+		col_number = ofa_currency_istore_get_column_number( instance, CURRENCY_COL_SYMBOL );
+		cell = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
+		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", col_number );
+	}
+
+	if( columns & CURRENCY_COL_DIGITS ){
+		col_number = ofa_currency_istore_get_column_number( instance, CURRENCY_COL_DIGITS );
+		cell = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
+		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", col_number );
+	}
+
+	gtk_combo_box_set_id_column ( priv->combo, priv->code_col_number );
+	gtk_widget_show_all( GTK_WIDGET( priv->combo ));
 }
 
 /**
@@ -205,158 +258,20 @@ ofa_currency_combo_new( void )
 	return( self );
 }
 
-/**
- * ofa_currency_combo_attach_to:
- */
-void
-ofa_currency_combo_attach_to( ofaCurrencyCombo *combo,
-									GtkContainer *parent, ofaCurrencyColumns columns )
-{
-	ofaCurrencyComboPrivate *priv;
-
-	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	priv = combo->priv;
-
-	if( !priv->dispose_has_run ){
-
-		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, combo );
-
-		priv->combo = GTK_COMBO_BOX( gtk_combo_box_new());
-		gtk_container_add( parent, GTK_WIDGET( priv->combo ));
-
-		setup_combo( combo, columns );
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
-}
-
-static void
-setup_combo( ofaCurrencyCombo *combo, ofaCurrencyColumns columns )
-{
-	ofaCurrencyComboPrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *cell;
-
-	priv = combo->priv;
-
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* code, label, symbol */
-			G_TYPE_STRING, G_TYPE_STRING, 					/* digits, notes */
-			G_TYPE_STRING, G_TYPE_STRING ));				/* upd_user, upd_stamp */
-
-	gtk_combo_box_set_model( priv->combo, tmodel );
-	g_object_unref( tmodel );
-
-	if( columns & CURRENCY_COL_CODE ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", COL_CODE );
-	}
-
-	if( columns & CURRENCY_COL_LABEL ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", COL_LABEL );
-	}
-
-	if( columns & CURRENCY_COL_SYMBOL ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", COL_SYMBOL );
-	}
-
-	if( columns & CURRENCY_COL_DIGITS ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", COL_DIGITS );
-	}
-
-	gtk_combo_box_set_id_column ( priv->combo, COL_CODE );
-
-	g_signal_connect( G_OBJECT( priv->combo ), "changed", G_CALLBACK( on_currency_changed ), combo );
-}
-
-/**
- * ofa_currency_combo_init_view:
- */
-void
-ofa_currency_combo_init_view( ofaCurrencyCombo *combo, ofoDossier *dossier, const gchar *code )
-{
-	ofaCurrencyComboPrivate *priv;
-
-	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv = combo->priv;
-
-	if( !priv->dispose_has_run ){
-
-		load_dataset( combo, dossier, code );
-		setup_signaling_connect( combo, dossier );
-	}
-}
-
-static void
-load_dataset( ofaCurrencyCombo *combo, ofoDossier *dossier, const gchar *code )
-{
-	ofaCurrencyComboPrivate *priv;
-	const GList *dataset, *it;
-	GtkTreeModel *tmodel;
-	ofoCurrency *currency;
-	gint i, idx;
-
-	priv = combo->priv;
-	dataset = ofo_currency_get_dataset( dossier );
-	tmodel = gtk_combo_box_get_model( priv->combo );
-	idx = -1;
-
-	for( i=0, it=dataset ; it ; ++i, it=it->next ){
-		currency = OFO_CURRENCY( it->data );
-		insert_row( combo, tmodel, currency );
-
-		if( code && !g_utf8_collate( code, ofo_currency_get_code( currency ))){
-			idx = i;
-		}
-	}
-
-	if( idx != -1 ){
-		gtk_combo_box_set_active( priv->combo, idx );
-	}
-}
-
-static void
-insert_row( ofaCurrencyCombo *self, GtkTreeModel *tmodel, const ofoCurrency *currency )
-{
-	GtkTreeIter iter;
-	gchar *str;
-
-	str = g_strdup_printf( "%d", ofo_currency_get_digits( currency ));
-
-	gtk_list_store_insert_with_values(
-			GTK_LIST_STORE( tmodel ),
-			&iter,
-			-1,
-			COL_CODE,   ofo_currency_get_code( currency ),
-			COL_LABEL,  ofo_currency_get_label( currency ),
-			COL_SYMBOL, ofo_currency_get_symbol( currency ),
-			COL_DIGITS, str,
-			-1 );
-
-	g_free( str );
-}
-
 static void
 on_currency_changed( GtkComboBox *box, ofaCurrencyCombo *self )
 {
+	ofaCurrencyComboPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *code;
 
+	priv = self->priv;
+
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 		tmodel = gtk_combo_box_get_model( box );
-		gtk_tree_model_get( tmodel, &iter, COL_CODE, &code, -1 );
+		g_debug( "on_currency_changed: code_col_number=%d", priv->code_col_number );
+		gtk_tree_model_get( tmodel, &iter, priv->code_col_number, &code, -1 );
 		g_signal_emit_by_name( self, "changed", code );
 	}
 }
@@ -412,148 +327,5 @@ ofa_currency_combo_set_selected( ofaCurrencyCombo *combo, const gchar *code )
 	if( !priv->dispose_has_run ){
 
 		gtk_combo_box_set_active_id( priv->combo, code );
-	}
-}
-
-static void
-setup_signaling_connect( ofaCurrencyCombo *combo, ofoDossier *dossier )
-{
-	ofaCurrencyComboPrivate *priv;
-	gulong handler;
-
-	priv = combo->priv;
-
-	handler = g_signal_connect( G_OBJECT( dossier ),
-					SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), combo );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), combo );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), combo );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( G_OBJECT( dossier ),
-			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), combo );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
-}
-
-static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyCombo *self )
-{
-	static const gchar *thisfn = "ofa_currency_combo_on_new_object";
-
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) dossier,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_CURRENCY( object )){
-		insert_row( self, gtk_combo_box_get_model( self->priv->combo ), OFO_CURRENCY( object ));
-	}
-}
-
-static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaCurrencyCombo *self )
-{
-	static const gchar *thisfn = "ofa_currency_combo_on_updated_object";
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	const gchar *code, *new_code;
-	gchar *str;
-
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn,
-			( void * ) dossier,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self );
-
-	if( OFO_IS_CURRENCY( object )){
-		new_code = ofo_currency_get_code( OFO_CURRENCY( object ));
-		code = prev_id ? prev_id : new_code;
-		if( find_currency_by_code( self, code, &tmodel, &iter )){
-
-			str = g_strdup_printf( "%d", ofo_currency_get_digits( OFO_CURRENCY( object )));
-			gtk_list_store_set(
-					GTK_LIST_STORE( tmodel ),
-					&iter,
-					COL_CODE,   new_code,
-					COL_LABEL,  ofo_currency_get_label( OFO_CURRENCY( object )),
-					COL_SYMBOL, ofo_currency_get_symbol( OFO_CURRENCY( object )),
-					COL_DIGITS, str,
-					-1 );
-			g_free( str );
-		}
-	}
-}
-
-static gboolean
-find_currency_by_code( ofaCurrencyCombo *self, const gchar *code, GtkTreeModel **tmodel, GtkTreeIter *iter )
-{
-	ofaCurrencyComboPrivate *priv;
-	gchar *str;
-	gint cmp;
-
-	priv = self->priv;
-	*tmodel = gtk_combo_box_get_model( priv->combo );
-
-	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
-		while( TRUE ){
-			gtk_tree_model_get( *tmodel, iter, COL_CODE, &str, -1 );
-			cmp = g_utf8_collate( str, code );
-			g_free( str );
-			if( cmp == 0 ){
-				return( TRUE );
-			}
-			if( !gtk_tree_model_iter_next( *tmodel, iter )){
-				break;
-			}
-		}
-	}
-
-	return( FALSE );
-}
-
-static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaCurrencyCombo *self )
-{
-	static const gchar *thisfn = "ofa_currency_combo_on_deleted_object";
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) dossier,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_CURRENCY( object )){
-		if( find_currency_by_code(
-				self,
-				ofo_currency_get_code( OFO_CURRENCY( object )), &tmodel, &iter )){
-
-			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-		}
-	}
-}
-
-static void
-on_reload_dataset( ofoDossier *dossier, GType type, ofaCurrencyCombo *self )
-{
-	static const gchar *thisfn = "ofa_currency_combo_on_reload_dataset";
-	ofaCurrencyComboPrivate *priv;
-
-	g_debug( "%s: dossier=%p, type=%lu, self=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) self );
-
-	priv = self->priv;
-
-	if( type == OFO_TYPE_CURRENCY ){
-		gtk_list_store_clear( GTK_LIST_STORE( gtk_combo_box_get_model( priv->combo )));
-		load_dataset( self, priv->dossier, NULL );
 	}
 }

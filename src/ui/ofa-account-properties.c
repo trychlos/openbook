@@ -261,12 +261,14 @@ v_init_dialog( myDialog *dialog )
 
 	priv->currency = g_strdup( ofo_account_get_currency( priv->account ));
 
+	combo = ofa_currency_combo_new();
 	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	combo = ofa_currency_combo_new();
-	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( parent ), CURRENCY_COL_CODE);
-	g_signal_connect( combo, "changed", G_CALLBACK( on_currency_changed ), dialog );
-	ofa_currency_combo_init_view( combo, MY_WINDOW( dialog )->prot->dossier, priv->currency );
+	ofa_currency_istore_attach_to( OFA_CURRENCY_ISTORE( combo ), GTK_CONTAINER( parent ));
+	ofa_currency_istore_set_columns( OFA_CURRENCY_ISTORE( combo ), CURRENCY_COL_CODE );
+	ofa_currency_istore_set_dossier( OFA_CURRENCY_ISTORE( combo ), MY_WINDOW( dialog )->prot->dossier );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_currency_changed ), dialog );
+	ofa_currency_combo_set_selected( combo, priv->currency );
 
 	priv->type_frame = my_utils_container_get_child_by_name( container, "p1-type-frame" );
 	priv->p1_exe_frame = my_utils_container_get_child_by_name( container, "p1-exe-frame" );

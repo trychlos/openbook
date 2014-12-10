@@ -147,7 +147,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="halign">start</property>
-                                        <property name="max_length">20</property>
+                                        <property name="max_length">9</property>
                                         <property name="width_chars">10</property>
                                       </object>
                                       <packing>
@@ -174,8 +174,10 @@
                                     </child>
                                     <child>
                                       <object class="GtkAlignment" id="p1-currency-parent">
+                                        <property name="width_request">100</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
+                                        <property name="halign">start</property>
                                         <child>
                                           <placeholder/>
                                         </child>

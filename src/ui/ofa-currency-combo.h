@@ -42,7 +42,7 @@
 
 #include "api/ofo-dossier-def.h"
 
-#include "ui/ofa-currency-columns.h"
+#include "ui/ofa-currency-istore.h"
 
 G_BEGIN_DECLS
 
@@ -73,14 +73,6 @@ typedef struct {
 GType             ofa_currency_combo_get_type     ( void ) G_GNUC_CONST;
 
 ofaCurrencyCombo *ofa_currency_combo_new          ( void );
-
-void              ofa_currency_combo_attach_to    ( ofaCurrencyCombo *combo,
-															GtkContainer *parent,
-															ofaCurrencyColumns columns );
-
-void              ofa_currency_combo_init_view    ( ofaCurrencyCombo *combo,
-															ofoDossier *dossier,
-															const gchar *code );
 
 void              ofa_currency_combo_set_selected ( ofaCurrencyCombo *combo,
 															const gchar *code );

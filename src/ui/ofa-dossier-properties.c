@@ -262,9 +262,11 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	parent = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	combo = ofa_currency_combo_new();
-	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( parent ), CURRENCY_COL_CODE );
+	ofa_currency_istore_attach_to( OFA_CURRENCY_ISTORE( combo ), GTK_CONTAINER( parent ));
+	ofa_currency_istore_set_columns( OFA_CURRENCY_ISTORE( combo ), CURRENCY_COL_CODE );
+	ofa_currency_istore_set_dossier( OFA_CURRENCY_ISTORE( combo ), priv->dossier );
 	g_signal_connect( combo, "changed", G_CALLBACK( on_currency_changed ), self );
-	ofa_currency_combo_init_view( combo, priv->dossier, ofo_dossier_get_default_currency( priv->dossier ));
+	ofa_currency_combo_set_selected( combo, ofo_dossier_get_default_currency( priv->dossier ));
 
 	label = my_utils_container_get_child_by_name( container, "p1-status" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

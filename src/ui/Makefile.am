@@ -95,9 +95,10 @@ openbook_SOURCES = \
 	ofa-classes-page.h									\
 	ofa-currencies-page.c								\
 	ofa-currencies-page.h								\
-	ofa-currency-columns.h								\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
+	ofa-currency-istore.c								\
+	ofa-currency-istore.h								\
 	ofa-currency-properties.c							\
 	ofa-currency-properties.h							\
 	ofa-dossier-cur.c									\
