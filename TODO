@@ -419,7 +419,9 @@
  516 2014-12- 9 on exe_dates_changed: recompute rough vs. future entries
                 + forbid that an entry becomes in the past before exercice
 
- 517
+ 517 2014-12-10 define two new entry status: PAST and FUTURE
+
+ 518
 
 -----------------------------------------------------------------------
  DONE
