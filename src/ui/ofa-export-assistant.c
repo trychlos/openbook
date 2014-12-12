@@ -68,8 +68,8 @@ struct _ofaExportAssistantPrivate {
 
 	/* p2: select format
 	 */
-	ofaFileFormatPiece *p2_settings_prefs;
 	ofaFileFormat      *p2_export_settings;
+	ofaFileFormatPiece *p2_settings_prefs;
 
 	/* p3: output file
 	 */
@@ -493,9 +493,9 @@ p2_do_init( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *page )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-alignment-parent" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-	priv->p2_settings_prefs = ofa_file_format_piece_new( SETTINGS_EXPORT_SETTINGS );
+	priv->p2_export_settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
+	priv->p2_settings_prefs = ofa_file_format_piece_new( priv->p2_export_settings );
 	ofa_file_format_piece_attach_to( priv->p2_settings_prefs, GTK_CONTAINER( widget ));
-	ofa_file_format_piece_display( priv->p2_settings_prefs );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-new-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -522,10 +522,6 @@ p2_do_forward( ofaExportAssistant *self, GtkWidget *page )
 	priv = self->priv;
 
 	ofa_file_format_piece_apply( priv->p2_settings_prefs );
-
-	g_clear_object( &priv->p2_export_settings );
-	priv->p2_export_settings =
-			g_object_ref( ofa_file_format_piece_get_file_format( priv->p2_settings_prefs ));
 }
 
 /*

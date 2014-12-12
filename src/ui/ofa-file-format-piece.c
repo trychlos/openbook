@@ -38,6 +38,7 @@
 
 #include "ui/my-date-combo.h"
 #include "ui/my-decimal-combo.h"
+#include "ui/my-field-combo.h"
 #include "ui/ofa-file-format-piece.h"
 
 /* private instance data
@@ -45,25 +46,30 @@
 struct _ofaFileFormatPiecePrivate {
 	gboolean           dispose_has_run;
 
-	/* runtime data
+	/* initialization data
 	 */
-	gchar          *prefs_name;
 	ofaFileFormat  *settings;
-	ofaFFmt         format;
 
-	/* UI
+	/* attachment
 	 */
 	GtkContainer   *parent;				/* from the hosting dialog */
 	GtkContainer   *container;			/* our top container */
 
+	/* UI
+	 */
 	GtkWidget      *format_combo;		/* file format */
 	GtkWidget      *encoding_combo;
 	myDateCombo    *date_combo;
 	myDecimalCombo *decimal_combo;
-	GtkWidget      *fieldsep_label;
-	GtkWidget      *fieldsep_combo;
+	myFieldCombo   *field_combo;
+	GtkWidget      *field_parent;
+	GtkWidget      *field_label;
 	GtkWidget      *headers_btn;
 	GtkWidget      *folder_btn;
+
+	/* runtime data
+	 */
+	ofaFFmt         format;
 };
 
 /* column ordering in the file format combobox
@@ -81,25 +87,6 @@ enum {
 	ENC_N_COLUMNS
 };
 
-/* field separator
- */
-enum {
-	SEP_COL_CODE,
-	SEP_COL_LABEL,
-	SEP_N_COLUMNS
-};
-
-typedef struct {
-	const gchar *code;
-	const gchar *label;
-}
-	sFieldSep;
-
-static const sFieldSep st_field_sep[] = {
-		{ ";", N_( "; (semi colon)" )},
-		{ 0 }
-};
-
 /* signals defined here
  */
 enum {
@@ -115,6 +102,7 @@ static const gchar *st_window_id        = "FileFormatPiece";
 G_DEFINE_TYPE( ofaFileFormatPiece, ofa_file_format_piece, G_TYPE_OBJECT )
 
 static void     on_parent_finalized( ofaFileFormatPiece *self, GObject *finalized_parent );
+static void     setup_piece( ofaFileFormatPiece *piece );
 static void     init_file_format( ofaFileFormatPiece *self );
 static void     on_ffmt_changed( GtkComboBox *box, ofaFileFormatPiece *self );
 static void     init_encoding( ofaFileFormatPiece *self );
@@ -124,13 +112,12 @@ static void     on_date_changed( myDateCombo *combo, myDateFormat format, ofaFil
 static void     init_decimal_dot( ofaFileFormatPiece *self );
 static void     on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatPiece *self );
 static void     init_field_separator( ofaFileFormatPiece *self );
-static void     on_field_changed( GtkComboBox *box, ofaFileFormatPiece *self );
+static void     on_field_changed( myFieldCombo *combo, ofaFileFormatPiece *self );
 static void     init_headers( ofaFileFormatPiece *self );
 static void     on_headers_toggled( GtkToggleButton *button, ofaFileFormatPiece *self );
 static gboolean is_validable( ofaFileFormatPiece *self );
 static gint     get_file_format( ofaFileFormatPiece *self );
 static gchar   *get_charmap( ofaFileFormatPiece *self );
-static gchar   *get_field_sep( ofaFileFormatPiece *self );
 static gboolean do_apply( ofaFileFormatPiece *self );
 static GList   *get_available_charmaps( void );
 
@@ -138,7 +125,6 @@ static void
 file_format_piece_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_file_format_piece_finalize";
-	ofaFileFormatPiecePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -146,9 +132,6 @@ file_format_piece_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_FILE_FORMAT_PIECE( instance ));
 
 	/* free data members here */
-	priv = OFA_FILE_FORMAT_PIECE( instance )->priv;
-
-	g_free( priv->prefs_name );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_file_format_piece_parent_class )->finalize( instance );
@@ -228,13 +211,13 @@ ofa_file_format_piece_class_init( ofaFileFormatPieceClass *klass )
  * ofa_file_format_piece_new:
  */
 ofaFileFormatPiece *
-ofa_file_format_piece_new( const gchar *prefs_name )
+ofa_file_format_piece_new( ofaFileFormat *settings )
 {
 	ofaFileFormatPiece *self;
 
 	self = g_object_new( OFA_TYPE_FILE_FORMAT_PIECE, NULL );
 
-	self->priv->prefs_name = g_strdup( prefs_name );
+	self->priv->settings = g_object_ref( settings );
 
 	return( self );
 }
@@ -246,17 +229,16 @@ ofa_file_format_piece_new( const gchar *prefs_name )
  * This must be called only once, at initialization time.
  */
 void
-ofa_file_format_piece_attach_to( ofaFileFormatPiece *settings, GtkContainer *new_parent )
+ofa_file_format_piece_attach_to( ofaFileFormatPiece *piece, GtkContainer *new_parent )
 {
 	ofaFileFormatPiecePrivate *priv;
 	GtkWidget *window, *widget;
 
-	g_return_if_fail( settings && OFA_IS_FILE_FORMAT_PIECE( settings ));
+	g_return_if_fail( piece && OFA_IS_FILE_FORMAT_PIECE( piece ));
 	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
 
-	priv = settings->priv;
-
-	g_return_if_fail( priv->parent == NULL );
+	priv = piece->priv;
+	g_return_if_fail( priv->settings && OFA_IS_FILE_FORMAT( priv->settings ));
 
 	if( !priv->dispose_has_run ){
 
@@ -270,7 +252,11 @@ ofa_file_format_piece_attach_to( ofaFileFormatPiece *settings, GtkContainer *new
 		priv->parent = new_parent;
 		priv->container = GTK_CONTAINER( widget );
 
-		g_object_weak_ref( G_OBJECT( new_parent ), ( GWeakNotify ) on_parent_finalized, settings );
+		g_object_weak_ref( G_OBJECT( new_parent ), ( GWeakNotify ) on_parent_finalized, piece );
+
+		setup_piece( piece );
+
+		gtk_widget_show_all( GTK_WIDGET( new_parent ));
 	}
 }
 
@@ -285,37 +271,29 @@ on_parent_finalized( ofaFileFormatPiece *self, GObject *finalized_parent )
 	g_object_unref( self );
 }
 
-/**
- * ofa_file_format_piece_display:
- *
- * This initializes the combo boxes. This must be done after having
- * attached the widgets to the containing parent.
- */
-void
-ofa_file_format_piece_display( ofaFileFormatPiece *settings )
+static void
+setup_piece( ofaFileFormatPiece *piece )
 {
 	ofaFileFormatPiecePrivate *priv;
 
-	g_return_if_fail( settings && OFA_IS_FILE_FORMAT_PIECE( settings ));
+	g_return_if_fail( piece && OFA_IS_FILE_FORMAT_PIECE( piece ));
 
-	priv = settings->priv;
+	priv = piece->priv;
 
 	g_return_if_fail( priv->parent && GTK_IS_CONTAINER( priv->parent ));
 	g_return_if_fail( priv->container && GTK_IS_CONTAINER( priv->container ));
 
 	if( !priv->dispose_has_run ){
 
-		priv->settings = ofa_file_format_new( priv->prefs_name );
-
-		init_encoding( settings );
-		init_date_format( settings );
-		init_decimal_dot( settings );
-		init_field_separator( settings );
-		init_headers( settings );
+		init_encoding( piece );
+		init_date_format( piece );
+		init_decimal_dot( piece );
+		init_field_separator( piece );
+		init_headers( piece );
 
 		/* export format at the end so that it is able to rely on
 		   precomputed widgets */
-		init_file_format( settings );
+		init_file_format( piece );
 	}
 }
 
@@ -394,8 +372,8 @@ on_ffmt_changed( GtkComboBox *box, ofaFileFormatPiece *self )
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 	gtk_tree_model_get( tmodel, &iter, EXP_COL_FORMAT, &priv->format, -1 );
 
-	gtk_widget_set_sensitive( priv->fieldsep_label, priv->format == OFA_FFMT_CSV );
-	gtk_widget_set_sensitive( priv->fieldsep_combo, priv->format == OFA_FFMT_CSV );
+	gtk_widget_set_sensitive( priv->field_label, priv->format == OFA_FFMT_CSV );
+	gtk_widget_set_sensitive( priv->field_parent, priv->format == OFA_FFMT_CSV );
 
 	g_signal_emit_by_name( self, "changed" );
 }
@@ -518,59 +496,26 @@ static void
 init_field_separator( ofaFileFormatPiece *self )
 {
 	ofaFileFormatPiecePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkCellRenderer *cell;
-	gint i, idx;
-	gchar value;
+	gchar *sep;
 
 	priv = self->priv;
 
-	priv->fieldsep_label =
-			my_utils_container_get_child_by_name( priv->container, "p5-field-label" );
+	priv->field_combo = my_field_combo_new();
+	priv->field_label = my_utils_container_get_child_by_name( priv->container, "p5-field-label" );
+	priv->field_parent = my_utils_container_get_child_by_name( priv->container, "p5-field-parent" );
+	g_return_if_fail( priv->field_parent && GTK_IS_CONTAINER( priv->field_parent ));
+	my_field_combo_attach_to( priv->field_combo, GTK_CONTAINER( priv->field_parent ));
 
-	priv->fieldsep_combo =
-			my_utils_container_get_child_by_name( priv->container, "p5-fieldsep" );
+	sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->settings ));
+	/*g_debug( "init_field_dot: sep='%s'", sep );*/
+	my_field_combo_set_selected( priv->field_combo, sep );
+	g_free( sep );
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			SEP_N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING ));
-	gtk_combo_box_set_model( GTK_COMBO_BOX( priv->fieldsep_combo ), tmodel );
-	g_object_unref( tmodel );
-
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start(
-			GTK_CELL_LAYOUT( priv->fieldsep_combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute(
-			GTK_CELL_LAYOUT( priv->fieldsep_combo ), cell, "text", SEP_COL_LABEL );
-
-	value = ofa_file_format_get_field_sep( priv->settings );
-	/*g_debug( "init_field_sep: sep='%c'", value );*/
-	idx = -1;
-
-	for( i=0 ; st_field_sep[i].code ; ++i ){
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				SEP_COL_CODE,  st_field_sep[i].code,
-				SEP_COL_LABEL, st_field_sep[i].label,
-				-1 );
-		if( value == st_field_sep[i].code[0] ){
-			idx = i;
-		}
-	}
-
-	g_signal_connect(
-			G_OBJECT( priv->fieldsep_combo ), "changed", G_CALLBACK( on_field_changed ), self );
-
-	if( idx != -1 ){
-		gtk_combo_box_set_active( GTK_COMBO_BOX( priv->fieldsep_combo ), idx );
-	}
+	g_signal_connect( priv->field_combo, "changed", G_CALLBACK( on_field_changed ), self );
 }
 
 static void
-on_field_changed( GtkComboBox *box, ofaFileFormatPiece *self )
+on_field_changed( myFieldCombo *combo, ofaFileFormatPiece *self )
 {
 	g_signal_emit_by_name( self, "changed" );
 }
@@ -661,7 +606,7 @@ is_validable( ofaFileFormatPiece *self )
 	g_free( decimal_sep );
 
 	/* field separator */
-	field_sep = get_field_sep( self );
+	field_sep = my_field_combo_get_selected( priv->field_combo );
 	if( !field_sep || !g_utf8_strlen( field_sep, -1 )){
 		g_free( field_sep );
 		return( FALSE );
@@ -711,27 +656,6 @@ get_charmap( ofaFileFormatPiece *self )
 	return( charmap );
 }
 
-static gchar *
-get_field_sep( ofaFileFormatPiece *self )
-{
-	ofaFileFormatPiecePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gchar *field_sep;
-
-	priv = self->priv;
-	field_sep = NULL;
-
-	/* field separator */
-	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->fieldsep_combo ), &iter )){
-		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->fieldsep_combo ));
-		g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
-		gtk_tree_model_get( tmodel, &iter, SEP_COL_CODE, &field_sep, -1 );
-	}
-
-	return( field_sep );
-}
-
 /**
  * ofa_file_format_piece_apply:
  *
@@ -779,7 +703,7 @@ do_apply( ofaFileFormatPiece *self )
 	charmap = get_charmap( self );
 	ivalue = my_date_combo_get_selected( priv->date_combo );
 	decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
-	field_sep = get_field_sep( self );
+	field_sep = my_field_combo_get_selected( priv->field_combo );
 	bvalue = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
 
 	ofa_file_format_set( priv->settings,
@@ -834,30 +758,4 @@ get_available_charmaps( void )
 	}
 
 	return( g_list_reverse( charmaps ));
-}
-
-/**
- * ofa_file_format_piece_get_file_format:
- *
- * Returns: the current #ofaFileFormat object.
- *
- * The returned object is owned by this #ofaFileFormatPiece object,
- * and should not be released by the caller.
- */
-ofaFileFormat *
-ofa_file_format_piece_get_file_format( ofaFileFormatPiece *settings )
-{
-	ofaFileFormatPiecePrivate *priv;
-
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT_PIECE( settings ), FALSE );
-
-	priv = settings->priv;
-
-	if( !priv->dispose_has_run ){
-
-		return( priv->settings );
-	}
-
-	g_return_val_if_reached( FALSE );
-	return( FALSE );
 }

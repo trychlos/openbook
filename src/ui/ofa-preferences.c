@@ -84,6 +84,10 @@ struct _ofaPreferencesPrivate {
 	ofaFileFormatPiece *export_settings;
 	GtkFileChooser     *p5_chooser;
 
+	/* Import settings
+	 */
+	ofaFileFormatPiece *import_settings;
+
 	/* UI - Plugin pages
 	 */
 	GList              *plugs;
@@ -130,6 +134,7 @@ static void       init_locales_page( ofaPreferences *self );
 static void       init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *parent, myDateFormat ivalue );
 static void       init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *wname, const gchar *svalue );
 static void       init_export_page( ofaPreferences *self );
+static void       init_import_page( ofaPreferences *self );
 static void       enumerate_prefs_plugins( ofaPreferences *self, pfnPlugin pfn );
 static void       init_plugin_page( ofaPreferences *self, ofaIPreferences *plugin );
 static void       activate_first_page( ofaPreferences *self );
@@ -143,6 +148,7 @@ static gboolean   do_update_locales_page( ofaPreferences *self );
 static void       setup_date_formats( void );
 static void       setup_amount_formats( void );
 static void       do_update_export_page( ofaPreferences *self );
+static void       do_update_import_page( ofaPreferences *self );
 static void       update_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
 static GtkWidget *find_prefs_plugin( ofaPreferences *self, ofaIPreferences *plugin );
 
@@ -273,6 +279,7 @@ v_init_dialog( myDialog *dialog )
 	init_account_page( OFA_PREFERENCES( dialog ));
 	init_locales_page( OFA_PREFERENCES( dialog ));
 	init_export_page( OFA_PREFERENCES( dialog ));
+	init_import_page( OFA_PREFERENCES( dialog ));
 	enumerate_prefs_plugins( OFA_PREFERENCES( dialog ), init_plugin_page );
 }
 
@@ -461,6 +468,7 @@ init_export_page( ofaPreferences *self )
 	GtkWidget *target, *label;
 	gchar *str;
 	GtkSizeGroup *group;
+	ofaFileFormat *settings;
 
 	priv = self->priv;
 
@@ -468,9 +476,10 @@ init_export_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( container, "alignment5-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	priv->export_settings = ofa_file_format_piece_new( SETTINGS_EXPORT_SETTINGS );
+	settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
+	priv->export_settings = ofa_file_format_piece_new( settings );
+	g_object_unref( settings );
 	ofa_file_format_piece_attach_to( priv->export_settings, GTK_CONTAINER( target ));
-	ofa_file_format_piece_display( priv->export_settings );
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( container, "p52-folder" ));
 	str = ofa_settings_get_string( SETTINGS_EXPORT_FOLDER );
@@ -500,6 +509,26 @@ init_export_page( ofaPreferences *self )
 	gtk_size_group_add_widget( group, label );
 
 	g_object_unref( group );
+}
+
+static void
+init_import_page( ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+	GtkContainer *container;
+	GtkWidget *target;
+	ofaFileFormat *settings;
+
+	priv = self->priv;
+
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )));
+	target = my_utils_container_get_child_by_name( container, "p6-import-parent" );
+	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
+
+	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
+	priv->import_settings = ofa_file_format_piece_new( settings );
+	g_object_unref( settings );
+	ofa_file_format_piece_attach_to( priv->import_settings, GTK_CONTAINER( target ));
 }
 
 static void
@@ -576,44 +605,6 @@ on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 			gtk_toggle_button_get_active( button ));
 }
 
-#if 0
-static void
-on_format_date_changed( GtkComboBox *combo, ofaPreferences *self )
-{
-	gint *pdata;
-	GtkTreeIter iter;
-	GtkTreeModel *tmodel;
-
-	if( gtk_combo_box_get_active_iter( combo, &iter )){
-		tmodel = gtk_combo_box_get_model( combo );
-		pdata = ( gint * ) g_object_get_data( G_OBJECT( combo ), DATA_DATE );
-		gtk_tree_model_get( tmodel, &iter, DATE_COL_CODE, pdata, -1 );
-	}
-}
-
-static void
-on_decimal_toggled( GtkToggleButton *check, ofaPreferences *self )
-{
-	gboolean *pdata;
-
-	pdata = ( gboolean * ) g_object_get_data( G_OBJECT( check ), DATA_DECIMAL );
-	*pdata = gtk_toggle_button_get_active( check );
-}
-
-static void
-on_sep_changed( GtkCellEditable *editable, ofaPreferences *self )
-{
-	const gchar *text;
-	gchar **pdata;
-
-	text = gtk_entry_get_text( GTK_ENTRY( editable ));
-	pdata = ( gchar ** ) g_object_get_data( G_OBJECT( editable ), DATA_SEPARATOR );
-	g_free( *pdata );
-	*pdata = g_strdup( text );
-
-}
-#endif
-
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
@@ -633,6 +624,7 @@ do_update( ofaPreferences *self )
 	do_update_account_page( self );
 	ok = do_update_locales_page( self );
 	do_update_export_page( self );
+	do_update_import_page( self );
 	enumerate_prefs_plugins( self, update_prefs_plugin );
 
 	priv->updated = ok;
@@ -782,24 +774,6 @@ do_update_locales_page( ofaPreferences *self )
 	return( TRUE );
 }
 
-#if 0
-static void
-error_decimal_sep( ofaPreferences *self )
-{
-	GtkWidget *dialog;
-
-	dialog = gtk_message_dialog_new(
-						my_window_get_toplevel( MY_WINDOW( self )),
-						GTK_DIALOG_DESTROY_WITH_PARENT,
-						GTK_MESSAGE_ERROR,
-						GTK_BUTTONS_CLOSE,
-						"%s", _( "Decimal separator is empty, but is mandatory" ));
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
-}
-#endif
-
 /**
  * ofa_prefs_date_display:
  *
@@ -926,6 +900,16 @@ do_update_export_page( ofaPreferences *self )
 	text = gtk_file_chooser_get_current_folder( priv->p5_chooser );
 	ofa_settings_set_string( SETTINGS_EXPORT_FOLDER, text );
 	g_free( text );
+}
+
+static void
+do_update_import_page( ofaPreferences *self )
+{
+	ofaPreferencesPrivate *priv;
+
+	priv = self->priv;
+
+	ofa_file_format_piece_apply( priv->import_settings );
 }
 
 static void

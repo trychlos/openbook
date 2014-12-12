@@ -65,20 +65,16 @@ typedef struct {
 }
 	ofaFileFormatPieceClass;
 
-GType               ofa_file_format_piece_get_type       ( void ) G_GNUC_CONST;
+GType               ofa_file_format_piece_get_type    ( void ) G_GNUC_CONST;
 
-ofaFileFormatPiece *ofa_file_format_piece_new            ( const gchar *prefs_name );
+ofaFileFormatPiece *ofa_file_format_piece_new         ( ofaFileFormat *settings );
 
-void                ofa_file_format_piece_attach_to      ( ofaFileFormatPiece *settings,
+void                ofa_file_format_piece_attach_to   ( ofaFileFormatPiece *piece,
 																		GtkContainer *parent );
 
-void                ofa_file_format_piece_display        ( ofaFileFormatPiece *settings );
+gboolean            ofa_file_format_piece_is_validable( ofaFileFormatPiece *piece );
 
-gboolean            ofa_file_format_piece_is_validable   ( ofaFileFormatPiece *settings );
-
-gboolean            ofa_file_format_piece_apply          ( ofaFileFormatPiece *settings );
-
-ofaFileFormat      *ofa_file_format_piece_get_file_format( ofaFileFormatPiece *settings );
+gboolean            ofa_file_format_piece_apply       ( ofaFileFormatPiece *piece );
 
 G_END_DECLS
 

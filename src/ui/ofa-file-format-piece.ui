@@ -105,19 +105,6 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkComboBox" id="p5-fieldsep">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">start</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">3</property>
-                        <property name="width">1</property>
-                        <property name="height">1</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkAlignment" id="p5-parent-date">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -143,6 +130,21 @@
                       <packing>
                         <property name="left_attach">1</property>
                         <property name="top_attach">2</property>
+                        <property name="width">1</property>
+                        <property name="height">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkAlignment" id="p5-field-parent">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">3</property>
                         <property name="width">1</property>
                         <property name="height">1</property>
                       </packing>
@@ -299,13 +301,5 @@
       <widget name="p5-field-label"/>
     </widgets>
   </object>
-  <object class="GtkSizeGroup" id="comboSizeGroup">
-    <widgets>
-      <widget name="p1-export-format"/>
-      <widget name="p5-encoding"/>
-      <widget name="p5-parent-date"/>
-      <widget name="p5-decimal-parent"/>
-      <widget name="p5-fieldsep"/>
-    </widgets>
-  </object>
+  <object class="GtkSizeGroup" id="comboSizeGroup"/>
 </interface>
