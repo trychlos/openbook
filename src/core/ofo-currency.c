@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -35,6 +36,7 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -60,6 +62,8 @@ struct _ofoCurrencyPrivate {
 	GTimeVal   upd_stamp;
 };
 
+static ofoBaseClass *ofo_currency_parent_class = NULL;
+
 static GList       *currency_load_dataset( ofoDossier *dossier );
 static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
@@ -74,10 +78,10 @@ static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
+static void         iimportable_iface_init( ofaIImportableInterface *iface );
+static guint        iimportable_get_interface_version( const ofaIImportable *instance );
+static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
 static gboolean     currency_do_drop_content( const ofaDbms *dbms );
-
-G_DEFINE_TYPE_EXTENDED( ofoCurrency, ofo_currency, OFO_TYPE_BASE, 0, \
-		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 OFA_IDATASET_LOAD( CURRENCY, currency );
 
@@ -137,10 +141,65 @@ ofo_currency_class_init( ofoCurrencyClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	ofo_currency_parent_class = g_type_class_peek_parent( klass );
+
 	G_OBJECT_CLASS( klass )->dispose = currency_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoCurrencyPrivate ));
+}
+
+static GType
+register_type( void )
+{
+	static const gchar *thisfn = "ofo_currency_register_type";
+	GType type;
+
+	static GTypeInfo info = {
+		sizeof( ofoCurrencyClass ),
+		( GBaseInitFunc ) NULL,
+		( GBaseFinalizeFunc ) NULL,
+		( GClassInitFunc ) ofo_currency_class_init,
+		NULL,
+		NULL,
+		sizeof( ofoCurrency ),
+		0,
+		( GInstanceInitFunc ) ofo_currency_init
+	};
+
+	static const GInterfaceInfo iexportable_iface_info = {
+		( GInterfaceInitFunc ) iexportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo iimportable_iface_info = {
+		( GInterfaceInitFunc ) iimportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	g_debug( "%s", thisfn );
+
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoCurrency", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
+
+	return( type );
+}
+
+GType
+ofo_currency_get_type( void )
+{
+	static GType type = 0;
+
+	if( !type ){
+		type = register_type();
+	}
+
+	return( type );
 }
 
 static GList *
@@ -813,8 +872,28 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	return( TRUE );
 }
 
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->import = iimportable_import;
+}
+
+static guint
+iimportable_get_interface_version( const ofaIImportable *instance )
+{
+	return( 1 );
+}
+
 /**
- * ofo_currency_import_csv:
+ * ofo_currency_iimportable_importv:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -826,85 +905,75 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  *
  * Replace the whole table with the provided datas.
  */
-void
-ofo_currency_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
+static gint
+iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_currency_import_csv";
+	GSList *itl, *fields, *itf;
+	const gchar *cstr;
 	ofoCurrency *currency;
-	GSList *ili, *ico;
-	GList *new_set, *ise;
-	gint count;
-	gint errors;
-	const gchar *str;
+	GList *dataset, *it;
+	guint errors, line;
 	gchar *splitted;
 
-	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
-			thisfn,
-			( void * ) dossier,
-			( void * ) lines, g_slist_length( lines ),
-			with_header ? "True":"False" );
-
-	new_set = NULL;
-	count = 0;
+	line = 0;
 	errors = 0;
+	dataset = NULL;
 
-	for( ili=lines ; ili ; ili=ili->next ){
-		count += 1;
-		if( !( count == 1 && with_header )){
-			currency = ofo_currency_new();
-			ico=ili->data;
+	for( itl=lines ; itl ; itl=itl->next ){
 
-			/* currency code */
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty code", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			ofo_currency_set_code( currency, str );
+		line += 1;
+		currency = ofo_currency_new();
+		fields = ( GSList * ) itl->data;
 
-			/* currency label */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty label", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			ofo_currency_set_label( currency, str );
-
-			/* currency symbol */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty symbol", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			ofo_currency_set_symbol( currency, str );
-
-			/* currency digits */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			ofo_currency_set_digits( currency,
-					( str && g_utf8_strlen( str, -1 ) ? atoi( str ) : CUR_DEFAULT_DIGITS ));
-
-			/* notes
-			 * we are tolerant on the last field... */
-			ico = ico->next;
-			if( ico ){
-				str = ( const gchar * ) ico->data;
-				if( str && g_utf8_strlen( str, -1 )){
-					splitted = my_utils_import_multi_lines( str );
-					ofo_currency_set_notes( currency, splitted );
-					g_free( splitted );
-				}
-			} else {
-				continue;
-			}
-
-			new_set = g_list_prepend( new_set, currency );
+		/* currency code */
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			ofa_iimportable_set_import_error( importable, line, _( "empty ISO 3A currency code" ));
+			errors += 1;
+			continue;
 		}
+		ofo_currency_set_code( currency, cstr );
+
+		/* currency label */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			ofa_iimportable_set_import_error( importable, line, _( "empty currency label" ));
+			errors += 1;
+			continue;
+		}
+		ofo_currency_set_label( currency, cstr );
+
+		/* currency symbol */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			ofa_iimportable_set_import_error( importable, line, _( "empty currency symbol" ));
+			errors += 1;
+			continue;
+		}
+		ofo_currency_set_symbol( currency, cstr );
+
+		/* currency digits - defaults to 2 */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		ofo_currency_set_digits( currency,
+				( cstr && g_utf8_strlen( cstr, -1 ) ? atoi( cstr ) : CUR_DEFAULT_DIGITS ));
+
+		/* notes
+		 * we are tolerant on the last field... */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr ){
+			splitted = my_utils_import_multi_lines( cstr );
+			ofo_currency_set_notes( currency, splitted );
+			g_free( splitted );
+		}
+
+		dataset = g_list_prepend( dataset, currency );
+
+		ofa_iimportable_set_import_ok( importable );
 	}
 
 	if( !errors ){
@@ -912,15 +981,16 @@ ofo_currency_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_heade
 
 		currency_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
-		for( ise=new_set ; ise ; ise=ise->next ){
+		for( it=dataset ; it ; it=it->next ){
 			currency_do_insert(
-					OFO_CURRENCY( ise->data ),
+					OFO_CURRENCY( it->data ),
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
+
+			ofa_iimportable_set_insert_ok( importable );
 		}
 
-		g_list_free( new_set );
-
+		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
 		ofa_idataset_free_dataset( dossier, OFO_TYPE_CURRENCY );
 
 		g_signal_emit_by_name(
@@ -928,6 +998,8 @@ ofo_currency_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_heade
 
 		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CURRENCY, TRUE );
 	}
+
+	return( errors );
 }
 
 static gboolean

@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -755,6 +756,17 @@ iimportable_get_interface_version( const ofaIImportable *instance )
 	return( 1 );
 }
 
+/*
+ * ofo_class_iimportable_import:
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - class number
+ * - label
+ * - notes (opt)
+ *
+ * Replace the whole table with the provided datas.
+ */
 static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
 {
@@ -763,7 +775,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	ofoClass *class;
 	GList *dataset, *it;
 	guint errors, number, line;
-	gchar *msg;
+	gchar *msg, *splitted;
 
 	line = 0;
 	errors = 0;
@@ -782,7 +794,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			number = atoi( cstr );
 		}
 		if( number < 1 || number > 9 ){
-			msg = g_strdup_printf( "invalid class number: %s", cstr );
+			msg = g_strdup_printf( _( "invalid class number: %s" ), cstr );
 			ofa_iimportable_set_import_error( importable, line, msg );
 			g_free( msg );
 			errors += 1;
@@ -793,9 +805,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			msg = g_strdup_printf( "empty class label" );
-			ofa_iimportable_set_import_error( importable, line, msg );
-			g_free( msg );
+			ofa_iimportable_set_import_error( importable, line, _( "empty class label" ));
 			errors += 1;
 			continue;
 		} else {
@@ -805,14 +815,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( cstr ){
-			ofo_class_set_notes( class, cstr );
+			splitted = my_utils_import_multi_lines( cstr );
+			ofo_class_set_notes( class, splitted );
+			g_free( splitted );
 		}
 
 		dataset = g_list_prepend( dataset, class );
 
 		ofa_iimportable_set_import_ok( importable );
-		/* just let the user actually see the progression */
-		g_usleep( 0.1*G_USEC_PER_SEC );
 	}
 
 	if( !errors ){
@@ -827,8 +837,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 					ofo_dossier_get_user( dossier ));
 
 			ofa_iimportable_set_insert_ok( importable );
-			/* just let the user actually see the progression */
-			g_usleep( 0.1*G_USEC_PER_SEC );
 		}
 
 		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );

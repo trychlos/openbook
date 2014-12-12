@@ -750,13 +750,15 @@ p5_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 
 	priv->p5_page = page;
 
-	priv->p5_object = ( ofaIImportable * ) g_object_new( st_radios[priv->p2_idx].get_type(), NULL );
-	if( !OFA_IS_IIMPORTABLE( priv->p5_object )){
-		p5_error_no_interface( self );
-		return;
-	}
+	if( st_radios[priv->p2_idx].get_type ){
+		priv->p5_object = ( ofaIImportable * ) g_object_new( st_radios[priv->p2_idx].get_type(), NULL );
+		if( !OFA_IS_IIMPORTABLE( priv->p5_object )){
+			p5_error_no_interface( self );
+			return;
+		}
 
-	g_idle_add(( GSourceFunc ) p5_do_import, self );
+		g_idle_add(( GSourceFunc ) p5_do_import, self );
+	}
 }
 
 static void
