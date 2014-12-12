@@ -832,7 +832,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		}
 
 		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
-
 		ofa_idataset_free_dataset( dossier, OFO_TYPE_CLASS );
 
 		g_signal_emit_by_name(
@@ -842,107 +841,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	}
 
 	return( errors );
-}
-
-/**
- * ofo_class_import_csv:
- *
- * Receives a GSList of lines, where data are GSList of fields.
- * Fields must be:
- * - class number
- * - label
- * - notes (opt)
- *
- * Replace the whole table with the provided datas.
- */
-void
-ofo_class_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
-{
-	static const gchar *thisfn = "ofo_class_import_csv";
-	ofoClass *class;
-	GSList *ili, *ico;
-	GList *new_set, *ise;
-	gint count;
-	gint errors;
-	gint number;
-	const gchar *str;
-	gchar *splitted;
-
-	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
-			thisfn,
-			( void * ) dossier,
-			( void * ) lines, g_slist_length( lines ),
-			with_header ? "True":"False" );
-
-	new_set = NULL;
-	count = 0;
-	errors = 0;
-
-	for( ili=lines ; ili ; ili=ili->next ){
-		count += 1;
-		if( !( count == 1 && with_header )){
-			class = ofo_class_new();
-			ico=ili->data;
-
-			/* class number */
-			str = ( const gchar * ) ico->data;
-			number = atoi( str );
-			if( number < 1 || number > 9 ){
-				g_warning( "%s: (line %d) invalid class number: %d", thisfn, count, number );
-				errors += 1;
-				continue;
-			}
-			ofo_class_set_number( class, number );
-
-			/* class label */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty label", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			ofo_class_set_label( class, str );
-
-			/* notes
-			 * we are tolerant on the last field... */
-			ico = ico->next;
-			if( ico ){
-				str = ( const gchar * ) ico->data;
-				if( str && g_utf8_strlen( str, -1 )){
-					splitted = my_utils_import_multi_lines( str );
-					ofo_class_set_notes( class, splitted );
-					g_free( splitted );
-				}
-			} else {
-				continue;
-			}
-
-			new_set = g_list_prepend( new_set, class );
-		}
-	}
-
-	if( !errors ){
-		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CLASS, FALSE );
-
-		class_do_drop_content( ofo_dossier_get_dbms( dossier ));
-
-		for( ise=new_set ; ise ; ise=ise->next ){
-			class_do_insert(
-					OFO_CLASS( ise->data ),
-					ofo_dossier_get_dbms( dossier ),
-					ofo_dossier_get_user( dossier ));
-		}
-
-		g_list_free( new_set );
-
-		ofa_idataset_free_dataset( dossier, OFO_TYPE_CLASS );
-
-		g_signal_emit_by_name(
-				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_CLASS );
-
-		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CLASS, TRUE );
-	}
 }
 
 static gboolean

@@ -90,18 +90,8 @@
  130 2014- 5-28 do not delete an account which has an account_exe archive
                 detail record, but set a 'deleted' flag
 
- 146 2014- 5-31 ImportAssistant::do_init_p3_confirm: remove the mnemonic
-                ('_') from the GtktoggleButton label when displaying it
-
- 147 2014- 6- 2 ImportAssistant: keep the last folder and reselect it
-
- 148 2014- 6- 2 ImportAssistant: selecting a folder shouldn't make the
-                page complete
-
  149 2014- 6- 2 ImportAssistant: double-clicking a file (or activating 
                 the current selection) should advance to the next page
-
- 151 2014- 6- 2 ofaImport::on_apply: to be written
 
  152 2014- 6- 3 import qif files
 
@@ -121,10 +111,6 @@
 
  163 2014- 6- 5 move the table definition from ofo-dossier to the
                 corresponding classes
-
- 176 2014- 6- 6 ImportAssistant: let the user select the encoding
-                character set of the imported file, so that we are
-                able to convert to UTF-8
 
  179 2014- 6- 9 ofaModelsSet: manage ledger deletion (reclass in 
                 'Unclassed')
@@ -153,10 +139,6 @@
                 OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
                  times on a journal selection in journal_treeview from
                  journals_set)
-
- 212 2014- 6-13 when importing, accept decimal comma as well as decimal
-                dot (and this should be a configuration option of the
-                assistant, as well as the character set)
 
  213 2014- 6-13 recurrente entries
      2014- 6-16 to be built as a plugin
@@ -199,8 +181,6 @@
 
  273 2014- 6-29 ofa.css: hack ofaTabLabel/GtkGrid/GtkButton/GtkImage 
                 styles
-
- 281 2014- 7-14 move import to myAssistant
 
  296 2014- 7-20 creating a new dossier from an existing database needs
                 to insert the new admin user from root account (else
@@ -927,9 +907,23 @@
  145 2014- 5-30 get rid of xxx_GET_PRIVATE macro
      2014- 5-31 done - svn #3563
 
+ 146 2014- 5-31 ImportAssistant::do_init_p3_confirm: remove the mnemonic
+                ('_') from the GtktoggleButton label when displaying it
+     2014-12-12 done - svn #4276
+
+ 147 2014- 6- 2 ImportAssistant: keep the last folder and reselect it
+     2014-12-12 done - svn #4276
+
+ 148 2014- 6- 2 ImportAssistant: selecting a folder shouldn't make the
+                page complete
+     2014-12-12 done - svn #4276
+
  150 2014- 6- 2 Reconciliation: when entries have been fetched, set the
                 'label' title column to the account label
      2014- 6- 3 done
+
+ 151 2014- 6- 2 ofaImport::on_apply: to be written
+     2014-12-12 done - svn #4276
 
  154 2014- 6- 3 be able to re-use an already imported BAT (for the same
                 account) if we have been interrupted in a previous
@@ -992,6 +986,11 @@
                 unconditionally close a previously already opened
                 dossier.
      2014- 6- 7 done - svn #3657
+
+ 176 2014- 6- 6 ImportAssistant: let the user select the encoding
+                character set of the imported file, so that we are
+                able to convert to UTF-8
+     2014-12-12 done - svn #4276
 
  177 2014- 6- 9 there is no sens to manage a GtkTreeView in ofaMainPage
      2014-10-28 done - svn #3995
@@ -1132,6 +1131,11 @@
                 - export
                 - new dossier
      2014- 7-14 closed - cf. #281 and #282
+
+ 212 2014- 6-13 when importing, accept decimal comma as well as decimal
+                dot (and this should be a configuration option of the
+                assistant, as well as the character set)
+     2014-12-12 done - svn #4276
 
  214 2014- 6-13 edit rough entries
      2014- 6-21 have a visual distinction depending of the entry status:
@@ -1432,6 +1436,9 @@
  280 2014- 7-14 DossierNew: update properties right after having opened
                 the dossier
      2014- 7-14 done - svn #3770
+
+ 281 2014- 7-14 move import to myAssistant
+     2014-12-12 done - svn #4276
 
  282 2014- 7-14 move export to myAssistant
      2014-11-24 done - svn #4158

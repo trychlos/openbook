@@ -69,8 +69,6 @@ gboolean        ofo_class_insert         ( ofoClass *class, ofoDossier *dossier 
 gboolean        ofo_class_update         ( ofoClass *class, ofoDossier *dossier, gint prev_id );
 gboolean        ofo_class_delete         ( ofoClass *class, ofoDossier *dossier );
 
-void            ofo_class_import_csv     ( ofoDossier *dossier, GSList *lines, gboolean with_header );
-
 G_END_DECLS
 
 #endif /* __OFO_CLASS_H__ */
