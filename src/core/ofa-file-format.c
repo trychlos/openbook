@@ -40,7 +40,7 @@
 /* private instance data
  */
 struct _ofaFileFormatPrivate {
-	gboolean        dispose_has_run;
+	gboolean     dispose_has_run;
 
 	/* if serialized in user preferences
 	 */
@@ -365,10 +365,10 @@ ofa_file_format_get_field_sep( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_get_headers:
+ * ofa_file_format_has_headers:
  */
 gboolean
-ofa_file_format_get_headers( const ofaFileFormat *settings )
+ofa_file_format_has_headers( const ofaFileFormat *settings )
 {
 	ofaFileFormatPrivate *priv;
 

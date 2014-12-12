@@ -1698,7 +1698,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	OFA_IDATASET_GET( dossier, LEDGER, ledger );
 
-	with_headers = ofa_file_format_get_headers( settings );
+	with_headers = ofa_file_format_has_headers( settings );
 
 	count = ( gulong ) g_list_length( ledger_dataset );
 	if( with_headers ){

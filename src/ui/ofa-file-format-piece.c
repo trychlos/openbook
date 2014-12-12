@@ -586,7 +586,7 @@ init_headers( ofaFileFormatPiece *self )
 	priv->headers_btn =
 			my_utils_container_get_child_by_name( priv->container, "p5-headers" );
 
-	bvalue = ofa_file_format_get_headers( priv->settings );
+	bvalue = ofa_file_format_has_headers( priv->settings );
 
 	g_signal_connect(
 			G_OBJECT( priv->headers_btn ), "toggled", G_CALLBACK( on_headers_toggled ), self );

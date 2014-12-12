@@ -2781,7 +2781,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	result = entry_load_dataset( ofo_dossier_get_dbms( dossier ), NULL );
 
-	with_headers = ofa_file_format_get_headers( settings );
+	with_headers = ofa_file_format_has_headers( settings );
 
 	count = ( gulong ) g_list_length( result );
 	if( with_headers ){

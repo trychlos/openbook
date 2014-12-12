@@ -704,7 +704,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	OFA_IDATASET_GET( dossier, CLASS, class );
 
-	with_headers = ofa_file_format_get_headers( settings );
+	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );
 
 	count = ( gulong ) g_list_length( class_dataset );

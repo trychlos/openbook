@@ -1966,7 +1966,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
-	with_headers = ofa_file_format_get_headers( settings );
+	with_headers = ofa_file_format_has_headers( settings );
 	field_sep = ofa_file_format_get_field_sep( settings );
 	decimal_sep = ofa_file_format_get_decimal_sep( settings );
 

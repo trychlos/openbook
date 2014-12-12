@@ -63,6 +63,8 @@ openbook_SOURCES = \
 	my-editable-amount.h								\
 	my-editable-date.c									\
 	my-editable-date.h									\
+	my-field-combo.c									\
+	my-field-combo.h									\
 	my-progress-bar.c									\
 	my-progress-bar.h									\
 	my-tab-label.c										\

@@ -106,7 +106,7 @@ const gchar   *ofa_file_format_get_charmap    ( const ofaFileFormat *settings );
 myDateFormat   ofa_file_format_get_date_format( const ofaFileFormat *settings );
 gchar          ofa_file_format_get_decimal_sep( const ofaFileFormat *settings );
 gchar          ofa_file_format_get_field_sep  ( const ofaFileFormat *settings );
-gboolean       ofa_file_format_get_headers    ( const ofaFileFormat *settings );
+gboolean       ofa_file_format_has_headers    ( const ofaFileFormat *settings );
 
 void           ofa_file_format_set            ( ofaFileFormat *settings,
 														const gchar *name,

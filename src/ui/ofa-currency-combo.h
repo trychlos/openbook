@@ -74,10 +74,10 @@ GType             ofa_currency_combo_get_type     ( void ) G_GNUC_CONST;
 
 ofaCurrencyCombo *ofa_currency_combo_new          ( void );
 
+gchar            *ofa_currency_combo_get_selected ( ofaCurrencyCombo *combo );
+
 void              ofa_currency_combo_set_selected ( ofaCurrencyCombo *combo,
 															const gchar *code );
-
-gchar            *ofa_currency_combo_get_selected ( ofaCurrencyCombo *combo );
 
 G_END_DECLS
 

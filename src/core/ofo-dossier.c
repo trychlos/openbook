@@ -2885,7 +2885,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gboolean ok, with_headers;
 	gulong count;
 
-	with_headers = ofa_file_format_get_headers( settings );
+	with_headers = ofa_file_format_has_headers( settings );
 
 	count = ( gulong ) 1;
 	if( with_headers ){

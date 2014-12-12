@@ -814,7 +814,7 @@ p5_do_import( ofaImportAssistant *self )
 	}
 
 	content = lines;
-	if( ofa_file_format_get_headers( priv->p3_import_settings )){
+	if( ofa_file_format_has_headers( priv->p3_import_settings )){
 		content = g_slist_nth( lines, st_radios[priv->p2_idx].headers );
 	}
 
