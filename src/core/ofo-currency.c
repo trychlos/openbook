@@ -878,7 +878,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 static void
 iimportable_iface_init( ofaIImportableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+	static const gchar *thisfn = "ofo_currency_iimportable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -972,7 +972,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		}
 
 		dataset = g_list_prepend( dataset, currency );
-
 		ofa_iimportable_set_import_ok( importable );
 	}
 

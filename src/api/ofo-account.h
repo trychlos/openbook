@@ -116,8 +116,6 @@ gboolean        ofo_account_insert               ( ofoAccount *account, ofoDossi
 gboolean        ofo_account_update               ( ofoAccount *account, ofoDossier *dossier, const gchar *prev_number );
 gboolean        ofo_account_delete               ( ofoAccount *account, ofoDossier *dossier );
 
-void            ofo_account_import_csv           ( ofoDossier *dossier, GSList *lines, gboolean with_header );
-
 G_END_DECLS
 
 #endif /* __OFO_ACCOUNT_H__ */

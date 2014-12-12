@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -38,6 +39,7 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -174,6 +176,8 @@ typedef struct {
 }
 	sChildren;
 
+static ofoBaseClass *ofo_account_parent_class = NULL;
+
 static void         on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data );
 static void         on_new_object_entry( ofoDossier *dossier, ofoEntry *entry );
 static void         on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
@@ -207,10 +211,10 @@ static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
+static void         iimportable_iface_init( ofaIImportableInterface *iface );
+static guint        iimportable_get_interface_version( const ofaIImportable *instance );
+static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
 static gboolean     account_do_drop_content( const ofaDbms *dbms );
-
-G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0, \
-		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 OFA_IDATASET_LOAD( ACCOUNT, account );
 
@@ -264,10 +268,65 @@ ofo_account_class_init( ofoAccountClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	ofo_account_parent_class = g_type_class_peek_parent( klass );
+
 	G_OBJECT_CLASS( klass )->dispose = account_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoAccountPrivate ));
+}
+
+static GType
+register_type( void )
+{
+	static const gchar *thisfn = "ofo_account_register_type";
+	GType type;
+
+	static GTypeInfo info = {
+		sizeof( ofoAccountClass ),
+		( GBaseInitFunc ) NULL,
+		( GBaseFinalizeFunc ) NULL,
+		( GClassInitFunc ) ofo_account_class_init,
+		NULL,
+		NULL,
+		sizeof( ofoAccount ),
+		0,
+		( GInstanceInitFunc ) ofo_account_init
+	};
+
+	static const GInterfaceInfo iexportable_iface_info = {
+		( GInterfaceInitFunc ) iexportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo iimportable_iface_info = {
+		( GInterfaceInitFunc ) iimportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	g_debug( "%s", thisfn );
+
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoAccount", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
+
+	return( type );
+}
+
+GType
+ofo_account_get_type( void )
+{
+	static GType type = 0;
+
+	if( !type ){
+		type = register_type();
+	}
+
+	return( type );
 }
 
 static void
@@ -1939,8 +1998,28 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	return( TRUE );
 }
 
-/**
- * ofo_account_import_csv:
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->import = iimportable_import;
+}
+
+static guint
+iimportable_get_interface_version( const ofaIImportable *instance )
+{
+	return( 1 );
+}
+
+/*
+ * ofo_account_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -1954,107 +2033,100 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  * Replace the whole table with the provided datas.
  * All the balances are set to NULL.
  */
-void
-ofo_account_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
+static gint
+iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_account_import_csv";
+	GSList *itl, *fields, *itf;
+	const gchar *cstr, *dev_code, *def_dev_code;
 	ofoAccount *account;
-	GSList *ili, *ico;
-	GList *new_set, *ise;
-	gint count;
-	gint errors;
-	gint class;
-	const gchar *str, *dev_code, *def_dev_code;
-	gchar *type;
+	GList *dataset, *it;
+	guint errors, class, line;
+	gchar *msg, *splitted;
 	ofoCurrency *currency;
-	gchar *splitted;
 
-	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
-			thisfn,
-			( void * ) dossier,
-			( void * ) lines, g_slist_length( lines ),
-			with_header ? "True":"False" );
-
-	new_set = NULL;
-	count = 0;
+	line = 0;
 	errors = 0;
+	dataset = NULL;
 	def_dev_code = ofo_dossier_get_default_currency( dossier );
 
-	for( ili=lines ; ili ; ili=ili->next ){
-		count += 1;
-		if( !( count == 1 && with_header )){
-			account = ofo_account_new();
-			ico=ili->data;
+	for( itl=lines ; itl ; itl=itl->next ){
 
-			/* account number */
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty account number", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			class = ofo_account_get_class_from_number( str );
-			if( class < 1 || class > 9 ){
-				g_warning( "%s: (line %d) invalid account number: %s", thisfn, count, str );
-				errors += 1;
-				continue;
-			}
-			ofo_account_set_number( account, str );
+		line += 1;
+		account = ofo_account_new();
+		fields = ( GSList * ) itl->data;
 
-			/* account label */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty label", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			ofo_account_set_label( account, str );
-
-			/* currency code */
-			ico = ico->next;
-			dev_code = ( const gchar * ) ico->data;
-
-			/* account type */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				type = g_strdup( "D" );
-			} else {
-				type = g_strdup( str );
-			}
-			ofo_account_set_type_account( account, type );
-
-			if( !strcmp( type, "D" )){
-				if( !dev_code || !g_utf8_strlen( str, -1 )){
-					dev_code = def_dev_code;
-				}
-				currency = ofo_currency_get_by_code( dossier, dev_code );
-				if( !currency ){
-					g_warning( "%s: (line %d) invalid currency: '%s'", thisfn, count, dev_code );
-					errors += 1;
-					continue;
-				}
-				ofo_account_set_currency( account, dev_code );
-			}
-
-			/* notes
-			 * we are tolerant on the last field... */
-			ico = ico->next;
-			if( ico ){
-				str = ( const gchar * ) ico->data;
-				if( str && g_utf8_strlen( str, -1 )){
-					splitted = my_utils_import_multi_lines( str );
-					ofo_account_set_notes( account, splitted );
-					g_free( splitted );
-				}
-			} else {
-				continue;
-			}
-
-			g_free( type );
-			new_set = g_list_prepend( new_set, account );
+		/* account number */
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			ofa_iimportable_set_import_error( importable, line, _( "empty account number" ));
+			errors += 1;
+			continue;
 		}
+		class = ofo_account_get_class_from_number( cstr );
+		if( class < 1 || class > 9 ){
+			msg = g_strdup_printf( _( "invalid account number: %s" ), cstr );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+		ofo_account_set_number( account, cstr );
+
+		/* account label */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			ofa_iimportable_set_import_error( importable, line, _( "empty account label" ));
+			errors += 1;
+			continue;
+		}
+		ofo_account_set_label( account, cstr );
+
+		/* currency code */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			dev_code = cstr;
+		} else {
+			dev_code = def_dev_code;
+		}
+		currency = ofo_currency_get_by_code( dossier, dev_code );
+		if( !currency ){
+			msg = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+		ofo_account_set_currency( account, dev_code );
+
+		/* account type */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			cstr = ACCOUNT_TYPE_DETAIL;
+		} else if( g_utf8_collate( cstr, ACCOUNT_TYPE_DETAIL ) && g_utf8_collate( cstr, ACCOUNT_TYPE_ROOT )){
+			msg = g_strdup_printf( _( "invalid account type: %s" ), cstr );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+		ofo_account_set_type_account( account, cstr );
+
+		/* notes
+		 * we are tolerant on the last field... */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr ){
+			splitted = my_utils_import_multi_lines( cstr );
+			ofo_account_set_notes( account, splitted );
+			g_free( splitted );
+		}
+
+		dataset = g_list_prepend( dataset, account );
+		ofa_iimportable_set_import_ok( importable );
 	}
 
 	if( !errors ){
@@ -2062,15 +2134,16 @@ ofo_account_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header
 
 		account_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
-		for( ise=new_set ; ise ; ise=ise->next ){
+		for( it=dataset ; it ; it=it->next ){
 			account_do_insert(
-					OFO_ACCOUNT( ise->data ),
+					OFO_ACCOUNT( it->data ),
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
+
+			ofa_iimportable_set_insert_ok( importable );
 		}
 
-		g_list_free( new_set );
-
+		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
 		ofa_idataset_free_dataset( dossier, OFO_TYPE_ACCOUNT );
 
 		g_signal_emit_by_name(
@@ -2078,6 +2151,8 @@ ofo_account_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header
 
 		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_ACCOUNT, TRUE );
 	}
+
+	return( errors );
 }
 
 static gboolean

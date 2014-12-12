@@ -821,7 +821,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		}
 
 		dataset = g_list_prepend( dataset, class );
-
 		ofa_iimportable_set_import_ok( importable );
 	}
 

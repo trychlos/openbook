@@ -110,6 +110,7 @@ struct _ofaImportAssistantPrivate {
 	myProgressBar      *p5_bar;
 	myProgressBar      *p5_insert;
 	GtkWidget          *p5_page;
+	GtkWidget          *p5_text;
 	ofaIImportable     *p5_object;
 };
 
@@ -121,18 +122,19 @@ typedef struct {
 	gint         type_id;
 	const gchar *w_name;
 	fn_type      get_type;
+	gint         headers;				/* count of header lines */
 }
 	sRadios;
 
 static const sRadios st_radios[] = {
-		{ IMPORTER_TYPE_BAT,      "p2-releve",   ofo_bat_get_type },
-		{ IMPORTER_TYPE_CLASS,    "p2-class",    ofo_class_get_type },
-		{ IMPORTER_TYPE_ACCOUNT,  "p2-account",  ofo_account_get_type },
-		{ IMPORTER_TYPE_CURRENCY, "p2-currency", ofo_currency_get_type },
-		{ IMPORTER_TYPE_LEDGER,   "p2-journals", ofo_ledger_get_type },
-		{ IMPORTER_TYPE_MODEL,    "p2-model",    ofo_ope_template_get_type },
-		{ IMPORTER_TYPE_RATE,     "p2-rate",     ofo_rate_get_type },
-		{ IMPORTER_TYPE_ENTRY,    "p2-entries",  ofo_entry_get_type },
+		{ IMPORTER_TYPE_BAT,      "p2-releve",   ofo_bat_get_type,          0 },
+		{ IMPORTER_TYPE_CLASS,    "p2-class",    ofo_class_get_type,        1 },
+		{ IMPORTER_TYPE_ACCOUNT,  "p2-account",  ofo_account_get_type,      1 },
+		{ IMPORTER_TYPE_CURRENCY, "p2-currency", ofo_currency_get_type,     1 },
+		{ IMPORTER_TYPE_LEDGER,   "p2-journals", ofo_ledger_get_type,       1 },
+		{ IMPORTER_TYPE_MODEL,    "p2-model",    ofo_ope_template_get_type, 2 },
+		{ IMPORTER_TYPE_RATE,     "p2-rate",     ofo_rate_get_type,         2 },
+		{ IMPORTER_TYPE_ENTRY,    "p2-entries",  ofo_entry_get_type,        1 },
 		{ 0 }
 };
 
@@ -748,6 +750,10 @@ p5_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 	priv->p5_insert = my_progress_bar_new();
 	my_progress_bar_attach_to( priv->p5_insert, GTK_CONTAINER( parent ));
 
+	priv->p5_text = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-text-view" );
+	g_return_if_fail( priv->p5_text && GTK_IS_TEXT_VIEW( priv->p5_text ));
+	gtk_widget_set_can_focus( priv->p5_text, FALSE );
+
 	priv->p5_page = page;
 
 	if( st_radios[priv->p2_idx].get_type ){
@@ -794,7 +800,7 @@ p5_do_import( ofaImportAssistant *self )
 	gchar *str, *text;
 	gint ffmt, errors;
 	guint count;
-	GSList *lines;
+	GSList *lines, *content;
 
 	priv = self->priv;
 
@@ -807,9 +813,15 @@ p5_do_import( ofaImportAssistant *self )
 			break;
 	}
 
-	count = g_slist_length( lines );
+	content = lines;
+	if( ofa_file_format_get_headers( priv->p3_import_settings )){
+		content = g_slist_nth( lines, st_radios[priv->p2_idx].headers );
+	}
+
+	count = g_slist_length( content );
 	errors = ofa_iimportable_import( priv->p5_object,
-			lines, priv->p3_import_settings, MY_WINDOW( self )->prot->dossier, self );
+			content, priv->p3_import_settings, MY_WINDOW( self )->prot->dossier, self );
+
 	free_lines( lines );
 
 	/* then display the result */
@@ -822,8 +834,8 @@ p5_do_import( ofaImportAssistant *self )
 				"imported into « %s »." ),
 				count, priv->p1_fname, str );
 	} else {
-		text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors.\n\n"
-				"The « %s » recordset has been left unchanged.\n\n"
+		text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors.\n"
+				"The « %s » recordset has been left unchanged.\n"
 				"Please fix these errors, and retry then." ), priv->p1_fname, str );
 	}
 	g_free( str );
@@ -860,9 +872,26 @@ static void
 p5_on_error( ofaIImporter *importer, guint line_number, const gchar *msg, ofaImportAssistant *self )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p5_on_error";
+	ofaImportAssistantPrivate *priv;
+	GtkTextBuffer *buffer;
+	GtkTextIter iter;
+	gchar *str;
 
 	g_debug( "%s: importer=%p, line_number=%u, msg=%s, self=%p",
 			thisfn, ( void * ) importer, line_number, msg, ( void * ) self );
+
+	priv = self->priv;
+
+	buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->p5_text ));
+	gtk_text_buffer_get_end_iter( buffer, &iter );
+	str = g_strdup_printf( "[%u] %s\n", line_number, msg );
+	gtk_text_buffer_insert( buffer, &iter, str, -1 );
+	g_free( str );
+
+	/* let Gtk update the display */
+	while( gtk_events_pending()){
+		gtk_main_iteration();
+	}
 }
 
 static void
@@ -1006,335 +1035,6 @@ free_lines( GSList *lines )
 {
 	g_slist_free_full( lines, ( GDestroyNotify ) free_fields );
 }
-
-#if 0
-/*
- * columns: class;label;notes
- * header : yes
- */
-static gint
-import_assistant_class_csv( ofaImportAssistant *self )
-{
-	GSList *lines;
-	gchar *str;
-	gboolean ok;
-
-	str = g_strdup( _( "ImportAssistanting class reference will replace the existing classes.\n"
-			"Are you sure you want drop the current classes, and import these new ones ?" ));
-
-	ok = confirm_import( self, str );
-	g_free( str );
-	if( !ok ){
-		return( -1 );
-	}
-
-	lines = split_csv_content( self );
-	if( g_slist_length( lines ) <= 1 ){
-		return( -1 );
-	}
-
-	ofo_class_import_assistant_csv(
-			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
-
-	free_csv_content( lines );
-	return( 0 );
-}
-
-/*
- * columns: class;label;notes
- * header : yes
- */
-static gint
-import_assistant_account_csv( ofaImportAssistant *self )
-{
-	GSList *lines;
-	gchar *str;
-	gboolean ok;
-
-	str = g_strdup( _( "ImportAssistanting a new accounts reference will replace the existing chart of accounts.\n"
-			"Are you sure you want drop all the current accounts, and reset the chart to these new ones ?" ));
-
-	ok = confirm_import( self, str );
-	g_free( str );
-	if( !ok ){
-		return( -1 );
-	}
-
-	lines = split_csv_content( self );
-	if( g_slist_length( lines ) <= 1 ){
-		return( -1 );
-	}
-
-	ofo_account_import_assistant_csv(
-			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
-
-	free_csv_content( lines );
-	return( 0 );
-}
-
-/*
- * columns: iso 3a code;label;symbol;notes
- * header : yes
- */
-static gint
-import_assistant_currency_csv( ofaImportAssistant *self )
-{
-	GSList *lines;
-	gchar *str;
-	gboolean ok;
-
-	str = g_strdup( _( "ImportAssistanting a new reference for currencies will replace the existing one.\n"
-			"Are you sure you want drop all the current currencies, and reset the list to these newly imported ?" ));
-
-	ok = confirm_import( self, str );
-	g_free( str );
-	if( !ok ){
-		return( -1 );
-	}
-
-	lines = split_csv_content( self );
-	if( g_slist_length( lines ) <= 1 ){
-		return( -1 );
-	}
-
-	ofo_currency_import_assistant_csv(
-			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
-
-	free_csv_content( lines );
-	return( 0 );
-}
-
-/*
- * columns:
- *  - Dope;Deffect;Label;Ref;Currency;Journal;Account;ofxAmount
- *    amount is negative for a credit, positive for a debit
- * header : yes
- */
-static gint
-import_assistant_entry_csv( ofaImportAssistant *self )
-{
-	GSList *lines;
-	gchar *str;
-	gboolean ok;
-
-	str = g_strdup( _( "ImportAssistanting new entries will impact the balances of the accounts.\n"
-			"New entries will be added to already existing one.\n"
-			"Are you sure you want to import these new entries, imputing them of your accounts ?" ));
-
-	ok = confirm_import( self, str );
-	g_free( str );
-	if( !ok ){
-		return( -1 );
-	}
-
-	lines = split_csv_content( self );
-	if( g_slist_length( lines ) <= 1 ){
-		return( -1 );
-	}
-
-	ofo_entry_import_assistant_csv(
-			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
-
-	free_csv_content( lines );
-	return( 0 );
-}
-
-/*
- * columns: mnemo;label;notes
- * header : yes
- */
-static gint
-importledger_csv( ofaImportAssistant *self )
-{
-	GSList *lines;
-	gchar *str;
-	gboolean ok;
-
-	str = g_strdup( _( "ImportAssistanting a new list of journals will replace the existing list.\n"
-			"Are you sure you want drop all the current journals, and reset the list to these new ones ?" ));
-
-	ok = confirm_import( self, str );
-	g_free( str );
-	if( !ok ){
-		return( -1 );
-	}
-
-	lines = split_csv_content( self );
-	if( g_slist_length( lines ) <= 1 ){
-		return( -1 );
-	}
-
-	ofo_ledger_import_assistant_csv(
-			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
-
-	free_csv_content( lines );
-	return( 0 );
-}
-
-/*
- * columns:
- * - 1:mnemo;label;journal;journal_locked;notes
- * - 2:mnemo;comment;account;account_locked;label;label_locked;debit;debit_locked;credit;credit_locked
- *
- * header : yes
- */
-static gint
-import_assistant_model_csv( ofaImportAssistant *self )
-{
-	GSList *lines;
-	gchar *str;
-	gboolean ok;
-
-	str = g_strdup( _( "ImportAssistanting a new reference for entry models will replace the existing list.\n"
-			"Are you sure you want drop all the current models, and reset the list to these new ones ?" ));
-
-	ok = confirm_import( self, str );
-	g_free( str );
-	if( !ok ){
-		return( -1 );
-	}
-
-	lines = split_csv_content( self );
-	if( g_slist_length( lines ) <= 1 ){
-		return( -1 );
-	}
-
-	ofo_ope_template_import_assistant_csv(
-			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
-
-	free_csv_content( lines );
-	return( 0 );
-}
-
-/*
- * columns:
- * - 1:mnemo;label;notes
- * - 2:mnemo;begin;end;rate
- *
- * header : yes
- */
-static gint
-import_assistant_rate_csv( ofaImportAssistant *self )
-{
-	GSList *lines;
-	gchar *str;
-	gboolean ok;
-
-	str = g_strdup( _( "ImportAssistanting a new reference for rates will replace the existing list.\n"
-			"Are you sure you want drop all the current rates, and reset the list to these new ones ?" ));
-
-	ok = confirm_import( self, str );
-	g_free( str );
-	if( !ok ){
-		return( -1 );
-	}
-
-	lines = split_csv_content( self );
-	if( g_slist_length( lines ) <= 1 ){
-		return( -1 );
-	}
-
-	ofo_rate_import_assistant_csv(
-			ofa_main_window_get_dossier( self->priv->main_window ), lines, TRUE );
-
-	free_csv_content( lines );
-	return( 0 );
-}
-
-/*
- * Returns a GSList of lines, where each lines->data is a GSList of
- * fields
- */
-static GSList *
-split_csv_content( ofaImportAssistant *self )
-{
-	static const gchar *thisfn = "ofa_import_assistant_split_csv_content";
-	ofaImportAssistantPrivate *priv;
-	GFile *gfile;
-	gchar *contents;
-	GError *error;
-	gchar **lines, **iter_line;
-	gchar **fields, **iter_field;
-	GSList *s_fields, *s_lines;
-	gchar *field;
-
-	priv = self->priv;
-
-	/* only deal with the first uri */
-	gfile = g_file_new_for_uri( priv->p1_fnames->data );
-	error = NULL;
-	if( !g_file_load_contents( gfile, NULL, &contents, NULL, NULL, &error )){
-		g_warning( "%s: g_file_load_contents: %s", thisfn, error->message );
-		g_error_free( error );
-		return( NULL );
-	}
-
-	lines = g_strsplit( contents, "\n", -1 );
-	g_free( contents );
-
-	s_lines = NULL;
-	iter_line = lines;
-
-	while( *iter_line ){
-		if( g_utf8_strlen( *iter_line, -1 )){
-			fields = g_strsplit(( const gchar * ) *iter_line, ";", -1 );
-			s_fields = NULL;
-			iter_field = fields;
-
-			while( *iter_field ){
-				field = g_strstrip( g_strdup( *iter_field ));
-				/*g_debug( "field='%s'", field );*/
-				s_fields = g_slist_prepend( s_fields, field );
-				iter_field++;
-			}
-
-			g_strfreev( fields );
-			s_lines = g_slist_prepend( s_lines, g_slist_reverse( s_fields ));
-		}
-		iter_line++;
-	}
-
-	g_strfreev( lines );
-	return( g_slist_reverse( s_lines ));
-}
-
-static void
-free_csv_fields( GSList *fields )
-{
-	g_slist_free_full( fields, ( GDestroyNotify ) g_free );
-}
-
-static void
-free_csv_content( GSList *lines )
-{
-	g_slist_free_full( lines, ( GDestroyNotify ) free_csv_fields );
-}
-
-static gboolean
-confirm_import( ofaImportAssistant *self, const gchar *str )
-{
-	GtkWidget *dialog;
-	gint response;
-
-	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( self->priv->assistant ),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_QUESTION,
-			GTK_BUTTONS_NONE,
-			"%s", str );
-
-	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
-			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "_OK" ), GTK_RESPONSE_OK,
-			NULL );
-
-	response = gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
-
-	return( response == GTK_RESPONSE_OK );
-}
-#endif
 
 /*
  * settings is "folder;last_chosen_type;"

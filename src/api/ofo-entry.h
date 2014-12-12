@@ -206,8 +206,6 @@ gboolean       ofo_entry_validate_by_ledger   ( ofoDossier *dossier,
 
 gboolean       ofo_entry_delete               ( ofoEntry *entry, const ofoDossier *dossier );
 
-void           ofo_entry_import_csv           ( ofoDossier *dossier, GSList *lines, gboolean with_header );
-
 G_END_DECLS
 
 #endif /* __OFO_ENTRY_H__ */

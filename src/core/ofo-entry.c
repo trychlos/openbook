@@ -37,6 +37,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -95,8 +96,8 @@ static sStatus st_status[] = {
 		{ 0 },
 };
 
-static void         iexportable_iface_init( ofaIExportableInterface *iface );
-static guint        iexportable_get_interface_version( const ofaIExportable *instance );
+static ofoBaseClass *ofo_entry_parent_class = NULL;
+
 static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void         on_updated_object_account_number( const ofoDossier *dossier, const gchar *prev_id, const gchar *number );
 static void         on_updated_object_currency_code( const ofoDossier *dossier, const gchar *prev_id, const gchar *code );
@@ -129,10 +130,12 @@ static gboolean     entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const
 static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofaDbms *dbms );
 static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
+static void         iexportable_iface_init( ofaIExportableInterface *iface );
+static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
-
-G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0, \
-		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
+static void         iimportable_iface_init( ofaIImportableInterface *iface );
+static guint        iimportable_get_interface_version( const ofaIImportable *instance );
+static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
 
 static void
 entry_finalize( GObject *instance )
@@ -199,27 +202,65 @@ ofo_entry_class_init( ofoEntryClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	ofo_entry_parent_class = g_type_class_peek_parent( klass );
+
 	G_OBJECT_CLASS( klass )->dispose = entry_dispose;
 	G_OBJECT_CLASS( klass )->finalize = entry_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoEntryPrivate ));
 }
 
-static void
-iexportable_iface_init( ofaIExportableInterface *iface )
+static GType
+register_type( void )
 {
-	static const gchar *thisfn = "ofo_entry_iexportable_iface_init";
+	static const gchar *thisfn = "ofo_entry_register_type";
+	GType type;
 
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+	static GTypeInfo info = {
+		sizeof( ofoEntryClass ),
+		( GBaseInitFunc ) NULL,
+		( GBaseFinalizeFunc ) NULL,
+		( GClassInitFunc ) ofo_entry_class_init,
+		NULL,
+		NULL,
+		sizeof( ofoEntry ),
+		0,
+		( GInstanceInitFunc ) ofo_entry_init
+	};
 
-	iface->get_interface_version = iexportable_get_interface_version;
-	iface->export = iexportable_export;
+	static const GInterfaceInfo iexportable_iface_info = {
+		( GInterfaceInitFunc ) iexportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo iimportable_iface_info = {
+		( GInterfaceInitFunc ) iimportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	g_debug( "%s", thisfn );
+
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoEntry", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
+
+	return( type );
 }
 
-static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
+GType
+ofo_entry_get_type( void )
 {
-	return( 1 );
+	static GType type = 0;
+
+	if( !type ){
+		type = register_type();
+	}
+
+	return( type );
 }
 
 /**
@@ -2693,6 +2734,23 @@ do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 
 }
 
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	return( 1 );
+}
+
 /*
  * iexportable_export:
  *
@@ -2805,8 +2863,28 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	return( TRUE );
 }
 
-/**
- * ofo_entry_import_csv:
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->import = iimportable_import;
+}
+
+static guint
+iimportable_get_interface_version( const ofaIImportable *instance )
+{
+	return( 1 );
+}
+
+/*
+ * ofo_entry_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -2835,16 +2913,14 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  * If the entry effect date is after the end of the exercice (if set),
  * then accounts and ledgers will not be imputed.
  */
-void
-ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
+static gint
+iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_entry_import_csv";
+	GSList *itl, *fields, *itf;
+	const gchar *cstr;
 	ofoEntry *entry;
-	GSList *ili, *ico;
-	GList *new_set, *ise;
-	gint count;
-	gint errors, tot_errors;
-	const gchar *str;
+	GList *dataset, *it;
+	guint errors, line;
 	GDate date;
 	gchar *currency;
 	ofoAccount *account;
@@ -2852,191 +2928,210 @@ ofo_entry_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 	gdouble debit, credit;
 	gdouble tot_debits, tot_credits;
 	const GDate *exe_begin, *exe_end, *led_close, *deffect;
-	gchar *sdeffect, *sled_close;
+	gchar *sdeffect, *sled_close, *msg;
 
-	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
-			thisfn,
-			( void * ) dossier,
-			( void * ) lines, g_slist_length( lines ),
-			with_header ? "True":"False" );
-
-	new_set = NULL;
-	count = 0;
-	tot_errors = 0;
+	dataset = NULL;
+	line = 0;
+	errors = 0;
 	tot_debits = 0;
 	tot_credits = 0;
 
 	exe_begin = ofo_dossier_get_exe_begin( dossier );
 	exe_end = ofo_dossier_get_exe_end( dossier );
 
-	for( ili=lines ; ili ; ili=ili->next ){
-		count += 1;
-		if( !( count == 1 && with_header )){
+	for( itl=lines ; itl ; itl=itl->next ){
 
-			debit = 0;
-			credit = 0;
-			errors = 0;
+		line += 1;
+		entry = ofo_entry_new();
+		fields = ( GSList * ) itl->data;
+		debit = 0;
+		credit = 0;
 
-			entry = ofo_entry_new();
-
-			/* operation date */
-			ico=ili->data;
-			str = ( const gchar * ) ico->data;
-			my_date_set_from_sql( &date, str );
-			if( !my_date_is_valid( &date )){
-				g_warning( "%s: (line %d) invalid operation date: %s", thisfn, count, str );
-				errors += 1;
-				continue;
-			}
-			entry->priv->dope = date;
-
-			/* effect date */
-			ico=ico->next;
-			str = ( const gchar * ) ico->data;
-			my_date_set_from_sql( &date, str );
-			if( !my_date_is_valid( &date )){
-				g_warning( "%s: (line %d) invalid effect date: %s", thisfn, count, str );
-				errors += 1;
-				continue;
-			}
-			entry->priv->deffect = date;
-			deffect = ofo_entry_get_deffect( entry );
-
-			/* entry label */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty label", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			ofo_entry_set_label( entry, str );
-
-			/* entry piece's reference - may be empty */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			ofo_entry_set_ref( entry, str );
-
-			/* entry currency - a default is provided by the account
-			 *  so check and set is pushed back after having read it */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			currency = g_strdup( str );
-
-			/* ledger - default to IMPORT */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				str = "IMPORT";
-			}
-			ledger = ofo_ledger_get_by_mnemo( dossier, str );
-			if( !ledger ){
-				g_warning( "%s: ledger not found: %s", thisfn, str );
-				errors += 1;
-				continue;
-			}
-			ofo_entry_set_ledger( entry, str );
-			led_close = ofo_ledger_get_last_close( ledger );
-
-			/* operation template */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( str && g_utf8_strlen( str, -1 )){
-				ofo_entry_set_ope_template( entry, str );
-			}
-
-			/* entry account */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty account", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			account = ofo_account_get_by_number( dossier, str );
-			if( !account ){
-				g_warning( "%s: (line %d) non existant account: %s", thisfn, count, str );
-				errors += 1;
-				continue;
-			}
-			if( ofo_account_is_root( account )){
-				g_warning( "%s: (line %d) not a detail account: %s", thisfn, count, str );
-				errors += 1;
-				continue;
-			}
-			ofo_entry_set_account( entry, str );
-
-			if( !currency || !g_utf8_strlen( currency, -1 )){
-				g_free( currency );
-				currency = g_strdup( ofo_account_get_currency( account ));
-			}
-			ofo_entry_set_currency( entry, currency );
-			g_free( currency );
-
-			/* debit */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( str && g_utf8_strlen( str, -1 )){
-				debit = my_double_set_from_sql( str );
-			}
-
-			/* credit */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( str && g_utf8_strlen( str, -1 )){
-				credit = my_double_set_from_sql( str );
-			}
-
-			/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/
-			if(( debit && !credit ) || ( !debit && credit )){
-				ofo_entry_set_debit( entry, debit );
-				ofo_entry_set_credit( entry, credit );
-			} else {
-				g_warning( "%s: (line %d) invalid amounts: debit=%.5lf, credit=%.5lf", thisfn, count, debit, credit );
-				errors += 1;
-				continue;
-			}
-
-			/* what to do regarding the effect date ? */
-			if( my_date_is_valid( exe_begin ) && my_date_compare( deffect, exe_begin ) < 0 ){
-				/* entry is in the past */
-				ofo_entry_set_status( entry, ENT_STATUS_VALIDATED );
-				entry->priv->signaling_ok = FALSE;
-
-			} else if( my_date_is_valid( exe_end ) && my_date_compare( deffect, exe_end ) > 0 ){
-				/* entry is in the future */
-
-			} else if( my_date_is_valid( led_close ) && my_date_compare( deffect, led_close ) <= 0 ){
-				sdeffect = my_date_to_str( deffect, MY_DATE_DMYY );
-				sled_close = my_date_to_str( led_close, MY_DATE_DMYY );
-				g_warning( "%s: (line %d) effect date %s before ledger last closing %s",
-						thisfn, count, sdeffect, sled_close );
-				g_free( sled_close );
-				g_free( sdeffect );
-				errors += 1;
-				continue;
-			}
-
-			new_set = g_list_prepend( new_set, entry );
-			tot_errors += errors;
-			tot_debits += debit;
-			tot_credits += credit;
+		/* operation date */
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		my_date_set_from_sql( &date, cstr );
+		if( !my_date_is_valid( &date )){
+			msg = g_strdup_printf( _( "invalid entry operation date: %s" ), cstr );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
 		}
+		ofo_entry_set_dope( entry, &date );
+
+		/* effect date */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		my_date_set_from_sql( &date, cstr );
+		if( !my_date_is_valid( &date )){
+			msg = g_strdup_printf( _( "invalid entry effect date: %s" ), cstr );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+		ofo_entry_set_deffect( entry, &date );
+		deffect = ofo_entry_get_deffect( entry );
+
+		/* entry label */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			ofa_iimportable_set_import_error( importable, line, _( "empty entry label" ));
+			errors += 1;
+			continue;
+		}
+		ofo_entry_set_label( entry, cstr );
+
+		/* entry piece's reference - may be empty */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		ofo_entry_set_ref( entry, cstr );
+
+		/* entry currency - a default is provided by the account
+		 *  so check and set is pushed back after having read it */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		currency = g_strdup( cstr );
+
+		/* ledger - default to IMPORT */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			cstr = "IMPORT";
+		}
+		ledger = ofo_ledger_get_by_mnemo( dossier, cstr );
+		if( !ledger ){
+			msg = g_strdup_printf( _( "entry ledger not found: %s" ), cstr );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+		ofo_entry_set_ledger( entry, cstr );
+		led_close = ofo_ledger_get_last_close( ledger );
+
+		/* operation template - optional */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		ofo_entry_set_ope_template( entry, cstr );
+
+		/* entry account */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			ofa_iimportable_set_import_error( importable, line, _( "empty entry account" ));
+			errors += 1;
+			continue;
+		}
+		account = ofo_account_get_by_number( dossier, cstr );
+		if( !account ){
+			msg = g_strdup_printf( _( "entry account not found: %s" ), cstr );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+		if( ofo_account_is_root( account )){
+			msg = g_strdup_printf( _( "entry account is a root account: %s" ), cstr );
+			ofa_iimportable_set_import_error( importable, line, cstr );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+		ofo_entry_set_account( entry, cstr );
+
+		cstr = ofo_account_get_currency( account );
+		if( !currency || !g_utf8_strlen( currency, -1 )){
+			g_free( currency );
+			currency = g_strdup( cstr );
+		} else if( g_utf8_collate( currency, cstr )){
+			msg = g_strdup_printf(
+					_( "entry currency: %s is not the same than those of the account: %s" ),
+					currency, cstr );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+		ofo_entry_set_currency( entry, currency );
+		g_free( currency );
+
+		/* debit */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			debit = my_double_set_from_sql( cstr );
+		}
+
+		/* credit */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr && g_utf8_strlen( cstr, -1 )){
+			credit = my_double_set_from_sql( cstr );
+		}
+
+		/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/
+		if(( debit && !credit ) || ( !debit && credit )){
+			ofo_entry_set_debit( entry, debit );
+			ofo_entry_set_credit( entry, credit );
+		} else {
+			msg = g_strdup_printf(
+					_( "invalid entry amounts: debit=%.5lf, credit=%.5lf" ), debit, credit );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+
+		/* what to do regarding the effect date ? */
+		if( my_date_is_valid( exe_begin ) && my_date_compare( deffect, exe_begin ) < 0 ){
+			/* entry is in the past */
+			ofo_entry_set_status( entry, ENT_STATUS_VALIDATED );
+			entry->priv->signaling_ok = FALSE;
+
+		} else if( my_date_is_valid( exe_end ) && my_date_compare( deffect, exe_end ) > 0 ){
+			/* entry is in the future */
+
+		} else if( my_date_is_valid( led_close ) && my_date_compare( deffect, led_close ) <= 0 ){
+			sdeffect = my_date_to_str( deffect, MY_DATE_DMYY );
+			sled_close = my_date_to_str( led_close, MY_DATE_DMYY );
+			msg = g_strdup_printf(
+					_( "entry effect date %s before ledger last closing %s" ), sdeffect, sled_close );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			g_free( sled_close );
+			g_free( sdeffect );
+			errors += 1;
+			continue;
+		}
+
+		dataset = g_list_prepend( dataset, entry );
+		ofa_iimportable_set_import_ok( importable );
+		tot_debits += debit;
+		tot_credits += credit;
 	}
 
 	/* entries must be balanced:
 	 * as we are storing 5 decimal digits in the DBMS, so this is the
 	 * maximal rounding error accepted */
 	if( abs( tot_debits - tot_credits ) > 0.00001 ){
-		g_warning( "%s: entries are not balanced: tot_debits=%.5lf, tot_credits=%.5lf", thisfn, tot_debits, tot_credits );
-		tot_errors += 1;
+		msg = g_strdup_printf(
+				_( "entries are not balanced: tot_debits=%.5lf, tot_credits=%.5lf" ), tot_debits, tot_credits );
+		ofa_iimportable_set_import_error( importable, line, msg );
+		g_free( msg );
+		errors += 1;
 	}
 
-	if( !tot_errors ){
-		for( ise=new_set ; ise ; ise=ise->next ){
-			ofo_entry_insert( OFO_ENTRY( ise->data ), dossier );
+	if( !errors ){
+		for( it=dataset ; it ; it=it->next ){
+			ofo_entry_insert( OFO_ENTRY( it->data ), dossier );
+			ofa_iimportable_set_insert_ok( importable );
 		}
 	}
 
-	g_list_free_full( new_set, ( GDestroyNotify ) g_object_unref );
+	g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
+
+	return( errors );
 }
