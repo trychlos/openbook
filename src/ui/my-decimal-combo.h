@@ -32,8 +32,11 @@
  * @short_description: #myDecimalCombo class definition.
  * @include: ui/my-decimal-combo.h
  *
- * This class manages a combobox which display the availabel decimal
+ * This class manages a combobox which display the available decimal
  * dot separators.
+ *
+ * The instanciated object is automatically unreffed when the parent
+ * widget to which it has been attached to is destroyed.
  */
 
 #include <gtk/gtk.h>
@@ -68,11 +71,13 @@ GType           my_decimal_combo_get_type    ( void ) G_GNUC_CONST;
 
 myDecimalCombo *my_decimal_combo_new         ( void );
 
-void            my_decimal_combo_attach_to   ( myDecimalCombo *combo, GtkContainer *new_parent );
-
-void            my_decimal_combo_init_view   ( myDecimalCombo *combo, const gchar *decimal_sep );
+void            my_decimal_combo_attach_to   ( myDecimalCombo *combo,
+														GtkContainer *new_parent );
 
 gchar          *my_decimal_combo_get_selected( myDecimalCombo *combo );
+
+void            my_decimal_combo_set_selected( myDecimalCombo *combo,
+														const gchar *decimal_sep );
 
 G_END_DECLS
 

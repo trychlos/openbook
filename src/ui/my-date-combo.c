@@ -338,18 +338,21 @@ my_date_combo_set_selected( myDateCombo *self, myDateFormat format )
 	priv = self->priv;
 	g_return_if_fail( priv->combo && GTK_IS_COMBO_BOX( priv->combo ));
 
-	tmodel = gtk_combo_box_get_model( priv->combo );
-	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+	if( !priv->dispose_has_run ){
 
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &dfmt, -1 );
-			if( dfmt == format ){
-				gtk_combo_box_set_active_iter( priv->combo, &iter );
-				break;
-			}
-			if( !gtk_tree_model_iter_next( tmodel, &iter )){
-				break;
+		tmodel = gtk_combo_box_get_model( priv->combo );
+		g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
+
+		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+			while( TRUE ){
+				gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &dfmt, -1 );
+				if( dfmt == format ){
+					gtk_combo_box_set_active_iter( priv->combo, &iter );
+					break;
+				}
+				if( !gtk_tree_model_iter_next( tmodel, &iter )){
+					break;
+				}
 			}
 		}
 	}

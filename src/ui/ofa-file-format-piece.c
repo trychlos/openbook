@@ -502,7 +502,7 @@ init_decimal_dot( ofaFileFormatPiece *self )
 	my_decimal_combo_attach_to( priv->decimal_combo, GTK_CONTAINER( parent ));
 	sep = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->settings ));
 	/*g_debug( "init_decimal_dot: sep='%s'", sep );*/
-	my_decimal_combo_init_view( priv->decimal_combo, sep );
+	my_decimal_combo_set_selected( priv->decimal_combo, sep );
 	g_free( sep );
 
 	g_signal_connect( priv->decimal_combo, "changed", G_CALLBACK( on_decimal_changed ), self );

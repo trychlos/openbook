@@ -32,7 +32,10 @@
  * @short_description: #myDateCombo class definition.
  * @include: ui/my-date-combo.h
  *
- * This class manages a combobox which display the known date formats.
+ * This class manages a combo box which display the known date formats.
+ *
+ * The instanciated object is automatically unreffed when the parent
+ * widget to which it has been attached to is destroyed.
  */
 
 #include <gtk/gtk.h>
@@ -69,11 +72,13 @@ GType        my_date_combo_get_type    ( void ) G_GNUC_CONST;
 
 myDateCombo *my_date_combo_new         ( void );
 
-void         my_date_combo_attach_to   ( myDateCombo *combo, GtkContainer *new_parent );
+void         my_date_combo_attach_to   ( myDateCombo *combo,
+												GtkContainer *new_parent );
 
 myDateFormat my_date_combo_get_selected( myDateCombo *combo );
 
-void         my_date_combo_set_selected( myDateCombo *combo, myDateFormat format );
+void         my_date_combo_set_selected( myDateCombo *combo,
+												myDateFormat format );
 
 G_END_DECLS
 
