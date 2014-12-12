@@ -86,8 +86,6 @@ gboolean        ofo_ledger_insert          ( ofoLedger *ledger, ofoDossier *doss
 gboolean        ofo_ledger_update          ( ofoLedger *ledger, ofoDossier *dossier, const gchar *prev_mnemo );
 gboolean        ofo_ledger_delete          ( ofoLedger *ledger, ofoDossier *dossier );
 
-void            ofo_ledger_import_csv      ( ofoDossier *dossier, GSList *lines, gboolean with_header );
-
 G_END_DECLS
 
 #endif /* __OFO_LEDGER_H__ */

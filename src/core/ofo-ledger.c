@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,6 +38,7 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -74,6 +76,8 @@ typedef struct {
 }
 	sDetailCur;
 
+static ofoBaseClass *ofo_ledger_parent_class = NULL;
+
 static void        on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data );
 static void        on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry );
 static void        on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
@@ -104,10 +108,10 @@ static gint        ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
+static void        iimportable_iface_init( ofaIImportableInterface *iface );
+static guint       iimportable_get_interface_version( const ofaIImportable *instance );
+static gboolean    iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
 static gboolean    ledger_do_drop_content( const ofaDbms *dbms );
-
-G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0, \
-		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 OFA_IDATASET_LOAD( LEDGER, ledger );
 
@@ -175,10 +179,65 @@ ofo_ledger_class_init( ofoLedgerClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	ofo_ledger_parent_class = g_type_class_peek_parent( klass );
+
 	G_OBJECT_CLASS( klass )->dispose = ledger_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoLedgerPrivate ));
+}
+
+static GType
+register_type( void )
+{
+	static const gchar *thisfn = "ofo_ledger_register_type";
+	GType type;
+
+	static GTypeInfo info = {
+		sizeof( ofoLedgerClass ),
+		( GBaseInitFunc ) NULL,
+		( GBaseFinalizeFunc ) NULL,
+		( GClassInitFunc ) ofo_ledger_class_init,
+		NULL,
+		NULL,
+		sizeof( ofoLedger ),
+		0,
+		( GInstanceInitFunc ) ofo_ledger_init
+	};
+
+	static const GInterfaceInfo iexportable_iface_info = {
+		( GInterfaceInitFunc ) iexportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo iimportable_iface_info = {
+		( GInterfaceInitFunc ) iimportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	g_debug( "%s", thisfn );
+
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoLedger", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
+
+	return( type );
+}
+
+GType
+ofo_ledger_get_type( void )
+{
+	static GType type = 0;
+
+	if( !type ){
+		type = register_type();
+	}
+
+	return( type );
 }
 
 /**
@@ -1721,8 +1780,28 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	return( TRUE );
 }
 
-/**
- * ofo_ledger_import_csv:
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->import = iimportable_import;
+}
+
+static guint
+iimportable_get_interface_version( const ofaIImportable *instance )
+{
+	return( 1 );
+}
+
+/*
+ * ofo_ledger_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -1732,69 +1811,58 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  *
  * Replace the whole table with the provided datas.
  */
-void
-ofo_ledger_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
+static gint
+iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_ledger_import_csv";
+	GSList *itl, *fields, *itf;
+	const gchar *cstr;
 	ofoLedger *ledger;
-	GSList *ili, *ico;
-	GList *new_set, *ise;
-	gint count;
-	gint errors;
-	const gchar *str;
+	GList *dataset, *it;
+	guint errors, line;
 	gchar *splitted;
 
-	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
-			thisfn,
-			( void * ) dossier,
-			( void * ) lines, g_slist_length( lines ),
-			with_header ? "True":"False" );
-
-	new_set = NULL;
-	count = 0;
+	line = 0;
 	errors = 0;
+	dataset = NULL;
 
-	for( ili=lines ; ili ; ili=ili->next ){
-		count += 1;
-		if( !( count == 1 && with_header )){
-			ledger = ofo_ledger_new();
-			ico=ili->data;
+	for( itl=lines ; itl ; itl=itl->next ){
 
-			/* ledger mnemo */
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty mnemo", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			ofo_ledger_set_mnemo( ledger, str );
+		line += 1;
+		ledger = ofo_ledger_new();
+		fields = ( GSList * ) itl->data;
 
-			/* ledger label */
-			ico = ico->next;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty label", thisfn, count );
-				errors += 1;
-				continue;
-			}
-			ofo_ledger_set_label( ledger, str );
-
-			/* notes
-			 * we are tolerant on the last field... */
-			ico = ico->next;
-			if( ico ){
-				str = ( const gchar * ) ico->data;
-				if( str && g_utf8_strlen( str, -1 )){
-					splitted = my_utils_import_multi_lines( str );
-					ofo_ledger_set_notes( ledger, splitted );
-					g_free( splitted );
-				}
-			} else {
-				continue;
-			}
-
-			new_set = g_list_prepend( new_set, ledger );
+		/* ledger mnemo */
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			ofa_iimportable_set_import_error( importable, line, _( "empty ledger mnemo" ));
+			errors += 1;
+			continue;
 		}
+		ofo_ledger_set_mnemo( ledger, cstr );
+
+		/* ledger label */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			ofa_iimportable_set_import_error( importable, line, _( "empty ledger label" ));
+			errors += 1;
+			continue;
+		}
+		ofo_ledger_set_label( ledger, cstr );
+
+		/* notes
+		 * we are tolerant on the last field... */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr ){
+			splitted = my_utils_import_multi_lines( cstr );
+			ofo_ledger_set_notes( ledger, splitted );
+			g_free( splitted );
+		}
+
+		dataset = g_list_prepend( dataset, ledger );
+		ofa_iimportable_set_import_ok( importable );
 	}
 
 	if( !errors ){
@@ -1802,15 +1870,16 @@ ofo_ledger_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header 
 
 		ledger_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
-		for( ise=new_set ; ise ; ise=ise->next ){
+		for( it=dataset ; it ; it=it->next ){
 			ledger_do_insert(
-					OFO_LEDGER( ise->data ),
+					OFO_LEDGER( it->data ),
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
+
+			ofa_iimportable_set_insert_ok( importable );
 		}
 
-		g_list_free( new_set );
-
+		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
 		ofa_idataset_free_dataset( dossier, OFO_TYPE_LEDGER );
 
 		g_signal_emit_by_name(
@@ -1818,6 +1887,8 @@ ofo_ledger_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header 
 
 		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_LEDGER, TRUE );
 	}
+
+	return( errors );
 }
 
 static gboolean
