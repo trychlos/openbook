@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -35,6 +36,7 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -80,6 +82,8 @@ typedef struct {
 /* mnemonic max length */
 #define MNEMO_LENGTH                    6
 
+static ofoBaseClass *ofo_ope_template_parent_class = NULL;
+
 static void            on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, void *user_data );
 static gboolean        on_update_ledger_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
 static gboolean        on_update_rate_mnemo( ofoDossier *dossier, const gchar *mnemo, const gchar *prev_id );
@@ -102,12 +106,12 @@ static gint            ope_template_cmp_by_ptr( const ofoOpeTemplate *a, const o
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
 static guint           iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean        iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
-static ofoOpeTemplate *model_import_csv_model( GSList *fields, gint count, gint *errors );
-static sModDetail     *model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo );
+static void            iimportable_iface_init( ofaIImportableInterface *iface );
+static guint           iimportable_get_interface_version( const ofaIImportable *instance );
+static gboolean        iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
+static ofoOpeTemplate *model_import_csv_model( ofaIImportable *importable, GSList *fields, guint count, guint *errors );
+static sModDetail     *model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint count, guint *errors, gchar **mnemo );
 static gboolean        model_do_drop_content( const ofaDbms *dbms );
-
-G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0, \
-		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 OFA_IDATASET_LOAD( OPE_TEMPLATE, ope_template );
 
@@ -193,10 +197,65 @@ ofo_ope_template_class_init( ofoOpeTemplateClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	ofo_ope_template_parent_class = g_type_class_peek_parent( klass );
+
 	G_OBJECT_CLASS( klass )->dispose = ope_template_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoOpeTemplatePrivate ));
+}
+
+static GType
+register_type( void )
+{
+	static const gchar *thisfn = "ofo_ope_template_register_type";
+	GType type;
+
+	static GTypeInfo info = {
+		sizeof( ofoOpeTemplateClass ),
+		( GBaseInitFunc ) NULL,
+		( GBaseFinalizeFunc ) NULL,
+		( GClassInitFunc ) ofo_ope_template_class_init,
+		NULL,
+		NULL,
+		sizeof( ofoOpeTemplate ),
+		0,
+		( GInstanceInitFunc ) ofo_ope_template_init
+	};
+
+	static const GInterfaceInfo iexportable_iface_info = {
+		( GInterfaceInitFunc ) iexportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo iimportable_iface_info = {
+		( GInterfaceInitFunc ) iimportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	g_debug( "%s", thisfn );
+
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoOpeTemplate", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
+
+	return( type );
+}
+
+GType
+ofo_ope_template_get_type( void )
+{
+	static GType type = 0;
+
+	if( !type ){
+		type = register_type();
+	}
+
+	return( type );
 }
 
 /**
@@ -1622,8 +1681,28 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	return( TRUE );
 }
 
-/**
- * ofo_ope_template_import_csv:
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->import = iimportable_import;
+}
+
+static guint
+iimportable_get_interface_version( const ofaIImportable *instance )
+{
+	return( 1 );
+}
+
+/*
+ * ofo_ope_template_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -1643,65 +1722,56 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  *
  * Replace the whole table with the provided datas.
  */
-void
-ofo_ope_template_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
+static gint
+iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_ope_template_import_csv";
-	gint type;
-	GSList *ili, *ico;
+	GSList *itl, *fields, *itf;
+	const gchar *cstr;
 	ofoOpeTemplate *model;
+	GList *dataset, *it;
+	guint errors, line;
+	gchar *msg, *mnemo;
+	gint type;
 	sModDetail *sdet;
-	GList *new_set, *ise;
-	gint count;
-	gint errors;
-	const gchar *str;
-	gchar *mnemo;
 
-	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
-			thisfn,
-			( void * ) dossier,
-			( void * ) lines, g_slist_length( lines ),
-			with_header ? "True":"False" );
-
-	new_set = NULL;
-	count = 0;
+	line = 0;
 	errors = 0;
+	dataset = NULL;
 
-	for( ili=lines ; ili ; ili=ili->next ){
-		count += 1;
-		if( !( count <= 2 && with_header )){
-			ico=ili->data;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty line type", thisfn, count );
+	for( itl=lines ; itl ; itl=itl->next ){
+
+		line += 1;
+		fields = ( GSList * ) itl->data;
+
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		type = atoi( cstr );
+		switch( type ){
+			case 1:
+				model = model_import_csv_model( importable, fields, line, &errors );
+				if( model ){
+					dataset = g_list_prepend( dataset, model );
+					ofa_iimportable_set_import_ok( importable );
+				}
+				break;
+			case 2:
+				mnemo = NULL;
+				sdet = model_import_csv_detail( importable, fields, line, &errors, &mnemo );
+				if( sdet ){
+					model = model_find_by_mnemo( dataset, mnemo );
+					if( model ){
+						model->priv->details = g_list_append( model->priv->details, sdet );
+						ofa_iimportable_set_import_ok( importable );
+					}
+					g_free( mnemo );
+				}
+				break;
+			default:
+				msg = g_strdup_printf( _( "invalid ope template line type: %s" ), cstr );
+				ofa_iimportable_set_import_error( importable, line, msg );
+				g_free( msg );
 				errors += 1;
 				continue;
-			}
-			type = atoi( str );
-			switch( type ){
-				case 1:
-					model = model_import_csv_model( ico, count, &errors );
-					if( model ){
-						new_set = g_list_prepend( new_set, model );
-					}
-					break;
-				case 2:
-					mnemo = NULL;
-					sdet = model_import_csv_detail( ico, count, &errors, &mnemo );
-					if( sdet ){
-						model = model_find_by_mnemo( new_set, mnemo );
-						if( model ){
-							model->priv->details =
-									g_list_append( model->priv->details, sdet );
-						}
-						g_free( mnemo );
-					}
-					break;
-				default:
-					g_warning( "%s: (line %d) invalid line type: %d", thisfn, count, type );
-					errors += 1;
-					continue;
-			}
 		}
 	}
 
@@ -1710,155 +1780,145 @@ ofo_ope_template_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_h
 
 		model_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
-		for( ise=new_set ; ise ; ise=ise->next ){
+		for( it=dataset ; it ; it=it->next ){
 			model_do_insert(
-					OFO_OPE_TEMPLATE( ise->data ),
+					OFO_OPE_TEMPLATE( it->data ),
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
-			g_debug( "%s: inserting into dbms", thisfn );
+
+			ofa_iimportable_set_insert_ok( importable );
 		}
 
+		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
 		ofa_idataset_free_dataset( dossier, OFO_TYPE_OPE_TEMPLATE );
 
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_OPE_TEMPLATE );
 
-		g_list_free( new_set );
-
 		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_OPE_TEMPLATE, TRUE );
 	}
+
+	return( errors );
 }
 
 static ofoOpeTemplate *
-model_import_csv_model( GSList *fields, gint count, gint *errors )
+model_import_csv_model( ofaIImportable *importable, GSList *fields, guint line, guint *errors )
 {
-	static const gchar *thisfn = "ofo_ope_template_import_csv_model";
 	ofoOpeTemplate *model;
-	const gchar *str;
-	GSList *ico;
+	const gchar *cstr;
+	GSList *itf;
 	gboolean locked;
 	gchar *splitted;
 
 	model = ofo_ope_template_new();
+	itf = fields;
 
 	/* model mnemo */
-	ico = fields->next;
-	str = ( const gchar * ) ico->data;
-	if( !str || !g_utf8_strlen( str, -1 )){
-		g_warning( "%s: (line %d) empty mnemo", thisfn, count );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		ofa_iimportable_set_import_error( importable, line, _( "empty operation template mnemonic" ));
 		*errors += 1;
 		g_object_unref( model );
 		return( NULL );
 	}
-	ofo_ope_template_set_mnemo( model, str );
+	ofo_ope_template_set_mnemo( model, cstr );
 
 	/* model label */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	if( !str || !g_utf8_strlen( str, -1 )){
-		g_warning( "%s: (line %d) empty label", thisfn, count );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		ofa_iimportable_set_import_error( importable, line, _( "empty operation template label" ));
 		*errors += 1;
 		g_object_unref( model );
 		return( NULL );
 	}
-	ofo_ope_template_set_label( model, str );
+	ofo_ope_template_set_label( model, cstr );
 
 	/* model ledger */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	if( !str || !g_utf8_strlen( str, -1 )){
-		g_warning( "%s: (line %d) empty ledger", thisfn, count );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		ofa_iimportable_set_import_error( importable, line, _( "empty operation template ledger" ));
 		*errors += 1;
 		g_object_unref( model );
 		return( NULL );
 	}
-	ofo_ope_template_set_ledger( model, str );
+	ofo_ope_template_set_ledger( model, cstr );
 
 	/* model ledger locked
 	 * default to false if not set, but must be valid if set */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	locked = my_utils_boolean_from_str( str );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	locked = my_utils_boolean_from_str( cstr );
 	ofo_ope_template_set_ledger_locked( model, locked );
 
 	/* notes
 	 * we are tolerant on the last field... */
-	ico = ico->next;
-	if( ico ){
-		str = ( const gchar * ) ico->data;
-		if( str && g_utf8_strlen( str, -1 )){
-			splitted = my_utils_import_multi_lines( str );
-			ofo_ope_template_set_notes( model, splitted );
-			g_free( splitted );
-		}
-	}
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	splitted = my_utils_import_multi_lines( cstr );
+	ofo_ope_template_set_notes( model, splitted );
+	g_free( splitted );
 
 	return( model );
 }
 
 static sModDetail *
-model_import_csv_detail( GSList *fields, gint count, gint *errors, gchar **mnemo )
+model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line, guint *errors, gchar **mnemo )
 {
-	static const gchar *thisfn = "ofo_ope_template_import_csv_detail";
 	sModDetail *detail;
-	const gchar *str;
-	GSList *ico;
+	const gchar *cstr;
+	GSList *itf;
 
 	detail = g_new0( sModDetail, 1 );
+	itf = fields;
 
 	/* model mnemo */
-	ico = fields->next;
-	str = ( const gchar * ) ico->data;
-	if( !str || !g_utf8_strlen( str, -1 )){
-		g_warning( "%s: (line %d) empty mnemo", thisfn, count );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		ofa_iimportable_set_import_error( importable, line, _( "empty operation template mnemonic" ));
 		*errors += 1;
 		g_free( detail );
 		return( NULL );
 	}
-	*mnemo = g_strdup( str );
+	*mnemo = g_strdup( cstr );
 
 	/* detail comment */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	if( str && g_utf8_strlen( str, -1 )){
-		detail->comment = g_strdup( str );
-	}
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->comment = g_strdup( cstr );
 
 	/* detail label */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	if( str && g_utf8_strlen( str, -1 )){
-		detail->label = g_strdup( str );
-	}
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->label = g_strdup( cstr );
 
 	/* detail label locked */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	detail->label_locked = my_utils_boolean_from_str( str );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->label_locked = my_utils_boolean_from_str( cstr );
 
 	/* detail debit */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	if( str && g_utf8_strlen( str, -1 )){
-		detail->debit = g_strdup( str );
-	}
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->debit = g_strdup( cstr );
 
 	/* detail debit locked */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	detail->debit_locked = my_utils_boolean_from_str( str );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->debit_locked = my_utils_boolean_from_str( cstr );
 
 	/* detail credit */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	if( str && g_utf8_strlen( str, -1 )){
-		detail->credit = g_strdup( str );
-	}
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->credit = g_strdup( cstr );
 
 	/* detail credit locked */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	detail->credit_locked = my_utils_boolean_from_str( str );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->credit_locked = my_utils_boolean_from_str( cstr );
 
 	return( detail );
 }

@@ -814,11 +814,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( cstr ){
-			splitted = my_utils_import_multi_lines( cstr );
-			ofo_class_set_notes( class, splitted );
-			g_free( splitted );
-		}
+		splitted = my_utils_import_multi_lines( cstr );
+		ofo_class_set_notes( class, splitted );
+		g_free( splitted );
 
 		dataset = g_list_prepend( dataset, class );
 		ofa_iimportable_set_import_ok( importable );

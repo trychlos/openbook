@@ -84,8 +84,6 @@ gboolean        ofo_rate_insert          ( ofoRate *rate, ofoDossier *dossier );
 gboolean        ofo_rate_update          ( ofoRate *rate, ofoDossier *dossier, const gchar *prev_mnemo );
 gboolean        ofo_rate_delete          ( ofoRate *rate, ofoDossier *dossier );
 
-void            ofo_rate_import_csv      ( ofoDossier *dossier, GSList *lines, gboolean with_header );
-
 G_END_DECLS
 
 #endif /* __OFO_RATE_H__ */

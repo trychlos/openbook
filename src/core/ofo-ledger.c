@@ -1855,11 +1855,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		 * we are tolerant on the last field... */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( cstr ){
-			splitted = my_utils_import_multi_lines( cstr );
-			ofo_ledger_set_notes( ledger, splitted );
-			g_free( splitted );
-		}
+		splitted = my_utils_import_multi_lines( cstr );
+		ofo_ledger_set_notes( ledger, splitted );
+		g_free( splitted );
 
 		dataset = g_list_prepend( dataset, ledger );
 		ofa_iimportable_set_import_ok( importable );

@@ -3061,16 +3061,12 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		/* debit */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
-			debit = my_double_set_from_sql( cstr );
-		}
+		debit = my_double_set_from_sql( cstr );
 
 		/* credit */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
-			credit = my_double_set_from_sql( cstr );
-		}
+		credit = my_double_set_from_sql( cstr );
 
 		/*g_debug( "%s: debit=%.2lf, credit=%.2lf", thisfn, debit, credit );*/
 		if(( debit && !credit ) || ( !debit && credit )){

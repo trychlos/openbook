@@ -43,6 +43,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
+#include "api/ofo-class.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -2040,9 +2041,10 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	const gchar *cstr, *dev_code, *def_dev_code;
 	ofoAccount *account;
 	GList *dataset, *it;
-	guint errors, class, line;
+	guint errors, class_num, line;
 	gchar *msg, *splitted;
 	ofoCurrency *currency;
+	ofoClass *class_obj;
 
 	line = 0;
 	errors = 0;
@@ -2063,9 +2065,10 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			errors += 1;
 			continue;
 		}
-		class = ofo_account_get_class_from_number( cstr );
-		if( class < 1 || class > 9 ){
-			msg = g_strdup_printf( _( "invalid account number: %s" ), cstr );
+		class_num = ofo_account_get_class_from_number( cstr );
+		class_obj = ofo_class_get_by_number( dossier, class_num );
+		if( !class_obj && !OFO_IS_CLASS( class_obj )){
+			msg = g_strdup_printf( _( "invalid account class number: %s" ), cstr );
 			ofa_iimportable_set_import_error( importable, line, msg );
 			g_free( msg );
 			errors += 1;
@@ -2119,11 +2122,9 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		 * we are tolerant on the last field... */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( cstr ){
-			splitted = my_utils_import_multi_lines( cstr );
-			ofo_account_set_notes( account, splitted );
-			g_free( splitted );
-		}
+		splitted = my_utils_import_multi_lines( cstr );
+		ofo_account_set_notes( account, splitted );
+		g_free( splitted );
 
 		dataset = g_list_prepend( dataset, account );
 		ofa_iimportable_set_import_ok( importable );

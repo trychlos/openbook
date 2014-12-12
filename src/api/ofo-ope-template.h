@@ -96,8 +96,6 @@ gboolean        ofo_ope_template_insert            ( ofoOpeTemplate *model, ofoD
 gboolean        ofo_ope_template_update            ( ofoOpeTemplate *model, ofoDossier *dossier, const gchar *prev_mnemo );
 gboolean        ofo_ope_template_delete            ( ofoOpeTemplate *model, ofoDossier *dossier );
 
-void            ofo_ope_template_import_csv        ( ofoDossier *dossier, GSList *lines, gboolean with_header );
-
 G_END_DECLS
 
 #endif /* __OFO_OPE_TEMPLATE_H__ */

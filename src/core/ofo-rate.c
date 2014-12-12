@@ -28,6 +28,7 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,6 +38,7 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -59,6 +61,8 @@ struct _ofoRatePrivate {
 	GList     *validities;
 };
 
+static ofoBaseClass *ofo_rate_parent_class = NULL;
+
 static GList           *rate_load_dataset( ofoDossier *dossier );
 static ofoRate         *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void             rate_set_upd_user( ofoRate *rate, const gchar *user );
@@ -78,12 +82,12 @@ static gint             rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidit
 static void             iexportable_iface_init( ofaIExportableInterface *iface );
 static guint            iexportable_get_interface_version( const ofaIExportable *instance );
 static gboolean         iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
-static ofoRate         *rate_import_csv_rate( GSList *fields, gint count, gint *errors );
-static ofsRateValidity *rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnemo );
+static void             iimportable_iface_init( ofaIImportableInterface *iface );
+static guint            iimportable_get_interface_version( const ofaIImportable *instance );
+static gboolean         iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
+static ofoRate         *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, guint count, guint *errors );
+static ofsRateValidity *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, guint count, guint *errors, gchar **mnemo );
 static gboolean         rate_do_drop_content( const ofaDbms *dbms );
-
-G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0, \
-		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 OFA_IDATASET_LOAD( RATE, rate );
 
@@ -158,10 +162,65 @@ ofo_rate_class_init( ofoRateClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	ofo_rate_parent_class = g_type_class_peek_parent( klass );
+
 	G_OBJECT_CLASS( klass )->dispose = rate_dispose;
 	G_OBJECT_CLASS( klass )->finalize = rate_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoRatePrivate ));
+}
+
+static GType
+register_type( void )
+{
+	static const gchar *thisfn = "ofo_rate_register_type";
+	GType type;
+
+	static GTypeInfo info = {
+		sizeof( ofoRateClass ),
+		( GBaseInitFunc ) NULL,
+		( GBaseFinalizeFunc ) NULL,
+		( GClassInitFunc ) ofo_rate_class_init,
+		NULL,
+		NULL,
+		sizeof( ofoRate ),
+		0,
+		( GInstanceInitFunc ) ofo_rate_init
+	};
+
+	static const GInterfaceInfo iexportable_iface_info = {
+		( GInterfaceInitFunc ) iexportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo iimportable_iface_info = {
+		( GInterfaceInitFunc ) iimportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	g_debug( "%s", thisfn );
+
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoRate", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
+
+	return( type );
+}
+
+GType
+ofo_rate_get_type( void )
+{
+	static GType type = 0;
+
+	if( !type ){
+		type = register_type();
+	}
+
+	return( type );
 }
 
 static GList *
@@ -1256,7 +1315,27 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	return( TRUE );
 }
 
-/**
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->import = iimportable_import;
+}
+
+static guint
+iimportable_get_interface_version( const ofaIImportable *instance )
+{
+	return( 1 );
+}
+
+/*
  * ofo_rate_import_csv:
  *
  * Receives a GSList of lines, where data are GSList of fields.
@@ -1277,64 +1356,56 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  *
  * Replace the whole table with the provided datas.
  */
-void
-ofo_rate_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
+static gint
+iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_rate_import_csv";
-	gint type;
-	GSList *ili, *ico;
+	GSList *itl, *fields, *itf;
+	const gchar *cstr;
 	ofoRate *rate;
+	GList *dataset, *it;
+	guint errors, line;
+	gchar *msg, *mnemo;
+	gint type;
 	ofsRateValidity *sdet;
-	GList *new_set, *ise;
-	gint count;
-	gint errors;
-	const gchar *str;
-	gchar *mnemo;
 
-	g_debug( "%s: dossier=%p, lines=%p (count=%d), with_header=%s",
-			thisfn,
-			( void * ) dossier,
-			( void * ) lines, g_slist_length( lines ),
-			with_header ? "True":"False" );
-
-	new_set = NULL;
-	count = 0;
+	line = 0;
 	errors = 0;
+	dataset = NULL;
 
-	for( ili=lines ; ili ; ili=ili->next ){
-		count += 1;
-		if( !( count == 1 && with_header )){
-			ico=ili->data;
-			str = ( const gchar * ) ico->data;
-			if( !str || !g_utf8_strlen( str, -1 )){
-				g_warning( "%s: (line %d) empty line type", thisfn, count );
+	for( itl=lines ; itl ; itl=itl->next ){
+
+		line += 1;
+		fields = ( GSList * ) itl->data;
+
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		type = atoi( cstr );
+		switch( type ){
+			case 1:
+				rate = rate_import_csv_rate( importable, fields, line, &errors );
+				if( rate ){
+					dataset = g_list_prepend( dataset, rate );
+					ofa_iimportable_set_import_ok( importable );
+				}
+				break;
+			case 2:
+				mnemo = NULL;
+				sdet = rate_import_csv_validity( importable, fields, line, &errors, &mnemo );
+				if( sdet ){
+					rate = rate_find_by_mnemo( dataset, mnemo );
+					if( rate ){
+						rate_val_add_detail( rate, sdet );
+						ofa_iimportable_set_import_ok( importable );
+					}
+					g_free( mnemo );
+				}
+				break;
+			default:
+				msg = g_strdup_printf( _( "invalid rate line type: %s" ), cstr );
+				ofa_iimportable_set_import_error( importable, line, msg );
+				g_free( msg );
 				errors += 1;
 				continue;
-			}
-			type = atoi( str );
-			switch( type ){
-				case 1:
-					rate = rate_import_csv_rate( ico, count, &errors );
-					if( rate ){
-						new_set = g_list_prepend( new_set, rate );
-					}
-					break;
-				case 2:
-					mnemo = NULL;
-					sdet = rate_import_csv_validity( ico, count, &errors, &mnemo );
-					if( sdet ){
-						rate = rate_find_by_mnemo( new_set, mnemo );
-						if( rate ){
-							rate_val_add_detail( rate, sdet );
-						}
-						g_free( mnemo );
-					}
-					break;
-				default:
-					g_warning( "%s: (line %d) invalid line type: %d", thisfn, count, type );
-					errors += 1;
-					continue;
-			}
 		}
 	}
 
@@ -1343,107 +1414,106 @@ ofo_rate_import_csv( ofoDossier *dossier, GSList *lines, gboolean with_header )
 
 		rate_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
-		for( ise=new_set ; ise ; ise=ise->next ){
+		for( it=dataset ; it ; it=it->next ){
 			rate_do_insert(
-					OFO_RATE( ise->data ),
+					OFO_RATE( it->data ),
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
+
+			ofa_iimportable_set_insert_ok( importable );
 		}
 
+		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
 		ofa_idataset_free_dataset( dossier, OFO_TYPE_RATE );
 
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_RATE );
 
-		g_list_free( new_set );
-
 		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_RATE, TRUE );
 	}
+
+	return( errors );
 }
 
 static ofoRate *
-rate_import_csv_rate( GSList *fields, gint count, gint *errors )
+rate_import_csv_rate( ofaIImportable *importable, GSList *fields, guint line, guint *errors )
 {
-	static const gchar *thisfn = "ofo_rate_import_csv_rate";
 	ofoRate *rate;
-	const gchar *str;
-	GSList *ico;
+	const gchar *cstr;
+	GSList *itf;
 	gchar *splitted;
 
 	rate = ofo_rate_new();
+	itf = fields;
 
 	/* rate mnemo */
-	ico = fields->next;
-	str = ( const gchar * ) ico->data;
-	if( !str || !g_utf8_strlen( str, -1 )){
-		g_warning( "%s: (line %d) empty mnemo", thisfn, count );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		ofa_iimportable_set_import_error( importable, line, _( "empty rate mnemonic" ));
 		*errors += 1;
 		g_object_unref( rate );
 		return( NULL );
 	}
-	ofo_rate_set_mnemo( rate, str );
+	ofo_rate_set_mnemo( rate, cstr );
 
 	/* rate label */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	if( !str || !g_utf8_strlen( str, -1 )){
-		g_warning( "%s: (line %d) empty label", thisfn, count );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		ofa_iimportable_set_import_error( importable, line, _( "empty rate label" ));
 		*errors += 1;
 		g_object_unref( rate );
 		return( NULL );
 	}
-	ofo_rate_set_label( rate, str );
+	ofo_rate_set_label( rate, cstr );
 
 	/* notes
 	 * we are tolerant on the last field... */
-	ico = ico->next;
-	if( ico ){
-		str = ( const gchar * ) ico->data;
-		if( str && g_utf8_strlen( str, -1 )){
-			splitted = my_utils_import_multi_lines( str );
-			ofo_rate_set_notes( rate, splitted );
-			g_free( splitted );
-		}
-	}
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	splitted = my_utils_import_multi_lines( cstr );
+	ofo_rate_set_notes( rate, splitted );
+	g_free( splitted );
 
 	return( rate );
 }
 
 static ofsRateValidity *
-rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnemo )
+rate_import_csv_validity( ofaIImportable *importable, GSList *fields, guint line, guint *errors, gchar **mnemo )
 {
-	static const gchar *thisfn = "ofo_rate_import_csv_validity";
 	ofsRateValidity *detail;
-	const gchar *str;
-	GSList *ico;
+	const gchar *cstr;
+	GSList *itf;
 
 	detail = g_new0( ofsRateValidity, 1 );
+	itf = fields;
 
 	/* rate mnemo */
-	ico = fields->next;
-	str = ( const gchar * ) ico->data;
-	if( !str || !g_utf8_strlen( str, -1 )){
-		g_warning( "%s: (line %d) empty mnemo", thisfn, count );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		ofa_iimportable_set_import_error( importable, line, _( "empty rate mnemonic" ));
 		*errors += 1;
 		g_free( detail );
 		return( NULL );
 	}
-	*mnemo = g_strdup( str );
+	*mnemo = g_strdup( cstr );
 
 	/* rate begin validity */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	my_date_set_from_sql( &detail->begin, str );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	my_date_set_from_sql( &detail->begin, cstr );
 
 	/* rate end validity */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	my_date_set_from_sql( &detail->end, str );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	my_date_set_from_sql( &detail->end, cstr );
 
 	/* rate rate */
-	ico = ico->next;
-	str = ( const gchar * ) ico->data;
-	detail->rate = g_ascii_strtod( str, NULL );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->rate = my_double_set_from_sql( cstr );
 
 	return( detail );
 }

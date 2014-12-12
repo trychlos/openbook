@@ -856,11 +856,11 @@ p5_do_import( ofaImportAssistant *self )
 static void
 p5_on_progress( ofaIImporter *importer, gdouble progress, const gchar *text, ofaImportAssistant *self )
 {
-	static const gchar *thisfn = "ofa_import_assistant_p5_on_progress";
+	/*static const gchar *thisfn = "ofa_import_assistant_p5_on_progress";*/
 	ofaImportAssistantPrivate *priv;
 
-	g_debug( "%s: importer=%p, progress=%.5lf, text=%s, self=%p",
-			thisfn, ( void * ) importer, progress, text, ( void * ) self );
+	/*g_debug( "%s: importer=%p, progress=%.5lf, text=%s, self=%p",
+			thisfn, ( void * ) importer, progress, text, ( void * ) self );*/
 
 	priv = self->priv;
 
@@ -897,11 +897,11 @@ p5_on_error( ofaIImporter *importer, guint line_number, const gchar *msg, ofaImp
 static void
 p5_on_insert( ofaIImporter *importer, gdouble progress, const gchar *text, ofaImportAssistant *self )
 {
-	static const gchar *thisfn = "ofa_import_assistant_p5_on_insert";
+	/*static const gchar *thisfn = "ofa_import_assistant_p5_on_insert";*/
 	ofaImportAssistantPrivate *priv;
 
-	g_debug( "%s: importer=%p, progress=%.5lf, text=%s, self=%p",
-			thisfn, ( void * ) importer, progress, text, ( void * ) self );
+	/*g_debug( "%s: importer=%p, progress=%.5lf, text=%s, self=%p",
+			thisfn, ( void * ) importer, progress, text, ( void * ) self );*/
 
 	priv = self->priv;
 
