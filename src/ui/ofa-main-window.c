@@ -51,7 +51,7 @@
 #include "ui/ofa-export-assistant.h"
 #include "ui/ofa-guided-ex.h"
 #include "ui/ofa-guided-input.h"
-#include "ui/ofa-import.h"
+#include "ui/ofa-import-assistant.h"
 #include "ui/ofa-int-closing.h"
 #include "ui/ofa-ledgers-page.h"
 #include "ui/ofa-main-window.h"
@@ -1247,7 +1247,7 @@ on_ope_import( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_import_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_import_assistant_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void

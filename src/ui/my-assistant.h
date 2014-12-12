@@ -84,6 +84,8 @@ void          my_assistant_set_page_initialized( myAssistant *assistant, GtkWidg
 
 GtkAssistant *my_assistant_get_assistant       ( myAssistant *assistant );
 
+void          my_assistant_set_page_complete   ( myAssistant *assistant, gint page_num, gboolean complete );
+
 G_END_DECLS
 
 #endif /* __MY_ASSISTANT_H__ */

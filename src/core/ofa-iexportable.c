@@ -41,16 +41,16 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaExportSettings *settings;
-	ofaIExportableFnDouble   fn_double;
-	ofaIExportableFnText     fn_text;
-	const void              *instance;
+	const ofaFileFormat    *settings;
+	ofaIExportableFnDouble  fn_double;
+	ofaIExportableFnText    fn_text;
+	const void             *instance;
 
 	/* runtime data
 	 */
-	GOutputStream           *stream;
-	gulong                   count;
-	gulong                   progress;
+	GOutputStream          *stream;
+	gulong                  count;
+	gulong                  progress;
 }
 	sIExportable;
 
@@ -62,7 +62,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIExportableInterface *klass );
 static void          interface_base_finalize( ofaIExportableInterface *klass );
-static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const ofaExportSettings *settings, ofoDossier *dossier );
+static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const ofaFileFormat *settings, ofoDossier *dossier );
 static void          error_convert( const ofaIExportable *exportable, GError *error );
 static void          error_write( const ofaIExportable *exportable, GError *error );
 static sIExportable *get_iexportable_data( ofaIExportable *exportable );
@@ -164,7 +164,7 @@ ofa_iexportable_get_interface_last_version( void )
  * @exportable: this #ofaIExportable instance.
  * @fname: the output filename, will be overriden without requering
  *  any confirmation if already exists.
- * @settings: a #ofaExportSettings object.
+ * @settings: a #ofaFileFormat object.
  * @dossier: the current dossier.
  * @fn_double: the callback to be triggered on progress with a double.
  * @fn_text: the callback to be triggered on progress with a text.
@@ -176,7 +176,7 @@ ofa_iexportable_get_interface_last_version( void )
  */
 gboolean
 ofa_iexportable_export_to_path( ofaIExportable *exportable,
-									const gchar *fname, const ofaExportSettings *settings,
+									const gchar *fname, const ofaFileFormat *settings,
 									ofoDossier *dossier,
 									const ofaIExportableFnDouble fn_double,
 									const ofaIExportableFnText fn_text, const void *instance )
@@ -211,7 +211,7 @@ ofa_iexportable_export_to_path( ofaIExportable *exportable,
 
 static gboolean
 iexportable_export_to_stream( ofaIExportable *exportable,
-									GOutputStream *stream, const ofaExportSettings *settings,
+									GOutputStream *stream, const ofaFileFormat *settings,
 									ofoDossier *dossier )
 {
 	sIExportable *sdata;
@@ -235,7 +235,7 @@ iexportable_export_to_stream( ofaIExportable *exportable,
  *
  * The #ofaIExportable exportable instance must have taken into account
  * the decimal dot and the field separators specified in provided
- * #ofaExportSettings settings.
+ * #ofaFileFormat settings.
  *
  * The #ofaIExportable interface takes care here of charset conversions.
  *
@@ -266,7 +266,7 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 
 		str = g_strdup_printf( "%s\n", ( const gchar * ) it->data );
 		converted = g_convert( str, -1,
-								ofa_export_settings_get_charmap( sdata->settings ),
+								ofa_file_format_get_charmap( sdata->settings ),
 								"UTF-8", NULL, NULL, &error );
 		g_free( str );
 		if( !converted ){

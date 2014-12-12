@@ -201,6 +201,8 @@ my_date_combo_attach_to( myDateCombo *self, GtkContainer *new_parent )
 		priv->combo = GTK_COMBO_BOX( box );
 
 		setup_combo( self );
+
+		gtk_widget_show_all( GTK_WIDGET( new_parent ));
 	}
 }
 

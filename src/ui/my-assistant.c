@@ -469,3 +469,26 @@ my_assistant_get_assistant( myAssistant *assistant )
 
 	return( NULL );
 }
+
+/**
+ * my_assistant_set_page_complete:
+ */
+void
+my_assistant_set_page_complete( myAssistant *assistant, gint page_num, gboolean complete )
+{
+	GtkAssistant *toplevel;
+	GtkWidget *widget;
+
+	g_return_if_fail( assistant && MY_IS_ASSISTANT( assistant ));
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		toplevel = my_assistant_get_assistant( assistant );
+		g_return_if_fail( toplevel && GTK_IS_ASSISTANT( toplevel ));
+
+		widget = gtk_assistant_get_nth_page( toplevel, page_num );
+		g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
+
+		gtk_assistant_set_page_complete( toplevel, widget, complete );
+	}
+}

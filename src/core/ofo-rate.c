@@ -43,6 +43,8 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
+#include "core/ofa-file-format.h"
+
 /* priv instance data
  */
 struct _ofoRatePrivate {
@@ -75,7 +77,7 @@ static gint             rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
 static gint             rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent );
 static void             iexportable_iface_init( ofaIExportableInterface *iface );
 static guint            iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean         iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
+static gboolean         iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
 static ofoRate         *rate_import_csv_rate( GSList *fields, gint count, gint *errors );
 static ofsRateValidity *rate_import_csv_validity( GSList *fields, gint count, gint *errors, gchar **mnemo );
 static gboolean         rate_do_drop_content( const ofaDbms *dbms );
@@ -1157,7 +1159,7 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GList *it, *det;
 	GSList *lines;
@@ -1171,7 +1173,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 
 	OFA_IDATASET_GET( dossier, RATE, rate );
 
-	with_headers = ofa_export_settings_get_headers( settings );
+	with_headers = ofa_file_format_get_headers( settings );
 
 	count = ( gulong ) g_list_length( rate_dataset );
 	if( with_headers ){

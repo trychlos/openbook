@@ -36,11 +36,14 @@
 #include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
+
+#include "core/ofa-file-format.h"
 
 /* priv instance data
  */
@@ -70,9 +73,9 @@ static const ofsBoxedDef st_boxed_defs[] = {
 				FALSE,
 				FALSE },
 		{ OFA_BOXED_CSV( CLA_UPD_STAMP ),
-				OFA_TYPE_STRING,
+				OFA_TYPE_TIMESTAMP,
 				FALSE,
-				TRUE },
+				FALSE },
 		{ 0 }
 };
 
@@ -81,6 +84,8 @@ static const ofsBoxedDef st_boxed_defs[] = {
 struct _ofoClassPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
+
+static ofoBaseClass *ofo_class_parent_class = NULL;
 
 static GList     *class_load_dataset( ofoDossier *dossier );
 static ofoClass  *class_find_by_number( GList *set, gint number );
@@ -93,11 +98,11 @@ static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
 static guint      iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean   iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
+static gboolean   iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
+static void       iimportable_iface_init( ofaIImportableInterface *iface );
+static guint      iimportable_get_interface_version( const ofaIImportable *instance );
+static gboolean   iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
 static gboolean   class_do_drop_content( const ofaDbms *dbms );
-
-G_DEFINE_TYPE_EXTENDED( ofoClass, ofo_class, OFO_TYPE_BASE, 0, \
-		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
 
 OFA_IDATASET_LOAD( CLASS, class );
 
@@ -151,10 +156,65 @@ ofo_class_class_init( ofoClassClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	ofo_class_parent_class = g_type_class_peek_parent( klass );
+
 	G_OBJECT_CLASS( klass )->dispose = class_dispose;
 	G_OBJECT_CLASS( klass )->finalize = class_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofoClassPrivate ));
+}
+
+static GType
+register_type( void )
+{
+	static const gchar *thisfn = "ofo_class_register_type";
+	GType type;
+
+	static GTypeInfo info = {
+		sizeof( ofoClassClass ),
+		( GBaseInitFunc ) NULL,
+		( GBaseFinalizeFunc ) NULL,
+		( GClassInitFunc ) ofo_class_class_init,
+		NULL,
+		NULL,
+		sizeof( ofoClass ),
+		0,
+		( GInstanceInitFunc ) ofo_class_init
+	};
+
+	static const GInterfaceInfo iexportable_iface_info = {
+		( GInterfaceInitFunc ) iexportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo iimportable_iface_info = {
+		( GInterfaceInitFunc ) iimportable_iface_init,
+		NULL,
+		NULL
+	};
+
+	g_debug( "%s", thisfn );
+
+	type = g_type_register_static( OFO_TYPE_BASE, "ofoClass", &info, 0 );
+
+	g_type_add_interface_static( type, OFA_TYPE_IEXPORTABLE, &iexportable_iface_info );
+
+	g_type_add_interface_static( type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
+
+	return( type );
+}
+
+GType
+ofo_class_get_type( void )
+{
+	static GType type = 0;
+
+	if( !type ){
+		type = register_type();
+	}
+
+	return( type );
 }
 
 /**
@@ -632,7 +692,7 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GList *it;
 	GSList *lines;
@@ -643,8 +703,8 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 
 	OFA_IDATASET_GET( dossier, CLASS, class );
 
-	with_headers = ofa_export_settings_get_headers( settings );
-	field_sep = ofa_export_settings_get_field_sep( settings );
+	with_headers = ofa_file_format_get_headers( settings );
+	field_sep = ofa_file_format_get_field_sep( settings );
 
 	count = ( gulong ) g_list_length( class_dataset );
 	if( with_headers ){
@@ -673,6 +733,115 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	}
 
 	return( TRUE );
+}
+
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->import = iimportable_import;
+}
+
+static guint
+iimportable_get_interface_version( const ofaIImportable *instance )
+{
+	return( 1 );
+}
+
+static gint
+iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
+{
+	GSList *itl, *fields, *itf;
+	const gchar *cstr;
+	ofoClass *class;
+	GList *dataset, *it;
+	guint errors, number, line;
+	gchar *msg;
+
+	line = 0;
+	errors = 0;
+	dataset = NULL;
+
+	for( itl=lines ; itl ; itl=itl->next ){
+
+		line += 1;
+		class = ofo_class_new();
+		fields = ( GSList * ) itl->data;
+
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		number = 0;
+		if( cstr ){
+			number = atoi( cstr );
+		}
+		if( number < 1 || number > 9 ){
+			msg = g_strdup_printf( "invalid class number: %s", cstr );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		}
+		ofo_class_set_number( class, number );
+
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+			msg = g_strdup_printf( "empty class label" );
+			ofa_iimportable_set_import_error( importable, line, msg );
+			g_free( msg );
+			errors += 1;
+			continue;
+		} else {
+			ofo_class_set_label( class, cstr );
+		}
+
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr ){
+			ofo_class_set_notes( class, cstr );
+		}
+
+		dataset = g_list_prepend( dataset, class );
+
+		ofa_iimportable_set_import_ok( importable );
+		/* just let the user actually see the progression */
+		g_usleep( 0.1*G_USEC_PER_SEC );
+	}
+
+	if( !errors ){
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CLASS, FALSE );
+
+		class_do_drop_content( ofo_dossier_get_dbms( dossier ));
+
+		for( it=dataset ; it ; it=it->next ){
+			class_do_insert(
+					OFO_CLASS( it->data ),
+					ofo_dossier_get_dbms( dossier ),
+					ofo_dossier_get_user( dossier ));
+
+			ofa_iimportable_set_insert_ok( importable );
+			/* just let the user actually see the progression */
+			g_usleep( 0.1*G_USEC_PER_SEC );
+		}
+
+		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
+
+		ofa_idataset_free_dataset( dossier, OFO_TYPE_CLASS );
+
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_CLASS );
+
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_CLASS, TRUE );
+	}
+
+	return( errors );
 }
 
 /**

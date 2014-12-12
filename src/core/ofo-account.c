@@ -45,7 +45,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
-#include "core/ofa-export-settings.h"
+#include "core/ofa-file-format.h"
 #include "core/ofa-preferences.h"
 
 /* priv instance data
@@ -206,7 +206,7 @@ static gint         account_cmp_by_number( const ofoAccount *a, const gchar *num
 static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
 static gboolean     account_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0, \
@@ -1895,7 +1895,7 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GSList *lines;
 	gchar *str;
@@ -1906,9 +1906,9 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 
 	OFA_IDATASET_GET( dossier, ACCOUNT, account );
 
-	with_headers = ofa_export_settings_get_headers( settings );
-	field_sep = ofa_export_settings_get_field_sep( settings );
-	decimal_sep = ofa_export_settings_get_decimal_sep( settings );
+	with_headers = ofa_file_format_get_headers( settings );
+	field_sep = ofa_file_format_get_field_sep( settings );
+	decimal_sep = ofa_file_format_get_decimal_sep( settings );
 
 	count = ( gulong ) g_list_length( account_dataset );
 	if( with_headers ){

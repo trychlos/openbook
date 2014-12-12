@@ -32,6 +32,20 @@
 
 #include <api/ofa-iimporter.h>
 
+/* signals defined here
+ */
+enum {
+	PROGRESS = 0,
+	ERROR,
+	INSERT,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
+#define IIMPORTER_LAST_VERSION          1
+#define IIMPORTER_DATA                  "ofa-iimporter-data"
+
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType register_type( void );
@@ -92,6 +106,7 @@ static void
 interface_base_init( ofaIImporterInterface *klass )
 {
 	static const gchar *thisfn = "ofa_iimporter_interface_base_init";
+	GType interface_type = G_TYPE_FROM_INTERFACE( klass );
 
 	if( !st_initializations ){
 
@@ -99,6 +114,81 @@ interface_base_init( ofaIImporterInterface *klass )
 
 		klass->get_interface_version = iimporter_get_interface_version;
 		klass->import_from_uri = NULL;
+
+		/**
+		 * ofaIImporter::progress:
+		 *
+		 * This signal is to be sent to the importer by an importable
+		 * in order to let the former visually render the import
+		 * progression of the later.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( ofaIImporter  *importer,
+		 * 						gdouble      progress,
+		 * 						const gchar *text,
+		 * 						gpointer     user_data );
+		 */
+		st_signals[ PROGRESS ] = g_signal_new_class_handler(
+					"progress",
+					interface_type,
+					G_SIGNAL_ACTION,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					2,
+					G_TYPE_DOUBLE, G_TYPE_STRING );
+
+		/**
+		 * ofaIImporter::error:
+		 *
+		 * This signal is to be sent to the importer by an importable
+		 * in order to let the former be informed of an error during
+		 * the import operation.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( ofaIImporter  *importer,
+		 * 						guint        line_number,
+		 * 						const gchar *message,
+		 * 						gpointer     user_data );
+		 */
+		st_signals[ ERROR ] = g_signal_new_class_handler(
+					"error",
+					interface_type,
+					G_SIGNAL_ACTION,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					2,
+					G_TYPE_UINT, G_TYPE_STRING );
+
+		/**
+		 * ofaIImporter::insert:
+		 *
+		 * This signal is to be sent to the importer by an importable
+		 * in order to let the former visually render the insert
+		 * progression of the later.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( ofaIImporter  *importer,
+		 * 						gdouble      progress,
+		 * 						const gchar *text,
+		 * 						gpointer     user_data );
+		 */
+		st_signals[ INSERT ] = g_signal_new_class_handler(
+					"insert",
+					interface_type,
+					G_SIGNAL_ACTION,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					2,
+					G_TYPE_DOUBLE, G_TYPE_STRING );
 	}
 
 	st_initializations += 1;

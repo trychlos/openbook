@@ -61,7 +61,9 @@ typedef enum {
 
 /* some used keys */
 #define SETTINGS_DBMS_PROVIDER          "DBMSProvider"
-#define SETTINGS_EXPORT_FOLDER          "DefaultExportFolder"
+#define SETTINGS_EXPORT_FOLDER          "ExportDefaultFolder"
+#define SETTINGS_EXPORT_SETTINGS        "ExportSettings"
+#define SETTINGS_IMPORT_SETTINGS        "ImportSettings"
 
 /* this is the group name for user preferences
  * should not be used by the code, but needed to define following

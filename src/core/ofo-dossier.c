@@ -152,7 +152,7 @@ static gboolean    dossier_do_update_currencies( ofoDossier *dossier, const ofaD
 static gboolean    do_update_currency_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *user );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
+static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
 static void        idataset_iface_init( ofaIDatasetInterface *iface );
 static guint       idataset_get_interface_version( const ofaIDataset *instance );
 static GList      *idataset_get_datasets( const ofaIDataset *instance );
@@ -2874,7 +2874,7 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GSList *lines;
 	gchar *str, *stamp;
@@ -2885,7 +2885,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 	gboolean ok, with_headers;
 	gulong count;
 
-	with_headers = ofa_export_settings_get_headers( settings );
+	with_headers = ofa_file_format_get_headers( settings );
 
 	count = ( gulong ) 1;
 	if( with_headers ){

@@ -129,8 +129,8 @@ openbook_SOURCES = \
 	ofa-exercice-combo.h								\
 	ofa-export-assistant.c								\
 	ofa-export-assistant.h								\
-	ofa-export-settings-prefs.c							\
-	ofa-export-settings-prefs.h							\
+	ofa-file-format-piece.c								\
+	ofa-file-format-piece.h								\
 	ofa-guided-common.c									\
 	ofa-guided-common.h									\
 	ofa-guided-ex.c										\
@@ -138,8 +138,8 @@ openbook_SOURCES = \
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
 	ofa-iimporter.c										\
-	ofa-import.c										\
-	ofa-import.h										\
+	ofa-import-assistant.c								\
+	ofa-import-assistant.h								\
 	ofa-importer.c										\
 	ofa-importer.h										\
 	ofa-int-closing.c									\
@@ -232,9 +232,9 @@ ui_files = \
 	ofa-exe-closing.ui									\
 	ofa-exe-forward.piece.ui							\
 	ofa-export-assistant.ui								\
-	ofa-export-settings.piece.ui						\
+	ofa-file-format-piece.ui							\
 	ofa-guided-input.ui									\
-	ofa-import.ui										\
+	ofa-import-assistant.ui								\
 	ofa-int-closing.ui									\
 	ofa-ledger-properties.ui							\
 	ofa-ope-template-properties.ui						\

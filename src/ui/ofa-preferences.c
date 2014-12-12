@@ -42,7 +42,7 @@
 #include "ui/my-date-combo.h"
 #include "ui/my-decimal-combo.h"
 #include "ui/ofa-dossier-delete-prefs.h"
-#include "ui/ofa-export-settings-prefs.h"
+#include "ui/ofa-file-format-piece.h"
 #include "ui/ofa-main-window.h"
 #include "core/ofa-preferences.h"
 
@@ -74,19 +74,19 @@ struct _ofaPreferencesPrivate {
 
 	/* UI - Locales
 	 */
-	myDateCombo            *p3_display_combo;
-	myDateCombo            *p3_check_combo;
-	myDecimalCombo         *p3_decimal_sep;
-	GtkWidget              *p3_thousand_sep;
+	myDateCombo        *p3_display_combo;
+	myDateCombo        *p3_check_combo;
+	myDecimalCombo     *p3_decimal_sep;
+	GtkWidget          *p3_thousand_sep;
 
 	/* Export settings
 	 */
-	ofaExportSettingsPrefs *export_settings;
-	GtkFileChooser         *p5_chooser;
+	ofaFileFormatPiece *export_settings;
+	GtkFileChooser     *p5_chooser;
 
 	/* UI - Plugin pages
 	 */
-	GList                  *plugs;
+	GList              *plugs;
 };
 
 #define SETTINGS_AMOUNT                 "UserAmount"
@@ -468,9 +468,9 @@ init_export_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( container, "alignment5-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	priv->export_settings = ofa_export_settings_prefs_new();
-	ofa_export_settings_prefs_attach_to( priv->export_settings, GTK_CONTAINER( target ));
-	ofa_export_settings_prefs_init_dialog( priv->export_settings );
+	priv->export_settings = ofa_file_format_piece_new( SETTINGS_EXPORT_SETTINGS );
+	ofa_file_format_piece_attach_to( priv->export_settings, GTK_CONTAINER( target ));
+	ofa_file_format_piece_display( priv->export_settings );
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( container, "p52-folder" ));
 	str = ofa_settings_get_string( SETTINGS_EXPORT_FOLDER );
@@ -921,7 +921,7 @@ do_update_export_page( ofaPreferences *self )
 
 	priv = self->priv;
 
-	ofa_export_settings_prefs_apply( priv->export_settings );
+	ofa_file_format_piece_apply( priv->export_settings );
 
 	text = gtk_file_chooser_get_current_folder( priv->p5_chooser );
 	ofa_settings_set_string( SETTINGS_EXPORT_FOLDER, text );

@@ -98,12 +98,15 @@ void       my_utils_init_upd_user_stamp    ( GtkContainer *container,
 
 gboolean   my_utils_output_stream_new      ( const gchar *filename, GFile **file, GOutputStream **stream );
 
+gboolean   my_utils_input_stream_new       ( const gchar *filename, GFile **file, GInputStream **stream );
+
 void       my_utils_pango_layout_ellipsize ( PangoLayout *layout, gint max_width );
 
 void       my_utils_window_restore_position( GtkWindow *window, const gchar *name );
 void       my_utils_window_save_position   ( GtkWindow *window, const gchar *name );
 
 gboolean   my_utils_file_exists            ( const gchar *filename );
+gboolean   my_utils_file_is_readable_file  ( const gchar *filename );
 
 gchar     *my_utils_filename_from_utf8     ( const gchar *filename );
 

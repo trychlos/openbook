@@ -45,15 +45,15 @@
 #include "api/ofo-rate.h"
 
 #include "core/my-window-prot.h"
-#include "core/ofa-export-settings.h"
+#include "core/ofa-file-format.h"
 
 #include "ui/ofa-export-assistant.h"
-#include "ui/ofa-export-settings-prefs.h"
+#include "ui/ofa-file-format-piece.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  *
- * There is 3 useful pages
+ * There are 3 useful pages
  * + one introduction page (page '0')
  * + one confirmation page (page '4)
  * + one result page (page '5')
@@ -62,26 +62,26 @@ struct _ofaExportAssistantPrivate {
 
 	/* p1: select data type to be exported
 	 */
-	GSList                 *p1_group;
-	GtkWidget              *p1_btn;
-	gint                    p1_idx;
+	GSList             *p1_group;
+	GtkWidget          *p1_btn;
+	gint                p1_idx;
 
 	/* p2: select format
 	 */
-	ofaExportSettingsPrefs *p2_settings_prefs;
-	ofaExportSettings      *p2_export_settings;
+	ofaFileFormatPiece *p2_settings_prefs;
+	ofaFileFormat      *p2_export_settings;
 
 	/* p3: output file
 	 */
-	GtkFileChooser         *p3_chooser;
-	gchar                  *p3_fname;		/* the output file */
-	gchar                  *p3_last_folder;
+	GtkFileChooser     *p3_chooser;
+	gchar              *p3_fname;		/* the output file */
+	gchar              *p3_last_folder;
 
 	/* p5: apply
 	 */
-	GtkWidget              *progress_bar;
-	ofaIExportable         *base;
-	GtkWidget              *p5_page;
+	GtkWidget          *progress_bar;
+	ofaIExportable     *base;
+	GtkWidget          *p5_page;
 };
 
 /* ExportAssistant Assistant
@@ -228,7 +228,6 @@ export_dispose( GObject *instance )
 		priv = OFA_EXPORT_ASSISTANT( instance )->priv;
 
 		/* unref object members here */
-		g_clear_object( &priv->p2_settings_prefs );
 		g_clear_object( &priv->p2_export_settings );
 	}
 
@@ -494,9 +493,9 @@ p2_do_init( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *page )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-alignment-parent" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-	priv->p2_settings_prefs = ofa_export_settings_prefs_new();
-	ofa_export_settings_prefs_attach_to( priv->p2_settings_prefs, GTK_CONTAINER( widget ));
-	ofa_export_settings_prefs_init_dialog( priv->p2_settings_prefs );
+	priv->p2_settings_prefs = ofa_file_format_piece_new( SETTINGS_EXPORT_SETTINGS );
+	ofa_file_format_piece_attach_to( priv->p2_settings_prefs, GTK_CONTAINER( widget ));
+	ofa_file_format_piece_display( priv->p2_settings_prefs );
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-new-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -522,10 +521,11 @@ p2_do_forward( ofaExportAssistant *self, GtkWidget *page )
 
 	priv = self->priv;
 
-	ofa_export_settings_prefs_apply( priv->p2_settings_prefs );
+	ofa_file_format_piece_apply( priv->p2_settings_prefs );
 
 	g_clear_object( &priv->p2_export_settings );
-	priv->p2_export_settings = ofa_export_settings_new( NULL );
+	priv->p2_export_settings =
+			g_object_ref( ofa_file_format_piece_get_file_format( priv->p2_settings_prefs ));
 }
 
 /*
@@ -692,25 +692,25 @@ p4_do_display( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-charmap" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	gtk_label_set_text( GTK_LABEL( label ), ofa_export_settings_get_charmap( priv->p2_export_settings ));
+	gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_charmap( priv->p2_export_settings ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-date" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	format = ofa_export_settings_get_date_format( priv->p2_export_settings );
+	format = ofa_file_format_get_date_format( priv->p2_export_settings );
 	gtk_label_set_text( GTK_LABEL( label ), my_date_get_format_str( format ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-decimal" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	str = g_strdup_printf( "%c", ofa_export_settings_get_decimal_sep( priv->p2_export_settings ));
+	str = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->p2_export_settings ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-field" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	str = g_strdup_printf( "%c", ofa_export_settings_get_field_sep( priv->p2_export_settings ));
+	str = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->p2_export_settings ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
@@ -799,8 +799,7 @@ p5_do_display( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 	priv = self->priv;
 
 	priv->progress_bar =
-			my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )) ), "p5-bar" );
+			my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-bar" );
 	priv->p5_page = page;
 
 	priv->base = ( ofaIExportable * ) g_object_new( st_types[priv->p1_idx].get_type(), NULL );

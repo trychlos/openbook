@@ -46,6 +46,8 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
+#include "core/ofa-file-format.h"
+
 /* priv instance data
  */
 struct _ofoEntryPrivate {
@@ -127,7 +129,7 @@ static gboolean     entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const
 static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofaDbms *dbms );
 static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
-static gboolean     iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IEXPORTABLE, iexportable_iface_init ));
@@ -2705,7 +2707,7 @@ do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
  * written in this stored program ?
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GList *result, *irow;
 	GSList *lines;
@@ -2721,7 +2723,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 
 	result = entry_load_dataset( ofo_dossier_get_dbms( dossier ), NULL );
 
-	with_headers = ofa_export_settings_get_headers( settings );
+	with_headers = ofa_file_format_get_headers( settings );
 
 	count = ( gulong ) g_list_length( result );
 	if( with_headers ){

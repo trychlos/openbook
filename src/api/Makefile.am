@@ -30,6 +30,7 @@ api_include_HEADERS = \
 	ofa-idataset.h										\
 	ofa-idbms.h											\
 	ofa-iexportable.h									\
+	ofa-iimportable.h									\
 	ofa-iimporter.h										\
 	ofa-ipreferences.h									\
 	\

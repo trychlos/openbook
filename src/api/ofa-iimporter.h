@@ -33,8 +33,11 @@
  * @short_description: The Import Interface
  * @include: openbook/ofa-iimporter.h
  *
- * The #ofaIImporter interface imports items from the outside world
- * into &prodname;.
+ * The #ofaIImporter lets the importable object communicate with the
+ * importer code. Two signals are defined:
+ * - "progress" to visually render the progress of the import
+ * - "error" to display an error message during the import
+ * - "insert" to visually render the progress of the insert
  */
 
 #include <glib-object.h>

@@ -175,7 +175,7 @@ my_editable_date_set_format( GtkEditable *editable, myDateFormat format )
 	sEditableDate *data;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
-	g_return_if_fail( format == -1 || ( format > MY_DATE_FIRST && format < MY_DATE_LAST ));
+	g_return_if_fail( format >= MY_DATE_FIRST && format < MY_DATE_LAST );
 
 	data = get_editable_date_data( editable );
 
@@ -561,7 +561,7 @@ on_changed( GtkEditable *editable, sEditableDate *data )
 
 		if( data->label ){
 			g_return_if_fail( GTK_IS_LABEL( data->label ));
-			g_return_if_fail( data->label_format > MY_DATE_FIRST && data->label_format < MY_DATE_LAST );
+			g_return_if_fail( data->label_format >= MY_DATE_FIRST && data->label_format < MY_DATE_LAST );
 			if( data->valid ){
 				text = my_date_to_str( &data->date, data->label_format );
 			} else if( len_text || data->mandatory ){
@@ -643,7 +643,7 @@ my_editable_date_set_label( GtkEditable *editable, GtkWidget *label, myDateForma
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
 	g_return_if_fail( label && GTK_IS_LABEL ( label ));
-	g_return_if_fail( format > MY_DATE_FIRST && format < MY_DATE_LAST );
+	g_return_if_fail( format >= MY_DATE_FIRST && format < MY_DATE_LAST );
 
 	data = get_editable_date_data( editable );
 

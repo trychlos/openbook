@@ -421,7 +421,23 @@
 
  517 2014-12-10 define two new entry status: PAST and FUTURE
 
- 518
+ 518 2014-12-10 DossierCur: try to make transient vs the main window
+
+ 519 2014-12-11 ExportAssistant: the list of exportables should be
+                dynamically computed from the list of classes which
+                implement the ofaIExportable interface
+
+ 520 2014-12-11 ImportAssistant: the list of importables should be
+                dynamically computed from the list of classes which
+                implement the ofaIImportable interface
+
+ 521 2014-12-11 IExportable: use myProgressBar
+                getting ride of defined callbacks
+
+ 522 2014-12-12 pieces of dialogs should have the corresponding code
+                isolated and named accordingly (see ofaFileFormatPiece)
+
+ 523
 
 -----------------------------------------------------------------------
  DONE

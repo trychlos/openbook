@@ -38,7 +38,7 @@
 
 #include "api/ofo-dossier-def.h"
 
-#include "core/ofa-export-settings.h"
+#include "core/ofa-file-format.h"
 
 G_BEGIN_DECLS
 
@@ -97,7 +97,7 @@ typedef struct {
 	 * Return: %TRUE if the dataset has been successfully exported.
 	 */
 	gboolean ( *export )               ( ofaIExportable *instance,
-												const ofaExportSettings *settings,
+												const ofaFileFormat *settings,
 												ofoDossier *dossier );
 }
 	ofaIExportableInterface;
@@ -108,7 +108,7 @@ guint    ofa_iexportable_get_interface_last_version( void );
 
 gboolean ofa_iexportable_export_to_path            ( ofaIExportable *exportable,
 															const gchar *fname,
-															const ofaExportSettings *settings,
+															const ofaFileFormat *settings,
 															ofoDossier *dossier,
 															const ofaIExportableFnDouble fn_double,
 															const ofaIExportableFnText fn_text,

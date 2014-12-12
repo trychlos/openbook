@@ -46,6 +46,8 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
+#include "core/ofa-file-format.h"
+
 /* priv instance data
  */
 struct _ofoLedgerPrivate {
@@ -101,7 +103,7 @@ static gint        ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo )
 static gint        ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier );
+static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
 static gboolean    ledger_do_drop_content( const ofaDbms *dbms );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0, \
@@ -1624,7 +1626,7 @@ iexportable_get_interface_version( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaExportSettings *settings, ofoDossier *dossier )
+iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier )
 {
 	GList *it, *amount;
 	GSList *lines;
@@ -1637,7 +1639,7 @@ iexportable_export( ofaIExportable *exportable, const ofaExportSettings *setting
 
 	OFA_IDATASET_GET( dossier, LEDGER, ledger );
 
-	with_headers = ofa_export_settings_get_headers( settings );
+	with_headers = ofa_file_format_get_headers( settings );
 
 	count = ( gulong ) g_list_length( ledger_dataset );
 	if( with_headers ){

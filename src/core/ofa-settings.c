@@ -632,12 +632,14 @@ ofa_settings_get_string_list_ex( ofaSettingsTarget target, const gchar *group, c
 	kfile = get_keyfile_from_target( target );
 	if( kfile ){
 		str = g_key_file_get_string( kfile, group, key, NULL );
+		/*g_debug( "ofa_settings_get_string_list_ex: str='%s'", str );*/
 
 		if( str && g_utf8_strlen( str, -1 )){
 			array = str_to_array( str );
 			if( array ){
 				iter = ( gchar ** ) array;
 				while( *iter ){
+					/*g_debug( "ofa_settings_get_string_list_ex: iter='%s'", *iter );*/
 					list = g_list_prepend( list, g_strdup( *iter ));
 					iter++;
 				}

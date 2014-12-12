@@ -682,6 +682,41 @@ my_utils_output_stream_new( const gchar *filename, GFile **file, GOutputStream *
 }
 
 /**
+ * my_utils_input_stream_new:
+ * @filename: the UTF-8 encoded input filename
+ */
+gboolean
+my_utils_input_stream_new( const gchar *filename, GFile **file, GInputStream **stream )
+{
+	static const gchar *thisfn = "my_utils_input_stream_new";
+	GError *error;
+	gchar *sysfname;
+
+	g_return_val_if_fail( filename && g_utf8_strlen( filename, -1 ), FALSE );
+	g_return_val_if_fail( file, FALSE );
+	g_return_val_if_fail( stream, FALSE );
+
+	error = NULL;
+	sysfname = my_utils_filename_from_utf8( filename );
+	if( !sysfname ){
+		return( FALSE );
+	}
+	*file = g_file_new_for_path( sysfname );
+	g_free( sysfname );
+
+	*stream = ( GInputStream * ) g_file_read( *file, NULL, &error );
+	if( !*stream ){
+		g_warning( "%s: g_file_read: %s", thisfn, error->message );
+		g_error_free( error );
+		g_object_unref( *file );
+		*file = NULL;
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/**
  * my_utils_pango_layout_ellipsize:
  *
  * Cannot make the sequence:
@@ -831,6 +866,10 @@ position_to_int_list( gint x, gint y, gint width, gint height )
  *
  * Returns: %TRUE if the specified file exists, %FALSE else.
  *
+ * This function doesn't distinguish between files and directories
+ * (as in "all in file in Unix") - so if you really want a *file* then
+ * rather take a glance at #my_utils_is_readable_file() function.
+ *
  * The caller should be conscious and take care of the usual race
  * condition: anything may happen between this test and the actual
  * use of its result...
@@ -853,8 +892,47 @@ my_utils_file_exists( const gchar *filename )
 	g_free( sysfname );
 
 	g_debug( "my_utils_file_exists: the file '%s' exists: %s", filename, exists ? "True":"False" );
-
 	return( exists );
+}
+
+/**
+ * my_utils_file_is_readable_file:
+ * @filename: a file pathname
+ *
+ * Returns: %TRUE if the specified file exists, is a file and is readable,
+ *  %FALSE else.
+ *
+ * The caller should be conscious and take care of the usual race
+ * condition: anything may happen between this test and the actual
+ * use of its result...
+ */
+gboolean
+my_utils_file_is_readable_file( const gchar *filename )
+{
+	GFile *file;
+	gboolean ok;
+	gchar *sysfname;
+	GFileInfo *info;
+	GFileType type;
+
+	ok = FALSE;
+
+	sysfname = my_utils_filename_from_utf8( filename );
+	if( sysfname ){
+		ok = TRUE;
+		file = g_file_new_for_path( sysfname );
+		info = g_file_query_info( file,
+				G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_ACCESS_CAN_READ,
+				G_FILE_QUERY_INFO_NONE, NULL, NULL );
+		type = g_file_info_get_attribute_uint32( info, G_FILE_ATTRIBUTE_STANDARD_TYPE );
+		ok &= ( type == G_FILE_TYPE_REGULAR );
+		ok &= g_file_info_get_attribute_boolean( info, G_FILE_ATTRIBUTE_ACCESS_CAN_READ );
+		g_object_unref( file );
+	}
+	g_free( sysfname );
+
+	g_debug( "my_utils_file_is_readable_file: filename=%s, ok=%s", filename, ok ? "True":"False" );
+	return( ok );
 }
 
 /**
