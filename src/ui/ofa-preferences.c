@@ -436,7 +436,7 @@ init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *paren
 	*wcombo = my_date_combo_new();
 	my_date_combo_attach_to( *wcombo, GTK_CONTAINER( parent_widget ));
 
-	my_date_combo_init_view( *wcombo, ivalue );
+	my_date_combo_set_selected( *wcombo, ivalue );
 }
 
 static void

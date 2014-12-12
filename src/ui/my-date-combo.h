@@ -71,9 +71,9 @@ myDateCombo *my_date_combo_new         ( void );
 
 void         my_date_combo_attach_to   ( myDateCombo *combo, GtkContainer *new_parent );
 
-void         my_date_combo_init_view   ( myDateCombo *combo, myDateFormat format );
-
 myDateFormat my_date_combo_get_selected( myDateCombo *combo );
+
+void         my_date_combo_set_selected( myDateCombo *combo, myDateFormat format );
 
 G_END_DECLS
 

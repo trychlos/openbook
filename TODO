@@ -417,7 +417,9 @@
  522 2014-12-12 pieces of dialogs should have the corresponding code
                 isolated and named accordingly (see ofaFileFormatPiece)
 
- 523
+ 523 2014-12-12 review BAT import
+
+ 524
 
 -----------------------------------------------------------------------
  DONE

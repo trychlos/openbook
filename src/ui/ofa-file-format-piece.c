@@ -475,7 +475,7 @@ init_date_format( ofaFileFormatPiece *self )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
 	my_date_combo_attach_to( priv->date_combo, GTK_CONTAINER( widget ));
-	my_date_combo_init_view( priv->date_combo, ofa_file_format_get_date_format( priv->settings ));
+	my_date_combo_set_selected( priv->date_combo, ofa_file_format_get_date_format( priv->settings ));
 
 	g_signal_connect( priv->date_combo, "changed", G_CALLBACK( on_date_changed ), self );
 }
