@@ -38,6 +38,8 @@
 
 #include "core/ofa-main-window-def.h"
 
+#include "ui/ofa-dossier-istore.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_DOSSIER_TREEVIEW                ( ofa_dossier_treeview_get_type())
@@ -64,15 +66,11 @@ typedef struct {
 }
 	ofaDossierTreeviewClass;
 
-GType               ofa_dossier_treeview_get_type ( void ) G_GNUC_CONST;
+GType               ofa_dossier_treeview_get_type    ( void ) G_GNUC_CONST;
 
-ofaDossierTreeview *ofa_dossier_treeview_new      ( void );
+ofaDossierTreeview *ofa_dossier_treeview_new         ( void );
 
-void                ofa_dossier_treeview_attach_to( ofaDossierTreeview *tview,
-															GtkContainer *new_parent );
-
-void                ofa_dossier_treeview_init_view( ofaDossierTreeview *tview,
-															const gchar *name );
+gchar              *ofa_dossier_treeview_get_selected( ofaDossierTreeview *view );
 
 G_END_DECLS
 

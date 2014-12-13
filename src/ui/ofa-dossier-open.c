@@ -207,11 +207,12 @@ v_init_dialog( myDialog *dialog )
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent-dossier" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 	priv->dossier_tview = ofa_dossier_treeview_new();
-	ofa_dossier_treeview_attach_to( priv->dossier_tview, GTK_CONTAINER( container ));
+	ofa_dossier_istore_attach_to(
+			OFA_DOSSIER_ISTORE( priv->dossier_tview ), GTK_CONTAINER( container ));
+	ofa_dossier_istore_set_columns(
+			OFA_DOSSIER_ISTORE( priv->dossier_tview ), DOSSIER_COL_DNAME );
 	g_signal_connect(
 			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), dialog );
-
-	ofa_dossier_treeview_init_view( priv->dossier_tview, NULL );
 
 	/* setup account and password */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account" );
@@ -301,9 +302,11 @@ check_for_enable_dlg( ofaDossierOpen *self )
 				priv->account && g_utf8_strlen( priv->account, -1 ) &&
 				priv->password && g_utf8_strlen( priv->password, -1 );
 
-	dbms = ofa_dbms_new();
-	ok_enable &= ofa_dbms_connect( dbms, priv->dname, priv->dbname, priv->account, priv->password, FALSE );
-	g_object_unref( dbms );
+	if( ok_enable ){
+		dbms = ofa_dbms_new();
+		ok_enable &= ofa_dbms_connect( dbms, priv->dname, priv->dbname, priv->account, priv->password, FALSE );
+		g_object_unref( dbms );
+	}
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok_enable );
 }

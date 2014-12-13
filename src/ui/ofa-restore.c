@@ -36,6 +36,7 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-misc.h"
+#include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-restore.h"
 #include "ui/ofa-main-window.h"
 
@@ -53,7 +54,7 @@ struct _ofaRestorePrivate {
 
 	gchar         *fname;
 	gint           dest_mode;
-	gchar         *label;
+	gchar         *dname;
 };
 
 /* where do we want restore the database ?
@@ -77,7 +78,7 @@ typedef struct {
 
 static destRestore st_dest_restore[]  = {
 		{ N_( "Restore to an existing dossier" ), DEST_EXISTING_DOSSIER },
-		/*{ N_( "Restore to a new dossier" ), DEST_NEW_DOSSIER },*/
+		{ N_( "Restore to a new dossier" ),       DEST_NEW_DOSSIER },
 		{ 0 }
 };
 
@@ -99,7 +100,7 @@ static void       init_combo( ofaRestore *self, GtkComboBox *box );
 static void       on_dest_changed( GtkComboBox *box, ofaRestore *self );
 static void       remove_current_dest( ofaRestore *self );
 static void       setup_existing_dossier( ofaRestore *self );
-static void       on_dossier_selection_changed( GtkTreeSelection *select, ofaRestore *self );
+static void       on_dossier_selection_changed( ofaDossierTreeview *tview, const gchar *dname, ofaRestore *self );
 static void       setup_new_dossier( ofaRestore *self );
 static void       on_chooser_selection_changed( GtkFileChooser *chooser, ofaRestore *self );
 static void       on_chooser_file_activated( GtkFileChooser *chooser, ofaRestore *self );
@@ -122,7 +123,7 @@ restore_finalize( GObject *instance )
 	priv = OFA_RESTORE( instance )->priv;
 
 	g_free( priv->fname );
-	g_free( priv->label );
+	g_free( priv->dname );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_restore_parent_class )->finalize( instance );
@@ -347,13 +348,8 @@ static void
 setup_existing_dossier( ofaRestore *self )
 {
 	ofaRestorePrivate *priv;
-	GtkWidget *frame, *alignment, *scrolled, *treeview;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-	GSList *list, *it;
-	GtkTreeIter iter;
-	GtkTreeSelection *select;
+	GtkWidget *frame;
+	ofaDossierTreeview *view;
 
 	priv = self->priv;
 
@@ -361,66 +357,24 @@ setup_existing_dossier( ofaRestore *self )
 	gtk_widget_set_size_request( frame, 200, -1 );
 	gtk_grid_attach( GTK_GRID( priv->grid ), frame, 1, 0, 1, 1 );
 
-	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_container_add( GTK_CONTAINER( frame ), alignment );
-
-	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_container_add( GTK_CONTAINER( alignment ), scrolled );
-
-	treeview = gtk_tree_view_new();
-	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( treeview ), FALSE );
-	gtk_container_add( GTK_CONTAINER( scrolled ), treeview );
-
-	tmodel = ( GtkTreeModel * ) gtk_list_store_new( EXIST_N_COLUMNS, G_TYPE_STRING );
-	gtk_tree_view_set_model( GTK_TREE_VIEW( treeview ), tmodel );
-	g_object_unref( tmodel );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			"",
-			cell, "text", EXIST_COL_LABEL,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( treeview ), column );
-
-	list = ofa_dossier_misc_get_dossiers();
-
-	for( it=list ; it ; it=it->next ){
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				EXIST_COL_LABEL, ( const gchar * ) it->data,
-				-1 );
-	}
-
-	ofa_dossier_misc_free_dossiers( list );
-
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( treeview ));
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-
+	view = ofa_dossier_treeview_new();
+	ofa_dossier_istore_attach_to(
+			OFA_DOSSIER_ISTORE( view ), GTK_CONTAINER( frame ));
+	ofa_dossier_istore_set_columns(
+			OFA_DOSSIER_ISTORE( view ), DOSSIER_COL_DNAME );
 	g_signal_connect(
-			G_OBJECT( select ),
-			"changed",
-			G_CALLBACK( on_dossier_selection_changed ),
-			self );
+			G_OBJECT( view ), "changed", G_CALLBACK( on_dossier_selection_changed ), self );
 }
 
 static void
-on_dossier_selection_changed( GtkTreeSelection *select, ofaRestore *self )
+on_dossier_selection_changed( ofaDossierTreeview *tview, const gchar *dname, ofaRestore *self )
 {
 	ofaRestorePrivate *priv;
-	GtkTreeIter iter;
-	GtkTreeModel *tmodel;
 
 	priv = self->priv;
 
-	g_free( priv->label );
-	priv->label = NULL;
-
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-
-		gtk_tree_model_get( tmodel, &iter, EXIST_COL_LABEL, &priv->label, -1 );
-	}
+	g_free( priv->dname );
+	priv->dname = g_strdup( dname );
 
 	check_for_enable_dlg( self );
 }
@@ -470,7 +424,7 @@ check_for_enable_dlg( ofaRestore *self )
 
 	switch( priv->dest_mode ){
 		case DEST_EXISTING_DOSSIER:
-			enable &= priv->label && g_utf8_strlen( priv->label, -1 );
+			enable &= priv->dname && g_utf8_strlen( priv->dname, -1 );
 			break;
 
 		case DEST_NEW_DOSSIER:
@@ -515,7 +469,7 @@ do_restore( ofaRestore *self )
 
 	if( ok && open ){
 		sdo = g_new0( ofsDossierOpen, 1 );
-		sdo->dname = g_strdup( priv->label );
+		sdo->dname = g_strdup( priv->dname );
 		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
 	}
 
@@ -539,18 +493,18 @@ do_restore_existing( ofaRestore *self )
 	dossier = ofa_main_window_get_dossier( priv->main_window );
 	if( dossier ){
 		g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
-		if( !g_utf8_collate( priv->label, ofo_dossier_get_name( dossier ))){
+		if( !g_utf8_collate( priv->dname, ofo_dossier_get_name( dossier ))){
 			ofa_main_window_close_dossier( priv->main_window );
 		}
 	}
 
 	/* restore the backup */
-	provider = ofa_settings_get_dossier_provider( priv->label );
+	provider = ofa_settings_get_dossier_provider( priv->dname );
 	if( provider && g_utf8_strlen( provider, -1 )){
 		dbms = ofa_idbms_get_provider_by_name( provider );
 		if( dbms ){
 			g_return_val_if_fail( OFA_IS_IDBMS( dbms ), FALSE );
-			ok = ofa_idbms_restore( dbms, priv->label, priv->fname );
+			ok = ofa_idbms_restore( dbms, priv->dname, priv->fname );
 			g_object_unref( dbms );
 		}
 	}

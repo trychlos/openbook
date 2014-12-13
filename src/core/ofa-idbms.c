@@ -495,6 +495,46 @@ ofa_idbms_new_apply( const ofaIDbms *instance, GtkContainer *parent,
 }
 
 /**
+ * ofa_idbms_backup:
+ */
+gboolean
+ofa_idbms_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
+{
+	gboolean ok;
+
+	ok = FALSE;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->backup ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->backup( instance, handle, fname );
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_idbms_restore:
+ *
+ * Takes care of asking the DBMS administrator account and password
+ * before calling the DBMS provider.
+ */
+gboolean
+ofa_idbms_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname )
+{
+	gboolean ok;
+	gchar *account, *password;
+
+	ok = FALSE;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->restore &&
+		ofa_dblogin_run( label, &account, &password )){
+
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->restore( instance, label, fname, account, password );
+	}
+
+	return( ok );
+}
+
+/**
  * ofa_idbms_get_dossier_host:
  */
 gchar *
@@ -589,72 +629,6 @@ confirm_for_deletion( const ofaIDbms *instance, const gchar *label, gboolean dro
 	gtk_widget_destroy( dialog );
 
 	return( response == GTK_RESPONSE_OK );
-}
-
-/**
- * ofa_idbms_get_def_backup_cmd:
- */
-const gchar *
-ofa_idbms_get_def_backup_cmd( const ofaIDbms *instance )
-{
-	if( OFA_IDBMS_GET_INTERFACE( instance )->get_def_backup_cmd ){
-		return( OFA_IDBMS_GET_INTERFACE( instance )->get_def_backup_cmd( instance ));
-	}
-
-	return( NULL );
-}
-
-/**
- * ofa_idbms_backup:
- */
-gboolean
-ofa_idbms_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
-{
-	gboolean ok;
-
-	ok = FALSE;
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->backup ){
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->backup( instance, handle, fname );
-	}
-
-	return( ok );
-}
-
-/**
- * ofa_idbms_get_def_restore_cmd:
- */
-const gchar *
-ofa_idbms_get_def_restore_cmd( const ofaIDbms *instance )
-{
-	if( OFA_IDBMS_GET_INTERFACE( instance )->get_def_restore_cmd ){
-		return( OFA_IDBMS_GET_INTERFACE( instance )->get_def_restore_cmd( instance ));
-	}
-
-	return( NULL );
-}
-
-/**
- * ofa_idbms_restore:
- *
- * Takes care of asking the DBMS administrator account and password
- * before calling the DBMS provider.
- */
-gboolean
-ofa_idbms_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname )
-{
-	gboolean ok;
-	gchar *account, *password;
-
-	ok = FALSE;
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->restore &&
-		ofa_dblogin_run( label, &account, &password )){
-
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->restore( instance, label, fname, account, password );
-	}
-
-	return( ok );
 }
 
 /**

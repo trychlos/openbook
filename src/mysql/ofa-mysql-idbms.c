@@ -165,12 +165,12 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->new_attach_to = idbms_new_attach_to;
 	iface->new_check = idbms_new_check;
 	iface->new_apply = idbms_new_apply;
+	iface->backup = ofa_mysql_backup;
+	iface->restore = ofa_mysql_restore;
 
 	iface->get_dossier_host = idbms_get_dossier_host;
 	iface->get_dossier_dbname = idbms_get_dossier_dbname;
 	iface->delete_dossier = idbms_delete_dossier;
-	iface->backup = ofa_mysql_backup;
-	iface->restore = ofa_mysql_restore;
 	iface->display_connect_infos = idbms_display_connect_infos;
 }
 

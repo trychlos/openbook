@@ -199,6 +199,18 @@
                         <property name="draw_indicator">True</property>
                       </object>
                       <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
+                        <property name="width">1</property>
+                        <property name="height">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label1x1">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                      </object>
+                      <packing>
                         <property name="left_attach">0</property>
                         <property name="top_attach">0</property>
                         <property name="width">1</property>
@@ -299,7 +311,16 @@
       <widget name="label3x"/>
       <widget name="label4x"/>
       <widget name="p5-field-label"/>
+      <widget name="label1x1"/>
     </widgets>
   </object>
-  <object class="GtkSizeGroup" id="comboSizeGroup"/>
+  <object class="GtkSizeGroup" id="comboSizeGroup">
+    <widgets>
+      <widget name="p1-export-format"/>
+      <widget name="p5-encoding"/>
+      <widget name="p5-parent-date"/>
+      <widget name="p5-decimal-parent"/>
+      <widget name="p5-field-parent"/>
+    </widgets>
+  </object>
 </interface>

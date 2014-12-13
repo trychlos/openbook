@@ -28,10 +28,6 @@
 #include <config.h>
 #endif
 
-#include "api/my-utils.h"
-#include "api/ofa-settings.h"
-
-#include "ui/ofa-dossier-misc.h"
 #include "ui/ofa-dossier-treeview.h"
 
 /* private instance data
@@ -41,40 +37,23 @@ struct _ofaDossierTreeviewPrivate {
 
 	/* UI
 	 */
-	GtkContainer *container;
+	GtkWidget    *scrolled;
 	GtkTreeView  *tview;
+	gint          dname_col;
 };
 
-static const gchar  *st_window_xml      = PKGUIDIR "/ofa-dossier-treeview.piece.ui";
-static const gchar  *st_window_id       = "DossierTreeviewWindow";
+static void       istore_iface_init( ofaDossierIStoreInterface *iface );
+static guint      istore_get_interface_version( const ofaDossierIStore *instance );
+static void       istore_attach_to( ofaDossierIStore *instance, GtkContainer *parent );
+static void       istore_set_columns( ofaDossierIStore *instance, GtkListStore *store, ofaDossierColumns columns );
+static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierTreeview *tview );
+static void       on_row_selected( GtkTreeSelection *selection, ofaDossierTreeview *self );
+static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self );
+static void       get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal );
+static GtkWidget *get_scrolled_window( ofaDossierTreeview *self );
 
-/* column ordering in the dossier selection listview
- */
-enum {
-	COL_NAME = 0,
-	N_COLUMNS
-};
-
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	ACTIVATED,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
-G_DEFINE_TYPE( ofaDossierTreeview, ofa_dossier_treeview, G_TYPE_OBJECT )
-
-static void on_parent_finalized( ofaDossierTreeview *self, gpointer finalized_parent );
-static void setup_treeview( ofaDossierTreeview *tview );
-static gint on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
-static void on_dossier_changed( GtkTreeSelection *selection, ofaDossierTreeview *self );
-static void on_dossier_changed_cleanup_handler( ofaDossierTreeview *self, gchar *name );
-static void on_dossier_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self );
-static void on_dossier_activated_cleanup_handler( ofaDossierTreeview *self, gchar *name );
-static void get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal );
+G_DEFINE_TYPE_EXTENDED( ofaDossierTreeview, ofa_dossier_treeview, G_TYPE_OBJECT, 0, \
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_DOSSIER_ISTORE, istore_iface_init ));
 
 static void
 dossier_treeview_finalize( GObject *instance )
@@ -138,70 +117,80 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = dossier_treeview_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaDossierTreeviewPrivate ));
-
-	/**
-	 * ofaDossierTreeview::changed:
-	 *
-	 * This signal is sent when the selection is changed.
-	 *
-	 * Arguments is the name of the selected dossier.
-	 *
-	 * The cleanup handler will take care of freeing this name.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaDossierTreeview *treeview,
-	 * 						const gchar      *name,
-	 * 						gpointer          user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
-				OFA_TYPE_DOSSIER_TREEVIEW,
-				G_SIGNAL_RUN_CLEANUP,
-				G_CALLBACK( on_dossier_changed_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
-
-	/**
-	 * ofaDossierTreeview::activated:
-	 *
-	 * This signal is sent when the selection is activated.
-	 *
-	 * Arguments is the name of the selected dossier.
-	 *
-	 * The cleanup handler will take care of freeing this name.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaDossierTreeview *treeview,
-	 * 						const gchar      *name,
-	 * 						gpointer          user_data );
-	 */
-	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
-				"activated",
-				OFA_TYPE_DOSSIER_TREEVIEW,
-				G_SIGNAL_RUN_CLEANUP,
-				G_CALLBACK( on_dossier_activated_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
 }
 
 static void
-on_parent_finalized( ofaDossierTreeview *self, gpointer finalized_parent )
+istore_iface_init( ofaDossierIStoreInterface *iface )
 {
-	static const gchar *thisfn = "ofa_dossier_treeview_on_parent_finalized";
+	static const gchar *thisfn = "ofa_dossier_combo_istore_iface_init";
 
-	g_debug( "%s: self=%p, finalized_parent=%p", thisfn, ( void * ) self, ( void * ) finalized_parent );
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	g_return_if_fail( self && OFA_IS_DOSSIER_TREEVIEW( self ));
+	iface->get_interface_version = istore_get_interface_version;
+	iface->attach_to = istore_attach_to;
+	iface->set_columns = istore_set_columns;
+}
 
-	g_object_unref( self );
+static guint
+istore_get_interface_version( const ofaDossierIStore *instance )
+{
+	return( 1 );
+}
+
+static void
+istore_attach_to( ofaDossierIStore *instance, GtkContainer *parent )
+{
+	ofaDossierTreeview *self;
+	GtkWidget *scrolled;
+
+	g_return_if_fail( instance && OFA_IS_DOSSIER_TREEVIEW( instance ));
+
+	g_debug( "ofa_dossier_treeview_istore_attach_to: instance=%p (%s), parent=%p (%s)",
+			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
+			( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
+
+	self = OFA_DOSSIER_TREEVIEW( instance );
+
+	scrolled = get_scrolled_window( self );
+	gtk_container_add( parent, scrolled );
+
+	gtk_widget_show_all( GTK_WIDGET( parent ));
+}
+
+static void
+istore_set_columns( ofaDossierIStore *instance, GtkListStore *store, ofaDossierColumns columns )
+{
+	ofaDossierTreeviewPrivate *priv;
+	GtkCellRenderer *cell;
+	GtkTreeViewColumn *column;
+	gint col_number;
+
+	priv = OFA_DOSSIER_TREEVIEW( instance )->priv;
+
+	get_scrolled_window( OFA_DOSSIER_TREEVIEW( instance ));
+
+	gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( store ));
+
+	priv->dname_col = ofa_dossier_istore_get_column_number( instance, DOSSIER_COL_DNAME );
+
+	if( columns & DOSSIER_COL_DNAME ){
+		col_number = ofa_dossier_istore_get_column_number( instance, DOSSIER_COL_DNAME );
+		cell = gtk_cell_renderer_text_new();
+		column = gtk_tree_view_column_new_with_attributes(
+				"label", cell, "text", col_number, NULL );
+		gtk_tree_view_append_column( priv->tview, column );
+	}
+
+	gtk_tree_sortable_set_default_sort_func(
+			GTK_TREE_SORTABLE( store ),
+			( GtkTreeIterCompareFunc ) on_sort_model, instance, NULL );
+
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( store ),
+			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
+			GTK_SORT_ASCENDING );
+
+	gtk_widget_show_all( GTK_WIDGET( priv->scrolled ));
 }
 
 /**
@@ -219,94 +208,17 @@ ofa_dossier_treeview_new( void )
 	return( self );
 }
 
-/**
- * ofa_dossier_treeview_attach_to:
- * @tview: this #ofaDossierTreeview instance.
- * @new_parent: the new parent.
- *
- * Attach the piece of window to the @new_parent.
- */
-void
-ofa_dossier_treeview_attach_to( ofaDossierTreeview *tview, GtkContainer *new_parent )
-{
-	ofaDossierTreeviewPrivate *priv;
-	GtkWidget *window, *widget;
-
-	g_return_if_fail( tview && OFA_IS_DOSSIER_TREEVIEW( tview ));
-	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
-
-	priv = tview->priv;
-
-	if( !priv->dispose_has_run ){
-
-		g_object_weak_ref( G_OBJECT( new_parent ), ( GWeakNotify ) on_parent_finalized, tview );
-
-		window = my_utils_builder_load_from_path( st_window_xml, st_window_id );
-		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
-
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "scrolled" );
-		g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
-
-		gtk_widget_reparent( widget, GTK_WIDGET( new_parent ));
-		priv->container = GTK_CONTAINER( widget );
-
-		setup_treeview( tview );
-	}
-}
-
-static void
-setup_treeview( ofaDossierTreeview *self )
-{
-	ofaDossierTreeviewPrivate *priv;
-	GtkWidget *tview;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
-
-	priv = self->priv;
-
-	tview = my_utils_container_get_child_by_name( priv->container, "treeview" );
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-	priv->tview = GTK_TREE_VIEW( tview );
-
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new( N_COLUMNS, G_TYPE_STRING ));
-	gtk_tree_view_set_model( priv->tview, tmodel );
-	g_object_unref( tmodel );
-
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ),
-			( GtkTreeIterCompareFunc ) on_sort_model, NULL, NULL );
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tmodel ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
-			GTK_SORT_ASCENDING );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			"label",
-			cell,
-			"text", COL_NAME,
-			NULL );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	g_signal_connect(
-			G_OBJECT( priv->tview ), "row-activated", G_CALLBACK( on_dossier_activated ), self );
-
-	select = gtk_tree_view_get_selection( priv->tview );
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect(
-			G_OBJECT( select ), "changed", G_CALLBACK( on_dossier_changed ), self );
-}
-
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierTreeview *tview )
 {
+	ofaDossierTreeviewPrivate *priv;
 	gchar *aname, *bname;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, COL_NAME, &aname, -1 );
-	gtk_tree_model_get( tmodel, b, COL_NAME, &bname, -1 );
+	priv = tview->priv;
+
+	gtk_tree_model_get( tmodel, a, priv->dname_col, &aname, -1 );
+	gtk_tree_model_get( tmodel, b, priv->dname_col, &bname, -1 );
 
 	cmp = g_utf8_collate( aname, bname );
 
@@ -317,23 +229,13 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer us
 }
 
 static void
-on_dossier_changed( GtkTreeSelection *selection, ofaDossierTreeview *self )
+on_row_selected( GtkTreeSelection *selection, ofaDossierTreeview *self )
 {
 	get_and_send( self, selection, "changed" );
 }
 
 static void
-on_dossier_changed_cleanup_handler( ofaDossierTreeview *self, gchar *name )
-{
-	static const gchar *thisfn = "ofa_dossier_treeview_on_dossier_changed_cleanup_handler";
-
-	g_debug( "%s: self=%p, name=%s", thisfn, ( void * ) self, name );
-
-	g_free( name );
-}
-
-static void
-on_dossier_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self )
+on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self )
 {
 	GtkTreeSelection *select;
 
@@ -342,75 +244,82 @@ on_dossier_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *
 }
 
 static void
-on_dossier_activated_cleanup_handler( ofaDossierTreeview *self, gchar *name )
-{
-	static const gchar *thisfn = "ofa_dossier_treeview_on_dossier_activated_cleanup_handler";
-
-	g_debug( "%s: self=%p, name=%s", thisfn, ( void * ) self, name );
-
-	g_free( name );
-}
-
-static void
 get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal )
 {
+	ofaDossierTreeviewPrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeModel *model;
-	gchar *name;
-
-	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-		gtk_tree_model_get( model, &iter, COL_NAME, &name, -1 );
-		g_signal_emit_by_name( self, signal, name );
-	}
-}
-
-/**
- * ofa_dossier_treeview_init_view:
- * @tview: this #ofaDossierTreeview instance.
- * @name: [allow-none]: the first name to be selected.
- *
- * Populates the view.
- */
-void
-ofa_dossier_treeview_init_view( ofaDossierTreeview *self, const gchar *name )
-{
-	ofaDossierTreeviewPrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter, select_iter;
-	GtkTreeSelection *select;
-	GSList *list, *it;
-	gboolean found;
-
-	g_return_if_fail( self && OFA_IS_DOSSIER_TREEVIEW( self ));
+	gchar *dname;
 
 	priv = self->priv;
 
-	if( !priv->dispose_has_run ){
+	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
+		gtk_tree_model_get( model, &iter, priv->dname_col, &dname, -1 );
+		g_signal_emit_by_name( self, signal, dname );
+		g_free( dname );
+	}
+}
 
-		list = ofa_dossier_misc_get_dossiers();
-		tmodel = gtk_tree_view_get_model( priv->tview );
-		found = FALSE;
+static GtkWidget *
+get_scrolled_window( ofaDossierTreeview *self )
+{
+	ofaDossierTreeviewPrivate *priv;
+	GtkTreeSelection *select;
 
-		for( it=list ; it ; it=it->next ){
-			gtk_list_store_insert_with_values(
-					GTK_LIST_STORE( tmodel ), &iter, -1,
-					COL_NAME, ( const gchar * ) it->data,
-					-1 );
-			if( name && !found && !g_utf8_collate( name, ( const gchar * ) it->data )){
-				found = TRUE;
-				select_iter = iter;
-			}
-		}
+	priv = self->priv;
 
-		ofa_dossier_misc_free_dossiers( list );
+	if( !priv->tview ){
+
+		priv->scrolled = gtk_scrolled_window_new( NULL, NULL );
+		gtk_scrolled_window_set_policy(
+				GTK_SCROLLED_WINDOW( priv->scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
+
+		priv->tview = GTK_TREE_VIEW( gtk_tree_view_new());
+		gtk_widget_set_hexpand( GTK_WIDGET( priv->tview ), TRUE );
+		gtk_widget_set_vexpand( GTK_WIDGET( priv->tview ), TRUE );
+		gtk_tree_view_set_headers_visible( priv->tview, FALSE );
+		gtk_container_add( GTK_CONTAINER( priv->scrolled ), GTK_WIDGET( priv->tview ));
+
+		g_signal_connect(
+				G_OBJECT( priv->tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
 
 		select = gtk_tree_view_get_selection( priv->tview );
+		gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 
-		if( found ){
-			gtk_tree_selection_select_iter( select, &select_iter );
+		g_signal_connect(
+				G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
+	}
 
-		} else if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-			gtk_tree_selection_select_iter( select, &iter );
+	return( GTK_WIDGET( priv->scrolled ));
+}
+
+/**
+ * ofa_dossier_treeview_get_selected:
+ *
+ * Return: the name of the currently selected dossier, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ */
+gchar *
+ofa_dossier_treeview_get_selected( ofaDossierTreeview *view )
+{
+	ofaDossierTreeviewPrivate *priv;
+	gchar *dname;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GtkTreeSelection *select;
+
+	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), NULL );
+
+	priv = view->priv;
+	dname = NULL;
+
+	if( !priv->dispose_has_run ){
+
+		select = gtk_tree_view_get_selection( priv->tview );
+		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+			gtk_tree_model_get( tmodel, &iter, priv->dname_col, &dname, -1 );
 		}
 	}
+
+	return( dname );
 }

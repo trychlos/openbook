@@ -276,6 +276,53 @@ typedef struct {
 														const gchar *account,
 														const gchar *password );
 
+	/**
+	 * backup:
+	 * @instance: the #ofaIDbms provider.
+	 * @handle: the handle returned by the connection.
+	 * @fname: the destination filename
+	 *
+	 * Backup the currently opened dossier.
+	 *
+	 * Return value: %TRUE if the dossier has been successfully saved.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *backup )               ( const ofaIDbms *instance,
+														void *handle,
+														const gchar *fname );
+
+	/**
+	 * restore:
+	 * @instance: the #ofaIDbms provider.
+	 * @dname: the name of the dossier to be restored.
+	 * @fname: the input filename.
+	 * @account: the root account of the DBMS server.
+	 * @password:
+	 *
+	 * Restore the given backup file to the named dossier.
+	 *
+	 * The destination dossier is supposed to be defined in the user's
+	 * settings, and closed.
+	 *
+	 * The DBMS interface takes care of asking for DBMS administrator
+	 * account and password, passing them to the DBMS provider.
+	 *
+	 * The DBMS provider doesn't take any caution before restoring the
+	 * database. This is up to the application to ask for a user
+	 * confirmation, and to close the dossier before restoring the
+	 * database.
+	 *
+	 * Return value: %TRUE if the dossier has been successfully restored.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *restore )              ( const ofaIDbms *instance,
+														const gchar *dname,
+														const gchar *fname,
+														const gchar *account,
+														const gchar *password );
+
 	/* ... */
 
 	/**
@@ -354,65 +401,6 @@ typedef struct {
 	gboolean      ( *delete_dossier )       ( const ofaIDbms *instance, const gchar *name, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
 
 	/**
-	 * get_def_backup_cmd:
-	 * @instance: the #ofaIDbms provider.
-	 *
-	 * Returns: the default backup command proposed by the DBMS plugin.
-	 *
-	 * Since: version 1
-	 */
-	const gchar * ( *get_def_backup_cmd )   ( const ofaIDbms *instance );
-
-	/**
-	 * backup:
-	 * @instance: the #ofaIDbms provider.
-	 * @handle: the handle returned by the connection.
-	 * @fname: the destination filename
-	 *
-	 * Backup the currently opened dossier.
-	 *
-	 * Return value: %TRUE if the dossier has been successfully saved.
-	 *
-	 * Since: version 1
-	 */
-	gboolean      ( *backup )               ( const ofaIDbms *instance, void *handle, const gchar *fname );
-
-	/**
-	 * get_def_restore_cmd:
-	 * @instance: the #ofaIDbms provider.
-	 *
-	 * Returns: the default restore command proposed by the DBMS plugin.
-	 *
-	 * Since: version 1
-	 */
-	const gchar * ( *get_def_restore_cmd )  ( const ofaIDbms *instance );
-
-	/**
-	 * restore:
-	 * @instance: the #ofaIDbms provider.
-	 * @label: the label of the dossier to be restored.
-	 * @fname: the input filename
-	 *
-	 * Restore the given backup file to the named dossier.
-	 *
-	 * The destination dossier is supposed to be defined in the user's
-	 * settings, and closed.
-	 *
-	 * The DBMS interface takes care of asking for DBMS administrator
-	 * account and password, passing them to the DBMS provider.
-	 *
-	 * The DBMS provider doesn't take any caution before restoring the
-	 * database. This is up to the application to ask for a user
-	 * confirmation, and to close the dossier before restoring the
-	 * database.
-	 *
-	 * Return value: %TRUE if the dossier has been successfully restored.
-	 *
-	 * Since: version 1
-	 */
-	gboolean      ( *restore )              ( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password );
-
-	/**
 	 * display_connect_infos:
 	 * @instance: the #ofaIDbms provider.
 	 * @container: the widget into which the connection informations
@@ -454,7 +442,8 @@ const gchar *ofa_idbms_get_provider_name    ( const ofaIDbms *instance );
 GSList      *ofa_idbms_get_exercices        ( const ofaIDbms *instance,
 													const gchar *dname );
 
-#define      ofa_idbms_free_exercices(L)    g_debug( "ofa_idbms_free_exercices" ); g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
+#define      ofa_idbms_free_exercices(L)    g_debug( "ofa_idbms_free_exercices" ); \
+													g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
 gchar       *ofa_idbms_get_current           ( const ofaIDbms *instance,
 													const gchar *dname );
@@ -494,6 +483,14 @@ gboolean     ofa_idbms_new_apply            ( const ofaIDbms *instance,
 														const gchar *account,
 														const gchar *password );
 
+gboolean     ofa_idbms_backup               ( const ofaIDbms *instance,
+														void *handle,
+														const gchar *fname );
+
+gboolean     ofa_idbms_restore              ( const ofaIDbms *instance,
+														const gchar *dname,
+														const gchar *fname );
+
 /* .... */
 
 gchar       *ofa_idbms_get_dossier_host     ( const ofaIDbms *instance, const gchar *label );
@@ -502,14 +499,6 @@ gchar       *ofa_idbms_get_dossier_dbname   ( const ofaIDbms *instance, const gc
 
 gboolean     ofa_idbms_delete_dossier       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password,
 												gboolean drop_db, gboolean drop_accounts, gboolean with_confirm );
-
-const gchar *ofa_idbms_get_def_backup_cmd   ( const ofaIDbms *instance );
-
-gboolean     ofa_idbms_backup               ( const ofaIDbms *instance, void *handle, const gchar *fname );
-
-const gchar *ofa_idbms_get_def_restore_cmd  ( const ofaIDbms *instance );
-
-gboolean     ofa_idbms_restore              ( const ofaIDbms *instance, const gchar *label, const gchar *fname );
 
 void         ofa_idbms_display_connect_infos( GtkWidget *container, const gchar *label );
 

@@ -68,7 +68,12 @@ gboolean  ofa_dbms_query_int           ( const ofaDbms *dbms,
 												gint *ivalue,
 												gboolean display_error );
 
-#define   ofa_dbms_free_results(R)     g_debug( "ofa_dbms_free_results" ); g_slist_foreach(( R ), ( GFunc ) g_slist_free_full, g_free )
+#define   ofa_dbms_free_results(R)     g_debug( "ofa_dbms_free_results" ); \
+												g_slist_foreach(( R ), ( GFunc ) g_slist_free_full, g_free ); \
+												g_slist_free( R )
+
+gboolean  ofa_dbms_backup              ( const ofaDbms *dbms,
+												const gchar *fname );
 
 G_END_DECLS
 

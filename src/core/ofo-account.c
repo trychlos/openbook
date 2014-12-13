@@ -405,8 +405,8 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 	 *  sent
 	 * if not in the past, only allowed status are 'rough' or 'future' */
 	status = ofo_entry_get_status( entry );
-	g_return_if_fail( status == ENT_STATUS_PAST );
-	g_return_if_fail( status != ENT_STATUS_ROUGH && status != ENT_STATUS_FUTURE );
+	g_return_if_fail( status != ENT_STATUS_PAST );
+	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
 
 	account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));

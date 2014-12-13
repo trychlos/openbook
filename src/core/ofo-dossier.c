@@ -3083,7 +3083,6 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 gboolean
 ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname )
 {
-#if 0
 	ofoDossierPrivate *priv;
 	gboolean ok;
 
@@ -3100,8 +3099,6 @@ ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname )
 	}
 
 	return( ok );
-#endif
-	return( FALSE );
 }
 
 /*

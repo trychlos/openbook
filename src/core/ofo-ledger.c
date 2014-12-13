@@ -291,8 +291,8 @@ on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 	 *  sent
 	 * if not in the past, only allowed status are 'rough' or 'future' */
 	status = ofo_entry_get_status( entry );
-	g_return_if_fail( status == ENT_STATUS_PAST );
-	g_return_if_fail( status != ENT_STATUS_ROUGH && status != ENT_STATUS_FUTURE );
+	g_return_if_fail( status != ENT_STATUS_PAST );
+	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
 
 	mnemo = ofo_entry_get_ledger( entry );
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );

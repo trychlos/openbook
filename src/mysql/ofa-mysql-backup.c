@@ -65,8 +65,8 @@ typedef struct {
 
 static const gchar *st_window_name = "MySQLBackupWindow";
 
-static gboolean    do_backup_restore( const sMySQLInfos *infos, const gchar *fname, const gchar *pref, const gchar *window_title, GChildWatchFunc pfn );
-static gchar      *build_cmdline( const sMySQLInfos *infos, const gchar *fname, const gchar *pref );
+static gboolean    do_backup_restore( const sMySQLInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn );
+static gchar      *build_cmdline( const sMySQLInfos *infos, const gchar *cmdline, const gchar *fname );
 static void        create_window( backupInfos *infos, const gchar *window_title );
 static GPid        exec_command( const gchar *cmdline, backupInfos *infos );
 static GIOChannel *set_up_io_channel( gint fd, GIOCondition cond, GIOFunc func, backupInfos *infos );
@@ -99,16 +99,24 @@ gboolean
 ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 {
 	const sMySQLInfos *infos;
+	gchar *cmdline;
 	gboolean ok;
 
 	infos = ( sMySQLInfos * ) handle;
 
+	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
+	if( !cmdline || !g_utf8_strlen( cmdline, -1 )){
+		cmdline = g_strdup( ofa_mysql_get_def_backup_cmd( instance ));
+	}
+
 	ok = do_backup_restore(
 				( const sMySQLInfos * ) infos,
+				cmdline,
 				fname,
-				PREFS_BACKUP_CMDLINE,
 				_( "Openbook backup" ),
 				( GChildWatchFunc ) exit_backup_cb );
+
+	g_free( cmdline );
 
 	return( ok );
 }
@@ -131,6 +139,7 @@ gboolean
 ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password )
 {
 	sMySQLInfos *infos;
+	gchar *cmdline;
 	gboolean ok;
 
 	infos = g_new0( sMySQLInfos, 1 );
@@ -138,20 +147,27 @@ ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fn
 	infos->account = g_strdup( account );
 	infos->password = g_strdup( password );
 
+	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
+	if( !cmdline || !g_utf8_strlen( cmdline, -1 )){
+		cmdline = g_strdup( ofa_mysql_get_def_restore_cmd( instance ));
+	}
+
 	ok = do_backup_restore(
 				( const sMySQLInfos * ) infos,
+				cmdline,
 				fname,
-				PREFS_RESTORE_CMDLINE,
 				_( "Openbook restore" ),
 				( GChildWatchFunc ) exit_restore_cb );
 
 	ofa_mysql_free_connect_infos( infos );
+	g_free( cmdline );
 
 	return( ok );
 }
 
 static gboolean
-do_backup_restore( const sMySQLInfos *sql_infos, const gchar *fname, const gchar *pref, const gchar *window_title, GChildWatchFunc pfn )
+do_backup_restore( const sMySQLInfos *sql_infos,
+						const gchar *def_cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn )
 {
 	static const gchar *thisfn = "ofa_mysql_do_backup_restore";
 	backupInfos *infos;
@@ -159,7 +175,7 @@ do_backup_restore( const sMySQLInfos *sql_infos, const gchar *fname, const gchar
 	GPid child_pid;
 	gboolean ok;
 
-	cmdline = build_cmdline( sql_infos, fname, pref );
+	cmdline = build_cmdline( sql_infos, def_cmdline, fname );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
 
 	infos = g_new0( backupInfos, 1 );
@@ -190,15 +206,15 @@ do_backup_restore( const sMySQLInfos *sql_infos, const gchar *fname, const gchar
 }
 
 static gchar *
-build_cmdline( const sMySQLInfos *sql_infos, const gchar *fname, const gchar *pref )
+build_cmdline( const sMySQLInfos *sql_infos, const gchar *def_cmdline, const gchar *fname )
 {
-	gchar *cmdline;
+	gchar *sysfname, *cmdline;
 	GString *options;
 	GRegex *regex;
 	gchar *newcmd;
 	gchar *quoted;
 
-	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_DOSSIER, PREFS_GROUP, pref );
+	cmdline = g_strdup( def_cmdline );
 
 	regex = g_regex_new( "%B", 0, 0, NULL );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, sql_infos->dbname, 0, NULL );
@@ -206,11 +222,13 @@ build_cmdline( const sMySQLInfos *sql_infos, const gchar *fname, const gchar *pr
 	g_free( cmdline );
 	cmdline = newcmd;
 
-	quoted = g_shell_quote( fname );
+	sysfname = my_utils_filename_from_utf8( fname );
+	quoted = g_shell_quote( sysfname );
 	regex = g_regex_new( "%F", 0, 0, NULL );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, quoted, 0, NULL );
 	g_regex_unref( regex );
 	g_free( quoted );
+	g_free( sysfname );
 	g_free( cmdline );
 	cmdline = newcmd;
 
@@ -220,7 +238,8 @@ build_cmdline( const sMySQLInfos *sql_infos, const gchar *fname, const gchar *pr
 	}
 	if( sql_infos->port > 0 ){
 		g_string_append_printf( options, "--port=%u ", sql_infos->port );
-	} else if( sql_infos->socket && g_utf8_strlen( sql_infos->socket, -1 )){
+	}
+	if( sql_infos->socket && g_utf8_strlen( sql_infos->socket, -1 )){
 		g_string_append_printf( options, "--socket=%s ", sql_infos->socket );
 	}
 
@@ -351,8 +370,10 @@ set_up_io_channel( gint fd, GIOCondition cond, GIOFunc func, backupInfos *infos 
 
 	/* Set IOChannel encoding to none to make
 	 *  it fit for binary data */
-	g_io_channel_set_encoding( ioc, NULL, NULL );
-	g_io_channel_set_buffered( ioc, FALSE );
+	/*g_io_channel_set_encoding( ioc, NULL, NULL );*/
+	/* GLib-WARNING **: Need to have NULL encoding to set
+	 * the buffering state of the channel. */
+	/*g_io_channel_set_buffered( ioc, FALSE );*/
 
 	/* Tell the io channel to close the file descriptor
 	 *  when the io channel gets destroyed */

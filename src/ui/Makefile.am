@@ -109,6 +109,8 @@ openbook_SOURCES = \
 	ofa-dossier-delete.h								\
 	ofa-dossier-delete-prefs.c							\
 	ofa-dossier-delete-prefs.h							\
+	ofa-dossier-istore.c								\
+	ofa-dossier-istore.h								\
 	ofa-dossier-login.c									\
 	ofa-dossier-login.h									\
 	ofa-dossier-manager.c								\

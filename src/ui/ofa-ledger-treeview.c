@@ -157,7 +157,7 @@ istore_attach_to( ofaLedgerIStore *instance, GtkContainer *parent )
 
 	g_return_if_fail( instance && OFA_IS_LEDGER_TREEVIEW( instance ));
 
-	g_debug( "istore_attach_to: instance=%p (%s), parent=%p (%s)",
+	g_debug( "ofa_ledger_treeview_istore_attach_to: instance=%p (%s), parent=%p (%s)",
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
 

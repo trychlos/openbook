@@ -331,6 +331,11 @@
  473 2014-11-29 DossierDelete review: delete exercice vs. delete dossier
 
  475 2014-11-29 review backup and restore: have a dedicated interface
+     2014-11-13 no dedicated interface (because we need a connection)
+                backup is ok.
+     2014-11-13 Have to restore with a better interface:
+                select the dossier name, the target database, extract
+                the date of the exercice and the status from the archive
 
  476 2014-11-29 DossierManager review: have a Dossier treeview and an
                 Exercices treeview

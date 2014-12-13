@@ -698,3 +698,38 @@ quote_query( const gchar *query )
 
 	return( quoted );
 }
+
+/**
+ * ofa_dbms_backup:
+ * @dbms: this #ofaDbms object
+ * @fname: the output filename.
+ *
+ * Backup the currently opened dossier in the output filename.
+ * The output filename will be silently overwritten if it already exists.
+ *
+ * Return: %TRUE if the backup is successful.
+ */
+gboolean
+ofa_dbms_backup( const ofaDbms *dbms, const gchar *fname )
+{
+	static const gchar *thisfn = "ofa_dbms_backup";
+	ofaDbmsPrivate *priv;
+	gboolean backup_ok;
+
+	g_debug( "%s: dbms=%p, fname=%s", thisfn, ( void * ) dbms, fname );
+
+	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
+
+	priv = dbms->priv;
+	backup_ok = FALSE;
+
+	g_return_val_if_fail( priv->pmodule && OFA_IS_IDBMS( priv->pmodule ), FALSE );
+	g_return_val_if_fail( priv->phandle, FALSE );
+
+	if( !priv->dispose_has_run ){
+
+		backup_ok = ofa_idbms_backup( priv->pmodule, priv->phandle, fname );
+	}
+
+	return( backup_ok );
+}
