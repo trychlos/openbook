@@ -43,6 +43,8 @@
 
 #include "api/ofo-dossier-def.h"
 
+#include "ui/ofa-ledger-istore.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_LEDGER_TREEVIEW                ( ofa_ledger_treeview_get_type())
@@ -65,32 +67,16 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	GObjectClass              parent;
 }
 	ofaLedgerTreeviewClass;
-
-/* which columns are to be displayed in the treeview ?
- */
-typedef enum {
-	LEDGER_MNEMO   = 1 << 0,
-	LEDGER_LABEL   = 1 << 1,
-	LEDGER_ENTRY   = 1 << 2,
-	LEDGER_CLOSING = 1 << 3
-}
-	ofaLedgerColumns;
 
 GType              ofa_ledger_treeview_get_type                ( void ) G_GNUC_CONST;
 
 ofaLedgerTreeview *ofa_ledger_treeview_new                     ( void );
 
-void               ofa_ledger_treeview_attach_to               ( ofaLedgerTreeview *view,
-																		GtkContainer *parent,
-																		ofaLedgerColumns columns,
-																		GtkSelectionMode mode );
-
-void               ofa_ledger_treeview_init_view               ( ofaLedgerTreeview *view,
-																		ofoDossier *dossier,
-																		const gchar *initial_selection );
+void               ofa_ledger_treeview_set_selection_mode      ( ofaLedgerTreeview *view,
+																			GtkSelectionMode mode );
 
 GList             *ofa_ledger_treeview_get_selected            ( ofaLedgerTreeview *view );
 

@@ -236,7 +236,7 @@ static void              add_entry_row( ofaGuidedCommon *self, gint i );
 static void              add_entry_row_set( ofaGuidedCommon *self, gint col_id, gint row );
 static void              add_entry_row_button( ofaGuidedCommon *self, const gchar *stock_id, gint column, gint row );
 static void              remove_entry_row( ofaGuidedCommon *self, gint row );
-static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaGuidedCommon *self );
+static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedCommon *self );
 static gboolean          on_dope_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
 static gboolean          on_dope_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedCommon *self );
 static void              on_dope_changed( GtkEntry *entry, ofaGuidedCommon *self );
@@ -450,11 +450,17 @@ setup_ledger_combo( ofaGuidedCommon *self )
 	priv->ledger_parent = my_utils_container_get_child_by_name( priv->parent, "p1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
 
-	ofa_ledger_combo_attach_to( priv->ledger_combo, FALSE, TRUE, GTK_CONTAINER( priv->ledger_parent ));
-	ofa_ledger_combo_init_view( priv->ledger_combo, priv->dossier, priv->ledger );
+	ofa_ledger_istore_attach_to(
+			OFA_LEDGER_ISTORE( priv->ledger_combo ), GTK_CONTAINER( priv->ledger_parent ));
+	ofa_ledger_istore_set_columns(
+			OFA_LEDGER_ISTORE( priv->ledger_combo ), LEDGER_COL_LABEL );
+	ofa_ledger_istore_set_dossier(
+			OFA_LEDGER_ISTORE( priv->ledger_combo ), priv->dossier );
 
 	g_signal_connect(
 			G_OBJECT( priv->ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), self );
+
+	ofa_ledger_combo_set_selected( priv->ledger_combo, priv->ledger );
 }
 
 /*
@@ -727,7 +733,7 @@ remove_entry_row( ofaGuidedCommon *self, gint row )
  * - the next day after the last close of the ledger (if any)
  */
 static void
-on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaGuidedCommon *self )
+on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedCommon *self )
 {
 	ofaGuidedCommonPrivate *priv;
 	ofoLedger *ledger;

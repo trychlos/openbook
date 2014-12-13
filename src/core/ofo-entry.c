@@ -1879,12 +1879,12 @@ void
 ofo_entry_set_ope_template( ofoEntry *entry, const gchar *model )
 {
 	g_return_if_fail( OFO_IS_ENTRY( entry ));
-	g_return_if_fail( model && g_utf8_strlen( model, -1 ));
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
 		g_free( entry->priv->model );
-		entry->priv->model = g_strdup( model );
+		entry->priv->model =
+				model && g_utf8_strlen( model, -1 ) ? g_strdup( model ) : NULL;
 	}
 }
 

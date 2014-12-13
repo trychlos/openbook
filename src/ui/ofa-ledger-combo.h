@@ -39,6 +39,8 @@
 
 #include "api/ofo-dossier-def.h"
 
+#include "ui/ofa-ledger-istore.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_LEDGER_COMBO                ( ofa_ledger_combo_get_type())
@@ -68,18 +70,6 @@ typedef struct {
 GType           ofa_ledger_combo_get_type    ( void );
 
 ofaLedgerCombo *ofa_ledger_combo_new         ( void );
-
-void            ofa_ledger_combo_attach_to   ( ofaLedgerCombo *combo,
-														gboolean display_mnemo,
-														gboolean display_label,
-														GtkContainer *parent );
-
-void            ofa_ledger_combo_attach_label( ofaLedgerCombo *combo,
-														GtkWidget *label );
-
-void            ofa_ledger_combo_init_view   ( ofaLedgerCombo *combo,
-														ofoDossier *dossier,
-														const gchar *mnemo );
 
 gchar          *ofa_ledger_combo_get_selected( ofaLedgerCombo *combo );
 

@@ -90,7 +90,7 @@ static void     on_sld_ope_select( GtkButton *button, ofaExeForward *piece );
 static void     on_for_ledger_new( GtkButton *button, ofaExeForward *piece );
 static void     on_for_ope_select( GtkButton *button, ofaExeForward *piece );
 static void     on_entry_changed( GtkEditable *editable, ofaExeForward *self );
-static void     on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaExeForward *self );
+static void     on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaExeForward *self );
 static void     on_balance_accounts( GtkButton *button, ofaExeForward *self );
 static void     check_piece( ofaExeForward *piece );
 static gboolean check_for_ledger( ofaExeForward *self, ofaLedgerCombo *combo );
@@ -255,12 +255,16 @@ setup_solde( ofaExeForward *piece )
 	parent = my_utils_container_get_child_by_name( priv->parent, "p2-bledger-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->sld_ledger_combo = ofa_ledger_combo_new();
-	ofa_ledger_combo_attach_to(
-			priv->sld_ledger_combo, FALSE, TRUE, GTK_CONTAINER( parent ));
-	ofa_ledger_combo_init_view(
-			priv->sld_ledger_combo, priv->dossier, ofo_dossier_get_sld_ledger( priv->dossier ));
+	ofa_ledger_istore_attach_to(
+			OFA_LEDGER_ISTORE( priv->sld_ledger_combo ), GTK_CONTAINER( parent ));
+	ofa_ledger_istore_set_columns(
+			OFA_LEDGER_ISTORE( priv->sld_ledger_combo ), LEDGER_COL_LABEL );
 	g_signal_connect(
 			G_OBJECT( priv->sld_ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), piece );
+	ofa_ledger_istore_set_dossier(
+			OFA_LEDGER_ISTORE( priv->sld_ledger_combo ), priv->dossier );
+	ofa_ledger_combo_set_selected(
+			priv->sld_ledger_combo, ofo_dossier_get_sld_ledger( priv->dossier ));
 
 	widget = my_utils_container_get_child_by_name( priv->parent, "p2-bledger-new" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -317,12 +321,16 @@ setup_forward( ofaExeForward *piece )
 	parent = my_utils_container_get_child_by_name( priv->parent, "p2-fledger-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->for_ledger_combo = ofa_ledger_combo_new();
-	ofa_ledger_combo_attach_to(
-			priv->for_ledger_combo, FALSE, TRUE, GTK_CONTAINER( parent ));
-	ofa_ledger_combo_init_view(
-			priv->for_ledger_combo, priv->dossier, ofo_dossier_get_forward_ledger( priv->dossier ));
+	ofa_ledger_istore_attach_to(
+			OFA_LEDGER_ISTORE( priv->for_ledger_combo ), GTK_CONTAINER( parent ));
+	ofa_ledger_istore_set_columns(
+			OFA_LEDGER_ISTORE( priv->for_ledger_combo ), LEDGER_COL_LABEL );
 	g_signal_connect(
 			G_OBJECT( priv->for_ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), piece );
+	ofa_ledger_istore_set_dossier(
+			OFA_LEDGER_ISTORE( priv->for_ledger_combo ), priv->dossier );
+	ofa_ledger_combo_set_selected(
+			priv->for_ledger_combo, ofo_dossier_get_forward_ledger( priv->dossier ));
 
 	widget = my_utils_container_get_child_by_name( priv->parent, "p2-fledger-new" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -471,7 +479,7 @@ on_entry_changed( GtkEditable *editable, ofaExeForward *self )
 }
 
 static void
-on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaExeForward *self )
+on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaExeForward *self )
 {
 	check_piece( self );
 }

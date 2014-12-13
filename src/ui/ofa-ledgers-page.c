@@ -76,7 +76,6 @@ static GtkWidget *setup_tree_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       insert_dataset( ofaLedgersPage *self );
 static void       on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
 static void       on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
 static void       v_on_button_clicked( ofaPage *page, guint button_id );
@@ -174,10 +173,14 @@ setup_tree_view( ofaPage *page )
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
 
 	priv->tview = ofa_ledger_treeview_new();
-	ofa_ledger_treeview_attach_to( priv->tview,
-			GTK_CONTAINER( frame ),
-			LEDGER_MNEMO | LEDGER_LABEL | LEDGER_ENTRY | LEDGER_CLOSING,
-			GTK_SELECTION_BROWSE );
+	ofa_ledger_istore_attach_to(
+			OFA_LEDGER_ISTORE( priv->tview ), GTK_CONTAINER( frame ));
+	ofa_ledger_istore_set_columns(
+			OFA_LEDGER_ISTORE( priv->tview ),
+			LEDGER_COL_MNEMO | LEDGER_COL_LABEL | LEDGER_COL_LAST_ENTRY | LEDGER_COL_LAST_CLOSE );
+	ofa_ledger_istore_set_dossier(
+			OFA_LEDGER_ISTORE( priv->tview ), ofa_page_get_dossier( page ));
+	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_BROWSE );
 
 	g_signal_connect( G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( G_OBJECT( priv->tview ), "activated", G_CALLBACK( on_row_activated ), page );
@@ -214,7 +217,7 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	insert_dataset( OFA_LEDGERS_PAGE( page ));
+	/*insert_dataset( OFA_LEDGERS_PAGE( page ));*/
 }
 
 static GtkWidget *
@@ -223,15 +226,6 @@ v_get_top_focusable_widget( const ofaPage *page )
 	g_return_val_if_fail( page && OFA_IS_LEDGERS_PAGE( page ), NULL );
 
 	return( ofa_ledger_treeview_get_top_focusable_widget( OFA_LEDGERS_PAGE( page )->priv->tview ));
-}
-
-static void
-insert_dataset( ofaLedgersPage *self )
-{
-	ofoDossier *dossier;
-
-	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
-	ofa_ledger_treeview_init_view( self->priv->tview, dossier, NULL );
 }
 
 /*

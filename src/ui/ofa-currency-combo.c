@@ -46,21 +46,11 @@ struct _ofaCurrencyComboPrivate {
 	gint         code_col_number;
 };
 
-/* signals defined here
- */
-enum {
-	CHANGED = 0,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static void     istore_iface_init( ofaCurrencyIStoreInterface *iface );
 static guint    istore_get_interface_version( const ofaCurrencyIStore *instance );
 static void     istore_attach_to( ofaCurrencyIStore *instance, GtkContainer *parent );
 static void     istore_set_columns( ofaCurrencyIStore *instance, GtkListStore *store, ofaCurrencyColumns columns );
 static void     on_currency_changed( GtkComboBox *box, ofaCurrencyCombo *self );
-static void     on_currency_changed_cleanup_handler( ofaCurrencyCombo *combo, gchar *code );
 
 G_DEFINE_TYPE_EXTENDED( ofaCurrencyCombo, ofa_currency_combo, G_TYPE_OBJECT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_CURRENCY_ISTORE, istore_iface_init ));
@@ -128,30 +118,6 @@ ofa_currency_combo_class_init( ofaCurrencyComboClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = currency_combo_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaCurrencyComboPrivate ));
-
-	/**
-	 * ofaCurrencyCombo::changed:
-	 *
-	 * This signal is sent when the selection is changed.
-	 *
-	 * Arguments is the selected currency.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaCurrencyCombo *combo,
-	 * 						const gchar    *code,
-	 * 						gpointer        user_data );
-	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
-				OFA_TYPE_CURRENCY_COMBO,
-				G_SIGNAL_RUN_CLEANUP,
-				G_CALLBACK( on_currency_changed_cleanup_handler ),
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
 }
 
 static void
@@ -212,7 +178,6 @@ istore_set_columns( ofaCurrencyIStore *instance, GtkListStore *store, ofaCurrenc
 
 	col_number = ofa_currency_istore_get_column_number( instance, CURRENCY_COL_CODE );
 	priv->code_col_number = col_number;
-	g_debug( "istore_set_columns: code_col_number=%d", priv->code_col_number );
 
 	if( columns & CURRENCY_COL_CODE ){
 		cell = gtk_cell_renderer_text_new();
@@ -273,17 +238,8 @@ on_currency_changed( GtkComboBox *box, ofaCurrencyCombo *self )
 		g_debug( "on_currency_changed: code_col_number=%d", priv->code_col_number );
 		gtk_tree_model_get( tmodel, &iter, priv->code_col_number, &code, -1 );
 		g_signal_emit_by_name( self, "changed", code );
+		g_free( code );
 	}
-}
-
-static void
-on_currency_changed_cleanup_handler( ofaCurrencyCombo *combo, gchar *code )
-{
-	static const gchar *thisfn = "ofa_currency_combo_on_currency_changed_cleanup_handler";
-
-	g_debug( "%s: combo=%p, code=%s", thisfn, ( void * ) combo, code );
-
-	g_free( code );
 }
 
 /**

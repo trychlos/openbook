@@ -175,7 +175,7 @@ my_editable_date_set_format( GtkEditable *editable, myDateFormat format )
 	sEditableDate *data;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
-	g_return_if_fail( format >= MY_DATE_FIRST && format < MY_DATE_LAST );
+	g_return_if_fail( format == -1 || ( format >= MY_DATE_FIRST && format < MY_DATE_LAST ));
 
 	data = get_editable_date_data( editable );
 

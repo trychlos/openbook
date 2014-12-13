@@ -69,7 +69,17 @@ enum {
 #define LEDGER_ISTORE_LAST_VERSION      1
 #define LEDGER_ISTORE_DATA              "ofa-ledger-istore-data"
 
-static guint st_initializations = 0;	/* interface initialization count */
+/* signals defined here
+ */
+enum {
+	CHANGED = 0,
+	ACTIVATED,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
+static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType    register_type( void );
 static void     interface_base_init( ofaLedgerIStoreInterface *klass );
@@ -140,15 +150,66 @@ static void
 interface_base_init( ofaLedgerIStoreInterface *klass )
 {
 	static const gchar *thisfn = "ofa_ledger_istore_interface_base_init";
+	GType interface_type = G_TYPE_FROM_INTERFACE( klass );
 
 	g_debug( "%s: klass=%p (%s), st_initializations=%d",
 			thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ), st_initializations );
 
-	st_initializations += 1;
-
-	if( st_initializations == 1 ){
+	if( !st_initializations ){
 		/* declare interface default methods here */
+
+		/**
+		 * ofaLedgerIStore::changed:
+		 *
+		 * This signal is sent by the views when the selection is
+		 * changed.
+		 *
+		 * Arguments is the selected ledger mnemo.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( ofaLedgerIStore *store,
+		 * 						const gchar     *mnemo,
+		 * 						gpointer         user_data );
+		 */
+		st_signals[ CHANGED ] = g_signal_new_class_handler(
+					"changed",
+					interface_type,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					1,
+					G_TYPE_STRING );
+
+		/**
+		 * ofaLedgerIStore::activated:
+		 *
+		 * This signal is sent by the views when the selection is
+		 * activated.
+		 *
+		 * Arguments is the selected ledger mnemo.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( ofaLedgerIStore *store,
+		 * 						const gchar     *mnemo,
+		 * 						gpointer         user_data );
+		 */
+		st_signals[ ACTIVATED ] = g_signal_new_class_handler(
+					"activated",
+					interface_type,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					1,
+					G_TYPE_STRING );
 	}
+
+	st_initializations += 1;
 }
 
 static void
@@ -505,22 +566,6 @@ ofa_ledger_istore_get_column_number( const ofaLedgerIStore *instance, ofaLedgerC
 	return( -1 );
 }
 
-static sIStore *
-get_istore_data( ofaLedgerIStore *instance )
-{
-	sIStore *sdata;
-
-	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( instance ), LEDGER_ISTORE_DATA );
-
-	if( !sdata ){
-		sdata = g_new0( sIStore, 1 );
-		g_object_set_data( G_OBJECT( instance ), LEDGER_ISTORE_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_object_finalized, sdata );
-	}
-
-	return( sdata );
-}
-
 static void
 on_parent_finalized( ofaLedgerIStore *instance, gpointer finalized_parent )
 {
@@ -552,4 +597,20 @@ on_object_finalized( sIStore *sdata, gpointer finalized_object )
 	}
 
 	g_free( sdata );
+}
+
+static sIStore *
+get_istore_data( ofaLedgerIStore *instance )
+{
+	sIStore *sdata;
+
+	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( instance ), LEDGER_ISTORE_DATA );
+
+	if( !sdata ){
+		sdata = g_new0( sIStore, 1 );
+		g_object_set_data( G_OBJECT( instance ), LEDGER_ISTORE_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_object_finalized, sdata );
+	}
+
+	return( sdata );
 }

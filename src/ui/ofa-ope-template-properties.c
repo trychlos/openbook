@@ -133,7 +133,7 @@ static void      signal_row_added( ofaOpeTemplateProperties *self );
 static void      signal_row_removed( ofaOpeTemplateProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
-static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaOpeTemplateProperties *self );
+static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaOpeTemplateProperties *self );
 static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
 static void      on_account_selection( ofaOpeTemplateProperties *self, gint row );
 static void      on_button_clicked( GtkButton *button, ofaOpeTemplateProperties *self );
@@ -276,15 +276,18 @@ v_init_dialog( myDialog *dialog )
 
 	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
-	ofa_ledger_combo_attach_to(
-			priv->ledger_combo, FALSE, TRUE, GTK_CONTAINER( priv->ledger_parent ));
+
+	ofa_ledger_istore_attach_to(
+			OFA_LEDGER_ISTORE( priv->ledger_combo ), GTK_CONTAINER( priv->ledger_parent ));
+	ofa_ledger_istore_set_columns(
+			OFA_LEDGER_ISTORE( priv->ledger_combo ), LEDGER_COL_LABEL );
+	ofa_ledger_istore_set_dossier(
+			OFA_LEDGER_ISTORE( priv->ledger_combo ), MY_WINDOW( dialog )->prot->dossier );
 
 	g_signal_connect(
 			G_OBJECT( priv->ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), self );
 
-	ofa_ledger_combo_init_view(
-			priv->ledger_combo,
-			MY_WINDOW( dialog )->prot->dossier,
+	ofa_ledger_combo_set_selected( priv->ledger_combo,
 			priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template ));
 
 	init_dialog_ledger_locked( self );
@@ -603,7 +606,7 @@ on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self )
 }
 
 static void
-on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, const gchar *label, ofaOpeTemplateProperties *self )
+on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaOpeTemplateProperties *self )
 {
 	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_PROPERTIES( self ));
 

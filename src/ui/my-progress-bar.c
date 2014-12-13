@@ -167,7 +167,7 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_DOUBLE );
+				G_TYPE_STRING );
 }
 
 static void
