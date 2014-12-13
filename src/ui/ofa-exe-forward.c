@@ -93,9 +93,9 @@ static void     on_entry_changed( GtkEditable *editable, ofaExeForward *self );
 static void     on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaExeForward *self );
 static void     on_balance_accounts( GtkButton *button, ofaExeForward *self );
 static void     check_piece( ofaExeForward *piece );
-static gboolean check_for_ledger( ofaExeForward *self, ofaLedgerCombo *combo );
-static gboolean check_for_ope( ofaExeForward *self, GtkWidget *entry );
-static gboolean check_for_label( ofaExeForward *self, GtkWidget *entry );
+static gboolean check_for_ledger( ofaExeForward *self, ofaLedgerCombo *combo, gchar **msg );
+static gboolean check_for_ope( ofaExeForward *self, GtkWidget *entry, gchar **msg );
+static gboolean check_for_label( ofaExeForward *self, GtkWidget *entry, gchar **msg );
 
 static void
 exe_forward_finalize( GObject *instance )
@@ -506,7 +506,7 @@ check_piece( ofaExeForward *self )
  * ofa_exe_forward_check:
  */
 gboolean
-ofa_exe_forward_check( ofaExeForward *piece )
+ofa_exe_forward_check( ofaExeForward *piece, gchar **msg )
 {
 	ofaExeForwardPrivate *priv;
 	gboolean ok;
@@ -519,39 +519,37 @@ ofa_exe_forward_check( ofaExeForward *piece )
 	if( !priv->dispose_has_run ){
 
 		ok = TRUE;
-		/*if( ok ) ok &= check_for_account( piece, priv->account_entry );*/
-		if( ok ) ok &= check_for_ledger( piece, priv->sld_ledger_combo );
-		if( ok ) ok &= check_for_ope( piece, priv->sld_ope_entry );
-		if( ok ) ok &= check_for_label( piece, priv->sld_label_entry );
+		if( ok ) ok &= check_for_ledger( piece, priv->sld_ledger_combo, msg );
+		if( ok ) ok &= check_for_ope( piece, priv->sld_ope_entry, msg );
+		if( ok ) ok &= check_for_label( piece, priv->sld_label_entry, msg );
 
-		if( ok ) ok &= check_for_ledger( piece, priv->for_ledger_combo );
-		if( ok ) ok &= check_for_ope( piece, priv->for_ope_entry );
-		if( ok ) ok &= check_for_label( piece, priv->for_label_close_entry );
-		if( ok ) ok &= check_for_label( piece, priv->for_label_open_entry );
+		if( ok ) ok &= check_for_ledger( piece, priv->for_ledger_combo, msg );
+		if( ok ) ok &= check_for_ope( piece, priv->for_ope_entry, msg );
+		if( ok ) ok &= check_for_label( piece, priv->for_label_close_entry, msg );
+		if( ok ) ok &= check_for_label( piece, priv->for_label_open_entry, msg );
 	}
 
 	return( ok );
 }
 
 static gboolean
-check_for_ledger( ofaExeForward *self, ofaLedgerCombo *combo )
+check_for_ledger( ofaExeForward *self, ofaLedgerCombo *combo, gchar **msg )
 {
-	static const gchar *thisfn = "ofa_exe_forward_check_for_ledger";
 	ofaExeForwardPrivate *priv;
 	gchar *mnemo;
 	ofoLedger *ledger;
 
 	priv = self->priv;
 
-	mnemo = ofa_ledger_combo_get_selected( priv->for_ledger_combo );
+	mnemo = ofa_ledger_combo_get_selected( combo );
 	if( !mnemo || !g_utf8_strlen( mnemo, -1 )){
-		g_debug( "%s: empty ledger mnemo", thisfn );
+		*msg = g_strdup( _( "Empty ledger mnemonic" ));
 		g_free( mnemo );
 		return( FALSE );
 	}
 	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
 	if( !ledger ){
-		g_debug( "%s: ledger not found: %s", thisfn, mnemo );
+		*msg = g_strdup_printf( _( "Ledger not found: %s" ), mnemo );
 		g_free( mnemo );
 		return( FALSE );
 	}
@@ -562,50 +560,37 @@ check_for_ledger( ofaExeForward *self, ofaLedgerCombo *combo )
 }
 
 static gboolean
-check_for_ope( ofaExeForward *self, GtkWidget *entry )
+check_for_ope( ofaExeForward *self, GtkWidget *entry, gchar **msg )
 {
-	static const gchar *thisfn = "ofa_exe_forward_check_for_ope";
 	ofaExeForwardPrivate *priv;
 	const gchar *cstr;
 	ofoOpeTemplate *ope;
-	gchar *mnemo;
-	gint cmp;
 
 	priv = self->priv;
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( entry ));
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		g_debug( "%s: empty operation template mnemo", thisfn );
+		*msg = g_strdup( _( "Empty operation template mnemonic" ));
 		return( FALSE );
 	}
 	ope = ofo_ope_template_get_by_mnemo( priv->dossier, cstr );
 	if( !ope ){
-		g_debug( "%s: operation template not found: %s", thisfn, cstr );
+		*msg = g_strdup_printf( _( "Operation template not found: %s" ), cstr );
 		return( FALSE );
 	}
 	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( ope ), FALSE );
-
-	mnemo = ofa_ledger_combo_get_selected( priv->for_ledger_combo );
-	cstr = ofo_ope_template_get_ledger( ope );
-	cmp = g_utf8_collate( mnemo, cstr );
-	g_free( mnemo );
-	if( cmp != 0 ){
-		g_debug( "%s: operation template is attached to %s ledger", thisfn, cstr );
-		return( FALSE );
-	}
 
 	return( TRUE );
 }
 
 static gboolean
-check_for_label( ofaExeForward *self, GtkWidget *entry )
+check_for_label( ofaExeForward *self, GtkWidget *entry, gchar **msg )
 {
-	static const gchar *thisfn = "ofa_exe_forward_check_for_label";
 	const gchar *cstr;
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( entry ));
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		g_debug( "%s: empty label", thisfn );
+		*msg = g_strdup( _( "Empty label" ));
 		return( FALSE );
 	}
 

@@ -396,6 +396,7 @@ p2_check_for_complete( ofaExeClosing *self )
 	gboolean complete;
 	const GDate *begin_cur, *end_cur, *begin_next, *end_next;
 	GDate date;
+	gchar *msg;
 
 	priv = self->priv;
 
@@ -430,7 +431,8 @@ p2_check_for_complete( ofaExeClosing *self )
 	}
 
 	if( priv->p2_forward ){
-		complete &= ofa_exe_forward_check( priv->p2_forward );
+		complete &= ofa_exe_forward_check( priv->p2_forward, &msg );
+		g_free( msg );
 	}
 
 	gtk_assistant_set_page_complete( assistant, page_widget, complete );

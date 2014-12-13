@@ -73,6 +73,7 @@ struct _ofaDossierPropertiesPrivate {
 	 */
 	GtkWidget       *siren_entry;
 	ofaExeForward   *forward;
+	GtkWidget       *msgerr;
 };
 
 static const gchar *st_ui_xml = PKGUIDIR "/ofa-dossier-properties.ui";
@@ -91,9 +92,11 @@ static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self )
 static void      on_begin_changed( GtkEditable *editable, ofaDossierProperties *self );
 static void      on_end_changed( GtkEditable *editable, ofaDossierProperties *self );
 static void      on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty );
+static void      on_forward_changed( ofaExeForward *piece, ofaDossierProperties *self );
 static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  is_dialog_valid( ofaDossierProperties *self );
+static void      set_msgerr( ofaDossierProperties *self, const gchar *msg );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_update( ofaDossierProperties *self );
 
@@ -210,6 +213,7 @@ v_init_dialog( myDialog *dialog )
 	ofaDossierProperties *self;
 	ofaDossierPropertiesPrivate *priv;
 	GtkContainer *container;
+	GdkRGBA color;
 
 	self = OFA_DOSSIER_PROPERTIES( dialog );
 	priv = self->priv;
@@ -225,6 +229,10 @@ v_init_dialog( myDialog *dialog )
 	/* these are main notes of the dossier */
 	my_utils_init_notes_ex( container, dossier );
 	my_utils_init_upd_user_stamp_ex( container, dossier );
+
+	priv->msgerr = my_utils_container_get_child_by_name( container, "px-msgerr" );
+	gdk_rgba_parse( &color, "#ff0000" );
+	gtk_widget_override_color( priv->msgerr, GTK_STATE_FLAG_NORMAL, &color );
 
 	check_for_enable_dlg( self );
 }
@@ -330,6 +338,8 @@ init_forward_page( ofaDossierProperties *self, GtkContainer *container )
 	priv->forward = ofa_exe_forward_new();
 	ofa_exe_forward_attach_to(
 			priv->forward, GTK_CONTAINER( parent ), MY_WINDOW( self )->prot->main_window );
+
+	g_signal_connect( priv->forward, "changed", G_CALLBACK( on_forward_changed ), self );
 }
 
 static void
@@ -458,6 +468,12 @@ on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date,
 }
 
 static void
+on_forward_changed( ofaExeForward *piece, ofaDossierProperties *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
 on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
@@ -490,28 +506,47 @@ static gboolean
 is_dialog_valid( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	gboolean ok;
+	gchar *msg;
+
+	priv = self->priv;
+	set_msgerr( self, "" );
+
+	if( !priv->begin_empty && !my_date_is_valid( &priv->begin )){
+		set_msgerr( self, _( "Not empty and not valid exercice beginning date" ));
+		return( FALSE );
+	}
+
+	if( !priv->end_empty && !my_date_is_valid( &priv->end )){
+		set_msgerr( self, _( "nNot empty and not valid exercice ending date" ));
+		return( FALSE );
+	}
+
+	if( !ofo_dossier_is_valid(
+				priv->label, priv->duree, priv->currency, &priv->begin, &priv->end, &msg )){
+		set_msgerr( self, msg );
+		g_free( msg );
+		return( FALSE );
+	}
+
+	if( priv->forward ){
+		if( !ofa_exe_forward_check( priv->forward, &msg )){
+			set_msgerr( self, msg );
+			g_free( msg );
+			return( FALSE );
+		}
+	}
+
+	return( TRUE );
+}
+
+static void
+set_msgerr( ofaDossierProperties *self, const gchar *msg )
+{
+	ofaDossierPropertiesPrivate *priv;
 
 	priv = self->priv;
 
-	ok = priv->begin_empty || ( my_date_is_valid( &priv->begin ));
-	/*g_debug( "is_dialog_valid 1: ok=%s", ok ? "True":"False" );*/
-
-	ok &= priv->end_empty ||
-			( my_date_is_valid( &priv->end ) &&
-				( !my_date_is_valid( &priv->begin ) ||
-					my_date_compare( &priv->end, &priv->begin ) > 0 ));
-	/*g_debug( "is_dialog_valid 2: ok=%s", ok ? "True":"False" );*/
-
-	ok &= ofo_dossier_is_valid( priv->label, priv->duree, priv->currency, &priv->begin, &priv->end );
-	/*g_debug( "is_dialog_valid 3: ok=%s", ok ? "True":"False" );*/
-
-	if( priv->forward ){
-		ok &= ofa_exe_forward_check( priv->forward );
-		/*g_debug( "is_dialog_valid 4: ok=%s", ok ? "True":"False" );*/
-	}
-
-	return( ok );
+	gtk_label_set_text( GTK_LABEL( priv->msgerr ), msg );
 }
 
 static gboolean

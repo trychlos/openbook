@@ -405,7 +405,14 @@
                 import ledgers:  0.02982 s (9 rows)
                 import entries:  0.13268 s (2431 rows)
 
- 526
+ 526 2014-12-13 ExeForward: there is no sense to check ledger attached
+                to the operation template
+
+ 527 2014-12-13 ExeForward: as DossierCur depends of ExeForward (via
+                the button), validation should not be allowed while
+                DossierCur is not set
+
+ 528
 
 -----------------------------------------------------------------------
  DONE

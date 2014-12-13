@@ -73,7 +73,8 @@ void           ofa_exe_forward_attach_to( ofaExeForward *prefs,
 													GtkContainer *new_parent,
 													ofaMainWindow *main_window );
 
-gboolean       ofa_exe_forward_check    ( ofaExeForward *prefs );
+gboolean       ofa_exe_forward_check    ( ofaExeForward *prefs,
+													gchar **msg );
 
 void           ofa_exe_forward_apply    ( ofaExeForward *prefs );
 

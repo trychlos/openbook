@@ -2067,25 +2067,31 @@ ofo_dossier_is_current( const ofoDossier *dossier )
  */
 gboolean
 ofo_dossier_is_valid( const gchar *label, gint nb_months, const gchar *currency,
-								const GDate *begin, const GDate *end )
+								const GDate *begin, const GDate *end, gchar **msg )
 {
-	gboolean valid;
-
-	valid = label && g_utf8_strlen( label, -1 );
-	g_debug( "ofo_dossier_is_valid: label valid=%s", valid ? "True":"False" );
-
-	valid &= nb_months > 0;
-	g_debug( "ofo_dossier_is_valid: nb_months valid=%s", valid ? "True":"False" );
-
-	valid &= currency && g_utf8_strlen( currency, -1 );
-	g_debug( "ofo_dossier_is_valid: currency valid=%s", valid ? "True":"False" );
-
-	if( my_date_is_valid( begin ) && my_date_is_valid( end )){
-		valid &= ( my_date_compare( begin, end ) < 0 );
-		g_debug( "ofo_dossier_is_valid: begin/end valid=%s", valid ? "True":"False" );
+	if( !label || !g_utf8_strlen( label, -1 )){
+		*msg = g_strdup( _( "Empty label" ));
+		return( FALSE );
 	}
 
-	return( valid );
+	if( nb_months <= 0 ){
+		*msg = g_strdup_printf( "Invalid length of exercice: %d", nb_months );
+		return( FALSE );
+	}
+
+	if( !currency || !g_utf8_strlen( currency, -1 )){
+		*msg = g_strdup( _( "Empty default currency"));
+		return( FALSE );
+	}
+
+	if( my_date_is_valid( begin ) && my_date_is_valid( end )){
+		if( my_date_compare( begin, end ) > 0 ){
+			*msg = g_strdup( _( "Exercice is set to begin after it has ended" ));
+			return( FALSE );
+		}
+	}
+
+	return( TRUE );
 }
 
 /**
