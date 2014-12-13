@@ -2028,7 +2028,10 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * - label
  * - currency iso 3a code (mandatory for detail accounts, default to
  *   dossier currency)
- * - type (default to detail)
+ * - type = {D|R} (default to Detail)
+ * - settleable = {S| } (defaults to no)
+ * - reconciliable = {R| } (defaults to no)
+ * - carried forwardable on new exercice = {F| } (defaults to no)
  * - notes (opt)
  *
  * Replace the whole table with the provided datas.
@@ -2117,6 +2120,51 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			continue;
 		}
 		ofo_account_set_type_account( account, cstr );
+
+		/* settleable ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr || g_utf8_strlen( cstr, -1 )){
+			if( g_utf8_collate( cstr, ACCOUNT_SETTLEABLE )){
+				msg = g_strdup_printf( _( "invalid account settleable indicator: %s" ), cstr );
+				ofa_iimportable_set_import_error( importable, line, msg );
+				g_free( msg );
+				errors += 1;
+				continue;
+			} else {
+				ofo_account_set_settleable( account, TRUE );
+			}
+		}
+
+		/* reconciliable ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr || g_utf8_strlen( cstr, -1 )){
+			if( g_utf8_collate( cstr, ACCOUNT_RECONCILIABLE )){
+				msg = g_strdup_printf( _( "invalid account reconciliable indicator: %s" ), cstr );
+				ofa_iimportable_set_import_error( importable, line, msg );
+				g_free( msg );
+				errors += 1;
+				continue;
+			} else {
+				ofo_account_set_reconciliable( account, TRUE );
+			}
+		}
+
+		/* carried forwardable ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( cstr || g_utf8_strlen( cstr, -1 )){
+			if( g_utf8_collate( cstr, ACCOUNT_FORWARDABLE )){
+				msg = g_strdup_printf( _( "invalid account forwardable indicator: %s" ), cstr );
+				ofa_iimportable_set_import_error( importable, line, msg );
+				g_free( msg );
+				errors += 1;
+				continue;
+			} else {
+				ofo_account_set_forward( account, TRUE );
+			}
+		}
 
 		/* notes
 		 * we are tolerant on the last field... */
