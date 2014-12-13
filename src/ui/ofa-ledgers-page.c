@@ -316,15 +316,20 @@ static void
 on_update_clicked( ofaLedgersPage *page )
 {
 	ofaLedgersPagePrivate *priv;
+	ofoDossier *dossier;
 	GList *selected;
+	ofoLedger *ledger;
 
 	priv = page->priv;
 
+	dossier = ofa_page_get_dossier( OFA_PAGE( page ));
+
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
-
-	do_update( page, OFO_LEDGER( selected->data ));
-
+	ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 	ofa_ledger_treeview_free_selected( selected );
+
+	do_update( page, ledger );
 }
 
 static void

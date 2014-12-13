@@ -14,6 +14,7 @@ Press Continue.</property>
       </object>
       <packing>
         <property name="page_type">intro</property>
+        <property name="title" translatable="yes">Introduction</property>
         <property name="complete">True</property>
       </packing>
     </child>
@@ -36,7 +37,7 @@ Press Continue.</property>
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Selection of the files</property>
+        <property name="title" translatable="yes">Selection of the file to be imported</property>
       </packing>
     </child>
     <child>
@@ -253,7 +254,7 @@ Press Continue.</property>
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Set the locale settings</property>
+        <property name="title" translatable="yes">Set the file format settings</property>
       </packing>
     </child>
     <child>
@@ -601,7 +602,7 @@ Press Continue.</property>
       </object>
       <packing>
         <property name="page_type">summary</property>
-        <property name="title" translatable="yes">Result of import</property>
+        <property name="title" translatable="yes">Result of the import</property>
       </packing>
     </child>
     <child internal-child="action_area">

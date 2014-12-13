@@ -177,14 +177,20 @@ ofa_iimportable_import( ofaIImportable *importable,
 									GSList *lines, const ofaFileFormat *settings,
 									ofoDossier *dossier, void *caller )
 {
+	static const gchar *thisfn = "ofa_iimportable_import";
 	sIImportable *sdata;
 	gint errors;
+	GTimeVal stamp_start, stamp_end;
+	gchar *sstart, *send;
+	guint count;
+	gulong udelay;
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
 	g_return_val_if_fail( OFO_IS_BASE( importable ), 0 );
 	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
 
+	my_utils_stamp_set_now( &stamp_start );
 	sdata = get_iimportable_data( importable );
 	g_return_val_if_fail( sdata, 0 );
 
@@ -197,6 +203,19 @@ ofa_iimportable_import( ofaIImportable *importable,
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import ){
 		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, lines, sdata->dossier );
 	}
+
+	my_utils_stamp_set_now( &stamp_end );
+
+	sstart = my_utils_stamp_to_str( &stamp_start, MY_STAMP_YYMDHMS );
+	send = my_utils_stamp_to_str( &stamp_end, MY_STAMP_YYMDHMS );
+	count = g_slist_length( lines );
+	udelay = 1000000*(stamp_end.tv_sec-stamp_start.tv_sec)+stamp_end.tv_usec-stamp_start.tv_usec;
+
+	g_debug( "%s: stamp_start=%s, stamp_end=%s, count=%u: average is %'.5lf s",
+			thisfn, sstart, send, count, ( gdouble ) udelay / 1000000.0 / ( gdouble ) count );
+
+	g_free( sstart );
+	g_free( send );
 
 	return( errors );
 }

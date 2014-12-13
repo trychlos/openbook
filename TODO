@@ -397,7 +397,15 @@
 
  523 2014-12-12 review BAT import
 
- 524
+ 524 2014-12-13 LedgerProperties: review the display of the balances per
+                currency
+
+ 525 2014-12-13 when importing entries: review the code to be faster
+                import accounts: 0.02286 s / 0.02316 s (127 rows)
+                import ledgers:  0.02982 s (9 rows)
+                import entries:  0.13268 s (2431 rows)
+
+ 526
 
 -----------------------------------------------------------------------
  DONE
