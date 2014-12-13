@@ -957,13 +957,16 @@ ofo_account_is_deletable( const ofoAccount *account, ofoDossier *dossier )
 {
 	gboolean deletable;
 	GList *children, *it;
+	const gchar *number;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( account )->prot->dispose_has_run ){
 
-		deletable = !ofo_entry_use_account( dossier, ofo_account_get_number( account ));
+		number = ofo_account_get_number( account );
+		deletable = !ofo_entry_use_account( dossier, number ) &&
+					!ofo_dossier_use_account( dossier, number );
 
 		if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children()){
 

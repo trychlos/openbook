@@ -129,6 +129,8 @@ static void        on_exe_dates_changed( const ofoDossier *dossier, void *empty 
 static gboolean    dbmodel_update( const ofoDossier *dossier );
 static gint        dbmodel_get_version( const ofoDossier *dossier );
 static gboolean    dbmodel_to_v1( const ofoDossier *dossier );
+static gint        dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
+static gint        dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static sCurrency  *get_currency_detail( ofoDossier *dossier, const gchar *currency, gboolean create );
 static gint        cmp_currency_detail( sCurrency *a, sCurrency *b );
@@ -1162,6 +1164,28 @@ ofo_dossier_get_dbms( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_use_account:
+ *
+ * Returns: %TRUE if the dossier makes use of this account, thus
+ * preventing its deletion.
+ */
+gboolean
+ofo_dossier_use_account( const ofoDossier *dossier, const gchar *account )
+{
+	gint count;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		count = dossier_cur_count_uses( dossier, "DOS_SLD_ACCOUNT", account );
+		return( count > 0 );
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofo_dossier_use_currency:
  *
  * Returns: %TRUE if the dossier makes use of this currency, thus
@@ -1171,6 +1195,7 @@ gboolean
 ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 {
 	const gchar *default_dev;
+	gint count;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), FALSE );
 
@@ -1178,12 +1203,95 @@ ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 
 		default_dev = ofo_dossier_get_default_currency( dossier );
 
-		if( default_dev && g_utf8_strlen( default_dev, -1 )){
-			return( g_utf8_collate( default_dev, currency ) == 0 );
+		if( default_dev &&
+				g_utf8_strlen( default_dev, -1 ) &&
+				!g_utf8_collate( default_dev, currency )){
+			return( TRUE );
 		}
+
+		count = dossier_cur_count_uses( dossier, "DOS_CURRENCY", currency );
+		return( count > 0 );
 	}
 
 	return( FALSE );
+}
+
+/**
+ * ofo_dossier_use_ledger:
+ *
+ * Returns: %TRUE if the dossier makes use of this ledger, thus
+ * preventing its deletion.
+ */
+gboolean
+ofo_dossier_use_ledger( const ofoDossier *dossier, const gchar *ledger )
+{
+	gint forward, solde;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		forward = dossier_count_uses( dossier, "DOS_FORW_LEDGER", ledger );
+		solde = dossier_count_uses( dossier, "DOS_SLD_LEDGER", ledger );
+		return( forward+solde > 0 );
+	}
+
+	return( FALSE );
+}
+
+/**
+ * ofo_dossier_use_ope_template:
+ *
+ * Returns: %TRUE if the dossier makes use of this operation template,
+ * thus preventing its deletion.
+ */
+gboolean
+ofo_dossier_use_ope_template( const ofoDossier *dossier, const gchar *ope_template )
+{
+	gint forward, solde;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		forward = dossier_count_uses( dossier, "DOS_FORW_OPE", ope_template );
+		solde = dossier_count_uses( dossier, "DOS_SLD_OPE", ope_template );
+		return( forward+solde > 0 );
+	}
+
+	return( FALSE );
+}
+
+static gint
+dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE %s='%s' AND DOS_ID=%d",
+					field, mnemo, THIS_DOS_ID );
+
+	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count );
+}
+
+static gint
+dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE %s='%s' AND DOS_ID=%d",
+					field, mnemo, THIS_DOS_ID );
+
+	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count );
 }
 
 /**

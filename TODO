@@ -350,21 +350,7 @@
 
  487 2014-12- 2 ope_template: not deletable if referenced in dossier
 
- 488 2014-12- 2 when the begin exercice date misses, directly open the
-                dossier properties for updates
-
- 489 2014-12- 2 Exe Closing: have default for date of next exercice
-
  490 2014-12- 2 ExeClosing: implement ledger select, ope select
-
- 491 2014-12- 3 check that ledger is only imputed with entries of the
-                exercice (not before, not after)
-
- 492 2014-12- 3 check that account is only imputed with entries of the
-                exercice (not before, not after)
-
- 493 2014-12- 4 ViewEntries: setting effect dates should refresh the 
-                display (but don't)
 
  494 2014-12- 4 ExeClosing: have a dossier option to have only one  
                 centralisation entry when balancing the accounts, or
@@ -375,8 +361,6 @@
                 into account the settings
      2014-12- 7 have to migrate to ofaBox
 
- 498 2014-12- 6 on import, display all the errors in a dialog box
-
  502 2014-12- 6 when entered in the command-line, accept an empty 
                 database (and defaults to the current)
      2014-12- 7 idem for account and password (let the user enter them)
@@ -384,9 +368,6 @@
                 command language
 
  508 2014-12- 8 DossierNew MySQL: set default server account = 'root'
-
- 509 2014-12- 8 LedgerCombo: use same column enumeration than Ledger
-                Treeview (instead of two booleans)
 
  510 2014-12- 8 AccountSelect: the pre-selection doesn't work well
 
@@ -398,8 +379,6 @@
 
  516 2014-12- 9 on exe_dates_changed: recompute rough vs. future entries
                 + forbid that an entry becomes in the past before exercice
-
- 517 2014-12-10 define two new entry status: PAST and FUTURE
 
  518 2014-12-10 DossierCur: try to make transient vs the main window
 
@@ -2169,6 +2148,25 @@
  485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
      2014-12- 7 done - svn #4253
 
+ 488 2014-12- 2 when the begin exercice date misses, directly open the
+                dossier properties for updates
+     2014-12-13 a button proposes this in the warning dialog box -> OK
+
+ 489 2014-12- 2 Exe Closing: have default for date of next exercice
+     2014-12-13 done
+
+ 491 2014-12- 3 check that ledger is only imputed with entries of the
+                exercice (not before, not after)
+     2014-12-13 done
+
+ 492 2014-12- 3 check that account is only imputed with entries of the
+                exercice (not before, not after)
+     2014-12-13 done
+
+ 493 2014-12- 4 ViewEntries: setting effect dates should refresh the 
+                display (but don't)
+     2014-12-13 fixed
+
  495 2014-12- 4 ExeClosing: have a balancing account per currency
                 these balancing accounts must not be settleable, nor
                 reconciliable
@@ -2177,6 +2175,9 @@
  496 2014-12- 4 entry_validate_by_ledger: only consider effect date
                 in the current exercice
      2014-12- 7 OK
+
+ 498 2014-12- 6 on import, display all the errors in a dialog box
+     2014-12-13 done
 
  499 2014-12- 6 entry: import past entries doesn't affect accounts nor
                 ledgers
@@ -2206,6 +2207,10 @@
  507 2014-12- 6 remove dossier_dates_changed signal ?
      2014-12- 7 done - svn #4258
 
+ 509 2014-12- 8 LedgerCombo: use same column enumeration than Ledger
+                Treeview (instead of two booleans)
+     2014-12-13 done
+
  511 2014-12- 8 AccountProperties: a detail account with entries should
                 have currencies disabled (idem for root account)
      2014-12- 9 done - svn #4267
@@ -2215,6 +2220,9 @@
 
  515 2014-12- 9 refactor ledger amount names as account
      2014-12- 9 done - svn #4265
+
+ 517 2014-12-10 define two new entry status: PAST and FUTURE
+     2014-12-13 done - svn #4293
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

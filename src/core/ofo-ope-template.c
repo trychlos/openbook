@@ -818,12 +818,17 @@ ofo_ope_template_get_upd_stamp( const ofoOpeTemplate *model )
 gboolean
 ofo_ope_template_is_deletable( const ofoOpeTemplate *model, ofoDossier *dossier )
 {
+	const gchar *mnemo;
+
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
 	if( !OFO_BASE( model )->prot->dispose_has_run ){
 
-		return( !ofo_entry_use_ope_template( dossier, ofo_ope_template_get_mnemo( model )));
+		mnemo = ofo_ope_template_get_mnemo( model );
+
+		return( !ofo_entry_use_ope_template( dossier, mnemo ) &&
+				!ofo_dossier_use_ope_template( dossier, mnemo ));
 	}
 
 	return( FALSE );
