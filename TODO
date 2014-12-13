@@ -344,12 +344,6 @@
  480 2014-11-30 ofaBoxed class is renamed to ofaBox
                 ofaIBoxed becomes the corresponding interface
 
- 481 2014-12- 1 review ofaCurrencyCombo
-
- 486 2014-12- 2 ledger: not deletable if referenced in dossier
-
- 487 2014-12- 2 ope_template: not deletable if referenced in dossier
-
  490 2014-12- 2 ExeClosing: implement ledger select, ope select
 
  494 2014-12- 4 ExeClosing: have a dossier option to have only one  
@@ -2136,6 +2130,9 @@
  478 2014-11-30 have a decimal dot combo
      2014-11-30 done - svn #4215
 
+ 481 2014-12- 1 review ofaCurrencyCombo
+     2014-12-13 done
+
  482 2014-12- 2 change BAT_URI to X(256)
      2014-12- 7 done - svn #4248
 
@@ -2147,6 +2144,12 @@
 
  485 2014-12- 2 remove useless dos_exe_id and dos_last_exe_id
      2014-12- 7 done - svn #4253
+
+ 486 2014-12- 2 ledger: not deletable if referenced in dossier
+     2014-12-13 done - svn #4294
+
+ 487 2014-12- 2 ope_template: not deletable if referenced in dossier
+     2014-12-13 done - svn #4294
 
  488 2014-12- 2 when the begin exercice date misses, directly open the
                 dossier properties for updates
