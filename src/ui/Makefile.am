@@ -151,6 +151,8 @@ openbook_SOURCES = \
 	ofa-iprintable.h									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
+	ofa-ledger-istore.c									\
+	ofa-ledger-istore.h									\
 	ofa-ledger-properties.c								\
 	ofa-ledger-properties.h								\
 	ofa-ledger-treeview.c								\
