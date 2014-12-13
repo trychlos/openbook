@@ -67,11 +67,28 @@ typedef struct {
 
 /**
  * ofaEntryStatus:
+ *
+ * @ENT_STATUS_PAST: status attached to the entries imported from a past
+ *  exercice; these entries are not imputed on accounts nor ledgers
+ *
+ * @ENT_STATUS_ROUGH:
+ * @ENT_STATUS_VALIDATED:
+ * @ENT_STATUS_DELETED:
+ *
+ * @ENT_STATUS_FUTURE: status attached to the entries imported or created
+ *  for a future exercice; these entries are imputed on the corresponding
+ *  solde of accounts and ledgers.
+ *
+ * IMPORTANT MAINTAINER NOTE: do NOT modify the value of the already
+ * defined status as this same value is written in the database
+ * (or refactor the database content).
  */
 typedef enum {
-	ENT_STATUS_ROUGH = 1,
+	ENT_STATUS_PAST = 1,
+	ENT_STATUS_ROUGH,
 	ENT_STATUS_VALIDATED,
-	ENT_STATUS_DELETED
+	ENT_STATUS_DELETED,
+	ENT_STATUS_FUTURE
 }
 	ofaEntryStatus;
 
@@ -158,6 +175,8 @@ ofxCounter     ofo_entry_get_settlement_number( const ofoEntry *entry );
 const gchar   *ofo_entry_get_settlement_user  ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_settlement_stamp ( const ofoEntry *entry );
 
+GDate         *ofo_entry_get_min_deffect      ( const ofoEntry *entry, ofoDossier *dossier );
+
 GDate         *ofo_entry_get_max_val_deffect  ( ofoDossier *dossier, const gchar *account, GDate *date );
 GDate         *ofo_entry_get_max_rough_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
 GDate         *ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
@@ -180,6 +199,8 @@ void           ofo_entry_set_status           ( ofoEntry *entry, ofaEntryStatus 
 void           ofo_entry_set_concil_dval      ( ofoEntry *entry, const GDate *date );
 void           ofo_entry_set_concil_user      ( ofoEntry *entry, const gchar *user );
 void           ofo_entry_set_concil_stamp     ( ofoEntry *entry, const GTimeVal *stamp );
+
+gboolean       ofo_entry_compute_status       ( ofoEntry *entry, ofoDossier *dossier );
 
 gboolean       ofo_entry_is_valid             ( ofoDossier *dossier,
 													const GDate *deffect, const GDate *dope,

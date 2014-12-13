@@ -118,9 +118,11 @@ struct _ofaViewEntriesPrivate {
 
 	/* frame 3: entry status
 	 */
+	gboolean           display_past;
 	gboolean           display_rough;
 	gboolean           display_validated;
 	gboolean           display_deleted;
+	gboolean           display_future;
 
 	/* frame 4: visible columns
 	 */
@@ -220,9 +222,7 @@ static const gchar *st_pref_ledger      = "ViewEntriesLedger";
 static const gchar *st_pref_account     = "ViewEntriesAccount";
 static const gchar *st_pref_d_from      = "ViewEntriesDFrom";
 static const gchar *st_pref_d_to        = "ViewEntriesDTo";
-static const gchar *st_pref_st_rough    = "ViewEntriesStRough";
-static const gchar *st_pref_st_valid    = "ViewEntriesStValidated";
-static const gchar *st_pref_st_deleted  = "ViewEntriesStDeleted";
+static const gchar *st_pref_status      = "ViewEntriesStatus";
 static const gchar *st_pref_columns     = "ViewEntriesColumns";
 static const gchar *st_pref_sort_c      = "ViewEntriesSortC";
 static const gchar *st_pref_sort_s      = "ViewEntriesSortS";
@@ -611,35 +611,65 @@ setup_status_selection( ofaViewEntries *self )
 	static const gchar *thisfn = "ofa_view_entries_setup_status_selection";
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *button;
-	gboolean brough, bvalid, bdeleted;
+	gboolean bpast, brough, bvalid, bdeleted, bfuture;
+	GList *prefs, *it;
+	const gchar *cstr;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
 
+	prefs = ofa_settings_get_string_list( st_pref_status );
+	it = prefs;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	bpast = my_utils_boolean_from_str( cstr );
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	brough = my_utils_boolean_from_str( cstr );
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	bvalid = my_utils_boolean_from_str( cstr );
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	bdeleted = my_utils_boolean_from_str( cstr );
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	bfuture = my_utils_boolean_from_str( cstr );
+	ofa_settings_free_string_list( prefs );
+
+	if( !bpast && !brough && !bvalid && !bdeleted && !bfuture ){
+		brough = TRUE;
+	}
+
+	button = my_utils_container_get_child_by_name( priv->top_box, "f3-past" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
+	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_past );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bpast );
+
 	button = my_utils_container_get_child_by_name( priv->top_box, "f3-rough" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
 	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_rough );
-	g_object_set_data( G_OBJECT( button ), DATA_ROW_STATUS, ( gpointer ) st_pref_st_rough );
-	brough = ofa_settings_get_boolean( st_pref_st_rough );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), brough );
 
 	button = my_utils_container_get_child_by_name( priv->top_box, "f3-validated" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
 	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_validated );
-	g_object_set_data( G_OBJECT( button ), DATA_ROW_STATUS, ( gpointer ) st_pref_st_valid );
-	bvalid = ofa_settings_get_boolean( st_pref_st_valid );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalid );
 
 	button = my_utils_container_get_child_by_name( priv->top_box, "f3-deleted" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
 	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_deleted );
-	g_object_set_data( G_OBJECT( button ), DATA_ROW_STATUS, ( gpointer ) st_pref_st_deleted );
-	bdeleted = ofa_settings_get_boolean( st_pref_st_deleted );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bdeleted );
+
+	button = my_utils_container_get_child_by_name( priv->top_box, "f3-future" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
+	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_future );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bfuture );
 
 	/* for now, do not display deleted entries */
 	gtk_widget_set_sensitive( button, FALSE );
@@ -1901,6 +1931,9 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 			status = get_row_status( self, tmodel, iter );
 
 			switch( status ){
+				case ENT_STATUS_PAST:
+					visible = priv->display_past;
+					break;
 				case ENT_STATUS_ROUGH:
 					visible = priv->display_rough;
 					break;
@@ -1909,6 +1942,9 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaViewEntries *self )
 					break;
 				case ENT_STATUS_DELETED:
 					visible = priv->display_deleted;
+					break;
+				case ENT_STATUS_FUTURE:
+					visible = priv->display_future;
 					break;
 			}
 
@@ -2066,21 +2102,30 @@ on_visible_column_toggled( GtkToggleButton *button, ofaViewEntries *self )
 }
 
 /*
- * display entries based on their validation status (rough, validated
- *  or deleted)
+ * display entries based on their status (past, rough, validated,
+ *  deleted or future)
  */
 static void
 on_entry_status_toggled( GtkToggleButton *button, ofaViewEntries *self )
 {
+	ofaViewEntriesPrivate *priv;
 	gboolean *visible_flag;
-	const gchar *pref;
+	gchar *prefs;
+
+	priv = self->priv;
 
 	visible_flag = ( gboolean * ) g_object_get_data( G_OBJECT( button ), DATA_PRIV_VISIBLE );
 	*visible_flag = gtk_toggle_button_get_active( button );
 	refresh_display( self );
 
-	pref = g_object_get_data( G_OBJECT( button ), DATA_ROW_STATUS );
-	ofa_settings_set_boolean( pref, *visible_flag );
+	prefs = g_strdup_printf( "%s;%s;%s;%s;%s;",
+					priv->display_past ? "True":"False",
+					priv->display_rough ? "True":"False",
+					priv->display_validated ? "True":"False",
+					priv->display_deleted ? "True":"False",
+					priv->display_future ? "True":"False" );
+	ofa_settings_set_string( st_pref_status, prefs );
+	g_free( prefs );
 }
 
 /*

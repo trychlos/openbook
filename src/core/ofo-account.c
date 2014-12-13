@@ -395,18 +395,18 @@ on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data )
 static void
 on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 {
-	static const gchar *thisfn = "ofo_account_on_new_object_entry";
+	ofaEntryStatus status;
 	ofoAccount *account;
 	gdouble debit, credit, prev;
-	const GDate *deffect, *exe_end, *exe_begin;
 
-	/* the only case where an entry is created with a 'validated' status
-	 * is an imported entry in the past (before the beginning of the
-	 * exercice) - in this case, the 'new_object' message is not send */
-	g_return_if_fail( ofo_entry_get_status( entry ) == ENT_STATUS_ROUGH );
-
-	deffect = ofo_entry_get_deffect( entry );
-	g_return_if_fail( my_date_is_valid( deffect ));
+	/* the only case where an entry is created with a 'past' status
+	 *  is an imported entry in the past (before the beginning of the
+	 *  exercice) - in this case, the 'new_object' message should not be
+	 *  sent
+	 * if not in the past, only allowed status are 'rough' or 'future' */
+	status = ofo_entry_get_status( entry );
+	g_return_if_fail( status == ENT_STATUS_PAST );
+	g_return_if_fail( status != ENT_STATUS_ROUGH && status != ENT_STATUS_FUTURE );
 
 	account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
@@ -414,38 +414,36 @@ on_new_object_entry( ofoDossier *dossier, ofoEntry *entry )
 	debit = ofo_entry_get_debit( entry );
 	credit = ofo_entry_get_credit( entry );
 
-	exe_begin = ofo_dossier_get_exe_begin( dossier );
-	exe_end = ofo_dossier_get_exe_end( dossier );
-
 	/* impute the new entry either to the debit or the credit of daily
 	 * or futur balances depending of the position of the effect date
 	 * vs. ending date of the exercice
 	 */
-	if( my_date_is_valid( exe_end ) && my_date_compare( exe_end, deffect ) < 0 ){
-		/* entry in the future */
-		if( debit ){
-			prev = ofo_account_get_futur_debit( account );
-			account_set_futur_debit( account, prev+debit );
+	switch( status ){
+		case ENT_STATUS_ROUGH:
+			if( debit ){
+				prev = ofo_account_get_rough_debit( account );
+				account_set_rough_debit( account, prev+debit );
 
-		} else {
-			prev = ofo_account_get_futur_credit( account );
-			account_set_futur_credit( account, prev+credit );
-		}
+			} else {
+				prev = ofo_account_get_rough_credit( account );
+				account_set_rough_credit( account, prev+credit );
+			}
+			break;
 
-	} else if( my_date_is_valid( exe_begin ) && my_date_compare( exe_begin, deffect ) > 0 ){
-		g_warning( "%s: entry %ld is in the past", thisfn, ofo_entry_get_number( entry ));
-		g_return_if_reached();
+		case ENT_STATUS_FUTURE:
+			if( debit ){
+				prev = ofo_account_get_futur_debit( account );
+				account_set_futur_debit( account, prev+debit );
 
-	} else {
-		/* entry in the exercice */
-		if( debit ){
-			prev = ofo_account_get_rough_debit( account );
-			account_set_rough_debit( account, prev+debit );
+			} else {
+				prev = ofo_account_get_futur_credit( account );
+				account_set_futur_credit( account, prev+credit );
+			}
+			break;
 
-		} else {
-			prev = ofo_account_get_rough_credit( account );
-			account_set_rough_credit( account, prev+credit );
-		}
+		default:
+			g_return_if_reached();
+			break;
 	}
 
 	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){

@@ -75,10 +75,6 @@ struct _ofoEntryPrivate {
 	ofxCounter     stlmt_number;
 	gchar         *stlmt_user;
 	GTimeVal       stlmt_stamp;
-
-	/* runtime data
-	 */
-	gboolean       signaling_ok;
 };
 
 /* manage the abbreviated localized status
@@ -90,9 +86,11 @@ typedef struct {
 	sStatus;
 
 static sStatus st_status[] = {
+		{ ENT_STATUS_PAST,      N_( "P" ) },
 		{ ENT_STATUS_ROUGH,     N_( "R" ) },
 		{ ENT_STATUS_VALIDATED, N_( "V" ) },
 		{ ENT_STATUS_DELETED,   N_( "D" ) },
+		{ ENT_STATUS_FUTURE,    N_( "F" ) },
 		{ 0 },
 };
 
@@ -192,7 +190,6 @@ ofo_entry_init( ofoEntry *self )
 	my_date_clear( &self->priv->dope );
 	my_date_clear( &self->priv->concil_dval );
 	self->priv->status = ENT_STATUS_ROUGH;
-	self->priv->signaling_ok = TRUE;
 }
 
 static void
@@ -1577,6 +1574,45 @@ ofo_entry_get_settlement_stamp( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_min_deffect:
+ *
+ * Returns: the minimal allowed effect date on the dossier for this
+ * ledger.
+ *
+ * Ledger should be set before calling this function.
+ *
+ * The returned value may be %NULL. Else, it should be g_free() by the
+ * caller.
+ */
+GDate *
+ofo_entry_get_min_deffect( const ofoEntry *entry, ofoDossier *dossier )
+{
+	GDate *date;
+	const gchar *mnemo;
+	ofoLedger *ledger;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+
+	date = NULL;
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		ledger = NULL;
+		mnemo = ofo_entry_get_ledger( entry );
+		if( mnemo && g_utf8_strlen( mnemo, -1 )){
+			ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
+			g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
+		}
+
+		date = g_new0( GDate, 1 );
+		ofo_dossier_get_min_deffect( date, dossier, ledger );
+	}
+
+	return( date );
+}
+
+/**
  * ofo_entry_get_max_val_deffect:
  *
  * Returns: the greatest effect date of validated entries on the account.
@@ -2050,6 +2086,67 @@ entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp )
 	}
 }
 
+/*
+ * ofo_entry_compute_status:
+ *
+ * Set the entry status depending of the exercice beginning and ending
+ * dates of the dossier. If the entry is inside the current exercice,
+ * then the set status is ENT_STATUS_ROUGH.
+ *
+ * Returns: %FALSE if the effect date is not valid regarding the last
+ * closing date of the associated ledger.
+ */
+gboolean
+ofo_entry_compute_status( ofoEntry *entry, ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_entry_compute_status";
+	const GDate *exe_begin, *exe_end, *deffect;
+	GDate *min_deffect;
+	gboolean is_valid;
+	gchar *sdeffect, *sdmin;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+
+	is_valid = FALSE;
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		is_valid = TRUE;
+		exe_begin = ofo_dossier_get_exe_begin( dossier );
+		exe_end = ofo_dossier_get_exe_end( dossier );
+		deffect = ofo_entry_get_deffect( entry );
+		g_return_val_if_fail( my_date_is_valid( deffect ), FALSE );
+
+		/* what to do regarding the effect date ? */
+		if( my_date_is_valid( exe_begin ) && my_date_compare( deffect, exe_begin ) < 0 ){
+			/* entry is in the past */
+			ofo_entry_set_status( entry, ENT_STATUS_PAST );
+
+		} else if( my_date_is_valid( exe_end ) && my_date_compare( deffect, exe_end ) > 0 ){
+			/* entry is in the future */
+			ofo_entry_set_status( entry, ENT_STATUS_FUTURE );
+
+		} else {
+			min_deffect = ofo_entry_get_min_deffect( entry, dossier );
+			is_valid = !my_date_is_valid( min_deffect ) || my_date_compare( deffect, min_deffect ) >= 0;
+			g_free( min_deffect );
+			if( !is_valid ){
+				sdeffect = my_date_to_str( deffect, MY_DATE_DMYY );
+				sdmin = my_date_to_str( min_deffect, MY_DATE_DMYY );
+				g_warning(
+						"%s: entry effect date %s is lesser than minimal allowed %s",
+						thisfn, sdeffect, sdmin );
+				g_free( sdmin );
+				g_free( sdeffect );
+				return( FALSE );
+			}
+			ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
+		}
+	}
+
+	return( is_valid );
+}
+
 /**
  * ofo_entry_is_valid:
  */
@@ -2167,7 +2264,7 @@ ofo_entry_insert( ofoEntry *entry, ofoDossier *dossier )
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ))){
 
-			if( entry->priv->signaling_ok ){
+			if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
 				g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_NEW_OBJECT, g_object_ref( entry ));
 			}
 
@@ -2591,11 +2688,13 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, o
 
 /**
  * ofo_entry_validate:
+ *
+ * entry must be in 'rough' status
  */
 gboolean
 ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
 {
-	const GDate *effect, *begin, *end;
+	ofaEntryStatus status;
 	gchar *query;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
@@ -2603,33 +2702,23 @@ ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
 
 	if( !OFO_BASE( entry )->prot->dispose_has_run ){
 
-		begin = ofo_dossier_get_exe_begin( dossier );
-		g_return_val_if_fail( my_date_is_valid( begin ), FALSE );
+		status = ofo_entry_get_status( entry );
+		g_return_val_if_fail( status == ENT_STATUS_ROUGH, FALSE );
 
-		end = ofo_dossier_get_exe_end( dossier );
-		g_return_val_if_fail( my_date_is_valid( end ), FALSE );
+		ofo_entry_set_status( entry, ENT_STATUS_VALIDATED );
 
-		effect = ofo_entry_get_deffect( entry );
-		g_return_val_if_fail( my_date_is_valid( effect ), FALSE );
+		query = g_strdup_printf(
+						"UPDATE OFA_T_ENTRIES "
+						"	SET ENT_STATUS=%d "
+						"	WHERE ENT_NUMBER=%ld",
+								ofo_entry_get_status( entry ),
+								ofo_entry_get_number( entry ));
 
-		if( my_date_compare( begin, effect ) <= 0 &&
-				my_date_compare( effect, end ) <= 0 ){
+		ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+		g_free( query );
 
-			ofo_entry_set_status( entry, ENT_STATUS_VALIDATED );
-
-			query = g_strdup_printf(
-							"UPDATE OFA_T_ENTRIES "
-							"	SET ENT_STATUS=%d "
-							"	WHERE ENT_NUMBER=%ld",
-									ofo_entry_get_status( entry ),
-									ofo_entry_get_number( entry ));
-
-			ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
-			g_free( query );
-
-			/* use the dossier signaling system to update the account */
-			g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_VALIDATED_ENTRY, entry );
-		}
+		/* use the dossier signaling system to update account and ledger */
+		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_VALIDATED_ENTRY, entry );
 	}
 
 	return( FALSE );
@@ -2926,18 +3015,19 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	ofoAccount *account;
 	ofoLedger *ledger;
 	gdouble debit, credit;
-	gdouble tot_debits, tot_credits;
-	const GDate *exe_begin, *exe_end, *led_close, *deffect;
-	gchar *sdeffect, *sled_close, *msg;
+	gdouble past_debits, past_credits, exe_debits, exe_credits, fut_debits, fut_credits;
+	gchar *sdeffect, *msg;
+	ofaEntryStatus status;
 
 	dataset = NULL;
 	line = 0;
 	errors = 0;
-	tot_debits = 0;
-	tot_credits = 0;
-
-	exe_begin = ofo_dossier_get_exe_begin( dossier );
-	exe_end = ofo_dossier_get_exe_end( dossier );
+	past_debits = 0;
+	past_credits = 0;
+	exe_debits = 0;
+	exe_credits = 0;
+	fut_debits = 0;
+	fut_credits = 0;
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
@@ -2972,7 +3062,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			continue;
 		}
 		ofo_entry_set_deffect( entry, &date );
-		deffect = ofo_entry_get_deffect( entry );
 
 		/* entry label */
 		itf = itf ? itf->next : NULL;
@@ -3010,7 +3099,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			continue;
 		}
 		ofo_entry_set_ledger( entry, cstr );
-		led_close = ofo_ledger_get_last_close( ledger );
 
 		/* operation template - optional */
 		itf = itf ? itf->next : NULL;
@@ -3074,7 +3162,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			ofo_entry_set_credit( entry, credit );
 		} else {
 			msg = g_strdup_printf(
-					_( "invalid entry amounts: debit=%.5lf, credit=%.5lf" ), debit, credit );
+					_( "invalid entry amounts: debit=%'.5lf, credit=%'.5lf" ), debit, credit );
 			ofa_iimportable_set_import_error( importable, line, msg );
 			g_free( msg );
 			errors += 1;
@@ -3082,39 +3170,67 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		}
 
 		/* what to do regarding the effect date ? */
-		if( my_date_is_valid( exe_begin ) && my_date_compare( deffect, exe_begin ) < 0 ){
-			/* entry is in the past */
-			ofo_entry_set_status( entry, ENT_STATUS_VALIDATED );
-			entry->priv->signaling_ok = FALSE;
-
-		} else if( my_date_is_valid( exe_end ) && my_date_compare( deffect, exe_end ) > 0 ){
-			/* entry is in the future */
-
-		} else if( my_date_is_valid( led_close ) && my_date_compare( deffect, led_close ) <= 0 ){
-			sdeffect = my_date_to_str( deffect, MY_DATE_DMYY );
-			sled_close = my_date_to_str( led_close, MY_DATE_DMYY );
+		if( !ofo_entry_compute_status( entry, dossier )){
+			sdeffect = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
 			msg = g_strdup_printf(
-					_( "entry effect date %s before ledger last closing %s" ), sdeffect, sled_close );
+					_( "entry effect date %s regarding exercice beginning and ledger last closing dates" ),
+					sdeffect );
 			ofa_iimportable_set_import_error( importable, line, msg );
-			g_free( msg );
-			g_free( sled_close );
 			g_free( sdeffect );
+			g_free( msg );
 			errors += 1;
 			continue;
 		}
 
+		status = ofo_entry_get_status( entry );
+		switch( status ){
+			case ENT_STATUS_PAST:
+				past_debits += debit;
+				past_credits += credit;
+				break;
+
+			case ENT_STATUS_ROUGH:
+				exe_debits += debit;
+				exe_credits += credit;
+				break;
+
+			case ENT_STATUS_FUTURE:
+				fut_debits += debit;
+				fut_credits += credit;
+				break;
+
+			default:
+				msg = g_strdup_printf( _( "invalid entry status: %d" ), status );
+				ofa_iimportable_set_import_error( importable, line, msg );
+				g_free( msg );
+				errors += 1;
+				continue;
+		}
+
 		dataset = g_list_prepend( dataset, entry );
 		ofa_iimportable_set_import_ok( importable );
-		tot_debits += debit;
-		tot_credits += credit;
 	}
 
 	/* entries must be balanced:
 	 * as we are storing 5 decimal digits in the DBMS, so this is the
 	 * maximal rounding error accepted */
-	if( abs( tot_debits - tot_credits ) > 0.00001 ){
+	if( abs( past_debits - past_credits ) > 0.00001 ){
 		msg = g_strdup_printf(
-				_( "entries are not balanced: tot_debits=%.5lf, tot_credits=%.5lf" ), tot_debits, tot_credits );
+				_( "past entries are not balanced: past_debits=%'.5lf, past_credits=%'.5lf" ), past_debits, past_credits );
+		ofa_iimportable_set_import_error( importable, line, msg );
+		g_free( msg );
+		errors += 1;
+	}
+	if( abs( exe_debits - exe_credits ) > 0.00001 ){
+		msg = g_strdup_printf(
+				_( "exercice entries are not balanced: exe_debits=%'.5lf, exe_credits=%'.5lf" ), exe_debits, exe_credits );
+		ofa_iimportable_set_import_error( importable, line, msg );
+		g_free( msg );
+		errors += 1;
+	}
+	if( abs( fut_debits - fut_credits ) > 0.00001 ){
+		msg = g_strdup_printf(
+				_( "future entries are not balanced: fut_debits=%'.5lf, fut_credits=%'.5lf" ), fut_debits, fut_credits );
 		ofa_iimportable_set_import_error( importable, line, msg );
 		g_free( msg );
 		errors += 1;

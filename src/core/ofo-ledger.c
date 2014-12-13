@@ -279,75 +279,58 @@ on_new_object( ofoDossier *dossier, ofoBase *object, gpointer user_data )
 static void
 on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry )
 {
-	static const gchar *thisfn = "ofo_ledger_on_new_ledger_entry";
+	ofaEntryStatus status;
 	const gchar *mnemo, *currency;
 	ofoLedger *ledger;
-	const GDate *exe_end, *deffect, *last_close;
-	gchar *sdeffect, *sclose, *str;
 	sDetailCur *detail;
 	ofxAmount amount;
 
-	/* the only case where an entry is created with a 'validated' status
-	 * is an imported entry in the past (before the beginning of the
-	 * exercice) - in this case, the 'new_object' message is not send */
-	g_return_if_fail( ofo_entry_get_status( entry ) == ENT_STATUS_ROUGH );
+	/* the only case where an entry is created with a 'past' status
+	 *  is an imported entry in the past (before the beginning of the
+	 *  exercice) - in this case, the 'new_object' message should not be
+	 *  sent
+	 * if not in the past, only allowed status are 'rough' or 'future' */
+	status = ofo_entry_get_status( entry );
+	g_return_if_fail( status == ENT_STATUS_PAST );
+	g_return_if_fail( status != ENT_STATUS_ROUGH && status != ENT_STATUS_FUTURE );
 
 	mnemo = ofo_entry_get_ledger( entry );
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
-	if( ledger ){
-		g_return_if_fail( OFO_IS_LEDGER( ledger ));
+	currency = ofo_entry_get_currency( entry );
+	detail = ledger_new_cur_with_code( ledger, currency );
+	g_return_if_fail( detail );
 
-		/* it is forbidden to have a new entry on a closed ledger */
-		last_close = ofo_ledger_get_last_close( ledger );
-		deffect = ofo_entry_get_deffect( entry );
-		if( my_date_is_valid( last_close ) && my_date_compare( deffect, last_close ) <= 0 ){
-			sdeffect = my_date_to_str( deffect, MY_DATE_DMYY );
-			sclose = my_date_to_str( last_close, MY_DATE_DMYY );
-			str = g_strdup_printf(
-						"Invalid entry effect %s while ledger was closed on %s", sdeffect, sclose );
-			g_warning( "%s: %s", thisfn, str );
-			g_free( str );
-			g_free( sdeffect );
-			g_free( sclose );
-			g_return_if_reached();
-		}
+	amount = ofo_entry_get_debit( entry );
 
-		currency = ofo_entry_get_currency( entry );
-
-		detail = ledger_new_cur_with_code( ledger, currency );
-		g_return_if_fail( detail );
-
-		amount = ofo_entry_get_debit( entry );
-		exe_end = ofo_dossier_get_exe_end( dossier );
-
-		if( my_date_is_valid( exe_end ) && my_date_compare( deffect, exe_end ) > 0 ){
-			/* entry is in the future */
-			if( amount ){
-				detail->futur_debit += amount;
-			} else {
-				detail->futur_credit += ofo_entry_get_credit( entry );
-			}
-		} else {
-			/* entry is in the exercice */
+	switch( status ){
+		case ENT_STATUS_ROUGH:
 			if( amount ){
 				detail->rough_debit += amount;
 
 			} else {
 				detail->rough_credit += ofo_entry_get_credit( entry );
 			}
-		}
+			break;
 
-		if( ledger_do_update_detail_cur( ledger, detail, ofo_dossier_get_dbms( dossier ))){
-			g_signal_emit_by_name(
-					G_OBJECT( dossier ),
-					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
-		}
+		case ENT_STATUS_FUTURE:
+			if( amount ){
+				detail->futur_debit += amount;
+			} else {
+				detail->futur_credit += ofo_entry_get_credit( entry );
+			}
+			break;
 
-	} else {
-		g_warning( "%s: ledger not found: %s", thisfn, mnemo );
+		default:
+			g_return_if_reached();
 	}
 
+	if( ledger_do_update_detail_cur( ledger, detail, ofo_dossier_get_dbms( dossier ))){
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), NULL );
+	}
 }
 
 static void
@@ -413,29 +396,24 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 
 	mnemo = ofo_entry_get_ledger( entry );
 	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
-	if( ledger ){
-		g_return_if_fail( OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
-		currency = ofo_entry_get_currency( entry );
-		detail = ledger_find_cur_by_code( ledger, currency );
-		/* the entry has necessarily be already recorded while in rough status */
-		g_return_if_fail( detail );
+	currency = ofo_entry_get_currency( entry );
+	detail = ledger_find_cur_by_code( ledger, currency );
+	/* the entry has necessarily be already recorded while in rough status */
+	g_return_if_fail( detail );
 
-		debit = ofo_entry_get_debit( entry );
-		detail->val_debit += debit;
-		detail->rough_debit -= debit;
-		credit = ofo_entry_get_credit( entry );
-		detail->val_credit += credit;
-		detail->rough_credit -= credit;
+	debit = ofo_entry_get_debit( entry );
+	detail->val_debit += debit;
+	detail->rough_debit -= debit;
+	credit = ofo_entry_get_credit( entry );
+	detail->val_credit += credit;
+	detail->rough_credit -= credit;
 
-		if( ledger_do_update_detail_cur( ledger, detail, ofo_dossier_get_dbms( dossier ))){
-			g_signal_emit_by_name(
-					G_OBJECT( dossier ),
-					SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), mnemo );
-		}
-
-	} else {
-		g_warning( "%s: ledger not found: %s", thisfn, mnemo );
+	if( ledger_do_update_detail_cur( ledger, detail, ofo_dossier_get_dbms( dossier ))){
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), mnemo );
 	}
 }
 
