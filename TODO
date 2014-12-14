@@ -405,14 +405,21 @@
                 import ledgers:  0.02982 s (9 rows)
                 import entries:  0.13268 s (2431 rows)
 
- 526 2014-12-13 ExeForward: there is no sense to check ledger attached
-                to the operation template
-
  527 2014-12-13 ExeForward: as DossierCur depends of ExeForward (via
                 the button), validation should not be allowed while
                 DossierCur is not set
 
- 528
+ 528 2014-12-13 Settlement: after dbms update:
+                 The model has been modified from within
+                gtk_tree_selection_selected_foreach. This function is for
+                observing the selections of the tree only.  If you are
+                trying to get all selected items from the tree, try using
+                gtk_tree_selection_get_selected_rows instead.
+
+ 529 2014-12-13 ExeClosing: piece=SOLDE
+                label = Sole du compte nnnn - llll
+
+ 530
 
 -----------------------------------------------------------------------
  DONE
@@ -2246,6 +2253,10 @@
 
  517 2014-12-10 define two new entry status: PAST and FUTURE
      2014-12-13 done - svn #4293
+
+ 526 2014-12-13 ExeForward: there is no sense to check ledger attached
+                to the operation template
+     2014-12-13 done - svn #4301
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

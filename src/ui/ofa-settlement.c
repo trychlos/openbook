@@ -162,7 +162,7 @@ static void           enum_selected( GtkTreeModel *tmodel, GtkTreePath *path, Gt
 static void           on_settle_clicked( GtkButton *button, ofaSettlement *self );
 static void           on_unsettle_clicked( GtkButton *button, ofaSettlement *self );
 static void           update_selection( ofaSettlement *self, gboolean settle );
-static void           enum_for_update( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, sEnumSelected *ses );
+static void           update_row( GtkTreeModel *tmodel, GtkTreeIter *iter, sEnumSelected *ses );
 
 static void
 settlement_finalize( GObject *instance )
@@ -762,6 +762,9 @@ display_entry( ofaSettlement *self, GtkTreeModel *tmodel, ofoEntry *entry )
 	g_free( sdope );
 }
 
+/*
+ * recompute the balance per currency each time the selection changes
+ */
 static void
 on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *self )
 {
@@ -788,7 +791,7 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *
 }
 
 /*
- * enumeration called each time the selection is changed
+ * a function called each time the selection is changed, for each selected row
  */
 static void
 enum_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, sEnumSelected *ses )
@@ -835,12 +838,22 @@ on_unsettle_clicked( GtkButton *button, ofaSettlement *self )
 	update_selection( self, FALSE );
 }
 
+/*
+ * we update here the rows to settled/unsettled
+ * due to the GtkTreeModelFilter, this may lead the updated row to
+ * disappear from the view -> so update based on GtkListStore iters
+ */
 static void
 update_selection( ofaSettlement *self, gboolean settle )
 {
 	ofaSettlementPrivate *priv;
 	GtkTreeSelection *select;
 	sEnumSelected ses;
+	GList *selected_paths, *ipath;
+	GtkTreeModel *tfilter, *tmodel;
+	gchar *path_str;
+	GtkTreeIter filter_iter, *model_iter;
+	GList *list_iters, *it;
 
 	priv = self->priv;
 
@@ -853,8 +866,30 @@ update_selection( ofaSettlement *self, gboolean settle )
 	}
 
 	select = gtk_tree_view_get_selection( priv->tview );
+	selected_paths = gtk_tree_selection_get_selected_rows( select, &tfilter );
+	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( tfilter ));
+	list_iters = NULL;
 
-	gtk_tree_selection_selected_foreach( select, ( GtkTreeSelectionForeachFunc ) enum_for_update, &ses );
+	/* convert the list of selected path on the tfilter to a list of
+	 * selected iters on the underlying tmodel (tstore) */
+	for( ipath=selected_paths ; ipath ; ipath=ipath->next ){
+		path_str = gtk_tree_path_to_string( ( GtkTreePath * ) ipath->data );
+		if( !gtk_tree_model_get_iter_from_string( tfilter, &filter_iter, path_str )){
+			g_return_if_reached();
+		}
+		g_free( path_str );
+		model_iter = g_new0( GtkTreeIter, 1 );
+		gtk_tree_model_filter_convert_iter_to_child_iter(
+				GTK_TREE_MODEL_FILTER( tfilter ), model_iter, &filter_iter );
+		list_iters = g_list_append( list_iters, model_iter );
+	}
+	g_list_free_full( selected_paths, ( GDestroyNotify ) gtk_tree_path_free );
+
+	/* now update the rows based on this list */
+	for( it=list_iters ; it ; it=it->next ){
+		update_row( tmodel, ( GtkTreeIter * ) it->data, &ses );
+	}
+	g_list_free_full( list_iters, ( GDestroyNotify ) g_free );
 
 	gtk_widget_set_sensitive( priv->settle_btn, ses.unsettled > 0 );
 	gtk_widget_set_sensitive( priv->unsettle_btn, ses.settled > 0 );
@@ -865,23 +900,23 @@ update_selection( ofaSettlement *self, gboolean settle )
 /*
  * enumeration called when we are clicking on 'settle' or 'unsettle'
  * button
+ *
+ * @tmodel: the underlying store tree model
+ * @iter: an iter on this model
  */
 static void
-enum_for_update( GtkTreeModel *tfilter, GtkTreePath *path, GtkTreeIter *iter, sEnumSelected *ses )
+update_row( GtkTreeModel *tmodel, GtkTreeIter *iter, sEnumSelected *ses )
 {
 	ofaSettlementPrivate *priv;
 	ofoEntry *entry;
-	GtkTreeModel *tmodel;
-	GtkTreeIter child_iter;
 	gint number;
 	gchar *snum;
 
 	priv = ses->self->priv;
 
 	/* get the object and update it, according to the clicked button */
-	gtk_tree_model_get( tfilter, iter,
-			ENT_COL_OBJECT, &entry,
-			-1 );
+
+	gtk_tree_model_get( tmodel, iter, ENT_COL_OBJECT, &entry, -1 );
 	g_object_unref( entry );
 
 	ofo_entry_update_settlement( entry, priv->dossier, ses->set_number );
@@ -893,14 +928,12 @@ enum_for_update( GtkTreeModel *tfilter, GtkTreePath *path, GtkTreeIter *iter, sE
 		snum = g_strdup( "" );
 	}
 
-	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( tfilter ));
-	gtk_tree_model_filter_convert_iter_to_child_iter( GTK_TREE_MODEL_FILTER( tfilter ), &child_iter, iter );
-	gtk_list_store_set( GTK_LIST_STORE( tmodel ), &child_iter,
+	gtk_list_store_set( GTK_LIST_STORE( tmodel ), iter,
 				ENT_COL_SETTLEMENT, snum,
 				-1 );
 
 	g_free( snum );
 
 	/* update counters in the structure */
-	enum_selected( tfilter, path, iter, ses );
+	enum_selected( tmodel, NULL, iter, ses );
 }
