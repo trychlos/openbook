@@ -154,8 +154,6 @@ struct _ofoAccountPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
-#define ACCOUNT_FORWARDABLE             "F"
-
 #define account_get_amount(I)           ofo_base_getter(ACCOUNT,account,amount,0,(I))
 #define account_get_counter(I)          ofo_base_getter(ACCOUNT,account,counter,0,(I))
 #define account_get_date(I)             ofo_base_getter(ACCOUNT,account,date,NULL,(I))

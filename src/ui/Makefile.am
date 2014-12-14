@@ -75,6 +75,8 @@ openbook_SOURCES = \
 	ofa-accounts-book.h									\
 	ofa-accounts-page.c									\
 	ofa-accounts-page.h									\
+	ofa-account-istore.c								\
+	ofa-account-istore.h								\
 	ofa-account-select.c								\
 	ofa-account-select.h								\
 	ofa-application.c									\

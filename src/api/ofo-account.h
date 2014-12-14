@@ -58,6 +58,7 @@ typedef struct {
 #define ACCOUNT_TYPE_DETAIL             "D"
 #define ACCOUNT_SETTLEABLE              "S"
 #define ACCOUNT_RECONCILIABLE           "R"
+#define ACCOUNT_FORWARDABLE             "F"
 
 void            ofo_account_free_balances        ( GList *balances );
 

@@ -390,7 +390,7 @@
                 implement the ofaIImportable interface
 
  521 2014-12-11 IExportable: use myProgressBar
-                getting ride of defined callbacks
+                getting rid of defined callbacks
 
  522 2014-12-12 pieces of dialogs should have the corresponding code
                 isolated and named accordingly (see ofaFileFormatPiece)
@@ -409,14 +409,7 @@
                 the button), validation should not be allowed while
                 DossierCur is not set
 
- 528 2014-12-13 Settlement: after dbms update:
-                 The model has been modified from within
-                gtk_tree_selection_selected_foreach. This function is for
-                observing the selections of the tree only.  If you are
-                trying to get all selected items from the tree, try using
-                gtk_tree_selection_get_selected_rows instead.
-
- 529 2014-12-13 ExeClosing: piece=SOLDE
+ 529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
 
  530
@@ -2257,6 +2250,14 @@
  526 2014-12-13 ExeForward: there is no sense to check ledger attached
                 to the operation template
      2014-12-13 done - svn #4301
+
+ 528 2014-12-13 Settlement: after dbms update:
+                 The model has been modified from within
+                gtk_tree_selection_selected_foreach. This function is for
+                observing the selections of the tree only.  If you are
+                trying to get all selected items from the tree, try using
+                gtk_tree_selection_get_selected_rows instead.
+     2014-12-14 fixed - svn #4302
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
