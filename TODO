@@ -412,7 +412,17 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
 
- 530
+ 530 2014-12-15 ViewEntries: no more display the entries !?
+                 + have some warning on initialization
+
+ 531 2014-12-15 replace myButtonsBox with ofaButtonsBox
+
+ 532 2014-12-15 the xxxIStore should have a singleton store, even if
+                data may be personalized per implementor object
+
+ 533 2014-12-15 xxxIStore: remove the useless  set_columns method
+
+ 534
 
 -----------------------------------------------------------------------
  DONE

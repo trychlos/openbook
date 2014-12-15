@@ -34,31 +34,33 @@
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-accounts-book.h"
+#include "ui/ofa-accounts-piece.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  */
 struct _ofaAccountSelectPrivate {
 
-	/* runtime
+	/* UI
 	 */
-	ofaAccountsBook  *child;
+	ofaAccountsPiece *accounts_piece;
+
+	GtkWidget        *ok_btn;
 
 	/* returned value
 	 */
-	gchar            *account_number;
+	gchar           *account_number;
 };
 
-static const gchar      *st_ui_xml = PKGUIDIR "/ofa-account-select.ui";
-static const gchar      *st_ui_id  = "AccountSelectDlg";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-account-select.ui";
+static const gchar *st_ui_id            = "AccountSelectDlg";
 
-static ofaAccountSelect *st_this   = NULL;
+static ofaAccountSelect *st_this        = NULL;
 
 G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_account_activated( const gchar *number, ofaAccountSelect *self );
+static void      on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_select( ofaAccountSelect *self );
@@ -126,8 +128,13 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
 }
 
 static void
-on_main_window_finalized( gpointer is_null, gpointer this_was_the_dialog )
+on_main_window_finalized( gpointer is_null, gpointer finalized_main_window )
 {
+	static const gchar *thisfn = "ofa_account_select_on_main_window_finalized";
+
+	g_debug( "%s: empty=%p, finalized_main_window=%p",
+			thisfn, ( void * ) is_null, ( void * ) finalized_main_window );
+
 	g_return_if_fail( st_this && OFA_IS_ACCOUNT_SELECT( st_this ));
 
 	g_clear_object( &st_this );
@@ -143,6 +150,7 @@ gchar *
 ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
+	ofaAccountSelectPrivate *priv;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -165,50 +173,49 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 		g_object_weak_ref( G_OBJECT( main_window ), ( GWeakNotify ) on_main_window_finalized, NULL );
 	}
 
-	g_free( st_this->priv->account_number );
-	st_this->priv->account_number = NULL;
+	priv = st_this->priv;
 
-	ofa_accounts_book_set_selected( st_this->priv->child, asked_number );
+	g_free( priv->account_number );
+	priv->account_number = NULL;
+
+	ofa_accounts_piece_set_selected( priv->accounts_piece, asked_number );
+
 	check_for_enable_dlg( st_this );
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
 
 	gtk_widget_hide( GTK_WIDGET( my_window_get_toplevel( MY_WINDOW( st_this ))));
 
-	return( g_strdup( st_this->priv->account_number ));
+	return( g_strdup( priv->account_number ));
 }
 
 static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaAccountSelectPrivate *priv;
-	GtkWidget *box;
-	ofsAccountsBookParms parms;
+	GtkContainer *container;
+	GtkWidget *parent;
 
 	priv = OFA_ACCOUNT_SELECT( dialog )->priv;
 
-	box = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this ))),
-					"top-box" );
-	g_return_if_fail( box && GTK_IS_BOX( box ));
+	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this )));
 
-	parms.main_window = MY_WINDOW( dialog )->prot->main_window;
-	parms.parent = GTK_CONTAINER( box );
-	parms.has_import = FALSE;
-	parms.has_export = FALSE;
-	parms.has_view_entries = FALSE;
-	parms.pfnSelected = NULL;
-	parms.pfnActivated = ( ofaAccountsBookCb ) on_account_activated;
-	parms.pfnViewEntries = NULL;
-	parms.user_data = dialog;
+	priv->ok_btn = my_utils_container_get_child_by_name( container, "btn-ok" );
 
-	priv->child = ofa_accounts_book_new( &parms );
+	parent = my_utils_container_get_child_by_name( container, "piece-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	ofa_accounts_book_init_view( st_this->priv->child, NULL );
+	priv->accounts_piece = ofa_accounts_piece_new();
+	ofa_accounts_piece_attach_to( priv->accounts_piece, GTK_CONTAINER( parent ));
+	ofa_accounts_piece_set_main_window( priv->accounts_piece, MY_WINDOW( dialog )->prot->main_window );
+	ofa_accounts_piece_set_buttons( priv->accounts_piece, FALSE );
+
+	g_signal_connect(
+			G_OBJECT( priv->accounts_piece ), "activated", G_CALLBACK( on_account_activated ), dialog );
 }
 
 static void
-on_account_activated( const gchar *number, ofaAccountSelect *self )
+on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountSelect *self )
 {
 	gtk_dialog_response(
 			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
@@ -218,16 +225,17 @@ on_account_activated( const gchar *number, ofaAccountSelect *self )
 static void
 check_for_enable_dlg( ofaAccountSelect *self )
 {
-	ofoAccount *account;
-	GtkWidget *btn;
+	ofaAccountSelectPrivate *priv;
+	gchar *account;
+	gboolean ok;
 
-	account = ofa_accounts_book_get_selected( self->priv->child );
+	priv = self->priv;
 
-	btn = my_utils_container_get_child_by_name(
-					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this ))),
-					"btn-ok" );
+	account = ofa_accounts_piece_get_selected( priv->accounts_piece );
+	ok = account && g_utf8_strlen( account, -1 );
+	g_free( account );
 
-	gtk_widget_set_sensitive( btn, account && OFO_IS_ACCOUNT( account ));
+	gtk_widget_set_sensitive( priv->ok_btn, ok );
 }
 
 static gboolean
@@ -239,12 +247,16 @@ v_quit_on_ok( myDialog *dialog )
 static gboolean
 do_select( ofaAccountSelect *self )
 {
-	ofoAccount *account;
+	ofaAccountSelectPrivate *priv;
+	gchar *account;
 
-	account = ofa_accounts_book_get_selected( self->priv->child );
-	if( account ){
-		self->priv->account_number = g_strdup( ofo_account_get_number( account ));
+	priv = self->priv;
+
+	account = ofa_accounts_piece_get_selected( priv->accounts_piece );
+	if( account && g_utf8_strlen( account, -1 )){
+		priv->account_number = g_strdup( account );
 	}
+	g_free( account );
 
 	return( TRUE );
 }

@@ -121,7 +121,6 @@ GtkWidget     *ofa_page_get_button_by_id          ( const ofaPage *page, guint i
 
 GtkWidget     *ofa_page_create_default_buttons_box( guint header_rows, GCallback callback, void *user_data );
 
-
 GtkWidget     *ofa_page_get_top_focusable_widget  ( const ofaPage *page );
 
 void           ofa_page_pre_remove                ( ofaPage *page );

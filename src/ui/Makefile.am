@@ -75,6 +75,8 @@ openbook_SOURCES = \
 	ofa-accounts-book.h									\
 	ofa-accounts-page.c									\
 	ofa-accounts-page.h									\
+	ofa-accounts-piece.c								\
+	ofa-accounts-piece.h								\
 	ofa-account-istore.c								\
 	ofa-account-istore.h								\
 	ofa-account-select.c								\
@@ -93,6 +95,8 @@ openbook_SOURCES = \
 	ofa-bat-select.h									\
 	ofa-bats-page.c										\
 	ofa-bats-page.h										\
+	ofa-buttons-box.c									\
+	ofa-buttons-box.h									\
 	ofa-class-properties.c								\
 	ofa-class-properties.h								\
 	ofa-classes-page.c									\

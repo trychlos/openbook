@@ -44,9 +44,9 @@
  * also available in AccountSelect dialog.
  */
 
-#include "api/ofo-account-def.h"
-
 #include "core/ofa-main-window-def.h"
+
+#include "ui/ofa-account-istore.h"
 
 G_BEGIN_DECLS
 
@@ -70,56 +70,28 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	GObjectClass            parent;
 }
 	ofaAccountsBookClass;
 
-/**
- * ofaAccountsBookCb:
- *
- * A callback triggered when the selected account changes.
- *
- * Passed arguments are:
- * - the selected account
- * - provided user data.
- */
-typedef void ( *ofaAccountsBookCb )( ofoAccount *, gpointer );
+GType            ofa_accounts_book_get_type                ( void ) G_GNUC_CONST;
 
-GType ofa_accounts_book_get_type ( void ) G_GNUC_CONST;
+ofaAccountsBook *ofa_accounts_book_new                     ( void );
 
-/**
- * ofsAccountsBookParms:
- * @book: an empty notebook which must have been defined by the caller
- * @dossier: the currently opened ofoDossier
- * @pfnSelected: [allow-none]: a user-provided callback which will be
- *  triggered each time the selection changes
- * @pfnActivated: [allow-none]: a user-provided callback which will be
- *  triggered each time a new row is activated (by hitting Enter or
- *  double-clicking the row)
- * @user_data: user data passed to the above callbacks
- */
-typedef struct {
-	ofaMainWindow    *main_window;
-	GtkContainer     *parent;
-	gboolean          has_import;
-	gboolean          has_export;
-	gboolean          has_view_entries;
-	ofaAccountsBookCb pfnSelected;
-	ofaAccountsBookCb pfnActivated;
-	ofaAccountsBookCb pfnViewEntries;
-	gpointer          user_data;
-}
-	ofsAccountsBookParms;
+void             ofa_accounts_book_set_main_window         ( ofaAccountsBook *book,
+																	ofaMainWindow *main_window );
 
-ofaAccountsBook *ofa_accounts_book_new                     ( ofsAccountsBookParms *parms );
+void             ofa_accounts_book_expand_all              ( ofaAccountsBook *book );
 
-void             ofa_accounts_book_init_view               ( ofaAccountsBook *self, const gchar *number );
+gchar           *ofa_accounts_book_get_selected            ( ofaAccountsBook *book );
 
-ofoAccount      *ofa_accounts_book_get_selected            ( ofaAccountsBook *self );
+void             ofa_accounts_book_set_selected            ( ofaAccountsBook *book,
+																	const gchar *number );
 
-void             ofa_accounts_book_set_selected            ( ofaAccountsBook *self, const gchar *number );
+void             ofa_accounts_book_button_clicked          ( ofaAccountsBook *book,
+																	gint button_id );
 
-GtkWidget       *ofa_accounts_book_get_top_focusable_widget( const ofaAccountsBook *self );
+GtkWidget       *ofa_accounts_book_get_top_focusable_widget( const ofaAccountsBook *book );
 
 G_END_DECLS
 

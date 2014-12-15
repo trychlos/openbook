@@ -30,12 +30,11 @@
 
 #include <glib/gi18n.h>
 
-#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/ofa-account-properties.h"
-#include "ui/ofa-accounts-book.h"
+#include "ui/ofa-accounts-piece.h"
 #include "ui/ofa-accounts-page.h"
+#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
@@ -47,8 +46,7 @@ struct _ofaAccountsPagePrivate {
 
 	/* UI
 	 */
-	ofaAccountsBook *book_child;
-	GtkButton       *consult_btn;
+	ofaAccountsPiece *accounts_piece;
 };
 
 G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
@@ -56,8 +54,6 @@ G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
 static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofoAccount *account, ofaPage *page );
-static void       on_view_entries( ofoAccount *account, ofaAccountsPage *self );
 
 static void
 accounts_page_finalize( GObject *instance )
@@ -122,28 +118,26 @@ ofa_accounts_page_class_init( ofaAccountsPageClass *klass )
 static void
 v_setup_page( ofaPage *page )
 {
-	ofsAccountsBookParms parms;
 	ofaAccountsPagePrivate *priv;
-
-	parms.main_window = ofa_page_get_main_window( page );
-	parms.parent = GTK_CONTAINER( ofa_page_get_top_grid( page ));
-	parms.has_import = FALSE;
-	parms.has_export = FALSE;
-	parms.has_view_entries = TRUE;
-	parms.pfnSelected = NULL;
-	parms.pfnActivated = ( ofaAccountsBookCb ) on_row_activated;
-	parms.pfnViewEntries = ( ofaAccountsBookCb ) on_view_entries;
-	parms.user_data = page;
+	GtkGrid *grid;
+	GtkWidget *alignment;
 
 	priv = OFA_ACCOUNTS_PAGE( page )->priv;
-	priv->book_child = ofa_accounts_book_new( &parms );
+
+	grid = ofa_page_get_top_grid( page );
+
+	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	gtk_grid_attach( grid, alignment, 0, 0, 1, 1 );
+
+	priv->accounts_piece = ofa_accounts_piece_new();
+	ofa_accounts_piece_attach_to( priv->accounts_piece, GTK_CONTAINER( alignment ));
+	ofa_accounts_piece_set_main_window( priv->accounts_piece, ofa_page_get_main_window( page ));
+	ofa_accounts_piece_set_buttons( priv->accounts_piece, TRUE );
 }
 
 static void
 v_init_view( ofaPage *page )
 {
-	ofa_accounts_book_init_view(
-			OFA_ACCOUNTS_PAGE( page )->priv->book_child, NULL );
 }
 
 static GtkWidget *
@@ -151,31 +145,14 @@ v_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_ACCOUNTS_PAGE( page ), NULL );
 
-	return( ofa_accounts_book_get_top_focusable_widget(
-					OFA_ACCOUNTS_PAGE( page )->priv->book_child ));
+	return( ofa_accounts_piece_get_top_focusable_widget(
+					OFA_ACCOUNTS_PAGE( page )->priv->accounts_piece ));
 }
 
 /*
  * ofaAccountsBook callback:
  */
-static void
-on_row_activated( ofoAccount *account, ofaPage *page )
-{
-	GtkWidget *tview;
-
-	if( account ){
-		g_return_if_fail( OFO_IS_ACCOUNT( account ));
-
-		ofa_account_properties_run( ofa_page_get_main_window( page ), account );
-	}
-
-	tview = ofa_accounts_book_get_top_focusable_widget(
-					OFA_ACCOUNTS_PAGE( page )->priv->book_child );
-	if( tview ){
-		gtk_widget_grab_focus( tview );
-	}
-}
-
+#if 0
 static void
 on_view_entries( ofoAccount *account, ofaAccountsPage *self )
 {
@@ -195,3 +172,4 @@ on_view_entries( ofoAccount *account, ofaAccountsPage *self )
 		}
 	}
 }
+#endif

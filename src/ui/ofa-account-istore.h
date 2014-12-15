@@ -118,7 +118,7 @@ typedef struct {
 	 * The application must implement this method in order to attach
 	 * its widget to the specified @parent.
 	 */
-	void  ( *attach_to)             ( ofaAccountIStore *instance,
+	void  ( *attach_to )            ( ofaAccountIStore *instance,
 												GtkContainer *parent );
 
 	/**
@@ -126,32 +126,38 @@ typedef struct {
 	 * @instance: the #ofaAccountIStore instance.
 	 * @store: the underlying #GtkTreeStore store.
 	 * @columns: the #ofaAccountColumns list of displayed columns.
+	 * @class: the class number.
 	 *
 	 * The interface code calls this method in order for the object to
 	 * create the required columns to be able to display them.
 	 */
-	void  ( *set_columns)           ( ofaAccountIStore *instance,
+	void  ( *set_columns )          ( ofaAccountIStore *instance,
 												GtkTreeStore *store,
-												ofaAccountColumns columns );
+												ofaAccountColumns columns,
+												gint class );
 }
 	ofaAccountIStoreInterface;
 
-GType ofa_account_istore_get_type         ( void );
+GType    ofa_account_istore_get_type         ( void );
 
-guint ofa_account_istore_get_interface_last_version
-                                           ( const ofaAccountIStore *instance );
+guint    ofa_account_istore_get_interface_last_version
+                                             ( const ofaAccountIStore *instance );
 
-void  ofa_account_istore_attach_to        ( ofaAccountIStore *instance,
-													GtkContainer *parent );
+void     ofa_account_istore_attach_to        ( ofaAccountIStore *instance,
+														GtkContainer *parent );
 
-void  ofa_account_istore_set_columns      ( ofaAccountIStore *instance,
-													ofaAccountColumns columns );
+void     ofa_account_istore_set_columns      ( ofaAccountIStore *instance,
+														ofaAccountColumns columns );
 
-void  ofa_account_istore_set_dossier      ( ofaAccountIStore *instance,
-													ofoDossier *dossier );
+void     ofa_account_istore_set_dossier      ( ofaAccountIStore *instance,
+														ofoDossier *dossier );
 
-gint  ofa_account_istore_get_column_number( const ofaAccountIStore *instance,
-													ofaAccountColumns column );
+gint     ofa_account_istore_get_column_number( const ofaAccountIStore *instance,
+														ofaAccountColumns column );
+
+gboolean ofa_account_istore_get_by_number    ( ofaAccountIStore *instance,
+														const gchar *number,
+														GtkTreeIter *iter );
 
 G_END_DECLS
 

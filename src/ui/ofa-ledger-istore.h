@@ -102,7 +102,7 @@ typedef struct {
 	 * The application must implement this method in order to attach
 	 * its widget to the specified @parent.
 	 */
-	void  ( *attach_to)             ( ofaLedgerIStore *instance,
+	void  ( *attach_to )            ( ofaLedgerIStore *instance,
 												GtkContainer *parent );
 
 	/**
@@ -114,7 +114,7 @@ typedef struct {
 	 * The interface code calls this method in order for the object to
 	 * create the required columns to be able to display them.
 	 */
-	void  ( *set_columns)           ( ofaLedgerIStore *instance,
+	void  ( *set_columns )          ( ofaLedgerIStore *instance,
 												GtkListStore *store,
 												ofaLedgerColumns columns );
 }

@@ -60,7 +60,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	myDialogClass            parent;
 }
 	ofaAccountSelectClass;
 

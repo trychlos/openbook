@@ -126,6 +126,7 @@ static GList        *realign_children_rec( const ofoAccount *account, GtkTreeMod
 static void          realign_children_move( sChild *child_str, ofaAccountIStore *instance );
 static void          child_free( sChild *child_str );
 static void          remove_row_by_number( ofaAccountIStore *instance, sIStore *sdata, const gchar *number );
+static gint          on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountIStore *instance );
 static void          setup_signaling_connect( ofaAccountIStore *instance, sIStore *sdata );
 static void          on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountIStore *instance );
 static void          on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountIStore *instance );
@@ -712,6 +713,26 @@ remove_row_by_number( ofaAccountIStore *instance, sIStore *sdata, const gchar *n
 	}
 }
 
+/*
+ * sorting the store per account number
+ */
+static gint
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountIStore *instance )
+{
+	gchar *anumber, *bnumber;
+	gint cmp;
+
+	gtk_tree_model_get( tmodel, a, COL_NUMBER, &anumber, -1 );
+	gtk_tree_model_get( tmodel, b, COL_NUMBER, &bnumber, -1 );
+
+	cmp = g_utf8_collate( anumber, bnumber );
+
+	g_free( anumber );
+	g_free( bnumber );
+
+	return( cmp );
+}
+
 static void
 setup_signaling_connect( ofaAccountIStore *instance, sIStore *sdata )
 {
@@ -999,6 +1020,7 @@ get_istore_data( ofaAccountIStore *instance )
 static GtkTreeStore *
 get_tree_store( ofaAccountIStore *instance, sIStore *sdata, gint class )
 {
+	static const gchar *thisfn = "ofa_account_istore_get_tree_store";
 	GtkTreeStore *store;
 	gint number;
 	GList *it;
@@ -1023,9 +1045,17 @@ get_tree_store( ofaAccountIStore *instance, sIStore *sdata, gint class )
 			G_TYPE_STRING, G_TYPE_STRING, 					/* exe_debit, exe_credit */
 			G_TYPE_OBJECT );								/* the #ofoAccount itself */
 
+	g_debug( "%s: creating new store at %p", thisfn, ( void * ) store );
+
 	if( OFA_ACCOUNT_ISTORE_GET_INTERFACE( instance )->set_columns ){
-		OFA_ACCOUNT_ISTORE_GET_INTERFACE( instance )->set_columns( instance, store, sdata->columns );
+		OFA_ACCOUNT_ISTORE_GET_INTERFACE( instance )->set_columns( instance, store, sdata->columns, class );
 	}
+
+	gtk_tree_sortable_set_default_sort_func(
+			GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, instance, NULL );
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( store ),
+			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	g_object_unref( store );
 
@@ -1033,4 +1063,35 @@ get_tree_store( ofaAccountIStore *instance, sIStore *sdata, gint class )
 	sdata->stores = g_list_prepend( sdata->stores, store );
 
 	return( store );
+}
+
+/**
+ * ofa_account_istore_get_by_number:
+ * @instance:
+ * @number:
+ * @iter:
+ *
+ * Set the iter to the specified row.
+ *
+ * Returns: %TRUE if found.
+ */
+gboolean
+ofa_account_istore_get_by_number( ofaAccountIStore *instance, const gchar *number, GtkTreeIter *iter )
+{
+	sIStore *sdata;
+	gboolean found;
+	GtkTreeStore *store;
+
+	g_return_val_if_fail( instance && OFA_IS_ACCOUNT_ISTORE( instance ), FALSE );
+
+	sdata = get_istore_data( instance );
+	g_return_val_if_fail( sdata, FALSE );
+
+	found = FALSE;
+	store = get_tree_store( instance, sdata, ofo_account_get_class_from_number( number ));
+	g_return_val_if_fail( store && GTK_IS_TREE_STORE( store ), FALSE );
+
+	found = find_row_by_number( instance, number, GTK_TREE_MODEL( store ), iter, NULL );
+
+	return( found );
 }
