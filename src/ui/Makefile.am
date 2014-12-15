@@ -69,18 +69,20 @@ openbook_SOURCES = \
 	my-progress-bar.h									\
 	my-tab-label.c										\
 	my-tab-label.h										\
+	ofa-account-istore.c								\
+	ofa-account-istore.h								\
 	ofa-account-properties.c							\
 	ofa-account-properties.h							\
+	ofa-account-select.c								\
+	ofa-account-select.h								\
 	ofa-accounts-book.c									\
 	ofa-accounts-book.h									\
 	ofa-accounts-page.c									\
 	ofa-accounts-page.h									\
 	ofa-accounts-piece.c								\
 	ofa-accounts-piece.h								\
-	ofa-account-istore.c								\
-	ofa-account-istore.h								\
-	ofa-account-select.c								\
-	ofa-account-select.h								\
+	ofa-accounts-store.c								\
+	ofa-accounts-store.h								\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-backup.c										\
@@ -204,6 +206,8 @@ openbook_SOURCES = \
 	ofa-restore.h										\
 	ofa-settlement.c									\
 	ofa-settlement.h									\
+	ofa-tree-store.c									\
+	ofa-tree-store.h									\
 	ofa-treeview.c										\
 	ofa-treeview.h										\
 	ofa-treeview-prot.h									\
