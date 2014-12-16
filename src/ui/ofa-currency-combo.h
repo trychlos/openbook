@@ -42,7 +42,7 @@
 
 #include "api/ofo-dossier-def.h"
 
-#include "ui/ofa-currency-istore.h"
+#include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
@@ -70,14 +70,38 @@ typedef struct {
 }
 	ofaCurrencyComboClass;
 
-GType             ofa_currency_combo_get_type     ( void ) G_GNUC_CONST;
+/**
+ * ofaCurrencyColumns:
+ * The columns displayed in the ComboBox.
+ */
+typedef enum {
+	CURRENCY_DISP_CODE      = 1 << 0,
+	CURRENCY_DISP_LABEL     = 1 << 1,
+	CURRENCY_DISP_SYMBOL    = 1 << 2,
+	CURRENCY_DISP_DIGITS    = 1 << 3,
+	CURRENCY_DISP_NOTES     = 1 << 4,
+	CURRENCY_DISP_UPD_USER  = 1 << 5,
+	CURRENCY_DISP_UPD_STAMP = 1 << 6,
+}
+	ofaCurrencyColumns;
 
-ofaCurrencyCombo *ofa_currency_combo_new          ( void );
+GType             ofa_currency_combo_get_type       ( void ) G_GNUC_CONST;
 
-gchar            *ofa_currency_combo_get_selected ( ofaCurrencyCombo *combo );
+ofaCurrencyCombo *ofa_currency_combo_new            ( void );
 
-void              ofa_currency_combo_set_selected ( ofaCurrencyCombo *combo,
-															const gchar *code );
+void              ofa_currency_combo_attach_to      ( ofaCurrencyCombo *combo,
+																GtkContainer *parent );
+
+void              ofa_currency_combo_set_columns    ( ofaCurrencyCombo *combo,
+																ofaCurrencyColumns columns );
+
+void              ofa_currency_combo_set_main_window( ofaCurrencyCombo *combo,
+																ofaMainWindow *main_window );
+
+gchar            *ofa_currency_combo_get_selected   ( ofaCurrencyCombo *combo );
+
+void              ofa_currency_combo_set_selected   ( ofaCurrencyCombo *combo,
+																const gchar *code );
 
 G_END_DECLS
 

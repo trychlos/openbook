@@ -30,8 +30,10 @@
 
 #include <glib/gi18n.h>
 
+#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
+#include "ui/ofa-account-properties.h"
 #include "ui/ofa-accounts-piece.h"
 #include "ui/ofa-accounts-page.h"
 #include "ui/ofa-buttons-box.h"
@@ -54,6 +56,7 @@ G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
 static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static void       on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountsPage *self );
 
 static void
 accounts_page_finalize( GObject *instance )
@@ -133,6 +136,10 @@ v_setup_page( ofaPage *page )
 	ofa_accounts_piece_attach_to( priv->accounts_piece, GTK_CONTAINER( alignment ));
 	ofa_accounts_piece_set_main_window( priv->accounts_piece, ofa_page_get_main_window( page ));
 	ofa_accounts_piece_set_buttons( priv->accounts_piece, TRUE );
+
+	g_signal_connect(
+			G_OBJECT( priv->accounts_piece ),
+			"activated", G_CALLBACK( on_account_activated ), page );
 }
 
 static void
@@ -147,6 +154,19 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	return( ofa_accounts_piece_get_top_focusable_widget(
 					OFA_ACCOUNTS_PAGE( page )->priv->accounts_piece ));
+}
+
+static void
+on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountsPage *self )
+{
+	ofoAccount *account;
+
+	if( number ){
+		account = ofo_account_get_by_number( ofa_page_get_dossier( OFA_PAGE( self )), number );
+		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+
+		ofa_account_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), account );
+	}
 }
 
 /*

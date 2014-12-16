@@ -79,8 +79,8 @@ openbook_SOURCES = \
 	ofa-accounts-page.h									\
 	ofa-accounts-piece.c								\
 	ofa-accounts-piece.h								\
-	ofa-accounts-store.c								\
-	ofa-accounts-store.h								\
+	ofa-account-store.c									\
+	ofa-account-store.h									\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-backup.c										\
@@ -105,10 +105,10 @@ openbook_SOURCES = \
 	ofa-currencies-page.h								\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
-	ofa-currency-istore.c								\
-	ofa-currency-istore.h								\
 	ofa-currency-properties.c							\
 	ofa-currency-properties.h							\
+	ofa-currency-store.c								\
+	ofa-currency-store.h								\
 	ofa-dossier-cur.c									\
 	ofa-dossier-cur.h									\
 	ofa-dossier-delete.c								\
@@ -167,6 +167,8 @@ openbook_SOURCES = \
 	ofa-ledger-treeview.h								\
 	ofa-ledgers-page.c									\
 	ofa-ledgers-page.h									\
+	ofa-list-store.c									\
+	ofa-list-store.h									\
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-misc-arcaccopebal.c								\

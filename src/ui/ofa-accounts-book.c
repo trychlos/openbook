@@ -40,7 +40,7 @@
 
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-accounts-book.h"
-#include "ui/ofa-accounts-store.h"
+#include "ui/ofa-account-store.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-main-window.h"
@@ -49,15 +49,16 @@
 /* private instance data
  */
 struct _ofaAccountsBookPrivate {
-	gboolean          dispose_has_run;
+	gboolean         dispose_has_run;
 
-	ofaMainWindow    *main_window;
-	ofoDossier       *dossier;
-	GList            *handlers;
+	ofaMainWindow   *main_window;
+	ofoDossier      *dossier;
+	GList           *handlers;
 
-	ofaAccountsStore *store;
-	GtkNotebook      *book;
-	gint              number_col;
+	ofaAccountStore *store;
+	GtkNotebook     *book;
+
+	gint             prev_class;
 };
 
 /* these are only default labels in the case where we were not able to
@@ -79,11 +80,11 @@ static const gchar  *st_class_labels[] = {
 /* the class number is attached to each page of the classes notebook,
  * and also attached to the undelrying treemodelfilter
  */
-#define DATA_PAGE_CLASS         "ofa-data-page-class"
+#define DATA_PAGE_CLASS                 "ofa-data-page-class"
 
 /* the column identifier is attached to each column header
  */
-#define DATA_COLUMN_ID          "ofa-data-column-id"
+#define DATA_COLUMN_ID                  "ofa-data-column-id"
 
 /* signals defined here
  */
@@ -95,11 +96,12 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void       on_parent_finalized( ofaAccountsBook *book, gpointer finalized_parent );
 static void       create_notebook( ofaAccountsBook *book );
+static void       on_parent_finalized( ofaAccountsBook *book, gpointer finalized_parent );
 static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsBook *self );
 static gboolean   on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountsBook *self );
 static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountsBook *book );
+static void       on_ofa_row_inserted( ofaAccountStore *store, gint class_num, ofaAccountsBook *book );
 static GtkWidget *book_get_page_by_class( ofaAccountsBook *self, gint class_num, gboolean create );
 static GtkWidget *book_create_page( ofaAccountsBook *self, gint class );
 static GtkWidget *book_create_scrolled_window( ofaAccountsBook *book, gint class_num );
@@ -284,6 +286,29 @@ ofa_accounts_book_new( void  )
 	return( book );
 }
 
+static void
+create_notebook( ofaAccountsBook *book )
+{
+	ofaAccountsBookPrivate *priv;
+
+	priv = book->priv;
+
+	if( !priv->book ){
+
+		priv->book = GTK_NOTEBOOK( gtk_notebook_new());
+		gtk_notebook_popup_enable( priv->book );
+		gtk_notebook_set_scrollable( priv->book, TRUE );
+
+		g_signal_connect(
+				G_OBJECT( priv->book ),
+				"switch-page", G_CALLBACK( on_book_page_switched ), book );
+
+		g_signal_connect(
+				G_OBJECT( priv->book ),
+				"key-press-event", G_CALLBACK( on_book_key_pressed ), book );
+	}
+}
+
 /**
  * ofa_accounts_book_attach_to:
  * @book: this #ofaAccountsBook book.
@@ -329,29 +354,6 @@ on_parent_finalized( ofaAccountsBook *book, gpointer finalized_parent )
 	g_return_if_fail( book && OFA_IS_ACCOUNTS_BOOK( book ));
 
 	g_object_unref( book );
-}
-
-static void
-create_notebook( ofaAccountsBook *book )
-{
-	ofaAccountsBookPrivate *priv;
-
-	priv = book->priv;
-
-	if( !priv->book ){
-
-		priv->book = GTK_NOTEBOOK( gtk_notebook_new());
-		gtk_notebook_popup_enable( priv->book );
-		gtk_notebook_set_scrollable( priv->book, TRUE );
-
-		g_signal_connect(
-				G_OBJECT( priv->book ),
-				"switch-page", G_CALLBACK( on_book_page_switched ), book );
-
-		g_signal_connect(
-				G_OBJECT( priv->book ),
-				"key-press-event", G_CALLBACK( on_book_key_pressed ), book );
-	}
 }
 
 /*
@@ -454,7 +456,10 @@ on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountsBook *sel
 void
 ofa_accounts_book_set_main_window( ofaAccountsBook *book, ofaMainWindow *main_window )
 {
+	static const gchar *thisfn = "ofa_accounts_book_set_main_window";
 	ofaAccountsBookPrivate *priv;
+
+	g_debug( "%s: book=%p, main_window=%p", thisfn, ( void * ) book, ( void * ) main_window );
 
 	g_return_if_fail( book && OFA_IS_ACCOUNTS_BOOK( book ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -468,15 +473,22 @@ ofa_accounts_book_set_main_window( ofaAccountsBook *book, ofaMainWindow *main_wi
 
 		priv->main_window = main_window;
 		priv->dossier = ofa_main_window_get_dossier( main_window );
-		priv->store = ofa_accounts_store_new( priv->dossier );
+		priv->store = ofa_account_store_new( priv->dossier );
 
 		g_signal_connect( priv->store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
-		ofa_accounts_store_load_dataset( priv->store );
+		g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( on_ofa_row_inserted ), book );
+
+		ofa_account_store_load_dataset( priv->store );
 
 		dossier_signals_connect( book );
 	}
 }
 
+/*
+ * is triggered by the store when a row is inserted
+ * we try to optimize the search by keeping the class of the last
+ * inserted row;
+ */
 static void
 on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountsBook *book )
 {
@@ -487,7 +499,23 @@ on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofa
 	class_num = ofo_account_get_class_from_number( number );
 	g_free( number );
 
-	book_get_page_by_class( book, class_num, TRUE );
+	on_ofa_row_inserted( NULL, class_num, book );
+}
+
+/*
+ * store may be NULL when called from above on_row_inserted()
+ */
+static void
+on_ofa_row_inserted( ofaAccountStore *store, gint class_num, ofaAccountsBook *book )
+{
+	ofaAccountsBookPrivate *priv;
+
+	priv = book->priv;
+
+	if( class_num != priv->prev_class ){
+		book_get_page_by_class( book, class_num, TRUE );
+		priv->prev_class = class_num;
+	}
 }
 
 /*
@@ -773,18 +801,16 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, void *pclass )
 static void
 on_tview_row_selected( GtkTreeSelection *selection, ofaAccountsBook *self )
 {
-	ofaAccountsBookPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *account;
 
-	priv = self->priv;
 	account = NULL;
 
 	/* selection may be null when called from on_delete_clicked() */
 	if( selection ){
 		if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-			gtk_tree_model_get( tmodel, &iter, priv->number_col, &account, -1 );
+			gtk_tree_model_get( tmodel, &iter, ACCOUNT_COL_NUMBER, &account, -1 );
 			g_signal_emit_by_name( self, "changed", account );
 			g_free( account );
 		}
@@ -796,18 +822,16 @@ on_tview_row_selected( GtkTreeSelection *selection, ofaAccountsBook *self )
 static void
 on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaAccountsBook *self )
 {
-	ofaAccountsBookPrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *account;
 
-	priv = self->priv;
 	account = NULL;
 
 	select = gtk_tree_view_get_selection( tview );
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, priv->number_col, &account, -1 );
+		gtk_tree_model_get( tmodel, &iter, ACCOUNT_COL_NUMBER, &account, -1 );
 		g_signal_emit_by_name( self, "activated", account );
 		g_free( account );
 	}
@@ -940,7 +964,7 @@ on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	priv = self->priv;
 
-	gtk_tree_model_get( tmodel, iter, priv->number_col, &account_num, -1 );
+	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_NUMBER, &account_num, -1 );
 	if( account_num ){
 		account_obj = ofo_account_get_by_number( priv->dossier, account_num );
 		g_return_if_fail( account_obj && OFO_IS_ACCOUNT( account_obj ));
@@ -949,7 +973,7 @@ on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
 		g_return_if_fail( level >= 2 );
 
 		column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( tcolumn ), DATA_COLUMN_ID ));
-		if( column == priv->number_col ){
+		if( column == ACCOUNT_COL_NUMBER ){
 			number = g_string_new( " " );
 			g_string_append_printf( number, "%s", account_num );
 			g_object_set( G_OBJECT( cell ), "text", number->str, NULL );
@@ -1123,6 +1147,7 @@ do_view_entries( ofaAccountsBook *self )
 	priv = self->priv;
 
 	number = ofa_accounts_book_get_selected( self );
+	g_debug( "ofa_accounts_book_do_view_entries: number=%s", number );
 	page = ofa_main_window_activate_theme( priv->main_window, THM_VIEW_ENTRIES );
 	ofa_view_entries_display_entries( OFA_VIEW_ENTRIES( page ), OFO_TYPE_ACCOUNT, number, NULL, NULL );
 	g_free( number );
@@ -1342,7 +1367,7 @@ ofa_accounts_book_get_selected( ofaAccountsBook *book )
 		tview = ( GtkTreeView * ) get_current_tree_view( book );
 		select = gtk_tree_view_get_selection( tview );
 		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-			gtk_tree_model_get( tmodel, &iter, priv->number_col, &account, -1 );
+			gtk_tree_model_get( tmodel, &iter, ACCOUNT_COL_NUMBER, &account, -1 );
 		}
 	}
 
@@ -1394,7 +1419,7 @@ select_row_by_number( ofaAccountsBook *book, const gchar *number )
 			page_n = gtk_notebook_page_num( priv->book, page_w );
 			gtk_notebook_set_current_page( priv->book, page_n );
 
-			ofa_accounts_store_get_by_number( priv->store, number, &store_iter );
+			ofa_account_store_get_by_number( priv->store, number, &store_iter );
 
 			tview = my_utils_container_get_child_by_type(
 							GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );

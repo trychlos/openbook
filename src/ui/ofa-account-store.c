@@ -36,15 +36,16 @@
 
 #include "core/ofa-preferences.h"
 
-#include "ui/ofa-accounts-store.h"
+#include "ui/ofa-account-store.h"
 
 /* private instance data
  */
-struct _ofaAccountsStorePrivate {
+struct _ofaAccountStorePrivate {
 	gboolean    dispose_has_run;
 
-	/*
+	/* runtime data
 	 */
+	gboolean    dataset_loaded;
 };
 
 /* a structure used when moving a subtree to another place
@@ -70,52 +71,61 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 /* the key which is attached to the dossier in order to identify this
  * store
  */
-#define STORE_DATA_DOSSIER                   "ofa-accounts-store"
+#define STORE_DATA_DOSSIER                   "ofa-account-store"
 
-static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountsStore *store );
-static void     load_dataset( ofaAccountsStore *store, ofoDossier *dossier );
-static void     insert_row( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account );
-static void     set_row( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter );
-static gboolean find_parent_iter( ofaAccountsStore *store, const ofoAccount *account, GtkTreeIter *parent_iter );
-static gboolean find_row_by_number( ofaAccountsStore *store, const gchar *number, GtkTreeIter *iter, gboolean *bvalid );
-static gboolean find_row_by_number_rec( ofaAccountsStore *store, const gchar *number, GtkTreeIter *iter, gint *last );
-static void     realign_children( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *parent_iter );
-static GList   *realign_children_rec( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter, GList *children );
-static void     realign_children_move( sChild *child_str, ofaAccountsStore *store );
+/* signals defined here
+ */
+enum {
+	INSERTED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]         = { 0 };
+
+static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountStore *store );
+static void     load_dataset( ofaAccountStore *store, ofoDossier *dossier );
+static void     insert_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account );
+static void     set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter );
+static gboolean find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter );
+static gboolean find_row_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gboolean *bvalid );
+static gboolean find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gint *last );
+static void     realign_children( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *parent_iter );
+static GList   *realign_children_rec( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter, GList *children );
+static void     realign_children_move( sChild *child_str, ofaAccountStore *store );
 static void     child_free( sChild *child_str );
-static void     remove_row_by_number( ofaAccountsStore *store, const gchar *number );
-static void     setup_signaling_connect( ofaAccountsStore *store, ofoDossier *dossier );
-static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountsStore *store );
-static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountsStore *store );
-static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountsStore *store );
-static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaAccountsStore *store );
+static void     remove_row_by_number( ofaAccountStore *store, const gchar *number );
+static void     setup_signaling_connect( ofaAccountStore *store, ofoDossier *dossier );
+static void     on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountStore *store );
+static void     on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountStore *store );
+static void     on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountStore *store );
+static void     on_reload_dataset( ofoDossier *dossier, GType type, ofaAccountStore *store );
 
-G_DEFINE_TYPE( ofaAccountsStore, ofa_accounts_store, OFA_TYPE_TREE_STORE )
+G_DEFINE_TYPE( ofaAccountStore, ofa_account_store, OFA_TYPE_TREE_STORE )
 
 static void
-accounts_store_finalize( GObject *instance )
+account_store_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_accounts_store_finalize";
+	static const gchar *thisfn = "ofa_account_store_finalize";
 
 	g_debug( "%s: application=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_STORE( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_STORE( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_store_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_account_store_parent_class )->finalize( instance );
 }
 
 static void
-accounts_store_dispose( GObject *instance )
+account_store_dispose( GObject *instance )
 {
-	ofaAccountsStorePrivate *priv;
+	ofaAccountStorePrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_STORE( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNT_STORE( instance ));
 
-	priv = OFA_ACCOUNTS_STORE( instance )->priv;
+	priv = OFA_ACCOUNT_STORE( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -125,61 +135,90 @@ accounts_store_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_store_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_account_store_parent_class )->dispose( instance );
 }
 
 static void
-ofa_accounts_store_init( ofaAccountsStore *self )
+ofa_account_store_init( ofaAccountStore *self )
 {
-	static const gchar *thisfn = "ofa_accounts_store_init";
+	static const gchar *thisfn = "ofa_account_store_init";
 
-	g_return_if_fail( OFA_IS_ACCOUNTS_STORE( self ));
+	g_return_if_fail( OFA_IS_ACCOUNT_STORE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNTS_STORE, ofaAccountsStorePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNT_STORE, ofaAccountStorePrivate );
 }
 
 static void
-ofa_accounts_store_class_init( ofaAccountsStoreClass *klass )
+ofa_account_store_class_init( ofaAccountStoreClass *klass )
 {
-	static const gchar *thisfn = "ofa_accounts_store_class_init";
+	static const gchar *thisfn = "ofa_account_store_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = accounts_store_dispose;
-	G_OBJECT_CLASS( klass )->finalize = accounts_store_finalize;
+	G_OBJECT_CLASS( klass )->dispose = account_store_dispose;
+	G_OBJECT_CLASS( klass )->finalize = account_store_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaAccountsStorePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaAccountStorePrivate ));
+
+	/**
+	 * ofaAccountStore::ofa-row-inserted:
+	 *
+	 * This signal is sent on the store when we are trying to load the
+	 * dataset after the first time.
+	 * Rationale: the AccountsBook takes advantage of the 'row-inserted'
+	 * signal sent by the GtkTreeStore when loading the dataset the first
+	 * time. After that, we have yet to iter through the accounts in
+	 * order to populate the treeviews.
+	 *
+	 * Argument is the account number.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaAccountStore *store,
+	 * 						gint           class_num,
+	 * 						gpointer       user_data );
+	 */
+	st_signals[ INSERTED ] = g_signal_new_class_handler(
+				"ofa-row-inserted",
+				OFA_TYPE_ACCOUNT_STORE,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_INT );
 }
 
 /**
- * ofa_accounts_store_new:
+ * ofa_account_store_new:
  * @dossier: the currently opened #ofoDossier.
  *
- * Instanciates a new #ofaAccountsStore and attached it to the @dossier
- * if not already done. Else get the already allocated #ofaAccountsStore
+ * Instanciates a new #ofaAccountStore and attached it to the @dossier
+ * if not already done. Else get the already allocated #ofaAccountStore
  * from the @dossier.
  *
  * A weak notify reference is put on this same @dossier, so that the
  * instance will be unreffed when the @dossier will be destroyed.
  */
-ofaAccountsStore *
-ofa_accounts_store_new( ofoDossier *dossier )
+ofaAccountStore *
+ofa_account_store_new( ofoDossier *dossier )
 {
-	ofaAccountsStore *store;
+	ofaAccountStore *store;
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
-	store = ( ofaAccountsStore * ) g_object_get_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER );
+	store = ( ofaAccountStore * ) g_object_get_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER );
 
 	if( store ){
-		g_return_val_if_fail( OFA_IS_ACCOUNTS_STORE( store ), NULL );
+		g_return_val_if_fail( OFA_IS_ACCOUNT_STORE( store ), NULL );
 
 	} else {
 		store = g_object_new(
-						OFA_TYPE_ACCOUNTS_STORE,
+						OFA_TYPE_ACCOUNT_STORE,
 						OFA_PROP_DOSSIER, dossier,
 						NULL );
 
@@ -201,18 +240,18 @@ ofa_accounts_store_new( ofoDossier *dossier )
 }
 
 /**
- * ofa_accounts_store_load_dataset:
- * @store: this #ofaAccountsStore instance.
+ * ofa_account_store_load_dataset:
+ * @store: this #ofaAccountStore instance.
  *
  * Load the dataset into the store.
  */
 void
-ofa_accounts_store_load_dataset( ofaAccountsStore *store )
+ofa_account_store_load_dataset( ofaAccountStore *store )
 {
-	ofaAccountsStorePrivate *priv;
+	ofaAccountStorePrivate *priv;
 	ofoDossier *dossier;
 
-	g_return_if_fail( store && OFA_IS_ACCOUNTS_STORE( store ));
+	g_return_if_fail( store && OFA_IS_ACCOUNT_STORE( store ));
 
 	priv = store->priv;
 
@@ -229,7 +268,7 @@ ofa_accounts_store_load_dataset( ofaAccountsStore *store )
  * sorting the store per account number
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountsStore *store )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountStore *store )
 {
 	gchar *anumber, *bnumber;
 	gint cmp;
@@ -249,21 +288,30 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccounts
  * load the dataset when columns and dossier have been both set
  */
 static void
-load_dataset( ofaAccountsStore *store, ofoDossier *dossier )
+load_dataset( ofaAccountStore *store, ofoDossier *dossier )
 {
+	ofaAccountStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoAccount *account;
+
+	priv = store->priv;
 
 	dataset = ofo_account_get_dataset( dossier );
 
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
-		insert_row( store, dossier, account );
+		if( !priv->dataset_loaded ){
+			insert_row( store, dossier, account );
+		} else {
+			g_signal_emit_by_name( store, "ofa-row-inserted", ofo_account_get_class( account ));
+		}
 	}
+
+	priv->dataset_loaded = TRUE;
 }
 
 static void
-insert_row( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account )
+insert_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account )
 {
 	GtkTreeIter parent_iter, iter;
 	gboolean parent_found;
@@ -283,7 +331,7 @@ insert_row( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *acco
 }
 
 static void
-set_row( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter )
+set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter )
 {
 	const gchar *currency_code;
 	gint digits;
@@ -367,7 +415,7 @@ set_row( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account
 }
 
 /*
- * @store: this #ofaAccountsStore
+ * @store: this #ofaAccountStore
  * @account: [in]: the account for which we are searching the closest
  *  parent
  * @parent_iter: [out]: the GtkTreeIter of the closes parent if found.
@@ -379,7 +427,7 @@ set_row( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account
  * this parent, else @parent_iter is undefined.
  */
 static gboolean
-find_parent_iter( ofaAccountsStore *store, const ofoAccount *account, GtkTreeIter *parent_iter )
+find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter )
 {
 	const gchar *number;
 	gchar *candidate_number;
@@ -401,7 +449,7 @@ find_parent_iter( ofaAccountsStore *store, const ofoAccount *account, GtkTreeIte
 
 /*
  * find_row_by_number:
- * @store: this #ofaAccountsStore
+ * @store: this #ofaAccountStore
  * @number: [in]: the account number we are searching for.
  * @iter: [out]: the last iter equal or immediately greater than the
  *  searched value.
@@ -419,7 +467,7 @@ find_parent_iter( ofaAccountsStore *store, const ofoAccount *account, GtkTreeIte
  * the first number greater than the searched value.
  */
 static gboolean
-find_row_by_number( ofaAccountsStore *store, const gchar *number, GtkTreeIter *iter, gboolean *bvalid )
+find_row_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gboolean *bvalid )
 {
 	gint last;
 	gboolean found;
@@ -455,7 +503,7 @@ find_row_by_number( ofaAccountsStore *store, const gchar *number, GtkTreeIter *i
  * less or equal to the searched value
  */
 static gboolean
-find_row_by_number_rec( ofaAccountsStore *store, const gchar *number, GtkTreeIter *iter, gint *last )
+find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gint *last )
 {
 	gchar *cmp_number;
 	GtkTreeIter cmp_iter, child_iter, last_iter;
@@ -501,9 +549,9 @@ find_row_by_number_rec( ofaAccountsStore *store, const gchar *number, GtkTreeIte
  * when entering here, @parent_iter should not have yet any child iter
  */
 static void
-realign_children( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *parent_iter )
+realign_children( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *parent_iter )
 {
-	static const gchar *thisfn = "ofa_accounts_store_realign_children";
+	static const gchar *thisfn = "ofa_account_store_realign_children";
 	GList *children;
 	GtkTreeIter iter;
 
@@ -528,7 +576,7 @@ realign_children( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount
  * then reinsert these same accounts
  */
 static GList *
-realign_children_rec( ofaAccountsStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter, GList *children )
+realign_children_rec( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter, GList *children )
 {
 	ofoAccount *candidate;
 	GtkTreeIter child_iter;
@@ -561,7 +609,7 @@ realign_children_rec( ofaAccountsStore *store, ofoDossier *dossier, const ofoAcc
 }
 
 static void
-realign_children_move( sChild *child_str, ofaAccountsStore *store )
+realign_children_move( sChild *child_str, ofaAccountStore *store )
 {
 	GtkTreePath *path;
 	GtkTreeIter iter;
@@ -575,8 +623,8 @@ realign_children_move( sChild *child_str, ofaAccountsStore *store )
 }
 
 /**
- * ofa_accounts_store_set_dossier:
- * @instance: this #ofaAccountsStore instance.
+ * ofa_account_store_set_dossier:
+ * @instance: this #ofaAccountStore instance.
  * @dossier: the opened #ofoDossier.
  *
  * Set the dossier and load the corresponding dataset.
@@ -592,7 +640,7 @@ child_free( sChild *child_str )
 }
 
 static void
-remove_row_by_number( ofaAccountsStore *store, const gchar *number )
+remove_row_by_number( ofaAccountStore *store, const gchar *number )
 {
 	GtkTreeIter iter;
 
@@ -607,7 +655,7 @@ remove_row_by_number( ofaAccountsStore *store, const gchar *number )
  * of this store is equal to those of the dossier
  */
 static void
-setup_signaling_connect( ofaAccountsStore *store, ofoDossier *dossier )
+setup_signaling_connect( ofaAccountStore *store, ofoDossier *dossier )
 {
 	g_signal_connect(
 			G_OBJECT( dossier ),
@@ -627,9 +675,9 @@ setup_signaling_connect( ofaAccountsStore *store, ofoDossier *dossier )
 }
 
 static void
-on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountsStore *store )
+on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountStore *store )
 {
-	static const gchar *thisfn = "ofa_accounts_store_on_new_object";
+	static const gchar *thisfn = "ofa_account_store_on_new_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), store=%p",
 			thisfn,
@@ -643,9 +691,9 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaAccountsStore *store )
 }
 
 static void
-on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountsStore *store )
+on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaAccountStore *store )
 {
-	static const gchar *thisfn = "ofa_accounts_store_on_updated_object";
+	static const gchar *thisfn = "ofa_account_store_on_updated_object";
 	GtkTreeIter iter;
 	const gchar *number;
 
@@ -670,9 +718,9 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 }
 
 static void
-on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountsStore *store )
+on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountStore *store )
 {
-	static const gchar *thisfn = "ofa_accounts_store_on_deleted_object";
+	static const gchar *thisfn = "ofa_account_store_on_deleted_object";
 	GList *children, *it;
 
 	g_debug( "%s: dossier=%p, object=%p (%s), store=%p",
@@ -699,9 +747,9 @@ on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaAccountsStore *store
 }
 
 static void
-on_reload_dataset( ofoDossier *dossier, GType type, ofaAccountsStore *store )
+on_reload_dataset( ofoDossier *dossier, GType type, ofaAccountStore *store )
 {
-	static const gchar *thisfn = "ofa_accounts_store_on_reload_dataset";
+	static const gchar *thisfn = "ofa_account_store_on_reload_dataset";
 
 	g_debug( "%s: dossier=%p, type=%lu, store=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) store );
@@ -712,258 +760,8 @@ on_reload_dataset( ofoDossier *dossier, GType type, ofaAccountsStore *store )
 	}
 }
 
-#if 0
 /**
- * ofa_accounts_store_attach_to:
- * @instance: this #ofaAccountsStore instance.
- * @parent: the #GtkContainer to which the widget should be attached.
- *
- * Attach the widget to its parent.
- *
- * A weak notify reference is put on the parent, so that the GObject
- * will be unreffed when the parent will be destroyed.
- */
-void
-ofa_accounts_store_attach_to( ofaAccountsStore *instance, GtkContainer *parent )
-{
-	sIStore *sdata;
-
-	g_return_if_fail( instance && G_IS_OBJECT( instance ) && OFA_IS_ACCOUNTS_STORE( instance ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	sdata = get_istore_data( instance );
-	g_return_if_fail( sdata );
-
-	g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, instance );
-
-	if( OFA_ACCOUNTS_STORE_GET_INTERFACE( instance )->attach_to ){
-		OFA_ACCOUNTS_STORE_GET_INTERFACE( instance )->attach_to( instance, parent );
-	}
-
-	gtk_widget_show_all( GTK_WIDGET( parent ));
-}
-
-/**
- * ofa_accounts_store_set_columns:
- * @instance: this #ofaAccountsStore instance.
- * @columns: the columns to be displayed from the #GtkAccountsStore.
- */
-void
-ofa_accounts_store_set_columns( ofaAccountsStore *instance, ofaAccountColumns columns )
-{
-	sIStore *sdata;
-
-	g_return_if_fail( instance && G_IS_OBJECT( instance ) && OFA_IS_ACCOUNTS_STORE( instance ));
-
-	sdata = get_istore_data( instance );
-	g_return_if_fail( sdata );
-
-	sdata->columns = columns;
-
-	load_dataset( instance, sdata );
-}
-
-void
-ofa_accounts_store_set_dossier( ofaAccountsStore *instance, ofoDossier *dossier )
-{
-	sIStore *sdata;
-
-	g_return_if_fail( instance && G_IS_OBJECT( instance ) && OFA_IS_ACCOUNTS_STORE( instance ));
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	sdata = get_istore_data( instance );
-	g_return_if_fail( sdata );
-
-	sdata->dossier = dossier;
-
-
-	load_dataset( instance, sdata );
-}
-
-/**
- * ofa_accounts_store_get_column_number:
- * @instance: this #ofaAccountsStore instance.
- * @column: the #ofaAccountColumns identifier.
- *
- * Returns: the number of the column in the store, counted from zero,
- * or -1 if the column is unknown.
- */
-gint
-ofa_accounts_store_get_column_number( const ofaAccountsStore *instance, ofaAccountColumns column )
-{
-	static const gchar *thisfn = "ofa_accounts_store_get_column_number";
-
-	switch( column ){
-		case ACCOUNT_COL_NUMBER:
-			return( COL_NUMBER );
-			break;
-
-		case ACCOUNT_COL_LABEL:
-			return( COL_LABEL );
-			break;
-
-		case ACCOUNT_COL_CURRENCY:
-			return( COL_CURRENCY );
-			break;
-
-		case ACCOUNT_COL_TYPE:
-			return( COL_TYPE );
-			break;
-
-		case ACCOUNT_COL_NOTES:
-			return( COL_NOTES );
-			break;
-
-		case ACCOUNT_COL_UPD_USER:
-			return( COL_UPD_USER );
-			break;
-
-		case ACCOUNT_COL_UPD_STAMP:
-			return( COL_UPD_STAMP );
-			break;
-
-		case ACCOUNT_COL_VAL_DEBIT:
-			return( COL_VAL_DEBIT );
-			break;
-
-		case ACCOUNT_COL_VAL_CREDIT:
-			return( COL_VAL_CREDIT );
-			break;
-
-		case ACCOUNT_COL_ROUGH_DEBIT:
-			return( COL_ROUGH_DEBIT );
-			break;
-
-		case ACCOUNT_COL_ROUGH_CREDIT:
-			return( COL_ROUGH_CREDIT );
-			break;
-
-		case ACCOUNT_COL_OPEN_DEBIT:
-			return( COL_OPEN_DEBIT );
-			break;
-
-		case ACCOUNT_COL_OPEN_CREDIT:
-			return( COL_OPEN_CREDIT );
-			break;
-
-		case ACCOUNT_COL_FUT_DEBIT:
-			return( COL_FUT_DEBIT );
-			break;
-
-		case ACCOUNT_COL_FUT_CREDIT:
-			return( COL_FUT_CREDIT );
-			break;
-
-		case ACCOUNT_COL_SETTLEABLE:
-			return( COL_SETTLEABLE );
-			break;
-
-		case ACCOUNT_COL_RECONCILIABLE:
-			return( COL_RECONCILIABLE );
-			break;
-
-		case ACCOUNT_COL_FORWARD:
-			return( COL_FORWARD );
-			break;
-
-		case ACCOUNT_COL_EXE_DEBIT:
-			return( COL_EXE_DEBIT );
-			break;
-
-		case ACCOUNT_COL_EXE_CREDIT:
-			return( COL_EXE_CREDIT );
-			break;
-	}
-
-	g_warning( "%s: unknown column:%d", thisfn, column );
-	return( -1 );
-}
-
-static void
-on_parent_finalized( ofaAccountsStore *instance, gpointer finalized_parent )
-{
-	static const gchar *thisfn = "ofa_accounts_store_on_parent_finalized";
-
-	g_debug( "%s: instance=%p, finalized_parent=%p",
-			thisfn, ( void * ) instance, ( void * ) finalized_parent );
-
-	g_return_if_fail( instance );
-
-	g_object_unref( G_OBJECT( instance ));
-}
-
-static void
-on_object_finalized( sIStore *sdata, gpointer finalized_object )
-{
-	static const gchar *thisfn = "ofa_accounts_store_on_object_finalized";
-	GList *it;
-
-	g_debug( "%s: sdata=%p, finalized_object=%p",
-			thisfn, ( void * ) sdata, ( void * ) finalized_object );
-
-	g_return_if_fail( sdata );
-
-	if( sdata->dossier && OFO_IS_DOSSIER( sdata->dossier )){
-		for( it=sdata->handlers ; it ; it=it->next ){
-			g_signal_handler_disconnect( sdata->dossier, ( gulong ) it->data );
-		}
-	}
-
-	g_free( sdata );
-}
-
-static sIStore *
-get_istore_data( ofaAccountsStore *instance )
-{
-	sIStore *sdata;
-
-	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( instance ), ACCOUNTS_STORE_DATA );
-
-	if( !sdata ){
-		sdata = g_new0( sIStore, 1 );
-		g_object_set_data( G_OBJECT( instance ), ACCOUNTS_STORE_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_object_finalized, sdata );
-	}
-
-	return( sdata );
-}
-
-static GtkAccountsStore *
-get_accounts_store( ofaAccountsStore *instance, sIStore *sdata, gint class )
-{
-	static const gchar *thisfn = "ofa_accounts_store_get_accounts_store";
-	GtkAccountsStore *store;
-	gint number;
-	GList *it;
-
-	store = NULL;
-	for( it=sdata->stores ; it ; it=it->next ){
-		number = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( it->data ), ACCOUNTS_STORE_CLASS ));
-		if( number == class ){
-			return( GTK_ACCOUNTS_STORE( it->data ));
-		}
-	}
-
-	store = gtk_accounts_store_new(
-			N_COLUMNS,
-
-	g_debug( "%s: creating new store at %p", thisfn, ( void * ) store );
-
-	if( OFA_ACCOUNTS_STORE_GET_INTERFACE( instance )->set_columns ){
-		OFA_ACCOUNTS_STORE_GET_INTERFACE( instance )->set_columns( instance, store, sdata->columns, class );
-	}
-
-	g_object_unref( store );
-
-	g_object_set_data( G_OBJECT( store ), ACCOUNTS_STORE_CLASS, GINT_TO_POINTER( class ));
-	sdata->stores = g_list_prepend( sdata->stores, store );
-
-	return( store );
-}
-#endif
-
-/**
- * ofa_accounts_store_get_by_number:
+ * ofa_account_store_get_by_number:
  * @instance:
  * @number:
  * @iter:
@@ -973,11 +771,11 @@ get_accounts_store( ofaAccountsStore *instance, sIStore *sdata, gint class )
  * Returns: %TRUE if found.
  */
 gboolean
-ofa_accounts_store_get_by_number( ofaAccountsStore *store, const gchar *number, GtkTreeIter *iter )
+ofa_account_store_get_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter )
 {
 	gboolean found;
 
-	g_return_val_if_fail( store && OFA_IS_ACCOUNTS_STORE( store ), FALSE );
+	g_return_val_if_fail( store && OFA_IS_ACCOUNT_STORE( store ), FALSE );
 
 	found = find_row_by_number( store, number, iter, NULL );
 

@@ -82,9 +82,9 @@ void              ofa_accounts_piece_set_main_window         ( ofaAccountsPiece 
 void              ofa_accounts_piece_set_buttons             ( ofaAccountsPiece *piece,
 																		gboolean view_entries );
 
-gchar           *ofa_accounts_piece_get_selected             ( ofaAccountsPiece *piece );
+gchar            *ofa_accounts_piece_get_selected            ( ofaAccountsPiece *piece );
 
-void             ofa_accounts_piece_set_selected             ( ofaAccountsPiece *piece,
+void              ofa_accounts_piece_set_selected            ( ofaAccountsPiece *piece,
 																	const gchar *number );
 
 GtkWidget        *ofa_accounts_piece_get_top_focusable_widget( const ofaAccountsPiece *piece );

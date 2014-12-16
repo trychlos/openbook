@@ -24,25 +24,25 @@
  * $Id$
  */
 
-#ifndef __OFA_ACCOUNTS_STORE_H__
-#define __OFA_ACCOUNTS_STORE_H__
+#ifndef __OFA_ACCOUNT_STORE_H__
+#define __OFA_ACCOUNT_STORE_H__
 
 /**
- * SECTION: accounts_store
- * @title: ofaAccountsStore
- * @short_description: The AccountsStore class description
+ * SECTION: account_store
+ * @title: ofaAccountStore
+ * @short_description: The AccountStore class description
  * @include: ui/ofa-accounts-store.h
  *
- * The #ofaAccountsStore derived from ofaStore, which itself derives
- * from GtkAccountsStore. It is populated with all the accounts of the
+ * The #ofaAccountStore derived from ofaStore, which itself derives
+ * from GtkAccountStore. It is populated with all the accounts of the
  * dossier on first call, and stay then alive until the dossier is
  * closed.
  *
- * Once more time: there is only one #ofaAccountsStore while the dossier
+ * Once more time: there is only one #ofaAccountStore while the dossier
  * is opened. All the views are built on this store, using ad-hoc filter
  * models when needed.
  *
- * The #ofaAccountsStore takes advantage of the dossier signaling
+ * The #ofaAccountStore takes advantage of the dossier signaling
  * system to maintain itself up to date.
  */
 
@@ -52,38 +52,37 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ACCOUNTS_STORE                ( ofa_accounts_store_get_type())
-#define OFA_ACCOUNTS_STORE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNTS_STORE, ofaAccountsStore ))
-#define OFA_ACCOUNTS_STORE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNTS_STORE, ofaAccountsStoreClass ))
-#define OFA_IS_ACCOUNTS_STORE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNTS_STORE ))
-#define OFA_IS_ACCOUNTS_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNTS_STORE ))
-#define OFA_ACCOUNTS_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNTS_STORE, ofaAccountsStoreClass ))
+#define OFA_TYPE_ACCOUNT_STORE                ( ofa_account_store_get_type())
+#define OFA_ACCOUNT_STORE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNT_STORE, ofaAccountStore ))
+#define OFA_ACCOUNT_STORE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNT_STORE, ofaAccountStoreClass ))
+#define OFA_IS_ACCOUNT_STORE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNT_STORE ))
+#define OFA_IS_ACCOUNT_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_STORE ))
+#define OFA_ACCOUNT_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_STORE, ofaAccountStoreClass ))
 
-typedef struct _ofaAccountsStorePrivate        ofaAccountsStorePrivate;
+typedef struct _ofaAccountStorePrivate        ofaAccountStorePrivate;
 
 typedef struct {
 	/*< public members >*/
-	ofaTreeStore             parent;
+	ofaTreeStore            parent;
 
 	/*< private members >*/
-	ofaAccountsStorePrivate *priv;
+	ofaAccountStorePrivate *priv;
 }
-	ofaAccountsStore;
+	ofaAccountStore;
 
 /**
- * ofaAccountsStoreClass:
+ * ofaAccountStoreClass:
  */
 typedef struct {
 	/*< public members >*/
-	ofaTreeStoreClass        parent;
+	ofaTreeStoreClass       parent;
 }
-	ofaAccountsStoreClass;
+	ofaAccountStoreClass;
 
 /**
- * ofaAccountColumns:
- * The columns stored in the subjacent #GtkAccountsStore.
+ * The columns stored in the subjacent #GtkAccountStore.
  */
-typedef enum {
+enum {
 	ACCOUNT_COL_NUMBER = 0,
 	ACCOUNT_COL_LABEL,
 	ACCOUNT_COL_CURRENCY,
@@ -106,19 +105,18 @@ typedef enum {
 	ACCOUNT_COL_EXE_CREDIT,
 	ACCOUNT_COL_OBJECT,
 	ACCOUNT_N_COLUMNS
-}
-	ofaAccountColumns;
+};
 
-GType             ofa_accounts_store_get_type     ( void );
+GType            ofa_account_store_get_type     ( void );
 
-ofaAccountsStore *ofa_accounts_store_new          ( ofoDossier *dossier );
+ofaAccountStore *ofa_account_store_new          ( ofoDossier *dossier );
 
-void              ofa_accounts_store_load_dataset ( ofaAccountsStore *store );
+void             ofa_account_store_load_dataset ( ofaAccountStore *store );
 
-gboolean          ofa_accounts_store_get_by_number( ofaAccountsStore *store,
+gboolean         ofa_account_store_get_by_number( ofaAccountStore *store,
 															const gchar *number,
 															GtkTreeIter *iter );
 
 G_END_DECLS
 
-#endif /* __OFA_ACCOUNTS_STORE_H__ */
+#endif /* __OFA_ACCOUNT_STORE_H__ */

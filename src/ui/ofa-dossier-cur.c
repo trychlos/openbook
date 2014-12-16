@@ -259,9 +259,9 @@ add_empty_row( ofaDossierCur *self )
 	widget = gtk_alignment_new( 0.5, 0.5, 1, 1 );
 	gtk_grid_attach( priv->grid, widget, COL_CURRENCY, row, 1, 1 );
 	combo = ofa_currency_combo_new();
-	ofa_currency_istore_attach_to( OFA_CURRENCY_ISTORE( combo ), GTK_CONTAINER( widget ));
-	ofa_currency_istore_set_columns( OFA_CURRENCY_ISTORE( combo ), CURRENCY_COL_CODE );
-	ofa_currency_istore_set_dossier( OFA_CURRENCY_ISTORE( combo ), MY_WINDOW( self )->prot->dossier );
+	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( widget ));
+	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
+	ofa_currency_combo_set_main_window( combo, MY_WINDOW( self )->prot->main_window );
 	g_signal_connect( combo, "changed", G_CALLBACK( on_currency_changed ), self );
 	g_object_set_data( G_OBJECT( combo ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_object_set_data( G_OBJECT( widget ), DATA_COMBO, combo);

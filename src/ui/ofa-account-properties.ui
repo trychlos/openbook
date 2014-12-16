@@ -321,6 +321,7 @@
                       <object class="GtkAlignment" id="p1-currency-parent">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="halign">start</property>
                         <child>
                           <placeholder/>
                         </child>
@@ -777,5 +778,11 @@
       <action-widget response="-6">btn-cancel</action-widget>
       <action-widget response="-5">btn-ok</action-widget>
     </action-widgets>
+  </object>
+  <object class="GtkSizeGroup" id="sizegroup1">
+    <widgets>
+      <widget name="p1-currency-parent"/>
+      <widget name="p1-number"/>
+    </widgets>
   </object>
 </interface>
