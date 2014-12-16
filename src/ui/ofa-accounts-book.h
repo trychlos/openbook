@@ -42,11 +42,18 @@
  * This convenience class also manages the update buttons (new, update,
  * delete and view entries). So that all the AccountsPage features are
  * also available in AccountSelect dialog.
+ *
+ * The #GtkNotebook is created when attaching to the parent widget.
+ * The underlying tree store is created (if not already done) when
+ * setting the main window. The dataset is so loaded, and inserted
+ * in the store.
+ * The #GtkTreeViews are created when a row is inserted for a new class
+ * number.
+ * So attaching to the parent widget should be called before setting
+ * the main window, so that the treeviews are rightly created.
  */
 
 #include "core/ofa-main-window-def.h"
-
-#include "ui/ofa-account-istore.h"
 
 G_BEGIN_DECLS
 
@@ -77,6 +84,9 @@ typedef struct {
 GType            ofa_accounts_book_get_type                ( void ) G_GNUC_CONST;
 
 ofaAccountsBook *ofa_accounts_book_new                     ( void );
+
+void             ofa_accounts_book_attach_to               ( ofaAccountsBook *book,
+																	GtkContainer *parent );
 
 void             ofa_accounts_book_set_main_window         ( ofaAccountsBook *book,
 																	ofaMainWindow *main_window );

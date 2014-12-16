@@ -293,14 +293,7 @@ get_top_grid( ofaAccountsPiece *piece )
 
 		priv->book = ofa_accounts_book_new();
 
-		ofa_account_istore_attach_to(
-				OFA_ACCOUNT_ISTORE( priv->book ), GTK_CONTAINER( alignment ));
-
-		ofa_account_istore_set_columns(
-				OFA_ACCOUNT_ISTORE( priv->book ),
-				ACCOUNT_COL_NUMBER | ACCOUNT_COL_LABEL |
-					ACCOUNT_COL_SETTLEABLE | ACCOUNT_COL_RECONCILIABLE | ACCOUNT_COL_FORWARD |
-					ACCOUNT_COL_EXE_DEBIT | ACCOUNT_COL_EXE_CREDIT | ACCOUNT_COL_CURRENCY );
+		ofa_accounts_book_attach_to( priv->book, GTK_CONTAINER( alignment ));
 
 		g_signal_connect(
 				G_OBJECT( priv->book ), "changed", G_CALLBACK( on_book_selection_changed ), piece );

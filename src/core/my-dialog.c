@@ -74,7 +74,6 @@ dialog_dispose( GObject *instance )
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref member objects here */
-
 	}
 
 	/* chain up to the parent class */

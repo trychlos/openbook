@@ -151,6 +151,7 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
+	GtkWindow *toplevel;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -179,12 +180,13 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 	priv->account_number = NULL;
 
 	ofa_accounts_piece_set_selected( priv->accounts_piece, asked_number );
-
 	check_for_enable_dlg( st_this );
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
 
-	gtk_widget_hide( GTK_WIDGET( my_window_get_toplevel( MY_WINDOW( st_this ))));
+	toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
+	gtk_widget_hide( GTK_WIDGET( toplevel ));
+	my_utils_window_save_position( toplevel, st_ui_id );
 
 	return( g_strdup( priv->account_number ));
 }
@@ -192,9 +194,12 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 static void
 v_init_dialog( myDialog *dialog )
 {
+	static const gchar *thisfn = "ofa_account_select_v_init_dialog";
 	ofaAccountSelectPrivate *priv;
 	GtkContainer *container;
 	GtkWidget *parent;
+
+	g_debug( "%s: dialog=%p", thisfn, ( void * ) dialog );
 
 	priv = OFA_ACCOUNT_SELECT( dialog )->priv;
 

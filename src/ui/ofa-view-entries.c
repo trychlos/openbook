@@ -423,13 +423,17 @@ v_setup_view( ofaPage *page )
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
 	reparent_from_dialog( OFA_VIEW_ENTRIES( page ), GTK_CONTAINER( frame ));
 
-	setup_gen_selection( OFA_VIEW_ENTRIES( page ));
 	setup_ledger_selection( OFA_VIEW_ENTRIES( page ));
 	setup_account_selection( OFA_VIEW_ENTRIES( page ));
 	setup_dates_selection( OFA_VIEW_ENTRIES( page ));
 	setup_status_selection( OFA_VIEW_ENTRIES( page ));
 	setup_display_columns( OFA_VIEW_ENTRIES( page ));
 	setup_edit_switch( OFA_VIEW_ENTRIES( page ));
+
+	/* must be done at the end so that on_gen_selection_toggled doesn't
+	 * complain */
+	setup_gen_selection( OFA_VIEW_ENTRIES( page ));
+
 	priv->entries_tview = setup_entries_treeview( OFA_VIEW_ENTRIES( page ));
 	setup_footer( OFA_VIEW_ENTRIES( page ));
 
@@ -465,21 +469,21 @@ static void
 setup_gen_selection( ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
-	GtkToggleButton *btn;
 	gchar *text;
+	GtkWidget *btn;
 
 	priv = self->priv;
 
-	btn = ( GtkToggleButton * ) my_utils_container_get_child_by_name( priv->top_box, "f1-btn-ledger" );
+	btn = my_utils_container_get_child_by_name( priv->top_box, "f1-btn-ledger" );
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_gen_selection_toggled ), self );
-	priv->ledger_btn = btn;
+	priv->ledger_btn = GTK_TOGGLE_BUTTON( btn );
 	gtk_toggle_button_set_active( priv->ledger_btn, FALSE );
 
-	btn = ( GtkToggleButton * ) my_utils_container_get_child_by_name( priv->top_box, "f1-btn-account" );
+	btn = my_utils_container_get_child_by_name( priv->top_box, "f1-btn-account" );
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_gen_selection_toggled ), self );
-	priv->account_btn = btn;
+	priv->account_btn =  GTK_TOGGLE_BUTTON( btn );
 	gtk_toggle_button_set_active( priv->account_btn, FALSE );
 
 	text = ofa_settings_get_string( st_pref_selection );

@@ -194,11 +194,35 @@ ofa_accounts_store_new( ofoDossier *dossier )
 
 		g_object_set_data( G_OBJECT( dossier ), STORE_DATA_DOSSIER, store );
 
-		load_dataset( store, dossier );
 		setup_signaling_connect( store, dossier );
 	}
 
 	return( store );
+}
+
+/**
+ * ofa_accounts_store_load_dataset:
+ * @store: this #ofaAccountsStore instance.
+ *
+ * Load the dataset into the store.
+ */
+void
+ofa_accounts_store_load_dataset( ofaAccountsStore *store )
+{
+	ofaAccountsStorePrivate *priv;
+	ofoDossier *dossier;
+
+	g_return_if_fail( store && OFA_IS_ACCOUNTS_STORE( store ));
+
+	priv = store->priv;
+
+	if( !priv->dispose_has_run ){
+
+		g_object_get( store, OFA_PROP_DOSSIER, &dossier, NULL );
+		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+		load_dataset( store, dossier );
+	}
 }
 
 /*
