@@ -52,14 +52,16 @@ struct _ofaAccountSelectPrivate {
 	gchar           *account_number;
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-account-select.ui";
-static const gchar *st_ui_id            = "AccountSelectDlg";
+static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-account-select.ui";
+static const gchar      *st_ui_id       = "AccountSelectDlg";
 
 static ofaAccountSelect *st_this        = NULL;
+static GtkWindow        *st_toplevel    = NULL;
 
 G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
+static void      on_account_changed( ofaAccountsPiece *piece, const gchar *number, ofaAccountSelect *self );
 static void      on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -151,7 +153,6 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
-	GtkWindow *toplevel;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -159,15 +160,17 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 			thisfn, ( void * ) main_window, asked_number );
 
 	if( !st_this ){
-
 		st_this = g_object_new(
 				OFA_TYPE_ACCOUNT_SELECT,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
+				MY_PROP_MAIN_WINDOW,   main_window,
+				MY_PROP_DOSSIER,       ofa_main_window_get_dossier( main_window ),
+				MY_PROP_WINDOW_XML,    st_ui_xml,
+				MY_PROP_WINDOW_NAME,   st_ui_id,
+				MY_PROP_SIZE_POSITION, FALSE,
 				NULL );
 
+		st_toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
+		my_utils_window_restore_position( st_toplevel, st_ui_id );
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
 		/* setup a weak reference on the main window to auto-unref */
@@ -184,9 +187,8 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
-	gtk_widget_hide( GTK_WIDGET( toplevel ));
-	my_utils_window_save_position( toplevel, st_ui_id );
+	my_utils_window_save_position( st_toplevel, st_ui_id );
+	gtk_widget_hide( GTK_WIDGET( st_toplevel ));
 
 	return( g_strdup( priv->account_number ));
 }
@@ -216,7 +218,15 @@ v_init_dialog( myDialog *dialog )
 	ofa_accounts_piece_set_buttons( priv->accounts_piece, FALSE );
 
 	g_signal_connect(
+			G_OBJECT( priv->accounts_piece ), "changed", G_CALLBACK( on_account_changed ), dialog );
+	g_signal_connect(
 			G_OBJECT( priv->accounts_piece ), "activated", G_CALLBACK( on_account_activated ), dialog );
+}
+
+static void
+on_account_changed( ofaAccountsPiece *piece, const gchar *number, ofaAccountSelect *self )
+{
+	check_for_enable_dlg( self );
 }
 
 static void

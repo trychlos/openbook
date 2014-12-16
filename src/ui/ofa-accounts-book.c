@@ -1393,20 +1393,20 @@ select_row_by_number( ofaAccountsBook *book, const gchar *number )
 		if( page_w ){
 			page_n = gtk_notebook_page_num( priv->book, page_w );
 			gtk_notebook_set_current_page( priv->book, page_n );
-			if( ofa_accounts_store_get_by_number( priv->store, number, &store_iter )){
 
-				tview = my_utils_container_get_child_by_type(
-								GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
-				tfilter = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
-				gtk_tree_model_filter_convert_child_iter_to_iter(
-						GTK_TREE_MODEL_FILTER( tfilter ), &filter_iter, &store_iter );
+			ofa_accounts_store_get_by_number( priv->store, number, &store_iter );
 
-				path = gtk_tree_model_get_path( tfilter, &filter_iter );
-				gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
-				gtk_tree_path_free( path );
+			tview = my_utils_container_get_child_by_type(
+							GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+			tfilter = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
+			gtk_tree_model_filter_convert_child_iter_to_iter(
+					GTK_TREE_MODEL_FILTER( tfilter ), &filter_iter, &store_iter );
 
-				select_row_by_iter( book, GTK_TREE_VIEW( tview ), tfilter, &filter_iter );
-			}
+			path = gtk_tree_model_get_path( tfilter, &filter_iter );
+			gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
+			gtk_tree_path_free( path );
+
+			select_row_by_iter( book, GTK_TREE_VIEW( tview ), tfilter, &filter_iter );
 		}
 	}
 }
