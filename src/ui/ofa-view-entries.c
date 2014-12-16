@@ -106,6 +106,7 @@ struct _ofaViewEntriesPrivate {
 	GtkEntry          *account_entry;
 	GtkButton         *account_select;
 	gchar             *acc_number;
+	gboolean           acc_valid;
 
 	GtkLabel          *f1_label;
 
@@ -257,6 +258,7 @@ static void           on_gen_selection_toggled( GtkToggleButton *button, ofaView
 static void           on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaViewEntries *self );
 static void           display_entries_from_ledger( ofaViewEntries *self );
 static void           on_account_changed( GtkEntry *entry, ofaViewEntries *self );
+static gboolean       on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntries *self );
 static void           on_account_select( GtkButton *button, ofaViewEntries *self );
 static void           display_entries_from_account( ofaViewEntries *self );
 static gboolean       on_d_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaViewEntries *self );
@@ -308,7 +310,7 @@ static void           do_update_currency_code( ofaViewEntries *self, const gchar
 static void           on_dossier_deleted_object( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
 static void           do_on_deleted_entry( ofaViewEntries *self, ofoEntry *entry );
 static void           on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries *self );
-static gboolean       on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *self );
+static gboolean       on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *self );
 static ofaEntryStatus get_row_status( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static GDate         *get_row_deffect( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter, GDate *date );
 static gint           get_row_errlevel( ofaViewEntries *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -550,6 +552,9 @@ setup_account_selection( ofaViewEntries *self )
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_account_changed ), self );
 	priv->account_entry = GTK_ENTRY( widget );
+
+	g_signal_connect(
+			G_OBJECT( widget ), "key-press-event", G_CALLBACK( on_account_entry_key_pressed ), self );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f1-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
@@ -1136,7 +1141,7 @@ setup_entries_treeview( ofaViewEntries *self )
 	gtk_tree_sortable_set_sort_column_id(
 			GTK_TREE_SORTABLE( priv->tsort ), sort_id, sort_sens );
 
-	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_key_pressed_event ), self );
+	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed_event ), self );
 
 	return( tview );
 }
@@ -1530,6 +1535,7 @@ on_account_changed( GtkEntry *entry, ofaViewEntries *self )
 
 	priv = self->priv;
 
+	priv->acc_valid = FALSE;
 	g_free( priv->acc_number );
 	priv->acc_number = g_strdup( gtk_entry_get_text( entry ));
 
@@ -1541,6 +1547,7 @@ on_account_changed( GtkEntry *entry, ofaViewEntries *self )
 		g_free( str );
 		display_entries_from_account( self );
 		ofa_settings_set_string( st_pref_account, priv->acc_number );
+		priv->acc_valid = TRUE;
 
 	} else {
 		gtk_label_set_text( priv->f1_label, "" );
@@ -1549,6 +1556,31 @@ on_account_changed( GtkEntry *entry, ofaViewEntries *self )
 
 }
 
+/*
+ * if account is invalid, and Tab is pressed, then directly opens the
+ * AccountSelect dialogbox
+ */
+static gboolean
+on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaViewEntries *self )
+{
+	ofaViewEntriesPrivate *priv;
+	gboolean stop;
+
+	priv = self->priv;
+	stop = FALSE;
+
+	/* a row may be inserted any where */
+	if( event->keyval == GDK_KEY_Tab && !priv->acc_valid ){
+		on_account_select( NULL, self );
+		stop = TRUE;
+	}
+
+	return( stop );
+}
+
+/*
+ * button may be NULL when called from above on_account_entry_key_pressed()
+ */
 static void
 on_account_select( GtkButton *button, ofaViewEntries *self )
 {
@@ -3094,7 +3126,7 @@ on_dossier_validated_entry( ofoDossier *dossier, ofoBase *object, ofaViewEntries
 }
 
 static gboolean
-on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *self )
+on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaViewEntries *self )
 {
 	gboolean stop;
 
