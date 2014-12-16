@@ -69,8 +69,6 @@ openbook_SOURCES = \
 	my-progress-bar.h									\
 	my-tab-label.c										\
 	my-tab-label.h										\
-	ofa-account-istore.c								\
-	ofa-account-istore.h								\
 	ofa-account-properties.c							\
 	ofa-account-properties.h							\
 	ofa-account-select.c								\
