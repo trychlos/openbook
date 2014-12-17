@@ -39,7 +39,9 @@
 
 #include "api/ofo-dossier-def.h"
 
-#include "ui/ofa-ledger-istore.h"
+#include "core/ofa-main-window-def.h"
+
+#include "ui/ofa-ledger-store.h"
 
 G_BEGIN_DECLS
 
@@ -67,14 +69,23 @@ typedef struct {
 }
 	ofaLedgerComboClass;
 
-GType           ofa_ledger_combo_get_type    ( void );
+GType           ofa_ledger_combo_get_type       ( void );
 
-ofaLedgerCombo *ofa_ledger_combo_new         ( void );
+ofaLedgerCombo *ofa_ledger_combo_new            ( void );
 
-gchar          *ofa_ledger_combo_get_selected( ofaLedgerCombo *combo );
+void            ofa_ledger_combo_attach_to      ( ofaLedgerCombo *instance,
+															GtkContainer *parent );
 
-void            ofa_ledger_combo_set_selected( ofaLedgerCombo *combo,
-														const gchar *mnemo );
+void            ofa_ledger_combo_set_columns    ( ofaLedgerCombo *instance,
+															ofaLedgerColumns columns );
+
+void            ofa_ledger_combo_set_main_window( ofaLedgerCombo *instance,
+															ofaMainWindow *main_window );
+
+gchar          *ofa_ledger_combo_get_selected   ( ofaLedgerCombo *combo );
+
+void            ofa_ledger_combo_set_selected   ( ofaLedgerCombo *combo,
+															const gchar *mnemo );
 
 G_END_DECLS
 

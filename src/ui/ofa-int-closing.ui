@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
 <interface>
-  <!-- interface-requires gtk+ 3.6 -->
+  <requires lib="gtk+" version="3.6"/>
   <object class="GtkDialog" id="IntClosingDlg">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
@@ -63,11 +64,13 @@
                 <property name="label_xalign">0</property>
                 <property name="shadow_type">in</property>
                 <child>
-                  <object class="GtkAlignment" id="px-treeview-alignement">
+                  <object class="GtkAlignment" id="treeview-parent">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="top_padding">2</property>
-                    <property name="left_padding">8</property>
+                    <property name="top_padding">4</property>
+                    <property name="bottom_padding">4</property>
+                    <property name="left_padding">12</property>
+                    <property name="right_padding">4</property>
                     <child>
                       <placeholder/>
                     </child>

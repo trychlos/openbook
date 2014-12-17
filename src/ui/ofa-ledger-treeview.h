@@ -39,11 +39,11 @@
  * embedded in a GtkScrolledWindow.
  */
 
-#include <gtk/gtk.h>
-
 #include "api/ofo-dossier-def.h"
 
-#include "ui/ofa-ledger-istore.h"
+#include "core/ofa-main-window-def.h"
+
+#include "ui/ofa-ledger-store.h"
 
 G_BEGIN_DECLS
 
@@ -74,6 +74,15 @@ typedef struct {
 GType              ofa_ledger_treeview_get_type                ( void ) G_GNUC_CONST;
 
 ofaLedgerTreeview *ofa_ledger_treeview_new                     ( void );
+
+void               ofa_ledger_treeview_attach_to               ( ofaLedgerTreeview *view,
+																			GtkContainer *parent );
+
+void               ofa_ledger_treeview_set_columns             ( ofaLedgerTreeview *view,
+																			ofaLedgerColumns columns );
+
+void               ofa_ledger_treeview_set_main_window         ( ofaLedgerTreeview *view,
+																			ofaMainWindow *main_window );
 
 void               ofa_ledger_treeview_set_selection_mode      ( ofaLedgerTreeview *view,
 																			GtkSelectionMode mode );

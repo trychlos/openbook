@@ -36,24 +36,37 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-ledger-treeview.h"
+#include "ui/ofa-main-window.h"
 
 /* private instance data
  */
 struct _ofaLedgerTreeviewPrivate {
-	gboolean     dispose_has_run;
+	gboolean         dispose_has_run;
 
 	/* runtime datas
 	 */
-	GtkWidget   *scrolled;
-	GtkTreeView *tview;
-	gint         mnemo_col_number;
+	GtkWidget       *top_widget;
+	GtkTreeView     *tview;
+
+	ofaMainWindow   *main_window;
+	ofoDossier      *dossier;
+	ofaLedgerColumns columns;
+	ofaLedgerStore  *store;
 };
 
-static void        istore_iface_init( ofaLedgerIStoreInterface *iface );
-static guint       istore_get_interface_version( const ofaLedgerIStore *instance );
-static void        istore_attach_to( ofaLedgerIStore *instance, GtkContainer *parent );
-static void        istore_set_columns( ofaLedgerIStore *instance, GtkListStore *store, ofaLedgerColumns columns );
-static GtkWidget  *get_scrolled_window( ofaLedgerTreeview *self );
+/* signals defined here
+ */
+enum {
+	CHANGED = 0,
+	ACTIVATED,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
+static void        on_parent_finalized( ofaLedgerTreeview *view, gpointer finalized_parent );
+static GtkWidget  *get_top_widget( ofaLedgerTreeview *self );
+static void        create_treeview_columns( ofaLedgerTreeview *view );
 static gboolean    on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaLedgerTreeview *self );
 static void        on_tview_key_insert( ofaLedgerTreeview *page );
 static void        on_tview_key_delete( ofaLedgerTreeview *page );
@@ -64,8 +77,7 @@ static void        on_row_selected( GtkTreeSelection *selection, ofaLedgerTreevi
 static GList      *get_selected( ofaLedgerTreeview *self );
 
 
-G_DEFINE_TYPE_EXTENDED( ofaLedgerTreeview, ofa_ledger_treeview, G_TYPE_OBJECT, 0, \
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_LEDGER_ISTORE, istore_iface_init ));
+G_DEFINE_TYPE( ofaLedgerTreeview, ofa_ledger_treeview, G_TYPE_OBJECT );
 
 static void
 ledger_treeview_finalize( GObject *instance )
@@ -129,101 +141,56 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ledger_treeview_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaLedgerTreeviewPrivate ));
-}
 
-static void
-istore_iface_init( ofaLedgerIStoreInterface *iface )
-{
-	static const gchar *thisfn = "ofa_ledger_treeview_istore_iface_init";
+	/**
+	 * ofaLedgerTreeview::changed:
+	 *
+	 * This signal is sent on the #ofaLedgerTreeview when the selection
+	 * is changed.
+	 *
+	 * Arguments is the selected ledger mnemo.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaLedgerTreeview *view,
+	 * 						const gchar     *mnemo,
+	 * 						gpointer         user_data );
+	 */
+	st_signals[ CHANGED ] = g_signal_new_class_handler(
+				"changed",
+				OFA_TYPE_LEDGER_TREEVIEW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_STRING );
 
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = istore_get_interface_version;
-	iface->attach_to = istore_attach_to;
-	iface->set_columns = istore_set_columns;
-}
-
-static guint
-istore_get_interface_version( const ofaLedgerIStore *instance )
-{
-	return( 1 );
-}
-
-static void
-istore_attach_to( ofaLedgerIStore *instance, GtkContainer *parent )
-{
-	ofaLedgerTreeview *self;
-	ofaLedgerTreeviewPrivate *priv;
-
-	g_return_if_fail( instance && OFA_IS_LEDGER_TREEVIEW( instance ));
-
-	g_debug( "ofa_ledger_treeview_istore_attach_to: instance=%p (%s), parent=%p (%s)",
-			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
-
-	self = OFA_LEDGER_TREEVIEW( instance );
-	priv = self->priv;
-
-	priv->scrolled = get_scrolled_window( self );
-
-	gtk_container_add( parent, priv->scrolled );
-}
-
-static void
-istore_set_columns( ofaLedgerIStore *instance, GtkListStore *store, ofaLedgerColumns columns )
-{
-	ofaLedgerTreeviewPrivate *priv;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-	gint col_number;
-
-	priv = OFA_LEDGER_TREEVIEW( instance )->priv;
-
-	gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( store ));
-
-	priv->mnemo_col_number = ofa_ledger_istore_get_column_number( instance, LEDGER_COL_MNEMO );
-
-	if( columns & LEDGER_COL_MNEMO ){
-		col_number = ofa_ledger_istore_get_column_number( instance, LEDGER_COL_MNEMO );
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Mnemo" ), cell, "text", col_number, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( columns & LEDGER_COL_LABEL ){
-		col_number = ofa_ledger_istore_get_column_number( instance, LEDGER_COL_LABEL );
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Label" ), cell, "text", col_number, NULL );
-		gtk_tree_view_column_set_expand( column, TRUE );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( columns & LEDGER_COL_LAST_ENTRY ){
-		col_number = ofa_ledger_istore_get_column_number( instance, LEDGER_COL_LAST_ENTRY );
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Last entry" ), cell, "text", col_number, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	if( columns & LEDGER_COL_LAST_CLOSE ){
-		col_number = ofa_ledger_istore_get_column_number( instance, LEDGER_COL_LAST_CLOSE );
-		cell = gtk_cell_renderer_text_new();
-		column = gtk_tree_view_column_new_with_attributes(
-						_( "Last closing" ), cell, "text", col_number, NULL );
-		gtk_tree_view_append_column( priv->tview, column );
-	}
-
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, instance, NULL );
-
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( store ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
-
-	gtk_widget_show_all( GTK_WIDGET( priv->scrolled ));
+	/**
+	 * ofaLedgerTreeview::activated:
+	 *
+	 * This signal is sent on the #ofaLedgerTreeview when the selection is
+	 * activated.
+	 *
+	 * Arguments is the selected ledger mnemo.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaLedgerTreeview *view,
+	 * 						const gchar     *mnemo,
+	 * 						gpointer         user_data );
+	 */
+	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
+				"activated",
+				OFA_TYPE_LEDGER_TREEVIEW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_STRING );
 }
 
 /**
@@ -239,26 +206,74 @@ ofa_ledger_treeview_new( void )
 	return( view );
 }
 
+/**
+ * ofa_ledger_treeview_attach_to:
+ */
+void
+ofa_ledger_treeview_attach_to( ofaLedgerTreeview *view, GtkContainer *parent )
+{
+	ofaLedgerTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
+	g_debug( "ofa_ledger_treeview_attach_to: view=%p, parent=%p (%s)",
+			( void * ) view,
+			( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, view );
+
+		get_top_widget( view );
+
+		gtk_container_add( parent, GTK_WIDGET( priv->top_widget ));
+
+		gtk_widget_show_all( GTK_WIDGET( parent ));
+	}
+}
+
+static void
+on_parent_finalized( ofaLedgerTreeview *view, gpointer finalized_parent )
+{
+	static const gchar *thisfn = "ofa_ledger_treeview_on_parent_finalized";
+
+	g_debug( "%s: treeview=%p, finalized_parent=%p",
+			thisfn, ( void * ) view, ( void * ) finalized_parent );
+
+	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
+
+	g_object_unref( view );
+}
+
+/*
+ * if not already done, create a GtkTreeView inside of a GtkScrolledWindow
+ */
 static GtkWidget *
-get_scrolled_window( ofaLedgerTreeview *self )
+get_top_widget( ofaLedgerTreeview *self )
 {
 	ofaLedgerTreeviewPrivate *priv;
 	GtkTreeSelection *select;
+	GtkWidget *scrolled;
 
 	priv = self->priv;
 
-	if( !priv->scrolled ){
-		priv->scrolled = gtk_scrolled_window_new( NULL, NULL );
-		gtk_container_set_border_width(
-				GTK_CONTAINER( priv->scrolled ), 4 );
+	if( !priv->top_widget ){
+		priv->top_widget = gtk_frame_new( NULL );
+		gtk_frame_set_shadow_type( GTK_FRAME( priv->top_widget ), GTK_SHADOW_IN );
+
+		scrolled = gtk_scrolled_window_new( NULL, NULL );
 		gtk_scrolled_window_set_policy(
-				GTK_SCROLLED_WINDOW( priv->scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
+				GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
+		gtk_container_add( GTK_CONTAINER( priv->top_widget ), scrolled );
 
 		priv->tview = GTK_TREE_VIEW( gtk_tree_view_new());
 		gtk_widget_set_hexpand( GTK_WIDGET( priv->tview ), TRUE );
 		gtk_widget_set_vexpand( GTK_WIDGET( priv->tview ), TRUE );
 		gtk_tree_view_set_headers_visible( priv->tview, TRUE );
-		gtk_container_add( GTK_CONTAINER( priv->scrolled ), GTK_WIDGET( priv->tview ));
+		gtk_container_add( GTK_CONTAINER( scrolled ), GTK_WIDGET( priv->tview ));
 
 		g_signal_connect(
 				G_OBJECT( priv->tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
@@ -270,7 +285,108 @@ get_scrolled_window( ofaLedgerTreeview *self )
 				G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
 	}
 
-	return( priv->scrolled );
+	return( priv->top_widget );
+}
+
+/**
+ * ofa_ledger_treeview_set_columns:
+ */
+void
+ofa_ledger_treeview_set_columns( ofaLedgerTreeview *view, ofaLedgerColumns columns )
+{
+	ofaLedgerTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		get_top_widget( view );
+
+		priv->columns = columns;
+		create_treeview_columns( view );
+	}
+}
+
+static void
+create_treeview_columns( ofaLedgerTreeview *view )
+{
+	ofaLedgerTreeviewPrivate *priv;
+	GtkCellRenderer *cell;
+	GtkTreeViewColumn *column;
+
+	priv = view->priv;
+
+	if( priv->columns & LEDGER_DISP_MNEMO ){
+		cell = gtk_cell_renderer_text_new();
+		column = gtk_tree_view_column_new_with_attributes(
+						_( "Mnemo" ), cell, "text", LEDGER_COL_MNEMO, NULL );
+		gtk_tree_view_append_column( priv->tview, column );
+	}
+
+	if( priv->columns & LEDGER_DISP_LABEL ){
+		cell = gtk_cell_renderer_text_new();
+		column = gtk_tree_view_column_new_with_attributes(
+						_( "Label" ), cell, "text", LEDGER_COL_LABEL, NULL );
+		gtk_tree_view_column_set_expand( column, TRUE );
+		gtk_tree_view_append_column( priv->tview, column );
+	}
+
+	if( priv->columns & LEDGER_DISP_LAST_ENTRY ){
+		cell = gtk_cell_renderer_text_new();
+		column = gtk_tree_view_column_new_with_attributes(
+						_( "Last entry" ), cell, "text", LEDGER_COL_LAST_ENTRY, NULL );
+		gtk_tree_view_append_column( priv->tview, column );
+	}
+
+	if( priv->columns & LEDGER_DISP_LAST_CLOSE ){
+		cell = gtk_cell_renderer_text_new();
+		column = gtk_tree_view_column_new_with_attributes(
+						_( "Last closing" ), cell, "text", LEDGER_COL_LAST_CLOSE, NULL );
+		gtk_tree_view_append_column( priv->tview, column );
+	}
+
+	gtk_widget_show_all( GTK_WIDGET( priv->top_widget ));
+}
+
+/**
+ * ofa_ledger_treeview_set_main_window:
+ *
+ * This is required in order to get the dossier which will permit to
+ * create the underlying tree store.
+ */
+void
+ofa_ledger_treeview_set_main_window( ofaLedgerTreeview *view, ofaMainWindow *main_window )
+{
+	ofaLedgerTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		/* the treeviewbox must have been created first */
+		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
+
+		priv->main_window = main_window;
+		priv->dossier = ofa_main_window_get_dossier( main_window );
+		priv->store = ofa_ledger_store_new( priv->dossier );
+
+		get_top_widget( view );
+		gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
+
+		gtk_tree_sortable_set_default_sort_func(
+				GTK_TREE_SORTABLE( priv->store ), ( GtkTreeIterCompareFunc ) on_sort_model, view, NULL );
+
+		gtk_tree_sortable_set_sort_column_id(
+				GTK_TREE_SORTABLE( priv->store ),
+				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+
+		/*dossier_signals_connect( treeview );*/
+	}
 }
 
 /*
@@ -311,14 +427,11 @@ on_tview_key_delete( ofaLedgerTreeview *page )
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerTreeview *self )
 {
-	ofaLedgerTreeviewPrivate *priv;
 	gchar *amnemo, *bmnemo;
 	gint cmp;
 
-	priv = self->priv;
-
-	gtk_tree_model_get( tmodel, a, priv->mnemo_col_number, &amnemo, -1 );
-	gtk_tree_model_get( tmodel, b, priv->mnemo_col_number, &bmnemo, -1 );
+	gtk_tree_model_get( tmodel, a, LEDGER_COL_MNEMO, &amnemo, -1 );
+	gtk_tree_model_get( tmodel, b, LEDGER_COL_MNEMO, &bmnemo, -1 );
 
 	cmp = cmp_by_mnemo( amnemo, bmnemo );
 
@@ -383,7 +496,7 @@ get_selected( ofaLedgerTreeview *self )
 
 	for( irow=sel_rows ; irow ; irow=irow->next ){
 		if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) irow->data )){
-			gtk_tree_model_get( tmodel, &iter, priv->mnemo_col_number, &ledger, -1 );
+			gtk_tree_model_get( tmodel, &iter, LEDGER_COL_MNEMO, &ledger, -1 );
 			sel_mnemos = g_list_append( sel_mnemos, ledger );
 		}
 	}
@@ -429,9 +542,7 @@ ofa_ledger_treeview_set_selection_mode( ofaLedgerTreeview *view, GtkSelectionMod
 
 	if( !priv->dispose_has_run ){
 
-		if( !priv->tview ){
-			get_scrolled_window( view );
-		}
+		get_top_widget( view );
 		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 
 		select = gtk_tree_view_get_selection( priv->tview );
@@ -452,6 +563,9 @@ ofa_ledger_treeview_get_top_focusable_widget( ofaLedgerTreeview *view )
 	priv = view->priv;
 
 	if( !priv->dispose_has_run ){
+
+		get_top_widget( view );
+		g_return_val_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ), NULL );
 
 		return( GTK_WIDGET( priv->tview ));
 	}

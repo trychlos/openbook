@@ -173,13 +173,10 @@ setup_tree_view( ofaPage *page )
 	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
 
 	priv->tview = ofa_ledger_treeview_new();
-	ofa_ledger_istore_attach_to(
-			OFA_LEDGER_ISTORE( priv->tview ), GTK_CONTAINER( frame ));
-	ofa_ledger_istore_set_columns(
-			OFA_LEDGER_ISTORE( priv->tview ),
-			LEDGER_COL_MNEMO | LEDGER_COL_LABEL | LEDGER_COL_LAST_ENTRY | LEDGER_COL_LAST_CLOSE );
-	ofa_ledger_istore_set_dossier(
-			OFA_LEDGER_ISTORE( priv->tview ), ofa_page_get_dossier( page ));
+	ofa_ledger_treeview_attach_to( priv->tview, GTK_CONTAINER( frame ));
+	ofa_ledger_treeview_set_columns( priv->tview,
+			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
+	ofa_ledger_treeview_set_main_window( priv->tview, ofa_page_get_main_window( page ));
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_BROWSE );
 
 	g_signal_connect( G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_row_selected ), page );

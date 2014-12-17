@@ -277,12 +277,9 @@ v_init_dialog( myDialog *dialog )
 	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
 
-	ofa_ledger_istore_attach_to(
-			OFA_LEDGER_ISTORE( priv->ledger_combo ), GTK_CONTAINER( priv->ledger_parent ));
-	ofa_ledger_istore_set_columns(
-			OFA_LEDGER_ISTORE( priv->ledger_combo ), LEDGER_COL_LABEL );
-	ofa_ledger_istore_set_dossier(
-			OFA_LEDGER_ISTORE( priv->ledger_combo ), MY_WINDOW( dialog )->prot->dossier );
+	ofa_ledger_combo_attach_to( priv->ledger_combo, GTK_CONTAINER( priv->ledger_parent ));
+	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
+	ofa_ledger_combo_set_main_window( priv->ledger_combo, MY_WINDOW( dialog )->prot->main_window );
 
 	g_signal_connect(
 			G_OBJECT( priv->ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), self );

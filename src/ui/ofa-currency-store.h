@@ -85,6 +85,21 @@ enum {
 	CURRENCY_N_COLUMNS
 };
 
+/**
+ * ofaCurrencyColumns:
+ * The columns displayed in the ComboBox.
+ */
+typedef enum {
+	CURRENCY_DISP_CODE      = 1 << 0,
+	CURRENCY_DISP_LABEL     = 1 << 1,
+	CURRENCY_DISP_SYMBOL    = 1 << 2,
+	CURRENCY_DISP_DIGITS    = 1 << 3,
+	CURRENCY_DISP_NOTES     = 1 << 4,
+	CURRENCY_DISP_UPD_USER  = 1 << 5,
+	CURRENCY_DISP_UPD_STAMP = 1 << 6,
+}
+	ofaCurrencyColumns;
+
 GType             ofa_currency_store_get_type( void );
 
 ofaCurrencyStore *ofa_currency_store_new     ( ofoDossier *dossier );

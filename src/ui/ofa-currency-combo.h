@@ -44,6 +44,8 @@
 
 #include "core/ofa-main-window-def.h"
 
+#include "ui/ofa-currency-store.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_CURRENCY_COMBO                ( ofa_currency_combo_get_type())
@@ -69,21 +71,6 @@ typedef struct {
 	GObjectClass             parent;
 }
 	ofaCurrencyComboClass;
-
-/**
- * ofaCurrencyColumns:
- * The columns displayed in the ComboBox.
- */
-typedef enum {
-	CURRENCY_DISP_CODE      = 1 << 0,
-	CURRENCY_DISP_LABEL     = 1 << 1,
-	CURRENCY_DISP_SYMBOL    = 1 << 2,
-	CURRENCY_DISP_DIGITS    = 1 << 3,
-	CURRENCY_DISP_NOTES     = 1 << 4,
-	CURRENCY_DISP_UPD_USER  = 1 << 5,
-	CURRENCY_DISP_UPD_STAMP = 1 << 6,
-}
-	ofaCurrencyColumns;
 
 GType             ofa_currency_combo_get_type       ( void ) G_GNUC_CONST;
 

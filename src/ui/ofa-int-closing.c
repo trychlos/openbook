@@ -194,16 +194,13 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	priv->do_close_btn = button;
 
-	parent = my_utils_container_get_child_by_name( container, "px-treeview-alignement" );
+	parent = my_utils_container_get_child_by_name( container, "treeview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->tview = ofa_ledger_treeview_new();
-	ofa_ledger_istore_attach_to(
-			OFA_LEDGER_ISTORE( priv->tview ), GTK_CONTAINER( parent ));
-	ofa_ledger_istore_set_columns(
-			OFA_LEDGER_ISTORE( priv->tview ),
-			LEDGER_COL_MNEMO | LEDGER_COL_LABEL | LEDGER_COL_LAST_ENTRY | LEDGER_COL_LAST_CLOSE );
-	ofa_ledger_istore_set_dossier(
-			OFA_LEDGER_ISTORE( priv->tview ), MY_WINDOW( dialog )->prot->dossier );
+	ofa_ledger_treeview_attach_to( priv->tview, GTK_CONTAINER( parent ));
+	ofa_ledger_treeview_set_columns( priv->tview,
+			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
+	ofa_ledger_treeview_set_main_window( priv->tview, MY_WINDOW( dialog )->prot->main_window );
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
 
 	g_signal_connect( G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_rows_selected ), dialog );

@@ -345,14 +345,10 @@ init_ledgers_selection( ofaPDFLedgers *self )
 	priv->alignment = widget;
 
 	priv->ledgers_tview = ofa_ledger_treeview_new();
-	ofa_ledger_istore_attach_to(
-			OFA_LEDGER_ISTORE( priv->ledgers_tview ), GTK_CONTAINER( widget ));
-	ofa_ledger_istore_set_columns(
-			OFA_LEDGER_ISTORE( priv->ledgers_tview ),
-			LEDGER_COL_MNEMO | LEDGER_COL_LABEL | LEDGER_COL_LAST_ENTRY | LEDGER_COL_LAST_CLOSE );
-	ofa_ledger_istore_set_dossier(
-			OFA_LEDGER_ISTORE( priv->ledgers_tview ),
-			MY_WINDOW( self )->prot->dossier );
+	ofa_ledger_treeview_attach_to( priv->ledgers_tview, GTK_CONTAINER( widget ));
+	ofa_ledger_treeview_set_columns( priv->ledgers_tview,
+			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
+	ofa_ledger_treeview_set_main_window( priv->ledgers_tview, MY_WINDOW( self )->prot->main_window );
 	ofa_ledger_treeview_set_selection_mode( priv->ledgers_tview, GTK_SELECTION_MULTIPLE );
 
 	g_signal_connect(
