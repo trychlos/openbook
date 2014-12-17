@@ -35,7 +35,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-rate.h"
 
-#include "ui/my-buttons-box.h"
+#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
@@ -74,6 +74,7 @@ G_DEFINE_TYPE( ofaRatesPage, ofa_rates_page, OFA_TYPE_PAGE )
 static GtkWidget *v_setup_view( ofaPage *page );
 static void       setup_dossier_signaling( ofaRatesPage *self );
 static GtkWidget *setup_tree_view( ofaRatesPage *self );
+static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       insert_dataset( ofaRatesPage *self );
@@ -86,7 +87,6 @@ static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIt
 static void       setup_first_selection( ofaRatesPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self );
-static void       v_on_button_clicked( ofaPage *page, guint button_id );
 static void       on_new_clicked( ofaRatesPage *page );
 static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatesPage *self );
 static void       on_update_clicked( ofaRatesPage *page );
@@ -169,9 +169,9 @@ ofa_rates_page_class_init( ofaRatesPageClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = rates_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-	OFA_PAGE_CLASS( klass )->on_button_clicked = v_on_button_clicked;
 
 	g_type_class_add_private( klass, sizeof( ofaRatesPagePrivate ));
 }
@@ -296,6 +296,27 @@ setup_tree_view( ofaRatesPage *self )
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	return( GTK_WIDGET( frame ));
+}
+
+static GtkWidget *
+v_setup_buttons( ofaPage *page )
+{
+	ofaRatesPagePrivate *priv;
+	ofaButtonsBox *buttons_box;
+
+	priv = OFA_RATES_PAGE( page )->priv;
+
+	buttons_box = ofa_buttons_box_new();
+
+	ofa_buttons_box_add_spacer( buttons_box );
+	ofa_buttons_box_add_button(
+			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
+	priv->update_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
+	priv->delete_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+
+	return( ofa_buttons_box_get_top_widget( buttons_box ));
 }
 
 static void
@@ -517,11 +538,6 @@ on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self )
 		g_object_unref( rate );
 	}
 
-	if( !priv->update_btn ){
-		priv->update_btn = ofa_page_get_button_by_id( OFA_PAGE( self ), BUTTONS_BOX_PROPERTIES );
-		priv->delete_btn = ofa_page_get_button_by_id( OFA_PAGE( self ), BUTTONS_BOX_DELETE );
-	}
-
 	if( priv->update_btn ){
 		gtk_widget_set_sensitive(
 				priv->update_btn,
@@ -533,24 +549,6 @@ on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self )
 				priv->delete_btn,
 				rate && OFO_IS_RATE( rate ) &&
 					ofo_rate_is_deletable( rate, ofa_page_get_dossier( OFA_PAGE( self ))));
-	}
-}
-
-static void
-v_on_button_clicked( ofaPage *page, guint button_id )
-{
-	g_return_if_fail( page && OFA_IS_RATES_PAGE( page ));
-
-	switch( button_id ){
-		case BUTTONS_BOX_NEW:
-			on_new_clicked( OFA_RATES_PAGE( page ));
-			break;
-		case BUTTONS_BOX_PROPERTIES:
-			on_update_clicked( OFA_RATES_PAGE( page ));
-			break;
-		case BUTTONS_BOX_DELETE:
-			on_delete_clicked( OFA_RATES_PAGE( page ));
-			break;
 	}
 }
 

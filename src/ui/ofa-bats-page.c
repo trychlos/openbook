@@ -32,9 +32,9 @@
 
 #include "api/ofo-bat.h"
 
-#include "ui/my-buttons-box.h"
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bats-page.h"
+#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
@@ -70,7 +70,6 @@ static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIt
 static void       setup_first_selection( ofaBatsPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaBatsPage *self );
-static void       v_on_button_clicked( ofaPage *page, guint button_id );
 static void       on_update_clicked( ofaBatsPage *page );
 static void       on_delete_clicked( ofaBatsPage *page );
 static void       try_to_delete_current_row( ofaBatsPage *page );
@@ -134,7 +133,6 @@ ofa_bats_page_class_init( ofaBatsPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-	OFA_PAGE_CLASS( klass )->on_button_clicked = v_on_button_clicked;
 
 	g_type_class_add_private( klass, sizeof( ofaBatsPagePrivate ));
 }
@@ -227,18 +225,21 @@ static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
 	ofaBatsPagePrivate *priv;
-	GtkWidget *buttons_box;
-	GtkWidget *btn_new;
-
-	buttons_box = OFA_PAGE_CLASS( ofa_bats_page_parent_class )->setup_buttons( page );
-	btn_new = ofa_page_get_button_by_id( page, BUTTONS_BOX_NEW );
-	gtk_widget_set_sensitive( btn_new, FALSE );
+	ofaButtonsBox *buttons_box;
 
 	priv = OFA_BATS_PAGE( page )->priv;
-	priv->update_btn = ofa_page_get_button_by_id( page, BUTTONS_BOX_PROPERTIES );
-	priv->delete_btn = ofa_page_get_button_by_id( page, BUTTONS_BOX_DELETE );
 
-	return( buttons_box );
+	buttons_box = ofa_buttons_box_new();
+
+	ofa_buttons_box_add_spacer( buttons_box );
+	ofa_buttons_box_add_button(
+			buttons_box, BUTTON_NEW, FALSE, NULL, NULL );
+	priv->update_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
+	priv->delete_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+
+	return( ofa_buttons_box_get_top_widget( buttons_box ));
 }
 
 static void
@@ -360,21 +361,6 @@ v_get_top_focusable_widget( const ofaPage *page )
 	g_return_val_if_fail( page && OFA_IS_BATS_PAGE( page ), NULL );
 
 	return( GTK_WIDGET( OFA_BATS_PAGE( page )->priv->tview ));
-}
-
-static void
-v_on_button_clicked( ofaPage *page, guint button_id )
-{
-	g_return_if_fail( page && OFA_IS_BATS_PAGE( page ));
-
-	switch( button_id ){
-		case BUTTONS_BOX_PROPERTIES:
-			on_update_clicked( OFA_BATS_PAGE( page ));
-			break;
-		case BUTTONS_BOX_DELETE:
-			on_delete_clicked( OFA_BATS_PAGE( page ));
-			break;
-	}
 }
 
 static ofoBat *

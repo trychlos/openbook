@@ -89,23 +89,26 @@ enum {
 	BUTTON_IMPORT,
 	BUTTON_EXPORT,
 	BUTTON_PRINT,
-	BUTTON_VIEW_ENTRIES
+	BUTTON_VIEW_ENTRIES,
+	BUTTON_GUIDED_INPUT
 };
 
-GType          ofa_buttons_box_get_type  ( void ) G_GNUC_CONST;
+GType          ofa_buttons_box_get_type      ( void ) G_GNUC_CONST;
 
-ofaButtonsBox *ofa_buttons_box_new       ( void );
+ofaButtonsBox *ofa_buttons_box_new           ( void );
 
-void           ofa_buttons_box_attach_to ( ofaButtonsBox *box,
+void           ofa_buttons_box_attach_to     ( ofaButtonsBox *box,
 														GtkContainer *parent );
 
-void           ofa_buttons_box_add_spacer( ofaButtonsBox *box );
+void           ofa_buttons_box_add_spacer    ( ofaButtonsBox *box );
 
-GtkWidget     *ofa_buttons_box_add_button( ofaButtonsBox *box,
+GtkWidget     *ofa_buttons_box_add_button    ( ofaButtonsBox *box,
 														gint button_id,
 														gboolean sensitive,
 														GCallback cb,
 														void *user_data );
+
+GtkWidget     *ofa_buttons_box_get_top_widget( ofaButtonsBox *box );
 
 G_END_DECLS
 

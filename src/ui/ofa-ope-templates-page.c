@@ -36,7 +36,7 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-ledger.h"
 
-#include "ui/my-buttons-box.h"
+#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-properties.h"
@@ -272,34 +272,29 @@ static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
 	ofaOpeTemplatesPagePrivate *priv;
-	myButtonsBox *box;
-	GtkWidget *button;
+	ofaButtonsBox *buttons_box;
 
 	priv = OFA_OPE_TEMPLATES_PAGE( page )->priv;
-	box = my_buttons_box_new();
-	my_buttons_box_set_header_rows( box, 2 );
 
-	my_buttons_box_pack_button_by_id( box,
-								BUTTONS_BOX_NEW,
-								TRUE, G_CALLBACK( on_new_clicked ), page );
-	priv->update_btn = my_buttons_box_pack_button_by_id( box,
-								BUTTONS_BOX_PROPERTIES,
-								FALSE, G_CALLBACK( on_update_clicked ), page );
-	priv->duplicate_btn = my_buttons_box_pack_button_by_id( box,
-								BUTTONS_BOX_DUPLICATE,
-								FALSE, G_CALLBACK( on_duplicate ), page );
-	priv->delete_btn = my_buttons_box_pack_button_by_id( box,
-								BUTTONS_BOX_DELETE,
-								FALSE, G_CALLBACK( on_delete_clicked ), page );
+	buttons_box = ofa_buttons_box_new();
 
-	my_buttons_box_add_spacer( box );
+	ofa_buttons_box_add_spacer( buttons_box );
+	ofa_buttons_box_add_spacer( buttons_box );
+	ofa_buttons_box_add_button(
+			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
+	priv->update_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
+	priv->duplicate_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_DUPLICATE, FALSE, G_CALLBACK( on_duplicate ), page );
+	priv->delete_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+	/*g_debug( "v_setup_buttons: delete_btn=%p", ( void * ) priv->delete_btn );*/
 
-	button = gtk_button_new_with_mnemonic( _( "_Guided input..." ));
-	my_buttons_box_pack_button( box,
-			button, FALSE, G_CALLBACK( on_guided_input ), page );
-	priv->guided_input_btn = button;
+	ofa_buttons_box_add_spacer( buttons_box );
+	priv->guided_input_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_GUIDED_INPUT, FALSE, G_CALLBACK( on_guided_input ), page );
 
-	return( GTK_WIDGET( box ));
+	return( ofa_buttons_box_get_top_widget( buttons_box ));
 }
 
 static void
@@ -599,13 +594,17 @@ enable_buttons( ofaOpeTemplatesPage *self, GtkTreeSelection *selection )
 	ofoOpeTemplate *model;
 	gboolean select_ok;
 
+	priv = self->priv;
+
 	/*g_debug( "%s: self=%p, selection=%p", thisfn, ( void * ) self, ( void * ) selection );*/
+	/*g_debug( "%s: update=%p, duplicate=%p, delete=%p, guided=%p",
+			thisfn,
+			( void * ) priv->update_btn, ( void * ) priv->duplicate_btn,
+			 ( void * ) priv->delete_btn, ( void * ) priv->guided_input_btn );*/
 
 	select_ok = selection
 					? gtk_tree_selection_get_selected( selection, &tmodel, &iter )
 					: FALSE;
-
-	priv = self->priv;
 
 	if( select_ok ){
 		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &model, -1 );

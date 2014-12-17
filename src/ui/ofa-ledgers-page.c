@@ -34,7 +34,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 
-#include "ui/my-buttons-box.h"
+#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-ledger-properties.h"
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-ledgers-page.h"
@@ -78,7 +78,6 @@ static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
 static void       on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
-static void       v_on_button_clicked( ofaPage *page, guint button_id );
 static void       on_new_clicked( ofaLedgersPage *page );
 static void       on_update_clicked( ofaLedgersPage *page );
 static void       do_update( ofaLedgersPage *self, ofoLedger *ledger );
@@ -143,7 +142,6 @@ ofa_ledgers_page_class_init( ofaLedgersPageClass *klass )
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-	OFA_PAGE_CLASS( klass )->on_button_clicked = v_on_button_clicked;
 
 	g_type_class_add_private( klass, sizeof( ofaLedgersPagePrivate ));
 }
@@ -162,18 +160,15 @@ static GtkWidget *
 setup_tree_view( ofaPage *page )
 {
 	ofaLedgersPagePrivate *priv;
-	GtkFrame *frame;
+	GtkWidget *alignment;
 
 	priv = OFA_LEDGERS_PAGE( page )->priv;
 
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
-	gtk_widget_set_margin_top( GTK_WIDGET( frame ), 4 );
-	gtk_widget_set_margin_bottom( GTK_WIDGET( frame ), 4 );
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
+	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 4, 4, 4, 0 );
 
 	priv->tview = ofa_ledger_treeview_new();
-	ofa_ledger_treeview_attach_to( priv->tview, GTK_CONTAINER( frame ));
+	ofa_ledger_treeview_attach_to( priv->tview, GTK_CONTAINER( alignment ));
 	ofa_ledger_treeview_set_columns( priv->tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
 	ofa_ledger_treeview_set_main_window( priv->tview, ofa_page_get_main_window( page ));
@@ -182,33 +177,34 @@ setup_tree_view( ofaPage *page )
 	g_signal_connect( G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( G_OBJECT( priv->tview ), "activated", G_CALLBACK( on_row_activated ), page );
 
-	return( GTK_WIDGET( frame ));
+	return( alignment );
 }
 
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
 	ofaLedgersPagePrivate *priv;
-	GtkWidget *buttons_box;
-	GtkWidget *button;
+	ofaButtonsBox *buttons_box;
 
 	g_return_val_if_fail( OFA_IS_LEDGERS_PAGE( page ), NULL );
 
 	priv = OFA_LEDGERS_PAGE( page )->priv;
 
-	buttons_box = OFA_PAGE_CLASS( ofa_ledgers_page_parent_class )->setup_buttons( page );
-	g_return_val_if_fail( buttons_box && MY_IS_BUTTONS_BOX( buttons_box ), NULL );
-	priv->update_btn = ofa_page_get_button_by_id( page, BUTTONS_BOX_PROPERTIES );
-	priv->delete_btn = ofa_page_get_button_by_id( page, BUTTONS_BOX_DELETE );
+	buttons_box = ofa_buttons_box_new();
 
-	my_buttons_box_add_spacer( MY_BUTTONS_BOX( buttons_box ));
+	ofa_buttons_box_add_spacer( buttons_box );
+	ofa_buttons_box_add_button(
+			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
+	priv->update_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
+	priv->delete_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
 
-	button = gtk_button_new_with_mnemonic( _( "View _entries..." ));
-	my_buttons_box_pack_button(
-			MY_BUTTONS_BOX( buttons_box ), button, FALSE, G_CALLBACK( on_view_entries ), page );
-	priv->entries_btn = button;
+	ofa_buttons_box_add_spacer( buttons_box );
+	priv->entries_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_view_entries ), page );
 
-	return( buttons_box );
+	return( ofa_buttons_box_get_top_widget( buttons_box ));
 }
 
 static void
@@ -270,24 +266,6 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self 
 			priv->entries_btn,
 			ledger && OFO_IS_LEDGER( ledger ) &&
 				ofo_ledger_has_entries( ledger, ofa_page_get_dossier( OFA_PAGE( self ))));
-}
-
-static void
-v_on_button_clicked( ofaPage *page, guint button_id )
-{
-	g_return_if_fail( page && OFA_IS_LEDGERS_PAGE( page ));
-
-	switch( button_id ){
-		case BUTTONS_BOX_NEW:
-			on_new_clicked( OFA_LEDGERS_PAGE( page ));
-			break;
-		case BUTTONS_BOX_PROPERTIES:
-			on_update_clicked( OFA_LEDGERS_PAGE( page ));
-			break;
-		case BUTTONS_BOX_DELETE:
-			on_delete_clicked( OFA_LEDGERS_PAGE( page ));
-			break;
-	}
 }
 
 static void

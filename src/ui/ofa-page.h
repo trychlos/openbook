@@ -101,12 +101,6 @@ G_BEGIN_DECLS
 #define PAGE_PROP_MAIN_WINDOW           "page-prop-main-window"
 #define PAGE_PROP_TOP_GRID              "page-prop-top-grid"
 #define PAGE_PROP_THEME                 "page-prop-theme"
-#define PAGE_PROP_HEADER_ROWS_COUNT     "page-prop-header-rows-count"
-
-/**
- * Default rows count before the first button
- */
-#define PAGE_HEADER_ROWS_DEFAULT        1
 
 /**
  * The color of the footer (if any)
@@ -117,9 +111,6 @@ ofaMainWindow *ofa_page_get_main_window           ( const ofaPage *page );
 GtkGrid       *ofa_page_get_top_grid              ( const ofaPage *page );
 gint           ofa_page_get_theme                 ( const ofaPage *page );
 ofoDossier    *ofa_page_get_dossier               ( const ofaPage *page );
-GtkWidget     *ofa_page_get_button_by_id          ( const ofaPage *page, guint id );
-
-GtkWidget     *ofa_page_create_default_buttons_box( guint header_rows, GCallback callback, void *user_data );
 
 GtkWidget     *ofa_page_get_top_focusable_widget  ( const ofaPage *page );
 

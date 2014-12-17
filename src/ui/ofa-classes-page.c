@@ -34,7 +34,7 @@
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/my-buttons-box.h"
+#include "ui/ofa-buttons-box.h"
 #include "ui/ofa-class-properties.h"
 #include "ui/ofa-classes-page.h"
 #include "ui/ofa-main-window.h"
@@ -71,6 +71,7 @@ G_DEFINE_TYPE( ofaClassesPage, ofa_classes_page, OFA_TYPE_PAGE )
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassesPage *self );
+static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static ofoClass  *tview_get_selected( ofaClassesPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
@@ -80,7 +81,6 @@ static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIt
 static void       setup_first_selection( ofaClassesPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self );
-static void       v_on_button_clicked( ofaPage *page, guint button_id );
 static void       on_new_clicked( ofaClassesPage *page );
 static void       on_update_clicked( ofaClassesPage *page );
 static void       on_delete_clicked( ofaClassesPage *page );
@@ -165,9 +165,9 @@ ofa_classes_page_class_init( ofaClassesPageClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = classes_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
-	OFA_PAGE_CLASS( klass )->on_button_clicked = v_on_button_clicked;
 
 	g_type_class_add_private( klass, sizeof( ofaClassesPagePrivate ));
 }
@@ -298,6 +298,27 @@ on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassesPage *sel
 	}
 
 	return( stop );
+}
+
+static GtkWidget *
+v_setup_buttons( ofaPage *page )
+{
+	ofaClassesPagePrivate *priv;
+	ofaButtonsBox *buttons_box;
+
+	priv = OFA_CLASSES_PAGE( page )->priv;
+
+	buttons_box = ofa_buttons_box_new();
+
+	ofa_buttons_box_add_spacer( buttons_box );
+	ofa_buttons_box_add_button(
+			buttons_box, BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), page );
+	priv->update_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_update_clicked ), page );
+	priv->delete_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
+
+	return( ofa_buttons_box_get_top_widget( buttons_box ));
 }
 
 static void
@@ -438,11 +459,6 @@ on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self )
 
 	priv = self->priv;
 
-	if( !priv->update_btn ){
-		priv->update_btn = ofa_page_get_button_by_id( OFA_PAGE( self ), BUTTONS_BOX_PROPERTIES );
-		priv->delete_btn = ofa_page_get_button_by_id( OFA_PAGE( self ), BUTTONS_BOX_DELETE );
-	}
-
 	if( priv->update_btn ){
 		gtk_widget_set_sensitive(
 				priv->update_btn,
@@ -454,24 +470,6 @@ on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self )
 				priv->delete_btn,
 				class && OFO_IS_CLASS( class ) &&
 					ofo_class_is_deletable( class, ofa_page_get_dossier( OFA_PAGE( self ))));
-	}
-}
-
-static void
-v_on_button_clicked( ofaPage *page, guint button_id )
-{
-	g_return_if_fail( OFA_IS_CLASSES_PAGE( page ));
-
-	switch( button_id ){
-		case BUTTONS_BOX_NEW:
-			on_new_clicked( OFA_CLASSES_PAGE( page ));
-			break;
-		case BUTTONS_BOX_PROPERTIES:
-			on_update_clicked( OFA_CLASSES_PAGE( page ));
-			break;
-		case BUTTONS_BOX_DELETE:
-			on_delete_clicked( OFA_CLASSES_PAGE( page ));
-			break;
 	}
 }
 

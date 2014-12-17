@@ -47,11 +47,9 @@ struct _ofaPagePrivate {
 	ofaMainWindow *main_window;
 	GtkGrid       *top_grid;
 	gint           theme;
-	gint           header_rows_count;
 
 	/* UI
 	 */
-	myButtonsBox  *buttons_box;
 };
 
 /* class properties
@@ -60,7 +58,6 @@ enum {
 	PROP_MAIN_WINDOW_ID = 1,
 	PROP_TOP_GRID_ID,
 	PROP_THEME_ID,
-	PROP_HEADER_ROWS_COUNT_ID
 };
 
 G_DEFINE_TYPE( ofaPage, ofa_page, G_TYPE_OBJECT )
@@ -69,9 +66,7 @@ static void       do_setup_page( ofaPage *page );
 static void       v_setup_page_default( ofaPage *page );
 static GtkWidget *do_setup_view( ofaPage *page );
 static GtkWidget *do_setup_buttons( ofaPage *page );
-static GtkWidget *v_setup_buttons_default( ofaPage *page );
 static void       do_init_view( ofaPage *page );
-static void       do_on_button_clicked( GtkWidget *button, ofaPage *page );
 static void       on_grid_finalized( ofaPage *self, GObject *grid );
 
 static void
@@ -144,10 +139,6 @@ page_get_property( GObject *instance, guint property_id, GValue *value, GParamSp
 				g_value_set_int( value, priv->theme );
 				break;
 
-			case PROP_HEADER_ROWS_COUNT_ID:
-				g_value_set_int( value, priv->header_rows_count );
-				break;
-
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
 				break;
@@ -186,10 +177,6 @@ page_set_property( GObject *instance, guint property_id, const GValue *value, GP
 				priv->theme = g_value_get_int( value );
 				break;
 
-			case PROP_HEADER_ROWS_COUNT_ID:
-				priv->header_rows_count = g_value_get_int( value );
-				break;
-
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
 				break;
@@ -217,13 +204,12 @@ page_constructed( GObject *instance )
 	self = OFA_PAGE( instance );
 	priv = self->priv;
 
-	g_debug( "%s: instance=%p (%s), main_window=%p, top_grid=%p, theme=%d, header_rows_count=%u",
+	g_debug( "%s: instance=%p (%s), main_window=%p, top_grid=%p, theme=%d",
 			thisfn,
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) priv->main_window,
 			( void * ) priv->top_grid,
-			priv->theme,
-			priv->header_rows_count );
+			priv->theme );
 
 	/* attach a weak reference to the grid widget to unref this object
 	 * and (more useful) the derived class which handles it */
@@ -255,7 +241,6 @@ ofa_page_init( ofaPage *self )
 	self->priv->main_window = NULL;
 	self->priv->top_grid = NULL;
 	self->priv->theme = -1;
-	self->priv->header_rows_count = PAGE_HEADER_ROWS_DEFAULT;
 }
 
 static void
@@ -303,21 +288,8 @@ ofa_page_class_init( ofaPageClass *klass )
 					-1,
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	g_object_class_install_property(
-			G_OBJECT_CLASS( klass ),
-			PROP_HEADER_ROWS_COUNT_ID,
-			g_param_spec_int(
-					PAGE_PROP_HEADER_ROWS_COUNT,
-					"Header rows count",
-					"The count of header rows before the first button",
-					0,
-					INT_MAX,
-					PAGE_HEADER_ROWS_DEFAULT,
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
 	klass->setup_page = v_setup_page_default;
 	klass->setup_view = NULL;
-	klass->setup_buttons = v_setup_buttons_default;
 	klass->init_view = NULL;
 	klass->on_button_clicked = NULL;
 	klass->get_top_focusable_widget = NULL;
@@ -395,49 +367,6 @@ do_setup_buttons( ofaPage *page )
 	return( buttons_box );
 }
 
-static GtkWidget *
-v_setup_buttons_default( ofaPage *page )
-{
-	ofaPagePrivate *priv;
-	GtkWidget *box;
-
-	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-
-	priv = page->priv;
-
-	box = ofa_page_create_default_buttons_box(
-					priv->header_rows_count, G_CALLBACK( do_on_button_clicked ), page );
-	g_return_val_if_fail( box && MY_IS_BUTTONS_BOX( box ), NULL );
-
-	priv->buttons_box = MY_BUTTONS_BOX( box );
-
-	return( box );
-}
-
-/**
- * ofa_page_create_default_buttons_box:
- * @header_rows: the count of header rows before the first button.
- * @user_data: the user data to be provided to the 'clicked' handler.
- *
- * This is a convenience function which creates a default buttons box,
- * defines the three standard buttons and attaches an handler to the
- * 'clicked' signal.
- */
-GtkWidget *
-ofa_page_create_default_buttons_box( guint header_rows, GCallback callback, void *user_data )
-{
-	myButtonsBox *box;
-
-	box = my_buttons_box_new();
-	my_buttons_box_set_header_rows( box, header_rows );
-
-	my_buttons_box_pack_button_by_id( box, BUTTONS_BOX_NEW, TRUE, callback, user_data );
-	my_buttons_box_pack_button_by_id( box, BUTTONS_BOX_PROPERTIES, FALSE, callback, user_data );
-	my_buttons_box_pack_button_by_id( box, BUTTONS_BOX_DELETE, FALSE, callback, user_data );
-
-	return( GTK_WIDGET( box ));
-}
-
 static void
 do_init_view( ofaPage *page )
 {
@@ -450,30 +379,6 @@ do_init_view( ofaPage *page )
 
 	} else {
 		g_debug( "%s: page=%p", thisfn, ( void * ) page );
-	}
-}
-
-/*
- * only buttons which are pre-identified in myButtonsBox class are
- * used here - so each one may be identified by its button id
- */
-static void
-do_on_button_clicked( GtkWidget *button, ofaPage *page )
-{
-	static const gchar *thisfn = "ofa_page_do_on_button_clicked";
-	guint button_id;
-
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_return_if_fail( page && OFA_IS_PAGE( page ));
-
-	button_id = my_buttons_box_get_button_id( page->priv->buttons_box, button );
-
-	if( OFA_PAGE_GET_CLASS( page )->on_button_clicked ){
-		OFA_PAGE_GET_CLASS( page )->on_button_clicked( page, button_id );
-
-	} else {
-		g_debug( "%s: button=%p, page=%p (%s)",
-				thisfn, ( void * ) button, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 	}
 }
 
@@ -539,22 +444,6 @@ ofa_page_get_dossier( const ofaPage *page )
 	if( !page->prot->dispose_has_run ){
 
 		return( ofa_main_window_get_dossier( page->priv->main_window ));
-	}
-
-	return( NULL );
-}
-
-/**
- * ofa_page_get_button_by_id:
- */
-GtkWidget *
-ofa_page_get_button_by_id( const ofaPage *page, guint id )
-{
-	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-
-	if( !page->prot->dispose_has_run ){
-
-		return( my_buttons_box_get_button_by_id( page->priv->buttons_box, id ));
 	}
 
 	return( NULL );

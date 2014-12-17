@@ -49,8 +49,6 @@ openbook_SOURCES = \
 	main.c												\
 	my-assistant.c										\
 	my-assistant.h										\
-	my-buttons-box.c									\
-	my-buttons-box.h									\
 	my-cell-renderer-amount.c							\
 	my-cell-renderer-amount.h							\
 	my-cell-renderer-date.c								\

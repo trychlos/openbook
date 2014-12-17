@@ -356,8 +356,6 @@ ofa_accounts_piece_set_buttons( ofaAccountsPiece *piece, gboolean view_entries )
 	if( !priv->dispose_has_run ){
 
 		alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-		gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 0, 0, 8, 8 );
-
 		gtk_grid_attach( priv->grid, alignment, 1, 0, 1, 1 );
 
 		priv->box = ofa_buttons_box_new();
@@ -368,14 +366,14 @@ ofa_accounts_piece_set_buttons( ofaAccountsPiece *piece, gboolean view_entries )
 		ofa_buttons_box_add_button( priv->box,
 				BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), piece );
 		priv->update_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_PROPERTIES, TRUE, G_CALLBACK( on_properties_clicked ), piece );
+				BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_properties_clicked ), piece );
 		priv->delete_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_DELETE, TRUE, G_CALLBACK( on_delete_clicked ), piece );
+				BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), piece );
 
 		if( view_entries ){
 			ofa_buttons_box_add_spacer( priv->box );
 			priv->view_entries_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_VIEW_ENTRIES, TRUE, G_CALLBACK( on_view_entries_clicked ), piece );
+					BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_view_entries_clicked ), piece );
 		}
 	}
 }

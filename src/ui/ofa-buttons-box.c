@@ -35,13 +35,14 @@
 /* private instance data
  */
 struct _ofaButtonsBoxPrivate {
-	gboolean dispose_has_run;
+	gboolean   dispose_has_run;
 
 	/* internals
 	 */
-	GtkGrid *grid;
-	gint     rows;
-	gint     spacers;
+	GtkWidget *alignment;
+	GtkGrid   *grid;
+	gint       rows;
+	gint       spacers;
 };
 
 #define BUTTON_ID                       "button-id"
@@ -177,7 +178,11 @@ get_top_grid( ofaButtonsBox *box )
 
 	if( !priv->grid ){
 
+		priv->alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+		gtk_alignment_set_padding( GTK_ALIGNMENT( priv->alignment ), 0, 0, 8, 8 );
+
 		grid = gtk_grid_new();
+		gtk_container_add( GTK_CONTAINER( priv->alignment ), grid );
 		gtk_grid_set_row_spacing( GTK_GRID( grid ), STYLE_ROW_MARGIN );
 
 		priv->grid = GTK_GRID( grid );
@@ -185,7 +190,7 @@ get_top_grid( ofaButtonsBox *box )
 		priv->spacers = 0;
 	}
 
-	return( GTK_WIDGET( priv->grid ));
+	return( priv->alignment );
 }
 
 /**
@@ -225,6 +230,7 @@ ofa_buttons_box_add_spacer( ofaButtonsBox *box )
 GtkWidget *
 ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensitive, GCallback cb, void *user_data )
 {
+	static const gchar *thisfn = "ofa_buttons_box_add_button";
 	ofaButtonsBoxPrivate *priv;
 	GtkWidget *alignment, *button;
 
@@ -244,13 +250,29 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 			case BUTTON_PROPERTIES:
 				button = gtk_button_new_with_mnemonic( _( "_Properties..." ));
 				break;
+			case BUTTON_DUPLICATE:
+				button = gtk_button_new_with_mnemonic( _( "_Duplicate" ));
+				break;
 			case BUTTON_DELETE:
 				button = gtk_button_new_with_mnemonic( _( "_Delete" ));
+				break;
+			case BUTTON_IMPORT:
+				button = gtk_button_new_with_mnemonic( _( "_Import..." ));
+				break;
+			case BUTTON_EXPORT:
+				button = gtk_button_new_with_mnemonic( _( "_Export..." ));
+				break;
+			case BUTTON_PRINT:
+				button = gtk_button_new_with_mnemonic( _( "_Print..." ));
 				break;
 			case BUTTON_VIEW_ENTRIES:
 				button = gtk_button_new_with_mnemonic( _( "View _entries..." ));
 				break;
+			case BUTTON_GUIDED_INPUT:
+				button = gtk_button_new_with_mnemonic( _( "_Guided input..." ));
+				break;
 			default:
+				g_warning( "%s: button=%u not implemented", thisfn, button_id );
 				break;
 		}
 
@@ -274,4 +296,29 @@ ofa_buttons_box_add_button( ofaButtonsBox *box, gint button_id, gboolean sensiti
 	}
 
 	return( button );
+}
+
+/**
+ * ofa_buttons_box_get_top_widget:
+ * @box: this #ofaButtonsBox object.
+ *
+ * Returns: the top box widget.
+ */
+GtkWidget *
+ofa_buttons_box_get_top_widget( ofaButtonsBox *box )
+{
+	ofaButtonsBoxPrivate *priv;
+	GtkWidget *top;
+
+	g_return_val_if_fail( box && OFA_IS_BUTTONS_BOX( box ), NULL );
+
+	priv = box->priv;
+	top = NULL;
+
+	if( !priv->dispose_has_run ){
+
+		top = get_top_grid( box );
+	}
+
+	return( top );
 }

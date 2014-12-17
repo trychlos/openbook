@@ -1538,7 +1538,7 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 	/* all pages of the main notebook begin with a GtkGrid
 	 */
 	grid = GTK_GRID( gtk_grid_new());
-	gtk_grid_set_column_spacing( grid, 4 );
+	/*gtk_grid_set_column_spacing( grid, 4 );*/
 
 	tab = my_tab_label_new( NULL, gettext( theme_def->label ));
 	g_signal_connect(
