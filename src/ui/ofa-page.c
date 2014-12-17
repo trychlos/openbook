@@ -33,7 +33,6 @@
 #include "api/my-utils.h"
 #include "api/ofo-base.h"
 
-#include "ui/my-buttons-box.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"

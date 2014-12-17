@@ -90,6 +90,7 @@ struct _ofaViewEntriesPrivate {
 	GDate              d_from;
 	GDate              d_to;
 	GList             *handlers;
+	gboolean           initializing;
 
 	/* UI
 	 */
@@ -383,6 +384,7 @@ ofa_view_entries_init( ofaViewEntries *self )
 	my_date_clear( &priv->d_to );
 
 	/* default visible columns */
+	priv->initializing = TRUE;
 	priv->dope_visible = TRUE;
 	priv->deffect_visible = FALSE;
 	priv->ref_visible = FALSE;
@@ -432,19 +434,18 @@ v_setup_view( ofaPage *page )
 	setup_display_columns( OFA_VIEW_ENTRIES( page ));
 	setup_edit_switch( OFA_VIEW_ENTRIES( page ));
 
+	priv->entries_tview = setup_entries_treeview( OFA_VIEW_ENTRIES( page ));
+	setup_footer( OFA_VIEW_ENTRIES( page ));
+
 	/* must be done at the end so that on_gen_selection_toggled doesn't
 	 * complain */
 	setup_gen_selection( OFA_VIEW_ENTRIES( page ));
 
-	priv->entries_tview = setup_entries_treeview( OFA_VIEW_ENTRIES( page ));
-	setup_footer( OFA_VIEW_ENTRIES( page ));
-
-	/* force a 'toggled' message on thegeneral selection */
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_btn ), TRUE );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ), TRUE );
-
 	/* connect to dossier signaling system */
 	setup_signaling_connect( OFA_VIEW_ENTRIES( page ));
+
+	/* allow the entry dataset to be loaded */
+	priv->initializing = FALSE;
 
 	return( frame );
 }
@@ -470,9 +471,11 @@ reparent_from_dialog( ofaViewEntries *self, GtkContainer *parent )
 static void
 setup_gen_selection( ofaViewEntries *self )
 {
+	static const gchar *thisfn = "ofa_view_entries_setup_gen_selection";
 	ofaViewEntriesPrivate *priv;
 	gchar *text;
 	GtkWidget *btn;
+	GtkToggleButton *toggle;
 
 	priv = self->priv;
 
@@ -480,23 +483,29 @@ setup_gen_selection( ofaViewEntries *self )
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_gen_selection_toggled ), self );
 	priv->ledger_btn = GTK_TOGGLE_BUTTON( btn );
-	gtk_toggle_button_set_active( priv->ledger_btn, FALSE );
+	g_debug( "%s: ledger_btn=%p", thisfn, ( void * ) priv->ledger_btn );
 
 	btn = my_utils_container_get_child_by_name( priv->top_box, "f1-btn-account" );
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_gen_selection_toggled ), self );
 	priv->account_btn =  GTK_TOGGLE_BUTTON( btn );
-	gtk_toggle_button_set_active( priv->account_btn, FALSE );
+	g_debug( "%s: account_btn=%p", thisfn, ( void * ) priv->account_btn );
+
+	/* force a 'toggled' message on the general selection
+	 * reset the 'fake' flag so that the entries are actually loaded
+	 * from the dbms on the last toggle only */
 
 	text = ofa_settings_get_string( st_pref_selection );
-	if( text && g_utf8_strlen( text, -1 )){
-		if( !g_utf8_collate( text, SEL_ACCOUNT )){
-			gtk_toggle_button_set_active( priv->account_btn, TRUE );
-		/* default to select by ledger */
-		} else {
-			gtk_toggle_button_set_active( priv->ledger_btn, TRUE );
-		}
+	if( text && g_utf8_strlen( text, -1 ) && !g_utf8_collate( text, SEL_ACCOUNT )){
+		toggle = priv->account_btn;
+	/* default to select by ledger */
+	} else {
+		toggle = priv->ledger_btn;
 	}
+
+	gtk_toggle_button_set_active( toggle, TRUE );
+	/*on_gen_selection_toggled( toggle, self );*/
+
 	g_free( text );
 }
 
@@ -1408,10 +1417,20 @@ static void
 v_init_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_view_entries_v_init_view";
+	ofaViewEntriesPrivate *priv;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
+	priv = OFA_VIEW_ENTRIES( page )->priv;
+
 	set_visible_columns( OFA_VIEW_ENTRIES( page ));
+
+	/* simulate a toggle message from gen_selection */
+	if( gtk_toggle_button_get_active( priv->ledger_btn )){
+		on_gen_selection_toggled( priv->ledger_btn, OFA_VIEW_ENTRIES( page ));
+	} else {
+		on_gen_selection_toggled( priv->account_btn, OFA_VIEW_ENTRIES( page ));
+	}
 }
 
 static void
@@ -1460,11 +1479,16 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 	priv = self->priv;
 
 	is_active = gtk_toggle_button_get_active( button );
-	/*g_debug( "on_gen_selection_toggled: is_active=%s", is_active ? "True":"False" );*/
+	g_debug( "on_gen_selection_toggled: button=%p, is_active=%s",
+			( void * ) button, is_active ? "True":"False" );
+
 
 	if( button == priv->ledger_btn ){
-		/* make the selection frame sensitive */
+		/* update the frames sensitivity */
 		gtk_widget_set_sensitive( priv->ledger_parent, is_active );
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_entry ), !is_active );
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_select ), !is_active );
+		gtk_widget_set_sensitive( GTK_WIDGET( priv->f1_label ), !is_active );
 
 		/* update the default visibility of the columns */
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_checkbox ), !is_active );
@@ -1477,13 +1501,17 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaViewEntries *self )
 		}
 
 	} else {
+		/* update the frames sensitivity */
+		gtk_widget_set_sensitive( priv->ledger_parent, !is_active );
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_entry ), is_active );
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_select ), is_active );
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->f1_label ), is_active );
 
+		/* update the default visibility of the columns */
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_checkbox ), is_active );
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_checkbox ), !is_active );
 
+		/* and display the entries */
 		if( is_active ){
 			display_entries_from_account( self );
 			ofa_settings_set_string( st_pref_selection, SEL_ACCOUNT );
@@ -1516,7 +1544,7 @@ display_entries_from_ledger( ofaViewEntries *self )
 
 	priv = self->priv;
 
-	if( priv->jou_mnemo ){
+	if( priv->jou_mnemo && !priv->initializing ){
 		entries = ofo_entry_get_dataset_by_ledger( priv->dossier, priv->jou_mnemo );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );
@@ -1603,7 +1631,7 @@ display_entries_from_account( ofaViewEntries *self )
 
 	priv = self->priv;
 
-	if( priv->acc_number ){
+	if( priv->acc_number && !priv->initializing ){
 		entries = ofo_entry_get_dataset_by_account( priv->dossier, priv->acc_number );
 		display_entries( self, entries );
 		ofo_entry_free_dataset( entries );

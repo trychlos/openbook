@@ -415,8 +415,6 @@
  530 2014-12-15 ViewEntries: no more display the entries !?
                  + have some warning on initialization
 
- 531 2014-12-15 replace myButtonsBox with ofaButtonsBox
-
  534
 
 -----------------------------------------------------------------------
@@ -2263,6 +2261,9 @@
                 trying to get all selected items from the tree, try using
                 gtk_tree_selection_get_selected_rows instead.
      2014-12-14 fixed - svn #4302
+
+ 531 2014-12-15 replace myButtonsBox with ofaButtonsBox
+     2014-12-17 done - svn #4326
 
  532 2014-12-15 the xxxIStore should have a singleton store, even if
                 data may be personalized per implementor object
