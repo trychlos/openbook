@@ -30,11 +30,20 @@
 /**
  * SECTION: currency_store
  * @title: ofaCurrencyStore
- * @short_description: The CurrencyStore Interface
- * @include: ui/ofa-currency-istore.h
+ * @short_description: The CurrencyStore class definition
+ * @include: ui/ofa-currency-store.h
  *
- * The #ofaCurrencyStore interface manages the subjacent GtkListStore
- * of currency views.
+ * The #ofaCurrencyStore derived from #ofaListStore, which itself
+ * derives from #GtkListStore. It is populated with all the currencies
+ * of the dossier on first call, and stay then alive until the dossier
+ * is closed.
+ *
+ * Once more time: there is only one #ofaCurrencyStore while the dossier
+ * is opened. All the views are built on this store, using ad-hoc filter
+ * models when needed.
+ *
+ * The #ofaCurrencyStore takes advantage of the dossier signaling
+ * system to maintain itself up to date.
  */
 
 #include "api/ofo-dossier-def.h"
@@ -87,7 +96,7 @@ enum {
 
 /**
  * ofaCurrencyColumns:
- * The columns displayed in the ComboBox.
+ * The columns displayed in the views.
  */
 typedef enum {
 	CURRENCY_DISP_CODE      = 1 << 0,

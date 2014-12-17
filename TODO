@@ -417,11 +417,6 @@
 
  531 2014-12-15 replace myButtonsBox with ofaButtonsBox
 
- 532 2014-12-15 the xxxIStore should have a singleton store, even if
-                data may be personalized per implementor object
-
- 533 2014-12-15 xxxIStore: remove the useless  set_columns method
-
  534
 
 -----------------------------------------------------------------------
@@ -2268,6 +2263,13 @@
                 trying to get all selected items from the tree, try using
                 gtk_tree_selection_get_selected_rows instead.
      2014-12-14 fixed - svn #4302
+
+ 532 2014-12-15 the xxxIStore should have a singleton store, even if
+                data may be personalized per implementor object
+     2014-12-17 remediated - svn #4322
+
+ 533 2014-12-15 xxxIStore: remove the useless  set_columns method
+     2014-12-17 remediated - svn #4322
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

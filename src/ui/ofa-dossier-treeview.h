@@ -38,7 +38,7 @@
 
 #include "core/ofa-main-window-def.h"
 
-#include "ui/ofa-dossier-istore.h"
+#include "ui/ofa-dossier-store.h"
 
 G_BEGIN_DECLS
 
@@ -69,6 +69,12 @@ typedef struct {
 GType               ofa_dossier_treeview_get_type    ( void ) G_GNUC_CONST;
 
 ofaDossierTreeview *ofa_dossier_treeview_new         ( void );
+
+void                ofa_dossier_treeview_attach_to   ( ofaDossierTreeview *view,
+																GtkContainer *parent );
+
+void                ofa_dossier_treeview_set_columns ( ofaDossierTreeview *view,
+																ofaDossierColumns columns );
 
 gchar              *ofa_dossier_treeview_get_selected( ofaDossierTreeview *view );
 

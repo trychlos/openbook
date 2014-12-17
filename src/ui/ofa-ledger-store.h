@@ -30,11 +30,20 @@
 /**
  * SECTION: ledger_store
  * @title: ofaLedgerStore
- * @short_description: The LedgerStore Interface
- * @include: ui/ofa-currency-istore.h
+ * @short_description: The LedgerStore class
+ * @include: ui/ofa-ledger-store.h
  *
- * The #ofaLedgerStore interface manages the subjacent GtkListStore
- * of currency views.
+ * The #ofaLedgerStore derived from #ofaTreeStore, which itself
+ * derives from #GtkTreeStore. It is populated with all the ledgers
+ * of the dossier on first call, and stay then alive until the dossier
+ * is closed.
+ *
+ * Once more time: there is only one #ofaLedgerStore while the dossier
+ * is opened. All the views are built on this store, using ad-hoc filter
+ * models when needed.
+ *
+ * The #ofaLedgerStore takes advantage of the dossier signaling
+ * system to maintain itself up to date.
  */
 
 #include "api/ofo-dossier-def.h"

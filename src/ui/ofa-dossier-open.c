@@ -183,7 +183,7 @@ v_init_dialog( myDialog *dialog )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *container, *entry, *button, *frame;
+	GtkWidget *container, *entry, *button;
 
 	priv = OFA_DOSSIER_OPEN( dialog )->priv;
 
@@ -206,15 +206,10 @@ v_init_dialog( myDialog *dialog )
 	/* setup dossier treeview */
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "parent-dossier" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-	frame = gtk_frame_new( NULL );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
-	gtk_container_add( GTK_CONTAINER( container ), frame );
 
 	priv->dossier_tview = ofa_dossier_treeview_new();
-	ofa_dossier_istore_attach_to(
-			OFA_DOSSIER_ISTORE( priv->dossier_tview ), GTK_CONTAINER( frame ));
-	ofa_dossier_istore_set_columns(
-			OFA_DOSSIER_ISTORE( priv->dossier_tview ), DOSSIER_COL_DNAME );
+	ofa_dossier_treeview_attach_to( priv->dossier_tview, GTK_CONTAINER( container ));
+	ofa_dossier_treeview_set_columns( priv->dossier_tview, DOSSIER_DISP_DNAME );
 	g_signal_connect(
 			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), dialog );
 

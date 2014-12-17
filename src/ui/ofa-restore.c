@@ -348,20 +348,17 @@ static void
 setup_existing_dossier( ofaRestore *self )
 {
 	ofaRestorePrivate *priv;
-	GtkWidget *frame;
+	GtkWidget *alignment;
 	ofaDossierTreeview *view;
 
 	priv = self->priv;
 
-	frame = gtk_frame_new( NULL );
-	gtk_widget_set_size_request( frame, 200, -1 );
-	gtk_grid_attach( GTK_GRID( priv->grid ), frame, 1, 0, 1, 1 );
+	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	gtk_grid_attach( GTK_GRID( priv->grid ), alignment, 1, 0, 1, 1 );
 
 	view = ofa_dossier_treeview_new();
-	ofa_dossier_istore_attach_to(
-			OFA_DOSSIER_ISTORE( view ), GTK_CONTAINER( frame ));
-	ofa_dossier_istore_set_columns(
-			OFA_DOSSIER_ISTORE( view ), DOSSIER_COL_DNAME );
+	ofa_dossier_treeview_attach_to( view, GTK_CONTAINER( alignment ));
+	ofa_dossier_treeview_set_columns( view, DOSSIER_DISP_DNAME );
 	g_signal_connect(
 			G_OBJECT( view ), "changed", G_CALLBACK( on_dossier_selection_changed ), self );
 }

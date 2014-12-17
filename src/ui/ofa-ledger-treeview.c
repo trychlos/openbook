@@ -240,7 +240,7 @@ on_parent_finalized( ofaLedgerTreeview *view, gpointer finalized_parent )
 {
 	static const gchar *thisfn = "ofa_ledger_treeview_on_parent_finalized";
 
-	g_debug( "%s: treeview=%p, finalized_parent=%p",
+	g_debug( "%s: view=%p, finalized_parent=%p",
 			thisfn, ( void * ) view, ( void * ) finalized_parent );
 
 	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));

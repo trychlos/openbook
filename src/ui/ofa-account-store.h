@@ -33,10 +33,10 @@
  * @short_description: The AccountStore class description
  * @include: ui/ofa-accounts-store.h
  *
- * The #ofaAccountStore derived from ofaStore, which itself derives
- * from GtkAccountStore. It is populated with all the accounts of the
- * dossier on first call, and stay then alive until the dossier is
- * closed.
+ * The #ofaAccountStore derived from #ofaTreeStore, which itself
+ * derives from #GtkTreeStore. It is populated with all the accounts
+ * of the dossier on first call, and stay then alive until the dossier
+ * is closed.
  *
  * Once more time: there is only one #ofaAccountStore while the dossier
  * is opened. All the views are built on this store, using ad-hoc filter
