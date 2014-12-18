@@ -41,7 +41,7 @@
 #include "ui/my-editable-date.h"
 #include "ui/ofa-currency-combo.h"
 #include "ui/ofa-dossier-properties.h"
-#include "ui/ofa-exe-forward.h"
+#include "ui/ofa-exe-forward-piece.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -50,30 +50,30 @@ struct _ofaDossierPropertiesPrivate {
 
 	/* internals
 	 */
-	ofoDossier      *dossier;
-	gboolean         is_new;
-	gboolean         updated;
-	gboolean         is_current;
-	GDate            begin_init;
-	GDate            end_init;
+	ofoDossier         *dossier;
+	gboolean            is_new;
+	gboolean            updated;
+	gboolean            is_current;
+	GDate               begin_init;
+	GDate               end_init;
 
 	/* data
 	 */
-	gchar           *label;
-	gchar           *siren;
-	gchar           *currency;
-	GDate            begin;
-	gboolean         begin_empty;
-	GDate            end;
-	gboolean         end_empty;
-	gint             duree;
-	gchar           *exe_notes;
+	gchar              *label;
+	gchar              *siren;
+	gchar              *currency;
+	GDate               begin;
+	gboolean            begin_empty;
+	GDate               end;
+	gboolean            end_empty;
+	gint                duree;
+	gchar              *exe_notes;
 
 	/* UI
 	 */
-	GtkWidget       *siren_entry;
-	ofaExeForward   *forward;
-	GtkWidget       *msgerr;
+	GtkWidget          *siren_entry;
+	ofaExeForwardPiece *forward;
+	GtkWidget          *msgerr;
 };
 
 static const gchar *st_ui_xml = PKGUIDIR "/ofa-dossier-properties.ui";
@@ -92,7 +92,7 @@ static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self )
 static void      on_begin_changed( GtkEditable *editable, ofaDossierProperties *self );
 static void      on_end_changed( GtkEditable *editable, ofaDossierProperties *self );
 static void      on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty );
-static void      on_forward_changed( ofaExeForward *piece, ofaDossierProperties *self );
+static void      on_forward_changed( ofaExeForwardPiece *piece, ofaDossierProperties *self );
 static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  is_dialog_valid( ofaDossierProperties *self );
@@ -335,9 +335,11 @@ init_forward_page( ofaDossierProperties *self, GtkContainer *container )
 	parent = my_utils_container_get_child_by_name( container, "p5-forward-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->forward = ofa_exe_forward_new();
-	ofa_exe_forward_attach_to(
-			priv->forward, GTK_CONTAINER( parent ), MY_WINDOW( self )->prot->main_window );
+	priv->forward = ofa_exe_forward_piece_new();
+	ofa_exe_forward_piece_attach_to(
+			priv->forward, GTK_CONTAINER( parent ));
+	ofa_exe_forward_piece_set_main_window(
+			priv->forward, MY_WINDOW( self )->prot->main_window );
 
 	g_signal_connect( priv->forward, "changed", G_CALLBACK( on_forward_changed ), self );
 }
@@ -468,7 +470,7 @@ on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date,
 }
 
 static void
-on_forward_changed( ofaExeForward *piece, ofaDossierProperties *self )
+on_forward_changed( ofaExeForwardPiece *piece, ofaDossierProperties *self )
 {
 	check_for_enable_dlg( self );
 }
@@ -529,7 +531,7 @@ is_dialog_valid( ofaDossierProperties *self )
 	}
 
 	if( priv->forward ){
-		if( !ofa_exe_forward_check( priv->forward, &msg )){
+		if( !ofa_exe_forward_piece_check( priv->forward, &msg )){
 			set_msgerr( self, msg );
 			g_free( msg );
 			return( FALSE );
@@ -546,7 +548,9 @@ set_msgerr( ofaDossierProperties *self, const gchar *msg )
 
 	priv = self->priv;
 
-	gtk_label_set_text( GTK_LABEL( priv->msgerr ), msg );
+	if( priv->msgerr ){
+		gtk_label_set_text( GTK_LABEL( priv->msgerr ), msg );
+	}
 }
 
 static gboolean
@@ -574,7 +578,7 @@ do_update( ofaDossierProperties *self )
 	ofo_dossier_set_exe_begin( priv->dossier, &priv->begin );
 	ofo_dossier_set_exe_end( priv->dossier, &priv->end );
 
-	ofa_exe_forward_apply( priv->forward );
+	ofa_exe_forward_piece_apply( priv->forward );
 
 	ofo_dossier_set_exe_notes( priv->dossier, priv->exe_notes );
 

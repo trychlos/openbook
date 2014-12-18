@@ -1013,8 +1013,7 @@ ofo_ledger_is_deletable( const ofoLedger *ledger, ofoDossier *dossier )
 		mnemo = ofo_ledger_get_mnemo( ledger );
 
 		ok &= !ofo_entry_use_ledger( dossier, mnemo ) &&
-				!ofo_ope_template_use_ledger( dossier, mnemo ) &&
-				!ofo_dossier_use_ledger( dossier, mnemo );
+				!ofo_ope_template_use_ledger( dossier, mnemo );
 
 		return( ok );
 	}

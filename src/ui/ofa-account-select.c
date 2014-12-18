@@ -34,7 +34,7 @@
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-accounts-piece.h"
+#include "ui/ofa-accounts-frame.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -43,7 +43,7 @@ struct _ofaAccountSelectPrivate {
 
 	/* UI
 	 */
-	ofaAccountsPiece *accounts_piece;
+	ofaAccountsFrame *accounts_frame;
 
 	GtkWidget        *ok_btn;
 
@@ -61,8 +61,8 @@ static GtkWindow        *st_toplevel    = NULL;
 G_DEFINE_TYPE( ofaAccountSelect, ofa_account_select, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_account_changed( ofaAccountsPiece *piece, const gchar *number, ofaAccountSelect *self );
-static void      on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountSelect *self );
+static void      on_account_changed( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self );
+static void      on_account_activated( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_select( ofaAccountSelect *self );
@@ -182,7 +182,7 @@ ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
 	g_free( priv->account_number );
 	priv->account_number = NULL;
 
-	ofa_accounts_piece_set_selected( priv->accounts_piece, asked_number );
+	ofa_accounts_frame_set_selected( priv->accounts_frame, asked_number );
 	check_for_enable_dlg( st_this );
 
 	my_dialog_run_dialog( MY_DIALOG( st_this ));
@@ -212,25 +212,25 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( container, "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->accounts_piece = ofa_accounts_piece_new();
-	ofa_accounts_piece_attach_to( priv->accounts_piece, GTK_CONTAINER( parent ));
-	ofa_accounts_piece_set_main_window( priv->accounts_piece, MY_WINDOW( dialog )->prot->main_window );
-	ofa_accounts_piece_set_buttons( priv->accounts_piece, FALSE );
+	priv->accounts_frame = ofa_accounts_frame_new();
+	ofa_accounts_frame_attach_to( priv->accounts_frame, GTK_CONTAINER( parent ));
+	ofa_accounts_frame_set_main_window( priv->accounts_frame, MY_WINDOW( dialog )->prot->main_window );
+	ofa_accounts_frame_set_buttons( priv->accounts_frame, FALSE );
 
 	g_signal_connect(
-			G_OBJECT( priv->accounts_piece ), "changed", G_CALLBACK( on_account_changed ), dialog );
+			G_OBJECT( priv->accounts_frame ), "changed", G_CALLBACK( on_account_changed ), dialog );
 	g_signal_connect(
-			G_OBJECT( priv->accounts_piece ), "activated", G_CALLBACK( on_account_activated ), dialog );
+			G_OBJECT( priv->accounts_frame ), "activated", G_CALLBACK( on_account_activated ), dialog );
 }
 
 static void
-on_account_changed( ofaAccountsPiece *piece, const gchar *number, ofaAccountSelect *self )
+on_account_changed( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self )
 {
 	check_for_enable_dlg( self );
 }
 
 static void
-on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountSelect *self )
+on_account_activated( ofaAccountsFrame *piece, const gchar *number, ofaAccountSelect *self )
 {
 	gtk_dialog_response(
 			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
@@ -246,7 +246,7 @@ check_for_enable_dlg( ofaAccountSelect *self )
 
 	priv = self->priv;
 
-	account = ofa_accounts_piece_get_selected( priv->accounts_piece );
+	account = ofa_accounts_frame_get_selected( priv->accounts_frame );
 	ok = account && g_utf8_strlen( account, -1 );
 	g_free( account );
 
@@ -267,7 +267,7 @@ do_select( ofaAccountSelect *self )
 
 	priv = self->priv;
 
-	account = ofa_accounts_piece_get_selected( priv->accounts_piece );
+	account = ofa_accounts_frame_get_selected( priv->accounts_frame );
 	if( account && g_utf8_strlen( account, -1 )){
 		priv->account_number = g_strdup( account );
 	}

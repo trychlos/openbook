@@ -31,7 +31,7 @@
  * SECTION: account_store
  * @title: ofaAccountStore
  * @short_description: The AccountStore class description
- * @include: ui/ofa-accounts-store.h
+ * @include: ui/ofa-account-store.h
  *
  * The #ofaAccountStore derived from #ofaTreeStore, which itself
  * derives from #GtkTreeStore. It is populated with all the accounts
@@ -80,7 +80,7 @@ typedef struct {
 	ofaAccountStoreClass;
 
 /**
- * The columns stored in the subjacent #GtkAccountStore.
+ * The columns stored in the subjacent #GtkTreeStore.
  */
 enum {
 	ACCOUNT_COL_NUMBER = 0,

@@ -34,7 +34,7 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-account-properties.h"
-#include "ui/ofa-accounts-piece.h"
+#include "ui/ofa-accounts-frame.h"
 #include "ui/ofa-accounts-page.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
@@ -48,7 +48,7 @@ struct _ofaAccountsPagePrivate {
 
 	/* UI
 	 */
-	ofaAccountsPiece *accounts_piece;
+	ofaAccountsFrame *accounts_frame;
 };
 
 G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
@@ -56,7 +56,7 @@ G_DEFINE_TYPE( ofaAccountsPage, ofa_accounts_page, OFA_TYPE_PAGE )
 static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountsPage *self );
+static void       on_account_activated( ofaAccountsFrame *frame, const gchar *number, ofaAccountsPage *self );
 
 static void
 accounts_page_finalize( GObject *instance )
@@ -132,13 +132,13 @@ v_setup_page( ofaPage *page )
 	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
 	gtk_grid_attach( grid, alignment, 0, 0, 1, 1 );
 
-	priv->accounts_piece = ofa_accounts_piece_new();
-	ofa_accounts_piece_attach_to( priv->accounts_piece, GTK_CONTAINER( alignment ));
-	ofa_accounts_piece_set_main_window( priv->accounts_piece, ofa_page_get_main_window( page ));
-	ofa_accounts_piece_set_buttons( priv->accounts_piece, TRUE );
+	priv->accounts_frame = ofa_accounts_frame_new();
+	ofa_accounts_frame_attach_to( priv->accounts_frame, GTK_CONTAINER( alignment ));
+	ofa_accounts_frame_set_main_window( priv->accounts_frame, ofa_page_get_main_window( page ));
+	ofa_accounts_frame_set_buttons( priv->accounts_frame, TRUE );
 
 	g_signal_connect(
-			G_OBJECT( priv->accounts_piece ),
+			G_OBJECT( priv->accounts_frame ),
 			"activated", G_CALLBACK( on_account_activated ), page );
 }
 
@@ -152,12 +152,12 @@ v_get_top_focusable_widget( const ofaPage *page )
 {
 	g_return_val_if_fail( page && OFA_IS_ACCOUNTS_PAGE( page ), NULL );
 
-	return( ofa_accounts_piece_get_top_focusable_widget(
-					OFA_ACCOUNTS_PAGE( page )->priv->accounts_piece ));
+	return( ofa_accounts_frame_get_top_focusable_widget(
+					OFA_ACCOUNTS_PAGE( page )->priv->accounts_frame ));
 }
 
 static void
-on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountsPage *self )
+on_account_activated( ofaAccountsFrame *frame, const gchar *number, ofaAccountsPage *self )
 {
 	ofoAccount *account;
 
@@ -168,28 +168,3 @@ on_account_activated( ofaAccountsPiece *piece, const gchar *number, ofaAccountsP
 		ofa_account_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), account );
 	}
 }
-
-/*
- * ofaAccountsBook callback:
- */
-#if 0
-static void
-on_view_entries( ofoAccount *account, ofaAccountsPage *self )
-{
-	ofaPage *page;
-
-	if( account ){
-		page = ofa_main_window_activate_theme(
-						ofa_page_get_main_window( OFA_PAGE( self )),
-						THM_VIEW_ENTRIES );
-		if( page ){
-			ofa_view_entries_display_entries(
-							OFA_VIEW_ENTRIES( page ),
-							OFO_TYPE_ACCOUNT,
-							ofo_account_get_number( account ),
-							NULL,
-							NULL );
-		}
-	}
-}
-#endif

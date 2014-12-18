@@ -412,10 +412,22 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
 
- 530 2014-12-15 ViewEntries: no more display the entries !?
-                 + have some warning on initialization
+ 534 2014-12-18 ofoDossier table refactoring : only rely on ope codes
 
- 534
+ 535 2014-12-18 Merge ofaExeForward and ofaDossierCur to ofaExeForwardPiece
+
+ 536 2014-12-18 have a ofaOpeTemplateStore as ofaAccountStore
+                have a ofaOpeTemplateBook as ofaAccountsBook
+                rename ofAccountsPiece to ofaAccountFrame
+                have a ofaOpeTemplateFrame as ofaAccountFrame
+
+ 537 2014-12-18 refactoring dbms scrits are renamed to v0.x
+                + directory is renamed to -v0
+
+ 538 2014-12-18 ViewEntries: have distinct color backgrounds for past,
+                validated, rough and future entries 
+
+ 539
 
 -----------------------------------------------------------------------
  DONE
@@ -2261,6 +2273,10 @@
                 trying to get all selected items from the tree, try using
                 gtk_tree_selection_get_selected_rows instead.
      2014-12-14 fixed - svn #4302
+
+ 530 2014-12-15 ViewEntries: no more display the entries !?
+                 + have some warning on initialization
+     2014-12-17 done - svn #4327
 
  531 2014-12-15 replace myButtonsBox with ofaButtonsBox
      2014-12-17 done - svn #4326

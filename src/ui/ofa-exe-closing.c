@@ -45,7 +45,7 @@
 #include "ui/my-progress-bar.h"
 #include "ui/ofa-balances-grid.h"
 #include "ui/ofa-exe-closing.h"
-#include "ui/ofa-exe-forward.h"
+#include "ui/ofa-exe-forward-piece.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-misc-chkbal.h"
 
@@ -59,7 +59,7 @@ struct _ofaExeClosingPrivate {
 	GtkWidget     *p2_end_cur;
 	GtkWidget     *p2_begin_next;
 	GtkWidget     *p2_end_next;
-	ofaExeForward *p2_forward;
+	ofaExeForwardPiece *p2_forward;
 
 	/* p3 - while checks are run, store GtkAssistant datas
 	 */
@@ -93,8 +93,8 @@ enum {
 	PAGE_SUMMARY						/* Summary */
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-exe-closing.ui";
-static const gchar  *st_ui_id  = "ExeClosingAssistant";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-exe-closing.ui";
+static const gchar *st_ui_id            = "ExeClosingAssistant";
 
 G_DEFINE_TYPE( ofaExeClosing, ofa_exe_closing, MY_TYPE_ASSISTANT )
 
@@ -103,7 +103,7 @@ static void             on_page_forward( ofaExeClosing *self, GtkWidget *page_wi
 static void             p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
 static void             p2_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
 static void             p2_on_date_changed( GtkEditable *editable, ofaExeClosing *self );
-static void             p2_on_forward_changed( ofaExeForward *piece, ofaExeClosing *self );
+static void             p2_on_forward_changed( ofaExeForwardPiece *piece, ofaExeClosing *self );
 static void             p2_check_for_complete( ofaExeClosing *self );
 static void             p2_do_forward( ofaExeClosing *self, GtkWidget *page_widget );
 static void             p3_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
@@ -354,9 +354,11 @@ p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-forward-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p2_forward = ofa_exe_forward_new();
-	ofa_exe_forward_attach_to(
-			priv->p2_forward, GTK_CONTAINER( parent ), MY_WINDOW( self )->prot->main_window );
+	priv->p2_forward = ofa_exe_forward_piece_new();
+	ofa_exe_forward_piece_attach_to(
+			priv->p2_forward, GTK_CONTAINER( parent ));
+	ofa_exe_forward_piece_set_main_window(
+			priv->p2_forward, MY_WINDOW( self )->prot->main_window );
 	g_signal_connect( G_OBJECT( priv->p2_forward ), "changed", G_CALLBACK( p2_on_forward_changed ), self );
 
 	gtk_assistant_set_page_complete( assistant, page_widget, FALSE );
@@ -381,7 +383,7 @@ p2_on_date_changed( GtkEditable *editable, ofaExeClosing *self )
 }
 
 static void
-p2_on_forward_changed( ofaExeForward *piece, ofaExeClosing *self )
+p2_on_forward_changed( ofaExeForwardPiece *piece, ofaExeClosing *self )
 {
 	p2_check_for_complete( self );
 }
@@ -431,7 +433,7 @@ p2_check_for_complete( ofaExeClosing *self )
 	}
 
 	if( priv->p2_forward ){
-		complete &= ofa_exe_forward_check( priv->p2_forward, &msg );
+		complete &= ofa_exe_forward_piece_check( priv->p2_forward, &msg );
 		g_free( msg );
 	}
 
@@ -457,7 +459,7 @@ p2_do_forward( ofaExeClosing *self, GtkWidget *page_widget )
 	ofo_dossier_set_exe_begin( dossier, begin_cur );
 	ofo_dossier_set_exe_end( dossier, end_cur );
 
-	ofa_exe_forward_apply( priv->p2_forward );
+	ofa_exe_forward_piece_apply( priv->p2_forward );
 
 	ofo_dossier_update( dossier );
 }
@@ -753,6 +755,7 @@ p5_validate_entries( ofaExeClosing *self )
 static gboolean
 p5_solde_accounts( ofaExeClosing *self )
 {
+#if 0
 	static const gchar *thisfn = "ofa_exe_closing_p5_solde_accounts";
 	ofaExeClosingPrivate *priv;
 	ofoDossier *dossier;
@@ -763,8 +766,8 @@ p5_solde_accounts( ofaExeClosing *self )
 	gchar *text;
 	ofoAccount *account;
 	const gchar *currency;
-	const gchar *sld_account, *sld_label, *sld_ledger, *sld_ope;
-	const gchar *for_label_c, *for_label_o, *for_ledger, *for_ope;
+	/*const gchar *sld_ope, *sld_account;
+	const gchar *for_ope;*/
 	ofxAmount debit, credit;
 	ofoEntry *entry;
 	const GDate *end_cur, *begin_next;
@@ -780,28 +783,24 @@ p5_solde_accounts( ofaExeClosing *self )
 
 	priv->p5_forwards = NULL;
 
-	end_cur = ofo_dossier_get_exe_end( dossier );
+	/*end_cur = ofo_dossier_get_exe_end( dossier );
 	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p2_begin_next ), NULL );
-	sld_label = ofo_dossier_get_sld_label( dossier );
-	for_label_c = ofo_dossier_get_forward_label_close( dossier );
-	for_label_o = ofo_dossier_get_forward_label_open( dossier );
-	sld_ledger = ofo_dossier_get_sld_ledger( dossier );
-	for_ledger = ofo_dossier_get_forward_ledger( dossier );
 	sld_ope = ofo_dossier_get_sld_ope( dossier );
-	for_ope = ofo_dossier_get_forward_ope( dossier );
+	for_ope = ofo_dossier_get_forward_ope( dossier );*/
 
 	for( i=1, it=accounts ; it ; ++i, it=it->next ){
 		account = OFO_ACCOUNT( it->data );
 
 		if( !ofo_account_is_root( account )){
 			currency = ofo_account_get_currency( account );
-			sld_account = ofo_dossier_get_sld_account( dossier, currency );
+			/*sld_account = ofo_dossier_get_sld_account( dossier, currency );*/
 			debit = ofo_account_get_val_debit( account );
 			credit = ofo_account_get_val_credit( account );
 			is_ran = ofo_account_is_forward( account );
 			if(( debit || credit ) && debit != credit ){
 
 				/* balance the account */
+				/*
 				entry = ofo_entry_new();
 				ofo_entry_set_deffect( entry, end_cur );
 				ofo_entry_set_dope( entry, end_cur );
@@ -818,9 +817,10 @@ p5_solde_accounts( ofaExeClosing *self )
 				}
 				ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
 				ofo_entry_insert( entry, dossier );
-				g_object_unref( entry );
+				g_object_unref( entry );*/
 
 				/* create the entry on the balancing account */
+				/*
 				entry = ofo_entry_new();
 				ofo_entry_set_deffect( entry, end_cur );
 				ofo_entry_set_dope( entry, end_cur );
@@ -837,10 +837,11 @@ p5_solde_accounts( ofaExeClosing *self )
 				}
 				ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
 				ofo_entry_insert( entry, dossier );
-				g_object_unref( entry );
+				g_object_unref( entry );*/
 
 				if( is_ran ){
 					/* carried forward entry */
+					/*
 					entry = ofo_entry_new();
 					ofo_entry_set_deffect( entry, begin_next );
 					ofo_entry_set_dope( entry, begin_next );
@@ -857,8 +858,10 @@ p5_solde_accounts( ofaExeClosing *self )
 					}
 					ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
 					priv->p5_forwards = g_list_prepend( priv->p5_forwards, entry );
+					*/
 
 					/* create the entry on the balancing account */
+					/*
 					entry = ofo_entry_new();
 					ofo_entry_set_deffect( entry, begin_next );
 					ofo_entry_set_dope( entry, begin_next );
@@ -875,6 +878,7 @@ p5_solde_accounts( ofaExeClosing *self )
 					}
 					ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
 					priv->p5_forwards = g_list_prepend( priv->p5_forwards, entry );
+					*/
 				}
 			}
 		}
@@ -886,6 +890,7 @@ p5_solde_accounts( ofaExeClosing *self )
 		g_signal_emit_by_name( bar, "text", text );
 		g_free( text );
 	}
+#endif
 
 	/* do not continue and remove from idle callbacks list */
 	g_idle_add(( GSourceFunc ) p5_close_ledgers, self );

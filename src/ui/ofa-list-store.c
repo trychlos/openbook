@@ -197,8 +197,10 @@ on_dossier_finalized( ofaListStore *store, gpointer finalized_dossier )
 {
 	static const gchar *thisfn = "ofa_list_store_on_dossier_finalized";
 
-	g_debug( "%s: store=%p, finalized_dossier=%p",
-			thisfn, ( void * ) store, ( void * ) finalized_dossier );
+	g_debug( "%s: store=%p (%s), ref_count=%d, finalized_dossier=%p",
+			thisfn,
+			( void * ) store, G_OBJECT_TYPE_NAME( store ), G_OBJECT( store )->ref_count,
+			( void * ) finalized_dossier );
 
 	g_return_if_fail( store && OFA_IS_LIST_STORE( store ));
 

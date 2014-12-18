@@ -53,9 +53,10 @@ struct _ofaAccountsBookPrivate {
 
 	ofaMainWindow   *main_window;
 	ofoDossier      *dossier;
-	GList           *handlers;
+	GList           *dos_handlers;
 
 	ofaAccountStore *store;
+	GList           *sto_handlers;
 	GtkNotebook     *book;
 
 	gint             prev_class;
@@ -164,9 +165,18 @@ accounts_book_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		/* disconnect from ofoDossier */
 		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-			for( it=priv->handlers ; it ; it=it->next ){
+			for( it=priv->dos_handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
+			}
+		}
+
+		/* disconnect from ofaAccountStore */
+		if( priv->store && OFA_IS_ACCOUNT_STORE( priv->store )){
+			for( it=priv->sto_handlers ; it ; it=it->next ){
+				g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
 			}
 		}
 	}
@@ -376,7 +386,7 @@ on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAcco
 
 /*
  * Returns :
- * TRUE to stop other handlers from being invoked for the event.
+ * TRUE to stop other dos_handlers from being invoked for the event.
  * FALSE to propagate the event further.
  */
 static gboolean
@@ -458,6 +468,7 @@ ofa_accounts_book_set_main_window( ofaAccountsBook *book, ofaMainWindow *main_wi
 {
 	static const gchar *thisfn = "ofa_accounts_book_set_main_window";
 	ofaAccountsBookPrivate *priv;
+	gulong handler;
 
 	g_debug( "%s: book=%p, main_window=%p", thisfn, ( void * ) book, ( void * ) main_window );
 
@@ -475,8 +486,13 @@ ofa_accounts_book_set_main_window( ofaAccountsBook *book, ofaMainWindow *main_wi
 		priv->dossier = ofa_main_window_get_dossier( main_window );
 		priv->store = ofa_account_store_new( priv->dossier );
 
-		g_signal_connect( priv->store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
-		g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( on_ofa_row_inserted ), book );
+		handler = g_signal_connect(
+				priv->store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
+		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
+
+		handler = g_signal_connect(
+				priv->store, "ofa-row-inserted", G_CALLBACK( on_ofa_row_inserted ), book );
+		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
 
 		ofa_account_store_load_dataset( priv->store );
 
@@ -839,7 +855,7 @@ on_tview_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn
 
 /*
  * Returns :
- * TRUE to stop other handlers from being invoked for the event.
+ * TRUE to stop other dos_handlers from being invoked for the event.
  * FALSE to propagate the event further.
  */
 static gboolean
@@ -1074,7 +1090,7 @@ do_delete_account( ofaAccountsBook *self )
 		if( delete_confirmed( self, account ) &&
 				ofo_account_delete( account, priv->dossier )){
 
-			/* nothing to do here, all being managed by signal handlers
+			/* nothing to do here, all being managed by signal dos_handlers
 			 * just reset the selection as this is not managed by the
 			 * account notebook (and doesn't have to)
 			 * asking for selection of the just deleted account makes
@@ -1169,22 +1185,22 @@ dossier_signals_connect( ofaAccountsBook *book )
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
 						SIGNAL_DOSSIER_NEW_OBJECT, G_CALLBACK( on_new_object ), book );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
 						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), book );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
 						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), book );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
 						G_OBJECT( priv->dossier),
 						SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reloaded_dataset ), book );
-	priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
+	priv->dos_handlers = g_list_prepend( priv->dos_handlers, ( gpointer ) handler );
 }
 
 /*

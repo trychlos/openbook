@@ -71,14 +71,14 @@ openbook_SOURCES = \
 	ofa-account-properties.h							\
 	ofa-account-select.c								\
 	ofa-account-select.h								\
-	ofa-accounts-book.c									\
-	ofa-accounts-book.h									\
-	ofa-accounts-page.c									\
-	ofa-accounts-page.h									\
-	ofa-accounts-piece.c								\
-	ofa-accounts-piece.h								\
 	ofa-account-store.c									\
 	ofa-account-store.h									\
+	ofa-accounts-book.c									\
+	ofa-accounts-book.h									\
+	ofa-accounts-frame.c								\
+	ofa-accounts-frame.h								\
+	ofa-accounts-page.c									\
+	ofa-accounts-page.h									\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-backup.c										\
@@ -107,8 +107,6 @@ openbook_SOURCES = \
 	ofa-currency-properties.h							\
 	ofa-currency-store.c								\
 	ofa-currency-store.h								\
-	ofa-dossier-cur.c									\
-	ofa-dossier-cur.h									\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
 	ofa-dossier-delete-prefs.c							\
@@ -131,8 +129,8 @@ openbook_SOURCES = \
 	ofa-dossier-treeview.h								\
 	ofa-exe-closing.c									\
 	ofa-exe-closing.h									\
-	ofa-exe-forward.c									\
-	ofa-exe-forward.h									\
+	ofa-exe-forward-piece.c								\
+	ofa-exe-forward-piece.h								\
 	ofa-exercice-combo.c								\
 	ofa-exercice-combo.h								\
 	ofa-export-assistant.c								\
@@ -175,6 +173,12 @@ openbook_SOURCES = \
 	ofa-misc-chkbal.h									\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
+	ofa-ope-template-store.c							\
+	ofa-ope-template-store.h							\
+	ofa-ope-templates-book.c							\
+	ofa-ope-templates-book.h							\
+	ofa-ope-templates-frame.c							\
+	ofa-ope-templates-frame.h							\
 	ofa-ope-templates-page.c							\
 	ofa-ope-templates-page.h							\
 	ofa-page.c											\
@@ -234,7 +238,6 @@ ui_files = \
 	ofa-bat-select.ui									\
 	ofa-class-properties.ui								\
 	ofa-currency-properties.ui							\
-	ofa-dossier-cur.ui									\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-delete-prefs.piece.ui					\
@@ -244,7 +247,7 @@ ui_files = \
 	ofa-dossier-properties.ui							\
 	ofa-dossier-treeview.piece.ui						\
 	ofa-exe-closing.ui									\
-	ofa-exe-forward.piece.ui							\
+	ofa-exe-forward-piece.ui							\
 	ofa-export-assistant.ui								\
 	ofa-file-format-piece.ui							\
 	ofa-guided-input.ui									\

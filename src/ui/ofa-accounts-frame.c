@@ -34,13 +34,13 @@
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-accounts-book.h"
-#include "ui/ofa-accounts-piece.h"
+#include "ui/ofa-accounts-frame.h"
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  */
-struct _ofaAccountsPiecePrivate {
+struct _ofaAccountsFramePrivate {
 	gboolean         dispose_has_run;
 
 	GtkGrid         *grid;
@@ -65,41 +65,41 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( ofaAccountsPiece, ofa_accounts_piece, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaAccountsFrame, ofa_accounts_frame, G_TYPE_OBJECT )
 
-static GtkWidget *get_top_grid( ofaAccountsPiece *piece );
-static void       on_new_clicked( GtkButton *button, ofaAccountsPiece *piece );
-static void       on_properties_clicked( GtkButton *button, ofaAccountsPiece *piece );
-static void       on_delete_clicked( GtkButton *button, ofaAccountsPiece *piece );
-static void       on_view_entries_clicked( GtkButton *button, ofaAccountsPiece *piece );
-static void       on_book_selection_changed( ofaAccountsBook *book, const gchar *number, ofaAccountsPiece *piece );
-static void       on_book_selection_activated( ofaAccountsBook *book, const gchar *number, ofaAccountsPiece *piece );
-static void       update_buttons_sensitivity( ofaAccountsPiece *self, const gchar *number );
+static GtkWidget *get_top_grid( ofaAccountsFrame *frame );
+static void       on_new_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void       on_properties_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void       on_delete_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void       on_view_entries_clicked( GtkButton *button, ofaAccountsFrame *frame );
+static void       on_book_selection_changed( ofaAccountsBook *book, const gchar *number, ofaAccountsFrame *frame );
+static void       on_book_selection_activated( ofaAccountsBook *book, const gchar *number, ofaAccountsFrame *frame );
+static void       update_buttons_sensitivity( ofaAccountsFrame *self, const gchar *number );
 
 static void
-accounts_piece_finalize( GObject *instance )
+accounts_frame_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_accounts_piece_finalize";
+	static const gchar *thisfn = "ofa_accounts_frame_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNTS_FRAME( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_piece_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_accounts_frame_parent_class )->finalize( instance );
 }
 
 static void
-accounts_piece_dispose( GObject *instance )
+accounts_frame_dispose( GObject *instance )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_ACCOUNTS_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_ACCOUNTS_FRAME( instance ));
 
-	priv = ( OFA_ACCOUNTS_PIECE( instance ))->priv;
+	priv = ( OFA_ACCOUNTS_FRAME( instance ))->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -109,50 +109,50 @@ accounts_piece_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_accounts_piece_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_accounts_frame_parent_class )->dispose( instance );
 }
 
 static void
-ofa_accounts_piece_init( ofaAccountsPiece *self )
+ofa_accounts_frame_init( ofaAccountsFrame *self )
 {
-	static const gchar *thisfn = "ofa_accounts_piece_init";
+	static const gchar *thisfn = "ofa_accounts_frame_init";
 
-	g_return_if_fail( self && OFA_IS_ACCOUNTS_PIECE( self ));
+	g_return_if_fail( self && OFA_IS_ACCOUNTS_FRAME( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNTS_PIECE, ofaAccountsPiecePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_ACCOUNTS_FRAME, ofaAccountsFramePrivate );
 	self->priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_accounts_piece_class_init( ofaAccountsPieceClass *klass )
+ofa_accounts_frame_class_init( ofaAccountsFrameClass *klass )
 {
-	static const gchar *thisfn = "ofa_accounts_piece_class_init";
+	static const gchar *thisfn = "ofa_accounts_frame_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = accounts_piece_dispose;
-	G_OBJECT_CLASS( klass )->finalize = accounts_piece_finalize;
+	G_OBJECT_CLASS( klass )->dispose = accounts_frame_dispose;
+	G_OBJECT_CLASS( klass )->finalize = accounts_frame_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaAccountsPiecePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaAccountsFramePrivate ));
 
 	/**
-	 * ofaAccountsPiece::changed:
+	 * ofaAccountsFrame::changed:
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
 	 * Argument is the selected account number.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaAccountsPiece *store,
+	 * void ( *handler )( ofaAccountsFrame *frame,
 	 * 						const gchar    *number,
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"changed",
-				OFA_TYPE_ACCOUNTS_PIECE,
+				OFA_TYPE_ACCOUNTS_FRAME,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -163,20 +163,20 @@ ofa_accounts_piece_class_init( ofaAccountsPieceClass *klass )
 				G_TYPE_STRING );
 
 	/**
-	 * ofaAccountsPiece::activated:
+	 * ofaAccountsFrame::activated:
 	 *
 	 * This signal is sent when the selection is activated.
 	 *
 	 * Argument is the selected account number.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaAccountsPiece *store,
+	 * void ( *handler )( ofaAccountsFrame *frame,
 	 * 						const gchar    *number,
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
 				"activated",
-				OFA_TYPE_ACCOUNTS_PIECE,
+				OFA_TYPE_ACCOUNTS_FRAME,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -188,7 +188,7 @@ ofa_accounts_piece_class_init( ofaAccountsPieceClass *klass )
 }
 
 /**
- * ofa_accounts_piece_new:
+ * ofa_accounts_frame_new:
  *
  * Creates the structured content, i.e. The accounts notebook on the
  * left column, the buttons box on the right one.
@@ -198,7 +198,7 @@ ofa_accounts_piece_class_init( ofaAccountsPieceClass *klass )
  * |   this is the grid of the main page,                                  |
  * |   or any another container (i.e. a frame)                             |
  * | +-------------------------------------------------------------------+ |
- * | | creates a grid which will contain the piece and the buttons       | |
+ * | | creates a grid which will contain the frame and the buttons       | |
  * | | +---------------------------------------------+-----------------+ + |
  * | | | creates a notebook where each page contains | creates         | | |
  * | | |   the account of the corresponding class    |   a buttons box | | |
@@ -208,12 +208,12 @@ ofa_accounts_piece_class_init( ofaAccountsPieceClass *klass )
  * | +-------------------------------------------------------------------+ |
  * +-----------------------------------------------------------------------+
  */
-ofaAccountsPiece *
-ofa_accounts_piece_new( void  )
+ofaAccountsFrame *
+ofa_accounts_frame_new( void  )
 {
-	ofaAccountsPiece *self;
+	ofaAccountsFrame *self;
 
-	self = g_object_new( OFA_TYPE_ACCOUNTS_PIECE, NULL );
+	self = g_object_new( OFA_TYPE_ACCOUNTS_FRAME, NULL );
 
 	get_top_grid( self );
 
@@ -221,24 +221,24 @@ ofa_accounts_piece_new( void  )
 }
 
 /**
- * ofa_accounts_piece_attach_to:
+ * ofa_accounts_frame_attach_to:
  *
  * Attachs the created content to the specified parent.
  */
 void
-ofa_accounts_piece_attach_to( ofaAccountsPiece *piece, GtkContainer *parent )
+ofa_accounts_frame_attach_to( ofaAccountsFrame *frame, GtkContainer *parent )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 	GtkWidget *grid;
 
-	g_return_if_fail( piece && OFA_IS_ACCOUNTS_PIECE( piece ));
+	g_return_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ));
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv = piece->priv;
+	priv = frame->priv;
 
 	if( !priv->dispose_has_run ){
 
-		grid = get_top_grid( piece );
+		grid = get_top_grid( frame );
 		gtk_container_add( parent, grid );
 
 		gtk_widget_show_all( GTK_WIDGET( parent ));
@@ -246,20 +246,20 @@ ofa_accounts_piece_attach_to( ofaAccountsPiece *piece, GtkContainer *parent )
 }
 
 /**
- * ofa_accounts_piece_set_main_window:
+ * ofa_accounts_frame_set_main_window:
  *
  * Returns the top focusable widget, here the treeview of the current
  * page.
  */
 void
-ofa_accounts_piece_set_main_window( ofaAccountsPiece *piece, ofaMainWindow *main_window )
+ofa_accounts_frame_set_main_window( ofaAccountsFrame *frame, ofaMainWindow *main_window )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 
-	g_return_if_fail( piece && OFA_IS_ACCOUNTS_PIECE( piece ));
+	g_return_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	priv = piece->priv;
+	priv = frame->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -271,12 +271,12 @@ ofa_accounts_piece_set_main_window( ofaAccountsPiece *piece, ofaMainWindow *main
 }
 
 static GtkWidget *
-get_top_grid( ofaAccountsPiece *piece )
+get_top_grid( ofaAccountsFrame *frame )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 	GtkWidget *grid, *alignment;
 
-	priv = piece->priv;
+	priv = frame->priv;
 
 	if( !priv->grid ){
 
@@ -296,62 +296,62 @@ get_top_grid( ofaAccountsPiece *piece )
 		ofa_accounts_book_attach_to( priv->book, GTK_CONTAINER( alignment ));
 
 		g_signal_connect(
-				G_OBJECT( priv->book ), "changed", G_CALLBACK( on_book_selection_changed ), piece );
+				G_OBJECT( priv->book ), "changed", G_CALLBACK( on_book_selection_changed ), frame );
 		g_signal_connect(
-				G_OBJECT( priv->book ), "activated", G_CALLBACK( on_book_selection_activated ), piece );
+				G_OBJECT( priv->book ), "activated", G_CALLBACK( on_book_selection_activated ), frame );
 	}
 
 	return( GTK_WIDGET( priv->grid ));
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaAccountsPiece *piece )
+on_new_clicked( GtkButton *button, ofaAccountsFrame *frame )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 
-	priv = piece->priv;
+	priv = frame->priv;
 	ofa_accounts_book_button_clicked( priv->book, BUTTON_NEW );
 }
 
 static void
-on_properties_clicked( GtkButton *button, ofaAccountsPiece *piece )
+on_properties_clicked( GtkButton *button, ofaAccountsFrame *frame )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 
-	priv = piece->priv;
+	priv = frame->priv;
 	ofa_accounts_book_button_clicked( priv->book, BUTTON_PROPERTIES );
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaAccountsPiece *piece )
+on_delete_clicked( GtkButton *button, ofaAccountsFrame *frame )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 
-	priv = piece->priv;
+	priv = frame->priv;
 	ofa_accounts_book_button_clicked( priv->book, BUTTON_DELETE );
 }
 
 static void
-on_view_entries_clicked( GtkButton *button, ofaAccountsPiece *piece )
+on_view_entries_clicked( GtkButton *button, ofaAccountsFrame *frame )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 
-	priv = piece->priv;
+	priv = frame->priv;
 	ofa_accounts_book_button_clicked( priv->book, BUTTON_VIEW_ENTRIES );
 }
 
 /**
- * ofa_accounts_piece_set_buttons:
+ * ofa_accounts_frame_set_buttons:
  */
 void
-ofa_accounts_piece_set_buttons( ofaAccountsPiece *piece, gboolean view_entries )
+ofa_accounts_frame_set_buttons( ofaAccountsFrame *frame, gboolean view_entries )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 	GtkWidget *alignment;
 
-	g_return_if_fail( piece && OFA_IS_ACCOUNTS_PIECE( piece ));
+	g_return_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ));
 
-	priv = piece->priv;
+	priv = frame->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -364,36 +364,36 @@ ofa_accounts_piece_set_buttons( ofaAccountsPiece *piece, gboolean view_entries )
 		ofa_buttons_box_add_spacer( priv->box );		/* notebook label */
 		ofa_buttons_box_add_spacer( priv->box );		/* treeview header */
 		ofa_buttons_box_add_button( priv->box,
-				BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), piece );
+				BUTTON_NEW, TRUE, G_CALLBACK( on_new_clicked ), frame );
 		priv->update_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_properties_clicked ), piece );
+				BUTTON_PROPERTIES, FALSE, G_CALLBACK( on_properties_clicked ), frame );
 		priv->delete_btn = ofa_buttons_box_add_button( priv->box,
-				BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), piece );
+				BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), frame );
 
 		if( view_entries ){
 			ofa_buttons_box_add_spacer( priv->box );
 			priv->view_entries_btn = ofa_buttons_box_add_button( priv->box,
-					BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_view_entries_clicked ), piece );
+					BUTTON_VIEW_ENTRIES, FALSE, G_CALLBACK( on_view_entries_clicked ), frame );
 		}
 	}
 }
 
 /**
- * ofa_accounts_piece_get_selected:
- * @piece:
+ * ofa_accounts_frame_get_selected:
+ * @frame:
  *
  * Returns: the currently selected account number, as a newly allocated
  * string which should be g_free() by the caller.
  */
 gchar *
-ofa_accounts_piece_get_selected( ofaAccountsPiece *piece )
+ofa_accounts_frame_get_selected( ofaAccountsFrame *frame )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 	gchar *account;
 
-	g_return_val_if_fail( piece && OFA_IS_ACCOUNTS_PIECE( piece ), NULL );
+	g_return_val_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ), NULL );
 
-	priv = piece->priv;
+	priv = frame->priv;
 	account = NULL;
 
 	if( !priv->dispose_has_run ){
@@ -405,19 +405,19 @@ ofa_accounts_piece_get_selected( ofaAccountsPiece *piece )
 }
 
 /**
- * ofa_accounts_piece_set_selected:
+ * ofa_accounts_frame_set_selected:
  *
  * Let the user reset the selection after the end of setup and
  * initialization phases
  */
 void
-ofa_accounts_piece_set_selected( ofaAccountsPiece *piece, const gchar *number )
+ofa_accounts_frame_set_selected( ofaAccountsFrame *frame, const gchar *number )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 
-	g_return_if_fail( piece && OFA_IS_ACCOUNTS_PIECE( piece ));
+	g_return_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ));
 
-	priv = piece->priv;
+	priv = frame->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -426,18 +426,18 @@ ofa_accounts_piece_set_selected( ofaAccountsPiece *piece, const gchar *number )
 }
 
 /**
- * ofa_accounts_piece_get_top_focusable_widget:
+ * ofa_accounts_frame_get_top_focusable_widget:
  *
  * Returns: top focusable widget.
  */
 GtkWidget *
-ofa_accounts_piece_get_top_focusable_widget( const ofaAccountsPiece *piece )
+ofa_accounts_frame_get_top_focusable_widget( const ofaAccountsFrame *frame )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 
-	g_return_val_if_fail( piece && OFA_IS_ACCOUNTS_PIECE( piece ), NULL );
+	g_return_val_if_fail( frame && OFA_IS_ACCOUNTS_FRAME( frame ), NULL );
 
-	priv = piece->priv;
+	priv = frame->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -448,22 +448,22 @@ ofa_accounts_piece_get_top_focusable_widget( const ofaAccountsPiece *piece )
 }
 
 static void
-on_book_selection_changed( ofaAccountsBook *book, const gchar *number, ofaAccountsPiece *piece )
+on_book_selection_changed( ofaAccountsBook *book, const gchar *number, ofaAccountsFrame *frame )
 {
-	update_buttons_sensitivity( piece, number );
-	g_signal_emit_by_name( piece, "changed", number );
+	update_buttons_sensitivity( frame, number );
+	g_signal_emit_by_name( frame, "changed", number );
 }
 
 static void
-on_book_selection_activated( ofaAccountsBook *book, const gchar *number, ofaAccountsPiece *piece )
+on_book_selection_activated( ofaAccountsBook *book, const gchar *number, ofaAccountsFrame *frame )
 {
-	g_signal_emit_by_name( piece, "activated", number );
+	g_signal_emit_by_name( frame, "activated", number );
 }
 
 static void
-update_buttons_sensitivity( ofaAccountsPiece *self, const gchar *number )
+update_buttons_sensitivity( ofaAccountsFrame *self, const gchar *number )
 {
-	ofaAccountsPiecePrivate *priv;
+	ofaAccountsFramePrivate *priv;
 	ofoDossier *dossier;
 	ofoAccount *account;
 	gboolean has_account;
