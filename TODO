@@ -412,15 +412,6 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
 
- 534 2014-12-18 ofoDossier table refactoring : only rely on ope codes
-
- 535 2014-12-18 Merge ofaExeForward and ofaDossierCur to ofaExeForwardPiece
-
- 536 2014-12-18 have a ofaOpeTemplateStore as ofaAccountStore
-                have a ofaOpeTemplateBook as ofaAccountsBook
-                rename ofAccountsPiece to ofaAccountFrame
-                have a ofaOpeTemplateFrame as ofaAccountFrame
-
  537 2014-12-18 refactoring dbms scrits are renamed to v0.x
                 + directory is renamed to -v0
 
@@ -2287,6 +2278,18 @@
 
  533 2014-12-15 xxxIStore: remove the useless  set_columns method
      2014-12-17 remediated - svn #4322
+
+ 534 2014-12-18 ofoDossier table refactoring : only rely on ope codes
+     2014-12-18 done - svn #4328
+
+ 535 2014-12-18 Merge ofaExeForward and ofaDossierCur to ofaExeForwardPiece
+     2014-12-18 done - svn #4328
+
+ 536 2014-12-18 have a ofaOpeTemplateStore as ofaAccountStore
+                have a ofaOpeTemplateBook as ofaAccountsBook
+                rename ofAccountsPiece to ofaAccountFrame
+                have a ofaOpeTemplateFrame as ofaAccountFrame
+     2014-12-18 done - svn #4328
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
