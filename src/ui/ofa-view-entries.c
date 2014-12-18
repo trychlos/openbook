@@ -212,8 +212,10 @@ enum {
 };
 
 /* other colors */
+#define RGBA_PAST                       "#d8ffa0"		/* green background */
 #define RGBA_VALIDATED                  "#ffe880"		/* pale gold background */
 #define RGBA_DELETED                    "#808080"		/* gray foreground */
+#define RGBA_FUTURE                     "#ffe8a8"		/* pale orange background */
 #define RGBA_BALANCE                    PAGE_RGBA_FOOTER
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-view-entries.piece.ui";
@@ -2062,6 +2064,11 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 
 	switch( status ){
 
+		case ENT_STATUS_PAST:
+			gdk_rgba_parse( &color, RGBA_PAST );
+			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+			break;
+
 		case ENT_STATUS_VALIDATED:
 			gdk_rgba_parse( &color, RGBA_VALIDATED );
 			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
@@ -2087,6 +2094,11 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 			}
 			gdk_rgba_parse( &color, color_str );
 			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+			break;
+
+		case ENT_STATUS_FUTURE:
+			gdk_rgba_parse( &color, RGBA_FUTURE );
+			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
 			break;
 
 		default:

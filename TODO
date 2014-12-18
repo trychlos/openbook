@@ -368,8 +368,6 @@
 
  508 2014-12- 8 DossierNew MySQL: set default server account = 'root'
 
- 510 2014-12- 8 AccountSelect: the pre-selection doesn't work well
-
  512 2014-12- 9 have an error message in all dialog box to say why it
                 is not validable
 
@@ -378,8 +376,6 @@
 
  516 2014-12- 9 on exe_dates_changed: recompute rough vs. future entries
                 + forbid that an entry becomes in the past before exercice
-
- 518 2014-12-10 DossierCur: try to make transient vs the main window
 
  519 2014-12-11 ExportAssistant: the list of exportables should be
                 dynamically computed from the list of classes which
@@ -405,15 +401,8 @@
                 import ledgers:  0.02982 s (9 rows)
                 import entries:  0.13268 s (2431 rows)
 
- 527 2014-12-13 ExeForward: as DossierCur depends of ExeForward (via
-                the button), validation should not be allowed while
-                DossierCur is not set
-
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
-
- 537 2014-12-18 refactoring dbms scrits are renamed to v0.x
-                + directory is renamed to -v0
 
  538 2014-12-18 ViewEntries: have distinct color backgrounds for past,
                 validated, rough and future entries 
@@ -2240,6 +2229,9 @@
                 Treeview (instead of two booleans)
      2014-12-13 done
 
+ 510 2014-12- 8 AccountSelect: the pre-selection doesn't work well
+     2014-12-18 fixed
+
  511 2014-12- 8 AccountProperties: a detail account with entries should
                 have currencies disabled (idem for root account)
      2014-12- 9 done - svn #4267
@@ -2253,9 +2245,17 @@
  517 2014-12-10 define two new entry status: PAST and FUTURE
      2014-12-13 done - svn #4293
 
+ 518 2014-12-10 DossierCur: try to make transient vs the main window
+     2014-12-18 obsoleted as merged in ofaExeForwardPiece
+
  526 2014-12-13 ExeForward: there is no sense to check ledger attached
                 to the operation template
      2014-12-13 done - svn #4301
+
+ 527 2014-12-13 ExeForward: as DossierCur depends of ExeForward (via
+                the button), validation should not be allowed while
+                DossierCur is not set
+     2014-12-18 obsolete as the two pieces are merged in ofaExeForwardPiece
 
  528 2014-12-13 Settlement: after dbms update:
                  The model has been modified from within
@@ -2290,6 +2290,10 @@
                 rename ofAccountsPiece to ofaAccountFrame
                 have a ofaOpeTemplateFrame as ofaAccountFrame
      2014-12-18 done - svn #4328
+
+ 537 2014-12-18 refactoring dbms scrits are renamed to v0.x
+                + directory is renamed to -v0
+     2014-12-18 done - svn #4330
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

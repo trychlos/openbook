@@ -32,12 +32,18 @@
  ViewEntries
  ===========
 
+ - past entries:
+   background color: #d8ffa0 green
+
  - validated entries:
    background color: #ffe880 pale gold
 
  - deleted entries:
    font color:       #808080 gray
    font style:       italic
+
+ - future entries:
+   background color: #ffe8a8 pale orange
 
  - rough invalid entries:
    font color:       #ff0000 red
