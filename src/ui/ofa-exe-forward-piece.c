@@ -40,6 +40,7 @@
 #include "ui/ofa-currency-combo.h"
 #include "ui/ofa-exe-forward-piece.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-ope-template-select.h"
 
 /* private instance data
  */
@@ -381,39 +382,35 @@ on_ope_changed( GtkEditable *editable, ofaExeForwardPiece *self )
 static void
 on_sld_ope_select( GtkButton *button, ofaExeForwardPiece *piece )
 {
-#if 0
 	ofaExeForwardPiecePrivate *priv;
-	gchar *acc_number;
+	gchar *mnemo;
 
 	priv = piece->priv;
 
-	acc_number = ofa_account_select_run(
+	mnemo = ofa_ope_template_select_run(
 							priv->main_window,
-							gtk_entry_get_text( GTK_ENTRY( priv->account_entry )));
-	if( acc_number ){
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), acc_number );
-		g_free( acc_number );
+							gtk_entry_get_text( GTK_ENTRY( priv->sld_ope )));
+	if( mnemo ){
+		gtk_entry_set_text( GTK_ENTRY( priv->sld_ope ), mnemo );
+		g_free( mnemo );
 	}
-#endif
 }
 
 static void
 on_for_ope_select( GtkButton *button, ofaExeForwardPiece *piece )
 {
-#if 0
 	ofaExeForwardPiecePrivate *priv;
-	gchar *acc_number;
+	gchar *mnemo;
 
 	priv = piece->priv;
 
-	acc_number = ofa_account_select_run(
+	mnemo = ofa_ope_template_select_run(
 							priv->main_window,
-							gtk_entry_get_text( GTK_ENTRY( priv->account_entry )));
-	if( acc_number ){
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), acc_number );
-		g_free( acc_number );
+							gtk_entry_get_text( GTK_ENTRY( priv->for_ope )));
+	if( mnemo ){
+		gtk_entry_set_text( GTK_ENTRY( priv->for_ope ), mnemo );
+		g_free( mnemo );
 	}
-#endif
 }
 
 /*

@@ -173,6 +173,8 @@ openbook_SOURCES = \
 	ofa-misc-chkbal.h									\
 	ofa-ope-template-properties.c						\
 	ofa-ope-template-properties.h						\
+	ofa-ope-template-select.c							\
+	ofa-ope-template-select.h							\
 	ofa-ope-template-store.c							\
 	ofa-ope-template-store.h							\
 	ofa-ope-templates-book.c							\
@@ -255,6 +257,7 @@ ui_files = \
 	ofa-int-closing.ui									\
 	ofa-ledger-properties.ui							\
 	ofa-ope-template-properties.ui						\
+	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
 	ofa-preferences.ui									\
 	ofa-print-balance.ui								\
