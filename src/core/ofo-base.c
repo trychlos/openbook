@@ -105,14 +105,13 @@ ofo_base_class_init( ofoBaseClass *klass )
 /**
  * ofo_base_init_fields_list:
  * @defs: the #ofsBoxDefs list of field definitions for this object
- * @object: the new #ofoBase object to be initialized.
  *
- * Initialize the list of data fields when allocating a new object.
+ * Returns: the list of data fields described in the definitions.
  */
-void
-ofo_base_init_fields_list( const ofsBoxDef *defs, ofoBase *object )
+GList *
+ofo_base_init_fields_list( const ofsBoxDef *defs )
 {
-	object->prot->fields = ofa_box_init_fields_list( defs );
+	return( ofa_box_init_fields_list( defs ));
 }
 
 /**
@@ -130,25 +129,52 @@ ofo_base_init_fields_list( const ofsBoxDef *defs, ofoBase *object )
 GList *
 ofo_base_load_dataset( const ofsBoxDef *defs, const ofaDbms *dbms, const gchar *from, GType type )
 {
-	gchar *columns, *query;
-	GSList *result, *irow;
 	ofoBase *object;
-	GList *dataset;
+	GList *rows, *dataset, *it;
 
 	dataset = NULL;
+	rows = ofo_base_load_rows( defs, dbms, from );
+
+	for( it=rows ; it ; it=it->next ){
+		object = g_object_new( type, NULL );
+		object->prot->fields = it->data;
+		dataset = g_list_prepend( dataset, object );
+	}
+	g_list_free( rows );
+
+	return( g_list_reverse( dataset ));
+}
+
+/**
+ * ofo_base_load_rows:
+ * @defs: the #ofsBoxDefs list of field definitions for this object
+ * @dossier: the currently opened dossier
+ * @dbms: the connection object
+ * @from: the 'from' part of the query
+ *
+ * This function loads the specified rows.
+ *
+ * Returns: the list of rows, each element being itself a list of fields.
+ */
+GList *
+ofo_base_load_rows( const ofsBoxDef *defs, const ofaDbms *dbms, const gchar *from )
+{
+	gchar *columns, *query;
+	GSList *result, *irow;
+	GList *rows;
+
+	rows = NULL;
 	columns = ofa_box_get_dbms_columns( defs );
 	query = g_strdup_printf( "SELECT %s FROM %s", columns, from );
 	g_free( columns );
 
 	if( ofa_dbms_query_ex( dbms, query, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
-			object = g_object_new( type, NULL );
-			object->prot->fields = ofa_box_parse_dbms_result( defs, irow );
-			dataset = g_list_prepend( dataset, object );
+			rows = g_list_prepend( rows, ofa_box_parse_dbms_result( defs, irow ));
 		}
 		ofa_dbms_free_results( result );
 	}
 	g_free( query );
 
-	return( g_list_reverse( dataset ));
+	return( g_list_reverse( rows ));
 }

@@ -682,7 +682,7 @@ ofo_account_new( void )
 	ofoAccount *account;
 
 	account = g_object_new( OFO_TYPE_ACCOUNT, NULL );
-	ofo_base_init_fields_list( st_boxed_defs, OFO_BASE( account ));
+	OFO_BASE( account )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( account );
 }

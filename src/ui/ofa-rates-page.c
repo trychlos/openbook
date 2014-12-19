@@ -87,11 +87,11 @@ static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIt
 static void       setup_first_selection( ofaRatesPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self );
-static void       on_new_clicked( ofaRatesPage *page );
+static void       on_new_clicked( GtkButton *button, ofaRatesPage *page );
 static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatesPage *self );
-static void       on_update_clicked( ofaRatesPage *page );
+static void       on_update_clicked( GtkButton *button, ofaRatesPage *page );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaRatesPage *self );
-static void       on_delete_clicked( ofaRatesPage *page );
+static void       on_delete_clicked( GtkButton *button, ofaRatesPage *page );
 static gboolean   delete_confirmed( ofaRatesPage *self, ofoRate *rate );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaRatesPage *self );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaRatesPage *self );
@@ -521,7 +521,7 @@ setup_first_selection( ofaRatesPage *self )
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
 {
-	on_update_clicked( OFA_RATES_PAGE( page ));
+	on_update_clicked( NULL, OFA_RATES_PAGE( page ));
 }
 
 static void
@@ -553,7 +553,7 @@ on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self )
 }
 
 static void
-on_new_clicked( ofaRatesPage *page )
+on_new_clicked( GtkButton *button, ofaRatesPage *page )
 {
 	ofoRate *rate;
 
@@ -587,7 +587,7 @@ on_new_object( ofoDossier *dossier, ofoBase *object, ofaRatesPage *self )
 }
 
 static void
-on_update_clicked( ofaRatesPage *page )
+on_update_clicked( GtkButton *button, ofaRatesPage *page )
 {
 	ofaRatesPagePrivate *priv;
 	GtkTreeSelection *select;
@@ -638,7 +638,7 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 }
 
 static void
-on_delete_clicked( ofaRatesPage *page )
+on_delete_clicked( GtkButton *button, ofaRatesPage *page )
 {
 	ofaRatesPagePrivate *priv;
 	GtkTreeSelection *select;

@@ -75,10 +75,13 @@ G_BEGIN_DECLS
 		if( OFO_BASE(V)->prot->dispose_has_run ) return; \
 		ofa_box_set_ ## T(OFO_BASE(V)->prot->fields,(I),(D))
 
-void   ofo_base_init_fields_list(const ofsBoxDef *defs, ofoBase *object );
+GList *ofo_base_init_fields_list( const ofsBoxDef *defs );
 
 GList *ofo_base_load_dataset    ( const ofsBoxDef *defs,
 											const ofaDbms *dbms, const gchar *from, GType type );
+
+GList *ofo_base_load_rows       ( const ofsBoxDef *defs,
+											const ofaDbms *dbms, const gchar *from );
 
 G_END_DECLS
 

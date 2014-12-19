@@ -35,6 +35,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
+#include "api/ofa-box.h"
 #include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
@@ -49,52 +50,111 @@
 
 /* priv instance data
  */
+enum {
+	RAT_MNEMO = 1,
+	RAT_LABEL,
+	RAT_NOTES,
+	RAT_UPD_USER,
+	RAT_UPD_STAMP,
+	RAT_BEGIN,
+	RAT_END,
+	RAT_RATE,
+};
+
+static const ofsBoxDef st_boxed_defs[] = {
+		{ OFA_BOX_CSV( RAT_MNEMO ),
+				OFA_TYPE_STRING,
+				TRUE,					/* importable */
+				FALSE },				/* export zero as empty */
+		{ OFA_BOX_CSV( RAT_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( RAT_NOTES ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( RAT_UPD_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( RAT_UPD_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
+		{ 0 }
+};
+
+static const ofsBoxDef st_validities_defs[] = {
+		{ RAT_MNEMO,
+				"RAT_MNEMO",
+				NULL,
+				OFA_TYPE_STRING,
+				TRUE,					/* importable */
+				FALSE },				/* export zero as empty */
+		{ RAT_BEGIN,
+				"RAT_VAL_BEG",
+				"RatValidityBegin",
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ RAT_END,
+				"RAT_VAL_END",
+				"RatValidityEnd",
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ RAT_RATE,
+				"RAT_VAL_RATE",
+				"RatRate",
+				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
 struct _ofoRatePrivate {
 
-	/* dbms data
+	/* the validities of the rate as a GList of GList fields
 	 */
-	gchar     *mnemo;
-	gchar     *label;
-	gchar     *notes;
-	gchar     *upd_user;
-	GTimeVal   upd_stamp;
-	GList     *validities;
+	GList *validities;
 };
 
 static ofoBaseClass *ofo_rate_parent_class = NULL;
 
-static GList           *rate_load_dataset( ofoDossier *dossier );
-static ofoRate         *rate_find_by_mnemo( GList *set, const gchar *mnemo );
-static void             rate_set_upd_user( ofoRate *rate, const gchar *user );
-static void             rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
-static void             rate_val_add_detail( ofoRate *rate, ofsRateValidity *detail );
-static gboolean         rate_do_insert( ofoRate *rate, const ofaDbms *dbms, const gchar *user );
-static gboolean         rate_insert_main( ofoRate *rate, const ofaDbms *dbms, const gchar *user );
-static gboolean         rate_delete_validities( ofoRate *rate, const ofaDbms *dbms );
-static gboolean         rate_insert_validities( ofoRate *rate, const ofaDbms *dbms );
-static gboolean         rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofaDbms *dbms );
-static gboolean         rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user );
-static gboolean         rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user );
-static gboolean         rate_do_delete( ofoRate *rate, const ofaDbms *dbms );
-static gint             rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
-static gint             rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
-static gint             rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent );
-static void             iexportable_iface_init( ofaIExportableInterface *iface );
-static guint            iexportable_get_interface_version( const ofaIExportable *instance );
-static gboolean         iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
-static void             iimportable_iface_init( ofaIImportableInterface *iface );
-static guint            iimportable_get_interface_version( const ofaIImportable *instance );
-static gboolean         iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
-static ofoRate         *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, guint count, guint *errors );
-static ofsRateValidity *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, guint count, guint *errors, gchar **mnemo );
-static gboolean         rate_do_drop_content( const ofaDbms *dbms );
+static GList    *rate_load_dataset( ofoDossier *dossier );
+static ofoRate  *rate_find_by_mnemo( GList *set, const gchar *mnemo );
+static void      rate_set_upd_user( ofoRate *rate, const gchar *user );
+static void      rate_set_upd_stamp( ofoRate *rate, const GTimeVal *stamp );
+static GList    *rate_val_new_detail( const gchar *mnemo, const GDate *begin, const GDate *end, ofxAmount value );
+static void      rate_val_add_detail( ofoRate *rate, GList *detail );
+static gboolean  rate_do_insert( ofoRate *rate, const ofaDbms *dbms, const gchar *user );
+static gboolean  rate_insert_main( ofoRate *rate, const ofaDbms *dbms, const gchar *user );
+static gboolean  rate_delete_validities( ofoRate *rate, const ofaDbms *dbms );
+static gboolean  rate_insert_validities( ofoRate *rate, const ofaDbms *dbms );
+static gboolean  rate_insert_validity( ofoRate *rate, GList *detail, const ofaDbms *dbms );
+static gboolean  rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user );
+static gboolean  rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, const gchar *user );
+static gboolean  rate_do_delete( ofoRate *rate, const ofaDbms *dbms );
+static gint      rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
+static gint      rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
+static gint      rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateValidity *b, gboolean *consistent );
+static void      iexportable_iface_init( ofaIExportableInterface *iface );
+static guint     iexportable_get_interface_version( const ofaIExportable *instance );
+static gboolean  iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofoDossier *dossier );
+static void      iimportable_iface_init( ofaIImportableInterface *iface );
+static guint     iimportable_get_interface_version( const ofaIImportable *instance );
+static gboolean  iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
+static ofoRate  *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, guint count, guint *errors );
+static GList    *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, guint count, guint *errors, gchar **mnemo );
+static gboolean  rate_do_drop_content( const ofaDbms *dbms );
 
 OFA_IDATASET_LOAD( RATE, rate );
 
 static void
-rate_free_validity( ofsRateValidity *sval )
+rate_free_validity( GList *fields )
 {
-	g_free( sval );
+	ofa_box_free_fields_list( fields );
 }
 
 static void
@@ -108,21 +168,15 @@ static void
 rate_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_rate_finalize";
-	ofoRatePrivate *priv;
-
-	priv = OFO_RATE( instance )->priv;
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			priv->mnemo, priv->label );
+			ofa_box_get_string( OFO_BASE( instance )->prot->fields, RAT_MNEMO ),
+			ofa_box_get_string( OFO_BASE( instance )->prot->fields, RAT_LABEL ));
 
 	g_return_if_fail( instance && OFO_IS_RATE( instance ));
 
 	/* free data members here */
-	g_free( priv->mnemo );
-	g_free( priv->label );
-	g_free( priv->notes );
-	g_free( priv->upd_user );
 
 	rate_free_validities( OFO_RATE( instance ));
 
@@ -226,70 +280,40 @@ ofo_rate_get_type( void )
 static GList *
 rate_load_dataset( ofoDossier *dossier )
 {
-	const ofaDbms *dbms;
-	GSList *result, *irow, *icol;
-	ofoRate *rate;
 	GList *dataset, *it;
-	ofsRateValidity *valid;
-	gchar *query;
-	GTimeVal timeval;
+	ofoRate *rate;
+	gchar *from;
 
-	dataset = NULL;
-	dbms = ofo_dossier_get_dbms( dossier );
-
-	if( ofa_dbms_query_ex( dbms,
-			"SELECT RAT_MNEMO,RAT_LABEL,RAT_NOTES,"
-			"	RAT_UPD_USER,RAT_UPD_STAMP"
-			"	FROM OFA_T_RATES", &result, TRUE )){
-
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = ( GSList * ) irow->data;
-			rate = ofo_rate_new();
-			ofo_rate_set_mnemo( rate, ( gchar * ) icol->data );
-			icol = icol->next;
-			ofo_rate_set_label( rate, ( gchar * ) icol->data );
-			icol = icol->next;
-			ofo_rate_set_notes( rate, ( gchar * ) icol->data );
-			icol = icol->next;
-			rate_set_upd_user( rate, ( gchar * ) icol->data );
-			icol = icol->next;
-			rate_set_upd_stamp( rate,
-					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
-
-			dataset = g_list_prepend( dataset, rate );
-		}
-
-		ofa_dbms_free_results( result );
-	}
+	dataset = ofo_base_load_dataset(
+					st_boxed_defs,
+					ofo_dossier_get_dbms( dossier ),
+					"OFA_T_RATES ORDER BY RAT_MNEMO ASC",
+					OFO_TYPE_RATE );
 
 	for( it=dataset ; it ; it=it->next ){
 
 		rate = OFO_RATE( it->data );
-		rate->priv->validities = NULL;
+		from = g_strdup_printf( "OFA_T_RATES_VAL WHERE RAT_MNEMO='%s'", ofo_rate_get_mnemo( rate ));
+		rate->priv->validities =
+				ofo_base_load_rows( st_validities_defs, ofo_dossier_get_dbms( dossier ), from );
+		g_free( from );
 
-		query = g_strdup_printf(
-					"SELECT RAT_VAL_BEG,RAT_VAL_END,RAT_VAL_RATE"
-					"	FROM OFA_T_RATES_VAL "
-					"	WHERE RAT_MNEMO='%s'",
-					ofo_rate_get_mnemo( rate ));
-
-		if( ofa_dbms_query_ex( dbms, query, &result, TRUE )){
-			for( irow=result ; irow ; irow=irow->next ){
-				icol = ( GSList * ) irow->data;
-				valid = g_new0( ofsRateValidity, 1 );
-				my_date_set_from_sql( &valid->begin, ( const gchar * ) icol->data );
-				icol = icol->next;
-				my_date_set_from_sql( &valid->end, ( const gchar * ) icol->data );
-				icol = icol->next;
-				valid->rate = my_double_set_from_sql(( const gchar * ) icol->data );
-				rate_val_add_detail( rate, valid );
-			}
-			ofa_dbms_free_results( result );
-			g_free( query );
-		}
+		/*GList *iv;
+		for( iv=rate->priv->validities ; iv ; iv=iv->next ){
+			const gchar *mnemo = ofa_box_get_string( iv->data, RAT_MNEMO );
+			const GDate *dbegin = ofa_box_get_date( iv->data, RAT_BEGIN );
+			const GDate *dend = ofa_box_get_date( iv->data, RAT_END );
+			ofxAmount amount = ofa_box_get_amount( iv->data, RAT_RATE );
+			gchar *sdbegin = my_date_to_str( dbegin, MY_DATE_DMYY );
+			gchar *sdend = my_date_to_str( dend, MY_DATE_DMYY );
+			g_debug( "rate_load_dataset: mnemo=%s, begin=%s, end=%s, amount=%.5lf",
+					mnemo, sdbegin, sdend, amount );
+			g_free( sdbegin );
+			g_free( sdend );
+		}*/
 	}
 
-	return( g_list_reverse( dataset ));
+	return( dataset );
 }
 
 /**
@@ -334,6 +358,7 @@ ofo_rate_new( void )
 	ofoRate *rate;
 
 	rate = g_object_new( OFO_TYPE_RATE, NULL );
+	OFO_BASE( rate )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( rate );
 }
@@ -344,15 +369,7 @@ ofo_rate_new( void )
 const gchar *
 ofo_rate_get_mnemo( const ofoRate *rate )
 {
-	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		return(( const gchar * ) rate->priv->mnemo );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	ofo_base_getter( RATE, rate, string, NULL, RAT_MNEMO );
 }
 
 /**
@@ -361,15 +378,7 @@ ofo_rate_get_mnemo( const ofoRate *rate )
 const gchar *
 ofo_rate_get_label( const ofoRate *rate )
 {
-	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		return(( const gchar * ) rate->priv->label );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	ofo_base_getter( RATE, rate, string, NULL, RAT_LABEL );
 }
 
 /**
@@ -378,15 +387,7 @@ ofo_rate_get_label( const ofoRate *rate )
 const gchar *
 ofo_rate_get_notes( const ofoRate *rate )
 {
-	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		return(( const gchar * ) rate->priv->notes );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	ofo_base_getter( RATE, rate, string, NULL, RAT_NOTES );
 }
 
 /**
@@ -395,15 +396,7 @@ ofo_rate_get_notes( const ofoRate *rate )
 const gchar *
 ofo_rate_get_upd_user( const ofoRate *rate )
 {
-	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		return(( const gchar * ) rate->priv->upd_user );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	ofo_base_getter( RATE, rate, string, NULL, RAT_UPD_USER );
 }
 
 /**
@@ -412,41 +405,32 @@ ofo_rate_get_upd_user( const ofoRate *rate )
 const GTimeVal *
 ofo_rate_get_upd_stamp( const ofoRate *rate )
 {
-	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		return(( const GTimeVal * ) &rate->priv->upd_stamp );
-	}
-
-	g_assert_not_reached();
-	return( NULL );
+	ofo_base_getter( RATE, rate, timestamp, NULL, RAT_UPD_STAMP );
 }
 
 /**
  * ofo_rate_get_min_valid:
  *
  * Returns the smallest beginning date, all validities included.
- * The returned #GDate object may be invalid if it is
- * infinite in the past.
+ * If the returned #GDate struct is invalid, then it must be considered
+ * as infinite in the past.
  */
 const GDate *
 ofo_rate_get_min_valid( const ofoRate *rate )
 {
-	GList *iv;
-	const GDate *min;
-	ofsRateValidity *sval;
+	GList *it;
+	const GDate *val_begin, *min;
 
 	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		for (min=NULL, iv=rate->priv->validities ; iv ; iv=iv->next ){
-			sval = ( ofsRateValidity * ) iv->data;
+		for( min=NULL, it=rate->priv->validities ; it ; it=it->next ){
+			val_begin = ofa_box_get_date( it->data, RAT_BEGIN );
 			if( !min ){
-				min = &sval->begin;
-			} else if( my_date_compare_ex( &sval->begin, min, TRUE ) < 0 ){
-				min = &sval->begin;
+				min = val_begin;
+			} else if( my_date_compare_ex( val_begin, min, TRUE ) < 0 ){
+				min = val_begin;
 			}
 		}
 
@@ -467,20 +451,19 @@ ofo_rate_get_min_valid( const ofoRate *rate )
 const GDate *
 ofo_rate_get_max_valid( const ofoRate *rate )
 {
-	GList *iv;
-	const GDate *max;
-	ofsRateValidity *sval;
+	GList *it;
+	const GDate *val_end, *max;
 
 	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		for (max=NULL, iv=rate->priv->validities ; iv ; iv=iv->next ){
-			sval = ( ofsRateValidity * ) iv->data;
+		for( max=NULL, it=rate->priv->validities ; it ; it=it->next ){
+			val_end = ofa_box_get_date( it->data, RAT_END );
 			if( !max ){
-				max = &sval->end;
-			} else if( my_date_compare_ex( &sval->end, max, FALSE ) > 0 ){
-				max = &sval->end;
+				max = val_end;
+			} else if( my_date_compare_ex( val_end, max, FALSE ) > 0 ){
+				max = val_end;
 			}
 		}
 
@@ -493,6 +476,8 @@ ofo_rate_get_max_valid( const ofoRate *rate )
 
 /**
  * ofo_rate_get_val_count:
+ *
+ * Returns: the count of validity rows for this @rate
  */
 gint
 ofo_rate_get_val_count( const ofoRate *rate )
@@ -514,7 +499,6 @@ const GDate *
 ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
 {
 	GList *nth;
-	ofsRateValidity *validity;
 
 	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
 
@@ -522,8 +506,7 @@ ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
 
 		nth = g_list_nth( rate->priv->validities, idx );
 		if( nth ){
-			validity = ( ofsRateValidity * ) nth->data;
-			return(( const GDate * ) &validity->begin );
+			return( ofa_box_get_date( nth->data, RAT_BEGIN ));
 		}
 	}
 
@@ -537,7 +520,6 @@ const GDate *
 ofo_rate_get_val_end( const ofoRate *rate, gint idx )
 {
 	GList *nth;
-	ofsRateValidity *validity;
 
 	g_return_val_if_fail( OFO_IS_RATE( rate ), NULL );
 
@@ -545,8 +527,7 @@ ofo_rate_get_val_end( const ofoRate *rate, gint idx )
 
 		nth = g_list_nth( rate->priv->validities, idx );
 		if( nth ){
-			validity = ( ofsRateValidity * ) nth->data;
-			return(( const GDate * ) &validity->end );
+			return( ofa_box_get_date( nth->data, RAT_END ));
 		}
 	}
 
@@ -560,7 +541,6 @@ ofxAmount
 ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
 {
 	GList *nth;
-	ofsRateValidity *validity;
 
 	g_return_val_if_fail( OFO_IS_RATE( rate ), 0 );
 
@@ -568,8 +548,7 @@ ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
 
 		nth = g_list_nth( rate->priv->validities, idx );
 		if( nth ){
-			validity = ( ofsRateValidity * ) nth->data;
-			return( validity->rate );
+			return( ofa_box_get_amount( nth->data, RAT_RATE ));
 		}
 	}
 
@@ -587,21 +566,24 @@ ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
 ofxAmount
 ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 {
-	GList *iva;
-	ofsRateValidity *svalid;
+	GList *it;
+	const GDate *val_begin, *val_end;
+	ofxAmount amount;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), 0 );
 	g_return_val_if_fail( date, 0 );
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		for( iva=rate->priv->validities ; iva ; iva=iva->next ){
-			svalid = ( ofsRateValidity * ) iva->data;
-			if( my_date_compare_ex( &svalid->begin, date, TRUE ) > 0 ){
+		for( it=rate->priv->validities ; it ; it=it->next ){
+			val_begin = ofa_box_get_date( it->data, RAT_BEGIN );
+			val_end = ofa_box_get_date( it->data, RAT_END );
+			if( my_date_compare_ex( val_begin, date, TRUE ) > 0 ){
 				continue;
 			}
-			if( my_date_compare_ex( &svalid->end, date, FALSE ) >= 0 ){
-				return( svalid->rate );
+			if( my_date_compare_ex( val_end, date, FALSE ) >= 0 ){
+				amount = ofa_box_get_amount( it->data, RAT_RATE );
+				return( amount );
 			}
 		}
 	}
@@ -640,7 +622,7 @@ ofo_rate_is_deletable( const ofoRate *rate, ofoDossier *dossier )
  * consistent between each others, we are trying to sort them from the
  * infinite past to the infinite future - if this doesn't work
  * (probably because overlapping each others), then the provided data
- * is not valid
+ * is considered as not valid
  */
 gboolean
 ofo_rate_is_valid( const gchar *mnemo, const gchar *label, GList *validities )
@@ -665,13 +647,7 @@ ofo_rate_is_valid( const gchar *mnemo, const gchar *label, GList *validities )
 void
 ofo_rate_set_mnemo( ofoRate *rate, const gchar *mnemo )
 {
-	g_return_if_fail( OFO_IS_RATE( rate ));
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		g_free( rate->priv->mnemo );
-		rate->priv->mnemo = g_strdup( mnemo );
-	}
+	ofo_base_setter( RATE, rate, string, RAT_MNEMO, mnemo );
 }
 
 /**
@@ -680,13 +656,7 @@ ofo_rate_set_mnemo( ofoRate *rate, const gchar *mnemo )
 void
 ofo_rate_set_label( ofoRate *rate, const gchar *label )
 {
-	g_return_if_fail( OFO_IS_RATE( rate ));
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		g_free( rate->priv->label );
-		rate->priv->label = g_strdup( label );
-	}
+	ofo_base_setter( RATE, rate, string, RAT_LABEL, label );
 }
 
 /**
@@ -695,13 +665,7 @@ ofo_rate_set_label( ofoRate *rate, const gchar *label )
 void
 ofo_rate_set_notes( ofoRate *rate, const gchar *notes )
 {
-	g_return_if_fail( OFO_IS_RATE( rate ));
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		g_free( rate->priv->notes );
-		rate->priv->notes = g_strdup( notes );
-	}
+	ofo_base_setter( RATE, rate, string, RAT_NOTES, notes );
 }
 
 /*
@@ -710,13 +674,7 @@ ofo_rate_set_notes( ofoRate *rate, const gchar *notes )
 static void
 rate_set_upd_user( ofoRate *rate, const gchar *upd_user )
 {
-	g_return_if_fail( OFO_IS_RATE( rate ));
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		g_free( rate->priv->upd_user );
-		rate->priv->upd_user = g_strdup( upd_user );
-	}
+	ofo_base_setter( RATE, rate, string, RAT_UPD_USER, upd_user );
 }
 
 /*
@@ -725,12 +683,7 @@ rate_set_upd_user( ofoRate *rate, const gchar *upd_user )
 static void
 rate_set_upd_stamp( ofoRate *rate, const GTimeVal *upd_stamp )
 {
-	g_return_if_fail( OFO_IS_RATE( rate ));
-
-	if( !OFO_BASE( rate )->prot->dispose_has_run ){
-
-		my_utils_stamp_set_from_stamp( &rate->priv->upd_stamp, upd_stamp );
-	}
+	ofo_base_setter( RATE, rate, timestamp, RAT_UPD_STAMP, upd_stamp );
 }
 
 /**
@@ -764,22 +717,33 @@ ofo_rate_free_all_val( ofoRate *rate )
 void
 ofo_rate_add_val( ofoRate *rate, const GDate *begin, const GDate *end, ofxAmount value )
 {
-	ofsRateValidity *sval;
+	GList *fields;
 
 	g_return_if_fail( rate && OFO_IS_RATE( rate ));
 
 	if( !OFO_BASE( rate )->prot->dispose_has_run ){
 
-		sval = g_new0( ofsRateValidity, 1 );
-		my_date_set_from_date( &sval->begin, begin );
-		my_date_set_from_date( &sval->end, end );
-		sval->rate = value;
-		rate_val_add_detail( rate, sval );
+		fields = rate_val_new_detail( ofo_rate_get_mnemo( rate ), begin, end, value );
+		rate_val_add_detail( rate, fields );
 	}
 }
 
+static GList *
+rate_val_new_detail( const gchar *mnemo, const GDate *begin, const GDate *end, ofxAmount value )
+{
+	GList *fields;
+
+	fields = ofa_box_init_fields_list( st_validities_defs );
+	ofa_box_set_string( fields, RAT_MNEMO, mnemo );
+	ofa_box_set_date( fields, RAT_BEGIN, begin );
+	ofa_box_set_date( fields, RAT_END, end );
+	ofa_box_set_amount( fields, RAT_RATE, value );
+
+	return( fields );
+}
+
 static void
-rate_val_add_detail( ofoRate *rate, ofsRateValidity *detail )
+rate_val_add_detail( ofoRate *rate, GList *detail )
 {
 	rate->priv->validities = g_list_append( rate->priv->validities, detail );
 }
@@ -896,28 +860,33 @@ static gboolean
 rate_insert_validities( ofoRate *rate, const ofaDbms *dbms )
 {
 	gboolean ok;
-	GList *idet;
-	ofsRateValidity *sdet;
+	GList *it;
 
 	ok = TRUE;
-	for( idet=rate->priv->validities ; idet ; idet=idet->next ){
-		sdet = ( ofsRateValidity * ) idet->data;
-		ok &= rate_insert_validity( rate, sdet, dbms );
+	for( it=rate->priv->validities ; it ; it=it->next ){
+		ok &= rate_insert_validity( rate, it->data, dbms );
 	}
 
 	return( ok );
 }
 
 static gboolean
-rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofaDbms *dbms )
+rate_insert_validity( ofoRate *rate, GList *fields, const ofaDbms *dbms )
 {
 	gboolean ok;
 	GString *query;
-	gchar *dbegin, *dend, *amount;
+	const GDate *dbegin, *dend;
+	ofxAmount amount;
+	gchar *sdbegin, *sdend, *samount;
 
-	dbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
-	dend = my_date_to_str( &sdet->end, MY_DATE_SQL );
-	amount = my_double_to_sql( sdet->rate );
+	dbegin = ofa_box_get_date( fields, RAT_BEGIN );
+	sdbegin = my_date_to_str( dbegin, MY_DATE_SQL );
+
+	dend = ofa_box_get_date( fields, RAT_END );
+	sdend = my_date_to_str( dend, MY_DATE_SQL );
+
+	amount = ofa_box_get_amount( fields, RAT_RATE );
+	samount = my_double_to_sql( amount );
 
 	query = g_string_new( "INSERT INTO OFA_T_RATES_VAL " );
 
@@ -927,26 +896,26 @@ rate_insert_validity( ofoRate *rate, ofsRateValidity *sdet, const ofaDbms *dbms 
 			"	VALUES ('%s',",
 					ofo_rate_get_mnemo( rate ));
 
-	if( dbegin && g_utf8_strlen( dbegin, -1 )){
-		g_string_append_printf( query, "'%s',", dbegin );
+	if( sdbegin && g_utf8_strlen( sdbegin, -1 )){
+		g_string_append_printf( query, "'%s',", sdbegin );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
-	if( dend && g_utf8_strlen( dend, -1 )){
-		g_string_append_printf( query, "'%s',", dend );
+	if( sdend && g_utf8_strlen( sdend, -1 )){
+		g_string_append_printf( query, "'%s',", sdend );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
-	g_string_append_printf( query, "%s)", amount );
+	g_string_append_printf( query, "%s)", samount );
 
 	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
 	g_string_free( query, TRUE );
-	g_free( dbegin );
-	g_free( dend );
-	g_free( amount );
+	g_free( sdbegin );
+	g_free( sdend );
+	g_free( samount );
 
 	return( ok );
 }
@@ -1130,7 +1099,7 @@ rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b )
  * +-----+-------------+-----------+---------+-----------+------------+
  */
 static gint
-rate_cmp_by_validity( ofsRateValidity *a, ofsRateValidity *b, gboolean *consistent )
+rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateValidity *b, gboolean *consistent )
 {
 	/* does 'a' start from the infinite ? */
 	if( !my_date_is_valid( &a->begin )){
@@ -1222,17 +1191,17 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 {
 	GList *it, *det;
 	GSList *lines;
-	gchar *str, *stamp;
 	ofoRate *rate;
-	const gchar *muser;
-	ofsRateValidity *sdet;
-	gchar *sbegin, *send, *notes, *dvalue;
+	gchar *str;
 	gboolean ok, with_headers;
 	gulong count;
+	gchar field_sep, decimal_sep;
 
 	OFA_IDATASET_GET( dossier, RATE, rate );
 
 	with_headers = ofa_file_format_has_headers( settings );
+	field_sep = ofa_file_format_get_field_sep( settings );
+	decimal_sep = ofa_file_format_get_decimal_sep( settings );
 
 	count = ( gulong ) g_list_length( rate_dataset );
 	if( with_headers ){
@@ -1245,7 +1214,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = g_strdup_printf( "1;Mnemo;Label;Notes;MajUser;MajStamp" );
+		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1253,7 +1222,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 			return( FALSE );
 		}
 
-		str = g_strdup_printf( "2;Mnemo;Begin;End;Rate" );
+		str = ofa_box_get_csv_header( st_validities_defs, field_sep );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1263,22 +1232,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=rate_dataset ; it ; it=it->next ){
-		rate = OFO_RATE( it->data );
-
-		notes = my_utils_export_multi_lines( ofo_rate_get_notes( rate ));
-		muser = ofo_rate_get_upd_user( rate );
-		stamp = my_utils_stamp_to_str( ofo_rate_get_upd_stamp( rate ), MY_STAMP_YYMDHMS );
-
-		str = g_strdup_printf( "1;%s;%s;%s;%s;%s",
-				ofo_rate_get_mnemo( rate ),
-				ofo_rate_get_label( rate ),
-				notes ? notes : "",
-				muser ? muser : "",
-				muser ? stamp : "" );
-
-		g_free( notes );
-		g_free( stamp );
-
+		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1286,23 +1240,9 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 			return( FALSE );
 		}
 
+		rate = OFO_RATE( it->data );
 		for( det=rate->priv->validities ; det ; det=det->next ){
-			sdet = ( ofsRateValidity * ) det->data;
-
-			sbegin = my_date_to_str( &sdet->begin, MY_DATE_SQL );
-			send = my_date_to_str( &sdet->end, MY_DATE_SQL );
-			dvalue = my_double_to_str( sdet->rate );
-
-			str = g_strdup_printf( "2;%s;%s;%s;%s",
-					ofo_rate_get_mnemo( rate ),
-					sbegin,
-					send,
-					dvalue );
-
-			g_free( dvalue );
-			g_free( sbegin );
-			g_free( send );
-
+			str = ofa_box_get_csv_line( det->data, field_sep, decimal_sep );
 			lines = g_slist_prepend( NULL, str );
 			ok = ofa_iexportable_export_lines( exportable, lines );
 			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1366,7 +1306,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	guint errors, line;
 	gchar *msg, *mnemo;
 	gint type;
-	ofsRateValidity *sdet;
+	GList *detail;
 
 	line = 0;
 	errors = 0;
@@ -1390,11 +1330,11 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 				break;
 			case 2:
 				mnemo = NULL;
-				sdet = rate_import_csv_validity( importable, fields, line, &errors, &mnemo );
-				if( sdet ){
+				detail = rate_import_csv_validity( importable, fields, line, &errors, &mnemo );
+				if( detail ){
 					rate = rate_find_by_mnemo( dataset, mnemo );
 					if( rate ){
-						rate_val_add_detail( rate, sdet );
+						rate_val_add_detail( rate, detail );
 						ofa_iimportable_set_import_ok( importable );
 					}
 					g_free( mnemo );
@@ -1479,14 +1419,16 @@ rate_import_csv_rate( ofaIImportable *importable, GSList *fields, guint line, gu
 	return( rate );
 }
 
-static ofsRateValidity *
+static GList *
 rate_import_csv_validity( ofaIImportable *importable, GSList *fields, guint line, guint *errors, gchar **mnemo )
 {
-	ofsRateValidity *detail;
+	GList *detail;
 	const gchar *cstr;
 	GSList *itf;
+	GDate begin, end;
+	ofxAmount amount;
 
-	detail = g_new0( ofsRateValidity, 1 );
+	detail = NULL;
 	itf = fields;
 
 	/* rate mnemo */
@@ -1503,17 +1445,19 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, guint line
 	/* rate begin validity */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	my_date_set_from_sql( &detail->begin, cstr );
+	my_date_set_from_sql( &begin, cstr );
 
 	/* rate end validity */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	my_date_set_from_sql( &detail->end, cstr );
+	my_date_set_from_sql( &end, cstr );
 
 	/* rate rate */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	detail->rate = my_double_set_from_sql( cstr );
+	amount = my_double_set_from_sql( cstr );
+
+	detail = rate_val_new_detail( *mnemo, &begin, &end, amount );
 
 	return( detail );
 }

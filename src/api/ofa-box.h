@@ -77,7 +77,7 @@ typedef struct {
 	gint         id;
 	const gchar *dbms;
 	const gchar *csv;
-	eBoxType   type;
+	eBoxType     type;
 	gboolean     import;
 	gboolean     csv_zero_as_empty;
 }

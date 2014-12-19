@@ -36,45 +36,47 @@
 #include "api/my-utils.h"
 #include "api/ofa-box.h"
 
-/*
- * our boxed type
+/**
+ * sBoxData:
+ *
+ * Our boxed elementary data
  */
 typedef struct {
 	const ofsBoxDef *def;
-	gboolean           is_null;
+	gboolean         is_null;
 	union {
-		ofxAmount   amount;
-		ofxCounter  counter;
-		gint        integer;
-		GDate       date;
-		gchar      *string;
-		GTimeVal    timestamp;
+		ofxAmount  amount;
+		ofxCounter counter;
+		gint       integer;
+		GDate      date;
+		gchar     *string;
+		GTimeVal   timestamp;
 	};
 }
-	sBoxed;
+	sBoxData;
 
 /*
- * boxed_new:
+ * box_new:
  * @def: the field definition.
  */
-static sBoxed *
-boxed_new( const ofsBoxDef *def )
+static sBoxData *
+box_new( const ofsBoxDef *def )
 {
-	sBoxed *box;
+	sBoxData *box;
 
-	box = g_new0( sBoxed, 1 );
+	box = g_new0( sBoxData, 1 );
 	box->def = def;
 	box->is_null = TRUE;
 
 	return( box );
 }
 
-static sBoxed *
+static sBoxData *
 amount_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
-	sBoxed *box;
+	sBoxData *box;
 
-	box = boxed_new( def );
+	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_AMOUNT, NULL );
 
 	if( str && g_utf8_strlen( str, -1 )){
@@ -86,7 +88,7 @@ amount_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-amount_to_csv_str( const sBoxed *box )
+amount_to_csv_str( const sBoxData *box )
 {
 	gchar *str;
 
@@ -102,7 +104,7 @@ amount_to_csv_str( const sBoxed *box )
 }
 
 static gpointer
-amount_get_fn( const sBoxed *box )
+amount_get_fn( const sBoxData *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_AMOUNT, 0 );
 
@@ -110,7 +112,7 @@ amount_get_fn( const sBoxed *box )
 }
 
 static void
-amount_set_fn( sBoxed *box, ofxAmount value )
+amount_set_fn( sBoxData *box, ofxAmount value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_AMOUNT );
 
@@ -118,12 +120,12 @@ amount_set_fn( sBoxed *box, ofxAmount value )
 	box->amount = value;
 }
 
-static sBoxed *
+static sBoxData *
 counter_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
-	sBoxed *box;
+	sBoxData *box;
 
-	box = boxed_new( def );
+	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_COUNTER, NULL );
 
 	if( str && g_utf8_strlen( str, -1 )){
@@ -135,7 +137,7 @@ counter_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-counter_to_csv_str( const sBoxed *box )
+counter_to_csv_str( const sBoxData *box )
 {
 	gchar *str;
 
@@ -151,7 +153,7 @@ counter_to_csv_str( const sBoxed *box )
 }
 
 static ofxCounter
-counter_get_fn( const sBoxed *box )
+counter_get_fn( const sBoxData *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_COUNTER, 0 );
 
@@ -159,7 +161,7 @@ counter_get_fn( const sBoxed *box )
 }
 
 static void
-counter_set_fn( sBoxed *box, ofxCounter value )
+counter_set_fn( sBoxData *box, ofxCounter value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_COUNTER );
 
@@ -167,12 +169,12 @@ counter_set_fn( sBoxed *box, ofxCounter value )
 	box->counter = value;
 }
 
-static sBoxed *
+static sBoxData *
 int_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
-	sBoxed *box;
+	sBoxData *box;
 
-	box = boxed_new( def );
+	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_INTEGER, NULL );
 
 	if( str && g_utf8_strlen( str, -1 )){
@@ -184,7 +186,7 @@ int_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-int_to_csv_str( const sBoxed *box )
+int_to_csv_str( const sBoxData *box )
 {
 	gchar *str;
 
@@ -200,7 +202,7 @@ int_to_csv_str( const sBoxed *box )
 }
 
 static gint
-int_get_fn( const sBoxed *box )
+int_get_fn( const sBoxData *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_INTEGER, 0 );
 
@@ -208,7 +210,7 @@ int_get_fn( const sBoxed *box )
 }
 
 static void
-int_set_fn( sBoxed *box, gint value )
+int_set_fn( sBoxData *box, gint value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_INTEGER );
 
@@ -216,12 +218,12 @@ int_set_fn( sBoxed *box, gint value )
 	box->integer = value;
 }
 
-static sBoxed *
+static sBoxData *
 date_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
-	sBoxed *box;
+	sBoxData *box;
 
-	box = boxed_new( def );
+	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_DATE, NULL );
 	my_date_clear( &box->date );
 
@@ -235,7 +237,7 @@ date_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-date_to_csv_str( const sBoxed *box )
+date_to_csv_str( const sBoxData *box )
 {
 	gchar *str;
 
@@ -251,7 +253,7 @@ date_to_csv_str( const sBoxed *box )
 }
 
 static const GDate *
-date_get_fn( const sBoxed *box )
+date_get_fn( const sBoxData *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_DATE, NULL );
 
@@ -259,7 +261,7 @@ date_get_fn( const sBoxed *box )
 }
 
 static void
-date_set_fn( sBoxed *box, const GDate *value )
+date_set_fn( sBoxData *box, const GDate *value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_DATE );
 
@@ -272,12 +274,12 @@ date_set_fn( sBoxed *box, const GDate *value )
 	}
 }
 
-static sBoxed *
+static sBoxData *
 string_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
-	sBoxed *box;
+	sBoxData *box;
 
-	box = boxed_new( def );
+	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
 	if( str && g_utf8_strlen( str, -1 )){
@@ -289,7 +291,7 @@ string_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static void
-string_free( sBoxed *box )
+string_free( sBoxData *box )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_STRING );
 
@@ -299,7 +301,7 @@ string_free( sBoxed *box )
 }
 
 static gchar *
-string_to_csv_str( const sBoxed *box )
+string_to_csv_str( const sBoxData *box )
 {
 	gchar *str;
 
@@ -315,7 +317,7 @@ string_to_csv_str( const sBoxed *box )
 }
 
 static const gchar *
-string_get_fn( const sBoxed *box )
+string_get_fn( const sBoxData *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
@@ -324,7 +326,7 @@ string_get_fn( const sBoxed *box )
 }
 
 static void
-string_set_fn( sBoxed *box, const gchar *value )
+string_set_fn( sBoxData *box, const gchar *value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_STRING );
 
@@ -341,12 +343,12 @@ string_set_fn( sBoxed *box, const gchar *value )
 	}
 }
 
-static sBoxed *
+static sBoxData *
 timestamp_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
-	sBoxed *box;
+	sBoxData *box;
 
-	box = boxed_new( def );
+	box = box_new( def );
 	g_return_val_if_fail( box->def->type == OFA_TYPE_TIMESTAMP, NULL );
 
 	if( str && g_utf8_strlen( str, -1 )){
@@ -358,7 +360,7 @@ timestamp_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-timestamp_to_csv_str( const sBoxed *box )
+timestamp_to_csv_str( const sBoxData *box )
 {
 	gchar *str;
 
@@ -374,7 +376,7 @@ timestamp_to_csv_str( const sBoxed *box )
 }
 
 static const GTimeVal *
-timestamp_get_fn( const sBoxed *box )
+timestamp_get_fn( const sBoxData *box )
 {
 	g_return_val_if_fail( box->def->type == OFA_TYPE_TIMESTAMP, NULL );
 
@@ -386,7 +388,7 @@ timestamp_get_fn( const sBoxed *box )
 }
 
 static void
-timestamp_set_fn( sBoxed *box, const GTimeVal *value )
+timestamp_set_fn( sBoxData *box, const GTimeVal *value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_TIMESTAMP );
 
@@ -413,9 +415,9 @@ typedef struct {
 	GetFn            get_fn;
 	SetFn            set_fn;
 }
-	sBoxedHelpers;
+	sBoxHelpers;
 
-static const sBoxedHelpers st_boxed_helpers[] = {
+static const sBoxHelpers st_box_helpers[] = {
 		{ OFA_TYPE_AMOUNT,
 				( NewFromDBMSStrFn ) amount_new_from_dbms_str,
 				( FreeFn )           g_free,
@@ -471,14 +473,14 @@ ofa_box_register_types( void )
 }
 
 /*
- * returns the sBoxedHelpers structure for the specified @type
+ * returns the sBoxHelpers structure for the specified @type
  */
-static const sBoxedHelpers *
-boxed_get_helper_for_type( eBoxType type )
+static const sBoxHelpers *
+box_get_helper_for_type( eBoxType type )
 {
-	const sBoxedHelpers *ihelper;
+	const sBoxHelpers *ihelper;
 
-	ihelper = st_boxed_helpers;
+	ihelper = st_box_helpers;
 	while( ihelper->id ){
 		if( ihelper->id == type ){
 			return( ihelper );
@@ -506,7 +508,7 @@ ofa_box_init_fields_list( const ofsBoxDef *defs )
 	if( defs ){
 		idef = defs;
 		while( idef->id ){
-			fields_list = g_list_prepend( fields_list, boxed_new( idef ));
+			fields_list = g_list_prepend( fields_list, box_new( idef ));
 			idef++;
 		}
 	}
@@ -562,7 +564,7 @@ ofa_box_parse_dbms_result( const ofsBoxDef *defs, GSList *row )
 	GList *fields_list;
 	GSList *icol;
 	const ofsBoxDef *idef;
-	const sBoxedHelpers *ihelper;
+	const sBoxHelpers *ihelper;
 	gboolean first;
 
 	fields_list = NULL;
@@ -571,7 +573,7 @@ ofa_box_parse_dbms_result( const ofsBoxDef *defs, GSList *row )
 	if( row && defs ){
 		idef = defs;
 		while( idef->id ){
-			ihelper = boxed_get_helper_for_type( idef->type );
+			ihelper = box_get_helper_for_type( idef->type );
 			g_return_val_if_fail( ihelper, NULL );
 			icol = ( GSList * )( first ? row->data : icol->next );
 			fields_list = g_list_prepend( fields_list, ihelper->new_from_dbms_fn( idef, icol->data ));
@@ -684,17 +686,17 @@ ofa_box_get_csv_line( const GList *fields_list, gchar field_sep, gchar decimal_s
 	GString *line;
 	const GList *it;
 	const ofsBoxDef *def;
-	const sBoxedHelpers *ihelper;
+	const sBoxHelpers *ihelper;
 	gchar *str;
 
 	line = g_string_new( "" );
 
 	for( it=fields_list ; it ; it=it->next ){
 
-		def = (( sBoxed * ) it->data )->def;
+		def = (( sBoxData * ) it->data )->def;
 		g_return_val_if_fail( def, NULL );
 
-		ihelper = boxed_get_helper_for_type( def->type );
+		ihelper = box_get_helper_for_type( def->type );
 		g_return_val_if_fail( ihelper, NULL );
 
 		str = ihelper->to_csv_str_fn( it->data );
@@ -744,14 +746,14 @@ ofa_box_get_value( const GList *fields_list, gint id )
 {
 	const GList *it;
 	const ofsBoxDef *def;
-	const sBoxedHelpers *ihelper;
+	const sBoxHelpers *ihelper;
 
 	for( it=fields_list ; it ; it=it->next ){
-		def = (( sBoxed * ) it->data )->def;
+		def = (( sBoxData * ) it->data )->def;
 		g_return_val_if_fail( def, NULL );
 
 		if( def->id == id ){
-			ihelper = boxed_get_helper_for_type( def->type );
+			ihelper = box_get_helper_for_type( def->type );
 			g_return_val_if_fail( ihelper, NULL );
 
 			return( ihelper->get_fn( it->data ));
@@ -769,26 +771,33 @@ ofa_box_get_value( const GList *fields_list, gint id )
  *
  * Set the data into a field.
  */
+static void
+box_set_value( sBoxData *data, gconstpointer value )
+{
+	const sBoxHelpers *ihelper;
+
+	ihelper = box_get_helper_for_type( data->def->type );
+	g_return_if_fail( ihelper );
+	ihelper->set_fn( data, value );
+}
+
 void
 ofa_box_set_value( const GList *fields_list, gint id, gconstpointer value )
 {
 	static const gchar *thisfn = "ofa_box_set_value";
 	const GList *it;
 	const ofsBoxDef *def;
-	const sBoxedHelpers *ihelper;
 	gboolean found;
 
 	/*g_debug( "ofa_box_set_value: fields_list=%p, count=%d, id=%d, value=%p",
 			( void * ) fields_list, g_list_length(( GList * ) fields_list ), id, value );*/
 
 	for( it=fields_list, found=FALSE ; it ; it=it->next ){
-		def = (( sBoxed * ) it->data )->def;
+		def = (( sBoxData * ) it->data )->def;
 		g_return_if_fail( def );
 
 		if( def->id == id ){
-			ihelper = boxed_get_helper_for_type( def->type );
-			g_return_if_fail( ihelper );
-			ihelper->set_fn( it->data, value );
+			box_set_value( it->data, value );
 			found = TRUE;
 			break;
 		}
@@ -805,26 +814,26 @@ ofa_box_set_value( const GList *fields_list, gint id, gconstpointer value )
  *
  * Free the list of #ofaBox elementary datas of a record.
  */
-static void boxed_free_data( sBoxed *box );
+static void box_free_data( sBoxData *box );
 
 void
 ofa_box_free_fields_list( GList *fields_list )
 {
 	if( fields_list ){
-		g_list_free_full( fields_list, ( GDestroyNotify ) boxed_free_data );
+		g_list_free_full( fields_list, ( GDestroyNotify ) box_free_data );
 	}
 }
 
 static void
-boxed_free_data( sBoxed *box )
+box_free_data( sBoxData *box )
 {
 	const ofsBoxDef *def;
-	const sBoxedHelpers *ihelper;
+	const sBoxHelpers *ihelper;
 
-	def = (( sBoxed * ) box )->def;
+	def = (( sBoxData * ) box )->def;
 	g_return_if_fail( def );
 
-	ihelper = boxed_get_helper_for_type( def->type );
+	ihelper = box_get_helper_for_type( def->type );
 	g_return_if_fail( ihelper );
 
 	ihelper->free_fn( box );

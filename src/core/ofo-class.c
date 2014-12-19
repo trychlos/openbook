@@ -227,7 +227,7 @@ ofo_class_new( void )
 	ofoClass *class;
 
 	class = g_object_new( OFO_TYPE_CLASS, NULL );
-	ofo_base_init_fields_list( st_boxed_defs, OFO_BASE( class ));
+	OFO_BASE( class )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( class );
 }

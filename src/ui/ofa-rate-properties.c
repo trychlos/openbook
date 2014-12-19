@@ -272,7 +272,7 @@ insert_new_row( ofaRateProperties *self, gint idx )
 
 	priv = self->priv;
 	add_empty_row( self );
-	row = self->priv->count;
+	row = priv->count;
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, row ));
 	d = ofo_rate_get_val_begin( priv->rate, idx );
@@ -299,7 +299,7 @@ add_empty_row( ofaRateProperties *self )
 	gint row;
 
 	priv = self->priv;
-	row = self->priv->count + 1;
+	row = priv->count + 1;
 
 	gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, COL_ADD, row ));
 
@@ -338,7 +338,7 @@ add_empty_row( ofaRateProperties *self )
 	add_button( self, "gtk-remove", COL_REMOVE, row );
 	add_button( self, "gtk-add", COL_ADD, row+1 );
 
-	self->priv->count = row;
+	priv->count = row;
 	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
 }
 
@@ -360,8 +360,12 @@ add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint ro
 static void
 on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self )
 {
-	g_free( self->priv->mnemo );
-	self->priv->mnemo = g_strdup( gtk_entry_get_text( entry ));
+	ofaRatePropertiesPrivate *priv;
+
+	priv = self->priv;
+
+	g_free( priv->mnemo );
+	priv->mnemo = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
@@ -369,8 +373,12 @@ on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self )
 static void
 on_label_changed( GtkEntry *entry, ofaRateProperties *self )
 {
-	g_free( self->priv->label );
-	self->priv->label = g_strdup( gtk_entry_get_text( entry ));
+	ofaRatePropertiesPrivate *priv;
+
+	priv = self->priv;
+
+	g_free( priv->label );
+	priv->label = g_strdup( gtk_entry_get_text( entry ));
 
 	check_for_enable_dlg( self );
 }
