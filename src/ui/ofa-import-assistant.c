@@ -107,7 +107,7 @@ struct _ofaImportAssistantPrivate {
 
 	/* p5: import the file, display the result
 	 */
-	myProgressBar      *p5_bar;
+	myProgressBar      *p5_import;
 	myProgressBar      *p5_insert;
 	GtkWidget          *p5_page;
 	GtkWidget          *p5_text;
@@ -173,9 +173,8 @@ static void     on_apply( GtkAssistant *assistant, ofaImportAssistant *self );
 static void     p5_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
 static void     p5_error_no_interface( const ofaImportAssistant *self );
 static gboolean p5_do_import( ofaImportAssistant *self );
-static void     p5_on_progress( ofaIImporter *importer, gdouble progress, const gchar *text, ofaImportAssistant *self );
-static void     p5_on_error( ofaIImporter *importer, guint line_number, const gchar *msg, ofaImportAssistant *self );
-static void     p5_on_insert( ofaIImporter *importer, gdouble progress, const gchar *text, ofaImportAssistant *self );
+static void     p5_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progress, const gchar *text, ofaImportAssistant *self );
+static void     p5_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg status, const gchar *msg, ofaImportAssistant *self );
 static GSList  *get_lines_from_csv( ofaImportAssistant *self );
 static void     error_load_contents( ofaImportAssistant *self, const gchar *fname, GError *error );
 static void     error_convert( ofaImportAssistant *self, GError *error );
@@ -186,19 +185,6 @@ static void     update_settings( ofaImportAssistant *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaImportAssistant, ofa_import_assistant, MY_TYPE_ASSISTANT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTER, iimporter_iface_init ));
-
-/*static void       get_active_type( ofaImportAssistant *self );*/
-/*static gint       import_assistant_class_csv( ofaImportAssistant *self );
-static gint       import_assistant_account_csv( ofaImportAssistant *self );
-static gint       import_assistant_currency_csv( ofaImportAssistant *self );
-static gint       import_assistant_entry_csv( ofaImportAssistant *self );
-static gint       importledger_csv( ofaImportAssistant *self );
-static gint       import_assistant_model_csv( ofaImportAssistant *self );
-static gint       import_assistant_rate_csv( ofaImportAssistant *self );
-static GSList    *split_csv_content( ofaImportAssistant *self );
-static void       free_csv_fields( GSList *fields );
-static void       free_csv_content( GSList *lines );
-static gboolean   confirm_import( ofaImportAssistant *self, const gchar *str );*/
 
 static void
 import_assistant_finalize( GObject *instance )
@@ -319,9 +305,7 @@ ofa_import_assistant_run( ofaMainWindow *main_window )
 	g_signal_connect(
 			G_OBJECT( self ), "progress", G_CALLBACK( p5_on_progress ), self );
 	g_signal_connect(
-			G_OBJECT( self ), "error", G_CALLBACK( p5_on_error ), self );
-	g_signal_connect(
-			G_OBJECT( self ), "insert", G_CALLBACK( p5_on_insert ), self );
+			G_OBJECT( self ), "message", G_CALLBACK( p5_on_message ), self );
 
 
 	my_assistant_signal_connect( MY_ASSISTANT( self ), "prepare", G_CALLBACK( on_prepare ));
@@ -738,8 +722,8 @@ p5_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-bar-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p5_bar = my_progress_bar_new();
-	my_progress_bar_attach_to( priv->p5_bar, GTK_CONTAINER( parent ));
+	priv->p5_import = my_progress_bar_new();
+	my_progress_bar_attach_to( priv->p5_import, GTK_CONTAINER( parent ));
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-insert-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -850,22 +834,25 @@ p5_do_import( ofaImportAssistant *self )
 }
 
 static void
-p5_on_progress( ofaIImporter *importer, gdouble progress, const gchar *text, ofaImportAssistant *self )
+p5_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progress, const gchar *text, ofaImportAssistant *self )
 {
-	/*static const gchar *thisfn = "ofa_import_assistant_p5_on_progress";*/
 	ofaImportAssistantPrivate *priv;
-
-	/*g_debug( "%s: importer=%p, progress=%.5lf, text=%s, self=%p",
-			thisfn, ( void * ) importer, progress, text, ( void * ) self );*/
 
 	priv = self->priv;
 
-	g_signal_emit_by_name( priv->p5_bar, "double", progress );
-	g_signal_emit_by_name( priv->p5_bar, "text", text );
+	if( phase == IMPORTABLE_PHASE_IMPORT ){
+		g_signal_emit_by_name( priv->p5_import, "double", progress );
+		g_signal_emit_by_name( priv->p5_import, "text", text );
+
+	} else {
+		g_return_if_fail( phase == IMPORTABLE_PHASE_INSERT );
+		g_signal_emit_by_name( priv->p5_insert, "double", progress );
+		g_signal_emit_by_name( priv->p5_insert, "text", text );
+	}
 }
 
 static void
-p5_on_error( ofaIImporter *importer, guint line_number, const gchar *msg, ofaImportAssistant *self )
+p5_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg status, const gchar *msg, ofaImportAssistant *self )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p5_on_error";
 	ofaImportAssistantPrivate *priv;
@@ -888,21 +875,6 @@ p5_on_error( ofaIImporter *importer, guint line_number, const gchar *msg, ofaImp
 	while( gtk_events_pending()){
 		gtk_main_iteration();
 	}
-}
-
-static void
-p5_on_insert( ofaIImporter *importer, gdouble progress, const gchar *text, ofaImportAssistant *self )
-{
-	/*static const gchar *thisfn = "ofa_import_assistant_p5_on_insert";*/
-	ofaImportAssistantPrivate *priv;
-
-	/*g_debug( "%s: importer=%p, progress=%.5lf, text=%s, self=%p",
-			thisfn, ( void * ) importer, progress, text, ( void * ) self );*/
-
-	priv = self->priv;
-
-	g_signal_emit_by_name( priv->p5_insert, "double", progress );
-	g_signal_emit_by_name( priv->p5_insert, "text", text );
 }
 
 /*

@@ -242,9 +242,6 @@
                 let the user enter only dd/mm, then automatically
                 computing the year on focus out
 
- 327 2014-10-14 Select account: size and position should be kept 
-                distinctly for each usage
-
  329 2014-10-17 updating an entry in ViewEntries should be repercuted
                 to the same entry in Reconciliation
 
@@ -285,6 +282,8 @@
  429 2014-11-11 implement print preview inside of Openbook
 
  442 2014-11-13 AccountsBook: add a notes indicator
+     2014-12-19 started with svn #4348
+                bug left: no background of backgrounded rows...
 
  455 2014-11-14 report colored footer in other pages with balances
                 (as view entries)
@@ -1538,6 +1537,10 @@
 
  324 2014-10- 9 ofo_objects: allocate all myDate in _init instance
      2014-10-13 cancelled as myDate class has been obsoleted
+
+ 327 2014-10-14 Select account: size and position should be kept 
+                distinctly for each usage
+     2014-12-19 cancelled
 
  328 2014-10-17 DossierOpen: display an error message box if account or
                 password are false

@@ -34,6 +34,18 @@
  * @include: api/ofa-iimportable.h
  *
  * The #ofaIImportable interface imports items from the outside world.
+ *
+ * The #ofaIImportable interface is supposed to be implemented by object
+ * classes which want to be imported (so are "importable"). The interface
+ * provides several function to let the implementation communicate with
+ * the caller (see infra for what is a caller):
+ * - increment the count of imported lines
+ * - send a standard, warning or error message to the caller.
+ * At the end, the implementation must return the count of found errors.
+ *
+ * A caller which would take advantage of this mechanism should implement
+ * the #ofaIImporter interface. This later defines ad-hoc signals which
+ * are used by the above functions.
  */
 
 #include "api/ofo-dossier-def.h"
@@ -95,6 +107,25 @@ typedef struct {
 }
 	ofaIImportableInterface;
 
+/**
+ * The import phase
+ */
+typedef enum {
+	IMPORTABLE_PHASE_IMPORT = 1,
+	IMPORTABLE_PHASE_INSERT,
+}
+	ofeImportablePhase;
+
+/**
+ * The nature of the message
+ */
+typedef enum {
+	IMPORTABLE_MSG_STANDARD = 1,
+	IMPORTABLE_MSG_WARNING,
+	IMPORTABLE_MSG_ERROR,
+}
+	ofeImportableMsg;
+
 GType    ofa_iimportable_get_type                  ( void );
 
 guint    ofa_iimportable_get_interface_last_version( void );
@@ -109,13 +140,14 @@ gint     ofa_iimportable_import                    ( ofaIImportable *importable,
 
 /* an importable-oriented API
  */
-void     ofa_iimportable_set_import_ok             ( ofaIImportable *importable );
+void     ofa_iimportable_increment_progress        ( ofaIImportable *importable,
+															ofeImportablePhase phase,
+															guint count );
 
-void     ofa_iimportable_set_import_error          ( ofaIImportable *importable,
+void     ofa_iimportable_set_message               ( ofaIImportable *importable,
 															guint line_number,
+															ofeImportableMsg status,
 															const gchar *msg );
-
-void     ofa_iimportable_set_insert_ok             ( ofaIImportable *importable );
 
 gchar   *ofa_iimportable_convert_date              ( ofaIImportable *importable,
 															const gchar *imported_date );

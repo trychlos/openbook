@@ -51,7 +51,6 @@ typedef struct {
 	 */
 	guint                count;			/* total count of lines to be imported */
 	guint                progress;		/* import progression */
-	guint                last_error;	/* last line number where an error occured */
 	guint                insert;		/* insert progression */
 }
 	sIImportable;
@@ -64,7 +63,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIImportableInterface *klass );
 static void          interface_base_finalize( ofaIImportableInterface *klass );
-static void          render_progress( ofaIImportable *importable, sIImportable *sdata, gint number, const gchar *signal );
+static void          render_progress( ofaIImportable *importable, sIImportable *sdata, guint number, guint phase );
 static sIImportable *get_iimportable_data( ofaIImportable *importable );
 static void          on_importable_weak_notify( sIImportable *sdata, GObject *finalized_object );
 
@@ -221,16 +220,16 @@ ofa_iimportable_import( ofaIImportable *importable,
 }
 
 /**
- * ofa_iimportable_set_import_ok:
+ * ofa_iimportable_increment_progress:
  * @importable: this #ofaIImportable instance.
+ * @phase: whether this is the import or the insert phase
+ * @count: the count of lines to be added to total of imported lines.
  *
- * Increment the import progress count.
- *
- * This function should be called by the implementation each time a new
- * line is validated.
+ * Increment the import/insert progress count.
  */
 void
-ofa_iimportable_set_import_ok( ofaIImportable *importable )
+ofa_iimportable_increment_progress( ofaIImportable *importable,
+										ofeImportablePhase phase, guint count )
 {
 	sIImportable *sdata;
 
@@ -239,67 +238,19 @@ ofa_iimportable_set_import_ok( ofaIImportable *importable )
 	sdata = get_iimportable_data( importable );
 	g_return_if_fail( sdata );
 
-	sdata->progress += 1;
-	render_progress( importable, sdata, sdata->progress, "progress" );
-}
+	if( phase == IMPORTABLE_PHASE_IMPORT ){
+		sdata->progress += count;
+		render_progress( importable, sdata, sdata->progress, phase );
 
-/**
- * ofa_iimportable_set_import_error:
- * @importable: this #ofaIImportable instance.
- * @line: the line count, counted from 1.
- * @msg: the error message.
- *
- * Send the error message to the caller.
- *
- * This function should be called by the implementation each time an
- * error is found in an imported line.
- */
-void
-ofa_iimportable_set_import_error( ofaIImportable *importable, guint line_number, const gchar *msg )
-{
-	sIImportable *sdata;
-
-	g_return_if_fail( OFA_IS_IIMPORTABLE( importable ));
-
-	sdata = get_iimportable_data( importable );
-	g_return_if_fail( sdata );
-
-	if( sdata->last_error != line_number ){
-		sdata->progress = line_number;
+	} else {
+		g_return_if_fail( phase == IMPORTABLE_PHASE_INSERT );
+		sdata->insert += count;
+		render_progress( importable, sdata, sdata->progress, phase );
 	}
-
-	render_progress( importable, sdata, sdata->progress, "progress" );
-
-	if( OFA_IS_IIMPORTER( sdata->caller )){
-		g_signal_emit_by_name( sdata->caller, "error", line_number, msg );
-	}
-}
-
-/**
- * ofa_iimportable_set_insert_ok:
- * @importable: this #ofaIImportable instance.
- *
- * Increment the insert progress count.
- *
- * This function should be called by the implementation each time a new
- * line is inserted into the database.
- */
-void
-ofa_iimportable_set_insert_ok( ofaIImportable *importable )
-{
-	sIImportable *sdata;
-
-	g_return_if_fail( OFA_IS_IIMPORTABLE( importable ));
-
-	sdata = get_iimportable_data( importable );
-	g_return_if_fail( sdata );
-
-	sdata->insert += 1;
-	render_progress( importable, sdata, sdata->insert, "insert" );
 }
 
 static void
-render_progress( ofaIImportable *importable, sIImportable *sdata, gint number, const gchar *signal )
+render_progress( ofaIImportable *importable, sIImportable *sdata, guint number, guint phase )
 {
 	gdouble progress;
 	gchar *text;
@@ -307,8 +258,36 @@ render_progress( ofaIImportable *importable, sIImportable *sdata, gint number, c
 	if( OFA_IS_IIMPORTER( sdata->caller )){
 		progress = ( gdouble ) number / ( gdouble ) sdata->count;
 		text = g_strdup_printf( "%u/%u", number, sdata->count );
-		g_signal_emit_by_name( sdata->caller, signal, progress, text );
+		g_signal_emit_by_name( sdata->caller, "progress", phase, progress, text );
 		g_free( text );
+	}
+}
+
+/**
+ * ofa_iimportable_set_message:
+ * @importable: this #ofaIImportable instance.
+ * @line: the line count, counted from 1.
+ * @status: whether this is a standard, warning or error message
+ * @msg: the message.
+ *
+ * Send the message to the caller.
+ *
+ * This function should be called by the implementation each time a
+ * message is to be displayed.
+ */
+void
+ofa_iimportable_set_message( ofaIImportable *importable,
+										guint line_number, ofeImportableMsg status, const gchar *msg )
+{
+	sIImportable *sdata;
+
+	g_return_if_fail( OFA_IS_IIMPORTABLE( importable ));
+
+	sdata = get_iimportable_data( importable );
+	g_return_if_fail( sdata );
+
+	if( OFA_IS_IIMPORTER( sdata->caller )){
+		g_signal_emit_by_name( sdata->caller, "message", line_number, status, msg );
 	}
 }
 

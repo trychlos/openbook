@@ -1316,6 +1316,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 
 		line += 1;
 		fields = ( GSList * ) itl->data;
+		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
 
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
@@ -1325,7 +1326,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 				rate = rate_import_csv_rate( importable, fields, line, &errors );
 				if( rate ){
 					dataset = g_list_prepend( dataset, rate );
-					ofa_iimportable_set_import_ok( importable );
 				}
 				break;
 			case 2:
@@ -1335,14 +1335,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 					rate = rate_find_by_mnemo( dataset, mnemo );
 					if( rate ){
 						rate_val_add_detail( rate, detail );
-						ofa_iimportable_set_import_ok( importable );
 					}
 					g_free( mnemo );
 				}
 				break;
 			default:
 				msg = g_strdup_printf( _( "invalid rate line type: %s" ), cstr );
-				ofa_iimportable_set_import_error( importable, line, msg );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
 				errors += 1;
 				continue;
@@ -1360,7 +1360,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 
-			ofa_iimportable_set_insert_ok( importable );
+			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 		}
 
 		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
@@ -1390,7 +1390,8 @@ rate_import_csv_rate( ofaIImportable *importable, GSList *fields, guint line, gu
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		ofa_iimportable_set_import_error( importable, line, _( "empty rate mnemonic" ));
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
 		*errors += 1;
 		g_object_unref( rate );
 		return( NULL );
@@ -1401,7 +1402,8 @@ rate_import_csv_rate( ofaIImportable *importable, GSList *fields, guint line, gu
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		ofa_iimportable_set_import_error( importable, line, _( "empty rate label" ));
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate label" ));
 		*errors += 1;
 		g_object_unref( rate );
 		return( NULL );
@@ -1435,7 +1437,8 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, guint line
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		ofa_iimportable_set_import_error( importable, line, _( "empty rate mnemonic" ));
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
 		*errors += 1;
 		g_free( detail );
 		return( NULL );

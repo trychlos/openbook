@@ -3036,6 +3036,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		fields = ( GSList * ) itl->data;
 		debit = 0;
 		credit = 0;
+		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
 
 		/* operation date */
 		itf = fields;
@@ -3043,7 +3044,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		my_date_set_from_sql( &date, cstr );
 		if( !my_date_is_valid( &date )){
 			msg = g_strdup_printf( _( "invalid entry operation date: %s" ), cstr );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -3056,7 +3058,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		my_date_set_from_sql( &date, cstr );
 		if( !my_date_is_valid( &date )){
 			msg = g_strdup_printf( _( "invalid entry effect date: %s" ), cstr );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -3067,7 +3070,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			ofa_iimportable_set_import_error( importable, line, _( "empty entry label" ));
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, _( "empty entry label" ));
 			errors += 1;
 			continue;
 		}
@@ -3093,7 +3097,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		ledger = ofo_ledger_get_by_mnemo( dossier, cstr );
 		if( !ledger ){
 			msg = g_strdup_printf( _( "entry ledger not found: %s" ), cstr );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -3109,21 +3114,24 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			ofa_iimportable_set_import_error( importable, line, _( "empty entry account" ));
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, _( "empty entry account" ));
 			errors += 1;
 			continue;
 		}
 		account = ofo_account_get_by_number( dossier, cstr );
 		if( !account ){
 			msg = g_strdup_printf( _( "entry account not found: %s" ), cstr );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
 		}
 		if( ofo_account_is_root( account )){
 			msg = g_strdup_printf( _( "entry account is a root account: %s" ), cstr );
-			ofa_iimportable_set_import_error( importable, line, cstr );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, cstr );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -3138,7 +3146,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			msg = g_strdup_printf(
 					_( "entry currency: %s is not the same than those of the account: %s" ),
 					currency, cstr );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -3163,7 +3172,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		} else {
 			msg = g_strdup_printf(
 					_( "invalid entry amounts: debit=%'.5lf, credit=%'.5lf" ), debit, credit );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -3173,9 +3183,10 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		if( !ofo_entry_compute_status( entry, dossier )){
 			sdeffect = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
 			msg = g_strdup_printf(
-					_( "entry effect date %s regarding exercice beginning and ledger last closing dates" ),
+					_( "entry effect date %s invalid regarding exercice beginning and ledger last closing dates" ),
 					sdeffect );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( sdeffect );
 			g_free( msg );
 			errors += 1;
@@ -3201,14 +3212,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 
 			default:
 				msg = g_strdup_printf( _( "invalid entry status: %d" ), status );
-				ofa_iimportable_set_import_error( importable, line, msg );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
 				errors += 1;
 				continue;
 		}
 
 		dataset = g_list_prepend( dataset, entry );
-		ofa_iimportable_set_import_ok( importable );
 	}
 
 	/* entries must be balanced:
@@ -3217,21 +3228,24 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	if( abs( past_debits - past_credits ) > 0.00001 ){
 		msg = g_strdup_printf(
 				_( "past entries are not balanced: past_debits=%'.5lf, past_credits=%'.5lf" ), past_debits, past_credits );
-		ofa_iimportable_set_import_error( importable, line, msg );
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, msg );
 		g_free( msg );
 		errors += 1;
 	}
 	if( abs( exe_debits - exe_credits ) > 0.00001 ){
 		msg = g_strdup_printf(
 				_( "exercice entries are not balanced: exe_debits=%'.5lf, exe_credits=%'.5lf" ), exe_debits, exe_credits );
-		ofa_iimportable_set_import_error( importable, line, msg );
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, msg );
 		g_free( msg );
 		errors += 1;
 	}
 	if( abs( fut_debits - fut_credits ) > 0.00001 ){
 		msg = g_strdup_printf(
 				_( "future entries are not balanced: fut_debits=%'.5lf, fut_credits=%'.5lf" ), fut_debits, fut_credits );
-		ofa_iimportable_set_import_error( importable, line, msg );
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, msg );
 		g_free( msg );
 		errors += 1;
 	}
@@ -3239,7 +3253,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	if( !errors ){
 		for( it=dataset ; it ; it=it->next ){
 			ofo_entry_insert( OFO_ENTRY( it->data ), dossier );
-			ofa_iimportable_set_insert_ok( importable );
+			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 		}
 	}
 

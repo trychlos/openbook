@@ -1808,12 +1808,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		line += 1;
 		ledger = ofo_ledger_new();
 		fields = ( GSList * ) itl->data;
+		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
 
 		/* ledger mnemo */
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			ofa_iimportable_set_import_error( importable, line, _( "empty ledger mnemo" ));
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ledger mnemo" ));
 			errors += 1;
 			continue;
 		}
@@ -1823,7 +1825,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			ofa_iimportable_set_import_error( importable, line, _( "empty ledger label" ));
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ledger label" ));
 			errors += 1;
 			continue;
 		}
@@ -1838,7 +1841,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		g_free( splitted );
 
 		dataset = g_list_prepend( dataset, ledger );
-		ofa_iimportable_set_import_ok( importable );
 	}
 
 	if( !errors ){
@@ -1852,7 +1854,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 
-			ofa_iimportable_set_insert_ok( importable );
+			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 		}
 
 		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );

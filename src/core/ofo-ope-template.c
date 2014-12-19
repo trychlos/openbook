@@ -1747,6 +1747,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 
 		line += 1;
 		fields = ( GSList * ) itl->data;
+		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
 
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
@@ -1756,7 +1757,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 				model = model_import_csv_model( importable, fields, line, &errors );
 				if( model ){
 					dataset = g_list_prepend( dataset, model );
-					ofa_iimportable_set_import_ok( importable );
 				}
 				break;
 			case 2:
@@ -1766,14 +1766,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 					model = model_find_by_mnemo( dataset, mnemo );
 					if( model ){
 						model->priv->details = g_list_append( model->priv->details, sdet );
-						ofa_iimportable_set_import_ok( importable );
 					}
 					g_free( mnemo );
 				}
 				break;
 			default:
 				msg = g_strdup_printf( _( "invalid ope template line type: %s" ), cstr );
-				ofa_iimportable_set_import_error( importable, line, msg );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
 				errors += 1;
 				continue;
@@ -1791,7 +1791,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 
-			ofa_iimportable_set_insert_ok( importable );
+			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 		}
 
 		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
@@ -1822,7 +1822,8 @@ model_import_csv_model( ofaIImportable *importable, GSList *fields, guint line, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		ofa_iimportable_set_import_error( importable, line, _( "empty operation template mnemonic" ));
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template mnemonic" ));
 		*errors += 1;
 		g_object_unref( model );
 		return( NULL );
@@ -1833,7 +1834,8 @@ model_import_csv_model( ofaIImportable *importable, GSList *fields, guint line, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		ofa_iimportable_set_import_error( importable, line, _( "empty operation template label" ));
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template label" ));
 		*errors += 1;
 		g_object_unref( model );
 		return( NULL );
@@ -1844,7 +1846,8 @@ model_import_csv_model( ofaIImportable *importable, GSList *fields, guint line, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		ofa_iimportable_set_import_error( importable, line, _( "empty operation template ledger" ));
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template ledger" ));
 		*errors += 1;
 		g_object_unref( model );
 		return( NULL );
@@ -1883,7 +1886,8 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line,
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
-		ofa_iimportable_set_import_error( importable, line, _( "empty operation template mnemonic" ));
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty operation template mnemonic" ));
 		*errors += 1;
 		g_free( detail );
 		return( NULL );

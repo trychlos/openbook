@@ -2058,12 +2058,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		line += 1;
 		account = ofo_account_new();
 		fields = ( GSList * ) itl->data;
+		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
 
 		/* account number */
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			ofa_iimportable_set_import_error( importable, line, _( "empty account number" ));
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, _( "empty account number" ));
 			errors += 1;
 			continue;
 		}
@@ -2071,7 +2073,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		class_obj = ofo_class_get_by_number( dossier, class_num );
 		if( !class_obj && !OFO_IS_CLASS( class_obj )){
 			msg = g_strdup_printf( _( "invalid account class number: %s" ), cstr );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -2082,7 +2085,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			ofa_iimportable_set_import_error( importable, line, _( "empty account label" ));
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, _( "empty account label" ));
 			errors += 1;
 			continue;
 		}
@@ -2099,7 +2103,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		currency = ofo_currency_get_by_code( dossier, dev_code );
 		if( !currency ){
 			msg = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -2113,7 +2118,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			cstr = ACCOUNT_TYPE_DETAIL;
 		} else if( g_utf8_collate( cstr, ACCOUNT_TYPE_DETAIL ) && g_utf8_collate( cstr, ACCOUNT_TYPE_ROOT )){
 			msg = g_strdup_printf( _( "invalid account type: %s" ), cstr );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -2126,7 +2132,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		if( cstr || g_utf8_strlen( cstr, -1 )){
 			if( g_utf8_collate( cstr, ACCOUNT_SETTLEABLE )){
 				msg = g_strdup_printf( _( "invalid account settleable indicator: %s" ), cstr );
-				ofa_iimportable_set_import_error( importable, line, msg );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
 				errors += 1;
 				continue;
@@ -2141,7 +2148,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		if( cstr || g_utf8_strlen( cstr, -1 )){
 			if( g_utf8_collate( cstr, ACCOUNT_RECONCILIABLE )){
 				msg = g_strdup_printf( _( "invalid account reconciliable indicator: %s" ), cstr );
-				ofa_iimportable_set_import_error( importable, line, msg );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
 				errors += 1;
 				continue;
@@ -2156,7 +2164,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		if( cstr || g_utf8_strlen( cstr, -1 )){
 			if( g_utf8_collate( cstr, ACCOUNT_FORWARDABLE )){
 				msg = g_strdup_printf( _( "invalid account forwardable indicator: %s" ), cstr );
-				ofa_iimportable_set_import_error( importable, line, msg );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
 				errors += 1;
 				continue;
@@ -2174,7 +2183,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		g_free( splitted );
 
 		dataset = g_list_prepend( dataset, account );
-		ofa_iimportable_set_import_ok( importable );
 	}
 
 	if( !errors ){
@@ -2188,7 +2196,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 
-			ofa_iimportable_set_insert_ok( importable );
+			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 		}
 
 		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );

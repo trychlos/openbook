@@ -786,6 +786,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		line += 1;
 		class = ofo_class_new();
 		fields = ( GSList * ) itl->data;
+		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
 
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
@@ -795,7 +796,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		}
 		if( number < 1 || number > 9 ){
 			msg = g_strdup_printf( _( "invalid class number: %s" ), cstr );
-			ofa_iimportable_set_import_error( importable, line, msg );
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -805,7 +807,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			ofa_iimportable_set_import_error( importable, line, _( "empty class label" ));
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, _( "empty class label" ));
 			errors += 1;
 			continue;
 		} else {
@@ -819,7 +822,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		g_free( splitted );
 
 		dataset = g_list_prepend( dataset, class );
-		ofa_iimportable_set_import_ok( importable );
 	}
 
 	if( !errors ){
@@ -833,7 +835,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 
-			ofa_iimportable_set_insert_ok( importable );
+			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 		}
 
 		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
