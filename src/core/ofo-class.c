@@ -33,7 +33,7 @@
 #include <string.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 #include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
@@ -56,24 +56,24 @@ enum {
 	CLA_UPD_STAMP,
 };
 
-static const ofsBoxedDef st_boxed_defs[] = {
-		{ OFA_BOXED_CSV( CLA_NUMBER ),
+static const ofsBoxDef st_boxed_defs[] = {
+		{ OFA_BOX_CSV( CLA_NUMBER ),
 				OFA_TYPE_INTEGER,
 				TRUE,					/* importable */
 				FALSE },				/* export_csv_zero_as_empty */
-		{ OFA_BOXED_CSV( CLA_LABEL ),
+		{ OFA_BOX_CSV( CLA_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( CLA_NOTES ),
+		{ OFA_BOX_CSV( CLA_NOTES ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( CLA_UPD_USER ),
+		{ OFA_BOX_CSV( CLA_UPD_USER ),
 				OFA_TYPE_STRING,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( CLA_UPD_STAMP ),
+		{ OFA_BOX_CSV( CLA_UPD_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				FALSE },
@@ -114,8 +114,8 @@ class_finalize( GObject *instance )
 
 	g_debug( "%s: instance=%p (%s): %d - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			ofa_boxed_get_int( OFO_BASE( instance )->prot->fields, CLA_NUMBER ),
-			ofa_boxed_get_string( OFO_BASE( instance )->prot->fields, CLA_LABEL ));
+			ofa_box_get_int( OFO_BASE( instance )->prot->fields, CLA_NUMBER ),
+			ofa_box_get_string( OFO_BASE( instance )->prot->fields, CLA_LABEL ));
 
 	g_return_if_fail( instance && OFO_IS_CLASS( instance ));
 
@@ -714,7 +714,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = ofa_boxed_get_csv_header( st_boxed_defs, field_sep );
+		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -724,7 +724,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=class_dataset ; it ; it=it->next ){
-		str = ofa_boxed_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, '\0' );
+		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, '\0' );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );

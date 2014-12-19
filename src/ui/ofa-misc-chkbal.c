@@ -28,7 +28,7 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"

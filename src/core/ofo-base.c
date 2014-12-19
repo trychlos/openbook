@@ -27,7 +27,7 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 #include "api/ofa-dbms.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -48,9 +48,9 @@ ofo_base_finalize( GObject *instance )
 	/* free data members here */
 	prot = OFO_BASE( instance )->prot;
 
-	/* only free ofaBoxed fields list here so that it is left available
+	/* only free ofaBox fields list here so that it is left available
 	 * in finalize method of the child classes */
-	ofa_boxed_free_fields_list( prot->fields );
+	ofa_box_free_fields_list( prot->fields );
 	prot->fields = NULL;
 
 	g_free( prot );
@@ -104,20 +104,20 @@ ofo_base_class_init( ofoBaseClass *klass )
 
 /**
  * ofo_base_init_fields_list:
- * @defs: the #ofsBoxedDefs list of field definitions for this object
+ * @defs: the #ofsBoxDefs list of field definitions for this object
  * @object: the new #ofoBase object to be initialized.
  *
  * Initialize the list of data fields when allocating a new object.
  */
 void
-ofo_base_init_fields_list( const ofsBoxedDef *defs, ofoBase *object )
+ofo_base_init_fields_list( const ofsBoxDef *defs, ofoBase *object )
 {
-	object->prot->fields = ofa_boxed_init_fields_list( defs );
+	object->prot->fields = ofa_box_init_fields_list( defs );
 }
 
 /**
  * ofo_base_load_dataset:
- * @defs: the #ofsBoxedDefs list of field definitions for this object
+ * @defs: the #ofsBoxDefs list of field definitions for this object
  * @dossier: the currently opened dossier
  * @dbms: the connection object
  * @from: the 'from' part of the query
@@ -128,7 +128,7 @@ ofo_base_init_fields_list( const ofsBoxedDef *defs, ofoBase *object )
  * Returns: the ordered list of loaded objects.
  */
 GList *
-ofo_base_load_dataset( const ofsBoxedDef *defs, const ofaDbms *dbms, const gchar *from, GType type )
+ofo_base_load_dataset( const ofsBoxDef *defs, const ofaDbms *dbms, const gchar *from, GType type )
 {
 	gchar *columns, *query;
 	GSList *result, *irow;
@@ -136,14 +136,14 @@ ofo_base_load_dataset( const ofsBoxedDef *defs, const ofaDbms *dbms, const gchar
 	GList *dataset;
 
 	dataset = NULL;
-	columns = ofa_boxed_get_dbms_columns( defs );
+	columns = ofa_box_get_dbms_columns( defs );
 	query = g_strdup_printf( "SELECT %s FROM %s", columns, from );
 	g_free( columns );
 
 	if( ofa_dbms_query_ex( dbms, query, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			object = g_object_new( type, NULL );
-			object->prot->fields = ofa_boxed_parse_dbms_result( defs, irow );
+			object->prot->fields = ofa_box_parse_dbms_result( defs, irow );
 			dataset = g_list_prepend( dataset, object );
 		}
 		ofa_dbms_free_results( result );

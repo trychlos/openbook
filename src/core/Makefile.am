@@ -57,7 +57,7 @@ libofa_core_la_SOURCES = \
 	my-window-prot.h									\
 	\
 	ofa-application-def.h								\
-	ofa-boxed.c											\
+	ofa-box.c											\
 	ofa-dblogin.c										\
 	ofa-dblogin.h										\
 	ofa-dbms.c											\

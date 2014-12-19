@@ -35,7 +35,7 @@
  * This file defines the #ofoAccount class public API.
  */
 
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 #include "api/ofo-account-def.h"
 #include "api/ofo-dossier-def.h"
 

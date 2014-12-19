@@ -43,7 +43,7 @@
  *   at creation time, this label defaults to the dossier name
  */
 
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 #include "api/ofa-dbms-def.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofo-ledger-def.h"

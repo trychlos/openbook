@@ -35,7 +35,7 @@
  * The ofoBase class is the class base for application objects.
  */
 
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 #include "api/ofa-dbms-def.h"
 #include "api/ofo-base-def.h"
 
@@ -57,7 +57,7 @@ G_BEGIN_DECLS
 #define ofo_base_getter(C,V,T,R,I)			\
 		g_return_val_if_fail( OFO_IS_ ## C(V),(R)); \
 		if( OFO_BASE(V)->prot->dispose_has_run) return(R); \
-		return(ofa_boxed_get_ ## T(OFO_BASE(V)->prot->fields,(I)))
+		return(ofa_box_get_ ## T(OFO_BASE(V)->prot->fields,(I)))
 
 /**
  * ofo_base_setter:
@@ -73,11 +73,11 @@ G_BEGIN_DECLS
 #define ofo_base_setter(C,V,T,I,D)			\
 		g_return_if_fail( OFO_IS_ ## C(V)); \
 		if( OFO_BASE(V)->prot->dispose_has_run ) return; \
-		ofa_boxed_set_ ## T(OFO_BASE(V)->prot->fields,(I),(D))
+		ofa_box_set_ ## T(OFO_BASE(V)->prot->fields,(I),(D))
 
-void   ofo_base_init_fields_list(const ofsBoxedDef *defs, ofoBase *object );
+void   ofo_base_init_fields_list(const ofsBoxDef *defs, ofoBase *object );
 
-GList *ofo_base_load_dataset    ( const ofsBoxedDef *defs,
+GList *ofo_base_load_dataset    ( const ofsBoxDef *defs,
 											const ofaDbms *dbms, const gchar *from, GType type );
 
 G_END_DECLS

@@ -36,7 +36,7 @@
  * which contain the imported bank account transaction lines.
  */
 
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofo-bat-def.h"
 #include "api/ofo-dossier-def.h"

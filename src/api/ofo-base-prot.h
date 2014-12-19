@@ -45,7 +45,7 @@ G_BEGIN_DECLS
 struct _ofoBaseProtected {
 	gboolean dispose_has_run;
 
-	/* the fields loaded from the ofaBoxed definitions
+	/* the fields loaded from the ofaBox definitions
 	 */
 	GList   *fields;
 };

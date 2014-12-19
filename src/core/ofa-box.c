@@ -34,13 +34,13 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 
 /*
  * our boxed type
  */
 typedef struct {
-	const ofsBoxedDef *def;
+	const ofsBoxDef *def;
 	gboolean           is_null;
 	union {
 		ofxAmount   amount;
@@ -58,7 +58,7 @@ typedef struct {
  * @def: the field definition.
  */
 static sBoxed *
-boxed_new( const ofsBoxedDef *def )
+boxed_new( const ofsBoxDef *def )
 {
 	sBoxed *box;
 
@@ -70,7 +70,7 @@ boxed_new( const ofsBoxedDef *def )
 }
 
 static sBoxed *
-amount_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
+amount_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxed *box;
 
@@ -119,7 +119,7 @@ amount_set_fn( sBoxed *box, ofxAmount value )
 }
 
 static sBoxed *
-counter_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
+counter_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxed *box;
 
@@ -168,7 +168,7 @@ counter_set_fn( sBoxed *box, ofxCounter value )
 }
 
 static sBoxed *
-int_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
+int_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxed *box;
 
@@ -217,7 +217,7 @@ int_set_fn( sBoxed *box, gint value )
 }
 
 static sBoxed *
-date_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
+date_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxed *box;
 
@@ -273,7 +273,7 @@ date_set_fn( sBoxed *box, const GDate *value )
 }
 
 static sBoxed *
-string_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
+string_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxed *box;
 
@@ -293,7 +293,7 @@ string_free( sBoxed *box )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_STRING );
 
-	/*g_debug( "ofa_boxed_string_free: box=%p", ( void * ) box );*/
+	/*g_debug( "ofa_box_string_free: box=%p", ( void * ) box );*/
 	g_free( box->string );
 	g_free( box );
 }
@@ -342,7 +342,7 @@ string_set_fn( sBoxed *box, const gchar *value )
 }
 
 static sBoxed *
-timestamp_new_from_dbms_str( const ofsBoxedDef *def, const gchar *str )
+timestamp_new_from_dbms_str( const ofsBoxDef *def, const gchar *str )
 {
 	sBoxed *box;
 
@@ -399,7 +399,7 @@ timestamp_set_fn( sBoxed *box, const GTimeVal *value )
 	}
 }
 
-typedef gpointer      ( *NewFromDBMSStrFn )( const ofsBoxedDef *def, const gchar *str );
+typedef gpointer      ( *NewFromDBMSStrFn )( const ofsBoxDef *def, const gchar *str );
 typedef void          ( *FreeFn )          ( gpointer box );
 typedef gchar       * ( *ExportToCSVStrFn )( gconstpointer box );
 typedef gconstpointer ( *GetFn )           ( gconstpointer box );
@@ -456,15 +456,15 @@ static const sBoxedHelpers st_boxed_helpers[] = {
 };
 
 /**
- * ofa_boxed_register_types:
+ * ofa_box_register_types:
  *
  * Register our GBoxed derived types which will hold all our elementary
  * data.
  */
 void
-ofa_boxed_register_types( void )
+ofa_box_register_types( void )
 {
-	static const gchar *thisfn = "ofa_boxed_register_types";
+	static const gchar *thisfn = "ofa_box_register_types";
 
 	g_debug( "%s: sizeof gpointer=%lu", thisfn, sizeof( gpointer ));
 	g_debug( "%s: sizeof gdouble=%lu", thisfn, sizeof( gdouble ));
@@ -474,7 +474,7 @@ ofa_boxed_register_types( void )
  * returns the sBoxedHelpers structure for the specified @type
  */
 static const sBoxedHelpers *
-boxed_get_helper_for_type( eBoxedType type )
+boxed_get_helper_for_type( eBoxType type )
 {
 	const sBoxedHelpers *ihelper;
 
@@ -489,17 +489,17 @@ boxed_get_helper_for_type( eBoxedType type )
 }
 
 /**
- * ofa_boxed_init_fields_list:
- * @defs: the definition of ofaBoxed elementary data of the object
+ * ofa_box_init_fields_list:
+ * @defs: the definition of ofaBox elementary data of the object
  *
  * Returns the list of fields for the object. All fields are allocated
  * in the same order than the definitions, and all are empty.
  */
 GList *
-ofa_boxed_init_fields_list( const ofsBoxedDef *defs )
+ofa_box_init_fields_list( const ofsBoxDef *defs )
 {
 	GList *fields_list;
-	const ofsBoxedDef *idef;
+	const ofsBoxDef *idef;
 
 	fields_list = NULL;
 
@@ -515,8 +515,8 @@ ofa_boxed_init_fields_list( const ofsBoxedDef *defs )
 }
 
 /**
- * ofa_boxed_get_dbms_columns:
- * @defs: the definition of ofaBoxed elementary data of the object
+ * ofa_box_get_dbms_columns:
+ * @defs: the definition of ofaBox elementary data of the object
  *
  * Returns the list of DBMS columns, as a newly allocated string which
  * should be g_free() by the caller.
@@ -524,10 +524,10 @@ ofa_boxed_init_fields_list( const ofsBoxedDef *defs )
  * The returned string is suitable for a DBMS selection.
  */
 gchar *
-ofa_boxed_get_dbms_columns( const ofsBoxedDef *defs )
+ofa_box_get_dbms_columns( const ofsBoxDef *defs )
 {
 	GString *query;
-	const ofsBoxedDef *idef;
+	const ofsBoxDef *idef;
 
 	query = g_string_new( "" );
 
@@ -548,20 +548,20 @@ ofa_boxed_get_dbms_columns( const ofsBoxedDef *defs )
 }
 
 /**
- * ofa_boxed_parse_dbms_result:
- * @defs: the definition of ofaBoxed elementary data of the object
+ * ofa_box_parse_dbms_result:
+ * @defs: the definition of ofaBox elementary data of the object
  * @row: a row of the DBMS result to be parsed.
  *
- * Returns a newly allocated GList which contains ofaBoxed-derived
+ * Returns a newly allocated GList which contains ofaBox-derived
  * elementary data. All data are allocated, though some may be just
  * initialized to NULL values.
  */
 GList *
-ofa_boxed_parse_dbms_result( const ofsBoxedDef *defs, GSList *row )
+ofa_box_parse_dbms_result( const ofsBoxDef *defs, GSList *row )
 {
 	GList *fields_list;
 	GSList *icol;
-	const ofsBoxedDef *idef;
+	const ofsBoxDef *idef;
 	const sBoxedHelpers *ihelper;
 	gboolean first;
 
@@ -584,21 +584,21 @@ ofa_boxed_parse_dbms_result( const ofsBoxedDef *defs, GSList *row )
 }
 
 /**
- * ofa_boxed_get_csv_header:
- * @boxed: the definition of ofaBoxed elementary data of the object
+ * ofa_box_get_csv_header:
+ * @boxed: the definition of ofaBox elementary data of the object
  * @field_sep: the field separator (usually a semi-colon)
  *
  * Returns the header of a CSV-type export, with a semi-colon separator,
  * as a newly allocated string which should be g_free() by the caller.
  */
-static gchar *get_csv_name( const ofsBoxedDef *def );
+static gchar *get_csv_name( const ofsBoxDef *def );
 static gchar *compute_csv_name( const gchar *dbms_name );
 
 gchar *
-ofa_boxed_get_csv_header( const ofsBoxedDef *defs, gchar field_sep )
+ofa_box_get_csv_header( const ofsBoxDef *defs, gchar field_sep )
 {
 	GString *header;
-	const ofsBoxedDef *idef;
+	const ofsBoxDef *idef;
 	gchar *name;
 
 	header = g_string_new( "" );
@@ -620,7 +620,7 @@ ofa_boxed_get_csv_header( const ofsBoxedDef *defs, gchar field_sep )
 }
 
 static gchar *
-get_csv_name( const ofsBoxedDef *def )
+get_csv_name( const ofsBoxDef *def )
 {
 	gchar *name;
 
@@ -629,7 +629,7 @@ get_csv_name( const ofsBoxedDef *def )
 	} else if( def->dbms && g_utf8_strlen( def->dbms, -1 )){
 		name = compute_csv_name( def->dbms );
 	} else {
-		g_warning( "ofa_boxed_get_csv_name: empty DBMS name for id=%u", def->id );
+		g_warning( "ofa_box_get_csv_name: empty DBMS name for id=%u", def->id );
 		name = g_strdup( "" );
 	}
 
@@ -668,7 +668,7 @@ compute_csv_name( const gchar *dbms_name )
 }
 
 /**
- * ofa_boxed_get_csv_line:
+ * ofa_box_get_csv_line:
  * @fields_list: the list of elementary datas of the record
  * @field_sep: the field separator (usually a semi-colon)
  * @decimal_sep: the decimal point separator (usually a dot or a comma)
@@ -679,11 +679,11 @@ compute_csv_name( const gchar *dbms_name )
 static void set_decimal_point( gchar *str, gchar decimal_sep );
 
 gchar *
-ofa_boxed_get_csv_line( const GList *fields_list, gchar field_sep, gchar decimal_sep )
+ofa_box_get_csv_line( const GList *fields_list, gchar field_sep, gchar decimal_sep )
 {
 	GString *line;
 	const GList *it;
-	const ofsBoxedDef *def;
+	const ofsBoxDef *def;
 	const sBoxedHelpers *ihelper;
 	gchar *str;
 
@@ -733,17 +733,17 @@ set_decimal_point( gchar *str, gchar decimal_sep )
 }
 
 /**
- * ofa_boxed_get_value:
+ * ofa_box_get_value:
  * @fields_list: the list of elementary datas of the record
  * @id: the identifier of the searched for elementary data
  *
  * Free the elementary datas of a record.
  */
 gconstpointer
-ofa_boxed_get_value( const GList *fields_list, gint id )
+ofa_box_get_value( const GList *fields_list, gint id )
 {
 	const GList *it;
-	const ofsBoxedDef *def;
+	const ofsBoxDef *def;
 	const sBoxedHelpers *ihelper;
 
 	for( it=fields_list ; it ; it=it->next ){
@@ -762,7 +762,7 @@ ofa_boxed_get_value( const GList *fields_list, gint id )
 }
 
 /**
- * ofa_boxed_set_value:
+ * ofa_box_set_value:
  * @fields_list: the list of elementary datas of the record
  * @id: the identifier of the searched for elementary data
  * @value: the data to be set
@@ -770,15 +770,15 @@ ofa_boxed_get_value( const GList *fields_list, gint id )
  * Set the data into a field.
  */
 void
-ofa_boxed_set_value( const GList *fields_list, gint id, gconstpointer value )
+ofa_box_set_value( const GList *fields_list, gint id, gconstpointer value )
 {
-	static const gchar *thisfn = "ofa_boxed_set_value";
+	static const gchar *thisfn = "ofa_box_set_value";
 	const GList *it;
-	const ofsBoxedDef *def;
+	const ofsBoxDef *def;
 	const sBoxedHelpers *ihelper;
 	gboolean found;
 
-	/*g_debug( "ofa_boxed_set_value: fields_list=%p, count=%d, id=%d, value=%p",
+	/*g_debug( "ofa_box_set_value: fields_list=%p, count=%d, id=%d, value=%p",
 			( void * ) fields_list, g_list_length(( GList * ) fields_list ), id, value );*/
 
 	for( it=fields_list, found=FALSE ; it ; it=it->next ){
@@ -800,15 +800,15 @@ ofa_boxed_set_value( const GList *fields_list, gint id, gconstpointer value )
 }
 
 /**
- * ofa_boxed_free_fields_list:
+ * ofa_box_free_fields_list:
  * @fields_list: the list of elementary datas of the record
  *
- * Free the list of #ofaBoxed elementary datas of a record.
+ * Free the list of #ofaBox elementary datas of a record.
  */
 static void boxed_free_data( sBoxed *box );
 
 void
-ofa_boxed_free_fields_list( GList *fields_list )
+ofa_box_free_fields_list( GList *fields_list )
 {
 	if( fields_list ){
 		g_list_free_full( fields_list, ( GDestroyNotify ) boxed_free_data );
@@ -818,7 +818,7 @@ ofa_boxed_free_fields_list( GList *fields_list )
 static void
 boxed_free_data( sBoxed *box )
 {
-	const ofsBoxedDef *def;
+	const ofsBoxDef *def;
 	const sBoxedHelpers *ihelper;
 
 	def = (( sBoxed * ) box )->def;

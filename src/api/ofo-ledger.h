@@ -35,7 +35,7 @@
  * This file defines the #ofoLedger class public API.
  */
 
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 #include "api/ofo-dossier-def.h"
 #include "api/ofo-ledger-def.h"
 

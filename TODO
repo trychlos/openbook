@@ -339,9 +339,6 @@
  477 2014-11-30 Dossier Open option should be insensitive when a dossier
                 is already opened
 
- 479 2014-11-30 get rid of mysqlConnect and mysqlInfos
-                after that rename sMySQLInfos to sMysqlInfos
-
  480 2014-11-30 ofaBoxed class is renamed to ofaBox
                 ofaIBoxed becomes the corresponding interface
 
@@ -2139,6 +2136,10 @@
 
  478 2014-11-30 have a decimal dot combo
      2014-11-30 done - svn #4215
+
+ 479 2014-11-30 get rid of mysqlConnect and mysqlInfos
+                after that rename sMySQLInfos to sMysqlInfos
+     2014-12-19 done - svn #4342
 
  481 2014-12- 1 review ofaCurrencyCombo
      2014-12-13 done

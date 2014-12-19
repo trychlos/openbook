@@ -37,7 +37,7 @@ api_include_HEADERS = \
 	my-date.h											\
 	my-double.h											\
 	my-utils.h											\
-	ofa-boxed.h											\
+	ofa-box.h											\
 	ofa-dbms.h											\
 	ofa-dbms-def.h										\
 	ofa-settings.h										\

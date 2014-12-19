@@ -35,7 +35,7 @@
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
-#include "api/ofa-boxed.h"
+#include "api/ofa-box.h"
 #include "api/ofa-dbms.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
@@ -74,76 +74,76 @@ enum {
 	ACC_FUT_CREDIT,
 };
 
-static const ofsBoxedDef st_boxed_defs[] = {
-		{ OFA_BOXED_CSV( ACC_NUMBER ),
+static const ofsBoxDef st_boxed_defs[] = {
+		{ OFA_BOX_CSV( ACC_NUMBER ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_LABEL ),
+		{ OFA_BOX_CSV( ACC_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_CURRENCY ),
+		{ OFA_BOX_CSV( ACC_CURRENCY ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_NOTES ),
+		{ OFA_BOX_CSV( ACC_NOTES ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_TYPE ),
+		{ OFA_BOX_CSV( ACC_TYPE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_SETTLEABLE ),
+		{ OFA_BOX_CSV( ACC_SETTLEABLE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_RECONCILIABLE ),
+		{ OFA_BOX_CSV( ACC_RECONCILIABLE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_FORWARD ),
+		{ OFA_BOX_CSV( ACC_FORWARD ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_UPD_USER ),
+		{ OFA_BOX_CSV( ACC_UPD_USER ),
 				OFA_TYPE_STRING,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_UPD_STAMP ),
+		{ OFA_BOX_CSV( ACC_UPD_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				TRUE },
-		{ OFA_BOXED_CSV( ACC_VAL_DEBIT ),
+		{ OFA_BOX_CSV( ACC_VAL_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_VAL_CREDIT ),
+		{ OFA_BOX_CSV( ACC_VAL_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_ROUGH_DEBIT ),
+		{ OFA_BOX_CSV( ACC_ROUGH_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_ROUGH_CREDIT ),
+		{ OFA_BOX_CSV( ACC_ROUGH_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_OPEN_DEBIT ),
+		{ OFA_BOX_CSV( ACC_OPEN_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_OPEN_CREDIT ),
+		{ OFA_BOX_CSV( ACC_OPEN_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_FUT_DEBIT ),
+		{ OFA_BOX_CSV( ACC_FUT_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
-		{ OFA_BOXED_CSV( ACC_FUT_CREDIT ),
+		{ OFA_BOX_CSV( ACC_FUT_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
@@ -224,8 +224,8 @@ account_finalize( GObject *instance )
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			ofa_boxed_get_string( OFO_BASE( instance )->prot->fields, ACC_NUMBER ),
-			ofa_boxed_get_string( OFO_BASE( instance )->prot->fields, ACC_LABEL ));
+			ofa_box_get_string( OFO_BASE( instance )->prot->fields, ACC_NUMBER ),
+			ofa_box_get_string( OFO_BASE( instance )->prot->fields, ACC_LABEL ));
 
 	g_return_if_fail( instance && OFO_IS_ACCOUNT( instance ));
 
@@ -1976,7 +1976,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofa_iexportable_set_count( exportable, count );
 
 	if( with_headers ){
-		str = ofa_boxed_get_csv_header( st_boxed_defs, field_sep );
+		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1986,7 +1986,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	for( it=account_dataset ; it ; it=it->next ){
-		str = ofa_boxed_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
+		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
