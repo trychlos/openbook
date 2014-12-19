@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofo-account.h"
@@ -59,7 +61,8 @@ typedef struct {
 
 static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* number, label, currency */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* type, notes, upd_user */
+		G_TYPE_STRING, G_TYPE_STRING, 0,				/* type, notes, notes_png */
+		G_TYPE_STRING,									/* upd_user */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* upd_stamp, val_debit, val_credit */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* rough_debit, rough_credit, open_debit */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* open_credit, fut_debit, fut_credit */
@@ -80,7 +83,10 @@ enum {
 	N_SIGNALS
 };
 
-static guint st_signals[ N_SIGNALS ]         = { 0 };
+static guint        st_signals[ N_SIGNALS ]  = { 0 };
+
+static const gchar *st_filler_png            = PKGUIDIR "/filler.png";
+static const gchar *st_notes_png             = PKGUIDIR "/notes1.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountStore *store );
 static void     load_dataset( ofaAccountStore *store, ofoDossier *dossier );
@@ -222,6 +228,7 @@ ofa_account_store_new( ofoDossier *dossier )
 						OFA_PROP_DOSSIER, dossier,
 						NULL );
 
+		st_col_types[ACCOUNT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_tree_store_set_column_types(
 				GTK_TREE_STORE( store ), ACCOUNT_N_COLUMNS, st_col_types );
 
@@ -317,6 +324,7 @@ insert_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *accou
 	gboolean parent_found;
 
 	parent_found = find_parent_iter( store, account, &parent_iter );
+
 	gtk_tree_store_insert_with_values(
 			GTK_TREE_STORE( store ),
 			&iter,
@@ -333,12 +341,15 @@ insert_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *accou
 static void
 set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account, GtkTreeIter *iter )
 {
-	const gchar *currency_code;
+	static const gchar *thisfn = "ofa_account_store_set_row";
+	const gchar *currency_code, *notes;
 	gint digits;
 	ofoCurrency *currency_obj;
 	gchar *stamp;
 	gchar *svdeb, *svcre, *srdeb, *srcre, *sodeb, *socre, *sfdeb, *sfcre, *sedeb, *secre;
 	ofxAmount val_debit, val_credit, rough_debit, rough_credit;
+	GdkPixbuf *notes_png;
+	GError *error;
 
 	currency_code = ofo_account_get_currency( account );
 	if( !ofo_account_is_root( account )){
@@ -375,7 +386,15 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 		sedeb = g_strdup( "" );
 		secre = g_strdup( "" );
 	}
-	stamp  = my_utils_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_DMYYHM );
+
+	stamp = my_utils_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_DMYYHM );
+	notes = ofo_account_get_notes( account );
+	error = NULL;
+	notes_png = gdk_pixbuf_new_from_file( notes ? st_notes_png : st_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_file: %s", thisfn, error->message );
+		g_error_free( error );
+	}
 
 	gtk_tree_store_set(
 			GTK_TREE_STORE( store ),
@@ -383,7 +402,8 @@ set_row( ofaAccountStore *store, ofoDossier *dossier, const ofoAccount *account,
 			ACCOUNT_COL_LABEL,         ofo_account_get_label( account ),
 			ACCOUNT_COL_CURRENCY,      currency_code,
 			ACCOUNT_COL_TYPE,          ofo_account_get_type_account( account ),
-			ACCOUNT_COL_NOTES,         ofo_account_get_notes( account ),
+			ACCOUNT_COL_NOTES,         notes,
+			ACCOUNT_COL_NOTES_PNG,     notes_png,
 			ACCOUNT_COL_UPD_USER,      ofo_account_get_upd_user( account ),
 			ACCOUNT_COL_UPD_STAMP,     stamp,
 			ACCOUNT_COL_VAL_DEBIT,     svdeb,

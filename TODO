@@ -282,16 +282,6 @@
  342 2014-10-26 document signals + callbacks should be signals
                 - ofaAccountsBook
 
- 419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
-                book, but most probably also in other treeviews)
-     2014-11- 5 ofaAccountsBook:     done - svn #4047
-     2014-11- 7 ofaBatsPage:         done - svn #4052
-     2014-11- 7 ofaClassesPage:      done - svn #4053
-     2014-11- 7 ofaCurrenciesPage:   done - svn #4054
-                ofaLedgerTreeview:   done - svn #4346
-                ofaOpeTemplatesPage: done
-                ofaRatesPage:
-
  429 2014-11-11 implement print preview inside of Openbook
 
  442 2014-11-13 AccountsBook: add a notes indicator
@@ -1953,6 +1943,16 @@
  418 2014-11- 3 new account: if root, then 'currency' label should be
                 disabled (not only the combo box)
      2014-11- 3 done - svn #4044 
+
+ 419 2014-11- 3 Accept 'Suppr' key for delete (at least in accounts 
+                book, but most probably also in other treeviews)
+     2014-11- 5 ofaAccountsBook:     done - svn #4047
+     2014-11- 7 ofaBatsPage:         done - svn #4052
+     2014-11- 7 ofaClassesPage:      done - svn #4053
+     2014-11- 7 ofaCurrenciesPage:   done - svn #4054
+                ofaLedgerTreeview:   done - svn #4346
+                ofaOpeTemplatesPage: done
+                ofaRatesPage:        done - svn #4347
 
  420 2014-11- 3 when deleting a root with children, and corresponding
                 user preference is set, then the rows 'seem' to be

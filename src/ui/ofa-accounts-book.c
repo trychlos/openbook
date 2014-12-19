@@ -116,7 +116,8 @@ static void       tview_collapse_node( ofaAccountsBook *self, GtkWidget *widget 
 static void       tview_expand_node( ofaAccountsBook *self, GtkWidget *widget );
 static void       on_tview_insert( ofaAccountsBook *self );
 static void       on_tview_delete( ofaAccountsBook *self );
-static void       on_tview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountsBook *self );
+static void       on_tview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountsBook *self );
+static void       tview_cell_renderer_text( GtkCellRendererText *cell, gboolean is_root, gint level, gboolean is_error );
 static void       do_insert_account( ofaAccountsBook *self );
 static void       do_update_account( ofaAccountsBook *self );
 static void       do_delete_account( ofaAccountsBook *self );
@@ -704,9 +705,7 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-				_( "Number" ),
-				cell, "text", ACCOUNT_COL_NUMBER,
-				NULL );
+			_( "Number" ), cell, "text", ACCOUNT_COL_NUMBER, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_NUMBER ));
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
@@ -714,20 +713,24 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Label" ),
-			cell, "text", ACCOUNT_COL_LABEL,
-			NULL );
+			_( "Label" ), cell, "text", ACCOUNT_COL_LABEL, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_LABEL ));
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
 
+	cell = gtk_cell_renderer_pixbuf_new();
+	column = gtk_tree_view_column_new_with_attributes(
+				"", cell, "pixbuf", ACCOUNT_COL_NOTES_PNG, NULL );
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_NOTES_PNG ));
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_cell_data_func(
+			column, cell, ( GtkTreeCellDataFunc ) on_tview_cell_data_func, book, NULL );
+
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-				_( "S" ),
-				cell, "text", ACCOUNT_COL_SETTLEABLE,
-				NULL );
+				_( "S" ), cell, "text", ACCOUNT_COL_SETTLEABLE, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_SETTLEABLE ));
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
@@ -735,9 +738,7 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-				_( "R" ),
-				cell, "text", ACCOUNT_COL_RECONCILIABLE,
-				NULL );
+				_( "R" ), cell, "text", ACCOUNT_COL_RECONCILIABLE, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_RECONCILIABLE ));
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
@@ -745,9 +746,7 @@ book_create_columns( ofaAccountsBook *book, gint class_num, GtkTreeView *tview )
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-				_( "F" ),
-				cell, "text", ACCOUNT_COL_FORWARD,
-				NULL );
+				_( "F" ), cell, "text", ACCOUNT_COL_FORWARD, NULL );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( ACCOUNT_COL_FORWARD ));
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
@@ -964,8 +963,8 @@ on_tview_delete( ofaAccountsBook *self )
  */
 static void
 on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
-						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
-						ofaAccountsBook *self )
+							GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+							ofaAccountsBook *self )
 {
 	ofaAccountsBookPrivate *priv;
 	gchar *account_num;
@@ -973,61 +972,88 @@ on_tview_cell_data_func( GtkTreeViewColumn *tcolumn,
 	GString *number;
 	gint level;
 	gint column;
-	GdkRGBA color;
 	ofoCurrency *currency;
+	/*GtkTreePath *path;
+	GdkRectangle rc;
+	GtkTreeView *tview;*/
+	gboolean is_root, is_error;
 
-	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
+	g_return_if_fail( GTK_IS_CELL_RENDERER( cell ));
 
 	priv = self->priv;
 
-	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_NUMBER, &account_num, -1 );
-	if( account_num ){
-		account_obj = ofo_account_get_by_number( priv->dossier, account_num );
-		g_return_if_fail( account_obj && OFO_IS_ACCOUNT( account_obj ));
+	gtk_tree_model_get( tmodel, iter,
+			ACCOUNT_COL_NUMBER, &account_num, ACCOUNT_COL_OBJECT, &account_obj, -1 );
+	g_return_if_fail( account_obj && OFO_IS_ACCOUNT( account_obj ));
+	g_object_unref( account_obj );
 
-		level = ofo_account_get_level_from_number( ofo_account_get_number( account_obj ));
-		g_return_if_fail( level >= 2 );
+	level = ofo_account_get_level_from_number( ofo_account_get_number( account_obj ));
+	g_return_if_fail( level >= 2 );
 
-		column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( tcolumn ), DATA_COLUMN_ID ));
-		if( column == ACCOUNT_COL_NUMBER ){
-			number = g_string_new( " " );
-			g_string_append_printf( number, "%s", account_num );
-			g_object_set( G_OBJECT( cell ), "text", number->str, NULL );
-			g_string_free( number, TRUE );
-		}
+	is_root = ofo_account_is_root( account_obj );
 
-		g_object_set( G_OBJECT( cell ),
-							"style-set",      FALSE,
-							"weight-set",     FALSE,
-							"foreground-set", FALSE,
-							"background-set", FALSE,
-							NULL );
+	is_error = FALSE;
+	if( !is_root ){
+		currency = ofo_currency_get_by_code( priv->dossier, ofo_account_get_currency( account_obj ));
+		is_error |= !currency;
+	}
 
-		if( ofo_account_is_root( account_obj )){
+	column = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( tcolumn ), DATA_COLUMN_ID ));
+	if( column == ACCOUNT_COL_NUMBER ){
+		number = g_string_new( " " );
+		g_string_append_printf( number, "%s", account_num );
+		g_object_set( G_OBJECT( cell ), "text", number->str, NULL );
+		g_string_free( number, TRUE );
+	}
 
-			if( level == 2 ){
-				gdk_rgba_parse( &color, "#c0ffff" );
-				g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
-				g_object_set( G_OBJECT( cell ), "weight", PANGO_WEIGHT_BOLD, NULL );
+	if( GTK_IS_CELL_RENDERER_TEXT( cell )){
+		tview_cell_renderer_text( GTK_CELL_RENDERER_TEXT( cell ), is_root, level, is_error );
 
-			} else if( level == 3 ){
-				gdk_rgba_parse( &color, "#0000ff" );
-				g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
-				g_object_set( G_OBJECT( cell ), "weight", PANGO_WEIGHT_BOLD, NULL );
+	} else if( GTK_IS_CELL_RENDERER_PIXBUF( cell )){
 
-			} else {
-				gdk_rgba_parse( &color, "#0000ff" );
-				g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
-				g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
-			}
+		/*if( ofo_account_is_root( account_obj ) && level == 2 ){
+			path = gtk_tree_model_get_path( tmodel, iter );
+			tview = gtk_tree_view_column_get_tree_view( tcolumn );
+			gtk_tree_view_get_cell_area( tview, path, tcolumn, &rc );
+			gtk_tree_path_free( path );
+		}*/
+	}
+}
+
+static void
+tview_cell_renderer_text( GtkCellRendererText *cell, gboolean is_root, gint level, gboolean is_error )
+{
+	GdkRGBA color;
+
+	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
+
+	g_object_set( G_OBJECT( cell ),
+						"style-set",      FALSE,
+						"weight-set",     FALSE,
+						"background-set", FALSE,
+						"foreground-set", FALSE,
+						NULL );
+
+	if( is_root ){
+		if( level == 2 ){
+			gdk_rgba_parse( &color, "#c0ffff" );
+			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+			g_object_set( G_OBJECT( cell ), "weight", PANGO_WEIGHT_BOLD, NULL );
+
+		} else if( level == 3 ){
+			gdk_rgba_parse( &color, "#0000ff" );
+			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( cell ), "weight", PANGO_WEIGHT_BOLD, NULL );
 
 		} else {
-			currency = ofo_currency_get_by_code( priv->dossier, ofo_account_get_currency( account_obj ));
-			if( !currency ){
-				gdk_rgba_parse( &color, "#800000" );
-				g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
-			}
+			gdk_rgba_parse( &color, "#0000ff" );
+			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 		}
+
+	} else if( is_error ){
+		gdk_rgba_parse( &color, "#800000" );
+		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 	}
 }
 
