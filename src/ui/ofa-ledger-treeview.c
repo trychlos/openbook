@@ -59,6 +59,8 @@ struct _ofaLedgerTreeviewPrivate {
 enum {
 	CHANGED = 0,
 	ACTIVATED,
+	INSERT,
+	DELETE,
 	N_SIGNALS
 };
 
@@ -148,11 +150,11 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 	 * This signal is sent on the #ofaLedgerTreeview when the selection
 	 * is changed.
 	 *
-	 * Arguments is the selected ledger mnemo.
+	 * Arguments is the list of selected mnemos.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaLedgerTreeview *view,
-	 * 						const gchar     *mnemo,
+	 * 						GList           *sel_mnemos,
 	 * 						gpointer         user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -165,7 +167,7 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_STRING );
+				G_TYPE_POINTER );
 
 	/**
 	 * ofaLedgerTreeview::activated:
@@ -173,11 +175,11 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 	 * This signal is sent on the #ofaLedgerTreeview when the selection is
 	 * activated.
 	 *
-	 * Arguments is the selected ledger mnemo.
+	 * Arguments is the list of selected mnemos.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaLedgerTreeview *view,
-	 * 						const gchar     *mnemo,
+	 * 						GList           *sel_mnemos,
 	 * 						gpointer         user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
@@ -190,7 +192,54 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_STRING );
+				G_TYPE_POINTER );
+
+	/**
+	 * ofaLedgerTreeview::insert:
+	 *
+	 * This signal is sent on the #ofaLedgerTreeview when the insertion
+	 * key is hit.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaLedgerTreeview *view,
+	 * 						gpointer         user_data );
+	 */
+	st_signals[ INSERT ] = g_signal_new_class_handler(
+				"insert",
+				OFA_TYPE_LEDGER_TREEVIEW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
+
+	/**
+	 * ofaLedgerTreeview::delete:
+	 *
+	 * This signal is sent on the #ofaLedgerTreeview when the deletion
+	 * key is hit.
+	 *
+	 * Arguments is the list of selected mnemos.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaLedgerTreeview *view,
+	 * 						GList           *sel_mnemos,
+	 * 						gpointer         user_data );
+	 */
+	st_signals[ DELETE ] = g_signal_new_class_handler(
+				"delete",
+				OFA_TYPE_LEDGER_TREEVIEW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_POINTER );
 }
 
 /**
@@ -415,13 +464,13 @@ on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaLedgerTreeview *
 static void
 on_tview_key_insert( ofaLedgerTreeview *page )
 {
-
+	g_signal_emit_by_name( page, "insert" );
 }
 
 static void
 on_tview_key_delete( ofaLedgerTreeview *page )
 {
-
+	g_signal_emit_by_name( page, "delete" );
 }
 
 static gint

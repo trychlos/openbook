@@ -78,6 +78,8 @@ static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
 static void       on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
+static void       on_insert_key( ofaLedgerTreeview *view, ofaLedgersPage *self );
+static void       on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
 static void       on_new_clicked( GtkButton *button, ofaLedgersPage *page );
 static void       on_update_clicked( GtkButton *button, ofaLedgersPage *page );
 static void       do_update( ofaLedgersPage *self, ofoLedger *ledger );
@@ -176,6 +178,8 @@ setup_tree_view( ofaPage *page )
 
 	g_signal_connect( G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( G_OBJECT( priv->tview ), "activated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect( G_OBJECT( priv->tview ), "insert", G_CALLBACK( on_insert_key ), page );
+	g_signal_connect( G_OBJECT( priv->tview ), "delete", G_CALLBACK( on_delete_key ), page );
 
 	return( alignment );
 }
@@ -266,6 +270,23 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self 
 			priv->entries_btn,
 			ledger && OFO_IS_LEDGER( ledger ) &&
 				ofo_ledger_has_entries( ledger, ofa_page_get_dossier( OFA_PAGE( self ))));
+}
+
+static void
+on_insert_key( ofaLedgerTreeview *view, ofaLedgersPage *self )
+{
+	on_new_clicked( NULL, self );
+}
+
+/*
+ * only delete if there is only one selected ledger
+ */
+static void
+on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self )
+{
+	if( g_list_length( selected ) == 1 ){
+		on_delete_clicked( NULL, self );
+	}
 }
 
 static void
