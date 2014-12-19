@@ -80,9 +80,9 @@ static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 static void         setup_first_selection( ofaCurrenciesPage *self );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void         on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self );
-static void         on_new_clicked( ofaCurrenciesPage *page );
-static void         on_update_clicked( ofaCurrenciesPage *page );
-static void         on_delete_clicked( ofaCurrenciesPage *page );
+static void         on_new_clicked( GtkButton *button, ofaCurrenciesPage *page );
+static void         on_update_clicked( GtkButton *button, ofaCurrenciesPage *page );
+static void         on_delete_clicked( GtkButton *button, ofaCurrenciesPage *page );
 static void         try_to_delete_current_row( ofaCurrenciesPage *page );
 static gboolean     delete_confirmed( ofaCurrenciesPage *self, ofoCurrency *currency );
 static void         do_delete( ofaCurrenciesPage *page, ofoCurrency *currency, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -295,7 +295,7 @@ on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaCurrenciesPage *
 
 	if( event->state == 0 ){
 		if( event->keyval == GDK_KEY_Insert ){
-			on_new_clicked( self );
+			on_new_clicked( NULL, self );
 		} else if( event->keyval == GDK_KEY_Delete ){
 			try_to_delete_current_row( self );
 		}
@@ -451,7 +451,7 @@ setup_first_selection( ofaCurrenciesPage *self )
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
 {
-	on_update_clicked( OFA_CURRENCIES_PAGE( page ));
+	on_update_clicked( NULL, OFA_CURRENCIES_PAGE( page ));
 }
 
 static void
@@ -486,7 +486,7 @@ on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self )
 }
 
 static void
-on_new_clicked( ofaCurrenciesPage *page )
+on_new_clicked( GtkButton *button, ofaCurrenciesPage *page )
 {
 	ofoCurrency *currency;
 
@@ -503,7 +503,7 @@ on_new_clicked( ofaCurrenciesPage *page )
 }
 
 static void
-on_update_clicked( ofaCurrenciesPage *page )
+on_update_clicked( GtkButton *button, ofaCurrenciesPage *page )
 {
 	ofaCurrenciesPagePrivate *priv;
 	GtkTreeSelection *select;
@@ -525,7 +525,7 @@ on_update_clicked( ofaCurrenciesPage *page )
 			gtk_list_store_set(
 					GTK_LIST_STORE( tmodel ),
 					&iter,
-					COL_CODE,  ofo_currency_get_code( currency ),
+					COL_CODE,   ofo_currency_get_code( currency ),
 					COL_LABEL,  ofo_currency_get_label( currency ),
 					COL_SYMBOL, ofo_currency_get_symbol( currency ),
 					-1 );
@@ -536,7 +536,7 @@ on_update_clicked( ofaCurrenciesPage *page )
 }
 
 static void
-on_delete_clicked( ofaCurrenciesPage *page )
+on_delete_clicked( GtkButton *button, ofaCurrenciesPage *page )
 {
 	ofaCurrenciesPagePrivate *priv;
 	GtkTreeModel *tmodel;

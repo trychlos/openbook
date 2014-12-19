@@ -78,10 +78,10 @@ static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
 static void       on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self );
-static void       on_new_clicked( ofaLedgersPage *page );
-static void       on_update_clicked( ofaLedgersPage *page );
+static void       on_new_clicked( GtkButton *button, ofaLedgersPage *page );
+static void       on_update_clicked( GtkButton *button, ofaLedgersPage *page );
 static void       do_update( ofaLedgersPage *self, ofoLedger *ledger );
-static void       on_delete_clicked( ofaLedgersPage *page );
+static void       on_delete_clicked( GtkButton *button, ofaLedgersPage *page );
 static gboolean   delete_confirmed( ofaLedgersPage *self, ofoLedger *ledger );
 static void       on_view_entries( GtkButton *button, ofaLedgersPage *self );
 
@@ -269,7 +269,7 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self 
 }
 
 static void
-on_new_clicked( ofaLedgersPage *page )
+on_new_clicked( GtkButton *button, ofaLedgersPage *page )
 {
 	ofoLedger *ledger;
 
@@ -288,7 +288,7 @@ on_new_clicked( ofaLedgersPage *page )
 }
 
 static void
-on_update_clicked( ofaLedgersPage *page )
+on_update_clicked( GtkButton *button, ofaLedgersPage *page )
 {
 	ofaLedgersPagePrivate *priv;
 	ofoDossier *dossier;
@@ -334,7 +334,7 @@ do_update( ofaLedgersPage *self, ofoLedger *ledger )
  * enregistrée, et après confirmation de l'utilisateur
  */
 static void
-on_delete_clicked( ofaLedgersPage *page )
+on_delete_clicked( GtkButton *button, ofaLedgersPage *page )
 {
 	ofaLedgersPagePrivate *priv;
 	ofoDossier *dossier;

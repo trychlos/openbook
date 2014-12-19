@@ -313,8 +313,6 @@
 
  466 2014-11-26 move ofoOpeTemplate to ofaBoxed
 
- 467 2014-11-26 move ofoRate to ofaBoxed
-
  469 2014-11-28 ExportSettings: the field separator should be free 
                 (but not empty nor space) instead of having to select
                 among predefined values
@@ -2116,6 +2114,9 @@
  460 2014-11-21 ViewEntries: in order to keep debit/credit/currency 
                 aligned, have other columns (reconcil) on the left
      2014-11-22 done - svn #4143
+
+ 467 2014-11-26 move ofoRate to ofaBoxed
+     2014-11-19 done - svn #4344
 
  468 2014-11-27 have one database per exercice
                 merge OFA_T_DOSSIER & OFA_T_DOSSIER_EXE

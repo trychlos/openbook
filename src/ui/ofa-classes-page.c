@@ -81,9 +81,9 @@ static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIt
 static void       setup_first_selection( ofaClassesPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self );
-static void       on_new_clicked( ofaClassesPage *page );
-static void       on_update_clicked( ofaClassesPage *page );
-static void       on_delete_clicked( ofaClassesPage *page );
+static void       on_new_clicked( GtkButton *button, ofaClassesPage *page );
+static void       on_update_clicked( GtkButton *button, ofaClassesPage *page );
+static void       on_delete_clicked( GtkButton *button, ofaClassesPage *page );
 static void       try_to_delete_current_row( ofaClassesPage *self );
 static gboolean   delete_confirmed( ofaClassesPage *self, ofoClass *class );
 static void       do_delete( ofaClassesPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -290,7 +290,7 @@ on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassesPage *sel
 
 	if( event->state == 0 ){
 		if( event->keyval == GDK_KEY_Insert ){
-			on_new_clicked( self );
+			on_new_clicked( NULL, self );
 
 		} else if( event->keyval == GDK_KEY_Delete ){
 			try_to_delete_current_row( self );
@@ -439,7 +439,7 @@ setup_first_selection( ofaClassesPage *self )
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
 {
-	on_update_clicked( OFA_CLASSES_PAGE( page ));
+	on_update_clicked( NULL, OFA_CLASSES_PAGE( page ));
 }
 
 static void
@@ -474,7 +474,7 @@ on_row_selected( GtkTreeSelection *selection, ofaClassesPage *self )
 }
 
 static void
-on_new_clicked( ofaClassesPage *page )
+on_new_clicked( GtkButton *button, ofaClassesPage *page )
 {
 	static const gchar *thisfn = "ofa_classes_page_on_new_clicked";
 	ofoClass *class;
@@ -491,7 +491,7 @@ on_new_clicked( ofaClassesPage *page )
 }
 
 static void
-on_update_clicked( ofaClassesPage *page )
+on_update_clicked( GtkButton *button, ofaClassesPage *page )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -506,7 +506,7 @@ on_update_clicked( ofaClassesPage *page )
 }
 
 static void
-on_delete_clicked( ofaClassesPage *page )
+on_delete_clicked( GtkButton *button, ofaClassesPage *page )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;

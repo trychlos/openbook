@@ -70,8 +70,8 @@ static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIt
 static void       setup_first_selection( ofaBatsPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaBatsPage *self );
-static void       on_update_clicked( ofaBatsPage *page );
-static void       on_delete_clicked( ofaBatsPage *page );
+static void       on_update_clicked( GtkButton *button, ofaBatsPage *page );
+static void       on_delete_clicked( GtkButton *button, ofaBatsPage *page );
 static void       try_to_delete_current_row( ofaBatsPage *page );
 static gboolean   delete_confirmed( ofaBatsPage *self, ofoBat *bat );
 static void       do_delete( ofaBatsPage *page, ofoBat *bat, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -331,7 +331,7 @@ setup_first_selection( ofaBatsPage *self )
 static void
 on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
 {
-	on_update_clicked( OFA_BATS_PAGE( page ));
+	on_update_clicked( NULL, OFA_BATS_PAGE( page ));
 }
 
 static void
@@ -387,7 +387,7 @@ get_current_selection( ofaBatsPage *page, GtkTreeModel **tmodel, GtkTreeIter *it
  * only notes can be updated
  */
 static void
-on_update_clicked( ofaBatsPage *page )
+on_update_clicked( GtkButton *button, ofaBatsPage *page )
 {
 	ofaBatsPagePrivate *priv;
 	GtkTreeModel *tmodel;
@@ -404,7 +404,7 @@ on_update_clicked( ofaBatsPage *page )
 }
 
 static void
-on_delete_clicked( ofaBatsPage *page )
+on_delete_clicked( GtkButton *button, ofaBatsPage *page )
 {
 	ofaBatsPagePrivate *priv;
 	GtkTreeModel *tmodel;
