@@ -288,8 +288,8 @@
      2014-11- 7 ofaBatsPage:         done - svn #4052
      2014-11- 7 ofaClassesPage:      done - svn #4053
      2014-11- 7 ofaCurrenciesPage:   done - svn #4054
-                ofaLedgerTreeview:
-                ofaOpeTemplatesPage:
+                ofaLedgerTreeview:   done - svn #4346
+                ofaOpeTemplatesPage: done
                 ofaRatesPage:
 
  429 2014-11-11 implement print preview inside of Openbook

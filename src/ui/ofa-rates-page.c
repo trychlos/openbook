@@ -85,6 +85,7 @@ static gchar     *get_min_val_date( ofoRate *rate );
 static gchar     *get_max_val_date( ofoRate *rate );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRatesPage *self );
 static void       setup_first_selection( ofaRatesPage *self );
+static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRatesPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaRatesPage *self );
 static void       on_new_clicked( GtkButton *button, ofaRatesPage *page );
@@ -241,7 +242,10 @@ setup_tree_view( ofaRatesPage *self )
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect(
+			G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect(
+			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
 	self->priv->tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
@@ -513,6 +517,30 @@ setup_first_selection( ofaRatesPage *self )
 	}
 
 	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
+}
+
+/*
+ * Returns :
+ * TRUE to stop other handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRatesPage *self )
+{
+	gboolean stop;
+
+	stop = FALSE;
+
+	if( event->state == 0 ){
+		if( event->keyval == GDK_KEY_Insert ){
+			on_new_clicked( NULL, self );
+
+		} else if( event->keyval == GDK_KEY_Delete ){
+			on_delete_clicked( NULL, self );
+		}
+	}
+
+	return( stop );
 }
 
 /*
