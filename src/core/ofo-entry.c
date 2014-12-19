@@ -94,6 +94,15 @@ static sStatus st_status[] = {
 		{ 0 },
 };
 
+/* a structure used when computing balances per currencies
+ */
+typedef struct {
+	gchar    *currency;
+	ofxAmount debit;
+	ofxAmount credit;
+}
+	sCurrency;
+
 static ofoBaseClass *ofo_entry_parent_class = NULL;
 
 static void         on_updated_object( const ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
@@ -134,6 +143,9 @@ static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFil
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, ofoDossier *dossier );
+static GList       *add_balance_currency( GList * list_in, const gchar *currency, ofxAmount debit, ofxAmount credit );
+static void         free_currency( sCurrency *sdet );
+static void         free_balance_currency( GList *list );
 
 static void
 entry_finalize( GObject *instance )
@@ -2988,19 +3000,25 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * - debit
  * - credit (only one of the twos must be set)
  *
- * Note that the decimal separator must be a dot '.' and not a comma,
- * without any thousand separator, with LANG=C as well as LANG=fr_FR
+ * Note that amounts must not include thousand separator.
  *
  * Add the imported entries to the content of OFA_T_ENTRIES, while
  * keeping already existing entries.
  *
  * If the entry effect date is before the beginning of the exercice (if
  * set), then accounts and ledgers will not be imputed. The entry will
- * be set as 'validated'.
+ * be set as 'past'.
+ * Past entries do not need to be balanced.
+ *
  * If the entry effect date is in the exercice, then it must be after
- * the last closing date of the ledger.
+ * the last closing date of the ledger. The status will be let to
+ * 'rough'.
+ *
  * If the entry effect date is after the end of the exercice (if set),
- * then accounts and ledgers will not be imputed.
+ * then accounts and ledgers will not be imputed, and will be set as
+ * 'future'.
+ *
+ * Both rough and future entries must be balanced per currency.
  */
 static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
@@ -3015,19 +3033,17 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	ofoAccount *account;
 	ofoLedger *ledger;
 	gdouble debit, credit;
-	gdouble past_debits, past_credits, exe_debits, exe_credits, fut_debits, fut_credits;
 	gchar *sdeffect, *msg;
 	ofaEntryStatus status;
+	GList *past, *exe, *fut;
+	sCurrency *sdet;
 
 	dataset = NULL;
 	line = 0;
 	errors = 0;
-	past_debits = 0;
-	past_credits = 0;
-	exe_debits = 0;
-	exe_credits = 0;
-	fut_debits = 0;
-	fut_credits = 0;
+	past = NULL;
+	exe = NULL;
+	fut = NULL;
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
@@ -3153,7 +3169,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			continue;
 		}
 		ofo_entry_set_currency( entry, currency );
-		g_free( currency );
 
 		/* debit */
 		itf = itf ? itf->next : NULL;
@@ -3196,18 +3211,15 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		status = ofo_entry_get_status( entry );
 		switch( status ){
 			case ENT_STATUS_PAST:
-				past_debits += debit;
-				past_credits += credit;
+				past = add_balance_currency( past, currency, debit, credit );
 				break;
 
 			case ENT_STATUS_ROUGH:
-				exe_debits += debit;
-				exe_credits += credit;
+				exe = add_balance_currency( exe, currency, debit, credit );
 				break;
 
 			case ENT_STATUS_FUTURE:
-				fut_debits += debit;
-				fut_credits += credit;
+				fut = add_balance_currency( fut, currency, debit, credit );
 				break;
 
 			default:
@@ -3219,35 +3231,47 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 				continue;
 		}
 
+		g_free( currency );
+
 		dataset = g_list_prepend( dataset, entry );
 	}
 
-	/* entries must be balanced:
+	/* rough and future entries must be balanced:
 	 * as we are storing 5 decimal digits in the DBMS, so this is the
 	 * maximal rounding error accepted */
-	if( abs( past_debits - past_credits ) > 0.00001 ){
-		msg = g_strdup_printf(
-				_( "past entries are not balanced: past_debits=%'.5lf, past_credits=%'.5lf" ), past_debits, past_credits );
+	for( it=past ; it ; it=it->next ){
+		sdet = ( sCurrency * ) it->data;
+		msg = g_strdup_printf( "PAST [%s] tot_debits='%'.5lf, tot_credits=%'.5lf",
+				sdet->currency, sdet->debit, sdet->credit );
 		ofa_iimportable_set_message(
-				importable, line, IMPORTABLE_MSG_ERROR, msg );
+				importable, line, IMPORTABLE_MSG_STANDARD, msg );
 		g_free( msg );
-		errors += 1;
 	}
-	if( abs( exe_debits - exe_credits ) > 0.00001 ){
-		msg = g_strdup_printf(
-				_( "exercice entries are not balanced: exe_debits=%'.5lf, exe_credits=%'.5lf" ), exe_debits, exe_credits );
+	for( it=exe ; it ; it=it->next ){
+		sdet = ( sCurrency * ) it->data;
+		msg = g_strdup_printf( "EXE [%s] tot_debits='%'.5lf, tot_credits=%'.5lf",
+				sdet->currency, sdet->debit, sdet->credit );
 		ofa_iimportable_set_message(
-				importable, line, IMPORTABLE_MSG_ERROR, msg );
+				importable, line, IMPORTABLE_MSG_STANDARD, msg );
 		g_free( msg );
-		errors += 1;
+		if( abs( sdet->debit - sdet->credit ) > 0.00001 ){
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, _( "entries are not balanced" ));
+			errors += 1;
+		}
 	}
-	if( abs( fut_debits - fut_credits ) > 0.00001 ){
-		msg = g_strdup_printf(
-				_( "future entries are not balanced: fut_debits=%'.5lf, fut_credits=%'.5lf" ), fut_debits, fut_credits );
+	for( it=fut ; it ; it=it->next ){
+		sdet = ( sCurrency * ) it->data;
+		msg = g_strdup_printf( "FUTURE [%s] tot_debits='%'.5lf, tot_credits=%'.5lf",
+				sdet->currency, sdet->debit, sdet->credit );
 		ofa_iimportable_set_message(
-				importable, line, IMPORTABLE_MSG_ERROR, msg );
+				importable, line, IMPORTABLE_MSG_STANDARD, msg );
 		g_free( msg );
-		errors += 1;
+		if( abs( sdet->debit - sdet->credit ) > 0.00001 ){
+			ofa_iimportable_set_message(
+					importable, line, IMPORTABLE_MSG_ERROR, _( "entries are not balanced" ));
+			errors += 1;
+		}
 	}
 
 	if( !errors ){
@@ -3258,6 +3282,54 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	}
 
 	g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
+	free_balance_currency( past );
+	free_balance_currency( exe );
+	free_balance_currency( fut );
 
 	return( errors );
+}
+
+static GList *
+add_balance_currency( GList * list_in, const gchar *currency, ofxAmount debit, ofxAmount credit )
+{
+	GList *list_out, *it;
+	sCurrency *sdet;
+	gboolean found;
+
+	found = FALSE;
+	list_out = list_in;
+
+	for( it=list_in ; it ; it=it->next ){
+		sdet = ( sCurrency * ) it->data;
+		if( !g_utf8_collate( sdet->currency, currency )){
+			found = TRUE;
+			break;
+		}
+	}
+
+	if( !found ){
+		sdet = g_new0( sCurrency, 1 );
+		sdet->currency = g_strdup( currency );
+		sdet->debit = 0;
+		sdet->credit = 0;
+		list_out = g_list_prepend( list_in, sdet );
+	}
+
+	sdet->debit += debit;
+	sdet->credit += credit;
+
+	return( list_out );
+}
+
+static void
+free_balance_currency( GList *list )
+{
+	g_list_free_full( list, ( GDestroyNotify ) free_currency );
+}
+
+static void
+free_currency( sCurrency *sdet )
+{
+	g_free( sdet->currency );
+	g_free( sdet );
 }
