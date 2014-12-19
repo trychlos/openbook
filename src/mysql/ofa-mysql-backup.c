@@ -65,8 +65,8 @@ typedef struct {
 
 static const gchar *st_window_name = "MySQLBackupWindow";
 
-static gboolean    do_backup_restore( const sMySQLInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn );
-static gchar      *build_cmdline( const sMySQLInfos *infos, const gchar *cmdline, const gchar *fname );
+static gboolean    do_backup_restore( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn );
+static gchar      *build_cmdline( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname );
 static void        create_window( backupInfos *infos, const gchar *window_title );
 static GPid        exec_command( const gchar *cmdline, backupInfos *infos );
 static GIOChannel *set_up_io_channel( gint fd, GIOCondition cond, GIOFunc func, backupInfos *infos );
@@ -98,11 +98,11 @@ ofa_mysql_get_def_backup_cmd( const ofaIDbms *instance )
 gboolean
 ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 {
-	const sMySQLInfos *infos;
+	const mysqlInfos *infos;
 	gchar *cmdline;
 	gboolean ok;
 
-	infos = ( sMySQLInfos * ) handle;
+	infos = ( mysqlInfos * ) handle;
 
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
 	if( !cmdline || !g_utf8_strlen( cmdline, -1 )){
@@ -110,7 +110,7 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 	}
 
 	ok = do_backup_restore(
-				( const sMySQLInfos * ) infos,
+				( const mysqlInfos * ) infos,
 				cmdline,
 				fname,
 				_( "Openbook backup" ),
@@ -138,11 +138,11 @@ ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance )
 gboolean
 ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password )
 {
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 	gchar *cmdline;
 	gboolean ok;
 
-	infos = g_new0( sMySQLInfos, 1 );
+	infos = g_new0( mysqlInfos, 1 );
 	ofa_mysql_get_connect_infos( infos, label );
 	infos->account = g_strdup( account );
 	infos->password = g_strdup( password );
@@ -153,7 +153,7 @@ ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fn
 	}
 
 	ok = do_backup_restore(
-				( const sMySQLInfos * ) infos,
+				( const mysqlInfos * ) infos,
 				cmdline,
 				fname,
 				_( "Openbook restore" ),
@@ -166,7 +166,7 @@ ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fn
 }
 
 static gboolean
-do_backup_restore( const sMySQLInfos *sql_infos,
+do_backup_restore( const mysqlInfos *sql_infos,
 						const gchar *def_cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn )
 {
 	static const gchar *thisfn = "ofa_mysql_do_backup_restore";
@@ -206,7 +206,7 @@ do_backup_restore( const sMySQLInfos *sql_infos,
 }
 
 static gchar *
-build_cmdline( const sMySQLInfos *sql_infos, const gchar *def_cmdline, const gchar *fname )
+build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gchar *fname )
 {
 	gchar *sysfname, *cmdline;
 	GString *options;

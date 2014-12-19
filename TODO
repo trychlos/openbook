@@ -294,10 +294,6 @@
 
  429 2014-11-11 implement print preview inside of Openbook
 
- 432 2014-11-12 on import, do not apply on account nor ledger entries
-                which have an effect date before the beginning of the 
-                exercice (the ledger will stay unbalanced)
-
  442 2014-11-13 AccountsBook: add a notes indicator
 
  455 2014-11-14 report colored footer in other pages with balances
@@ -349,17 +345,10 @@
  480 2014-11-30 ofaBoxed class is renamed to ofaBox
                 ofaIBoxed becomes the corresponding interface
 
- 490 2014-12- 2 ExeClosing: implement ledger select, ope select
-     2014-12-19 moved to ofaExeForwardPiece
-
  494 2014-12- 4 ExeClosing: have a dossier option to have only one  
                 centralisation entry when balancing the accounts, or
                 have one entry per account
      2014-12- 7 maybe in a next version...
-
- 497 2014-12- 6 bug: ofoRate exports with a decimal dot, doesn't take 
-                into account the settings
-     2014-12- 7 have to migrate to ofaBox
 
  502 2014-12- 6 when entered in the command-line, accept an empty 
                 database (and defaults to the current)
@@ -405,7 +394,10 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
 
- 539
+ 539 2014-12-19 import entries: have total per currency
+                + imported PAST entries do not need to be balanced
+
+ 540
 
 -----------------------------------------------------------------------
  DONE
@@ -2019,6 +2011,11 @@
  431 2014-11-11 print general ledger: have a general total per currency
      2014-11-14 done - svn #4114
 
+ 432 2014-11-12 on import, do not apply on account nor ledger entries
+                which have an effect date before the beginning of the 
+                exercice (the ledger will stay unbalanced)
+     2014-11-19 done: entries with PAST status are not imputed
+
  433 2014-11-12 print ledgers
      2014-11-22 done - svn #4142
 
@@ -2171,6 +2168,10 @@
  489 2014-12- 2 Exe Closing: have default for date of next exercice
      2014-12-13 done
 
+ 490 2014-12- 2 ExeClosing: implement ledger select, ope select
+     2014-12-19 moved to ofaExeForwardPiece
+     2014-12-19 done - svn #4341
+
  491 2014-12- 3 check that ledger is only imputed with entries of the
                 exercice (not before, not after)
      2014-12-13 done
@@ -2191,6 +2192,11 @@
  496 2014-12- 4 entry_validate_by_ledger: only consider effect date
                 in the current exercice
      2014-12- 7 OK
+
+ 497 2014-12- 6 bug: ofoRate exports with a decimal dot, doesn't take 
+                into account the settings
+     2014-12- 7 have to migrate to ofaBox
+     2014-12-19 cancelled as duplicate of #467
 
  498 2014-12- 6 on import, display all the errors in a dialog box
      2014-12-13 done

@@ -46,7 +46,7 @@
  */
 typedef struct {
 	const ofaIDbms *module;
-	sMySQLInfos     sInfos;
+	mysqlInfos     sInfos;
 	gboolean        connect_ok;			/* connection (host, port, socket, account, password) is ok */
 	GtkLabel       *msg;
 	GtkButton      *browse_btn;
@@ -97,8 +97,8 @@ static const gchar *st_newui_mysql      = "MySQLWindow";
 
 static guint      idbms_get_interface_version( const ofaIDbms *instance );
 static void      *idbms_connect( const ofaIDbms *instance,const gchar *dname, const gchar *dbname, const gchar *account, const gchar *password );
-static void       setup_infos( sMySQLInfos *infos );
-static gboolean   connect_with_infos( sMySQLInfos *infos );
+static void       setup_infos( mysqlInfos *infos );
+static gboolean   connect_with_infos( mysqlInfos *infos );
 static void       idbms_close( const ofaIDbms *instance, void *handle );
 static GSList    *idbms_get_exercices( const ofaIDbms *instance, const gchar *dname );
 static gchar     *idbms_get_current( const ofaIDbms *instance, const gchar *dname );
@@ -131,15 +131,15 @@ static gboolean   new_create_db_as_root( sPrivate *priv );
 static gboolean   new_create_user_as_root( sPrivate *priv );
 static gboolean   new_init_db( sPrivate *priv );
 static gboolean   confirm_database_reinit( sPrivate *priv, const gchar *dbname );
-static void       mysql_display_error( sMySQLInfos *infos );
-static gboolean   mysql_get_db_exists( sMySQLInfos *infos );
+static void       mysql_display_error( mysqlInfos *infos );
+static gboolean   mysql_get_db_exists( mysqlInfos *infos );
 static gboolean   local_get_db_exists( MYSQL *mysql, const gchar *dbname );
 
 static gchar       *idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label );
 static gchar       *idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label );
-/*static void        *idbms_connect_conv( const ofaIDbms *instance, mysqlInfos *infos, const gchar *label, const gchar *account, const gchar *password );*/
+/*static void        *idbms_connect_conv( const ofaIDbms *instance, mysqlConnect_oldv2 *infos, const gchar *label, const gchar *account, const gchar *password );*/
 static gboolean     idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
-/*static void         idbms_drop_database( const mysqlInfos *infos );*/
+/*static void         idbms_drop_database( const mysqlConnect_oldv2 *infos );*/
 static void         idbms_display_connect_infos( const ofaIDbms *instance, GtkWidget *container, const gchar *label );
 
 /*
@@ -200,9 +200,9 @@ idbms_connect( const ofaIDbms *instance,
 								const gchar *dname, const gchar *dbname,
 								const gchar *account, const gchar *password )
 {
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 
-	infos = g_new0( sMySQLInfos, 1 );
+	infos = g_new0( mysqlInfos, 1 );
 	infos->dname = g_strdup( dname );
 	infos->dbname = g_strdup( dbname );
 	infos->account = g_strdup( account );
@@ -223,7 +223,7 @@ idbms_connect( const ofaIDbms *instance,
  * NB: the database name is an intrant
  */
 static void
-setup_infos( sMySQLInfos *infos )
+setup_infos( mysqlInfos *infos )
 {
 	infos->host = ofa_settings_dossier_get_string( infos->dname, SETTINGS_HOST );
 	infos->socket = ofa_settings_dossier_get_string( infos->dname, SETTINGS_SOCKET );
@@ -238,7 +238,7 @@ setup_infos( sMySQLInfos *infos )
  * it comes from the dossier
  */
 static gboolean
-connect_with_infos( sMySQLInfos *infos )
+connect_with_infos( mysqlInfos *infos )
 {
 	static const gchar *thisfn = "ofa_mysql_connect_with_infos";
 	MYSQL *mysql;
@@ -269,11 +269,11 @@ connect_with_infos( sMySQLInfos *infos )
 /**
  * ofa_mysql_free_connect_infos:
  *
- * Fully free the sMySQLInfos structure (but not including the structure
+ * Fully free the mysqlInfos structure (but not including the structure
  * iself).
  */
 void
-ofa_mysql_free_connect_infos( sMySQLInfos *infos )
+ofa_mysql_free_connect_infos( mysqlInfos *infos )
 {
 	g_free( infos->dname );
 	g_free( infos->dbname );
@@ -287,14 +287,14 @@ ofa_mysql_free_connect_infos( sMySQLInfos *infos )
  * close the opened instance
  *
  * This function is supposed to be the matching of idbms_connect()
- * which allocates a new sMySQLInfos structure. So we free it here.
+ * which allocates a new mysqlInfos structure. So we free it here.
  */
 static void
 idbms_close( const ofaIDbms *instance, void *handle )
 {
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 
-	infos = ( sMySQLInfos * ) handle;
+	infos = ( mysqlInfos * ) handle;
 
 	mysql_close( infos->mysql );
 	ofa_mysql_free_connect_infos( infos );
@@ -458,10 +458,10 @@ idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_query";
 	gboolean query_ok;
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 
 	query_ok = FALSE;
-	infos = ( sMySQLInfos * ) handle;
+	infos = ( mysqlInfos * ) handle;
 
 	if( infos && infos->mysql ){
 		query_ok = ( mysql_query( infos->mysql, query ) == 0 );
@@ -476,7 +476,7 @@ static gboolean
 idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result )
 {
 	gboolean ok;
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 	MYSQL_RES *res;
 	MYSQL_ROW row;
 	gint fields_count, i;
@@ -487,7 +487,7 @@ idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSLi
 	if( idbms_query( instance, handle, query )){
 
 		ok = TRUE;
-		infos = ( sMySQLInfos * ) handle;
+		infos = ( mysqlInfos * ) handle;
 		res = mysql_store_result( infos->mysql );
 		if( res ){
 			fields_count = mysql_num_fields( res );
@@ -512,10 +512,10 @@ idbms_last_error( const ofaIDbms *instance, void *handle )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_error";
 	gchar *msg;
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 
 	msg = NULL;
-	infos = ( sMySQLInfos * ) handle;
+	infos = ( mysqlInfos * ) handle;
 
 	if( infos && infos->mysql ){
 		msg = g_strdup( mysql_error( infos->mysql ));
@@ -773,7 +773,7 @@ new_on_root_password_changed( GtkEntry *entry, sPrivate *priv )
 static void
 new_check_for_dbserver_connection( sPrivate *priv )
 {
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 	const gchar *msg;
 	GdkRGBA color;
 
@@ -781,8 +781,8 @@ new_check_for_dbserver_connection( sPrivate *priv )
 
 		/* test a connexion without the database
 		 * this is a short copy, so do not free the strings */
-		infos = g_new0( sMySQLInfos, 1 );
-		memcpy( infos, &priv->sInfos, sizeof( sMySQLInfos ));
+		infos = g_new0( mysqlInfos, 1 );
+		memcpy( infos, &priv->sInfos, sizeof( mysqlInfos ));
 		infos->dbname = NULL;
 		priv->connect_ok = connect_with_infos( infos );
 		if( priv->connect_ok ){
@@ -905,7 +905,7 @@ idbms_new_apply( const ofaIDbms *instance, GtkContainer *parent,
 {
 	static const gchar *thisfn = "ofa_mysql_properties_new_apply";
 	sPrivate *priv;
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 	gboolean ok;
 
 	priv = ( sPrivate * ) g_object_get_data( G_OBJECT( parent ), IDBMS_DATA );
@@ -1015,7 +1015,7 @@ static gboolean
 new_create_db_as_root( sPrivate *priv )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_new_create_db_as_root";
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 	GString *stmt;
 	gboolean db_created;
 
@@ -1025,8 +1025,8 @@ new_create_db_as_root( sPrivate *priv )
 		return( TRUE );
 	}
 
-	infos = g_new0( sMySQLInfos, 1 );
-	memcpy( infos, &priv->sInfos, sizeof( sMySQLInfos ));
+	infos = g_new0( mysqlInfos, 1 );
+	memcpy( infos, &priv->sInfos, sizeof( mysqlInfos ));
 	infos->dbname = "mysql";
 
 	if( !connect_with_infos( infos )){
@@ -1070,15 +1070,15 @@ static gboolean
 new_create_user_as_root( sPrivate *priv )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_new_create_user_as_root";
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 	GString *stmt;
 	gboolean user_created;
 	gchar *hostname;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) priv );
 
-	infos = g_new0( sMySQLInfos, 1 );
-	memcpy( infos, &priv->sInfos, sizeof( sMySQLInfos ));
+	infos = g_new0( mysqlInfos, 1 );
+	memcpy( infos, &priv->sInfos, sizeof( mysqlInfos ));
 	infos->dbname = "mysql";
 
 	if( !connect_with_infos( infos )){
@@ -1143,7 +1143,7 @@ static gboolean
 new_init_db( sPrivate *priv )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_new_init_db";
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 	GString *stmt;
 	gboolean db_initialized;
 
@@ -1155,8 +1155,8 @@ new_init_db( sPrivate *priv )
 		return( TRUE );
 	}*/
 
-	infos = g_new0( sMySQLInfos, 1 );
-	memcpy( infos, &priv->sInfos, sizeof( sMySQLInfos ));
+	infos = g_new0( mysqlInfos, 1 );
+	memcpy( infos, &priv->sInfos, sizeof( mysqlInfos ));
 	infos->account = ( gchar * ) priv->account;
 	infos->password = ( gchar * ) priv->password;
 
@@ -1218,12 +1218,12 @@ free_stmt:
 
 #if 0
 static void
-drop_admin_account( mysqlConnect *connect, const gchar *account )
+drop_admin_account( mysqlConnect_oldv1_oldv1_oldv1 *connect, const gchar *account )
 {
 	MYSQL *mysql;
-	mysqlConnect *cnt;
+	mysqlConnect_oldv1_oldv1_oldv1 *cnt;
 
-	cnt = g_new0( mysqlConnect, 1 );
+	cnt = g_new0( mysqlConnect_oldv1_oldv1_oldv1, 1 );
 	cnt->host = connect->host;
 	cnt->port = connect->port;
 	cnt->socket = connect->socket;
@@ -1301,7 +1301,7 @@ confirm_database_reinit( sPrivate *priv, const gchar *dbname )
 }
 
 static void
-mysql_display_error( sMySQLInfos *infos )
+mysql_display_error( mysqlInfos *infos )
 {
 	GtkWidget *dialog;
 
@@ -1320,14 +1320,14 @@ mysql_display_error( sMySQLInfos *infos )
  * mysql_get_db_exists:
  */
 static gboolean
-mysql_get_db_exists( sMySQLInfos *infos )
+mysql_get_db_exists( mysqlInfos *infos )
 {
 	gboolean exists;
-	sMySQLInfos *temp;
+	mysqlInfos *temp;
 
 	exists = FALSE;
-	temp = g_new0( sMySQLInfos, 1 );
-	memcpy( temp, infos, sizeof( sMySQLInfos ));
+	temp = g_new0( mysqlInfos, 1 );
+	memcpy( temp, infos, sizeof( mysqlInfos ));
 	temp->dbname = NULL;
 
 	if( connect_with_infos( temp )){
@@ -1368,8 +1368,8 @@ local_get_db_exists( MYSQL *mysql, const gchar *dbname )
  *
  * Return: the connection structure itself.
  */
-sMySQLInfos *
-ofa_mysql_get_connect_infos( sMySQLInfos *infos, const gchar *label )
+mysqlInfos *
+ofa_mysql_get_connect_infos( mysqlInfos *infos, const gchar *label )
 {
 	infos->host = ofa_settings_dossier_get_string( label, SETTINGS_HOST );
 	infos->socket = ofa_settings_dossier_get_string( label, SETTINGS_SOCKET );
@@ -1408,14 +1408,14 @@ idbms_delete_dossier( const ofaIDbms *instance, const gchar *name, const gchar *
 {
 #if 0
 	static const gchar *thisfn = "ofa_mysql_idbms_delete_dossier";
-	sMySQLInfos *infos;
+	mysqlInfos *infos;
 
 	g_debug( "%s: instance=%p, label=%s, account=%s, drop_db=%s, drop_accounts=%s",
 			thisfn,
 			( void * ) instance, label, account,
 			drop_db ? "True":"False", drop_accounts ? "True":"False" );
 
-	infos = ( mysqlInfos * ) idbms_connect( instance, label, "mysql", TRUE, account, password );
+	infos = ( mysqlConnect_oldv2 * ) idbms_connect( instance, label, "mysql", TRUE, account, password );
 	if( !infos ){
 		return( FALSE );
 	}
@@ -1442,7 +1442,7 @@ idbms_delete_dossier( const ofaIDbms *instance, const gchar *name, const gchar *
 
 #if 0
 static void
-idbms_drop_database( const mysqlInfos *infos )
+idbms_drop_database( const mysqlConnect_oldv2 *infos )
 {
 	static const gchar *thisfn = "ofa_mysql_idbms_drop_database";
 	gchar *query;

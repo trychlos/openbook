@@ -44,9 +44,9 @@ const gchar *ofa_mysql_idbms_get_provider_name( const ofaIDbms *instance );
 
 /* MySQL private functions
  */
-sMySQLInfos *ofa_mysql_get_connect_infos      ( sMySQLInfos *infos, const gchar *dname );
+mysqlInfos *ofa_mysql_get_connect_infos      ( mysqlInfos *infos, const gchar *dname );
 
-void         ofa_mysql_free_connect_infos     ( sMySQLInfos *infos );
+void         ofa_mysql_free_connect_infos     ( mysqlInfos *infos );
 
 G_END_DECLS
 

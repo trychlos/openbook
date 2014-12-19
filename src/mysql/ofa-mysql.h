@@ -70,7 +70,7 @@ typedef struct {
 	ofaMysqlClass;
 
 /**
- * sMySQLInfos:
+ * mysqlInfos:
  * @dname: the name of the dossier
  * @host: [allow-none]:
  * @port: [allow-none]:
@@ -93,47 +93,6 @@ typedef struct {
 	gchar *account;
 	gchar *password;
 	MYSQL *mysql;
-}
-	sMySQLInfos;
-
-/**
- * mysqlConnect:
- * @host: [allow-none]:
- * @port: [allow-none]:
- * @socket: [allow-none]:
- * @dbname: [allow-none]:
- * @account: [allow-none]:
- * @password: [allow-none]:
- *
- * Connection information for MySQL.
- *
- * MySQL provides a default value for all these fields.
- */
-typedef struct {
-	gchar *host;
-	gint   port;
-	gchar *socket;
-	gchar *dbname;
-	gchar *account;
-	gchar *password;
-}
-	mysqlConnect;
-
-/**
- * mysqlInfos:
- * @label:
- * @mysql:
- * @connect:
- *
- * A structure which associates the ofoSgbd connection to its properties.
- *
- * The structure is dynamically allocated on a new connection, and its
- * handle is returned to the caller.
- */
-typedef struct {
-	gchar        *label;
-	MYSQL        *mysql;
-	mysqlConnect  connect;
 }
 	mysqlInfos;
 
