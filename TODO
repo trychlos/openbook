@@ -375,8 +375,6 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
 
- 540 2014-12-20 add the piece to operation template detail
-
  541
 
 -----------------------------------------------------------------------
@@ -2311,6 +2309,9 @@
  539 2014-12-19 import entries: have total per currency
                 + imported PAST entries do not need to be balanced
      2014-12-20 done - svn #4350
+
+ 540 2014-12-20 add the piece to operation template detail
+     2014-12-20 done - svn #4355
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

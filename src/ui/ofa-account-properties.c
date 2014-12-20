@@ -56,6 +56,7 @@ struct _ofaAccountPropertiesPrivate {
 	gboolean         updated;
 	gboolean         number_ok;
 	gboolean         has_entries;
+	gboolean         balances_displayed;
 
 	/* UI
 	 */
@@ -91,6 +92,7 @@ static const gchar  *st_ui_id  = "AccountPropertiesDlg";
 G_DEFINE_TYPE( ofaAccountProperties, ofa_account_properties, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
+static void      remove_balances_page( ofaAccountProperties *self, GtkContainer *container );
 static void      init_balances_page( ofaAccountProperties *self );
 static void      set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
@@ -155,6 +157,7 @@ ofa_account_properties_init( ofaAccountProperties *self )
 	self->priv->account = NULL;
 	self->priv->is_new = FALSE;
 	self->priv->updated = FALSE;
+	self->priv->balances_displayed = TRUE;
 }
 
 static void
@@ -268,7 +271,9 @@ v_init_dialog( myDialog *dialog )
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
 	ofa_currency_combo_set_main_window( combo, MY_WINDOW( dialog )->prot->main_window );
 	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_currency_changed ), dialog );
-	ofa_currency_combo_set_selected( combo, priv->currency );
+	if( priv->currency && g_utf8_strlen( priv->currency, -1 )){
+		ofa_currency_combo_set_selected( combo, priv->currency );
+	}
 
 	priv->type_frame = my_utils_container_get_child_by_name( container, "p1-type-frame" );
 	priv->p1_exe_frame = my_utils_container_get_child_by_name( container, "p1-exe-frame" );
@@ -314,7 +319,11 @@ v_init_dialog( myDialog *dialog )
 	priv->currency_etiq = my_utils_container_get_child_by_name( container, "p1-label3" );
 	priv->currency_combo = my_utils_container_get_child_by_name( container, "p1-currency-parent" );
 
-	init_balances_page( self );
+	if( ofo_account_is_root( priv->account )){
+		remove_balances_page( self, container );
+	} else {
+		init_balances_page( self );
+	}
 
 	my_utils_init_notes_ex( container, account );
 	my_utils_init_upd_user_stamp_ex( container, account );
@@ -322,6 +331,25 @@ v_init_dialog( myDialog *dialog )
 	priv->btn_ok = my_utils_container_get_child_by_name( container, "btn-ok" );
 
 	check_for_enable_dlg( OFA_ACCOUNT_PROPERTIES( dialog ));
+}
+
+/*
+ * no need to display a balance page for root accounts
+ */
+static void
+remove_balances_page( ofaAccountProperties *self, GtkContainer *container )
+{
+	GtkWidget *book, *page_w;
+	gint page_n;
+
+	book = my_utils_container_get_child_by_name( container, "properties-book" );
+	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
+
+	page_w = my_utils_container_get_child_by_name( container, "balance-grid" );
+	page_n = gtk_notebook_page_num( GTK_NOTEBOOK( book ), page_w );
+	gtk_notebook_remove_page( GTK_NOTEBOOK( book ), page_n );
+
+	self->priv->balances_displayed = FALSE;
 }
 
 static void
@@ -431,7 +459,10 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 		priv->cur_symbol = ofo_currency_get_symbol( cur_obj );
 	}
 
-	init_balances_page( self );
+	if( priv->balances_displayed ){
+		init_balances_page( self );
+	}
+
 	check_for_enable_dlg( self );
 }
 
