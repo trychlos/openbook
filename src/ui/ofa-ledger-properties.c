@@ -240,6 +240,12 @@ v_init_dialog( myDialog *dialog )
 	check_for_enable_dlg( OFA_LEDGER_PROPERTIES( dialog ));
 }
 
+/*
+ * the "Debit" and "Credit" titles are already displayed on row 0
+ * for each currency, we add
+ * - a title line "balance for xxx currency"
+ * - three lines for validated, rough and future balances
+ */
 static void
 init_balances_page( ofaLedgerProperties *self )
 {
@@ -251,6 +257,7 @@ init_balances_page( ofaLedgerProperties *self )
 	ofoCurrency *currency;
 	gint i, count, digits;
 	gchar *str;
+	GdkRGBA color;
 
 	priv = self->priv;
 
@@ -259,9 +266,12 @@ init_balances_page( ofaLedgerProperties *self )
 	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( container ), "p2-grid" );
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));
 
+	gdk_rgba_parse( &color, "#0000ff" );
+
 	currencies = ofo_ledger_get_currencies( priv->ledger );
 	count = g_list_length( currencies );
-	gtk_grid_insert_row( GTK_GRID( grid ), 3*count );
+	/* 4 lines by currency */
+	gtk_grid_insert_row( GTK_GRID( grid ), 4*count );
 
 	for( i=0, it=currencies ; it ; ++i, it=it->next ){
 		code = ( const gchar * ) it->data;
@@ -270,104 +280,90 @@ init_balances_page( ofaLedgerProperties *self )
 		digits = ofo_currency_get_digits( currency );
 		symbol = ofo_currency_get_symbol( currency );
 
-		if( !i ){
-			label = gtk_label_new( _( "Validated balance :" ));
-			gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-			gtk_grid_attach( GTK_GRID( grid ), label, 0, i+1, 1, 1 );
-		}
+		str = g_strdup_printf( _( "%s balance" ), code );
+		label = gtk_label_new( str );
+		g_free( str );
+		gtk_widget_override_color( GTK_WIDGET( label ), GTK_STATE_FLAG_NORMAL, &color );
+		gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+1, 1, 1 );
+
+		label = gtk_label_new( _( "      Validated balance :" ));
+		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+2, 1, 1 );
 
 		label = gtk_label_new( "" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 1, i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 1, 4*i+2, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_val_debit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = gtk_label_new( "" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 2, i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 2, 4*i+2, 1, 1 );
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
 		label = gtk_label_new( "" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 3, i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 3, 4*i+2, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_val_credit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = gtk_label_new( "" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 4, i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 4, 4*i+2, 1, 1 );
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
-		label = gtk_label_new( "" );
+		label = gtk_label_new( _( "Rough balance :" ));
 		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 5, i+1, 1, 1 );
-		gtk_label_set_text( GTK_LABEL( label ), code );
-
-		if( !i ){
-			label = gtk_label_new( _( "Rough balance :" ));
-			gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-			gtk_grid_attach( GTK_GRID( grid ), label, 0, count+1, 1, 1 );
-		}
+		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+3, 1, 1 );
 
 		label = gtk_label_new( "" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 1, count+i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 1, 4*i+3, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_rough_debit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = gtk_label_new( "" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 2, count+i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 2, 4*i+3, 1, 1 );
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
 		label = gtk_label_new( "" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 3, count+i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 3, 4*i+3, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_rough_credit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = gtk_label_new( "" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 4, count+i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 4, 4*i+3, 1, 1 );
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
-		label = gtk_label_new( "" );
+		label = gtk_label_new( _( "Future balance :" ));
 		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 5, count+i+1, 1, 1 );
-		gtk_label_set_text( GTK_LABEL( label ), code );
-
-		if( !i ){
-			label = gtk_label_new( _( "Future balance :" ));
-			gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-			gtk_grid_attach( GTK_GRID( grid ), label, 0, 2*count+1, 1, 1 );
-		}
+		gtk_grid_attach( GTK_GRID( grid ), label, 0, 4*i+4, 1, 1 );
 
 		label = gtk_label_new( "" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 1, 2*count+i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 1, 4*i+4, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_futur_debit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = gtk_label_new( "" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 2, 2*count+i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 2, 4*i+4, 1, 1 );
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
 
 		label = gtk_label_new( "" );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 3, 2*count+i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 3, 4*i+4, 1, 1 );
 		str = my_double_to_str_ex( ofo_ledger_get_futur_credit( priv->ledger, code ), digits );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = gtk_label_new( "" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 4, 2*count+i+1, 1, 1 );
+		gtk_grid_attach( GTK_GRID( grid ), label, 4, 4*i+4, 1, 1 );
 		gtk_label_set_text( GTK_LABEL( label ), symbol );
-
-		label = gtk_label_new( "" );
-		gtk_misc_set_alignment( GTK_MISC( label ), 1.0, 0.5 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 5, 2*count+i+1, 1, 1 );
-		gtk_label_set_text( GTK_LABEL( label ), code );
 	}
 }
 
