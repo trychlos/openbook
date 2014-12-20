@@ -68,6 +68,8 @@ struct _ofoOpeTemplatePrivate {
 
 typedef struct {
 	gchar     *comment;
+	gchar     *ref;
+	gboolean   ref_locked;
 	gchar     *account;					/* account */
 	gboolean   account_locked;			/* account is locked */
 	gchar     *label;
@@ -119,6 +121,7 @@ static void
 details_list_free_detail( sModDetail *detail )
 {
 	g_free( detail->comment );
+	g_free( detail->ref );
 	g_free( detail->account );
 	g_free( detail->label );
 	g_free( detail->debit );
@@ -445,6 +448,7 @@ ope_template_load_dataset( ofoDossier *dossier )
 
 		query = g_strdup_printf(
 				"SELECT OTE_DET_COMMENT,"
+				"	OTE_DET_REF,OTE_DET_REF_LOCKED,"
 				"	OTE_DET_ACCOUNT,OTE_DET_ACCOUNT_LOCKED,"
 				"	OTE_DET_LABEL,OTE_DET_LABEL_LOCKED,"
 				"	OTE_DET_DEBIT,OTE_DET_DEBIT_LOCKED,"
@@ -460,6 +464,12 @@ ope_template_load_dataset( ofoDossier *dossier )
 				icol = ( GSList * ) irow->data;
 				detail = g_new0( sModDetail, 1 );
 				detail->comment = g_strdup(( gchar * ) icol->data );
+				icol = icol->next;
+				detail->ref = g_strdup(( gchar * ) icol->data );
+				icol = icol->next;
+				if( icol->data ){
+					detail->ref_locked = atoi(( gchar * ) icol->data );
+				}
 				icol = icol->next;
 				detail->account = g_strdup(( gchar * ) icol->data );
 				icol = icol->next;
@@ -641,6 +651,8 @@ ofo_ope_template_new_from_template( const ofoOpeTemplate *model )
 		for( i=0 ; i<count ; ++i ){
 			ofo_ope_template_add_detail( dest,
 					ofo_ope_template_get_detail_comment( model, i ),
+					ofo_ope_template_get_detail_ref( model, i ),
+					ofo_ope_template_get_detail_ref_locked( model, i ),
 					ofo_ope_template_get_detail_account( model, i ),
 					ofo_ope_template_get_detail_account_locked( model, i ),
 					ofo_ope_template_get_detail_label( model, i ),
@@ -952,6 +964,7 @@ ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp )
 
 void
 ofo_ope_template_add_detail( ofoOpeTemplate *model, const gchar *comment,
+							const gchar *ref, gboolean ref_locked,
 							const gchar *account, gboolean account_locked,
 							const gchar *label, gboolean label_locked,
 							const gchar *debit, gboolean debit_locked,
@@ -967,6 +980,8 @@ ofo_ope_template_add_detail( ofoOpeTemplate *model, const gchar *comment,
 		model->priv->details = g_list_append( model->priv->details, detail );
 
 		detail->comment = g_strdup( comment );
+		detail->ref = g_strdup( ref );
+		detail->ref_locked = ref_locked;
 		detail->account = g_strdup( account );
 		detail->account_locked = account_locked;
 		detail->label = g_strdup( label );
@@ -1028,6 +1043,50 @@ ofo_ope_template_get_detail_comment( const ofoOpeTemplate *model, gint idx )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_ope_template_get_detail_ref:
+ * @idx is the index in the details list, starting with zero
+ */
+const gchar *
+ofo_ope_template_get_detail_ref( const ofoOpeTemplate *model, gint idx )
+{
+	GList *idet;
+	sModDetail *sdet;
+
+	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), NULL );
+
+	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		idet = g_list_nth( model->priv->details, idx );
+		sdet = ( sModDetail * ) idet->data;
+		return(( const gchar * ) sdet->ref );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_ope_template_get_detail_ref_locked:
+ * @idx is the index in the details list, starting with zero
+ */
+gboolean
+ofo_ope_template_get_detail_ref_locked( const ofoOpeTemplate *model, gint idx )
+{
+	GList *idet;
+	sModDetail *sdet;
+
+	g_return_val_if_fail( idx >= 0 && OFO_IS_OPE_TEMPLATE( model ), FALSE );
+
+	if( !OFO_BASE( model )->prot->dispose_has_run ){
+
+		idet = g_list_nth( model->priv->details, idx );
+		sdet = ( sModDetail * ) idet->data;
+		return( sdet->ref_locked );
+	}
+
+	return( FALSE );
 }
 
 /**
@@ -1352,6 +1411,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, sMo
 
 	g_string_append_printf( query,
 			"	(OTE_MNEMO,OTE_DET_ROW,OTE_DET_COMMENT,"
+			"	OTE_DET_REF,OTE_DET_REF_LOCKED,"
 			"	OTE_DET_ACCOUNT,OTE_DET_ACCOUNT_LOCKED,"
 			"	OTE_DET_LABEL,OTE_DET_LABEL_LOCKED,"
 			"	OTE_DET_DEBIT,OTE_DET_DEBIT_LOCKED,"
@@ -1364,6 +1424,14 @@ model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, sMo
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+
+	if( detail->ref && g_utf8_strlen( detail->ref, -1 )){
+		g_string_append_printf( query, "'%s',", detail->ref );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	g_string_append_printf( query, "%d,", detail->ref_locked ? 1:0 );
 
 	if( detail->account && g_utf8_strlen( detail->account, -1 )){
 		g_string_append_printf( query, "'%s',", detail->account );
@@ -1624,7 +1692,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 			return( FALSE );
 		}
 
-		str = g_strdup_printf( "2;Mnemo;Comment;Account;AccountLocked;Label;LabelLocked;Debit;DebitLocked;Credit;CreditLocked" );
+		str = g_strdup_printf( "2;Mnemo;Comment;Ref;RefLocked;Account;AccountLocked;Label;LabelLocked;Debit;DebitLocked;Credit;CreditLocked" );
 		lines = g_slist_prepend( NULL, str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1662,9 +1730,11 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		for( det=model->priv->details ; det ; det=det->next ){
 			sdet = ( sModDetail * ) det->data;
 
-			str = g_strdup_printf( "2;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s",
+			str = g_strdup_printf( "2;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s",
 					ofo_ope_template_get_mnemo( model ),
 					sdet->comment ? sdet->comment : "",
+					sdet->ref ? sdet->ref : "",
+					sdet->ref_locked ? "True" : "False",
 					sdet->account ? sdet->account : "",
 					sdet->account_locked ? "True" : "False",
 					sdet->label ? sdet->label : "",
@@ -1714,13 +1784,23 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * - 1:
  * - model mnemo
  * - label
+ * - ledger
+ * - ledger locked
  * - notes (opt)
  *
  * - 2:
  * - model mnemo
- * - begin validity (opt)
- * - end validity (opt)
- * - rate
+ * - comment
+ * - ref
+ * - ref locked
+ * - account
+ * - account locked
+ * - label
+ * - label locked
+ * - debit
+ * - debit locked
+ * - credit
+ * - credit locked
  *
  * It is not required that the input csv files be sorted by mnemo. We
  * may have all 'model' records, then all 'validity' records...
@@ -1898,6 +1978,26 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, guint line,
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	detail->comment = g_strdup( cstr );
+
+	/* detail ref */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->ref = g_strdup( cstr );
+
+	/* detail ref locked */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->ref_locked = my_utils_boolean_from_str( cstr );
+
+	/* detail account */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->account = g_strdup( cstr );
+
+	/* detail account locked */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	detail->account_locked = my_utils_boolean_from_str( cstr );
 
 	/* detail label */
 	itf = itf ? itf->next : NULL;

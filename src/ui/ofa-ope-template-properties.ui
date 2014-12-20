@@ -281,7 +281,7 @@
                                             <property name="width_chars">10</property>
                                           </object>
                                           <packing>
-                                            <property name="left_attach">2</property>
+                                            <property name="left_attach">4</property>
                                             <property name="top_attach">0</property>
                                             <property name="width">1</property>
                                             <property name="height">1</property>
@@ -298,7 +298,7 @@
                                             <property name="width_chars">20</property>
                                           </object>
                                           <packing>
-                                            <property name="left_attach">5</property>
+                                            <property name="left_attach">7</property>
                                             <property name="top_attach">0</property>
                                             <property name="width">1</property>
                                             <property name="height">1</property>
@@ -315,7 +315,7 @@
                                             <property name="width_chars">10</property>
                                           </object>
                                           <packing>
-                                            <property name="left_attach">7</property>
+                                            <property name="left_attach">9</property>
                                             <property name="top_attach">0</property>
                                             <property name="width">1</property>
                                             <property name="height">1</property>
@@ -332,7 +332,7 @@
                                             <property name="width_chars">10</property>
                                           </object>
                                           <packing>
-                                            <property name="left_attach">9</property>
+                                            <property name="left_attach">11</property>
                                             <property name="top_attach">0</property>
                                             <property name="width">1</property>
                                             <property name="height">1</property>
@@ -345,7 +345,7 @@
                                             <property name="label" translatable="yes">Lock.</property>
                                           </object>
                                           <packing>
-                                            <property name="left_attach">4</property>
+                                            <property name="left_attach">6</property>
                                             <property name="top_attach">0</property>
                                             <property name="width">1</property>
                                             <property name="height">1</property>
@@ -358,7 +358,7 @@
                                             <property name="label" translatable="yes">Lock.</property>
                                           </object>
                                           <packing>
-                                            <property name="left_attach">6</property>
+                                            <property name="left_attach">8</property>
                                             <property name="top_attach">0</property>
                                             <property name="width">1</property>
                                             <property name="height">1</property>
@@ -371,7 +371,7 @@
                                             <property name="label" translatable="yes">Lock.</property>
                                           </object>
                                           <packing>
-                                            <property name="left_attach">10</property>
+                                            <property name="left_attach">12</property>
                                             <property name="top_attach">0</property>
                                             <property name="width">1</property>
                                             <property name="height">1</property>
@@ -384,7 +384,37 @@
                                             <property name="label" translatable="yes">Lock.</property>
                                           </object>
                                           <packing>
-                                            <property name="left_attach">8</property>
+                                            <property name="left_attach">10</property>
+                                            <property name="top_attach">0</property>
+                                            <property name="width">1</property>
+                                            <property name="height">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="label18">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="label" translatable="yes">Lock.</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left_attach">3</property>
+                                            <property name="top_attach">0</property>
+                                            <property name="width">1</property>
+                                            <property name="height">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="label19">
+                                            <property name="visible">True</property>
+                                            <property name="can_focus">False</property>
+                                            <property name="margin_left">8</property>
+                                            <property name="xalign">0</property>
+                                            <property name="label" translatable="yes">Ref.</property>
+                                            <property name="use_markup">True</property>
+                                            <property name="width_chars">10</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left_attach">2</property>
                                             <property name="top_attach">0</property>
                                             <property name="width">1</property>
                                             <property name="height">1</property>

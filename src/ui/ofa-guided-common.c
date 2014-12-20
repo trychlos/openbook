@@ -1292,7 +1292,7 @@ update_all_formulas( ofaGuidedCommon *self )
 
 /*
  * a formula is something like '=[operator]<token><operator><token>...'
- * i.e. an equal sign '=', followed by a list of pairs '<operator><token>'
+ * i.e. an equal sign '=', followed by a list of '<operator><token>' pairs
  * apart maybe the first operator which defaults to '+'
  *
  * operators are '-', '+', '*' and '/'

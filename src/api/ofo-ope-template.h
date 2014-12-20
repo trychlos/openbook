@@ -73,6 +73,7 @@ void            ofo_ope_template_set_notes         ( ofoOpeTemplate *model, cons
 
 void            ofo_ope_template_add_detail        ( ofoOpeTemplate *model,
 															const gchar *comment,
+															const gchar *ref, gboolean ref_locked,
 															const gchar *account, gboolean account_locked,
 															const gchar *label, gboolean label_locked,
 															const gchar *debit, gboolean debit_locked,
@@ -81,6 +82,8 @@ void            ofo_ope_template_free_detail_all   ( ofoOpeTemplate *model );
 
 gint            ofo_ope_template_get_detail_count         ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_detail_comment       ( const ofoOpeTemplate *model, gint idx );
+const gchar    *ofo_ope_template_get_detail_ref           ( const ofoOpeTemplate *model, gint idx );
+gboolean        ofo_ope_template_get_detail_ref_locked    ( const ofoOpeTemplate *model, gint idx );
 const gchar    *ofo_ope_template_get_detail_account       ( const ofoOpeTemplate *model, gint idx );
 gboolean        ofo_ope_template_get_detail_account_locked( const ofoOpeTemplate *model, gint idx );
 const gchar    *ofo_ope_template_get_detail_label         ( const ofoOpeTemplate *model, gint idx );

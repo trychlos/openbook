@@ -1033,6 +1033,8 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	OTE_MNEMO              VARCHAR(6) NOT NULL     COMMENT 'Operation template menmonic',"
 			"	OTE_DET_ROW            INTEGER    NOT NULL     COMMENT 'Detail line number',"
 			"	OTE_DET_COMMENT        VARCHAR(80)             COMMENT 'Detail line comment',"
+			"	OTE_DET_REF            VARCHAR(20)             COMMENT 'Line reference',"
+			"	OTE_DET_REF_LOCKED     INTEGER                 COMMENT 'Line reference is locked',"
 			"	OTE_DET_ACCOUNT        VARCHAR(20)             COMMENT 'Account number',"
 			"	OTE_DET_ACCOUNT_LOCKED INTEGER                 COMMENT 'Account number is locked',"
 			"	OTE_DET_LABEL          VARCHAR(80)             COMMENT 'Entry label',"
