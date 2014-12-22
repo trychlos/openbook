@@ -370,8 +370,6 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
 
- 541 2014-12-22 ofoBat: remove count
-
  543
 
 -----------------------------------------------------------------------
@@ -2316,6 +2314,9 @@
 
  540 2014-12-20 add the piece to operation template detail
      2014-12-20 done - svn #4355
+
+ 541 2014-12-22 ofoBat: remove count
+     2014-12-22 done - svn #4366
 
  542 2014-12-22 merge ofoBat and ofoBatLine (as other children tables)
      2014-12-22 NO because the dataset would be potentially as big as 
