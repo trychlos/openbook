@@ -56,14 +56,15 @@ struct _ofaFileFormatPiecePrivate {
 	/* UI
 	 */
 	GtkWidget      *format_combo;		/* file format */
+	GtkWidget      *settings_frame;
 	GtkWidget      *encoding_combo;
 	myDateCombo    *date_combo;
 	myDecimalCombo *decimal_combo;
 	myFieldCombo   *field_combo;
 	GtkWidget      *field_parent;
 	GtkWidget      *field_label;
+	GtkWidget      *dispo_frame;
 	GtkWidget      *headers_btn;
-	GtkWidget      *folder_btn;
 
 	/* runtime data
 	 */
@@ -283,6 +284,9 @@ setup_piece( ofaFileFormatPiece *piece )
 
 	if( !priv->dispose_has_run ){
 
+		priv->settings_frame = my_utils_container_get_child_by_name( priv->container, "settings-frame" );
+		priv->dispo_frame = my_utils_container_get_child_by_name( priv->container, "dispo-frame" );
+
 		init_encoding( piece );
 		init_date_format( piece );
 		init_decimal_dot( piece );
@@ -370,8 +374,10 @@ on_ffmt_changed( GtkComboBox *box, ofaFileFormatPiece *self )
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 	gtk_tree_model_get( tmodel, &iter, EXP_COL_FORMAT, &priv->format, -1 );
 
+	gtk_widget_set_sensitive( priv->settings_frame, priv->format != OFA_FFMT_OTHER );
 	gtk_widget_set_sensitive( priv->field_label, priv->format == OFA_FFMT_CSV );
 	gtk_widget_set_sensitive( priv->field_parent, priv->format == OFA_FFMT_CSV );
+	gtk_widget_set_sensitive( priv->dispo_frame, priv->format != OFA_FFMT_OTHER );
 
 	g_signal_emit_by_name( self, "changed" );
 }

@@ -652,6 +652,7 @@ p4_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 	gchar *str;
 	gboolean complete;
 	myDateFormat format;
+	ofaFFmt ffmt;
 
 	g_debug( "%s: self=%p, assistant=%p, page=%p (%s)",
 			thisfn,
@@ -674,30 +675,39 @@ p4_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-charmap" );
+	ffmt = ofa_file_format_get_ffmt( priv->p3_import_settings );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-ffmt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_charmap( priv->p3_import_settings ));
+	gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_ffmt_str( ffmt ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-date" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	format = ofa_file_format_get_date_format( priv->p3_import_settings );
-	gtk_label_set_text( GTK_LABEL( label ), my_date_get_format_str( format ));
+	if( ffmt != OFA_FFMT_OTHER ){
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-decimal" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	str = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->p3_import_settings ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-charmap" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_charmap( priv->p3_import_settings ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-field" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
-	str = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->p3_import_settings ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-date" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		format = ofa_file_format_get_date_format( priv->p3_import_settings );
+		gtk_label_set_text( GTK_LABEL( label ), my_date_get_format_str( format ));
+
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-decimal" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		str = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->p3_import_settings ));
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
+
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-field" );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
+		str = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->p3_import_settings ));
+		gtk_label_set_text( GTK_LABEL( label ), str );
+		g_free( str );
+	}
 
 	gtk_widget_show_all( page );
 

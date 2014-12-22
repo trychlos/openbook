@@ -11,7 +11,7 @@
         <property name="row_spacing">3</property>
         <property name="column_spacing">4</property>
         <child>
-          <object class="GtkFrame" id="frame1">
+          <object class="GtkFrame" id="settings-frame">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="hexpand">True</property>
@@ -170,7 +170,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkFrame" id="frame2">
+          <object class="GtkFrame" id="dispo-frame">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="hexpand">True</property>
