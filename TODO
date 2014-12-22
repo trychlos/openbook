@@ -364,9 +364,6 @@
 
  523 2014-12-12 review BAT import
 
- 524 2014-12-13 LedgerProperties: review the display of the balances per
-                currency
-
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s / 0.02316 s (127 rows)
                 import ledgers:  0.02982 s (9 rows)
@@ -375,7 +372,11 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
 
- 541
+ 541 2014-12-22 ofoBat: remove count
+
+ 542 2014-12-22 merge ofoBat and ofoBatLine (as other children tables)
+
+ 543
 
 -----------------------------------------------------------------------
  DONE
@@ -2254,6 +2255,10 @@
 
  518 2014-12-10 DossierCur: try to make transient vs the main window
      2014-12-18 obsoleted as merged in ofaExeForwardPiece
+
+ 524 2014-12-13 LedgerProperties: review the display of the balances per
+                currency
+     2014-12-20 done - svn #4357
 
  526 2014-12-13 ExeForward: there is no sense to check ledger attached
                 to the operation template

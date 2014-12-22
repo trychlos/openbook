@@ -33,6 +33,7 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-file-format.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
@@ -45,7 +46,6 @@
 #include "api/ofo-rate.h"
 
 #include "core/my-window-prot.h"
-#include "core/ofa-file-format.h"
 
 #include "ui/ofa-export-assistant.h"
 #include "ui/ofa-file-format-piece.h"

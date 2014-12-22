@@ -36,7 +36,8 @@
  * settings. It is to be used as a piece of user preferences.
  */
 
-#include "core/ofa-file-format.h"
+#include "api/ofa-file-format.h"
+
 #include "core/ofa-main-window-def.h"
 
 G_BEGIN_DECLS

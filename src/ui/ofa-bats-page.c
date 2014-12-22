@@ -30,6 +30,8 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-date.h"
+#include "api/my-double.h"
 #include "api/ofo-bat.h"
 
 #include "ui/ofa-bat-properties.h"
@@ -48,12 +50,19 @@ struct _ofaBatsPagePrivate {
 	GtkTreeView *tview;					/* the main treeview of the page */
 	GtkWidget   *update_btn;
 	GtkWidget   *delete_btn;
+	GtkWidget   *import_btn;
 };
 
 /* column ordering in the selection listview
  */
 enum {
-	COL_URI = 0,
+	COL_BEGIN = 0,
+	COL_END,
+	COL_COUNT,
+	COL_FORMAT,
+	COL_RIB,
+	COL_SOLDE,
+	COL_CURRENCY,
 	COL_OBJECT,
 	N_COLUMNS
 };
@@ -72,6 +81,7 @@ static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTre
 static void       on_row_selected( GtkTreeSelection *selection, ofaBatsPage *self );
 static void       on_update_clicked( GtkButton *button, ofaBatsPage *page );
 static void       on_delete_clicked( GtkButton *button, ofaBatsPage *page );
+static void       on_import_clicked( GtkButton *button, ofaBatsPage *page );
 static void       try_to_delete_current_row( ofaBatsPage *page );
 static gboolean   delete_confirmed( ofaBatsPage *self, ofoBat *bat );
 static void       do_delete( ofaBatsPage *page, ofoBat *bat, GtkTreeModel *tmodel, GtkTreeIter *iter );
@@ -174,16 +184,50 @@ v_setup_view( ofaPage *page )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_OBJECT ));
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* begin, end, format */
+			G_TYPE_STRING, 									/* count */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* rib, solde, currency */
+			G_TYPE_OBJECT ));								/* the ofoBat object itself */
 	gtk_tree_view_set_model( tview, tmodel );
 	g_object_unref( tmodel );
 
 	text_cell = gtk_cell_renderer_text_new();
-	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_START, NULL );
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "URI" ),
-			text_cell, "text", COL_URI,
-			NULL );
+			_( "Begin" ), text_cell, "text", COL_BEGIN, NULL );
+	gtk_tree_view_append_column( tview, column );
+
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "End" ), text_cell, "text", COL_END, NULL );
+	gtk_tree_view_append_column( tview, column );
+
+	text_cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Count" ), text_cell, "text", COL_COUNT, NULL );
+	gtk_tree_view_column_set_alignment( column, 1.0 );
+	gtk_tree_view_append_column( tview, column );
+
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Format" ), text_cell, "text", COL_FORMAT, NULL );
+	gtk_tree_view_append_column( tview, column );
+
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "RIB" ), text_cell, "text", COL_RIB, NULL );
+	gtk_tree_view_append_column( tview, column );
+
+	text_cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Solde" ), text_cell, "text", COL_SOLDE, NULL );
+	gtk_tree_view_column_set_alignment( column, 1.0 );
+	gtk_tree_view_append_column( tview, column );
+
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Cur." ), text_cell, "text", COL_CURRENCY, NULL );
 	gtk_tree_view_append_column( tview, column );
 
 	select = gtk_tree_view_get_selection( tview );
@@ -239,6 +283,10 @@ v_setup_buttons( ofaPage *page )
 	priv->delete_btn = ofa_buttons_box_add_button(
 			buttons_box, BUTTON_DELETE, FALSE, G_CALLBACK( on_delete_clicked ), page );
 
+	ofa_buttons_box_add_spacer( buttons_box );
+	priv->import_btn = ofa_buttons_box_add_button(
+			buttons_box, BUTTON_IMPORT, TRUE, G_CALLBACK( on_import_clicked ), page );
+
 	return( ofa_buttons_box_get_top_widget( buttons_box ));
 }
 
@@ -270,16 +318,34 @@ insert_new_row( ofaBatsPage *self, ofoBat *bat, gboolean with_selection )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreePath *path;
+	gchar *sbegin, *send, *scount, *samount;
 
 	priv = self->priv;
 	tmodel = gtk_tree_view_get_model( priv->tview );
+
+	sbegin = my_date_to_str( ofo_bat_get_begin( bat ), MY_DATE_DMYY );
+	send = my_date_to_str( ofo_bat_get_end( bat ), MY_DATE_DMYY );
+	scount = g_strdup_printf( "%u", ofo_bat_get_count( bat ));
+	samount = my_double_to_str( ofo_bat_get_solde( bat ));
+
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( tmodel ),
 			&iter,
 			-1,
-			COL_URI,    ofo_bat_get_uri( bat ),
-			COL_OBJECT, bat,
+			COL_BEGIN,    sbegin,
+			COL_END,      send,
+			COL_COUNT,    scount,
+			COL_FORMAT,   ofo_bat_get_format( bat ),
+			COL_RIB,      ofo_bat_get_rib( bat ),
+			COL_SOLDE,    samount,
+			COL_CURRENCY, ofo_bat_get_currency( bat ),
+			COL_OBJECT,   bat,
 			-1 );
+
+	g_free( samount );
+	g_free( scount );
+	g_free( send );
+	g_free( sbegin );
 
 	/* select the newly added bat */
 	if( with_selection ){
@@ -462,4 +528,9 @@ delete_confirmed( ofaBatsPage *self, ofoBat *bat )
 	g_free( msg );
 
 	return( delete_ok );
+}
+
+static void
+on_import_clicked( GtkButton *button, ofaBatsPage *page )
+{
 }

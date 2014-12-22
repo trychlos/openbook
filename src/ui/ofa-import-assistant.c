@@ -33,6 +33,7 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-file-format.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-settings.h"
@@ -48,7 +49,6 @@
 
 #include "core/my-window-prot.h"
 #include "core/ofa-plugin.h"
-#include "core/ofa-file-format.h"
 
 #include "ui/my-progress-bar.h"
 #include "ui/ofa-file-format-piece.h"
@@ -75,12 +75,6 @@ enum {
 	ASSIST_PAGE_SETTINGS,
 	ASSIST_PAGE_CONFIRM,
 	ASSIST_PAGE_DONE
-};
-
-/* type of imported datas
- */
-enum {
-	TYPE_BANK_ACCOUNT = 1
 };
 
 /* private instance data
@@ -112,6 +106,7 @@ struct _ofaImportAssistantPrivate {
 	GtkWidget          *p5_page;
 	GtkWidget          *p5_text;
 	ofaIImportable     *p5_object;
+	ofaIImportable     *p5_plugin;
 };
 
 /* management of the radio buttons group
@@ -119,22 +114,33 @@ struct _ofaImportAssistantPrivate {
  */
 typedef GType ( *fn_type )( void );
 typedef struct {
-	gint         type_id;
-	const gchar *w_name;
+	guint        type_id;
+	const gchar *w_name;				/* the name of the radio button widget */
 	fn_type      get_type;
-	gint         headers;				/* count of header lines */
+	gint         headers;				/* count of header lines in CSV formats */
 }
 	sRadios;
 
+enum {
+	IMPORT_BAT = 1,
+	IMPORT_CLASS,
+	IMPORT_ACCOUNT,
+	IMPORT_CURRENCY,
+	IMPORT_LEDGER,
+	IMPORT_MODEL,
+	IMPORT_RATE,
+	IMPORT_ENTRY,
+};
+
 static const sRadios st_radios[] = {
-		{ IMPORTER_TYPE_BAT,      "p2-releve",   ofo_bat_get_type,          0 },
-		{ IMPORTER_TYPE_CLASS,    "p2-class",    ofo_class_get_type,        1 },
-		{ IMPORTER_TYPE_ACCOUNT,  "p2-account",  ofo_account_get_type,      1 },
-		{ IMPORTER_TYPE_CURRENCY, "p2-currency", ofo_currency_get_type,     1 },
-		{ IMPORTER_TYPE_LEDGER,   "p2-journals", ofo_ledger_get_type,       1 },
-		{ IMPORTER_TYPE_MODEL,    "p2-model",    ofo_ope_template_get_type, 2 },
-		{ IMPORTER_TYPE_RATE,     "p2-rate",     ofo_rate_get_type,         2 },
-		{ IMPORTER_TYPE_ENTRY,    "p2-entries",  ofo_entry_get_type,        1 },
+		{ IMPORT_BAT,      "p2-releve",   NULL,                      0 },
+		{ IMPORT_CLASS,    "p2-class",    ofo_class_get_type,        1 },
+		{ IMPORT_ACCOUNT,  "p2-account",  ofo_account_get_type,      1 },
+		{ IMPORT_CURRENCY, "p2-currency", ofo_currency_get_type,     1 },
+		{ IMPORT_LEDGER,   "p2-journals", ofo_ledger_get_type,       1 },
+		{ IMPORT_MODEL,    "p2-model",    ofo_ope_template_get_type, 2 },
+		{ IMPORT_RATE,     "p2-rate",     ofo_rate_get_type,         2 },
+		{ IMPORT_ENTRY,    "p2-entries",  ofo_entry_get_type,        1 },
 		{ 0 }
 };
 
@@ -149,39 +155,42 @@ static const gchar *st_prefs_import     = "ImportAssistant";
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-import-assistant.ui";
 static const gchar *st_ui_id            = "ImportAssistant";
 
-static void     iimporter_iface_init( ofaIImporterInterface *iface );
-static guint    iimporter_get_interface_version( const ofaIImporter *instance );
-static void     on_page_forward( ofaImportAssistant *self, GtkWidget *page, gint page_num, void *empty );
-static void     on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaImportAssistant *self );
-static void     p1_do_init( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
-static void     p1_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
-static void     p1_on_selection_changed( GtkFileChooser *chooser, ofaImportAssistant *self );
-static void     p1_on_file_activated( GtkFileChooser *chooser, ofaImportAssistant *self );
-static void     p1_check_for_complete( ofaImportAssistant *self );
-static void     p1_do_forward( ofaImportAssistant *self, GtkWidget *page );
-static void     p2_do_init( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
-static void     p2_on_type_toggled( GtkToggleButton *button, ofaImportAssistant *self );
-static void     p2_check_for_complete( ofaImportAssistant *self );
-static void     p2_do_forward( ofaImportAssistant *self, GtkWidget *page );
-static void     p3_do_init( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
-static void     p3_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
-static void     p3_on_settings_changed( ofaFileFormatPiece *piece, ofaImportAssistant *self );
-static void     p3_check_for_complete( ofaImportAssistant *self );
-static void     p3_do_forward( ofaImportAssistant *self, GtkWidget *page );
-static void     p4_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
-static void     on_apply( GtkAssistant *assistant, ofaImportAssistant *self );
-static void     p5_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
-static void     p5_error_no_interface( const ofaImportAssistant *self );
-static gboolean p5_do_import( ofaImportAssistant *self );
-static void     p5_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progress, const gchar *text, ofaImportAssistant *self );
-static void     p5_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg status, const gchar *msg, ofaImportAssistant *self );
-static GSList  *get_lines_from_csv( ofaImportAssistant *self );
-static void     error_load_contents( ofaImportAssistant *self, const gchar *fname, GError *error );
-static void     error_convert( ofaImportAssistant *self, GError *error );
-static void     free_fields( GSList *fields );
-static void     free_lines( GSList *lines );
-static void     get_settings( ofaImportAssistant *self );
-static void     update_settings( ofaImportAssistant *self );
+static void            iimporter_iface_init( ofaIImporterInterface *iface );
+static guint           iimporter_get_interface_version( const ofaIImporter *instance );
+static void            on_page_forward( ofaImportAssistant *self, GtkWidget *page, gint page_num, void *empty );
+static void            on_prepare( GtkAssistant *assistant, GtkWidget *page, ofaImportAssistant *self );
+static void            p1_do_init( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
+static void            p1_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
+static void            p1_on_selection_changed( GtkFileChooser *chooser, ofaImportAssistant *self );
+static void            p1_on_file_activated( GtkFileChooser *chooser, ofaImportAssistant *self );
+static void            p1_check_for_complete( ofaImportAssistant *self );
+static void            p1_do_forward( ofaImportAssistant *self, GtkWidget *page );
+static void            p2_do_init( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
+static void            p2_on_type_toggled( GtkToggleButton *button, ofaImportAssistant *self );
+static void            p2_check_for_complete( ofaImportAssistant *self );
+static void            p2_do_forward( ofaImportAssistant *self, GtkWidget *page );
+static void            p3_do_init( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
+static void            p3_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
+static void            p3_on_settings_changed( ofaFileFormatPiece *piece, ofaImportAssistant *self );
+static void            p3_check_for_complete( ofaImportAssistant *self );
+static void            p3_do_forward( ofaImportAssistant *self, GtkWidget *page );
+static void            p4_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
+static void            on_apply( GtkAssistant *assistant, ofaImportAssistant *self );
+static void            p5_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
+static ofaIImportable *p5_search_for_plugin( ofaImportAssistant *self );
+static void            p5_error_no_interface( const ofaImportAssistant *self );
+static gboolean        p5_do_import( ofaImportAssistant *self );
+static guint           p5_do_import_csv( ofaImportAssistant *self, guint *errors );
+static guint           p5_do_import_other( ofaImportAssistant *self, guint *errors );
+static void            p5_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progress, const gchar *text, ofaImportAssistant *self );
+static void            p5_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg status, const gchar *msg, ofaImportAssistant *self );
+static GSList         *get_lines_from_csv( ofaImportAssistant *self );
+static void            error_load_contents( ofaImportAssistant *self, const gchar *fname, GError *error );
+static void            error_convert( ofaImportAssistant *self, GError *error );
+static void            free_fields( GSList *fields );
+static void            free_lines( GSList *lines );
+static void            get_settings( ofaImportAssistant *self );
+static void            update_settings( ofaImportAssistant *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaImportAssistant, ofa_import_assistant, MY_TYPE_ASSISTANT, 0, \
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTER, iimporter_iface_init ));
@@ -220,6 +229,8 @@ import_assistant_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->p3_import_settings );
+		g_clear_object( &priv->p5_object );
+		g_clear_object( &priv->p5_plugin );
 	}
 
 	/* chain up to the parent class */
@@ -508,6 +519,7 @@ p2_do_init( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *page )
 		g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( p2_on_type_toggled ), self );
 		if( st_radios[i].type_id == priv->p2_type ){
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), TRUE );
+			p2_on_type_toggled( GTK_TOGGLE_BUTTON( button ), self );
 		}
 		if( !priv->p2_group ){
 			priv->p2_group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( button ));
@@ -736,15 +748,47 @@ p5_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 
 	priv->p5_page = page;
 
+	/* search from something which would be able to import the data */
 	if( st_radios[priv->p2_idx].get_type ){
 		priv->p5_object = ( ofaIImportable * ) g_object_new( st_radios[priv->p2_idx].get_type(), NULL );
-		if( !OFA_IS_IIMPORTABLE( priv->p5_object )){
-			p5_error_no_interface( self );
-			return;
-		}
-
-		g_idle_add(( GSourceFunc ) p5_do_import, self );
+	} else {
+		priv->p5_plugin = p5_search_for_plugin( self );
 	}
+	if( !OFA_IS_IIMPORTABLE( priv->p5_object ) && !priv->p5_plugin ){
+		p5_error_no_interface( self );
+		return;
+	}
+
+	g_idle_add(( GSourceFunc ) p5_do_import, self );
+}
+
+/*
+ * search for a plugin willing to import an 'other' format
+ */
+static ofaIImportable *
+p5_search_for_plugin( ofaImportAssistant *self )
+{
+	static const gchar *thisfn = "ofa_import_assistant_p5_search_for_plugin";
+	ofaImportAssistantPrivate *priv;
+	GList *modules, *it;
+	ofaIImportable *found;
+
+	priv = self->priv;
+	found = NULL;
+	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IIMPORTABLE );
+	g_debug( "%s: modules=%p, count=%d", thisfn, ( void * ) modules, g_list_length( modules ));
+
+	for( it=modules ; it ; it=it->next ){
+		if( ofa_iimportable_is_willing_to(
+				OFA_IIMPORTABLE( it->data ), priv->p1_fname, priv->p3_import_settings )){
+			found = g_object_ref( OFA_IIMPORTABLE( it->data ));
+			break;
+		}
+	}
+
+	ofa_plugin_free_extensions( modules );
+
+	return( found );
 }
 
 static void
@@ -756,9 +800,13 @@ p5_error_no_interface( const ofaImportAssistant *self )
 
 	priv = self->priv;
 
-	str = g_strdup_printf(
-				_( "The requested type (%s) does not implement the IImportable interface" ),
-				G_OBJECT_TYPE_NAME( priv->p5_object ));
+	if( priv->p5_object ){
+		str = g_strdup_printf(
+					_( "The requested type (%s) does not implement the IImportable interface" ),
+					G_OBJECT_TYPE_NAME( priv->p5_object ));
+	} else {
+		str = g_strdup_printf( _( "Unable to find a plugin to import the specified data" ));
+	}
 
 	dialog = gtk_message_dialog_new(
 			my_window_get_toplevel( MY_WINDOW( self )),
@@ -778,59 +826,99 @@ p5_do_import( ofaImportAssistant *self )
 	ofaImportAssistantPrivate *priv;
 	GtkWidget *label;
 	gchar *str, *text;
-	gint ffmt, errors;
-	guint count;
-	GSList *lines, *content;
+	gint ffmt;
+	guint count, errors;
+	gboolean has_worked;
 
 	priv = self->priv;
+	count = 0;
+	errors = 0;
+	has_worked = TRUE;
 
 	/* first, import */
-	lines = NULL;
 	ffmt = ofa_file_format_get_ffmt( priv->p3_import_settings );
 	switch( ffmt ){
 		case OFA_FFMT_CSV:
-			lines = get_lines_from_csv( self );
+			count = p5_do_import_csv( self, &errors );
+			break;
+		case OFA_FFMT_OTHER:
+			g_return_val_if_fail( priv->p5_plugin && OFA_IS_IIMPORTABLE( priv->p5_plugin ), FALSE );
+			count = p5_do_import_other( self, &errors );
+			break;
+		default:
+			has_worked = FALSE;
 			break;
 	}
-
-	content = lines;
-	if( ofa_file_format_has_headers( priv->p3_import_settings )){
-		content = g_slist_nth( lines, st_radios[priv->p2_idx].headers );
-	}
-
-	count = g_slist_length( content );
-	errors = ofa_iimportable_import( priv->p5_object,
-			content, priv->p3_import_settings, MY_WINDOW( self )->prot->dossier, self );
-
-	free_lines( lines );
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name(
 					GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self )) ), "p5-label" );
 
 	str = my_utils_str_remove_underlines( gtk_button_get_label( GTK_BUTTON( priv->p2_type_btn )));
-	if( !errors ){
-		text = g_strdup_printf( _( "OK: %u lines from '%s' have been successfully "
-				"imported into « %s »." ),
-				count, priv->p1_fname, str );
+
+	if( has_worked ){
+		if( !errors ){
+			text = g_strdup_printf( _( "OK: %u lines from '%s' have been successfully "
+					"imported into « %s »." ),
+					count, priv->p1_fname, str );
+		} else {
+			text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors.\n"
+					"The « %s » recordset has been left unchanged.\n"
+					"Please fix these errors, and retry then." ), priv->p1_fname, str );
+		}
 	} else {
-		text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors.\n"
-				"The « %s » recordset has been left unchanged.\n"
-				"Please fix these errors, and retry then." ), priv->p1_fname, str );
+		text = g_strdup_printf( _( "Unfortunately, the required file format is not "
+				"managed at this time.\n"
+				"Please fix this, and retry, then." ));
 	}
+
 	g_free( str );
 
 	gtk_label_set_text( GTK_LABEL( label ), text );
 	g_free( text );
 
-	/* unref the reference object _after_ having built the label so
-	 * we always have access to its internal datas */
-	g_object_unref( priv->p5_object );
-
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), ASSIST_PAGE_DONE, TRUE );
 
 	/* do not continue and remove from idle callbacks list */
 	return( FALSE );
+}
+
+static guint
+p5_do_import_csv( ofaImportAssistant *self, guint *errors )
+{
+	ofaImportAssistantPrivate *priv;
+	guint count;
+	GSList *lines, *content;
+
+	priv = self->priv;
+	lines = get_lines_from_csv( self );
+	content = lines;
+
+	if( ofa_file_format_has_headers( priv->p3_import_settings )){
+		content = g_slist_nth( lines, st_radios[priv->p2_idx].headers );
+	}
+
+	count = g_slist_length( content );
+	*errors = ofa_iimportable_import( priv->p5_object,
+			content, priv->p3_import_settings, MY_WINDOW( self )->prot->dossier, self );
+
+	free_lines( lines );
+
+	return( count );
+}
+
+static guint
+p5_do_import_other( ofaImportAssistant *self, guint *errors )
+{
+	ofaImportAssistantPrivate *priv;
+	guint count;
+
+	priv = self->priv;
+
+	*errors = ofa_iimportable_import_fname( priv->p5_plugin, MY_WINDOW( self )->prot->dossier, self );
+	count = ofa_iimportable_get_count( priv->p5_plugin );
+
+	return( count );
 }
 
 static void

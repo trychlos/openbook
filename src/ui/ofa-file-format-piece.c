@@ -34,8 +34,6 @@
 #include "api/my-utils.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-file-format.h"
-
 #include "ui/my-date-combo.h"
 #include "ui/my-decimal-combo.h"
 #include "ui/my-field-combo.h"
@@ -579,7 +577,7 @@ is_validable( ofaFileFormatPiece *self )
 
 	/* export format */
 	iexport = get_file_format( self );
-	if( iexport != OFA_FFMT_CSV && iexport != OFA_FFMT_FIXED ){
+	if( iexport < 1 ){
 		return( FALSE );
 	}
 

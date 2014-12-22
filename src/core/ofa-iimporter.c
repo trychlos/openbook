@@ -112,7 +112,6 @@ interface_base_init( ofaIImporterInterface *klass )
 		g_debug( "%s: klass%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
 		klass->get_interface_version = iimporter_get_interface_version;
-		klass->import_from_uri = NULL;
 
 		/**
 		 * ofaIImporter::progress:
@@ -189,6 +188,7 @@ iimporter_get_interface_version( const ofaIImporter *instance )
 	return( 1 );
 }
 
+#if 0
 /**
  * ofa_iimporter_import_from_uri:
  * @importer: this #ofaIImporter instance.
@@ -265,3 +265,4 @@ ofa_iimporter_free_output( ofaIImporterParms *parms )
 			g_debug( "%s: TO BE WRITTEN", thisfn );
 	}
 }
+#endif

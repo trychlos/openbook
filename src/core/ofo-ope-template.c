@@ -34,6 +34,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
+#include "api/ofa-file-format.h"
 #include "api/ofa-idataset.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
@@ -44,8 +45,6 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
-
-#include "core/ofa-file-format.h"
 
 /* priv instance data
  */

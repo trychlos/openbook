@@ -36,41 +36,46 @@
 #include <string.h>
 
 #include <api/my-date.h>
-#include <api/ofa-iimporter.h>
+#include <api/ofa-file-format.h>
+#include <api/ofa-iimportable.h>
+#include <api/ofo-bat.h>
 
 #include "of1-importer.h"
 
 /* private instance data
  */
 struct _of1ImporterPrivate {
-	gboolean  dispose_has_run;
+	gboolean       dispose_has_run;
 
-	/* input parameters
-	 */
-	ofaIImporterParms *parms;
+	ofaFileFormat *settings;
+	ofoDossier    *dossier;
+	GSList        *lines;
+	guint          count;
+	guint          errors;
 
-	/* file data
-	 */
-	GSList            *content;
-	gchar             *etag;
 };
 
+/* a description of the import functions we are able to manage here
+ */
 typedef struct {
 	const gchar *label;
-	gint         type;
 	gint         version;
-	gint       (*fn)( of1Importer * );
+	gboolean   (*fnTest)  ( of1Importer * );
+	ofsBat *   (*fnImport)( of1Importer * );
 }
 	ImportFormat;
 
-static gint import_bourso_excel95_v1    ( of1Importer *importer );
-static gint import_bourso_excel2002_v1  ( of1Importer *importer );
-static gint import_lcl_tabulated_text_v1( of1Importer *importer );
+static gboolean bourso_excel95_v1_check( of1Importer *importer );
+static ofsBat  *bourso_excel95_v1_import( of1Importer *importer );
+static gboolean bourso_excel2002_v1_check( of1Importer *importer );
+static ofsBat  *bourso_excel2002_v1_import( of1Importer *importer );
+static gboolean lcl_tabulated_text_v1_check( of1Importer *importer );
+static ofsBat  *lcl_tabulated_text_v1_import( of1Importer *importer );
 
 static ImportFormat st_import_formats[] = {
-		{ "Boursorama - Excel 95",        IMPORTER_TYPE_BAT, 1, import_bourso_excel95_v1 },
-		{ "Boursorama - Excel 2002",      IMPORTER_TYPE_BAT, 1, import_bourso_excel2002_v1 },
-		{ "LCL - Excel (tabulated text)", IMPORTER_TYPE_BAT, 1, import_lcl_tabulated_text_v1 },
+		{ "Boursorama - Excel 95",        1, bourso_excel95_v1_check,     bourso_excel95_v1_import },
+		{ "Boursorama - Excel 2002",      1, bourso_excel2002_v1_check,   bourso_excel2002_v1_import },
+		{ "LCL - Excel (tabulated text)", 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_import },
 		{ 0 }
 };
 
@@ -81,16 +86,20 @@ static void         class_init( of1ImporterClass *klass );
 static void         instance_init( GTypeInstance *instance, gpointer klass );
 static void         instance_dispose( GObject *object );
 static void         instance_finalize( GObject *object );
-
-static void         iimporter_iface_init( ofaIImporterInterface *iface );
-static guint        iimporter_get_interface_version( const ofaIImporter *importer );
-
-static guint        of1_importer_import_from_uri( const ofaIImporter *importer, ofaIImporterParms *parms );
-static gint         import_bourso_tabulated_text_v1( of1Importer *importer, const gchar *thisfn );
-static gchar       *strip_field( gchar *begin );
+static void         iimportable_iface_init( ofaIImportableInterface *iface );
+static guint        iimportable_get_interface_version( const ofaIImportable *importer );
+static gboolean     iimportable_is_willing_to( ofaIImportable *importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count );
+static guint        iimportable_import_fname( ofaIImportable *importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier );
+static GSList      *get_file_content( ofaIImportable *importer, const gchar *fname );
+static gboolean     bourso_tabulated_text_v1_check( of1Importer *importer, const gchar *thisfn );
+static ofsBat      *bourso_tabulated_text_v1_import( of1Importer *importe, const gchar *thisfn );
+static gchar       *bourso_strip_field( gchar *str );
+static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
+static gboolean     lcl_tabulated_text_v1_check( of1Importer *importer );
+static ofsBat      *lcl_tabulated_text_v1_import( of1Importer *importer );
+static const gchar *lcl_get_ref_paiement( const gchar *str );
+static gchar       *lcl_concatenate_labels( gchar ***iter );
 static gdouble      get_double( const gchar *str );
-static const gchar *find_lcl_ref_paiement( const gchar *str );
-static gchar       *concatenate_labels( gchar ***iter );
 
 GType
 of1_importer_get_type( void )
@@ -115,8 +124,8 @@ of1_importer_register_type( GTypeModule *module )
 		( GInstanceInitFunc ) instance_init
 	};
 
-	static const GInterfaceInfo iimporter_iface_info = {
-		( GInterfaceInitFunc ) iimporter_iface_init,
+	static const GInterfaceInfo iimportable_iface_info = {
+		( GInterfaceInitFunc ) iimportable_iface_init,
 		NULL,
 		NULL
 	};
@@ -125,7 +134,7 @@ of1_importer_register_type( GTypeModule *module )
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "of1Importer", &info, 0 );
 
-	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IIMPORTER, &iimporter_iface_info );
+	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
 }
 
 static void
@@ -193,99 +202,135 @@ instance_finalize( GObject *object )
 
 	/* free data members here */
 	priv = OF1_IMPORTER( object )->priv;
-	g_slist_free_full( priv->content, ( GDestroyNotify ) g_free );
-	g_free( priv->etag );
+
+	g_slist_free_full( priv->lines, ( GDestroyNotify ) g_free );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( st_parent_class )->finalize( object );
 }
 
 static void
-iimporter_iface_init( ofaIImporterInterface *iface )
+iimportable_iface_init( ofaIImportableInterface *iface )
 {
-	static const gchar *thisfn = "of1_importer_iimporter_iface_init";
+	static const gchar *thisfn = "of1_importer_iimportable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = iimporter_get_interface_version;
-	iface->import_from_uri = of1_importer_import_from_uri;
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->is_willing_to = iimportable_is_willing_to;
+	iface->import_fname = iimportable_import_fname;
 }
 
 static guint
-iimporter_get_interface_version( const ofaIImporter *importer )
+iimportable_get_interface_version( const ofaIImportable *importer )
 {
 	return( 1 );
 }
 
-static guint
-of1_importer_import_from_uri( const ofaIImporter *importer, ofaIImporterParms *parms )
+/*
+ * do the minimum to identify the file
+ * as this moment, it should not be needed to make any charmap conversion
+ *
+ * Returns: %TRUE if willing to import.
+ */
+static gboolean
+iimportable_is_willing_to( ofaIImportable *importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count )
 {
-	static const gchar *thisfn = "of1_importer_import_from_uri";
+	static const gchar *thisfn = "of1_importer_iimportable_is_willing_to";
 	of1ImporterPrivate *priv;
-	GFile *gfile;
-	gchar *contents;
-	GError *error;
-	gchar *str;
-	guint code;
 	gint i;
-	gchar **lines, **iter;
+	gboolean ok;
 
-	g_debug( "%s: importer=%p, parms=%p, uri=%s",
-			thisfn, ( void * ) importer, parms, parms->uri );
+	g_debug( "%s: importer=%p, fname=%s, settings=%p, count=%p",
+			thisfn, ( void * ) importer, fname, ( void * ) settings, ( void * ) count );
 
 	priv = OF1_IMPORTER( importer )->priv;
-	priv->parms = parms;
+	ok = FALSE;
 
-	code = IMPORTER_CODE_NOT_WILLING_TO;
+	priv->lines = get_file_content( importer, fname );
+	priv->settings = settings;
 
-	gfile = g_file_new_for_uri( parms->uri );
-	error = NULL;
-	if( !g_file_load_contents( gfile, NULL, &contents, NULL, &priv->etag, &error )){
-		str = g_strdup( error->message );
-		parms->messages = g_slist_append( parms->messages, str );
-		g_debug( "%s: %s", thisfn, str );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
-	}
-
-	lines = g_strsplit( contents, "\n", -1 );
-	g_free( contents );
-	iter = lines;
-	priv->content = NULL;
-	while( *iter ){
-		priv->content = g_slist_prepend( priv->content, g_strstrip( g_strdup( *iter )));
-		iter++;
-	}
-	g_strfreev( lines );
-	priv->content = g_slist_reverse( priv->content );
-	g_debug( "%s: %d lines found", thisfn, g_slist_length( priv->content ));
-
-	for( i=0 ; st_import_formats[i].label && code!=IMPORTER_CODE_OK ; ++i ){
-
-		if( !parms->type || parms->type == st_import_formats[i].type ){
-
-			parms->type = st_import_formats[i].type;
-			parms->version = st_import_formats[i].version;
-			parms->format = g_strdup( st_import_formats[i].label );
-			code = st_import_formats[i].fn( OF1_IMPORTER( importer ));
-
-			if( code != IMPORTER_CODE_OK ){
-
-				str = g_strdup_printf( "%s: %s", st_import_formats[i].label, _( "unable to parse "));
-				parms->messages = g_slist_append( parms->messages, str );
-				g_debug( "%s: %s", thisfn, str );
-
-				ofa_iimporter_free_output( parms );
-			}
+	for( i=0 ; st_import_formats[i].label ; ++i ){
+		if( st_import_formats[i].fnTest( OF1_IMPORTER( importer ))){
+			*ref = GINT_TO_POINTER( i );
+			*count = priv->count;
+			ok = TRUE;
+			break;
 		}
 	}
 
-	return( code );
+	g_slist_free_full( priv->lines, ( GDestroyNotify ) g_free );
+
+	return( ok );
+}
+
+/*
+ * import the file
+ */
+static guint
+iimportable_import_fname( ofaIImportable *importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier )
+{
+	static const gchar *thisfn = "of1_importer_iimportable_import_fname";
+	of1ImporterPrivate *priv;
+	gint idx;
+	ofsBat *bat;
+
+	g_debug( "%s: importer=%p, ref=%p, fname=%s, settings=%p, dossier=%p",
+			thisfn, ( void * ) importer, ref,
+			fname, ( void * ) settings, ( void * ) dossier );
+
+	priv = OF1_IMPORTER( importer )->priv;
+
+	priv->lines = get_file_content( importer, fname );
+	priv->settings = settings;
+	priv->dossier = dossier;
+
+	idx = GPOINTER_TO_INT( ref );
+	bat = NULL;
+
+	if( st_import_formats[idx].fnImport ){
+		bat = st_import_formats[idx].fnImport( OF1_IMPORTER( importer ));
+		if( bat ){
+			bat->uri = g_strdup( fname );
+			bat->format = g_strdup( st_import_formats[idx].label );
+			ofo_bat_import( importer, bat, dossier );
+			ofo_bat_free( bat );
+		}
+	}
+
+	g_slist_free_full( priv->lines, ( GDestroyNotify ) g_free );
+
+	return( priv->errors );
+}
+
+static GSList *
+get_file_content( ofaIImportable *importer, const gchar *fname )
+{
+	GFile *gfile;
+	gchar *contents;
+	gchar **lines, **iter;
+	GSList *list;
+
+	list = NULL;
+	gfile = g_file_new_for_path( fname );
+	if( g_file_load_contents( gfile, NULL, &contents, NULL, NULL, NULL )){
+		lines = g_strsplit( contents, "\n", -1 );
+		g_free( contents );
+		iter = lines;
+		while( *iter ){
+			list = g_slist_prepend( list, g_strstrip( g_strdup( *iter )));
+			iter++;
+		}
+		g_strfreev( lines );
+	}
+
+	return( g_slist_reverse( list ));
 }
 
 /*
  * As of 2014- 6- 1:
  * -----------------
- * "*** P<E9>riode : 01/01/2014 - 01/06/2014"
+ * "*** Période : 01/01/2014 - 01/06/2014"
  * "*** Compte : 40618-80264-00040200033    -EUR "
  *
  * "DATE OPERATION"        "DATE VALEUR"   "LIBELLE"       "MONTANT"       "DEVISE"
@@ -294,167 +339,217 @@ of1_importer_import_from_uri( const ofaIImporter *importer, ofaIImporterParms *p
  *
  * where spaces are tabulations
  */
-static gint
-import_bourso_excel95_v1( of1Importer *importer )
+static gboolean
+bourso_excel95_v1_check( of1Importer *importer )
 {
-	static const gchar *thisfn = "of1_importer_import_bourso_excel95_v1";
+	static const gchar *thisfn = "of1_importer_bourso_excel95_v1_check";
 
-	return( import_bourso_tabulated_text_v1( importer, thisfn ));
+	return( bourso_tabulated_text_v1_check( importer, thisfn ));
+}
+
+static ofsBat *
+bourso_excel95_v1_import( of1Importer *importer )
+{
+	static const gchar *thisfn = "of1_importer_bourso_excel95_v1_import";
+
+	return( bourso_tabulated_text_v1_import( importer, thisfn ));
 }
 
 /*
- * note this definition is only for consistancy
- * if import_bourso_excel95() works fine on the input file, this
- * function will never be called
+ * note these definitions are only for consistancy
+ * if bourso_excel95 format works fine on the input file, these
+ * functions will never be called
  */
-static gint
-import_bourso_excel2002_v1( of1Importer *importer )
+static gboolean
+bourso_excel2002_v1_check( of1Importer *importer )
 {
-	static const gchar *thisfn = "of1_importer_import_bourso_excel2002_v1";
+	static const gchar *thisfn = "of1_importer_bourso_excel2002_v1_check";
 
-	return( import_bourso_tabulated_text_v1( importer, thisfn ));
+	return( bourso_tabulated_text_v1_check( importer, thisfn ));
 }
 
-static gint
-import_bourso_tabulated_text_v1( of1Importer *importer, const gchar *thisfn )
+static ofsBat *
+bourso_excel2002_v1_import( of1Importer *importer )
+{
+	static const gchar *thisfn = "of1_importer_bourso_excel2002_v1_import";
+
+	return( bourso_tabulated_text_v1_import( importer, thisfn ));
+}
+
+static gboolean
+bourso_tabulated_text_v1_check( of1Importer *importer, const gchar *thisfn )
 {
 	of1ImporterPrivate *priv;
-	ofaIImporterBatv1 *output;
 	GSList *line;
 	const gchar *str;
 	gchar *found;
-	gint bd, bm, by, ed, em, ey;
-	ofaIImporterSBatv1 *bat;
-	gchar **tokens, **iter;
+	GDate date;
 
 	priv = importer->priv;
-	output = &priv->parms->batv1;
-	output->count = 0;
-	output->results = NULL;
+	line = priv->lines;
 
-	line = priv->content;
+	/* first line: "*** Période : dd/mm/yyyy - dd/mm/yyyy" */
 	str = line->data;
-	g_debug( "%s: str='%s'", thisfn, str );
 	if( !g_str_has_prefix( str, "\"*** P" )){
-		g_debug( "%s: no '\"*** P' prefix", thisfn );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
+		g_debug( "%s: no '*** P' prefix", thisfn );
+		return( FALSE );
 	}
 	found = g_strstr_len( str, -1, "riode : " );
 	if( !found ){
 		g_debug( "%s: 'riode : ' not found", thisfn );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
+		return( FALSE );
 	}
-	sscanf( found+9, "%d/%d/%d - %d/%d/%d", &bd, &bm, &by, &ed, &em, &ey );
-	if( bd < 0 || bm < 0 || by < 0 || ed < 0 || em < 0 || ey < 0 ){
-		g_debug( "%s: bd=%d, bm=%d, by=%d, ed=%d, em=%d, ey=%d", thisfn, bd, bm, by, ed, em, ey );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
+	/* dd/mm/yyyy - dd/mm/yyyy */
+	if( !scan_date_dmyy( &date, found+9 )){
+		g_debug( "%s: date at found+9 not valid", thisfn );
+		return( FALSE );
 	}
-	if( bd > 31 || ed > 31 || bm > 12 || em > 12 ){
-		g_debug( "%s: bd=%d, bm=%d, ed=%d, em=%d", thisfn, bd, bm, ed, em );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
-	}
-	g_date_set_dmy( &output->begin, bd, bm, by );
-	if( !my_date_is_valid( &output->begin )){
-		g_debug( "%s: invalid begin date", thisfn );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
-	}
-	g_date_set_dmy( &output->end, ed, em, ey );
-	if( !my_date_is_valid( &output->end )){
-		g_debug( "%s: invalid end date", thisfn );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
+	if( !scan_date_dmyy( &date, found+22 )){
+		g_debug( "%s: date at found+22 not valid", thisfn );
+		return( FALSE );
 	}
 
+	/* second line: "*** Compte : 40618-80264-00040200033    -EUR " */
 	line = line->next;
 	str = line->data;
-	g_debug( "%s: str='%s'", thisfn, str );
 	if( !g_str_has_prefix( str, "\"*** Compte : " )){
-		g_debug( "%s: no '\"*** Compte : ' prefix", thisfn );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
+		g_debug( "%s: no '*** Compte : ' prefix", thisfn );
+		return( FALSE );
 	}
-	output->rib = g_strstrip( g_strndup( str+14, 24 ));
 	found = g_strstr_len( str+38, -1, " -" );
 	if( !found ){
-		g_debug( "%s: ' -' not found", thisfn );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
+		g_debug( "%s: ' - ' not found", thisfn );
+		return( FALSE );
 	}
-	output->currency = g_strndup( found+2, 3 );
 
-	output->solde_set = FALSE;
-
+	/* third line: empty */
 	line = line->next;
 	str = line->data;
 	if( strlen( str )){
-		g_debug( "%s: not empty '%s'", thisfn, str );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
+		return( FALSE );
 	}
 
+	/* fourth line: "DATE OPERATION"        "DATE VALEUR"   "LIBELLE"       "MONTANT"       "DEVISE" */
 	line = line->next;
 	str = line->data;
 	if( !g_ascii_strcasecmp( str, "\"DATE OPERATION\"        \"DATE VALEUR\"   \"LIBELLE\"       \"MONTANT\"       \"DEVISE\"" )){
-		g_debug( "%s: header not found: '%s'", thisfn, str );
-		return( IMPORTER_CODE_UNABLE_TO_PARSE );
+		g_debug( "%s: headers not found", thisfn );
+		return( FALSE );
 	}
+
+	/* if the four first lines are ok, we are found to suppose that we
+	 * have identified the input file */
+	g_debug( "%s: nblines=%d", thisfn, g_slist_length( priv->lines ));
+	priv->count = g_slist_length( priv->lines )-5;
+
+	return( TRUE );
+}
+
+static ofsBat *
+bourso_tabulated_text_v1_import( of1Importer *importer, const gchar *thisfn )
+{
+	of1ImporterPrivate *priv;
+	GSList *line;
+	const gchar *str;
+	ofsBat *sbat;
+	ofsBatDetail *sdet;
+	gchar *found;
+	gchar **tokens, **iter;
+	gchar *msg, *sbegin, *send;
+
+	priv = importer->priv;
+	sbat = g_new0( ofsBat, 1 );
+	priv->errors = 0;
+
+	/* line 1: begin, end */
+	str = g_slist_nth( priv->lines, 0 )->data;
+	found = g_strstr_len( str, -1, "riode : " );
+	g_return_val_if_fail( found, -1 );
+	if( !scan_date_dmyy( &sbat->begin, found+9 )){
+		return( FALSE );
+	}
+	if( !scan_date_dmyy( &sbat->end, found+22 )){
+		return( FALSE );
+	}
+
+	/* line 2: rib, currency */
+	str = g_slist_nth( priv->lines, 1 )->data;
+	sbat->rib = g_strstrip( g_strndup( str+14, 24 ));
+	found = g_strstr_len( str+38, -1, " -" );
+	sbat->currency = g_strndup( found+2, 3 );
+
+	if( ofo_bat_exists( priv->dossier, sbat->rib, &sbat->begin, &sbat->end )){
+		sbegin = my_date_to_str( &sbat->begin, MY_DATE_DMYY );
+		send = my_date_to_str( &sbat->end, MY_DATE_DMYY );
+		msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
+				sbat->rib, sbegin, send );
+		ofa_iimportable_set_message( OFA_IIMPORTABLE( importer ), 2, IMPORTABLE_MSG_ERROR, msg );
+		g_free( msg );
+		g_free( sbegin );
+		g_free( send );
+		priv->errors += 1;
+		ofo_bat_free( sbat );
+		return( NULL );
+	}
+
+	/* entries start at line 5 (counting from 1) */
+	line = g_slist_nth( priv->lines, 3 );
 
 	while( TRUE ){
 		line = line->next;
 		if( !line || !line->data || !g_utf8_strlen( line->data, -1 )){
 			break;
 		}
-		bat = g_new0( ofaIImporterSBatv1, 1 );
+		sdet = g_new0( ofsBatDetail, 1 );
 		tokens = g_strsplit( line->data, "\t", -1 );
 		iter = tokens;
+		ofa_iimportable_increment_progress( OFA_IIMPORTABLE( importer ), IMPORTABLE_PHASE_IMPORT, 1 );
 
-		found = strip_field( *iter );
-		/*g_debug( "%s: found dope='%s'", thisfn, found );*/
-		sscanf( found, "%d/%d/%d", &bd, &bm, &by );
+		found = bourso_strip_field( *iter );
+		scan_date_dmyy( &sdet->dope, found );
 		g_free( found );
-		if( bd < 0 || bm < 0 || by < 0 || bd > 31 || bm > 12 ){
-			g_debug( "%s: bd=%d, bm=%d, by=%d", thisfn, bd, bm, by );
-			return( IMPORTER_CODE_UNABLE_TO_PARSE );
-		}
-		g_date_set_dmy( &bat->dope, bd, bm, by );
-		if( !my_date_is_valid( &bat->dope )){
-			g_debug( "%s: invalid ope date", thisfn );
-			return( IMPORTER_CODE_UNABLE_TO_PARSE );
-		}
 
 		iter += 1;
-		found = strip_field( *iter );
-		/*g_debug( "%s: found valeur='%s'", thisfn, found );*/
-		sscanf( found, "%d/%d/%d", &bd, &bm, &by );
+		found = bourso_strip_field( *iter );
+		scan_date_dmyy( &sdet->deffect, found );
 		g_free( found );
-		if( bd < 0 || bm < 0 || by < 0 || bd > 31 || bm > 12 ){
-			g_debug( "%s: bd=%d, bm=%d, by=%d", thisfn, bd, bm, by );
-			return( IMPORTER_CODE_UNABLE_TO_PARSE );
-		}
-		g_date_set_dmy( &bat->deffect, bd, bm, by );
-		if( !my_date_is_valid( &bat->deffect )){
-			g_debug( "%s invalid valeur date", thisfn );
-			return( IMPORTER_CODE_UNABLE_TO_PARSE );
-		}
 
 		iter += 1;
-		found = strip_field( *iter );
+		found = bourso_strip_field( *iter );
 		/*g_debug( "%s: found='%s'", thisfn, found );*/
-		bat->label = found;
+		sdet->label = found;
 
 		iter +=1 ;
 		found = *iter;
-		bat->amount = get_double( found );
-		g_debug( "%s: str='%s', amount=%lf", thisfn, found, bat->amount );
+		sdet->amount = get_double( found );
+		/*g_debug( "%s: str='%s', amount=%lf", thisfn, found, sdet->amount );*/
 
 		iter += 1;
-		found = strip_field( *iter );
+		found = bourso_strip_field( *iter );
 		/*g_debug( "%s: found='%s'", thisfn, found );*/
-		bat->currency = found;
+		sdet->currency = found;
 
-		output->count += 1;
-		output->results = g_list_prepend( output->results, bat );
+		sbat->details = g_list_prepend( sbat->details, sdet );
 		g_strfreev( tokens );
 	}
 
-	output->results = g_list_reverse( output->results );
-	return( IMPORTER_CODE_OK );
+	return( sbat );
+}
+
+static gchar *
+bourso_strip_field( gchar *str )
+{
+	gchar *s1, *s2, *e1, *e2;
+	gchar *dest;
+
+	s1 = g_utf8_strchr( str, -1, '"' );
+	s2 = g_utf8_find_next_char( s1, NULL );
+	e1 = g_utf8_strrchr( s2, -1, '"' );
+	e2 = g_utf8_find_prev_char( s2, e1 );
+
+	dest = g_strndup( s2, e2-s2+1 );
+
+	return( g_strstrip ( dest ));
 }
 
 /*
@@ -480,25 +575,50 @@ import_bourso_tabulated_text_v1( of1Importer *importer, const gchar *thisfn )
  *
  * The unknown field and the category arealways set, or unset, together.
  */
-
-static gint
-import_lcl_tabulated_text_v1( of1Importer *importer )
+static gboolean
+lcl_tabulated_text_v1_check( of1Importer *importer )
 {
-	static const gchar *thisfn = "of1_importer_import_lcl_tabulated_text";
 	of1ImporterPrivate *priv;
-	ofaIImporterBatv1 *output;
-	GSList *line;
-	gint bd, bm, by;
-	ofaIImporterSBatv1 *bat;
 	gchar **tokens, **iter;
-	gint nb;
+	GDate date;
 
 	priv = importer->priv;
-	output = &priv->parms->batv1;
-	output->count = 0;
+	tokens = g_strsplit( priv->lines->data, "\t", -1 );
+	/* only interpret first line */
+	/* first field = value date */
+	iter = tokens;
+	if( !scan_date_dmyy( &date, *iter )){
+		return( FALSE );
+	}
+	iter += 1;
+	if( !get_double( *iter )){
+		return( FALSE );
+	}
+	/* other fields may be empty */
 
-	line = priv->content;
-	nb = g_slist_length( priv->content );
+	priv->count = g_slist_length( priv->lines )-1;
+	g_strfreev( tokens );
+
+	return( TRUE );
+}
+
+static ofsBat  *
+lcl_tabulated_text_v1_import( of1Importer *importer )
+{
+	of1ImporterPrivate *priv;
+	GSList *line;
+	ofsBat *sbat;
+	ofsBatDetail *sdet;
+	gchar **tokens, **iter;
+	gint count, nb;
+	gchar *msg, *sbegin, *send;
+
+	priv = importer->priv;
+	line = priv->lines;
+	sbat = g_new0( ofsBat, 1 );
+	nb = g_slist_length( priv->lines );
+	count = 0;
+	priv->errors = 0;
 
 	while( TRUE ){
 		if( !line || !line->data || !g_utf8_strlen( line->data, -1 )){
@@ -506,140 +626,64 @@ import_lcl_tabulated_text_v1( of1Importer *importer )
 		}
 		tokens = g_strsplit( line->data, "\t", -1 );
 		iter = tokens;
-		output->count += 1;
+		count += 1;
 
-		if( output->count < nb ){
-			bat = g_new0( ofaIImporterSBatv1, 1 );
-			my_date_clear( &bat->dope );
-			/*g_debug( "%s: str='%s'", thisfn, ( gchar * ) line->data );*/
+		/* detail line */
+		if( count < nb ){
+			sdet = g_new0( ofsBatDetail, 1 );
+			ofa_iimportable_increment_progress( OFA_IIMPORTABLE( importer ), IMPORTABLE_PHASE_IMPORT, 1 );
 
-			sscanf( *iter, "%d/%d/%d", &bd, &bm, &by );
-			if( bd < 0 || bm < 0 || by < 0 || bd > 31 || bm > 12 ){
-				g_debug( "%s: bd=%d, bm=%d, by=%d", thisfn, bd, bm, by );
-				return( IMPORTER_CODE_UNABLE_TO_PARSE );
-			}
-			g_date_set_dmy( &bat->deffect, bd, bm, by );
-			if( !my_date_is_valid( &bat->deffect )){
-				g_debug( "%s invalid valeur date", thisfn );
-				return( IMPORTER_CODE_UNABLE_TO_PARSE );
-			}
+			scan_date_dmyy( &sdet->deffect, *iter );
 
-			iter +=1 ;
-			bat->amount = get_double( *iter );
+			iter += 1;
+			sdet->amount = get_double( *iter );
 
 			iter += 1;
 			if( *iter && g_utf8_strlen( *iter, -1 )){
-				bat->ref = g_strdup( find_lcl_ref_paiement( *iter ));
+				sdet->ref = g_strdup( lcl_get_ref_paiement( *iter ));
 			}
 
 			iter += 1;
-			bat->label = concatenate_labels( &iter );
-			g_debug( "%s: nb=%d, count=%d, label='%s' amount=%lf", thisfn, nb, output->count, bat->label, bat->amount );
+			sdet->label = lcl_concatenate_labels( &iter );
 
 			/* do not interpret
 			 * unknown field nor category */
-			output->results = g_list_prepend( output->results, bat );
+			sbat->details = g_list_prepend( sbat->details, sdet );
 
+		/* last line is the file footer */
 		} else {
-			sscanf( *iter, "%d/%d/%d", &bd, &bm, &by );
-			if( bd < 0 || bm < 0 || by < 0 || bd > 31 || bm > 12 ){
-				g_debug( "%s: bd=%d, bm=%d, by=%d", thisfn, bd, bm, by );
-				return( IMPORTER_CODE_UNABLE_TO_PARSE );
-			}
-			g_date_set_dmy( &output->end, bd, bm, by );
-			if( !my_date_is_valid( &output->end )){
-				g_debug( "%s invalid end date", thisfn );
-				return( IMPORTER_CODE_UNABLE_TO_PARSE );
-			}
+			scan_date_dmyy( &sbat->end, *iter );
 
 			iter +=1 ;
-			output->solde = get_double( *iter );
-			output->solde_set = TRUE;
+			sbat->solde = get_double( *iter );
+			sbat->solde_set = TRUE;
 
 			iter += 1;
 			/* no ref */
 
 			iter += 1;
-			output->rib = concatenate_labels( &iter );
-			g_debug( "%s: account='%s' balance=%lf", thisfn, output->rib, output->solde );
+			sbat->rib = lcl_concatenate_labels( &iter );
+
+			if( ofo_bat_exists( priv->dossier, sbat->rib, &sbat->begin, &sbat->end )){
+				sbegin = my_date_to_str( &sbat->begin, MY_DATE_DMYY );
+				send = my_date_to_str( &sbat->end, MY_DATE_DMYY );
+				msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
+						sbat->rib, sbegin, send );
+				ofa_iimportable_set_message( OFA_IIMPORTABLE( importer ), nb, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				g_free( sbegin );
+				g_free( send );
+				priv->errors += 1;
+				ofo_bat_free( sbat );
+				sbat = NULL;
+			}
 		}
 
 		g_strfreev( tokens );
 		line = line->next;
 	}
 
-	output->results = g_list_reverse( output->results );
-	return( IMPORTER_CODE_OK );
-}
-
-/*
- * returns the next unstripped double-quoted field, or NULL
- * as a newly allocated string
- * advance 'begin' to the character after the second quote
- */
-#if 0
-static gchar *
-iter_next_field( gchar **begin )
-{
-	gchar *end;
-	gchar *field;
-
-	while( *begin[0] && *begin[0] != '"' ){
-		*begin += 1;
-	}
-	if( !*begin[0] || !*begin[1] ){
-		return( NULL );
-	}
-	*begin += 1;	/* first char after the first double-quote */
-	end = *begin;
-	while( end[0] && end[0] != '"' ){
-		end += 1;
-	}
-	end += 1;	/* first char after the second double-quote */
-	field = g_strstrip( g_strndup( *begin, end-*begin-1 ));
-	begin = &end;
-
-	return( field );
-}
-#endif
-
-static gchar *
-strip_field( gchar *str )
-{
-	gchar *s1, *s2, *e1, *e2;
-	gchar *dest;
-
-	s1 = g_utf8_strchr( str, -1, '"' );
-	s2 = g_utf8_find_next_char( s1, NULL );
-	e1 = g_utf8_strrchr( s2, -1, '"' );
-	e2 = g_utf8_find_prev_char( s2, e1 );
-
-	dest = g_strndup( s2, e2-s2+1 );
-
-	return( g_strstrip ( dest ));
-}
-
-static gdouble
-get_double( const gchar *str )
-{
-	static const gchar *thisfn = "of1_importer_get_double";
-	gdouble amount1, amount2;
-	gdouble entier1, entier2;
-
-	amount1 = g_ascii_strtod( str, NULL );
-	entier1 = trunc( amount1 );
-	if( entier1 == amount1 ){
-		amount2 = strtod( str, NULL );
-		entier2 = trunc( amount2 );
-		if( entier2 == amount2 ){
-			if( entier1 != entier2 ){
-				g_warning( "%s: unable to get double from str='%s'", thisfn, str );
-				return( 0 );
-			}
-		}
-		return( amount2 );
-	}
-	return( amount1 );
+	return( sbat );
 }
 
 typedef struct {
@@ -658,7 +702,7 @@ static const lclPaiement st_lcl_paiements[] = {
 };
 
 static const gchar *
-find_lcl_ref_paiement( const gchar *str )
+lcl_get_ref_paiement( const gchar *str )
 {
 	gint i;
 
@@ -677,7 +721,7 @@ find_lcl_ref_paiement( const gchar *str )
  * return a newly allocated stripped string
  */
 static gchar *
-concatenate_labels( gchar ***iter )
+lcl_concatenate_labels( gchar ***iter )
 {
 	GString *lab1;
 	gchar *lab2;
@@ -723,4 +767,48 @@ concatenate_labels( gchar ***iter )
 
 	g_strstrip( lab1->str );
 	return( g_string_free( lab1, FALSE ));
+}
+
+/*
+ * parse a 'dd/mm/yyyy' date
+ */
+static GDate *
+scan_date_dmyy( GDate *date, const gchar *str )
+{
+	gint d, m, y;
+
+	my_date_clear( date );
+	sscanf( str, "%d/%d/%d", &d, &m, &y );
+	if( d <= 0 || m <= 0 || y < 0 || d > 31 || m > 12 ){
+		return( NULL );
+	}
+	g_date_set_dmy( date, d, m, y );
+	if( !my_date_is_valid( date )){
+		return( NULL );
+	}
+
+	return( date );
+}
+
+static gdouble
+get_double( const gchar *str )
+{
+	static const gchar *thisfn = "of1_importer_get_double";
+	gdouble amount1, amount2;
+	gdouble entier1, entier2;
+
+	amount1 = g_ascii_strtod( str, NULL );
+	entier1 = trunc( amount1 );
+	if( entier1 == amount1 ){
+		amount2 = strtod( str, NULL );
+		entier2 = trunc( amount2 );
+		if( entier2 == amount2 ){
+			if( entier1 != entier2 ){
+				g_warning( "%s: unable to get double from str='%s'", thisfn, str );
+				return( 0 );
+			}
+		}
+		return( amount2 );
+	}
+	return( amount1 );
 }

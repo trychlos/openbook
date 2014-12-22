@@ -33,9 +33,8 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-file-format.h"
 #include "api/ofa-settings.h"
-
-#include "core/ofa-file-format.h"
 
 /* private instance data
  */
@@ -66,6 +65,7 @@ typedef struct {
 static const sFormat st_file_format[] = {
 		{ OFA_FFMT_CSV,   N_( "CSV-like file format" )},
 		{ OFA_FFMT_FIXED, N_( "Fixed file format" )},
+		{ OFA_FFMT_OTHER, N_( "Other (plugin-managed) format" )},
 		{ 0 }
 };
 

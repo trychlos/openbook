@@ -35,9 +35,10 @@
  *
  * The #ofaIImporter lets the importable object communicate with the
  * importer code. Two signals are defined:
- * - "progress" to visually render the progress of the import
- * - "error" to display an error message during the import
- * - "insert" to visually render the progress of the insert
+ * - "progress" to visually render the progress of the import (resp.
+ *   the insertion in the DBMS)
+ * - "message" to display a standard, warning or error message during
+ *   the import (resp. the DBMS insertion).
  */
 
 #include <glib-object.h>
@@ -82,118 +83,10 @@ typedef struct {
 	 * Defaults to 1.
 	 */
 	guint ( *get_interface_version )( const ofaIImporter *instance );
-
-	/**
-	 * import_from_uri:
-	 * @instance: the #ofaIImporter provider.
-	 * @parms: an #ofaIImporterParms structure.
-	 *
-	 * Imports the content of a file.
-	 *
-	 * Return value: the return code of the operation.
-	 */
-	guint ( *import_from_uri )      ( const ofaIImporter *instance, ofaIImporterParms *parms );
 }
 	ofaIImporterInterface;
 
-/**
- * ofaIImporterStatus:
- * @IMPORTER_CODE_OK:                import ok.
- * @IMPORTER_CODE_PROGRAM_ERROR:     a program error has been detected.
- *                                   You should open a bug in
- *                                   <ulink url="https://bugzilla.gnome.org/enter_bug.cgi?product=openbook">Bugzilla</ulink>.
- * @IMPORTER_CODE_NOT_WILLING_TO:    the plugin is not willing to import the uri.
- * @IMPORTER_CODE_UNKNOWN_FORMAT:    unknown format or not a regular file.
- *
- * Defines the return status of the import operation.
- */
-typedef enum {
-	IMPORTER_CODE_OK = 0,
-	IMPORTER_CODE_PROGRAM_ERROR,
-	IMPORTER_CODE_NOT_WILLING_TO,
-	IMPORTER_CODE_UNABLE_TO_PARSE
-}
-	ofaIImporterStatus;
-
-typedef enum {
-	IMPORTER_TYPE_BAT = 1,
-	IMPORTER_TYPE_CLASS,
-	IMPORTER_TYPE_ACCOUNT,
-	IMPORTER_TYPE_CURRENCY,
-	IMPORTER_TYPE_LEDGER,
-	IMPORTER_TYPE_MODEL,
-	IMPORTER_TYPE_RATE,
-	IMPORTER_TYPE_ENTRY
-}
-	ofaIImporterType;
-
-/**
- * ofaIImporterBatv1:
- * This structure is used when importing a bank account transaction list.
- * All data members are to be set on output (no input data here).
- */
-typedef struct {
-	gint     count;
-	GDate    begin;
-	GDate    end;
-	gchar   *rib;
-	gchar   *currency;
-	gdouble  solde;
-	gboolean solde_set;
-	GList   *results;					/* list of ofaIImporterSBatv1 structs */
-}
-	ofaIImporterBatv1;
-
-typedef struct {
-						/* bourso                 lcl */
-						/* excel95 excel2002 excel_tabulated */
-	GDate   dope;		/*   X         X */
-	GDate   deffect;	/*   X         X           X */
-	gchar  *ref;		/*                         X */
-	gchar  *label;		/*   X         X           X */
-	gdouble amount;		/*   X         X           X */
-	gchar  *currency;	/*   X         X */
-}
-	ofaIImporterSBatv1;
-
-/**
- * ofaIImporterRefv1:
- * This structure is used when importing a reference table in csv format.
- * All data members are to be set on output (no input data here).
- */
-typedef struct {
-	gint     count;
-}
-	ofaIImporterRefv1;
-
-/**
- * ofaIImporterParms:
- * @uri:      [in]
- * @messages: [in/out]
- * @type:     [out]    the type of imported data, to be set by the
- *                     importer
- * @v1:      [out]     the BAT v1 parameters, if @type is BAT1
- *
- * This structure allows to pass all needed parameters when importing
- * from an URI, taking back all the results on output.
- */
-struct _ofaIImporterParms {
-	const gchar *uri;
-	GSList      *messages;
-	gint         type;
-	gint         version;
-	gchar       *format;
-	union {
-		ofaIImporterBatv1 batv1;
-		ofaIImporterRefv1 refv1;
-	};
-};
-
 GType ofa_iimporter_get_type       ( void );
-
-guint ofa_iimporter_import_from_uri( const ofaIImporter *importer, ofaIImporterParms *parms );
-
-void  ofa_iimporter_free_output    ( ofaIImporterParms *parms );
 
 G_END_DECLS
 

@@ -36,9 +36,8 @@
  * The #ofaIExportable interface exports items to the outside world.
  */
 
+#include "api/ofa-file-format.h"
 #include "api/ofo-dossier-def.h"
-
-#include "core/ofa-file-format.h"
 
 G_BEGIN_DECLS
 

@@ -37,11 +37,50 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-iimporter.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofo-bat-def.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
+
+/**
+ * ofsBat:
+ * This structure is used when importing a bank account transaction
+ * list (BAT).
+ * All data members are to be set on output (no input data here).
+ * Though most data are optional, the importer MUST set the version
+ * number of the structure to the version it is using.
+ */
+typedef struct {
+	gint     version;
+	gchar   *uri;
+	gchar   *format;
+	GDate    begin;
+	GDate    end;
+	gchar   *rib;
+	gchar   *currency;
+	gdouble  solde;
+	gboolean solde_set;
+	GList   *details;
+}
+	ofsBat;
+
+typedef struct {
+							/* bourso    bourso       lcl        */
+							/* excel95 excel2002 excel_tabulated */
+							/* ------- --------- --------------- */
+	gint    version;		/*   X         X                     */
+	GDate   dope;			/*   X         X                     */
+	GDate   deffect;		/*   X         X           X         */
+	gchar  *ref;			/*                         X         */
+	gchar  *label;			/*   X         X           X         */
+	gdouble amount;			/*   X         X           X         */
+	gchar  *currency;		/*   X         X                     */
+}
+	ofsBatDetail;
+
+#define OFS_BAT_LAST_VERSION            1
+#define OFS_BAT_DETAIL_LAST_VERSION     1
 
 ofoBat         *ofo_bat_new          ( void );
 
@@ -80,6 +119,10 @@ void            ofo_bat_set_notes    ( ofoBat *bat, const gchar *notes );
 gboolean        ofo_bat_insert       ( ofoBat *bat, ofoDossier *dossier );
 gboolean        ofo_bat_update       ( ofoBat *bat, ofoDossier *dossier );
 gboolean        ofo_bat_delete       ( ofoBat *bat, ofoDossier *dossier );
+
+gboolean        ofo_bat_import       ( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier );
+
+void            ofo_bat_free         ( ofsBat *sbat );
 
 G_END_DECLS
 

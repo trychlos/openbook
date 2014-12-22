@@ -1362,6 +1362,7 @@ on_select_bat( GtkButton *button, ofaReconciliation *self )
 static void
 on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 {
+#if 0
 	gint bat_id;
 
 	bat_id = ofa_importer_import_from_uri(
@@ -1372,6 +1373,7 @@ on_file_set( GtkFileChooserButton *button, ofaReconciliation *self )
 	if( bat_id > 0 ){
 		setup_bat_lines( self, bat_id );
 	}
+#endif
 }
 
 static void

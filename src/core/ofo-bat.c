@@ -41,6 +41,7 @@
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-bat.h"
+#include "api/ofo-bat-line.h"
 
 /* priv instance data
  */
@@ -1011,4 +1012,87 @@ bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b )
 	id_b = ofo_bat_get_id( b );
 
 	return( id_a > id_b ? 1 : ( id_a < id_b ? -1 : 0 ));
+}
+
+/**
+ * ofo_bat_import:
+ * @importable:
+ * @sbat:
+ * @dossier:
+ *
+ * Import the provided #ofsBat structure.
+ */
+gboolean
+ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier )
+{
+	gboolean ok;
+	ofoBat *bat;
+	ofoBatLine *bline;
+	ofsBatDetail *sdet;
+	GList *it;
+
+	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), FALSE );
+	g_return_val_if_fail( sbat, FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	bat = ofo_bat_new();
+
+	ofo_bat_set_uri( bat, sbat->uri );
+	ofo_bat_set_format( bat, sbat->format );
+	ofo_bat_set_count( bat, g_list_length( sbat->details ));
+	ofo_bat_set_begin( bat, &sbat->begin );
+	ofo_bat_set_end( bat, &sbat->end );
+	ofo_bat_set_rib( bat, sbat->rib );
+	ofo_bat_set_currency( bat, sbat->currency );
+	ofo_bat_set_solde( bat, sbat->solde );
+	ofo_bat_set_solde_set( bat, sbat->solde_set );
+
+	ok = ofo_bat_insert( bat, dossier );
+	if( ok ){
+		for( it=sbat->details ; it ; it=it->next ){
+			sdet = ( ofsBatDetail * ) it->data;
+			bline = ofo_bat_line_new( ofo_bat_get_id( bat ));
+
+			ofo_bat_line_set_deffect( bline, &sdet->deffect );
+			ofo_bat_line_set_dope( bline, &sdet->dope );
+			ofo_bat_line_set_ref( bline, sdet->ref );
+			ofo_bat_line_set_label( bline, sdet->label );
+			ofo_bat_line_set_currency( bline, sdet->currency );
+			ofo_bat_line_set_amount( bline, sdet->amount );
+
+			ok &= ofo_bat_line_insert( bline, dossier );
+			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
+			g_object_unref( bline );
+		}
+	}
+	g_object_unref( bat );
+
+	return( ok );
+}
+
+/**
+ * ofo_bat_free:
+ * @sbat:
+ *
+ * Free the provided #ofsBat structure.
+ */
+static void
+bat_free_detail( ofsBatDetail *detail )
+{
+	g_free( detail->ref );
+	g_free( detail->label );
+	g_free( detail->currency );
+	g_free( detail );
+}
+
+void
+ofo_bat_free( ofsBat *sbat )
+{
+	g_list_free_full( sbat->details, ( GDestroyNotify ) bat_free_detail );
+
+	g_free( sbat->uri );
+	g_free( sbat->format );
+	g_free( sbat->rib );
+	g_free( sbat->currency );
+	g_free( sbat );
 }

@@ -43,15 +43,19 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaFileFormat *settings;
-	void                *caller;
-	ofoDossier          *dossier;
+	void          *caller;
 
 	/* runtime data
 	 */
-	guint                count;			/* total count of lines to be imported */
-	guint                progress;		/* import progression */
-	guint                insert;		/* insert progression */
+	guint          count;				/* total count of lines to be imported */
+	guint          progress;			/* import progression */
+	guint          insert;				/* insert progression */
+
+	/* when importing via a plugin
+	 */
+	gchar         *fname;
+	ofaFileFormat *settings;
+	void          *ref;
 }
 	sIImportable;
 
@@ -111,7 +115,7 @@ register_type( void )
 
 	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIImportable", &info, 0 );
 
-	g_type_interface_add_prerequisite( type, OFO_TYPE_BASE );
+	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
 	return( type );
 }
@@ -194,13 +198,13 @@ ofa_iimportable_import( ofaIImportable *importable,
 	g_return_val_if_fail( sdata, 0 );
 
 	errors = 0;
-	sdata->settings = settings;
 	sdata->caller = caller;
-	sdata->dossier = dossier;
+	sdata->progress = 0;
+	sdata->insert = 0;
 	sdata->count = g_slist_length( lines );
 
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import ){
-		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, lines, sdata->dossier );
+		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, lines, dossier );
 	}
 
 	my_utils_stamp_set_now( &stamp_end );
@@ -315,5 +319,101 @@ on_importable_weak_notify( sIImportable *sdata, GObject *finalized_object )
 	g_debug( "%s: sdata=%p, finalized_object=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_object );
 
+	g_free( sdata->fname );
 	g_free( sdata );
+}
+
+/**
+ * ofa_iimportable_is_willing_to:
+ * @importable: this #ofaIImportable instance.
+ * @fname: the filename to be imported.
+ * @settings: an #ofaFileFormat object.
+ *
+ * Returns: %TRUE if the provider is willing to import the file.
+ */
+gboolean
+ofa_iimportable_is_willing_to( ofaIImportable *importable,
+									const gchar *fname, ofaFileFormat *settings )
+{
+	static const gchar *thisfn = "ofa_iimportable_is_willing_to";
+	sIImportable *sdata;
+	gboolean ok;
+
+	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), FALSE );
+	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), FALSE );
+
+	sdata = get_iimportable_data( importable );
+	g_return_val_if_fail( sdata, FALSE );
+
+	ok = FALSE;
+	sdata->fname = g_strdup( fname );
+	sdata->settings = settings;
+
+	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->is_willing_to ){
+		ok = OFA_IIMPORTABLE_GET_INTERFACE( importable )->is_willing_to(
+					importable, sdata->fname, sdata->settings, &sdata->ref, &sdata->count );
+	}
+
+	g_debug( "%s: importable=%p (%s), ok=%s, count=%u",
+			thisfn,
+			( void * ) importable, G_OBJECT_TYPE_NAME( importable ), ok ? "True":"False", sdata->count );
+
+	return( ok );
+}
+
+/**
+ * ofa_iimportable_import_fname:
+ * @importable: this #ofaIImportable instance.
+ * @fname: the filename to be imported.
+ * @settings: an #ofaFileFormat object.
+ * @dossier: the current dossier.
+ * @caller: the caller instance.
+ *
+ * Import the specified @fname.
+ *
+ * Returns: the count of errors.
+ */
+guint
+ofa_iimportable_import_fname( ofaIImportable *importable,
+									ofoDossier *dossier, void *caller )
+{
+	sIImportable *sdata;
+	gint errors;
+
+	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+
+	sdata = get_iimportable_data( importable );
+	g_return_val_if_fail( sdata, 0 );
+
+	errors = 0;
+	sdata->caller = caller;
+	sdata->progress = 0;
+	sdata->insert = 0;
+
+	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_fname ){
+		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_fname(
+						importable, sdata->ref, sdata->fname, sdata->settings, dossier );
+	}
+
+	return( errors );
+}
+
+/**
+ * ofa_iimportable_get_count:
+ * @importable: this #ofaIImportable instance.
+ *
+ * Returns: the count of imported lines.
+ */
+guint
+ofa_iimportable_get_count( ofaIImportable *importable )
+{
+	sIImportable *sdata;
+
+	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
+
+	sdata = get_iimportable_data( importable );
+	g_return_val_if_fail( sdata, 0 );
+
+	return( sdata->count );
 }

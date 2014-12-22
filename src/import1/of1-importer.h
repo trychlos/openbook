@@ -64,6 +64,7 @@ typedef struct {
 	of1ImporterClass;
 
 GType of1_importer_get_type     ( void );
+
 void  of1_importer_register_type( GTypeModule *module );
 
 G_END_DECLS

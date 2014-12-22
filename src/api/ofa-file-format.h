@@ -24,13 +24,13 @@
  * $Id$
  */
 
-#ifndef __OFA_FILE_FORMAT_H__
-#define __OFA_FILE_FORMAT_H__
+#ifndef __OPENBOOK_API_OFA_FILE_FORMAT_H__
+#define __OPENBOOK_API_OFA_FILE_FORMAT_H__
 
 /**
  * SECTION: ofa_file_format
  * @short_description: #ofaFileFormat class definition.
- * @include: core/ofa-file-format.h
+ * @include: openbook/ofa-file-format.h
  *
  * A convenience class which manages the file formats for import and
  * export datas.
@@ -69,7 +69,7 @@ typedef struct _ofaFileFormatPrivate        ofaFileFormatPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                   parent;
+	GObject               parent;
 
 	/*< private members >*/
 	ofaFileFormatPrivate *priv;
@@ -78,7 +78,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass              parent;
+	GObjectClass          parent;
 }
 	ofaFileFormatClass;
 
@@ -86,13 +86,17 @@ typedef struct {
  * ofaFFmt:
  * The format of the file as a whole.
  * @OFA_FFMT_CSV:   a text file, csv-like format, line-oriented, with
- *                   a field separator
+ *                  a field separator
  * @OFA_FFMT_FIXED: a binary mode, fixed-format file (without field
- *                   separator).
+ *                  separator).
+ * @OFA_FFMT_OTHER: any other format, whether it is text or binary;
+ *                  this format is not handled by Openbook, and must
+ *                  be managed by a plugin.
  */
 typedef enum {
 	OFA_FFMT_CSV = 1,					/* keep this =1 as this is the default */
-	OFA_FFMT_FIXED
+	OFA_FFMT_FIXED,
+	OFA_FFMT_OTHER
 }
 	ofaFFmt;
 
@@ -119,4 +123,4 @@ void           ofa_file_format_set            ( ofaFileFormat *settings,
 
 G_END_DECLS
 
-#endif /* __OFA_FILE_FORMAT_H__ */
+#endif /* __OPENBOOK_API_OFA_FILE_FORMAT_H__ */

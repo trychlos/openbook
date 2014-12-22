@@ -143,11 +143,8 @@ openbook_SOURCES = \
 	ofa-guided-ex.h										\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
-	ofa-iimporter.c										\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
-	ofa-importer.c										\
-	ofa-importer.h										\
 	ofa-int-closing.c									\
 	ofa-int-closing.h									\
 	ofa-ipreferences.c									\

@@ -62,10 +62,10 @@ libofa_core_la_SOURCES = \
 	ofa-dblogin.h										\
 	ofa-dbms.c											\
 	ofa-file-format.c									\
-	ofa-file-format.h									\
 	ofa-idataset.c										\
 	ofa-idbms.c											\
 	ofa-iexportable.c									\
+	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-main-window-def.h								\
 	ofa-plugin.c										\
