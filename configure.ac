@@ -113,6 +113,7 @@ AC_CONFIG_FILES([
 	src/core/Makefile
 	src/css/Makefile
 	src/import-bourso/Makefile
+	src/import-lcl/Makefile
 	src/mysql/Makefile
 	src/postgre/Makefile
 	src/ui/Makefile

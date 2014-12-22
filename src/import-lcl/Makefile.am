@@ -22,13 +22,44 @@
 #
 # $Id$
 
-SUBDIRS = \
-	api									\
-	core								\
-	css									\
-	import-bourso						\
-	import-lcl							\
-	mysql								\
-	postgre								\
-	ui									\
+plugin_id = ofa-import-lcl
+
+pkglib_LTLIBRARIES = libofa-import-lcl.la
+
+plugin_datadir = $(pkgdatadir)/$(plugin_id)
+
+AM_CPPFLAGS += \
+	-I $(top_srcdir)								\
+	-I $(top_srcdir)/src							\
+	$(OPENBOOK_CFLAGS)								\
+	-DG_LOG_DOMAIN=\"OFA\"							\
+	-DPROVIDER_ID=\"$(plugin_id)\"					\
+	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
+	$(NULL)
+
+libofa_import_lcl_la_SOURCES = \
+	ofa-importer.c									\
+	ofa-importer.h									\
+	ofa-module.c									\
+	$(NULL)
+
+libofa_import_lcl_la_LIBADD = \
+	$(OPENBOOK_LIBS)								\
+	$(NULL)
+
+libofa_import_lcl_la_LDFLAGS = \
+	-module 										\
+	-no-undefined									\
+	-avoid-version									\
+	$(NULL)
+
+images_files = \
+	$(NULL)
+
+plugin_data_DATA = \
+	$(images_files)									\
+	$(NULL)
+
+EXTRA_DIST = \
+	$(plugin_data_DATA)								\
 	$(NULL)

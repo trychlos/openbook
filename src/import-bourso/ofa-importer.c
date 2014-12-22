@@ -44,7 +44,7 @@
 
 /* private instance data
  */
-struct _ofaImporterPrivate {
+struct _ofaBoursoImporterPrivate {
 	gboolean       dispose_has_run;
 
 	ofaFileFormat *settings;
@@ -60,66 +60,59 @@ struct _ofaImporterPrivate {
 typedef struct {
 	const gchar *label;
 	gint         version;
-	gboolean   (*fnTest)  ( ofaImporter * );
-	ofsBat *   (*fnImport)( ofaImporter * );
+	gboolean   (*fnTest)  ( ofaBoursoImporter * );
+	ofsBat *   (*fnImport)( ofaBoursoImporter * );
 }
 	ImportFormat;
 
-static gboolean bourso_excel95_v1_check( ofaImporter *importer );
-static ofsBat  *bourso_excel95_v1_import( ofaImporter *importer );
-static gboolean bourso_excel2002_v1_check( ofaImporter *importer );
-static ofsBat  *bourso_excel2002_v1_import( ofaImporter *importer );
-static gboolean lcl_tabulated_text_v1_check( ofaImporter *importer );
-static ofsBat  *lcl_tabulated_text_v1_import( ofaImporter *importer );
+static gboolean bourso_excel95_v1_check( ofaBoursoImporter *bourso_importer );
+static ofsBat  *bourso_excel95_v1_import( ofaBoursoImporter *bourso_importer );
+static gboolean bourso_excel2002_v1_check( ofaBoursoImporter *bourso_importer );
+static ofsBat  *bourso_excel2002_v1_import( ofaBoursoImporter *bourso_importer );
 
 static ImportFormat st_import_formats[] = {
 		{ "Boursorama - Excel 95",        1, bourso_excel95_v1_check,     bourso_excel95_v1_import },
 		{ "Boursorama - Excel 2002",      1, bourso_excel2002_v1_check,   bourso_excel2002_v1_import },
-		{ "LCL - Excel (tabulated text)", 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_import },
 		{ 0 }
 };
 
 static GType         st_module_type = 0;
 static GObjectClass *st_parent_class = NULL;
 
-static void         class_init( ofaImporterClass *klass );
+static void         class_init( ofaBoursoImporterClass *klass );
 static void         instance_init( GTypeInstance *instance, gpointer klass );
 static void         instance_dispose( GObject *object );
 static void         instance_finalize( GObject *object );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
-static guint        iimportable_get_interface_version( const ofaIImportable *importer );
-static gboolean     iimportable_is_willing_to( ofaIImportable *importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_fname( ofaIImportable *importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier );
-static GSList      *get_file_content( ofaIImportable *importer, const gchar *fname );
-static gboolean     bourso_tabulated_text_v1_check( ofaImporter *importer, const gchar *thisfn );
-static ofsBat      *bourso_tabulated_text_v1_import( ofaImporter *importe, const gchar *thisfn );
+static guint        iimportable_get_interface_version( const ofaIImportable *bourso_importer );
+static gboolean     iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count );
+static guint        iimportable_import_fname( ofaIImportable *bourso_importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier );
+static GSList      *get_file_content( ofaIImportable *bourso_importer, const gchar *fname );
+static gboolean     bourso_tabulated_text_v1_check( ofaBoursoImporter *bourso_importer, const gchar *thisfn );
+static ofsBat      *bourso_tabulated_text_v1_import( ofaBoursoImporter *importe, const gchar *thisfn );
 static gchar       *bourso_strip_field( gchar *str );
 static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
-static gboolean     lcl_tabulated_text_v1_check( ofaImporter *importer );
-static ofsBat      *lcl_tabulated_text_v1_import( ofaImporter *importer );
-static const gchar *lcl_get_ref_paiement( const gchar *str );
-static gchar       *lcl_concatenate_labels( gchar ***iter );
 static gdouble      get_double( const gchar *str );
 
 GType
-ofa_importer_get_type( void )
+ofa_bourso_importer_get_type( void )
 {
 	return( st_module_type );
 }
 
 void
-ofa_importer_register_type( GTypeModule *module )
+ofa_bourso_importer_register_type( GTypeModule *module )
 {
-	static const gchar *thisfn = "ofa_importer_register_type";
+	static const gchar *thisfn = "ofa_bourso_importer_register_type";
 
 	static GTypeInfo info = {
-		sizeof( ofaImporterClass ),
+		sizeof( ofaBoursoImporterClass ),
 		NULL,
 		NULL,
 		( GClassInitFunc ) class_init,
 		NULL,
 		NULL,
-		sizeof( ofaImporter ),
+		sizeof( ofaBoursoImporter ),
 		0,
 		( GInstanceInitFunc ) instance_init
 	};
@@ -132,15 +125,15 @@ ofa_importer_register_type( GTypeModule *module )
 
 	g_debug( "%s", thisfn );
 
-	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaImporter", &info, 0 );
+	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaBoursoImporter", &info, 0 );
 
 	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
 }
 
 static void
-class_init( ofaImporterClass *klass )
+class_init( ofaBoursoImporterClass *klass )
 {
-	static const gchar *thisfn = "ofa_importer_class_init";
+	static const gchar *thisfn = "ofa_bourso_importer_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -149,34 +142,34 @@ class_init( ofaImporterClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
 	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaImporterPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaBoursoImporterPrivate ));
 }
 
 static void
 instance_init( GTypeInstance *instance, gpointer klass )
 {
-	static const gchar *thisfn = "ofa_importer_instance_init";
-	ofaImporter *self;
+	static const gchar *thisfn = "ofa_bourso_importer_instance_init";
+	ofaBoursoImporter *self;
 
 	g_debug( "%s: instance=%p (%s), klass=%p",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) klass );
 
-	g_return_if_fail( instance && OFA_IS_IMPORTER( instance ));
+	g_return_if_fail( instance && OFA_IS_BOURSO_IMPORTER( instance ));
 
-	self = OFA_IMPORTER( instance );
+	self = OFA_BOURSO_IMPORTER( instance );
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_IMPORTER, ofaImporterPrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_BOURSO_IMPORTER, ofaBoursoImporterPrivate );
 	self->priv->dispose_has_run = FALSE;
 }
 
 static void
 instance_dispose( GObject *object )
 {
-	ofaImporterPrivate *priv;
+	ofaBoursoImporterPrivate *priv;
 
-	g_return_if_fail( object && OFA_IS_IMPORTER( object ));
+	g_return_if_fail( object && OFA_IS_BOURSO_IMPORTER( object ));
 
-	priv = OFA_IMPORTER( object )->priv;
+	priv = OFA_BOURSO_IMPORTER( object )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -192,16 +185,16 @@ instance_dispose( GObject *object )
 static void
 instance_finalize( GObject *object )
 {
-	static const gchar *thisfn = "ofa_importer_instance_finalize";
-	ofaImporterPrivate *priv;
+	static const gchar *thisfn = "ofa_bourso_importer_instance_finalize";
+	ofaBoursoImporterPrivate *priv;
 
-	g_return_if_fail( object && OFA_IS_IMPORTER( object ));
+	g_return_if_fail( object && OFA_IS_BOURSO_IMPORTER( object ));
 
 	g_debug( "%s: object=%p (%s)",
 			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
 	/* free data members here */
-	priv = OFA_IMPORTER( object )->priv;
+	priv = OFA_BOURSO_IMPORTER( object )->priv;
 
 	g_slist_free_full( priv->lines, ( GDestroyNotify ) g_free );
 
@@ -212,7 +205,7 @@ instance_finalize( GObject *object )
 static void
 iimportable_iface_init( ofaIImportableInterface *iface )
 {
-	static const gchar *thisfn = "ofa_importer_iimportable_iface_init";
+	static const gchar *thisfn = "ofa_bourso_importer_iimportable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -222,7 +215,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 }
 
 static guint
-iimportable_get_interface_version( const ofaIImportable *importer )
+iimportable_get_interface_version( const ofaIImportable *bourso_importer )
 {
 	return( 1 );
 }
@@ -234,24 +227,24 @@ iimportable_get_interface_version( const ofaIImportable *importer )
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-iimportable_is_willing_to( ofaIImportable *importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count )
+iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *fname, ofaFileFormat *settings, void **ref, guint *count )
 {
-	static const gchar *thisfn = "ofa_importer_iimportable_is_willing_to";
-	ofaImporterPrivate *priv;
+	static const gchar *thisfn = "ofa_bourso_importer_iimportable_is_willing_to";
+	ofaBoursoImporterPrivate *priv;
 	gint i;
 	gboolean ok;
 
-	g_debug( "%s: importer=%p, fname=%s, settings=%p, count=%p",
-			thisfn, ( void * ) importer, fname, ( void * ) settings, ( void * ) count );
+	g_debug( "%s: bourso_importer=%p, fname=%s, settings=%p, count=%p",
+			thisfn, ( void * ) bourso_importer, fname, ( void * ) settings, ( void * ) count );
 
-	priv = OFA_IMPORTER( importer )->priv;
+	priv = OFA_BOURSO_IMPORTER( bourso_importer )->priv;
 	ok = FALSE;
 
-	priv->lines = get_file_content( importer, fname );
+	priv->lines = get_file_content( bourso_importer, fname );
 	priv->settings = settings;
 
 	for( i=0 ; st_import_formats[i].label ; ++i ){
-		if( st_import_formats[i].fnTest( OFA_IMPORTER( importer ))){
+		if( st_import_formats[i].fnTest( OFA_BOURSO_IMPORTER( bourso_importer ))){
 			*ref = GINT_TO_POINTER( i );
 			*count = priv->count;
 			ok = TRUE;
@@ -268,20 +261,20 @@ iimportable_is_willing_to( ofaIImportable *importer, const gchar *fname, ofaFile
  * import the file
  */
 static guint
-iimportable_import_fname( ofaIImportable *importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier )
+iimportable_import_fname( ofaIImportable *bourso_importer, void *ref, const gchar *fname, ofaFileFormat *settings, ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofa_importer_iimportable_import_fname";
-	ofaImporterPrivate *priv;
+	static const gchar *thisfn = "ofa_bourso_importer_iimportable_import_fname";
+	ofaBoursoImporterPrivate *priv;
 	gint idx;
 	ofsBat *bat;
 
-	g_debug( "%s: importer=%p, ref=%p, fname=%s, settings=%p, dossier=%p",
-			thisfn, ( void * ) importer, ref,
+	g_debug( "%s: bourso_importer=%p, ref=%p, fname=%s, settings=%p, dossier=%p",
+			thisfn, ( void * ) bourso_importer, ref,
 			fname, ( void * ) settings, ( void * ) dossier );
 
-	priv = OFA_IMPORTER( importer )->priv;
+	priv = OFA_BOURSO_IMPORTER( bourso_importer )->priv;
 
-	priv->lines = get_file_content( importer, fname );
+	priv->lines = get_file_content( bourso_importer, fname );
 	priv->settings = settings;
 	priv->dossier = dossier;
 
@@ -289,11 +282,11 @@ iimportable_import_fname( ofaIImportable *importer, void *ref, const gchar *fnam
 	bat = NULL;
 
 	if( st_import_formats[idx].fnImport ){
-		bat = st_import_formats[idx].fnImport( OFA_IMPORTER( importer ));
+		bat = st_import_formats[idx].fnImport( OFA_BOURSO_IMPORTER( bourso_importer ));
 		if( bat ){
 			bat->uri = g_strdup( fname );
 			bat->format = g_strdup( st_import_formats[idx].label );
-			ofo_bat_import( importer, bat, dossier );
+			ofo_bat_import( bourso_importer, bat, dossier );
 			ofo_bat_free( bat );
 		}
 	}
@@ -304,7 +297,7 @@ iimportable_import_fname( ofaIImportable *importer, void *ref, const gchar *fnam
 }
 
 static GSList *
-get_file_content( ofaIImportable *importer, const gchar *fname )
+get_file_content( ofaIImportable *bourso_importer, const gchar *fname )
 {
 	GFile *gfile;
 	gchar *contents;
@@ -340,19 +333,19 @@ get_file_content( ofaIImportable *importer, const gchar *fname )
  * where spaces are tabulations
  */
 static gboolean
-bourso_excel95_v1_check( ofaImporter *importer )
+bourso_excel95_v1_check( ofaBoursoImporter *bourso_importer )
 {
-	static const gchar *thisfn = "ofa_importer_bourso_excel95_v1_check";
+	static const gchar *thisfn = "ofa_bourso_importer_bourso_excel95_v1_check";
 
-	return( bourso_tabulated_text_v1_check( importer, thisfn ));
+	return( bourso_tabulated_text_v1_check( bourso_importer, thisfn ));
 }
 
 static ofsBat *
-bourso_excel95_v1_import( ofaImporter *importer )
+bourso_excel95_v1_import( ofaBoursoImporter *bourso_importer )
 {
-	static const gchar *thisfn = "ofa_importer_bourso_excel95_v1_import";
+	static const gchar *thisfn = "ofa_bourso_importer_bourso_excel95_v1_import";
 
-	return( bourso_tabulated_text_v1_import( importer, thisfn ));
+	return( bourso_tabulated_text_v1_import( bourso_importer, thisfn ));
 }
 
 /*
@@ -361,31 +354,31 @@ bourso_excel95_v1_import( ofaImporter *importer )
  * functions will never be called
  */
 static gboolean
-bourso_excel2002_v1_check( ofaImporter *importer )
+bourso_excel2002_v1_check( ofaBoursoImporter *bourso_importer )
 {
-	static const gchar *thisfn = "ofa_importer_bourso_excel2002_v1_check";
+	static const gchar *thisfn = "ofa_bourso_importer_bourso_excel2002_v1_check";
 
-	return( bourso_tabulated_text_v1_check( importer, thisfn ));
+	return( bourso_tabulated_text_v1_check( bourso_importer, thisfn ));
 }
 
 static ofsBat *
-bourso_excel2002_v1_import( ofaImporter *importer )
+bourso_excel2002_v1_import( ofaBoursoImporter *bourso_importer )
 {
-	static const gchar *thisfn = "ofa_importer_bourso_excel2002_v1_import";
+	static const gchar *thisfn = "ofa_bourso_importer_bourso_excel2002_v1_import";
 
-	return( bourso_tabulated_text_v1_import( importer, thisfn ));
+	return( bourso_tabulated_text_v1_import( bourso_importer, thisfn ));
 }
 
 static gboolean
-bourso_tabulated_text_v1_check( ofaImporter *importer, const gchar *thisfn )
+bourso_tabulated_text_v1_check( ofaBoursoImporter *bourso_importer, const gchar *thisfn )
 {
-	ofaImporterPrivate *priv;
+	ofaBoursoImporterPrivate *priv;
 	GSList *line;
 	const gchar *str;
 	gchar *found;
 	GDate date;
 
-	priv = importer->priv;
+	priv = bourso_importer->priv;
 	line = priv->lines;
 
 	/* first line: "*** Période : dd/mm/yyyy - dd/mm/yyyy" */
@@ -446,9 +439,9 @@ bourso_tabulated_text_v1_check( ofaImporter *importer, const gchar *thisfn )
 }
 
 static ofsBat *
-bourso_tabulated_text_v1_import( ofaImporter *importer, const gchar *thisfn )
+bourso_tabulated_text_v1_import( ofaBoursoImporter *bourso_importer, const gchar *thisfn )
 {
-	ofaImporterPrivate *priv;
+	ofaBoursoImporterPrivate *priv;
 	GSList *line;
 	const gchar *str;
 	ofsBat *sbat;
@@ -457,7 +450,7 @@ bourso_tabulated_text_v1_import( ofaImporter *importer, const gchar *thisfn )
 	gchar **tokens, **iter;
 	gchar *msg, *sbegin, *send;
 
-	priv = importer->priv;
+	priv = bourso_importer->priv;
 	sbat = g_new0( ofsBat, 1 );
 	priv->errors = 0;
 
@@ -483,7 +476,7 @@ bourso_tabulated_text_v1_import( ofaImporter *importer, const gchar *thisfn )
 		send = my_date_to_str( &sbat->end, MY_DATE_DMYY );
 		msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
 				sbat->rib, sbegin, send );
-		ofa_iimportable_set_message( OFA_IIMPORTABLE( importer ), 2, IMPORTABLE_MSG_ERROR, msg );
+		ofa_iimportable_set_message( OFA_IIMPORTABLE( bourso_importer ), 2, IMPORTABLE_MSG_ERROR, msg );
 		g_free( msg );
 		g_free( sbegin );
 		g_free( send );
@@ -503,7 +496,7 @@ bourso_tabulated_text_v1_import( ofaImporter *importer, const gchar *thisfn )
 		sdet = g_new0( ofsBatDetail, 1 );
 		tokens = g_strsplit( line->data, "\t", -1 );
 		iter = tokens;
-		ofa_iimportable_increment_progress( OFA_IIMPORTABLE( importer ), IMPORTABLE_PHASE_IMPORT, 1 );
+		ofa_iimportable_increment_progress( OFA_IIMPORTABLE( bourso_importer ), IMPORTABLE_PHASE_IMPORT, 1 );
 
 		found = bourso_strip_field( *iter );
 		scan_date_dmyy( &sdet->dope, found );
@@ -553,223 +546,6 @@ bourso_strip_field( gchar *str )
 }
 
 /*
- * As of 2014- 6- 1:
- * ----------------
- * 17/04/2014 -> -80,0   -> Carte     ->->       CB  BUFFETTI STILO   15/04/14                          0       Divers
- * 18/04/2014 -> 10000,0 -> Virement  ->->-> VIREMENT WIESER
- * 23/04/2014 -> -12,0   -> Ch<E8>que -> 8341505 ->->->->->
- *
- * Last line is the balance of the account.
- *
- * Ref may be:
- *  'Carte'        -> 'CB'
- *  'Virement'     -> 'Vir.'
- *  'Prélèvement'  -> 'Pr.'
- *  'Chèque'       -> 'Ch.'
- *  'TIP'          -> 'TIP'
- *
- * There is an unknown field, maybe empty, most of time at zero
- *
- * The category may be empty. Most of time, it is set. When it is set,
- * it is always equal to 'Divers'.
- *
- * The unknown field and the category arealways set, or unset, together.
- */
-static gboolean
-lcl_tabulated_text_v1_check( ofaImporter *importer )
-{
-	ofaImporterPrivate *priv;
-	gchar **tokens, **iter;
-	GDate date;
-
-	priv = importer->priv;
-	tokens = g_strsplit( priv->lines->data, "\t", -1 );
-	/* only interpret first line */
-	/* first field = value date */
-	iter = tokens;
-	if( !scan_date_dmyy( &date, *iter )){
-		return( FALSE );
-	}
-	iter += 1;
-	if( !get_double( *iter )){
-		return( FALSE );
-	}
-	/* other fields may be empty */
-
-	priv->count = g_slist_length( priv->lines )-1;
-	g_strfreev( tokens );
-
-	return( TRUE );
-}
-
-static ofsBat  *
-lcl_tabulated_text_v1_import( ofaImporter *importer )
-{
-	ofaImporterPrivate *priv;
-	GSList *line;
-	ofsBat *sbat;
-	ofsBatDetail *sdet;
-	gchar **tokens, **iter;
-	gint count, nb;
-	gchar *msg, *sbegin, *send;
-
-	priv = importer->priv;
-	line = priv->lines;
-	sbat = g_new0( ofsBat, 1 );
-	nb = g_slist_length( priv->lines );
-	count = 0;
-	priv->errors = 0;
-
-	while( TRUE ){
-		if( !line || !line->data || !g_utf8_strlen( line->data, -1 )){
-			break;
-		}
-		tokens = g_strsplit( line->data, "\t", -1 );
-		iter = tokens;
-		count += 1;
-
-		/* detail line */
-		if( count < nb ){
-			sdet = g_new0( ofsBatDetail, 1 );
-			ofa_iimportable_increment_progress( OFA_IIMPORTABLE( importer ), IMPORTABLE_PHASE_IMPORT, 1 );
-
-			scan_date_dmyy( &sdet->deffect, *iter );
-
-			iter += 1;
-			sdet->amount = get_double( *iter );
-
-			iter += 1;
-			if( *iter && g_utf8_strlen( *iter, -1 )){
-				sdet->ref = g_strdup( lcl_get_ref_paiement( *iter ));
-			}
-
-			iter += 1;
-			sdet->label = lcl_concatenate_labels( &iter );
-
-			/* do not interpret
-			 * unknown field nor category */
-			sbat->details = g_list_prepend( sbat->details, sdet );
-
-		/* last line is the file footer */
-		} else {
-			scan_date_dmyy( &sbat->end, *iter );
-
-			iter +=1 ;
-			sbat->solde = get_double( *iter );
-			sbat->solde_set = TRUE;
-
-			iter += 1;
-			/* no ref */
-
-			iter += 1;
-			sbat->rib = lcl_concatenate_labels( &iter );
-
-			if( ofo_bat_exists( priv->dossier, sbat->rib, &sbat->begin, &sbat->end )){
-				sbegin = my_date_to_str( &sbat->begin, MY_DATE_DMYY );
-				send = my_date_to_str( &sbat->end, MY_DATE_DMYY );
-				msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
-						sbat->rib, sbegin, send );
-				ofa_iimportable_set_message( OFA_IIMPORTABLE( importer ), nb, IMPORTABLE_MSG_ERROR, msg );
-				g_free( msg );
-				g_free( sbegin );
-				g_free( send );
-				priv->errors += 1;
-				ofo_bat_free( sbat );
-				sbat = NULL;
-			}
-		}
-
-		g_strfreev( tokens );
-		line = line->next;
-	}
-
-	return( sbat );
-}
-
-typedef struct {
-	const gchar *bat_label;
-	const gchar *ofa_label;
-}
-	lclPaiement;
-
-static const lclPaiement st_lcl_paiements[] = {
-		{ "Carte",       "CB" },
-		{ "Virement",    "Vir" },
-		{ "Prélèvement", "Prel" },
-		{ "Chèque",      "Ch" },
-		{ "TIP",         "TIP" },
-		{ 0 }
-};
-
-static const gchar *
-lcl_get_ref_paiement( const gchar *str )
-{
-	gint i;
-
-	if( str && g_utf8_strlen( str, -1 )){
-		for( i=0 ; st_lcl_paiements[i].bat_label ; ++ i ){
-			if( !g_utf8_collate( str, st_lcl_paiements[i].bat_label )){
-				return( st_lcl_paiements[i].ofa_label );
-			}
-		}
-	}
-
-	return( NULL );
-}
-
-/*
- * return a newly allocated stripped string
- */
-static gchar *
-lcl_concatenate_labels( gchar ***iter )
-{
-	GString *lab1;
-	gchar *lab2;
-
-	lab1 = g_string_new( "" );
-	if( **iter ){
-		lab2 = g_strdup( **iter );
-		g_strstrip( lab2 );
-		if( lab2 && g_utf8_strlen( lab2, -1 )){
-			if( g_utf8_strlen( lab1->str, -1 )){
-				lab1 = g_string_append( lab1, " " );
-			}
-			lab1 = g_string_append( lab1, lab2 );
-		}
-		g_free( lab2 );
-
-		*iter += 1;
-		if( **iter ){
-			lab2 = g_strdup( **iter );
-			g_strstrip( lab2 );
-			if( lab2 && g_utf8_strlen( lab2, -1 )){
-				if( g_utf8_strlen( lab1->str, -1 )){
-					lab1 = g_string_append( lab1, " " );
-				}
-				lab1 = g_string_append( lab1, lab2 );
-			}
-			g_free( lab2 );
-
-			*iter += 1;
-			if( **iter && g_utf8_strlen( **iter, -1 )){
-				lab2 = g_strdup( **iter );
-				g_strstrip( lab2 );
-				if( lab2 && g_utf8_strlen( lab2, -1 )){
-					if( g_utf8_strlen( lab1->str, -1 )){
-						lab1 = g_string_append( lab1, " " );
-					}
-					lab1 = g_string_append( lab1, lab2 );
-				}
-				g_free( lab2 );
-			}
-		}
-	}
-
-	g_strstrip( lab1->str );
-	return( g_string_free( lab1, FALSE ));
-}
-
-/*
  * parse a 'dd/mm/yyyy' date
  */
 static GDate *
@@ -793,7 +569,7 @@ scan_date_dmyy( GDate *date, const gchar *str )
 static gdouble
 get_double( const gchar *str )
 {
-	static const gchar *thisfn = "ofa_importer_get_double";
+	static const gchar *thisfn = "ofa_bourso_importer_get_double";
 	gdouble amount1, amount2;
 	gdouble entier1, entier2;
 

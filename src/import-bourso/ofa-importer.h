@@ -24,13 +24,13 @@
  * $Id$
  */
 
-#ifndef __OFA_IMPORTER_H__
-#define __OFA_IMPORTER_H__
+#ifndef __OFA_BOURSO_IMPORTER_H__
+#define __OFA_BOURSO_IMPORTER_H__
 
 /**
- * SECTION: ofa_importer
- * @short_description: #ofaImporter class definition.
- * @include: ofa-importer.h
+ * SECTION: ofa_bourso_importer
+ * @short_description: #ofaBoursoImporter class definition.
+ * @include: ofa-bourso_importer.h
  *
  * Import Bank Account Transaction (BAT) files in tabulated text format.
  */
@@ -39,34 +39,34 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_IMPORTER                ( ofa_importer_get_type())
-#define OFA_IMPORTER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_IMPORTER, ofaImporter ))
-#define OFA_IMPORTER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_IMPORTER, ofaImporterClass ))
-#define OFA_IS_IMPORTER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_IMPORTER ))
-#define OFA_IS_IMPORTER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_IMPORTER ))
-#define OFA_IMPORTER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_IMPORTER, ofaImporterClass ))
+#define OFA_TYPE_BOURSO_IMPORTER                ( ofa_bourso_importer_get_type())
+#define OFA_BOURSO_IMPORTER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BOURSO_IMPORTER, ofaBoursoImporter ))
+#define OFA_BOURSO_IMPORTER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BOURSO_IMPORTER, ofaBoursoImporterClass ))
+#define OFA_IS_BOURSO_IMPORTER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BOURSO_IMPORTER ))
+#define OFA_IS_BOURSO_IMPORTER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BOURSO_IMPORTER ))
+#define OFA_BOURSO_IMPORTER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BOURSO_IMPORTER, ofaBoursoImporterClass ))
 
-typedef struct _ofaImporterPrivate       ofaImporterPrivate;
+typedef struct _ofaBoursoImporterPrivate        ofaBoursoImporterPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject             parent;
+	GObject                   parent;
 
 	/*< private members >*/
-	ofaImporterPrivate *priv;
+	ofaBoursoImporterPrivate *priv;
 }
-	ofaImporter;
+	ofaBoursoImporter;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass        parent;
+	GObjectClass              parent;
 }
-	ofaImporterClass;
+	ofaBoursoImporterClass;
 
-GType ofa_importer_get_type     ( void );
+GType ofa_bourso_importer_get_type     ( void );
 
-void  ofa_importer_register_type( GTypeModule *module );
+void  ofa_bourso_importer_register_type( GTypeModule *module );
 
 G_END_DECLS
 
-#endif /* __OFA_IMPORTER_H__ */
+#endif /* __OFA_BOURSO_IMPORTER_H__ */
