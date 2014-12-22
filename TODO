@@ -374,8 +374,6 @@
 
  541 2014-12-22 ofoBat: remove count
 
- 542 2014-12-22 merge ofoBat and ofoBatLine (as other children tables)
-
  543
 
 -----------------------------------------------------------------------
@@ -2317,6 +2315,10 @@
 
  540 2014-12-20 add the piece to operation template detail
      2014-12-20 done - svn #4355
+
+ 542 2014-12-22 merge ofoBat and ofoBatLine (as other children tables)
+     2014-12-22 NO because the dataset would be potentially as big as 
+                all entries of the year for all accounts !
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

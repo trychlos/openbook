@@ -22,9 +22,9 @@
 #
 # $Id$
 
-plugin_id = of1-import
+plugin_id = ofa-import-bourso-xls
 
-pkglib_LTLIBRARIES = libof1-import.la
+pkglib_LTLIBRARIES = libofa-import-bourso-xls.la
 
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
 
@@ -38,9 +38,9 @@ AM_CPPFLAGS += \
 	$(NULL)
 
 libof1_import_la_SOURCES = \
-	of1-importer.c									\
-	of1-importer.h									\
-	of1-module.c									\
+	ofa-importer.c									\
+	ofa-importer.h									\
+	ofa-module.c									\
 	$(NULL)
 
 libof1_import_la_LIBADD = \
