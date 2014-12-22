@@ -26,7 +26,7 @@ SUBDIRS = \
 	api									\
 	core								\
 	css									\
-	import1								\
+	import-bourso						\
 	mysql								\
 	postgre								\
 	ui									\

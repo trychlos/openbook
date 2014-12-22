@@ -104,7 +104,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/import1
+subdir = src/import-bourso
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -153,17 +153,18 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)" \
 	"$(DESTDIR)$(plugin_datadir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libof1_import_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_libof1_import_la_OBJECTS = of1-importer.lo of1-module.lo
-libof1_import_la_OBJECTS = $(am_libof1_import_la_OBJECTS)
+libofa_import_bourso_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am_libofa_import_bourso_la_OBJECTS = ofa-importer.lo ofa-module.lo
+libofa_import_bourso_la_OBJECTS =  \
+	$(am_libofa_import_bourso_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libof1_import_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+libofa_import_bourso_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libof1_import_la_LDFLAGS) $(LDFLAGS) \
-	-o $@
+	$(AM_CFLAGS) $(CFLAGS) $(libofa_import_bourso_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -198,8 +199,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libof1_import_la_SOURCES)
-DIST_SOURCES = $(libof1_import_la_SOURCES)
+SOURCES = $(libofa_import_bourso_la_SOURCES)
+DIST_SOURCES = $(libofa_import_bourso_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -397,20 +398,20 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-plugin_id = of1-import
-pkglib_LTLIBRARIES = libof1-import.la
+plugin_id = ofa-import-bourso
+pkglib_LTLIBRARIES = libofa-import-bourso.la
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
-libof1_import_la_SOURCES = \
-	of1-importer.c									\
-	of1-importer.h									\
-	of1-module.c									\
+libofa_import_bourso_la_SOURCES = \
+	ofa-importer.c									\
+	ofa-importer.h									\
+	ofa-module.c									\
 	$(NULL)
 
-libof1_import_la_LIBADD = \
+libofa_import_bourso_la_LIBADD = \
 	$(OPENBOOK_LIBS)								\
 	$(NULL)
 
-libof1_import_la_LDFLAGS = \
+libofa_import_bourso_la_LDFLAGS = \
 	-module 										\
 	-no-undefined									\
 	-avoid-version									\
@@ -440,9 +441,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/import1/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/import-bourso/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/import1/Makefile
+	  $(AUTOMAKE) --gnu src/import-bourso/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -497,8 +498,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-libof1-import.la: $(libof1_import_la_OBJECTS) $(libof1_import_la_DEPENDENCIES) $(EXTRA_libof1_import_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libof1_import_la_LINK) -rpath $(pkglibdir) $(libof1_import_la_OBJECTS) $(libof1_import_la_LIBADD) $(LIBS)
+libofa-import-bourso.la: $(libofa_import_bourso_la_OBJECTS) $(libofa_import_bourso_la_DEPENDENCIES) $(EXTRA_libofa_import_bourso_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libofa_import_bourso_la_LINK) -rpath $(pkglibdir) $(libofa_import_bourso_la_OBJECTS) $(libofa_import_bourso_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -506,8 +507,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/of1-importer.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/of1-module.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-importer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

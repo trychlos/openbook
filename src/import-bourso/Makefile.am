@@ -22,9 +22,9 @@
 #
 # $Id$
 
-plugin_id = ofa-import-bourso-xls
+plugin_id = ofa-import-bourso
 
-pkglib_LTLIBRARIES = libofa-import-bourso-xls.la
+pkglib_LTLIBRARIES = libofa-import-bourso.la
 
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
 
@@ -37,17 +37,17 @@ AM_CPPFLAGS += \
 	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
 	$(NULL)
 
-libof1_import_la_SOURCES = \
+libofa_import_bourso_la_SOURCES = \
 	ofa-importer.c									\
 	ofa-importer.h									\
 	ofa-module.c									\
 	$(NULL)
 
-libof1_import_la_LIBADD = \
+libofa_import_bourso_la_LIBADD = \
 	$(OPENBOOK_LIBS)								\
 	$(NULL)
 
-libof1_import_la_LDFLAGS = \
+libofa_import_bourso_la_LDFLAGS = \
 	-module 										\
 	-no-undefined									\
 	-avoid-version									\

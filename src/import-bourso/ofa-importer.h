@@ -24,13 +24,13 @@
  * $Id$
  */
 
-#ifndef __OF1_IMPORTER_H__
-#define __OF1_IMPORTER_H__
+#ifndef __OFA_IMPORTER_H__
+#define __OFA_IMPORTER_H__
 
 /**
- * SECTION: of1_importer
- * @short_description: #of1Importer class definition.
- * @include: of1-importer.h
+ * SECTION: ofa_importer
+ * @short_description: #ofaImporter class definition.
+ * @include: ofa-importer.h
  *
  * Import Bank Account Transaction (BAT) files in tabulated text format.
  */
@@ -39,34 +39,34 @@
 
 G_BEGIN_DECLS
 
-#define OF1_TYPE_IMPORTER                ( of1_importer_get_type())
-#define OF1_IMPORTER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OF1_TYPE_IMPORTER, of1Importer ))
-#define OF1_IMPORTER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OF1_TYPE_IMPORTER, of1ImporterClass ))
-#define OF1_IS_IMPORTER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OF1_TYPE_IMPORTER ))
-#define OF1_IS_IMPORTER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OF1_TYPE_IMPORTER ))
-#define OF1_IMPORTER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OF1_TYPE_IMPORTER, of1ImporterClass ))
+#define OFA_TYPE_IMPORTER                ( ofa_importer_get_type())
+#define OFA_IMPORTER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_IMPORTER, ofaImporter ))
+#define OFA_IMPORTER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_IMPORTER, ofaImporterClass ))
+#define OFA_IS_IMPORTER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_IMPORTER ))
+#define OFA_IS_IMPORTER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_IMPORTER ))
+#define OFA_IMPORTER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_IMPORTER, ofaImporterClass ))
 
-typedef struct _of1ImporterPrivate       of1ImporterPrivate;
+typedef struct _ofaImporterPrivate       ofaImporterPrivate;
 
 typedef struct {
 	/*< public members >*/
 	GObject             parent;
 
 	/*< private members >*/
-	of1ImporterPrivate *priv;
+	ofaImporterPrivate *priv;
 }
-	of1Importer;
+	ofaImporter;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass parent;
+	GObjectClass        parent;
 }
-	of1ImporterClass;
+	ofaImporterClass;
 
-GType of1_importer_get_type     ( void );
+GType ofa_importer_get_type     ( void );
 
-void  of1_importer_register_type( GTypeModule *module );
+void  ofa_importer_register_type( GTypeModule *module );
 
 G_END_DECLS
 
-#endif /* __OF1_IMPORTER_H__ */
+#endif /* __OFA_IMPORTER_H__ */

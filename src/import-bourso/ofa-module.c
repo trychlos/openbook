@@ -30,7 +30,7 @@
 
 #include <api/ofa-extension.h>
 
-#include "import1/of1-importer.h"
+#include "import-bourso/ofa-importer.h"
 
 /* the count of GType types provided by this extension
  * each new GType type must
@@ -47,11 +47,11 @@
 gboolean
 ofa_extension_startup( GTypeModule *module )
 {
-	static const gchar *thisfn = "import1/of1_module_ofa_extension_startup";
+	static const gchar *thisfn = "import-bourso/ofa_module_ofa_extension_startup";
 
 	g_debug( "%s: module=%p", thisfn, ( void * ) module );
 
-	of1_importer_register_type( module );
+	ofa_importer_register_type( module );
 
 	return( TRUE );
 }
@@ -64,7 +64,7 @@ ofa_extension_startup( GTypeModule *module )
 guint
 ofa_extension_get_api_version( void )
 {
-	static const gchar *thisfn = "import1/of1_module_ofa_extension_get_api_version";
+	static const gchar *thisfn = "import-bourso/ofa_module_ofa_extension_get_api_version";
 	guint version;
 
 	version = 1;
@@ -82,7 +82,7 @@ ofa_extension_get_api_version( void )
 const gchar *
 ofa_extension_get_name( void )
 {
-	return( "Tabulated BAT Importer #1" );
+	return( "Boursorama tabulated BAT Importer #1" );
 }
 
 /*
@@ -104,12 +104,12 @@ ofa_extension_get_version_number( void )
 guint
 ofa_extension_list_types( const GType **types )
 {
-	static const gchar *thisfn = "import1/of1_module_ofa_extension_list_types";
+	static const gchar *thisfn = "import-bourso/ofa_module_ofa_extension_list_types";
 	static GType types_list [1+OFA_TYPES_COUNT];
 
 	g_debug( "%s: types=%p", thisfn, ( void * ) types );
 
-	types_list[0] = OF1_TYPE_IMPORTER;
+	types_list[0] = OFA_TYPE_IMPORTER;
 
 	types_list[OFA_TYPES_COUNT] = 0;
 	*types = types_list;
@@ -125,7 +125,7 @@ ofa_extension_list_types( const GType **types )
 void
 ofa_extension_shutdown( void )
 {
-	static const gchar *thisfn = "import1/of1_module_ofa_extension_shutdown";
+	static const gchar *thisfn = "import-bourso/ofa_module_ofa_extension_shutdown";
 
 	g_debug( "%s", thisfn );
 }
