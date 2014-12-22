@@ -440,7 +440,7 @@ setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat )
 		gtk_entry_set_text( priv->format, "" );
 	}
 
-	str = g_strdup_printf( "%d", ofo_bat_get_count( bat ));
+	str = g_strdup_printf( "%d", ofo_bat_get_count( bat, priv->dossier ));
 	gtk_entry_set_text( priv->count, str );
 	g_free( str );
 

@@ -325,7 +325,7 @@ insert_new_row( ofaBatsPage *self, ofoBat *bat, gboolean with_selection )
 
 	sbegin = my_date_to_str( ofo_bat_get_begin( bat ), MY_DATE_DMYY );
 	send = my_date_to_str( ofo_bat_get_end( bat ), MY_DATE_DMYY );
-	scount = g_strdup_printf( "%u", ofo_bat_get_count( bat ));
+	scount = g_strdup_printf( "%u", ofo_bat_get_count( bat, ofa_page_get_dossier( OFA_PAGE( self ))));
 	samount = my_double_to_str( ofo_bat_get_solde( bat ));
 
 	gtk_list_store_insert_with_values(

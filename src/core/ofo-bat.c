@@ -52,7 +52,6 @@ struct _ofoBatPrivate {
 	ofxCounter id;						/* bat (imported file) id */
 	gchar     *uri;
 	gchar     *format;
-	gint       count;
 	GDate      begin;
 	GDate      end;
 	gchar     *rib;
@@ -171,7 +170,7 @@ bat_load_dataset( ofoDossier *dossier )
 	dbms = ofo_dossier_get_dbms( dossier );
 
 	if( ofa_dbms_query_ex( dbms,
-			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_COUNT,"
+			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,"
 			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE,"
 			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
 			"	FROM OFA_T_BAT "
@@ -187,8 +186,6 @@ bat_load_dataset( ofoDossier *dossier )
 			if( icol->data ){
 				ofo_bat_set_format( bat, ( gchar * ) icol->data );
 			}
-			icol = icol->next;
-			ofo_bat_set_count( bat, atoi(( gchar * ) icol->data ));
 			icol = icol->next;
 			if( icol->data ){
 				my_date_set_from_sql( &bat->priv->begin, ( const gchar * ) icol->data );
@@ -287,13 +284,22 @@ ofo_bat_get_format( const ofoBat *bat )
  * ofo_bat_get_count:
  */
 gint
-ofo_bat_get_count( const ofoBat *bat )
+ofo_bat_get_count( const ofoBat *bat, ofoDossier *dossier )
 {
-	g_return_val_if_fail( OFO_IS_BAT( bat ), -1 );
+	gchar *query;
+	gint count;
+
+	g_return_val_if_fail( bat && OFO_IS_BAT( bat ), -1 );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), -1 );
 
 	if( !OFO_BASE( bat )->prot->dispose_has_run ){
 
-		return( bat->priv->count );
+		query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_ID=%lu",
+						ofo_bat_get_id( bat ));
+		ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query, &count, TRUE );
+		g_free( query );
+
+		return( count );
 	}
 
 	g_assert_not_reached();
@@ -587,20 +593,6 @@ ofo_bat_set_format( ofoBat *bat, const gchar *format )
 }
 
 /**
- * ofo_bat_set_count:
- */
-void
-ofo_bat_set_count( ofoBat *bat, gint count )
-{
-	g_return_if_fail( OFO_IS_BAT( bat ));
-
-	if( !OFO_BASE( bat )->prot->dispose_has_run ){
-
-		bat->priv->count = count;
-	}
-}
-
-/**
  * ofo_bat_set_begin:
  */
 void
@@ -787,7 +779,7 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 	query = g_string_new( "INSERT INTO OFA_T_BAT" );
 
 	g_string_append_printf( query,
-			"	(BAT_ID,BAT_URI,BAT_FORMAT,BAT_COUNT,BAT_BEGIN,BAT_END,"
+			"	(BAT_ID,BAT_URI,BAT_FORMAT,BAT_BEGIN,BAT_END,"
 			"	 BAT_RIB,BAT_CURRENCY,BAT_SOLDE,"
 			"	 BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP) VALUES (%ld,'%s',",
 					ofo_bat_get_id( bat ),
@@ -800,8 +792,6 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 		query = g_string_append( query, "NULL," );
 	}
 	g_free( str );
-
-	g_string_append_printf( query, "%d,", ofo_bat_get_count( bat ));
 
 	begin = ofo_bat_get_begin( bat );
 	if( my_date_is_valid( begin )){
@@ -1039,7 +1029,6 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofoDossier *dossier )
 
 	ofo_bat_set_uri( bat, sbat->uri );
 	ofo_bat_set_format( bat, sbat->format );
-	ofo_bat_set_count( bat, g_list_length( sbat->details ));
 	ofo_bat_set_begin( bat, &sbat->begin );
 	ofo_bat_set_end( bat, &sbat->end );
 	ofo_bat_set_rib( bat, sbat->rib );
