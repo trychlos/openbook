@@ -184,7 +184,6 @@ static void
 instance_finalize( GObject *object )
 {
 	static const gchar *thisfn = "ofa_lcl_importer_instance_finalize";
-	ofaLCLImporterPrivate *priv;
 
 	g_return_if_fail( object && OFA_IS_LCL_IMPORTER( object ));
 
@@ -192,9 +191,6 @@ instance_finalize( GObject *object )
 			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
 	/* free data members here */
-	priv = OFA_LCL_IMPORTER( object )->priv;
-
-	g_slist_free_full( priv->lines, ( GDestroyNotify ) g_free );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( st_parent_class )->finalize( object );
