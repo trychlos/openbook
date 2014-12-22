@@ -485,13 +485,13 @@ ofo_bat_exists( const ofoDossier *dossier, const gchar *rib, const GDate *begin,
 	if( my_date_is_valid( begin )){
 		g_string_append_printf( query, "AND BAT_BEGIN='%s' ", sbegin );
 	} else {
-		g_string_append_printf( query, "AND BAT_BEGIN=NULL " );
+		g_string_append_printf( query, "AND BAT_BEGIN IS NULL " );
 	}
 
 	if( my_date_is_valid( end )){
 		g_string_append_printf( query, "AND BAT_END='%s'", send );
 	} else {
-		g_string_append_printf( query, "AND BAT_END=NULL" );
+		g_string_append_printf( query, "AND BAT_END IS NULL" );
 	}
 
 	ofa_dbms_query_int( ofo_dossier_get_dbms( dossier ), query->str, &count, TRUE );
