@@ -74,7 +74,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint         ( *get_interface_version )( const ofaIDbms *instance );
+	guint         ( *get_interface_version )     ( const ofaIDbms *instance );
 
 	/**
 	 * connect:
@@ -91,9 +91,31 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void        * ( *connect )              ( const ofaIDbms *instance,
-														const gchar *dname, const gchar *dbname,
-														const gchar *account, const gchar *password );
+	void        * ( *connect )                   ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *dbname,
+															const gchar *account,
+															const gchar *password );
+
+	/**
+	 * connect_ex:
+	 * @instance: the #ofaIDbms provider.
+	 * @infos: the connection informations as sent by the "changed"
+	 *  signal in the #ofa_idbms_connect_enter_attach_to() function.
+	 * @account: the DBMS root credentials.
+	 * @password: the corresponding password.
+	 *
+	 * Check the DBMS connection.
+	 *
+	 * Return value: %TRUE if the credentials are valid on these
+	 * connection informations.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *connect_ex )                ( const ofaIDbms *instance,
+															void *infos,
+															const gchar *account,
+															const gchar *password );
 
 	/**
 	 * close:
@@ -104,8 +126,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void          ( *close )                ( const ofaIDbms *instance,
-														void *handle );
+	void          ( *close )                     ( const ofaIDbms *instance,
+															void *handle );
 
 	/**
 	 * get_provider_name:
@@ -121,7 +143,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	const gchar * ( *get_provider_name )    ( const ofaIDbms *instance );
+	const gchar * ( *get_provider_name )         ( const ofaIDbms *instance );
 
 	/**
 	 * get_exercices:
@@ -138,8 +160,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GSList *      ( *get_exercices )        ( const ofaIDbms *instance,
-														const gchar *dname );
+	GSList *      ( *get_exercices )             ( const ofaIDbms *instance,
+															const gchar *dname );
 
 	/**
 	 * get_current:
@@ -154,8 +176,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gchar *       ( *get_current )          ( const ofaIDbms *instance,
-														const gchar *dname );
+	gchar *       ( *get_current )               ( const ofaIDbms *instance,
+															const gchar *dname );
 
 	/**
 	 * set_current:
@@ -168,9 +190,10 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	void          ( *set_current )          ( const ofaIDbms *instance,
-														const gchar *dname,
-														const GDate *begin, const GDate *end );
+	void          ( *set_current )               ( const ofaIDbms *instance,
+															const gchar *dname,
+															const GDate *begin,
+															const GDate *end );
 
 	/**
 	 * query:
@@ -186,8 +209,8 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *query )                ( const ofaIDbms *instance,
-														void *handle, const gchar *query );
+	gboolean      ( *query )                     ( const ofaIDbms *instance,
+															void *handle, const gchar *query );
 
 	/**
 	 * query_ex:
@@ -207,9 +230,9 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *query_ex )             ( const ofaIDbms *instance,
-														void *handle, const gchar *query,
-														GSList **result );
+	gboolean      ( *query_ex )                  ( const ofaIDbms *instance,
+															void *handle, const gchar *query,
+															GSList **result );
 
 	/**
 	 * last_error:
@@ -221,60 +244,137 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gchar       * ( *last_error )           ( const ofaIDbms *instance,
-														void *handle );
+	gchar       * ( *last_error )                ( const ofaIDbms *instance,
+															void *handle );
 
 	/**
-	 * properties_new_init:
+	 * connect_display_attach_to:
 	 * @instance: the #ofaIDbms provider.
-	 * @parent: the #GtkContainer which handles the dialog part
-	 * @group: a #GtkSizeGroup to which the DBMS UI grid may be attached
+	 * @dname: the dname of the dossier.
+	 * @parent: the widget into which the connection informations are
+	 *  to be displayed.
 	 *
-	 * Initialize the GtkDialog part which let the user enter the
-	 * properties for a new connection definition.
+	 * Display the DBMS connection informations.
 	 *
 	 * Since: version 1
 	 */
-	void          ( *new_attach_to )        ( const ofaIDbms *instance,
-														GtkContainer *parent,
-														GtkSizeGroup *group );
+	void          ( *connect_display_attach_to ) ( const ofaIDbms *instance,
+															const gchar *dname,
+															GtkContainer *parent );
 
 	/**
-	 * new_check:
+	 * connect_enter_attach_to:
 	 * @instance: the #ofaIDbms provider.
-	 * @parent: the #GtkContainer which handles the dialog part
+	 * @parent: the widget into which the connection informations are
+	 *  to be displayed.
 	 *
-	 * Check that the definition is enough to be validable.
+	 * Display a dialog box in order to let the user enter the connection
+	 * informations.
 	 *
-	 * Returns: %TRUE if enough information has been entered.
+	 * The DBMS provider should load and display a piece of dialog,
+	 * attaching it to the @parent #GtkContainer. In following operations,
+	 * the #GtkContainer will be passed in, so the DBMS provider may set
+	 * some data against it.
+	 * The DBMS provider should send a "changed" signal when something
+	 * is updated in the displayed piece of dialog, joining to the signal
+	 * a pointer to connection informations.
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *new_check )            ( const ofaIDbms *instance,
-														GtkContainer *parent );
+	void          ( *connect_enter_attach_to )   ( ofaIDbms *instance,
+															GtkContainer *parent,
+															GtkSizeGroup *group );
 
 	/**
-	 * new_apply:
+	 * connect_enter_is_valid:
 	 * @instance: the #ofaIDbms provider.
-	 * @parent: the #GtkContainer which handles the dialog part
+	 * @parent: the #GtkContainer to which the dialog piece is attached.
+	 *
+	 * Returns: %TRUE if the entered connection informations are valid.
+	 *
+	 * Note that we only do here an intrinsic check as we do not have
+	 * any credentials.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *connect_enter_is_valid )    ( const ofaIDbms *instance,
+															GtkContainer *parent );
+
+	/**
+	 * connect_enter_get_database:
+	 * @instance: the #ofaIDbms provider.
+	 * @parent: the #GtkContainer to which the dialog piece is attached.
+	 *
+	 * Returns: the database name as a newly allocated string which
+	 * should be g_free() by the caller.
+	 *
+	 * Since: version 1
+	 */
+	gchar *       ( *connect_enter_get_database )( const ofaIDbms *instance,
+															GtkContainer *parent );
+
+	/**
+	 * connect_enter_apply:
+	 * @instance: the #ofaIDbms provider.
+	 * @dname: the name of the dossier.
+	 * @infos: the connection informations as sent by the "changed"
+	 *  signal in the #ofa_idbms_connect_enter_attach_to() function.
+	 *
+	 * Record the newly defined dossier in settings.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *connect_enter_apply )       ( const ofaIDbms *instance,
+															const gchar *dname,
+															void *infos );
+
+	/**
+	 * new_dossier:
+	 * @instance: the #ofaIDbms provider.
 	 * @dname: the name of the new dossier
 	 * @account: the administrative account for the dossier
 	 * @password: the password of the administrative account
 	 *
-	 * Try to apply for a new dossier definition.
-	 * This will also create and initializes the database.
+	 * Create and initialize a new dossier database.
+	 * the database is dropped and recreated without any user
+	 * confirmation.
 	 *
-	 * Returns: %TRUE is a definition is successful, thus letting the
-	 * dialog box to be closed, %FALSE else. In this later case, the DBMS
-	 * provider makes its best to clean up the database.
+	 * Returns: %TRUE is a definition is successful.
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *new_apply )            ( const ofaIDbms *instance,
-														GtkContainer *parent,
-														const gchar *dname,
-														const gchar *account,
-														const gchar *password );
+	gboolean      ( *new_dossier )               ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *root_account,
+															const gchar *root_password );
+
+	/**
+	 * set_admin_credentials:
+	 * @instance: the #ofaIDbms provider.
+	 * @dname: the name of the dossier to be restored.
+	 * @root_account: the root account of the DBMS server.
+	 * @root_password:
+	 * @adm_account: the administrative account for the dossier.
+	 * @adm_password:
+	 *
+	 * Set the dossier administrative credentials.
+	 *
+	 * The #ofaIDbms interface code takes care of defining the account
+	 * as an administrator of the current exercice for the dossier.
+	 *
+	 * The DBMS provider may take advantage of this method to define
+	 * and grant the account at the DBMS level.
+	 *
+	 * Return value: %TRUE if the account has been successfully defined.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *set_admin_credentials )     ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *root_account,
+															const gchar *root_password,
+															const gchar *adm_account,
+															const gchar *adm_password );
 
 	/**
 	 * backup:
@@ -288,25 +388,22 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *backup )               ( const ofaIDbms *instance,
-														void *handle,
-														const gchar *fname );
+	gboolean      ( *backup )                    ( const ofaIDbms *instance,
+															void *handle,
+															const gchar *fname );
 
 	/**
 	 * restore:
 	 * @instance: the #ofaIDbms provider.
 	 * @dname: the name of the dossier to be restored.
 	 * @fname: the input filename.
-	 * @account: the root account of the DBMS server.
-	 * @password:
+	 * @root_account: the root account of the DBMS server.
+	 * @root_password:
 	 *
 	 * Restore the given backup file to the named dossier.
 	 *
 	 * The destination dossier is supposed to be defined in the user's
 	 * settings, and closed.
-	 *
-	 * The DBMS interface takes care of asking for DBMS administrator
-	 * account and password, passing them to the DBMS provider.
 	 *
 	 * The DBMS provider doesn't take any caution before restoring the
 	 * database. This is up to the application to ask for a user
@@ -317,11 +414,11 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *restore )              ( const ofaIDbms *instance,
-														const gchar *dname,
-														const gchar *fname,
-														const gchar *account,
-														const gchar *password );
+	gboolean      ( *restore )                   ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *fname,
+															const gchar *root_account,
+															const gchar *root_password );
 
 	/* ... */
 
@@ -399,19 +496,6 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean      ( *delete_dossier )       ( const ofaIDbms *instance, const gchar *name, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
-
-	/**
-	 * display_connect_infos:
-	 * @instance: the #ofaIDbms provider.
-	 * @container: the widget into which the connection informations
-	 *  are to be displayed.
-	 * @label: the label of the dossier to be restored.
-	 *
-	 * Display the DBMS connection informations.
-	 *
-	 * Since: version 1
-	 */
-	void          ( *display_connect_infos )( const ofaIDbms *instance, GtkWidget *container, const gchar *label );
 }
 	ofaIDbmsInterface;
 
@@ -427,69 +511,94 @@ typedef enum {
 }
 	ofnDBMode;
 
-GType        ofa_idbms_get_type             ( void );
+GType        ofa_idbms_get_type                  ( void );
 
-void        *ofa_idbms_connect              ( const ofaIDbms *instance,
-														const gchar *dname, const gchar *dbname,
-														const gchar *account, const gchar *password );
+void        *ofa_idbms_connect                   ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *dbname,
+															const gchar *account,
+															const gchar *password );
 
-void         ofa_idbms_close                ( const ofaIDbms *instance, void *handle );
+gboolean     ofa_idbms_connect_ex                ( const ofaIDbms *instance,
+															void *infos,
+															const gchar *account,
+															const gchar *password );
 
-ofaIDbms    *ofa_idbms_get_provider_by_name ( const gchar *pname );
+void         ofa_idbms_close                     ( const ofaIDbms *instance,
+															void *handle );
 
-const gchar *ofa_idbms_get_provider_name    ( const ofaIDbms *instance );
+ofaIDbms    *ofa_idbms_get_provider_by_name      ( const gchar *pname );
 
-GSList      *ofa_idbms_get_exercices        ( const ofaIDbms *instance,
-													const gchar *dname );
+const gchar *ofa_idbms_get_provider_name         ( const ofaIDbms *instance );
 
-#define      ofa_idbms_free_exercices(L)    g_debug( "ofa_idbms_free_exercices" ); \
+GSList      *ofa_idbms_get_exercices             ( const ofaIDbms *instance,
+															const gchar *dname );
+
+#define      ofa_idbms_free_exercices(L)         g_debug( "ofa_idbms_free_exercices" ); \
 													g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
-gchar       *ofa_idbms_get_current           ( const ofaIDbms *instance,
-													const gchar *dname );
+gchar       *ofa_idbms_get_current               ( const ofaIDbms *instance,
+															const gchar *dname );
 
-void         ofa_idbms_set_current           ( const ofaIDbms *instance,
-													const gchar *dname,
-													const GDate *begin, const GDate *end );
+void         ofa_idbms_set_current               ( const ofaIDbms *instance,
+															const gchar *dname,
+															const GDate *begin,
+															const GDate *end );
 
-GSList      *ofa_idbms_get_providers_list   ( void );
+GSList      *ofa_idbms_get_providers_list        ( void );
 
-void         ofa_idbms_free_providers_list  ( GSList *list );
+void         ofa_idbms_free_providers_list       ( GSList *list );
 
-gboolean     ofa_idbms_query                ( const ofaIDbms *instance,
-														void *handle, const gchar *query );
+gboolean     ofa_idbms_query                     ( const ofaIDbms *instance,
+															void *handle,
+															const gchar *query );
 
-gboolean     ofa_idbms_query_ex             ( const ofaIDbms *instance,
-														void *handle, const gchar *query,
-														GSList **result );
+gboolean     ofa_idbms_query_ex                  ( const ofaIDbms *instance,
+															void *handle,
+															const gchar *query,
+															GSList **result );
 
-gchar       *ofa_idbms_last_error           ( const ofaIDbms *instance,
-														void *handle );
+gchar       *ofa_idbms_last_error                ( const ofaIDbms *instance,
+															void *handle );
 
-GSList      *ofa_idbms_get_providers_list   ( void );
+void         ofa_idbms_connect_display_attach_to ( const gchar *dname,
+															GtkContainer *parent );
 
-void         ofa_idbms_free_providers_list  ( GSList *list );
+void         ofa_idbms_connect_enter_attach_to   ( ofaIDbms *instance,
+															GtkContainer *parent,
+															GtkSizeGroup *group );
 
-void         ofa_idbms_new_attach_to        ( const ofaIDbms *instance,
-														GtkContainer *parent,
-														GtkSizeGroup *group );
+gboolean     ofa_idbms_connect_enter_is_valid    ( const ofaIDbms *instance,
+															GtkContainer *parent );
 
-gboolean     ofa_idbms_new_check            ( const ofaIDbms *instance,
-														GtkContainer *parent );
+gchar       *ofa_idbms_connect_enter_get_database( const ofaIDbms *instance,
+															GtkContainer *parent );
 
-gboolean     ofa_idbms_new_apply            ( const ofaIDbms *instance,
-														GtkContainer *parent,
-														const gchar *dname,
-														const gchar *account,
-														const gchar *password );
+gboolean     ofa_idbms_connect_enter_apply       ( const ofaIDbms *instance,
+															const gchar *dname,
+															void *infos );
 
-gboolean     ofa_idbms_backup               ( const ofaIDbms *instance,
-														void *handle,
-														const gchar *fname );
+gboolean     ofa_idbms_new_dossier               ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *root_account,
+															const gchar *root_password );
 
-gboolean     ofa_idbms_restore              ( const ofaIDbms *instance,
-														const gchar *dname,
-														const gchar *fname );
+gboolean     ofa_idbms_set_admin_credentials     ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *root_account,
+															const gchar *root_password,
+															const gchar *adm_account,
+															const gchar *adm_password );
+
+gboolean     ofa_idbms_backup                    ( const ofaIDbms *instance,
+															void *handle,
+															const gchar *fname );
+
+gboolean     ofa_idbms_restore                   ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *fname,
+															const gchar *root_account,
+															const gchar *root_password );
 
 /* .... */
 
@@ -499,8 +608,6 @@ gchar       *ofa_idbms_get_dossier_dbname   ( const ofaIDbms *instance, const gc
 
 gboolean     ofa_idbms_delete_dossier       ( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password,
 												gboolean drop_db, gboolean drop_accounts, gboolean with_confirm );
-
-void         ofa_idbms_display_connect_infos( GtkWidget *container, const gchar *label );
 
 G_END_DECLS
 

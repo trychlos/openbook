@@ -236,7 +236,7 @@ on_dossier_changed( ofaDossierTreeview *tview, const gchar *name, ofaDossierOpen
 	g_free( priv->dname );
 	priv->dname = g_strdup( name );
 
-	ofa_exercice_combo_init_view( priv->exercice_combo, name );
+	ofa_exercice_combo_set_dossier( priv->exercice_combo, name );
 
 	check_for_enable_dlg( self );
 }

@@ -370,7 +370,12 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Sole du compte nnnn - llll
 
- 543
+ 543 2014-12-28 piece of dialog should be weak_ref against the top
+                widget instead of the parent container (so that removing
+                the widget from the container also finalize the piece
+                itself)
+
+ 544
 
 -----------------------------------------------------------------------
  DONE

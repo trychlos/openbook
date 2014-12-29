@@ -35,27 +35,19 @@
  * Create a new dossier.
  *
  * Creating a new dossier involves following operations:
- * - (re)creating the database, if not already exists or allowed to
- *   be dropped
- * - creating ad granting the dossier administrative account
+ * - name the dossier
+ * - choose a DBMS provider
+ * - enter DBMS connection informations, including database name
+ * - enter DBMS root credentials
+ * - choose and enter dossier administrative credentials
+ *
+ * Then (and after asking for user confirmation):
+ * - record the dossier connection informations in user settings
+ * - (re)create the database, first dropping it if already exist
+ * - create and grant the dossier administrative account
  * - creating minimal tables as root in order the administrative
  *   account is allowed to connect to the dossier
- * - updating the model to last known version
- * - recording the dossier connection informations in the user
- *   configuration file.
- *
- * In case of an error:
- * - if the database didn't exist, or was allowed to be dropped,
- *   then the database is dropped
- *   (=> database is left as is if database existed and was asked to
- *       be left as is)
- * - if the account didn't exist, then it is dropped
- *   (=> account is left untouched if it already existed)
- * - dossier connection informations are removed from the user
- *   configuration file
- *
- * Note that the process only begins after the DB server connection
- * has been checked OK. This step is so not a source of error.
+ * - create the data model, updating it to last known version
  */
 
 #include "core/my-dialog.h"
@@ -83,7 +75,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	myDialogClass         parent;
 }
 	ofaDossierNewClass;
 

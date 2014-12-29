@@ -60,6 +60,8 @@ typedef struct {
 	GtkWidget *textview;
 	GtkWidget *close_btn;
 	gboolean   backup_ok;
+	gulong     out_line;
+	gulong     err_line;
 }
 	backupInfos;
 
@@ -127,7 +129,7 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 const gchar *
 ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance )
 {
-	return( "mysql %O -u%U -p%P -e 'drop database %B' ; mysql %O -u%U -p%P -e 'create database %B' ; gzip -cd %F | mysql %O -u%U -p%P %B" );
+	return( "mysql %O -u%U -p%P -e 'drop database %B' ; mysql %O -u%U -p%P -e 'create database %B' ; gzip -cd %F | mysql --verbose %O -u%U -p%P %B" );
 }
 
 /**
@@ -136,16 +138,17 @@ ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance )
  * Restore a backup file on a named dossier.
  */
 gboolean
-ofa_mysql_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname, const gchar *account, const gchar *password )
+ofa_mysql_restore( const ofaIDbms *instance,
+						const gchar *dname, const gchar *fname,
+						const gchar *root_account, const gchar *root_password )
 {
 	mysqlInfos *infos;
 	gchar *cmdline;
 	gboolean ok;
 
-	infos = g_new0( mysqlInfos, 1 );
-	ofa_mysql_get_connect_infos( infos, label );
-	infos->account = g_strdup( account );
-	infos->password = g_strdup( password );
+	infos = ofa_mysql_get_connect_infos( dname );
+	infos->account = g_strdup( root_account );
+	infos->password = g_strdup( root_password );
 
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
 	if( !cmdline || !g_utf8_strlen( cmdline, -1 )){
@@ -180,6 +183,8 @@ do_backup_restore( const mysqlInfos *sql_infos,
 
 	infos = g_new0( backupInfos, 1 );
 	infos->backup_ok = FALSE;
+	infos->out_line = 0;
+	infos->err_line = 0;
 
 	create_window( infos, window_title );
 	g_debug( "%s: window=%p, textview=%p",
@@ -215,8 +220,10 @@ build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gcha
 	gchar *quoted;
 
 	cmdline = g_strdup( def_cmdline );
+	g_debug( "cmdline=%s", cmdline );
 
 	regex = g_regex_new( "%B", 0, 0, NULL );
+	g_debug( "dbname=%s", sql_infos->dbname );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, sql_infos->dbname, 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
@@ -225,6 +232,7 @@ build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gcha
 	sysfname = my_utils_filename_from_utf8( fname );
 	quoted = g_shell_quote( sysfname );
 	regex = g_regex_new( "%F", 0, 0, NULL );
+	g_debug( "quoted=%s", quoted );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, quoted, 0, NULL );
 	g_regex_unref( regex );
 	g_free( quoted );
@@ -405,14 +413,12 @@ stdout_fn( GIOChannel *ioc, GIOCondition cond, backupInfos *infos )
 	if( cond & (G_IO_IN | G_IO_PRI )){
 		len = 0;
 		memset( buf, 0x00, BUFSIZE );
-
 		ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
-
 		if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
 			return( stdout_done( ioc ));	/* = return FALSE */
 		}
 
-		str = g_strdup_printf( "[stdout] %s", buf );
+		str = g_strdup_printf( "[stdout %lu] %s\n", ++infos->out_line, buf );
 		display_output( str, infos );
 		g_free( str );
 	}
@@ -445,14 +451,13 @@ stderr_fn( GIOChannel *ioc, GIOCondition cond, backupInfos *infos )
 	/* data for us to read? */
 	if( cond & (G_IO_IN | G_IO_PRI )){
 		len = 0;
-
+		memset( buf, 0x00, BUFSIZE );
 		ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
-
 		if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
 			return( stderr_done( ioc )); /* = return FALSE */
 		}
 
-		str = g_strdup_printf( "[stderr] %s", buf );
+		str = g_strdup_printf( "[stderr %lu] %s\n", ++infos->err_line, buf );
 		display_output( str, infos );
 		g_free( str );
 	}
@@ -509,6 +514,11 @@ display_output( const gchar *str, backupInfos *infos )
 			GTK_TEXT_VIEW( infos->textview),
 			gtk_text_buffer_get_mark( textbuf, "insert" ),
 			0.0, FALSE, 0.0, 0.0 );
+
+	/* let Gtk update the display */
+	while( gtk_events_pending()){
+		gtk_main_iteration();
+	}
 }
 
 static void

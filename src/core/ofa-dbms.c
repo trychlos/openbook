@@ -131,6 +131,7 @@ ofa_dbms_init( ofaDbms *self )
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DBMS, ofaDbmsPrivate );
 
 	self->priv->dispose_has_run = FALSE;
+	self->priv->connected = FALSE;
 }
 
 static void

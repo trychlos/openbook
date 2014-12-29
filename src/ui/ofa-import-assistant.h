@@ -30,7 +30,7 @@
 /**
  * SECTION: ofa_import
  * @short_description: #ofaImportAssistant class definition.
- * @include: ui/ofa-import.h
+ * @include: ui/ofa-import-assistant.h
  *
  * Guide the user through the process of importing data.
  *

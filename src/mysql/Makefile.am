@@ -42,6 +42,10 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql.h										\
 	ofa-mysql-backup.c								\
 	ofa-mysql-backup.h								\
+	ofa-mysql-connect-display-piece.c				\
+	ofa-mysql-connect-display-piece.h				\
+	ofa-mysql-connect-enter-piece.c					\
+	ofa-mysql-connect-enter-piece.h					\
 	ofa-mysql-idbms.c								\
 	ofa-mysql-idbms.h								\
 	ofa-mysql-ipreferences.c						\
@@ -60,8 +64,8 @@ libofa_mysql_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
-	ofa-mysql-connect-infos.piece.ui				\
-	ofa-mysql-dossier-new.piece.ui					\
+	ofa-mysql-connect-display-piece.ui				\
+	ofa-mysql-connect-enter-piece.ui				\
 	ofa-mysql-prefs.piece.ui						\
 	$(NULL)
 

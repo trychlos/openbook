@@ -119,6 +119,10 @@ openbook_SOURCES = \
 	ofa-dossier-misc.h									\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
+	ofa-dossier-new-mini.c								\
+	ofa-dossier-new-mini.h								\
+	ofa-dossier-new-piece.c								\
+	ofa-dossier-new-piece.h								\
 	ofa-dossier-open.c									\
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
@@ -133,6 +137,10 @@ openbook_SOURCES = \
 	ofa-exe-forward-piece.h								\
 	ofa-exercice-combo.c								\
 	ofa-exercice-combo.h								\
+	ofa-exercice-store.c								\
+	ofa-exercice-store.h								\
+	ofa-exercice-treeview.c								\
+	ofa-exercice-treeview.h								\
 	ofa-export-assistant.c								\
 	ofa-export-assistant.h								\
 	ofa-file-format-piece.c								\
@@ -203,8 +211,8 @@ openbook_SOURCES = \
 	ofa-rates-page.h									\
 	ofa-reconciliation.c								\
 	ofa-reconciliation.h								\
-	ofa-restore.c										\
-	ofa-restore.h										\
+	ofa-restore-assistant.c								\
+	ofa-restore-assistant.h								\
 	ofa-settlement.c									\
 	ofa-settlement.h									\
 	ofa-tree-store.c									\
@@ -242,6 +250,8 @@ ui_files = \
 	ofa-dossier-delete-prefs.piece.ui					\
 	ofa-dossier-login.ui								\
 	ofa-dossier-new.ui									\
+	ofa-dossier-new-mini.ui								\
+	ofa-dossier-new-piece.ui							\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
 	ofa-dossier-treeview.piece.ui						\
@@ -261,6 +271,7 @@ ui_files = \
 	ofa-print-books.ui									\
 	ofa-print-ledgers.ui								\
 	ofa-print-reconcil.ui								\
+	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\
 	ofa-settlement.piece.ui								\
 	ofa-view-entries.piece.ui							\

@@ -56,10 +56,12 @@ libofa_core_la_SOURCES = \
 	my-window.h											\
 	my-window-prot.h									\
 	\
+	ofa-admin-credentials-piece.c						\
+	ofa-admin-credentials-piece.h						\
 	ofa-application-def.h								\
 	ofa-box.c											\
-	ofa-dblogin.c										\
-	ofa-dblogin.h										\
+	ofa-dbms-root-piece.c								\
+	ofa-dbms-root-piece.h								\
 	ofa-dbms.c											\
 	ofa-file-format.c									\
 	ofa-idataset.c										\
@@ -104,7 +106,8 @@ libofa_core_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
-	ofa-dblogin.ui										\
+	ofa-admin-credentials-piece.ui						\
+	ofa-dbms-root-piece.ui								\
 	$(NULL)
 
 core_data_DATA = \

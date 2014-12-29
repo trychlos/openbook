@@ -38,78 +38,57 @@
 #include "api/ofo-dossier.h"
 
 #include "core/my-window-prot.h"
+#include "core/ofa-admin-credentials-piece.h"
 
-#include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-new.h"
+#include "ui/ofa-dossier-new-piece.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  */
 struct _ofaDossierNewPrivate {
 
-	/* p1: SGDB Provider
-	 */
-	GtkWidget     *p1_parent;
-
-	gchar         *p1_prov_name;
-	gulong         p1_prov_handler;
-	ofaIDbms      *p1_prov_module;
-
-	/* p3: dossier properties
-	 */
-	gchar         *p3_label;
-	gchar         *p3_account;
-	gchar         *p3_password;
-	gchar         *p3_bis;
-	gboolean       p3_open_dossier;
-	gboolean       p3_update_properties;
-
-	gboolean       p3_label_is_ok;
-	gboolean       p3_account_is_ok;
-	gboolean       p3_passwd_are_equals;
-
 	/* UI
 	 */
-	GtkLabel      *p1_message;
-	GtkWidget     *p3_browse_btn;
-	GtkWidget     *p3_properties_btn;
-	GtkLabel      *msg_label;
-	GtkWidget     *apply_btn;
+	ofaDossierNewPiece       *new_piece;
+	ofaAdminCredentialsPiece *adm_piece;
+	GtkWidget                *properties_toggle;
+	GtkWidget                *ok_btn;
+	GtkWidget                *msg_label;
+
+	/* runtime data
+	 */
+	gchar                    *dname;
+	gchar                    *database;
+	gchar                    *root_account;
+	gchar                    *root_password;
+	gchar                    *adm_account;
+	gchar                    *adm_password;
+	gboolean                  b_open;
+	gboolean                  b_properties;
+
+	gchar                    *prov_name;
 
 	/* result
 	 */
 	gboolean       dossier_created;
 };
 
-/* columns in SGDB provider combo box
- */
-enum {
-	SGDB_COL_PROVIDER = 0,
-	SGDB_N_COLUMNS
-};
-
-static const gchar *st_ui_xml   = PKGUIDIR "/ofa-dossier-new.ui";
-static const gchar *st_ui_id    = "DossierNewDlg";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-new.ui";
+static const gchar *st_ui_id            = "DossierNewDlg";
 
 G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, MY_TYPE_DIALOG )
 
-static gchar    *get_current_dbname( ofaDossierNew *self );
 static void      v_init_dialog( myDialog *dialog );
-static void      init_p1_sgbd_provider( ofaDossierNew *self, GtkContainer *container );
-static void      on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self );
-static void      on_provider_ui_changed( ofaIDbms *provider, gboolean connect_ok, gboolean db_ok, ofaDossierNew *self );
-static void      init_p3_dossier_properties( ofaDossierNew *self, GtkContainer *container );
-static void      on_db_label_changed( GtkEntry *entry, ofaDossierNew *self );
-static void      on_db_account_changed( GtkEntry *entry, ofaDossierNew *self );
-static gboolean  is_account_ok( ofaDossierNew *self );
-static void      on_db_password_changed( GtkEntry *entry, ofaDossierNew *self );
-static void      on_db_bis_changed( GtkEntry *entry, ofaDossierNew *self );
-static gboolean  db_passwords_are_equals( ofaDossierNew *self );
-static void      on_db_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
-static void      on_db_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
-static void      set_message( ofaDossierNew *self, const gchar *msg );
+static void      on_new_piece_changed( ofaDossierNewPiece *piece, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNew *self );
+static void      on_adm_piece_changed( ofaAdminCredentialsPiece *piece, const gchar *account, const gchar *password, ofaDossierNew *self );
+static void      on_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
+static void      on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
+static void      get_settings( ofaDossierNew *self );
+static void      update_settings( ofaDossierNew *self );
 static void      check_for_enable_dlg( ofaDossierNew *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  create_confirmed( const ofaDossierNew *self );
 
 static void
 dossier_new_finalize( GObject *instance )
@@ -124,11 +103,14 @@ dossier_new_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_DOSSIER_NEW( instance )->priv;
-	g_free( priv->p1_prov_name );
-	g_free( priv->p3_label );
-	g_free( priv->p3_account );
-	g_free( priv->p3_password );
-	g_free( priv->p3_bis );
+
+	g_free( priv->dname );
+	g_free( priv->database );
+	g_free( priv->root_account );
+	g_free( priv->root_password );
+	g_free( priv->adm_account );
+	g_free( priv->adm_password );
+	g_free( priv->prov_name );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_new_parent_class )->finalize( instance );
@@ -137,21 +119,11 @@ dossier_new_finalize( GObject *instance )
 static void
 dossier_new_dispose( GObject *instance )
 {
-	ofaDossierNewPrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
-		priv = OFA_DOSSIER_NEW( instance )->priv;
-
 		/* unref object members here */
-		if( priv->p1_prov_handler ){
-			g_signal_handler_disconnect( priv->p1_prov_module, priv->p1_prov_handler );
-		}
-		if( priv->p1_prov_module ){
-			g_clear_object( &priv->p1_prov_module );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -199,6 +171,7 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run";
 	ofaDossierNew *self;
+	ofaDossierNewPrivate *priv;
 	gboolean dossier_created, open_dossier, open_properties;
 	ofsDossierOpen *sdo;
 	gboolean dossier_opened;
@@ -215,18 +188,19 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
+	priv = self->priv;
 	dossier_opened = FALSE;
-	dossier_created = self->priv->dossier_created;
-	open_dossier = self->priv->p3_open_dossier;
-	open_properties = self->priv->p3_update_properties;
+	dossier_created = priv->dossier_created;
+	open_dossier = priv->b_open;
+	open_properties = priv->b_properties;
 
 	if( dossier_created ){
 		if( open_dossier ){
 			sdo = g_new0( ofsDossierOpen, 1 );
-			sdo->dname = g_strdup( self->priv->p3_label );
-			sdo->dbname = get_current_dbname( self );
-			sdo->account = g_strdup( self->priv->p3_account );
-			sdo->password = g_strdup( self->priv->p3_password );
+			sdo->dname = g_strdup( priv->dname );
+			sdo->dbname = g_strdup( priv->database );
+			sdo->account = g_strdup( priv->adm_account );
+			sdo->password = g_strdup( priv->adm_password );
 		}
 	}
 
@@ -245,381 +219,118 @@ ofa_dossier_new_run( ofaMainWindow *main_window )
 	return( dossier_opened );
 }
 
-static gchar *
-get_current_dbname( ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-	gchar *line, *dbname;
-	gchar **array, **iter;
-
-	priv = self->priv;
-
-	/* a description of the exercice with the dbname */
-	line = ofa_idbms_get_current( priv->p1_prov_module, priv->p3_label );
-
-	/* split to an array */
-	array = g_strsplit( line, ";", -1 );
-
-	/* first line is the exercice description */
-	iter = array;
-
-	/* second line is the database name */
-	iter++;
-	dbname = g_strdup( *iter );
-
-	g_strfreev( array );
-	g_free( line );
-
-	return( dbname );
-}
-
 /*
  * the provided 'page' is the toplevel widget of the asistant's page
  */
 static void
 v_init_dialog( myDialog *dialog )
 {
-	GtkWindow *container;
+	ofaDossierNewPrivate *priv;
+	GtkWindow *toplevel;
+	GtkSizeGroup *group;
+	GtkWidget *parent, *toggle;
 
-	g_debug( "v_init_dialog" );
+	priv = OFA_DOSSIER_NEW( dialog )->priv;
+	get_settings( OFA_DOSSIER_NEW( dialog ));
 
-	container = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( container && GTK_IS_WINDOW( container ));
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
-	init_p1_sgbd_provider( OFA_DOSSIER_NEW( dialog ), GTK_CONTAINER( container ));
-	init_p3_dossier_properties( OFA_DOSSIER_NEW( dialog ), GTK_CONTAINER( container ));
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->new_piece = ofa_dossier_new_piece_new();
+	ofa_dossier_new_piece_attach_to( priv->new_piece, GTK_CONTAINER( parent ), group );
+	g_object_unref( group );
+	ofa_dossier_new_piece_set_frame( priv->new_piece, TRUE );
+	if( priv->prov_name && g_utf8_strlen( priv->prov_name, -1 )){
+		ofa_dossier_new_piece_set_provider( priv->new_piece, priv->prov_name );
+	}
+
+	g_signal_connect( priv->new_piece, "changed", G_CALLBACK( on_new_piece_changed ), dialog );
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "admin-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->adm_piece = ofa_admin_credentials_piece_new();
+	ofa_admin_credentials_piece_attach_to( priv->adm_piece, GTK_CONTAINER( parent ));
+
+	g_signal_connect( priv->adm_piece, "changed", G_CALLBACK( on_adm_piece_changed ), dialog );
+
+	/* set properties_toggle before setting open value */
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dn-properties" );
+	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_properties_toggled ), dialog );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), priv->b_properties );
+	priv->properties_toggle = toggle;
+
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dn-open" );
+	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_open_toggled ), dialog );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), priv->b_open );
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
 	check_for_enable_dlg( OFA_DOSSIER_NEW( dialog ));
 }
 
 static void
-init_p1_sgbd_provider( ofaDossierNew *self, GtkContainer *container )
+on_new_piece_changed( ofaDossierNewPiece *piece, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
-	GtkComboBox *combo;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *cell;
-	GtkTreeIter iter;
-	GSList *prov_list, *ip;
 
 	priv = self->priv;
 
-	combo = ( GtkComboBox * ) my_utils_container_get_child_by_name( container, "p1-provider" );
-	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	g_free( priv->dname );
+	priv->dname = g_strdup( dname );
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			SGDB_N_COLUMNS,
-			G_TYPE_STRING ));
-	gtk_combo_box_set_model( combo, tmodel );
-	g_object_unref( tmodel );
+	g_free( priv->root_account );
+	priv->root_account = g_strdup( account );
 
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", SGDB_COL_PROVIDER );
-
-	prov_list = ofa_idbms_get_providers_list();
-
-	for( ip=prov_list ; ip ; ip=ip->next ){
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				SGDB_COL_PROVIDER, ip->data,
-				-1 );
-	}
-
-	ofa_idbms_free_providers_list( prov_list );
-
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_sgdb_provider_changed ), self );
-
-	/* take a pointer on the parent container of the DBMS widget before
-	 *  selecting the default */
-	priv->p1_parent = my_utils_container_get_child_by_name( container, "sgdb-container" );
-	g_return_if_fail( priv->p1_parent && GTK_IS_CONTAINER( priv->p1_parent ));
-
-	gtk_combo_box_set_active( combo, 0 );
-}
-
-static void
-on_sgdb_provider_changed( GtkComboBox *combo, ofaDossierNew *self )
-{
-	static const gchar *thisfn = "ofa_dossier_new_on_sgdb_provider_changed";
-	ofaDossierNewPrivate *priv;
-	GtkTreeIter iter;
-	GtkTreeModel *tmodel;
-	GtkWidget *child;
-	gchar *str;
-	GtkSizeGroup *group;
-	GtkWidget *label;
-
-	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) self );
-
-	priv = self->priv;
-
-	/* do we have finished with the initialization ? */
-	if( priv->p1_parent ){
-
-		/* do we had a previous selection ? */
-		if( priv->p1_prov_handler ){
-			g_free( priv->p1_prov_name );
-			g_signal_handler_disconnect( priv->p1_prov_module, priv->p1_prov_handler );
-			g_clear_object( &priv->p1_prov_module );
-			/* last, remove the widget */
-			child = gtk_bin_get_child( GTK_BIN( priv->p1_parent ));
-			if( child ){
-				gtk_container_remove( GTK_CONTAINER( priv->p1_parent ), child );
-			}
-		}
-
-		priv->p1_prov_name = NULL;
-		priv->p1_prov_handler = 0;
-
-		/* setup current provider */
-		if( gtk_combo_box_get_active_iter( combo, &iter )){
-			tmodel = gtk_combo_box_get_model( combo );
-			gtk_tree_model_get( tmodel, &iter,
-					SGDB_COL_PROVIDER, &priv->p1_prov_name,
-					-1 );
-
-			priv->p1_prov_module = ofa_idbms_get_provider_by_name( priv->p1_prov_name );
-
-			if( priv->p1_prov_module ){
-				/* have a size group */
-				group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-				label = my_utils_container_get_child_by_name(
-								GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
-								"p1-provider-label" );
-				g_return_if_fail( label && GTK_IS_LABEL( label ));
-				gtk_size_group_add_widget( group, label );
-				g_object_unref( group );
-
-				/* and let the DBMS initialize its own part */
-				ofa_idbms_new_attach_to( priv->p1_prov_module, GTK_CONTAINER( priv->p1_parent ), group );
-
-				priv->p1_prov_handler = g_signal_connect(
-												priv->p1_prov_module,
-												"changed" , G_CALLBACK( on_provider_ui_changed ), self );
-
-			} else {
-				str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), priv->p1_prov_name );
-				set_message( self, str );
-				g_free( str );
-			}
-		}
-	}
-}
-
-/*
- * something has changed in the part of the UI managed by the provider
- */
-static void
-on_provider_ui_changed( ofaIDbms *provider, gboolean connect_ok, gboolean db_ok, ofaDossierNew *self )
-{
-	static const gchar *thisfn = "ofa_dossier_new_on_provider_ui_changed";
-
-	g_debug( "%s: provider=%p, connect_ok=%s, db_ok=%s, self=%p",
-			thisfn, ( void * ) provider,
-			connect_ok ? "True":"False", db_ok ? "True":"False", ( void * ) self );
+	g_free( priv->root_password );
+	priv->root_password = g_strdup( password );
 
 	check_for_enable_dlg( self );
 }
 
 static void
-init_p3_dossier_properties( ofaDossierNew *self, GtkContainer *container )
-{
-	GtkWidget *widget;
-	gboolean value;
-
-	widget = my_utils_container_get_child_by_name( container, "p3-label" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_label_changed ), self );
-
-	widget = my_utils_container_get_child_by_name( container, "p3-account" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_account_changed ), self );
-
-	widget = my_utils_container_get_child_by_name( container, "p3-password" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_password_changed ), self );
-
-	widget = my_utils_container_get_child_by_name( container, "p3-bis" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_db_bis_changed ), self );
-
-	/* before p3-open so that the later may update the former */
-	widget = my_utils_container_get_child_by_name( container, "p3-properties" );
-	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
-	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_db_properties_toggled ), self );
-	value = ofa_settings_get_boolean( "DossierNewDlg-properties" );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), value );
-	self->priv->p3_properties_btn = widget;
-
-	widget = my_utils_container_get_child_by_name( container, "p3-open" );
-	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
-	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_db_open_toggled ), self );
-	/* force a signal to be triggered */
-	value = ofa_settings_get_boolean( "DossierNewDlg-opendossier" );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), !value );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), value );
-}
-
-static void
-on_db_label_changed( GtkEntry *entry, ofaDossierNew *self )
+on_adm_piece_changed( ofaAdminCredentialsPiece *piece, const gchar *account, const gchar *password, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
-	const gchar *label;
 
 	priv = self->priv;
 
-	label = gtk_entry_get_text( entry );
-	g_free( priv->p3_label );
-	priv->p3_label = g_strdup( label );
+	g_free( priv->adm_account );
+	priv->adm_account = g_strdup( account );
 
-	priv->p3_label_is_ok = ( priv->p3_label && g_utf8_strlen( priv->p3_label, -1 ));
+	g_free( priv->adm_password );
+	priv->adm_password = g_strdup( password );
+
 	check_for_enable_dlg( self );
 }
 
 static void
-on_db_account_changed( GtkEntry *entry, ofaDossierNew *self )
+on_open_toggled( GtkToggleButton *button, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
-	const gchar *account;
 
 	priv = self->priv;
 
-	account = gtk_entry_get_text( entry );
-	g_free( priv->p3_account );
-	priv->p3_account = g_strdup( account );
+	priv->b_open = gtk_toggle_button_get_active( button );
 
-	priv->p3_account_is_ok = is_account_ok( self );
-	check_for_enable_dlg( self );
-}
-
-/*
- * the dossier administrative account must be distinct of the DBserver
- * admin account (root)
- */
-static gboolean
-is_account_ok( ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-	gboolean ok;
-
-	priv = self->priv;
-	ok = FALSE;
-
-	if( !priv->p3_account || !g_utf8_strlen( priv->p3_account, -1 )){
-		set_message( self, _( "Dossier administrative account is not set" ));
-
-	} else if( g_utf8_collate( priv->p3_account, "root" ) == 0 ){
-		set_message( self, _( "Dossier administrative account must be distinct from DB server admin account" ));
-
-	} else {
-		ok = TRUE;
-		set_message( self, NULL );
+	if( priv->properties_toggle ){
+		gtk_widget_set_sensitive( priv->properties_toggle, priv->b_open );
 	}
-
-	return( ok );
 }
 
 static void
-on_db_password_changed( GtkEntry *entry, ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-	const gchar *password;
-
-	priv = self->priv;
-
-	password = gtk_entry_get_text( entry );
-	g_free( priv->p3_password );
-	priv->p3_password = g_strdup( password );
-
-	priv->p3_passwd_are_equals = db_passwords_are_equals( self );
-	check_for_enable_dlg( self );
-}
-
-static void
-on_db_bis_changed( GtkEntry *entry, ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-	const gchar *bis;
-
-	priv = self->priv;
-
-	bis = gtk_entry_get_text( entry );
-	g_free( priv->p3_bis );
-	priv->p3_bis = g_strdup( bis );
-
-	priv->p3_passwd_are_equals = db_passwords_are_equals( self );
-	check_for_enable_dlg( self );
-}
-
-static gboolean
-db_passwords_are_equals( ofaDossierNew *self )
-{
-	ofaDossierNewPrivate *priv;
-	gboolean are_equals;
-
-	priv = self->priv;
-
-	are_equals = (( !priv->p3_password && !priv->p3_bis ) ||
-				( priv->p3_password && g_utf8_strlen( priv->p3_password, -1 ) &&
-					priv->p3_bis && g_utf8_strlen( priv->p3_bis, -1 ) &&
-					!g_utf8_collate( priv->p3_password, priv->p3_bis )));
-
-	if( are_equals ){
-		set_message( self, "" );
-	} else {
-		set_message( self, _( "Dossier administrative passwords are not set or not equal" ));
-	}
-
-	return( are_equals );
-}
-
-static void
-on_db_open_toggled( GtkToggleButton *button, ofaDossierNew *self )
+on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 
 	priv = self->priv;
 
-	priv->p3_open_dossier = gtk_toggle_button_get_active( button );
-
-	g_return_if_fail( priv->p3_properties_btn && GTK_IS_CHECK_BUTTON( priv->p3_properties_btn ));
-	gtk_widget_set_sensitive( priv->p3_properties_btn, priv->p3_open_dossier );
-}
-
-static void
-on_db_properties_toggled( GtkToggleButton *button, ofaDossierNew *self )
-{
-	self->priv->p3_update_properties = gtk_toggle_button_get_active( button );
-}
-
-static void
-set_message( ofaDossierNew *self, const gchar *msg )
-{
-	ofaDossierNewPrivate *priv;
-	GdkRGBA color;
-
-	priv = self->priv;
-
-	if( !priv->msg_label ){
-		priv->msg_label = ( GtkLabel * )
-								my_utils_container_get_child_by_name(
-										GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
-										"px-msg" );
-	}
-
-	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-
-	if( msg && g_utf8_strlen( msg, -1 )){
-		gtk_label_set_text( priv->msg_label, msg );
-		if( gdk_rgba_parse( &color, "#FF0000" )){
-			gtk_widget_override_color( GTK_WIDGET( priv->msg_label ), GTK_STATE_FLAG_NORMAL, &color );
-		}
-	} else {
-		gtk_label_set_text( priv->msg_label, "" );
-	}
+	priv->b_properties = gtk_toggle_button_get_active( button );
 }
 
 /*
@@ -636,42 +347,19 @@ check_for_enable_dlg( ofaDossierNew *self )
 	static const gchar *thisfn = "ofa_dossier_new_check_for_enable_dlg";
 	ofaDossierNewPrivate *priv;
 	gboolean enabled;
+	gboolean oka, okb;
 
 	priv = self->priv;
 
-	g_debug( "%s: self=%p, p1_parent=%p", thisfn, ( void * ) self, ( void * ) priv->p1_parent );
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	/* #288: enable dlg should not depend of connection check
-	 * but actually yes */
-	enabled = priv->p3_label_is_ok &&
-				priv->p3_account_is_ok &&
-				priv->p3_password &&
-				priv->p3_bis &&
-				priv->p3_passwd_are_equals &&
-				( priv->p1_parent ?
-						ofa_idbms_new_check( priv->p1_prov_module, GTK_CONTAINER( priv->p1_parent )) :
-						FALSE );
+	oka = ofa_dossier_new_piece_is_valid( priv->new_piece );
+	okb = ofa_admin_credentials_piece_is_valid( priv->adm_piece );
 
-	/*if( !enabled ){
-		g_debug( "%s: label=%s, account=%s, password=%s, bis=%s, equals=%s, idbms_check=%s",
-				thisfn, priv->p3_label_is_ok ? "True":"False",
-				priv->p3_account_is_ok ? "True":"False",
-				priv->p3_password ? "True":"False",
-				priv->p3_bis ? "True":"False",
-				priv->p3_passwd_are_equals ? "True":"False",
-				ofa_idbms_new_check( priv->p1_prov_module, priv->p1_parent ) ? "True":"False" );
-	}*/
+	enabled = oka && okb;
 
-	if( !priv->apply_btn ){
-		priv->apply_btn = my_utils_container_get_child_by_name(
-									GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( self ))),
-									"btn-ok" );
-	}
-	g_return_if_fail( priv->apply_btn && GTK_IS_BUTTON( priv->apply_btn ));
-	gtk_widget_set_sensitive( priv->apply_btn, enabled );
-
-	if( enabled ){
-		set_message( self, NULL );
+	if( priv->ok_btn ){
+		gtk_widget_set_sensitive( priv->ok_btn, enabled );
 	}
 }
 
@@ -680,19 +368,133 @@ v_quit_on_ok( myDialog *dialog )
 {
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
+	ofaIDbms *prov_instance;
 
 	priv = OFA_DOSSIER_NEW( dialog )->priv;
 
-	ok = ofa_idbms_new_apply(
-			priv->p1_prov_module, GTK_CONTAINER( priv->p1_parent ),
-			priv->p3_label, priv->p3_account, priv->p3_password );
+	/* get the database name */
+	g_free( priv->database );
+	ofa_dossier_new_piece_get_database( priv->new_piece, &priv->database );
+	g_return_val_if_fail( priv->database && g_utf8_strlen( priv->database, -1 ), FALSE );
 
-	if( ok ){
-		ofa_settings_set_boolean( "DossierNewDlg-opendossier", priv->p3_open_dossier );
-		ofa_settings_set_boolean( "DossierNewDlg-properties", priv->p3_update_properties );
+	/* ask for user confirmation */
+	if( !create_confirmed( OFA_DOSSIER_NEW( dialog ))){
+		return( FALSE );
 	}
 
+	/* define the new dossier in user settings */
+	ok = ofa_dossier_new_piece_apply( priv->new_piece );
+
+	if( ok ){
+		/* get the provider name (from user settings) */
+		g_free( priv->prov_name );
+		priv->prov_name = ofa_settings_get_dossier_provider( priv->dname );
+		g_return_val_if_fail( priv->prov_name && g_utf8_strlen( priv->prov_name, -1 ), FALSE );
+
+		/* and a new ref on the DBMS provider module */
+		prov_instance = ofa_idbms_get_provider_by_name( priv->prov_name );
+		g_return_val_if_fail( prov_instance && OFA_IS_IDBMS( prov_instance ), FALSE );
+
+		/* create the database itself */
+		ok = ofa_idbms_new_dossier(
+				prov_instance, priv->dname,  priv->root_account, priv->root_password );
+	}
+
+	if( ok ){
+		/* last, grant administrative credentials */
+		ok = ofa_idbms_set_admin_credentials(
+				prov_instance, priv->dname, priv->root_account, priv->root_password,
+				priv->adm_account, priv->adm_password );
+	}
+
+	g_clear_object( &prov_instance );
 	priv->dossier_created = ok;
+	update_settings( OFA_DOSSIER_NEW( dialog ));
 
 	return( ok );
+}
+
+static gboolean
+create_confirmed( const ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	GtkWidget *dialog;
+	gchar *str;
+	gint response;
+
+	priv = self->priv;
+
+	str = g_strdup_printf(
+				_( "The create operation will drop and fully reset the '%s' target database.\n"
+					"This may not be what you actually want !\n"
+					"Are you sure you want to create into this database ?" ), priv->database );
+
+	dialog = gtk_message_dialog_new(
+			GTK_WINDOW( my_window_get_toplevel( MY_WINDOW( self ))),
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_QUESTION,
+			GTK_BUTTONS_NONE,
+			"%s", str );
+
+	gtk_dialog_add_buttons( GTK_DIALOG( dialog ),
+			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+			_( "C_reate" ), GTK_RESPONSE_OK,
+			NULL );
+
+	response = gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	g_free( str );
+	gtk_widget_destroy( dialog );
+
+	return( response == GTK_RESPONSE_OK );
+}
+
+/*
+ * settings are: "provider_name;open,properties;"
+ */
+static void
+get_settings( ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	GList *slist, *it;
+	const gchar *cstr;
+
+	priv = self->priv;
+
+	slist = ofa_settings_get_string_list( "DossierNew" );
+	it = slist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		g_free( priv->prov_name );
+		priv->prov_name = g_strdup( cstr );
+	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		priv->b_open = my_utils_boolean_from_str( cstr );
+	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( cstr && g_utf8_strlen( cstr, -1 )){
+		priv->b_properties = my_utils_boolean_from_str( cstr );
+	}
+
+	ofa_settings_free_string_list( slist );
+}
+
+static void
+update_settings( ofaDossierNew *self )
+{
+	ofaDossierNewPrivate *priv;
+	GList *slist;
+
+	priv = self->priv;
+
+	slist = g_list_append( NULL, g_strdup( priv->prov_name ));
+	slist = g_list_append( slist, g_strdup_printf( "%s", priv->b_open ? "True":"False" ));
+	slist = g_list_append( slist, g_strdup_printf( "%s", priv->b_properties ? "True":"False" ));
+
+	ofa_settings_set_string_list( "DossierNew", slist );
+
+	g_list_free_full( slist, ( GDestroyNotify ) g_free );
 }

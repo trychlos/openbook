@@ -33,24 +33,18 @@
 
 #include "ui/ofa-dossier-misc.h"
 #include "ui/ofa-exercice-combo.h"
+#include "ui/ofa-exercice-store.h"
 
 /* private instance data
  */
 struct _ofaExerciceComboPrivate {
-	gboolean         dispose_has_run;
+	gboolean          dispose_has_run;
 
 	/* UI
 	 */
-	GtkContainer    *container;
-	GtkComboBox     *combo;
-};
-
-/* column ordering in the exercice combobox
- */
-enum {
-	COL_LABEL = 0,
-	COL_DBNAME,
-	N_COLUMNS
+	GtkContainer     *container;
+	GtkComboBox      *combo;
+	ofaExerciceStore *store;
 };
 
 /* signals defined here
@@ -217,20 +211,17 @@ static void
 setup_combo( ofaExerciceCombo *self )
 {
 	ofaExerciceComboPrivate *priv;
-	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 
 	priv = self->priv;
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING ));
-	gtk_combo_box_set_model( priv->combo, tmodel );
-	g_object_unref( tmodel );
+	priv->store = ofa_exercice_store_new();
+	gtk_combo_box_set_model( priv->combo, GTK_TREE_MODEL( priv->store ));
+	g_object_unref( priv->store );
 
 	cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( priv->combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", COL_LABEL );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->combo ), cell, "text", EXERCICE_COL_LABEL );
 
 	g_signal_connect( G_OBJECT( priv->combo ), "changed", G_CALLBACK( on_exercice_changed ), self );
 }
@@ -247,8 +238,8 @@ on_exercice_changed( GtkComboBox *combo, ofaExerciceCombo *self )
 	if( gtk_combo_box_get_active_iter( combo, &iter )){
 		tmodel = gtk_combo_box_get_model( combo );
 		gtk_tree_model_get( tmodel, &iter,
-				COL_LABEL, &label,
-				COL_DBNAME, &dbname,
+				EXERCICE_COL_LABEL, &label,
+				EXERCICE_COL_DBNAME, &dbname,
 				-1 );
 		g_signal_emit_by_name( self, "changed", label, dbname );
 	}
@@ -266,49 +257,23 @@ on_exercice_changed_cleanup_handler( ofaExerciceCombo *self, gchar *label, gchar
 }
 
 /**
- * ofa_exercice_combo_init_view:
+ * ofa_exercice_combo_set_dossier:
  * @self: this #ofaExerciceCombo instance.
  * @dname: the name of the dossier from which we want known exercices
  */
 void
-ofa_exercice_combo_init_view( ofaExerciceCombo *self, const gchar *dname )
+ofa_exercice_combo_set_dossier( ofaExerciceCombo *self, const gchar *dname )
 {
-	static const gchar *thisfn = "ofa_exercice_combo_init_view";
+	static const gchar *thisfn = "ofa_exercice_combo_set_dossier";
 	ofaExerciceComboPrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter, first_iter;
-	GSList *list, *it;
-	gchar **array;
-	gboolean have_first;
 
 	g_debug( "%s: self=%p, dname=%s", thisfn, ( void * ) self, dname );
 
 	priv = self->priv;
 
-	have_first = FALSE;
-	list = ofa_dossier_misc_get_exercices( dname );
-	tmodel = gtk_combo_box_get_model( priv->combo );
-	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
+	ofa_exercice_store_set_dossier( priv->store, dname );
 
-	for( it=list ; it ; it=it->next ){
-		array = g_strsplit(( const gchar * ) it->data, ";", -1 );
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				COL_LABEL,  *array,
-				COL_DBNAME, *(array+1),
-				-1 );
-		g_strfreev( array );
-
-		if( !have_first ){
-			have_first = TRUE;
-			first_iter = iter;
-		}
-	}
-	ofa_dossier_misc_free_exercices( list );
-
-	gtk_combo_box_set_active_iter( priv->combo, &first_iter );
+	gtk_combo_box_set_active( priv->combo, 0 );
 }
 
 #if 0

@@ -76,6 +76,7 @@ typedef struct {
  */
 enum {
 	DOSSIER_COL_DNAME = 0,
+	DOSSIER_COL_DBMS,
 	DOSSIER_N_COLUMNS
 };
 
@@ -84,13 +85,18 @@ enum {
  * The columns displayed in the views.
  */
 typedef enum {
-	DOSSIER_DISP_DNAME = 1 << 0
+	DOSSIER_DISP_DNAME = 1 << 0,
+	DOSSIER_DISP_DBMS  = 1 << 1,
 }
 	ofaDossierColumns;
 
-GType            ofa_dossier_store_get_type     ( void );
+GType            ofa_dossier_store_get_type( void );
 
-ofaDossierStore *ofa_dossier_store_new          ( void );
+ofaDossierStore *ofa_dossier_store_new     ( void );
+
+void             ofa_dossier_store_add_row ( ofaDossierStore *store,
+														const gchar *dname,
+														const gchar *dbms );
 
 G_END_DECLS
 

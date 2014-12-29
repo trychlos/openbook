@@ -33,7 +33,6 @@
 #include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-dblogin.h"
 #include "core/ofa-plugin.h"
 
 /* signals defined here
@@ -120,14 +119,13 @@ interface_base_init( ofaIDbmsInterface *klass )
 		 * ofaIDbms::changed:
 		 *
 		 * This signal may be sent by a IDbms provider when a change
-		 * occurs in its dialog. The application may take benefit of
-		 * this signal to update the UI.
+		 * occurs in its connection information dialog. The application
+		 * may take benefit of this signal to update its UI.
 		 *
 		 * Handler is of type:
-		 * void ( *handler )( ofaIDbms   *instance,
-		 *                      gboolean  connect_ok,
-		 *                      gboolean  db_ok,
-		 * 						gpointer  user_data );
+		 * void ( *handler )( ofaIDbms  *instance,
+		 *                      void    *instance_data,
+		 * 						gpointer user_data );
 		 */
 		st_signals[ CHANGED ] = g_signal_new_class_handler(
 					"changed",
@@ -138,8 +136,8 @@ interface_base_init( ofaIDbmsInterface *klass )
 					NULL,								/* accumulator data */
 					NULL,
 					G_TYPE_NONE,
-					2,
-					G_TYPE_BOOLEAN, G_TYPE_BOOLEAN );
+					1,
+					G_TYPE_POINTER );
 	}
 
 	st_initializations += 1;
@@ -186,6 +184,30 @@ ofa_idbms_connect( const ofaIDbms *instance,
 	}
 
 	return( handle );
+}
+
+/**
+ * ofa_idbms_connect_ex:
+ * @instance: this
+ */
+gboolean
+ofa_idbms_connect_ex( const ofaIDbms *instance,
+						void *infos,
+						const gchar *account, const gchar *password )
+{
+	static const gchar *thisfn = "ofa_idbms_connect_ex";
+	gboolean ok;
+
+	g_debug( "%s: instance=%p, infos=%p, account=%s, password=%s",
+			thisfn, ( void * ) instance, infos, account, password );
+
+	ok = FALSE;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_ex ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->connect_ex( instance, infos, account, password );
+	}
+
+	return( ok );
 }
 
 /**
@@ -270,7 +292,10 @@ ofa_idbms_get_provider_name( const ofaIDbms *instance )
  * Returns: the list of known exercices for the dossier as a sem-colon
  * separated list of strings:
  * - a displayable label
- * - the corresponding database name.
+ * - the corresponding database name
+ * - the exercice begin date as a sql-formatted string yyyy-mm-dd
+ * - the exercice end date as a sql-formatted string yyyy-mm-dd
+ * - the status of the exercice.
  *
  * The returned list should be ofa_idbms_free_exercices() by the caller.
  */
@@ -294,7 +319,10 @@ ofa_idbms_get_exercices( const ofaIDbms *instance, const gchar *dname )
  *
  * Returns: a semi-colon separated string which contains:
  * - a displayable label
- * - the database name for the current exercice.
+ * - the database name for the current exercice
+ * - the begin of exercice yyyy-mm-dd
+ * - the end of exercice yyyy-mm-dd
+ * - the status.
  *
  * The returned string should be g_free() by the caller.
  */
@@ -330,57 +358,6 @@ ofa_idbms_set_current( const ofaIDbms *instance, const gchar *dname, const GDate
 	if( OFA_IDBMS_GET_INTERFACE( instance )->set_current ){
 		OFA_IDBMS_GET_INTERFACE( instance )->set_current( instance, dname, begin, end );
 	}
-}
-
-/**
- * ofa_idbms_query:
- */
-gboolean
-ofa_idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
-{
-	g_return_val_if_fail( OFA_IS_IDBMS( instance ), FALSE );
-	g_return_val_if_fail( handle, FALSE );
-	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), FALSE );
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->query ){
-		return( OFA_IDBMS_GET_INTERFACE( instance )->query( instance, handle, query ));
-	}
-
-	return( FALSE );
-}
-
-/**
- * ofa_idbms_query_ex:
- */
-gboolean
-ofa_idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result )
-{
-	g_return_val_if_fail( OFA_IS_IDBMS( instance ), FALSE );
-	g_return_val_if_fail( handle, FALSE );
-	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), FALSE );
-	g_return_val_if_fail( result, FALSE );
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->query_ex ){
-		return( OFA_IDBMS_GET_INTERFACE( instance )->query_ex( instance, handle, query, result ));
-	}
-
-	return( FALSE );
-}
-
-/**
- * ofa_idbms_last_error:
- */
-gchar *
-ofa_idbms_last_error( const ofaIDbms *instance, void *handle )
-{
-	g_return_val_if_fail( OFA_IS_IDBMS( instance ), NULL );
-	g_return_val_if_fail( handle, NULL );
-
-	if( OFA_IDBMS_GET_INTERFACE( instance )->last_error ){
-		return( OFA_IDBMS_GET_INTERFACE( instance )->last_error( instance, handle ));
-	}
-
-	return( NULL );
 }
 
 /**
@@ -442,53 +419,244 @@ ofa_idbms_free_providers_list( GSList *list )
 }
 
 /**
- * ofa_idbms_properties_init:
+ * ofa_idbms_query:
+ */
+gboolean
+ofa_idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
+{
+	g_return_val_if_fail( OFA_IS_IDBMS( instance ), FALSE );
+	g_return_val_if_fail( handle, FALSE );
+	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), FALSE );
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->query ){
+		return( OFA_IDBMS_GET_INTERFACE( instance )->query( instance, handle, query ));
+	}
+
+	return( FALSE );
+}
+
+/**
+ * ofa_idbms_query_ex:
+ */
+gboolean
+ofa_idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result )
+{
+	g_return_val_if_fail( OFA_IS_IDBMS( instance ), FALSE );
+	g_return_val_if_fail( handle, FALSE );
+	g_return_val_if_fail( query && g_utf8_strlen( query, -1 ), FALSE );
+	g_return_val_if_fail( result, FALSE );
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->query_ex ){
+		return( OFA_IDBMS_GET_INTERFACE( instance )->query_ex( instance, handle, query, result ));
+	}
+
+	return( FALSE );
+}
+
+/**
+ * ofa_idbms_last_error:
+ */
+gchar *
+ofa_idbms_last_error( const ofaIDbms *instance, void *handle )
+{
+	g_return_val_if_fail( OFA_IS_IDBMS( instance ), NULL );
+	g_return_val_if_fail( handle, NULL );
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->last_error ){
+		return( OFA_IDBMS_GET_INTERFACE( instance )->last_error( instance, handle ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_idbms_connect_display_attach_to:
+ * @dname: the name of the dossier.
+ * @parent: the widget into which display the connection informations
  *
- * Initialize the GtkDialog part which let the user enter properties
- * for a new connection definition
+ * Ask the DBMS provider associated to the named dossier to display
+ * its connect informations
  */
 void
-ofa_idbms_new_attach_to( const ofaIDbms *instance, GtkContainer *parent, GtkSizeGroup *group )
+ofa_idbms_connect_display_attach_to( const gchar *dname, GtkContainer *parent )
 {
-	if( OFA_IDBMS_GET_INTERFACE( instance )->new_attach_to ){
-		OFA_IDBMS_GET_INTERFACE( instance )->new_attach_to( instance, parent, group );
+	GList *modules;
+	ofaIDbms *instance;
+	gchar *provider;
+
+	g_return_if_fail( dname && g_utf8_strlen( dname, -1 ));
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
+	provider = ofa_settings_get_dossier_provider( dname );
+	if( provider && g_utf8_strlen( provider, -1 )){
+
+		modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMS );
+		instance = get_provider_by_name( modules, provider );
+		ofa_plugin_free_extensions( modules );
+
+		if( instance &&
+				OFA_IS_IDBMS( instance ) &&
+				OFA_IDBMS_GET_INTERFACE( instance )->connect_display_attach_to ){
+
+			OFA_IDBMS_GET_INTERFACE( instance )->connect_display_attach_to( instance, dname, parent );
+		}
+	}
+
+	g_free( provider );
+}
+
+/**
+ * ofa_idbms_connect_enter_attach_to:
+ * @instance: this #ofaIDbms instance.
+ * @parent: the widget into which the connection informations will be
+ *  entered.
+ * @group: [allow-none]: if set, then the horizontal size group which
+ *  should be used to set the width of labels on left column.
+ *
+ * Let the user enter connection informations.
+ */
+void
+ofa_idbms_connect_enter_attach_to( ofaIDbms *instance, GtkContainer *parent, GtkSizeGroup *group )
+{
+	g_return_if_fail( instance && OFA_IS_IDBMS( instance ));
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_attach_to ){
+		OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_attach_to( instance, parent, group );
 	}
 }
 
 /**
- * ofa_idbms_new_check:
+ * ofa_idbms_connect_enter_is_valid:
+ * @instance: this #ofaIDbms instance.
+ * @parent: the #GtkContainer to which the widget has been attached.
  *
- * Check that the definition is enough to be validated.
+ * Returns: %TRUE if the entered connection informations are valid.
  */
 gboolean
-ofa_idbms_new_check( const ofaIDbms *instance, GtkContainer *parent )
+ofa_idbms_connect_enter_is_valid( const ofaIDbms *instance, GtkContainer *parent )
 {
 	gboolean ok;
 
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
+	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
+
 	ok = FALSE;
 
-	if( OFA_IDBMS_GET_INTERFACE( instance )->new_check ){
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->new_check( instance, parent );
+	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_is_valid ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_is_valid( instance, parent );
 	}
 
 	return( ok );
 }
 
 /**
- * ofa_idbms_new_apply:
+ * ofa_idbms_connect_enter_get_database:
+ * @instance: this #ofaIDbms instance.
+ * @parent: the #GtkContainer to which the widget has been attached.
  *
- * Try to apply the new definition
+ * Returns: %TRUE if the entered connection informations are valid.
+ */
+gchar *
+ofa_idbms_connect_enter_get_database( const ofaIDbms *instance, GtkContainer *parent )
+{
+	gchar *database;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), NULL );
+	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), NULL );
+
+	database = NULL;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_get_database ){
+		database = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_get_database( instance, parent );
+	}
+
+	return( database );
+}
+
+/**
+ * ofa_idbms_connect_enter_apply:
+ * @instance: this #ofaIDbms instance.
+ *
+ * Record the informations in settings.
  */
 gboolean
-ofa_idbms_new_apply( const ofaIDbms *instance, GtkContainer *parent,
-									const gchar *dname, const gchar *account, const gchar *password )
+ofa_idbms_connect_enter_apply( const ofaIDbms *instance, const gchar *dname, void *infos )
+{
+	gboolean ok;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
+	g_return_val_if_fail( dname && g_utf8_strlen( dname, -1 ), FALSE );
+
+	ok = FALSE;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_apply ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->connect_enter_apply( instance, dname, infos );
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_idbms_new_dossier:
+ *
+ * Create the quasi-empty database, with only service tables.
+ */
+gboolean
+ofa_idbms_new_dossier( const ofaIDbms *instance,
+									const gchar *dname, const gchar *root_account, const gchar *root_password )
 {
 	gboolean ok;
 
 	ok = FALSE;
 
-	if( OFA_IDBMS_GET_INTERFACE( instance )->new_apply ){
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->new_apply( instance, parent, dname, account, password );
+	if( OFA_IDBMS_GET_INTERFACE( instance )->new_dossier ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->new_dossier( instance, dname, root_account, root_password );
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_idbms_set_admin_credentials:
+ */
+gboolean
+ofa_idbms_set_admin_credentials( const ofaIDbms *instance,
+					const gchar *dname, const gchar *root_account, const gchar *root_password,
+					const gchar *adm_account, const gchar *adm_password )
+{
+	gboolean ok;
+	gchar *query;
+	gchar *slist, *dbname;
+	gchar **array;
+	void *handle;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
+
+	ok = FALSE;
+
+	/* let the DBMS provider define the account at the DBMS level */
+	if( OFA_IDBMS_GET_INTERFACE( instance )->set_admin_credentials ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->set_admin_credentials( instance, dname, root_account, root_password, adm_account, adm_password );
+	}
+
+	/* define the dossier administrative account */
+	if( ok ){
+		slist = ofa_idbms_get_current( instance, dname );
+		array = g_strsplit( slist, ";", -1 );
+		dbname = g_strdup( *( array+1 ));
+		g_strfreev( array );
+		g_free( slist );
+
+		handle = ofa_idbms_connect( instance, dname, dbname, root_account, root_password );
+		query = g_strdup_printf(
+					"INSERT INTO OFA_T_ROLES "
+					"	(ROL_USER,ROL_IS_ADMIN) VALUES ('%s',1)", adm_account );
+		ok = ofa_idbms_query( instance, handle, query );
+
+		g_free( query );
+		ofa_idbms_close( instance, handle );
+		g_free( dbname );
 	}
 
 	return( ok );
@@ -513,22 +681,20 @@ ofa_idbms_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 
 /**
  * ofa_idbms_restore:
- *
- * Takes care of asking the DBMS administrator account and password
- * before calling the DBMS provider.
  */
 gboolean
-ofa_idbms_restore( const ofaIDbms *instance, const gchar *label, const gchar *fname )
+ofa_idbms_restore( const ofaIDbms *instance,
+		const gchar *dname, const gchar *fname, const gchar *root_account, const gchar *root_password )
 {
 	gboolean ok;
-	gchar *account, *password;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
 
 	ok = FALSE;
 
-	if( OFA_IDBMS_GET_INTERFACE( instance )->restore &&
-		ofa_dblogin_run( label, &account, &password )){
+	if( OFA_IDBMS_GET_INTERFACE( instance )->restore ){
 
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->restore( instance, label, fname, account, password );
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->restore( instance, dname, fname, root_account, root_password );
 	}
 
 	return( ok );
@@ -629,35 +795,4 @@ confirm_for_deletion( const ofaIDbms *instance, const gchar *label, gboolean dro
 	gtk_widget_destroy( dialog );
 
 	return( response == GTK_RESPONSE_OK );
-}
-
-/**
- * ofa_idbms_display_connect_infos:
- * @container: the widget into which display the connection informations
- * @label: the label of the dossier.
- *
- * Ask the DBMS provider associated to the named dossier to display
- * its connect informations
- */
-void
-ofa_idbms_display_connect_infos( GtkWidget *container, const gchar *label )
-{
-	gchar *provider;
-	GList *modules;
-	ofaIDbms *instance;
-
-	instance = NULL;
-	provider = ofa_settings_get_dossier_provider( label );
-
-	if( provider && g_utf8_strlen( provider, -1 )){
-		modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMS );
-		instance = get_provider_by_name( modules, provider );
-		ofa_plugin_free_extensions( modules );
-	}
-
-	if( instance && OFA_IS_IDBMS( instance ) &&
-		OFA_IDBMS_GET_INTERFACE( instance )->display_connect_infos ){
-
-		OFA_IDBMS_GET_INTERFACE( instance )->display_connect_infos( instance, container, label );
-	}
 }

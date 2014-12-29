@@ -76,7 +76,13 @@ void                ofa_dossier_treeview_attach_to   ( ofaDossierTreeview *view,
 void                ofa_dossier_treeview_set_columns ( ofaDossierTreeview *view,
 																ofaDossierColumns columns );
 
+void                ofa_dossier_treeview_add_row     ( ofaDossierTreeview *view,
+																const gchar *dname );
+
 gchar              *ofa_dossier_treeview_get_selected( ofaDossierTreeview *view );
+
+void                ofa_dossier_treeview_set_selected( ofaDossierTreeview *view,
+																const gchar *dname );
 
 G_END_DECLS
 

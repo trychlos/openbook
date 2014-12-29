@@ -38,6 +38,10 @@
  *
  * Returns: the list of all defined dossiers.
  *
+ * Each string of the returned list is a semi-colon separated list of
+ * - the dossier name
+ * - the DBMS provider name.
+ *
  * The returned list should be #ofa_dossier_misc_free_dossiers() by the
  * caller.
  */
@@ -46,7 +50,7 @@ ofa_dossier_misc_get_dossiers( void )
 {
 	GSList *slist_in, *it;
 	GSList *slist_out;
-	gchar *prefix;
+	gchar *prefix, *dname, *dbms, *out_str;
 	gint spfx;
 	const gchar *cstr;
 
@@ -59,7 +63,12 @@ ofa_dossier_misc_get_dossiers( void )
 	for( it=slist_in ; it ; it=it->next ){
 		cstr = ( const gchar * ) it->data;
 		if( g_str_has_prefix( cstr, prefix )){
-			slist_out = g_slist_append( slist_out, g_strstrip( g_strdup( cstr+spfx )));
+			dname = g_strstrip( g_strdup( cstr+spfx ));
+			dbms = ofa_settings_get_dossier_provider( dname );
+			out_str = g_strdup_printf( "%s;%s;", dname, dbms );
+			slist_out = g_slist_append( slist_out, out_str );
+			g_free( dbms );
+			g_free( dname );
 		}
 	}
 
@@ -81,8 +90,12 @@ ofa_dossier_misc_get_dossiers( void )
  * Each item of this #GSList is the result of the concatenation of the
  * two strings:
  * - a displayable label
- * - the database name.
- * The two strings are semi-colon separated.
+ * - the database name
+ * - the exercice begin date as a sql-formatted string yyyy-mm-dd
+ * - the exercice end date as a sql-formatted string yyyy-mm-dd
+ * - the status of the exercice.
+ *
+ * The strings are semi-colon separated.
  */
 GSList *
 ofa_dossier_misc_get_exercices ( const gchar *dname )

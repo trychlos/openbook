@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-settings.h"
+
 #include "ui/ofa-dossier-treeview.h"
 
 /* private instance data
@@ -311,6 +313,13 @@ create_treeview_columns( ofaDossierTreeview *view )
 		gtk_tree_view_append_column( priv->tview, column );
 	}
 
+	if( priv->columns & DOSSIER_DISP_DBMS ){
+		cell = gtk_cell_renderer_text_new();
+		column = gtk_tree_view_column_new_with_attributes(
+						"", cell, "text", DOSSIER_COL_DBMS, NULL );
+		gtk_tree_view_append_column( priv->tview, column );
+	}
+
 	gtk_widget_show_all( GTK_WIDGET( priv->top_widget ));
 }
 
@@ -370,6 +379,27 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 }
 
 /**
+ * ofa_dossier_treeview_add_row:
+ */
+void
+ofa_dossier_treeview_add_row( ofaDossierTreeview *view, const gchar *dname )
+{
+	ofaDossierTreeviewPrivate *priv;
+	gchar *dbms;
+
+	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		dbms = ofa_settings_get_dossier_provider( dname );
+		ofa_dossier_store_add_row( priv->store, dname, dbms );
+		g_free( dbms );
+	}
+}
+
+/**
  * ofa_dossier_treeview_get_selected:
  *
  * Return: the name of the currently selected dossier, as a newly
@@ -398,4 +428,41 @@ ofa_dossier_treeview_get_selected( ofaDossierTreeview *view )
 	}
 
 	return( dname );
+}
+
+/**
+ * ofa_dossier_treeview_set_selected:
+ */
+void
+ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname )
+{
+	ofaDossierTreeviewPrivate *priv;
+	GtkTreeIter iter;
+	gchar *str;
+	gint cmp;
+	GtkTreeSelection *select;
+
+	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), &iter )){
+			while( TRUE ){
+				gtk_tree_model_get(
+						GTK_TREE_MODEL( priv->store ), &iter, DOSSIER_COL_DNAME, &str, -1 );
+				cmp = g_utf8_collate( str, dname );
+				g_free( str );
+				if( !cmp ){
+					select = gtk_tree_view_get_selection( priv->tview );
+					gtk_tree_selection_select_iter( select, &iter );
+					break;
+				}
+				if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), &iter )){
+					break;
+				}
+			}
+		}
+	}
 }

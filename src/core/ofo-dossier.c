@@ -760,7 +760,6 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE COMMENT 'Intern import identifier',"
 			"	BAT_URI       VARCHAR(256)                COMMENT 'Imported URI',"
 			"	BAT_FORMAT    VARCHAR(80)                 COMMENT 'Identified file format',"
-			"	BAT_COUNT     INTEGER                     COMMENT 'Imported lines count',"
 			"	BAT_BEGIN     DATE                        COMMENT 'Begin date of the transaction list',"
 			"	BAT_END       DATE                        COMMENT 'End date of the transaction list',"
 			"	BAT_RIB       VARCHAR(80)                 COMMENT 'Bank provided RIB',"

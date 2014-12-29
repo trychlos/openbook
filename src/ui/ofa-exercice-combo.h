@@ -68,7 +68,7 @@ ofaExerciceCombo *ofa_exercice_combo_new         ( void );
 void              ofa_exercice_combo_attach_to   ( ofaExerciceCombo *combo,
 															GtkContainer *new_parent );
 
-void              ofa_exercice_combo_init_view   ( ofaExerciceCombo *combo,
+void              ofa_exercice_combo_set_dossier ( ofaExerciceCombo *combo,
 															const gchar *dname );
 
 G_END_DECLS

@@ -100,6 +100,11 @@ typedef struct {
 #define PREFS_BACKUP_CMDLINE            "BackupCommand"
 #define PREFS_RESTORE_CMDLINE           "RestoreCommand"
 
+#define SETTINGS_DATABASE               "MySQLDatabase"
+#define SETTINGS_HOST                   "MySQLHost"
+#define SETTINGS_PORT                   "MySQLPort"
+#define SETTINGS_SOCKET                 "MySQLSocket"
+
 GType         ofa_mysql_get_type         ( void );
 
 void          ofa_mysql_register_type    ( GTypeModule *module );
