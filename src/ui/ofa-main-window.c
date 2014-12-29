@@ -33,6 +33,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -747,14 +748,21 @@ connect_window_for_enabled_updates( ofaMainWindow *window )
 static void
 set_window_title( ofaMainWindow *window )
 {
+	ofaMainWindowPrivate *priv;
 	gchar *title;
 
-	if( window->priv->dossier ){
-		title = g_strdup_printf( "%s - %s",
-				ofo_dossier_get_name( window->priv->dossier ),
-				window->priv->orig_title );
+	priv = window->priv;
+
+	if( priv->dossier ){
+		title = g_strdup_printf( "%s - %s - %s",
+				ofo_dossier_get_name( priv->dossier ),
+				ofa_dossier_misc_get_exercice_label(
+						ofo_dossier_get_exe_begin( priv->dossier ),
+						ofo_dossier_get_exe_end( priv->dossier ),
+						g_utf8_collate( ofo_dossier_get_status( priv->dossier ), DOS_STATUS_OPENED ) == 0 ),
+				priv->orig_title );
 	} else {
-		title = g_strdup( window->priv->orig_title );
+		title = g_strdup( priv->orig_title );
 	}
 
 	gtk_window_set_title( GTK_WINDOW( window ), title );

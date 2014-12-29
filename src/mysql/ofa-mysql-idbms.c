@@ -33,6 +33,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
 
@@ -370,9 +371,8 @@ exercice_get_description( const gchar *dname, const gchar *key )
 	gchar *send;
 	gchar **array;
 	gboolean is_current;
-	GString *svalue;
-	GDate date;
-	gchar *sdate, *sdbegin, *sdend, *status;
+	GDate begin, end;
+	gchar *label, *svalue, *sdbegin, *sdend, *status;
 
 	strlist = ofa_settings_dossier_get_string_list( dname, key );
 
@@ -396,27 +396,19 @@ exercice_get_description( const gchar *dname, const gchar *key )
 		is_current = TRUE;
 	}
 
-	svalue = g_string_new( is_current ? _( "Current exercice" ) : _( "Archived exercice" ));
 	status = g_strdup( is_current ? _( "Current" ) : _( "Archived" ));
 
-	my_date_set_from_str( &date, sbegin, MY_DATE_YYMD );
-	if( my_date_is_valid( &date )){
-		sdate = my_date_to_str( &date, MY_DATE_DMYY );
-		g_string_append_printf( svalue, _( " from %s" ), sdate );
-		g_free( sdate );
-	}
-	sdbegin = my_date_to_str( &date, MY_DATE_SQL );
+	my_date_set_from_str( &begin, sbegin, MY_DATE_YYMD );
+	sdbegin = my_date_to_str( &begin, MY_DATE_SQL );
 
-	my_date_set_from_str( &date, send, MY_DATE_YYMD );
-	if( my_date_is_valid( &date )){
-		sdate = my_date_to_str( &date, MY_DATE_DMYY );
-		g_string_append_printf( svalue, _( " to %s" ), sdate );
-		g_free( sdate );
-	}
-	sdend = my_date_to_str( &date, MY_DATE_SQL );
+	my_date_set_from_str( &end, send, MY_DATE_YYMD );
+	sdend = my_date_to_str( &end, MY_DATE_SQL );
 
-	g_string_append_printf( svalue, ";%s;%s;%s;%s;", sdb, sdbegin, sdend, status );
+	label = ofa_dossier_misc_get_exercice_label( &begin, &end, is_current );
 
+	svalue = g_strdup_printf( "%s;%s;%s;%s;%s;", label, sdb, sdbegin, sdend, status );
+
+	g_free( label );
 	g_free( send );
 	g_free( sdbegin );
 	g_free( sdend );
@@ -424,7 +416,7 @@ exercice_get_description( const gchar *dname, const gchar *key )
 
 	ofa_settings_free_string_list( strlist );
 
-	return( g_string_free( svalue, FALSE ));
+	return( svalue );
 }
 
 /*

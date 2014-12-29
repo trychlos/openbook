@@ -363,11 +363,6 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Solde du compte nnnn - llll
 
- 543 2014-12-28 piece of dialog should be weak_ref against the top
-                widget instead of the parent container (so that removing
-                the widget from the container also finalize the piece
-                itself)
-
  545 2014-12-29 set the main window title to the description of the
                 opened exercice
 
@@ -2330,6 +2325,12 @@
  542 2014-12-22 merge ofoBat and ofoBatLine (as other children tables)
      2014-12-22 NO because the dataset would be potentially as big as 
                 all entries of the year for all accounts !
+
+ 543 2014-12-28 piece of dialog should be weak_ref against the top
+                widget instead of the parent container (so that removing
+                the widget from the container also finalize the piece
+                itself)
+     2014-12-29 done - svn #4389
 
  544 2014-12-29 when opening a dossier, update the current settings
                 (if opening the current exercice)

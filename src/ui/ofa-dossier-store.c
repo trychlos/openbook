@@ -29,11 +29,11 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-preferences.h"
 
-#include "ui/ofa-dossier-misc.h"
 #include "ui/ofa-dossier-store.h"
 
 /* private instance data

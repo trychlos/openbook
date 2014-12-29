@@ -115,8 +115,6 @@ openbook_SOURCES = \
 	ofa-dossier-login.h									\
 	ofa-dossier-manager.c								\
 	ofa-dossier-manager.h								\
-	ofa-dossier-misc.c									\
-	ofa-dossier-misc.h									\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
 	ofa-dossier-new-mini.c								\

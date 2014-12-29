@@ -30,7 +30,7 @@
 /**
  * SECTION: ofa_dossier_Misc
  * @short_description: Dossier mmiscellaneous functions
- * @include: ui/ofa-dossier-misc.h
+ * @include: api/ofa-dossier-misc.h
  *
  * Delete a dossier.
  */
@@ -44,6 +44,8 @@ GSList  *ofa_dossier_misc_get_dossiers      ( void );
 
 GSList  *ofa_dossier_misc_get_exercices     ( const gchar *dname );
 #define  ofa_dossier_misc_free_exercices(L) ofa_dbms_free_exercices(L)
+
+gchar   *ofa_dossier_misc_get_exercice_label( const GDate *begin, const GDate *end, gboolean is_current );
 
 G_END_DECLS
 

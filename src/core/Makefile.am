@@ -63,6 +63,7 @@ libofa_core_la_SOURCES = \
 	ofa-dbms-root-piece.c								\
 	ofa-dbms-root-piece.h								\
 	ofa-dbms.c											\
+	ofa-dossier-misc.c									\
 	ofa-file-format.c									\
 	ofa-idataset.c										\
 	ofa-idbms.c											\

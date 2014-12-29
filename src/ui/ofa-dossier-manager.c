@@ -33,6 +33,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-idbms.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -40,7 +41,6 @@
 
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-manager.h"
-#include "ui/ofa-dossier-misc.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-main-window.h"

@@ -30,8 +30,8 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-dossier-misc.h"
 
-#include "ui/ofa-dossier-misc.h"
 #include "ui/ofa-exercice-store.h"
 
 /* private instance data

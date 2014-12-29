@@ -29,9 +29,9 @@
 #endif
 
 #include "api/my-utils.h"
+#include "api/ofa-dossier-misc.h"
 #include "api/ofa-settings.h"
 
-#include "ui/ofa-dossier-misc.h"
 #include "ui/ofa-exercice-combo.h"
 #include "ui/ofa-exercice-store.h"
 
