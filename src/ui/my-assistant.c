@@ -76,7 +76,7 @@ static void        on_cancel( GtkAssistant *assistant, myAssistant *self );
 static gboolean    is_willing_to_quit( myAssistant *self );
 static void        on_close( GtkAssistant *assistant, myAssistant *self );
 static void        do_close( myAssistant *self );
-static void        on_page_weak_notify( sAssistant *sdata, gpointer finalized_page );
+static void        on_page_finalized( sAssistant *sdata, gpointer finalized_page );
 static sAssistant *assistant_get_data( myAssistant *self, GtkWidget *page );
 
 static void
@@ -339,9 +339,9 @@ do_close( myAssistant *self )
 }
 
 static void
-on_page_weak_notify( sAssistant *sdata, gpointer finalized_page )
+on_page_finalized( sAssistant *sdata, gpointer finalized_page )
 {
-	static const gchar *thisfn = "my_assistant_on_page_weak_notify";
+	static const gchar *thisfn = "my_assistant_on_page_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_page=%p", thisfn, ( void * ) sdata, ( void * ) finalized_page );
 
@@ -361,7 +361,7 @@ assistant_get_data( myAssistant *self, GtkWidget *page )
 		sdata->page_num = gtk_assistant_get_current_page(
 									GTK_ASSISTANT( my_window_get_toplevel( MY_WINDOW( self ))));
 		g_object_set_data( G_OBJECT( page ), DATA_PAGE, sdata );
-		g_object_weak_ref( G_OBJECT( page ), ( GWeakNotify ) on_page_weak_notify, sdata );
+		g_object_weak_ref( G_OBJECT( page ), ( GWeakNotify ) on_page_finalized, sdata );
 	}
 
 	return( sdata );

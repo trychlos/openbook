@@ -74,7 +74,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 G_DEFINE_TYPE( myDecimalCombo, my_decimal_combo, G_TYPE_OBJECT )
 
-static void       on_parent_finalized( myDecimalCombo *self, gpointer finalized_parent );
+static void       on_widget_finalized( myDecimalCombo *self, gpointer finalized_parent );
 static GtkWidget *get_combo_box( myDecimalCombo *self );
 static void       setup_combo( myDecimalCombo *self );
 static void       populate_combo( myDecimalCombo *self );
@@ -170,11 +170,11 @@ my_decimal_combo_class_init( myDecimalComboClass *klass )
 }
 
 static void
-on_parent_finalized( myDecimalCombo *self, gpointer finalized_parent )
+on_widget_finalized( myDecimalCombo *self, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "my_decimal_combo_on_parent_finalized";
+	static const gchar *thisfn = "my_decimal_combo_on_widget_finalized";
 
-	g_debug( "%s: self=%p, finalized_parent=%p", thisfn, ( void * ) self, ( void * ) finalized_parent );
+	g_debug( "%s: self=%p, finalized_widget=%p", thisfn, ( void * ) self, ( void * ) finalized_widget );
 
 	g_return_if_fail( self && MY_IS_DECIMAL_COMBO( self ));
 
@@ -210,10 +210,9 @@ my_decimal_combo_attach_to( myDecimalCombo *self, GtkContainer *new_parent )
 
 	if( !priv->dispose_has_run ){
 
-		g_object_weak_ref( G_OBJECT( new_parent ), ( GWeakNotify ) on_parent_finalized, self );
-
 		box = get_combo_box( self );
 		gtk_container_add( new_parent, box );
+		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, self );
 
 		gtk_widget_show_all( GTK_WIDGET( new_parent ));
 	}

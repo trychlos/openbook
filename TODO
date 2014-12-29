@@ -368,10 +368,10 @@
                 the widget from the container also finalize the piece
                 itself)
 
- 544 2014-12-29 when opening a dossier, update the current settings
-                (if opening the current exercice)
+ 545 2014-12-29 set the main window title to the description of the
+                opened exercice
 
- 545
+ 546
 
 -----------------------------------------------------------------------
  DONE
@@ -2330,6 +2330,10 @@
  542 2014-12-22 merge ofoBat and ofoBatLine (as other children tables)
      2014-12-22 NO because the dataset would be potentially as big as 
                 all entries of the year for all accounts !
+
+ 544 2014-12-29 when opening a dossier, update the current settings
+                (if opening the current exercice)
+     2014-12-29 done - svn #4388
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

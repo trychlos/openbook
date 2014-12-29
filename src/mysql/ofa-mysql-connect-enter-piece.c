@@ -60,7 +60,7 @@ typedef struct {
 static const gchar *st_newui_xml        = PROVIDER_DATADIR "/ofa-mysql-connect-enter-piece.ui";
 static const gchar *st_newui_mysql      = "MySQLConnectEnterPiece";
 
-static void       on_parent_finalized( sPrivate *priv, GObject *finalized_parent );
+static void       on_widget_finalized( sPrivate *priv, GObject *finalized_parent );
 static GtkWidget *set_parent( const ofaIDbms *instance, sPrivate *priv, GtkContainer *parent );
 static void       setup_dialog( const ofaIDbms *instance, sPrivate *priv );
 static void       on_host_changed( GtkEntry *entry, sPrivate *priv );
@@ -87,18 +87,18 @@ ofa_mysql_connect_enter_piece_attach_to( ofaIDbms *instance, GtkContainer *paren
 	priv->group = group;
 
 	set_parent( instance, priv, parent );
-	g_object_weak_ref( G_OBJECT( priv->parent ), ( GWeakNotify ) on_parent_finalized, priv );
+	g_object_weak_ref( G_OBJECT( priv->parent ), ( GWeakNotify ) on_widget_finalized, priv );
 
 	setup_dialog( instance, priv );
 }
 
 static void
-on_parent_finalized( sPrivate *priv, GObject *finalized_parent )
+on_widget_finalized( sPrivate *priv, GObject *finalized_widget )
 {
-	static const gchar *thisfn = "ofa_mysql_connect_enter_piece_on_parent_finalized";
+	static const gchar *thisfn = "ofa_mysql_connect_enter_piece_on_widget_finalized";
 
-	g_debug( "%s: priv=%p, finalized_parent=%p",
-			thisfn, ( void * ) priv, ( void * ) finalized_parent );
+	g_debug( "%s: priv=%p, finalized_widget=%p",
+			thisfn, ( void * ) priv, ( void * ) finalized_widget );
 
 	ofa_mysql_free_connect_infos( &priv->sInfos );
 

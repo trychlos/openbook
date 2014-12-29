@@ -53,7 +53,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 G_DEFINE_TYPE( myProgressBar, my_progress_bar, G_TYPE_OBJECT )
 
-static void on_parent_finalized( myProgressBar *self, gpointer finalized_parent );
+static void on_widget_finalized( myProgressBar *self, gpointer finalized_parent );
 static void on_double( myProgressBar *self, gdouble progress, void *empty );
 static void on_text( myProgressBar *self, const gchar *text, void *empty );
 
@@ -171,11 +171,11 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 }
 
 static void
-on_parent_finalized( myProgressBar *self, gpointer finalized_parent )
+on_widget_finalized( myProgressBar *self, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "my_progress_bar_on_parent_finalized";
+	static const gchar *thisfn = "my_progress_bar_on_widget_finalized";
 
-	g_debug( "%s: self=%p, finalized_parent=%p", thisfn, ( void * ) self, ( void * ) finalized_parent );
+	g_debug( "%s: self=%p, finalized_widget=%p", thisfn, ( void * ) self, ( void * ) finalized_widget );
 
 	g_return_if_fail( self && MY_IS_PROGRESS_BAR( self ));
 
@@ -211,11 +211,10 @@ my_progress_bar_attach_to( myProgressBar *self, GtkContainer *new_parent )
 
 	if( !priv->dispose_has_run ){
 
-		g_object_weak_ref( G_OBJECT( new_parent ), ( GWeakNotify ) on_parent_finalized, self );
-
 		box = gtk_progress_bar_new();
 		gtk_container_add( new_parent, box );
 		priv->bar = GTK_PROGRESS_BAR( box );
+		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, self );
 
 		g_signal_connect( G_OBJECT( self ), "double", G_CALLBACK( on_double ), NULL );
 		g_signal_connect( G_OBJECT( self ), "text", G_CALLBACK( on_text ), NULL );

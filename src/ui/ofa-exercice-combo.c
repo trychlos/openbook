@@ -58,7 +58,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 G_DEFINE_TYPE( ofaExerciceCombo, ofa_exercice_combo, G_TYPE_OBJECT )
 
-static void on_parent_finalized( ofaExerciceCombo *self, gpointer finalized_parent );
+static void on_widget_finalized( ofaExerciceCombo *self, gpointer finalized_parent );
 static void setup_combo( ofaExerciceCombo *self );
 static void on_exercice_changed( GtkComboBox *box, ofaExerciceCombo *self );
 static void on_exercice_changed_cleanup_handler( ofaExerciceCombo *self, gchar *label, gchar *dbname );
@@ -157,11 +157,12 @@ ofa_exercice_combo_class_init( ofaExerciceComboClass *klass )
 }
 
 static void
-on_parent_finalized( ofaExerciceCombo *self, gpointer finalized_parent )
+on_widget_finalized( ofaExerciceCombo *self, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "ofa_exercice_combo_on_parent_finalized";
+	static const gchar *thisfn = "ofa_exercice_combo_on_widget_finalized";
 
-	g_debug( "%s: self=%p, finalized_parent=%p", thisfn, ( void * ) self, ( void * ) finalized_parent );
+	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( self && OFA_IS_EXERCICE_COMBO( self ));
 
@@ -197,11 +198,10 @@ ofa_exercice_combo_attach_to( ofaExerciceCombo *self, GtkContainer *new_parent )
 
 	if( !priv->dispose_has_run ){
 
-		g_object_weak_ref( G_OBJECT( new_parent ), ( GWeakNotify ) on_parent_finalized, self );
-
 		box = gtk_combo_box_new();
 		gtk_container_add( new_parent, box );
 		priv->combo = GTK_COMBO_BOX( box );
+		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, self );
 
 		setup_combo( self );
 	}

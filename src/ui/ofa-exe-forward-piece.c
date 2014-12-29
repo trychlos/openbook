@@ -97,7 +97,7 @@ static const gchar *st_def_for_ope      = N_( "CLORAN" );
 
 G_DEFINE_TYPE( ofaExeForwardPiece, ofa_exe_forward_piece, G_TYPE_OBJECT )
 
-static void     on_parent_finalized( ofaExeForwardPiece *self, gpointer finalized_parent );
+static void     on_widget_finalized( ofaExeForwardPiece *self, gpointer finalized_parent );
 static void     setup_dialog( ofaExeForwardPiece *self );
 static void     setup_closing_opes( ofaExeForwardPiece *piece );
 static void     setup_currency_accounts( ofaExeForwardPiece *piece );
@@ -230,8 +230,6 @@ ofa_exe_forward_piece_attach_to( ofaExeForwardPiece *piece, GtkContainer *new_pa
 
 	if( !priv->dispose_has_run ){
 
-		g_object_weak_ref( G_OBJECT( new_parent ), ( GWeakNotify ) on_parent_finalized, piece );
-
 		window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
 		g_return_if_fail( window && GTK_IS_WINDOW( window ));
 
@@ -240,17 +238,19 @@ ofa_exe_forward_piece_attach_to( ofaExeForwardPiece *piece, GtkContainer *new_pa
 
 		gtk_widget_reparent( forward, GTK_WIDGET( new_parent ));
 		priv->parent = new_parent;
+		g_object_weak_ref( G_OBJECT( forward ), ( GWeakNotify ) on_widget_finalized, piece );
 
 		setup_dialog( piece );
 	}
 }
 
 static void
-on_parent_finalized( ofaExeForwardPiece *self, gpointer finalized_parent )
+on_widget_finalized( ofaExeForwardPiece *self, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "ofa_exe_forward_piece_on_parent_finalized";
+	static const gchar *thisfn = "ofa_exe_forward_piece_on_widget_finalized";
 
-	g_debug( "%s: self=%p, finalized_parent=%p", thisfn, ( void * ) self, ( void * ) finalized_parent );
+	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( self && OFA_IS_EXE_FORWARD_PIECE( self ));
 

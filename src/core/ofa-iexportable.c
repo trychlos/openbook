@@ -66,7 +66,7 @@ static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, G
 static void          error_convert( const ofaIExportable *exportable, GError *error );
 static void          error_write( const ofaIExportable *exportable, GError *error );
 static sIExportable *get_iexportable_data( ofaIExportable *exportable );
-static void          on_exportable_weak_notify( sIExportable *sdata, GObject *finalized_object );
+static void          on_exportable_finalized( sIExportable *sdata, GObject *finalized_object );
 
 /**
  * ofa_iexportable_get_type:
@@ -398,16 +398,16 @@ get_iexportable_data( ofaIExportable *exportable )
 	if( !sdata ){
 		sdata = g_new0( sIExportable, 1 );
 		g_object_set_data( G_OBJECT( exportable ), IEXPORTABLE_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( exportable ), ( GWeakNotify ) on_exportable_weak_notify, sdata );
+		g_object_weak_ref( G_OBJECT( exportable ), ( GWeakNotify ) on_exportable_finalized, sdata );
 	}
 
 	return( sdata );
 }
 
 static void
-on_exportable_weak_notify( sIExportable *sdata, GObject *finalized_object )
+on_exportable_finalized( sIExportable *sdata, GObject *finalized_object )
 {
-	static const gchar *thisfn = "ofa_iexportable_on_exportable_weak_notify";
+	static const gchar *thisfn = "ofa_iexportable_on_exportable_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_object=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_object );

@@ -67,7 +67,7 @@ static gboolean   is_an_ofa_plugin( ofaPlugin *plugin );
 static gboolean   plugin_check( ofaPlugin *plugin, const gchar *symbol, gpointer *pfn );
 static void       register_module_types( ofaPlugin *plugin );
 static void       add_module_type( ofaPlugin *plugin, GType type );
-static void       object_weak_notify( ofaPlugin *plugin, GObject *object );
+static void       on_object_finalized( ofaPlugin *plugin, GObject *finalized_object );
 static void       v_plugin_unload( GTypeModule *gmodule );
 
 static void
@@ -402,20 +402,21 @@ add_module_type( ofaPlugin *plugin, GType type )
 	g_debug( "ofa_plugin_add_module_type: allocating object=%p (%s)",
 						( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
-	g_object_weak_ref( object, ( GWeakNotify ) object_weak_notify, plugin );
+	g_object_weak_ref( object, ( GWeakNotify ) on_object_finalized, plugin );
 
 	plugin->priv->objects = g_list_prepend( plugin->priv->objects, object );
 }
 
 static void
-object_weak_notify( ofaPlugin *plugin, GObject *object )
+on_object_finalized( ofaPlugin *plugin, GObject *finalized_object )
 {
-	static const gchar *thisfn = "ofa_plugin_object_weak_notify";
+	static const gchar *thisfn = "ofa_plugin_object_finalized";
 
-	g_debug( "%s: plugin=%p, object=%p (%s)",
-			thisfn, ( void * ) plugin, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+	g_debug( "%s: plugin=%p, finalized_object=%p (%s)",
+			thisfn, ( void * ) plugin,
+			( void * ) finalized_object, G_OBJECT_TYPE_NAME( finalized_object ));
 
-	plugin->priv->objects = g_list_remove( plugin->priv->objects, object );
+	plugin->priv->objects = g_list_remove( plugin->priv->objects, finalized_object );
 
 	g_debug( "%s: new objects list after remove is %p", thisfn, ( void * ) plugin->priv->objects );
 }

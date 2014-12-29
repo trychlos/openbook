@@ -54,7 +54,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 G_DEFINE_TYPE( ofaBalancesGrid, ofa_balances_grid, G_TYPE_OBJECT )
 
-static void on_parent_finalized( ofaBalancesGrid *self, gpointer finalized_parent );
+static void on_widget_finalized( ofaBalancesGrid *self, gpointer finalized_parent );
 static void on_update( ofaBalancesGrid *self, const gchar *currency, gdouble debit, gdouble credit, void *empty );
 static void write_double( ofaBalancesGrid *self, gdouble amount, gint left, gint top );
 
@@ -148,11 +148,12 @@ ofa_balances_grid_class_init( ofaBalancesGridClass *klass )
 }
 
 static void
-on_parent_finalized( ofaBalancesGrid *self, gpointer finalized_parent )
+on_widget_finalized( ofaBalancesGrid *self, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "ofa_balances_grid_on_parent_finalized";
+	static const gchar *thisfn = "ofa_balances_grid_on_widget_finalized";
 
-	g_debug( "%s: self=%p, finalized_parent=%p", thisfn, ( void * ) self, ( void * ) finalized_parent );
+	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( self && OFA_IS_BALANCES_GRID( self ));
 
@@ -188,12 +189,12 @@ ofa_balances_grid_attach_to( ofaBalancesGrid *self, GtkContainer *new_parent )
 
 	if( !priv->dispose_has_run ){
 
-		g_object_weak_ref( G_OBJECT( new_parent ), ( GWeakNotify ) on_parent_finalized, self );
-
 		grid = gtk_grid_new();
 		gtk_container_add( new_parent, grid );
 		priv->grid = GTK_GRID( grid );
 		gtk_grid_set_column_spacing( priv->grid, 4 );
+
+		g_object_weak_ref( G_OBJECT( grid ), ( GWeakNotify ) on_widget_finalized, self );
 
 		g_signal_connect( G_OBJECT( self ), "update", G_CALLBACK( on_update ), NULL );
 

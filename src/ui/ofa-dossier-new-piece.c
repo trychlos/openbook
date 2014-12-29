@@ -86,7 +86,7 @@ static const gchar *st_piece_id         = "DossierNewPiece";
 
 G_DEFINE_TYPE( ofaDossierNewPiece, ofa_dossier_new_piece, G_TYPE_OBJECT )
 
-static void     on_parent_finalized( ofaDossierNewPiece *piece, GObject *finalized_parent );
+static void     on_widget_finalized( ofaDossierNewPiece *piece, GObject *finalized_parent );
 static void     setup_dbms_provider( ofaDossierNewPiece *piece );
 static void     setup_dialog( ofaDossierNewPiece *piece );
 static void     on_dname_changed( GtkEditable *editable, ofaDossierNewPiece *piece );
@@ -237,7 +237,7 @@ ofa_dossier_new_piece_attach_to( ofaDossierNewPiece *piece, GtkContainer *parent
 		priv->container = GTK_CONTAINER( widget );
 		priv->group = group;
 
-		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, piece );
+		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_widget_finalized, piece );
 
 		setup_dbms_provider( piece );
 		setup_dialog( piece );
@@ -247,12 +247,12 @@ ofa_dossier_new_piece_attach_to( ofaDossierNewPiece *piece, GtkContainer *parent
 }
 
 static void
-on_parent_finalized( ofaDossierNewPiece *piece, GObject *finalized_parent )
+on_widget_finalized( ofaDossierNewPiece *piece, GObject *finalized_widget )
 {
-	static const gchar *thisfn = "ofa_dossier_new_piece_on_parent_finalized";
+	static const gchar *thisfn = "ofa_dossier_new_piece_on_widget_finalized";
 
-	g_debug( "%s: piece=%p, finalized_parent=%p",
-			thisfn, ( void * ) piece, ( void * ) finalized_parent );
+	g_debug( "%s: piece=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) piece, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_object_unref( piece );
 }

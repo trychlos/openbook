@@ -98,7 +98,7 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void       create_notebook( ofaAccountsBook *book );
-static void       on_parent_finalized( ofaAccountsBook *book, gpointer finalized_parent );
+static void       on_widget_finalized( ofaAccountsBook *book, gpointer finalized_parent );
 static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAccountsBook *self );
 static gboolean   on_book_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountsBook *self );
 static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountsBook *book );
@@ -346,21 +346,20 @@ ofa_accounts_book_attach_to( ofaAccountsBook *book, GtkContainer *parent )
 
 	if( !priv->dispose_has_run ){
 
-		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, book );
-
 		gtk_container_add( parent, GTK_WIDGET( priv->book ));
+		g_object_weak_ref( G_OBJECT( priv->book ), ( GWeakNotify ) on_widget_finalized, book );
 
 		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 }
 
 static void
-on_parent_finalized( ofaAccountsBook *book, gpointer finalized_parent )
+on_widget_finalized( ofaAccountsBook *book, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "ofa_accounts_book_on_parent_finalized";
+	static const gchar *thisfn = "ofa_accounts_book_on_widget_finalized";
 
-	g_debug( "%s: book=%p, finalized_parent=%p",
-			thisfn, ( void * ) book, ( void * ) finalized_parent );
+	g_debug( "%s: book=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) book, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( book && OFA_IS_ACCOUNTS_BOOK( book ));
 

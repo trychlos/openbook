@@ -61,7 +61,7 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void create_combo_box( ofaCurrencyCombo *combo );
-static void on_parent_finalized( ofaCurrencyCombo *combo, gpointer finalized_parent );
+static void on_widget_finalized( ofaCurrencyCombo *combo, gpointer finalized_parent );
 static void create_combo_columns( ofaCurrencyCombo *combo );
 static void on_currency_changed( GtkComboBox *box, ofaCurrencyCombo *self );
 
@@ -204,21 +204,20 @@ ofa_currency_combo_attach_to( ofaCurrencyCombo *combo, GtkContainer *parent )
 
 	if( !priv->dispose_has_run ){
 
-		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, combo );
-
 		gtk_container_add( parent, GTK_WIDGET( priv->combo ));
+		g_object_weak_ref( G_OBJECT( priv->combo ), ( GWeakNotify ) on_widget_finalized, combo );
 
 		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 }
 
 static void
-on_parent_finalized( ofaCurrencyCombo *combo, gpointer finalized_parent )
+on_widget_finalized( ofaCurrencyCombo *combo, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "ofa_currency_combo_on_parent_finalized";
+	static const gchar *thisfn = "ofa_currency_combo_on_widget_finalized";
 
-	g_debug( "%s: combo=%p, finalized_parent=%p",
-			thisfn, ( void * ) combo, ( void * ) finalized_parent );
+	g_debug( "%s: combo=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) combo, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( combo && OFA_IS_CURRENCY_COMBO( combo ));
 

@@ -69,7 +69,7 @@ typedef struct {
 
 #define EDITABLE_DATE_DATA      "my-editable-date-data"
 
-static void               on_editable_weak_notify( sEditableDate *data, GObject *was_the_editable );
+static void               on_editable_finalized( sEditableDate *data, GObject *was_the_editable );
 static sEditableDate     *get_editable_date_data( GtkEditable *editable );
 static const sDateFormat *get_date_format( guint date_format );
 static void               on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditableDate *data );
@@ -100,16 +100,16 @@ my_editable_date_init( GtkEditable *editable )
 
 	data = get_editable_date_data( editable );
 
-	g_object_weak_ref( G_OBJECT( editable ), ( GWeakNotify ) on_editable_weak_notify, data );
+	g_object_weak_ref( G_OBJECT( editable ), ( GWeakNotify ) on_editable_finalized, data );
 }
 
 static void
-on_editable_weak_notify( sEditableDate *data, GObject *was_the_editable )
+on_editable_finalized( sEditableDate *data, GObject *finalized_editable )
 {
 	static const gchar *thisfn = "my_editable_date_on_weak_notify";
 
-	g_debug( "%s: data=%p, the_editable_was=%p",
-			thisfn, ( void * ) data, ( void * ) was_the_editable );
+	g_debug( "%s: data=%p, finalized_editable=%p",
+			thisfn, ( void * ) data, ( void * ) finalized_editable );
 
 	g_free( data );
 }

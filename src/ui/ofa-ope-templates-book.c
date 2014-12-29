@@ -75,7 +75,7 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void       create_notebook( ofaOpeTemplatesBook *book );
-static void       on_parent_finalized( ofaOpeTemplatesBook *book, gpointer finalized_parent );
+static void       on_widget_finalized( ofaOpeTemplatesBook *book, gpointer finalized_parent );
 static void       on_book_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplatesBook *self );
 static void       on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplatesBook *book );
 static void       on_ofa_row_inserted( ofaOpeTemplateStore *store, const ofoOpeTemplate *ope, ofaOpeTemplatesBook *book );
@@ -301,21 +301,20 @@ ofa_ope_templates_book_attach_to( ofaOpeTemplatesBook *book, GtkContainer *paren
 
 	if( !priv->dispose_has_run ){
 
-		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, book );
-
 		gtk_container_add( parent, GTK_WIDGET( priv->book ));
+		g_object_weak_ref( G_OBJECT( priv->book ), ( GWeakNotify ) on_widget_finalized, book );
 
 		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 }
 
 static void
-on_parent_finalized( ofaOpeTemplatesBook *book, gpointer finalized_parent )
+on_widget_finalized( ofaOpeTemplatesBook *book, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "ofa_ope_templates_book_on_parent_finalized";
+	static const gchar *thisfn = "ofa_ope_templates_book_on_widget_finalized";
 
-	g_debug( "%s: book=%p, finalized_parent=%p",
-			thisfn, ( void * ) book, ( void * ) finalized_parent );
+	g_debug( "%s: book=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) book, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( book && OFA_IS_OPE_TEMPLATES_BOOK( book ));
 

@@ -100,7 +100,7 @@ static const gchar *st_window_id        = "FileFormatPiece";
 
 G_DEFINE_TYPE( ofaFileFormatPiece, ofa_file_format_piece, G_TYPE_OBJECT )
 
-static void     on_parent_finalized( ofaFileFormatPiece *self, GObject *finalized_parent );
+static void     on_widget_finalized( ofaFileFormatPiece *self, GObject *finalized_parent );
 static void     setup_piece( ofaFileFormatPiece *piece );
 static void     init_file_format( ofaFileFormatPiece *self );
 static void     on_ffmt_changed( GtkComboBox *box, ofaFileFormatPiece *self );
@@ -251,7 +251,7 @@ ofa_file_format_piece_attach_to( ofaFileFormatPiece *piece, GtkContainer *new_pa
 		priv->parent = new_parent;
 		priv->container = GTK_CONTAINER( widget );
 
-		g_object_weak_ref( G_OBJECT( new_parent ), ( GWeakNotify ) on_parent_finalized, piece );
+		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_widget_finalized, piece );
 
 		setup_piece( piece );
 
@@ -260,12 +260,12 @@ ofa_file_format_piece_attach_to( ofaFileFormatPiece *piece, GtkContainer *new_pa
 }
 
 static void
-on_parent_finalized( ofaFileFormatPiece *self, GObject *finalized_parent )
+on_widget_finalized( ofaFileFormatPiece *self, GObject *finalized_widget )
 {
-	static const gchar *thisfn = "ofa_file_format_piece_on_parent_finalized";
+	static const gchar *thisfn = "ofa_file_format_piece_on_widget_finalized";
 
-	g_debug( "%s: self=%p, finalized_parent=%p",
-			thisfn, ( void * ) self, ( void * ) finalized_parent );
+	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_object_unref( self );
 }

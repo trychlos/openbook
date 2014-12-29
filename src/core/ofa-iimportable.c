@@ -69,7 +69,7 @@ static void          interface_base_init( ofaIImportableInterface *klass );
 static void          interface_base_finalize( ofaIImportableInterface *klass );
 static void          render_progress( ofaIImportable *importable, sIImportable *sdata, guint number, guint phase );
 static sIImportable *get_iimportable_data( ofaIImportable *importable );
-static void          on_importable_weak_notify( sIImportable *sdata, GObject *finalized_object );
+static void          on_importable_finalized( sIImportable *sdata, GObject *finalized_object );
 
 /**
  * ofa_iimportable_get_type:
@@ -305,16 +305,16 @@ get_iimportable_data( ofaIImportable *importable )
 	if( !sdata ){
 		sdata = g_new0( sIImportable, 1 );
 		g_object_set_data( G_OBJECT( importable ), IIMPORTABLE_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( importable ), ( GWeakNotify ) on_importable_weak_notify, sdata );
+		g_object_weak_ref( G_OBJECT( importable ), ( GWeakNotify ) on_importable_finalized, sdata );
 	}
 
 	return( sdata );
 }
 
 static void
-on_importable_weak_notify( sIImportable *sdata, GObject *finalized_object )
+on_importable_finalized( sIImportable *sdata, GObject *finalized_object )
 {
-	static const gchar *thisfn = "ofa_iimportable_on_importable_weak_notify";
+	static const gchar *thisfn = "ofa_iimportable_on_importable_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_object=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_object );

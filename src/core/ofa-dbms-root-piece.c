@@ -74,7 +74,7 @@ static const gchar *st_piece_id         = "DBMSRootPiece";
 
 G_DEFINE_TYPE( ofaDBMSRootPiece, ofa_dbms_root_piece, G_TYPE_OBJECT )
 
-static void     on_parent_finalized( ofaDBMSRootPiece *piece, GObject *finalized_parent );
+static void     on_widget_finalized( ofaDBMSRootPiece *piece, GObject *finalized_parent );
 static void     setup_dialog( ofaDBMSRootPiece *piece );
 static void     on_account_changed( GtkEditable *entry, ofaDBMSRootPiece *self );
 static void     on_password_changed( GtkEditable *entry, ofaDBMSRootPiece *self );
@@ -216,8 +216,7 @@ ofa_dbms_root_piece_attach_to( ofaDBMSRootPiece *piece, GtkContainer *parent, Gt
 		priv->parent = parent;
 		priv->container = GTK_CONTAINER( widget );
 		priv->group = group;
-
-		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, piece );
+		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_widget_finalized, piece );
 
 		setup_dialog( piece );
 
@@ -226,12 +225,12 @@ ofa_dbms_root_piece_attach_to( ofaDBMSRootPiece *piece, GtkContainer *parent, Gt
 }
 
 static void
-on_parent_finalized( ofaDBMSRootPiece *piece, GObject *finalized_parent )
+on_widget_finalized( ofaDBMSRootPiece *piece, GObject *finalized_widget )
 {
-	static const gchar *thisfn = "ofa_dbms_root_piece_on_parent_finalized";
+	static const gchar *thisfn = "ofa_dbms_root_piece_on_widget_finalized";
 
-	g_debug( "%s: piece=%p, finalized_parent=%p",
-			thisfn, ( void * ) piece, ( void * ) finalized_parent );
+	g_debug( "%s: piece=%p, finalized_widget=%p",
+			thisfn, ( void * ) piece, ( void * ) finalized_widget );
 
 	g_object_unref( piece );
 }

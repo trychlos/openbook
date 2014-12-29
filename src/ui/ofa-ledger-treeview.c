@@ -66,7 +66,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void        on_parent_finalized( ofaLedgerTreeview *view, gpointer finalized_parent );
+static void        on_widget_finalized( ofaLedgerTreeview *view, gpointer finalized_parent );
 static GtkWidget  *get_top_widget( ofaLedgerTreeview *self );
 static void        create_treeview_columns( ofaLedgerTreeview *view );
 static gboolean    on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaLedgerTreeview *self );
@@ -274,23 +274,21 @@ ofa_ledger_treeview_attach_to( ofaLedgerTreeview *view, GtkContainer *parent )
 
 	if( !priv->dispose_has_run ){
 
-		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, view );
-
 		get_top_widget( view );
-
 		gtk_container_add( parent, GTK_WIDGET( priv->top_widget ));
+		g_object_weak_ref( G_OBJECT( priv->top_widget ), ( GWeakNotify ) on_widget_finalized, view );
 
 		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 }
 
 static void
-on_parent_finalized( ofaLedgerTreeview *view, gpointer finalized_parent )
+on_widget_finalized( ofaLedgerTreeview *view, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "ofa_ledger_treeview_on_parent_finalized";
+	static const gchar *thisfn = "ofa_ledger_treeview_on_widget_finalized";
 
-	g_debug( "%s: view=%p, finalized_parent=%p",
-			thisfn, ( void * ) view, ( void * ) finalized_parent );
+	g_debug( "%s: view=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) view, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
 

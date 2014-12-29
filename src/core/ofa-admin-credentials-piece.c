@@ -67,7 +67,7 @@ static const gchar *st_piece_id         = "AdminCredentialsPiece";
 
 G_DEFINE_TYPE( ofaAdminCredentialsPiece, ofa_admin_credentials_piece, G_TYPE_OBJECT )
 
-static void     on_parent_finalized( ofaAdminCredentialsPiece *piece, GObject *finalized_parent );
+static void     on_widget_finalized( ofaAdminCredentialsPiece *piece, GObject *finalized_parent );
 static void     setup_dialog( ofaAdminCredentialsPiece *piece );
 static void     on_account_changed( GtkEditable *entry, ofaAdminCredentialsPiece *self );
 static void     on_password_changed( GtkEditable *entry, ofaAdminCredentialsPiece *self );
@@ -207,8 +207,7 @@ ofa_admin_credentials_piece_attach_to( ofaAdminCredentialsPiece *piece, GtkConta
 		gtk_widget_reparent( widget, GTK_WIDGET( parent ));
 		priv->parent = parent;
 		priv->container = GTK_CONTAINER( widget );
-
-		g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, piece );
+		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_widget_finalized, piece );
 
 		setup_dialog( piece );
 
@@ -217,12 +216,12 @@ ofa_admin_credentials_piece_attach_to( ofaAdminCredentialsPiece *piece, GtkConta
 }
 
 static void
-on_parent_finalized( ofaAdminCredentialsPiece *piece, GObject *finalized_parent )
+on_widget_finalized( ofaAdminCredentialsPiece *piece, GObject *finalized_widget )
 {
-	static const gchar *thisfn = "ofa_admin_credentials_piece_on_parent_finalized";
+	static const gchar *thisfn = "ofa_admin_credentials_piece_on_widget_finalized";
 
-	g_debug( "%s: piece=%p, finalized_parent=%p",
-			thisfn, ( void * ) piece, ( void * ) finalized_parent );
+	g_debug( "%s: piece=%p, finalized_widget=%p",
+			thisfn, ( void * ) piece, ( void * ) finalized_widget );
 
 	g_object_unref( piece );
 }

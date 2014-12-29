@@ -54,7 +54,7 @@ struct _ofaButtonsBoxPrivate {
 
 G_DEFINE_TYPE( ofaButtonsBox, ofa_buttons_box, G_TYPE_OBJECT )
 
-static void       on_parent_finalized( ofaButtonsBox *box, gpointer finalized_parent );
+static void       on_widget_finalized( ofaButtonsBox *box, gpointer finalized_parent );
 static GtkWidget *get_top_grid( ofaButtonsBox *box );
 
 static void
@@ -147,21 +147,20 @@ ofa_buttons_box_attach_to( ofaButtonsBox *box, GtkContainer *parent )
 	g_return_if_fail( box && OFA_IS_BUTTONS_BOX( box ));
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	g_object_weak_ref( G_OBJECT( parent ), ( GWeakNotify ) on_parent_finalized, box );
-
 	grid = get_top_grid( box );
 	gtk_container_add( parent, grid );
+	g_object_weak_ref( G_OBJECT( grid ), ( GWeakNotify ) on_widget_finalized, box );
 
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 }
 
 static void
-on_parent_finalized( ofaButtonsBox *box, gpointer finalized_parent )
+on_widget_finalized( ofaButtonsBox *box, gpointer finalized_widget )
 {
-	static const gchar *thisfn = "ofa_buttons_box_on_parent_finalized";
+	static const gchar *thisfn = "ofa_buttons_box_on_widget_finalized";
 
-	g_debug( "%s: box=%p, finalized_parent=%p",
-			thisfn, ( void * ) box, ( void * ) finalized_parent );
+	g_debug( "%s: box=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) box, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( box );
 

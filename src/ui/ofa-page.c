@@ -214,9 +214,7 @@ page_constructed( GObject *instance )
 	 * and (more useful) the derived class which handles it */
 	g_return_if_fail( priv->top_grid && GTK_IS_GRID( priv->top_grid ));
 	g_object_weak_ref(
-			G_OBJECT( priv->top_grid ),
-			( GWeakNotify ) on_grid_finalized,
-			OFA_PAGE( instance ));
+			G_OBJECT( priv->top_grid ), ( GWeakNotify ) on_grid_finalized, OFA_PAGE( instance ));
 
 	/* let the child class setup its page */
 	do_setup_page( self );
@@ -449,14 +447,14 @@ ofa_page_get_dossier( const ofaPage *page )
 }
 
 static void
-on_grid_finalized( ofaPage *self, GObject *grid )
+on_grid_finalized( ofaPage *self, GObject *finalized_grid )
 {
 	static const gchar *thisfn = "ofa_page_on_grid_finalized";
 
-	g_debug( "%s: self=%p (%s), grid=%p",
+	g_debug( "%s: self=%p (%s), finalized_grid=%p (%s)",
 			thisfn,
 			( void * ) self, G_OBJECT_TYPE_NAME( self ),
-			( void * ) grid );
+			( void * ) finalized_grid, G_OBJECT_TYPE_NAME( finalized_grid ));
 
 	g_object_unref( self );
 }

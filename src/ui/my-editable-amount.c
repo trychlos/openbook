@@ -60,7 +60,7 @@ typedef struct {
 #define EDITABLE_AMOUNT_DATA             "my-editable-amount-data"
 
 static void             editable_amount_init( GtkEditable *editable );
-static void             on_editable_weak_notify( sEditableofxAmount *data, GObject *was_the_editable );
+static void             on_editable_finalized( sEditableofxAmount *data, GObject *was_the_editable );
 static sEditableofxAmount *get_editable_amount_data( GtkEditable *editable );
 static void             on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditableofxAmount *data );
 static void             on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditableofxAmount *data );
@@ -124,16 +124,16 @@ editable_amount_init( GtkEditable *editable )
 
 	data = get_editable_amount_data( editable );
 
-	g_object_weak_ref( G_OBJECT( editable ), ( GWeakNotify ) on_editable_weak_notify, data );
+	g_object_weak_ref( G_OBJECT( editable ), ( GWeakNotify ) on_editable_finalized, data );
 }
 
 static void
-on_editable_weak_notify( sEditableofxAmount *data, GObject *was_the_editable )
+on_editable_finalized( sEditableofxAmount *data, GObject *finalized_editable )
 {
 	static const gchar *thisfn = "my_editable_amount_on_weak_notify";
 
-	g_debug( "%s: data=%p, the_editable_was=%p",
-			thisfn, ( void * ) data, ( void * ) was_the_editable );
+	g_debug( "%s: data=%p, finalized_editable=%p",
+			thisfn, ( void * ) data, ( void * ) finalized_editable );
 
 	g_free( data );
 }
