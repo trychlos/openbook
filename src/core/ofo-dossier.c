@@ -107,11 +107,6 @@ static gint st_signals[ N_SIGNALS ] = { 0 };
 #define THIS_DBMODEL_VERSION            1
 #define THIS_DOS_ID                     1
 
-/* dossier status
- */
-#define DOSSIER_CURRENT                 "C"
-#define DOSSIER_ARCHIVED                "A"
-
 static ofoBaseClass *ofo_dossier_parent_class = NULL;
 
 static GType       register_type( void );
@@ -535,7 +530,18 @@ ofo_dossier_open( ofoDossier *dossier,
 
 	if( dbmodel_update( dossier )){
 		connect_objects_handlers( dossier );
-		ok = dossier_do_read( dossier );
+		if( dossier_do_read( dossier )){
+			ok = TRUE;
+
+			/* when opening the dossier, make sure the settings are up to date
+			 * (this may not be the case when the dossier has just been restored
+			 *  or created) */
+			if( !g_utf8_collate( ofo_dossier_get_status( dossier ), DOS_STATUS_OPENED )){
+				ofa_dbms_set_current_exercice( dbms,
+						ofo_dossier_get_name( dossier ),
+						ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
+			}
+		}
 	}
 
 	return( ok );
@@ -914,7 +920,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,DOS_STATUS) "
-			"	VALUES (1,'%s',%u,'EUR','C')", priv->dname, DOS_DEFAULT_LENGTH );
+			"	VALUES (1,'%s',%u,'EUR','%s')", priv->dname, DOS_DEFAULT_LENGTH, DOS_STATUS_OPENED );
 	if( !ofa_dbms_query( priv->dbms, query, TRUE )){
 		g_free( query );
 		return( FALSE );
@@ -1098,7 +1104,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 /**
  * ofo_dossier_get_name:
  *
- * Returns: the name (short label) of the dossier as it appeats in the
+ * Returns: the name (short label) of the dossier as it appears in the
  * selection dialogs. The name is not stored in the DBMS, but at an
  * external level by the program.
  */
@@ -1495,11 +1501,37 @@ ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_status:
+ *
+ * Returns: the status of the dossier, as a single const gchar, which
+ * is suitable to be compared with the global constants
+ * #DOS_STATUS_OPENED and #DOS_STATUS_CLOSED.
  */
 const gchar *
 ofo_dossier_get_status( const ofoDossier *dossier )
 {
-	static const gchar *thisfn = "ofo_dossier_get_status";
+	ofoDossierPrivate *priv;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
+
+		priv = dossier->priv;
+		return( priv->status );
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_dossier_get_status_str:
+ *
+ * Returns: the status of the dossier as a const string suitable for
+ * display.
+ */
+const gchar *
+ofo_dossier_get_status_str( const ofoDossier *dossier )
+{
+	static const gchar *thisfn = "ofo_dossier_get_status_str";
 	ofoDossierPrivate *priv;
 
 	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
@@ -1508,10 +1540,10 @@ ofo_dossier_get_status( const ofoDossier *dossier )
 
 		priv = dossier->priv;
 
-		if( !g_utf8_collate( priv->status, DOSSIER_CURRENT )){
+		if( !g_utf8_collate( priv->status, DOS_STATUS_OPENED )){
 			return( _( "Opened" ));
 		}
-		if( !g_utf8_collate( priv->status, DOSSIER_ARCHIVED )){
+		if( !g_utf8_collate( priv->status, DOS_STATUS_CLOSED )){
 			return( _( "Archived" ));
 		}
 		g_warning( "%s: unknown status: %s", thisfn, priv->status );
@@ -1868,6 +1900,7 @@ cmp_currency_detail( sCurrency *a, sCurrency *b )
 	return( g_utf8_collate( a->currency, b->currency ));
 }
 
+#if 0
 /**
  * ofo_dossier_get_last_closed_exercice:
  *
@@ -1875,7 +1908,6 @@ cmp_currency_detail( sCurrency *a, sCurrency *b )
  * #GDate structure which should be g_free() by the caller,
  * or %NULL if the dossier has never been closed.
  */
-/*
 GDate *
 ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 {
@@ -1914,7 +1946,7 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 
 	return( dmax );
 }
-*/
+#endif
 
 /**
  * ofo_dossier_is_current:
@@ -1928,7 +1960,7 @@ ofo_dossier_is_current( const ofoDossier *dossier )
 
 	if( !OFO_BASE( dossier )->prot->dispose_has_run ){
 
-		return( g_utf8_collate( dossier->priv->status, DOSSIER_CURRENT ) == 0 );
+		return( g_utf8_collate( dossier->priv->status, DOS_STATUS_OPENED ) == 0 );
 	}
 
 	g_return_val_if_reached( FALSE );
@@ -2216,8 +2248,8 @@ dossier_set_status( ofoDossier *dossier, const gchar *status )
 		g_free( priv->status );
 		priv->status = NULL;
 
-		if( !g_utf8_collate( status, DOSSIER_CURRENT ) ||
-			!g_utf8_collate( status, DOSSIER_ARCHIVED )){
+		if( !g_utf8_collate( status, DOS_STATUS_OPENED ) ||
+			!g_utf8_collate( status, DOS_STATUS_CLOSED )){
 
 			priv->status = g_strdup( status );
 

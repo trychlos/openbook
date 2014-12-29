@@ -50,14 +50,8 @@
 
 G_BEGIN_DECLS
 
-/**
- * ofaDossierStatus:
- */
-typedef enum {
-	DOS_STATUS_OPENED = 1,
-	DOS_STATUS_CLOSED
-}
-	ofaDossierStatus;
+#define DOS_STATUS_OPENED               "O"
+#define DOS_STATUS_CLOSED               "A"
 
 ofoDossier      *ofo_dossier_new                       ( void );
 
@@ -91,6 +85,7 @@ const gchar     *ofo_dossier_get_sld_ope               ( const ofoDossier *dossi
 const gchar     *ofo_dossier_get_upd_user              ( const ofoDossier *dossier );
 const GTimeVal  *ofo_dossier_get_upd_stamp             ( const ofoDossier *dossier );
 const gchar     *ofo_dossier_get_status                ( const ofoDossier *dossier );
+const gchar     *ofo_dossier_get_status_str            ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_bat              ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_batline          ( const ofoDossier *dossier );
 ofxCounter       ofo_dossier_get_last_entry            ( const ofoDossier *dossier );

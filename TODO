@@ -313,13 +313,6 @@
 
  473 2014-11-29 DossierDelete review: delete exercice vs. delete dossier
 
- 475 2014-11-29 review backup and restore: have a dedicated interface
-     2014-11-13 no dedicated interface (because we need a connection)
-                backup is ok.
-     2014-11-13 Have to restore with a better interface:
-                select the dossier name, the target database, extract
-                the date of the exercice and the status from the archive
-
  476 2014-11-29 DossierManager review: have a Dossier treeview and an
                 Exercices treeview
 
@@ -368,14 +361,17 @@
                 import entries:  0.13268 s (2431 rows)
 
  529 2014-12-14 ExeClosing: piece=SOLDE
-                label = Sole du compte nnnn - llll
+                label = Solde du compte nnnn - llll
 
  543 2014-12-28 piece of dialog should be weak_ref against the top
                 widget instead of the parent container (so that removing
                 the widget from the container also finalize the piece
                 itself)
 
- 544
+ 544 2014-12-29 when opening a dossier, update the current settings
+                (if opening the current exercice)
+
+ 545
 
 -----------------------------------------------------------------------
  DONE
@@ -2131,6 +2127,14 @@
 
  474 2014-11-29 st_global datasets should be owned by the dossier
      2014-11-30 done - svn #4203
+
+ 475 2014-11-29 review backup and restore: have a dedicated interface
+     2014-11-13 no dedicated interface (because we need a connection)
+                backup is ok.
+     2014-11-13 Have to restore with a better interface:
+                select the dossier name, the target database, extract
+                the date of the exercice and the status from the archive
+     2014-12-29 done - svn #4387
 
  478 2014-11-30 have a decimal dot combo
      2014-11-30 done - svn #4215
