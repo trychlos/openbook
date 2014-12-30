@@ -93,8 +93,10 @@ static void       on_tview_delete( ofaOpeTemplatesBook *self );
 static void       on_tview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplatesBook *self );
 static void       do_insert_ope_template( ofaOpeTemplatesBook *self );
 static void       do_update_ope_template( ofaOpeTemplatesBook *self );
+static void       do_duplicate_ope_template( ofaOpeTemplatesBook *self );
 static void       do_delete_ope_template( ofaOpeTemplatesBook *self );
 static gboolean   delete_confirmed( ofaOpeTemplatesBook *self, ofoOpeTemplate *ope );
+static void       do_guided_input( ofaOpeTemplatesBook *self );
 static void       dossier_signals_connect( ofaOpeTemplatesBook *book );
 static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesBook *book );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplatesBook *book );
@@ -758,6 +760,45 @@ do_update_ope_template( ofaOpeTemplatesBook *self )
 }
 
 static void
+do_duplicate_ope_template( ofaOpeTemplatesBook *self )
+{
+	static const gchar *thisfn = "ofa_ope_templates_book_do_duplicate_ope_template";
+	ofaOpeTemplatesBookPrivate *priv;
+	gchar *mnemo, *new_mnemo;
+	ofoOpeTemplate *ope;
+	ofoOpeTemplate *duplicate;
+	gchar *str;
+
+	g_return_if_fail( OFA_IS_OPE_TEMPLATES_BOOK( self ));
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	priv = self->priv;
+
+	mnemo = ofa_ope_templates_book_get_selected( self );
+	if( mnemo ){
+		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
+		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
+
+		duplicate = ofo_ope_template_new_from_template( ope );
+		new_mnemo = ofo_ope_template_get_mnemo_new_from( ope, priv->dossier );
+		ofo_ope_template_set_mnemo( duplicate, new_mnemo );
+
+		str = g_strdup_printf( "%s (%s)", ofo_ope_template_get_label( ope ), _( "Duplicate" ));
+		ofo_ope_template_set_label( duplicate, str );
+		g_free( str );
+
+		if( !ofo_ope_template_insert( duplicate, priv->dossier )){
+			g_object_unref( duplicate );
+		} else {
+			select_row_by_mnemo( self, new_mnemo );
+		}
+		g_free( new_mnemo );
+	}
+	g_free( mnemo );
+}
+
+static void
 do_delete_ope_template( ofaOpeTemplatesBook *self )
 {
 	ofaOpeTemplatesBookPrivate *priv;
@@ -819,6 +860,11 @@ delete_confirmed( ofaOpeTemplatesBook *self, ofoOpeTemplate *ope )
 	g_free( msg );
 
 	return( delete_ok );
+}
+
+static void
+do_guided_input( ofaOpeTemplatesBook *self )
+{
 }
 
 static void
@@ -1136,8 +1182,14 @@ ofa_ope_templates_book_button_clicked( ofaOpeTemplatesBook *book, gint button_id
 			case BUTTON_PROPERTIES:
 				do_update_ope_template( book );
 				break;
+			case BUTTON_DUPLICATE:
+				do_duplicate_ope_template( book );
+				break;
 			case BUTTON_DELETE:
 				do_delete_ope_template( book );
+				break;
+			case BUTTON_GUIDED_INPUT:
+				do_guided_input( book );
 				break;
 			default:
 				g_warning( "%s: unmanaged button_id=%d", thisfn, button_id );
