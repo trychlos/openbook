@@ -36,6 +36,7 @@
 #include "api/ofo-ope-template.h"
 
 #include "ui/ofa-buttons-box.h"
+#include "ui/ofa-guided-input.h"
 #include "ui/ofa-ope-template-properties.h"
 #include "ui/ofa-ope-template-store.h"
 #include "ui/ofa-ope-templates-book.h"
@@ -865,6 +866,20 @@ delete_confirmed( ofaOpeTemplatesBook *self, ofoOpeTemplate *ope )
 static void
 do_guided_input( ofaOpeTemplatesBook *self )
 {
+	ofaOpeTemplatesBookPrivate *priv;
+	ofoOpeTemplate *ope;
+	gchar *mnemo;
+
+	priv = self->priv;
+
+	mnemo = ofa_ope_templates_book_get_selected( self );
+	if( mnemo ){
+		ope = ofo_ope_template_get_by_mnemo( priv->dossier, mnemo );
+		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
+
+		ofa_guided_input_run( priv->main_window, ope );
+	}
+	g_free( mnemo );
 }
 
 static void
