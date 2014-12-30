@@ -363,9 +363,6 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Solde du compte nnnn - llll
 
- 545 2014-12-29 set the main window title to the description of the
-                opened exercice
-
  546
 
 -----------------------------------------------------------------------
@@ -2335,6 +2332,10 @@
  544 2014-12-29 when opening a dossier, update the current settings
                 (if opening the current exercice)
      2014-12-29 done - svn #4388
+
+ 545 2014-12-29 set the main window title to the description of the
+                opened exercice
+     2014-12-29 done - svn #4390
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
