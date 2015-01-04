@@ -388,7 +388,7 @@ ofa_guided_input_piece_new( void )
 void
 ofa_guided_input_piece_attach_to( ofaGuidedInputPiece *piece, GtkContainer *parent )
 {
-	static const gchar *thisfn = "ofa_fuided_input_piece_attach_to";
+	static const gchar *thisfn = "ofa_guided_input_piece_attach_to";
 	ofaGuidedInputPiecePrivate *priv;
 	GtkWidget *window, *top_widget;
 
@@ -769,14 +769,11 @@ row_widget_label( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint ro
 static GtkWidget *
 row_widget_button( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint row )
 {
-	GtkWidget *image;
 	GtkWidget *button;
 
-	image = gtk_image_new_from_icon_name( col_def->stock_id, GTK_ICON_SIZE_BUTTON );
-	button = gtk_button_new();
+	button = gtk_button_new_from_icon_name( col_def->stock_id, GTK_ICON_SIZE_MENU );
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( col_def->column_id ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_button_set_image( GTK_BUTTON( button ), image );
 
 	g_signal_connect(
 			G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), piece );

@@ -43,7 +43,7 @@ G_BEGIN_DECLS
  *               |            |               usage              |
  *               | display as | display | entry | sql | filename |
  * --------------+------------+---------+-------+-----+----------+
- * @MY_DATE_MMYY |  mmm yyyy  |    X    |       |     |          |
+ * @MY_DATE_MMYY |  Mmm yyyy  |    X    |       |     |          |
  * @MY_DATE_DMMM | d mmm yyyy |    X    |       |     |          |
  * @MY_DATE_DMYY | dd/mm/yyyy |    X    |   X   |     |          |
  * @MY_DATE_SQL  | yyyy-mm-dd |         |       |  X  |          |

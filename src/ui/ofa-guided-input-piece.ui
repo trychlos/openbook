@@ -39,6 +39,7 @@
                           <object class="GtkGrid" id="grid5">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="halign">start</property>
                             <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkLabel" id="label3">
@@ -96,7 +97,9 @@
                           <object class="GtkGrid" id="grid6">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="halign">center</property>
                             <property name="margin_left">8</property>
+                            <property name="hexpand">True</property>
                             <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkLabel" id="label4">
@@ -154,6 +157,7 @@
                           <object class="GtkGrid" id="grid7">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="halign">end</property>
                             <property name="margin_left">8</property>
                             <property name="column_spacing">4</property>
                             <child>

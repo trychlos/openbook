@@ -249,10 +249,9 @@ static gchar *
 compute_formula( sHelper *helper, const gchar *formula, gint row, gint column )
 {
 	static const gchar *thisfn = "ofs_ope_compute_formula";
-	gchar *str1, *str2;
+	gchar *str1, *str2, *str3;
 
-	str1 = NULL;
-	str2 = NULL;
+	str3 = NULL;
 	helper->comp_row = row;
 	helper->comp_column = column;
 
@@ -263,12 +262,19 @@ compute_formula( sHelper *helper, const gchar *formula, gint row, gint column )
 		str2 = g_regex_replace_eval( st_regex_fn,
 					str1, -1, 0, 0, ( GRegexEvalCallback ) eval_function_cb, helper, NULL );
 
-		g_free( str1 );
+		if( column == OPE_COL_DEBIT || column == OPE_COL_CREDIT ){
+			str3 = my_double_to_str( eval( helper, str2 ));
+		} else {
+			str3 = g_strdup( str2 );
+		}
 
-		DEBUG( "%s: formula=%s, row=%d, column=%d, str2=%s", thisfn, formula, row, column, str2 );
+		g_free( str1 );
+		g_free( str2 );
+
+		DEBUG( "%s: formula=%s, row=%d, column=%d, str3=%s", thisfn, formula, row, column, str3 );
 	}
 
-	return( str2 );
+	return( str3 );
 }
 
 static gboolean
@@ -881,6 +887,9 @@ check_for_all_entries( sChecker *checker )
 	return( ok );
 }
 
+/*
+ * empty account is not an error if both debit and credit are zero
+ */
 static gboolean
 check_for_entry( sChecker *checker, ofsOpeDetail *detail )
 {
@@ -892,9 +901,13 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail )
 	currency = NULL;
 
 	if( !detail->account || !g_utf8_strlen( detail->account, -1 )){
-		g_free( checker->message );
-		checker->message = g_strdup( _( "Empty account" ));
-
+		if( detail->debit || detail->credit ){
+			g_free( checker->message );
+			checker->message = g_strdup( _( "Empty account" ));
+		} else {
+			/* entry is not generated */
+			ok = TRUE;
+		}
 	} else {
 		account = ofo_account_get_by_number( checker->dossier, detail->account );
 		if( !account || !OFO_IS_ACCOUNT( account )){
@@ -970,7 +983,7 @@ ofs_ope_generate_entries( ofsOpe *ope, ofoDossier *dossier )
 
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
-		if( detail->account ){
+		if( detail->account && ( detail->debit || detail->credit )){
 			account = ofo_account_get_by_number( dossier, detail->account );
 			if( account ){
 				currency = ofo_account_get_currency( account );

@@ -54,7 +54,7 @@ struct _ofaGuidedExPrivate {
 
 	/* UI - the pane
 	 */
-	GtkPaned             *pane;
+	GtkWidget            *pane;
 
 	/* UI - left part treeview selection of the entry model
 	 */
@@ -62,12 +62,10 @@ struct _ofaGuidedExPrivate {
 	GtkButton            *left_select;
 
 	/* UI - right part guided input
-	 *      most if not all elements are taken from ofa-guided-input.ui
+	 *      most if not all elements are taken from ofa-guided-input-piece.ui
 	 *      dialog box definition
 	 */
-	GtkContainer         *right_box;		/* the reparented container from dialog */
-	GtkButton            *right_ok;
-	GtkButton            *right_cancel;
+	GtkWidget            *ok_btn;
 };
 
 /* columns in the left tree view which handles the entry models
@@ -82,7 +80,7 @@ enum {
 G_DEFINE_TYPE( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
-static void       pane_restore_position( GtkPaned *pane );
+static void       pane_restore_position( GtkWidget *pane );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
@@ -90,6 +88,7 @@ static GtkWidget *setup_view_left( ofaGuidedEx *self );
 static GtkWidget *setup_view_right( ofaGuidedEx *self );
 static GtkWidget *setup_left_treeview( ofaGuidedEx *self );
 static gint       on_left_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self );
+static gchar     *get_sort_key( GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void       on_left_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedEx *self );
 static void       init_left_view( ofaGuidedEx *self, GtkWidget *child );
 static void       on_left_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self );
@@ -109,6 +108,7 @@ static void       insert_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *mode
 static void       update_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id );
 static void       remove_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model );
 static gboolean   find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void       on_right_piece_changed( ofaGuidedInputPiece *piece, gboolean ok, ofaGuidedEx *self );
 static void       on_right_ok( GtkButton *button, ofaGuidedEx *self );
 static void       on_right_cancel( GtkButton *button, ofaGuidedEx *self );
 static void       on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
@@ -116,7 +116,7 @@ static void       on_updated_object( const ofoDossier *dossier, const ofoBase *o
 static void       on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
 static void       v_pre_remove( ofaPage *page );
-static void       pane_save_position( GtkPaned *pane );
+static void       pane_save_position( GtkWidget *pane );
 
 static void
 guided_ex_finalize( GObject *instance )
@@ -184,16 +184,16 @@ static GtkWidget *
 v_setup_view( ofaPage *page )
 {
 	ofaGuidedExPrivate *priv;
-	GtkPaned *child;
+	GtkWidget *pane;
 
 	priv = OFA_GUIDED_EX( page )->priv;
 	priv->dossier = ofa_page_get_dossier( page );
 
-	child = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
-	gtk_paned_add1( child, setup_view_left( OFA_GUIDED_EX( page )));
-	gtk_paned_add2( child, setup_view_right( OFA_GUIDED_EX( page )));
-	priv->pane = child;
-	pane_restore_position( child );
+	pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
+	gtk_paned_add1( GTK_PANED( pane ), setup_view_left( OFA_GUIDED_EX( page )));
+	gtk_paned_add2( GTK_PANED( pane ), setup_view_right( OFA_GUIDED_EX( page )));
+	priv->pane = pane;
+	pane_restore_position( pane );
 
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
@@ -211,17 +211,17 @@ v_setup_view( ofaPage *page )
 			G_OBJECT( priv->dossier ),
 			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), page );
 
-	return( GTK_WIDGET( child ));
+	return( pane );
 }
 
 static void
-pane_restore_position( GtkPaned *pane )
+pane_restore_position( GtkWidget *pane )
 {
 	gint pos;
 
 	pos = ofa_settings_get_int( "GuidedInputExDlg-pane" );
 	g_debug( "ofa_guided_ex_pane_restore_position: pos=%d", pos );
-	gtk_paned_set_position( pane, pos );
+	gtk_paned_set_position( GTK_PANED( pane ), pos );
 }
 
 static GtkWidget *
@@ -234,7 +234,7 @@ static void
 v_init_view( ofaPage *page )
 {
 	init_left_view( OFA_GUIDED_EX( page ),
-						gtk_paned_get_child1( OFA_GUIDED_EX( page )->priv->pane ));
+						gtk_paned_get_child1( GTK_PANED( OFA_GUIDED_EX( page )->priv->pane )));
 }
 
 static GtkWidget *
@@ -252,31 +252,29 @@ v_get_top_focusable_widget( const ofaPage *page )
 static GtkWidget *
 setup_view_left( ofaGuidedEx *self )
 {
-	GtkFrame *frame;
-	GtkWidget *tview;
-	GtkBox *box, *box2;
-	GtkButton *button;
+	GtkWidget *frame, *grid, *tview, *box, *button;
 
-	frame = GTK_FRAME( gtk_frame_new( _( " Per ledger " )));
-	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
-	gtk_widget_set_margin_bottom( GTK_WIDGET( frame ), 4 );
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
+	frame = gtk_frame_new( _( " Per ledger " ));
+	gtk_widget_set_margin_left( frame, 4 );
+	gtk_widget_set_margin_bottom( frame, 4 );
+	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
-	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 ));
-	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( box ));
+	grid = gtk_grid_new();
+	gtk_grid_set_row_spacing( GTK_GRID( grid ), 3 );
+	gtk_container_add( GTK_CONTAINER( frame ), grid );
 
 	tview = setup_left_treeview( self );
-	gtk_box_pack_start( box, tview, TRUE, TRUE, 0 );
+	gtk_grid_attach( GTK_GRID( grid ), tview, 0, 0, 1, 1 );
 
-	box2 = GTK_BOX( gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 ));
-	gtk_box_pack_end( box, GTK_WIDGET( box2 ), FALSE, FALSE, 0 );
+	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
+	gtk_grid_attach( GTK_GRID( grid ), box, 0, 1, 1, 1 );
 
-	button = GTK_BUTTON( gtk_button_new_with_mnemonic( _( "_Select" )));
-	gtk_widget_set_margin_bottom( GTK_WIDGET( button ), 4 );
-	gtk_widget_set_margin_right( GTK_WIDGET( button ), 4 );
+	button = gtk_button_new_with_mnemonic( _( "_Select" ));
+	gtk_widget_set_margin_bottom( button, 4 );
+	gtk_widget_set_margin_right( button, 4 );
+	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_left_select_clicked ), self );
-	gtk_box_pack_end( box2, GTK_WIDGET( button ), FALSE, FALSE, 0 );
-	self->priv->left_select = button;
+	self->priv->left_select = GTK_BUTTON( button );
 
 	enable_left_select( self );
 
@@ -284,32 +282,49 @@ setup_view_left( ofaGuidedEx *self )
 }
 
 /*
- * note that we may have no current ofoOpeTemplate at this time
+ * note that we do not have any current ofoOpeTemplate at this time
  */
 static GtkWidget *
 setup_view_right( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
-	GtkWidget *parent, *widget;
+	GtkWidget *grid, *parent, *box, *button, *image;
 
 	priv = self->priv;
+
+	grid = gtk_grid_new();
+
 	parent = gtk_alignment_new( 0.5, 0.5, 1, 1 );
+	gtk_alignment_set_padding( GTK_ALIGNMENT( parent ), 0, 0, 0, 2 );
+	gtk_grid_attach( GTK_GRID( grid ), parent, 0, 0, 1, 1 );
 
 	priv->piece = ofa_guided_input_piece_new();
 	ofa_guided_input_piece_attach_to( priv->piece, GTK_CONTAINER( parent ));
 	ofa_guided_input_piece_set_main_window( priv->piece, ofa_page_get_main_window( OFA_PAGE( self )));
 
-	widget = my_utils_container_get_child_by_name( priv->right_box, "box-ok" );
-	g_return_val_if_fail( widget && GTK_IS_BUTTON( widget ), NULL );
-	priv->right_ok = GTK_BUTTON( widget );
-	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_right_ok ), self );
+	g_signal_connect( priv->piece, "changed", G_CALLBACK( on_right_piece_changed ), self );
 
-	widget = my_utils_container_get_child_by_name( priv->right_box, "box-cancel" );
-	g_return_val_if_fail( widget && GTK_IS_BUTTON( widget ), NULL );
-	priv->right_cancel = GTK_BUTTON( widget );
-	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_right_cancel ), self );
+	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
+	gtk_grid_attach( GTK_GRID( grid ), box, 0, 1, 1, 1 );
 
-	return( parent );
+	button = gtk_button_new_with_mnemonic( _( "_Validate" ));
+	gtk_widget_set_margin_bottom( button, 4 );
+	gtk_widget_set_margin_right( button, 6 );
+	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
+	image = gtk_image_new_from_icon_name( "gtk-ok", GTK_ICON_SIZE_BUTTON );
+	gtk_button_set_image( GTK_BUTTON( button ), image );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_right_ok ), self );
+	priv->ok_btn = button;
+
+	button = gtk_button_new_with_mnemonic( _( "  _Reset  " ));
+	gtk_widget_set_margin_bottom( button, 4 );
+	gtk_widget_set_margin_right( button, 4 );
+	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
+	image = gtk_image_new_from_icon_name( "gtk-cancel", GTK_ICON_SIZE_BUTTON );
+	gtk_button_set_image( GTK_BUTTON( button ), image );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_right_cancel ), self );
+
+	return( grid );
 }
 
 /*
@@ -331,7 +346,8 @@ setup_left_treeview( ofaGuidedEx *self )
 	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
 
 	tview = GTK_TREE_VIEW( gtk_tree_view_new());
-	/*gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );*/
+	gtk_widget_set_hexpand( GTK_WIDGET( tview ), TRUE );
+	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, FALSE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
 	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_left_row_activated ), self );
@@ -380,7 +396,40 @@ setup_left_treeview( ofaGuidedEx *self )
 static gint
 on_left_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self )
 {
-	return( 0 );
+	gchar *a_key, *b_key;
+	gint cmp;
+
+	a_key = get_sort_key( tmodel, a );
+	b_key = get_sort_key( tmodel, b );
+
+	cmp = g_utf8_collate( a_key, b_key );
+
+	g_free( a_key );
+	g_free( b_key );
+
+	return( cmp );
+}
+
+static gchar *
+get_sort_key( GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	gchar *key;
+	ofoBase *obj;
+
+	key = NULL;
+	gtk_tree_model_get( tmodel, iter, LEFT_COL_OBJECT, &obj, -1 );
+	g_object_unref( obj );
+
+	if( OFO_IS_LEDGER( obj )){
+		key = g_strdup( ofo_ledger_get_mnemo( OFO_LEDGER( obj )));
+	} else {
+		g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( obj ), NULL );
+		key = g_strdup_printf( "%s%s",
+				ofo_ope_template_get_ledger( OFO_OPE_TEMPLATE( obj )),
+				ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( obj )));
+	}
+
+	return( key );
 }
 
 /*
@@ -555,6 +604,7 @@ select_model( ofaGuidedEx *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoBase *object;
+	gboolean ok;
 
 	priv = self->priv;
 
@@ -568,7 +618,10 @@ select_model( ofaGuidedEx *self )
 
 	ofa_guided_input_piece_set_ope_template( priv->piece, OFO_OPE_TEMPLATE( object ));
 
-	gtk_widget_show_all( gtk_paned_get_child2( priv->pane ));
+	ok = ofa_guided_input_piece_is_valid( priv->piece );
+	on_right_piece_changed( priv->piece, ok, self );
+
+	gtk_widget_show_all( gtk_paned_get_child2( GTK_PANED( priv->pane )));
 }
 
 static void
@@ -830,6 +883,18 @@ find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **
 	return( FALSE );
 }
 
+static void
+on_right_piece_changed( ofaGuidedInputPiece *piece, gboolean ok, ofaGuidedEx *self )
+{
+	ofaGuidedExPrivate *priv;
+
+	priv = self->priv;
+
+	if( priv->ok_btn ){
+		gtk_widget_set_sensitive( priv->ok_btn, ok );
+	}
+}
+
 /*
  * the right bottom "OK" has been clicked:
  *  try to validate and generate the entries
@@ -954,11 +1019,11 @@ v_pre_remove( ofaPage *page )
 }
 
 static void
-pane_save_position( GtkPaned *pane )
+pane_save_position( GtkWidget *pane )
 {
 	guint pos;
 
-	pos = gtk_paned_get_position( pane );
+	pos = gtk_paned_get_position( GTK_PANED( pane ));
 	g_debug( "ofa_guided_ex_pane_save_position: pos=%d", pos );
 	ofa_settings_set_int( "GuidedInputExDlg-pane", pos );
 }
