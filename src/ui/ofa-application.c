@@ -696,7 +696,7 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	sdo = ofa_dossier_open_run( priv->main_window );
+	sdo = ofa_dossier_open_run( priv->main_window, NULL );
 	if( sdo ){
 		g_signal_emit_by_name( priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
 	}

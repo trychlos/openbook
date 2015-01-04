@@ -43,6 +43,8 @@
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
+#include "ui/ofa-dossier-properties.h"
+#include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -51,38 +53,25 @@ struct _ofaDossierManagerPrivate {
 
 	/* UI
 	 */
-	GtkTreeView *tview;
-	GtkWidget   *open_btn;
-	GtkWidget   *update_btn;
-	GtkWidget   *delete_btn;
+	ofaDossierTreeview *tview;
+	GtkWidget          *open_btn;
+	GtkWidget          *delete_btn;
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-dossier-manager.ui";
-static const gchar  *st_ui_id  = "DossierManagerDlg";
-
-/* column ordering in the selection listview
- */
-enum {
-	COL_NAME = 0,
-	COL_PROVIDER,
-	COL_HOST,
-	COL_DBNAME,
-	N_COLUMNS
-};
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-manager.ui";
+static const gchar *st_ui_id            = "DossierManagerDlg";
 
 G_DEFINE_TYPE( ofaDossierManager, ofa_dossier_manager, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
 static void      setup_treeview( ofaDossierManager *self );
-static void      load_in_treeview( ofaDossierManager *self );
-static gint      on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
-static void      on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierManager *self );
-static void      on_dossier_selected( GtkTreeSelection *selection, ofaDossierManager *self );
+static void      on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManager *self );
+static void      on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManager *self );
 static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
 static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
-static void      on_update_clicked( GtkButton *button, ofaDossierManager *self );
+static void      open_dossier( ofaDossierManager *self, const gchar *dname );
 static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
-static gboolean  confirm_delete( ofaDossierManager *self, const gchar *name, const gchar *provider, const gchar *dbname );
+static gboolean  confirm_delete( ofaDossierManager *self, const gchar *dname );
 
 static void
 dossier_manager_finalize( GObject *instance )
@@ -190,192 +179,57 @@ v_init_dialog( myDialog *dialog )
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_open_clicked ), dialog );
 	priv->open_btn = widget;
 
-	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "update-btn" );
-	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_update_clicked ), dialog );
-	priv->update_btn = widget;
-
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "delete-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_delete_clicked ), dialog );
 	priv->delete_btn = widget;
 
 	setup_treeview( OFA_DOSSIER_MANAGER( dialog ));
-	load_in_treeview( OFA_DOSSIER_MANAGER( dialog ));
 }
 
 static void
 setup_treeview( ofaDossierManager *self )
 {
+	ofaDossierManagerPrivate *priv;
 	GtkWindow *toplevel;
-	GtkWidget *tview;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
+	GtkWidget *parent;
 
+	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
-	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "treeview" );
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-	self->priv->tview = GTK_TREE_VIEW( tview );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "tview-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING ));
-	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tmodel );
-	g_object_unref( tmodel );
+	priv->tview = ofa_dossier_treeview_new();
+	ofa_dossier_treeview_attach_to( priv->tview, GTK_CONTAINER( parent ));
+	ofa_dossier_treeview_set_columns( priv->tview, DOSSIER_DISP_DNAME | DOSSIER_DISP_DBMS );
+	ofa_dossier_treeview_set_headers( priv->tview, TRUE );
 
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ),
-			( GtkTreeIterCompareFunc ) on_sort_model, NULL, NULL );
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tmodel ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
-			GTK_SORT_ASCENDING );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Dossier" ),
-			cell,
-			"text", COL_NAME,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Provider" ),
-			cell,
-			"text", COL_PROVIDER,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Host" ),
-			cell,
-			"text", COL_HOST,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_cell_data_func( column, cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "DB name" ),
-			cell,
-			"text", COL_DBNAME,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect(G_OBJECT( select ), "changed", G_CALLBACK( on_dossier_selected ), self );
+	g_signal_connect(
+			G_OBJECT( priv->tview ), "changed", G_CALLBACK( on_tview_changed ), self );
+	g_signal_connect(
+			G_OBJECT( priv->tview ), "activated", G_CALLBACK( on_tview_activated ), self );
 }
 
 static void
-load_in_treeview( ofaDossierManager *self )
+on_tview_changed( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManager *self )
 {
-	GtkTreeModel *tmodel;
-	GtkTreeSelection *select;
-	GtkTreeIter iter;
-	GSList *dossiers, *id;
-	const gchar *name;
-	gchar *provider, *host, *dbname;
-	ofaIDbms *module;
-
-	tmodel = gtk_tree_view_get_model( self->priv->tview );
-	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
-
-	dossiers = ofa_dossier_misc_get_dossiers();
-
-	for( id=dossiers ; id ; id=id->next ){
-		name = ( const gchar * ) id->data;
-		provider = ofa_settings_get_dossier_provider( name );
-		module = ofa_idbms_get_provider_by_name( provider );
-		host = ofa_idbms_get_dossier_host( module, name );
-		dbname = ofa_idbms_get_dossier_dbname( module, name );
-		g_object_unref( module );
-
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				COL_NAME,     name,
-				COL_PROVIDER, provider,
-				COL_HOST,     host,
-				COL_DBNAME,   dbname,
-				-1 );
-
-		g_free( dbname );
-		g_free( host );
-		g_free( provider );
-	}
-
-	ofa_dossier_misc_free_dossiers( dossiers );
-
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		select = gtk_tree_view_get_selection( self->priv->tview );
-		gtk_tree_selection_select_iter( select, &iter );
-	}
-}
-
-static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data )
-{
-	gchar *aname, *bname;
-	gint cmp;
-
-	gtk_tree_model_get( tmodel, a, COL_NAME, &aname, -1 );
-	gtk_tree_model_get( tmodel, b, COL_NAME, &bname, -1 );
-
-	cmp = g_utf8_collate( aname, bname );
-
-	g_free( aname );
-	g_free( bname );
-
-	return( cmp );
-}
-
-/*
- * default to not display journal (resp. account) when selection is made
- *  per journal (resp. account)
- *
- * deleted entries re italic on white background
- * rough entries are standard (blanck on white)
- *  - unvalid entries have red foreground
- * validated entries are on light yellow background
- */
-static void
-on_cell_data_func( GtkTreeViewColumn *tcolumn,
-						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
-						ofaDossierManager *self )
-{
-	gchar *host;
-
-	gtk_tree_model_get( tmodel, iter,
-						COL_HOST, &host,
-						-1 );
-
-	if( !host || !g_utf8_strlen( host, -1 )){
-		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
-		gtk_list_store_set( GTK_LIST_STORE( tmodel ), iter,
-							COL_HOST, "localhost",
-							-1 );
-	}
-
-	g_free( host );
-}
-
-static void
-on_dossier_selected( GtkTreeSelection *selection, ofaDossierManager *self )
-{
+	ofaDossierManagerPrivate *priv;
 	gboolean ok;
 
-	ok = gtk_tree_selection_get_selected( selection, NULL, NULL );
+	priv = self->priv;
+	ok = dname && g_utf8_strlen( dname, -1 );
 
-	gtk_widget_set_sensitive( self->priv->open_btn, ok );
-	gtk_widget_set_sensitive( self->priv->update_btn, ok );
-	gtk_widget_set_sensitive( self->priv->delete_btn, ok );
+	gtk_widget_set_sensitive( priv->open_btn, ok );
+	gtk_widget_set_sensitive( priv->delete_btn, ok );
+}
+
+static void
+on_tview_activated( ofaDossierTreeview *tview, const gchar *dname, ofaDossierManager *self )
+{
+	if( dname && g_utf8_strlen( dname, -1 )){
+		open_dossier( self, dname );
+	}
 }
 
 static void
@@ -389,19 +243,27 @@ on_new_clicked( GtkButton *button, ofaDossierManager *self )
 		gtk_dialog_response(
 				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
 				GTK_RESPONSE_CANCEL );
-
-	} else {
-		load_in_treeview( self );
 	}
 }
 
 static void
 on_open_clicked( GtkButton *button, ofaDossierManager *self )
 {
+	ofaDossierManagerPrivate *priv;
+	gchar *dname;
+
+	priv = self->priv;
+	dname = ofa_dossier_treeview_get_selected( priv->tview );
+	open_dossier( self, dname );
+	g_free( dname );
+}
+
+static void
+open_dossier( ofaDossierManager *self, const gchar *dname )
+{
 	ofsDossierOpen *sdo;
 
-	sdo = ofa_dossier_open_run(
-			MY_WINDOW( self )->prot->main_window );
+	sdo = ofa_dossier_open_run( MY_WINDOW( self )->prot->main_window, dname );
 
 	if( sdo ){
 		g_signal_emit_by_name(
@@ -413,14 +275,23 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaDossierManager *self )
-{
-}
-
-static void
 on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_on_delete_clicked";
+	ofaDossierManagerPrivate *priv;
+	gchar *dname;
+
+	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
+
+	priv = self->priv;
+	dname = ofa_dossier_treeview_get_selected( priv->tview );
+
+	if( confirm_delete( self, dname )){
+
+	}
+
+	g_free( dname );
+#if 0
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
@@ -457,20 +328,21 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 	} else {
 		g_warning( "%s: no current selection", thisfn );
 	}
+#endif
 }
 
 static gboolean
-confirm_delete( ofaDossierManager *self, const gchar *name, const gchar *provider, const gchar *dbname )
+confirm_delete( ofaDossierManager *self, const gchar *dname )
 {
 	GtkWidget *dialog;
 	gint response;
 	gchar *str;
 
 	str = g_strdup_printf(
-			_( "You are about to remove the '%s' dossier (provider=%s, dbname=%s).\n"
+			_( "You are about to remove the '%s' dossier.\n"
 				"This operation will not be recoverable.\n"
 				"Are your sure ?" ),
-					name, provider, dbname );
+					dname );
 
 	dialog = gtk_message_dialog_new(
 			my_window_get_toplevel( MY_WINDOW( self )),

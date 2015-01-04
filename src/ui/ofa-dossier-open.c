@@ -153,10 +153,11 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
  * Run the selection dialog to choose a dossier to be opened
  */
 ofsDossierOpen *
-ofa_dossier_open_run( ofaMainWindow *main_window )
+ofa_dossier_open_run( ofaMainWindow *main_window, const gchar *dname )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
+	ofaDossierOpenPrivate *priv;
 	ofsDossierOpen *sdo;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), NULL );
@@ -170,9 +171,12 @@ ofa_dossier_open_run( ofaMainWindow *main_window )
 				MY_PROP_WINDOW_NAME, st_ui_id,
 				NULL );
 
+	priv = self->priv;
+	priv->dname = g_strdup( dname );
+
 	my_dialog_run_dialog( MY_DIALOG( self ));
 
-	sdo = self->priv->sdo;
+	sdo = priv->sdo;
 	g_object_unref( self );
 
 	return( sdo );
@@ -212,6 +216,9 @@ v_init_dialog( myDialog *dialog )
 	ofa_dossier_treeview_set_columns( priv->dossier_tview, DOSSIER_DISP_DNAME );
 	g_signal_connect(
 			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), dialog );
+	if( priv->dname ){
+		ofa_dossier_treeview_set_selected( priv->dossier_tview, priv->dname );
+	}
 
 	/* setup account and password */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "account" );

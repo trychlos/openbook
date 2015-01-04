@@ -76,6 +76,9 @@ void                ofa_dossier_treeview_attach_to   ( ofaDossierTreeview *view,
 void                ofa_dossier_treeview_set_columns ( ofaDossierTreeview *view,
 																ofaDossierColumns columns );
 
+void                ofa_dossier_treeview_set_headers ( ofaDossierTreeview *view,
+																gboolean visible );
+
 void                ofa_dossier_treeview_add_row     ( ofaDossierTreeview *view,
 																const gchar *dname );
 

@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "api/ofa-settings.h"
 
 #include "ui/ofa-dossier-treeview.h"
@@ -296,6 +298,24 @@ ofa_dossier_treeview_set_columns( ofaDossierTreeview *view, ofaDossierColumns co
 	}
 }
 
+/**
+ * ofa_dossier_treeview_set_headers:
+ */
+void
+ofa_dossier_treeview_set_headers( ofaDossierTreeview *view, gboolean visible )
+{
+	ofaDossierTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		gtk_tree_view_set_headers_visible( priv->tview, visible );
+	}
+}
+
 static void
 create_treeview_columns( ofaDossierTreeview *view )
 {
@@ -308,14 +328,14 @@ create_treeview_columns( ofaDossierTreeview *view )
 	if( priv->columns & DOSSIER_DISP_DNAME ){
 		cell = gtk_cell_renderer_text_new();
 		column = gtk_tree_view_column_new_with_attributes(
-						"", cell, "text", DOSSIER_COL_DNAME, NULL );
+						_( "Dossier" ), cell, "text", DOSSIER_COL_DNAME, NULL );
 		gtk_tree_view_append_column( priv->tview, column );
 	}
 
 	if( priv->columns & DOSSIER_DISP_DBMS ){
 		cell = gtk_cell_renderer_text_new();
 		column = gtk_tree_view_column_new_with_attributes(
-						"", cell, "text", DOSSIER_COL_DBMS, NULL );
+						_( "Provider" ), cell, "text", DOSSIER_COL_DBMS, NULL );
 		gtk_tree_view_append_column( priv->tview, column );
 	}
 
@@ -440,6 +460,7 @@ ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname 
 	gchar *str;
 	gint cmp;
 	GtkTreeSelection *select;
+	GtkTreePath *path;
 
 	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
 
@@ -456,6 +477,10 @@ ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname 
 				if( !cmp ){
 					select = gtk_tree_view_get_selection( priv->tview );
 					gtk_tree_selection_select_iter( select, &iter );
+					/* move the cursor so that it is visible */
+					path = gtk_tree_model_get_path( GTK_TREE_MODEL( priv->store ), &iter );
+					gtk_tree_view_scroll_to_cell( priv->tview, path, NULL, FALSE, 0, 0 );
+					gtk_tree_path_free( path );
 					break;
 				}
 				if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), &iter )){
