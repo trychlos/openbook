@@ -115,7 +115,7 @@ static void       on_new_object( const ofoDossier *dossier, const ofoBase *objec
 static void       on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
 static void       on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
-static void       v_pre_remove( ofaPage *page );
+static void       on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty );
 static void       pane_save_position( GtkWidget *pane );
 
 static void
@@ -175,7 +175,6 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->pre_remove = v_pre_remove;
 
 	g_type_class_add_private( klass, sizeof( ofaGuidedExPrivate ));
 }
@@ -210,6 +209,9 @@ v_setup_view( ofaPage *page )
 	g_signal_connect(
 			G_OBJECT( priv->dossier ),
 			SIGNAL_DOSSIER_RELOAD_DATASET, G_CALLBACK( on_reload_dataset ), page );
+
+	g_signal_connect(
+			G_OBJECT( page ), "page-removed", G_CALLBACK( on_page_removed ), NULL );
 
 	return( pane );
 }
@@ -1002,19 +1004,18 @@ on_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )
 }
 
 static void
-v_pre_remove( ofaPage *page )
+on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty )
 {
+	static const gchar *thisfn = "ofa_guided_ex_on_page_removed";
 	ofaGuidedExPrivate *priv;
 
-	g_return_if_fail( page && OFA_IS_GUIDED_EX( page ));
+	g_debug( "%s: page=%p, page_w=%p, page_n=%d, empty=%p",
+			thisfn, ( void * ) page, ( void * ) page_w, page_n, ( void * ) empty );
 
-	if( !page->prot->dispose_has_run ){
+	priv = page->priv;
 
-		priv = OFA_GUIDED_EX( page )->priv;
-
-		if( priv->pane ){
-			pane_save_position( priv->pane );
-		}
+	if( priv->pane ){
+		pane_save_position( priv->pane );
 	}
 }
 

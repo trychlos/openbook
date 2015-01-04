@@ -137,17 +137,6 @@ typedef struct {
 	 * order the focus to be correctly set.
 	 */
 	GtkWidget * ( *get_top_focusable_widget )( const ofaPage *page );
-
-	/**
-	 * pre_remove:
-	 * @page: this #ofaPage object.
-	 *
-	 * This virtual function is called by the main window when it is
-	 * about to remove the main page from the main notebook.
-	 * This is time for derived classes to handle widgets before they
-	 * are finalized.
-	 */
-	void        ( *pre_remove )              ( ofaPage *page );
 }
 	ofaPageClass;
 

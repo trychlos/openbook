@@ -359,13 +359,6 @@
  547 2014-12-31 migrate local sCurrency used for currency balance 
                 computings to the global ofsCurrency struct declaration
 
- 549 2014-12-31 OpeTemplates page: the ledger tabs are sorted depending
-                of the mnemo of the first ope template of the tab -
-                the consequence is that the ledger tabs are not in the 
-                same order, nor in the order the user has set them
-                => keep the same order (defaulting to ledger label alpha
-                order, keeping user rearrangements)
-
  551 2015- 1- 4 ofaPage: the v_preremove virtual should be replaced by
                 a trigger on "page-removed" signal
 
@@ -2364,6 +2357,14 @@
  548 2014-12-31 Rate: the rate mnemo should be compared against keywords
                 reserved by operation template formulas
      2015- 1- 4 no as the RATE() macro may use any rate mnemo
+
+ 549 2014-12-31 OpeTemplates page: the ledger tabs are sorted depending
+                of the mnemo of the first ope template of the tab -
+                the consequence is that the ledger tabs are not in the 
+                same order, nor in the order the user has set them
+                => keep the same order (defaulting to ledger label alpha
+                order, keeping user rearrangements)
+     2015- 1- 4 done - svn #4405
 
  550 2015- 1- 1 GuidedInputPiece: remove useless entries_count data ?
      2015- 1- 4 no - this is used and would lead to a too fragile code

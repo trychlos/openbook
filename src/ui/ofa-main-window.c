@@ -1650,8 +1650,6 @@ on_page_removed( GtkNotebook *book, GtkWidget *page_w, guint page_num, ofaMainWi
 	g_return_if_fail( handler && OFA_IS_PAGE( handler ));
 
 	g_signal_emit_by_name( handler, "page-removed", page_w, page_num );
-
-	ofa_page_pre_remove( handler );
 }
 
 /**

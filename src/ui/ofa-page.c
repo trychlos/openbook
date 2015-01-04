@@ -299,7 +299,6 @@ ofa_page_class_init( ofaPageClass *klass )
 	klass->init_view = NULL;
 	klass->on_button_clicked = NULL;
 	klass->get_top_focusable_widget = NULL;
-	klass->pre_remove = NULL;
 
 	/**
 	 * ofaPage::page-removed:
@@ -513,25 +512,4 @@ ofa_page_get_top_focusable_widget( const ofaPage *page )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofa_page_pre_remove:
- *
- * This function is called by the #ofaMainWindow main window when it is
- * about to remove an #ofaPage from the main notebook. It is time for
- * the #ofaPage-derived class to handle widgets before they are
- * destroyed.
- */
-void
-ofa_page_pre_remove( ofaPage *page )
-{
-	g_return_if_fail( page && OFA_IS_PAGE( page ));
-
-	if( !page->prot->dispose_has_run ){
-
-		if( OFA_PAGE_GET_CLASS( page )->pre_remove ){
-			OFA_PAGE_GET_CLASS( page )->pre_remove( page );
-		}
-	}
 }
