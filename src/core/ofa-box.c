@@ -112,12 +112,12 @@ amount_get_fn( const sBoxData *box )
 }
 
 static void
-amount_set_fn( sBoxData *box, ofxAmount value )
+amount_set_fn( sBoxData *box, gconstpointer value )
 {
 	g_return_if_fail( box->def->type == OFA_TYPE_AMOUNT );
 
 	box->is_null = FALSE;
-	box->amount = value;
+	box->amount = GPOINTER_TO_AMOUNT( value );
 }
 
 static sBoxData *

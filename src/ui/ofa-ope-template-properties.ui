@@ -212,7 +212,7 @@
                           <object class="GtkLabel" id="label8">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes"> Entry model </property>
+                            <property name="label" translatable="yes">&lt;b&gt; Operation template &lt;/b&gt;</property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>
@@ -438,7 +438,7 @@
                           <object class="GtkLabel" id="label4">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes"> Entries to be generated </property>
+                            <property name="label" translatable="yes">&lt;b&gt; Entries to be generated &lt;/b&gt;</property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>

@@ -97,8 +97,10 @@ typedef struct {
  */
 #define OFA_BOX_CSV(N)                  OFA_BOX_DBMS(N), NULL
 
-#define GPOINTER_TO_AMOUNT(P)           ((ofxAmount)(glong)(P))
-#define AMOUNT_TO_GPOINTER(D)           ((gpointer)(glong)(ofxAmount)(D))
+/* because DBMS keeps 5 digits after the decimal dot */
+#define PRECISION                       100000
+#define GPOINTER_TO_AMOUNT(P)           (((ofxAmount)(glong)(P))/PRECISION)
+#define AMOUNT_TO_GPOINTER(A)           ((gpointer)(glong)((A)*PRECISION))
 
 #define GPOINTER_TO_COUNTER(P)          ((ofxCounter)(glong)(P))
 #define COUNTER_TO_GPOINTER(D)          ((gpointer)(ofxCounter)(D))

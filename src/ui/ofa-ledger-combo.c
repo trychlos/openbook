@@ -38,16 +38,16 @@
 /* private instance data
  */
 struct _ofaLedgerComboPrivate {
-	gboolean         dispose_has_run;
+	gboolean             dispose_has_run;
 
 	/* runtime data
 	 */
-	GtkComboBox     *combo;
-	ofaLedgerColumns columns;
+	GtkComboBox         *combo;
+	ofaLedgerColumns     columns;
 
-	ofaMainWindow   *main_window;
-	ofoDossier      *dossier;
-	ofaLedgerStore  *store;
+	const ofaMainWindow *main_window;
+	ofoDossier          *dossier;
+	ofaLedgerStore      *store;
 };
 
 /* signals defined here
@@ -300,7 +300,7 @@ create_combo_columns( ofaLedgerCombo *combo )
  * create the underlying tree store.
  */
 void
-ofa_ledger_combo_set_main_window( ofaLedgerCombo *combo, ofaMainWindow *main_window )
+ofa_ledger_combo_set_main_window( ofaLedgerCombo *combo, const ofaMainWindow *main_window )
 {
 	ofaLedgerComboPrivate *priv;
 

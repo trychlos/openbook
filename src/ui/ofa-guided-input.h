@@ -31,6 +31,11 @@
  * SECTION: ofa_guided_input
  * @short_description: #ofaGuidedInput class definition.
  * @include: ui/ofa-guided-input.h
+ *
+ * #ofaGuidedInput implements a dialog box to enter an operation based
+ * on a operation template.
+ *
+ * It internally implements an #ofaGuidedInputPiece convenience class.
  */
 
 #include "api/ofo-ope-template-def.h"
@@ -59,7 +64,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass parent;
+	myDialogClass          parent;
 }
 	ofaGuidedInputClass;
 

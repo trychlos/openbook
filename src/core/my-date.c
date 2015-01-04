@@ -421,6 +421,14 @@ my_date_to_str( const GDate *date, myDateFormat format )
 						g_date_get_year( date ));
 				break;
 
+			/* mmm yyyy - display as a label */
+			case MY_DATE_MMYY:
+				g_free( str );
+				str = g_strdup_printf( "%s %4.4d",
+						gettext( st_month[g_date_get_month( date )-1] ),
+						g_date_get_year( date ));
+				break;
+
 			/* dd/mm/yyyy - display for entry */
 			case MY_DATE_DMYY:
 				g_free( str );

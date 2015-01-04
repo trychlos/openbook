@@ -37,28 +37,33 @@
 
 #include "core/my-window-prot.h"
 
-#include "ui/ofa-guided-common.h"
 #include "ui/ofa-guided-input.h"
+#include "ui/ofa-guided-input-piece.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  */
 struct _ofaGuidedInputPrivate {
 
-	/* internals
+	/* runtime data
 	 */
-	const ofoOpeTemplate  *model;
-	ofaGuidedCommon       *common;
+	const ofoOpeTemplate *model;
+
+	/* UI
+	 */
+	ofaGuidedInputPiece  *piece;
+	GtkWidget            *ok_btn;
 };
 
-static const gchar  *st_ui_xml    = PKGUIDIR "/ofa-guided-input.ui";
-static const gchar  *st_ui_id     = "GuidedInputDlg";
+static const gchar  *st_ui_xml          = PKGUIDIR "/ofa-guided-input.ui";
+static const gchar  *st_ui_id           = "GuidedInputDialog";
 
 G_DEFINE_TYPE( ofaGuidedInput, ofa_guided_input, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_ok_clicked( GtkButton *button, ofaGuidedInput *self );
-static void      on_cancel_clicked( GtkButton *button, ofaGuidedInput *self );
+static void      on_piece_changed( ofaGuidedInputPiece *piece, gboolean ok, ofaGuidedInput *self );
+static void      check_for_enable_dlg( ofaGuidedInput *self );
+static gboolean  v_quit_on_ok( myDialog *dialog );
 
 static void
 guided_input_finalize( GObject *instance )
@@ -79,17 +84,11 @@ guided_input_finalize( GObject *instance )
 static void
 guided_input_dispose( GObject *instance )
 {
-	ofaGuidedInputPrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = OFA_GUIDED_INPUT( instance )->priv;
-		if( priv->common ){
-			g_clear_object( &priv->common );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -120,6 +119,7 @@ ofa_guided_input_class_init( ofaGuidedInputClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = guided_input_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 
 	g_type_class_add_private( klass, sizeof( ofaGuidedInputPrivate ));
 }
@@ -160,41 +160,63 @@ static void
 v_init_dialog( myDialog *dialog )
 {
 	ofaGuidedInputPrivate *priv;
-	GtkWidget *button;
-	GtkContainer *container;
+	GtkWindow *toplevel;
+	GtkWidget *parent;
 
 	priv = OFA_GUIDED_INPUT( dialog )->priv;
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
-	priv->common = ofa_guided_common_new(
-							MY_WINDOW( dialog )->prot->main_window,
-							container );
+	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
-	ofa_guided_common_set_model( priv->common, priv->model );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "piece-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	button = my_utils_container_get_child_by_name( container, "box-ok" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_ok_clicked ), dialog );
+	priv->piece = ofa_guided_input_piece_new();
+	ofa_guided_input_piece_attach_to( priv->piece, GTK_CONTAINER( parent ));
+	ofa_guided_input_piece_set_main_window( priv->piece, MY_WINDOW( dialog )->prot->main_window );
+	ofa_guided_input_piece_set_ope_template( priv->piece, priv->model );
 
-	button = my_utils_container_get_child_by_name( container, "box-cancel" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_cancel_clicked ), dialog );
+	g_signal_connect( priv->piece, "changed", G_CALLBACK( on_piece_changed ), dialog );
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+
+	check_for_enable_dlg( OFA_GUIDED_INPUT( dialog ));
 }
 
 static void
-on_ok_clicked( GtkButton *button, ofaGuidedInput *self )
+on_piece_changed( ofaGuidedInputPiece *piece, gboolean ok, ofaGuidedInput *self )
 {
-	if( ofa_guided_common_validate( self->priv->common )){
-		gtk_dialog_response(
-				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
-				GTK_RESPONSE_OK );
+	static const gchar *thisfn = "ofa_guided_input_on_piece_changed";
+	ofaGuidedInputPrivate *priv;
+
+	priv = self->priv;
+
+	g_debug( "%s: ok=%s", thisfn, ok ? "True":"False" );
+
+	if( priv->ok_btn ){
+		gtk_widget_set_sensitive( priv->ok_btn, ok );
 	}
 }
 
 static void
-on_cancel_clicked( GtkButton *button, ofaGuidedInput *self )
+check_for_enable_dlg( ofaGuidedInput *self )
 {
-	gtk_dialog_response(
-			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
-			GTK_RESPONSE_CANCEL );
+	ofaGuidedInputPrivate *priv;
+	gboolean ok;
+
+	priv = self->priv;
+
+	ok = ofa_guided_input_piece_is_valid( priv->piece );
+	on_piece_changed( priv->piece, ok, self );
+}
+
+static gboolean
+v_quit_on_ok( myDialog *dialog )
+{
+	gboolean ok;
+
+	ok = ofa_guided_input_piece_apply( OFA_GUIDED_INPUT( dialog )->priv->piece );
+
+	return( ok );
 }

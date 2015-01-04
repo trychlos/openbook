@@ -383,7 +383,7 @@ remove_row_by_mnemo( ofaOpeTemplateStore *store, const gchar *number )
 	GtkTreeIter iter;
 
 	if( find_row_by_mnemo( store, number, &iter, NULL )){
-		gtk_tree_store_remove( GTK_TREE_STORE( store ), &iter );
+		gtk_list_store_remove( GTK_LIST_STORE( store ), &iter );
 	}
 }
 

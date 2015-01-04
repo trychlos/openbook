@@ -52,21 +52,27 @@
 
 G_BEGIN_DECLS
 
-void    my_editable_amount_init        ( GtkEditable *editable );
+void    my_editable_amount_init          ( GtkEditable *editable );
 
-void    my_editable_amount_init_ex     ( GtkEditable *editable, gint decimals );
+void    my_editable_amount_init_ex       ( GtkEditable *editable,
+													gint decimals );
 
-void    my_editable_amount_set_decimals( GtkEditable *editable, gint decimals );
+void    my_editable_amount_set_decimals  ( GtkEditable *editable,
+													gint decimals );
 
-gdouble my_editable_amount_get_amount  ( GtkEditable *editable );
+gdouble my_editable_amount_get_amount    ( GtkEditable *editable );
 
-void    my_editable_amount_set_amount  ( GtkEditable *editable, gdouble amount );
+void    my_editable_amount_set_amount    ( GtkEditable *editable,
+													gdouble amount );
 
-gchar  *my_editable_amount_get_string  ( GtkEditable *editable );
+gchar  *my_editable_amount_get_string    ( GtkEditable *editable );
 
-void    my_editable_amount_set_string  ( GtkEditable *editable, const gchar *string );
+void    my_editable_amount_set_string    ( GtkEditable *editable,
+													const gchar *string );
 
-/*void    my_editable_amount_render      ( GtkEditable *editable );*/
+void    my_editable_amount_set_changed_cb( GtkEditable *editable,
+													GCallback cb,
+													void *user_data );
 
 G_END_DECLS
 

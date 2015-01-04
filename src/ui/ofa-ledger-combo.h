@@ -80,7 +80,7 @@ void            ofa_ledger_combo_set_columns    ( ofaLedgerCombo *instance,
 															ofaLedgerColumns columns );
 
 void            ofa_ledger_combo_set_main_window( ofaLedgerCombo *instance,
-															ofaMainWindow *main_window );
+															const ofaMainWindow *main_window );
 
 gchar          *ofa_ledger_combo_get_selected   ( ofaLedgerCombo *combo );
 

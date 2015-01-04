@@ -87,6 +87,9 @@ libofa_core_la_SOURCES = \
 	ofo-ledger.c										\
 	ofo-ope-template.c									\
 	ofo-rate.c											\
+	\
+	ofs-currency.c										\
+	ofs-ope.c											\
 	$(NULL)
 
 ofo-marshal.h: ofo-marshal.def $(GLIB_GENMARSHAL)

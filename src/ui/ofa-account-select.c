@@ -149,7 +149,7 @@ on_main_window_finalized( gpointer is_null, gpointer finalized_main_window )
  * that must be g_free() by the caller
  */
 gchar *
-ofa_account_select_run( ofaMainWindow *main_window, const gchar *asked_number )
+ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;

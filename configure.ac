@@ -106,6 +106,7 @@ AC_CONFIG_FILES([
 	m4/Makefile
 	maintainer/Makefile
 	misc/Makefile
+	misc/amounts/Makefile
 	misc/delete/Makefile
 	po/Makefile.in
 	src/Makefile

@@ -36,8 +36,8 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
-#include "ui/ofa-guided-common.h"
 #include "ui/ofa-guided-ex.h"
+#include "ui/ofa-guided-input-piece.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-main-window.h"
@@ -50,7 +50,7 @@ struct _ofaGuidedExPrivate {
 	 */
 	ofoDossier           *dossier;			/* dossier */
 	const ofoOpeTemplate *model;			/* model */
-	ofaGuidedCommon      *common;
+	ofaGuidedInputPiece  *piece;
 
 	/* UI - the pane
 	 */
@@ -79,9 +79,6 @@ enum {
 	LEFT_N_COLUMNS
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-guided-input.ui";
-static const gchar *st_ui_id            = "GuidedInputDlg";
-
 G_DEFINE_TYPE( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_PAGE )
 
 static GtkWidget *v_setup_view( ofaPage *page );
@@ -94,7 +91,6 @@ static GtkWidget *setup_view_right( ofaGuidedEx *self );
 static GtkWidget *setup_left_treeview( ofaGuidedEx *self );
 static gint       on_left_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self );
 static void       on_left_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedEx *self );
-static void       reparent_from_dialog( ofaGuidedEx *self, GtkContainer *parent );
 static void       init_left_view( ofaGuidedEx *self, GtkWidget *child );
 static void       on_left_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self );
 static void       on_left_row_selected( GtkTreeSelection *selection, ofaGuidedEx *self );
@@ -141,18 +137,11 @@ guided_ex_finalize( GObject *instance )
 static void
 guided_ex_dispose( GObject *instance )
 {
-	ofaGuidedExPrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_GUIDED_EX( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = OFA_GUIDED_EX( instance )->priv;
-
-		if( priv->common ){
-			g_clear_object( &priv->common );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -300,25 +289,15 @@ setup_view_left( ofaGuidedEx *self )
 static GtkWidget *
 setup_view_right( ofaGuidedEx *self )
 {
-	GtkFrame *frame;
 	ofaGuidedExPrivate *priv;
-	GtkScrolledWindow *scroll;
-	GtkWidget *widget;
+	GtkWidget *parent, *widget;
 
 	priv = self->priv;
+	parent = gtk_alignment_new( 0.5, 0.5, 1, 1 );
 
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	gtk_widget_set_margin_right( GTK_WIDGET( frame ), 4 );
-	gtk_widget_set_margin_bottom( GTK_WIDGET( frame ), 4 );
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_NONE );
-
-	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
-	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 0 );
-	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( scroll ));
-
-	/* setup the box from the ofaGuidedInput dialog */
-	reparent_from_dialog( self, GTK_CONTAINER( scroll ));
+	priv->piece = ofa_guided_input_piece_new();
+	ofa_guided_input_piece_attach_to( priv->piece, GTK_CONTAINER( parent ));
+	ofa_guided_input_piece_set_main_window( priv->piece, ofa_page_get_main_window( OFA_PAGE( self )));
 
 	widget = my_utils_container_get_child_by_name( priv->right_box, "box-ok" );
 	g_return_val_if_fail( widget && GTK_IS_BUTTON( widget ), NULL );
@@ -330,11 +309,7 @@ setup_view_right( ofaGuidedEx *self )
 	priv->right_cancel = GTK_BUTTON( widget );
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_right_cancel ), self );
 
-	priv->common = ofa_guided_common_new(
-							ofa_page_get_main_window( OFA_PAGE( self )),
-							priv->right_box );
-
-	return( GTK_WIDGET( frame ));
+	return( parent );
 }
 
 /*
@@ -438,24 +413,6 @@ on_left_cell_data_func( GtkTreeViewColumn *tcolumn,
 		g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
 		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 	}
-}
-
-static void
-reparent_from_dialog( ofaGuidedEx *self, GtkContainer *parent )
-{
-	GtkWidget *dialog;
-	GtkWidget *box;
-
-	/* load our dialog */
-	dialog = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
-	g_return_if_fail( dialog && GTK_IS_WINDOW( dialog ));
-
-	box = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "px-box" );
-	g_return_if_fail( box && GTK_IS_BOX( box ));
-	self->priv->right_box = GTK_CONTAINER( box );
-
-	/* attach our box to the parent's frame */
-	gtk_widget_reparent( box, GTK_WIDGET( parent ));
 }
 
 static void
@@ -609,7 +566,7 @@ select_model( ofaGuidedEx *self )
 	}
 	g_return_if_fail( object && OFO_IS_OPE_TEMPLATE( object ));
 
-	ofa_guided_common_set_model( priv->common, OFO_OPE_TEMPLATE( object ));
+	ofa_guided_input_piece_set_ope_template( priv->piece, OFO_OPE_TEMPLATE( object ));
 
 	gtk_widget_show_all( gtk_paned_get_child2( priv->pane ));
 }
@@ -880,7 +837,7 @@ find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **
 static void
 on_right_ok( GtkButton *button, ofaGuidedEx *self )
 {
-	ofa_guided_common_validate( self->priv->common );
+	ofa_guided_input_piece_apply( self->priv->piece );
 }
 
 /*
@@ -890,7 +847,7 @@ on_right_ok( GtkButton *button, ofaGuidedEx *self )
 static void
 on_right_cancel( GtkButton *button, ofaGuidedEx *self )
 {
-	ofa_guided_common_reset( self->priv->common );
+	ofa_guided_input_piece_reset( self->priv->piece );
 }
 
 /*

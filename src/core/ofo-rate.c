@@ -568,6 +568,8 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 	GList *it;
 	const GDate *val_begin, *val_end;
 	ofxAmount amount;
+	gchar *sdate, *sbegin, *send;
+	gint cmp;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), 0 );
 	g_return_val_if_fail( date, 0 );
@@ -577,11 +579,23 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 		for( it=rate->priv->validities ; it ; it=it->next ){
 			val_begin = ofa_box_get_date( it->data, RAT_BEGIN );
 			val_end = ofa_box_get_date( it->data, RAT_END );
-			if( my_date_compare_ex( val_begin, date, TRUE ) > 0 ){
+			sdate = my_date_to_str( date, MY_DATE_DMYY );
+			sbegin = my_date_to_str( val_begin, MY_DATE_DMYY );
+			send = my_date_to_str( val_end, MY_DATE_DMYY );
+			g_debug( "ofo_rate_get_rate_at_date: date=%s, begin=%s, end=%s", sdate, sbegin, send );
+			g_free( sdate );
+			g_free( sbegin );
+			g_free( send );
+			cmp = my_date_compare_ex( val_begin, date, TRUE );
+			g_debug( "my_date_compare_ex( val_begin, date, TRUE ): cmp=%d", cmp );
+			if( cmp > 0 ){
 				continue;
 			}
-			if( my_date_compare_ex( val_end, date, FALSE ) >= 0 ){
+			cmp = my_date_compare_ex( val_end, date, FALSE );
+			g_debug( "my_date_compare_ex( val_end, date, FALSE ): cmp=%d", cmp );
+			if( cmp >= 0 ){
 				amount = ofa_box_get_amount( it->data, RAT_RATE );
+				g_debug( "amount=%.5lf", amount );
 				return( amount );
 			}
 		}
@@ -736,6 +750,7 @@ rate_val_new_detail( const gchar *mnemo, const GDate *begin, const GDate *end, o
 	ofa_box_set_string( fields, RAT_MNEMO, mnemo );
 	ofa_box_set_date( fields, RAT_BEGIN, begin );
 	ofa_box_set_date( fields, RAT_END, end );
+	g_debug( "rate_val_new_detail: ofa_box_set_amount with value=%.5lf", value );
 	ofa_box_set_amount( fields, RAT_RATE, value );
 
 	return( fields );

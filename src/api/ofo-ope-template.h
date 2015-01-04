@@ -33,6 +33,88 @@
  * @include: api/ofo-ope-template.h
  *
  * This file defines the #ofoOpeTemplate class behavior.
+ *
+ * An #ofoOpeTemplate is a template for an operation. It embeds two
+ * types of datas:
+ * - the template intrinsic datas:
+ *   . mnemonic and label
+ *   . notes
+ *   . user and timestamp of last update
+ *   . a comment on each detail line
+ * - the datas used to generate entries:
+ *   . ledger
+ *   . piece reference
+ *   . entry label
+ *   . account
+ *   . debit and credit amounts.
+ *
+ * Each entry-generation-data may be locked in the template: it will
+ * be used as a mandatory, non-modifiable (though possibly not fixed,
+ * see formula below) value for the generated entries.
+ * If not locked, the user may choose to modify this data in the
+ * operation, thus eventually generating different entries.
+ *
+ * As a special case, the Guided Input UI will force all the entries
+ * generated from an operation template to have the same piece
+ * reference. This is mainly for easy of use reasons. Nonetheless, it
+ * would be perfectly correct to have a program-generated operation
+ * which generates entries with different piece references.
+ *
+ * Formulas may be used to automatically compute the value of some
+ * fields, based on the value of other fields.
+ * Formulas are mainly a substituting system, outputing an new string
+ * after having replaced tokens by their value.
+ * Tokens are identified by a percent character '%', followed by an
+ * uppercase letter. Unrecognized tokens are just reconducted as-is to
+ * the output string.
+ * Tokens are case sensitive.
+ *
+ * Tokens may be:
+ *
+ * 1/ a reference to another field of the operation;
+ *    these tokens are single-uppercase-letter, immediately followed
+ *    by the number of the row, counted from 1:
+ *    - 'Ai': account number
+ *    - 'Li': label
+ *    - 'Ri': piece reference
+ *    - 'Di': debit
+ *    - 'Ci': credit
+ *    E.g.: the '%A1' string (without the quotes) will be substituted
+ *          with the account number from row n° 1.
+ *
+ * 2/ a reference to a global field of the operation
+ *    - 'OPMN': operation template mnemo
+ *    - 'OPLA': operation template label
+ *    - 'LEMN': ledger mnemo
+ *    - 'LELA': ledger label
+ *    - 'DOPE': operation date (format from user preferences)
+ *    - 'DOMY': operation date as mmm yyyy
+ *    - 'DEFFECT': effect date (format from user preferences)
+ *    - 'SOLDE': the solde of the entries debit and credit to balance
+ *      the operation
+ *    - 'IDEM': the content of the same field from the previous row
+ *
+ *    Other keywords are searched as rate mnemonics (as a convenient
+ *    shortcut to RATE() function).
+ *
+ * 3/ a function, arguments being passed between parenthesis:
+ *    - 'ACLA()': returns account label
+ *    - 'ACCU()': returns account currency
+ *    - 'EVAL()': evaluate the result of the operation
+ *                may be omitted when in an amount entry
+ *    - 'RATE()': evaluates the rate value at the operation date
+ *                may be omitted, only using %<rate> if the
+ *                'rate' mnemonic is not ambiguous
+ *    The opening parenthesis must immediately follow the function name.
+ *    E.g.:
+ *    - the '%ACLA(%A1)' (without the quotes) will be substituted with
+ *      the label of the account whose number is found in row 1
+ *    - the '%EVAL( %D1 + %D2 ) will be susbtituted with the sum of
+ *      debits from row 1 and 2
+ *      Caution: the '%D1 + %D2' string will be only substituted with
+ *        the string '<debit_1> + <debit_2', which is probably not what
+ *        you want (unless you might want explicite a calculation)
+ *    - the '%RATE( TVAN )' is the same that '%TVAN'
  */
 
 #include "api/ofo-ope-template-def.h"
@@ -92,8 +174,6 @@ const gchar    *ofo_ope_template_get_detail_debit         ( const ofoOpeTemplate
 gboolean        ofo_ope_template_get_detail_debit_locked  ( const ofoOpeTemplate *model, gint idx );
 const gchar    *ofo_ope_template_get_detail_credit        ( const ofoOpeTemplate *model, gint idx );
 gboolean        ofo_ope_template_get_detail_credit_locked ( const ofoOpeTemplate *model, gint idx );
-
-gboolean        ofo_ope_template_detail_is_formula        ( const gchar *str );
 
 gboolean        ofo_ope_template_insert            ( ofoOpeTemplate *model, ofoDossier *dossier );
 gboolean        ofo_ope_template_update            ( ofoOpeTemplate *model, ofoDossier *dossier, const gchar *prev_mnemo );

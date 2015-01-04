@@ -1265,15 +1265,6 @@ ofo_ope_template_get_detail_credit_locked( const ofoOpeTemplate *model, gint idx
 }
 
 /**
- * ofo_ope_template_detail_is_formula:
- */
-gboolean
-ofo_ope_template_detail_is_formula( const gchar *str )
-{
-	return( str && str[0] == '=' );
-}
-
-/**
  * ofo_ope_template_insert:
  *
  * we deal here with an update of publicly modifiable model properties

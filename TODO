@@ -57,10 +57,6 @@
                 that we stop the entering at 512 chars
      2014- 6-21 at 4096 chars now...
 
-  61 2014- 5-19 manage dataserver locale as a user preference (format 
-                for storing date, amounts and rates) - this is rather
-                a configuration information than actually a user pref..
-
   85 2014- 5-21 Color the frame of the invalid GtkEntry
                 + set data "ofa-data-entry-valid"
                 + my_utils_entry_is_valid
@@ -363,7 +359,26 @@
  529 2014-12-14 ExeClosing: piece=SOLDE
                 label = Solde du compte nnnn - llll
 
- 546
+ 546 2014-12-30 OpeTemplate: choose if the piece ref. is part of the
+                main ope template or of the detail line - makes change
+                accordingly (doc, database, class, ofsOpe struct)
+
+ 547 2014-12-31 migrate local sCurrency used for currency balance 
+                computings to the global ofsCurrency struct declaration
+
+ 548 2014-12-31 Rate: the rate mnemo should be compared against keywords
+                reserved by operation template formulas
+
+ 549 2014-12-31 OpeTemplates page: the ledger tabs are sorted depending
+                of the mnemo of the first ope template of the tab -
+                the consequence is that the ledger tabs are not in the 
+                same order, nor in the order the user has set them
+                => keep the same order (defaulting to ledger label alpha
+                order, keeping user rearrangements)
+
+ 550 2015- 1- 1 GuidedInputPiece: remove useless  entries_count data ?
+
+ 551
 
 -----------------------------------------------------------------------
  DONE
@@ -568,6 +583,12 @@
   60 2014- 5-19 manage locale as a user preference (format for entering
                 date, amounts and rates)
      2014-11-30 done - svn #4210
+
+  61 2014- 5-19 manage dataserver locale as a user preference (format 
+                for storing date, amounts and rates) - this is rather
+                a configuration information than actually a user pref..
+     2014-12-31 no: the dataserver charmap is always 'utf-8' and this 
+                is forced at the database creation.
 
   62 2014- 5-19 review all the rates management:
                 there should be a master record (the rate) and child

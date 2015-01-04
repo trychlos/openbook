@@ -75,9 +75,11 @@ struct _ofaRatePropertiesPrivate {
 enum {
 	COL_ADD = 0,
 	COL_BEGIN,
+	COL_BEGIN_LABEL,
 	COL_END,
+	COL_END_LABEL,
 	COL_RATE,
-	COL_MESSAGE,
+	COL_RATE_LABEL,
 	COL_REMOVE,
 	N_COLUMNS
 };
@@ -93,11 +95,9 @@ static void      add_empty_row( ofaRateProperties *self );
 static void      add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint row );
 static void      on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaRateProperties *self );
-static gboolean  on_date_focus_in( GtkWidget *entry, GdkEvent *event, ofaRateProperties *self );
-static gboolean  on_focus_out( GtkWidget *entry, GdkEvent *event, ofaRateProperties *self );
 static void      on_date_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_rate_changed( GtkEntry *entry, ofaRateProperties *self );
-static void      set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment );
+static void      set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment, gint column );
 static void      on_button_clicked( GtkButton *button, ofaRateProperties *self );
 static void      remove_row( ofaRateProperties *self, gint row );
 static void      check_for_enable_dlg( ofaRateProperties *self );
@@ -265,7 +265,7 @@ static void
 insert_new_row( ofaRateProperties *self, gint idx )
 {
 	ofaRatePropertiesPrivate *priv;
-	GtkEntry *entry;
+	GtkWidget *entry;
 	const GDate *d;
 	gdouble rate;
 	gint row;
@@ -274,15 +274,15 @@ insert_new_row( ofaRateProperties *self, gint idx )
 	add_empty_row( self );
 	row = priv->count;
 
-	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_BEGIN, row ));
+	entry = gtk_grid_get_child_at( priv->grid, COL_BEGIN, row );
 	d = ofo_rate_get_val_begin( priv->rate, idx );
 	my_editable_date_set_date( GTK_EDITABLE( entry ), d );
 
-	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_END, row ));
+	entry = gtk_grid_get_child_at( priv->grid, COL_END, row );
 	d = ofo_rate_get_val_end( priv->rate, idx );
 	my_editable_date_set_date( GTK_EDITABLE( entry ), d );
 
-	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_RATE, row ));
+	entry = gtk_grid_get_child_at( priv->grid, COL_RATE, row );
 	rate = ofo_rate_get_val_rate( priv->rate, idx );
 	my_editable_amount_set_amount( GTK_EDITABLE( entry ), rate );
 }
@@ -294,8 +294,7 @@ static void
 add_empty_row( ofaRateProperties *self )
 {
 	ofaRatePropertiesPrivate *priv;
-	GtkEntry *entry;
-	GtkLabel *label;
+	GtkWidget *entry, *label;
 	gint row;
 
 	priv = self->priv;
@@ -303,37 +302,48 @@ add_empty_row( ofaRateProperties *self )
 
 	gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, COL_ADD, row ));
 
-	entry = GTK_ENTRY( gtk_entry_new());
+	entry = gtk_entry_new();
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_date_focus_in ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-	gtk_entry_set_width_chars( entry, 10 );
-	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), COL_BEGIN, row, 1, 1 );
+	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
+	gtk_grid_attach( priv->grid, entry, COL_BEGIN, row, 1, 1 );
 
-	entry = GTK_ENTRY( gtk_entry_new());
+	label = gtk_label_new( "" );
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
+	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	gtk_widget_set_sensitive( label, FALSE );
+	gtk_widget_set_hexpand( label, TRUE );
+	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	gtk_grid_attach( priv->grid, label, COL_BEGIN_LABEL, row, 1, 1 );
+
+	entry = gtk_entry_new();
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	g_signal_connect( G_OBJECT( entry ), "focus-in-event", G_CALLBACK( on_date_focus_in ), self );
-	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-	gtk_entry_set_width_chars( entry, 10 );
-	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), COL_END, row, 1, 1 );
+	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
+	gtk_grid_attach( priv->grid, entry, COL_END, row, 1, 1 );
 
-	entry = GTK_ENTRY( gtk_entry_new());
+	label = gtk_label_new( "" );
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, MY_DATE_DMMM );
+	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	gtk_widget_set_sensitive( label, FALSE );
+	gtk_widget_set_hexpand( label, TRUE );
+	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
+	gtk_grid_attach( priv->grid, label, COL_END_LABEL, row, 1, 1 );
+
+	entry = gtk_entry_new();
 	my_editable_amount_init_ex( GTK_EDITABLE( entry ), DEFAULT_RATE_DECIMALS );
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	g_signal_connect( G_OBJECT( entry ), "focus-out-event", G_CALLBACK( on_focus_out ), self );
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_rate_changed ), self );
-	gtk_entry_set_width_chars( entry, 10 );
-	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), COL_RATE, row, 1, 1 );
+	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
+	gtk_grid_attach( priv->grid, entry, COL_RATE, row, 1, 1 );
 
-	label = GTK_LABEL( gtk_label_new( "" ));
-	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-	gtk_widget_set_hexpand( GTK_WIDGET( label ), TRUE );
+	label = gtk_label_new( "" );
+	gtk_widget_set_sensitive( label, FALSE );
+	gtk_widget_set_hexpand( label, TRUE );
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
-	gtk_grid_attach( priv->grid, GTK_WIDGET( label ), COL_MESSAGE, row, 1, 1 );
+	gtk_grid_attach( priv->grid, label, COL_RATE_LABEL, row, 1, 1 );
 
 	add_button( self, "gtk-remove", COL_REMOVE, row );
 	add_button( self, "gtk-add", COL_ADD, row+1 );
@@ -345,16 +355,18 @@ add_empty_row( ofaRateProperties *self )
 static void
 add_button( ofaRateProperties *self, const gchar *stock_id, gint column, gint row )
 {
-	GtkWidget *image;
-	GtkButton *button;
+	GtkWidget *image, *button;
 
 	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
-	button = GTK_BUTTON( gtk_button_new());
+	button = gtk_button_new();
+	if( column == COL_REMOVE ){
+		gtk_widget_set_halign( button, GTK_ALIGN_END );
+	}
 	g_object_set_data( G_OBJECT( button ), DATA_COLUMN, GINT_TO_POINTER( column ));
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_button_set_image( button, image );
+	gtk_button_set_image( GTK_BUTTON( button ), image );
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
-	gtk_grid_attach( self->priv->grid, GTK_WIDGET( button ), column, row, 1, 1 );
+	gtk_grid_attach( self->priv->grid, button, column, row, 1, 1 );
 }
 
 static void
@@ -383,46 +395,9 @@ on_label_changed( GtkEntry *entry, ofaRateProperties *self )
 	check_for_enable_dlg( self );
 }
 
-static gboolean
-on_date_focus_in( GtkWidget *entry, GdkEvent *event, ofaRateProperties *self )
-{
-	on_date_changed( GTK_ENTRY( entry ), self );
-	return( FALSE );
-}
-
-static gboolean
-on_focus_out( GtkWidget *entry, GdkEvent *event, ofaRateProperties *self )
-{
-	set_grid_line_comment( self, entry, "" );
-	return( FALSE );
-}
-
 static void
 on_date_changed( GtkEntry *entry, ofaRateProperties *self )
 {
-	const gchar *content;
-	const GDate *date;
-	gboolean valid;
-	gchar *str;
-
-	g_debug( "ofa_rate_properties_on_date_changed: entry=%p", ( void * ) entry );
-
-	content = gtk_entry_get_text( entry );
-	if( !content || !g_utf8_strlen( content, -1 )){
-		str = g_strdup( "" );
-
-	} else {
-		date = my_editable_date_get_date( GTK_EDITABLE( entry ), &valid );
-		if( valid ){
-			str = my_date_to_str( date, MY_DATE_DMMM );
-		} else {
-			str = g_strdup( _( "invalid date" ));
-		}
-	}
-
-	set_grid_line_comment( self, GTK_WIDGET( entry ), str );
-	g_free( str );
-
 	check_for_enable_dlg( self );
 }
 
@@ -432,33 +407,31 @@ on_rate_changed( GtkEntry *entry, ofaRateProperties *self )
 	const gchar *content;
 	gchar *text, *str;
 
-	g_debug( "on_rate_changed" );
 	content = gtk_entry_get_text( entry );
 
 	if( !content || !g_utf8_strlen( content, -1 )){
 		str = g_strdup( "" );
-
 	} else {
 		text = my_editable_amount_get_string( GTK_EDITABLE( entry ));
 		str = g_strdup_printf( "%s %%", text );
 		g_free( text );
 	}
 
-	set_grid_line_comment( self, GTK_WIDGET( entry ), str );
+	set_grid_line_comment( self, GTK_WIDGET( entry ), str, COL_RATE_LABEL );
 	g_free( str );
 
 	check_for_enable_dlg( self );
 }
 
 static void
-set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment )
+set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment, gint column )
 {
 	gint row;
 	GtkLabel *label;
 	gchar *markup;
 
 	row = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( widget ), DATA_ROW ));
-	label = GTK_LABEL( gtk_grid_get_child_at( self->priv->grid, COL_MESSAGE, row ));
+	label = GTK_LABEL( gtk_grid_get_child_at( self->priv->grid, column, row ));
 	markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", comment );
 	gtk_label_set_markup( label, markup );
 	g_free( markup );
@@ -608,7 +581,7 @@ do_update( ofaRateProperties *self )
 	gint i;
 	GtkEntry *entry;
 	const GDate *dbegin, *dend;
-	gchar *prev_mnemo;
+	gchar *prev_mnemo, *str;
 	gdouble rate;
 	ofoDossier *dossier;
 
@@ -631,6 +604,8 @@ do_update( ofaRateProperties *self )
 		dend = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( priv->grid, COL_RATE, i ));
 		rate = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
+		str = my_editable_amount_get_string( GTK_EDITABLE( entry ));
+		g_debug( "do_update: amount=%.5lf, str=%s", rate, str );
 		if( my_date_is_valid( dbegin ) ||
 			my_date_is_valid( dend ) ||
 			( rate > 0 )){

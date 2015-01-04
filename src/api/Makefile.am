@@ -65,4 +65,7 @@ api_include_HEADERS = \
 	ofo-ope-template-def.h								\
 	ofo-rate.h											\
 	ofo-rate-def.h										\
+	\
+	ofs-currency.h										\
+	ofs-ope.h											\
 	$(NULL)

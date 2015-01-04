@@ -23,5 +23,6 @@
 # $Id$
 
 SUBDIRS = \
+	amounts								\
 	delete								\
 	$(NULL)

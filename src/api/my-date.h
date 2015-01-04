@@ -43,6 +43,7 @@ G_BEGIN_DECLS
  *               |            |               usage              |
  *               | display as | display | entry | sql | filename |
  * --------------+------------+---------+-------+-----+----------+
+ * @MY_DATE_MMYY |  mmm yyyy  |    X    |       |     |          |
  * @MY_DATE_DMMM | d mmm yyyy |    X    |       |     |          |
  * @MY_DATE_DMYY | dd/mm/yyyy |    X    |   X   |     |          |
  * @MY_DATE_SQL  | yyyy-mm-dd |         |       |  X  |          |
@@ -52,6 +53,7 @@ G_BEGIN_DECLS
 typedef enum {
 	MY_DATE_FIRST = 1,					/* formats must be greater than zero */
 	MY_DATE_DMMM = MY_DATE_FIRST,
+	MY_DATE_MMYY,
 	MY_DATE_DMYY,
 	MY_DATE_SQL,
 	MY_DATE_YYMD,

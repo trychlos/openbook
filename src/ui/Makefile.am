@@ -143,12 +143,12 @@ openbook_SOURCES = \
 	ofa-export-assistant.h								\
 	ofa-file-format-piece.c								\
 	ofa-file-format-piece.h								\
-	ofa-guided-common.c									\
-	ofa-guided-common.h									\
 	ofa-guided-ex.c										\
 	ofa-guided-ex.h										\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
+	ofa-guided-input-piece.c							\
+	ofa-guided-input-piece.h							\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
 	ofa-int-closing.c									\
@@ -258,6 +258,7 @@ ui_files = \
 	ofa-export-assistant.ui								\
 	ofa-file-format-piece.ui							\
 	ofa-guided-input.ui									\
+	ofa-guided-input-piece.ui							\
 	ofa-import-assistant.ui								\
 	ofa-int-closing.ui									\
 	ofa-ledger-properties.ui							\
