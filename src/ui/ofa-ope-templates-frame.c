@@ -61,6 +61,7 @@ struct _ofaOpeTemplatesFramePrivate {
 enum {
 	CHANGED = 0,
 	ACTIVATED,
+	CLOSED,
 	N_SIGNALS
 };
 
@@ -77,6 +78,7 @@ static void       on_guided_input_clicked( GtkButton *button, ofaOpeTemplatesFra
 static void       on_book_selection_changed( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame );
 static void       on_book_selection_activated( ofaOpeTemplatesBook *book, const gchar *mnemo, ofaOpeTemplatesFrame *frame );
 static void       update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo );
+static void       on_frame_closed( ofaOpeTemplatesFrame *frame, void *empty );
 
 static void
 ope_templates_frame_finalize( GObject *instance )
@@ -187,6 +189,31 @@ ofa_ope_templates_frame_class_init( ofaOpeTemplatesFrameClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_STRING );
+
+	/**
+	 * ofaOpeTemplatesFrame::closed:
+	 *
+	 * This signal is sent on the #ofaOpeTemplatesFrame when the book is
+	 * about to be closed.
+	 *
+	 * The #ofaOpeTemplatesBook takes advantage of this signal to save
+	 * its own settings.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaOpeTemplatesFrame *store,
+	 * 						gpointer            user_data );
+	 */
+	st_signals[ CLOSED ] = g_signal_new_class_handler(
+				"closed",
+				OFA_TYPE_OPE_TEMPLATES_FRAME,
+				G_SIGNAL_ACTION,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
 }
 
 /**
@@ -218,6 +245,8 @@ ofa_ope_templates_frame_new( void  )
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATES_FRAME, NULL );
 
 	get_top_grid( self );
+
+	g_signal_connect( self, "closed", G_CALLBACK( on_frame_closed ), NULL );
 
 	return( self );
 }
@@ -508,4 +537,17 @@ update_buttons_sensitivity( ofaOpeTemplatesFrame *self, const gchar *mnemo )
 					priv->guided_input_btn,
 					has_ope );
 	}
+}
+
+static void
+on_frame_closed( ofaOpeTemplatesFrame *frame, void *empty )
+{
+	static const gchar *thisfn = "ofa_ope_templates_frame_on_frame_closed";
+	ofaOpeTemplatesFramePrivate *priv;
+
+	g_debug( "%s: frame=%p, empty=%p", thisfn, ( void * ) frame, ( void * ) empty );
+
+	priv = frame->priv;
+
+	g_signal_emit_by_name( priv->book, "closed" );
 }

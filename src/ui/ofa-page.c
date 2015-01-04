@@ -59,6 +59,15 @@ enum {
 	PROP_THEME_ID,
 };
 
+/* signals defined here
+ */
+enum {
+	PAGE_REMOVED = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
 G_DEFINE_TYPE( ofaPage, ofa_page, G_TYPE_OBJECT )
 
 static void       do_setup_page( ofaPage *page );
@@ -291,6 +300,30 @@ ofa_page_class_init( ofaPageClass *klass )
 	klass->on_button_clicked = NULL;
 	klass->get_top_focusable_widget = NULL;
 	klass->pre_remove = NULL;
+
+	/**
+	 * ofaPage::page-removed:
+	 *
+	 * This signal is proxied by the main window after the page has
+	 * been removed from the main notebook.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaPage     *page,
+	 * 						GtkWidget *page_widget,
+	 * 						guint      page_num,
+	 * 						gpointer   user_data );
+	 */
+	st_signals[ PAGE_REMOVED ] = g_signal_new_class_handler(
+				"page-removed",
+				OFA_TYPE_PAGE,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_POINTER, G_TYPE_UINT );
 }
 
 static void

@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
@@ -51,29 +52,34 @@ struct _ofaOpeTemplatesBookPrivate {
 	ofoDossier          *dossier;
 	GList               *dos_handlers;
 
-	ofaOpeTemplateStore *store;
-	GList               *sto_handlers;
+	ofaOpeTemplateStore *ope_store;
+	GList               *ope_handlers;
 	GtkNotebook         *book;
 };
 
 /* the ledger mnemo is attached to each page of the notebook,
  * and also attached to the underlying treemodelfilter
  */
-#define DATA_PAGE_LEDGER                "ofa-data-page-ledger"
+#define DATA_PAGE_LEDGER                    "ofa-data-page-ledger"
 
 /* the column identifier is attached to each column header
  */
-#define DATA_COLUMN_ID                  "ofa-data-column-id"
+#define DATA_COLUMN_ID                      "ofa-data-column-id"
+
+/* a settings which holds the order of ledger mnemos as a string list
+ */
+static const gchar *st_ledger_order         = "OpeTemplateBookOrder";
 
 /* signals defined here
  */
 enum {
 	CHANGED = 0,
 	ACTIVATED,
+	CLOSED,
 	N_SIGNALS
 };
 
-static guint st_signals[ N_SIGNALS ]    = { 0 };
+static guint        st_signals[ N_SIGNALS ] = { 0 };
 
 static void       create_notebook( ofaOpeTemplatesBook *book );
 static void       on_widget_finalized( ofaOpeTemplatesBook *book, gpointer finalized_parent );
@@ -108,6 +114,8 @@ static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTe
 static GtkWidget *get_current_tree_view( const ofaOpeTemplatesBook *self );
 static void       select_row_by_mnemo( ofaOpeTemplatesBook *self, const gchar *mnemo );
 static void       select_row_by_iter( ofaOpeTemplatesBook *self, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
+static void       on_action_closed( ofaOpeTemplatesBook *book );
+static void       write_settings( ofaOpeTemplatesBook *book );
 
 G_DEFINE_TYPE( ofaOpeTemplatesBook, ofa_ope_templates_book, G_TYPE_OBJECT )
 
@@ -151,9 +159,9 @@ ope_templates_book_dispose( GObject *instance )
 		}
 
 		/* disconnect from ofaOpeTemplateStore */
-		if( priv->store && OFA_IS_OPE_TEMPLATE_STORE( priv->store )){
-			for( it=priv->sto_handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
+		if( priv->ope_store && OFA_IS_OPE_TEMPLATE_STORE( priv->ope_store )){
+			for( it=priv->ope_handlers ; it ; it=it->next ){
+				g_signal_handler_disconnect( priv->ope_store, ( gulong ) it->data );
 			}
 		}
 	}
@@ -237,6 +245,31 @@ ofa_ope_templates_book_class_init( ofaOpeTemplatesBookClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_STRING );
+
+	/**
+	 * ofaOpeTemplatesBook::closed:
+	 *
+	 * This signal is sent on the #ofaOpeTemplatesBook when the book is
+	 * about to be closed.
+	 *
+	 * The #ofaOpeTemplatesBook takes advantage of this signal to save
+	 * its own settings.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaOpeTemplatesBook *store,
+	 * 						gpointer           user_data );
+	 */
+	st_signals[ CLOSED ] = g_signal_new_class_handler(
+				"closed",
+				OFA_TYPE_OPE_TEMPLATES_BOOK,
+				G_SIGNAL_ACTION,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
 }
 
 /**
@@ -255,6 +288,8 @@ ofa_ope_templates_book_new( void  )
 	book = g_object_new( OFA_TYPE_OPE_TEMPLATES_BOOK, NULL );
 
 	create_notebook( book );
+
+	g_signal_connect( book, "closed", G_CALLBACK( on_action_closed ), book );
 
 	return( book );
 }
@@ -354,6 +389,7 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 	static const gchar *thisfn = "ofa_ope_templates_book_set_main_window";
 	ofaOpeTemplatesBookPrivate *priv;
 	gulong handler;
+	GList *strlist, *it;
 
 	g_debug( "%s: book=%p, main_window=%p", thisfn, ( void * ) book, ( void * ) main_window );
 
@@ -369,17 +405,26 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 
 		priv->main_window = main_window;
 		priv->dossier = ofa_main_window_get_dossier( main_window );
-		priv->store = ofa_ope_template_store_new( priv->dossier );
+		priv->ope_store = ofa_ope_template_store_new( priv->dossier );
+
+		/* create one page per ledger
+		 * if strlist is set, then create one page per ledger
+		 * other needed pages will be created on fly */
+		strlist = ofa_settings_get_string_list( st_ledger_order );
+		for( it=strlist ; it ; it=it->next ){
+			book_get_page_by_ledger( book, ( const gchar * ) it->data, TRUE );
+		}
+		ofa_settings_free_string_list( strlist );
 
 		handler = g_signal_connect(
-				priv->store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
-		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
+				priv->ope_store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
+		priv->ope_handlers = g_list_prepend( priv->ope_handlers, ( gpointer ) handler );
 
 		handler = g_signal_connect(
-				priv->store, "ofa-row-inserted", G_CALLBACK( on_ofa_row_inserted ), book );
-		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
+				priv->ope_store, "ofa-row-inserted", G_CALLBACK( on_ofa_row_inserted ), book );
+		priv->ope_handlers = g_list_prepend( priv->ope_handlers, ( gpointer ) handler );
 
-		ofa_ope_template_store_load_dataset( priv->store );
+		ofa_ope_template_store_load_dataset( priv->ope_store );
 
 		dossier_signals_connect( book );
 	}
@@ -416,7 +461,7 @@ on_ofa_row_inserted( ofaOpeTemplateStore *store, const ofoOpeTemplate *ope, ofaO
 
 /*
  * Returns the notebook's page container which is dedicated to the
- * given class number.
+ * given ledger.
  *
  * If the page doesn't exist, and @bcreate is %TRUE, then it is created.
  */
@@ -456,6 +501,8 @@ book_get_page_by_ledger( ofaOpeTemplatesBook *book, const gchar *ledger, gboolea
 }
 
 /*
+ * @ledger: ledger mnemo
+ *
  * creates the page widget for the given ledger
  */
 static GtkWidget *
@@ -542,8 +589,8 @@ book_create_treeview( ofaOpeTemplatesBook *book, const gchar *ledger, GtkContain
 	gtk_widget_set_vexpand( tview, TRUE );
 	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( tview ), TRUE );
 
-	tfilter = gtk_tree_model_filter_new( GTK_TREE_MODEL( priv->store ), NULL );
-	g_debug( "%s: store=%p, tfilter=%p", thisfn, ( void * ) priv->store, ( void * ) tfilter );
+	tfilter = gtk_tree_model_filter_new( GTK_TREE_MODEL( priv->ope_store ), NULL );
+	g_debug( "%s: store=%p, tfilter=%p", thisfn, ( void * ) priv->ope_store, ( void * ) tfilter );
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( tfilter ),
 			( GtkTreeModelFilterVisibleFunc ) is_visible_row, g_strdup( ledger ), NULL );
@@ -1119,7 +1166,7 @@ select_row_by_mnemo( ofaOpeTemplatesBook *book, const gchar *mnemo )
 					page_n = gtk_notebook_page_num( priv->book, page_w );
 					gtk_notebook_set_current_page( priv->book, page_n );
 
-					ofa_ope_template_store_get_by_mnemo( priv->store, mnemo, &store_iter );
+					ofa_ope_template_store_get_by_mnemo( priv->ope_store, mnemo, &store_iter );
 
 					tview = my_utils_container_get_child_by_type(
 									GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
@@ -1211,4 +1258,37 @@ ofa_ope_templates_book_button_clicked( ofaOpeTemplatesBook *book, gint button_id
 				break;
 		}
 	}
+}
+
+static void
+on_action_closed( ofaOpeTemplatesBook *book )
+{
+	static const gchar *thisfn = "ofa_ope_templates_book_on_action_closed";
+
+	g_debug( "%s: book=%p", thisfn, ( void * ) book );
+
+	write_settings( book );
+}
+
+static void
+write_settings( ofaOpeTemplatesBook *book )
+{
+	ofaOpeTemplatesBookPrivate *priv;
+	GList *strlist;
+	gint i, count;
+	GtkWidget *page;
+	const gchar *mnemo;
+
+	priv = book->priv;
+
+	/* record in settings the pages position */
+	strlist = NULL;
+	count = gtk_notebook_get_n_pages( priv->book );
+	for( i=0 ; i<count ; ++i ){
+		page = gtk_notebook_get_nth_page( priv->book, i );
+		mnemo = ( const gchar * ) g_object_get_data( G_OBJECT( page ), DATA_PAGE_LEDGER );
+		strlist = g_list_append( strlist, ( gpointer ) mnemo );
+	}
+	ofa_settings_set_string_list( st_ledger_order, strlist );
+	g_list_free( strlist );
 }

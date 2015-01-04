@@ -366,7 +366,10 @@
                 => keep the same order (defaulting to ledger label alpha
                 order, keeping user rearrangements)
 
- 551
+ 551 2015- 1- 4 ofaPage: the v_preremove virtual should be replaced by
+                a trigger on "page-removed" signal
+
+ 552
 
 -----------------------------------------------------------------------
  DONE

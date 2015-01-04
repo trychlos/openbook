@@ -58,6 +58,7 @@ static void       v_setup_page( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplatesPage *page );
+static void       on_page_removed( ofaOpeTemplatesPage *page, GtkWidget *page_w, guint page_n, void *empty );
 
 static void
 ope_templates_page_finalize( GObject *instance )
@@ -140,8 +141,10 @@ v_setup_page( ofaPage *page )
 	ofa_ope_templates_frame_set_buttons( priv->ope_frame, TRUE );
 
 	g_signal_connect(
-			G_OBJECT( priv->ope_frame ),
-			"activated", G_CALLBACK( on_row_activated ), page );
+			G_OBJECT( priv->ope_frame ), "activated", G_CALLBACK( on_row_activated ), page );
+
+	g_signal_connect(
+			G_OBJECT( page ), "page-removed", G_CALLBACK( on_page_removed ), NULL );
 }
 
 static void
@@ -172,4 +175,18 @@ on_row_activated( ofaOpeTemplatesFrame *frame, const gchar *mnemo, ofaOpeTemplat
 
 		ofa_ope_template_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), ope, NULL );
 	}
+}
+
+static void
+on_page_removed( ofaOpeTemplatesPage *page, GtkWidget *page_w, guint page_n, void *empty )
+{
+	static const gchar *thisfn = "ofa_ope_templates_page_on_page_removed";
+	ofaOpeTemplatesPagePrivate *priv;
+
+	g_debug( "%s: page=%p, page_w=%p, page_n=%d, empty=%p",
+			thisfn, ( void * ) page, ( void * ) page_w, page_n, ( void * ) empty );
+
+	priv = page->priv;
+
+	g_signal_emit_by_name( priv->ope_frame, "closed" );
 }

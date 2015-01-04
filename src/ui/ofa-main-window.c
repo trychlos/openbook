@@ -1546,7 +1546,6 @@ main_book_create_page( ofaMainWindow *main, GtkNotebook *book, const sThemeDef *
 	/* all pages of the main notebook begin with a GtkGrid
 	 */
 	grid = GTK_GRID( gtk_grid_new());
-	/*gtk_grid_set_column_spacing( grid, 4 );*/
 
 	tab = my_tab_label_new( NULL, gettext( theme_def->label ));
 	g_signal_connect(
@@ -1634,6 +1633,10 @@ on_tab_close_clicked( myTabLabel *tab, GtkGrid *grid )
 	gtk_notebook_remove_page( book, page_num );
 }
 
+/*
+ * signal handler triggered when a page is removed from the main notebook
+ * the same signal is proxied to the ofaPage
+ */
 static void
 on_page_removed( GtkNotebook *book, GtkWidget *page_w, guint page_num, ofaMainWindow *main_window )
 {
@@ -1645,6 +1648,8 @@ on_page_removed( GtkNotebook *book, GtkWidget *page_w, guint page_num, ofaMainWi
 
 	handler = ( ofaPage * ) g_object_get_data( G_OBJECT( page_w ), OFA_DATA_HANDLER );
 	g_return_if_fail( handler && OFA_IS_PAGE( handler ));
+
+	g_signal_emit_by_name( handler, "page-removed", page_w, page_num );
 
 	ofa_page_pre_remove( handler );
 }
