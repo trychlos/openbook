@@ -43,6 +43,7 @@ typedef struct {
 
 static const sDateFormat st_date_format[] = {
 		{ MY_DATE_DMMM, N_( "D MMM YYYY" )},
+		{ MY_DATE_MMYY, N_( "MMM YYYY" )},
 		{ MY_DATE_DMYY, N_( "DD/MM/YYYY" )},
 		{ MY_DATE_SQL,  N_( "YYYY-MM-DD" )},
 		{ MY_DATE_YYMD, N_( "YYYYMMDD" )},

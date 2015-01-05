@@ -309,14 +309,15 @@ ofa_import_assistant_run( ofaMainWindow *main_window )
 
 	get_settings( self );
 
-	g_signal_connect(
-			G_OBJECT( self ), MY_SIGNAL_PAGE_FORWARD, G_CALLBACK( on_page_forward ), NULL );
-
 	/* messages provided by the ofaIImporter interface */
 	g_signal_connect(
 			G_OBJECT( self ), "progress", G_CALLBACK( p5_on_progress ), self );
 	g_signal_connect(
 			G_OBJECT( self ), "message", G_CALLBACK( p5_on_message ), self );
+
+	/* message provided by the myAssistant class */
+	g_signal_connect(
+			G_OBJECT( self ), MY_SIGNAL_PAGE_FORWARD, G_CALLBACK( on_page_forward ), NULL );
 
 
 	my_assistant_signal_connect( MY_ASSISTANT( self ), "prepare", G_CALLBACK( on_prepare ));

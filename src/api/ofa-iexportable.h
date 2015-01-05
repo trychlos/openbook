@@ -49,16 +49,6 @@ G_BEGIN_DECLS
 typedef struct _ofaIExportable                    ofaIExportable;
 
 /**
- * Two callbacks which let the ofaIEXportable instance announce the
- * progression of the export. It is advised to use them on each exported
- * line.
- *
- * The two callbacks are to be called with the provided @instance data.
- */
-typedef void ( *ofaIExportableFnDouble )( const void *instance, gdouble progress );
-typedef void ( *ofaIExportableFnText )  ( const void *instance, const gchar *text );
-
-/**
  * ofaIExportableInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
@@ -109,8 +99,6 @@ gboolean ofa_iexportable_export_to_path            ( ofaIExportable *exportable,
 															const gchar *fname,
 															const ofaFileFormat *settings,
 															ofoDossier *dossier,
-															const ofaIExportableFnDouble fn_double,
-															const ofaIExportableFnText fn_text,
 															const void *instance );
 
 gulong   ofa_iexportable_get_count                 ( ofaIExportable *exportable );

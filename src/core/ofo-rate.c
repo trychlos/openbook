@@ -290,26 +290,11 @@ rate_load_dataset( ofoDossier *dossier )
 					OFO_TYPE_RATE );
 
 	for( it=dataset ; it ; it=it->next ){
-
 		rate = OFO_RATE( it->data );
 		from = g_strdup_printf( "OFA_T_RATES_VAL WHERE RAT_MNEMO='%s'", ofo_rate_get_mnemo( rate ));
 		rate->priv->validities =
 				ofo_base_load_rows( st_validities_defs, ofo_dossier_get_dbms( dossier ), from );
 		g_free( from );
-
-		/*GList *iv;
-		for( iv=rate->priv->validities ; iv ; iv=iv->next ){
-			const gchar *mnemo = ofa_box_get_string( iv->data, RAT_MNEMO );
-			const GDate *dbegin = ofa_box_get_date( iv->data, RAT_BEGIN );
-			const GDate *dend = ofa_box_get_date( iv->data, RAT_END );
-			ofxAmount amount = ofa_box_get_amount( iv->data, RAT_RATE );
-			gchar *sdbegin = my_date_to_str( dbegin, MY_DATE_DMYY );
-			gchar *sdend = my_date_to_str( dend, MY_DATE_DMYY );
-			g_debug( "rate_load_dataset: mnemo=%s, begin=%s, end=%s, amount=%.5lf",
-					mnemo, sdbegin, sdend, amount );
-			g_free( sdbegin );
-			g_free( sdend );
-		}*/
 	}
 
 	return( dataset );
@@ -1229,7 +1214,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	if( with_headers ){
 		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
-		lines = g_slist_prepend( NULL, str );
+		lines = g_slist_prepend( NULL, g_strdup_printf( "1;%s", str ));
+		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
@@ -1237,7 +1223,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		}
 
 		str = ofa_box_get_csv_header( st_validities_defs, field_sep );
-		lines = g_slist_prepend( NULL, str );
+		lines = g_slist_prepend( NULL, g_strdup_printf( "2;%s", str ));
+		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
@@ -1247,7 +1234,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	for( it=rate_dataset ; it ; it=it->next ){
 		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
-		lines = g_slist_prepend( NULL, str );
+		lines = g_slist_prepend( NULL, g_strdup_printf( "1;%s", str ));
+		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
@@ -1257,7 +1245,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		rate = OFO_RATE( it->data );
 		for( det=rate->priv->validities ; det ; det=det->next ){
 			str = ofa_box_get_csv_line( det->data, field_sep, decimal_sep );
-			lines = g_slist_prepend( NULL, str );
+			lines = g_slist_prepend( NULL, g_strdup_printf( "2;%s", str ));
+			g_free( str );
 			ok = ofa_iexportable_export_lines( exportable, lines );
 			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 			if( !ok ){

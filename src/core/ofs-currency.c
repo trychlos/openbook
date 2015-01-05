@@ -95,6 +95,8 @@ currency_free( ofsCurrency *cur )
 void
 ofs_currency_list_free( GList **list )
 {
-	g_list_free_full( *list, ( GDestroyNotify ) currency_free );
-	*list = NULL;
+	if( *list ){
+		g_list_free_full( *list, ( GDestroyNotify ) currency_free );
+		*list = NULL;
+	}
 }

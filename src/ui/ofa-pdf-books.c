@@ -38,6 +38,7 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
+#include "api/ofs-currency.h"
 
 #include "core/my-window-prot.h"
 
@@ -122,13 +123,6 @@ struct _ofaPDFBooksPrivate {
 	 */
 	GList         *totals;				/* list of totals per currency */
 };
-
-typedef struct {
-	gchar    *currency;
-	ofxAmount debit;
-	ofxAmount credit;
-}
-	sCurrency;
 
 static const gchar *st_ui_xml              = PKGUIDIR "/ofa-print-books.ui";
 static const gchar *st_ui_id               = "PrintBooksDlg";
@@ -218,19 +212,10 @@ static void     draw_account_solde_debit_credit( ofaPDFBooks *self, GtkPrintCont
 static void     iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, GList *current );
 static void     iprintable_draw_group_bottom_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void     iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void     add_account_balance( ofaPDFBooks *self, gboolean is_drawing );
-static gint     cmp_currencies( const sCurrency *a, const sCurrency *b );
 static void     iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 
 G_DEFINE_TYPE_EXTENDED( ofaPDFBooks, ofa_pdf_books, OFA_TYPE_PDF_DIALOG, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IPRINTABLE, iprintable_iface_init ));
-
-static void
-free_currency( sCurrency *total_per_currency )
-{
-	g_free( total_per_currency->currency );
-	g_free( total_per_currency );
-}
 
 static void
 pdf_books_finalize( GObject *instance )
@@ -249,7 +234,7 @@ pdf_books_finalize( GObject *instance )
 	g_free( priv->to_account );
 	g_free( priv->account_number );
 	g_free( priv->currency_code );
-	g_list_free_full( priv->totals, ( GDestroyNotify ) free_currency );
+	ofs_currency_list_free( &priv->totals );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_pdf_books_parent_class )->finalize( instance );
@@ -665,8 +650,7 @@ iprintable_reset_runtime( ofaIPrintable *instance )
 
 	priv = OFA_PDF_BOOKS( instance )->priv;
 
-	g_list_free_full( priv->totals, ( GDestroyNotify ) free_currency );
-	priv->totals = NULL;
+	ofs_currency_list_free( &priv->totals );
 
 	g_free( priv->account_number );
 	priv->account_number = NULL;
@@ -1127,53 +1111,14 @@ iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operat
 	/* current account solde */
 	draw_account_solde_debit_credit( OFA_PDF_BOOKS( instance ), context, y );
 
-	add_account_balance( OFA_PDF_BOOKS( instance ), context != NULL );
+	/* add the account balance to the total per currency */
+	ofs_currency_add_currency( &priv->totals,
+			priv->currency_code,
+			context ? priv->account_debit : 0,
+			context ? priv->account_credit : 0 );
 
 	y += ofa_iprintable_get_current_line_height( instance );
 	ofa_iprintable_set_last_y( instance, y );
-}
-
-/*
- * add the account balance to the total per currency,
- * adding a new currency record if needed
- */
-static void
-add_account_balance( ofaPDFBooks *self, gboolean is_drawing )
-{
-	ofaPDFBooksPrivate *priv;
-	GList *it;
-	sCurrency *scur;
-	gboolean found;
-
-	priv = self->priv;
-
-	for( it=priv->totals, found=FALSE ; it ; it=it->next ){
-		scur = ( sCurrency * ) it->data;
-		if( !g_utf8_collate( scur->currency, priv->currency_code )){
-			found = TRUE;
-			break;
-		}
-	}
-
-	if( !found ){
-		scur = g_new0( sCurrency, 1 );
-		scur->currency = g_strdup( priv->currency_code );
-		priv->totals = g_list_insert_sorted( priv->totals, scur, ( GCompareFunc ) cmp_currencies );
-		scur->debit = 0;
-		scur->credit = 0;
-	}
-
-	scur->debit += is_drawing ? priv->account_debit : 0;
-	scur->credit += is_drawing ? priv->account_credit : 0;
-
-	/*g_debug( "add_account_balance: account=%s, debit=%lf, credit=%lf",
-			priv->account_number, scur->debit, scur->credit );*/
-}
-
-static gint
-cmp_currencies( const sCurrency *a, const sCurrency *b )
-{
-	return( g_utf8_collate( a->currency, b->currency ));
 }
 
 /*
@@ -1186,8 +1131,10 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	gdouble bottom, vspace, req_height, line_height, top, y;
 	gchar *str;
 	GList *it;
-	sCurrency *scur;
+	ofsCurrency *scur;
 	gboolean first;
+	ofoCurrency *currency;
+	gint digits;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
@@ -1213,7 +1160,10 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	y = top;
 
 	for( it=priv->totals, first=TRUE ; it ; it=it->next ){
-		scur = ( sCurrency * ) it->data;
+		scur = ( ofsCurrency * ) it->data;
+		currency = ofo_currency_get_by_code( MY_WINDOW( instance )->prot->dossier, scur->currency );
+		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+		digits = ofo_currency_get_digits( currency );
 
 		if( first ){
 			ofa_iprintable_set_text( instance, context,
@@ -1222,12 +1172,12 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 			first = FALSE;
 		}
 
-		str = my_double_to_str( scur->debit );
+		str = my_double_to_str_ex( scur->debit, digits );
 		ofa_iprintable_set_text( instance, context,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str( scur->credit );
+		str = my_double_to_str_ex( scur->credit, digits );
 		ofa_iprintable_set_text( instance, context,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );

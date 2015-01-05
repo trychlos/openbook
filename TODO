@@ -347,22 +347,28 @@
 
  521 2014-12-11 IExportable: use myProgressBar
                 getting rid of defined callbacks
+     2015- 1- 5 done
 
  522 2014-12-12 pieces of dialogs should have the corresponding code
                 isolated and named accordingly (see ofaFileFormatPiece)
 
  525 2014-12-13 when importing entries: review the code to be faster
-                import accounts: 0.02286 s / 0.02316 s (127 rows)
-                import ledgers:  0.02982 s (9 rows)
-                import entries:  0.13268 s (2431 rows)
+                import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
+                import ledgers:  0.02982 s/row (9 rows)
+                import entries:  0.13268 s/row (2431 rows)
 
  547 2014-12-31 migrate local sCurrency used for currency balance 
                 computings to the global ofsCurrency struct declaration
+     2015- 1- 5 done
 
- 551 2015- 1- 4 ofaPage: the v_preremove virtual should be replaced by
-                a trigger on "page-removed" signal
+ 552 2015- 1- 5 at least classes which export an amount should use the
+                ofaBox definitions as ofaBox is able to output the data
+                following the ofaFileFormat recommandations:
+                ofoEntry
+                ofoLedger
+     2015- 1- 5 done
 
- 552
+ 553
 
 -----------------------------------------------------------------------
  DONE
@@ -2368,6 +2374,10 @@
 
  550 2015- 1- 1 GuidedInputPiece: remove useless entries_count data ?
      2015- 1- 4 no - this is used and would lead to a too fragile code
+
+ 551 2015- 1- 4 ofaPage: the v_preremove virtual should be replaced by
+                a trigger on "page-removed" signal
+     2015- 1- 4 done - svn #4406
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

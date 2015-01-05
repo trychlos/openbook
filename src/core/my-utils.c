@@ -155,16 +155,21 @@ my_utils_stamp_to_str( const GTimeVal *stamp, myStampFormat format )
 	gchar *str;
 
 	str = NULL;
-	dt = g_date_time_new_from_timeval_local( stamp );
-	switch( format ){
-		case MY_STAMP_YYMDHMS:
-			str = g_date_time_format( dt, "%Y-%m-%d %H:%M:%S" );
-			break;
-		case MY_STAMP_DMYYHM:
-			str = g_date_time_format( dt, "%d/%m/%Y %H:%M" );
-			break;
+
+	if( stamp ){
+		dt = g_date_time_new_from_timeval_local( stamp );
+		if( dt ){
+			switch( format ){
+				case MY_STAMP_YYMDHMS:
+					str = g_date_time_format( dt, "%Y-%m-%d %H:%M:%S" );
+					break;
+				case MY_STAMP_DMYYHM:
+					str = g_date_time_format( dt, "%d/%m/%Y %H:%M" );
+					break;
+			}
+			g_date_time_unref( dt );
+		}
 	}
-	g_date_time_unref( dt );
 
 	return( str );
 }

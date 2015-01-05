@@ -38,6 +38,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
+#include "api/ofs-currency.h"
 
 #include "core/my-window-prot.h"
 
@@ -107,14 +108,6 @@ struct _ofaPDFLedgersPrivate {
 	GList             *report_totals;		/* all totals per currency */
 };
 
-typedef struct {
-	gchar  *currency;
-	gint    digits;
-	gdouble debit;
-	gdouble credit;
-}
-	sCurrency;
-
 static const gchar *st_ui_xml              = PKGUIDIR "/ofa-print-ledgers.ui";
 static const gchar *st_ui_id               = "PrintLedgersDlg";
 
@@ -172,17 +165,13 @@ static void     iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation
 static void     iprintable_draw_group_bottom_report( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void     iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 static void     iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
-static void     add_ledger_balance( ofaPDFLedgers *self, gboolean is_drawing, const gchar *currency, gint digits, ofxAmount debit, ofxAmount credit );
-static void     add_totals_balance( ofaPDFLedgers *self, gboolean is_drawing, sCurrency *scur );
-static GList   *add_balance( ofaPDFLedgers *self, gboolean is_drawing, GList *list, const gchar *currency, gint digits, ofxAmount debit, ofxAmount credit );
-static gint     cmp_currencies( const sCurrency *a, const sCurrency *b );
 static void     draw_ledger_totals( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 
 G_DEFINE_TYPE_EXTENDED( ofaPDFLedgers, ofa_pdf_ledgers, OFA_TYPE_PDF_DIALOG, 0, \
 		G_IMPLEMENT_INTERFACE (OFA_TYPE_IPRINTABLE, iprintable_iface_init ));
 
 static void
-free_currency( sCurrency *total_per_currency )
+free_currency( ofsCurrency *total_per_currency )
 {
 	g_free( total_per_currency->currency );
 	g_free( total_per_currency );
@@ -201,8 +190,9 @@ pdf_ledgers_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_PDF_LEDGERS( instance )->priv;
-	g_list_free_full( priv->ledger_totals, ( GDestroyNotify ) free_currency );
-	g_list_free_full( priv->report_totals, ( GDestroyNotify ) free_currency );
+
+	ofs_currency_list_free( &priv->ledger_totals );
+	ofs_currency_list_free( &priv->report_totals );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_pdf_ledgers_parent_class )->finalize( instance );
@@ -584,8 +574,7 @@ iprintable_reset_runtime( ofaIPrintable *instance )
 
 	priv = OFA_PDF_LEDGERS( instance )->priv;
 
-	g_list_free_full( priv->report_totals, ( GDestroyNotify ) free_currency );
-	priv->report_totals = NULL;
+	ofs_currency_list_free( &priv->report_totals );
 
 	g_free( priv->ledger_mnemo );
 	priv->ledger_mnemo = NULL;
@@ -911,7 +900,8 @@ iprintable_draw_line( ofaIPrintable *instance, GtkPrintOperation *operation, Gtk
 	ofa_iprintable_set_text( instance, context,
 			priv->body_currency_rtab, y, code, PANGO_ALIGN_RIGHT );
 
-	add_ledger_balance( OFA_PDF_LEDGERS( instance ), context != NULL, code, digits, debit, credit );
+	ofs_currency_add_currency(
+			&priv->ledger_totals, code, context ? debit : 0, context ? credit : 0 );
 }
 
 static void
@@ -932,6 +922,7 @@ iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operat
 {
 	ofaPDFLedgersPrivate *priv;
 	GList *it;
+	ofsCurrency *cur;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
@@ -940,7 +931,9 @@ iprintable_draw_group_footer( ofaIPrintable *instance, GtkPrintOperation *operat
 	priv = OFA_PDF_LEDGERS( instance )->priv;
 
 	for( it=priv->ledger_totals ; it ; it=it->next ){
-		add_totals_balance( OFA_PDF_LEDGERS( instance ), context != NULL, ( sCurrency * ) it->data );
+		cur = ( ofsCurrency * ) it->data;
+		ofs_currency_add_currency(
+				&priv->report_totals, cur->currency, context ? cur->debit : 0, context ? cur->credit : 0 );
 	}
 }
 
@@ -954,8 +947,10 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	gdouble bottom, vspace, req_height, line_height, top;
 	gchar *str;
 	GList *it;
-	sCurrency *scur;
+	ofsCurrency *scur;
 	gboolean first;
+	ofoCurrency *currency;
+	gint digits, shift;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
@@ -976,27 +971,30 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	top = bottom - req_height;
 
 	ofa_iprintable_draw_rect( instance, context, 0, top, -1, req_height );
-
 	top += vspace;
+	shift = 4;
 
 	for( it=priv->report_totals, first=TRUE ; it ; it=it->next ){
-		scur = ( sCurrency * ) it->data;
+		scur = ( ofsCurrency * ) it->data;
+		currency = ofo_currency_get_by_code( MY_WINDOW( instance )->prot->dossier, scur->currency );
+		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+		digits = ofo_currency_get_digits( currency );
 
 		if( first ){
 			ofa_iprintable_set_text( instance, context,
-					priv->body_debit_rtab-st_amount_width, top,
+					priv->body_debit_rtab-st_amount_width-shift, top,
 					_( "Ledgers general balance : " ), PANGO_ALIGN_RIGHT );
 			first = FALSE;
 		}
 
-		str = my_double_to_str( scur->debit );
+		str = my_double_to_str_ex( scur->debit, digits );
 		ofa_iprintable_set_text( instance, context,
-				priv->body_debit_rtab, top, str, PANGO_ALIGN_RIGHT );
+				priv->body_debit_rtab-shift, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str( scur->credit );
+		str = my_double_to_str_ex( scur->credit, digits );
 		ofa_iprintable_set_text( instance, context,
-				priv->body_credit_rtab, top, str, PANGO_ALIGN_RIGHT );
+				priv->body_credit_rtab-shift, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		ofa_iprintable_set_text( instance, context,
@@ -1006,81 +1004,6 @@ iprintable_draw_bottom_summary( ofaIPrintable *instance, GtkPrintOperation *oper
 	}
 
 	ofa_iprintable_set_last_y( instance, ofa_iprintable_get_last_y( instance ) + req_height );
-}
-
-/*
- * add the entry to the total per currency for the ledger,
- * adding a new currency record if needed
- */
-static void
-add_ledger_balance( ofaPDFLedgers *self, gboolean is_drawing,
-						const gchar *currency, gint digits, ofxAmount debit, ofxAmount credit )
-{
-	ofaPDFLedgersPrivate *priv;
-
-	priv = self->priv;
-
-	priv->ledger_totals =
-			add_balance( self, is_drawing, priv->ledger_totals,
-							currency, digits, debit, credit );
-}
-
-/*
- * add the totals for the ledger to the totals for the report,
- * adding a new currency record if needed
- */
-static void
-add_totals_balance( ofaPDFLedgers *self, gboolean is_drawing, sCurrency *scur )
-{
-	ofaPDFLedgersPrivate *priv;
-
-	priv = self->priv;
-
-	priv->report_totals =
-			add_balance( self, is_drawing, priv->report_totals,
-							scur->currency, scur->digits, scur->debit, scur->credit );
-}
-
-/*
- * add the entry to the total per currency for the ledger,
- * adding a new currency record if needed
- */
-static GList *
-add_balance( ofaPDFLedgers *self, gboolean is_drawing, GList *list,
-					const gchar *currency, gint digits, ofxAmount debit, ofxAmount credit )
-{
-	GList *it;
-	sCurrency *scur;
-	gboolean found;
-
-	for( it=list, found=FALSE ; it ; it=it->next ){
-		scur = ( sCurrency * ) it->data;
-		if( !g_utf8_collate( scur->currency, currency )){
-			found = TRUE;
-			break;
-		}
-	}
-
-	if( !found ){
-		scur = g_new0( sCurrency, 1 );
-		scur->currency = g_strdup( currency );
-		scur->digits = digits;
-		list = g_list_insert_sorted( list, scur, ( GCompareFunc ) cmp_currencies );
-		/*g_debug( "add_balance: inserting new currency %s", currency );*/
-		scur->debit = 0;
-		scur->credit = 0;
-	}
-
-	scur->debit += is_drawing ? debit : 0;
-	scur->credit += is_drawing ? credit : 0;
-
-	return( list );
-}
-
-static gint
-cmp_currencies( const sCurrency *a, const sCurrency *b )
-{
-	return( g_utf8_collate( a->currency, b->currency ));
 }
 
 /*
@@ -1095,7 +1018,9 @@ draw_ledger_totals( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPr
 	gboolean first;
 	gchar *str;
 	GList *it;
-	sCurrency *scur;
+	ofsCurrency *scur;
+	ofoCurrency *currency;
+	gint digits;
 
 	g_return_if_fail( !context || GTK_IS_PRINT_CONTEXT( context ));
 
@@ -1104,7 +1029,10 @@ draw_ledger_totals( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPr
 	y = ofa_iprintable_get_last_y( instance );
 
 	for( it=priv->ledger_totals, first=TRUE ; it ; it=it->next ){
-		scur = ( sCurrency * ) it->data;
+		scur = ( ofsCurrency * ) it->data;
+		currency = ofo_currency_get_by_code( MY_WINDOW( instance )->prot->dossier, scur->currency );
+		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+		digits = ofo_currency_get_digits( currency );
 
 		if( first ){
 			str = g_strdup_printf( _( "%s ledger balance : " ), priv->ledger_mnemo );
@@ -1115,12 +1043,12 @@ draw_ledger_totals( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPr
 			first = FALSE;
 		}
 
-		str = my_double_to_str_ex( scur->debit, scur->digits );
+		str = my_double_to_str_ex( scur->debit, digits );
 		ofa_iprintable_set_text( instance, context,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str_ex( scur->credit, scur->digits );
+		str = my_double_to_str_ex( scur->credit, digits );
 		ofa_iprintable_set_text( instance, context,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );

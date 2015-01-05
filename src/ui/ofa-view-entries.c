@@ -41,6 +41,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
+#include "api/ofs-currency.h"
 
 #include "ui/my-cell-renderer-amount.h"
 #include "ui/my-cell-renderer-date.h"
@@ -159,16 +160,8 @@ struct _ofaViewEntriesPrivate {
 	/* footer
 	 */
 	GtkLabel          *comment;
-	GHashTable        *balances_hash;
+	GList             *balances;
 };
-
-/* the balance per currency, mostly useful when displaying per ledger
- */
-typedef struct {
-	gdouble debits;
-	gdouble credits;
-}
-	sCurrency;
 
 /* the id of the column is set against some columns of interest,
  * typically whose that we want be able to show/hide */
@@ -271,10 +264,8 @@ static void           refresh_display( ofaViewEntries *self );
 static void           display_entries( ofaViewEntries *self, GList *entries );
 static void           display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter );
 static void           compute_balances( ofaViewEntries *self );
-static sCurrency     *find_balance_by_currency( ofaViewEntries *self, const gchar *dev_code );
-static void           reset_balances_hash( ofaViewEntries *self );
 static GtkWidget     *reset_balances_widgets( ofaViewEntries *self );
-static void           display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self );
+static void           display_balance( ofsCurrency *pc, ofaViewEntries *self );
 static void           set_balance_currency_label_position( ofaViewEntries *self );
 static void           set_balance_currency_label_margin( GtkWidget *widget, ofaViewEntries *self );
 static gboolean       is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaViewEntries *self );
@@ -337,7 +328,7 @@ view_entries_finalize( GObject *instance )
 
 	g_free( priv->jou_mnemo );
 	g_free( priv->acc_number );
-	reset_balances_hash( OFA_VIEW_ENTRIES( instance ));
+	ofs_currency_list_free( &priv->balances );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_view_entries_parent_class )->finalize( instance );
@@ -1785,18 +1776,11 @@ compute_balances( ofaViewEntries *self )
 	GtkWidget *box;
 	GtkTreeIter iter;
 	gchar *sdeb, *scre, *dev_code;
-	sCurrency *pc;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
-
-	reset_balances_hash( self );
-	priv->balances_hash = g_hash_table_new_full(
-					( GHashFunc ) g_str_hash,			/* hash_func */
-					( GEqualFunc ) g_str_equal,			/* key_equal_func */
-					( GDestroyNotify ) g_free, 			/* key_destroy_func */
-					( GDestroyNotify ) g_free );		/* value_destroy_func */
+	ofs_currency_list_free( &priv->balances );
 
 	if( gtk_tree_model_get_iter_first( priv->tsort, &iter )){
 		while( TRUE ){
@@ -1808,11 +1792,9 @@ compute_balances( ofaViewEntries *self )
 					ENT_COL_CURRENCY, &dev_code,
 					-1 );
 
-			if( dev_code && g_utf8_strlen( dev_code, -1 )){
-				pc = find_balance_by_currency( self, dev_code );
-				pc->debits += my_double_set_from_str( sdeb );
-				pc->credits += my_double_set_from_str( scre );
-			}
+			ofs_currency_add_currency(
+					&priv->balances,
+					dev_code, my_double_set_from_str( sdeb ), my_double_set_from_str( scre ));
 
 			g_free( sdeb );
 			g_free( scre );
@@ -1825,47 +1807,9 @@ compute_balances( ofaViewEntries *self )
 	}
 
 	box = reset_balances_widgets( self );
-	g_hash_table_foreach( priv->balances_hash, ( GHFunc ) display_balance, self );
+	g_list_foreach( priv->balances, ( GFunc ) display_balance, self );
 	set_balance_currency_label_position( self );
 	gtk_widget_show_all( box );
-}
-
-/*
- * the hash is used to store the balance per currency
- */
-static sCurrency *
-find_balance_by_currency( ofaViewEntries *self, const gchar *dev_code )
-{
-	ofaViewEntriesPrivate *priv;
-	sCurrency *pc;
-
-	priv = self->priv;
-
-	pc = ( sCurrency * ) g_hash_table_lookup( priv->balances_hash, dev_code );
-	if( !pc ){
-		pc = g_new0( sCurrency, 1 );
-		pc->debits = 0;
-		pc->credits = 0;
-		g_hash_table_insert( priv->balances_hash, g_strdup( dev_code ), pc );
-	}
-
-	return( pc );
-}
-
-/*
- * the hash is used to store the balance per currency
- */
-static void
-reset_balances_hash( ofaViewEntries *self )
-{
-	ofaViewEntriesPrivate *priv;
-
-	priv = self->priv;
-
-	if( priv->balances_hash ){
-		g_hash_table_unref( priv->balances_hash );
-		priv->balances_hash = NULL;
-	}
 }
 
 static GtkWidget *
@@ -1881,14 +1825,14 @@ reset_balances_widgets( ofaViewEntries *self )
 }
 
 static void
-display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self )
+display_balance( ofsCurrency *pc, ofaViewEntries *self )
 {
 	ofaViewEntriesPrivate *priv;
 	GtkWidget *box, *row, *label;
 	gchar *str;
 	GdkRGBA color;
 
-	if( pc->debits || pc->credits ){
+	if( pc->debit || pc->credit ){
 
 		priv = self->priv;
 		gdk_rgba_parse( &color, RGBA_BALANCE );
@@ -1899,17 +1843,16 @@ display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self )
 		row = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
 		gtk_box_pack_start( GTK_BOX( box ), row, FALSE, FALSE, 0 );
 
-		label = gtk_label_new( dev_code );
+		label = gtk_label_new( pc->currency );
 		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 		gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
-		gtk_label_set_text( GTK_LABEL( label ), dev_code );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
 
 		label = gtk_label_new( NULL );
 		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
-		str = my_double_to_str( pc->credits );
+		str = my_double_to_str( pc->credit );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
@@ -1918,7 +1861,7 @@ display_balance( const gchar *dev_code, sCurrency *pc, ofaViewEntries *self )
 		gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 		gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
-		str = my_double_to_str( pc->debits );
+		str = my_double_to_str( pc->debit );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );

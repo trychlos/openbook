@@ -370,6 +370,9 @@ timestamp_to_csv_str( const sBoxData *box )
 		str = g_strdup( "" );
 	} else {
 		str = my_utils_stamp_to_str( &box->timestamp, MY_STAMP_YYMDHMS );
+		if( !str ){
+			str = g_strdup( "" );
+		}
 	}
 
 	return( str );

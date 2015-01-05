@@ -149,12 +149,12 @@ my_field_combo_class_init( myFieldComboClass *klass )
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
-	 * Arguments is the selected date format.
+	 * Arguments is the newly selected field separator.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( myFieldCombo *combo,
-	 * 						const gchar  *field_sep,
-	 * 						gpointer      user_data );
+	 * void ( *handler )( myFieldCombo  *combo,
+	 * 						const gchar *field_sep,
+	 * 						gpointer     user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"changed",

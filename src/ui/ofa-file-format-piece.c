@@ -111,7 +111,7 @@ static void     on_date_changed( myDateCombo *combo, myDateFormat format, ofaFil
 static void     init_decimal_dot( ofaFileFormatPiece *self );
 static void     on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatPiece *self );
 static void     init_field_separator( ofaFileFormatPiece *self );
-static void     on_field_changed( myFieldCombo *combo, ofaFileFormatPiece *self );
+static void     on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatPiece *self );
 static void     init_headers( ofaFileFormatPiece *self );
 static void     on_headers_toggled( GtkToggleButton *button, ofaFileFormatPiece *self );
 static gboolean is_validable( ofaFileFormatPiece *self );
@@ -519,7 +519,7 @@ init_field_separator( ofaFileFormatPiece *self )
 }
 
 static void
-on_field_changed( myFieldCombo *combo, ofaFileFormatPiece *self )
+on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatPiece *self )
 {
 	g_signal_emit_by_name( self, "changed" );
 }

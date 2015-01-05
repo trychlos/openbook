@@ -41,18 +41,25 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaFileFormat    *settings;
-	ofaIExportableFnDouble  fn_double;
-	ofaIExportableFnText    fn_text;
-	const void             *instance;
+	const ofaFileFormat *settings;
+	const void          *instance;
 
 	/* runtime data
 	 */
-	GOutputStream          *stream;
-	gulong                  count;
-	gulong                  progress;
+	GOutputStream       *stream;
+	gulong               count;
+	gulong               progress;
 }
 	sIExportable;
+
+/* signals defined here
+ */
+enum {
+	PROGRESS = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 #define IEXPORTABLE_LAST_VERSION        1
 #define IEXPORTABLE_DATA                "ofa-iexportable-data"
@@ -121,18 +128,39 @@ static void
 interface_base_init( ofaIExportableInterface *klass )
 {
 	static const gchar *thisfn = "ofa_iexportable_interface_base_init";
+	GType interface_type = G_TYPE_FROM_INTERFACE( klass );
 
 	if( !st_initializations ){
 
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
+
+		/**
+		 * ofaIExportable::progress:
+		 *
+		 * This signal is to be sent on the exportable
+		 * in order to visually render the export
+		 * progression.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( ofaIExportable *exporter,
+		 * 						gdouble       progress,
+		 * 						const gchar  *text,
+		 * 						gpointer      user_data );
+		 */
+		st_signals[ PROGRESS ] = g_signal_new_class_handler(
+					"progress",
+					interface_type,
+					G_SIGNAL_ACTION,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					2,
+					G_TYPE_DOUBLE, G_TYPE_STRING );
 	}
 
 	st_initializations += 1;
-
-	if( st_initializations == 1 ){
-
-		/* declare here the default implementations */
-	}
 }
 
 static void
@@ -177,9 +205,7 @@ ofa_iexportable_get_interface_last_version( void )
 gboolean
 ofa_iexportable_export_to_path( ofaIExportable *exportable,
 									const gchar *fname, const ofaFileFormat *settings,
-									ofoDossier *dossier,
-									const ofaIExportableFnDouble fn_double,
-									const ofaIExportableFnText fn_text, const void *instance )
+									ofoDossier *dossier, const void *instance )
 {
 	GFile *output_file;
 	sIExportable *sdata;
@@ -192,8 +218,6 @@ ofa_iexportable_export_to_path( ofaIExportable *exportable,
 	g_return_val_if_fail( sdata, FALSE );
 
 	sdata->settings = settings;
-	sdata->fn_double = fn_double;
-	sdata->fn_text = fn_text;
 	sdata->instance = instance;
 
 	if( !my_utils_output_stream_new( fname, &output_file, &output_stream )){
@@ -250,6 +274,7 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 	gchar *str, *converted;
 	GError *error;
 	gint ret;
+	gdouble progress;
 
 	g_return_val_if_fail( OFA_IS_IEXPORTABLE( exportable ), FALSE );
 
@@ -288,19 +313,14 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 		/* only try to display the progress if the exportable has first
 		 * set the total count of lines */
 		if( sdata->count ){
-			if( sdata->fn_double ){
-				sdata->fn_double( sdata->instance, ( gdouble ) sdata->progress/ ( gdouble ) sdata->count );
-			}
-			if( sdata->fn_text ){
-				str = g_strdup_printf( "%ld/%ld", sdata->progress, sdata->count );
-				sdata->fn_text( sdata->instance, str );
-				g_free( str );
-			}
-			/* let Gtk update the display */
-			while( gtk_events_pending()){
-				gtk_main_iteration();
-			}
+			progress = ( gdouble ) sdata->progress / ( gdouble ) sdata->count;
+			str = g_strdup_printf( "%ld/%ld", sdata->progress, sdata->count );
+		} else {
+			progress = ( gdouble ) sdata->progress;
+			str = g_strdup_printf( "%ld", sdata->progress );
 		}
+		g_signal_emit_by_name( exportable, "progress", progress, str );
+		g_free( str );
 	}
 
 	return( TRUE );

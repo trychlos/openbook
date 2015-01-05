@@ -47,6 +47,7 @@
 
 #include "core/my-window-prot.h"
 
+#include "ui/my-progress-bar.h"
 #include "ui/ofa-export-assistant.h"
 #include "ui/ofa-file-format-piece.h"
 #include "ui/ofa-main-window.h"
@@ -79,7 +80,7 @@ struct _ofaExportAssistantPrivate {
 
 	/* p5: apply
 	 */
-	GtkWidget          *progress_bar;
+	myProgressBar      *p5_bar;
 	ofaIExportable     *base;
 	GtkWidget          *p5_page;
 };
@@ -175,8 +176,7 @@ static void      on_apply( GtkAssistant *assistant, ofaExportAssistant *self );
 static void      p5_do_display( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
 static gboolean  export_data( ofaExportAssistant *self );
 static void      error_no_interface( const ofaExportAssistant *self );
-static void      set_progress_double( const ofaExportAssistant *self, gdouble progress );
-static void      set_progress_text( const ofaExportAssistant *self, const gchar *text );
+static void      p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text, ofaExportAssistant *self );
 
 typedef void ( *cb )( ofaExportAssistant *, GtkWidget * );
 
@@ -283,6 +283,7 @@ ofa_export_assistant_run( ofaMainWindow *main_window )
 							MY_PROP_WINDOW_NAME, st_ui_id,
 							NULL );
 
+	/* message provided by the myAssistant class */
 	g_signal_connect(
 			G_OBJECT( self ), MY_SIGNAL_PAGE_FORWARD, G_CALLBACK( on_page_forward ), NULL );
 
@@ -784,6 +785,7 @@ p5_do_display( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 {
 	static const gchar *thisfn = "ofa_export_assistant_p5_do_display";
 	ofaExportAssistantPrivate *priv;
+	GtkWidget *parent;
 
 	g_return_if_fail( OFA_IS_EXPORT_ASSISTANT( self ));
 
@@ -794,8 +796,11 @@ p5_do_display( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 
 	priv = self->priv;
 
-	priv->progress_bar =
-			my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-bar" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-bar-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->p5_bar = my_progress_bar_new();
+	my_progress_bar_attach_to( priv->p5_bar, GTK_CONTAINER( parent ));
+
 	priv->p5_page = page;
 
 	priv->base = ( ofaIExportable * ) g_object_new( st_types[priv->p1_idx].get_type(), NULL );
@@ -803,6 +808,10 @@ p5_do_display( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 		error_no_interface( self );
 		return;
 	}
+
+	/* message provided by the ofaIExportable interface */
+	g_signal_connect(
+			G_OBJECT( priv->base ), "progress", G_CALLBACK( p5_on_progress ), self );
 
 	g_idle_add(( GSourceFunc ) export_data, self );
 }
@@ -820,9 +829,7 @@ export_data( ofaExportAssistant *self )
 	/* first, export */
 	ok = ofa_iexportable_export_to_path(
 			priv->base, priv->p3_fname, priv->p2_export_settings,
-			MY_WINDOW( self )->prot->dossier,
-			( ofaIExportableFnDouble ) set_progress_double,
-			( ofaIExportableFnText ) set_progress_text, self );
+			MY_WINDOW( self )->prot->dossier, self );
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name(
@@ -854,7 +861,7 @@ export_data( ofaExportAssistant *self )
 			GTK_ASSISTANT( my_window_get_toplevel( MY_WINDOW( self ))), priv->p5_page, TRUE );
 
 	/* do not continue and remove from idle callbacks list */
-	return( FALSE );
+	return( G_SOURCE_REMOVE );
 }
 
 static void
@@ -874,22 +881,12 @@ error_no_interface( const ofaExportAssistant *self )
 }
 
 static void
-set_progress_double( const ofaExportAssistant *self, gdouble progress )
+p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text, ofaExportAssistant *self )
 {
 	ofaExportAssistantPrivate *priv;
 
 	priv = self->priv;
 
-	gtk_progress_bar_set_fraction( GTK_PROGRESS_BAR( priv->progress_bar ), progress );
-}
-
-static void
-set_progress_text( const ofaExportAssistant *self, const gchar *text )
-{
-	ofaExportAssistantPrivate *priv;
-
-	priv = self->priv;
-
-	gtk_progress_bar_set_show_text( GTK_PROGRESS_BAR( priv->progress_bar ), TRUE );
-	gtk_progress_bar_set_text( GTK_PROGRESS_BAR( priv->progress_bar ), text );
+	g_signal_emit_by_name( priv->p5_bar, "double", progress );
+	g_signal_emit_by_name( priv->p5_bar, "text", text );
 }
