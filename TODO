@@ -289,14 +289,23 @@
  461 2014-11-24 ExportAssistant: implement 'on_new_profile'
 
  462 2014-11-26 move ofoBat/ofoBatLine to ofaBoxed
+     2015- 1- 5 really only required when ofoBat/ofoBatLine will implement
+                the ofaIExportable interface - so it is not urgent
 
  463 2014-11-26 move ofoCurrency to ofaBoxed
+     2015- 1- 5 really only required when ofoCurrency will implement the
+                ofaIExportable interface *and* if exports any amounts -
+                so it is not urgent
 
  464 2014-11-26 move ofoDossier to ofaBoxed
-
- 465 2014-11-26 move ofoEntry to ofaBoxed
+     2015- 1- 5 really only required when ofoDossier will implement the
+                ofaIExportable interface *and* if exports any amounts -
+                so it is not urgent
 
  466 2014-11-26 move ofoOpeTemplate to ofaBoxed
+     2015- 1- 5 really only required when ofoDossier will implement the
+                ofaIExportable interface *and* if exports any amounts -
+                so it is not urgent
 
  469 2014-11-28 ExportSettings: the field separator should be free 
                 (but not empty nor space) instead of having to select
@@ -308,9 +317,6 @@
  472 2014-11-29 set dialogs readonly if not current exercice
 
  473 2014-11-29 DossierDelete review: delete exercice vs. delete dossier
-
- 476 2014-11-29 DossierManager review: have a Dossier treeview and an
-                Exercices treeview
 
  477 2014-11-30 Dossier Open option should be insensitive when a dossier
                 is already opened
@@ -345,10 +351,6 @@
                 dynamically computed from the list of classes which
                 implement the ofaIImportable interface
 
- 521 2014-12-11 IExportable: use myProgressBar
-                getting rid of defined callbacks
-     2015- 1- 5 done
-
  522 2014-12-12 pieces of dialogs should have the corresponding code
                 isolated and named accordingly (see ofaFileFormatPiece)
 
@@ -356,17 +358,6 @@
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
                 import ledgers:  0.02982 s/row (9 rows)
                 import entries:  0.13268 s/row (2431 rows)
-
- 547 2014-12-31 migrate local sCurrency used for currency balance 
-                computings to the global ofsCurrency struct declaration
-     2015- 1- 5 done
-
- 552 2015- 1- 5 at least classes which export an amount should use the
-                ofaBox definitions as ofaBox is able to output the data
-                following the ofaFileFormat recommandations:
-                ofoEntry
-                ofoLedger
-     2015- 1- 5 done
 
  553
 
@@ -2114,6 +2105,9 @@
                 aligned, have other columns (reconcil) on the left
      2014-11-22 done - svn #4143
 
+ 465 2014-11-26 move ofoEntry to ofaBoxed
+     2015- 1- 5 duplicate of #552
+
  467 2014-11-26 move ofoRate to ofaBoxed
      2014-11-19 done - svn #4344
 
@@ -2138,6 +2132,10 @@
                 select the dossier name, the target database, extract
                 the date of the exercice and the status from the archive
      2014-12-29 done - svn #4387
+
+ 476 2014-11-29 DossierManager review: have a Dossier treeview and an
+                Exercices treeview
+     2015- 1- 5 done
 
  478 2014-11-30 have a decimal dot combo
      2014-11-30 done - svn #4215
@@ -2262,6 +2260,10 @@
  518 2014-12-10 DossierCur: try to make transient vs the main window
      2014-12-18 obsoleted as merged in ofaExeForwardPiece
 
+ 521 2014-12-11 IExportable: use myProgressBar
+                getting rid of defined callbacks
+     2015- 1- 5 done - svn #4407
+
  523 2014-12-12 review BAT import
      2014-12-22 done - svn #4365
 
@@ -2360,6 +2362,10 @@
                 reasons.
                 This is ok in documentation and database.
 
+ 547 2014-12-31 migrate local sCurrency used for currency balance 
+                computings to the global ofsCurrency struct declaration
+     2015- 1- 5 done - svn #4407
+
  548 2014-12-31 Rate: the rate mnemo should be compared against keywords
                 reserved by operation template formulas
      2015- 1- 4 no as the RATE() macro may use any rate mnemo
@@ -2378,6 +2384,13 @@
  551 2015- 1- 4 ofaPage: the v_preremove virtual should be replaced by
                 a trigger on "page-removed" signal
      2015- 1- 4 done - svn #4406
+
+ 552 2015- 1- 5 at least classes which export an amount should use the
+                ofaBox definitions as ofaBox is able to output the data
+                following the ofaFileFormat recommandations:
+                ofoEntry
+                ofoLedger
+     2015- 1- 5 done - svn #4407
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

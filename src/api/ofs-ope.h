@@ -102,16 +102,16 @@ enum {
 
 ofsOpe  *ofs_ope_new             ( const ofoOpeTemplate *template );
 
-void     ofs_ope_compute_formulas( ofsOpe *ope,
+void     ofs_ope_apply_template  ( ofsOpe *ope,
 										ofoDossier *dossier,
 										const ofoOpeTemplate *template );
 
-gboolean ofs_ope_is_valid        ( ofsOpe *ope,
+gboolean ofs_ope_is_valid        ( const ofsOpe *ope,
 										ofoDossier *dossier,
 										gchar **message,
 										GList **currencies );
 
-GList   *ofs_ope_generate_entries( ofsOpe *ope,
+GList   *ofs_ope_generate_entries( const ofsOpe *ope,
 										ofoDossier *dossier );
 
 void     ofs_ope_free            ( ofsOpe *ope );

@@ -66,11 +66,11 @@ typedef struct {
 /* an helper structure when checking operation
  */
 typedef struct {
-	ofsOpe     *ope;
-	ofoDossier *dossier;
-	ofoLedger  *ledger;
-	gchar      *message;
-	GList      *currencies;
+	const ofsOpe *ope;
+	ofoDossier   *dossier;
+	ofoLedger    *ledger;
+	gchar        *message;
+	GList        *currencies;
 }
 	sChecker;
 
@@ -130,7 +130,7 @@ ofs_ope_new( const ofoOpeTemplate *template )
 }
 
 /**
- * ofs_ope_compute_formulas:
+ * ofs_ope_apply_template:
  * @ope: [in]: the input operation.
  * @dossier: the dossier
  * @template: [in]: the used operation template.
@@ -141,7 +141,7 @@ ofs_ope_new( const ofoOpeTemplate *template )
  * Have to scan all the fields of the operation template
  */
 void
-ofs_ope_compute_formulas( ofsOpe *ope, ofoDossier *dossier, const ofoOpeTemplate *template )
+ofs_ope_apply_template( ofsOpe *ope, ofoDossier *dossier, const ofoOpeTemplate *template )
 {
 	sHelper *helper;
 
@@ -739,7 +739,7 @@ rate( sHelper *helper, const gchar *content )
  *  all chcecks are ok.
  */
 gboolean
-ofs_ope_is_valid( ofsOpe *ope, ofoDossier *dossier, gchar **message, GList **currencies )
+ofs_ope_is_valid( const ofsOpe *ope, ofoDossier *dossier, gchar **message, GList **currencies )
 {
 	sChecker *checker;
 	gboolean ok, oki;
@@ -785,7 +785,7 @@ ofs_ope_is_valid( ofsOpe *ope, ofoDossier *dossier, gchar **message, GList **cur
 static gboolean
 check_for_ledger( sChecker *checker )
 {
-	ofsOpe *ope;
+	const ofsOpe *ope;
 	gboolean ok;
 	ofoLedger *ledger;
 
@@ -821,7 +821,7 @@ check_for_ledger( sChecker *checker )
 static gboolean
 check_for_dates( sChecker *checker )
 {
-	ofsOpe *ope;
+	const ofsOpe *ope;
 	gboolean ok;
 	GDate dmin;
 	gint cmp;
@@ -871,7 +871,7 @@ check_for_dates( sChecker *checker )
 static gboolean
 check_for_all_entries( sChecker *checker )
 {
-	ofsOpe *ope;
+	const ofsOpe *ope;
 	ofsOpeDetail *detail;
 	gboolean ok;
 	GList *it;
@@ -970,7 +970,7 @@ check_for_currencies( sChecker *checker )
  * ofs_ope_generate_entries:
  */
 GList *
-ofs_ope_generate_entries( ofsOpe *ope, ofoDossier *dossier )
+ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 {
 	GList *entries;
 	ofsOpeDetail *detail;

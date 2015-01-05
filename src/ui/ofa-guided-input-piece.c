@@ -1266,7 +1266,7 @@ is_dialog_validable( ofaGuidedInputPiece *piece )
 	ope = priv->ope;
 	ofs_currency_list_free( &priv->currency_list );
 
-	ofs_ope_compute_formulas( ope, priv->dossier, priv->model );
+	ofs_ope_apply_template( ope, priv->dossier, priv->model );
 
 	/* update the piece dialog with the new content of operation */
 	for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
