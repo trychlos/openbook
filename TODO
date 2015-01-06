@@ -316,8 +316,6 @@
 
  472 2014-11-29 set dialogs readonly if not current exercice
 
- 473 2014-11-29 DossierDelete review: delete exercice vs. delete dossier
-
  477 2014-11-30 Dossier Open option should be insensitive when a dossier
                 is already opened
 
@@ -358,13 +356,20 @@
                 isolated and named accordingly (see ofaFileFormatPiece)
      2015- 1- 5 review ofaDossierDeletePrefs, and do not unref from
                 ofa_preferences_dispose
+     2015- 1- 6 see #553 if DossierDeletePrefs should be kept ?
 
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
                 import ledgers:  0.02982 s/row (9 rows)
                 import entries:  0.13268 s/row (2431 rows)
 
- 553
+ 553 2015- 1- 6 deleting a dossier only removes its references from
+                settings - so DossierDelete and DossierDeletePrefs
+                become useless (see also #522)
+
+ 554 2015- 1- 6 Preferences: saves ExportSettings as a null string !?
+
+ 555
 
 -----------------------------------------------------------------------
  DONE
@@ -2126,6 +2131,10 @@
 
  471 2014-11-29 migrate to ofaDbms
      2014-11-29 done - svn #4192
+
+ 473 2014-11-29 DossierDelete review: delete exercice vs. delete dossier
+     2015- 1- 6 deleting a dossier leaves unchanged the database(s)
+     2015- 1- 6 done - svn #4410
 
  474 2014-11-29 st_global datasets should be owned by the dossier
      2014-11-30 done - svn #4203
