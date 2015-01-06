@@ -342,6 +342,9 @@
 
  516 2014-12- 9 on exe_dates_changed: recompute rough vs. future entries
                 + forbid that an entry becomes in the past before exercice
+     2015- 1- 6 actually all changes on begin and end exercice dates 
+                should be forbidden, or a remediation be provided (which
+                is possible in all cases)
 
  519 2014-12-11 ExportAssistant: the list of exportables should be
                 dynamically computed from the list of classes which

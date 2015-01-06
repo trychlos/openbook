@@ -825,18 +825,20 @@ ofa_settings_dossier_get_keys( const gchar *dname )
  * ofa_settings_remove_dossier:
  */
 void
-ofa_settings_remove_dossier( const gchar *name )
+ofa_settings_remove_dossier( const gchar *dname )
 {
 	static const gchar *thisfn = "ofa_settings_remove_dossier";
 	gchar *group;
 
-	g_debug( "%s: name=%s", thisfn, name );
+	g_debug( "%s: name=%s", thisfn, dname );
 
 	settings_new();
 
-	group = get_dossier_group_from_name( name );
-	g_key_file_remove_group( st_user_settings->priv->keyfile, group, NULL );
+	group = get_dossier_group_from_name( dname );
+	g_key_file_remove_group( st_dossier_settings->priv->keyfile, group, NULL );
 	g_free( group );
+
+	write_key_file( st_dossier_settings );
 }
 
 /**

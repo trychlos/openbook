@@ -419,6 +419,24 @@ ofa_dossier_treeview_add_row( ofaDossierTreeview *view, const gchar *dname )
 }
 
 /**
+ * ofa_dossier_treeview_remove_row:
+ */
+void
+ofa_dossier_treeview_remove_row( ofaDossierTreeview *view, const gchar *dname )
+{
+	ofaDossierTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+
+	priv = view->priv;
+
+	if( !priv->dispose_has_run ){
+
+		ofa_dossier_store_remove_row( priv->store, dname );
+	}
+}
+
+/**
  * ofa_dossier_treeview_get_selected:
  *
  * Return: the name of the currently selected dossier, as a newly

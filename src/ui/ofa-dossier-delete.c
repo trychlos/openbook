@@ -69,14 +69,14 @@ struct _ofaDossierDeletePrivate {
 	GtkWidget             *btn_ok;
 };
 
-static const gchar  *st_ui_xml           = PKGUIDIR "/ofa-dossier-delete.ui";
-static const gchar  *st_ui_id            = "DossierDeleteDlg";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-delete.ui";
+static const gchar *st_ui_id            = "DossierDeleteDlg";
 
-static const gchar  *st_delete_prefs_xml = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
-static const gchar  *st_delete_prefs_ui  = "DossierDeleteWindow";
+static const gchar *st_delete_prefs_xml = PKGUIDIR "/ofa-dossier-delete-prefs.piece.ui";
+static const gchar *st_delete_prefs_ui  = "DossierDeleteWindow";
 
 /* keep the dbserver admin password */
-static       gchar  *st_passwd           = NULL;
+static       gchar *st_passwd           = NULL;
 
 G_DEFINE_TYPE( ofaDossierDelete, ofa_dossier_delete, MY_TYPE_DIALOG )
 

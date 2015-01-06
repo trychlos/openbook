@@ -287,7 +287,8 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 	dname = ofa_dossier_treeview_get_selected( priv->tview );
 
 	if( confirm_delete( self, dname )){
-
+		ofa_settings_remove_dossier( dname );
+		ofa_dossier_treeview_remove_row( priv->tview, dname );
 	}
 
 	g_free( dname );
@@ -339,8 +340,9 @@ confirm_delete( ofaDossierManager *self, const gchar *dname )
 	gchar *str;
 
 	str = g_strdup_printf(
-			_( "You are about to remove the '%s' dossier.\n"
-				"This operation will not be recoverable.\n"
+			_( "You are about to delete the '%s' dossier.\n"
+				"This operation will remove the dossier from the settings, "
+				"letting the database(s) unchanged.\n"
 				"Are your sure ?" ),
 					dname );
 

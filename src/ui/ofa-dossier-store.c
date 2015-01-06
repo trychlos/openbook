@@ -53,6 +53,7 @@ static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter
 static void     load_dataset( ofaDossierStore *store );
 static void     insert_row( ofaDossierStore *store, const gchar *dname );
 static void     set_row( ofaDossierStore *store, const gchar *dname, GtkTreeIter *iter );
+static gboolean get_iter_from_dname( ofaDossierStore *store, const gchar *dname, GtkTreeIter *iter );
 
 G_DEFINE_TYPE( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE )
 
@@ -231,4 +232,48 @@ ofa_dossier_store_add_row( ofaDossierStore *store, const gchar *dname, const gch
 				DOSSIER_COL_DBMS,  dbms,
 				-1 );
 	}
+}
+
+/**
+ * ofa_dossier_store_remove_row:
+ */
+void
+ofa_dossier_store_remove_row( ofaDossierStore *store, const gchar *dname )
+{
+	ofaDossierStorePrivate *priv;
+	GtkTreeIter iter;
+
+	g_return_if_fail( store && OFA_IS_DOSSIER_STORE( store ));
+
+	priv = store->priv;
+
+	if( !priv->dispose_has_run ){
+
+		if( get_iter_from_dname( store, dname, &iter )){
+			gtk_list_store_remove( GTK_LIST_STORE( store ), &iter );
+		}
+	}
+}
+
+static gboolean
+get_iter_from_dname( ofaDossierStore *store, const gchar *dname, GtkTreeIter *iter )
+{
+	gchar *row_dname;
+	gint cmp;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, DOSSIER_COL_DNAME, &row_dname, -1 );
+			cmp = g_utf8_collate( row_dname, dname );
+			g_free( row_dname );
+			if( cmp == 0 ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
 }
