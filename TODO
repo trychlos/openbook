@@ -367,8 +367,6 @@
                 settings - so DossierDelete and DossierDeletePrefs
                 become useless (see also #522)
 
- 554 2015- 1- 6 Preferences: saves ExportSettings as a null string !?
-
  555
 
 -----------------------------------------------------------------------
@@ -2405,6 +2403,9 @@
                 ofoEntry
                 ofoLedger
      2015- 1- 5 done - svn #4407
+
+ 554 2015- 1- 6 Preferences: saves ExportSettings as a null string !?
+     2015- 1- 6 done - svn #4411
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
