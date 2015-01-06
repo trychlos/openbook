@@ -724,6 +724,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
+#if 0
 	/* defined post v1 */
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ASSETS ("
@@ -760,6 +761,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
+#endif
 
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
@@ -1053,6 +1055,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 		return( FALSE );
 	}
 
+#if 0
 	/* defined post v1 */
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RECURRENT ("
@@ -1067,6 +1070,7 @@ dbmodel_to_v1( const ofoDossier *dossier )
 			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
+#endif
 
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES ("
@@ -1081,11 +1085,12 @@ dbmodel_to_v1( const ofoDossier *dossier )
 
 	if( !ofa_dbms_query( priv->dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES_VAL ("
+			"	RAT_UNUSED        INTEGER AUTO_INCREMENT PRIMARY KEY COMMENT 'An unused counter to have a unique key with NULL values',"
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL        COMMENT 'Mnemonic identifier of the rate',"
 			"	RAT_VAL_BEG       DATE    DEFAULT NULL              COMMENT 'Validity begin date',"
 			"	RAT_VAL_END       DATE    DEFAULT NULL              COMMENT 'Validity end date',"
 			"	RAT_VAL_RATE      DECIMAL(20,5)                     COMMENT 'Rate value',"
-			"	CONSTRAINT PRIMARY KEY (RAT_MNEMO,RAT_VAL_BEG,RAT_VAL_END)"
+			"	UNIQUE (RAT_MNEMO,RAT_VAL_BEG,RAT_VAL_END)"
 			") CHARACTER SET utf8", TRUE )){
 		return( FALSE );
 	}
