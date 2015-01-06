@@ -51,6 +51,7 @@ struct _ofaOpeTemplatesBookPrivate {
 	ofaMainWindow       *main_window;
 	ofoDossier          *dossier;
 	GList               *dos_handlers;
+	gchar               *dname;			/* to be used after dossier finalization */
 
 	ofaOpeTemplateStore *ope_store;
 	GList               *ope_handlers;
@@ -124,6 +125,7 @@ static void
 ope_templates_book_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ope_templates_book_finalize";
+	ofaOpeTemplatesBookPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -131,6 +133,9 @@ ope_templates_book_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATES_BOOK( instance ));
 
 	/* free data members here */
+	priv = OFA_OPE_TEMPLATES_BOOK( instance )->priv;
+
+	g_free( priv->dname );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ope_templates_book_parent_class )->finalize( instance );
@@ -391,7 +396,6 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 	ofaOpeTemplatesBookPrivate *priv;
 	gulong handler;
 	GList *strlist, *it;
-	const gchar *dname;
 
 	g_debug( "%s: book=%p, main_window=%p", thisfn, ( void * ) book, ( void * ) main_window );
 
@@ -412,8 +416,8 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 		/* create one page per ledger
 		 * if strlist is set, then create one page per ledger
 		 * other needed pages will be created on fly */
-		dname = ofo_dossier_get_name( priv->dossier );
-		strlist = ofa_settings_dossier_get_string_list( dname, st_ledger_order );
+		priv->dname = g_strdup( ofo_dossier_get_name( priv->dossier ));
+		strlist = ofa_settings_dossier_get_string_list( priv->dname, st_ledger_order );
 		for( it=strlist ; it ; it=it->next ){
 			book_get_page_by_ledger( book, ( const gchar * ) it->data, TRUE );
 		}
@@ -1309,7 +1313,7 @@ write_settings( ofaOpeTemplatesBook *book )
 	GList *strlist;
 	gint i, count;
 	GtkWidget *page;
-	const gchar *mnemo, *dname;
+	const gchar *mnemo;
 
 	priv = book->priv;
 	strlist = NULL;
@@ -1322,8 +1326,7 @@ write_settings( ofaOpeTemplatesBook *book )
 		strlist = g_list_append( strlist, ( gpointer ) mnemo );
 	}
 
-	dname = ofo_dossier_get_name( priv->dossier );
-	ofa_settings_dossier_set_string_list( dname, st_ledger_order, strlist );
+	ofa_settings_dossier_set_string_list( priv->dname, st_ledger_order, strlist );
 
 	g_list_free( strlist );
 }
