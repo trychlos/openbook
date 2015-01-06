@@ -390,6 +390,7 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 	ofaOpeTemplatesBookPrivate *priv;
 	gulong handler;
 	GList *strlist, *it;
+	const gchar *dname;
 
 	g_debug( "%s: book=%p, main_window=%p", thisfn, ( void * ) book, ( void * ) main_window );
 
@@ -410,7 +411,8 @@ ofa_ope_templates_book_set_main_window( ofaOpeTemplatesBook *book, ofaMainWindow
 		/* create one page per ledger
 		 * if strlist is set, then create one page per ledger
 		 * other needed pages will be created on fly */
-		strlist = ofa_settings_get_string_list( st_ledger_order );
+		dname = ofo_dossier_get_name( priv->dossier );
+		strlist = ofa_settings_dossier_get_string_list( dname, st_ledger_order );
 		for( it=strlist ; it ; it=it->next ){
 			book_get_page_by_ledger( book, ( const gchar * ) it->data, TRUE );
 		}
@@ -1277,18 +1279,21 @@ write_settings( ofaOpeTemplatesBook *book )
 	GList *strlist;
 	gint i, count;
 	GtkWidget *page;
-	const gchar *mnemo;
+	const gchar *mnemo, *dname;
 
 	priv = book->priv;
+	strlist = NULL;
 
 	/* record in settings the pages position */
-	strlist = NULL;
 	count = gtk_notebook_get_n_pages( priv->book );
 	for( i=0 ; i<count ; ++i ){
 		page = gtk_notebook_get_nth_page( priv->book, i );
 		mnemo = ( const gchar * ) g_object_get_data( G_OBJECT( page ), DATA_PAGE_LEDGER );
 		strlist = g_list_append( strlist, ( gpointer ) mnemo );
 	}
-	ofa_settings_set_string_list( st_ledger_order, strlist );
+
+	dname = ofo_dossier_get_name( priv->dossier );
+	ofa_settings_dossier_set_string_list( dname, st_ledger_order, strlist );
+
 	g_list_free( strlist );
 }

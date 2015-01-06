@@ -367,7 +367,13 @@
                 settings - so DossierDelete and DossierDeletePrefs
                 become useless (see also #522)
 
- 555
+ 555 2015- 1- 6 OpeTemplateSelect: creating a new ope template doesn't
+                show it after creation
+
+ 556 2015- 1- 6 when on a new dossier, the OpeTemplateSelect dialog
+                shows 'unclassed' ledgers
+
+ 557
 
 -----------------------------------------------------------------------
  DONE
