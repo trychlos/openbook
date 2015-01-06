@@ -331,7 +331,7 @@ set_row( ofaOpeTemplateStore *store, ofoDossier *dossier, const ofoOpeTemplate *
  * @bvalid: [allow-none][out]: set to TRUE if the returned iter is
  *  valid.
  *
- * rows are sorted by account number
+ * rows are sorted by mnemonic
  * we exit the search as soon as we get a number greater than the
  * searched one
  *
@@ -451,6 +451,9 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 
 		} else if( find_row_by_mnemo( store, mnemo, &iter, NULL )){
 			set_row( store, dossier, OFO_OPE_TEMPLATE( object ), &iter);
+
+		} else {
+			g_debug( "%s: not found: mnemo=%s", thisfn, mnemo );
 		}
 	}
 }

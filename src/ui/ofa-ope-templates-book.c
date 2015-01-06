@@ -108,6 +108,7 @@ static void       dossier_signals_connect( ofaOpeTemplatesBook *book );
 static void       on_new_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesBook *book );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, ofaOpeTemplatesBook *book );
 static void       on_updated_ledger_label( ofaOpeTemplatesBook *book, ofoLedger *ledger );
+static void       on_updated_ope_template( ofaOpeTemplatesBook *book, ofoOpeTemplate *template );
 static void       on_deleted_object( ofoDossier *dossier, ofoBase *object, ofaOpeTemplatesBook *book );
 static void       on_deleted_ledger_object( ofaOpeTemplatesBook *book, ofoLedger *ledger );
 static void       on_reloaded_dataset( ofoDossier *dossier, GType type, ofaOpeTemplatesBook *book );
@@ -496,6 +497,8 @@ book_get_page_by_ledger( ofaOpeTemplatesBook *book, const gchar *ledger, gboolea
 		if( !found ){
 			g_warning( "%s: unable to create the page for ledger=%s", thisfn, ledger );
 			return( NULL );
+		} else {
+			gtk_widget_show_all( found );
 		}
 	}
 
@@ -987,6 +990,9 @@ on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, o
 
 	if( OFO_IS_LEDGER( object )){
 		on_updated_ledger_label( book, OFO_LEDGER( object ));
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
+		on_updated_ope_template( book, OFO_OPE_TEMPLATE( object ));
 	}
 }
 
@@ -1008,6 +1014,30 @@ on_updated_ledger_label( ofaOpeTemplatesBook *book, ofoLedger *ledger )
 		g_return_if_fail( GTK_IS_WIDGET( page_w ));
 		gtk_notebook_set_tab_label_text( priv->book, page_w, ofo_ledger_get_label( ledger ));
 	}
+}
+
+/*
+ * we do not have any way to know if the ledger attached to the operation
+ *  template has changed or not - So just make sure the correct page is
+ *  shown
+ */
+static void
+on_updated_ope_template( ofaOpeTemplatesBook *book, ofoOpeTemplate *template )
+{
+	ofaOpeTemplatesBookPrivate *priv;
+	GtkWidget *page_w;
+	const gchar *ledger;
+	gint page_n;
+
+	priv = book->priv;
+
+	ledger = ofo_ope_template_get_ledger( template );
+	page_w = book_get_page_by_ledger( book, ledger, TRUE );
+	g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
+	select_row_by_mnemo( book, ofo_ope_template_get_mnemo( template ));
+
+	page_n = gtk_notebook_page_num( priv->book, page_w );
+	gtk_notebook_set_current_page( priv->book, page_n );
 }
 
 /*

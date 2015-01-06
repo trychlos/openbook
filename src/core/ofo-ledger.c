@@ -593,6 +593,7 @@ ofo_ledger_new( void )
 	ofoLedger *ledger;
 
 	ledger = g_object_new( OFO_TYPE_LEDGER, NULL );
+	OFO_BASE( ledger )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( ledger );
 }
