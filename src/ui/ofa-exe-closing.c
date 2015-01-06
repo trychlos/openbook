@@ -475,7 +475,7 @@ p3_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 }
 
 /*
- * check if the page is validable
+ * begins the checks before exercice closing
  */
 static void
 p3_checks( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
@@ -485,9 +485,10 @@ p3_checks( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget 
 
 	priv = self->priv;
 
+	gtk_assistant_set_page_complete( assistant, page_widget, priv->p3_done );
+
 	if( !priv->p3_done ){
 
-		gtk_assistant_set_page_complete( assistant, page_widget, FALSE );
 		page_num = gtk_assistant_get_current_page( assistant );
 
 		priv->assistant = assistant;
@@ -500,6 +501,9 @@ p3_checks( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget 
 	}
 }
 
+/*
+ * 1/ check that entries are balanced per currency
+ */
 static gboolean
 p3_check_entries_balance( ofaExeClosing *self )
 {
@@ -515,11 +519,16 @@ p3_check_entries_balance( ofaExeClosing *self )
 			MY_WINDOW( self )->prot->dossier, &priv->p3_entries_list, bar, grid );
 	p3_check_status( self, priv->p3_entries_ok, "p3-entry-ok" );
 
-	/* do not continue and remove from idle callbacks list */
+	/* next: check for ledgers balances */
 	g_idle_add(( GSourceFunc ) p3_check_ledgers_balance, self );
-	return( FALSE );
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
 }
 
+/*
+ * 2/ check that ledgers are balanced per currency
+ */
 static gboolean
 p3_check_ledgers_balance( ofaExeClosing *self )
 {
@@ -535,11 +544,16 @@ p3_check_ledgers_balance( ofaExeClosing *self )
 			MY_WINDOW( self )->prot->dossier, &priv->p3_ledgers_list, bar, grid );
 	p3_check_status( self, priv->p3_ledgers_ok, "p3-ledger-ok" );
 
-	/* do not continue and remove from idle callbacks list */
+	/* next: check for accounts balances */
 	g_idle_add(( GSourceFunc ) p3_check_accounts_balance, self );
-	return( FALSE );
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
 }
 
+/*
+ * 3/ check that accounts are balanced per currency
+ */
 static gboolean
 p3_check_accounts_balance( ofaExeClosing *self )
 {
@@ -556,10 +570,13 @@ p3_check_accounts_balance( ofaExeClosing *self )
 			MY_WINDOW( self )->prot->dossier, &priv->p3_accounts_list, bar, grid );
 	p3_check_status( self, priv->p3_accounts_ok, "p3-account-ok" );
 
-	/* do not continue and remove from idle callbacks list */
+	/* next: if all checks complete and ok ?
+	 * set priv->p3_done */
 	complete = p3_info_checks( self );
 	gtk_assistant_set_page_complete( priv->assistant, priv->page_widget, complete );
-	return( FALSE );
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
 }
 
 static myProgressBar *
@@ -623,6 +640,10 @@ p3_check_status( ofaExeClosing *self, gboolean ok, const gchar *w_name )
 	gtk_widget_override_color( label, GTK_STATE_FLAG_NORMAL, &color );
 }
 
+/*
+ * after the end of individual checks (entries, ledgers, accounts)
+ * check that the balances are the sames
+ */
 static gboolean
 p3_info_checks( ofaExeClosing *self )
 {
@@ -743,7 +764,7 @@ p5_validate_entries( ofaExeClosing *self )
 
 	/* do not continue and remove from idle callbacks list */
 	g_idle_add(( GSourceFunc ) p5_solde_accounts, self );
-	return( FALSE );
+	return( G_SOURCE_REMOVE );
 }
 
 /*

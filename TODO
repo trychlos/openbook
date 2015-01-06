@@ -353,6 +353,8 @@
 
  522 2014-12-12 pieces of dialogs should have the corresponding code
                 isolated and named accordingly (see ofaFileFormatPiece)
+     2015- 1- 5 review ofaDossierDeletePrefs, and do not unref from
+                ofa_preferences_dispose
 
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)

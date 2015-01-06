@@ -43,12 +43,16 @@ G_BEGIN_DECLS
  *               |            |               usage              |
  *               | display as | display | entry | sql | filename |
  * --------------+------------+---------+-------+-----+----------+
- * @MY_DATE_MMYY |  Mmm yyyy  |    X    |       |     |          |
  * @MY_DATE_DMMM | d mmm yyyy |    X    |       |     |          |
+ * @MY_DATE_MMYY |  Mmm yyyy  |    X    |       |     |          |
  * @MY_DATE_DMYY | dd/mm/yyyy |    X    |   X   |     |          |
  * @MY_DATE_SQL  | yyyy-mm-dd |         |       |  X  |          |
  * @MY_DATE_YYMD |  yyyymmdd  |         |       |     |     X    |
  * --------------+------------+---------+-------+-----+----------+
+ *
+ * MAINTAINER_NOTE: only add a new format at the end of the list, as the
+ * format number is stored in user settings + update my-date.c and
+ * my-editable-date.c
  */
 typedef enum {
 	MY_DATE_FIRST = 1,					/* formats must be greater than zero */

@@ -181,7 +181,6 @@ preferences_dispose( GObject *instance )
 		priv = OFA_PREFERENCES( instance )->priv;
 
 		g_clear_object( &priv->dd_prefs );
-		g_clear_object( &priv->export_settings );
 
 		g_list_free_full( priv->plugs, ( GDestroyNotify ) g_free );
 		priv->plugs = NULL;

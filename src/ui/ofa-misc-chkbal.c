@@ -33,23 +33,16 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
+#include "api/ofs-currency.h"
 
 #include "ui/ofa-misc-chkbal.h"
-
-typedef struct {
-	gchar    *currency;
-	ofxAmount debit;
-	ofxAmount credit;
-}
-	sBalance;
 
 static void      impute_acc_balance( GList **balances, const ofoAccount *account, const gchar *currency, ofaBalancesGrid *grid );
 static void      impute_ent_balance( GList **balances, const ofoEntry *entry, const gchar *currency, ofaBalancesGrid *grid );
 static void      impute_led_balance( GList **balances, const ofoLedger *ledger, const gchar *currency, ofaBalancesGrid *grid );
-static sBalance *get_balance_for_currency( GList **list, const gchar *currency );
+static ofsCurrency *get_balance_for_currency( GList **list, const gchar *currency );
 static gboolean  check_balances( GList *balances );
 static gboolean  cmp_lists( GList *list_a, GList *list_b );
-static void      free_balance( sBalance *sbal );
 
 /**
  * ofa_misc_chkbalacc_run:
@@ -107,7 +100,7 @@ ofa_misc_chkbalacc_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 static void
 impute_acc_balance( GList **balances, const ofoAccount *account, const gchar *currency, ofaBalancesGrid *grid )
 {
-	sBalance *sbal;
+	ofsCurrency *sbal;
 
 	sbal = get_balance_for_currency( balances, currency );
 	sbal->debit +=
@@ -184,7 +177,7 @@ ofa_misc_chkbalent_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 static void
 impute_ent_balance( GList **balances, const ofoEntry *entry, const gchar *currency, ofaBalancesGrid *grid )
 {
-	sBalance *sbal;
+	ofsCurrency *sbal;
 
 	sbal = get_balance_for_currency( balances, currency );
 	sbal->debit += ofo_entry_get_debit( entry );
@@ -255,7 +248,7 @@ ofa_misc_chkballed_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 static void
 impute_led_balance( GList **balances, const ofoLedger *ledger, const gchar *currency, ofaBalancesGrid *grid )
 {
-	sBalance *sbal;
+	ofsCurrency *sbal;
 
 	sbal = get_balance_for_currency( balances, currency );
 	sbal->debit +=
@@ -268,17 +261,17 @@ impute_led_balance( GList **balances, const ofoLedger *ledger, const gchar *curr
 	g_signal_emit_by_name( grid, "update", currency, sbal->debit, sbal->credit );
 }
 
-static sBalance *
+static ofsCurrency *
 get_balance_for_currency( GList **list, const gchar *currency )
 {
 	GList *it;
-	sBalance *sbal;
+	ofsCurrency *sbal;
 	gboolean found;
 
 	found = FALSE;
 
 	for( it=*list ; it ; it=it->next ){
-		sbal = ( sBalance * ) it->data;
+		sbal = ( ofsCurrency * ) it->data;
 		if( !g_utf8_collate( sbal->currency, currency )){
 			found = TRUE;
 			break;
@@ -286,7 +279,7 @@ get_balance_for_currency( GList **list, const gchar *currency )
 	}
 
 	if( !found ){
-		sbal = g_new0( sBalance, 1 );
+		sbal = g_new0( ofsCurrency, 1 );
 		sbal->currency = g_strdup( currency );
 		*list = g_list_prepend( *list, sbal );
 	}
@@ -299,11 +292,11 @@ check_balances( GList *balances )
 {
 	gboolean ok;
 	GList *it;
-	sBalance *sbal;
+	ofsCurrency *sbal;
 
 	ok = TRUE;
 	for( it=balances ; it ; it=it->next ){
-		sbal = ( sBalance * ) it->data;
+		sbal = ( ofsCurrency * ) it->data;
 		ok &= ( sbal->debit == sbal->credit );
 	}
 
@@ -330,11 +323,11 @@ static gboolean
 cmp_lists( GList *list_a, GList *list_b )
 {
 	GList *it;
-	sBalance *sbal_a, *sbal_b;
+	ofsCurrency *sbal_a, *sbal_b;
 
 	/* check that all 'a' records are found and same in list_b */
 	for( it=list_a ; it ; it=it->next ){
-		sbal_a = ( sBalance * ) it->data;
+		sbal_a = ( ofsCurrency * ) it->data;
 		sbal_b = get_balance_for_currency( &list_b, sbal_a->currency );
 		if( sbal_a->debit != sbal_b->debit || sbal_a->credit != sbal_b->credit ){
 			return( FALSE );
@@ -343,7 +336,7 @@ cmp_lists( GList *list_a, GList *list_b )
 
 	/* check that all 'b' records are found and same in list_a */
 	for( it=list_b ; it ; it=it->next ){
-		sbal_b = ( sBalance * ) it->data;
+		sbal_b = ( ofsCurrency * ) it->data;
 		sbal_a = get_balance_for_currency( &list_a, sbal_b->currency );
 		if( sbal_b->debit != sbal_a->debit || sbal_b->credit != sbal_a->credit ){
 			return( FALSE );
@@ -353,18 +346,11 @@ cmp_lists( GList *list_a, GList *list_b )
 	return( TRUE );
 }
 
-static void
-free_balance( sBalance *sbal )
-{
-	g_free( sbal->currency );
-	g_free( sbal );
-}
-
 /**
  * ofa_misc_chkbal_free:
  */
 void
 ofa_misc_chkbal_free( GList *balances )
 {
-	g_list_free_full( balances, ( GDestroyNotify ) free_balance );
+	ofs_currency_list_free( &balances );
 }
