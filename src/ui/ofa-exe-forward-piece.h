@@ -74,7 +74,7 @@ void                ofa_exe_forward_piece_attach_to      ( ofaExeForwardPiece *p
 void                ofa_exe_forward_piece_set_main_window( ofaExeForwardPiece *prefs,
 																	ofaMainWindow *main_window );
 
-gboolean            ofa_exe_forward_piece_check          ( ofaExeForwardPiece *prefs,
+gboolean            ofa_exe_forward_piece_is_valid       ( ofaExeForwardPiece *prefs,
 																	gchar **msg );
 
 void                ofa_exe_forward_piece_apply          ( ofaExeForwardPiece *prefs );

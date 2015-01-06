@@ -531,7 +531,7 @@ is_dialog_valid( ofaDossierProperties *self )
 	}
 
 	if( priv->forward ){
-		if( !ofa_exe_forward_piece_check( priv->forward, &msg )){
+		if( !ofa_exe_forward_piece_is_valid( priv->forward, &msg )){
 			set_msgerr( self, msg );
 			g_free( msg );
 			return( FALSE );

@@ -2684,8 +2684,10 @@ do_update_currency_properties( ofoDossier *dossier, const ofaDbms *dbms, const g
 	GList *it;
 	GTimeVal stamp;
 	gchar *stamp_str;
+	gint count;
 
 	ok = ofa_dbms_query( dbms, "DELETE FROM OFA_T_DOSSIER_CUR", TRUE );
+	count = 0;
 
 	if( ok ){
 		priv = dossier->priv;
@@ -2697,9 +2699,10 @@ do_update_currency_properties( ofoDossier *dossier, const ofaDbms *dbms, const g
 					"	(%d,'%s','%s')", THIS_DOS_ID, sdet->currency, sdet->sld_account );
 			ok &= ofa_dbms_query( dbms, query, TRUE );
 			g_free( query );
+			count += 1;
 		}
 
-		if( ok ){
+		if( ok && count ){
 			my_utils_stamp_set_now( &stamp );
 			stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 			query = g_strdup_printf(

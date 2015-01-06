@@ -433,7 +433,7 @@ p2_check_for_complete( ofaExeClosing *self )
 	}
 
 	if( priv->p2_forward ){
-		complete &= ofa_exe_forward_piece_check( priv->p2_forward, &msg );
+		complete &= ofa_exe_forward_piece_is_valid( priv->p2_forward, &msg );
 		g_free( msg );
 	}
 

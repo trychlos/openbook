@@ -673,10 +673,10 @@ check_piece( ofaExeForwardPiece *self )
 }
 
 /**
- * ofa_exe_forward_piece_check:
+ * ofa_exe_forward_piece_is_valid:
  */
 gboolean
-ofa_exe_forward_piece_check( ofaExeForwardPiece *piece, gchar **msg )
+ofa_exe_forward_piece_is_valid( ofaExeForwardPiece *piece, gchar **msg )
 {
 	ofaExeForwardPiecePrivate *priv;
 	gboolean ok;

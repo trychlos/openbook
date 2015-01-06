@@ -369,9 +369,7 @@
 
  555 2015- 1- 6 OpeTemplateSelect: creating a new ope template doesn't
                 show it after creation
-
- 556 2015- 1- 6 when on a new dossier, the OpeTemplateSelect dialog
-                shows 'unclassed' ledgers
+     2015- 1- 6 unable to reproduce
 
  557
 
@@ -2412,6 +2410,10 @@
 
  554 2015- 1- 6 Preferences: saves ExportSettings as a null string !?
      2015- 1- 6 done - svn #4411
+
+ 556 2015- 1- 6 when on a new dossier, the OpeTemplateSelect dialog
+                shows 'unclassed' ledgers
+     2015- 1- 6 done - svn #4413
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
