@@ -897,10 +897,10 @@ do_update_export_page( ofaPreferences *self )
 	ofa_file_format_piece_apply( priv->export_settings );
 
 	text = gtk_file_chooser_get_current_folder( priv->p5_chooser );
-	if( text ){
+	if( text && g_utf8_strlen( text, -1 )){
 		ofa_settings_set_string( SETTINGS_EXPORT_FOLDER, text );
-		g_free( text );
 	}
+	g_free( text );
 }
 
 static void
