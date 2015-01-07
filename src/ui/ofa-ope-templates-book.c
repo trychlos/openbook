@@ -310,6 +310,7 @@ create_notebook( ofaOpeTemplatesBook *book )
 	if( !priv->book ){
 
 		priv->book = GTK_NOTEBOOK( gtk_notebook_new());
+
 		gtk_notebook_popup_enable( priv->book );
 		gtk_notebook_set_scrollable( priv->book, TRUE );
 
@@ -336,7 +337,10 @@ create_notebook( ofaOpeTemplatesBook *book )
 void
 ofa_ope_templates_book_attach_to( ofaOpeTemplatesBook *book, GtkContainer *parent )
 {
+	static const gchar *thisfn = "ofa_ope_templates_book_attach_to";
 	ofaOpeTemplatesBookPrivate *priv;
+
+	g_debug( "%s: book=%p, parent=%p", thisfn, ( void * ) book, ( void * ) parent );
 
 	g_return_if_fail( book && OFA_IS_OPE_TEMPLATES_BOOK( book ));
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));

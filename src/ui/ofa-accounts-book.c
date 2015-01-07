@@ -1067,6 +1067,9 @@ do_insert_account( ofaAccountsBook *self )
 
 	if( !ofa_account_properties_run( priv->main_window, account )){
 		g_object_unref( account );
+
+	} else {
+		select_row_by_number( self, ofo_account_get_number( account ));
 	}
 }
 

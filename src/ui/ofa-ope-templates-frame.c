@@ -322,7 +322,6 @@ get_top_grid( ofaOpeTemplatesFrame *frame )
 		gtk_grid_attach( priv->grid, alignment, 0, 0, 1, 1 );
 
 		priv->book = ofa_ope_templates_book_new();
-
 		ofa_ope_templates_book_attach_to( priv->book, GTK_CONTAINER( alignment ));
 
 		g_signal_connect(

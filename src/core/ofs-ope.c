@@ -101,6 +101,7 @@ static const gchar *get_account_currency( sHelper *helper, const gchar *content 
 static gdouble      eval( sHelper *helper, const gchar *content );
 static gint         eval_parse_operator( const gchar *token );
 static gdouble      rate( sHelper *helper, const gchar *content );
+static gchar       *get_closing_account( sHelper *helper, const gchar *content );
 static gboolean     check_for_ledger( sChecker *checker );
 static gboolean     check_for_dates( sChecker *checker );
 static gboolean     check_for_all_entries( sChecker *checker );
@@ -165,7 +166,7 @@ alloc_regex( void )
 {
 	static const gchar *st_detail_ref = "%([ALRDC])([0-9]+)";
 	static const gchar *st_global_ref = "%(OPMN|OPLA|LEMN|LELA|DOPE|DOMY|DEFFECT|SOLDE|IDEM)";
-	static const gchar *st_function = "%(ACLA|ACCU|EVAL|RATE)\\(\\s*([^()]+)\\s*\\)";
+	static const gchar *st_function = "%(ACLA|ACCU|EVAL|RATE|ACCL)\\(\\s*([^()]+)\\s*\\)";
 	/*static const gchar *st_function = "%(ACLA|ACCU|EVAL|RATE)\\(\\s*";*/
 
 	if( !st_regex ){
@@ -584,6 +585,9 @@ is_function( const gchar *token, sHelper *helper, gchar **str )
 		} else if( !g_utf8_collate( field, "RATE" )){
 			*str = my_double_to_str_ex( rate( helper, content ), 5 );
 
+		} else if( !g_utf8_collate( field, "ACCL" )){
+			*str = get_closing_account( helper, content );
+
 		} else {
 			ok = FALSE;
 		}
@@ -727,6 +731,26 @@ rate( sHelper *helper, const gchar *content )
 	return( amount );
 }
 
+static gchar *
+get_closing_account( sHelper *helper, const gchar *content )
+{
+	ofoAccount *account;
+	const gchar *currency;
+	gchar *str;
+
+	str = NULL;
+
+	if( content ){
+		account = ofo_account_get_by_number( helper->dossier, content );
+		if( account && !ofo_account_is_root( account )){
+			currency = ofo_account_get_currency( account );
+			str = g_strdup( ofo_dossier_get_sld_account( helper->dossier, currency ));
+		}
+	}
+
+	return( str );
+}
+
 /**
  * ofs_ope_is_valid:
  * @ope: [in]: the input operation.
@@ -842,11 +866,11 @@ check_for_dates( sChecker *checker )
 		ofo_dossier_get_min_deffect( &dmin, checker->dossier, checker->ledger );
 		if( my_date_is_valid( &dmin )){
 			cmp = my_date_compare( &dmin, &ope->deffect );
-			if( cmp < 0 ){
+			if( cmp >= 0 ){
 				str = my_date_to_str( &dmin, MY_DATE_DMYY );
 				g_free( checker->message );
 				checker->message = g_strdup_printf(
-						_( "Effect date greater than minimum allowed on this ledger: %s" ), str );
+						_( "Effect date less or equal to minimum allowed on this ledger: %s" ), str );
 				g_free( str );
 
 			} else {

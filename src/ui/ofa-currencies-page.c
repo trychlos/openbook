@@ -61,6 +61,7 @@ enum {
 	COL_CODE = 0,
 	COL_LABEL,
 	COL_SYMBOL,
+	COL_DIGITS,
 	COL_OBJECT,
 	N_COLUMNS
 };
@@ -241,7 +242,7 @@ setup_tree_view( ofaCurrenciesPage *self )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( tview, tmodel );
 	g_object_unref( tmodel );
 
@@ -264,6 +265,13 @@ setup_tree_view( ofaCurrenciesPage *self )
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Symbol" ),
 			text_cell, "text", COL_SYMBOL,
+			NULL );
+	gtk_tree_view_append_column( tview, column );
+
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Digits" ),
+			text_cell, "text", COL_DIGITS,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 
@@ -385,8 +393,11 @@ insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_se
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkTreePath *path;
+	gchar *str;
 
 	priv = self->priv;
+
+	str = g_strdup_printf( "%d", ofo_currency_get_digits( currency ));
 	tmodel = gtk_tree_view_get_model( priv->tview );
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( tmodel ),
@@ -395,8 +406,10 @@ insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_se
 			COL_CODE,   ofo_currency_get_code( currency ),
 			COL_LABEL,  ofo_currency_get_label( currency ),
 			COL_SYMBOL, ofo_currency_get_symbol( currency ),
+			COL_DIGITS, str,
 			COL_OBJECT, currency,
 			-1 );
+	g_free( str );
 
 	/* select the newly added currency */
 	if( with_selection ){

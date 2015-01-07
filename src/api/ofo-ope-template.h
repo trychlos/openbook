@@ -83,16 +83,16 @@
  *          with the account number from row n° 1.
  *
  * 2/ a reference to a global field of the operation
- *    - 'OPMN': operation template mnemo
- *    - 'OPLA': operation template label
- *    - 'LEMN': ledger mnemo
- *    - 'LELA': ledger label
- *    - 'DOPE': operation date (format from user preferences)
- *    - 'DOMY': operation date as mmm yyyy
+ *    - 'OPMN':    operation template mnemo
+ *    - 'OPLA':    operation template label
+ *    - 'LEMN':    ledger mnemo
+ *    - 'LELA':    ledger label
+ *    - 'DOPE':    operation date (format from user preferences)
+ *    - 'DOMY':    operation date as mmm yyyy
  *    - 'DEFFECT': effect date (format from user preferences)
- *    - 'SOLDE': the solde of the entries debit and credit to balance
- *      the operation
- *    - 'IDEM': the content of the same field from the previous row
+ *    - 'SOLDE':   the solde of the entries debit and credit to balance
+ *                 the operation
+ *    - 'IDEM':    the content of the same field from the previous row
  *
  *    Other keywords are searched as rate mnemonics (as a convenient
  *    shortcut to RATE() function).
@@ -105,6 +105,8 @@
  *    - 'RATE()': evaluates the rate value at the operation date
  *                may be omitted, only using %<rate> if the
  *                'rate' mnemonic is not ambiguous
+ *    - 'ACCL()': the closing account for the currency of the specified
+ *                account number
  *    The opening parenthesis must immediately follow the function name.
  *    E.g.:
  *    - the '%ACLA(%A1)' (without the quotes) will be substituted with
