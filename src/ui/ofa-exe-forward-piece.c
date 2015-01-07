@@ -394,6 +394,10 @@ on_sld_ope_select( GtkButton *button, ofaExeForwardPiece *piece )
 		gtk_entry_set_text( GTK_ENTRY( priv->sld_ope ), mnemo );
 		g_free( mnemo );
 	}
+
+	/* re-check even if the content has not changed
+	 * which may happen after having created a operation template */
+	check_piece( piece );
 }
 
 static void
@@ -411,6 +415,10 @@ on_for_ope_select( GtkButton *button, ofaExeForwardPiece *piece )
 		gtk_entry_set_text( GTK_ENTRY( priv->for_ope ), mnemo );
 		g_free( mnemo );
 	}
+
+	/* re-check even if the content has not changed
+	 * which may happen after having created a operation template */
+	check_piece( piece );
 }
 
 /*

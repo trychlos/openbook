@@ -779,15 +779,21 @@ do_insert_ope_template( ofaOpeTemplatesBook *self )
 	const gchar *ledger;
 
 	priv = self->priv;
+	ledger = NULL;
 
 	page_n = gtk_notebook_get_current_page( priv->book );
-	page_w = gtk_notebook_get_nth_page( priv->book, page_n );
-	ledger = ( const gchar * ) g_object_get_data( G_OBJECT( page_w ), DATA_PAGE_LEDGER );
+	if( page_n >= 0 ){
+		page_w = gtk_notebook_get_nth_page( priv->book, page_n );
+		ledger = ( const gchar * ) g_object_get_data( G_OBJECT( page_w ), DATA_PAGE_LEDGER );
+	}
 
 	ope = ofo_ope_template_new();
 
 	if( !ofa_ope_template_properties_run( priv->main_window, ope, ledger )){
 		g_object_unref( ope );
+
+	} else {
+		select_row_by_mnemo( self, ofo_ope_template_get_mnemo( ope ));
 	}
 }
 
@@ -1141,9 +1147,11 @@ ofa_ope_templates_book_get_selected( ofaOpeTemplatesBook *book )
 	if( !priv->dispose_has_run ){
 
 		tview = ( GtkTreeView * ) get_current_tree_view( book );
-		select = gtk_tree_view_get_selection( tview );
-		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-			gtk_tree_model_get( tmodel, &iter, OPE_TEMPLATE_COL_MNEMO, &mnemo, -1 );
+		if( tview ){
+			select = gtk_tree_view_get_selection( tview );
+			if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+				gtk_tree_model_get( tmodel, &iter, OPE_TEMPLATE_COL_MNEMO, &mnemo, -1 );
+			}
 		}
 	}
 

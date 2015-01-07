@@ -483,6 +483,7 @@ ofo_entry_new( void )
 	ofoEntry *entry;
 
 	entry = g_object_new( OFO_TYPE_ENTRY, NULL );
+	OFO_BASE( entry )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	ofo_entry_set_number( entry, OFO_BASE_UNSET_ID );
 	ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
@@ -2775,7 +2776,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		if( ofo_account_is_root( account )){
 			msg = g_strdup_printf( _( "entry account is a root account: %s" ), cstr );
 			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, cstr );
+					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
 			errors += 1;
 			continue;
@@ -2906,6 +2907,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		for( it=dataset ; it ; it=it->next ){
 			ofo_entry_insert( OFO_ENTRY( it->data ), dossier );
 			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
+			/*g_debug( "it=%p", ( void * ) it );*/
 		}
 	}
 

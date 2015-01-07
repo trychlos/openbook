@@ -147,10 +147,6 @@ if( $opt_help ){
 	exit;
 }
 
-###
-### MAIN
-###
-
 # ---------------------------------------------------------------------
 # convert dd/mm/yyyy date to yyyy-mm-dd
 #
@@ -201,9 +197,22 @@ sub mapping
 	return( join( ';', $dope, $deff, $label, $ref, "", $ledger, "", $account, $debit, $credit ));
 }
 
+###
+### MAIN
+###
+
 binmode STDIN, ':encoding(iso-8859-15)';
 binmode STDOUT, ":utf8";
+my $count = 0;
 
 while( <> ){
-	print mapping( $_ )."\n";
+	$count += 1;
+	if( $count == 1 ){
+		print "DOpe;DEffect;Label;Ref;Currency;Ledger;OpeTemplate;Account;Debit;Credit\n";	
+	} else {
+		print mapping( $_ )."\n";
+	}
 }
+
+my $nb = $count-1;
+print STDERR "$nb converted entries\n";

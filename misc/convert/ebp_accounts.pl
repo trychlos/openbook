@@ -147,10 +147,6 @@ if( $opt_help ){
 	exit;
 }
 
-###
-### MAIN
-###
-
 # ---------------------------------------------------------------------
 # convert dd/mm/yyyy date to yyyy-mm-dd
 #
@@ -198,9 +194,22 @@ sub mapping
 	return( join( ';', $number, $label, "", $type ));
 }
 
+###
+### MAIN
+###
+
 binmode STDIN, ':encoding(iso-8859-15)';
 binmode STDOUT, ":utf8";
+my $count = 0;
 
 while( <> ){
-	print mapping( $_ )."\n";
+	$count += 1;
+	if( $count == 1 ){
+		print "Number;Label;Currency;Type\n";	
+	} else {
+		print mapping( $_ )."\n";
+	}
 }
+
+my $nb = $count-1;
+print STDERR "$nb converted accounts\n";

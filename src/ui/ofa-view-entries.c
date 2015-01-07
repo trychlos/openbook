@@ -678,9 +678,6 @@ setup_status_selection( ofaViewEntries *self )
 	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_entry_status_toggled), self );
 	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_future );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bfuture );
-
-	/* for now, do not display deleted entries */
-	gtk_widget_set_sensitive( button, FALSE );
 }
 
 static void

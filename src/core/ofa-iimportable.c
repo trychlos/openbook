@@ -249,7 +249,7 @@ ofa_iimportable_increment_progress( ofaIImportable *importable,
 	} else {
 		g_return_if_fail( phase == IMPORTABLE_PHASE_INSERT );
 		sdata->insert += count;
-		render_progress( importable, sdata, sdata->progress, phase );
+		render_progress( importable, sdata, sdata->insert, phase );
 	}
 }
 
