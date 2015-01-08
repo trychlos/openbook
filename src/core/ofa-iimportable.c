@@ -224,6 +224,36 @@ ofa_iimportable_import( ofaIImportable *importable,
 }
 
 /**
+ * ofa_iimportable_get_string:
+ *
+ * Returns a newly allocated string pointed to by the @it.
+ * If not null, the string is stripped from leading and tailing spaces.
+ * The returned list should be g_free() by the caller.
+ * Returns NULL if empty.
+ */
+gchar *
+ofa_iimportable_get_string( GSList **it )
+{
+	const gchar *cstr;
+	gchar *str;
+
+	cstr = *it ? ( const gchar * )(( *it )->data ) : NULL;
+	if( cstr ){
+		str = g_strstrip( g_strdup( cstr ));
+		if( !g_utf8_strlen( str, -1 )){
+			g_free( str );
+			str = NULL;
+		}
+	} else {
+		str = NULL;
+	}
+
+	*it = *it ? ( *it )->next : NULL;
+
+	return( str );
+}
+
+/**
  * ofa_iimportable_increment_progress:
  * @importable: this #ofaIImportable instance.
  * @phase: whether this is the import or the insert phase
@@ -415,5 +445,24 @@ ofa_iimportable_get_count( ofaIImportable *importable )
 	sdata = get_iimportable_data( importable );
 	g_return_val_if_fail( sdata, 0 );
 
-	return( sdata->count );
+	return( sdata->insert );
+}
+
+/**
+ * ofa_iimportable_set_count:
+ * @importable: this #ofaIImportable instance.
+ *
+ * Set the new count of lines.
+ */
+void
+ofa_iimportable_set_count( ofaIImportable *importable, guint count )
+{
+	sIImportable *sdata;
+
+	g_return_if_fail( importable && OFA_IS_IIMPORTABLE( importable ));
+
+	sdata = get_iimportable_data( importable );
+	g_return_if_fail( sdata );
+
+	sdata->count = count;
 }

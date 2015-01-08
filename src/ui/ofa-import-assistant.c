@@ -869,6 +869,7 @@ p5_do_import( ofaImportAssistant *self )
 
 	if( has_worked ){
 		if( !errors ){
+			count = ofa_iimportable_get_count( priv->p5_object );
 			text = g_strdup_printf( _( "OK: %u lines from '%s' have been successfully "
 					"imported into « %s »." ),
 					count, priv->p1_fname, str );
@@ -990,7 +991,7 @@ get_lines_from_csv( ofaImportAssistant *self )
 	gchar **lines, **iter_line;
 	gchar **fields, **iter_field;
 	GSList *s_fields, *s_lines;
-	gchar *field;
+	gchar *field, *field_sep;
 
 	priv = self->priv;
 
@@ -1017,6 +1018,7 @@ get_lines_from_csv( ofaImportAssistant *self )
 
 	s_lines = NULL;
 	iter_line = lines;
+	field_sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->p3_import_settings ));
 
 	while( *iter_line ){
 		error = NULL;
@@ -1029,7 +1031,7 @@ get_lines_from_csv( ofaImportAssistant *self )
 			return( NULL );
 		}
 		if( g_utf8_strlen( *iter_line, -1 )){
-			fields = g_strsplit(( const gchar * ) *iter_line, ";", -1 );
+			fields = g_strsplit(( const gchar * ) *iter_line, field_sep, -1 );
 			s_fields = NULL;
 			iter_field = fields;
 
@@ -1046,6 +1048,7 @@ get_lines_from_csv( ofaImportAssistant *self )
 		iter_line++;
 	}
 
+	g_free( field_sep );
 	g_strfreev( lines );
 	return( g_slist_reverse( s_lines ));
 }

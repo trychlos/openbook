@@ -234,11 +234,13 @@ on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self
 	ofoDossier *dossier;
 	ofoLedger *ledger;
 
-	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
-	ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	if( selected ){
+		dossier = ofa_page_get_dossier( OFA_PAGE( self ));
+		ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
+		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
-	do_update( self, ledger );
+		do_update( self, ledger );
+	}
 }
 
 /*
@@ -252,9 +254,13 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self 
 	ofoLedger *ledger;
 
 	priv = self->priv;
-	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
-	ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	ledger = NULL;
+
+	if( selected ){
+		dossier = ofa_page_get_dossier( OFA_PAGE( self ));
+		ledger = ofo_ledger_get_by_mnemo( dossier, ( const gchar * ) selected->data );
+		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	}
 
 	gtk_widget_set_sensitive(
 			priv->update_btn,
@@ -292,16 +298,17 @@ on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgersPage *self )
 static void
 on_new_clicked( GtkButton *button, ofaLedgersPage *page )
 {
+	ofaLedgersPagePrivate *priv;
 	ofoLedger *ledger;
+
+	priv = page->priv;
 
 	ledger = ofo_ledger_new();
 
 	if( ofa_ledger_properties_run(
 			ofa_page_get_main_window( OFA_PAGE( page )), ledger )){
 
-		/* this is managed by ofaLedgerTreeview convenience class
-		 * graceful to dossier signaling system  */
-		/*insert_new_row( OFA_LEDGERS_PAGE( page ), ledger, TRUE );*/
+		ofa_ledger_treeview_set_selected( priv->tview, ofo_ledger_get_mnemo( ledger ));
 
 	} else {
 		g_object_unref( ledger );

@@ -57,11 +57,11 @@ enum {
 	ACC_NUMBER = 1,
 	ACC_LABEL,
 	ACC_CURRENCY,
-	ACC_NOTES,
 	ACC_TYPE,
 	ACC_SETTLEABLE,
 	ACC_RECONCILIABLE,
 	ACC_FORWARD,
+	ACC_NOTES,
 	ACC_UPD_USER,
 	ACC_UPD_STAMP,
 	ACC_VAL_DEBIT,
@@ -74,20 +74,23 @@ enum {
 	ACC_FUT_CREDIT,
 };
 
+/*
+ * MAINTAINER NOTE: the dataset is exported in this same order. So:
+ * 1/ put in in an order compatible with import
+ * 2/ no more modify it
+ * 3/ take attention to be able to support the import of a previously
+ *    exported file
+ */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ACC_NUMBER ),
 				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
+				TRUE,					/* importable */
+				FALSE },				/* amount, counter: export zero as empty */
 		{ OFA_BOX_CSV( ACC_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( ACC_CURRENCY ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( ACC_NOTES ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -107,6 +110,11 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( ACC_NOTES ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+										/* below data are not imported */
 		{ OFA_BOX_CSV( ACC_UPD_USER ),
 				OFA_TYPE_STRING,
 				FALSE,
@@ -114,7 +122,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ACC_UPD_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
-				TRUE },
+				FALSE },
 		{ OFA_BOX_CSV( ACC_VAL_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
@@ -133,19 +141,19 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE },
 		{ OFA_BOX_CSV( ACC_OPEN_DEBIT ),
 				OFA_TYPE_AMOUNT,
-				TRUE,
+				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( ACC_OPEN_CREDIT ),
 				OFA_TYPE_AMOUNT,
-				TRUE,
+				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( ACC_FUT_DEBIT ),
 				OFA_TYPE_AMOUNT,
-				TRUE,
+				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( ACC_FUT_CREDIT ),
 				OFA_TYPE_AMOUNT,
-				TRUE,
+				FALSE,
 				FALSE },
 		{ 0 }
 };
@@ -2040,13 +2048,14 @@ static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
 {
 	GSList *itl, *fields, *itf;
-	const gchar *cstr, *dev_code, *def_dev_code;
+	const gchar *def_dev_code;
 	ofoAccount *account;
 	GList *dataset, *it;
 	guint errors, class_num, line;
-	gchar *msg, *splitted;
+	gchar *msg, *splitted, *dev_code;
 	ofoCurrency *currency;
 	ofoClass *class_obj;
+	gchar *str;
 
 	line = 0;
 	errors = 0;
@@ -2062,125 +2071,132 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 
 		/* account number */
 		itf = fields;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		str = ofa_iimportable_get_string( &itf );
+		if( !str ){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty account number" ));
 			errors += 1;
 			continue;
 		}
-		class_num = ofo_account_get_class_from_number( cstr );
+		class_num = ofo_account_get_class_from_number( str );
 		class_obj = ofo_class_get_by_number( dossier, class_num );
 		if( !class_obj && !OFO_IS_CLASS( class_obj )){
-			msg = g_strdup_printf( _( "invalid account class number: %s" ), cstr );
+			msg = g_strdup_printf( _( "invalid account class number: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
-		ofo_account_set_number( account, cstr );
+		ofo_account_set_number( account, str );
+		g_free( str );
 
 		/* account label */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		str = ofa_iimportable_get_string( &itf );
+		if( !str ){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty account label" ));
 			errors += 1;
 			continue;
 		}
-		ofo_account_set_label( account, cstr );
+		ofo_account_set_label( account, str );
 
 		/* currency code */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( cstr && g_utf8_strlen( cstr, -1 )){
-			dev_code = cstr;
+		str = ofa_iimportable_get_string( &itf );
+		if( str ){
+			dev_code = g_strdup( str );
 		} else {
-			dev_code = def_dev_code;
+			dev_code = g_strdup( def_dev_code );
 		}
+		g_free( str );
 		currency = ofo_currency_get_by_code( dossier, dev_code );
 		if( !currency ){
 			msg = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( dev_code );
 			errors += 1;
 			continue;
 		}
 		ofo_account_set_currency( account, dev_code );
+		g_free( dev_code );
 
 		/* account type */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
-			cstr = ACCOUNT_TYPE_DETAIL;
-		} else if( g_utf8_collate( cstr, ACCOUNT_TYPE_DETAIL ) && g_utf8_collate( cstr, ACCOUNT_TYPE_ROOT )){
-			msg = g_strdup_printf( _( "invalid account type: %s" ), cstr );
+		str = ofa_iimportable_get_string( &itf );
+		if( !str ){
+			str = g_strdup( ACCOUNT_TYPE_DETAIL );
+		} else if( g_utf8_collate( str, ACCOUNT_TYPE_DETAIL ) && g_utf8_collate( str, ACCOUNT_TYPE_ROOT )){
+			msg = g_strdup_printf( _( "invalid account type: %s" ), str );
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, msg );
 			g_free( msg );
+			g_free( str );
 			errors += 1;
 			continue;
 		}
-		ofo_account_set_type_account( account, cstr );
+		ofo_account_set_type_account( account, str );
+		g_free( str );
 
 		/* settleable ? */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( cstr || g_utf8_strlen( cstr, -1 )){
-			if( g_utf8_collate( cstr, ACCOUNT_SETTLEABLE )){
-				msg = g_strdup_printf( _( "invalid account settleable indicator: %s" ), cstr );
+		str = ofa_iimportable_get_string( &itf );
+		if( str ){
+			if( g_utf8_collate( str, ACCOUNT_SETTLEABLE )){
+				msg = g_strdup_printf( _( "invalid account settleable indicator: %s" ), str );
 				ofa_iimportable_set_message(
 						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
+				g_free( str );
 				errors += 1;
 				continue;
 			} else {
 				ofo_account_set_settleable( account, TRUE );
 			}
 		}
+		g_free( str );
 
 		/* reconciliable ? */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( cstr || g_utf8_strlen( cstr, -1 )){
-			if( g_utf8_collate( cstr, ACCOUNT_RECONCILIABLE )){
-				msg = g_strdup_printf( _( "invalid account reconciliable indicator: %s" ), cstr );
+		str = ofa_iimportable_get_string( &itf );
+		if( str ){
+			if( g_utf8_collate( str, ACCOUNT_RECONCILIABLE )){
+				msg = g_strdup_printf( _( "invalid account reconciliable indicator: %s" ), str );
 				ofa_iimportable_set_message(
 						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
+				g_free( str );
 				errors += 1;
 				continue;
 			} else {
 				ofo_account_set_reconciliable( account, TRUE );
 			}
 		}
+		g_free( str );
 
 		/* carried forwardable ? */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( cstr || g_utf8_strlen( cstr, -1 )){
-			if( g_utf8_collate( cstr, ACCOUNT_FORWARDABLE )){
-				msg = g_strdup_printf( _( "invalid account forwardable indicator: %s" ), cstr );
+		str = ofa_iimportable_get_string( &itf );
+		if( str ){
+			if( g_utf8_collate( str, ACCOUNT_FORWARDABLE )){
+				msg = g_strdup_printf( _( "invalid account forwardable indicator: %s" ), str );
 				ofa_iimportable_set_message(
 						importable, line, IMPORTABLE_MSG_ERROR, msg );
 				g_free( msg );
+				g_free( str );
 				errors += 1;
 				continue;
 			} else {
 				ofo_account_set_forward( account, TRUE );
 			}
 		}
+		g_free( str );
 
 		/* notes
 		 * we are tolerant on the last field... */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		splitted = my_utils_import_multi_lines( cstr );
+		str = ofa_iimportable_get_string( &itf );
+		splitted = my_utils_import_multi_lines( str );
 		ofo_account_set_notes( account, splitted );
 		g_free( splitted );
+		g_free( str );
 
 		dataset = g_list_prepend( dataset, account );
 	}

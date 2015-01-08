@@ -36,6 +36,7 @@
 #include "ui/ofa-buttons-box.h"
 #include "ui/ofa-currency-properties.h"
 #include "ui/ofa-currencies-page.h"
+#include "ui/ofa-currency-store.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
@@ -46,24 +47,14 @@ struct _ofaCurrenciesPagePrivate {
 
 	/* internals
 	 */
-	GList       *handlers;
+	GList            *handlers;
 
 	/* UI
 	 */
-	GtkTreeView *tview;					/* the main treeview of the page */
-	GtkWidget   *update_btn;
-	GtkWidget   *delete_btn;
-};
-
-/* column ordering in the selection listview
- */
-enum {
-	COL_CODE = 0,
-	COL_LABEL,
-	COL_SYMBOL,
-	COL_DIGITS,
-	COL_OBJECT,
-	N_COLUMNS
+	ofaCurrencyStore *store;
+	GtkTreeView      *tview;			/* the main treeview of the page */
+	GtkWidget        *update_btn;
+	GtkWidget        *delete_btn;
 };
 
 G_DEFINE_TYPE( ofaCurrenciesPage, ofa_currencies_page, OFA_TYPE_PAGE )
@@ -75,13 +66,12 @@ static ofoCurrency *tview_get_selected( ofaCurrenciesPage *page, GtkTreeModel **
 static GtkWidget   *v_setup_buttons( ofaPage *page );
 static void         v_init_view( ofaPage *page );
 static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
-static void         insert_dataset( ofaCurrenciesPage *self );
-static void         insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_selection );
-static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenciesPage *self );
 static void         setup_first_selection( ofaCurrenciesPage *self );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void         on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self );
 static void         on_new_clicked( GtkButton *button, ofaCurrenciesPage *page );
+static void         select_row_by_code( ofaCurrenciesPage *page, const gchar *code );
+static gboolean     find_row_by_code( ofaCurrenciesPage *page, const gchar *code, GtkTreeIter *iter );
 static void         on_update_clicked( GtkButton *button, ofaCurrenciesPage *page );
 static void         on_delete_clicked( GtkButton *button, ofaCurrenciesPage *page );
 static void         try_to_delete_current_row( ofaCurrenciesPage *page );
@@ -209,15 +199,16 @@ static GtkWidget *
 setup_tree_view( ofaCurrenciesPage *self )
 {
 	ofaCurrenciesPagePrivate *priv;
+	ofoDossier *dossier;
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 
 	priv = self->priv;
+	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	gtk_widget_set_margin_left( GTK_WIDGET( frame ), 4 );
@@ -240,23 +231,21 @@ setup_tree_view( ofaCurrenciesPage *self )
 			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
 	priv->tview = tview;
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
-	gtk_tree_view_set_model( tview, tmodel );
-	g_object_unref( tmodel );
+	priv->store = ofa_currency_store_new( dossier );
+	gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
+	g_object_unref( priv->store );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "ISO 3A code" ),
-			text_cell, "text", COL_CODE,
+			text_cell, "text", CURRENCY_COL_CODE,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
-			text_cell, "text", COL_LABEL,
+			text_cell, "text", CURRENCY_COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
@@ -264,27 +253,20 @@ setup_tree_view( ofaCurrenciesPage *self )
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Symbol" ),
-			text_cell, "text", COL_SYMBOL,
+			text_cell, "text", CURRENCY_COL_SYMBOL,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Digits" ),
-			text_cell, "text", COL_DIGITS,
+			text_cell, "text", CURRENCY_COL_DIGITS,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_currency_selected ), self );
-
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tmodel ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 	return( GTK_WIDGET( frame ));
 }
@@ -325,7 +307,7 @@ tview_get_selected( ofaCurrenciesPage *page, GtkTreeModel **tmodel, GtkTreeIter 
 	select = gtk_tree_view_get_selection( priv->tview );
 	if( gtk_tree_selection_get_selected( select, tmodel, iter )){
 
-		gtk_tree_model_get( *tmodel, iter, COL_OBJECT, &currency, -1 );
+		gtk_tree_model_get( *tmodel, iter, CURRENCY_COL_OBJECT, &currency, -1 );
 		g_object_unref( currency );
 	}
 
@@ -356,7 +338,7 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	insert_dataset( OFA_CURRENCIES_PAGE( page ));
+	setup_first_selection( OFA_CURRENCIES_PAGE( page ));
 }
 
 static GtkWidget *
@@ -365,82 +347,6 @@ v_get_top_focusable_widget( const ofaPage *page )
 	g_return_val_if_fail( page && OFA_IS_CURRENCIES_PAGE( page ), NULL );
 
 	return( GTK_WIDGET( OFA_CURRENCIES_PAGE( page )->priv->tview ));
-}
-
-static void
-insert_dataset( ofaCurrenciesPage *self )
-{
-	ofoDossier *dossier;
-	GList *dataset, *iset;
-	ofoCurrency *currency;
-
-	dossier = ofa_page_get_dossier( OFA_PAGE( self ));
-	dataset = ofo_currency_get_dataset( dossier );
-
-	for( iset=dataset ; iset ; iset=iset->next ){
-
-		currency = OFO_CURRENCY( iset->data );
-		insert_new_row( self, currency, FALSE );
-	}
-
-	setup_first_selection( self );
-}
-
-static void
-insert_new_row( ofaCurrenciesPage *self, ofoCurrency *currency, gboolean with_selection )
-{
-	ofaCurrenciesPagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-	gchar *str;
-
-	priv = self->priv;
-
-	str = g_strdup_printf( "%d", ofo_currency_get_digits( currency ));
-	tmodel = gtk_tree_view_get_model( priv->tview );
-	gtk_list_store_insert_with_values(
-			GTK_LIST_STORE( tmodel ),
-			&iter,
-			-1,
-			COL_CODE,   ofo_currency_get_code( currency ),
-			COL_LABEL,  ofo_currency_get_label( currency ),
-			COL_SYMBOL, ofo_currency_get_symbol( currency ),
-			COL_DIGITS, str,
-			COL_OBJECT, currency,
-			-1 );
-	g_free( str );
-
-	/* select the newly added currency */
-	if( with_selection ){
-		path = gtk_tree_model_get_path( tmodel, &iter );
-		gtk_tree_view_set_cursor( priv->tview, path, NULL, FALSE );
-		gtk_tree_path_free( path );
-		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
-	}
-}
-
-static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrenciesPage *self )
-{
-	gchar *acod, *bcod, *afold, *bfold;
-	gint cmp;
-
-	gtk_tree_model_get( tmodel, a, COL_CODE, &acod, -1 );
-	afold = g_utf8_casefold( acod, -1 );
-
-	gtk_tree_model_get( tmodel, b, COL_CODE, &bcod, -1 );
-	bfold = g_utf8_casefold( bcod, -1 );
-
-	/*g_debug( "on_sort_model: afold=%p, bfold=%p", afold, bfold );*/
-	cmp = g_utf8_collate( afold, bfold );
-
-	g_free( acod );
-	g_free( afold );
-	g_free( bcod );
-	g_free( bfold );
-
-	return( cmp );
 }
 
 static void
@@ -478,7 +384,7 @@ on_currency_selected( GtkTreeSelection *selection, ofaCurrenciesPage *self )
 	currency = NULL;
 
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &currency, -1 );
+		gtk_tree_model_get( tmodel, &iter, CURRENCY_COL_OBJECT, &currency, -1 );
 		g_object_unref( currency );
 	}
 
@@ -508,11 +414,52 @@ on_new_clicked( GtkButton *button, ofaCurrenciesPage *page )
 	if( ofa_currency_properties_run(
 			ofa_page_get_main_window( OFA_PAGE( page )), currency )){
 
-		insert_new_row( page, currency, TRUE );
+		select_row_by_code( page, ofo_currency_get_code( currency ));
 
 	} else {
 		g_object_unref( currency );
 	}
+}
+
+static void
+select_row_by_code( ofaCurrenciesPage *page, const gchar *code )
+{
+	ofaCurrenciesPagePrivate *priv;
+	GtkTreeIter iter;
+	GtkTreeSelection *select;
+
+	priv = page->priv;
+
+	if( find_row_by_code( page, code, &iter )){
+		select = gtk_tree_view_get_selection( priv->tview );
+		gtk_tree_selection_select_iter( select, &iter );
+	}
+}
+
+static gboolean
+find_row_by_code( ofaCurrenciesPage *page, const gchar *code, GtkTreeIter *iter )
+{
+	ofaCurrenciesPagePrivate *priv;
+	gchar *row_code;
+	gint cmp;
+
+	priv = page->priv;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, CURRENCY_COL_CODE, &row_code, -1 );
+			cmp = g_utf8_collate( row_code, code );
+			g_free( row_code );
+			if( cmp == 0 ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
 }
 
 static void
@@ -529,19 +476,13 @@ on_update_clicked( GtkButton *button, ofaCurrenciesPage *page )
 
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &currency, -1 );
+		gtk_tree_model_get( tmodel, &iter, CURRENCY_COL_OBJECT, &currency, -1 );
 		g_object_unref( currency );
 
 		if( ofa_currency_properties_run(
 				ofa_page_get_main_window( OFA_PAGE( page )), currency )){
 
-			gtk_list_store_set(
-					GTK_LIST_STORE( tmodel ),
-					&iter,
-					COL_CODE,   ofo_currency_get_code( currency ),
-					COL_LABEL,  ofo_currency_get_label( currency ),
-					COL_SYMBOL, ofo_currency_get_symbol( currency ),
-					-1 );
+			/* take into account by dossier signaling system */
 		}
 	}
 
@@ -610,9 +551,7 @@ do_delete( ofaCurrenciesPage *page, ofoCurrency *currency, GtkTreeModel *tmodel,
 	if( delete_confirmed( page, currency ) &&
 			ofo_currency_delete( currency, dossier )){
 
-		/* remove the row from the tmodel
-		 * this will cause an automatic new selection */
-		gtk_list_store_remove( GTK_LIST_STORE( tmodel ), iter );
+		/* take into account by dossier signaling system */
 	}
 }
 
@@ -673,17 +612,10 @@ static void
 on_reloaded_dataset( ofoDossier *dossier, GType type, ofaCurrenciesPage *self )
 {
 	static const gchar *thisfn = "ofa_currencies_page_on_reloaded_dataset";
-	ofaCurrenciesPagePrivate *priv;
-	GtkTreeModel *tmodel;
 
 	g_debug( "%s: dossier=%p, type=%lu, self=%p",
 			thisfn, ( void * ) dossier, type, ( void * ) self );
 
-	priv = self->priv;
-
 	if( type == OFO_TYPE_CURRENCY ){
-		tmodel = gtk_tree_view_get_model( priv->tview );
-		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
-		insert_dataset( self );
 	}
 }

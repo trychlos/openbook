@@ -706,7 +706,7 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaDbms
 	}
 
 	g_string_append_printf( query,
-			"	CUR_MAJ_USER='%s',CUR_MAJ_STAMP='%s'"
+			"	CUR_UPD_USER='%s',CUR_UPD_STAMP='%s'"
 			"	WHERE CUR_CODE='%s'", user, stamp_str, prev_code );
 
 	if( ofa_dbms_query( dbms, query->str, TRUE )){

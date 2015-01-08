@@ -1358,12 +1358,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		rate_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
 		for( it=dataset ; it ; it=it->next ){
+			rate = OFO_RATE( it->data );
 			rate_do_insert(
-					OFO_RATE( it->data ),
+					rate,
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 
-			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
+			ofa_iimportable_increment_progress(
+					importable, IMPORTABLE_PHASE_INSERT, 1+ofo_rate_get_val_count( rate ));
 		}
 
 		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );

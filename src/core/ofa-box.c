@@ -411,7 +411,7 @@ typedef gconstpointer ( *GetFn )           ( gconstpointer box );
 typedef void          ( *SetFn )           ( gpointer box, gconstpointer value );
 
 typedef struct {
-	gint             id;
+	gint             type;
 	NewFromDBMSStrFn new_from_dbms_fn;
 	FreeFn           free_fn;
 	ExportToCSVStrFn to_csv_str_fn;
@@ -484,8 +484,8 @@ box_get_helper_for_type( eBoxType type )
 	const sBoxHelpers *ihelper;
 
 	ihelper = st_box_helpers;
-	while( ihelper->id ){
-		if( ihelper->id == type ){
+	while( ihelper->type ){
+		if( ihelper->type == type ){
 			return( ihelper );
 		}
 		ihelper++;
@@ -703,7 +703,7 @@ ofa_box_get_csv_line( const GList *fields_list, gchar field_sep, gchar decimal_s
 		g_return_val_if_fail( ihelper, NULL );
 
 		str = ihelper->to_csv_str_fn( it->data );
-		if( ihelper->id == OFA_TYPE_AMOUNT ){
+		if( ihelper->type == OFA_TYPE_AMOUNT ){
 			set_decimal_point( str, decimal_sep );
 		}
 

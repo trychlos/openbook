@@ -91,6 +91,9 @@ GList             *ofa_ledger_treeview_get_selected            ( ofaLedgerTreevi
 
 #define            ofa_ledger_treeview_free_selected(L)        g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
+void               ofa_ledger_treeview_set_selected            ( ofaLedgerTreeview *view,
+																			const gchar *ledger );
+
 GtkWidget         *ofa_ledger_treeview_get_top_focusable_widget( ofaLedgerTreeview *view );
 
 G_END_DECLS

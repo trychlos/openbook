@@ -179,8 +179,13 @@ guint    ofa_iimportable_import_fname              ( ofaIImportable *importable,
 
 guint    ofa_iimportable_get_count                 ( ofaIImportable *importable );
 
+void     ofa_iimportable_set_count                 ( ofaIImportable *importable,
+															guint count );
+
 /* an importable-oriented API
  */
+gchar   *ofa_iimportable_get_string                ( GSList **it );
+
 void     ofa_iimportable_increment_progress        ( ofaIImportable *importable,
 															ofeImportablePhase phase,
 															guint count );

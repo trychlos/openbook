@@ -66,8 +66,8 @@ typedef enum {
  * @type: the identifier of the #ofaBox type
  * @import: whether the data is importable (all data are exported)
  * @csv_zero_as_empty: whether a zero counter or amount should be
- *  exported as an empty string (NULL strings are always exported as
- *  empty strings)
+ *  exported as an empty string (NULL strings and timestamps are
+ *  always exported as empty strings)
  *
  * This structure is to be defined by each #ofoBase derived object
  * which would wish banalize its dataset. Each elementary data is

@@ -52,17 +52,17 @@
 /* priv instance data
  */
 enum {
-	ENT_NUMBER = 1,
-	ENT_DOPE,
+	ENT_DOPE = 1,
 	ENT_DEFFECT,
 	ENT_LABEL,
 	ENT_REF,
-	ENT_ACCOUNT,
 	ENT_CURRENCY,
 	ENT_LEDGER,
 	ENT_OPE_TEMPLATE,
+	ENT_ACCOUNT,
 	ENT_DEBIT,
 	ENT_CREDIT,
+	ENT_NUMBER,
 	ENT_STATUS,
 	ENT_UPD_USER,
 	ENT_UPD_STAMP,
@@ -74,15 +74,18 @@ enum {
 	ENT_STLMT_STAMP,
 };
 
+/*
+ * MAINTAINER NOTE: the dataset is exported in this same order. So:
+ * 1/ put in in an order compatible with import
+ * 2/ no more modify it
+ * 3/ take attention to be able to support the import of a previously
+ *    exported file
+ */
 static const ofsBoxDef st_boxed_defs[] = {
-		{ OFA_BOX_CSV( ENT_NUMBER ),
-				OFA_TYPE_COUNTER,
-				FALSE,					/* importable */
-				FALSE },				/* export zero as empty */
 		{ OFA_BOX_CSV( ENT_DOPE ),
 				OFA_TYPE_DATE,
-				TRUE,
-				FALSE },
+				TRUE,					/* importable */
+				FALSE },				/* amount, counter: export zero as empty */
 		{ OFA_BOX_CSV( ENT_DEFFECT ),
 				OFA_TYPE_DATE,
 				TRUE,
@@ -92,10 +95,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( ENT_REF ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( ENT_ACCOUNT ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -111,6 +110,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( ENT_ACCOUNT ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( ENT_DEBIT ),
 				OFA_TYPE_AMOUNT,
 				TRUE,
@@ -118,6 +121,11 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ENT_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				TRUE,
+				FALSE },
+										/* below data are not imported */
+		{ OFA_BOX_CSV( ENT_NUMBER ),
+				OFA_TYPE_COUNTER,
+				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( ENT_STATUS ),
 				OFA_TYPE_INTEGER,
@@ -130,7 +138,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ENT_UPD_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
-				TRUE },
+				FALSE },
 		{ OFA_BOX_CSV( ENT_CONCIL_DVAL ),
 				OFA_TYPE_DATE,
 				TRUE,
@@ -142,11 +150,11 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ENT_CONCIL_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
-				TRUE },
+				FALSE },
 		{ OFA_BOX_CSV( ENT_STLMT_NUMBER ),
 				OFA_TYPE_COUNTER,
-				TRUE,
-				TRUE },
+				FALSE,
+				FALSE },
 		{ OFA_BOX_CSV( ENT_STLMT_USER ),
 				OFA_TYPE_STRING,
 				FALSE,
@@ -154,7 +162,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( ENT_STLMT_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
-				TRUE },
+				FALSE },
 		{ 0 }
 };
 
@@ -2445,6 +2453,7 @@ ofo_entry_validate_by_ledger( ofoDossier *dossier, const gchar *mnemo, const GDa
 					OFO_TYPE_ENTRY );
 
 	g_free( query );
+	g_signal_emit_by_name( dossier, SIGNAL_DOSSIER_PRE_VALID_ENTRY, mnemo, g_list_length( dataset ));
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );

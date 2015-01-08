@@ -95,6 +95,7 @@ enum {
 	UPDATED_OBJECT,
 	DELETED_OBJECT,
 	RELOAD_DATASET,
+	PRE_VALID_ENTRY,
 	VALIDATED_ENTRY,
 	EXE_DATE_CHANGED,
 	N_SIGNALS
@@ -388,6 +389,27 @@ dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_GTYPE );
+
+	/**
+	 * ofoDossier::ofa-signal-pre-valid-entry:
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofoDossier      *dossier,
+	 * 								const gchar *ledger,
+	 * 								gint         count,
+	 * 								gpointer     user_data );
+	 */
+	st_signals[ PRE_VALID_ENTRY ] = g_signal_new_class_handler(
+				SIGNAL_DOSSIER_PRE_VALID_ENTRY,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_ACTION,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_STRING, G_TYPE_UINT );
 
 	/**
 	 * ofoDossier::ofa-signal-validated-entry:

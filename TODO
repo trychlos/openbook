@@ -281,6 +281,10 @@
      2014-12-19 started with svn #4348
                 bug left: no background of backgrounded rows...
 
+ 445 2014-11-13 my_date: do not accept two successive '/'
+     2014-11-23 done - svn #4145
+     2015- 1- 8 opened back as doesn't work
+
  455 2014-11-14 report colored footer in other pages with balances
                 (as view entries)
 
@@ -296,16 +300,19 @@
      2015- 1- 5 really only required when ofoCurrency will implement the
                 ofaIExportable interface *and* if exports any amounts -
                 so it is not urgent
+     2015- 1- 8 nonetheless required to correctly implement field sep
 
  464 2014-11-26 move ofoDossier to ofaBoxed
      2015- 1- 5 really only required when ofoDossier will implement the
                 ofaIExportable interface *and* if exports any amounts -
                 so it is not urgent
+     2015- 1- 8 nonetheless required to correctly implement field sep
 
  466 2014-11-26 move ofoOpeTemplate to ofaBoxed
      2015- 1- 5 really only required when ofoDossier will implement the
                 ofaIExportable interface *and* if exports any amounts -
                 so it is not urgent
+     2015- 1- 8 nonetheless required to correctly implement field sep
 
  469 2014-11-28 ExportSettings: the field separator should be free 
                 (but not empty nor space) instead of having to select
@@ -367,7 +374,10 @@
                 settings - so DossierDelete and DossierDeletePrefs
                 become useless (see also #522)
 
- 557
+ 557 2015- 1- 8 ImportAssistant: add to import file format dialog the
+                count of headers
+
+ 558
 
 -----------------------------------------------------------------------
  DONE
@@ -2057,9 +2067,6 @@
 
  444 2014-11-13 General Ledger: last account is not taken into account
      2014-11-13 done - svn #4110
-
- 445 2014-11-13 my_date: do not accept two successive '/'
-     2014-11-23 done - svn #4145
 
  446 2014-11-13 General Ledger: account header/footer: font size -= 1
      2014-11-14 done - svn #4106

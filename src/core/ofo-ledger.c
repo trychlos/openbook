@@ -67,11 +67,18 @@ enum {
 	LED_FUT_CREDIT,
 };
 
+/*
+ * MAINTAINER NOTE: the dataset is exported in this same order. So:
+ * 1/ put in in an order compatible with import
+ * 2/ no more modify it
+ * 3/ take attention to be able to support the import of a previously
+ *    exported file
+ */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( LED_MNEMO ),
 				OFA_TYPE_STRING,
 				TRUE,					/* importable */
-				FALSE },				/* export zero as empty */
+				FALSE },				/* amount, counter: export zero as empty */
 		{ OFA_BOX_CSV( LED_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -87,11 +94,11 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( LED_UPD_STAMP ),
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
-				TRUE },
+				FALSE },
 		{ OFA_BOX_CSV( LED_LAST_CLO ),
 				OFA_TYPE_DATE,
-				TRUE,
-				TRUE },
+				FALSE,
+				FALSE },
 		{ 0 }
 };
 
@@ -1672,7 +1679,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	if( with_headers ){
 		str = ofa_box_get_csv_header( st_boxed_defs, field_sep );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "1;%s", str ));
+		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1681,7 +1688,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		}
 
 		str = ofa_box_get_csv_header( st_balances_defs, field_sep );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "2;%s", str ));
+		lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1692,7 +1699,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	for( it=ledger_dataset ; it ; it=it->next ){
 		str = ofa_box_get_csv_line( OFO_BASE( it->data )->prot->fields, field_sep, decimal_sep );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "1;%s", str ));
+		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
 		g_free( str );
 		ok = ofa_iexportable_export_lines( exportable, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1703,7 +1710,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		ledger = OFO_LEDGER( it->data );
 		for( bal=ledger->priv->balances ; bal ; bal=bal->next ){
 			str = ofa_box_get_csv_line( bal->data, field_sep, decimal_sep );
-			lines = g_slist_prepend( NULL, g_strdup_printf( "2;%s", str ));
+			lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 			g_free( str );
 			ok = ofa_iexportable_export_lines( exportable, lines );
 			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
@@ -1746,6 +1753,10 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * - notes (opt)
  *
  * Replace the whole table with the provided datas.
+ *
+ * In order to be able to import a previously exported file:
+ * - we accept that the first field be "1"
+ * - we silently ignore other lines.
  */
 static gint
 iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossier )
@@ -1755,11 +1766,13 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	ofoLedger *ledger;
 	GList *dataset, *it;
 	guint errors, line;
-	gchar *splitted;
+	gchar *splitted, *msg, *str;
+	gboolean have_prefix;
 
 	line = 0;
 	errors = 0;
 	dataset = NULL;
+	have_prefix = FALSE;
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
@@ -1768,42 +1781,60 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		fields = ( GSList * ) itl->data;
 		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
 
-		/* ledger mnemo */
+		/* ledger mnemo or "1" */
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		if( line == 1 ){
+			have_prefix = ( my_strlen( cstr ) && !g_utf8_collate( cstr, "1" ));
+		}
+		str = ofa_iimportable_get_string( &itf );
+		if( have_prefix ){
+			if( g_utf8_collate( str, "1" )){
+				msg = g_strdup_printf( _( "ignoring line with prefix=%s" ), str );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				g_free( str );
+				continue;
+			}
+			g_free( str );
+			str = ofa_iimportable_get_string( &itf );
+		}
+		if( !str ){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ledger mnemo" ));
 			errors += 1;
 			continue;
 		}
-		ofo_ledger_set_mnemo( ledger, cstr );
+		ofo_ledger_set_mnemo( ledger, str );
+		g_free( str );
 
 		/* ledger label */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !cstr || !g_utf8_strlen( cstr, -1 )){
+		str = ofa_iimportable_get_string( &itf );
+		if( !str ){
 			ofa_iimportable_set_message(
 					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ledger label" ));
 			errors += 1;
 			continue;
 		}
-		ofo_ledger_set_label( ledger, cstr );
+		ofo_ledger_set_label( ledger, str );
+		g_free( str );
 
 		/* notes
 		 * we are tolerant on the last field... */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		splitted = my_utils_import_multi_lines( cstr );
+		str = ofa_iimportable_get_string( &itf );
+		splitted = my_utils_import_multi_lines( str );
 		ofo_ledger_set_notes( ledger, splitted );
 		g_free( splitted );
+		g_free( str );
 
 		dataset = g_list_prepend( dataset, ledger );
 	}
 
 	if( !errors ){
-		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_LEDGER, FALSE );
+		ofa_iimportable_set_count( importable, g_list_length( dataset ));
 
+		ofa_idataset_set_signal_new_allowed( dossier, OFO_TYPE_LEDGER, FALSE );
 		ledger_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
 		for( it=dataset ; it ; it=it->next ){

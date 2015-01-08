@@ -230,7 +230,7 @@ v_init_dialog( myDialog *dialog )
 				my_utils_container_get_child_by_name(
 						GTK_CONTAINER( toplevel ), "p1-digits" ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_digits_changed ), dialog );
-	str = g_strdup_printf( "%d", priv->digits ? priv->digits : CUR_DEFAULT_DIGITS );
+	str = g_strdup_printf( "%d", priv->digits );
 	gtk_entry_set_text( entry, str );
 	g_free( str );
 

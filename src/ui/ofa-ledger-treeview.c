@@ -77,6 +77,8 @@ static gint        cmp_by_mnemo( const gchar *a, const gchar *b );
 static void        on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaLedgerTreeview *self );
 static void        on_row_selected( GtkTreeSelection *selection, ofaLedgerTreeview *self );
 static GList      *get_selected( ofaLedgerTreeview *self );
+static void        select_row_by_mnemo( ofaLedgerTreeview *tview, const gchar *ledger );
+static gboolean    find_row_by_mnemo( ofaLedgerTreeview *tview, const gchar *ledger, GtkTreeIter *iter );
 
 
 G_DEFINE_TYPE( ofaLedgerTreeview, ofa_ledger_treeview, G_TYPE_OBJECT );
@@ -572,6 +574,65 @@ ofa_ledger_treeview_get_selected( ofaLedgerTreeview *self )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_ledger_treeview_set_selected:
+ */
+void
+ofa_ledger_treeview_set_selected( ofaLedgerTreeview *tview, const gchar *ledger )
+{
+	ofaLedgerTreeviewPrivate *priv;
+
+	g_return_if_fail( tview && OFA_IS_LEDGER_TREEVIEW( tview ));
+
+	priv = tview->priv;
+
+	if( !priv->dispose_has_run ){
+
+		select_row_by_mnemo( tview, ledger );
+	}
+}
+
+static void
+select_row_by_mnemo( ofaLedgerTreeview *tview, const gchar *ledger )
+{
+	ofaLedgerTreeviewPrivate *priv;
+	GtkTreeIter iter;
+	GtkTreeSelection *select;
+
+	priv = tview->priv;
+
+	if( find_row_by_mnemo( tview, ledger, &iter )){
+		select = gtk_tree_view_get_selection( priv->tview );
+		gtk_tree_selection_select_iter( select, &iter );
+	}
+}
+
+static gboolean
+find_row_by_mnemo( ofaLedgerTreeview *tview, const gchar *ledger, GtkTreeIter *iter )
+{
+	ofaLedgerTreeviewPrivate *priv;
+	gchar *mnemo;
+	gint cmp;
+
+	priv = tview->priv;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, LEDGER_COL_MNEMO, &mnemo, -1 );
+			cmp = g_utf8_collate( mnemo, ledger );
+			g_free( mnemo );
+			if( cmp == 0 ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
 }
 
 /**

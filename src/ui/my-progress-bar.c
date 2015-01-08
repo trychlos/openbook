@@ -199,27 +199,27 @@ my_progress_bar_new( void )
  * my_progress_bar_attach_to:
  */
 void
-my_progress_bar_attach_to( myProgressBar *self, GtkContainer *new_parent )
+my_progress_bar_attach_to( myProgressBar *bar, GtkContainer *parent )
 {
 	myProgressBarPrivate *priv;
 	GtkWidget *box;
 
-	g_return_if_fail( self && MY_IS_PROGRESS_BAR( self ));
-	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
+	g_return_if_fail( bar && MY_IS_PROGRESS_BAR( bar ));
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv = self->priv;
+	priv = bar->priv;
 
 	if( !priv->dispose_has_run ){
 
 		box = gtk_progress_bar_new();
-		gtk_container_add( new_parent, box );
+		gtk_container_add( parent, box );
 		priv->bar = GTK_PROGRESS_BAR( box );
-		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, self );
+		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, bar );
 
-		g_signal_connect( G_OBJECT( self ), "double", G_CALLBACK( on_double ), NULL );
-		g_signal_connect( G_OBJECT( self ), "text", G_CALLBACK( on_text ), NULL );
+		g_signal_connect( G_OBJECT( bar ), "double", G_CALLBACK( on_double ), NULL );
+		g_signal_connect( G_OBJECT( bar ), "text", G_CALLBACK( on_text ), NULL );
 
-		gtk_widget_show_all( GTK_WIDGET( new_parent ));
+		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 }
 

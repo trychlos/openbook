@@ -55,11 +55,18 @@ enum {
 	CLA_UPD_STAMP,
 };
 
+/*
+ * MAINTAINER NOTE: the dataset is exported in this same order. So:
+ * 1/ put in in an order compatible with import
+ * 2/ no more modify it
+ * 3/ take attention to be able to support the import of a previously
+ *    exported file
+ */
 static const ofsBoxDef st_boxed_defs[] = {
 		{ OFA_BOX_CSV( CLA_NUMBER ),
 				OFA_TYPE_INTEGER,
 				TRUE,					/* importable */
-				FALSE },				/* export_csv_zero_as_empty */
+				FALSE },				/* amount, counter: export zero as empty */
 		{ OFA_BOX_CSV( CLA_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -68,6 +75,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
+										/* below data are not imported */
 		{ OFA_BOX_CSV( CLA_UPD_USER ),
 				OFA_TYPE_STRING,
 				FALSE,

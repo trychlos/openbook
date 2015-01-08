@@ -48,6 +48,8 @@ typedef enum {
 }
 	myStampFormat;
 
+#define    my_strlen(s)                    ( s ) && g_utf8_strlen(( s ), -1 )
+
 gchar     *my_utils_quote                  ( const gchar *str );
 
 GTimeVal  *my_utils_stamp_set_now          ( GTimeVal *stamp );
