@@ -1856,12 +1856,14 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 		model_do_drop_content( ofo_dossier_get_dbms( dossier ));
 
 		for( it=dataset ; it ; it=it->next ){
+			model = OFO_OPE_TEMPLATE( it->data );
 			model_do_insert(
-					OFO_OPE_TEMPLATE( it->data ),
+					model,
 					ofo_dossier_get_dbms( dossier ),
 					ofo_dossier_get_user( dossier ));
 
-			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
+			ofa_iimportable_increment_progress(
+					importable, IMPORTABLE_PHASE_INSERT, 1+ofo_ope_template_get_detail_count( model ));
 		}
 
 		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );

@@ -375,7 +375,7 @@
                 become useless (see also #522)
 
  557 2015- 1- 8 ImportAssistant: add to import file format dialog the
-                count of headers
+                count of headers to be removed from the file
 
  558
 
