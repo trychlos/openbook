@@ -42,6 +42,7 @@
  */
 struct _ofaDossierNewPiecePrivate {
 	gboolean          dispose_has_run;
+	gboolean          from_widget_finalized;
 
 	/* UI
 	 */
@@ -133,6 +134,10 @@ dossier_new_piece_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->container ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -250,9 +255,13 @@ static void
 on_widget_finalized( ofaDossierNewPiece *piece, GObject *finalized_widget )
 {
 	static const gchar *thisfn = "ofa_dossier_new_piece_on_widget_finalized";
+	ofaDossierNewPiecePrivate *priv;
 
 	g_debug( "%s: piece=%p, finalized_widget=%p (%s)",
 			thisfn, ( void * ) piece, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
+
+	priv = piece->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( piece );
 }

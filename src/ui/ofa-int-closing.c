@@ -84,6 +84,7 @@ static gboolean  is_dialog_validable( ofaIntClosing *self, GList *selected );
 static void      check_foreach_ledger( ofaIntClosing *self, const gchar *ledger );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 static gboolean  do_close( ofaIntClosing *self );
+static void      prepare_grid( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid );
 static gboolean  close_foreach_ledger( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid );
 static void      do_end_close( ofaIntClosing *self );
 static void      on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint count, ofaIntClosing *self );
@@ -393,7 +394,25 @@ check_foreach_ledger( ofaIntClosing *self, const gchar *mnemo )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	return( do_close( OFA_INT_CLOSING( dialog )));
+	GtkWindow *toplevel;
+	GtkWidget *button;
+
+	if( do_close( OFA_INT_CLOSING( dialog ))){
+
+		toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
+		g_return_val_if_fail( toplevel && GTK_IS_DIALOG( toplevel ), FALSE );
+
+		button = gtk_dialog_get_widget_for_response( GTK_DIALOG( toplevel ), GTK_RESPONSE_OK );
+		g_return_val_if_fail( button && GTK_IS_BUTTON( button ), FALSE );
+		gtk_widget_set_sensitive( button, FALSE );
+
+		button = gtk_dialog_get_widget_for_response( GTK_DIALOG( toplevel ), GTK_RESPONSE_CANCEL );
+		g_return_val_if_fail( button && GTK_IS_BUTTON( button ), FALSE );
+		gtk_button_set_label( GTK_BUTTON( button ), _( "_Close" ));
+		gtk_button_set_use_underline( GTK_BUTTON( button ), TRUE );
+	}
+
+	return( FALSE );
 }
 
 static gboolean
@@ -409,8 +428,6 @@ do_close( ofaIntClosing *self )
 	ok = is_dialog_validable( self, selected );
 
 	g_return_val_if_fail( ok, FALSE );
-
-	priv->count = 0;
 
 	dialog = gtk_dialog_new_with_buttons(
 					_( "Closing ledger" ),
@@ -430,8 +447,15 @@ do_close( ofaIntClosing *self )
 	gtk_grid_set_row_spacing( GTK_GRID( grid ), 3 );
 	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
 	gtk_container_add( GTK_CONTAINER( content ), grid );
+
+	priv->count = 0;
+	for( it=selected ; it ; it=it->next ){
+		prepare_grid( self, ( const gchar * ) it->data, grid );
+	}
+
 	gtk_widget_show_all( dialog );
 
+	priv->count = 0;
 	for( it=selected ; it ; it=it->next ){
 		close_foreach_ledger( self, ( const gchar * ) it->data, grid );
 	}
@@ -443,14 +467,13 @@ do_close( ofaIntClosing *self )
 	return( TRUE );
 }
 
-static gboolean
-close_foreach_ledger( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
+static void
+prepare_grid( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
 {
 	ofaIntClosingPrivate *priv;
-	ofoLedger *ledger;
 	gchar *str;
-	gboolean ok;
 	GtkWidget *label, *alignment;
+	myProgressBar *bar;
 
 	priv = self->priv;
 
@@ -463,10 +486,31 @@ close_foreach_ledger( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
 	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
 	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 2, 2, 10, 10 );
 	gtk_grid_attach( GTK_GRID( grid ), alignment, 1, priv->count, 1, 1 );
-	priv->bar = my_progress_bar_new();
-	my_progress_bar_attach_to( priv->bar, GTK_CONTAINER( alignment ));
+	bar = my_progress_bar_new();
+	my_progress_bar_attach_to( bar, GTK_CONTAINER( alignment ));
+	g_debug( "prepare_grid: alignment=%p, bar=%p", ( void * ) alignment, ( void * ) bar );
 
-	gtk_widget_show_all( grid );
+	priv->count += 1;
+}
+
+static gboolean
+close_foreach_ledger( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
+{
+	ofaIntClosingPrivate *priv;
+	GtkWidget *widget, *bar;
+	ofoLedger *ledger;
+	gboolean ok;
+
+	priv = self->priv;
+
+	widget = gtk_grid_get_child_at( GTK_GRID( grid ), 1, priv->count );
+	g_return_val_if_fail( widget && GTK_IS_BIN( widget ), FALSE );
+
+	bar = gtk_bin_get_child( GTK_BIN( widget ));
+	g_debug( "close_foreach_ledger: widget=%p, bar=%p (%s)",
+			( void * ) widget, ( void * ) bar, G_OBJECT_TYPE_NAME( bar ));
+	g_return_val_if_fail( bar && MY_IS_PROGRESS_BAR( bar ), FALSE );
+	priv->bar = MY_PROGRESS_BAR( bar );
 
 	ledger = ofo_ledger_get_by_mnemo( MY_WINDOW( self )->prot->dossier, mnemo );
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
@@ -489,15 +533,19 @@ do_end_close( ofaIntClosing *self )
 	priv = self->priv;
 	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
 
-	if( priv->count == 1 ){
+	if( priv->count == 0 ){
+		str = g_strdup( _( "No closed ledger" ));
+
+	} else if( priv->count == 1 ){
 		str = g_strdup( _( "Ledger has been successfully closed" ));
+
 	} else {
 		str = g_strdup_printf( _( "%u ledgers have been successfully closed" ), priv->count );
 	}
 
 	dialog = gtk_message_dialog_new(
 			toplevel,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			0,
 			GTK_MESSAGE_INFO,
 			GTK_BUTTONS_OK,
 			"%s", str );
@@ -534,7 +582,7 @@ on_dossier_validated_entry( ofoDossier *dossier, void *entry, ofaIntClosing *sel
 
 	priv->entries_num += 1;
 	progress = ( gdouble ) priv->entries_num / ( gdouble ) priv->entries_count;
-	g_signal_emit_by_name( priv->bar, "progress", progress );
+	g_signal_emit_by_name( priv->bar, "double", progress );
 
 	text = g_strdup_printf( "%u/%u", priv->entries_num, priv->entries_count );
 	g_signal_emit_by_name( priv->bar, "text", text );

@@ -42,6 +42,7 @@
  */
 struct _ofaBatCommonPrivate {
 	gboolean         dispose_has_run;
+	gboolean         from_widget_finalized;
 
 	/* input data
 	 */
@@ -96,6 +97,7 @@ static void          on_row_activated( GtkTreeView *tview, GtkTreePath *path, Gt
 static void          on_selection_changed( GtkTreeSelection *selection, ofaBatCommon *self );
 static void          setup_bat_properties( const ofaBatCommon *self, const ofoBat *bat );
 static const ofoBat *get_selected_object( const ofaBatCommon *self, GtkTreeSelection *selection );
+static void          on_widget_finalized( ofaBatCommon *self, gpointer finalized_widget );
 
 static void
 bat_common_finalize( GObject *instance )
@@ -127,6 +129,10 @@ bat_common_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->container ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -161,9 +167,19 @@ ofa_bat_common_class_init( ofaBatCommonClass *klass )
 }
 
 static void
-on_container_finalized( ofaBatCommon *self, gpointer this_was_the_container )
+on_widget_finalized( ofaBatCommon *self, gpointer finalized_widget )
 {
+	static const gchar *thisfn = "ofa_bat_common_on_widget_finalized";
+	ofaBatCommonPrivate *priv;
+
+	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
+			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
+
 	g_return_if_fail( self && OFA_IS_BAT_COMMON( self ));
+
+	priv = self->priv;
+	priv->from_widget_finalized = TRUE;
+
 	g_object_unref( self );
 }
 
@@ -198,7 +214,7 @@ ofa_bat_common_init_dialog( const ofsBatCommonParms *parms )
 	priv->user_data = parms->user_data;
 
 	/* setup a weak reference on the dialog to auto-unref */
-	g_object_weak_ref( G_OBJECT( priv->container ), ( GWeakNotify ) on_container_finalized, self );
+	g_object_weak_ref( G_OBJECT( priv->container ), ( GWeakNotify ) on_widget_finalized, self );
 
 	/* then initialize the dialog */
 	if( do_move_between_containers( self )){

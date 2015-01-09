@@ -41,6 +41,7 @@
  */
 struct _ofaCurrencyComboPrivate {
 	gboolean           dispose_has_run;
+	gboolean           from_widget_finalized;
 
 	ofaMainWindow     *main_window;
 	ofoDossier        *dossier;
@@ -97,6 +98,10 @@ currency_combo_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->combo ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */

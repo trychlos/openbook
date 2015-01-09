@@ -40,6 +40,7 @@
 /* private instance data
  */
 struct _ofaPagePrivate {
+	gboolean       from_widget_finalized;
 
 	/* properties set at instanciation time
 	 */
@@ -99,6 +100,7 @@ page_finalize( GObject *instance )
 static void
 page_dispose( GObject *instance )
 {
+	ofaPagePrivate *priv;
 	ofaPageProtected *prot;
 
 	g_return_if_fail( instance && OFA_IS_PAGE( instance ));
@@ -110,6 +112,12 @@ page_dispose( GObject *instance )
 		prot->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		priv = ( OFA_PAGE( instance ))->priv;
+
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->top_grid ), ( GWeakNotify ) on_grid_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -223,7 +231,7 @@ page_constructed( GObject *instance )
 	 * and (more useful) the derived class which handles it */
 	g_return_if_fail( priv->top_grid && GTK_IS_GRID( priv->top_grid ));
 	g_object_weak_ref(
-			G_OBJECT( priv->top_grid ), ( GWeakNotify ) on_grid_finalized, OFA_PAGE( instance ));
+			G_OBJECT( priv->top_grid ), ( GWeakNotify ) on_grid_finalized, instance );
 
 	/* let the child class setup its page */
 	do_setup_page( self );
@@ -482,11 +490,17 @@ static void
 on_grid_finalized( ofaPage *self, GObject *finalized_grid )
 {
 	static const gchar *thisfn = "ofa_page_on_grid_finalized";
+	ofaPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s), finalized_grid=%p (%s)",
 			thisfn,
 			( void * ) self, G_OBJECT_TYPE_NAME( self ),
 			( void * ) finalized_grid, G_OBJECT_TYPE_NAME( finalized_grid ));
+
+	g_return_if_fail( self && OFA_IS_PAGE( self ));
+
+	priv = self->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( self );
 }

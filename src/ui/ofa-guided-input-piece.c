@@ -56,11 +56,13 @@
  */
 struct _ofaGuidedInputPiecePrivate {
 	gboolean              dispose_has_run;
+	gboolean              from_widget_finalized;
 
 	/* input parameters at initialization time
 	 */
 	const ofaMainWindow  *main_window;
 	GtkContainer         *parent;		/* the parent to which the top widget is attached */
+	GtkWidget            *top_widget;
 
 	/* from dossier
 	 */
@@ -296,7 +298,11 @@ guided_input_piece_dispose( GObject *instance )
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
 		 * terminates) */
-		priv = ( OFA_GUIDED_INPUT_PIECE( instance ))->priv;
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->top_widget ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
+
 		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
 			for( iha=priv->handlers ; iha ; iha=iha->next ){
 				handler_id = ( gulong ) iha->data;
@@ -390,7 +396,7 @@ ofa_guided_input_piece_attach_to( ofaGuidedInputPiece *piece, GtkContainer *pare
 {
 	static const gchar *thisfn = "ofa_guided_input_piece_attach_to";
 	ofaGuidedInputPiecePrivate *priv;
-	GtkWidget *window, *top_widget;
+	GtkWidget *window;
 
 	g_debug( "%s: piece=%p, parent=%p", thisfn, ( void * ) piece, ( void * ) parent );
 
@@ -404,13 +410,13 @@ ofa_guided_input_piece_attach_to( ofaGuidedInputPiece *piece, GtkContainer *pare
 		window = my_utils_builder_load_from_path( st_piece_xml, st_piece_id );
 		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-		top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-widget" );
-		g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
+		priv->top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-widget" );
+		g_return_if_fail( priv->top_widget && GTK_IS_CONTAINER( priv->top_widget ));
 
-		gtk_widget_reparent( top_widget, GTK_WIDGET( parent ));
+		gtk_widget_reparent( priv->top_widget, GTK_WIDGET( parent ));
 		priv->parent = parent;
 
-		g_object_weak_ref( G_OBJECT( top_widget ), ( GWeakNotify ) on_widget_finalized, piece );
+		g_object_weak_ref( G_OBJECT( priv->top_widget ), ( GWeakNotify ) on_widget_finalized, piece );
 
 		/* setup the dialog part which do not depend of the operation
 		 * template */
@@ -424,9 +430,15 @@ static void
 on_widget_finalized( ofaGuidedInputPiece *piece, GObject *finalized_widget )
 {
 	static const gchar *thisfn = "ofa_file_format_piece_on_widget_finalized";
+	ofaGuidedInputPiecePrivate *priv;
 
 	g_debug( "%s: piece=%p, finalized_widget=%p (%s)",
 			thisfn, ( void * ) piece, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
+
+	g_return_if_fail( piece && OFA_IS_GUIDED_INPUT_PIECE( piece ));
+
+	priv = piece->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( piece );
 }

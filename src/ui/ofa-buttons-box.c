@@ -36,6 +36,7 @@
  */
 struct _ofaButtonsBoxPrivate {
 	gboolean   dispose_has_run;
+	gboolean   from_widget_finalized;
 
 	/* internals
 	 */
@@ -87,6 +88,10 @@ buttons_box_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->alignment ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -142,14 +147,14 @@ ofa_buttons_box_new( void )
 void
 ofa_buttons_box_attach_to( ofaButtonsBox *box, GtkContainer *parent )
 {
-	GtkWidget *grid;
+	GtkWidget *top_grid;
 
 	g_return_if_fail( box && OFA_IS_BUTTONS_BOX( box ));
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	grid = get_top_grid( box );
-	gtk_container_add( parent, grid );
-	g_object_weak_ref( G_OBJECT( grid ), ( GWeakNotify ) on_widget_finalized, box );
+	top_grid = get_top_grid( box );
+	gtk_container_add( parent, top_grid );
+	g_object_weak_ref( G_OBJECT( top_grid ), ( GWeakNotify ) on_widget_finalized, box );
 
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 }
@@ -158,11 +163,15 @@ static void
 on_widget_finalized( ofaButtonsBox *box, gpointer finalized_widget )
 {
 	static const gchar *thisfn = "ofa_buttons_box_on_widget_finalized";
+	ofaButtonsBoxPrivate *priv;
 
 	g_debug( "%s: box=%p, finalized_widget=%p (%s)",
 			thisfn, ( void * ) box, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
-	g_return_if_fail( box );
+	g_return_if_fail( box && OFA_IS_BUTTONS_BOX( box ));
+
+	priv = box->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( G_OBJECT( box ));
 }

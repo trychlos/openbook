@@ -39,6 +39,7 @@
  */
 struct _ofaLedgerComboPrivate {
 	gboolean             dispose_has_run;
+	gboolean             from_widget_finalized;
 
 	/* runtime data
 	 */
@@ -96,6 +97,10 @@ ledger_combo_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->combo ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -227,11 +232,15 @@ static void
 on_widget_finalized( ofaLedgerCombo *combo, gpointer finalized_widget )
 {
 	static const gchar *thisfn = "ofa_ledger_combo_on_widget_finalized";
+	ofaLedgerComboPrivate *priv;
 
 	g_debug( "%s: combo=%p, finalized_widget=%p (%s)",
 			thisfn, ( void * ) combo, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( combo && OFA_IS_LEDGER_COMBO( combo ));
+
+	priv = combo->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( combo );
 }

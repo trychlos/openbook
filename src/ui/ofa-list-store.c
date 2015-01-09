@@ -36,6 +36,7 @@
  */
 struct _ofaListStorePrivate {
 	gboolean    dispose_has_run;
+	gboolean    from_dossier_finalized;
 
 	/* properties
 	 */
@@ -82,6 +83,10 @@ list_store_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_dossier_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->dossier ), ( GWeakNotify ) on_dossier_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -196,6 +201,7 @@ static void
 on_dossier_finalized( ofaListStore *store, gpointer finalized_dossier )
 {
 	static const gchar *thisfn = "ofa_list_store_on_dossier_finalized";
+	ofaListStorePrivate *priv;
 
 	g_debug( "%s: store=%p (%s), ref_count=%d, finalized_dossier=%p",
 			thisfn,
@@ -203,6 +209,9 @@ on_dossier_finalized( ofaListStore *store, gpointer finalized_dossier )
 			( void * ) finalized_dossier );
 
 	g_return_if_fail( store && OFA_IS_LIST_STORE( store ));
+
+	priv = store->priv;
+	priv->from_dossier_finalized = TRUE;
 
 	g_object_unref( store );
 }

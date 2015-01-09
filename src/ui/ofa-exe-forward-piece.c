@@ -46,10 +46,12 @@
  */
 struct _ofaExeForwardPiecePrivate {
 	gboolean        dispose_has_run;
+	gboolean        from_widget_finalized;
 
 	/* runtime data
 	 */
 	GtkContainer   *parent;
+	GtkWidget      *forward;
 	ofaMainWindow  *main_window;
 	ofoDossier     *dossier;
 	GSList         *currencies;			/* used currencies, from entries */
@@ -149,6 +151,10 @@ exe_forward_piece_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->forward ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -221,7 +227,7 @@ void
 ofa_exe_forward_piece_attach_to( ofaExeForwardPiece *piece, GtkContainer *new_parent )
 {
 	ofaExeForwardPiecePrivate *priv;
-	GtkWidget *window, *forward;
+	GtkWidget *window;
 
 	g_return_if_fail( piece && OFA_IS_EXE_FORWARD_PIECE( piece ));
 	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
@@ -233,12 +239,12 @@ ofa_exe_forward_piece_attach_to( ofaExeForwardPiece *piece, GtkContainer *new_pa
 		window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
 		g_return_if_fail( window && GTK_IS_WINDOW( window ));
 
-		forward = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p-exe-forward" );
-		g_return_if_fail( forward && GTK_IS_CONTAINER( forward ));
+		priv->forward = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p-exe-forward" );
+		g_return_if_fail( priv->forward && GTK_IS_CONTAINER( priv->forward ));
 
-		gtk_widget_reparent( forward, GTK_WIDGET( new_parent ));
+		gtk_widget_reparent( priv->forward, GTK_WIDGET( new_parent ));
 		priv->parent = new_parent;
-		g_object_weak_ref( G_OBJECT( forward ), ( GWeakNotify ) on_widget_finalized, piece );
+		g_object_weak_ref( G_OBJECT( priv->forward ), ( GWeakNotify ) on_widget_finalized, piece );
 
 		setup_dialog( piece );
 	}
@@ -248,11 +254,15 @@ static void
 on_widget_finalized( ofaExeForwardPiece *self, gpointer finalized_widget )
 {
 	static const gchar *thisfn = "ofa_exe_forward_piece_on_widget_finalized";
+	ofaExeForwardPiecePrivate *priv;
 
 	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
 			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( self && OFA_IS_EXE_FORWARD_PIECE( self ));
+
+	priv = self->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( self );
 }

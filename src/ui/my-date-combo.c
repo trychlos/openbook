@@ -34,6 +34,7 @@
  */
 struct _myDateComboPrivate {
 	gboolean      dispose_has_run;
+	gboolean      from_widget_finalized;
 
 	/* UI
 	 */
@@ -96,6 +97,10 @@ date_combo_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->combo ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -159,10 +164,14 @@ static void
 on_widget_finalized( myDateCombo *self, gpointer finalized_widget )
 {
 	static const gchar *thisfn = "my_date_combo_on_widget_finalized";
+	myDateComboPrivate *priv;
 
 	g_debug( "%s: self=%p, finalized_widget=%p", thisfn, ( void * ) self, ( void * ) finalized_widget );
 
 	g_return_if_fail( self && MY_IS_DATE_COMBO( self ));
+
+	priv = self->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( self );
 }

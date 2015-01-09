@@ -364,6 +364,7 @@
      2015- 1- 5 review ofaDossierDeletePrefs, and do not unref from
                 ofa_preferences_dispose
      2015- 1- 6 see #553 if DossierDeletePrefs should be kept ?
+     2015- 1- 9 review ofaBatCommon
 
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
@@ -401,6 +402,7 @@
                 main window title
 
  565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
+     2015- 1- 8 due to a bad management of weak references
 
  566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
                 of only Reconcil.

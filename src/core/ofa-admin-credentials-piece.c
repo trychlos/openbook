@@ -38,6 +38,7 @@
  */
 struct _ofaAdminCredentialsPiecePrivate {
 	gboolean      dispose_has_run;
+	gboolean      from_widget_finalized;
 
 	/* UI
 	 */
@@ -110,6 +111,10 @@ admin_credentials_piece_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->container ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -206,8 +211,9 @@ ofa_admin_credentials_piece_attach_to( ofaAdminCredentialsPiece *piece, GtkConta
 
 		gtk_widget_reparent( widget, GTK_WIDGET( parent ));
 		priv->parent = parent;
-		priv->container = GTK_CONTAINER( widget );
+
 		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_widget_finalized, piece );
+		priv->container = GTK_CONTAINER( widget );
 
 		setup_dialog( piece );
 
@@ -219,9 +225,13 @@ static void
 on_widget_finalized( ofaAdminCredentialsPiece *piece, GObject *finalized_widget )
 {
 	static const gchar *thisfn = "ofa_admin_credentials_piece_on_widget_finalized";
+	ofaAdminCredentialsPiecePrivate *priv;
 
 	g_debug( "%s: piece=%p, finalized_widget=%p",
 			thisfn, ( void * ) piece, ( void * ) finalized_widget );
+
+	priv = piece->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( piece );
 }

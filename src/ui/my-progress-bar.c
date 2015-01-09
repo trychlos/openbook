@@ -34,11 +34,6 @@
  */
 struct _myProgressBarPrivate {
 	gboolean        dispose_has_run;
-
-	/* UI
-	 */
-	GtkContainer   *container;
-	GtkProgressBar *bar;
 };
 
 /* signals defined here
@@ -51,9 +46,8 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-G_DEFINE_TYPE( myProgressBar, my_progress_bar, G_TYPE_OBJECT )
+G_DEFINE_TYPE( myProgressBar, my_progress_bar, GTK_TYPE_PROGRESS_BAR )
 
-static void on_widget_finalized( myProgressBar *self, gpointer finalized_parent );
 static void on_double( myProgressBar *self, gdouble progress, void *empty );
 static void on_text( myProgressBar *self, const gchar *text, void *empty );
 
@@ -170,18 +164,6 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 				G_TYPE_STRING );
 }
 
-static void
-on_widget_finalized( myProgressBar *self, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "my_progress_bar_on_widget_finalized";
-
-	g_debug( "%s: self=%p, finalized_widget=%p", thisfn, ( void * ) self, ( void * ) finalized_widget );
-
-	g_return_if_fail( self && MY_IS_PROGRESS_BAR( self ));
-
-	g_object_unref( self );
-}
-
 /**
  * my_progress_bar_new:
  */
@@ -202,7 +184,6 @@ void
 my_progress_bar_attach_to( myProgressBar *bar, GtkContainer *parent )
 {
 	myProgressBarPrivate *priv;
-	GtkWidget *box;
 
 	g_return_if_fail( bar && MY_IS_PROGRESS_BAR( bar ));
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -211,28 +192,19 @@ my_progress_bar_attach_to( myProgressBar *bar, GtkContainer *parent )
 
 	if( !priv->dispose_has_run ){
 
-		box = gtk_progress_bar_new();
-		gtk_container_add( parent, box );
-		priv->bar = GTK_PROGRESS_BAR( box );
-		g_object_weak_ref( G_OBJECT( box ), ( GWeakNotify ) on_widget_finalized, bar );
+		gtk_container_add( parent, GTK_WIDGET( bar ));
 
 		g_signal_connect( G_OBJECT( bar ), "double", G_CALLBACK( on_double ), NULL );
 		g_signal_connect( G_OBJECT( bar ), "text", G_CALLBACK( on_text ), NULL );
-
-		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 }
 
 static void
 on_double( myProgressBar *self, gdouble progress, void *empty )
 {
-	myProgressBarPrivate *priv;
-
 	g_return_if_fail( self && MY_IS_PROGRESS_BAR( self ));
 
-	priv = self->priv;
-
-	gtk_progress_bar_set_fraction( priv->bar, progress );
+	gtk_progress_bar_set_fraction( GTK_PROGRESS_BAR( self ), progress );
 
 	/* let Gtk update the display */
 	while( gtk_events_pending()){
@@ -243,14 +215,10 @@ on_double( myProgressBar *self, gdouble progress, void *empty )
 static void
 on_text( myProgressBar *self, const gchar *text, void *empty )
 {
-	myProgressBarPrivate *priv;
-
 	g_return_if_fail( self && MY_IS_PROGRESS_BAR( self ));
 
-	priv = self->priv;
-
-	gtk_progress_bar_set_show_text( priv->bar, TRUE );
-	gtk_progress_bar_set_text( priv->bar, text );
+	gtk_progress_bar_set_show_text( GTK_PROGRESS_BAR( self ), TRUE );
+	gtk_progress_bar_set_text( GTK_PROGRESS_BAR( self ), text );
 
 	/* let Gtk update the display */
 	while( gtk_events_pending()){

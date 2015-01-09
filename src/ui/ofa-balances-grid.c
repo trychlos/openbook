@@ -36,6 +36,7 @@
  */
 struct _ofaBalancesGridPrivate {
 	gboolean        dispose_has_run;
+	gboolean        from_widget_finalized;
 
 	/* UI
 	 */
@@ -59,7 +60,7 @@ static void on_update( ofaBalancesGrid *self, const gchar *currency, gdouble deb
 static void write_double( ofaBalancesGrid *self, gdouble amount, gint left, gint top );
 
 static void
-progress_bar_finalize( GObject *instance )
+balances_grid_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_balances_grid_finalize";
 
@@ -75,7 +76,7 @@ progress_bar_finalize( GObject *instance )
 }
 
 static void
-progress_bar_dispose( GObject *instance )
+balances_grid_dispose( GObject *instance )
 {
 	ofaBalancesGridPrivate *priv;
 
@@ -88,6 +89,10 @@ progress_bar_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->grid ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -117,8 +122,8 @@ ofa_balances_grid_class_init( ofaBalancesGridClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = progress_bar_dispose;
-	G_OBJECT_CLASS( klass )->finalize = progress_bar_finalize;
+	G_OBJECT_CLASS( klass )->dispose = balances_grid_dispose;
+	G_OBJECT_CLASS( klass )->finalize = balances_grid_finalize;
 
 	g_type_class_add_private( klass, sizeof( ofaBalancesGridPrivate ));
 
@@ -151,11 +156,15 @@ static void
 on_widget_finalized( ofaBalancesGrid *self, gpointer finalized_widget )
 {
 	static const gchar *thisfn = "ofa_balances_grid_on_widget_finalized";
+	ofaBalancesGridPrivate *priv;
 
 	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
 			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( self && OFA_IS_BALANCES_GRID( self ));
+
+	priv = self->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( self );
 }

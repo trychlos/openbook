@@ -47,6 +47,7 @@
  */
 struct _ofaOpeTemplatesBookPrivate {
 	gboolean             dispose_has_run;
+	gboolean             from_widget_finalized;
 
 	ofaMainWindow       *main_window;
 	ofoDossier          *dossier;
@@ -156,6 +157,10 @@ ope_templates_book_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		if( !priv->from_widget_finalized ){
+			g_object_weak_unref(
+					G_OBJECT( priv->book ), ( GWeakNotify ) on_widget_finalized, instance );
+		}
 
 		/* disconnect from ofoDossier */
 		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
@@ -360,11 +365,15 @@ static void
 on_widget_finalized( ofaOpeTemplatesBook *book, gpointer finalized_widget )
 {
 	static const gchar *thisfn = "ofa_ope_templates_book_on_widget_finalized";
+	ofaOpeTemplatesBookPrivate *priv;
 
 	g_debug( "%s: book=%p, finalized_widget=%p (%s)",
 			thisfn, ( void * ) book, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
 
 	g_return_if_fail( book && OFA_IS_OPE_TEMPLATES_BOOK( book ));
+
+	priv = book->priv;
+	priv->from_widget_finalized = TRUE;
 
 	g_object_unref( book );
 }
