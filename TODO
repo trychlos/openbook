@@ -369,15 +369,43 @@
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
                 import ledgers:  0.02982 s/row (9 rows)
                 import entries:  0.13268 s/row (2431 rows)
+                import entries:  0.13237 s/row (1985 rows)
 
  553 2015- 1- 6 deleting a dossier only removes its references from
                 settings - so DossierDelete and DossierDeletePrefs
                 become useless (see also #522)
 
  557 2015- 1- 8 ImportAssistant: add to import file format dialog the
-                count of headers to be removed from the file
+                count of headers to be removed from the file (rather
+                than with_headers)
 
- 558
+ 558 2015- 1- 8 DossierManager: display databases used by a dossier
+
+ 559 2015- 1- 8 have a macro language to automate dossier creation,
+                import of files
+
+ 560 2015- 1- 8 import_multi_lines uses a pipe which happens to may be
+                a field separator!
+
+ 561 2015- 1- 8 importing operation templates (while the corresponding
+                page is opened) doesn't update it - As the store is
+                loaded, there is no way to reset it :(
+
+ 562 2015- 1- 8 Add misc menu option to see the loaded stores, and
+                reset them
+
+ 563 2015- 1- 8 IImportable interface: take FileFormat settings into
+                account
+
+ 564 2015- 1- 8 Changing the dates of the exercice should update the
+                main window title
+
+ 565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
+
+ 566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
+                of only Reconcil.
+
+ 567
 
 -----------------------------------------------------------------------
  DONE

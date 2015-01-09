@@ -39,7 +39,6 @@
 
 /* header
  */
-
 #define MY_TYPE_FOO            (my_foo_get_type ())
 #define MY_FOO(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), MY_TYPE_FOO, MyFoo))
 #define MY_IS_FOO(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), MY_TYPE_FOO))

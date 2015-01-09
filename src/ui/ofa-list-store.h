@@ -35,6 +35,9 @@
  *
  * This is a very thin base class for other stores which will manage
  * the dossier objects.
+ * The store is supposed to be a singleton which handles the object
+ * from the DBMS for their lifetime. The store is attached to the
+ * dossier and is normally only released when dossier is closed.
  */
 
 #include <gtk/gtk.h>

@@ -23,6 +23,7 @@
 # $Id$
 
 SUBDIRS = \
-	amounts								\
-	delete								\
+	t_amounts							\
+	t_delete							\
+	t_weakref							\
 	$(NULL)

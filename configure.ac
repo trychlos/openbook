@@ -106,8 +106,9 @@ AC_CONFIG_FILES([
 	m4/Makefile
 	maintainer/Makefile
 	misc/Makefile
-	misc/amounts/Makefile
-	misc/delete/Makefile
+	misc/t_amounts/Makefile
+	misc/t_delete/Makefile
+	misc/t_weakref/Makefile
 	po/Makefile.in
 	src/Makefile
 	src/api/Makefile
