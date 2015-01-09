@@ -198,7 +198,6 @@ ofa_ledger_combo_attach_to( ofaLedgerCombo *combo, GtkContainer *parent )
 	if( !priv->dispose_has_run ){
 
 		gtk_container_add( parent, GTK_WIDGET( combo ));
-		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 }
 

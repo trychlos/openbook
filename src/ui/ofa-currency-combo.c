@@ -189,7 +189,6 @@ ofa_currency_combo_attach_to( ofaCurrencyCombo *combo, GtkContainer *parent )
 	if( !priv->dispose_has_run ){
 
 		gtk_container_add( parent, GTK_WIDGET( combo ));
-		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 }
 
