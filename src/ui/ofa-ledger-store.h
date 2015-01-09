@@ -33,8 +33,8 @@
  * @short_description: The LedgerStore class
  * @include: ui/ofa-ledger-store.h
  *
- * The #ofaLedgerStore derived from #ofaTreeStore, which itself
- * derives from #GtkTreeStore. It is populated with all the ledgers
+ * The #ofaLedgerStore derived from #ofaListStore, which itself
+ * derives from #GtkListStore. It is populated with all the ledgers
  * of the dossier on first call, and stay then alive until the dossier
  * is closed.
  *

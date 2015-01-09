@@ -32,7 +32,7 @@
  * @short_description: #ofaLedgerCombo class definition.
  * @include: ui/ofa-ledger-combo.h
  *
- * A class to embed a Ledgers combobox in a dialog.
+ * A #GtkComboBox -derived class which manages ledgers.
  */
 
 #include <gtk/gtk.h>
@@ -56,7 +56,7 @@ typedef struct _ofaLedgerComboPrivate        ofaLedgerComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                parent;
+	GtkComboBox            parent;
 
 	/*< private members >*/
 	ofaLedgerComboPrivate *priv;
@@ -65,7 +65,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass           parent;
+	GtkComboBoxClass       parent;
 }
 	ofaLedgerComboClass;
 

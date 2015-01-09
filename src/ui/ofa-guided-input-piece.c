@@ -507,7 +507,7 @@ setup_dialog( ofaGuidedInputPiece *piece )
 	ofa_ledger_combo_set_main_window( priv->ledger_combo, priv->main_window );
 
 	g_signal_connect(
-			G_OBJECT( priv->ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), piece );
+			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), piece );
 
 	/* when opening the window, dates are set to the last used (from the
 	 * global static variables)

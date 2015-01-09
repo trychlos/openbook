@@ -526,7 +526,7 @@ setup_ledger_selection( ofaViewEntries *self )
 	ofa_ledger_combo_set_main_window( priv->ledger_combo, ofa_page_get_main_window( OFA_PAGE( self )));
 
 	g_signal_connect(
-			G_OBJECT( priv->ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), self );
+			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
 
 	ofa_ledger_combo_set_selected( priv->ledger_combo, initial_mnemo);
 

@@ -286,7 +286,7 @@ v_init_dialog( myDialog *dialog )
 	ofa_ledger_combo_set_main_window( priv->ledger_combo, MY_WINDOW( dialog )->prot->main_window );
 
 	g_signal_connect(
-			G_OBJECT( priv->ledger_combo ), "changed", G_CALLBACK( on_ledger_changed ), self );
+			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
 
 	ofa_ledger_combo_set_selected( priv->ledger_combo,
 			priv->is_new ? priv->ledger : ofo_ope_template_get_ledger( priv->ope_template ));
