@@ -371,6 +371,7 @@
                 import ledgers:  0.02982 s/row (9 rows)
                 import entries:  0.13268 s/row (2431 rows)
                 import entries:  0.13237 s/row (1985 rows)
+     2015- 1- 9 problem is the same when closing ledgers
 
  553 2015- 1- 6 deleting a dossier only removes its references from
                 settings - so DossierDelete and DossierDeletePrefs
@@ -401,13 +402,12 @@
  564 2015- 1- 8 Changing the dates of the exercice should update the
                 main window title
 
- 565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
-     2015- 1- 8 due to a bad management of weak references
-
  566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
                 of only Reconcil.
 
- 567
+ 567 2015- 1- 9 have a EntryStore
+
+ 568
 
 -----------------------------------------------------------------------
  DONE
@@ -2452,6 +2452,10 @@
  556 2015- 1- 6 when on a new dossier, the OpeTemplateSelect dialog
                 shows 'unclassed' ledgers
      2015- 1- 6 done - svn #4413
+
+ 565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
+     2015- 1- 8 due to a bad management of weak references
+     2015- 1- 9 done - svn #4427
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

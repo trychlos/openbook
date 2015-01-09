@@ -65,6 +65,7 @@ enum {
 	ENT_COL_LEDGER,
 	ENT_COL_ACCOUNT,
 	ENT_COL_LABEL,
+	ENT_COL_SETTLE,
 	ENT_COL_DRECONCIL,
 	ENT_COL_DEBIT,
 	ENT_COL_CREDIT,
@@ -138,6 +139,7 @@ struct _ofaViewEntriesPrivate {
 	gboolean           ref_visible;
 	gboolean           ledger_visible;
 	gboolean           account_visible;
+	gboolean           settlement_visible;
 	gboolean           dreconcil_visible;
 	gboolean           status_visible;
 
@@ -243,6 +245,7 @@ static GtkTreeView   *setup_entries_treeview( ofaViewEntries *self );
 static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntries *self );
 static gint           cmp_strings( ofaViewEntries *self, const gchar *stra, const gchar *strb );
 static gint           cmp_amounts( ofaViewEntries *self, const gchar *stra, const gchar *strb );
+static gint           cmp_counters( ofaViewEntries *self, const gchar *stra, const gchar *strb );
 static void           on_header_clicked( GtkTreeViewColumn *column, ofaViewEntries *self );
 static void           setup_footer( ofaViewEntries *self );
 static void           setup_signaling_connect( ofaViewEntries *self );
@@ -383,6 +386,7 @@ ofa_view_entries_init( ofaViewEntries *self )
 	priv->ref_visible = FALSE;
 	priv->ledger_visible = TRUE;
 	priv->account_visible = TRUE;
+	priv->settlement_visible = FALSE;
 	priv->dreconcil_visible = FALSE;
 	priv->status_visible = FALSE;
 }
@@ -731,6 +735,13 @@ setup_display_columns( ofaViewEntries *self )
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->account_visible );
 	priv->account_checkbox = GTK_CHECK_BUTTON( widget );
 
+	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-settlement" );
+	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
+	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
+	priv->settlement_visible = has_column_id( id_list, ENT_COL_SETTLE );
+	g_object_set_data( G_OBJECT( widget ), DATA_PRIV_VISIBLE, &priv->settlement_visible );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( widget ), priv->settlement_visible );
+
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f4-rappro" );
 	g_return_if_fail( widget && GTK_IS_CHECK_BUTTON( widget ));
 	g_signal_connect( G_OBJECT( widget ), "toggled", G_CALLBACK( on_visible_column_toggled), self );
@@ -821,7 +832,8 @@ setup_entries_treeview( ofaViewEntries *self )
 			ENT_N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* dope, deff, number */
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ref, ledger, account */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, dreconcil, debit */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, settlement, dreconcil */
+			G_TYPE_STRING,									/* debit */
 			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* credit, currency, status */
 			/* below columns are not visible */
 			G_TYPE_OBJECT,									/* the entry itself */
@@ -919,7 +931,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			_( "Piece" ),
 			text_cell, "text", column_id,
 			NULL );
-	gtk_tree_view_column_set_expand( column, TRUE );
+	/*gtk_tree_view_column_set_expand( column, TRUE );*/
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
@@ -1004,6 +1016,30 @@ setup_entries_treeview( ofaViewEntries *self )
 		sort_column = column;
 	}
 
+	/* settlement number
+	 */
+	column_id = ENT_COL_SETTLE;
+	text_cell = gtk_cell_renderer_text_new();
+	priv->renderers[column_id] = text_cell;
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Stlmt." ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_append_column( tview, column );
+	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->settlement_visible );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
+	if( sort_id == column_id ){
+		sort_column = column;
+	}
+
 	/* reconciliation date
 	 */
 	column_id = ENT_COL_DRECONCIL;
@@ -1012,9 +1048,10 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Reconcil." ),
+			_( "Rec." ),
 			text_cell, "text", column_id,
 			NULL );
+	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_object_set_data( G_OBJECT( column ), DATA_PRIV_VISIBLE, &priv->dreconcil_visible );
@@ -1088,6 +1125,7 @@ setup_entries_treeview( ofaViewEntries *self )
 			_( "Cur." ),
 			text_cell, "text", column_id,
 			NULL );
+	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_column_set_min_width( column, 32 );	/* "EUR" width */
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
@@ -1109,9 +1147,10 @@ setup_entries_treeview( ofaViewEntries *self )
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "St." ),
+			_( "Sta" ),
 			text_cell, "text", column_id,
 			NULL );
+	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_column_set_alignment( column, 0.5 );
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
@@ -1158,9 +1197,9 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 	ofxCounter numa, numb;
 	GtkSortType sort_order;
 	gchar *sdopea, *sdeffa, *srefa,
-			*slabela, *sleda, *sacca, *sdeba, *screa, *scura, *sdcona, *sstaa;
+			*slabela, *sleda, *sacca, *sdeba, *screa, *scura, *sstlmta, *sdcona, *sstaa;
 	gchar *sdopeb, *sdeffb, *srefb,
-			*slabelb, *sledb, *saccb, *sdebb, *screb, *scurb, *sdconb, *sstab;
+			*slabelb, *sledb, *saccb, *sdebb, *screb, *scurb, *sstlmtb, *sdconb, *sstab;
 
 	gtk_tree_model_get( tmodel, a,
 			ENT_COL_DOPE,      &sdopea,
@@ -1173,6 +1212,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 			ENT_COL_DEBIT,     &sdeba,
 			ENT_COL_CREDIT,    &screa,
 			ENT_COL_CURRENCY,  &scura,
+			ENT_COL_SETTLE,    &sstlmta,
 			ENT_COL_DRECONCIL, &sdcona,
 			ENT_COL_STATUS,    &sstaa,
 			-1 );
@@ -1188,6 +1228,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 			ENT_COL_DEBIT,     &sdebb,
 			ENT_COL_CREDIT,    &screb,
 			ENT_COL_CURRENCY,  &scurb,
+			ENT_COL_SETTLE,    &sstlmtb,
 			ENT_COL_DRECONCIL, &sdconb,
 			ENT_COL_STATUS,    &sstab,
 			-1 );
@@ -1229,6 +1270,9 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 		case ENT_COL_CURRENCY:
 			cmp = cmp_strings( self, scura, scurb );
 			break;
+		case ENT_COL_SETTLE:
+			cmp = cmp_counters( self, sstlmta, sstlmtb );
+			break;
 		case ENT_COL_DRECONCIL:
 			cmp = my_date_compare_by_str( sdcona, sdconb, MY_DATE_DMYY );
 			break;
@@ -1258,6 +1302,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaViewEntr
 	g_free( screb );
 	g_free( scura );
 	g_free( scurb );
+	g_free( sstlmta );
+	g_free( sstlmtb );
 	g_free( sdcona );
 	g_free( sdconb );
 	g_free( sstaa );
@@ -1309,6 +1355,30 @@ cmp_amounts( ofaViewEntries *self, const gchar *stra, const gchar *strb )
 	/* both a and b are set */
 	a = my_double_set_from_str( stra );
 	b = my_double_set_from_str( strb );
+
+	return( a < b ? -1 : ( a > b ? 1 : 0 ));
+}
+
+static gint
+cmp_counters( ofaViewEntries *self, const gchar *stra, const gchar *strb )
+{
+	ofxCounter a, b;
+
+	if( !stra || !g_utf8_strlen( stra, -1 )){
+		if( !strb || !g_utf8_strlen( strb, -1 )){
+			/* the two strings are both empty */
+			return( 0 );
+		}
+		/* a is empty while b is set */
+		return( -1 );
+	} else if( !strb || !g_utf8_strlen( strb, -1 )){
+		/* a is set while b is empty */
+		return( 1 );
+	}
+
+	/* both a and b are set */
+	a = atol( stra );
+	b = atol( strb );
 
 	return( a < b ? -1 : ( a > b ? 1 : 0 ));
 }
@@ -1715,7 +1785,8 @@ static void
 display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 {
 	ofaViewEntriesPrivate *priv;
-	gchar *sdope, *sdeff, *sdeb, *scre, *srappro;
+	gchar *sdope, *sdeff, *sdeb, *scre, *srappro, *ssettle;
+	ofxCounter counter;
 	const GDate *d;
 
 	priv = self->priv;
@@ -1726,6 +1797,12 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 	scre = my_double_to_str( ofo_entry_get_credit( entry ));
 	d = ofo_entry_get_concil_dval( entry );
 	srappro = my_date_to_str( d, MY_DATE_DMYY );
+	counter = ofo_entry_get_settlement_number( entry );
+	if( counter ){
+		ssettle = g_strdup_printf( "%lu", counter );
+	} else {
+		ssettle = g_strdup( "" );
+	}
 
 	gtk_list_store_set(
 				GTK_LIST_STORE( priv->tstore ),
@@ -1740,6 +1817,7 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 				ENT_COL_DEBIT,        sdeb,
 				ENT_COL_CREDIT,       scre,
 				ENT_COL_CURRENCY,     ofo_entry_get_currency( entry ),
+				ENT_COL_SETTLE,       ssettle,
 				ENT_COL_DRECONCIL,    srappro,
 				ENT_COL_STATUS,       ofo_entry_get_abr_status( entry ),
 				ENT_COL_OBJECT,       entry,
@@ -1750,6 +1828,7 @@ display_entry( ofaViewEntries *self, ofoEntry *entry, GtkTreeIter *iter )
 				ENT_COL_CURRENCY_SET, FALSE,
 				-1 );
 
+	g_free( ssettle );
 	g_free( srappro );
 	g_free( scre );
 	g_free( sdeb );
@@ -2171,7 +2250,8 @@ set_renderers_editable( ofaViewEntries *self, gboolean editable )
 	priv = self->priv;
 
 	for( i=0 ; i<ENT_N_COLUMNS ; ++i ){
-		if( priv->renderers[i] && i != ENT_COL_DRECONCIL && i != ENT_COL_STATUS ){
+		if( priv->renderers[i] &&
+				i != ENT_COL_SETTLE && i != ENT_COL_DRECONCIL && i != ENT_COL_STATUS ){
 			g_object_set( G_OBJECT( priv->renderers[i] ), "editable", editable, NULL );
 		}
 	}

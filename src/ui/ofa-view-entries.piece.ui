@@ -118,6 +118,7 @@
                             <property name="can_focus">False</property>
                             <property name="margin_left">24</property>
                             <property name="xalign">0</property>
+                            <property name="ellipsize">end</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -350,23 +351,6 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkCheckButton" id="f3-deleted">
-                            <property name="label" translatable="yes">_Deleted</property>
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="receives_default">False</property>
-                            <property name="use_underline">True</property>
-                            <property name="xalign">0</property>
-                            <property name="draw_indicator">True</property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">3</property>
-                            <property name="width">1</property>
-                            <property name="height">1</property>
-                          </packing>
-                        </child>
-                        <child>
                           <object class="GtkCheckButton" id="f3-past">
                             <property name="label" translatable="yes">_Past</property>
                             <property name="visible">True</property>
@@ -384,6 +368,23 @@
                           </packing>
                         </child>
                         <child>
+                          <object class="GtkCheckButton" id="f3-deleted">
+                            <property name="label" translatable="yes">_Deleted</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">False</property>
+                            <property name="use_underline">True</property>
+                            <property name="xalign">0</property>
+                            <property name="draw_indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">0</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
                           <object class="GtkCheckButton" id="f3-future">
                             <property name="label" translatable="yes">_Future</property>
                             <property name="visible">True</property>
@@ -394,11 +395,14 @@
                             <property name="draw_indicator">True</property>
                           </object>
                           <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">4</property>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">1</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
                         </child>
                       </object>
                     </child>
@@ -524,23 +528,6 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkCheckButton" id="f4-rappro">
-                            <property name="label" translatable="yes">_Reconciliation</property>
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="receives_default">False</property>
-                            <property name="use_underline">True</property>
-                            <property name="xalign">0</property>
-                            <property name="draw_indicator">True</property>
-                          </object>
-                          <packing>
-                            <property name="left_attach">0</property>
-                            <property name="top_attach">3</property>
-                            <property name="width">1</property>
-                            <property name="height">1</property>
-                          </packing>
-                        </child>
-                        <child>
                           <object class="GtkCheckButton" id="f4-status">
                             <property name="label" translatable="yes">_Status</property>
                             <property name="visible">True</property>
@@ -556,6 +543,49 @@
                             <property name="width">1</property>
                             <property name="height">1</property>
                           </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="f4-rappro">
+                            <property name="label" translatable="yes">_Reconciliation</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">False</property>
+                            <property name="use_underline">True</property>
+                            <property name="xalign">0</property>
+                            <property name="draw_indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">2</property>
+                            <property name="top_attach">0</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkCheckButton" id="f4-settlement">
+                            <property name="label" translatable="yes">Se_ttlement</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">False</property>
+                            <property name="use_underline">True</property>
+                            <property name="xalign">0</property>
+                            <property name="draw_indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">2</property>
+                            <property name="top_attach">1</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
                         </child>
                         <child>
                           <placeholder/>
