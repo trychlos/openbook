@@ -273,7 +273,7 @@ init_properties_page( ofaDossierProperties *self, GtkContainer *container )
 	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( parent ));
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
 	ofa_currency_combo_set_main_window( combo, MY_WINDOW( self )->prot->main_window );
-	g_signal_connect( combo, "changed", G_CALLBACK( on_currency_changed ), self );
+	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	ofa_currency_combo_set_selected( combo, ofo_dossier_get_default_currency( priv->dossier ));
 
 	label = my_utils_container_get_child_by_name( container, "p1-status" );

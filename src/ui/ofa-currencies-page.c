@@ -233,7 +233,6 @@ setup_tree_view( ofaCurrenciesPage *self )
 
 	priv->store = ofa_currency_store_new( dossier );
 	gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
-	g_object_unref( priv->store );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(

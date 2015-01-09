@@ -32,7 +32,7 @@
  * @short_description: #ofaCurrencyCombo class definition.
  * @include: ui/ofa-currency-combo.h
  *
- * A class to embed a Currency combobox in a dialog.
+ * A #GtkComboBox -derived class to manage currencies.
  *
  * The class defines a "changed" signal which is triggered when the
  * selected currency changes.
@@ -59,7 +59,7 @@ typedef struct _ofaCurrencyComboPrivate        ofaCurrencyComboPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                  parent;
+	GtkComboBox              parent;
 
 	/*< private members >*/
 	ofaCurrencyComboPrivate *priv;
@@ -68,7 +68,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass             parent;
+	GtkComboBoxClass         parent;
 }
 	ofaCurrencyComboClass;
 

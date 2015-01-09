@@ -456,7 +456,7 @@ add_empty_row( ofaExeForwardPiece *self )
 	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( widget ));
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
 	ofa_currency_combo_set_main_window( combo, priv->main_window );
-	g_signal_connect( combo, "changed", G_CALLBACK( on_currency_changed ), self );
+	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	g_object_set_data( G_OBJECT( combo ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_object_set_data( G_OBJECT( widget ), DATA_COMBO, combo);
 

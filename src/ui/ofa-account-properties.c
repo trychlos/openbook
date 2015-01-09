@@ -270,7 +270,7 @@ v_init_dialog( myDialog *dialog )
 	ofa_currency_combo_attach_to( combo, GTK_CONTAINER( parent ));
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
 	ofa_currency_combo_set_main_window( combo, MY_WINDOW( dialog )->prot->main_window );
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_currency_changed ), dialog );
+	g_signal_connect( G_OBJECT( combo ), "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
 	if( priv->currency && g_utf8_strlen( priv->currency, -1 )){
 		ofa_currency_combo_set_selected( combo, priv->currency );
 	}

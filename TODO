@@ -402,10 +402,7 @@
  564 2015- 1- 8 Changing the dates of the exercice should update the
                 main window title
 
- 566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
-                of only Reconcil.
-
- 567 2015- 1- 9 have a EntryStore
+ 567 2015- 1- 9 have an EntryStore ?
 
  568
 
@@ -2456,6 +2453,10 @@
  565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
      2015- 1- 8 due to a bad management of weak references
      2015- 1- 9 done - svn #4427
+
+ 566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
+                of only Reconcil.
+     2015- 1- 9 done - svn #4428
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
