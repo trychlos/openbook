@@ -46,9 +46,25 @@ const gchar *ofa_mysql_idbms_get_provider_name( const ofaIDbms *instance );
  */
 mysqlInfos  *ofa_mysql_get_connect_infos      ( const gchar *dname );
 
+mysqlInfos  *ofa_mysql_get_connect_newdb_infos( const gchar *dname,
+														const gchar *root_account,
+														const gchar *root_password,
+														gchar **prev_dbname );
+
 gboolean     ofa_mysql_connect_with_infos     ( mysqlInfos *infos );
 
 void         ofa_mysql_free_connect_infos     ( mysqlInfos *infos );
+
+void         ofa_mysql_set_new_exercice       ( const ofaIDbms *instance,
+														const gchar *dname,
+														const gchar *dbname,
+														const GDate *begin_next,
+														const GDate *end_next );
+
+gboolean     ofa_mysql_duplicate_grants       ( const ofaIDbms *instance,
+														mysqlInfos *infos,
+														const gchar *user_account,
+														const gchar *prev_dbname );
 
 G_END_DECLS
 

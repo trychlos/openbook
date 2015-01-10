@@ -28,8 +28,11 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "api/ofa-box.h"
 #include "api/ofo-account.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -37,12 +40,12 @@
 
 #include "ui/ofa-misc-chkbal.h"
 
-static void      impute_acc_balance( GList **balances, const ofoAccount *account, const gchar *currency, ofaBalancesGrid *grid );
-static void      impute_ent_balance( GList **balances, const ofoEntry *entry, const gchar *currency, ofaBalancesGrid *grid );
-static void      impute_led_balance( GList **balances, const ofoLedger *ledger, const gchar *currency, ofaBalancesGrid *grid );
+static void         impute_acc_balance( GList **balances, const ofoAccount *account, const gchar *currency, ofaBalancesGrid *grid );
+static void         impute_ent_balance( GList **balances, const ofoEntry *entry, const gchar *currency, ofaBalancesGrid *grid );
+static void         impute_led_balance( GList **balances, const ofoLedger *ledger, const gchar *currency, ofaBalancesGrid *grid );
 static ofsCurrency *get_balance_for_currency( GList **list, const gchar *currency );
-static gboolean  check_balances( GList *balances );
-static gboolean  cmp_lists( GList *list_a, GList *list_b );
+static gboolean     check_balances( GList *balances, ofoDossier *dossier );
+static gboolean     cmp_lists( GList *list_a, GList *list_b );
 
 /**
  * ofa_misc_chkbalacc_run:
@@ -86,13 +89,13 @@ ofa_misc_chkbalacc_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 		if( bar ){
 			progress = ( gdouble ) i / ( gdouble ) count;
 			g_signal_emit_by_name( bar, "double", progress );
-			text = g_strdup_printf( "%d/%d", i+1, count );
+			text = g_strdup_printf( "%d/%d", i, count );
 			g_signal_emit_by_name( bar, "text", text );
 			g_free( text );
 		}
 	}
 
-	ok = check_balances( *balances );
+	ok = check_balances( *balances, dossier );
 
 	return( ok );
 }
@@ -161,7 +164,7 @@ ofa_misc_chkbalent_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 		if( bar ){
 			progress = ( gdouble ) i / ( gdouble ) count;
 			g_signal_emit_by_name( bar, "double", progress );
-			text = g_strdup_printf( "%d/%d", i+1, count );
+			text = g_strdup_printf( "%d/%d", i, count );
 			g_signal_emit_by_name( bar, "text", text );
 			g_free( text );
 		}
@@ -169,7 +172,7 @@ ofa_misc_chkbalent_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 
 	ofo_entry_free_dataset( entries );
 
-	ok = check_balances( *balances );
+	ok = check_balances( *balances, dossier );
 
 	return( ok );
 }
@@ -234,13 +237,13 @@ ofa_misc_chkballed_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 		if( bar ){
 			progress = ( gdouble ) i / ( gdouble ) count;
 			g_signal_emit_by_name( bar, "double", progress );
-			text = g_strdup_printf( "%d/%d", i+1, count );
+			text = g_strdup_printf( "%d/%d", i, count );
 			g_signal_emit_by_name( bar, "text", text );
 			g_free( text );
 		}
 	}
 
-	ok = check_balances( *balances );
+	ok = check_balances( *balances, dossier );
 
 	return( ok );
 }
@@ -288,15 +291,27 @@ get_balance_for_currency( GList **list, const gchar *currency )
 }
 
 static gboolean
-check_balances( GList *balances )
+check_balances( GList *balances, ofoDossier *dossier )
 {
+	static const gchar *thisfn = "ofa_misc_chkbal_check_balances";
 	gboolean ok;
 	GList *it;
 	ofsCurrency *sbal;
+	ofoCurrency *currency;
+	gint digits;
+	gdouble precision;
 
 	ok = TRUE;
 	for( it=balances ; it ; it=it->next ){
 		sbal = ( ofsCurrency * ) it->data;
+		currency = ofo_currency_get_by_code( dossier, sbal->currency );
+		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
+		digits = ofo_currency_get_digits( currency );
+		precision = exp10(( gdouble ) digits );
+		g_debug( "%s: precision=%.lf, debit=%.5lf, credit=%.5lf",
+				thisfn, precision, sbal->debit, sbal->credit );
+		sbal->debit = round( sbal->debit * precision ) / precision;
+		sbal->credit = round( sbal->credit * precision ) / precision;
 		ok &= ( sbal->debit == sbal->credit );
 	}
 

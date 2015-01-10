@@ -77,15 +77,10 @@ static void       idbms_set_current( const ofaIDbms *instance, const gchar *dnam
 static gboolean   idbms_query( const ofaIDbms *instance, void *handle, const gchar *query );
 static gboolean   idbms_query_ex( const ofaIDbms *instance, void *handle, const gchar *query, GSList **result );
 static gchar     *idbms_last_error( const ofaIDbms *instance, void *handle );
+static gchar     *find_new_database( mysqlInfos *infos, const gchar *dbname );
+static gboolean   local_get_db_exists( MYSQL *mysql, const gchar *dbname );
 static gboolean   idbms_new_dossier( const ofaIDbms *instance, const gchar *dname, const gchar *root_account, const gchar *root_password );
-static gboolean   idbms_set_admin_credentials( const ofaIDbms *instance, const gchar *dname, const gchar *root_account, const gchar *root_password, const gchar *adm_account, const gchar *adm_password );
-#if 0
-static gchar     *idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label );
-static gchar     *idbms_get_dossier_dbname( const ofaIDbms *instance, const gchar *label );
-static void      *idbms_connect_conv( const ofaIDbms *instance, mysqlConnect_oldv2 *infos, const gchar *label, const gchar *account, const gchar *password );
-static gboolean   idbms_delete_dossier( const ofaIDbms *instance, const gchar *label, const gchar *account, const gchar *password, gboolean drop_db, gboolean drop_accounts );
-static void       idbms_drop_database( const mysqlConnect_oldv2 *infos );
-#endif
+static gboolean   idbms_grant_user( const ofaIDbms *instance, const gchar *dname, const gchar *root_account, const gchar *root_password, const gchar *user_account, const gchar *user_password );
 
 /*
  * #ofaIDbms interface setup
@@ -114,9 +109,10 @@ ofa_mysql_idbms_iface_init( ofaIDbmsInterface *iface )
 	iface->connect_enter_get_database = ofa_mysql_connect_enter_piece_get_database;
 	iface->connect_enter_apply = ofa_mysql_connect_enter_piece_apply;
 	iface->new_dossier = idbms_new_dossier;
-	iface->set_admin_credentials = idbms_set_admin_credentials;
+	iface->grant_user = idbms_grant_user;
 	iface->backup = ofa_mysql_backup;
 	iface->restore = ofa_mysql_restore;
+	iface->archive = ofa_mysql_archive;
 #if 0
 	iface->get_dossier_host = idbms_get_dossier_host;
 	iface->get_dossier_dbname = idbms_get_dossier_dbname;
@@ -448,6 +444,50 @@ idbms_set_current( const ofaIDbms *instance, const gchar *dname, const GDate *be
 	g_free( send );
 }
 
+/*
+ * move the current exercice as an archived one
+ * define a new current exercice with the provided dates
+ */
+void
+ofa_mysql_set_new_exercice( const ofaIDbms *instance, const gchar *dname, const gchar *dbname, const GDate *begin, const GDate *end )
+{
+	GList *slist, *it;
+	const gchar *sdb, *sbegin, *send;
+	gchar *key, *content, *sbegin_next, *send_next;
+
+	/* move current exercice to archived */
+	slist = ofa_settings_dossier_get_string_list( dname, SETTINGS_DATABASE );
+
+	sdb = sbegin = send = NULL;
+	it = slist;
+	sdb = ( const gchar * ) it->data;
+	it = it ? it->next : NULL;
+	sbegin = it ? ( const gchar * ) it->data : NULL;
+	it = it ? it->next : NULL;
+	send = it ? ( const gchar * ) it->data : NULL;
+	g_return_if_fail( sdb && sbegin && send );
+
+	key = g_strdup_printf( "%s_%s", SETTINGS_DATABASE, send );
+	content = g_strdup_printf( "%s;%s;", sdb, sbegin );
+
+	ofa_settings_dossier_set_string( dname, key, content );
+
+	ofa_settings_free_string_list( slist );
+	g_free( key );
+	g_free( content );
+
+	/* define new current exercice */
+	sbegin_next = my_date_to_str( begin, MY_DATE_YYMD );
+	send_next = my_date_to_str( end, MY_DATE_YYMD );
+	content = g_strdup_printf( "%s;%s;%s;", dbname, sbegin_next, send_next );
+
+	ofa_settings_dossier_set_string( dname, SETTINGS_DATABASE, content );
+
+	g_free( content );
+	g_free( sbegin_next );
+	g_free( send_next );
+}
+
 static gboolean
 idbms_query( const ofaIDbms *instance, void *handle, const gchar *query )
 {
@@ -544,8 +584,104 @@ ofa_mysql_get_connect_infos( const gchar *dname )
 
 	slist = ofa_settings_dossier_get_string_list( dname, SETTINGS_DATABASE );
 	infos->dbname = g_strdup(( const gchar * ) slist->data );
+	ofa_settings_free_string_list( slist );
 
 	return( infos );
+}
+
+/**
+ * ofa_mysql_get_connect_newdb_infos:
+ * @dname: the name of the dossier in user's settings
+ * @root_account:
+ * @root_password:
+ * @prev_dbname: [out]:
+ *
+ * Allocate a new connection structure, filling it with the connection
+ * informations got from the settings, allocating a new database name
+ * for a new exercice.
+ *
+ * Return: a newly allocated connection structure, which should be
+ * #ofa_mysql_free_connect_infos() and #g_free() by the caller.
+ */
+mysqlInfos *
+ofa_mysql_get_connect_newdb_infos( const gchar *dname, const gchar *root_account, const gchar *root_password, gchar **prev_dbname )
+{
+	mysqlInfos *infos;
+	gchar *dbname, *newdb;
+
+	infos = ofa_mysql_get_connect_infos( dname );
+	dbname = infos->dbname;
+	*prev_dbname = g_strdup( infos->dbname );
+
+	infos->dbname = NULL;
+	infos->account = g_strdup( root_account );
+	infos->password = g_strdup( root_password );
+
+	newdb = find_new_database( infos, dbname );
+	g_free( dbname );
+	infos->dbname = newdb;
+
+	return( infos );
+}
+
+static gchar *
+find_new_database( mysqlInfos *infos, const gchar *dbname )
+{
+	static const gchar *thisfn = "ofa_mysql_idbms_find_new_database";
+	gchar *candidate, *prefix, *newdb, *p;
+	gboolean exists;
+	gint i;
+
+	newdb = NULL;
+
+	if( ofa_mysql_connect_with_infos( infos )){
+
+		p = g_strrstr( dbname, "_" );
+		if( p ){
+			prefix = g_strdup( dbname );
+			prefix[p-dbname] = '\0';
+			i = atoi( p+1 );
+		} else {
+			prefix = g_strdup( dbname );
+			i = 0;
+		}
+		while( TRUE ){
+			i += 1;
+			candidate = g_strdup_printf( "%s_%d", prefix, i );
+			exists = local_get_db_exists( infos->mysql, candidate );
+			g_debug( "%s: candidate=%s, exists=%s", thisfn, candidate, exists ? "True":"False" );
+			if( !exists ){
+				newdb = candidate;
+				break;
+			}
+			g_free( candidate );
+		}
+
+		g_free( prefix );
+		mysql_close( infos->mysql );
+		infos->mysql = NULL;
+	}
+
+	return( newdb );
+}
+
+static gboolean
+local_get_db_exists( MYSQL *mysql, const gchar *dbname )
+{
+	gboolean exists;
+	MYSQL_RES *result;
+
+	exists = FALSE;
+
+	result = mysql_list_dbs( mysql, dbname );
+	if( result ){
+		if( mysql_fetch_row( result )){
+			exists = TRUE;
+		}
+		mysql_free_result( result );
+	}
+
+	return( exists );
 }
 
 /*
@@ -642,19 +778,19 @@ free_stmt:
 }
 
 static gboolean
-idbms_set_admin_credentials( const ofaIDbms *instance, const gchar *dname,
+idbms_grant_user( const ofaIDbms *instance, const gchar *dname,
 											const gchar *root_account, const gchar *root_password,
-											const gchar *adm_account, const gchar *adm_password )
+											const gchar *user_account, const gchar *user_password )
 {
-	static const gchar *thisfn = "ofa_mysql_idbms_set_admin_credentials";
+	static const gchar *thisfn = "ofa_mysql_idbms_grant_user";
 	mysqlInfos *infos;
 	gchar *dbname;
 	GString *stmt;
 	gboolean user_granted;
 	gchar *hostname;
 
-	g_debug( "%s: instance=%p, dname=%s, root_account=%s, adm_account=%s",
-			thisfn, ( void * ) instance, dname, root_account, adm_account );
+	g_debug( "%s: instance=%p, dname=%s, root_account=%s, user_account=%s",
+			thisfn, ( void * ) instance, dname, root_account, user_account );
 
 	infos = ofa_mysql_get_connect_infos( dname );
 	dbname = infos->dbname;
@@ -679,16 +815,16 @@ idbms_set_admin_credentials( const ofaIDbms *instance, const gchar *dname,
 	/* doesn't trap error on create user as the user may already exist */
 	g_string_printf( stmt,
 			"CREATE USER '%s'@'%s' IDENTIFIED BY '%s'",
-				adm_account,
+				user_account,
 				hostname,
-				adm_password );
+				user_password );
 	g_debug( "%s: query=%s", thisfn, stmt->str );
 	mysql_query( infos->mysql, stmt->str );
 
 	g_string_printf( stmt,
 			"GRANT ALL ON %s.* TO '%s'@'%s' WITH GRANT OPTION",
 				dbname,
-				adm_account,
+				user_account,
 				hostname );
 	g_debug( "%s: query=%s", thisfn, stmt->str );
 	if( mysql_query( infos->mysql, stmt->str )){
@@ -698,7 +834,7 @@ idbms_set_admin_credentials( const ofaIDbms *instance, const gchar *dname,
 
 	g_string_printf( stmt,
 			"GRANT CREATE USER, FILE ON *.* TO '%s'@'%s'",
-				adm_account,
+				user_account,
 				hostname );
 	g_debug( "%s: query=%s", thisfn, stmt->str );
 	if( mysql_query( infos->mysql, stmt->str )){
@@ -717,6 +853,70 @@ free_stmt:
 	g_debug( "%s: user_granted=%s", thisfn, user_granted ? "True":"False" );
 
 	return( user_granted );
+}
+
+/*
+ * infos structure must have been already filled up with DBMS root
+ * credentials and target database
+ */
+gboolean
+ofa_mysql_duplicate_grants( const ofaIDbms *instance, mysqlInfos *infos, const gchar *user_account, const gchar *prev_dbname )
+{
+	static const gchar *thisfn = "ofa_mysql_duplicate_grants";
+	gchar *hostname, *query, *dbname, *str;
+	GSList *result, *irow, *icol;
+	GRegex *regex;
+	const gchar *cstr;
+	gboolean ok;
+
+	g_debug( "%s: instance=%p, infos=%p, user_account=%s",
+			thisfn, ( void * ) instance, ( void * ) infos, user_account );
+
+	dbname = infos->dbname;
+	infos->dbname = g_strdup( "mysql" );
+
+	if( !ofa_mysql_connect_with_infos( infos )){
+		mysql_close( infos->mysql );
+		return( FALSE );
+	}
+
+	str = g_strdup_printf( "\\b%s\\b", prev_dbname );
+	regex = g_regex_new( str, 0, 0, NULL );
+	g_free( str );
+
+	hostname = g_strdup( infos->host );
+	if( !hostname || !g_utf8_strlen( hostname, -1 )){
+		g_free( hostname );
+		hostname = g_strdup( "localhost" );
+	}
+
+	query = g_strdup_printf( "SHOW GRANTS FOR '%s'@'%s'", user_account, hostname );
+	ok = idbms_query_ex( instance, infos, query, &result );
+	g_free( query );
+	if( !ok ){
+		g_warning( "%s: %s", thisfn, mysql_error( infos->mysql ));
+		goto free_stmt;
+	}
+
+	for( irow=result ; irow ; irow=irow->next ){
+		icol = ( GSList * ) irow->data;
+		cstr = ( const gchar * ) icol->data;
+		g_debug( "%s: cstr=%s", thisfn, cstr );
+		if( g_regex_match( regex, cstr, 0, NULL )){
+			query = g_regex_replace_literal( regex, cstr, -1, 0, dbname, 0, NULL );
+			g_debug( "%s: query=%s", thisfn, query );
+			mysql_query( infos->mysql, query );
+			g_free( query );
+		}
+	}
+
+free_stmt:
+	mysql_close( infos->mysql );
+	g_free( hostname );
+	g_free( dbname );
+	g_regex_unref( regex );
+
+	return( ok );
 }
 
 #if 0
@@ -818,47 +1018,6 @@ mysql_display_error( mysqlInfos *infos )
 	gtk_widget_destroy( dialog );
 }
 
-/*
- * mysql_get_db_exists:
- */
-static gboolean
-mysql_get_db_exists( mysqlInfos *infos )
-{
-	gboolean exists;
-	mysqlInfos *temp;
-
-	exists = FALSE;
-	temp = g_new0( mysqlInfos, 1 );
-	memcpy( temp, infos, sizeof( mysqlInfos ));
-	temp->dbname = NULL;
-
-	if( ofa_mysql_connect_with_infos( temp )){
-		exists = local_get_db_exists( temp->mysql, infos->dbname );
-		mysql_close( temp->mysql );
-	}
-	g_free( temp );
-
-	return( exists );
-}
-
-static gboolean
-local_get_db_exists( MYSQL *mysql, const gchar *dbname )
-{
-	gboolean exists;
-	MYSQL_RES *result;
-
-	exists = FALSE;
-
-	result = mysql_list_dbs( mysql, dbname );
-	if( result ){
-		if( mysql_fetch_row( result )){
-			exists = TRUE;
-		}
-		mysql_free_result( result );
-	}
-
-	return( exists );
-}
 
 static gchar *
 idbms_get_dossier_host( const ofaIDbms *instance, const gchar *label )

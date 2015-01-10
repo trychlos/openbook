@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "api/my-double.h"
+#include "api/ofa-box.h"
 #include "api/ofa-settings.h"
 
 #include "core/ofa-preferences.h"
@@ -129,18 +130,38 @@ double_set_locale( void )
 /**
  * my_double_set_from_sql:
  *
- * Returns a double from the specified SQl stringified decimal
+ * Returns a double from the specified SQL-stringified decimal
  *
  * The input string is not supposed to be localized, nor decorated.
  */
 gdouble
 my_double_set_from_sql( const gchar *sql_string )
 {
+	return( my_double_set_from_sql_ex( sql_string, 5 ));
+}
+
+/**
+ * my_double_set_from_sql_ex:
+ *
+ * Returns a double from the specified SQL-stringified decimal
+ *
+ * The input string is not supposed to be localized, nor decorated.
+ */
+gdouble
+my_double_set_from_sql_ex( const gchar *sql_string, gint digits )
+{
+	gdouble amount;
+	gdouble precision;
+
 	if( !sql_string || !g_utf8_strlen( sql_string, -1 )){
 		return( 0.0 );
 	}
 
-	return( g_ascii_strtod( sql_string, NULL ));
+	precision = exp10( digits );
+	amount = g_ascii_strtod( sql_string, NULL );
+	amount = round( amount*precision ) / precision;
+
+	return( amount );
 }
 
 /**
@@ -174,10 +195,6 @@ my_double_set_from_str( const gchar *string )
  *
  * Returns: a newly allocated string which represents the specified
  * value, suitable for an SQL insertion.
- *
- * Prefer g_ascii_formatd() to g_ascii_dtostr() as the later doesn't
- * correctly rounds up the double (have a non-null twelth ou thirteenth
- * decimal digit)
  */
 gchar *
 my_double_to_sql( gdouble value )
@@ -185,7 +202,7 @@ my_double_to_sql( gdouble value )
 	gchar amount[1+G_ASCII_DTOSTR_BUF_SIZE];
 	gchar *text;
 
-	g_ascii_formatd( amount, G_ASCII_DTOSTR_BUF_SIZE, "%15.5f", value );
+	g_ascii_dtostr( amount, G_ASCII_DTOSTR_BUF_SIZE, value );
 	g_strchug( amount );
 	text = g_strdup( amount );
 

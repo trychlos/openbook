@@ -114,6 +114,8 @@ gboolean ofs_ope_is_valid        ( const ofsOpe *ope,
 GList   *ofs_ope_generate_entries( const ofsOpe *ope,
 										ofoDossier *dossier );
 
+void     ofs_ope_dump            ( const ofsOpe *ope );
+
 void     ofs_ope_free            ( ofsOpe *ope );
 
 G_END_DECLS

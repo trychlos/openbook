@@ -122,13 +122,17 @@ void             ofo_dossier_set_notes                 ( ofoDossier *dossier, co
 void             ofo_dossier_set_siren                 ( ofoDossier *dossier, const gchar *siren );
 void             ofo_dossier_set_sld_ope               ( ofoDossier *dossier, const gchar *ope );
 
+void             ofo_dossier_set_status                ( ofoDossier *dossier, const gchar *status );
+
 void             ofo_dossier_reset_currencies          ( ofoDossier *dossier );
 void             ofo_dossier_set_sld_account           ( ofoDossier *dossier, const gchar *currency, const gchar *account );
 
 gboolean         ofo_dossier_update                    ( ofoDossier *dossier );
 gboolean         ofo_dossier_update_currencies         ( ofoDossier *dossier );
 
-gboolean         ofo_dossier_backup                    ( const ofoDossier *dossier, const gchar *fname );
+gboolean         ofo_dossier_backup                    ( const ofoDossier *dossier,
+																const gchar *fname,
+																gboolean verbose );
 
 G_END_DECLS
 

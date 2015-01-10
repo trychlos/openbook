@@ -636,8 +636,8 @@ ofa_idbms_set_admin_credentials( const ofaIDbms *instance,
 	ok = FALSE;
 
 	/* let the DBMS provider define the account at the DBMS level */
-	if( OFA_IDBMS_GET_INTERFACE( instance )->set_admin_credentials ){
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->set_admin_credentials( instance, dname, root_account, root_password, adm_account, adm_password );
+	if( OFA_IDBMS_GET_INTERFACE( instance )->grant_user ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->grant_user( instance, dname, root_account, root_password, adm_account, adm_password );
 	}
 
 	/* define the dossier administrative account */
@@ -650,11 +650,17 @@ ofa_idbms_set_admin_credentials( const ofaIDbms *instance,
 
 		handle = ofa_idbms_connect( instance, dname, dbname, root_account, root_password );
 		query = g_strdup_printf(
-					"INSERT INTO OFA_T_ROLES "
+					"INSERT IGNORE INTO OFA_T_ROLES "
 					"	(ROL_USER,ROL_IS_ADMIN) VALUES ('%s',1)", adm_account );
-		ok = ofa_idbms_query( instance, handle, query );
-
+		ofa_idbms_query( instance, handle, query );
 		g_free( query );
+
+		/* be sure the user has 'admin' role */
+		query = g_strdup_printf(
+					"UPDATE OFA_T_ROLES SET ROL_IS_ADMIN=1 WHERE ROL_USER='%s'", adm_account );
+		ok = ofa_idbms_query( instance, handle, query );
+		g_free( query );
+
 		ofa_idbms_close( instance, handle );
 		g_free( dbname );
 	}
@@ -666,14 +672,14 @@ ofa_idbms_set_admin_credentials( const ofaIDbms *instance,
  * ofa_idbms_backup:
  */
 gboolean
-ofa_idbms_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
+ofa_idbms_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gboolean verbose )
 {
 	gboolean ok;
 
 	ok = FALSE;
 
 	if( OFA_IDBMS_GET_INTERFACE( instance )->backup ){
-		ok = OFA_IDBMS_GET_INTERFACE( instance )->backup( instance, handle, fname );
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->backup( instance, handle, fname, verbose );
 	}
 
 	return( ok );
@@ -695,6 +701,29 @@ ofa_idbms_restore( const ofaIDbms *instance,
 	if( OFA_IDBMS_GET_INTERFACE( instance )->restore ){
 
 		ok = OFA_IDBMS_GET_INTERFACE( instance )->restore( instance, dname, fname, root_account, root_password );
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_idbms_archive:
+ *
+ * Archive the current exercice, defining a new one.
+ */
+gboolean
+ofa_idbms_archive( const ofaIDbms *instance,
+		const gchar *dname, const gchar *root_account, const gchar *root_password,
+		const gchar *user_account, const GDate *begin_next, const GDate *end_next )
+{
+	gboolean ok;
+
+	g_return_val_if_fail( instance && OFA_IS_IDBMS( instance ), FALSE );
+
+	ok = FALSE;
+
+	if( OFA_IDBMS_GET_INTERFACE( instance )->archive ){
+		ok = OFA_IDBMS_GET_INTERFACE( instance )->archive( instance, dname, root_account, root_password, user_account, begin_next, end_next );
 	}
 
 	return( ok );

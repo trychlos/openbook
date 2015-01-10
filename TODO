@@ -372,6 +372,8 @@
                 import entries:  0.13268 s/row (2431 rows)
                 import entries:  0.13237 s/row (1985 rows)
      2015- 1- 9 problem is the same when closing ledgers
+     2015- 1-10 idem when validating entries:
+                count=484: average is 0.09846 s
 
  553 2015- 1- 6 deleting a dossier only removes its references from
                 settings - so DossierDelete and DossierDeletePrefs
@@ -404,7 +406,37 @@
 
  567 2015- 1- 9 have an EntryStore ?
 
- 568
+ 568 2015- 1- 9 would be a GtkFrame-derived class suitable for any 
+                piece of dialog ?
+
+ 569 2015- 1-10 intermediate ledger closing: refuse to close at the 
+                date of the end of the exercice
+
+ 570 2015- 1-10 refactor int-closing to "provisional closure" and
+                ledger-closure
+
+ 571 2015- 1-10 refactor exe-closing to exe-closure-assistant
+
+ 572 2015- 1-10 refactor: get rid of amounts, replacing them with
+                integers
+
+ 573 2015- 1-10 put back init, display, forward signals to myAssistant
+                checking if these three signals are actually sent to
+                each page including intro
+
+ 574 2015- 1-10 Settlement: set the view sortable, defaulting to dope
+                ascending
+
+ 575 2015- 1-10 Settlement: set settle balance with labels instead of
+                insensitive entries
+                + add the currency
+                + red color if unbalanced
+
+ 576 2015- 1-10 Reconciliation: should use a filter instead of reloading
+                reconciliated/unreconciliated/all entries
+                (settlement seems to be fine)
+
+ 577
 
 -----------------------------------------------------------------------
  DONE

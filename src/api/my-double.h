@@ -37,16 +37,18 @@
 
 G_BEGIN_DECLS
 
-gchar     *my_double_undecorate   ( const gchar *decorated );
+gchar     *my_double_undecorate     ( const gchar *decorated );
 
-gdouble    my_double_set_from_sql ( const gchar *sql_string );
-gdouble    my_double_set_from_str ( const gchar *string );
+gdouble    my_double_set_from_sql   ( const gchar *sql_string );
+gdouble    my_double_set_from_sql_ex( const gchar *sql_string, gint digits );
 
-gchar     *my_bigint_to_str       ( glong value );
+gdouble    my_double_set_from_str   ( const gchar *string );
 
-gchar     *my_double_to_sql       ( gdouble value );
-gchar     *my_double_to_str       ( gdouble value );
-gchar     *my_double_to_str_ex    ( gdouble value, gint decimals );
+gchar     *my_bigint_to_str         ( glong value );
+
+gchar     *my_double_to_sql         ( gdouble value );
+gchar     *my_double_to_str         ( gdouble value );
+gchar     *my_double_to_str_ex      ( gdouble value, gint decimals );
 
 G_END_DECLS
 

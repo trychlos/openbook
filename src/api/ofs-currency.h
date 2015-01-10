@@ -54,6 +54,8 @@ void ofs_currency_add_currency( GList **list,
 										gdouble debit,
 										gdouble credit );
 
+void ofs_currency_list_dump   ( GList *list );
+
 void ofs_currency_list_free   ( GList **list );
 
 G_END_DECLS

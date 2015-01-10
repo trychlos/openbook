@@ -62,16 +62,18 @@ typedef struct {
 	gboolean   backup_ok;
 	gulong     out_line;
 	gulong     err_line;
+	gboolean   verbose;
+	GMainLoop *loop;
 }
 	backupInfos;
 
 static const gchar *st_window_name = "MySQLBackupWindow";
 
-static gboolean    do_backup_restore( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn );
-static gchar      *build_cmdline( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname );
+static gboolean    do_backup_restore( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
+static gchar      *build_cmdline( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *new_dbname );
 static void        create_window( backupInfos *infos, const gchar *window_title );
 static GPid        exec_command( const gchar *cmdline, backupInfos *infos );
-static GIOChannel *set_up_io_channel( gint fd, GIOCondition cond, GIOFunc func, backupInfos *infos );
+static GIOChannel *set_up_io_channel( gint fd, GIOFunc func, backupInfos *infos );
 static gboolean    stdout_fn( GIOChannel *ioc, GIOCondition cond, backupInfos *infos );
 static gboolean    stdout_done( GIOChannel *ioc );
 static gboolean    stderr_fn( GIOChannel *ioc, GIOCondition cond, backupInfos *infos );
@@ -98,7 +100,7 @@ ofa_mysql_get_def_backup_cmd( const ofaIDbms *instance )
  * so that we will be able to reload the data to any database name.
  */
 gboolean
-ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
+ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gboolean verbose )
 {
 	const mysqlInfos *infos;
 	gchar *cmdline;
@@ -116,7 +118,8 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname )
 				cmdline,
 				fname,
 				_( "Openbook backup" ),
-				( GChildWatchFunc ) exit_backup_cb );
+				( GChildWatchFunc ) exit_backup_cb,
+				verbose );
 
 	g_free( cmdline );
 
@@ -143,8 +146,8 @@ ofa_mysql_restore( const ofaIDbms *instance,
 						const gchar *root_account, const gchar *root_password )
 {
 	mysqlInfos *infos;
-	gchar *cmdline;
 	gboolean ok;
+	gchar *cmdline;
 
 	infos = ofa_mysql_get_connect_infos( dname );
 	infos->account = g_strdup( root_account );
@@ -160,59 +163,143 @@ ofa_mysql_restore( const ofaIDbms *instance,
 				cmdline,
 				fname,
 				_( "Openbook restore" ),
-				( GChildWatchFunc ) exit_restore_cb );
+				( GChildWatchFunc ) exit_restore_cb,
+				TRUE );
+
+	g_free( cmdline );
 
 	ofa_mysql_free_connect_infos( infos );
+
+	return( ok );
+}
+
+/**
+ * ofa_mysql_archive:
+ *
+ * In the settings, the current exercice points to the database which
+ * contains the newly closed exercice. Its status has been set as
+ * 'Closed'.
+ * Duplicate the corresponding database to a new one, updating the
+ * settings accordingly.
+ */
+gboolean
+ofa_mysql_archive( const ofaIDbms *instance,
+						const gchar *dname,
+						const gchar *root_account, const gchar *root_password,
+						const gchar *user_account,
+						const GDate *begin_next, const GDate *end_next )
+{
+	static const gchar *thisfn = "ofa_mysql_archive";
+	mysqlInfos *infos;
+	gboolean ok;
+	gchar *prev_dbname, *new_dbname;
+	gchar *cmdline, *cmd;
+	gint status;
+
+	infos = ofa_mysql_get_connect_newdb_infos( dname, root_account, root_password, &prev_dbname );
+
+	new_dbname = infos->dbname;
+	infos->dbname = prev_dbname;
+
+	cmdline = build_cmdline( infos,
+			"mysql %O -u%U -p%P -e 'drop database %N' >/dev/null 2>&1; "
+			"mysql %O -u%U -p%P -e 'create database %N'; "
+			"mysqldump %O -u%U -p%P %B | mysql %O -u%U -p%P %N", NULL, new_dbname );
+
+	cmd = g_strdup_printf( "/bin/sh -c \"%s\"", cmdline );
+	ok = g_spawn_command_line_sync( cmd, NULL, NULL, &status, NULL );
+	g_debug( "%s: exit_status=%d", thisfn, status );
+	ok &= ( status == 0 );
+
 	g_free( cmdline );
+	g_free( cmd );
+
+	prev_dbname = infos->dbname;
+	infos->dbname = new_dbname;
+
+	if( ok ){
+		ofa_mysql_set_new_exercice( instance, dname, infos->dbname, begin_next, end_next );
+		ofa_mysql_duplicate_grants( instance, infos, user_account, prev_dbname );
+	}
+
+	g_free( prev_dbname );
+	ofa_mysql_free_connect_infos( infos );
 
 	return( ok );
 }
 
 static gboolean
 do_backup_restore( const mysqlInfos *sql_infos,
-						const gchar *def_cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn )
+						const gchar *def_cmdline, const gchar *fname, const gchar *window_title,
+						GChildWatchFunc pfn, gboolean verbose )
 {
 	static const gchar *thisfn = "ofa_mysql_do_backup_restore";
 	backupInfos *infos;
 	gchar *cmdline;
 	GPid child_pid;
 	gboolean ok;
+	guint source_id;
 
-	cmdline = build_cmdline( sql_infos, def_cmdline, fname );
+	cmdline = build_cmdline( sql_infos, def_cmdline, fname, NULL );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
 
 	infos = g_new0( backupInfos, 1 );
 	infos->backup_ok = FALSE;
 	infos->out_line = 0;
 	infos->err_line = 0;
+	infos->verbose = verbose;
 
-	create_window( infos, window_title );
-	g_debug( "%s: window=%p, textview=%p",
-			thisfn, ( void * ) infos->window, ( void * ) infos->textview );
-
-	child_pid = exec_command( cmdline, infos );
-
-	if( child_pid != ( GPid ) 0 ){
-		g_debug("%s: child PID=%lu", thisfn, ( gulong ) child_pid );
-
-		/* Watch the child, so we get the exit status */
-		g_child_watch_add( child_pid, pfn, infos );
-		g_debug( "%s: returning from g_child_watch_add", thisfn );
-		gtk_dialog_run( GTK_DIALOG( infos->window ));
-		my_utils_window_save_position( GTK_WINDOW( infos->window ), st_window_name );
+	if( infos->verbose ){
+		create_window( infos, window_title );
+		g_debug( "%s: window=%p, textview=%p",
+				thisfn, ( void * ) infos->window, ( void * ) infos->textview );
+	} else {
+		infos->loop = g_main_loop_new( NULL, FALSE );
 	}
 
-	gtk_widget_destroy( infos->window );
-	ok = infos->backup_ok;
+	child_pid = exec_command( cmdline, infos );
+	g_debug("%s: child_pid=%lu", thisfn, ( gulong ) child_pid );
 
+	if( child_pid != ( GPid ) 0 ){
+		/* Watch the child, so we get the exit status */
+		source_id = g_child_watch_add( child_pid, pfn, infos );
+		g_debug( "%s: returning from g_child_watch_add, source_id=%u", thisfn, source_id );
+
+		if( infos->verbose ){
+			g_debug( "%s: running the display dialog", thisfn );
+			gtk_dialog_run( GTK_DIALOG( infos->window ));
+			my_utils_window_save_position( GTK_WINDOW( infos->window ), st_window_name );
+
+		} else {
+			g_main_loop_run( infos->loop );
+			g_main_loop_unref( infos->loop );
+		}
+	}
+
+	if( infos->verbose ){
+		g_debug( "%s: destroying the display dialog", thisfn );
+		gtk_widget_destroy( infos->window );
+	}
+
+	ok = infos->backup_ok;
 	g_free( infos );
 
+	g_debug( "%s: returning %s", thisfn, ok ? "True":"False" );
 	return( ok );
 }
 
+/*
+ * %B: current database name
+ * %F: filename
+ * %N: new database name
+ * %O: connection options (host, port, socket)
+ * %P: password
+ * %U: account
+ */
 static gchar *
-build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gchar *fname )
+build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gchar *fname, const gchar *new_dbname )
 {
+	static const gchar *thisfn = "ofa_mysql_backup_build_cmdline";
 	gchar *sysfname, *cmdline;
 	GString *options;
 	GRegex *regex;
@@ -220,25 +307,33 @@ build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gcha
 	gchar *quoted;
 
 	cmdline = g_strdup( def_cmdline );
-	g_debug( "cmdline=%s", cmdline );
+	g_debug( "%s: def_cmdline=%s", thisfn, cmdline );
 
 	regex = g_regex_new( "%B", 0, 0, NULL );
-	g_debug( "dbname=%s", sql_infos->dbname );
 	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, sql_infos->dbname, 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
 	cmdline = newcmd;
 
-	sysfname = my_utils_filename_from_utf8( fname );
-	quoted = g_shell_quote( sysfname );
-	regex = g_regex_new( "%F", 0, 0, NULL );
-	g_debug( "quoted=%s", quoted );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, quoted, 0, NULL );
-	g_regex_unref( regex );
-	g_free( quoted );
-	g_free( sysfname );
-	g_free( cmdline );
-	cmdline = newcmd;
+	if( fname ){
+		sysfname = my_utils_filename_from_utf8( fname );
+		quoted = g_shell_quote( sysfname );
+		regex = g_regex_new( "%F", 0, 0, NULL );
+		newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, quoted, 0, NULL );
+		g_regex_unref( regex );
+		g_free( quoted );
+		g_free( sysfname );
+		g_free( cmdline );
+		cmdline = newcmd;
+	}
+
+	if( new_dbname ){
+		regex = g_regex_new( "%N", 0, 0, NULL );
+		newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, new_dbname, 0, NULL );
+		g_regex_unref( regex );
+		g_free( cmdline );
+		cmdline = newcmd;
+	}
 
 	options = g_string_new( "" );
 	if( sql_infos->host && g_utf8_strlen( sql_infos->host, -1 )){
@@ -273,6 +368,9 @@ build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gcha
 	return( cmdline );
 }
 
+/*
+ * the dialog is only created when running verbosely
+ */
 static void
 create_window( backupInfos *infos, const gchar *window_title )
 {
@@ -344,7 +442,6 @@ exec_command( const gchar *cmdline, backupInfos *infos )
 						&error )){
 		g_warning( "%s: g_spawn_async_with_pipes: %s", thisfn, error->message );
 		g_error_free( error );
-
 	} else {
 		ok = TRUE;
 	}
@@ -354,11 +451,8 @@ exec_command( const gchar *cmdline, backupInfos *infos )
 
 	if( ok ){
 		/* Now use GIOChannels to monitor stdout and stderr */
-		set_up_io_channel(
-				stdout_fd, G_IO_IN|G_IO_PRI|G_IO_ERR|G_IO_HUP|G_IO_NVAL, ( GIOFunc ) stdout_fn, infos );
-
-		set_up_io_channel(
-				stderr_fd, G_IO_IN|G_IO_PRI|G_IO_ERR|G_IO_HUP|G_IO_NVAL, ( GIOFunc ) stderr_fn, infos );
+		set_up_io_channel( stdout_fd, ( GIOFunc ) stdout_fn, infos );
+		set_up_io_channel( stderr_fd, ( GIOFunc ) stderr_fn, infos );
 	}
 
 	return( ok ? child_pid : ( GPid ) 0 );
@@ -369,7 +463,7 @@ exec_command( const gchar *cmdline, backupInfos *infos )
  *   happens on a pipe
  */
 static GIOChannel *
-set_up_io_channel( gint fd, GIOCondition cond, GIOFunc func, backupInfos *infos )
+set_up_io_channel( gint fd, GIOFunc func, backupInfos *infos )
 {
 	GIOChannel *ioc;
 
@@ -391,7 +485,7 @@ set_up_io_channel( gint fd, GIOCondition cond, GIOFunc func, backupInfos *infos 
 	 *  which will be dropped when the watch source
 	 *  is removed from the main loop (which happens
 	 *  when we return FALSE from the callback) */
-	g_io_add_watch( ioc, cond, func, infos );
+	g_io_add_watch( ioc, G_IO_IN|G_IO_PRI|G_IO_ERR|G_IO_HUP|G_IO_NVAL, func, infos );
 	g_io_channel_unref( ioc );
 
 	return( ioc );
@@ -411,16 +505,17 @@ stdout_fn( GIOChannel *ioc, GIOCondition cond, backupInfos *infos )
 
 	/* data for us to read? */
 	if( cond & (G_IO_IN | G_IO_PRI )){
-		len = 0;
-		memset( buf, 0x00, BUFSIZE );
-		ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
-		if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
-			return( stdout_done( ioc ));	/* = return FALSE */
+		if( infos->verbose ){
+			len = 0;
+			memset( buf, 0x00, BUFSIZE );
+			ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
+			if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
+				return( stdout_done( ioc ));	/* = return FALSE */
+			}
+			str = g_strdup_printf( "[stdout %lu] %s\n", ++infos->out_line, buf );
+			display_output( str, infos );
+			g_free( str );
 		}
-
-		str = g_strdup_printf( "[stdout %lu] %s\n", ++infos->out_line, buf );
-		display_output( str, infos );
-		g_free( str );
 	}
 
 	if( cond & ( G_IO_ERR | G_IO_HUP | G_IO_NVAL )){
@@ -450,16 +545,17 @@ stderr_fn( GIOChannel *ioc, GIOCondition cond, backupInfos *infos )
 
 	/* data for us to read? */
 	if( cond & (G_IO_IN | G_IO_PRI )){
-		len = 0;
-		memset( buf, 0x00, BUFSIZE );
-		ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
-		if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
-			return( stderr_done( ioc )); /* = return FALSE */
+		if( infos->verbose ){
+			len = 0;
+			memset( buf, 0x00, BUFSIZE );
+			ret = g_io_channel_read_chars( ioc, buf, BUFSIZE, &len, NULL );
+			if( len <= 0 || ret != G_IO_STATUS_NORMAL ){
+				return( stderr_done( ioc )); /* = return FALSE */
+			}
+			str = g_strdup_printf( "[stderr %lu] %s\n", ++infos->err_line, buf );
+			display_output( str, infos );
+			g_free( str );
 		}
-
-		str = g_strdup_printf( "[stderr %lu] %s\n", ++infos->err_line, buf );
-		display_output( str, infos );
-		g_free( str );
 	}
 
 	if( cond & ( G_IO_ERR | G_IO_HUP | G_IO_NVAL )){
@@ -475,6 +571,9 @@ stderr_done( GIOChannel *ioc )
 	return( FALSE );
 }
 
+/*
+ * this is only called when running verbosely
+ */
 static void
 display_output( const gchar *str, backupInfos *infos )
 {
@@ -528,53 +627,58 @@ exit_backup_cb( GPid child_pid, gint status, backupInfos *infos )
 	GtkWidget *dlg;
 	gchar *msg;
 
-	g_debug("%s: child PID=%lu, exit status=%d", thisfn, ( gulong ) child_pid, status );
+	g_debug("%s: child_pid=%lu, exit status=%d", thisfn, ( gulong ) child_pid, status );
 	msg = NULL;
 
 	/* Not sure how the exit status works on win32. Unix code follows */
-
 #ifdef G_OS_UNIX
 	if( WIFEXITED( status )){			/* did child terminate in a normal way? */
 
 		if( WEXITSTATUS( status ) == EXIT_SUCCESS ){
 			msg = g_strdup( _( "Backup has successfully run" ));
 			infos->backup_ok = TRUE;
+			g_debug( "%s: setting backup_ok to TRUE", thisfn );
 
 		} else {
 			msg = g_strdup_printf(
-								_( "Backup has exited with error code=%d" ),
-								WEXITSTATUS( status ));
+						_( "Backup has exited with error code=%d" ), WEXITSTATUS( status ));
 		}
-	} else if( WIFSIGNALED( status )){	/* was it terminated by a signal */
+	} else if( WIFSIGNALED( status )){	/* was it terminated by a signal ? */
 		msg = g_strdup_printf(
-							_( "Backup has exited with signal %d" ),
-							WTERMSIG( status ));
+						_( "Backup has exited with signal %d" ), WTERMSIG( status ));
 	} else {
-		msg = g_strdup( _( "Backup was terminated with unknown errors" ));
+		msg = g_strdup( _( "Backup was terminated with errors" ));
 	}
 #endif /* G_OS_UNIX */
 
 	g_spawn_close_pid( child_pid );		/* does nothing on unix, needed on win32 */
 
-	if( !msg || !g_utf8_strlen( msg, -1 )){
-		if( infos->backup_ok ){
-			msg = g_strdup( _( "Dossier successfully backuped" ));
-		} else {
-			msg = g_strdup( _( "An error occured while backuping the dossier" ));
+	if( infos->verbose ){
+		if( !msg || !g_utf8_strlen( msg, -1 )){
+			if( infos->backup_ok ){
+				msg = g_strdup( _( "Dossier successfully backuped" ));
+			} else {
+				msg = g_strdup( _( "An error occured while backuping the dossier" ));
+			}
 		}
+
+		dlg = gtk_message_dialog_new(
+					NULL,
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_MESSAGE_INFO,
+					GTK_BUTTONS_CLOSE,
+					"%s", msg );
+
+		gtk_dialog_run( GTK_DIALOG( dlg ));
+		gtk_widget_destroy( dlg );
+
+		gtk_widget_set_sensitive( infos->close_btn, TRUE );
+
+	} else {
+		g_main_loop_quit( infos->loop );
 	}
 
-	dlg = gtk_message_dialog_new(
-				NULL,
-				GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_INFO,
-				GTK_BUTTONS_CLOSE,
-				"%s", msg );
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( dlg );
-
-	gtk_widget_set_sensitive( infos->close_btn, TRUE );
+	g_free( msg );
 }
 
 static void
@@ -584,51 +688,56 @@ exit_restore_cb( GPid child_pid, gint status, backupInfos *infos )
 	GtkWidget *dlg;
 	gchar *msg;
 
-	g_debug("%s: child PID=%lu, exit status=%d", thisfn, ( gulong ) child_pid, status );
+	g_debug("%s: child_pid=%lu, exit status=%d", thisfn, ( gulong ) child_pid, status );
 	msg = NULL;
 
 	/* Not sure how the exit status works on win32. Unix code follows */
-
 #ifdef G_OS_UNIX
 	if( WIFEXITED( status )){			/* did child terminate in a normal way? */
 
 		if( WEXITSTATUS( status ) == EXIT_SUCCESS ){
 			msg = g_strdup( _( "Restore has successfully run" ));
 			infos->backup_ok = TRUE;
+			g_debug( "%s: setting restore_ok to TRUE", thisfn );
 
 		} else {
 			msg = g_strdup_printf(
-								_( "Restore has exited with error code=%d" ),
-								WEXITSTATUS( status ));
+						_( "Restore has exited with error code=%d" ), WEXITSTATUS( status ));
 		}
 	} else if( WIFSIGNALED( status )){	/* was it terminated by a signal */
 		msg = g_strdup_printf(
-							_( "Restore has exited with signal %d" ),
-							WTERMSIG( status ));
+						_( "Restore has exited with signal %d" ), WTERMSIG( status ));
 	} else {
-		msg = g_strdup( _( "Database was restored with unknown errors" ));
+		msg = g_strdup( _( "Database was restored with errors" ));
 	}
 #endif /* G_OS_UNIX */
 
 	g_spawn_close_pid( child_pid );		/* does nothing on unix, needed on win32 */
 
-	if( !msg || !g_utf8_strlen( msg, -1 )){
-		if( infos->backup_ok ){
-			msg = g_strdup( _( "Dossier successfully restored" ));
-		} else {
-			msg = g_strdup( _( "An error occured while restoring the dossier" ));
+	if( infos->verbose ){
+		if( !msg || !g_utf8_strlen( msg, -1 )){
+			if( infos->backup_ok ){
+				msg = g_strdup( _( "Dossier successfully restored" ));
+			} else {
+				msg = g_strdup( _( "An error occured while restoring the dossier" ));
+			}
 		}
+
+		dlg = gtk_message_dialog_new(
+					NULL,
+					GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_MESSAGE_INFO,
+					GTK_BUTTONS_CLOSE,
+					"%s", msg );
+
+		gtk_dialog_run( GTK_DIALOG( dlg ));
+		gtk_widget_destroy( dlg );
+
+		gtk_widget_set_sensitive( infos->close_btn, TRUE );
+
+	} else {
+		g_main_loop_quit( infos->loop );
 	}
 
-	dlg = gtk_message_dialog_new(
-				NULL,
-				GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_INFO,
-				GTK_BUTTONS_CLOSE,
-				"%s", msg );
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( dlg );
-
-	gtk_widget_set_sensitive( infos->close_btn, TRUE );
+	g_free( msg );
 }

@@ -758,6 +758,7 @@ p5_do_display( ofaImportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 	gtk_widget_set_can_focus( priv->p5_text, FALSE );
 
 	priv->p5_page = page;
+	gtk_widget_show_all( page );
 
 	/* search from something which would be able to import the data */
 	if( st_radios[priv->p2_idx].get_type ){

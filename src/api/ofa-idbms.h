@@ -349,38 +349,39 @@ typedef struct {
 															const gchar *root_password );
 
 	/**
-	 * set_admin_credentials:
+	 * grant_user:
 	 * @instance: the #ofaIDbms provider.
 	 * @dname: the name of the dossier to be restored.
 	 * @root_account: the root account of the DBMS server.
-	 * @root_password:
-	 * @adm_account: the administrative account for the dossier.
-	 * @adm_password:
+	 * @root_password: the corresponding password.
+	 * @user_account: the account to be granted.
+	 * @user_password: the corresponding password.
 	 *
-	 * Set the dossier administrative credentials.
+	 * Grant the user for access to the dossier.
 	 *
 	 * The #ofaIDbms interface code takes care of defining the account
 	 * as an administrator of the current exercice for the dossier.
 	 *
-	 * The DBMS provider may take advantage of this method to define
+	 * The DBMS provider should take advantage of this method to define
 	 * and grant the account at the DBMS level.
 	 *
 	 * Return value: %TRUE if the account has been successfully defined.
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *set_admin_credentials )     ( const ofaIDbms *instance,
+	gboolean      ( *grant_user )                ( const ofaIDbms *instance,
 															const gchar *dname,
 															const gchar *root_account,
 															const gchar *root_password,
-															const gchar *adm_account,
-															const gchar *adm_password );
+															const gchar *user_account,
+															const gchar *user_password );
 
 	/**
 	 * backup:
 	 * @instance: the #ofaIDbms provider.
 	 * @handle: the handle returned by the connection.
 	 * @fname: the destination filename
+	 * @verbose: run verbosely
 	 *
 	 * Backup the currently opened dossier.
 	 *
@@ -390,7 +391,8 @@ typedef struct {
 	 */
 	gboolean      ( *backup )                    ( const ofaIDbms *instance,
 															void *handle,
-															const gchar *fname );
+															const gchar *fname,
+															gboolean verbose );
 
 	/**
 	 * restore:
@@ -419,6 +421,36 @@ typedef struct {
 															const gchar *fname,
 															const gchar *root_account,
 															const gchar *root_password );
+
+	/**
+	 * archive:
+	 * @instance: the #ofaIDbms provider.
+	 * @dname: the name of the dossier to be archived.
+	 * @root_account: the root account of the DBMS server.
+	 * @root_password: the corresponding password.
+	 * @user_account: the account whose privileges are to be duplicated.
+	 * @begin_next: the beginning date of the next exercice.
+	 * @end_next: the ending date of the next exercice.
+	 *
+	 * Archive the current exercice.
+	 *
+	 * It is up to the DBMS provider to choose whether to archive the
+	 * current exercice, and to create a new database for the new
+	 * exercice, or to archive the current exercice into a new database,
+	 * keeping the current database for the new exercice, provided that
+	 * user setting be updated accordingly.
+	 *
+	 * Return value: %TRUE if OK.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *archive )                   ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *root_account,
+															const gchar *root_password,
+															const gchar *user_account,
+															const GDate *begin_next,
+															const GDate *end_next );
 
 	/* ... */
 
@@ -592,13 +624,22 @@ gboolean     ofa_idbms_set_admin_credentials     ( const ofaIDbms *instance,
 
 gboolean     ofa_idbms_backup                    ( const ofaIDbms *instance,
 															void *handle,
-															const gchar *fname );
+															const gchar *fname,
+															gboolean verbose );
 
 gboolean     ofa_idbms_restore                   ( const ofaIDbms *instance,
 															const gchar *dname,
 															const gchar *fname,
 															const gchar *root_account,
 															const gchar *root_password );
+
+gboolean     ofa_idbms_archive                   ( const ofaIDbms *instance,
+															const gchar *dname,
+															const gchar *root_account,
+															const gchar *root_password,
+															const gchar *user_account,
+															const GDate *begin_next,
+															const GDate *end_next );
 
 /* .... */
 

@@ -711,13 +711,14 @@ quote_query( const gchar *query )
  * Return: %TRUE if the backup is successful.
  */
 gboolean
-ofa_dbms_backup( const ofaDbms *dbms, const gchar *fname )
+ofa_dbms_backup( const ofaDbms *dbms, const gchar *fname, gboolean verbose )
 {
 	static const gchar *thisfn = "ofa_dbms_backup";
 	ofaDbmsPrivate *priv;
 	gboolean backup_ok;
 
-	g_debug( "%s: dbms=%p, fname=%s", thisfn, ( void * ) dbms, fname );
+	g_debug( "%s: dbms=%p, fname=%s, verbose=%s",
+			thisfn, ( void * ) dbms, fname, verbose ? "True":"False" );
 
 	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
 
@@ -729,7 +730,7 @@ ofa_dbms_backup( const ofaDbms *dbms, const gchar *fname )
 
 	if( !priv->dispose_has_run ){
 
-		backup_ok = ofa_idbms_backup( priv->pmodule, priv->phandle, fname );
+		backup_ok = ofa_idbms_backup( priv->pmodule, priv->phandle, fname, verbose );
 	}
 
 	return( backup_ok );

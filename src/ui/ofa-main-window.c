@@ -73,8 +73,10 @@
 struct _ofaMainWindowPrivate {
 	gboolean       dispose_has_run;
 
-	/* properties
+	/* dossier credentials at opening time
 	 */
+	gchar         *dos_account;
+	gchar         *dos_password;
 
 	/* internals
 	 */
@@ -284,6 +286,7 @@ static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             connect_window_for_enabled_updates( ofaMainWindow *window );
 static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
+static void             set_default_database( ofaMainWindow *window, ofsDossierOpen *sdo );
 static void             connect_dossier_for_enabled_updates( ofaMainWindow *window );
 static void             warning_exercice_unset( const ofaMainWindow *window );
 static void             warning_archived_dossier( const ofaMainWindow *window );
@@ -640,30 +643,36 @@ ofa_main_window_is_willing_to_quit( ofaMainWindow *window )
 static void
 set_menubar( ofaMainWindow *window, GMenuModel *model )
 {
+	ofaMainWindowPrivate *priv;
 	GtkWidget *menubar;
 
-	if( window->priv->menubar ){
-		gtk_widget_destroy( GTK_WIDGET( window->priv->menubar ));
-		window->priv->menubar = NULL;
+	priv = window->priv;
+
+	if( priv->menubar ){
+		gtk_widget_destroy( GTK_WIDGET( priv->menubar ));
+		priv->menubar = NULL;
 	}
 
-	if( window->priv->accel_group ){
-		gtk_window_remove_accel_group( GTK_WINDOW( window ), window->priv->accel_group );
-		g_object_unref( window->priv->accel_group );
-		window->priv->accel_group = NULL;
+	if( priv->accel_group ){
+		gtk_window_remove_accel_group( GTK_WINDOW( window ), priv->accel_group );
+		g_object_unref( priv->accel_group );
+		priv->accel_group = NULL;
 	}
 
 	/*accels = gtk_accel_groups_from_object( G_OBJECT( model ));
 	 *accels = gtk_accel_groups_from_object( G_OBJECT( menubar ));
 	 * return nil */
 
-	window->priv->accel_group = gtk_accel_group_new();
-	extract_accels_rec( window, model, window->priv->accel_group );
-	gtk_window_add_accel_group( GTK_WINDOW( window ), window->priv->accel_group );
+	priv->accel_group = gtk_accel_group_new();
+	extract_accels_rec( window, model, priv->accel_group );
+	gtk_window_add_accel_group( GTK_WINDOW( window ), priv->accel_group );
 
 	menubar = gtk_menu_bar_new_from_model( model );
-	gtk_grid_attach( window->priv->grid, menubar, 0, 0, 1, 1 );
-	window->priv->menubar = GTK_MENU_BAR( menubar );
+	g_debug( "set_menubar: model=%p (%s), menubar=%p, grid=%p (%s)",
+			( void * ) model, G_OBJECT_TYPE_NAME( model ), ( void * ) menubar,
+			( void * ) priv->grid, G_OBJECT_TYPE_NAME( priv->grid ));
+	gtk_grid_attach( priv->grid, menubar, 0, 0, 1, 1 );
+	priv->menubar = GTK_MENU_BAR( menubar );
 	gtk_widget_show_all( GTK_WIDGET( window ));
 }
 
@@ -794,6 +803,10 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 
 	priv->dossier = ofo_dossier_new();
 
+	if( !sdo->dbname ){
+		set_default_database( window, sdo );
+	}
+
 	if( !ofo_dossier_open( priv->dossier, sdo->dname, sdo->dbname, sdo->account, sdo->password )){
 		g_clear_object( &priv->dossier );
 		return;
@@ -809,11 +822,38 @@ on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data 
 	set_window_title( window );
 	connect_dossier_for_enabled_updates( window );
 
+	priv->dos_account = g_strdup( sdo->account );
+	priv->dos_password = g_strdup( sdo->password );
+
 	exe_begin = ofo_dossier_get_exe_begin( priv->dossier );
 	exe_end = ofo_dossier_get_exe_end( priv->dossier );
 	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
 		warning_exercice_unset( window );
 	}
+}
+
+static void
+set_default_database( ofaMainWindow *window, ofsDossierOpen *sdo )
+{
+	gchar *provider;
+	ofaIDbms *dbms;
+	gchar *str;
+	gchar **array, **iter;
+
+	provider = ofa_settings_get_dossier_provider( sdo->dname );
+	g_return_if_fail( provider && g_utf8_strlen( provider, -1 ));
+
+	dbms = ofa_idbms_get_provider_by_name( provider );
+	g_return_if_fail( dbms && OFA_IS_IDBMS( dbms ));
+
+	str = ofa_idbms_get_current( dbms, sdo->dname );
+	array = g_strsplit( str, ";", -1 );
+	iter = array+1;
+	sdo->dbname = g_strdup( *iter );
+
+	g_strfreev( array );
+	g_free( str );
+	g_clear_object( &dbms );
 }
 
 /*
@@ -1142,6 +1182,8 @@ do_close_dossier( ofaMainWindow *self )
 	priv = self->priv;
 
 	g_clear_object( &priv->dossier );
+	g_free( priv->dos_account );
+	g_free( priv->dos_password );
 
 	gtk_widget_destroy( GTK_WIDGET( priv->pane ));
 	priv->pane = NULL;
@@ -1433,14 +1475,37 @@ on_misc_arc_acc_ope_bal( GSimpleAction *action, GVariant *parameter, gpointer us
 ofoDossier *
 ofa_main_window_get_dossier( const ofaMainWindow *window )
 {
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( window ), NULL );
+	ofaMainWindowPrivate *priv;
 
-	if( !window->priv->dispose_has_run ){
+	g_return_val_if_fail( window && OFA_IS_MAIN_WINDOW( window ), NULL );
 
-		return( window->priv->dossier );
+	priv = window->priv;
+
+	if( !priv->dispose_has_run ){
+
+		return( priv->dossier );
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofa_main_window_get_dossier_credentials:
+ */
+void
+ofa_main_window_get_dossier_credentials( const ofaMainWindow *window, const gchar **account, const gchar **password )
+{
+	ofaMainWindowPrivate *priv;
+
+	g_return_if_fail( window && OFA_IS_MAIN_WINDOW( window ));
+
+	priv = window->priv;
+
+	if( !priv->dispose_has_run ){
+
+		*account = priv->dos_account;
+		*password = priv->dos_password;
+	}
 }
 
 /**

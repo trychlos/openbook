@@ -55,6 +55,9 @@ typedef struct {
 }
 	sBoxData;
 
+static gchar *get_csv_name( const ofsBoxDef *def );
+static gchar *compute_csv_name( const gchar *dbms_name );
+
 /*
  * box_new:
  * @def: the field definition.
@@ -520,6 +523,30 @@ ofa_box_init_fields_list( const ofsBoxDef *defs )
 }
 
 /**
+ * ofa_box_dump_fields_list:
+ * @fname: the name of a function to be printed as a prefix.
+ * @list: the list of fields.
+ */
+void
+ofa_box_dump_fields_list( const gchar *fname, const GList *fields )
+{
+	const GList *it;
+	sBoxData *box;
+	const sBoxHelpers *helper;
+	gchar *key, *value;
+
+	for( it=fields ; it ; it=it->next ){
+		box = ( sBoxData * ) it->data;
+		helper = box_get_helper_for_type( box->def->type );
+		key = get_csv_name( box->def );
+		value = helper->to_csv_str_fn( box );
+		g_debug( "%s: %s=%s", fname, key, value );
+		g_free( key );
+		g_free( value );
+	}
+}
+
+/**
  * ofa_box_get_dbms_columns:
  * @defs: the definition of ofaBox elementary data of the object
  *
@@ -596,9 +623,6 @@ ofa_box_parse_dbms_result( const ofsBoxDef *defs, GSList *row )
  * Returns the header of a CSV-type export, with a semi-colon separator,
  * as a newly allocated string which should be g_free() by the caller.
  */
-static gchar *get_csv_name( const ofsBoxDef *def );
-static gchar *compute_csv_name( const gchar *dbms_name );
-
 gchar *
 ofa_box_get_csv_header( const ofsBoxDef *defs, gchar field_sep )
 {

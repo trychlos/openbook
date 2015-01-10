@@ -120,6 +120,8 @@ GType          ofo_entry_get_type             ( void ) G_GNUC_CONST;
 
 ofoEntry      *ofo_entry_new                  ( void );
 
+void           ofo_entry_dump                 ( const ofoEntry *entry );
+
 void           ofo_entry_connect_handlers     ( const ofoDossier *dossier );
 
 GList         *ofo_entry_get_dataset_by_concil         ( const ofoDossier *dossier,

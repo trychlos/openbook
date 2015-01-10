@@ -802,6 +802,7 @@ p5_do_display( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 	my_progress_bar_attach_to( priv->p5_bar, GTK_CONTAINER( parent ));
 
 	priv->p5_page = page;
+	gtk_widget_show_all( page );
 
 	priv->base = ( ofaIExportable * ) g_object_new( st_types[priv->p1_idx].get_type(), NULL );
 	if( !OFA_IS_IEXPORTABLE( priv->base )){

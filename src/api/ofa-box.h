@@ -109,6 +109,8 @@ void          ofa_box_register_types       ( void );
 
 GList        *ofa_box_init_fields_list     ( const ofsBoxDef *defs );
 
+void          ofa_box_dump_fields_list     ( const gchar *fname, const GList *fields );
+
 gchar        *ofa_box_get_dbms_columns     ( const ofsBoxDef *defs );
 
 GList        *ofa_box_parse_dbms_result    ( const ofsBoxDef *defs, GSList *row );

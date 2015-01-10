@@ -131,7 +131,6 @@ static void        dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter
 static void        dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
-static void        dossier_set_status( ofoDossier *dossier, const gchar *status );
 static void        on_new_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
 static void        on_updated_object_cleanup_handler( ofoDossier *dossier, ofoBase *object, const gchar *prev_id );
 static void        on_deleted_object_cleanup_handler( ofoDossier *dossier, ofoBase *object );
@@ -2261,10 +2260,15 @@ dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter )
 	}
 }
 
-static void
-dossier_set_status( ofoDossier *dossier, const gchar *status )
+/**
+ * ofo_dossier_set_status:
+ * @dossier:
+ * @status:
+ */
+void
+ofo_dossier_set_status( ofoDossier *dossier, const gchar *status )
 {
-	static const gchar *thisfn = "ofo_dossier_set_status";
+	static const gchar *thisfn = "ofo_ofo_dossier_set_status";
 	ofoDossierPrivate *priv;
 
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
@@ -2505,7 +2509,7 @@ dossier_read_properties( ofoDossier *dossier )
 		icol = icol->next;
 		cstr = icol->data;
 		if( cstr && g_utf8_strlen( cstr, -1 )){
-			dossier_set_status( dossier, cstr );
+			ofo_dossier_set_status( dossier, cstr );
 		}
 
 		ok = TRUE;
@@ -2652,6 +2656,9 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	} else {
 		query = g_string_append( query, "DOS_SLD_OPE=NULL," );
 	}
+
+	cstr = ofo_dossier_get_status( dossier );
+	g_string_append_printf( query, "DOS_STATUS='%s',", cstr );
 
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
@@ -2867,7 +2874,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  * Backup the database behind the dossier
  */
 gboolean
-ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname )
+ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname, gboolean verbose )
 {
 	ofoDossierPrivate *priv;
 	gboolean ok;
@@ -2881,7 +2888,7 @@ ofo_dossier_backup( const ofoDossier *dossier, const gchar *fname )
 
 		priv = dossier->priv;
 
-		ok = ofa_dbms_backup( priv->dbms, fname );
+		ok = ofa_dbms_backup( priv->dbms, fname, verbose );
 	}
 
 	return( ok );

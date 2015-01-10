@@ -86,6 +86,7 @@ static gboolean st_debug                = FALSE;
 static void         ope_free_detail( ofsOpeDetail *detail );
 static void         alloc_regex( void );
 static void         compute_simple_formulas( sHelper *helper );
+static void         compute_dates( sHelper *helper );
 static gchar       *compute_formula( sHelper *helper, const gchar *formula, gint row, gint column );
 static gboolean     eval_formula_cb( const GMatchInfo *match_info, GString *result, sHelper *helper );
 static gboolean     is_detail_ref( const gchar *token, sHelper *helper, gchar **str );
@@ -107,6 +108,7 @@ static gboolean     check_for_dates( sChecker *checker );
 static gboolean     check_for_all_entries( sChecker *checker );
 static gboolean     check_for_entry( sChecker *checker, ofsOpeDetail *detail );
 static gboolean     check_for_currencies( sChecker *checker );
+static void         ope_dump_detail( ofsOpeDetail *detail, void *empty );
 
 /**
  * ofs_ope_new:
@@ -144,7 +146,11 @@ ofs_ope_new( const ofoOpeTemplate *template )
 void
 ofs_ope_apply_template( ofsOpe *ope, ofoDossier *dossier, const ofoOpeTemplate *template )
 {
+	static const gchar *thisfn = "ofs_ope_apply_template";
 	sHelper *helper;
+
+	g_debug( "%s: entering:", thisfn );
+	ofs_ope_dump( ope );
 
 	helper = g_new0( sHelper, 1 );
 	helper->ope = ope;
@@ -155,6 +161,9 @@ ofs_ope_apply_template( ofsOpe *ope, ofoDossier *dossier, const ofoOpeTemplate *
 	compute_simple_formulas( helper );
 
 	g_free( helper );
+
+	g_debug( "%s: returning:", thisfn );
+	ofs_ope_dump( ope );
 }
 
 /*
@@ -203,6 +212,8 @@ compute_simple_formulas( sHelper *helper )
 		ope->ledger = compute_formula( helper, ofo_ope_template_get_ledger( template ), -1, -1 );
 	}
 
+	compute_dates( helper );
+
 	count = ofo_ope_template_get_detail_count( template );
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
@@ -239,6 +250,38 @@ compute_simple_formulas( sHelper *helper )
 			detail->credit = my_double_set_from_str( str );
 			g_free( str );
 		}
+	}
+}
+
+static void
+compute_dates( sHelper *helper )
+{
+	ofsOpe *ope;
+	GDate date;
+	ofoLedger *ledger;
+
+	ope = helper->ope;
+
+	/* if dope is set, but not deffect:
+	 * set minimal deffect depending of dossier and ledger
+	 */
+	if( ope->dope_user_set && !ope->deffect_user_set ){
+		ledger = ofo_ledger_get_by_mnemo( helper->dossier, ope->ledger );
+		if( ledger ){
+			ofo_dossier_get_min_deffect( &date, helper->dossier, ledger );
+			if( my_date_compare( &date, &ope->dope ) < 0 ){
+				my_date_set_from_date( &ope->deffect, &ope->dope );
+			} else {
+				my_date_set_from_date( &ope->deffect, &date );
+			}
+		}
+	}
+
+	/* if dope is not set, but deffect is:
+	 * set dope = deffect
+	 */
+	if( !ope->dope_user_set && ope->deffect_user_set ){
+		my_date_set_from_date( &ope->dope, &ope->deffect );
 	}
 }
 
@@ -563,15 +606,15 @@ is_function( const gchar *token, sHelper *helper, gchar **str )
 	field = NULL;
 
 	ok = g_regex_match( st_regex_fn, token, 0, &info );
-	g_debug( "%s: token=%s, g_regex_match=%s", thisfn, token, ok ? "True":"False" );
+	DEBUG( "%s: token=%s, g_regex_match=%s", thisfn, token, ok ? "True":"False" );
 	if( ok ){
 		ok = g_match_info_matches( info );
-		g_debug( "%s: g_match_info_matches=%s", thisfn, ok ? "True":"False" );
+		DEBUG( "%s: g_match_info_matches=%s", thisfn, ok ? "True":"False" );
 	}
 	if( ok ){
 		field = g_match_info_fetch( info, 1 );
 		content = g_match_info_fetch( info, 2 );
-		g_debug( "%s: field=%s, content=%s", thisfn, field, content );
+		DEBUG( "%s: field=%s, content=%s", thisfn, field, content );
 
 		if( !g_utf8_collate( field, "ACLA" )){
 			*str = g_strdup( get_account_label( helper, content ));
@@ -748,6 +791,8 @@ get_closing_account( sHelper *helper, const gchar *content )
 		}
 	}
 
+	g_debug( "ofs_ope_get_closing_account: content=%s, str=%s", content, str );
+
 	return( str );
 }
 
@@ -756,8 +801,9 @@ get_closing_account( sHelper *helper, const gchar *content )
  * @ope: [in]: the input operation.
  * @dossier: the dossier.
  * @message: [out][allow-none]: a place to set the output error messsage.
-  @currencies: [out][allow-none]: a place to set the list of balances
- *  per currency.
+ * @currencies: [out][allow-none]: a place to set the list of balances
+ *  per currency. If set, the returned list should be #ofs_currency_list_free()
+ *  by the caller.
  *
  * Returns: %TRUE if the entries have been successfully generated and
  *  all chcecks are ok.
@@ -969,8 +1015,11 @@ check_for_currencies( sChecker *checker )
 	GList *it;
 	ofsCurrency *scur;
 	gint errors;
+	gdouble precision;
 
 	errors = 0;
+	precision = 1/PRECISION;
+
 	for( it=checker->currencies ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
 		if( scur->debit == scur->credit && !scur->debit ){
@@ -978,7 +1027,7 @@ check_for_currencies( sChecker *checker )
 			g_free( checker->message );
 			checker->message = g_strdup_printf( _( "Empty currency balance: %s" ), scur->currency );
 
-		} else if( scur->debit != scur->credit ){
+		} else if( abs( scur->debit - scur->credit ) > precision ){
 			errors += 1;
 			g_free( checker->message );
 			checker->message = g_strdup_printf( _( "Unbalanced currency: %s" ), scur->currency );
@@ -1026,6 +1075,46 @@ ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 	}
 
 	return( entries );
+}
+
+/**
+ * ofs_ope_dump:
+ */
+void
+ofs_ope_dump( const ofsOpe *ope )
+{
+	static const gchar *thisfn = "ofs_ope_dump";
+	gchar *sdope, *sdeffect;
+
+	sdope = my_date_to_str( &ope->dope, MY_DATE_DMYY );
+	sdeffect = my_date_to_str( &ope->deffect, MY_DATE_DMYY );
+
+	g_debug( "%s: ope=%p, template=%s, ledger=%s, ledger_user_set=%s,"
+			" dope=%s, dope_user_set=%s, deffect=%s, deffect_user_set=%s",
+				thisfn, ( void * ) ope, ope->ope_template,
+				ope->ledger, ope->ledger_user_set ? "True":"False",
+				sdope, ope->dope_user_set ? "True":"False",
+				sdeffect, ope->deffect_user_set ? "True":"False" );
+
+	g_free( sdope );
+	g_free( sdeffect );
+
+	g_list_foreach( ope->detail, ( GFunc ) ope_dump_detail, NULL );
+}
+
+static void
+ope_dump_detail( ofsOpeDetail *detail, void *empty )
+{
+	static const gchar *thisfn = "ofs_ope_dump";
+
+	g_debug( "%s: detail=%p, ref=%s, ref_user_set=%s, account=%s, account_user_set=%s,"
+			" label=%s, label_user_set=%s, debit=%.5lf, debit_user_set=%s, credit=%.5lf, credit_user_set=%s",
+				thisfn, ( void * ) detail,
+				detail->ref, detail->ref_user_set ? "True":"False",
+				detail->account, detail->account_user_set ? "True":"False",
+				detail->label, detail->label_user_set ? "True":"False",
+				detail->debit, detail->debit_user_set ? "True":"False",
+				detail->credit, detail->credit_user_set ? "True":"False" );
 }
 
 /**

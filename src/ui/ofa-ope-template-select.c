@@ -131,12 +131,12 @@ ofa_ope_template_select_class_init( ofaOpeTemplateSelectClass *klass )
 }
 
 static void
-on_main_window_finalized( gpointer is_null, gpointer finalized_main_window )
+on_dossier_finalized( gpointer is_null, gpointer finalized_dossier )
 {
-	static const gchar *thisfn = "ofa_ope_template_select_on_main_window_finalized";
+	static const gchar *thisfn = "ofa_ope_template_select_on_dossier_finalized";
 
-	g_debug( "%s: empty=%p, finalized_main_window=%p",
-			thisfn, ( void * ) is_null, ( void * ) finalized_main_window );
+	g_debug( "%s: empty=%p, finalized_dossier=%p",
+			thisfn, ( void * ) is_null, ( void * ) finalized_dossier );
 
 	g_return_if_fail( st_this && OFA_IS_OPE_TEMPLATE_SELECT( st_this ));
 
@@ -154,6 +154,7 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 {
 	static const gchar *thisfn = "ofa_ope_template_select_run";
 	ofaOpeTemplateSelectPrivate *priv;
+	ofoDossier *dossier;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -161,10 +162,11 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 			thisfn, ( void * ) main_window, asked_mnemo );
 
 	if( !st_this ){
+		dossier = ofa_main_window_get_dossier( main_window );
 		st_this = g_object_new(
 				OFA_TYPE_OPE_TEMPLATE_SELECT,
 				MY_PROP_MAIN_WINDOW,   main_window,
-				MY_PROP_DOSSIER,       ofa_main_window_get_dossier( main_window ),
+				MY_PROP_DOSSIER,       dossier,
 				MY_PROP_WINDOW_XML,    st_ui_xml,
 				MY_PROP_WINDOW_NAME,   st_ui_id,
 				MY_PROP_SIZE_POSITION, FALSE,
@@ -174,8 +176,8 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 		my_utils_window_restore_position( st_toplevel, st_ui_id );
 		my_dialog_init_dialog( MY_DIALOG( st_this ));
 
-		/* setup a weak reference on the main window to auto-unref */
-		g_object_weak_ref( G_OBJECT( main_window ), ( GWeakNotify ) on_main_window_finalized, NULL );
+		/* setup a weak reference on the dossier to auto-unref */
+		g_object_weak_ref( G_OBJECT( dossier ), ( GWeakNotify ) on_dossier_finalized, NULL );
 	}
 
 	priv = st_this->priv;

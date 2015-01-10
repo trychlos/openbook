@@ -228,7 +228,7 @@ do_backup( ofaBackup *self )
 	g_free( folder );
 
 	fname = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER( priv->dialog ));
-	ok = ofo_dossier_backup( priv->dossier, fname );
+	ok = ofo_dossier_backup( priv->dossier, fname, TRUE );
 	g_free( fname );
 
 	return( ok );

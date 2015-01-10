@@ -73,7 +73,8 @@ gboolean  ofa_dbms_query_int           ( const ofaDbms *dbms,
 												g_slist_free( R )
 
 gboolean  ofa_dbms_backup              ( const ofaDbms *dbms,
-												const gchar *fname );
+												const gchar *fname,
+												gboolean verbose );
 
 G_END_DECLS
 

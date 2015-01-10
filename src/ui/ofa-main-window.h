@@ -89,19 +89,23 @@ enum {
 	THM_VIEW_ENTRIES
 };
 
-ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
+ofaMainWindow *ofa_main_window_new                    ( const ofaApplication *application );
 
-ofaPage       *ofa_main_window_activate_theme    ( ofaMainWindow *window, gint theme_id );
+ofaPage       *ofa_main_window_activate_theme         ( ofaMainWindow *window, gint theme_id );
 
-gboolean       ofa_main_window_is_willing_to_quit( ofaMainWindow *window );
+gboolean       ofa_main_window_is_willing_to_quit     ( ofaMainWindow *window );
 
-ofoDossier    *ofa_main_window_get_dossier       ( const ofaMainWindow *window );
+ofoDossier    *ofa_main_window_get_dossier            ( const ofaMainWindow *window );
 
-void           ofa_main_window_close_dossier     ( ofaMainWindow *window );
+void           ofa_main_window_get_dossier_credentials( const ofaMainWindow *window,
+																	const gchar **account,
+																	const gchar **password );
 
-void           ofa_main_window_warning_no_entry  ( const ofaMainWindow *window );
+void           ofa_main_window_close_dossier          ( ofaMainWindow *window );
 
-gboolean       ofa_main_window_confirm_deletion  ( const ofaMainWindow *window, const gchar *message );
+void           ofa_main_window_warning_no_entry       ( const ofaMainWindow *window );
+
+gboolean       ofa_main_window_confirm_deletion       ( const ofaMainWindow *window, const gchar *message );
 
 G_END_DECLS
 

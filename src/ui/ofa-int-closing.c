@@ -484,11 +484,10 @@ prepare_grid( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
 	gtk_grid_attach( GTK_GRID( grid ), label, 0, priv->count, 1, 1 );
 
 	alignment = gtk_alignment_new( 0.5, 0.5, 1, 1 );
-	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 2, 2, 10, 10 );
+	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 2, 2, 0, 10 );
 	gtk_grid_attach( GTK_GRID( grid ), alignment, 1, priv->count, 1, 1 );
 	bar = my_progress_bar_new();
 	my_progress_bar_attach_to( bar, GTK_CONTAINER( alignment ));
-	g_debug( "prepare_grid: alignment=%p, bar=%p", ( void * ) alignment, ( void * ) bar );
 
 	priv->count += 1;
 }
@@ -507,8 +506,6 @@ close_foreach_ledger( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
 	g_return_val_if_fail( widget && GTK_IS_BIN( widget ), FALSE );
 
 	bar = gtk_bin_get_child( GTK_BIN( widget ));
-	g_debug( "close_foreach_ledger: widget=%p, bar=%p (%s)",
-			( void * ) widget, ( void * ) bar, G_OBJECT_TYPE_NAME( bar ));
 	g_return_val_if_fail( bar && MY_IS_PROGRESS_BAR( bar ), FALSE );
 	priv->bar = MY_PROGRESS_BAR( bar );
 

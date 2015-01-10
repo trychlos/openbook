@@ -32,6 +32,7 @@
 
 static ofsCurrency *currency_get_by_code( GList **list, const gchar *currency );
 static gint         cmp_currency( const ofsCurrency *a, const ofsCurrency *b );
+static void         currency_dump( ofsCurrency *cur, void *empty );
 static void         currency_free( ofsCurrency *cur );
 
 /**
@@ -77,6 +78,22 @@ ofs_currency_add_currency( GList **list, const gchar *currency, gdouble debit, g
 	found = currency_get_by_code( list, currency );
 	found->debit += debit;
 	found->credit += credit;
+}
+
+/**
+ * ofs_currency_list_dump:
+ */
+void
+ofs_currency_list_dump( GList *list )
+{
+	g_list_foreach( list, ( GFunc ) currency_dump, NULL );
+}
+
+static void
+currency_dump( ofsCurrency *cur, void *empty )
+{
+	g_debug( "  [%p] %s: debit=%.5lf, credit=%.5lf",
+			( void * ) cur, cur->currency, cur->debit, cur->credit );
 }
 
 /*
