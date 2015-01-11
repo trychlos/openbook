@@ -1254,6 +1254,7 @@ p6_do_archive_exercice( ofaExeClosing *self, gboolean with_ui )
  * remove settled entries on settleable accounts
  * remove reconciliated entries on reconciliable accounts
  * remove all entries on unsettleable or unreconciliable accounts
+ * update remaining entries status to PAST
  * reset all account balances to zero
  * last, erase audit table
  */

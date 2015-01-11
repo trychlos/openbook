@@ -511,54 +511,6 @@ ofo_entry_dump( const ofoEntry *entry )
 }
 
 /**
- * ofo_entry_get_dataset_by_concil:
- * @dossier: the dossier.
- * @account: the searched account number.
- * @mode: the conciliation status.
- *
- * Returns the dataset on the current exercice, for the given account,
- * with the given reconciliation status.
- *
- * The returned dataset only contains rough or validated entries; it
- * doesn't contain deleted entries.
- */
-GList *
-ofo_entry_get_dataset_by_concil( const ofoDossier *dossier, const gchar *account, ofaEntryConcil mode )
-{
-	GList *dataset;
-	GString *where;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	g_return_val_if_fail( account && g_utf8_strlen( account, -1 ), NULL );
-
-	where = g_string_new( "" );
-	g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
-
-	switch( mode ){
-		case ENT_CONCILED_YES:
-			g_string_append_printf( where,
-				"	AND ENT_CONCIL_DVAL!=0" );
-			break;
-		case ENT_CONCILED_NO:
-			g_string_append_printf( where,
-				"	AND (ENT_CONCIL_DVAL=0 OR ENT_CONCIL_DVAL IS NULL)" );
-			break;
-		case ENT_CONCILED_ALL:
-			break;
-		default:
-			break;
-	}
-
-	g_string_append_printf( where, " AND ENT_STATUS!=%d ", ENT_STATUS_DELETED );
-
-	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
-
-	g_string_free( where, TRUE );
-
-	return( dataset );
-}
-
-/**
  * ofo_entry_get_dataset_by_account:
  * @dossier: the dossier.
  * @account: the searched account number.

@@ -124,9 +124,6 @@ void           ofo_entry_dump                 ( const ofoEntry *entry );
 
 void           ofo_entry_connect_handlers     ( const ofoDossier *dossier );
 
-GList         *ofo_entry_get_dataset_by_concil         ( const ofoDossier *dossier,
-															const gchar *account,
-															ofaEntryConcil mode );
 GList         *ofo_entry_get_dataset_by_account        ( const ofoDossier *dossier,
 																const gchar *account );
 GList         *ofo_entry_get_dataset_by_ledger         ( const ofoDossier *dossier,

@@ -153,6 +153,7 @@ static gboolean     check_for_enable_view( ofaReconciliation *self, ofoAccount *
 static ofoAccount  *get_reconciliable_account( ofaReconciliation *self );
 static void         on_fetch_button_clicked( GtkButton *button, ofaReconciliation *self );
 static void         do_fetch_entries( ofaReconciliation *self );
+static void         on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self );
 static void         on_select_bat( GtkButton *button, ofaReconciliation *self );
 static void         on_file_set( GtkFileChooserButton *button, ofaReconciliation *self );
 static void         on_clear_button_clicked( GtkButton *button, ofaReconciliation *self );
@@ -431,6 +432,9 @@ setup_manual_rappro( ofaPage *page )
 	gtk_widget_set_tooltip_text(
 			GTK_WIDGET( priv->date_concil ),
 			_( "The date to which the entry will be set as reconciliated if no account transaction is proposed" ));
+
+	g_signal_connect(
+			G_OBJECT( priv->date_concil ), "changed", G_CALLBACK( on_date_concil_changed ), page );
 
 	gtk_misc_set_alignment( GTK_MISC( label ), 0, 0.5 );
 	gtk_label_set_width_chars( label, 10 );
@@ -765,7 +769,7 @@ setup_balance( ofaPage *page )
 	priv = OFA_RECONCILIATION( page )->priv;
 
 	box = GTK_BOX( gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 ));
-	/*gtk_widget_set_margin_bottom( GTK_WIDGET( box ), 2 );*/
+	gtk_widget_set_margin_bottom( GTK_WIDGET( box ), 2 );
 
 	label = GTK_LABEL( gtk_label_new( "" ));
 	gtk_label_set_width_chars( label, 13 );
@@ -1011,7 +1015,6 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconciliation *self
 static gboolean
 is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
 {
-	static const gchar *thisfn = "ofa_reconciliation_is_visible_entry";
 	gboolean visible;
 	gboolean validated;
 	gint mode;
@@ -1021,20 +1024,26 @@ is_visible_entry( ofaReconciliation *self, GtkTreeModel *tmodel, GtkTreeIter *it
 	mode = get_selected_concil_mode( self );
 	visible = TRUE;
 
-	switch( mode ){
-		case ENT_CONCILED_ALL:
-			/*g_debug( "%s: mode=%d, visible=True", thisfn, mode );*/
-			break;
-		case ENT_CONCILED_YES:
-			visible = validated;
-			/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
-			break;
-		case ENT_CONCILED_NO:
-			visible = !validated;
-			/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
-			break;
-		default:
-			g_warning( "%s: invalid display mode: %d", thisfn, mode );
+	if( ofo_entry_get_status( entry ) == ENT_STATUS_DELETED ){
+		visible = FALSE;
+
+	} else {
+		switch( mode ){
+			case ENT_CONCILED_ALL:
+				/*g_debug( "%s: mode=%d, visible=True", thisfn, mode );*/
+				break;
+			case ENT_CONCILED_YES:
+				visible = validated;
+				/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
+				break;
+			case ENT_CONCILED_NO:
+				visible = !validated;
+				/*g_debug( "%s: mode=%d, visible=%s", thisfn, mode, visible ? "True":"False" );*/
+				break;
+			default:
+				/* when display mode is not set */
+				visible = FALSE;
+		}
 	}
 
 	return( visible );
@@ -1113,13 +1122,12 @@ on_account_changed( GtkEntry *entry, ofaReconciliation *self )
 {
 	static const gchar *thisfn = "ofa_reconciliation_on_account_changed";
 	ofaReconciliationPrivate *priv;
-	gboolean enabled;
 	ofoAccount *account;
 	gdouble amount;
 	gchar *str;
 
 	priv = self->priv;
-	enabled = check_for_enable_view( self, &account, NULL );
+	check_for_enable_view( self, &account, NULL );
 
 	if( account ){
 		g_debug( "%s: setting account %s properties", thisfn, ofo_account_get_number( account ));
@@ -1136,6 +1144,8 @@ on_account_changed( GtkEntry *entry, ofaReconciliation *self )
 		gtk_label_set_text( priv->account_credit, str );
 		g_free( str );
 
+		/* automatically fetch entries */
+		on_fetch_button_clicked( NULL, self );
 
 	} else {
 		g_debug( "%s: clearing account properties", thisfn );
@@ -1143,11 +1153,6 @@ on_account_changed( GtkEntry *entry, ofaReconciliation *self )
 		gtk_label_set_text( priv->account_label, "" );
 		gtk_label_set_text( priv->account_debit, "" );
 		gtk_label_set_text( priv->account_credit, "" );
-	}
-
-	if( enabled ){
-		/* automatically fetch entries */
-		on_fetch_button_clicked( NULL, self );
 	}
 }
 
@@ -1187,10 +1192,14 @@ do_account_selection( ofaReconciliation *self )
 static void
 on_combo_mode_changed( GtkComboBox *box, ofaReconciliation *self )
 {
+	ofaReconciliationPrivate *priv;
+
 	if( check_for_enable_view( self, NULL, NULL )){
 
-		/* automatically fetch entries */
-		on_fetch_button_clicked( NULL, self );
+		priv = self->priv;
+
+		/* do not re-fetch entries, but refilter the view */
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 	}
 }
 
@@ -1264,11 +1273,11 @@ get_reconciliable_account( ofaReconciliation *self )
 }
 
 /*
- * there used to be a 'Fetch' button, but we have remove it to provider
- * a dynamic display
+ * there used to be a 'Fetch' button, but we have remove it to provide
+ * a more dynamic display
  */
 static void
-on_fetch_button_clicked( GtkButton *button, ofaReconciliation *self )
+on_fetch_button_clicked( GtkButton *button /* =NULL */, ofaReconciliation *self )
 {
 	do_fetch_entries( self );
 	display_bat_lines( self );
@@ -1279,9 +1288,7 @@ static void
 do_fetch_entries( ofaReconciliation *self )
 {
 	static const gchar *thisfn = "ofa_reconciliation_do_fetch_entries";
-	gboolean enableable;
 	ofoAccount *account;
-	gint mode;
 	GList *entries, *it;
 	ofoEntry *entry;
 	GtkTreeModel *tmodel;
@@ -1289,20 +1296,17 @@ do_fetch_entries( ofaReconciliation *self )
 	gchar *sdope, *sdeb, *scre, *sdrap, *snum;
 	const GDate *dconcil;
 
-	enableable = check_for_enable_view( self, &account, &mode );
-	g_return_if_fail( enableable );
+	check_for_enable_view( self, &account, NULL );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
-	g_return_if_fail( mode > ENT_CONCILED_FIRST && mode < ENT_CONCILED_LAST );
 
 	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
 
 	g_debug( "%s: clearing treestore=%p", thisfn, ( void * ) tmodel );
 	gtk_tree_store_clear( GTK_TREE_STORE( tmodel ));
 
-	entries = ofo_entry_get_dataset_by_concil(
+	entries = ofo_entry_get_dataset_by_account(
 					ofa_page_get_dossier( OFA_PAGE( self )),
-					ofo_account_get_number( account ),
-					mode );
+					ofo_account_get_number( account ));
 
 	for( it=entries ; it ; it=it->next ){
 
@@ -1339,6 +1343,21 @@ do_fetch_entries( ofaReconciliation *self )
 	}
 
 	ofo_entry_free_dataset( entries );
+}
+
+static void
+on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self )
+{
+	ofaReconciliationPrivate *priv;
+	GDate date;
+	gboolean valid;
+
+	priv = self->priv;
+
+	my_date_set_from_date( &date, my_editable_date_get_date( editable, &valid ));
+	if( valid ){
+		my_date_set_from_date( &priv->dconcil, &date );
+	}
 }
 
 /*
@@ -1779,16 +1798,19 @@ on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *colum
 static gboolean
 toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 {
+	ofaReconciliationPrivate *priv;
 	GtkTreeIter iter;
 	gchar *srappro;
 	gboolean bvalid;
 	GObject *object;
 	GDate date;
 
-	if( gtk_tree_model_get_iter( self->priv->tsort, &iter, path )){
+	priv = self->priv;
+
+	if( gtk_tree_model_get_iter( priv->tsort, &iter, path )){
 
 		gtk_tree_model_get(
-				self->priv->tsort,
+				priv->tsort,
 				&iter,
 				COL_DRECONCIL, &srappro,
 				COL_VALID,     &bvalid,
@@ -1810,12 +1832,7 @@ toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 		 * valid or if we have a proposed reconciliation from imported
 		 * BAT */
 		} else {
-			my_date_clear( &date );
-			if( srappro && g_utf8_strlen( srappro, -1 )){
-				my_date_set_from_str( &date, srappro, MY_DATE_DMYY );
-			} else {
-				my_date_set_from_date( &date, &self->priv->dconcil );
-			}
+			my_date_set_from_date( &date, &priv->dconcil );
 			if( my_date_is_valid( &date )){
 				reconciliate_entry( self, OFO_ENTRY( object ), &date, &iter );
 			}
@@ -1844,12 +1861,14 @@ toggle_rappro( ofaReconciliation *self, GtkTreePath *path )
 static void
 reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *sort_iter )
 {
+	ofaReconciliationPrivate *priv;
 	GtkTreeModel *store_tmodel;
 	GtkTreeIter filter_iter, store_iter, store_bat_iter;
 	ofoBatLine *batline;
 	gboolean is_valid_rappro;
 	gchar *str;
 
+	priv = self->priv;
 	is_valid_rappro = my_date_is_valid( drappro );
 	batline = NULL;
 
@@ -1861,12 +1880,12 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 	 * actually says if we have a *visible* child
 	 * but a possible batline is not visible when we are clearing
 	 * the reconciliation date */
-	store_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( self->priv->tfilter ));
+	store_tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 
 	gtk_tree_model_sort_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_SORT( self->priv->tsort ), &filter_iter, sort_iter );
+			GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, sort_iter );
 	gtk_tree_model_filter_convert_iter_to_child_iter(
-			GTK_TREE_MODEL_FILTER( self->priv->tfilter ), &store_iter, &filter_iter );
+			GTK_TREE_MODEL_FILTER( priv->tfilter ), &store_iter, &filter_iter );
 
 	if( gtk_tree_model_iter_has_child( store_tmodel, &store_iter ) &&
 		gtk_tree_model_iter_children( store_tmodel, &store_bat_iter, &store_iter )){
