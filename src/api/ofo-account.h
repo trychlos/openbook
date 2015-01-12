@@ -65,6 +65,9 @@ void            ofo_account_free_balances        ( GList *balances );
 void            ofo_account_connect_handlers     ( const ofoDossier *dossier );
 
 GList          *ofo_account_get_dataset          ( ofoDossier *dossier );
+GList          *ofo_account_get_dataset_for_solde( ofoDossier *dossier );
+#define         ofo_account_free_dataset( L )    g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
+
 ofoAccount     *ofo_account_get_by_number        ( ofoDossier *dossier, const gchar *number );
 gboolean        ofo_account_use_class            ( ofoDossier *dossier, gint number );
 gboolean        ofo_account_use_currency         ( ofoDossier *dossier, const gchar *devise );
@@ -102,7 +105,7 @@ gboolean        ofo_account_has_children         ( const ofoAccount *account, of
 GList          *ofo_account_get_children         ( const ofoAccount *account, ofoDossier *dossier );
 gboolean        ofo_account_is_child_of          ( const ofoAccount *account, const ofoAccount *candidate );
 
-void            ofo_account_archive_open_balances( ofoDossier *dossier );
+gboolean        ofo_account_archive_open_balance ( ofoAccount *account, ofoDossier *dossier );
 
 void            ofo_account_set_number           ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label            ( ofoAccount *account, const gchar *label );

@@ -204,7 +204,6 @@ static gint         entry_count_for_ope_template( const ofaDbms *dbms, const gch
 static gint         entry_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
-static void         entry_set_settlement_number( ofoEntry *entry, ofxCounter number );
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static gboolean     entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
@@ -876,84 +875,6 @@ ofo_entry_get_dataset_remaining_for_val( const ofoDossier *dossier )
 	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
 
 	g_string_free( where, TRUE );
-
-	return( dataset );
-}
-
-/**
- * ofo_entry_get_unreconciliated:
- * @dossier: the current dossier.
- *
- * Returns the dataset of unreconciliated entries to be renew in the
- * next exercice.
- */
-GList *
-ofo_entry_get_unreconciliated( const ofoDossier *dossier )
-{
-	GList *dataset;
-	GString *query;
-	gchar *str;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	dataset = NULL;
-	query = g_string_new( "" );
-
-	str = effect_in_exercice( dossier);
-	g_string_append_printf( query,
-			"OFA_T_ENTRIES,OFA_T_ACCOUNTS "
-			"	WHERE %s "
-			"		AND ENT_CONCIL_DVAL IS NULL "
-			"		AND ENT_ACCOUNT=ACC_NUMBER "
-			"		AND ACC_RECONCILIABLE='%s' ", str, ACCOUNT_RECONCILIABLE );
-	g_free( str );
-
-	dataset = ofo_base_load_dataset(
-					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
-					query->str,
-					OFO_TYPE_ENTRY );
-
-	g_string_free( query, TRUE );
-
-	return( dataset );
-}
-
-/**
- * ofo_entry_get_unsettled:
- * @dossier: the current dossier.
- *
- * Returns the dataset of unsettled entries to be renew in the next
- * exercice.
- */
-GList *
-ofo_entry_get_unsettled( const ofoDossier *dossier )
-{
-	GList *dataset;
-	GString *query;
-	gchar *str;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	dataset = NULL;
-	query = g_string_new( "" );
-
-	str = effect_in_exercice( dossier);
-	g_string_append_printf( query,
-			"OFA_T_ENTRIES,OFA_T_ACCOUNTS "
-			"	WHERE %s "
-			"		AND (ENT_STLMT_NUMBER=0 OR ENT_STLMT_NUMBER IS NULL) "
-			"		AND ENT_ACCOUNT=ACC_NUMBER "
-			"		AND ACC_SETTLEABLE='%s' ", str, ACCOUNT_SETTLEABLE );
-	g_free( str );
-
-	dataset = ofo_base_load_dataset(
-					st_boxed_defs,
-					ofo_dossier_get_dbms( dossier ),
-					query->str,
-					OFO_TYPE_ENTRY );
-
-	g_string_free( query, TRUE );
 
 	return( dataset );
 }
@@ -1718,13 +1639,13 @@ ofo_entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *stamp )
 	ofo_base_setter( ENTRY, entry, timestamp, ENT_CONCIL_STAMP, stamp );
 }
 
-/*
+/**
  * ofo_entry_set_settlement_number:
  *
  * The reconciliation may be unset by setting @number to 0.
  */
-static void
-entry_set_settlement_number( ofoEntry *entry, ofxCounter number )
+void
+ofo_entry_set_settlement_number( ofoEntry *entry, ofxCounter number )
 {
 	ofo_base_setter( ENTRY, entry, counter, ENT_STLMT_NUMBER, number );
 }
@@ -2320,7 +2241,7 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, o
 	query = g_string_new( "UPDATE OFA_T_ENTRIES SET " );
 
 	if( number > 0 ){
-		entry_set_settlement_number( entry, number );
+		ofo_entry_set_settlement_number( entry, number );
 		entry_set_settlement_user( entry, user );
 		entry_set_settlement_stamp( entry, my_utils_stamp_set_now( &stamp ));
 
@@ -2331,7 +2252,7 @@ do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, o
 		g_free( stamp_str );
 
 	} else {
-		entry_set_settlement_number( entry, -1 );
+		ofo_entry_set_settlement_number( entry, -1 );
 		entry_set_settlement_user( entry, NULL );
 		entry_set_settlement_stamp( entry, NULL );
 

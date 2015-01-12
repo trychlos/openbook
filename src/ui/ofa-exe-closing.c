@@ -34,6 +34,7 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
+#include "api/ofa-dbms.h"
 #include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -118,8 +119,7 @@ enum {
 	PAGE_DBMS,							/* p3 - Content */
 	PAGE_CHECKS,						/* p4 - Progress */
 	PAGE_CONFIRM,						/* p5 - Confirm */
-	PAGE_CLOSE,							/* p6 - Progress */
-	PAGE_SUMMARY						/* Summary */
+	PAGE_CLOSE,							/* p6 - Progress then Summary */
 };
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-exe-closing.ui";
@@ -155,11 +155,13 @@ static void             p6_do_close( ofaExeClosing *self, GtkAssistant *assistan
 static gboolean         p6_validate_entries( ofaExeClosing *self );
 static gboolean         p6_solde_accounts( ofaExeClosing *self );
 static gint             p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui );
+static void             set_forward_settlement_number( GList *entries, const gchar *account, ofxCounter counter );
 static gboolean         p6_close_ledgers( ofaExeClosing *self );
 static gboolean         p6_archive_exercice( ofaExeClosing *self );
 static gboolean         p6_do_archive_exercice( ofaExeClosing *self, gboolean with_ui );
 static gboolean         p6_cleanup( ofaExeClosing *self );
 static gboolean         p6_forward( ofaExeClosing *self );
+static gboolean         p6_open( ofaExeClosing *self );
 static void             error_dialog( ofaExeClosing *self, const gchar *msg );
 
 static void
@@ -313,10 +315,6 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page_widget, ofaExeClosing *self
 		case PAGE_CLOSE:
 			p6_do_close( self, assistant, page_widget );
 			break;
-
-		/* page_num=6 / p7  [Progress] Close the exercice and print the result */
-		case PAGE_SUMMARY:
-			break;
 	}
 }
 
@@ -393,6 +391,7 @@ p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 	gint exe_length;
 
 	priv = self->priv;
+	priv->assistant = assistant;
 	dossier = MY_WINDOW( self )->prot->dossier;
 	exe_length = ofo_dossier_get_exe_length( dossier );
 
@@ -562,6 +561,7 @@ p2_do_forward( ofaExeClosing *self, GtkWidget *page_widget )
 	ofo_dossier_set_exe_begin( dossier, begin_cur );
 	ofo_dossier_set_exe_end( dossier, end_cur );
 	ofa_idbms_set_current( priv->dbms, priv->dname, begin_cur, end_cur );
+	ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
 
 	ofa_exe_forward_piece_apply( priv->p2_forward );
 
@@ -639,7 +639,6 @@ p3_check_for_complete( ofaExeClosing *self )
 static void
 p3_do_forward( ofaExeClosing *self, GtkWidget *page_widget )
 {
-	p6_do_archive_exercice( self, FALSE );
 }
 
 static void
@@ -669,7 +668,6 @@ p4_checks( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget 
 
 		page_num = gtk_assistant_get_current_page( assistant );
 
-		priv->assistant = assistant;
 		priv->page_w = gtk_assistant_get_nth_page( assistant, page_num );
 		priv->p4_entries_ok = FALSE;
 		priv->p4_ledgers_ok = FALSE;
@@ -950,8 +948,12 @@ p6_validate_entries( ofaExeClosing *self )
 
 		text = g_strdup_printf( "%u/%u", i, count );
 		g_signal_emit_by_name( bar, "text", text );
+
+		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
+
 		g_free( text );
 	}
+
 	if( !entries ){
 		g_signal_emit_by_name( bar, "text", "0/0" );
 	}
@@ -994,6 +996,9 @@ p6_solde_accounts( ofaExeClosing *self )
  *
  * It shouldn't remain any amount on daily soldes, but we do not take
  * care of that here.
+ *
+ * Note: forward entries on setlleable accounts are automatically set
+ * as settled, being balanced with the corresponding solde entry.
  */
 static gint
 p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
@@ -1001,14 +1006,14 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 	static const gchar *thisfn = "ofa_exe_closing_p6_do_solde_accounts";
 	ofaExeClosingPrivate *priv;
 	ofoDossier *dossier;
-	GList *accounts, *entries, *it, *ite, *currencies;
+	GList *accounts, *sld_entries, *for_entries, *it, *ite, *currencies;
 	myProgressBar *bar;
 	gint count, i;
 	gdouble progress;
 	gchar *text, *msg;
 	ofoAccount *account;
 	ofoOpeTemplate *sld_template, *for_template;
-	const gchar *sld_ope, *for_ope;
+	const gchar *sld_ope, *for_ope, *acc_number;
 	ofxAmount debit, credit;
 	const GDate *end_cur, *begin_next;
 	gboolean is_ran;
@@ -1016,6 +1021,8 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 	ofsOpeDetail *detail;
 	gint errors;
 	gdouble precision;
+	ofxCounter counter;
+	ofoEntry *entry;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1023,7 +1030,7 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 	bar = NULL;
 	errors = 0;
 	dossier = MY_WINDOW( self )->prot->dossier;
-	accounts = ofo_account_get_dataset( dossier );
+	accounts = ofo_account_get_dataset_for_solde( dossier );
 	count = g_list_length( accounts );
 	precision = 1/PRECISION;
 
@@ -1047,84 +1054,152 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 
 	for( i=1, it=accounts ; it ; ++i, it=it->next ){
 		account = OFO_ACCOUNT( it->data );
+		debit = ofo_account_get_val_debit( account );
+		credit = ofo_account_get_val_credit( account );
 
-		if( !ofo_account_is_root( account )){
-			debit = ofo_account_get_val_debit( account );
-			credit = ofo_account_get_val_credit( account );
+		if( fabs( debit-credit ) > precision ){
 
-			if( fabs( debit - credit ) > precision ){
-				ope = ofs_ope_new( sld_template );
-				my_date_set_from_date( &ope->deffect, end_cur );
+			acc_number = ofo_account_get_number( account );
+			sld_entries = NULL;
+			for_entries = NULL;
+			counter = 0;
+
+			/* create solde operation
+			 * and generate corresponding solde entries */
+			ope = ofs_ope_new( sld_template );
+			my_date_set_from_date( &ope->deffect, end_cur );
+			ope->deffect_user_set = TRUE;
+			detail = ( ofsOpeDetail * ) ope->detail->data;
+			detail->account = g_strdup( acc_number );
+			detail->account_user_set = TRUE;
+			if( debit > credit ){
+				detail->credit = debit-credit;
+				detail->credit_user_set = TRUE;
+			} else {
+				detail->debit = credit-debit;
+				detail->debit_user_set = TRUE;
+			}
+
+			ofs_ope_apply_template( ope, dossier, sld_template );
+
+			if( ofs_ope_is_valid( ope, dossier, &msg, &currencies )){
+				sld_entries = ofs_ope_generate_entries( ope, dossier );
+
+			} else {
+				g_warning( "%s: %s", thisfn, msg );
+				g_free( msg );
+				ofs_currency_list_dump( currencies );
+				errors += 1;
+			}
+			ofs_currency_list_free( &currencies );
+
+			ofs_ope_free( ope );
+
+			/* create forward operation
+			 * and generate corresponding entries */
+			is_ran = ofo_account_is_forward( account );
+			if( is_ran ){
+				ope = ofs_ope_new( for_template );
+				my_date_set_from_date( &ope->deffect, begin_next );
 				ope->deffect_user_set = TRUE;
 				detail = ( ofsOpeDetail * ) ope->detail->data;
-				detail->account = g_strdup( ofo_account_get_number( account ));
+				detail->account = g_strdup( acc_number );
 				detail->account_user_set = TRUE;
 				if( debit > credit ){
-					detail->credit = debit-credit;
-					detail->credit_user_set = TRUE;
-				} else {
-					detail->debit = credit-debit;
+					detail->debit = debit-credit;
 					detail->debit_user_set = TRUE;
-				}
-
-				g_debug( "%s: applying solde template for account %s", thisfn, ofo_account_get_number( account ));
-				ofs_ope_apply_template( ope, dossier, sld_template );
-
-				if( ofs_ope_is_valid( ope, dossier, &msg, &currencies )){
-					entries = ofs_ope_generate_entries( ope, dossier );
-					for( ite=entries ; ite ; ite=ite->next ){
-						ofo_entry_insert( OFO_ENTRY( ite->data ), dossier );
-						/*ofo_entry_dump( OFO_ENTRY( ite->data ));*/
-					}
 				} else {
-					g_warning( "%s: %s", thisfn, msg );
-					g_free( msg );
-					ofs_currency_list_dump( currencies );
-					errors += 1;
+					detail->credit = credit-debit;
+					detail->credit_user_set = TRUE;
 				}
-				ofs_currency_list_free( &currencies );
+
+				ofs_ope_apply_template( ope, dossier, for_template );
+
+				if( ofs_ope_is_valid( ope, dossier, NULL, NULL )){
+					for_entries = ofs_ope_generate_entries( ope, dossier );
+				}
 
 				ofs_ope_free( ope );
+			}
 
-				is_ran = ofo_account_is_forward( account );
-				if( is_ran ){
-					ope = ofs_ope_new( for_template );
-					my_date_set_from_date( &ope->deffect, begin_next );
-					ope->deffect_user_set = TRUE;
-					detail = ( ofsOpeDetail * ) ope->detail->data;
-					detail->account = g_strdup( ofo_account_get_number( account ));
-					detail->account_user_set = TRUE;
-					if( debit > credit ){
-						detail->debit = debit-credit;
-						detail->debit_user_set = TRUE;
-					} else {
-						detail->credit = credit-debit;
-						detail->credit_user_set = TRUE;
-					}
-
-					priv->p6_forwards = g_list_prepend( priv->p6_forwards, ope );
+			/* all entries have been prepared
+			 * -> set a settlement number on those which are to be
+			 *    written on a settleable account - set the same
+			 *    counter on the solde and the forward entries to have
+			 *    an audit track
+			 * -> set a reconciliation date on those which are to be
+			 *    written on a reconciliable account */
+			for( ite=sld_entries ; ite ; ite=ite->next ){
+				entry = OFO_ENTRY( ite->data );
+				ofo_entry_insert( entry, dossier );
+				if( is_ran &&
+						ofo_account_is_settleable( account ) &&
+						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
+					counter = ofo_dossier_get_next_settlement( dossier );
+					ofo_entry_update_settlement( entry, dossier, counter );
+					set_forward_settlement_number( for_entries, acc_number, counter );
 				}
+				if( ofo_account_is_reconciliable( account ) &&
+						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
+					ofo_entry_set_concil_dval( entry, end_cur );
+					ofo_entry_update_concil( entry, dossier );
+				}
+			}
+			ofo_entry_free_dataset( sld_entries );
+
+			for( ite=for_entries ; ite ; ite=ite->next ){
+				entry = OFO_ENTRY( ite->data );
+				priv->p6_forwards = g_list_prepend( priv->p6_forwards, entry );
 			}
 		}
 
-		if( with_ui ){
-			progress = ( gdouble ) i / ( gdouble ) count;
-			g_signal_emit_by_name( bar, "double", progress );
+		progress = ( gdouble ) i / ( gdouble ) count;
+		text = g_strdup_printf( "%u/%u", i, count );
 
-			text = g_strdup_printf( "%u/%u", i, count );
+		if( with_ui ){
+			g_signal_emit_by_name( bar, "double", progress );
 			g_signal_emit_by_name( bar, "text", text );
-			g_free( text );
 		}
+
+		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
+		g_free( text );
 	}
+
+	ofo_account_free_dataset( accounts );
 
 	if( errors ){
 		msg = g_strdup_printf(
 				_( "%d errors have been found while computing accounts soldes" ), errors );
 		error_dialog( self, msg );
 		g_free( msg );
+		gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
+		gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
 	}
 
 	return( errors );
+}
+
+/*
+ * set the specified settlement number on the entry for the specified
+ * account - as there should only be one entry per account, we just stop
+ * as soon as we have found it
+ */
+static void
+set_forward_settlement_number( GList *entries, const gchar *account, ofxCounter counter )
+{
+	static const gchar *thisfn = "ofa_exe_closing_set_forward_settlement_number";
+	GList *it;
+	ofoEntry *entry;
+
+	for( it=entries ; it ; it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		if( !g_utf8_collate( ofo_entry_get_account( entry ), account )){
+			ofo_entry_set_settlement_number( entry, counter );
+			return;
+		}
+	}
+
+	g_warning( "%s: no found entry for %s account", thisfn, account );
 }
 
 /*
@@ -1157,7 +1232,6 @@ p6_close_ledgers( ofaExeClosing *self )
 
 	for( i=1, it=ledgers ; it ; ++i, it=it->next ){
 		ledger = OFO_LEDGER( it->data );
-
 		ofo_ledger_close( ledger, dossier, end_cur );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
@@ -1165,6 +1239,9 @@ p6_close_ledgers( ofaExeClosing *self )
 
 		text = g_strdup_printf( "%u/%u", i, count );
 		g_signal_emit_by_name( bar, "text", text );
+
+		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
+
 		g_free( text );
 	}
 
@@ -1225,11 +1302,14 @@ p6_do_archive_exercice( ofaExeClosing *self, gboolean with_ui )
 
 	ofo_dossier_set_status( dossier, DOS_STATUS_CLOSED );
 	ofo_dossier_update( dossier );
+	ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
 
 	if( !ofa_idbms_archive(
 				priv->dbms, priv->dname, priv->p3_account, priv->p3_password,
 				priv->cur_account, begin_next, end_next )){
 		error_dialog( self, _( "Unable to archive the dossier" ));
+		gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
+		gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
 
 	} else {
 		/* open the new exercice */
@@ -1239,10 +1319,12 @@ p6_do_archive_exercice( ofaExeClosing *self, gboolean with_ui )
 		sdo->password = g_strdup( priv->cur_password );
 		g_signal_emit_by_name( MY_WINDOW( self )->prot->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
 
+		dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
 		ofo_dossier_set_status( dossier, DOS_STATUS_OPENED );
 		ofo_dossier_set_exe_begin( dossier, begin_next );
 		ofo_dossier_set_exe_end( dossier, end_next );
 		ofo_dossier_update( dossier );
+		ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
 
 		ok = TRUE;
 	}
@@ -1251,12 +1333,12 @@ p6_do_archive_exercice( ofaExeClosing *self, gboolean with_ui )
 }
 
 /*
+ * erase audit table
  * remove settled entries on settleable accounts
  * remove reconciliated entries on reconciliable accounts
  * remove all entries on unsettleable or unreconciliable accounts
  * update remaining entries status to PAST
- * reset all account balances to zero
- * last, erase audit table
+ * reset all account and ledger balances to zero
  */
 static gboolean
 p6_cleanup( ofaExeClosing *self )
@@ -1264,26 +1346,82 @@ p6_cleanup( ofaExeClosing *self )
 	static const gchar *thisfn = "ofa_exe_closing_p6_cleanup";
 	ofaExeClosingPrivate *priv;
 	ofoDossier *dossier;
-	gchar *where;
+	gchar *query;
+	const ofaDbms *dbms;
+	gboolean ok;
+	GtkWidget *label;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = self->priv;
 	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	where = g_strdup_printf( ""
-			"DELETE FROM OFA_T_ENTRIES, OFA_T_ACCOUNTS "
-			"	WHERE ENT_ACCOUNT=ACC_NUMBER AND "
-			"	(ACC_SETTLEABLE!='%s' OR ENT_STLMT_NUMBER IS NULL) AND "
-			"	(ACC_RECONCILIABLE!='%s' OR ENT_RECONCIL_DVAL IS NULL)",
-				ACCOUNT_SETTLEABLE, ACCOUNT_RECONCILIABLE );
+	dbms = ofo_dossier_get_dbms( dossier );
+	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
 
-	if( where ){}
-	if( dossier ){}
-	if( priv ){}
-	gboolean ok = FALSE;
+	query = g_strdup( "TRUNCATE TABLE OFA_T_AUDIT" );
+	ok = ofa_dbms_query( dbms, query, TRUE );
+	g_free( query );
+
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_ENTRIES" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup_printf( "CREATE TABLE OFA_T_DELETED_ENTRIES "
+					"SELECT * FROM OFA_T_ENTRIES,OFA_T_ACCOUNTS WHERE "
+					"	ENT_ACCOUNT=ACC_NUMBER AND "
+					"	(ACC_SETTLEABLE IS NULL OR ENT_STLMT_NUMBER IS NOT NULL) AND "
+					"	(ACC_RECONCILIABLE IS NULL OR ENT_CONCIL_DVAL IS NOT NULL) AND"
+					"	ENT_STATUS!=%d", ENT_STATUS_FUTURE );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup( "DELETE FROM OFA_T_ENTRIES "
+					"WHERE ENT_NUMBER IN (SELECT ENT_NUMBER FROM OFA_T_DELETED_ENTRIES)" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup_printf( "UPDATE OFA_T_ENTRIES SET "
+					"ENT_STATUS=%d WHERE ENT_STATUS!=%d", ENT_STATUS_PAST, ENT_STATUS_FUTURE );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup( "UPDATE OFA_T_ACCOUNTS SET "
+					"ACC_VAL_DEBIT=0, ACC_VAL_CREDIT=0, "
+					"ACC_ROUGH_DEBIT=0, ACC_ROUGH_CREDIT=0, "
+					"ACC_OPEN_DEBIT=0, ACC_OPEN_CREDIT=0" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	if( ok ){
+		query = g_strdup( "UPDATE OFA_T_LEDGERS_CUR SET "
+					"LED_CUR_VAL_DEBIT=0, LED_CUR_VAL_CREDIT=0, "
+					"LED_CUR_ROUGH_DEBIT=0, LED_CUR_ROUGH_CREDIT=0" );
+		ok = ofa_dbms_query( dbms, query, TRUE );
+		g_free( query );
+	}
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->page_w ), "p6-cleanup" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
+	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
+
 	if( ok ){
 		g_idle_add(( GSourceFunc ) p6_forward, self );
+
+	} else {
+		gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
+		gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
 	}
 
 	/* do not continue and remove from idle callbacks list */
@@ -1292,11 +1430,107 @@ p6_cleanup( ofaExeClosing *self )
 
 /*
  * generate carried forward entries
- * archive begin of exercice accounts balance
  */
 static gboolean
 p6_forward( ofaExeClosing *self )
 {
+	static const gchar *thisfn = "ofa_exe_closing_p6_forward";
+	ofaExeClosingPrivate *priv;
+	myProgressBar *bar;
+	gint count, i;
+	GList *it;
+	ofoEntry *entry;
+	ofoDossier *dossier;
+	ofxCounter counter;
+	gdouble progress;
+	gchar *text;
+
+	priv = self->priv;
+	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+
+	bar = get_new_bar( self, "p6-forward" );
+	gtk_widget_show_all( priv->page_w );
+
+	count = g_list_length( priv->p6_forwards );
+
+	for( i=1, it=priv->p6_forwards ; it ; ++i, it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		ofo_entry_insert( entry, dossier );
+		counter = ofo_entry_get_settlement_number( entry );
+		if( counter ){
+			ofo_entry_update_settlement( entry, dossier, counter );
+		}
+
+		progress = ( gdouble ) i / ( gdouble ) count;
+		g_signal_emit_by_name( bar, "double", progress );
+
+		text = g_strdup_printf( "%u/%u", i, count );
+		g_signal_emit_by_name( bar, "text", text );
+
+		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
+
+		g_free( text );
+	}
+
+	ofo_entry_free_dataset( priv->p6_forwards );
+
+	g_idle_add(( GSourceFunc ) p6_open, self );
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
+}
+
+/*
+ * archive begin of exercice accounts balance
+ */
+static gboolean
+p6_open( ofaExeClosing *self )
+{
+	static const gchar *thisfn = "ofa_exe_closing_p6_open";
+	ofaExeClosingPrivate *priv;
+	myProgressBar *bar;
+	gint count, i;
+	GList *accounts, *it;
+	ofoDossier *dossier;
+	ofoAccount *account;
+	gdouble progress;
+	gchar *text;
+	GtkWidget *label;
+
+	priv = self->priv;
+	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+	accounts = ofo_account_get_dataset( dossier );
+	count = g_list_length( accounts );
+
+	bar = get_new_bar( self, "p6-open" );
+	gtk_widget_show_all( priv->page_w );
+
+	for( i=1, it=accounts ; it ; ++i, it=it->next ){
+		account = OFO_ACCOUNT( it->data );
+
+		ofo_account_archive_open_balance( account, dossier );
+
+		progress = ( gdouble ) i / ( gdouble ) count;
+		g_signal_emit_by_name( bar, "double", progress );
+
+		text = g_strdup_printf( "%u/%u", i, count );
+		g_signal_emit_by_name( bar, "text", text );
+
+		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
+
+		g_free( text );
+	}
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->page_w ), "p6-summary" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
+
+	gtk_label_set_text( GTK_LABEL( label ),
+			_( "The previous exercice has been successfully closed.\n"
+				"The next exercice has been automatically defined and opened." ));
+
+	gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
+	gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
+
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
 }

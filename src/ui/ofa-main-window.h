@@ -101,6 +101,8 @@ void           ofa_main_window_get_dossier_credentials( const ofaMainWindow *win
 																	const gchar **account,
 																	const gchar **password );
 
+void           ofa_main_window_update_title           ( const ofaMainWindow *window );
+
 void           ofa_main_window_close_dossier          ( ofaMainWindow *window );
 
 void           ofa_main_window_warning_no_entry       ( const ofaMainWindow *window );

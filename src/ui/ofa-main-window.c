@@ -285,6 +285,7 @@ static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, g
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             connect_window_for_enabled_updates( ofaMainWindow *window );
+static void             set_window_title( const ofaMainWindow *window );
 static void             on_dossier_open( ofaMainWindow *window, ofsDossierOpen *sdo, gpointer user_data );
 static void             set_default_database( ofaMainWindow *window, ofsDossierOpen *sdo );
 static void             connect_dossier_for_enabled_updates( ofaMainWindow *window );
@@ -754,8 +755,26 @@ connect_window_for_enabled_updates( ofaMainWindow *window )
 			G_OBJECT( window ), SIGNAL_ENABLED_UPDATES, G_CALLBACK( on_enabled_updates ), NULL );
 }
 
+/**
+ * ofa_main_window_update_title:
+ */
+void
+ofa_main_window_update_title( const ofaMainWindow *window )
+{
+	ofaMainWindowPrivate *priv;
+
+	g_return_if_fail( window && OFA_IS_MAIN_WINDOW( window ));
+
+	priv = window->priv;
+
+	if( !priv->dispose_has_run ){
+
+		set_window_title( window );
+	}
+}
+
 static void
-set_window_title( ofaMainWindow *window )
+set_window_title( const ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
 	gchar *title;

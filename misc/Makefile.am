@@ -25,5 +25,6 @@
 SUBDIRS = \
 	t_amounts							\
 	t_delete							\
+	t_spawn								\
 	t_weakref							\
 	$(NULL)

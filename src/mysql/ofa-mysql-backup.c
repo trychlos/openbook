@@ -189,10 +189,10 @@ ofa_mysql_archive( const ofaIDbms *instance,
 						const gchar *user_account,
 						const GDate *begin_next, const GDate *end_next )
 {
-	static const gchar *thisfn = "ofa_mysql_archive";
+	static const gchar *thisfn = "ofa_mysql_backup_archive";
 	mysqlInfos *infos;
 	gboolean ok;
-	gchar *prev_dbname, *new_dbname;
+	gchar *prev_dbname, *new_dbname, *stdout, *stderr;
 	gchar *cmdline, *cmd;
 	gint status;
 
@@ -202,15 +202,31 @@ ofa_mysql_archive( const ofaIDbms *instance,
 	infos->dbname = prev_dbname;
 
 	cmdline = build_cmdline( infos,
-			"mysql %O -u%U -p%P -e 'drop database %N' >/dev/null 2>&1; "
-			"mysql %O -u%U -p%P -e 'create database %N'; "
-			"mysqldump %O -u%U -p%P %B | mysql %O -u%U -p%P %N", NULL, new_dbname );
+					"mysql %O -u%U -p%P -e 'drop database if exists %N'; "
+					"mysql %O -u%U -p%P -e 'create database %N'; "
+					"mysqldump %O -u%U -p%P %B | mysql %O -u%U -p%P %N",
+					NULL, new_dbname );
 
 	cmd = g_strdup_printf( "/bin/sh -c \"%s\"", cmdline );
-	ok = g_spawn_command_line_sync( cmd, NULL, NULL, &status, NULL );
-	g_debug( "%s: exit_status=%d", thisfn, status );
-	ok &= ( status == 0 );
+	g_debug( "%s: cmd=%s", thisfn, cmd );
 
+	stdout = NULL;
+	stderr = NULL;
+	ok = g_spawn_command_line_sync( cmd, &stdout, &stderr, &status, NULL );
+	g_debug( "%s: first try: exit_status=%d", thisfn, status );
+	g_free( stdout );
+	g_free( stderr );
+
+	if( status > 0 ){
+		stdout = NULL;
+		stderr = NULL;
+		ok = g_spawn_command_line_sync( cmd, &stdout, &stderr, &status, NULL );
+		g_debug( "%s: second try: exit_status=%d", thisfn, status );
+		g_free( stdout );
+		g_free( stderr );
+	}
+
+	ok &= ( status == 0 );
 	g_free( cmdline );
 	g_free( cmd );
 
@@ -297,7 +313,7 @@ do_backup_restore( const mysqlInfos *sql_infos,
  * %U: account
  */
 static gchar *
-build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gchar *fname, const gchar *new_dbname )
+build_cmdline( const mysqlInfos *infos, const gchar *def_cmdline, const gchar *fname, const gchar *new_dbname )
 {
 	static const gchar *thisfn = "ofa_mysql_backup_build_cmdline";
 	gchar *sysfname, *cmdline;
@@ -310,12 +326,12 @@ build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gcha
 	g_debug( "%s: def_cmdline=%s", thisfn, cmdline );
 
 	regex = g_regex_new( "%B", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, sql_infos->dbname, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, infos->dbname, 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
 	cmdline = newcmd;
 
-	if( fname ){
+	if( my_strlen( fname )){
 		sysfname = my_utils_filename_from_utf8( fname );
 		quoted = g_shell_quote( sysfname );
 		regex = g_regex_new( "%F", 0, 0, NULL );
@@ -327,7 +343,7 @@ build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gcha
 		cmdline = newcmd;
 	}
 
-	if( new_dbname ){
+	if( my_strlen( new_dbname )){
 		regex = g_regex_new( "%N", 0, 0, NULL );
 		newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, new_dbname, 0, NULL );
 		g_regex_unref( regex );
@@ -336,14 +352,14 @@ build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gcha
 	}
 
 	options = g_string_new( "" );
-	if( sql_infos->host && g_utf8_strlen( sql_infos->host, -1 )){
-		g_string_append_printf( options, "--host=%s ", sql_infos->host );
+	if( my_strlen( infos->host )){
+		g_string_append_printf( options, "--host=%s ", infos->host );
 	}
-	if( sql_infos->port > 0 ){
-		g_string_append_printf( options, "--port=%u ", sql_infos->port );
+	if( infos->port > 0 ){
+		g_string_append_printf( options, "--port=%u ", infos->port );
 	}
-	if( sql_infos->socket && g_utf8_strlen( sql_infos->socket, -1 )){
-		g_string_append_printf( options, "--socket=%s ", sql_infos->socket );
+	if( my_strlen( infos->socket )){
+		g_string_append_printf( options, "--socket=%s ", infos->socket );
 	}
 
 	regex = g_regex_new( "%O", 0, 0, NULL );
@@ -354,13 +370,13 @@ build_cmdline( const mysqlInfos *sql_infos, const gchar *def_cmdline, const gcha
 	g_string_free( options, TRUE );
 
 	regex = g_regex_new( "%P", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, sql_infos->password, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, infos->password, 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
 	cmdline = newcmd;
 
 	regex = g_regex_new( "%U", 0, 0, NULL );
-	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, sql_infos->account, 0, NULL );
+	newcmd = g_regex_replace_literal( regex, cmdline, -1, 0, infos->account, 0, NULL );
 	g_regex_unref( regex );
 	g_free( cmdline );
 	cmdline = newcmd;
@@ -577,6 +593,7 @@ stderr_done( GIOChannel *ioc )
 static void
 display_output( const gchar *str, backupInfos *infos )
 {
+	static const gchar *thisfn = "ofa_mysql_backup_display_output";
 	GtkTextBuffer *textbuf;
 	GtkTextIter enditer;
 	const gchar *charset;
@@ -602,7 +619,7 @@ display_output( const gchar *str, backupInfos *infos )
 			g_free(utf8);
 
 		} else {
-			g_warning( "Message output is not in UTF-8 nor in locale charset." );
+			g_debug( "%s: message output is not in UTF-8 nor in locale charset", thisfn );
 		}
 	}
 

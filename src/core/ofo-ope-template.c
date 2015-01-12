@@ -1396,6 +1396,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, sMo
 {
 	GString *query;
 	gboolean ok;
+	gchar *label;
 
 	query = g_string_new( "INSERT INTO OFA_T_OPE_TEMPLATES_DET " );
 
@@ -1431,8 +1432,10 @@ model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, sMo
 
 	g_string_append_printf( query, "%d,", detail->account_locked ? 1:0 );
 
-	if( detail->label && g_utf8_strlen( detail->label, -1 )){
-		g_string_append_printf( query, "'%s',", detail->label );
+	if( my_strlen( detail->label )){
+		label = my_utils_quote( detail->label );
+		g_string_append_printf( query, "'%s',", label );
+		g_free( label );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}

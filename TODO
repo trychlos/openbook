@@ -375,6 +375,15 @@
      2015- 1-10 idem when validating entries:
                 count=484: average is 0.09846 s
 
+ 546 2014-12-30 OpeTemplate: choose if the piece ref. is part of the
+                main ope template or of the detail line - makes change
+                accordingly (doc, database, class, ofsOpe struct)
+     2015- 1- 4 piece ref is part of detail entry - it is in the global
+                part of the GuidedInput UI just for simplification
+                reasons.
+                This is ok in documentation and database.
+     2015- 1-11 open back: the ref should be part of the main operation
+
  553 2015- 1- 6 deleting a dossier only removes its references from
                 settings - so DossierDelete and DossierDeletePrefs
                 become useless (see also #522)
@@ -418,7 +427,7 @@
  571 2015- 1-10 refactor exe-closing to exe-closure-assistant
 
  572 2015- 1-10 refactor: get rid of amounts, replacing them with
-                integers
+                integers ?
 
  573 2015- 1-10 put back init, display, forward signals to myAssistant
                 checking if these three signals are actually sent to
@@ -427,16 +436,48 @@
  574 2015- 1-10 Settlement: set the view sortable, defaulting to dope
                 ascending
 
- 575 2015- 1-10 Settlement: set settle balance with labels instead of
-                insensitive entries
+ 575 2015- 1-10 Settlement: display settle balance with labels instead 
+                of insensitive entries
                 + add the currency
                 + red color if unbalanced
 
- 576 2015- 1-10 Reconciliation: should use a filter instead of reloading
-                reconciliated/unreconciliated/all entries
-                (settlement seems to be fine)
+ 577 2015- 1-11 Reconciliation: keep parameters in user settings
 
- 577
+ 578 2015- 1-11 converting from EBP entries: add settlement and 
+                reconciliation infos
+
+ 579 2015- 1-11 ofa_list_store_on_dossier_finalized: store=0x967620 
+                (ofaCurrencyStore), ref_count=47, 
+                finalized_dossier=0x740430
+
+ 581 2015- 1-12 when serializing to/unserializing from sql, quote all
+                labels  (cf. ope_template_detail_label)
+
+ 582 2015- 1-12 general books: how are sorted the accounts ?
+                (cf for ex OFATv0.25Closing-2011_opening-General.pdf) 
+
+ 583 2015- 1-12 homogeneïze ofo_entry_update_settlement() and
+                ofo_entry_update_concil( with or without provider arg)
+
+ 584 2015- 1-12 ofo_insert_entry: should set in dbms reconciliation and
+                settlement groups the data which may be set in the object
+                (would prevent two update when closing the exercice)
+
+ 585 2015- 1-12 Restore: must adapt title and settings to the restored 
+                content so that we cannot end with the same archive
+                staying in two databases for a dossier
+                => can only restore an exercice on the same exercice
+                + as we cannot restore on an archived exercice (read-
+                only), we should only be able to restore an archived
+                exercice on a new dossier.
+
+ 586 2015- 1-12 when entering account/password for opening a database,
+                do not sensitive OK button only when password is ok
+                (security rule), but as soon as it is not empty 
+
+ 587 2015- 1-12 Restore: Open should not have a _O keybord shortcut
+
+ 588
 
 -----------------------------------------------------------------------
  DONE
@@ -2432,14 +2473,6 @@
                 opened exercice
      2014-12-29 done - svn #4390
 
- 546 2014-12-30 OpeTemplate: choose if the piece ref. is part of the
-                main ope template or of the detail line - makes change
-                accordingly (doc, database, class, ofsOpe struct)
-     2015- 1- 4 piece ref is part of detail entry - it is in the global
-                part of the GuidedInput UI just for simplification
-                reasons.
-                This is ok in documentation and database.
-
  547 2014-12-31 migrate local sCurrency used for currency balance 
                 computings to the global ofsCurrency struct declaration
      2015- 1- 5 done - svn #4407
@@ -2489,6 +2522,15 @@
  566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
                 of only Reconcil.
      2015- 1- 9 done - svn #4428
+
+ 576 2015- 1-10 Reconciliation: should use a filter instead of reloading
+                reconciliated/unreconciliated/all entries
+                (settlement seems to be fine)
+     2015- 1-11 done - svn #4433
+
+ 580 2015- 1-11 ExeClosing: do not try to solde accounts which are used
+                for closing (reffered in OFA_T_DOSSIER_CUR)
+     2015- 1-12 done 
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

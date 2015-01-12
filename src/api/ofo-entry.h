@@ -141,8 +141,6 @@ GList         *ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossi
 															const gchar *account,
 															const GDate *date );
 GList         *ofo_entry_get_dataset_remaining_for_val ( const ofoDossier *dossier );
-GList         *ofo_entry_get_unreconciliated           ( const ofoDossier *dossier );
-GList         *ofo_entry_get_unsettled                 ( const ofoDossier *dossier );
 
 void           ofo_entry_free_dataset         ( GList *dataset );
 
@@ -198,6 +196,7 @@ void           ofo_entry_set_status           ( ofoEntry *entry, ofaEntryStatus 
 void           ofo_entry_set_concil_dval      ( ofoEntry *entry, const GDate *date );
 void           ofo_entry_set_concil_user      ( ofoEntry *entry, const gchar *user );
 void           ofo_entry_set_concil_stamp     ( ofoEntry *entry, const GTimeVal *stamp );
+void           ofo_entry_set_settlement_number( ofoEntry *entry, ofxCounter counter );
 
 gboolean       ofo_entry_compute_status       ( ofoEntry *entry, ofoDossier *dossier );
 

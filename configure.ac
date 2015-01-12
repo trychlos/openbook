@@ -108,6 +108,7 @@ AC_CONFIG_FILES([
 	misc/Makefile
 	misc/t_amounts/Makefile
 	misc/t_delete/Makefile
+	misc/t_spawn/Makefile
 	misc/t_weakref/Makefile
 	po/Makefile.in
 	src/Makefile

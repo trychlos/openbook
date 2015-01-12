@@ -318,6 +318,9 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
           </object>
         </child>
       </object>
+      <packing>
+        <property name="title" translatable="yes">Get the root DBMS credentials</property>
+      </packing>
     </child>
     <child>
       <object class="GtkAlignment" id="alignment4">
@@ -724,7 +727,7 @@ The new exercice will be automatically opened after the operation.</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">1</property>
-                <property name="label" translatable="yes">Balancing and closing accounts :</property>
+                <property name="label" translatable="yes">Balancing accounts :</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -809,7 +812,7 @@ The new exercice will be automatically opened after the operation.</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">1</property>
-                <property name="label" translatable="yes">Generating carried forward entries :</property>
+                <property name="label" translatable="yes">Creating carried forward entries :</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -848,12 +851,10 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkAlignment" id="p6-cleanup">
+              <object class="GtkLabel" id="p6-cleanup">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <child>
-                  <placeholder/>
-                </child>
+                <property name="xalign">0</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -863,10 +864,47 @@ The new exercice will be automatically opened after the operation.</property>
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkLabel" id="label21">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="label" translatable="yes">Saving opening accounts balances :</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">6</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkAlignment" id="p6-open">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">6</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="p6-summary">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="ypad">20</property>
+                <property name="wrap">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">7</property>
+                <property name="width">2</property>
+                <property name="height">1</property>
+              </packing>
             </child>
           </object>
         </child>
@@ -877,102 +915,13 @@ The new exercice will be automatically opened after the operation.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkAlignment" id="alignment7">
-        <property name="can_focus">False</property>
-        <child>
-          <object class="GtkGrid" id="grid7">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-          </object>
-        </child>
-      </object>
+      <placeholder/>
     </child>
     <child>
-      <object class="GtkAlignment" id="alignment8">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <child>
-          <object class="GtkGrid" id="grid8">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <child>
-              <object class="GtkLabel" id="label4">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="xalign">0</property>
-                <property name="label" translatable="yes">We are now ready to close the current exercice...</property>
-                <property name="wrap">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-          </object>
-        </child>
-      </object>
-      <packing>
-        <property name="page_type">confirm</property>
-      </packing>
+      <placeholder/>
     </child>
     <child>
-      <object class="GtkAlignment" id="alignment9">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <child>
-          <object class="GtkGrid" id="grid9">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <child>
-              <object class="GtkLabel" id="label11">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="xalign">0</property>
-                <property name="label" translatable="yes">The exercice has been successfully closed.</property>
-                <property name="wrap">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-                <property name="width">1</property>
-                <property name="height">1</property>
-              </packing>
-            </child>
-          </object>
-        </child>
-      </object>
-      <packing>
-        <property name="page_type">summary</property>
-      </packing>
+      <placeholder/>
     </child>
     <child internal-child="action_area">
       <object class="GtkBox" id="assistant-action_area1">

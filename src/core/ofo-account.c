@@ -198,17 +198,17 @@ static gint         account_count_for_like( const ofaDbms *dbms, const gchar *fi
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str, ofoDossier *dossier );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static void         archive_open_balances( ofoAccount *account, ofoDossier *dossier );
+static gboolean     do_archive_open_balance( ofoAccount *account, const ofaDbms *dbms );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static void         account_set_val_debit( ofoAccount *account, ofxAmount amount );
 static void         account_set_val_credit( ofoAccount *account, ofxAmount amount );
 static void         account_set_rough_debit( ofoAccount *account, ofxAmount amount );
 static void         account_set_rough_credit( ofoAccount *account, ofxAmount amount );
-static void         account_set_open_debit( ofoAccount *account, ofxAmount amount );
-static void         account_set_open_credit( ofoAccount *account, ofxAmount amount );
 static void         account_set_futur_debit( ofoAccount *account, ofxAmount amount );
 static void         account_set_futur_credit( ofoAccount *account, ofxAmount amount );
+static void         account_set_open_debit( ofoAccount *account, ofxAmount amount );
+static void         account_set_open_credit( ofoAccount *account, ofxAmount amount );
 static gboolean     account_do_insert( ofoAccount *account, const ofaDbms *dbms, const gchar *user );
 static gboolean     account_do_update( ofoAccount *account, const ofaDbms *dbms, const gchar *user, const gchar *prev_number );
 static gboolean     account_update_amounts( ofoAccount *account, const ofaDbms *dbms );
@@ -551,12 +551,42 @@ on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data )
 static GList *
 account_load_dataset( ofoDossier *dossier )
 {
-	return(
-			ofo_base_load_dataset(
+	return( ofo_base_load_dataset(
 					st_boxed_defs,
 					ofo_dossier_get_dbms( dossier ),
 					"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
 					OFO_TYPE_ACCOUNT ));
+}
+
+/**
+ * ofo_account_get_dataset_for_solde:
+ * @dossier: the currently opened #ofoDossier dossier.
+ *
+ * Returns: the #ofoAccount dataset, without the solde accounts.
+ *
+ * The returned list should be #ofo_account_free_dataset() by the caller.
+ */
+GList *
+ofo_account_get_dataset_for_solde( ofoDossier *dossier )
+{
+	GList *dataset;
+	gchar *query;
+
+	g_return_val_if_fail( OFO_IS_DOSSIER( dossier ), NULL );
+
+	query = g_strdup_printf( "OFA_T_ACCOUNTS WHERE "
+			"	ACC_TYPE!='R' AND "
+			"	ACC_NUMBER NOT IN (SELECT DOS_SLD_ACCOUNT FROM OFA_T_DOSSIER_CUR)" );
+
+	dataset = ofo_base_load_dataset(
+					st_boxed_defs,
+					ofo_dossier_get_dbms( dossier ),
+					query,
+					OFO_TYPE_ACCOUNT );
+
+	g_free( query );
+
+	return( dataset );
 }
 
 /**
@@ -1325,51 +1355,59 @@ ofo_account_is_child_of( const ofoAccount *account, const ofoAccount *candidate 
  * At this time, all ledgers on exercice N should have been closed, and
  * no entries should have been recorded in ledgers for exercice N+1.
  */
-void
-ofo_account_archive_open_balances( ofoDossier *dossier )
+gboolean
+ofo_account_archive_open_balance( ofoAccount *account, ofoDossier *dossier )
 {
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	gboolean ok;
 
-	OFA_IDATASET_GET( dossier, ACCOUNT, account );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
 
-	g_list_foreach( account_dataset, ( GFunc ) archive_open_balances, dossier );
+	ok = FALSE;
+
+	if( !OFO_BASE( account )->prot->dispose_has_run ){
+
+		if( ofo_account_is_root( account )){
+			ok = TRUE;
+
+		} else {
+			ok = do_archive_open_balance( account, ofo_dossier_get_dbms( dossier ));
+		}
+	}
+
+	return( ok );
 }
 
-static void
-archive_open_balances( ofoAccount *account, ofoDossier *dossier )
+static gboolean
+do_archive_open_balance( ofoAccount *account, const ofaDbms *dbms )
 {
-	static const gchar *thisfn = "ofo_account_archive_open_balances";
 	GString *query;
 	gchar *samount;
 	ofxAmount amount;
+	gboolean ok;
 
-	if( !ofo_account_is_root( account )){
+	query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
 
-		query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
+	amount = ofo_account_get_rough_debit( account )+ofo_account_get_val_debit( account );
+	account_set_open_debit( account, amount );
+	samount = my_double_to_sql( amount );
+	g_string_append_printf( query, "ACC_OPEN_DEBIT=%s,", samount );
+	g_free( samount );
 
-		account_set_open_debit( account, ofo_account_get_val_debit( account ));
-		samount = my_double_to_sql( ofo_account_get_open_debit( account ));
-		g_string_append_printf( query, "ACC_OPEN_DEBIT=%s,", samount );
-		g_free( samount );
+	amount = ofo_account_get_rough_credit( account )+ofo_account_get_val_credit( account );
+	account_set_open_credit( account, amount );
+	samount = my_double_to_sql( amount );
+	g_string_append_printf( query, "ACC_OPEN_CREDIT=%s ", samount );
+	g_free( samount );
 
-		account_set_open_credit( account, ofo_account_get_val_credit( account ));
-		samount = my_double_to_sql( ofo_account_get_open_credit( account ));
-		g_string_append_printf( query, "ACC_OPEN_CREDIT=%s ", samount );
-		g_free( samount );
+	g_string_append_printf( query,
+			"WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
 
-		g_string_append_printf( query,
-				"WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
+	ok = ofa_dbms_query( dbms, query->str, TRUE );
 
-		ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query->str, TRUE );
+	g_string_free( query, TRUE );
 
-		g_string_free( query, TRUE );
-
-		amount = ofo_account_get_rough_debit( account ) + ofo_account_get_rough_credit( account );
-		if( amount != 0 ){
-			g_warning( "%s: account=%s: rough balance is not zero",
-					thisfn, ofo_account_get_number( account ));
-		}
-	}
+	return( ok );
 }
 
 /**

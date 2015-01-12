@@ -48,8 +48,18 @@ static void     report_done( const ofaMainWindow *main_window );
 void
 ofa_misc_arcaccopebal_run( const ofaMainWindow *main_window )
 {
+	ofoDossier *dossier;
+	GList *accounts, *it;
+
 	if( is_confirmed( main_window )){
-		ofo_account_archive_open_balances( ofa_main_window_get_dossier( main_window ));
+
+		dossier = ofa_main_window_get_dossier( main_window );
+		accounts = ofo_account_get_dataset( dossier );
+
+		for( it=accounts ; it ; it=it->next ){
+			ofo_account_archive_open_balance( OFO_ACCOUNT( it->data ), dossier );
+		}
+
 		report_done( main_window );
 	}
 }

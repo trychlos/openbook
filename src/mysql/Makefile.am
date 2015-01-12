@@ -35,6 +35,7 @@ AM_CPPFLAGS += \
 	-DG_LOG_DOMAIN=\"OFA\"							\
 	-DPROVIDER_ID=\"$(plugin_id)\"					\
 	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
+	-DPKGLIBEXECDIR=\"$(pkglibexecdir)\"			\
 	$(NULL)
 
 libofa_mysql_la_SOURCES = \
@@ -76,6 +77,10 @@ plugin_data_DATA = \
 	$(ui_files)										\
 	$(images_files)									\
 	$(NULL)
+
+#pkglibexec_SCRIPTS = \
+#	ofa-mysql-clone.sh								\
+#	$(NULL)
 
 EXTRA_DIST = \
 	$(plugin_data_DATA)								\
