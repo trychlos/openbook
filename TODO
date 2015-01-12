@@ -80,9 +80,6 @@
 
  126 2014- 5-28 have several demo dossiers
 
- 129 2014- 5-28 Account: archive balances after closing in ACCOUNT_EXE
-                table details
-
  130 2014- 5-28 do not delete an account which has an account_exe archive
                 detail record, but set a 'deleted' flag
 
@@ -141,13 +138,6 @@
 
  215 2014- 6-13 assets management
      2014- 6-16 to be built as a plugin
-
- 216 2014- 6-13 exercice closing
-     2014-10- 6 keep the account balances at the end of the exercice N
-                and at the beginning of exercice N+1
-     2014-12- 3 Checks for entries balance - svn #4230
-     2014-12- 3 Checks for ledgers balance - svn #4233
-     2014-12- 3 Checks for accounts balance - svn #4235
 
  217 2014- 6-13 tableau de trésorerie
      2014-10- 6 this may require the balance be printed
@@ -925,6 +915,10 @@
  128 2014- 5-28 Dossier: have a default currency
      2014- 5-31 done - svn #3569
 
+ 129 2014- 5-28 Account: archive balances after closing in ACCOUNT_EXE
+                table details
+     2015- 1-12 done - svn #4434
+
  131 2014- 5-28 have a currency combo box convenience class
      2014- 5-31 done - svn #3566
 
@@ -1213,6 +1207,14 @@
      2014- 6-21 connect to dossier signals to be advertised on 
                 intermediate closing, new entries..
      2014- 6-24 done - svn #3746
+
+ 216 2014- 6-13 exercice closing
+     2014-10- 6 keep the account balances at the end of the exercice N
+                and at the beginning of exercice N+1
+     2014-12- 3 Checks for entries balance - svn #4230
+     2014-12- 3 Checks for ledgers balance - svn #4233
+     2014-12- 3 Checks for accounts balance - svn #4235
+     2015- 1-12 done - svn #4434
 
  218 2014- 6-15 this is an error if entry number is not strictly 
                 increasing when we update the account balance

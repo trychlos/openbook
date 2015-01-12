@@ -336,7 +336,7 @@ Press Continue.</property>
                     <property name="row_spacing">3</property>
                     <child>
                       <object class="GtkCheckButton" id="p4-open">
-                        <property name="label" translatable="yes">_Open the dossier after successful restore</property>
+                        <property name="label" translatable="yes">O_pen the dossier after successful restore</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
