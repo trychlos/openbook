@@ -28,6 +28,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "api/my-utils.h"
 #include "api/ofa-dbms.h"
 #include "api/ofa-settings.h"
@@ -56,6 +58,7 @@ struct _ofaDossierOpenPrivate {
 	 */
 	ofaDossierTreeview *dossier_tview;
 	ofaExerciceCombo   *exercice_combo;
+	GtkWidget          *message_label;
 	GtkWidget          *ok_btn;
 
 	/* return value
@@ -77,7 +80,9 @@ static void      on_account_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      on_password_changed( GtkEntry *entry, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  connection_is_valid( ofaDossierOpen *self );
 static gboolean  do_open( ofaDossierOpen *self );
+static void      set_message( ofaDossierOpen *self, const gchar *msg );
 
 static void
 dossier_open_finalize( GObject *instance )
@@ -298,20 +303,23 @@ check_for_enable_dlg( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 	gboolean ok_enable;
-	ofaDbms *dbms;
 
 	priv = self->priv;
+	set_message( self, "" );
+	ok_enable = FALSE;
 
-	ok_enable = priv->dname && g_utf8_strlen( priv->dname, -1 ) &&
-				priv->label && g_utf8_strlen( priv->label, -1 ) &&
-				priv->dbname && g_utf8_strlen( priv->dbname, -1 ) &&
-				priv->account && g_utf8_strlen( priv->account, -1 ) &&
-				priv->password && g_utf8_strlen( priv->password, -1 );
-
-	if( ok_enable ){
-		dbms = ofa_dbms_new();
-		ok_enable &= ofa_dbms_connect( dbms, priv->dname, priv->dbname, priv->account, priv->password, FALSE );
-		g_object_unref( dbms );
+	if( !my_strlen( priv->dname )){
+		set_message( self, _( "No selected dossier" ));
+	} else if( !my_strlen( priv->label )){
+		set_message( self, _( "No selected exercice" ));
+	} else if( !my_strlen( priv->dbname )){
+		set_message( self, _( "Empty database name" ));
+	} else if( !my_strlen( priv->account )){
+		set_message( self, _( "Empty connection account" ));
+	} else if( !my_strlen( priv->password )){
+		set_message( self, _( "Empty connection password" ));
+	} else {
+		ok_enable = TRUE;
 	}
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok_enable );
@@ -320,7 +328,33 @@ check_for_enable_dlg( ofaDossierOpen *self )
 static gboolean
 v_quit_on_ok( myDialog *dialog )
 {
-	return( do_open( OFA_DOSSIER_OPEN( dialog )));
+	if( connection_is_valid( OFA_DOSSIER_OPEN( dialog ))){
+		return( do_open( OFA_DOSSIER_OPEN( dialog )));
+	}
+	return( FALSE );
+}
+
+static gboolean
+connection_is_valid( ofaDossierOpen *self )
+{
+	ofaDossierOpenPrivate *priv;
+	gboolean valid;
+	ofaDbms *dbms;
+	gchar *str;
+
+	priv = self->priv;
+
+	dbms = ofa_dbms_new();
+	valid = ofa_dbms_connect( dbms, priv->dname, priv->dbname, priv->account, priv->password, FALSE );
+	g_object_unref( dbms );
+
+	if( !valid ){
+		str = g_strdup_printf( _( "Invalid credentials for '%s' account" ), priv->account );
+		my_utils_dialog_error( str );
+		g_free( str );
+	}
+
+	return( valid );
 }
 
 /*
@@ -343,4 +377,25 @@ do_open( ofaDossierOpen *self )
 	priv->sdo = sdo;
 
 	return( TRUE );
+}
+
+static void
+set_message( ofaDossierOpen *self, const gchar *msg )
+{
+	ofaDossierOpenPrivate *priv;
+	GtkWindow *toplevel;
+	GdkRGBA color;
+
+	priv = self->priv;
+
+	if( !priv->message_label ){
+		toplevel = my_window_get_toplevel( MY_WINDOW( self ));
+		g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+		priv->message_label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "message" );
+		g_return_if_fail( priv->message_label && GTK_IS_LABEL( priv->message_label ));
+		gdk_rgba_parse( &color, "#ff0000" );
+		gtk_widget_override_color( priv->message_label, GTK_STATE_FLAG_NORMAL, &color );
+	}
+
+	gtk_label_set_text( GTK_LABEL( priv->message_label ), msg );
 }

@@ -41,6 +41,15 @@ static GList  *position_to_int_list( gint x, gint y, gint width, gint height );
 static void    error_filename_from_utf8( const gchar *filename, GError *error );
 
 /**
+ * my_strlen:
+ */
+glong
+my_strlen( const gchar *str )
+{
+	return( str ? g_utf8_strlen( str, -1 ) : 0 );
+}
+
+/**
  * my_utils_quote:
  *
  * Replace "'" quote characters with "\\'" before executing SQL queries
@@ -326,6 +335,25 @@ my_utils_builder_load_from_path( const gchar *path_xml, const gchar *widget_name
 	g_object_unref( builder );
 
 	return( widget );
+}
+
+/**
+ * my_utils_dialog_error:
+ */
+void
+my_utils_dialog_error( const gchar *msg )
+{
+	GtkWidget *dialog;
+
+	dialog = gtk_message_dialog_new(
+			NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_MESSAGE_WARNING,
+			GTK_BUTTONS_CLOSE,
+			"%s", msg );
+
+	gtk_dialog_run( GTK_DIALOG( dialog ));
+	gtk_widget_destroy( dialog );
 }
 
 /**

@@ -48,7 +48,7 @@ typedef enum {
 }
 	myStampFormat;
 
-#define    my_strlen(s)                    ( s ) && g_utf8_strlen(( s ), -1 )
+glong      my_strlen                       ( const gchar *str );
 
 gchar     *my_utils_quote                  ( const gchar *str );
 
@@ -67,6 +67,8 @@ gchar     *my_utils_str_remove_underlines  ( const gchar *string );
 gchar     *my_utils_str_replace            ( const gchar *string, const gchar *old, const gchar *new );
 
 GtkWidget *my_utils_builder_load_from_path ( const gchar *path_xml, const gchar *widget_name );
+
+void       my_utils_dialog_error           ( const gchar *msg );
 
 gboolean   my_utils_entry_get_valid        ( GtkEntry *entry );
 void       my_utils_entry_set_valid        ( GtkEntry *entry, gboolean valid );

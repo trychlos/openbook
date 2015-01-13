@@ -465,8 +465,6 @@
                 do not sensitive OK button only when password is ok
                 (security rule), but as soon as it is not empty 
 
- 587 2015- 1-12 Restore: Open should not have a _O keybord shortcut
-
  588
 
 -----------------------------------------------------------------------
@@ -2533,6 +2531,9 @@
  580 2015- 1-11 ExeClosing: do not try to solde accounts which are used
                 for closing (reffered in OFA_T_DOSSIER_CUR)
      2015- 1-12 done 
+
+ 587 2015- 1-12 Restore: Open should not have a _O keybord shortcut
+     2015- 1-12 done - svn #4437
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
