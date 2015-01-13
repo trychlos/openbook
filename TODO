@@ -439,13 +439,11 @@
  579 2015- 1-11 ofa_list_store_on_dossier_finalized: store=0x967620 
                 (ofaCurrencyStore), ref_count=47, 
                 finalized_dossier=0x740430
-
- 581 2015- 1-12 when serializing to/unserializing from sql, quote all
-                labels  (cf. ope_template_detail_label)
+     2015- 1-13 not reproduced
 
  584 2015- 1-12 ofo_insert_entry: should set in dbms reconciliation and
                 settlement groups the data which may be set in the object
-                (would prevent two update when closing the exercice)
+                (would prevent two updates when closing the exercice)
 
  585 2015- 1-12 Restore: must adapt title and settings to the restored 
                 content so that we cannot end with the same archive
@@ -2521,6 +2519,10 @@
  580 2015- 1-11 ExeClosing: do not try to solde accounts which are used
                 for closing (reffered in OFA_T_DOSSIER_CUR)
      2015- 1-12 done 
+
+ 581 2015- 1-12 when serializing to/unserializing from sql, quote all
+                labels  (cf. ope_template_detail_label)
+     2015- 1-13 done - svn #4443
 
  582 2015- 1-12 general books: how are sorted the accounts ?
                 (cf for ex OFATv0.25Closing-2011_opening-General.pdf)
