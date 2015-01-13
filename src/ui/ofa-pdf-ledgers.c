@@ -150,7 +150,6 @@ static void     on_ledgers_activated( ofaLedgerTreeview *view, GList *selected, 
 static void     on_all_ledgers_toggled( GtkToggleButton *button, ofaPDFLedgers *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFLedgers *self );
-static void     error_empty( const ofaPDFLedgers *self );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
 static void     iprintable_free_dataset( GList *elements );
 static void     iprintable_reset_runtime( ofaIPrintable *instance );
@@ -495,7 +494,7 @@ do_apply( ofaPDFLedgers *self )
 	}
 
 	if( !g_list_length( priv->selected )){
-		error_empty( self );
+		my_utils_dialog_error( _( "Empty ledgers selection: unable to continue" ));
 		return( FALSE );
 	}
 
@@ -516,22 +515,6 @@ do_apply( ofaPDFLedgers *self )
 	ofa_iprintable_set_group_on_new_page( OFA_IPRINTABLE( self ), priv->new_page );
 
 	return( TRUE );
-}
-
-static void
-error_empty( const ofaPDFLedgers *self )
-{
-	GtkWidget *dialog;
-
-	dialog = gtk_message_dialog_new(
-			my_window_get_toplevel( MY_WINDOW( self )),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", _( "Empty ledgers selection: unable to continue" ));
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }
 
 static GList *

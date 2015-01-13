@@ -70,8 +70,6 @@ static GType         register_type( void );
 static void          interface_base_init( ofaIExportableInterface *klass );
 static void          interface_base_finalize( ofaIExportableInterface *klass );
 static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const ofaFileFormat *settings, ofoDossier *dossier );
-static void          error_convert( const ofaIExportable *exportable, GError *error );
-static void          error_write( const ofaIExportable *exportable, GError *error );
 static sIExportable *get_iexportable_data( ofaIExportable *exportable );
 static void          on_exportable_finalized( sIExportable *sdata, GObject *finalized_object );
 
@@ -271,7 +269,7 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 {
 	sIExportable *sdata;
 	GSList *it;
-	gchar *str, *converted;
+	gchar *str, *converted, *msg;
 	GError *error;
 	gint ret;
 	gdouble progress;
@@ -295,7 +293,9 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 								"UTF-8", NULL, NULL, &error );
 		g_free( str );
 		if( !converted ){
-			error_convert( exportable, error );
+			msg = g_strdup_printf( _( "Charset conversion error: %s" ), error->message );
+			my_utils_dialog_error( msg );
+			g_free( msg );
 			return( FALSE );
 		}
 
@@ -304,7 +304,9 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 		ret = g_output_stream_write( sdata->stream, converted, strlen( converted), NULL, &error );
 		g_free( converted );
 		if( ret == -1 ){
-			error_write( exportable, error );
+			msg = g_strdup_printf( _( "Write error: %s" ), error->message );
+			my_utils_dialog_error( msg );
+			g_free( msg );
 			return( FALSE );
 		}
 
@@ -324,46 +326,6 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 	}
 
 	return( TRUE );
-}
-
-static void
-error_convert( const ofaIExportable *exportable, GError *error )
-{
-	GtkWidget *dialog;
-	gchar *str;
-
-	str = g_strdup_printf( _( "Charset conversion error: %s" ), error->message );
-
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", str );
-
-	g_free( str );
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
-}
-
-static void
-error_write( const ofaIExportable *exportable, GError *error )
-{
-	GtkWidget *dialog;
-	gchar *str;
-
-	str = g_strdup_printf( _( "Write error: %s" ), error->message );
-
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", str );
-
-	g_free( str );
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }
 
 /**

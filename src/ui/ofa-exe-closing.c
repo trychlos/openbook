@@ -162,7 +162,6 @@ static gboolean         p6_do_archive_exercice( ofaExeClosing *self, gboolean wi
 static gboolean         p6_cleanup( ofaExeClosing *self );
 static gboolean         p6_forward( ofaExeClosing *self );
 static gboolean         p6_open( ofaExeClosing *self );
-static void             error_dialog( ofaExeClosing *self, const gchar *msg );
 
 static void
 exe_closing_finalize( GObject *instance )
@@ -1170,7 +1169,7 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 	if( errors ){
 		msg = g_strdup_printf(
 				_( "%d errors have been found while computing accounts soldes" ), errors );
-		error_dialog( self, msg );
+		my_utils_dialog_error( msg );
 		g_free( msg );
 		gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
 		gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
@@ -1307,7 +1306,7 @@ p6_do_archive_exercice( ofaExeClosing *self, gboolean with_ui )
 	if( !ofa_idbms_archive(
 				priv->dbms, priv->dname, priv->p3_account, priv->p3_password,
 				priv->cur_account, begin_next, end_next )){
-		error_dialog( self, _( "Unable to archive the dossier" ));
+		my_utils_dialog_error( _( "Unable to archive the dossier" ));
 		gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
 		gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
 
@@ -1533,20 +1532,4 @@ p6_open( ofaExeClosing *self )
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
-}
-
-static void
-error_dialog( ofaExeClosing *self, const gchar *msg )
-{
-	GtkWidget *dialog;
-
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", msg );
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }

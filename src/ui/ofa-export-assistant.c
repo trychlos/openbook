@@ -175,7 +175,6 @@ static gboolean  confirm_overwrite( const ofaExportAssistant *self, const gchar 
 static void      on_apply( GtkAssistant *assistant, ofaExportAssistant *self );
 static void      p5_do_display( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *page );
 static gboolean  export_data( ofaExportAssistant *self );
-static void      error_no_interface( const ofaExportAssistant *self );
 static void      p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text, ofaExportAssistant *self );
 
 typedef void ( *cb )( ofaExportAssistant *, GtkWidget * );
@@ -806,7 +805,7 @@ p5_do_display( ofaExportAssistant *self, GtkAssistant *assistant, GtkWidget *pag
 
 	priv->base = ( ofaIExportable * ) g_object_new( st_types[priv->p1_idx].get_type(), NULL );
 	if( !OFA_IS_IEXPORTABLE( priv->base )){
-		error_no_interface( self );
+		my_utils_dialog_error( _( "The requested type does not implement the IExportable interface" ));
 		return;
 	}
 
@@ -863,22 +862,6 @@ export_data( ofaExportAssistant *self )
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
-}
-
-static void
-error_no_interface( const ofaExportAssistant *self )
-{
-	GtkWidget *dialog;
-
-	dialog = gtk_message_dialog_new(
-			my_window_get_toplevel( MY_WINDOW( self )),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", _( "The requested type does not implement the IExportable interface" ));
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }
 
 static void

@@ -38,7 +38,6 @@
 static void    on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static void    int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
 static GList  *position_to_int_list( gint x, gint y, gint width, gint height );
-static void    error_filename_from_utf8( const gchar *filename, GError *error );
 
 /**
  * my_strlen:
@@ -976,35 +975,18 @@ my_utils_filename_from_utf8( const gchar *filename )
 {
 	gchar *sysfname;
 	GError *error;
+	gchar *str;
 
 	error = NULL;
 	sysfname = g_filename_from_utf8( filename, -1, NULL, NULL, &error );
 	if( !sysfname ){
-		error_filename_from_utf8( filename, error );
+		str = g_strdup_printf(
+					_( "Unable to convert '%s' filename to filesystem encoding: %s" ),
+					filename, error->message );
+		my_utils_dialog_error( str );
+		g_free( str );
 		g_error_free( error );
 	}
 
 	return( sysfname );
-}
-
-static void
-error_filename_from_utf8( const gchar *filename, GError *error )
-{
-	GtkWidget *dialog;
-	gchar *str;
-
-	str = g_strdup_printf(
-				_( "Unable to convert '%s' filname to filesystem encoding: %s" ),
-				filename, error->message );
-
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", str );
-
-	g_free( str );
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }

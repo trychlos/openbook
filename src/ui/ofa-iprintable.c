@@ -155,8 +155,6 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType              register_type( void );
 static void               interface_base_init( ofaIPrintableInterface *klass );
 static void               interface_base_finalize( ofaIPrintableInterface *klass );
-static void               error_get_dataset( const ofaIPrintable *instance );
-static void               error_printing( const ofaIPrintable *instance, GError *error );
 static void               success_printing( const ofaIPrintable *instance, sIPrintable *sdata );
 static gboolean           do_operate( ofaIPrintable *instance, sIPrintable *sdata );
 static void               on_begin_print( GtkPrintOperation *operation, GtkPrintContext *context, ofaIPrintable *instance );
@@ -397,7 +395,7 @@ ofa_iprintable_print_to_pdf( ofaIPrintable *instance, const gchar *filename )
 	if( OFA_IPRINTABLE_GET_INTERFACE( instance )->get_dataset ){
 		sdata->dataset = OFA_IPRINTABLE_GET_INTERFACE( instance )->get_dataset( instance );
 	} else {
-		error_get_dataset( instance );
+		my_utils_dialog_error( _( "get_dataset() virtual not implemented, but is mandatory" ));
 		return( FALSE );
 	}
 
@@ -422,41 +420,6 @@ ofa_iprintable_set_group_on_new_page( const ofaIPrintable *instance, gboolean ne
 	g_return_if_fail( sdata );
 
 	sdata->group_on_new_page = new_page;
-}
-
-static void
-error_get_dataset( const ofaIPrintable *instance )
-{
-	GtkWidget *dialog;
-
-	dialog = gtk_message_dialog_new(
-						my_window_get_toplevel( MY_WINDOW( instance )),
-						GTK_DIALOG_DESTROY_WITH_PARENT,
-						GTK_MESSAGE_ERROR,
-						GTK_BUTTONS_CLOSE,
-						"%s", _( "get_dataset() virtual not implemented, but is mandatory" ));
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
-}
-
-static void
-error_printing( const ofaIPrintable *instance, GError *error )
-{
-	GtkWidget *dialog;
-	gchar *str;
-
-	str = g_strdup_printf( _( "Error while printing document:\n%s" ), error->message );
-	dialog = gtk_message_dialog_new(
-						my_window_get_toplevel( MY_WINDOW( instance )),
-						GTK_DIALOG_DESTROY_WITH_PARENT,
-						GTK_MESSAGE_ERROR,
-						GTK_BUTTONS_CLOSE,
-						"%s", str );
-	g_free( str );
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }
 
 static void
@@ -497,6 +460,7 @@ do_operate( ofaIPrintable *instance, sIPrintable *sdata )
 	GError *error;
 	GtkPageSetup *psetup;
 	GtkPaperSize *psize;
+	gchar *str;
 
 	printed = FALSE;
 	error = NULL;
@@ -540,7 +504,9 @@ do_operate( ofaIPrintable *instance, sIPrintable *sdata )
 	                &error );
 
 	if( res == GTK_PRINT_OPERATION_RESULT_ERROR ){
-		error_printing( instance, error );
+		str = g_strdup_printf( _( "Error while printing document:\n%s" ), error->message );
+		my_utils_dialog_error( str );
+		g_free( str );
 		g_error_free( error );
 
 	} else {

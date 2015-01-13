@@ -134,7 +134,6 @@ static void     on_account_changed( GtkEntry *entry, ofaPDFReconcil *self );
 static void     on_account_select( GtkButton *button, ofaPDFReconcil *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean do_apply( ofaPDFReconcil *self );
-static void     widget_error( ofaPDFReconcil *self, const gchar *msg );
 static GList   *iprintable_get_dataset( const ofaIPrintable *instance );
 static void     iprintable_free_dataset( GList *dataset );
 static void     iprintable_reset_runtime( ofaIPrintable *instance );
@@ -412,7 +411,7 @@ do_apply( ofaPDFReconcil *self )
 	priv = self->priv;
 
 	if( !priv->account || !OFO_IS_ACCOUNT( priv->account )){
-		widget_error( self, _( "Invalid account" ));
+		my_utils_dialog_error( _( "Invalid account" ));
 		return( FALSE );
 	}
 	ofa_settings_set_string( st_pref_account, ofo_account_get_number( priv->account ));
@@ -421,7 +420,7 @@ do_apply( ofaPDFReconcil *self )
 			my_editable_date_get_date( GTK_EDITABLE( priv->date_entry ), NULL ));
 
 	if( !my_date_is_valid( &priv->date )){
-		widget_error( self, _( "Invalid reconciliation date" ));
+		my_utils_dialog_error( _( "Invalid reconciliation date" ));
 		return( FALSE );
 	}
 
@@ -430,22 +429,6 @@ do_apply( ofaPDFReconcil *self )
 	g_free( sdate );
 
 	return( TRUE );
-}
-
-static void
-widget_error( ofaPDFReconcil *self, const gchar *msg )
-{
-	GtkWidget *dialog;
-
-	dialog = gtk_message_dialog_new(
-						GTK_WINDOW( MY_WINDOW( self )->prot->main_window ),
-						GTK_DIALOG_DESTROY_WITH_PARENT,
-						GTK_MESSAGE_ERROR,
-						GTK_BUTTONS_CLOSE,
-						"%s", msg );
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_show( dialog );
 }
 
 static GList *

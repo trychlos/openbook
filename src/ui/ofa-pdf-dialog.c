@@ -73,7 +73,6 @@ static void     init_filechooser( ofaPDFDialog *self );
 static void     on_file_activated( GtkFileChooser *chooser, ofaPDFDialog *self );
 static gboolean v_quit_on_ok( myDialog *dialog );
 static gboolean apply_on_filechooser( ofaPDFDialog *self );
-static void     error_empty( const ofaPDFDialog *self );
 static gboolean confirm_overwrite( const ofaPDFDialog *self, const gchar *fname );
 
 G_DEFINE_TYPE( ofaPDFDialog, ofa_pdf_dialog, MY_TYPE_DIALOG );
@@ -347,8 +346,8 @@ apply_on_filechooser( ofaPDFDialog *self )
 
 	/* the export filename is the only mandatory argument */
 	priv->filename = gtk_file_chooser_get_filename( GTK_FILE_CHOOSER( priv->filechooser ));
-	if( !priv->filename || !g_utf8_strlen( priv->filename, -1 )){
-		error_empty( self );
+	if( !my_strlen( priv->filename )){
+		my_utils_dialog_error( _( "Empty export selection: unable to continue" ));
 		return( FALSE );
 	}
 
@@ -363,22 +362,6 @@ apply_on_filechooser( ofaPDFDialog *self )
 	}
 
 	return( TRUE );
-}
-
-static void
-error_empty( const ofaPDFDialog *self )
-{
-	GtkWidget *dialog;
-
-	dialog = gtk_message_dialog_new(
-			my_window_get_toplevel( MY_WINDOW( self )),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", _( "Empty export selection: unable to continue" ));
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }
 
 /*

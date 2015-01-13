@@ -58,13 +58,9 @@ struct _ofaDbmsPrivate {
 G_DEFINE_TYPE( ofaDbms, ofa_dbms, G_TYPE_OBJECT )
 
 static gboolean  dbms_connect( ofaDbms *dbms, const gchar *name, const gchar *dbname, const gchar *account, const gchar *password, gboolean display_error );
-static gchar    *get_provider_name_from_dossier_name( ofaDbms *dbms, const gchar *name, gboolean display_error );
 static ofaIDbms *get_provider_module_from_provider_name( ofaDbms *dbms, const gchar *name, const gchar *provider_name, gboolean display_error );
 static ofaIDbms *get_provider_module_from_dossier_name( ofaDbms *dbms, const gchar *dname, gboolean display_error );
 static void      error_already_connected( const ofaDbms *dbms );
-static void      error_dossier_not_exists( const ofaDbms *dbms, const gchar *name );
-static void      error_provider_not_defined( const ofaDbms *dbms, const gchar *name );
-static void      error_module_not_found( const ofaDbms *dbms, const gchar *name, const gchar *provider );
 static void      error_connect( const ofaDbms *dbms, const gchar *name, const gchar *dbname, const gchar *account );
 static void      error_with_infos( const ofaDbms *dbms, const gchar *name, const gchar *dbname, const gchar *account, const gchar *provider, const gchar *msg );
 static void      error_query( const ofaDbms *dbms, const gchar *query );
@@ -247,38 +243,6 @@ dbms_connect( ofaDbms *dbms,
 }
 
 /*
- * get from the settings the provider name from the dossier name
- */
-static gchar *
-get_provider_name_from_dossier_name( ofaDbms *dbms, const gchar *dname, gboolean display_error )
-{
-	static const gchar *thisfn = "ofa_dbms_get_provider_name_from_dossier_name";
-	gchar *provider_name;
-
-	if( !ofa_settings_has_dossier( dname )){
-		if( display_error ){
-			error_dossier_not_exists( dbms, dname );
-		} else {
-			g_warning( "%s: dname=%s: dossier is not defined", thisfn, dname );
-		}
-		return( NULL );
-	}
-
-	provider_name = ofa_settings_get_dossier_provider( dname );
-	if( !provider_name || !g_utf8_strlen( provider_name, -1 )){
-		if( display_error ){
-			error_provider_not_defined( dbms, dname );
-		} else {
-			g_warning( "%s: dname=%s: provider not defined", thisfn, dname );
-		}
-		g_free( provider_name );
-		return( NULL );
-	}
-
-	return( provider_name );
-}
-
-/*
  * returns the IDbms provider module from its name
  */
 static ofaIDbms *
@@ -286,11 +250,14 @@ get_provider_module_from_provider_name( ofaDbms *dbms, const gchar *dname, const
 {
 	static const gchar *thisfn = "ofa_dbms_get_provider_module_from_provider_name";
 	ofaIDbms *provider_module;
+	gchar *str;
 
 	provider_module = ofa_idbms_get_provider_by_name( provider_name );
 	if( !provider_module ){
 		if( display_error ){
-			error_module_not_found( dbms, dname, provider_name );
+			str = g_strdup_printf( _( "Unable to get a module instance for '%s' provider" ), provider_name );
+			my_utils_dialog_error( str );
+			g_free( str );
 		} else {
 			g_warning( "%s: dname=%s, provider=%s: module not found",
 					thisfn, dname, provider_name );
@@ -313,17 +280,20 @@ get_provider_module_from_dossier_name( ofaDbms *dbms, const gchar *dname, gboole
 	ofaDbmsPrivate *priv;
 	gchar *prov_name;
 	ofaIDbms *prov_module;
+	gchar *str;
 
 	priv = dbms->priv;
 
-	prov_name = get_provider_name_from_dossier_name( dbms, dname, display_error );
-	if( !prov_name ){
+	prov_name = ofa_settings_get_dossier_provider( dname );
+	if( !my_strlen( prov_name )){
+		str = g_strdup_printf( _( "Provider is not defined for '%s' dossier" ), dname );
+		my_utils_dialog_error( str );
+		g_free( str );
 		return( NULL );
 	}
-	g_return_val_if_fail( g_utf8_strlen( prov_name, -1 ), NULL );
 
 	g_free( priv->pname );
-	priv->pname = g_strdup( prov_name );
+	priv->pname = prov_name;
 
 	prov_module = get_provider_module_from_provider_name( dbms, dname, prov_name, display_error );
 	if( !prov_module ){
@@ -344,73 +314,6 @@ error_already_connected( const ofaDbms *dbms )
 	error_with_infos( dbms,
 			priv->dname, priv->dbname, priv->account, priv->pname,
 			_( "Already connected" ));
-}
-
-static void
-error_dossier_not_exists( const ofaDbms *dbms, const gchar *dname )
-{
-	GtkWidget *dlg;
-	gchar *str;
-
-	str = g_strdup_printf(
-				_( "The '%s' dossier is not defined" ), dname );
-
-	dlg = gtk_message_dialog_new(
-				NULL,
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", str );
-
-	g_free( str );
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( dlg );
-}
-
-static void
-error_provider_not_defined( const ofaDbms *dbms, const gchar *dname )
-{
-	GtkWidget *dlg;
-	gchar *str;
-
-	str = g_strdup_printf(
-				_( "No provider is defined for the '%s' dossier" ), dname );
-
-	dlg = gtk_message_dialog_new(
-				NULL,
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", str );
-
-	g_free( str );
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( dlg );
-}
-
-static void
-error_module_not_found( const ofaDbms *dbms, const gchar *dname, const gchar *provider )
-{
-	GtkWidget *dlg;
-	gchar *str;
-
-	str = g_strdup_printf(
-				_( "The dossier '%s' is defined to use the '%s' DBMS provider, "
-						"but this one is not found" ), dname, provider );
-
-	dlg = gtk_message_dialog_new(
-				NULL,
-				GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-				GTK_MESSAGE_WARNING,
-				GTK_BUTTONS_OK,
-				"%s", str );
-
-	g_free( str );
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( dlg );
 }
 
 static void

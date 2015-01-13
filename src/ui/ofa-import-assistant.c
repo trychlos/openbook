@@ -185,8 +185,6 @@ static guint           p5_do_import_other( ofaImportAssistant *self, guint *erro
 static void            p5_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progress, const gchar *text, ofaImportAssistant *self );
 static void            p5_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg status, const gchar *msg, ofaImportAssistant *self );
 static GSList         *get_lines_from_csv( ofaImportAssistant *self );
-static void            error_load_contents( ofaImportAssistant *self, const gchar *fname, GError *error );
-static void            error_convert( ofaImportAssistant *self, GError *error );
 static void            free_fields( GSList *fields );
 static void            free_lines( GSList *lines );
 static void            get_settings( ofaImportAssistant *self );
@@ -807,7 +805,6 @@ static void
 p5_error_no_interface( const ofaImportAssistant *self )
 {
 	ofaImportAssistantPrivate *priv;
-	GtkWidget *dialog;
 	gchar *str;
 
 	priv = self->priv;
@@ -820,16 +817,9 @@ p5_error_no_interface( const ofaImportAssistant *self )
 		str = g_strdup_printf( _( "Unable to find a plugin to import the specified data" ));
 	}
 
-	dialog = gtk_message_dialog_new(
-			my_window_get_toplevel( MY_WINDOW( self )),
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", str );
+	my_utils_dialog_error( str );
 
 	g_free( str );
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }
 
 static gboolean
@@ -1005,7 +995,10 @@ get_lines_from_csv( ofaImportAssistant *self )
 
 	error = NULL;
 	if( !g_file_load_contents( gfile, NULL, &contents, NULL, NULL, &error )){
-		error_load_contents( self, priv->p1_fname, error );
+		str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ),
+				priv->p1_fname, error->message );
+		my_utils_dialog_error( str );
+		g_free( str );
 		g_error_free( error );
 		g_free( contents );
 		g_object_unref( gfile );
@@ -1027,7 +1020,9 @@ get_lines_from_csv( ofaImportAssistant *self )
 								ofa_file_format_get_charmap( priv->p3_import_settings ),
 								"UTF-8", NULL, NULL, &error );
 		if( !str ){
-			error_convert( self, error );
+			str = g_strdup_printf( _( "Charset conversion error: %s" ), error->message );
+			my_utils_dialog_error( str );
+			g_free( str );
 			g_strfreev( lines );
 			return( NULL );
 		}
@@ -1052,47 +1047,6 @@ get_lines_from_csv( ofaImportAssistant *self )
 	g_free( field_sep );
 	g_strfreev( lines );
 	return( g_slist_reverse( s_lines ));
-}
-
-static void
-error_load_contents( ofaImportAssistant *self, const gchar *fname, GError *error )
-{
-	GtkWidget *dialog;
-	gchar *str;
-
-	str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ),
-				fname, error->message );
-
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", str );
-
-	g_free( str );
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
-}
-
-static void
-error_convert( ofaImportAssistant *self, GError *error )
-{
-	GtkWidget *dialog;
-	gchar *str;
-
-	str = g_strdup_printf( _( "Charset conversion error: %s" ), error->message );
-
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", str );
-
-	g_free( str );
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
 }
 
 static void
