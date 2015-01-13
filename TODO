@@ -446,9 +446,6 @@
  582 2015- 1-12 general books: how are sorted the accounts ?
                 (cf for ex OFATv0.25Closing-2011_opening-General.pdf) 
 
- 583 2015- 1-12 homogeneïze ofo_entry_update_settlement() and
-                ofo_entry_update_concil( with or without provider arg)
-
  584 2015- 1-12 ofo_insert_entry: should set in dbms reconciliation and
                 settlement groups the data which may be set in the object
                 (would prevent two update when closing the exercice)
@@ -2527,6 +2524,10 @@
  580 2015- 1-11 ExeClosing: do not try to solde accounts which are used
                 for closing (reffered in OFA_T_DOSSIER_CUR)
      2015- 1-12 done 
+
+ 583 2015- 1-12 homogeneïze ofo_entry_update_settlement() and
+                ofo_entry_update_concil( with or without provider arg)
+     2015- 1-13 done - svn #4441
 
  586 2015- 1-12 when entering account/password for opening a database,
                 do not sensitive OK button only when password is ok
