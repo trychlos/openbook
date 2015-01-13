@@ -215,7 +215,7 @@ static void         error_account( const gchar *number );
 static void         error_acc_currency( ofoDossier *dossier, const gchar *currency, ofoAccount *account );
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
 static gboolean     entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
-static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofaDbms *dbms );
+static gboolean     do_update_concil( ofoEntry *entry, const GDate *date, const gchar *user, const ofaDbms *dbms );
 static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
@@ -1621,24 +1621,6 @@ ofo_entry_set_concil_dval( ofoEntry *entry, const GDate *drappro )
 }
 
 /**
- * ofo_entry_set_concil_user:
- */
-void
-ofo_entry_set_concil_user( ofoEntry *entry, const gchar *user )
-{
-	ofo_base_setter( ENTRY, entry, string, ENT_CONCIL_USER, user );
-}
-
-/**
- * ofo_entry_set_concil_stamp:
- */
-void
-ofo_entry_set_concil_stamp( ofoEntry *entry, const GTimeVal *stamp )
-{
-	ofo_base_setter( ENTRY, entry, timestamp, ENT_CONCIL_STAMP, stamp );
-}
-
-/**
  * ofo_entry_set_settlement_number:
  *
  * The reconciliation may be unset by setting @number to 0.
@@ -2128,7 +2110,7 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
  * ofo_entry_update_concil:
  */
 gboolean
-ofo_entry_update_concil( ofoEntry *entry, const ofoDossier *dossier )
+ofo_entry_update_concil( ofoEntry *entry, const ofoDossier *dossier, const GDate *date )
 {
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
@@ -2137,6 +2119,7 @@ ofo_entry_update_concil( ofoEntry *entry, const ofoDossier *dossier )
 
 		return( do_update_concil(
 						entry,
+						date,
 						ofo_dossier_get_user( dossier ),
 						ofo_dossier_get_dbms( dossier )));
 	}
@@ -2145,21 +2128,18 @@ ofo_entry_update_concil( ofoEntry *entry, const ofoDossier *dossier )
 }
 
 static gboolean
-do_update_concil( ofoEntry *entry, const gchar *user, const ofaDbms *dbms )
+do_update_concil( ofoEntry *entry, const GDate *date, const gchar *user, const ofaDbms *dbms )
 {
 	GString *query;
 	gchar *where, *sdrappro, *stamp_str;
-	const GDate *rappro;
 	gboolean ok;
 	GTimeVal stamp;
 
-	rappro = ofo_entry_get_concil_dval( entry );
 	query = g_string_new( "UPDATE OFA_T_ENTRIES SET " );
 	where = g_strdup_printf( "WHERE ENT_NUMBER=%ld", ofo_entry_get_number( entry ));
 
-	if( my_date_is_valid( rappro )){
-
-		sdrappro = my_date_to_str( rappro, MY_DATE_SQL );
+	if( my_date_is_valid( date )){
+		sdrappro = my_date_to_str( date, MY_DATE_SQL );
 		my_utils_stamp_set_now( &stamp );
 		stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 		g_string_append_printf(

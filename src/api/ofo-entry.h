@@ -194,8 +194,6 @@ void           ofo_entry_set_debit            ( ofoEntry *entry, ofxAmount amoun
 void           ofo_entry_set_credit           ( ofoEntry *entry, ofxAmount amount );
 void           ofo_entry_set_status           ( ofoEntry *entry, ofaEntryStatus status );
 void           ofo_entry_set_concil_dval      ( ofoEntry *entry, const GDate *date );
-void           ofo_entry_set_concil_user      ( ofoEntry *entry, const gchar *user );
-void           ofo_entry_set_concil_stamp     ( ofoEntry *entry, const GTimeVal *stamp );
 void           ofo_entry_set_settlement_number( ofoEntry *entry, ofxCounter counter );
 
 gboolean       ofo_entry_compute_status       ( ofoEntry *entry, ofoDossier *dossier );
@@ -216,7 +214,7 @@ ofoEntry      *ofo_entry_new_with_data        ( ofoDossier *dossier,
 
 gboolean       ofo_entry_insert               ( ofoEntry *entry, ofoDossier *dossier );
 gboolean       ofo_entry_update               ( ofoEntry *entry, const ofoDossier *dossier );
-gboolean       ofo_entry_update_concil        ( ofoEntry *entry, const ofoDossier *dossier );
+gboolean       ofo_entry_update_concil        ( ofoEntry *entry, const ofoDossier *dossier, const GDate *date );
 gboolean       ofo_entry_update_settlement    ( ofoEntry *entry, const ofoDossier *dossier, ofxCounter number );
 gboolean       ofo_entry_validate             ( ofoEntry *entry, const ofoDossier *dossier );
 

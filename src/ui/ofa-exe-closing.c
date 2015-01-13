@@ -1140,8 +1140,7 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 				}
 				if( ofo_account_is_reconciliable( account ) &&
 						!g_utf8_collate( ofo_entry_get_account( entry ), acc_number )){
-					ofo_entry_set_concil_dval( entry, end_cur );
-					ofo_entry_update_concil( entry, dossier );
+					ofo_entry_update_concil( entry, dossier, end_cur );
 				}
 			}
 			ofo_entry_free_dataset( sld_entries );

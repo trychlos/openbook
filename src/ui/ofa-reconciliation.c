@@ -1929,7 +1929,8 @@ reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drapp
 	/* last, update the sgbd */
 	ofo_entry_update_concil(
 			entry,
-			ofa_page_get_dossier( OFA_PAGE( self )));
+			ofa_page_get_dossier( OFA_PAGE( self )),
+			ofo_entry_get_concil_dval( entry ));
 
 	if( batline ){
 		ofo_bat_line_update(
