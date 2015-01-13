@@ -214,7 +214,6 @@ static void         error_acc_number( void );
 static void         error_account( const gchar *number );
 static void         error_acc_currency( ofoDossier *dossier, const gchar *currency, ofoAccount *account );
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
-static void         error_entry( const gchar *message );
 static gboolean     entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
 static gboolean     do_update_concil( ofoEntry *entry, const gchar *user, const ofaDbms *dbms );
 static gboolean     do_update_settlement( ofoEntry *entry, const gchar *user, const ofaDbms *dbms, ofxCounter number );
@@ -1947,7 +1946,7 @@ error_ledger( const gchar *ledger )
 	gchar *str;
 
 	str = g_strdup_printf( _( "Invalid ledger identifier: %s" ), ledger );
-	error_entry( str );
+	my_utils_dialog_error( str );
 
 	g_free( str );
 }
@@ -1958,7 +1957,7 @@ error_ope_template( const gchar *model )
 	gchar *str;
 
 	str = g_strdup_printf( _( "Invalid operation template identifier: %s" ), model );
-	error_entry( str );
+	my_utils_dialog_error( str );
 
 	g_free( str );
 }
@@ -1969,7 +1968,7 @@ error_currency( const gchar *currency )
 	gchar *str;
 
 	str = g_strdup_printf( _( "Invalid currency ISO 3A code: %s" ), currency );
-	error_entry( str );
+	my_utils_dialog_error( str );
 
 	g_free( str );
 }
@@ -1980,7 +1979,7 @@ error_acc_number( void )
 	gchar *str;
 
 	str = g_strdup( _( "Empty account number" ));
-	error_entry( str );
+	my_utils_dialog_error( str );
 
 	g_free( str );
 }
@@ -1991,7 +1990,7 @@ error_account( const gchar *number )
 	gchar *str;
 
 	str = g_strdup_printf( _( "Invalid account number: %s" ), number );
-	error_entry( str );
+	my_utils_dialog_error( str );
 
 	g_free( str );
 }
@@ -2019,7 +2018,7 @@ error_acc_currency( ofoDossier *dossier, const gchar *currency, ofoAccount *acco
 					acc_currency,
 					currency );
 	}
-	error_entry( str );
+	my_utils_dialog_error( str );
 
 	g_free( str );
 }
@@ -2033,26 +2032,9 @@ error_amounts( ofxAmount debit, ofxAmount credit )
 					"Invalid amounts: debit=%.lf, credit=%.lf: one and only one must be non zero",
 					debit, credit );
 
-	error_entry( str );
+	my_utils_dialog_error( str );
 
 	g_free( str );
-}
-
-static void
-error_entry( const gchar *message )
-{
-	GtkWidget *dialog;
-
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", message );
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-
-	gtk_widget_destroy( dialog );
 }
 
 /**
