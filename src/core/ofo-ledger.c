@@ -1375,7 +1375,7 @@ ledger_insert_main( ofoLedger *ledger, const ofaDbms *dbms, const gchar *user )
 			ofo_ledger_get_mnemo( ledger ),
 			label );
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -1455,7 +1455,7 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaDbms *dbm
 	g_string_append_printf( query, "LED_MNEMO='%s',", ofo_ledger_get_mnemo( ledger ));
 	g_string_append_printf( query, "LED_LABEL='%s',", label );
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "LED_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "LED_NOTES=NULL," );

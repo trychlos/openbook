@@ -2613,7 +2613,7 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 			"DOS_EXE_LENGTH=%d,", ofo_dossier_get_exe_length( dossier ));
 
 	notes = my_utils_quote( ofo_dossier_get_exe_notes( dossier ));
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "DOS_EXE_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "DOS_EXE_NOTES=NULL," );
@@ -2628,7 +2628,7 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	}
 
 	label = my_utils_quote( ofo_dossier_get_label( dossier ));
-	if( label && g_utf8_strlen( label, -1 )){
+	if( my_strlen( label )){
 		g_string_append_printf( query, "DOS_LABEL='%s',", label );
 	} else {
 		query = g_string_append( query, "DOS_LABEL=NULL," );
@@ -2636,7 +2636,7 @@ do_update_properties( ofoDossier *dossier, const ofaDbms *dbms, const gchar *use
 	g_free( label );
 
 	notes = my_utils_quote( ofo_dossier_get_notes( dossier ));
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "DOS_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "DOS_NOTES=NULL," );

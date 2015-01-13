@@ -1872,7 +1872,7 @@ entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 			sdope,
 			label );
 
-	if( ref && g_utf8_strlen( ref, -1 )){
+	if( my_strlen( ref )){
 		g_string_append_printf( query, "'%s',", ref );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -1885,7 +1885,7 @@ entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 				ofo_entry_get_ledger( entry ));
 
 	model = ofo_entry_get_ope_template( entry );
-	if( model && g_utf8_strlen( model, -1 )){
+	if( my_strlen( model )){
 		g_string_append_printf( query, "'%s',", model );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -2050,7 +2050,7 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
 	gchar *sdeff, *sdope, *sdeb, *scre;
-	gchar *stamp_str;
+	gchar *stamp_str, *label, *ref;
 	GTimeVal stamp;
 	gboolean ok;
 	const gchar *model;
@@ -2058,6 +2058,8 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( dbms && OFA_IS_DBMS( dbms ), FALSE );
 
+	label = my_utils_quote( ofo_entry_get_label( entry ));
+	ref = my_utils_quote( ofo_entry_get_ref( entry ));
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
 	sdeb = my_double_to_sql( ofo_entry_get_debit( entry ));
@@ -2071,14 +2073,14 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 			"	SET ENT_DEFFECT='%s',ENT_DOPE='%s',ENT_LABEL='%s',ENT_REF='%s',"
 			"	ENT_ACCOUNT='%s',ENT_CURRENCY='%s',ENT_LEDGER='%s',",
 			sdeff, sdope,
-			ofo_entry_get_label( entry ),
-			ofo_entry_get_ref( entry ),
+			label,
+			ref,
 			ofo_entry_get_account( entry ),
 			ofo_entry_get_currency( entry ),
 			ofo_entry_get_ledger( entry ));
 
 	model = ofo_entry_get_ope_template( entry );
-	if( !model || !g_utf8_strlen( model, -1 )){
+	if( !my_strlen( model )){
 		query = g_string_append( query, " ENT_OPE_TEMPLATE=NULL," );
 	} else {
 		g_string_append_printf( query, " ENT_OPE_TEMPLATE='%s',", model );
@@ -2097,6 +2099,8 @@ entry_do_update( ofoEntry *entry, const ofaDbms *dbms, const gchar *user )
 	}
 
 	g_string_free( query, TRUE );
+	g_free( label );
+	g_free( ref );
 	g_free( sdeff );
 	g_free( sdope );
 	g_free( sdeb );

@@ -621,7 +621,7 @@ currency_insert_main( ofoCurrency *currency, const ofaDbms *dbms, const gchar *u
 			symbol,
 			ofo_currency_get_digits( currency ));
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -699,7 +699,7 @@ currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaDbms
 			ofo_currency_get_symbol( currency ),
 			ofo_currency_get_digits( currency ));
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "CUR_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "CUR_NOTES=NULL," );

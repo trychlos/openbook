@@ -1328,7 +1328,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user
 			ofo_ope_template_get_ledger( model ),
 			ofo_ope_template_get_ledger_locked( model ) ? 1:0 );
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -1396,7 +1396,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, sMo
 {
 	GString *query;
 	gboolean ok;
-	gchar *label;
+	gchar *label, *comment, *ref, *account;
 
 	query = g_string_new( "INSERT INTO OFA_T_OPE_TEMPLATES_DET " );
 
@@ -1410,35 +1410,41 @@ model_insert_details( ofoOpeTemplate *model, const ofaDbms *dbms, gint rang, sMo
 			"	VALUES('%s',%d,",
 			ofo_ope_template_get_mnemo( model ), rang );
 
-	if( detail->comment && g_utf8_strlen( detail->comment, -1 )){
-		g_string_append_printf( query, "'%s',", detail->comment );
+	comment = my_utils_quote( detail->comment );
+	if( my_strlen( comment )){
+		g_string_append_printf( query, "'%s',", comment );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+	g_free( comment );
 
-	if( detail->ref && g_utf8_strlen( detail->ref, -1 )){
-		g_string_append_printf( query, "'%s',", detail->ref );
+	ref = my_utils_quote( detail->ref );
+	if( my_strlen( ref )){
+		g_string_append_printf( query, "'%s',", ref );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+	g_free( ref );
 
 	g_string_append_printf( query, "%d,", detail->ref_locked ? 1:0 );
 
-	if( detail->account && g_utf8_strlen( detail->account, -1 )){
-		g_string_append_printf( query, "'%s',", detail->account );
+	account = my_utils_quote( detail->account );
+	if( my_strlen( account )){
+		g_string_append_printf( query, "'%s',", account );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+	g_free( account );
 
 	g_string_append_printf( query, "%d,", detail->account_locked ? 1:0 );
 
-	if( my_strlen( detail->label )){
-		label = my_utils_quote( detail->label );
+	label = my_utils_quote( detail->label );
+	if( my_strlen( label )){
 		g_string_append_printf( query, "'%s',", label );
-		g_free( label );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+	g_free( label );
 
 	g_string_append_printf( query, "%d,", detail->label_locked ? 1:0 );
 
@@ -1535,7 +1541,7 @@ model_update_main( ofoOpeTemplate *model, const ofaDbms *dbms, const gchar *user
 	g_string_append_printf( query, "OTE_LED_MNEMO='%s',", ofo_ope_template_get_ledger( model ));
 	g_string_append_printf( query, "OTE_LED_LOCKED=%d,", ofo_ope_template_get_ledger_locked( model ) ? 1:0 );
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "OTE_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "OTE_NOTES=NULL," );

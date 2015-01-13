@@ -766,7 +766,7 @@ static gboolean
 bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 {
 	GString *query;
-	gchar *str;
+	gchar *suri, *str;
 	const GDate *begin, *end;
 	gboolean ok;
 	gchar *stamp_str;
@@ -774,6 +774,7 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 
 	ok = FALSE;
 	my_utils_stamp_set_now( &stamp );
+	suri = my_utils_quote( ofo_bat_get_uri( bat ));
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT" );
@@ -783,10 +784,12 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 			"	 BAT_RIB,BAT_CURRENCY,BAT_SOLDE,"
 			"	 BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP) VALUES (%ld,'%s',",
 					ofo_bat_get_id( bat ),
-					ofo_bat_get_uri( bat ));
+					suri );
+
+	g_free( suri );
 
 	str = my_utils_quote( ofo_bat_get_format( bat ));
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -812,14 +815,14 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 	}
 
 	str = ( gchar * ) ofo_bat_get_rib( bat );
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
 	str = ( gchar * ) ofo_bat_get_currency( bat );
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -834,7 +837,7 @@ bat_insert_main( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 	}
 
 	str = my_utils_quote( ofo_bat_get_notes( bat ));
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -904,7 +907,7 @@ bat_do_update( ofoBat *bat, const ofaDbms *dbms, const gchar *user )
 
 	query = g_string_new( "UPDATE OFA_T_BAT SET " );
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "BAT_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "BAT_NOTES=NULL," );

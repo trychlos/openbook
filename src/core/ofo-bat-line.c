@@ -637,7 +637,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user )
 	}
 
 	str = my_utils_quote( ofo_bat_line_get_ref( bat ));
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -645,7 +645,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user )
 	g_free( str );
 
 	str = my_utils_quote( ofo_bat_line_get_label( bat ));
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -653,7 +653,7 @@ bat_line_insert_main( ofoBatLine *bat, const ofaDbms *dbms, const gchar *user )
 	g_free( str );
 
 	str = ( gchar * ) ofo_bat_line_get_currency( bat );
-	if( str && g_utf8_strlen( str, -1 )){
+	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
 		query = g_string_append( query, "NULL," );

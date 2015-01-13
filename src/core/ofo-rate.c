@@ -815,7 +815,7 @@ rate_insert_main( ofoRate *rate, const ofaDbms *dbms, const gchar *user )
 			ofo_rate_get_mnemo( rate ),
 			label );
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -984,7 +984,7 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaDbms *dbms, c
 	g_string_append_printf( query, "RAT_MNEMO='%s',", ofo_rate_get_mnemo( rate ));
 	g_string_append_printf( query, "RAT_LABEL='%s',", label );
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "RAT_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "RAT_NOTES=NULL," );

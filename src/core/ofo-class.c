@@ -498,7 +498,7 @@ class_do_insert( ofoClass *class, const ofaDbms *dbms, const gchar *user )
 					ofo_class_get_number( class ),
 					label );
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
 	} else {
 		query = g_string_append( query, "NULL," );
@@ -574,7 +574,7 @@ class_do_update( ofoClass *class, gint prev_id, const ofaDbms *dbms, const gchar
 	g_string_append_printf( query, "	CLA_NUMBER=%d,", ofo_class_get_number( class ));
 	g_string_append_printf( query, "	CLA_LABEL='%s',", label );
 
-	if( notes && g_utf8_strlen( notes, -1 )){
+	if( my_strlen( notes )){
 		g_string_append_printf( query, "CLA_NOTES='%s',", notes );
 	} else {
 		query = g_string_append( query, "CLA_NOTES=NULL," );
