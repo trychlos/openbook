@@ -450,9 +450,6 @@
                 only), we should only be able to restore an archived
                 exercice on a new dossier.
 
- 588 2015- 1-14 future entries become rough when opening a new
-                exercice
-
  589 2015- 1-14 restoring in a newly created dossier doesn't work
                 (as cloning ?)
 
@@ -2552,6 +2549,10 @@
 
  587 2015- 1-12 Restore: Open should not have a _O keybord shortcut
      2015- 1-12 done - svn #4437
+
+ 588 2015- 1-14 future entries become rough when opening a new
+                exercice
+     2015- 1-14 done - svn #4446
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

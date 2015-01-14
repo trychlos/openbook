@@ -419,6 +419,7 @@ p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 		g_date_subtract_months( &begin, exe_length );
 		g_date_add_days( &begin, 1 );
 		my_editable_date_set_date( GTK_EDITABLE( priv->p2_begin_cur ), &begin );
+		my_date_set_from_date( &end, end_cur );
 
 	} else if( my_date_is_valid( begin_cur ) && !my_date_is_valid( end_cur ) && exe_length > 0 ){
 		my_date_set_from_date( &end, begin_cur );
@@ -434,8 +435,8 @@ p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p2_begin_next ), TRUE );
 	g_signal_connect( G_OBJECT( priv->p2_begin_next ), "changed", G_CALLBACK( p2_on_date_changed ), self );
 
-	if( my_date_is_valid( end_cur )){
-		my_date_set_from_date( &begin, end_cur );
+	if( my_date_is_valid( &end )){
+		my_date_set_from_date( &begin, &end );
 		g_date_add_days( &begin, 1 );
 		my_editable_date_set_date( GTK_EDITABLE( priv->p2_begin_next ), &begin );
 	}
@@ -447,10 +448,8 @@ p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p2_end_next ), TRUE );
 	g_signal_connect( G_OBJECT( priv->p2_end_next ), "changed", G_CALLBACK( p2_on_date_changed ), self );
 
-	if( my_date_is_valid( end_cur ) && exe_length > 0 ){
-		my_date_set_from_date( &end, end_cur );
+	if( my_date_is_valid( &end ) && exe_length > 0 ){
 		g_date_add_months( &end, exe_length );
-		g_date_subtract_days( &end, 1 );
 		my_editable_date_set_date( GTK_EDITABLE( priv->p2_end_next ), &end );
 	}
 
