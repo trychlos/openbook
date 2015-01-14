@@ -155,9 +155,12 @@ if( $opt_help ){
 sub convert_date
 {
 	my $date = shift;
-	my $out = substr( $date, 6, 4 );
-	$out .= "-" . substr( $date, 3, 2 );
-	$out .= "-" . substr( $date, 0, 2 );
+	my $out = "";
+	if( 0+substr( $date, 0, 2 ) > 0 ){
+		$out = substr( $date, 6, 4 );
+		$out .= "-" . substr( $date, 3, 2 );
+		$out .= "-" . substr( $date, 0, 2 );
+	}
 	return( $out );
 }
 
@@ -193,8 +196,10 @@ sub mapping
 	my $account = $infields[2];
 	my $debit = convert_amount( $infields[14] );
 	my $credit = convert_amount( $infields[15] );
+	my $settlement = $infields[28] eq "oui" ? "True" : "";
+	my $reconciliation = convert_date( $infields[7] );
 	
-	return( join( ';', $dope, $deff, $label, $ref, "", $ledger, "", $account, $debit, $credit ));
+	return( join( ';', $dope, $deff, $label, $ref, "", $ledger, "", $account, $debit, $credit, $settlement, "", "", $reconciliation, "", "" ));
 }
 
 ###
@@ -208,7 +213,7 @@ my $count = 0;
 while( <> ){
 	$count += 1;
 	if( $count == 1 ){
-		print "DOpe;DEffect;Label;Ref;Currency;Ledger;OpeTemplate;Account;Debit;Credit\n";	
+		print "DOpe;DEffect;Label;Ref;Currency;Ledger;OpeTemplate;Account;Debit;Credit;Settlement;Reconciliation\n";
 	} else {
 		print mapping( $_ )."\n";
 	}

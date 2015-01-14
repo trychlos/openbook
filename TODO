@@ -441,8 +441,8 @@
                 finalized_dossier=0x740430
      2015- 1-13 not reproduced
 
- 584 2015- 1-12 ofo_insert_entry: should set in dbms reconciliation and
-                settlement groups the data which may be set in the object
+ 584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
+                settlement groups if they are set in the object
                 (would prevent two updates when closing the exercice)
 
  585 2015- 1-12 Restore: must adapt title and settings to the restored 

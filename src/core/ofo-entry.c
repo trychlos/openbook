@@ -123,6 +123,33 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
+										/* settlement number and reconciliation date
+										 * are imported, but not the corresponding
+										 * users and dates */
+		{ OFA_BOX_CSV( ENT_STLMT_NUMBER ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ENT_STLMT_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( ENT_STLMT_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( ENT_CONCIL_DVAL ),
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ENT_CONCIL_USER ),
+				OFA_TYPE_STRING,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( ENT_CONCIL_STAMP ),
+				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				FALSE },
 										/* below data are not imported */
 		{ OFA_BOX_CSV( ENT_NUMBER ),
 				OFA_TYPE_COUNTER,
@@ -140,35 +167,11 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				FALSE },
-		{ OFA_BOX_CSV( ENT_CONCIL_DVAL ),
-				OFA_TYPE_DATE,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( ENT_CONCIL_USER ),
-				OFA_TYPE_STRING,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( ENT_CONCIL_STAMP ),
-				OFA_TYPE_TIMESTAMP,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( ENT_STLMT_NUMBER ),
-				OFA_TYPE_COUNTER,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( ENT_STLMT_USER ),
-				OFA_TYPE_STRING,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( ENT_STLMT_STAMP ),
-				OFA_TYPE_TIMESTAMP,
-				FALSE,
-				FALSE },
 		{ 0 }
 };
 
 struct _ofoEntryPrivate {
-	void *empty;
+	gboolean import_settled;
 };
 
 /* manage the abbreviated localized status
@@ -202,10 +205,12 @@ static gint         entry_count_for_currency( const ofaDbms *dbms, const gchar *
 static gint         entry_count_for_ledger( const ofaDbms *dbms, const gchar *ledger );
 static gint         entry_count_for_ope_template( const ofaDbms *dbms, const gchar *model );
 static gint         entry_count_for( const ofaDbms *dbms, const gchar *field, const gchar *mnemo );
+static gboolean     entry_get_import_settled( const ofoEntry *entry );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
 static void         entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp );
 static void         entry_set_settlement_user( ofoEntry *entry, const gchar *user );
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
+static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
 static gboolean     entry_do_insert( ofoEntry *entry, const ofaDbms *dbms, const gchar *user );
 static void         error_ledger( const gchar *ledger );
 static void         error_ope_template( const gchar *model );
@@ -1484,6 +1489,25 @@ ofo_entry_get_currencies( const ofoDossier *dossier )
 }
 
 /**
+ * ofo_entry_get_import_settled:
+ */
+static gboolean
+entry_get_import_settled( const ofoEntry *entry )
+{
+	ofoEntryPrivate *priv;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		priv = entry->priv;
+		return( priv->import_settled );
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofo_entry_set_number:
  */
 void
@@ -1647,6 +1671,23 @@ static void
 entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp )
 {
 	ofo_base_setter( ENTRY, entry, timestamp, ENT_STLMT_STAMP, stamp );
+}
+
+/*
+ * ofo_entry_set_import_settled:
+ */
+static void
+entry_set_import_settled( ofoEntry *entry, gboolean settled )
+{
+	ofoEntryPrivate *priv;
+
+	g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		priv = entry->priv;
+		priv->import_settled = settled;
+	}
 }
 
 /*
@@ -2487,6 +2528,13 @@ iimportable_get_interface_version( const ofaIImportable *instance )
  * - account number, must exist and be a detail account
  * - debit
  * - credit (only one of the twos must be set)
+ * - settlement: "True" or a settlement number if the entry has been
+ *   settled, or empty
+ * - ignored (settlement user on export)
+ * - ignored (settlement timestamp on export)
+ * - reconciliation date: yyyy-mm-dd
+ * - ignored (reconciliation user on export)
+ * - ignored (reconciliation timestamp on export)
  *
  * Note that amounts must not include thousand separator.
  *
@@ -2527,6 +2575,8 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	ofsCurrency *sdet;
 	gint digits;
 	ofoCurrency *cur_object;
+	ofxCounter counter;
+	const GDate *cdate;
 
 	dataset = NULL;
 	line = 0;
@@ -2694,6 +2744,40 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 			continue;
 		}
 
+		/* settlement (number or True)
+		 * do not allocate a settlement number from the dossier here
+		 * in case where the entries import would not be inserted */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr ) && ofo_account_is_settleable( account )){
+			counter = atol( cstr );
+			if( counter ){
+				entry_set_import_settled( entry, TRUE );
+			} else {
+				entry_set_import_settled( entry, my_utils_boolean_from_str( cstr ));
+			}
+		}
+
+		/* ignored (settlement user from export) */
+		itf = itf ? itf->next : NULL;
+
+		/* ignored (settlement timestamp from export) */
+		itf = itf ? itf->next : NULL;
+
+		/* reconciliation date */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		my_date_set_from_sql( &date, cstr );
+		if( my_date_is_valid( &date )){
+			ofo_entry_set_concil_dval( entry, &date );
+		}
+
+		/* ignored (reconciliation user from export) */
+		itf = itf ? itf->next : NULL;
+
+		/* ignored (reconciliation timestamp from export) */
+		itf = itf ? itf->next : NULL;
+
 		/* what to do regarding the effect date ? */
 		if( !ofo_entry_compute_status( entry, dossier )){
 			sdeffect = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_DMYY );
@@ -2739,7 +2823,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 	/* rough and future entries must be balanced:
 	 * as we are storing 5 decimal digits in the DBMS, so this is the
 	 * maximal rounding error accepted */
-	precision = 1 / PRECISION;
+	precision = ( gdouble ) 1 / ( gdouble ) PRECISION;
 	for( it=past ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
 		msg = g_strdup_printf( "PAST [%s] tot_debits=%'.5lf, tot_credits=%'.5lf",
@@ -2777,7 +2861,16 @@ iimportable_import( ofaIImportable *importable, GSList *lines, ofoDossier *dossi
 
 	if( !errors ){
 		for( it=dataset ; it ; it=it->next ){
-			ofo_entry_insert( OFO_ENTRY( it->data ), dossier );
+			entry = OFO_ENTRY( it->data );
+			ofo_entry_insert( entry, dossier );
+			if( entry_get_import_settled( entry )){
+				counter = ofo_dossier_get_next_settlement( dossier );
+				ofo_entry_update_settlement( entry, dossier, counter );
+			}
+			cdate = ofo_entry_get_concil_dval( entry );
+			if( my_date_is_valid( cdate )){
+				ofo_entry_update_concil( entry, dossier, cdate );
+			}
 			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
 			/*g_debug( "it=%p", ( void * ) it );*/
 		}
