@@ -456,9 +456,6 @@
  590 2015- 1-14 ofa_accounts_book_on_widget_finalized: (dossier) has
                 no handler with (id) : 4 times
 
- 591 2015- 1-14 closing the exercice: one date is enough to compute the
-                three others
-
  592
 
 -----------------------------------------------------------------------
@@ -2553,6 +2550,10 @@
  588 2015- 1-14 future entries become rough when opening a new
                 exercice
      2015- 1-14 done - svn #4446
+
+ 591 2015- 1-14 closing the exercice: one date is enough to compute the
+                three others
+     2015- 1-14 done - svn #4447
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd

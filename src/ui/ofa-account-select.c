@@ -44,12 +44,11 @@ struct _ofaAccountSelectPrivate {
 	/* UI
 	 */
 	ofaAccountsFrame *accounts_frame;
-
 	GtkWidget        *ok_btn;
 
 	/* returned value
 	 */
-	gchar           *account_number;
+	gchar            *account_number;
 };
 
 static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-account-select.ui";

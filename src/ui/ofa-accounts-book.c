@@ -57,7 +57,6 @@ struct _ofaAccountsBookPrivate {
 	GList           *dos_handlers;
 
 	ofaAccountStore *store;
-	GList           *sto_handlers;
 	GtkNotebook     *book;
 
 	gint             prev_class;
@@ -170,21 +169,16 @@ accounts_book_dispose( GObject *instance )
 		if( !priv->from_widget_finalized ){
 			g_object_weak_unref(
 					G_OBJECT( priv->book ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 
-		/* disconnect from ofoDossier */
-		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
-			for( it=priv->dos_handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
+			/* disconnect from ofoDossier */
+			if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
+				for( it=priv->dos_handlers ; it ; it=it->next ){
+					g_debug( "about to disconnect from dossier" );
+					g_signal_handler_disconnect( priv->dossier, ( gulong ) it->data );
+				}
 			}
 		}
 
-		/* disconnect from ofaAccountStore */
-		if( priv->store && OFA_IS_ACCOUNT_STORE( priv->store )){
-			for( it=priv->sto_handlers ; it ; it=it->next ){
-				g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
-			}
-		}
 	}
 
 	/* chain up to the parent class */
@@ -477,7 +471,6 @@ ofa_accounts_book_set_main_window( ofaAccountsBook *book, ofaMainWindow *main_wi
 {
 	static const gchar *thisfn = "ofa_accounts_book_set_main_window";
 	ofaAccountsBookPrivate *priv;
-	gulong handler;
 
 	g_debug( "%s: book=%p, main_window=%p", thisfn, ( void * ) book, ( void * ) main_window );
 
@@ -495,13 +488,11 @@ ofa_accounts_book_set_main_window( ofaAccountsBook *book, ofaMainWindow *main_wi
 		priv->dossier = ofa_main_window_get_dossier( main_window );
 		priv->store = ofa_account_store_new( priv->dossier );
 
-		handler = g_signal_connect(
+		g_signal_connect(
 				priv->store, "row-inserted", G_CALLBACK( on_row_inserted ), book );
-		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
 
-		handler = g_signal_connect(
+		g_signal_connect(
 				priv->store, "ofa-row-inserted", G_CALLBACK( on_ofa_row_inserted ), book );
-		priv->sto_handlers = g_list_prepend( priv->sto_handlers, ( gpointer ) handler );
 
 		ofa_account_store_load_dataset( priv->store );
 
