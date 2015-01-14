@@ -453,10 +453,9 @@
  589 2015- 1-14 restoring in a newly created dossier doesn't work
                 (as cloning ?)
 
- 590 2015- 1-14 ofa_accounts_book_on_widget_finalized: (dossier) has
-                no handler with (id) : 4 times
+ 592 2015- 1-14 MySQLDatabase should be an Openbook key
 
- 592
+ 593
 
 -----------------------------------------------------------------------
  DONE
@@ -2550,6 +2549,10 @@
  588 2015- 1-14 future entries become rough when opening a new
                 exercice
      2015- 1-14 done - svn #4446
+
+ 590 2015- 1-14 ofa_accounts_book_on_widget_finalized: (dossier) has
+                no handler with (id) : 4 times
+     2015- 1-14 done - svn #4448
 
  591 2015- 1-14 closing the exercice: one date is enough to compute the
                 three others

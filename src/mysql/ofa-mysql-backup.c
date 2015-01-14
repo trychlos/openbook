@@ -132,13 +132,16 @@ ofa_mysql_backup( const ofaIDbms *instance, void *handle, const gchar *fname, gb
 const gchar *
 ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance )
 {
-	return( "mysql %O -u%U -p%P -e 'drop database %B' ; mysql %O -u%U -p%P -e 'create database %B' ; gzip -cd %F | mysql --verbose %O -u%U -p%P %B" );
+	return( "mysql %O -u%U -p%P -e 'drop database if exists %B'; mysql %O -u%U -p%P -e 'create database %B'; gzip -cd %F | mysql --verbose %O -u%U -p%P %B" );
 }
 
 /**
  * ofa_mysql_restore:
  *
  * Restore a backup file on a named dossier.
+ *
+ * It happens that MySQL has some issues with dropping an non-existant
+ * database - so create it first
  */
 gboolean
 ofa_mysql_restore( const ofaIDbms *instance,

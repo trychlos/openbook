@@ -123,7 +123,7 @@ Press Continue.</property>
                     </child>
                     <child>
                       <object class="GtkButton" id="p2-new-dossier">
-                        <property name="label" translatable="yes">New d_ossier...</property>
+                        <property name="label" translatable="yes">New _dossier...</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
