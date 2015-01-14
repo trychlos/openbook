@@ -518,7 +518,8 @@ ofo_entry_dump( const ofoEntry *entry )
  * @dossier: the dossier.
  * @account: the searched account number.
  *
- * Returns all entries for the given account (if specified).
+ * Returns all entries either for the specified @account (if any),
+ * or for all accounts.
  *
  * The returned dataset is sorted by ascending dope/deffect/number.
  */
@@ -533,7 +534,7 @@ ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *accoun
 
 	where = g_string_new( "" );
 
-	if( account && g_utf8_strlen( account, -1 )){
+	if( my_strlen( account )){
 		g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
 	}
 
@@ -550,7 +551,8 @@ ofo_entry_get_dataset_by_account( const ofoDossier *dossier, const gchar *accoun
  * @dossier: the dossier.
  * @ledger: the ledger.
  *
- * Returns all entries for the given ledger (if specified).
+ * Returns all entries either for the specified @ledger (if any),
+ * or for all ledgers.
  *
  * The returned dataset is sorted by ascending dope/deffect/number.
  */
@@ -564,7 +566,7 @@ GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *
 
 	where = g_string_new( "" );
 
-	if( ledger && g_utf8_strlen( ledger, -1 )){
+	if( my_strlen( ledger )){
 		g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
 	}
 
@@ -584,12 +586,12 @@ GList *ofo_entry_get_dataset_by_ledger( const ofoDossier *dossier, const gchar *
  * @from_date: the starting effect date.
  * @to_date: the ending effect date.
  *
- * Returns the dataset of entries for the given accounts, between the
- * specified effect dates, as a GList of newly allocated
+ * Returns the dataset of non-deleted entries for the given accounts,
+ * between the specified effect dates, as a GList of newly allocated
  * #ofsAccountBalance structures, that the user should
- *  ofo_account_free_balances().
+ * ofo_account_free_balances().
  *
- * The returned dataset doesn't contain deleted entries.
+ * The returned dataset is ordered by ascending account.
  */
 GList *
 ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
@@ -612,11 +614,11 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
 	first = FALSE;
 	dataset = NULL;
 
-	if( from_account && g_utf8_strlen( from_account, -1 )){
+	if( my_strlen( from_account )){
 		g_string_append_printf( query, "ENT_ACCOUNT>='%s' ", from_account );
 		first = TRUE;
 	}
-	if( to_account && g_utf8_strlen( to_account, -1 )){
+	if( my_strlen( to_account )){
 		if( first ){
 			query = g_string_append( query, "AND " );
 		}
@@ -677,13 +679,11 @@ ofo_entry_get_dataset_for_print_balance( const ofoDossier *dossier,
  * @from_date: the starting effect date.
  * @to_date: the ending effect date.
  *
- * Returns the dataset of entries for the given accounts, between the
- * specified effect dates, as a GList of #ofoEntry, that the user
- * should g_list_free_full( list, ( GDestroyNotify ) g_object_unref ).
+ * Returns the dataset of non-deleted entries for the given accounts,
+ * between the specified effect dates, as a GList of #ofoEntry,
+ * that the user should #ofo_entry_free_dataset().
  *
- * All entries (validated or rough) are considered.
- *
- * The returned dataset doesn't contain deleted entries.
+ * The returned dataset is ordered by ascending account/dope/deffect/number.
  */
 GList *
 ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
@@ -701,11 +701,11 @@ ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
 	first = FALSE;
 	dataset = NULL;
 
-	if( from_account && g_utf8_strlen( from_account, -1 )){
+	if( my_strlen( from_account )){
 		g_string_append_printf( query, "ENT_ACCOUNT>='%s' ", from_account );
 		first = TRUE;
 	}
-	if( to_account && g_utf8_strlen( to_account, -1 )){
+	if( my_strlen( to_account )){
 		if( first ){
 			query = g_string_append( query, "AND " );
 		}
@@ -756,11 +756,11 @@ ofo_entry_get_dataset_for_print_general_books( const ofoDossier *dossier,
  * @from_date: the starting effect date.
  * @to_date: the ending effect date.
  *
- * Returns the dataset of entries for the given ledgers, between the
- * specified effect dates, as a GList of #ofoEntry, that the user
- * should g_list_free_full( list, ( GDestroyNotify ) g_object_unref ).
+ * Returns the dataset of non-deleted entries for the ledgers specified
+ * by their mnemo, between the specified effect dates, as a #GList of
+ * #ofoEntry, that the user should #ofo_entry_free_dataset().
  *
- * The returned dataset doesn't contain deleted entries.
+ * The returned dataset is ordered by ascending ledger/dope/deffect/number.
  */
 GList *
 ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
@@ -820,10 +820,10 @@ ofo_entry_get_dataset_for_print_ledgers( const ofoDossier *dossier,
  * @account: the reconciliated account.
  * @date: the greatest effect date to be returned.
  *
- * Returns the dataset of unreconciliated entries for the given account,
- * until the specified effect date.
+ * Returns the dataset of un-reconciliated un-deleted entries for the
+ * specified account, up to and including the specified effect date.
  *
- * The returned dataset doesn't contain deleted entries.
+ * The returned dataset is ordered by ascending dope/deffect/number.
  */
 GList *
 ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
@@ -856,13 +856,17 @@ ofo_entry_get_dataset_for_print_reconcil( const ofoDossier *dossier,
 }
 
 /**
- * ofo_entry_get_dataset_remaining_for_val:
+ * ofo_entry_get_dataset_for_exercice_by_status:
  * @dossier: the current dossier.
+ * @status: the requested status
  *
  * Returns the dataset of rough remaining entries on the exercice.
+ *
+ * The returned dataset is ordered by dope/deffect/number, and should
+ * be #ofo_entry_free_dataset() by the caller.
  */
 GList *
-ofo_entry_get_dataset_remaining_for_val( const ofoDossier *dossier )
+ofo_entry_get_dataset_for_exercice_by_status( const ofoDossier *dossier, ofaEntryStatus status )
 {
 	GList *dataset;
 	GString *where;
@@ -873,7 +877,7 @@ ofo_entry_get_dataset_remaining_for_val( const ofoDossier *dossier )
 	where = g_string_new( "" );
 
 	str = effect_in_exercice( dossier);
-	g_string_append_printf( where, "%s AND ENT_STATUS=%u ", str, ENT_STATUS_ROUGH );
+	g_string_append_printf( where, "%s AND ENT_STATUS=%u ", str, status );
 	g_free( str );
 
 	dataset = entry_load_dataset( ofo_dossier_get_dbms( dossier ), where->str );
@@ -2308,6 +2312,44 @@ ofo_entry_validate( ofoEntry *entry, const ofoDossier *dossier )
 
 		/* use the dossier signaling system to update account and ledger */
 		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_VALIDATED_ENTRY, entry );
+	}
+
+	return( FALSE );
+}
+
+/**
+ * ofo_entry_future_to_rough:
+ *
+ * entry must be in 'future' status
+ */
+gboolean
+ofo_entry_future_to_rough( ofoEntry *entry, const ofoDossier *dossier )
+{
+	ofaEntryStatus status;
+	gchar *query;
+
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
+
+	if( !OFO_BASE( entry )->prot->dispose_has_run ){
+
+		status = ofo_entry_get_status( entry );
+		g_return_val_if_fail( status == ENT_STATUS_FUTURE, FALSE );
+
+		ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
+
+		query = g_strdup_printf(
+						"UPDATE OFA_T_ENTRIES "
+						"	SET ENT_STATUS=%d "
+						"	WHERE ENT_NUMBER=%ld",
+								ofo_entry_get_status( entry ),
+								ofo_entry_get_number( entry ));
+
+		ofa_dbms_query( ofo_dossier_get_dbms( dossier ), query, TRUE );
+		g_free( query );
+
+		/* use the dossier signaling system to update account and ledger */
+		g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY, entry );
 	}
 
 	return( FALSE );

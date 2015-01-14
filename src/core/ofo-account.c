@@ -189,6 +189,7 @@ static void         on_new_object( ofoDossier *dossier, ofoBase *object, gpointe
 static void         on_new_object_entry( ofoDossier *dossier, ofoEntry *entry );
 static void         on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void         on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code );
+static void         on_future_to_rough_entry( ofoDossier *dossier, ofoEntry *entry, void *empty );
 static void         on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
 static GList       *account_load_dataset( ofoDossier *dossier );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
@@ -376,6 +377,9 @@ ofo_account_connect_handlers( const ofoDossier *dossier )
 				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 
 	g_signal_connect( G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY, G_CALLBACK( on_future_to_rough_entry ), NULL );
+
+	g_signal_connect( G_OBJECT( dossier ),
 				SIGNAL_DOSSIER_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
 }
 
@@ -502,6 +506,45 @@ on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, cons
 	if( ofa_idataset_get_dataset( dossier, OFO_TYPE_ACCOUNT )){
 		g_signal_emit_by_name(
 				G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_ACCOUNT );
+	}
+}
+
+/*
+ * an entry is becomes rough from a future status (after closing exercice)
+ */
+static void
+on_future_to_rough_entry( ofoDossier *dossier, ofoEntry *entry, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_on_validated_entry";
+	ofoAccount *account;
+	ofxAmount debit, credit, amount;
+
+	g_debug( "%s: dossier=%p, entry=%p, empty=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) empty );
+
+	account = ofo_account_get_by_number( dossier, ofo_entry_get_account( entry ));
+	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+
+	debit = ofo_entry_get_debit( entry );
+	if( debit ){
+		amount = ofo_account_get_rough_debit( account );
+		account_set_rough_debit( account, amount+debit );
+		amount = ofo_account_get_futur_debit( account );
+		account_set_futur_debit( account, amount-debit );
+	}
+
+	credit = ofo_entry_get_credit( entry );
+	if( credit ){
+		amount = ofo_account_get_rough_credit( account );
+		account_set_rough_credit( account, amount+credit );
+		amount = ofo_account_get_futur_credit( account );
+		account_set_futur_credit( account, amount-credit );
+	}
+
+	if( account_update_amounts( account, ofo_dossier_get_dbms( dossier ))){
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( account ), NULL );
 	}
 }
 

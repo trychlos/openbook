@@ -167,6 +167,7 @@ static void       on_new_object( ofoDossier *dossier, ofoBase *object, gpointer 
 static void       on_new_ledger_entry( ofoDossier *dossier, ofoEntry *entry );
 static void       on_updated_object( ofoDossier *dossier, ofoBase *object, const gchar *prev_id, gpointer user_data );
 static void       on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, const gchar *code );
+static void       on_future_to_rough_entry( ofoDossier *dossier, ofoEntry *entry, void *empty );
 static void       on_validated_entry( ofoDossier *dossier, ofoEntry *entry, void *user_data );
 static GList     *ledger_load_dataset( ofoDossier *dossier );
 static ofoLedger *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
@@ -345,6 +346,9 @@ ofo_ledger_connect_handlers( const ofoDossier *dossier )
 				SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), NULL );
 
 	g_signal_connect( G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY, G_CALLBACK( on_future_to_rough_entry ), NULL );
+
+	g_signal_connect( G_OBJECT( dossier ),
 				SIGNAL_DOSSIER_VALIDATED_ENTRY, G_CALLBACK( on_validated_entry ), NULL );
 }
 
@@ -448,6 +452,50 @@ on_updated_object_currency_code( ofoDossier *dossier, const gchar *prev_id, cons
 	ofa_idataset_free_dataset( dossier, OFO_TYPE_LEDGER );
 
 	g_signal_emit_by_name( G_OBJECT( dossier ), SIGNAL_DOSSIER_RELOAD_DATASET, OFO_TYPE_LEDGER );
+}
+
+/*
+ * an entry becomes rough from future, when closing the exercice
+ */
+static void
+on_future_to_rough_entry( ofoDossier *dossier, ofoEntry *entry, void *empty )
+{
+	static const gchar *thisfn = "ofo_ledger_on_validated_entry";
+	const gchar *currency, *mnemo;
+	ofoLedger *ledger;
+	GList *balance;
+	ofxAmount debit, credit, amount;
+
+	g_debug( "%s: dossier=%p, entry=%p, user_data=%p",
+			thisfn, ( void * ) dossier, ( void * ) entry, ( void * ) empty );
+
+	mnemo = ofo_entry_get_ledger( entry );
+	ledger = ofo_ledger_get_by_mnemo( dossier, mnemo );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+
+	currency = ofo_entry_get_currency( entry );
+	balance = ledger_find_balance_by_code( ledger, currency );
+	/* the entry has necessarily be already recorded while in rough status */
+	g_return_if_fail( balance );
+
+	debit = ofo_entry_get_debit( entry );
+	amount = ofa_box_get_amount( balance, LED_ROUGH_DEBIT );
+	ofa_box_set_amount( balance, LED_ROUGH_DEBIT, amount+debit );
+	amount = ofa_box_get_amount( balance, LED_FUT_DEBIT );
+	ofa_box_set_amount( balance, LED_FUT_DEBIT, amount-debit );
+
+
+	credit = ofo_entry_get_credit( entry );
+	amount = ofa_box_get_amount( balance, LED_ROUGH_CREDIT );
+	ofa_box_set_amount( balance, LED_ROUGH_CREDIT, amount+credit );
+	amount = ofa_box_get_amount( balance, LED_FUT_CREDIT );
+	ofa_box_set_amount( balance, LED_FUT_CREDIT, amount-credit );
+
+	if( ledger_do_update_balance( ledger, balance, ofo_dossier_get_dbms( dossier ))){
+		g_signal_emit_by_name(
+				G_OBJECT( dossier ),
+				SIGNAL_DOSSIER_UPDATED_OBJECT, g_object_ref( ledger ), mnemo );
+	}
 }
 
 /*

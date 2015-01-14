@@ -162,6 +162,7 @@ static gboolean         p6_do_archive_exercice( ofaExeClosing *self, gboolean wi
 static gboolean         p6_cleanup( ofaExeClosing *self );
 static gboolean         p6_forward( ofaExeClosing *self );
 static gboolean         p6_open( ofaExeClosing *self );
+static gboolean         p6_future( ofaExeClosing *self );
 
 static void
 exe_closing_finalize( GObject *instance )
@@ -932,7 +933,7 @@ p6_validate_entries( ofaExeClosing *self )
 	priv = self->priv;
 	dossier = MY_WINDOW( self )->prot->dossier;
 
-	entries = ofo_entry_get_dataset_remaining_for_val( dossier );
+	entries = ofo_entry_get_dataset_for_exercice_by_status( dossier, ENT_STATUS_ROUGH );
 	count = g_list_length( entries );
 	my_utils_stamp_set_now( &stamp_start );
 
@@ -1493,7 +1494,6 @@ p6_open( ofaExeClosing *self )
 	ofoAccount *account;
 	gdouble progress;
 	gchar *text;
-	GtkWidget *label;
 
 	priv = self->priv;
 	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
@@ -1517,6 +1517,57 @@ p6_open( ofaExeClosing *self )
 		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
 
 		g_free( text );
+	}
+
+	g_idle_add(( GSourceFunc ) p6_future, self );
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
+}
+
+/*
+ * take the ex-future entries, bringing them up in the new exercice
+ * if appropriate
+ */
+static gboolean
+p6_future( ofaExeClosing *self )
+{
+	static const gchar *thisfn = "ofa_exe_closing_p6_future";
+	ofaExeClosingPrivate *priv;
+	ofoDossier *dossier;
+	myProgressBar *bar;
+	gint count, i;
+	GList *entries, *it;
+	ofoEntry *entry;
+	gdouble progress;
+	gchar *text;
+	GtkWidget *label;
+
+	priv = self->priv;
+	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
+	entries = ofo_entry_get_dataset_for_exercice_by_status( dossier, ENT_STATUS_FUTURE );
+	count = g_list_length( entries );
+
+	bar = get_new_bar( self, "p6-open" );
+	gtk_widget_show_all( priv->page_w );
+
+	for( i=1, it=entries ; it ; ++i, it=it->next ){
+		entry = OFO_ENTRY( it->data );
+		ofo_entry_future_to_rough( entry, dossier );
+
+		progress = ( gdouble ) i / ( gdouble ) count;
+		g_signal_emit_by_name( bar, "double", progress );
+
+		text = g_strdup_printf( "%u/%u", i, count );
+		g_signal_emit_by_name( bar, "text", text );
+
+		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
+
+		g_free( text );
+	}
+	if( !count ){
+		g_signal_emit_by_name( bar, "double", 1.0 );
+		g_signal_emit_by_name( bar, "text", "0/0" );
 	}
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->page_w ), "p6-summary" );

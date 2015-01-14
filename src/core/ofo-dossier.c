@@ -96,6 +96,7 @@ enum {
 	DELETED_OBJECT,
 	RELOAD_DATASET,
 	PRE_VALID_ENTRY,
+	FUTURE_ROUGH,
 	VALIDATED_ENTRY,
 	EXE_DATE_CHANGED,
 	N_SIGNALS
@@ -409,6 +410,26 @@ dossier_class_init( ofoDossierClass *klass )
 				G_TYPE_NONE,
 				2,
 				G_TYPE_STRING, G_TYPE_UINT );
+
+	/**
+	 * ofoDossier::ofa-signal-dossier-future-rough-entry:
+	 *
+	 * Handler is of type:
+	 * 		void user_handler ( ofoDossier *dossier,
+	 * 								ofoEntry *entry,
+	 * 								gpointer  user_data );
+	 */
+	st_signals[ FUTURE_ROUGH ] = g_signal_new_class_handler(
+				SIGNAL_DOSSIER_FUTURE_ROUGH_ENTRY,
+				OFO_TYPE_DOSSIER,
+				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
+				G_CALLBACK( on_validated_entry_cleanup_handler ),
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_OBJECT );
 
 	/**
 	 * ofoDossier::ofa-signal-validated-entry:
