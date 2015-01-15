@@ -34,6 +34,7 @@
 
 #include "api/my-date.h"
 #include "api/my-double.h"
+#include "api/my-utils.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -819,20 +820,20 @@ ofs_ope_is_valid( const ofsOpe *ope, ofoDossier *dossier, gchar **message, GList
 	checker->dossier = dossier;
 	ok = TRUE;
 
-	/* check for a valid ledger */
-	oki = check_for_ledger( checker );
-	ok &= oki;
-
-	/* check for valid operation and effect dates */
-	oki = check_for_dates( checker );
-	ok &= oki;
-
 	/* check for non empty accounts and labels, updating the currencies */
 	oki = check_for_all_entries( checker );
 	ok &= oki;
 
 	/* check for balance by currency */
 	oki = check_for_currencies( checker );
+	ok &= oki;
+
+	/* check for a valid ledger */
+	oki = check_for_ledger( checker );
+	ok &= oki;
+
+	/* check for valid operation and effect dates */
+	oki = check_for_dates( checker );
 	ok &= oki;
 
 	if( message ){
@@ -970,7 +971,7 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail )
 	ok = FALSE;
 	currency = NULL;
 
-	if( !detail->account || !g_utf8_strlen( detail->account, -1 )){
+	if( !my_strlen( detail->account )){
 		if( detail->debit || detail->credit ){
 			g_free( checker->message );
 			checker->message = g_strdup( _( "Empty account" ));
@@ -992,7 +993,7 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail )
 			g_free( checker->message );
 			checker->message = g_strdup( _( "Empty label" ));
 
-		} else if(( detail->debit && detail->credit ) || ( !detail->debit && !detail->credit )){
+		} else if( detail->debit && detail->credit ){
 			g_free( checker->message );
 			checker->message = g_strdup( _( "Invalid amounts" ));
 
