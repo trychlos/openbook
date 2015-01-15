@@ -108,19 +108,21 @@ enum {
 	DET_N_COLUMNS
 };
 
-#define DET_COL_ADD                  DET_COL_ROW
+#define RANG_WIDTH                      3
+
+#define DET_COL_ADD                     DET_COL_ROW
 
 /* each widget of the grid brings its row number */
-#define DATA_ROW                     "ofa-data-row"
+#define DATA_ROW                        "ofa-data-row"
 
 /* buttons also bring their column number */
-#define DATA_COLUMN                  "ofa-data-column"
+#define DATA_COLUMN                     "ofa-data-column"
 
 /* space between widgets in a detail line */
-#define DETAIL_SPACE                 2
+#define DETAIL_SPACE                    2
 
-static const gchar  *st_ui_xml       = PKGUIDIR "/ofa-ope-template-properties.ui";
-static const gchar  *st_ui_id        = "OpeTemplatePropertiesDlg";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-ope-template-properties.ui";
+static const gchar *st_ui_id            = "OpeTemplatePropertiesDlg";
 
 G_DEFINE_TYPE( ofaOpeTemplateProperties, ofa_ope_template_properties, MY_TYPE_DIALOG )
 
@@ -451,34 +453,37 @@ insert_new_row( ofaOpeTemplateProperties *self, gint row )
 static void
 add_empty_row( ofaOpeTemplateProperties *self )
 {
+	ofaOpeTemplatePropertiesPrivate *priv;
 	gint row;
-	GtkWidget *widget;
+	GtkWidget *widget, *label;
 	GtkEntry *entry;
 	GtkWidget *toggle;
 	gchar *str;
 
-	row = self->priv->count + 1;
+	priv = self->priv;
+
+	row = priv->count + 1;
 	g_return_if_fail( row >= 1 );
 
-	widget = gtk_grid_get_child_at( self->priv->grid, DET_COL_ADD, row );
+	widget = gtk_grid_get_child_at( priv->grid, DET_COL_ADD, row );
 	gtk_widget_destroy( widget );
 
-	entry = GTK_ENTRY( gtk_entry_new());
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), FALSE );
-	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_entry_set_alignment( entry, 1.0 );
-	gtk_entry_set_width_chars( entry, 2 );
-	gtk_grid_attach( self->priv->grid, GTK_WIDGET( entry ), DET_COL_ROW, row, 1, 1 );
-	str = g_strdup_printf( "%d", row );
-	gtk_entry_set_text( entry, str );
+	str = g_strdup_printf( "%2d", row );
+	label = gtk_label_new( str );
+	g_object_set_data( G_OBJECT( label ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_free( str );
+	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
+	gtk_widget_set_margin_right( label, 4 );
+	gtk_widget_set_margin_bottom( label, 2 );
+	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );
+	gtk_label_set_width_chars( GTK_LABEL( label ), RANG_WIDTH );
+	gtk_grid_attach( priv->grid, GTK_WIDGET( label ), DET_COL_ROW, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_widget_set_margin_left( GTK_WIDGET( entry ), 2*DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 80 );
-	gtk_grid_attach( self->priv->grid, GTK_WIDGET( entry ), DET_COL_COMMENT, row, 1, 1 );
+	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_COMMENT, row, 1, 1 );
 	gtk_widget_grab_focus( GTK_WIDGET( entry ));
 
 	entry = GTK_ENTRY( gtk_entry_new());
@@ -486,24 +491,24 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 20 );
 	gtk_entry_set_width_chars( entry, 10 );
-	gtk_grid_attach( self->priv->grid, GTK_WIDGET( entry ), DET_COL_REF, row, 1, 1 );
+	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_REF, row, 1, 1 );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( self->priv->grid, toggle, DET_COL_REF_LOCKED, row, 1, 1 );
+	gtk_grid_attach( priv->grid, toggle, DET_COL_REF_LOCKED, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 20 );
 	gtk_entry_set_width_chars( entry, 10 );
-	gtk_grid_attach( self->priv->grid, GTK_WIDGET( entry ), DET_COL_ACCOUNT, row, 1, 1 );
+	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_ACCOUNT, row, 1, 1 );
 
 	add_button( self, "gtk-index", DET_COL_ACCOUNT_SELECT, row, DETAIL_SPACE, 0 );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( self->priv->grid, toggle, DET_COL_ACCOUNT_LOCKED, row, 1, 1 );
+	gtk_grid_attach( priv->grid, toggle, DET_COL_ACCOUNT_LOCKED, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -511,43 +516,43 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	gtk_widget_set_hexpand( GTK_WIDGET( entry ), TRUE );
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_entry_set_width_chars( entry, 20 );
-	gtk_grid_attach( self->priv->grid, GTK_WIDGET( entry ), DET_COL_LABEL, row, 1, 1 );
+	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_LABEL, row, 1, 1 );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( self->priv->grid, toggle, DET_COL_LABEL_LOCKED, row, 1, 1 );
+	gtk_grid_attach( priv->grid, toggle, DET_COL_LABEL_LOCKED, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_entry_set_width_chars( entry, 10 );
-	gtk_grid_attach( self->priv->grid, GTK_WIDGET( entry ), DET_COL_DEBIT, row, 1, 1 );
+	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_DEBIT, row, 1, 1 );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( self->priv->grid, toggle, DET_COL_DEBIT_LOCKED, row, 1, 1 );
+	gtk_grid_attach( priv->grid, toggle, DET_COL_DEBIT_LOCKED, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
 	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_entry_set_width_chars( entry, 10 );
-	gtk_grid_attach( self->priv->grid, GTK_WIDGET( entry ), DET_COL_CREDIT, row, 1, 1 );
+	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_CREDIT, row, 1, 1 );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( self->priv->grid, toggle, DET_COL_CREDIT_LOCKED, row, 1, 1 );
+	gtk_grid_attach( priv->grid, toggle, DET_COL_CREDIT_LOCKED, row, 1, 1 );
 
 	add_button( self, "gtk-go-up", DET_COL_UP, row, DETAIL_SPACE, 0 );
 	add_button( self, "gtk-go-down", DET_COL_DOWN, row, DETAIL_SPACE, 0 );
 	add_button( self, "gtk-remove", DET_COL_REMOVE, row, DETAIL_SPACE, 2*DETAIL_SPACE );
 	add_button( self, "gtk-add", DET_COL_ADD, row+1, DETAIL_SPACE, 0 );
 
-	self->priv->count = row;
+	priv->count = row;
 
 	signal_row_added( self );
-	gtk_widget_show_all( GTK_WIDGET( self->priv->grid ));
+	gtk_widget_show_all( GTK_WIDGET( priv->grid ));
 }
 
 static void

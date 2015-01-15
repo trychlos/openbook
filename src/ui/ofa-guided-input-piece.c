@@ -651,6 +651,7 @@ add_entry_row( ofaGuidedInputPiece *piece, gint row )
 	str = g_strdup_printf( "%2d", row );
 	label = gtk_label_new( str );
 	g_free( str );
+	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	gtk_widget_set_margin_right( label, 4 );
 	gtk_widget_set_margin_bottom( label, 2 );
 	gtk_misc_set_alignment( GTK_MISC( label ), 1, 0.5 );

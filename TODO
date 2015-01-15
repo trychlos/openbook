@@ -457,10 +457,6 @@
  594 2015- 1-15 model line number is a GtkLabel in GuidedInput - should
                 be the same in OpeTemplateProperties
 
- 595 2015- 1-15 GuidedInput: error message "invalid amounts" when one
-                line has nul amounts - but should be fine, the entry
-                is just not generated
-
  596
 
 -----------------------------------------------------------------------
@@ -2567,6 +2563,11 @@
  591 2015- 1-14 closing the exercice: one date is enough to compute the
                 three others
      2015- 1-14 done - svn #4447
+
+ 595 2015- 1-15 GuidedInput: error message "invalid amounts" when one
+                line has nul amounts - but should be fine, the entry
+                is just not generated
+     2015- 1-15 done - svn #4451
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2014, may 2nd
