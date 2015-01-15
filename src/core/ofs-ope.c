@@ -483,8 +483,9 @@ is_rate( const gchar *token, sHelper *helper, gchar **str )
 	if( rate ){
 		ok = TRUE;
 		if( my_date_is_valid( &helper->ope->dope )){
-			amount = ofo_rate_get_rate_at_date( rate, &helper->ope->dope )/100;
+			amount = ofo_rate_get_rate_at_date( rate, &helper->ope->dope )/( gdouble ) 100;
 			*str = my_double_to_str_ex( amount, 5 );
+			g_debug( "%s: amount=%.5lf, str=%s", thisfn, amount, *str );
 		}
 	}
 
@@ -603,6 +604,7 @@ is_function( const gchar *token, sHelper *helper, gchar **str )
 	gboolean ok;
 	GMatchInfo *info;
 	gchar *field, *content;
+	ofxAmount amount;
 
 	field = NULL;
 
@@ -627,7 +629,9 @@ is_function( const gchar *token, sHelper *helper, gchar **str )
 			*str = my_double_to_str( eval( helper, content ));
 
 		} else if( !g_utf8_collate( field, "RATE" )){
-			*str = my_double_to_str_ex( rate( helper, content ), 5 );
+			amount = rate( helper, content );
+			*str = my_double_to_str_ex( amount, 5 );
+			g_debug( "%s: amount=%.5lf, rate=%s", thisfn, amount, *str );
 
 		} else if( !g_utf8_collate( field, "ACCL" )){
 			*str = get_closing_account( helper, content );
@@ -768,7 +772,7 @@ rate( sHelper *helper, const gchar *content )
 	if( my_date_is_valid( &helper->ope->dope )){
 		rate = ofo_rate_get_by_mnemo( helper->dossier, content );
 		if( rate ){
-			amount = ofo_rate_get_rate_at_date( rate, &helper->ope->dope )/100;
+			amount = ofo_rate_get_rate_at_date( rate, &helper->ope->dope )/( gdouble ) 100;
 		}
 	}
 

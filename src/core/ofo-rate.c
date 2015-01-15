@@ -580,7 +580,7 @@ ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
 			g_debug( "my_date_compare_ex( val_end, date, FALSE ): cmp=%d", cmp );
 			if( cmp >= 0 ){
 				amount = ofa_box_get_amount( it->data, RAT_RATE );
-				g_debug( "amount=%.5lf", amount );
+				/*g_debug( "amount=%.5lf", amount );*/
 				return( amount );
 			}
 		}
