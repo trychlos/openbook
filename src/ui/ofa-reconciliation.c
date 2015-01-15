@@ -29,11 +29,13 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "api/my-date.h"
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-iimporter.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-dossier.h"
@@ -115,6 +117,8 @@ static const sConcil st_concils[] = {
 		{ 0 }
 };
 
+static const gchar *st_reconciliation   = "Reconciliation";
+
 /* it appears that Gtk+ displays a counter intuitive sort indicator:
  * when asking for ascending sort, Gtk+ displays a 'v' indicator
  * while we would prefer the '^' version -
@@ -149,6 +153,7 @@ static void         on_account_button_clicked( GtkButton *button, ofaReconciliat
 static void         do_account_selection( ofaReconciliation *self );
 static void         on_combo_mode_changed( GtkComboBox *box, ofaReconciliation *self );
 static gint         get_selected_concil_mode( ofaReconciliation *self );
+static void         select_mode( ofaReconciliation *self, gint mode );
 static gboolean     check_for_enable_view( ofaReconciliation *self, ofoAccount **account, gint *mode );
 static ofoAccount  *get_reconciliable_account( ofaReconciliation *self );
 static void         on_fetch_button_clicked( GtkButton *button, ofaReconciliation *self );
@@ -171,6 +176,8 @@ static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkT
 static gboolean     toggle_rappro( ofaReconciliation *self, GtkTreePath *path );
 static void         reconciliate_entry( ofaReconciliation *self, ofoEntry *entry, const GDate *drappro, GtkTreeIter *iter );
 static void         set_reconciliated_balance( ofaReconciliation *self );
+static void         get_settings( ofaReconciliation *self );
+static void         set_settings( ofaReconciliation *self );
 
 static void
 reconciliation_finalize( GObject *instance )
@@ -277,6 +284,8 @@ v_setup_view( ofaPage *page )
 
 	soldes = setup_balance( page );
 	gtk_grid_attach( grid, soldes, 0, 3, 3, 1 );
+
+	get_settings( OFA_RECONCILIATION( page ));
 
 	return( GTK_WIDGET( frame ));
 }
@@ -1144,6 +1153,8 @@ on_account_changed( GtkEntry *entry, ofaReconciliation *self )
 		gtk_label_set_text( priv->account_credit, str );
 		g_free( str );
 
+		set_settings( self );
+
 		/* automatically fetch entries */
 		on_fetch_button_clicked( NULL, self );
 
@@ -1198,6 +1209,8 @@ on_combo_mode_changed( GtkComboBox *box, ofaReconciliation *self )
 
 		priv = self->priv;
 
+		set_settings( self );
+
 		/* do not re-fetch entries, but refilter the view */
 		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
 	}
@@ -1218,6 +1231,31 @@ get_selected_concil_mode( ofaReconciliation *self )
 	}
 
 	return( mode );
+}
+
+static void
+select_mode( ofaReconciliation *self, gint mode )
+{
+	ofaReconciliationPrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gint box_mode;
+
+	priv = self->priv;
+
+	tmodel = gtk_combo_box_get_model( priv->mode );
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, ENT_COL_CODE, &box_mode, -1 );
+			if( box_mode == mode ){
+				gtk_combo_box_set_active_iter( priv->mode, &iter );
+				break;
+			}
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
+		}
+	}
 }
 
 /*
@@ -1357,6 +1395,7 @@ on_date_concil_changed( GtkEditable *editable, ofaReconciliation *self )
 	my_date_set_from_date( &date, my_editable_date_get_date( editable, &valid ));
 	if( valid ){
 		my_date_set_from_date( &priv->dconcil, &date );
+		set_settings( self );
 	}
 }
 
@@ -2010,4 +2049,63 @@ set_reconciliated_balance( ofaReconciliation *self )
 
 	g_free( sdeb );
 	g_free( scre );
+}
+
+/*
+ * settings format: account;type;date;
+ */
+static void
+get_settings( ofaReconciliation *self )
+{
+	ofaReconciliationPrivate *priv;
+	GList *slist, *it;
+	const gchar *cstr;
+
+	priv = self->priv;
+
+	slist = ofa_settings_get_string_list( st_reconciliation );
+	if( slist ){
+		it = slist ? slist : NULL;
+		cstr = it ? it->data : NULL;
+		if( cstr && priv->account ){
+			gtk_entry_set_text( priv->account, cstr );
+		}
+
+		it = it ? it->next : NULL;
+		cstr = it ? it->data : NULL;
+		if( cstr && priv->mode ){
+			select_mode( self, atoi( cstr ));
+		}
+
+		it = it ? it->next : NULL;
+		cstr = it ? it->data : NULL;
+		if( cstr && priv->date_concil ){
+			gtk_entry_set_text( priv->date_concil, cstr );
+		}
+
+		ofa_settings_free_string_list( slist );
+	}
+}
+
+static void
+set_settings( ofaReconciliation *self )
+{
+	ofaReconciliationPrivate *priv;
+	const gchar *account, *sdate;
+	gint mode;
+	gchar *smode, *str;
+
+	priv = self->priv;
+
+	account = priv->account ? gtk_entry_get_text( priv->account ) : NULL;
+	mode = priv->mode ? get_selected_concil_mode( self ) : -1;
+	smode = g_strdup_printf( "%d", mode );
+	sdate = priv->date_concil ? gtk_entry_get_text( priv->date_concil ) : NULL;
+
+	str = g_strdup_printf( "%s;%s;%s;", account ? account : "", smode, sdate ? sdate : "" );
+
+	ofa_settings_set_string( st_reconciliation, str );
+
+	g_free( str );
+	g_free( smode );
 }
