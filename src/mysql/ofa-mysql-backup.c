@@ -69,6 +69,7 @@ typedef struct {
 
 static const gchar *st_window_name = "MySQLBackupWindow";
 
+static void        create_fake_database( const ofaIDbms *instance, mysqlInfos *infos );
 static gboolean    do_backup_restore( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
 static gchar      *build_cmdline( const mysqlInfos *infos, const gchar *cmdline, const gchar *fname, const gchar *new_dbname );
 static void        create_window( backupInfos *infos, const gchar *window_title );
@@ -139,9 +140,6 @@ ofa_mysql_get_def_restore_cmd( const ofaIDbms *instance )
  * ofa_mysql_restore:
  *
  * Restore a backup file on a named dossier.
- *
- * It happens that MySQL has some issues with dropping an non-existant
- * database - so create it first
  */
 gboolean
 ofa_mysql_restore( const ofaIDbms *instance,
@@ -155,6 +153,8 @@ ofa_mysql_restore( const ofaIDbms *instance,
 	infos = ofa_mysql_get_connect_infos( dname );
 	infos->account = g_strdup( root_account );
 	infos->password = g_strdup( root_password );
+
+	create_fake_database( instance, infos );
 
 	cmdline = ofa_settings_get_string_ex( SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
 	if( !cmdline || !g_utf8_strlen( cmdline, -1 )){
@@ -174,6 +174,28 @@ ofa_mysql_restore( const ofaIDbms *instance,
 	ofa_mysql_free_connect_infos( infos );
 
 	return( ok );
+}
+
+/*
+ * It happens that MySQL has some issues with dropping an non-existant
+ * database - so create it first
+ */
+static void
+create_fake_database( const ofaIDbms *instance, mysqlInfos *infos )
+{
+	static const gchar *thisfn = "mfa_mysql_backup_create_fake_database";
+	gchar *cmdline, *stdout, *stderr;
+
+	cmdline = build_cmdline( infos, "/bin/sh \"mysql -u%U -p%P -e 'create database %B'\"", NULL, NULL );
+	g_debug( "%s: cmdline=%s", thisfn, cmdline );
+	stdout = NULL;
+	stderr = NULL;
+
+	g_spawn_command_line_sync( cmdline, &stdout, &stderr, NULL, NULL );
+
+	g_free( stdout );
+	g_free( stderr );
+	g_free( cmdline );
 }
 
 /**
@@ -737,9 +759,14 @@ exit_restore_cb( GPid child_pid, gint status, backupInfos *infos )
 	if( infos->verbose ){
 		if( !msg || !g_utf8_strlen( msg, -1 )){
 			if( infos->backup_ok ){
-				msg = g_strdup( _( "Dossier successfully restored" ));
+				msg = g_strdup(
+						_( "Dossier successfully restored" ));
 			} else {
-				msg = g_strdup( _( "An error occured while restoring the dossier" ));
+				msg = g_strdup(
+						_( "An error occured while restoring the dossier.\n"
+							"If this the first time you are seeing this error, "
+							"and you do not see any specific reason for that, "
+							"you could take the chance of just retrying..." ));
 			}
 		}
 

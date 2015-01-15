@@ -178,8 +178,6 @@ ofxCounter     ofo_entry_get_settlement_number( const ofoEntry *entry );
 const gchar   *ofo_entry_get_settlement_user  ( const ofoEntry *entry );
 const GTimeVal*ofo_entry_get_settlement_stamp ( const ofoEntry *entry );
 
-GDate         *ofo_entry_get_min_deffect      ( const ofoEntry *entry, ofoDossier *dossier );
-
 GDate         *ofo_entry_get_max_val_deffect  ( ofoDossier *dossier, const gchar *account, GDate *date );
 GDate         *ofo_entry_get_max_rough_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
 GDate         *ofo_entry_get_max_futur_deffect( ofoDossier *dossier, const gchar *account, GDate *date );
@@ -198,11 +196,8 @@ void           ofo_entry_set_ledger           ( ofoEntry *entry, const gchar *jo
 void           ofo_entry_set_ope_template     ( ofoEntry *entry, const gchar *model );
 void           ofo_entry_set_debit            ( ofoEntry *entry, ofxAmount amount );
 void           ofo_entry_set_credit           ( ofoEntry *entry, ofxAmount amount );
-void           ofo_entry_set_status           ( ofoEntry *entry, ofaEntryStatus status );
 void           ofo_entry_set_concil_dval      ( ofoEntry *entry, const GDate *date );
 void           ofo_entry_set_settlement_number( ofoEntry *entry, ofxCounter counter );
-
-gboolean       ofo_entry_compute_status       ( ofoEntry *entry, ofoDossier *dossier );
 
 gboolean       ofo_entry_is_valid             ( ofoDossier *dossier,
 													const GDate *deffect, const GDate *dope,

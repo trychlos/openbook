@@ -842,6 +842,14 @@ idbms_grant_user( const ofaIDbms *instance, const gchar *dname,
 		goto free_stmt;
 	}
 
+	g_string_printf( stmt,
+			"FLUSH PRIVILEGES" );
+	g_debug( "%s: query=%s", thisfn, stmt->str );
+	if( mysql_query( infos->mysql, stmt->str )){
+		g_warning( "%s: %s", thisfn, mysql_error( infos->mysql ));
+		goto free_stmt;
+	}
+
 	user_granted = TRUE;
 
 free_stmt:
@@ -880,10 +888,6 @@ ofa_mysql_duplicate_grants( const ofaIDbms *instance, mysqlInfos *infos, const g
 		return( FALSE );
 	}
 
-	str = g_strdup_printf( "\\b%s\\b", prev_dbname );
-	regex = g_regex_new( str, 0, 0, NULL );
-	g_free( str );
-
 	hostname = g_strdup( infos->host );
 	if( !hostname || !g_utf8_strlen( hostname, -1 )){
 		g_free( hostname );
@@ -898,23 +902,32 @@ ofa_mysql_duplicate_grants( const ofaIDbms *instance, mysqlInfos *infos, const g
 		goto free_stmt;
 	}
 
+	str = g_strdup_printf( " `(%s)`\\.\\* ", prev_dbname );
+	regex = g_regex_new( str, 0, 0, NULL );
+	g_free( str );
+
+	str = g_strdup_printf( " `%s`.* ", dbname );
+	g_debug( "%s: str=%s", thisfn, str );
+
 	for( irow=result ; irow ; irow=irow->next ){
 		icol = ( GSList * ) irow->data;
 		cstr = ( const gchar * ) icol->data;
 		g_debug( "%s: cstr=%s", thisfn, cstr );
 		if( g_regex_match( regex, cstr, 0, NULL )){
-			query = g_regex_replace_literal( regex, cstr, -1, 0, dbname, 0, NULL );
+			query = g_regex_replace_literal( regex, cstr, -1, 0, str, 0, NULL );
 			g_debug( "%s: query=%s", thisfn, query );
 			mysql_query( infos->mysql, query );
 			g_free( query );
 		}
 	}
 
+	g_free( str );
+	g_regex_unref( regex );
+
 free_stmt:
 	mysql_close( infos->mysql );
 	g_free( hostname );
 	g_free( dbname );
-	g_regex_unref( regex );
 
 	return( ok );
 }

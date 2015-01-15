@@ -3276,7 +3276,6 @@ insert_new_row( ofaViewEntries *self )
 
 	/* set default values that we are able to guess */
 	entry = ofo_entry_new();
-	ofo_entry_set_status( entry, ENT_STATUS_ROUGH );
 
 	if( gtk_toggle_button_get_active( priv->ledger_btn )){
 		if( priv->jou_mnemo && g_utf8_strlen( priv->jou_mnemo, -1 )){

@@ -115,6 +115,7 @@ static gboolean manage_options( ofaApplication *application );
 
 static void     application_startup( GApplication *application );
 static void     application_activate( GApplication *application );
+static void     test_regex( void );
 static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -617,12 +618,39 @@ application_activate( GApplication *application )
 
 	gtk_window_present( GTK_WINDOW( priv->main_window ));
 
+	if( 0 ){
+		test_regex();
+	}
+
 	/* if present, command-line options have been dealt with before
 	 * g_application_run() has been called, i.e. before even startup
 	 * has been triggered */
 	if( priv->sdo ){
 		g_signal_emit_by_name(
 				priv->main_window, OFA_SIGNAL_DOSSIER_OPEN, priv->sdo );
+	}
+}
+
+static void
+test_regex( void )
+{
+	static const gchar *thisfn = "ofa_application_test_regex";
+
+	gchar *cstr = "GRANT ALL PRIVILEGES ON `ofat`.* TO 'ofat'@'localhost' WITH GRANT OPTION";
+	gchar *prev_dbname = "ofat";
+	gchar *dbname = "ofat_3";
+	GRegex *regex;
+	gchar *str = g_strdup_printf( " `%s`\\.\\* ", prev_dbname );
+	g_debug( "%s: str='%s'", thisfn, str );
+	regex = g_regex_new( str, 0, 0, NULL );
+	g_free( str );
+	/*str = g_strdup_printf( "\\1%s", dbname );*/
+	str = g_strdup_printf( " `%s`.* ", dbname );
+	g_debug( "%s: str=%s", thisfn, str );
+	if( g_regex_match( regex, cstr, 0, NULL )){
+		gchar *query = g_regex_replace( regex, cstr, -1, 0, str, 0, NULL );
+		g_debug( "%s: cstr=%s", thisfn, cstr );
+		g_debug( "%s: query=%s", thisfn, query );
 	}
 }
 

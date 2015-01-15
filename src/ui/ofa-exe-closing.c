@@ -426,6 +426,9 @@ p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 		g_date_add_months( &end, exe_length );
 		g_date_subtract_days( &end, 1 );
 		my_editable_date_set_date( GTK_EDITABLE( priv->p2_end_cur ), &end );
+
+	} else if( my_date_is_valid( end_cur )){
+		my_date_set_from_date( &end, end_cur );
 	}
 
 	priv->p2_begin_next = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-next-begin" );
@@ -1318,13 +1321,15 @@ p6_do_archive_exercice( ofaExeClosing *self, gboolean with_ui )
 		g_signal_emit_by_name( MY_WINDOW( self )->prot->main_window, OFA_SIGNAL_DOSSIER_OPEN, sdo );
 
 		dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
-		ofo_dossier_set_status( dossier, DOS_STATUS_OPENED );
-		ofo_dossier_set_exe_begin( dossier, begin_next );
-		ofo_dossier_set_exe_end( dossier, end_next );
-		ofo_dossier_update( dossier );
-		ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
+		if( dossier && OFO_IS_DOSSIER( dossier )){
+			ofo_dossier_set_status( dossier, DOS_STATUS_OPENED );
+			ofo_dossier_set_exe_begin( dossier, begin_next );
+			ofo_dossier_set_exe_end( dossier, end_next );
+			ofo_dossier_update( dossier );
+			ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
 
-		ok = TRUE;
+			ok = TRUE;
+		}
 	}
 
 	return( ok );
@@ -1547,7 +1552,7 @@ p6_future( ofaExeClosing *self )
 	entries = ofo_entry_get_dataset_for_exercice_by_status( dossier, ENT_STATUS_FUTURE );
 	count = g_list_length( entries );
 
-	bar = get_new_bar( self, "p6-open" );
+	bar = get_new_bar( self, "p6-future" );
 	gtk_widget_show_all( priv->page_w );
 
 	for( i=1, it=entries ; it ; ++i, it=it->next ){

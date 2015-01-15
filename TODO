@@ -450,12 +450,18 @@
                 only), we should only be able to restore an archived
                 exercice on a new dossier.
 
- 589 2015- 1-14 restoring in a newly created dossier doesn't work
-                (as cloning ?)
+ 592 2015- 1-14 should MySQLDatabase be an Openbook key ?
 
- 592 2015- 1-14 MySQLDatabase should be an Openbook key
+ 593 2015- 1-15 GuidedInput: %RATE doesn't work ?
 
- 593
+ 594 2015- 1-15 model line number is a GtkLabel in GuidedInput - should
+                be the same in OpeTemplateProperties
+
+ 595 2015- 1-15 GuidedInput: error message "invalid amounts" when one
+                line has nul amounts - but should be fine, the entry
+                is just not generated
+
+ 596
 
 -----------------------------------------------------------------------
  DONE
@@ -2549,6 +2555,10 @@
  588 2015- 1-14 future entries become rough when opening a new
                 exercice
      2015- 1-14 done - svn #4446
+
+ 589 2015- 1-14 restoring in a newly created dossier doesn't work
+                (as cloning ?)
+     2015- 1-14 done (though not really sure..) - svn #4449
 
  590 2015- 1-14 ofa_accounts_book_on_widget_finalized: (dossier) has
                 no handler with (id) : 4 times
