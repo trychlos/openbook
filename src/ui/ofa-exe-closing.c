@@ -1082,7 +1082,7 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 				detail->debit_user_set = TRUE;
 			}
 
-			ofs_ope_apply_template( ope, dossier, sld_template );
+			ofs_ope_apply_template( ope, dossier );
 
 			if( ofs_ope_is_valid( ope, dossier, &msg, &currencies )){
 				sld_entries = ofs_ope_generate_entries( ope, dossier );
@@ -1115,7 +1115,7 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 					detail->credit_user_set = TRUE;
 				}
 
-				ofs_ope_apply_template( ope, dossier, for_template );
+				ofs_ope_apply_template( ope, dossier );
 
 				if( ofs_ope_is_valid( ope, dossier, NULL, NULL )){
 					for_entries = ofs_ope_generate_entries( ope, dossier );

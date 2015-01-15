@@ -452,8 +452,6 @@
 
  592 2015- 1-14 should MySQLDatabase be an Openbook key ?
 
- 593 2015- 1-15 GuidedInput: %RATE doesn't work ?
-
  596
 
 -----------------------------------------------------------------------
@@ -2560,6 +2558,10 @@
  591 2015- 1-14 closing the exercice: one date is enough to compute the
                 three others
      2015- 1-14 done - svn #4447
+
+ 593 2015- 1-15 GuidedInput: %RATE doesn't work ?
+     2015- 1-15 Have to choose between %TVAN and %RATE(TVAN) !
+     2015- 1-15 done - svn #4453
 
  594 2015- 1-15 model line number is a GtkLabel in GuidedInput - should
                 be the same in OpeTemplateProperties

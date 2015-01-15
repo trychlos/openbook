@@ -56,11 +56,10 @@ enum {
 /* an helper structure when computing formulas
  */
 typedef struct {
-	ofsOpe               *ope;
-	ofoDossier           *dossier;
-	const ofoOpeTemplate *template;
-	gint                  comp_row;			/* counted from zero */
-	gint                  comp_column;
+	ofsOpe     *ope;
+	ofoDossier *dossier;
+	gint        comp_row;				/* counted from zero */
+	gint        comp_column;
 }
 	sHelper;
 
@@ -122,7 +121,7 @@ ofs_ope_new( const ofoOpeTemplate *template )
 	gint i, count;
 
 	ope = g_new0( ofsOpe, 1 );
-	ope->ope_template = g_strdup( ofo_ope_template_get_mnemo( template ));
+	ope->ope_template = g_object_ref(( gpointer ) template );
 
 	count = ofo_ope_template_get_detail_count( template );
 	for( i=0 ; i<count ; ++i ){
@@ -137,7 +136,6 @@ ofs_ope_new( const ofoOpeTemplate *template )
  * ofs_ope_apply_template:
  * @ope: [in]: the input operation.
  * @dossier: the dossier
- * @template: [in]: the used operation template.
  *
  * Update fields from @ope from formulas from @template.
  *
@@ -145,7 +143,7 @@ ofs_ope_new( const ofoOpeTemplate *template )
  * Have to scan all the fields of the operation template
  */
 void
-ofs_ope_apply_template( ofsOpe *ope, ofoDossier *dossier, const ofoOpeTemplate *template )
+ofs_ope_apply_template( ofsOpe *ope, ofoDossier *dossier )
 {
 	static const gchar *thisfn = "ofs_ope_apply_template";
 	sHelper *helper;
@@ -156,7 +154,6 @@ ofs_ope_apply_template( ofsOpe *ope, ofoDossier *dossier, const ofoOpeTemplate *
 	helper = g_new0( sHelper, 1 );
 	helper->ope = ope;
 	helper->dossier = dossier;
-	helper->template = template;
 
 	alloc_regex();
 	compute_simple_formulas( helper );
@@ -206,7 +203,7 @@ compute_simple_formulas( sHelper *helper )
 	gchar *str;
 
 	ope = helper->ope;
-	template = helper->template;
+	template = ope->ope_template;
 
 	if( !ope->ledger_user_set ){
 		g_free( ope->ledger );
@@ -421,8 +418,10 @@ is_global_ref( const gchar *token, sHelper *helper, gchar **str )
 	gboolean ok;
 	GMatchInfo *info;
 	gchar *field;
+	const ofoOpeTemplate *template;
 
 	field = NULL;
+	template = helper->ope->ope_template;
 
 	ok = g_regex_match( st_regex_global_ref, token, 0, &info );
 	if( ok ){
@@ -432,10 +431,10 @@ is_global_ref( const gchar *token, sHelper *helper, gchar **str )
 		field = g_match_info_fetch( info, 1 );
 
 		if( !g_utf8_collate( field, "OPMN" )){
-			*str = g_strdup( helper->ope->ope_template );
+			*str = g_strdup( ofo_ope_template_get_mnemo( template ));
 
 		} else if( !g_utf8_collate( field, "OPLA" )){
-			*str = g_strdup( ofo_ope_template_get_label( helper->template ));
+			*str = g_strdup( ofo_ope_template_get_label( template ));
 
 		} else if( !g_utf8_collate( field, "LEMN" )){
 			*str = g_strdup( helper->ope->ledger );
@@ -1073,7 +1072,7 @@ ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 								detail->ref, detail->account,
 								currency,
 								ope->ledger,
-								ope->ope_template,
+								ofo_ope_template_get_mnemo( ope->ope_template ),
 								detail->debit, detail->credit ));
 			}
 		}
@@ -1096,7 +1095,7 @@ ofs_ope_dump( const ofsOpe *ope )
 
 	g_debug( "%s: ope=%p, template=%s, ledger=%s, ledger_user_set=%s,"
 			" dope=%s, dope_user_set=%s, deffect=%s, deffect_user_set=%s",
-				thisfn, ( void * ) ope, ope->ope_template,
+				thisfn, ( void * ) ope, ofo_ope_template_get_mnemo( ope->ope_template ),
 				ope->ledger, ope->ledger_user_set ? "True":"False",
 				sdope, ope->dope_user_set ? "True":"False",
 				sdeffect, ope->deffect_user_set ? "True":"False" );
@@ -1129,7 +1128,7 @@ void
 ofs_ope_free( ofsOpe *ope )
 {
 	if( ope ){
-		g_free( ope->ope_template );
+		g_object_unref(( gpointer ) ope->ope_template );
 		g_free( ope->ledger );
 		g_list_free_full( ope->detail, ( GDestroyNotify ) ope_free_detail );
 		g_free( ope );
