@@ -151,11 +151,11 @@ openbook_SOURCES = \
 	ofa-guided-input-piece.h							\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
-	ofa-int-closing.c									\
-	ofa-int-closing.h									\
 	ofa-ipreferences.c									\
 	ofa-iprintable.c									\
 	ofa-iprintable.h									\
+	ofa-ledger-close.c									\
+	ofa-ledger-close.h									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
 	ofa-ledger-properties.c								\
@@ -260,7 +260,7 @@ ui_files = \
 	ofa-guided-input.ui									\
 	ofa-guided-input-piece.ui							\
 	ofa-import-assistant.ui								\
-	ofa-int-closing.ui									\
+	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
 	ofa-ope-template-properties.ui						\
 	ofa-ope-template-select.ui							\

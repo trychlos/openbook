@@ -53,7 +53,7 @@
 #include "ui/ofa-guided-ex.h"
 #include "ui/ofa-guided-input.h"
 #include "ui/ofa-import-assistant.h"
-#include "ui/ofa-int-closing.h"
+#include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledgers-page.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-misc-arcaccopebal.h"
@@ -112,7 +112,7 @@ static void on_ope_guided          ( GSimpleAction *action, GVariant *parameter,
 static void on_ope_view_entries    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_concil          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_settlement      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void on_ope_int_closing     ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_ledger_close    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_exercice_close  ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -137,7 +137,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "entries",       on_ope_view_entries,     NULL, NULL, NULL },
 		{ "concil",        on_ope_concil,           NULL, NULL, NULL },
 		{ "settlement",    on_ope_settlement,       NULL, NULL, NULL },
-		{ "iclosing",      on_ope_int_closing,      NULL, NULL, NULL },
+		{ "ledclosing",    on_ope_ledger_close,     NULL, NULL, NULL },
 		{ "execlosing",    on_ope_exercice_close,   NULL, NULL, NULL },
 		{ "import",        on_ope_import,           NULL, NULL, NULL },
 		{ "export",        on_ope_export,           NULL, NULL, NULL },
@@ -1281,22 +1281,22 @@ on_ope_settlement( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 }
 
 static void
-on_ope_int_closing( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+on_ope_ledger_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_ope_int_closing";
+	static const gchar *thisfn = "ofa_main_window_on_ope_ledger_close";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_int_closing_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_ledger_close_run( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void
 on_ope_exercice_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_ope_exe_closing";
+	static const gchar *thisfn = "ofa_main_window_on_ope_exercice_close";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );

@@ -73,8 +73,8 @@
       </section>
       <section>
         <item>
-          <attribute name="label" translatable="yes">Intermediate _closing...</attribute>
-          <attribute name="action">win.iclosing</attribute>
+          <attribute name="label" translatable="yes">Provisional _ledger closing...</attribute>
+          <attribute name="action">win.ledclosing</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">E_xercice closing...</attribute>

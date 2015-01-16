@@ -39,13 +39,13 @@
 
 #include "ui/my-editable-date.h"
 #include "ui/my-progress-bar.h"
+#include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledger-treeview.h"
-#include "ui/ofa-int-closing.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  */
-struct _ofaIntClosingPrivate {
+struct _ofaLedgerClosePrivate {
 
 	gboolean            done;			/* whether we have actually done something */
 	GDate               closing;
@@ -69,56 +69,56 @@ struct _ofaIntClosingPrivate {
 	myProgressBar      *bar;
 };
 
-static const gchar  *st_ui_xml = PKGUIDIR "/ofa-int-closing.ui";
-static const gchar  *st_ui_id  = "IntClosingDlg";
+static const gchar  *st_ui_xml = PKGUIDIR "/ofa-ledger-close.ui";
+static const gchar  *st_ui_id  = "LedgerCloseDlg";
 
-G_DEFINE_TYPE( ofaIntClosing, ofa_int_closing, MY_TYPE_DIALOG )
+G_DEFINE_TYPE( ofaLedgerClose, ofa_ledger_close, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      connect_to_dossier( ofaIntClosing *dialog );
-static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaIntClosing *self );
-static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaIntClosing *self );
-static void      on_date_changed( GtkEditable *entry, ofaIntClosing *self );
-static void      check_for_enable_dlg( ofaIntClosing *self, GList *selected );
-static gboolean  is_dialog_validable( ofaIntClosing *self, GList *selected );
-static void      check_foreach_ledger( ofaIntClosing *self, const gchar *ledger );
+static void      connect_to_dossier( ofaLedgerClose *dialog );
+static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
+static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
+static void      on_date_changed( GtkEditable *entry, ofaLedgerClose *self );
+static void      check_for_enable_dlg( ofaLedgerClose *self, GList *selected );
+static gboolean  is_dialog_validable( ofaLedgerClose *self, GList *selected );
+static void      check_foreach_ledger( ofaLedgerClose *self, const gchar *ledger );
 static gboolean  v_quit_on_ok( myDialog *dialog );
-static gboolean  do_close( ofaIntClosing *self );
-static void      prepare_grid( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid );
-static gboolean  close_foreach_ledger( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid );
-static void      do_end_close( ofaIntClosing *self );
-static void      on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint count, ofaIntClosing *self );
-static void      on_dossier_validated_entry( ofoDossier *dossier, void *entry, ofaIntClosing *self );
+static gboolean  do_close( ofaLedgerClose *self );
+static void      prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid );
+static gboolean  close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid );
+static void      do_end_close( ofaLedgerClose *self );
+static void      on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint count, ofaLedgerClose *self );
+static void      on_dossier_validated_entry( ofoDossier *dossier, void *entry, ofaLedgerClose *self );
 
 static void
-int_closing_finalize( GObject *instance )
+ledger_close_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_int_closing_finalize";
+	static const gchar *thisfn = "ofa_ledger_close_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_INT_CLOSING( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_CLOSE( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_int_closing_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ledger_close_parent_class )->finalize( instance );
 }
 
 static void
-int_closing_dispose( GObject *instance )
+ledger_close_dispose( GObject *instance )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	ofoDossier *dossier;
 	GList *it;
 
-	g_return_if_fail( instance && OFA_IS_INT_CLOSING( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_CLOSE( instance ));
 
 	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = OFA_INT_CLOSING( instance )->priv;
+		priv = OFA_LEDGER_CLOSE( instance )->priv;
 		dossier = MY_WINDOW( instance )->prot->dossier;
 
 		if( dossier && OFO_IS_DOSSIER( dossier )){
@@ -129,51 +129,51 @@ int_closing_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_int_closing_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ledger_close_parent_class )->dispose( instance );
 }
 
 static void
-ofa_int_closing_init( ofaIntClosing *self )
+ofa_ledger_close_init( ofaLedgerClose *self )
 {
-	static const gchar *thisfn = "ofa_int_closing_instance_init";
+	static const gchar *thisfn = "ofa_ledger_close_instance_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_INT_CLOSING( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_CLOSE( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_INT_CLOSING, ofaIntClosingPrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_LEDGER_CLOSE, ofaLedgerClosePrivate );
 
 	my_date_clear( &self->priv->closing );
 }
 
 static void
-ofa_int_closing_class_init( ofaIntClosingClass *klass )
+ofa_ledger_close_class_init( ofaLedgerCloseClass *klass )
 {
-	static const gchar *thisfn = "ofa_int_closing_class_init";
+	static const gchar *thisfn = "ofa_ledger_close_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = int_closing_dispose;
-	G_OBJECT_CLASS( klass )->finalize = int_closing_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ledger_close_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ledger_close_finalize;
 
 	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
 	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
 
-	g_type_class_add_private( klass, sizeof( ofaIntClosingPrivate ));
+	g_type_class_add_private( klass, sizeof( ofaLedgerClosePrivate ));
 }
 
 /**
- * ofa_int_closing_run:
+ * ofa_ledger_close_run:
  * @main: the main window of the application.
  *
  * Run an intermediate closing on selected ledgers
  */
 gboolean
-ofa_int_closing_run( ofaMainWindow *main_window )
+ofa_ledger_close_run( ofaMainWindow *main_window )
 {
-	static const gchar *thisfn = "ofa_int_closing_run";
-	ofaIntClosing *self;
+	static const gchar *thisfn = "ofa_ledger_close_run";
+	ofaLedgerClose *self;
 	gboolean done;
 
 	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( main_window ), FALSE );
@@ -181,7 +181,7 @@ ofa_int_closing_run( ofaMainWindow *main_window )
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
 	self = g_object_new(
-					OFA_TYPE_INT_CLOSING,
+					OFA_TYPE_LEDGER_CLOSE,
 					MY_PROP_MAIN_WINDOW, main_window,
 					MY_PROP_DOSSIER,     ofa_main_window_get_dossier( main_window ),
 					MY_PROP_WINDOW_XML,  st_ui_xml,
@@ -200,13 +200,13 @@ ofa_int_closing_run( ofaMainWindow *main_window )
 static void
 v_init_dialog( myDialog *dialog )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	GtkContainer *container;
 	GtkButton *button;
 	GtkLabel *label;
 	GtkWidget *parent;
 
-	priv = OFA_INT_CLOSING( dialog )->priv;
+	priv = OFA_LEDGER_CLOSE( dialog )->priv;
 	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( dialog )));
 
 	button = ( GtkButton * )
@@ -239,15 +239,15 @@ v_init_dialog( myDialog *dialog )
 
 	g_signal_connect( G_OBJECT( priv->closing_entry ), "changed", G_CALLBACK( on_date_changed ), dialog );
 
-	connect_to_dossier( OFA_INT_CLOSING( dialog ));
+	connect_to_dossier( OFA_LEDGER_CLOSE( dialog ));
 
-	check_for_enable_dlg( OFA_INT_CLOSING( dialog ), NULL );
+	check_for_enable_dlg( OFA_LEDGER_CLOSE( dialog ), NULL );
 }
 
 static void
-connect_to_dossier( ofaIntClosing *dialog )
+connect_to_dossier( ofaLedgerClose *dialog )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	ofoDossier *dossier;
 	gulong handler;
 
@@ -269,7 +269,7 @@ connect_to_dossier( ofaIntClosing *dialog )
  * LedgerTreeview callback
  */
 static void
-on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaIntClosing *self )
+on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self )
 {
 	if( is_dialog_validable( self, selected )){
 		do_close( self );
@@ -280,15 +280,15 @@ on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaIntClosing *self
  * LedgerTreeview callback
  */
 static void
-on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaIntClosing *self )
+on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self )
 {
 	check_for_enable_dlg( self, selected );
 }
 
 static void
-on_date_changed( GtkEditable *entry, ofaIntClosing *self )
+on_date_changed( GtkEditable *entry, ofaLedgerClose *self )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	const GDate *exe_end;
 
 	priv = self->priv;
@@ -315,7 +315,7 @@ on_date_changed( GtkEditable *entry, ofaIntClosing *self )
 }
 
 static void
-check_for_enable_dlg( ofaIntClosing *self, GList *selected )
+check_for_enable_dlg( ofaLedgerClose *self, GList *selected )
 {
 	gtk_widget_set_sensitive(
 				GTK_WIDGET( self->priv->do_close_btn ),
@@ -327,9 +327,9 @@ check_for_enable_dlg( ofaIntClosing *self, GList *selected )
  * valid, and greater that at least one of the previous closing dates
  */
 static gboolean
-is_dialog_validable( ofaIntClosing *self, GList *selected )
+is_dialog_validable( ofaLedgerClose *self, GList *selected )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	GList *selection, *it;
 	gboolean ok;
 
@@ -370,9 +370,9 @@ is_dialog_validable( ofaIntClosing *self, GList *selected )
 }
 
 static void
-check_foreach_ledger( ofaIntClosing *self, const gchar *mnemo )
+check_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	ofoLedger *ledger;
 	const GDate *last;
 
@@ -397,7 +397,7 @@ v_quit_on_ok( myDialog *dialog )
 	GtkWindow *toplevel;
 	GtkWidget *button;
 
-	if( do_close( OFA_INT_CLOSING( dialog ))){
+	if( do_close( OFA_LEDGER_CLOSE( dialog ))){
 
 		toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
 		g_return_val_if_fail( toplevel && GTK_IS_DIALOG( toplevel ), FALSE );
@@ -416,9 +416,9 @@ v_quit_on_ok( myDialog *dialog )
 }
 
 static gboolean
-do_close( ofaIntClosing *self )
+do_close( ofaLedgerClose *self )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	GList *selected, *it;
 	gboolean ok;
 	GtkWidget *dialog, *content, *grid, *button;
@@ -468,9 +468,9 @@ do_close( ofaIntClosing *self )
 }
 
 static void
-prepare_grid( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
+prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	gchar *str;
 	GtkWidget *label, *alignment;
 	myProgressBar *bar;
@@ -493,9 +493,9 @@ prepare_grid( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
 }
 
 static gboolean
-close_foreach_ledger( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
+close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	GtkWidget *widget, *bar;
 	ofoLedger *ledger;
 	gboolean ok;
@@ -520,9 +520,9 @@ close_foreach_ledger( ofaIntClosing *self, const gchar *mnemo, GtkWidget *grid )
 }
 
 static void
-do_end_close( ofaIntClosing *self )
+do_end_close( ofaLedgerClose *self )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	gchar *str;
 	GtkWindow *toplevel;
 	GtkWidget *dialog;
@@ -554,9 +554,9 @@ do_end_close( ofaIntClosing *self )
 }
 
 static void
-on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint count, ofaIntClosing *self )
+on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint count, ofaLedgerClose *self )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 
 	priv = self->priv;
 
@@ -569,9 +569,9 @@ on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint coun
 }
 
 static void
-on_dossier_validated_entry( ofoDossier *dossier, void *entry, ofaIntClosing *self )
+on_dossier_validated_entry( ofoDossier *dossier, void *entry, ofaLedgerClose *self )
 {
-	ofaIntClosingPrivate *priv;
+	ofaLedgerClosePrivate *priv;
 	gdouble progress;
 	gchar *text;
 
