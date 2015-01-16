@@ -36,6 +36,8 @@
  * the settings.
  */
 
+#include <gtk/gtk.h>
+
 #include "core/ofa-main-window-def.h"
 
 #include "ui/ofa-dossier-store.h"
@@ -53,7 +55,7 @@ typedef struct _ofaDossierTreeviewPrivate        ofaDossierTreeviewPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GObject                    parent;
+	GtkBin                     parent;
 
 	/*< private members >*/
 	ofaDossierTreeviewPrivate *priv;
@@ -62,7 +64,7 @@ typedef struct {
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass               parent;
+	GtkBinClass                parent;
 }
 	ofaDossierTreeviewClass;
 

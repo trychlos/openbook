@@ -37,7 +37,7 @@
 #include "api/ofo-ope-template.h"
 
 #include "ui/ofa-guided-ex.h"
-#include "ui/ofa-guided-input-piece.h"
+#include "ui/ofa-guided-input-bin.h"
 #include "ui/ofa-page.h"
 #include "ui/ofa-page-prot.h"
 #include "ui/ofa-main-window.h"
@@ -50,7 +50,7 @@ struct _ofaGuidedExPrivate {
 	 */
 	ofoDossier           *dossier;			/* dossier */
 	const ofoOpeTemplate *model;			/* model */
-	ofaGuidedInputPiece  *piece;
+	ofaGuidedInputBin    *input_bin;
 
 	/* UI - the pane
 	 */
@@ -108,7 +108,7 @@ static void       insert_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *mode
 static void       update_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id );
 static void       remove_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model );
 static gboolean   find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void       on_right_piece_changed( ofaGuidedInputPiece *piece, gboolean ok, ofaGuidedEx *self );
+static void       on_right_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self );
 static void       on_right_ok( GtkButton *button, ofaGuidedEx *self );
 static void       on_right_cancel( GtkButton *button, ofaGuidedEx *self );
 static void       on_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
@@ -300,11 +300,11 @@ setup_view_right( ofaGuidedEx *self )
 	gtk_alignment_set_padding( GTK_ALIGNMENT( parent ), 0, 0, 0, 2 );
 	gtk_grid_attach( GTK_GRID( grid ), parent, 0, 0, 1, 1 );
 
-	priv->piece = ofa_guided_input_piece_new();
-	ofa_guided_input_piece_attach_to( priv->piece, GTK_CONTAINER( parent ));
-	ofa_guided_input_piece_set_main_window( priv->piece, ofa_page_get_main_window( OFA_PAGE( self )));
+	priv->input_bin = ofa_guided_input_bin_new();
+	ofa_guided_input_bin_attach_to( priv->input_bin, GTK_CONTAINER( parent ));
+	ofa_guided_input_bin_set_main_window( priv->input_bin, ofa_page_get_main_window( OFA_PAGE( self )));
 
-	g_signal_connect( priv->piece, "changed", G_CALLBACK( on_right_piece_changed ), self );
+	g_signal_connect( priv->input_bin, "changed", G_CALLBACK( on_right_piece_changed ), self );
 
 	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
 	gtk_grid_attach( GTK_GRID( grid ), box, 0, 1, 1, 1 );
@@ -618,10 +618,10 @@ select_model( ofaGuidedEx *self )
 	}
 	g_return_if_fail( object && OFO_IS_OPE_TEMPLATE( object ));
 
-	ofa_guided_input_piece_set_ope_template( priv->piece, OFO_OPE_TEMPLATE( object ));
+	ofa_guided_input_bin_set_ope_template( priv->input_bin, OFO_OPE_TEMPLATE( object ));
 
-	ok = ofa_guided_input_piece_is_valid( priv->piece );
-	on_right_piece_changed( priv->piece, ok, self );
+	ok = ofa_guided_input_bin_is_valid( priv->input_bin );
+	on_right_piece_changed( priv->input_bin, ok, self );
 
 	gtk_widget_show_all( gtk_paned_get_child2( GTK_PANED( priv->pane )));
 }
@@ -886,7 +886,7 @@ find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **
 }
 
 static void
-on_right_piece_changed( ofaGuidedInputPiece *piece, gboolean ok, ofaGuidedEx *self )
+on_right_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
 
@@ -904,7 +904,7 @@ on_right_piece_changed( ofaGuidedInputPiece *piece, gboolean ok, ofaGuidedEx *se
 static void
 on_right_ok( GtkButton *button, ofaGuidedEx *self )
 {
-	ofa_guided_input_piece_apply( self->priv->piece );
+	ofa_guided_input_bin_apply( self->priv->input_bin );
 }
 
 /*
@@ -914,7 +914,7 @@ on_right_ok( GtkButton *button, ofaGuidedEx *self )
 static void
 on_right_cancel( GtkButton *button, ofaGuidedEx *self )
 {
-	ofa_guided_input_piece_reset( self->priv->piece );
+	ofa_guided_input_bin_reset( self->priv->input_bin );
 }
 
 /*

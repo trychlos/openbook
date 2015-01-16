@@ -48,21 +48,18 @@
 #include "ui/my-editable-amount.h"
 #include "ui/my-editable-date.h"
 #include "ui/ofa-account-select.h"
-#include "ui/ofa-guided-input-piece.h"
+#include "ui/ofa-guided-input-bin.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
  */
-struct _ofaGuidedInputPiecePrivate {
+struct _ofaGuidedInputBinPrivate {
 	gboolean              dispose_has_run;
-	gboolean              from_widget_finalized;
 
 	/* input parameters at initialization time
 	 */
 	const ofaMainWindow  *main_window;
-	GtkContainer         *parent;		/* the parent to which the top widget is attached */
-	GtkWidget            *top_widget;
 
 	/* from dossier
 	 */
@@ -102,7 +99,7 @@ struct _ofaGuidedInputPiecePrivate {
 
 	/* a list which keeps trace of used currencies
 	 * one list item is created for each used currency */
-	GList           *currency_list;
+	GList                *currency_list;
 };
 
 #define RANG_WIDTH                      3
@@ -214,82 +211,81 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static GDate st_last_dope               = { 0 };
 static GDate st_last_deff               = { 0 };
 
-static const gchar *st_piece_xml        = PKGUIDIR "/ofa-guided-input-piece.ui";
-static const gchar *st_piece_id         = "GuidedInputPiece";
+static const gchar *st_bin_xml        = PKGUIDIR "/ofa-guided-input-bin.ui";
+static const gchar *st_bin_id         = "GuidedInputBin";
 
-G_DEFINE_TYPE( ofaGuidedInputPiece, ofa_guided_input_piece, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN )
 
-static void              on_widget_finalized( ofaGuidedInputPiece *piece, GObject *finalized_widget );
-static void              setup_dialog( ofaGuidedInputPiece *piece );
-static void              init_model_data( ofaGuidedInputPiece *piece );
-static void              add_entry_row( ofaGuidedInputPiece *piece, gint i );
-static void              add_entry_row_widget( ofaGuidedInputPiece *piece, gint col_id, gint row );
-static GtkWidget        *row_widget_entry( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint row );
-static GtkWidget        *row_widget_label( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint row );
-static GtkWidget        *row_widget_button( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint row );
-static void              remove_entry_row( ofaGuidedInputPiece *piece, gint row );
+static void              setup_dialog( ofaGuidedInputBin *bin );
+static void              init_model_data( ofaGuidedInputBin *bin );
+static void              add_entry_row( ofaGuidedInputBin *bin, gint i );
+static void              add_entry_row_widget( ofaGuidedInputBin *bin, gint col_id, gint row );
+static GtkWidget        *row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
+static GtkWidget        *row_widget_label( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
+static GtkWidget        *row_widget_button( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row );
+static void              remove_entry_row( ofaGuidedInputBin *bin, gint row );
 static void              on_entry_finalized( sEntryData *sdata, GObject *finalized_entry );
-static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputPiece *piece );
-static void              on_dope_changed( GtkEntry *entry, ofaGuidedInputPiece *piece );
-static gboolean          on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece );
-static gboolean          on_deffect_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece );
-static void              on_deffect_changed( GtkEntry *entry, ofaGuidedInputPiece *piece );
-static void              on_piece_changed( GtkEditable *editable, ofaGuidedInputPiece *piece );
-static gboolean          on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputPiece *piece );
-static void              on_button_clicked( GtkButton *button, ofaGuidedInputPiece *piece );
-static void              on_account_selection( ofaGuidedInputPiece *piece, gint row );
-static void              check_for_account( ofaGuidedInputPiece *piece, GtkEntry *entry, gint row );
-static gboolean          on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece );
-static gboolean          on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece );
-static void              on_entry_changed( GtkEntry *entry, ofaGuidedInputPiece *piece );
-static const sColumnDef *find_column_def_from_col_id( const ofaGuidedInputPiece *piece, gint col_id );
-static void              check_for_enable_dlg( ofaGuidedInputPiece *piece );
-static gboolean          is_dialog_validable( ofaGuidedInputPiece *piece );
-static void              set_ope_to_ui( const ofaGuidedInputPiece *piece, gint row, gint col_id, const gchar *content );
-static void              set_comment( ofaGuidedInputPiece *piece, const gchar *comment );
-static void              set_message( ofaGuidedInputPiece *piece, const gchar *errmsg );
-static void              display_currencies( ofaGuidedInputPiece *piece );
-static gboolean          update_totals( ofaGuidedInputPiece *piece );
-static void              total_add_diff_lines( ofaGuidedInputPiece *piece, gint model_count );
-static void              total_display_diff( ofaGuidedInputPiece *piece, const gchar *currency, gint row, gdouble ddiff, gdouble cdiff );
-static gboolean          do_validate( ofaGuidedInputPiece *piece );
-static void              display_ok_message( ofaGuidedInputPiece *piece, gint count );
-static void              do_reset_entries_rows( ofaGuidedInputPiece *piece );
-static void              on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedInputPiece *self );
-static void              on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedInputPiece *self );
+static void              on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin *bin );
+static void              on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *bin );
+static gboolean          on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
+static gboolean          on_deffect_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
+static void              on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *bin );
+static void              on_bin_changed( GtkEditable *editable, ofaGuidedInputBin *bin );
+static gboolean          on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputBin *bin );
+static void              on_button_clicked( GtkButton *button, ofaGuidedInputBin *bin );
+static void              on_account_selection( ofaGuidedInputBin *bin, gint row );
+static void              check_for_account( ofaGuidedInputBin *bin, GtkEntry *entry, gint row );
+static gboolean          on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
+static gboolean          on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
+static void              on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *bin );
+static const sColumnDef *find_column_def_from_col_id( const ofaGuidedInputBin *bin, gint col_id );
+static void              check_for_enable_dlg( ofaGuidedInputBin *bin );
+static gboolean          is_dialog_validable( ofaGuidedInputBin *bin );
+static void              set_ope_to_ui( const ofaGuidedInputBin *bin, gint row, gint col_id, const gchar *content );
+static void              set_comment( ofaGuidedInputBin *bin, const gchar *comment );
+static void              set_message( ofaGuidedInputBin *bin, const gchar *errmsg );
+static void              display_currencies( ofaGuidedInputBin *bin );
+static gboolean          update_totals( ofaGuidedInputBin *bin );
+static void              total_add_diff_lines( ofaGuidedInputBin *bin, gint model_count );
+static void              total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdouble ddiff, gdouble cdiff );
+static gboolean          do_validate( ofaGuidedInputBin *bin );
+static void              display_ok_message( ofaGuidedInputBin *bin, gint count );
+static void              do_reset_entries_rows( ofaGuidedInputBin *bin );
+static void              on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self );
+static void              on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedInputBin *self );
 
 static void
-guided_input_piece_finalize( GObject *instance )
+guided_input_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_finalize";
-	ofaGuidedInputPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_guided_input_bin_finalize";
+	ofaGuidedInputBinPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_GUIDED_INPUT_PIECE( instance )->priv;
+	priv = OFA_GUIDED_INPUT_BIN( instance )->priv;
 
 	if( priv->currency_list ){
 		ofs_currency_list_free( &priv->currency_list );
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_guided_input_piece_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_guided_input_bin_parent_class )->finalize( instance );
 }
 
 static void
-guided_input_piece_dispose( GObject *instance )
+guided_input_bin_dispose( GObject *instance )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	GList *iha;
 	gulong handler_id;
 
-	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_GUIDED_INPUT_BIN( instance ));
 
-	priv = OFA_GUIDED_INPUT_PIECE( instance )->priv;
+	priv = OFA_GUIDED_INPUT_BIN( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -298,11 +294,6 @@ guided_input_piece_dispose( GObject *instance )
 		/* note when deconnecting the handlers that the dossier may
 		 * have been already finalized (e.g. when the application
 		 * terminates) */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->top_widget ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
-
 		if( priv->dossier && OFO_IS_DOSSIER( priv->dossier )){
 			for( iha=priv->handlers ; iha ; iha=iha->next ){
 				handler_id = ( gulong ) iha->data;
@@ -312,21 +303,21 @@ guided_input_piece_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_guided_input_piece_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_guided_input_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_guided_input_piece_init( ofaGuidedInputPiece *self )
+ofa_guided_input_bin_init( ofaGuidedInputBin *self )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_init";
-	ofaGuidedInputPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_guided_input_bin_init";
+	ofaGuidedInputBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_GUIDED_INPUT_PIECE( self ));
+	g_return_if_fail( self && OFA_IS_GUIDED_INPUT_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_GUIDED_INPUT_PIECE, ofaGuidedInputPiecePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_GUIDED_INPUT_BIN, ofaGuidedInputBinPrivate );
 	priv = self->priv;
 
 	priv->dispose_has_run = FALSE;
@@ -337,34 +328,34 @@ ofa_guided_input_piece_init( ofaGuidedInputPiece *self )
 }
 
 static void
-ofa_guided_input_piece_class_init( ofaGuidedInputPieceClass *klass )
+ofa_guided_input_bin_class_init( ofaGuidedInputBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_class_init";
+	static const gchar *thisfn = "ofa_guided_input_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = guided_input_piece_dispose;
-	G_OBJECT_CLASS( klass )->finalize = guided_input_piece_finalize;
+	G_OBJECT_CLASS( klass )->dispose = guided_input_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = guided_input_bin_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaGuidedInputPiecePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaGuidedInputBinPrivate ));
 
 	my_date_clear( &st_last_dope );
 	my_date_clear( &st_last_deff );
 
 	/**
-	 * ofaGuidedInputPiece::changed:
+	 * ofaGuidedInputBin::changed:
 	 *
 	 * This signal is sent after all the fields have been checked,
 	 * reacting to a field change.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaGuidedInputPiece *piece,
+	 * void ( *handler )( ofaGuidedInputBin *bin,
 	 * 						gboolean           is_valid,
 	 * 						gpointer           user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"changed",
-				OFA_TYPE_GUIDED_INPUT_PIECE,
+				OFA_TYPE_GUIDED_INPUT_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -376,89 +367,70 @@ ofa_guided_input_piece_class_init( ofaGuidedInputPieceClass *klass )
 }
 
 /**
- * ofa_guided_input_piece_new:
+ * ofa_guided_input_bin_new:
  */
-ofaGuidedInputPiece *
-ofa_guided_input_piece_new( void )
+ofaGuidedInputBin *
+ofa_guided_input_bin_new( void )
 {
-	ofaGuidedInputPiece *self;
+	ofaGuidedInputBin *self;
 
-	self = g_object_new( OFA_TYPE_GUIDED_INPUT_PIECE, NULL );
+	self = g_object_new( OFA_TYPE_GUIDED_INPUT_BIN, NULL );
 
 	return( self );
 }
 
 /**
- * ofa_guided_input_piece_attach_to:
+ * ofa_guided_input_bin_attach_to:
  */
 void
-ofa_guided_input_piece_attach_to( ofaGuidedInputPiece *piece, GtkContainer *parent )
+ofa_guided_input_bin_attach_to( ofaGuidedInputBin *bin, GtkContainer *parent )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_attach_to";
-	ofaGuidedInputPiecePrivate *priv;
-	GtkWidget *window;
+	static const gchar *thisfn = "ofa_guided_input_bin_attach_to";
+	ofaGuidedInputBinPrivate *priv;
+	GtkWidget *window, *top_widget;
 
-	g_debug( "%s: piece=%p, parent=%p", thisfn, ( void * ) piece, ( void * ) parent );
+	g_debug( "%s: bin=%p, parent=%p", thisfn, ( void * ) bin, ( void * ) parent );
 
-	g_return_if_fail( piece && OFA_IS_GUIDED_INPUT_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ));
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
-		window = my_utils_builder_load_from_path( st_piece_xml, st_piece_id );
+		window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
 		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-		priv->top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-widget" );
-		g_return_if_fail( priv->top_widget && GTK_IS_CONTAINER( priv->top_widget ));
+		top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-widget" );
+		g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
 
-		gtk_widget_reparent( priv->top_widget, GTK_WIDGET( parent ));
-		priv->parent = parent;
-
-		g_object_weak_ref( G_OBJECT( priv->top_widget ), ( GWeakNotify ) on_widget_finalized, piece );
+		gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
+		gtk_container_add( parent, GTK_WIDGET( bin ));
 
 		/* setup the dialog part which do not depend of the operation
 		 * template */
 		if( priv->main_window ){
-			setup_dialog( piece );
+			setup_dialog( bin );
 		}
 	}
 }
 
-static void
-on_widget_finalized( ofaGuidedInputPiece *piece, GObject *finalized_widget )
-{
-	static const gchar *thisfn = "ofa_file_format_piece_on_widget_finalized";
-	ofaGuidedInputPiecePrivate *priv;
-
-	g_debug( "%s: piece=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) piece, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
-
-	g_return_if_fail( piece && OFA_IS_GUIDED_INPUT_PIECE( piece ));
-
-	priv = piece->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( piece );
-}
-
 /**
- * ofa_guided_input_piece_set_main_window:
+ * ofa_guided_input_bin_set_main_window:
  */
 void
-ofa_guided_input_piece_set_main_window( ofaGuidedInputPiece *piece, const ofaMainWindow *main_window )
+ofa_guided_input_bin_set_main_window( ofaGuidedInputBin *bin, const ofaMainWindow *main_window )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_set_main_window";
-	ofaGuidedInputPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_guided_input_bin_set_main_window";
+	ofaGuidedInputBinPrivate *priv;
 	gulong handler;
 
-	g_debug( "%s: piece=%p, main_window=%p", thisfn, ( void * ) piece, ( void * ) main_window );
+	g_debug( "%s: bin=%p, main_window=%p", thisfn, ( void * ) bin, ( void * ) main_window );
 
-	g_return_if_fail( piece && OFA_IS_GUIDED_INPUT_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -472,34 +444,32 @@ ofa_guided_input_piece_set_main_window( ofaGuidedInputPiece *piece, const ofaMai
 
 		handler = g_signal_connect(
 						G_OBJECT( priv->dossier ),
-						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), piece );
+						SIGNAL_DOSSIER_UPDATED_OBJECT, G_CALLBACK( on_updated_object ), bin );
 		priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 		handler = g_signal_connect(
 						G_OBJECT( priv->dossier ),
-						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), piece );
+						SIGNAL_DOSSIER_DELETED_OBJECT, G_CALLBACK( on_deleted_object ), bin );
 		priv->handlers = g_list_prepend( priv->handlers, ( gpointer ) handler );
 
 		/* setup the dialog part which do not depend of the operation
 		 * template */
-		if( priv->parent ){
-			setup_dialog( piece );
-		}
+		setup_dialog( bin );
 	}
 }
 
 static void
-setup_dialog( ofaGuidedInputPiece *piece )
+setup_dialog( ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label, *widget, *view;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	/* set ledger combo */
 	priv->ledger_combo = ofa_ledger_combo_new();
 
-	priv->ledger_parent = my_utils_container_get_child_by_name( priv->parent, "p1-ledger-parent" );
+	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
 
 	ofa_ledger_combo_attach_to( priv->ledger_combo, GTK_CONTAINER( priv->ledger_parent ));
@@ -507,80 +477,79 @@ setup_dialog( ofaGuidedInputPiece *piece )
 	ofa_ledger_combo_set_main_window( priv->ledger_combo, priv->main_window );
 
 	g_signal_connect(
-			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), piece );
+			G_OBJECT( priv->ledger_combo ), "ofa-changed", G_CALLBACK( on_ledger_changed ), bin );
 
 	/* when opening the window, dates are set to the last used (from the
 	 * global static variables)
 	 * if the window stays alive after a validation (the case of the main
 	 * page), then the dates stays untouched */
-	priv->dope_entry = GTK_ENTRY( my_utils_container_get_child_by_name( priv->parent, "p1-dope" ));
+	priv->dope_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope" ));
 	my_editable_date_init( GTK_EDITABLE( priv->dope_entry ));
 	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
 
-	label = my_utils_container_get_child_by_name( priv->parent, "p1-dope-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-dope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_editable_date_set_label( GTK_EDITABLE( priv->dope_entry ), label, MY_DATE_DMYY );
 
 	g_signal_connect(
-			G_OBJECT( priv->dope_entry ), "changed", G_CALLBACK( on_dope_changed ), piece );
+			G_OBJECT( priv->dope_entry ), "changed", G_CALLBACK( on_dope_changed ), bin );
 
-	priv->deffect_entry = GTK_ENTRY( my_utils_container_get_child_by_name( priv->parent, "p1-deffect" ));
+	priv->deffect_entry = GTK_ENTRY( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect" ));
 	my_editable_date_init( GTK_EDITABLE( priv->deffect_entry ));
 	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
 
-	label = my_utils_container_get_child_by_name( priv->parent, "p1-deffect-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-deffect-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_editable_date_set_label( GTK_EDITABLE( priv->deffect_entry ), label, MY_DATE_DMYY );
 
 	g_signal_connect(
-			G_OBJECT( priv->deffect_entry ), "focus-in-event", G_CALLBACK( on_deffect_focus_in ), piece );
+			G_OBJECT( priv->deffect_entry ), "focus-in-event", G_CALLBACK( on_deffect_focus_in ), bin );
 	g_signal_connect(
-			G_OBJECT( priv->deffect_entry ), "focus-out-event", G_CALLBACK( on_deffect_focus_out ), piece );
+			G_OBJECT( priv->deffect_entry ), "focus-out-event", G_CALLBACK( on_deffect_focus_out ), bin );
 	g_signal_connect(
-			G_OBJECT( priv->deffect_entry ), "changed", G_CALLBACK( on_deffect_changed ), piece );
+			G_OBJECT( priv->deffect_entry ), "changed", G_CALLBACK( on_deffect_changed ), bin );
 
-	/* as this is easier, we only have here a single 'piece ref' entry
+	/* as this is easier, we only have here a single 'bin ref' entry
 	 * which will be duplicated on each detail ref */
-	widget = my_utils_container_get_child_by_name( priv->parent, "p1-piece" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-piece" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( widget, "changed", G_CALLBACK( on_piece_changed ), piece );
+	g_signal_connect( widget, "changed", G_CALLBACK( on_bin_changed ), bin );
 
 	/* setup other widgets */
-	widget = my_utils_container_get_child_by_name( priv->parent, "p1-model-label" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-model-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->model_label = GTK_LABEL( widget );
 
-	view = my_utils_container_get_child_by_name( priv->parent, "p2-entries" );
+	view = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-entries" );
 	g_return_if_fail( view && GTK_IS_GRID( view ));
 	priv->entries_grid = GTK_GRID( view );
 
-	widget = my_utils_container_get_child_by_name( priv->parent, "p3-comment" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-comment" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->comment = widget;
 
-	widget = my_utils_container_get_child_by_name( priv->parent, "p3-message" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-message" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->message = widget;
 }
 
 /**
- * ofa_guided_input_piece_set_ope_template:
+ * ofa_guided_input_bin_set_ope_template:
  *
  * This must be called *after* having be attached to a parent, and the
  * main window be set
  */
 void
-ofa_guided_input_piece_set_ope_template( ofaGuidedInputPiece *piece, const ofoOpeTemplate *template )
+ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin, const ofoOpeTemplate *template )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	gint i, count;
 
-	g_return_if_fail( piece && OFA_IS_GUIDED_INPUT_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ));
 	g_return_if_fail( template && OFO_IS_OPE_TEMPLATE( template ));
 
-	priv = piece->priv;
+	priv = bin->priv;
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
-	g_return_if_fail( priv->parent && GTK_IS_CONTAINER( priv->parent ));
 
 	if( !priv->dispose_has_run ){
 
@@ -588,7 +557,7 @@ ofa_guided_input_piece_set_ope_template( ofaGuidedInputPiece *piece, const ofoOp
 
 		/* remove previous entries if any */
 		for( i=1 ; i<=priv->entries_count ; ++i ){
-			remove_entry_row( piece, i );
+			remove_entry_row( bin, i );
 		}
 		ofs_ope_free( priv->ope );
 
@@ -598,25 +567,25 @@ ofa_guided_input_piece_set_ope_template( ofaGuidedInputPiece *piece, const ofoOp
 		priv->entries_count = 0;
 		count = ofo_ope_template_get_detail_count( priv->model );
 		for( i=1 ; i<=count ; ++i ){
-			add_entry_row( piece, i );
+			add_entry_row( bin, i );
 		}
 
-		init_model_data( piece );
+		init_model_data( bin );
 
-		gtk_widget_show_all( GTK_WIDGET( priv->parent ));
+		gtk_widget_show_all( GTK_WIDGET( bin ));
 
 		priv->check_allowed = TRUE;
-		check_for_enable_dlg( piece );
+		check_for_enable_dlg( bin );
 	}
 }
 
 static void
-init_model_data( ofaGuidedInputPiece *piece )
+init_model_data( ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	gchar *str;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	/* operation template mnemo and label */
 	str = g_strdup_printf( "%s - %s",
@@ -639,13 +608,13 @@ init_model_data( ofaGuidedInputPiece *piece )
  * row number start from 1 as row 0 is used by the headers
  */
 static void
-add_entry_row( ofaGuidedInputPiece *piece, gint row )
+add_entry_row( ofaGuidedInputBin *bin, gint row )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label;
 	gchar *str;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	/* col #0: rang: number of the entry */
 	str = g_strdup_printf( "%2d", row );
@@ -659,25 +628,25 @@ add_entry_row( ofaGuidedInputPiece *piece, gint row )
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_RANG, row, 1, 1 );
 
 	/* other columns starting with OPE_COL_ACCOUNT=1 */
-	add_entry_row_widget( piece, OPE_COL_ACCOUNT, row );
-	add_entry_row_widget( piece, OPE_COL_ACCOUNT_SELECT, row );
-	add_entry_row_widget( piece, OPE_COL_LABEL, row );
-	add_entry_row_widget( piece, OPE_COL_DEBIT, row );
-	add_entry_row_widget( piece, OPE_COL_CREDIT, row );
-	add_entry_row_widget( piece, OPE_COL_CURRENCY, row );
+	add_entry_row_widget( bin, OPE_COL_ACCOUNT, row );
+	add_entry_row_widget( bin, OPE_COL_ACCOUNT_SELECT, row );
+	add_entry_row_widget( bin, OPE_COL_LABEL, row );
+	add_entry_row_widget( bin, OPE_COL_DEBIT, row );
+	add_entry_row_widget( bin, OPE_COL_CREDIT, row );
+	add_entry_row_widget( bin, OPE_COL_CURRENCY, row );
 
 	priv->entries_count += 1;
 }
 
 static void
-add_entry_row_widget( ofaGuidedInputPiece *piece, gint col_id, gint row )
+add_entry_row_widget( ofaGuidedInputBin *bin, gint col_id, gint row )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *widget;
 	const sColumnDef *col_def;
 
-	priv = piece->priv;
-	col_def = find_column_def_from_col_id( piece, col_id );
+	priv = bin->priv;
+	col_def = find_column_def_from_col_id( bin, col_id );
 	g_return_if_fail( col_def );
 
 	widget = NULL;
@@ -685,15 +654,15 @@ add_entry_row_widget( ofaGuidedInputPiece *piece, gint col_id, gint row )
 	switch( col_def->column_type ){
 
 		case TYPE_ENTRY:
-			widget = row_widget_entry( piece, col_def, row );
+			widget = row_widget_entry( bin, col_def, row );
 			break;
 
 		case TYPE_LABEL:
-			widget = row_widget_label( piece, col_def, row );
+			widget = row_widget_label( bin, col_def, row );
 			break;
 
 		case TYPE_BUTTON:
-			widget = row_widget_button( piece, col_def, row );
+			widget = row_widget_button( bin, col_def, row );
 			break;
 
 		default:
@@ -706,15 +675,15 @@ add_entry_row_widget( ofaGuidedInputPiece *piece, gint col_id, gint row )
 }
 
 static GtkWidget *
-row_widget_entry( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint row )
+row_widget_entry( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *widget;
 	const gchar *str;
 	gboolean locked;
 	sEntryData *sdata;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	widget = NULL;
 
 	/* only create the entry if the field is not empty or not locked
@@ -735,7 +704,7 @@ row_widget_entry( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint ro
 			my_editable_amount_init(
 					GTK_EDITABLE( widget ));
 			my_editable_amount_set_changed_cb(
-					GTK_EDITABLE( widget ), G_CALLBACK( on_entry_changed ), piece );
+					GTK_EDITABLE( widget ), G_CALLBACK( on_entry_changed ), bin );
 		} else {
 			gtk_entry_set_alignment( GTK_ENTRY( widget ), col_def->xalign );
 		}
@@ -752,13 +721,13 @@ row_widget_entry( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint ro
 
 		if( !locked ){
 			g_signal_connect(
-					G_OBJECT( widget ), "changed", G_CALLBACK( on_entry_changed ), piece );
+					G_OBJECT( widget ), "changed", G_CALLBACK( on_entry_changed ), bin );
 			g_signal_connect(
-					G_OBJECT( widget ), "focus-in-event", G_CALLBACK( on_entry_focus_in ), piece );
+					G_OBJECT( widget ), "focus-in-event", G_CALLBACK( on_entry_focus_in ), bin );
 			g_signal_connect(
-					G_OBJECT( widget ), "focus-out-event", G_CALLBACK( on_entry_focus_out ), piece );
+					G_OBJECT( widget ), "focus-out-event", G_CALLBACK( on_entry_focus_out ), bin );
 			g_signal_connect(
-					G_OBJECT( widget ), "key-press-event", G_CALLBACK( on_key_pressed ), piece );
+					G_OBJECT( widget ), "key-press-event", G_CALLBACK( on_key_pressed ), bin );
 		}
 	}
 
@@ -766,7 +735,7 @@ row_widget_entry( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint ro
 }
 
 static GtkWidget *
-row_widget_label( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint row )
+row_widget_label( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 {
 	GtkWidget *widget;
 
@@ -780,7 +749,7 @@ row_widget_label( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint ro
 }
 
 static GtkWidget *
-row_widget_button( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint row )
+row_widget_button( ofaGuidedInputBin *bin, const sColumnDef *col_def, gint row )
 {
 	GtkWidget *button;
 
@@ -789,19 +758,19 @@ row_widget_button( ofaGuidedInputPiece *piece, const sColumnDef *col_def, gint r
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
 
 	g_signal_connect(
-			G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), piece );
+			G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), bin );
 
 	return( button );
 }
 
 static void
-remove_entry_row( ofaGuidedInputPiece *piece, gint row )
+remove_entry_row( ofaGuidedInputBin *bin, gint row )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	gint i;
 	GtkWidget *widget;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	for( i=0 ; i<OPE_N_COLUMNS ; ++i ){
 		widget = gtk_grid_get_child_at( priv->entries_grid, i, row );
@@ -814,7 +783,7 @@ remove_entry_row( ofaGuidedInputPiece *piece, gint row )
 static void
 on_entry_finalized( sEntryData *sdata, GObject *finalized_entry )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_on_entry_finalized";
+	static const gchar *thisfn = "ofa_guided_input_bin_on_entry_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_entry=%p", thisfn, ( void * ) sdata, ( void * ) finalized_entry );
 
@@ -830,13 +799,13 @@ on_entry_finalized( sEntryData *sdata, GObject *finalized_entry )
  * - the next day after the last close of the ledger (if any)
  */
 static void
-on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputPiece *piece )
+on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	ofsOpe *ope;
 	ofoLedger *ledger;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	ope = priv->ope;
 
 	ledger = ofo_ledger_get_by_mnemo( priv->dossier, mnemo );
@@ -847,16 +816,16 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputPiec
 
 	ofo_dossier_get_min_deffect( &priv->deffect_min, priv->dossier, ledger );
 
-	check_for_enable_dlg( piece );
+	check_for_enable_dlg( bin );
 }
 
 static void
-on_dope_changed( GtkEntry *entry, ofaGuidedInputPiece *piece )
+on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	ofsOpe *ope;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	ope = priv->ope;
 
 	/* check the operation date */
@@ -878,7 +847,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInputPiece *piece )
 		my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &ope->deffect );
 	}
 
-	check_for_enable_dlg( piece );
+	check_for_enable_dlg( bin );
 }
 
 /*
@@ -887,9 +856,9 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInputPiece *piece )
  * FALSE to propagate the event further.
  */
 static gboolean
-on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece )
+on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 {
-	piece->priv->deffect_has_focus = TRUE;
+	bin->priv->deffect_has_focus = TRUE;
 	return( FALSE );
 }
 
@@ -899,19 +868,19 @@ on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piec
  * FALSE to propagate the event further.
  */
 static gboolean
-on_deffect_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece )
+on_deffect_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 {
-	piece->priv->deffect_has_focus = FALSE;
+	bin->priv->deffect_has_focus = FALSE;
 	return( FALSE );
 }
 
 static void
-on_deffect_changed( GtkEntry *entry, ofaGuidedInputPiece *piece )
+on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	ofsOpe *ope;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	ope = priv->ope;
 
 	if( priv->deffect_has_focus ){
@@ -922,18 +891,18 @@ on_deffect_changed( GtkEntry *entry, ofaGuidedInputPiece *piece )
 		priv->deffect_changed_while_focus = TRUE;
 	}
 
-	check_for_enable_dlg( piece );
+	check_for_enable_dlg( bin );
 }
 
 static void
-on_piece_changed( GtkEditable *editable, ofaGuidedInputPiece *piece )
+on_bin_changed( GtkEditable *editable, ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	const gchar *content;
 	GList *it;
 	ofsOpeDetail *detail;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	content = gtk_entry_get_text( GTK_ENTRY( editable ));
 
@@ -944,7 +913,7 @@ on_piece_changed( GtkEditable *editable, ofaGuidedInputPiece *piece )
 		detail->ref_user_set = TRUE;
 	}
 
-	check_for_enable_dlg( piece );
+	check_for_enable_dlg( bin );
 }
 
 /*
@@ -959,7 +928,7 @@ on_piece_changed( GtkEditable *editable, ofaGuidedInputPiece *piece )
  * Gtk toolkit will complain as we return too late from this function
  */
 static gboolean
-on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputPiece *piece )
+on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputBin *bin )
 {
 	sEntryData *sdata;
 
@@ -970,7 +939,7 @@ on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputPiece *piec
 	switch( sdata->col_def->column_id ){
 		case OPE_COL_ACCOUNT:
 			if( event->state == 0 && event->keyval == GDK_KEY_Tab ){
-				check_for_account( piece, GTK_ENTRY( widget ), sdata->row_id );
+				check_for_account( bin, GTK_ENTRY( widget ), sdata->row_id );
 			}
 			break;
 	}
@@ -982,7 +951,7 @@ on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputPiece *piec
  * click on a button in an entry row
  */
 static void
-on_button_clicked( GtkButton *button, ofaGuidedInputPiece *piece )
+on_button_clicked( GtkButton *button, ofaGuidedInputBin *bin )
 {
 	gint column, row;
 
@@ -991,7 +960,7 @@ on_button_clicked( GtkButton *button, ofaGuidedInputPiece *piece )
 
 	switch( column ){
 		case OPE_COL_ACCOUNT_SELECT:
-			on_account_selection( piece, row );
+			on_account_selection( bin, row );
 			break;
 	}
 }
@@ -1000,13 +969,13 @@ on_button_clicked( GtkButton *button, ofaGuidedInputPiece *piece )
  * we have clicked on the 'Account selection' button
  */
 static void
-on_account_selection( ofaGuidedInputPiece *piece, gint row )
+on_account_selection( ofaGuidedInputBin *bin, gint row )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	GtkEntry *entry;
 	gchar *number;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, row ));
 	number = ofa_account_select_run( priv->main_window, gtk_entry_get_text( entry ));
@@ -1024,14 +993,14 @@ on_account_selection( ofaGuidedInputPiece *piece, gint row )
  * else open a dialog for selection
  */
 static void
-check_for_account( ofaGuidedInputPiece *piece, GtkEntry *entry, gint row  )
+check_for_account( ofaGuidedInputBin *bin, GtkEntry *entry, gint row  )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	ofoAccount *account;
 	const gchar *asked_account;
 	gchar *number;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	asked_account = gtk_entry_get_text( entry );
 	account = ofo_account_get_by_number( priv->dossier, asked_account );
@@ -1059,14 +1028,14 @@ check_for_account( ofaGuidedInputPiece *piece, GtkEntry *entry, gint row  )
  * has been manually modified
  */
 static gboolean
-on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece )
+on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_on_entry_focus_in";
-	ofaGuidedInputPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_guided_input_bin_on_entry_focus_in";
+	ofaGuidedInputBinPrivate *priv;
 	sEntryData *sdata;
 	const gchar *comment;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
 	priv->on_changed_count = 0;
@@ -1081,7 +1050,7 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece 
 	sdata->previous = g_strdup( gtk_entry_get_text( entry ));
 
 	comment = ofo_ope_template_get_detail_comment( priv->model, priv->focused_row-1 );
-	set_comment( piece, comment ? comment : "" );
+	set_comment( bin, comment ? comment : "" );
 
 	return( FALSE );
 }
@@ -1092,14 +1061,14 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece 
  * FALSE to propagate the event further.
  */
 static gboolean
-on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece )
+on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_on_entry_focus_out";
-	ofaGuidedInputPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_guided_input_bin_on_entry_focus_out";
+	ofaGuidedInputBinPrivate *priv;
 	sEntryData *sdata;
 	const gchar *current;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
 	g_debug( "%s: entry=%p, row=%u, column=%u",
@@ -1114,7 +1083,7 @@ on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece
 	priv->focused_row = 0;
 	priv->focused_column = 0;
 
-	set_comment( piece, "" );
+	set_comment( bin, "" );
 
 	return( FALSE );
 }
@@ -1129,15 +1098,15 @@ on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputPiece *piece
  * then block all next automatic recomputes
  */
 static void
-on_entry_changed( GtkEntry *entry, ofaGuidedInputPiece *piece )
+on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_on_entry_changed";
-	ofaGuidedInputPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_guided_input_bin_on_entry_changed";
+	ofaGuidedInputBinPrivate *priv;
 	ofsOpeDetail *detail;
 	sEntryData *sdata;
 	const gchar *cstr;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
 
 	g_debug( "%s: entry=%p, row=%d, column=%d, focused_row=%u, focused_column=%u, on_changed_count=%u",
@@ -1184,7 +1153,7 @@ on_entry_changed( GtkEntry *entry, ofaGuidedInputPiece *piece )
 				break;
 		}
 
-		check_for_enable_dlg( piece );
+		check_for_enable_dlg( bin );
 
 	} else {
 		g_debug( "%s: field at row=%d, column=%d changed but not checked",
@@ -1195,7 +1164,7 @@ on_entry_changed( GtkEntry *entry, ofaGuidedInputPiece *piece )
 }
 
 static const sColumnDef *
-find_column_def_from_col_id( const ofaGuidedInputPiece *piece, gint col_id )
+find_column_def_from_col_id( const ofaGuidedInputBin *bin, gint col_id )
 {
 	gint i;
 
@@ -1216,19 +1185,19 @@ find_column_def_from_col_id( const ofaGuidedInputPiece *piece, gint col_id )
  * highlight the erroneous ones
  */
 static void
-check_for_enable_dlg( ofaGuidedInputPiece *piece )
+check_for_enable_dlg( ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	gboolean ok;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( priv->entries_grid && priv->check_allowed ){
 
 		priv->check_allowed = FALSE;
 
-		ok = is_dialog_validable( piece );
-		g_signal_emit_by_name( piece, "changed", ok );
+		ok = is_dialog_validable( bin );
+		g_signal_emit_by_name( bin, "changed", ok );
 
 		priv->check_allowed = TRUE;
 	}
@@ -1238,19 +1207,19 @@ check_for_enable_dlg( ofaGuidedInputPiece *piece )
  *
  */
 gboolean
-ofa_guided_input_piece_is_valid( ofaGuidedInputPiece *piece )
+ofa_guided_input_bin_is_valid( ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	gboolean ok;
 
-	g_return_val_if_fail( piece && OFA_IS_GUIDED_INPUT_PIECE( piece ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ), FALSE );
 
-	priv = piece->priv;
+	priv = bin->priv;
 	ok = FALSE;
 
 	if( !priv->dispose_has_run ){
 
-		ok = is_dialog_validable( piece );
+		ok = is_dialog_validable( bin );
 	}
 
 	return( ok );
@@ -1263,50 +1232,50 @@ ofa_guided_input_piece_is_valid( ofaGuidedInputPiece *piece )
  * the focus...
  */
 static gboolean
-is_dialog_validable( ofaGuidedInputPiece *piece )
+is_dialog_validable( ofaGuidedInputBin *bin )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_is_dialog_validable";
-	ofaGuidedInputPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_guided_input_bin_is_dialog_validable";
+	ofaGuidedInputBinPrivate *priv;
 	ofsOpe *ope;
 	ofsOpeDetail *detail;
 	gchar *message, *amount;
 	gboolean ok;
 	gint i;
 
-	g_debug( "%s: piece=%p", thisfn, ( void * ) piece );
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	priv = piece->priv;
+	priv = bin->priv;
 	ope = priv->ope;
 	ofs_currency_list_free( &priv->currency_list );
 
 	ofs_ope_apply_template( ope, priv->dossier );
 
-	/* update the piece dialog with the new content of operation */
+	/* update the bin dialog with the new content of operation */
 	for( i=0 ; i<g_list_length( ope->detail ) ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
 		if( !detail->account_user_set ){
-			set_ope_to_ui( piece, i+1, OPE_COL_ACCOUNT, detail->account );
+			set_ope_to_ui( bin, i+1, OPE_COL_ACCOUNT, detail->account );
 		}
 		if( !detail->label_user_set ){
-			set_ope_to_ui( piece, i+1, OPE_COL_LABEL, detail->label );
+			set_ope_to_ui( bin, i+1, OPE_COL_LABEL, detail->label );
 		}
 		if( !detail->debit_user_set ){
 			amount = my_double_to_str( detail->debit );
-			set_ope_to_ui( piece, i+1, OPE_COL_DEBIT, amount );
+			set_ope_to_ui( bin, i+1, OPE_COL_DEBIT, amount );
 			g_free( amount );
 		}
 		if( !detail->credit_user_set ){
 			amount = my_double_to_str( detail->credit );
-			set_ope_to_ui( piece, i+1, OPE_COL_CREDIT, amount );
+			set_ope_to_ui( bin, i+1, OPE_COL_CREDIT, amount );
 			g_free( amount );
 		}
 	}
 
 	ok = ofs_ope_is_valid( ope, priv->dossier, &message, &priv->currency_list );
 
-	display_currencies( piece );
-	update_totals( piece );
-	set_message( piece, message );
+	display_currencies( bin );
+	update_totals( bin );
+	set_message( bin, message );
 
 	g_free( message );
 
@@ -1314,14 +1283,14 @@ is_dialog_validable( ofaGuidedInputPiece *piece )
 }
 
 static void
-set_ope_to_ui( const ofaGuidedInputPiece *piece, gint row, gint col_id, const gchar *content )
+set_ope_to_ui( const ofaGuidedInputBin *bin, gint row, gint col_id, const gchar *content )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	const sColumnDef *def;
 	GtkWidget *entry;
 
-	priv = piece->priv;
-	def = find_column_def_from_col_id( piece, col_id );
+	priv = bin->priv;
+	def = find_column_def_from_col_id( bin, col_id );
 	g_return_if_fail( def );
 
 	if( def->column_type == TYPE_ENTRY && content ){
@@ -1332,9 +1301,9 @@ set_ope_to_ui( const ofaGuidedInputPiece *piece, gint row, gint col_id, const gc
 			g_return_if_fail( GTK_IS_ENTRY( entry ));
 
 			if( def->is_double ){
-				g_signal_handlers_block_by_func( entry, on_entry_changed, ( gpointer ) piece );
+				g_signal_handlers_block_by_func( entry, on_entry_changed, ( gpointer ) bin );
 				my_editable_amount_set_string( GTK_EDITABLE( entry ), content );
-				g_signal_handlers_unblock_by_func( entry, on_entry_changed, ( gpointer ) piece );
+				g_signal_handlers_unblock_by_func( entry, on_entry_changed, ( gpointer ) bin );
 
 			} else {
 				gtk_entry_set_text( GTK_ENTRY( entry ), content );
@@ -1344,22 +1313,22 @@ set_ope_to_ui( const ofaGuidedInputPiece *piece, gint row, gint col_id, const gc
 }
 
 static void
-set_comment( ofaGuidedInputPiece *piece, const gchar *comment )
+set_comment( ofaGuidedInputBin *bin, const gchar *comment )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	gtk_label_set_text( GTK_LABEL( priv->comment ), comment );
 }
 
 static void
-set_message( ofaGuidedInputPiece *piece, const gchar *errmsg )
+set_message( ofaGuidedInputBin *bin, const gchar *errmsg )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	GdkRGBA color;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	gtk_label_set_text( GTK_LABEL( priv->message ), errmsg );
 
@@ -1373,16 +1342,16 @@ set_message( ofaGuidedInputPiece *piece, const gchar *errmsg )
  * only display the currency if different from default currency
  */
 static void
-display_currencies( ofaGuidedInputPiece *piece )
+display_currencies( ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	ofsOpeDetail *detail;
 	ofoAccount *account;
 	gint i, count;
 	const gchar *currency, *display_cur;
 	GtkWidget *label;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	count = g_list_length( priv->ope->detail );
 
 	for( i=0 ; i<count ; ++i ){
@@ -1412,9 +1381,9 @@ display_currencies( ofaGuidedInputPiece *piece )
  * of currencies
  */
 static gboolean
-update_totals( ofaGuidedInputPiece *piece )
+update_totals( ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	gint model_count, i;
 	GList *it;
 	ofsCurrency *sbal;
@@ -1423,7 +1392,7 @@ update_totals( ofaGuidedInputPiece *piece )
 	gdouble ddiff, cdiff;
 	gchar *total_str;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->model ){
 		return( FALSE );
@@ -1436,7 +1405,7 @@ update_totals( ofaGuidedInputPiece *piece )
 
 		/* insert total and diff lines */
 		if( priv->totals_count < i+2 ){
-			total_add_diff_lines( piece, model_count );
+			total_add_diff_lines( bin, model_count );
 		}
 
 		sbal = ( ofsCurrency * ) it->data;
@@ -1470,14 +1439,14 @@ update_totals( ofaGuidedInputPiece *piece )
 			oki = TRUE;
 		}
 
-		total_display_diff( piece, sbal->currency, model_count+i+2, ddiff, cdiff );
+		total_display_diff( bin, sbal->currency, model_count+i+2, ddiff, cdiff );
 
 		ok &= oki;
 	}
 
 	/* at the end, remove the unneeded supplementary lines */
 	for( ; i<priv->totals_count ; ++i ){
-		remove_entry_row( piece, model_count+i+1 );
+		remove_entry_row( bin, model_count+i+1 );
 	}
 	priv->totals_count = 2*g_list_length( priv->currency_list );
 
@@ -1490,13 +1459,13 @@ update_totals( ofaGuidedInputPiece *piece )
  * enough total/diff lines to hold the next currency)
  */
 static void
-total_add_diff_lines( ofaGuidedInputPiece *piece, gint model_count )
+total_add_diff_lines( ofaGuidedInputBin *bin, gint model_count )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label, *entry;
 	gint row;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	row = model_count + priv->totals_count;
 
 	label = gtk_label_new( NULL );
@@ -1541,15 +1510,15 @@ total_add_diff_lines( ofaGuidedInputPiece *piece, gint model_count )
 }
 
 static void
-total_display_diff( ofaGuidedInputPiece *piece, const gchar *currency, gint row, gdouble ddiff, gdouble cdiff )
+total_display_diff( ofaGuidedInputBin *bin, const gchar *currency, gint row, gdouble ddiff, gdouble cdiff )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label;
 	gchar *amount_str;
 	GdkRGBA color;
 	gboolean has_diff;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	has_diff = FALSE;
 
 	gdk_rgba_parse( &color, "#FF0000" );
@@ -1586,7 +1555,7 @@ total_display_diff( ofaGuidedInputPiece *piece, const gchar *currency, gint row,
 }
 
 /**
- * ofa_guided_input_piece_apply:
+ * ofa_guided_input_bin_apply:
  *
  * Generate the entries.
  * All the entries are created in memory and checked before being
@@ -1595,22 +1564,22 @@ total_display_diff( ofaGuidedInputPiece *piece, const gchar *currency, gint row,
  * Returns %TRUE if ok.
  */
 gboolean
-ofa_guided_input_piece_apply( ofaGuidedInputPiece *piece )
+ofa_guided_input_bin_apply( ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	gboolean ok;
 
-	g_return_val_if_fail( piece && OFA_IS_GUIDED_INPUT_PIECE( piece ), FALSE );
-	g_return_val_if_fail( is_dialog_validable( piece ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ), FALSE );
+	g_return_val_if_fail( is_dialog_validable( bin ), FALSE );
 
 	ok = FALSE;
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
-		if( do_validate( piece )){
+		if( do_validate( bin )){
 			ok = TRUE;
-			do_reset_entries_rows( piece );
+			do_reset_entries_rows( bin );
 		}
 	}
 
@@ -1618,13 +1587,13 @@ ofa_guided_input_piece_apply( ofaGuidedInputPiece *piece )
 }
 
 static gboolean
-do_validate( ofaGuidedInputPiece *piece )
+do_validate( ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	gboolean ok;
 	GList *entries, *it;
 
-	priv = piece->priv;
+	priv = bin->priv;
 	ok = TRUE;
 	entries = ofs_ope_generate_entries( priv->ope, priv->dossier );
 
@@ -1637,7 +1606,7 @@ do_validate( ofaGuidedInputPiece *piece )
 		 */
 	}
 	if( ok ){
-		display_ok_message( piece, g_list_length( entries ));
+		display_ok_message( bin, g_list_length( entries ));
 	}
 
 	g_list_free_full( entries, g_object_unref );
@@ -1649,7 +1618,7 @@ do_validate( ofaGuidedInputPiece *piece )
 }
 
 static void
-display_ok_message( ofaGuidedInputPiece *piece, gint count )
+display_ok_message( ofaGuidedInputBin *bin, gint count )
 {
 	GtkWidget *dialog;
 	gchar *message;
@@ -1657,7 +1626,7 @@ display_ok_message( ofaGuidedInputPiece *piece, gint count )
 	message = g_strdup_printf( _( "%d entries have been successfully created" ), count );
 
 	dialog = gtk_message_dialog_new(
-			GTK_WINDOW( piece->priv->main_window ),
+			GTK_WINDOW( bin->priv->main_window ),
 			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 			GTK_MESSAGE_INFO,
 			GTK_BUTTONS_OK,
@@ -1669,18 +1638,18 @@ display_ok_message( ofaGuidedInputPiece *piece, gint count )
 }
 
 /**
- * ofa_guided_input_piece_reset:
+ * ofa_guided_input_bin_reset:
  *
  * Reset the input fields, keeping the dates and the same entry model
  */
 void
-ofa_guided_input_piece_reset( ofaGuidedInputPiece *piece )
+ofa_guided_input_bin_reset( ofaGuidedInputBin *bin )
 {
-	g_return_if_fail( piece && OFA_IS_GUIDED_INPUT_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_GUIDED_INPUT_BIN( bin ));
 
-	if( !piece->priv->dispose_has_run ){
+	if( !bin->priv->dispose_has_run ){
 
-		do_reset_entries_rows( piece );
+		do_reset_entries_rows( bin );
 	}
 }
 
@@ -1689,13 +1658,13 @@ ofa_guided_input_piece_reset( ofaGuidedInputPiece *piece )
  * Only the LABEL entries may be non present on the last two lines
  */
 static void
-do_reset_entries_rows( ofaGuidedInputPiece *piece )
+do_reset_entries_rows( ofaGuidedInputBin *bin )
 {
-	ofaGuidedInputPiecePrivate *priv;
+	ofaGuidedInputBinPrivate *priv;
 	gint i;
 	GtkWidget *entry;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	for( i=1 ; i<=priv->entries_count ; ++i ){
 		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_LABEL, i );
@@ -1717,9 +1686,9 @@ do_reset_entries_rows( ofaGuidedInputPiece *piece )
  * SIGNAL_DOSSIER_UPDATED_OBJECT signal handler
  */
 static void
-on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedInputPiece *self )
+on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedInputBin *self )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_on_updated_object";
+	static const gchar *thisfn = "ofa_guided_input_bin_on_updated_object";
 
 	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
@@ -1730,7 +1699,7 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
 
 	if( OFO_IS_OPE_TEMPLATE( object )){
 		if( OFO_OPE_TEMPLATE( object ) == self->priv->model ){
-			ofa_guided_input_piece_set_ope_template( self, OFO_OPE_TEMPLATE( object ));
+			ofa_guided_input_bin_set_ope_template( self, OFO_OPE_TEMPLATE( object ));
 		}
 	}
 }
@@ -1739,10 +1708,10 @@ on_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar
  * SIGNAL_DOSSIER_DELETED_OBJECT signal handler
  */
 static void
-on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedInputPiece *self )
+on_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedInputBin *self )
 {
-	static const gchar *thisfn = "ofa_guided_input_piece_on_deleted_object";
-	ofaGuidedInputPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_guided_input_bin_on_deleted_object";
+	ofaGuidedInputBinPrivate *priv;
 	gint i;
 
 	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",

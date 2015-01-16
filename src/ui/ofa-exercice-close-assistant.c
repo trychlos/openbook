@@ -46,15 +46,15 @@
 #include "api/ofs-ope.h"
 
 #include "core/my-window-prot.h"
-#include "core/ofa-dbms-root-piece.h"
+#include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-preferences.h"
 
 #include "ui/my-assistant.h"
 #include "ui/my-editable-date.h"
 #include "ui/my-progress-bar.h"
 #include "ui/ofa-balances-grid.h"
+#include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-exercice-close-assistant.h"
-#include "ui/ofa-exe-forward-piece.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-misc-chkbal.h"
 
@@ -78,11 +78,11 @@ struct _ofaExerciceCloseAssistantPrivate {
 	GtkWidget          *p2_end_cur;
 	GtkWidget          *p2_begin_next;
 	GtkWidget          *p2_end_next;
-	ofaExeForwardPiece *p2_forward;
+	ofaClosingParmsBin *p2_closing_parms;
 
 	/* p3 - get DBMS root credentials
 	 */
-	ofaDBMSRootPiece   *p3_dbms_piece;
+	ofaDBMSRootBin     *p3_dbms_credentials;
 	gchar              *p3_account;
 	gchar              *p3_password;
 
@@ -130,12 +130,12 @@ static void             p1_do_forward( ofaExerciceCloseAssistant *self, gint pag
 static void             p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p2_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p2_on_date_changed( GtkEditable *editable, ofaExerciceCloseAssistant *self );
-static void             p2_on_forward_changed( ofaExeForwardPiece *piece, ofaExerciceCloseAssistant *self );
+static void             p2_on_closing_parms_changed( ofaClosingParmsBin *bin, ofaExerciceCloseAssistant *self );
 static void             p2_check_for_complete( ofaExerciceCloseAssistant *self );
 static void             p2_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p3_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
-static void             p3_on_dbms_root_changed( ofaDBMSRootPiece *piece, const gchar *account, const gchar *password, ofaExerciceCloseAssistant *self );
+static void             p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaExerciceCloseAssistant *self );
 static void             p3_check_for_complete( ofaExerciceCloseAssistant *self );
 static void             p3_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
 static void             p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -394,12 +394,12 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-forward-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p2_forward = ofa_exe_forward_piece_new();
-	ofa_exe_forward_piece_attach_to(
-			priv->p2_forward, GTK_CONTAINER( parent ));
-	ofa_exe_forward_piece_set_main_window(
-			priv->p2_forward, MY_WINDOW( self )->prot->main_window );
-	g_signal_connect( G_OBJECT( priv->p2_forward ), "changed", G_CALLBACK( p2_on_forward_changed ), self );
+	priv->p2_closing_parms = ofa_closing_parms_bin_new();
+	ofa_closing_parms_bin_attach_to(
+			priv->p2_closing_parms, GTK_CONTAINER( parent ));
+	ofa_closing_parms_bin_set_main_window(
+			priv->p2_closing_parms, MY_WINDOW( self )->prot->main_window );
+	g_signal_connect( G_OBJECT( priv->p2_closing_parms ), "changed", G_CALLBACK( p2_on_closing_parms_changed ), self );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
 }
@@ -423,7 +423,7 @@ p2_on_date_changed( GtkEditable *editable, ofaExerciceCloseAssistant *self )
 }
 
 static void
-p2_on_forward_changed( ofaExeForwardPiece *piece, ofaExerciceCloseAssistant *self )
+p2_on_closing_parms_changed( ofaClosingParmsBin *bin, ofaExerciceCloseAssistant *self )
 {
 	p2_check_for_complete( self );
 }
@@ -472,8 +472,8 @@ p2_check_for_complete( ofaExerciceCloseAssistant *self )
 		}
 	}
 
-	if( priv->p2_forward ){
-		complete &= ofa_exe_forward_piece_is_valid( priv->p2_forward, &msg );
+	if( priv->p2_closing_parms ){
+		complete &= ofa_closing_parms_bin_is_valid( priv->p2_closing_parms, &msg );
 		g_free( msg );
 	}
 
@@ -501,7 +501,7 @@ p2_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	ofa_idbms_set_current( priv->dbms, priv->dname, begin_cur, end_cur );
 	ofa_main_window_update_title( MY_WINDOW( self )->prot->main_window );
 
-	ofa_exe_forward_piece_apply( priv->p2_forward );
+	ofa_closing_parms_bin_apply( priv->p2_closing_parms );
 
 	ofo_dossier_update( dossier );
 }
@@ -522,17 +522,17 @@ p3_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p3-dbms" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p3_dbms_piece = ofa_dbms_root_piece_new();
-	ofa_dbms_root_piece_attach_to( priv->p3_dbms_piece, GTK_CONTAINER( parent ), NULL );
+	priv->p3_dbms_credentials = ofa_dbms_root_bin_new();
+	ofa_dbms_root_bin_attach_to( priv->p3_dbms_credentials, GTK_CONTAINER( parent ), NULL );
 	dname = ofo_dossier_get_name( MY_WINDOW( self )->prot->dossier );
-	ofa_dbms_root_piece_set_dossier( priv->p3_dbms_piece, dname );
+	ofa_dbms_root_bin_set_dossier( priv->p3_dbms_credentials, dname );
 
 	if( priv->p3_account && priv->p3_password ){
-		ofa_dbms_root_piece_set_credentials(
-				priv->p3_dbms_piece, priv->p3_account, priv->p3_password );
+		ofa_dbms_root_bin_set_credentials(
+				priv->p3_dbms_credentials, priv->p3_account, priv->p3_password );
 	}
 
-	g_signal_connect( priv->p3_dbms_piece, "changed", G_CALLBACK( p3_on_dbms_root_changed ), self );
+	g_signal_connect( priv->p3_dbms_credentials, "changed", G_CALLBACK( p3_on_dbms_root_changed ), self );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
 }
@@ -544,7 +544,7 @@ p3_display( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 }
 
 static void
-p3_on_dbms_root_changed( ofaDBMSRootPiece *piece, const gchar *account, const gchar *password, ofaExerciceCloseAssistant *self )
+p3_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaExerciceCloseAssistant *self )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
 
@@ -567,7 +567,7 @@ p3_check_for_complete( ofaExerciceCloseAssistant *self )
 
 	priv = self->priv;
 
-	ok = ofa_dbms_root_piece_is_valid( priv->p3_dbms_piece );
+	ok = ofa_dbms_root_bin_is_valid( priv->p3_dbms_credentials );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, ok );
 }

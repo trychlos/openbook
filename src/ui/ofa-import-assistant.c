@@ -51,7 +51,7 @@
 #include "core/ofa-plugin.h"
 
 #include "ui/my-progress-bar.h"
-#include "ui/ofa-file-format-piece.h"
+#include "ui/ofa-file-format-bin.h"
 #include "ui/ofa-import-assistant.h"
 #include "ui/ofa-importer.h"
 #include "ui/ofa-main-window.h"
@@ -81,36 +81,42 @@ enum {
  */
 struct _ofaImportAssistantPrivate {
 
-	/* p1: select file to be imported
+	/* p1: introduction
 	 */
-	GtkFileChooser     *p2_chooser;
-	gchar              *p2_folder;
-	gchar              *p2_fname;		/* the utf-8 imported filename */
 
-	/* p2: select a type of data to be imported
+	/* p2: select file to be imported
 	 */
-	GSList             *p3_group;
-	gint                p3_type;
-	gint                p3_idx;
-	GtkButton          *p3_type_btn;
+	GtkFileChooser   *p2_chooser;
+	gchar            *p2_folder;
+	gchar            *p2_fname;			/* the utf-8 imported filename */
 
-	/* p3: locale settings
+	/* p3: select a type of data to be imported
 	 */
-	ofaFileFormat      *p4_import_settings;
-	ofaFileFormatPiece *p4_settings_prefs;
+	GSList           *p3_group;
+	gint              p3_type;
+	gint              p3_idx;
+	GtkButton        *p3_type_btn;
 
-	/* p5: import the file, display the result
+	/* p4: locale settings
 	 */
-	myProgressBar      *p6_import;
-	myProgressBar      *p6_insert;
-	GtkWidget          *p6_page;
-	GtkWidget          *p6_text;
-	ofaIImportable     *p6_object;
-	ofaIImportable     *p6_plugin;
+	ofaFileFormat    *p4_import_settings;
+	ofaFileFormatBin *p4_settings_prefs;
+
+	/* p5: confirm
+	 */
+
+	/* p6: import the file, display the result
+	 */
+	myProgressBar    *p6_import;
+	myProgressBar    *p6_insert;
+	GtkWidget        *p6_page;
+	GtkWidget        *p6_text;
+	ofaIImportable   *p6_object;
+	ofaIImportable   *p6_plugin;
 
 	/* runtime data
 	 */
-	GtkWidget          *current_page_w;
+	GtkWidget        *current_page_w;
 };
 
 /* management of the radio buttons group
@@ -173,7 +179,7 @@ static void            p3_check_for_complete( ofaImportAssistant *self );
 static void            p3_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void            p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void            p4_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
-static void            p4_on_settings_changed( ofaFileFormatPiece *piece, ofaImportAssistant *self );
+static void            p4_on_settings_changed( ofaFileFormatBin *bin, ofaImportAssistant *self );
 static void            p4_check_for_complete( ofaImportAssistant *self );
 static void            p4_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void            p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
@@ -524,8 +530,8 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
 	priv->p4_import_settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
-	priv->p4_settings_prefs = ofa_file_format_piece_new( priv->p4_import_settings );
-	ofa_file_format_piece_attach_to( priv->p4_settings_prefs, GTK_CONTAINER( widget ));
+	priv->p4_settings_prefs = ofa_file_format_bin_new( priv->p4_import_settings );
+	ofa_file_format_bin_attach_to( priv->p4_settings_prefs, GTK_CONTAINER( widget ));
 
 	g_signal_connect(
 			G_OBJECT( priv->p4_settings_prefs ), "changed", G_CALLBACK( p4_on_settings_changed ), self );
@@ -538,7 +544,7 @@ p4_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p4_on_settings_changed( ofaFileFormatPiece *piece, ofaImportAssistant *self )
+p4_on_settings_changed( ofaFileFormatBin *bin, ofaImportAssistant *self )
 {
 	p4_check_for_complete( self );
 }
@@ -550,7 +556,7 @@ p4_check_for_complete( ofaImportAssistant *self )
 	gboolean ok;
 
 	priv = self->priv;
-	ok = ofa_file_format_piece_is_validable( priv->p4_settings_prefs );
+	ok = ofa_file_format_bin_is_validable( priv->p4_settings_prefs );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
 }
@@ -566,7 +572,7 @@ p4_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = self->priv;
 
-	ofa_file_format_piece_apply( priv->p4_settings_prefs );
+	ofa_file_format_bin_apply( priv->p4_settings_prefs );
 }
 
 /*

@@ -37,22 +37,16 @@
 #include "ui/my-date-combo.h"
 #include "ui/my-decimal-combo.h"
 #include "ui/my-field-combo.h"
-#include "ui/ofa-file-format-piece.h"
+#include "ui/ofa-file-format-bin.h"
 
 /* private instance data
  */
-struct _ofaFileFormatPiecePrivate {
+struct _ofaFileFormatBinPrivate {
 	gboolean        dispose_has_run;
-	gboolean        from_widget_finalized;
 
 	/* initialization data
 	 */
 	ofaFileFormat  *settings;
-
-	/* attachment
-	 */
-	GtkContainer   *parent;				/* from the hosting dialog */
-	GtkContainer   *container;			/* our top container */
 
 	/* UI
 	 */
@@ -96,112 +90,107 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_window_xml       = PKGUIDIR "/ofa-file-format-piece.ui";
-static const gchar *st_window_id        = "FileFormatPiece";
+static const gchar *st_window_xml       = PKGUIDIR "/ofa-file-format-bin.ui";
+static const gchar *st_window_id        = "FileFormatBin";
 
-G_DEFINE_TYPE( ofaFileFormatPiece, ofa_file_format_piece, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaFileFormatBin, ofa_file_format_bin, GTK_TYPE_BIN )
 
-static void     on_widget_finalized( ofaFileFormatPiece *self, GObject *finalized_parent );
-static void     setup_piece( ofaFileFormatPiece *piece );
-static void     init_file_format( ofaFileFormatPiece *self );
-static void     on_ffmt_changed( GtkComboBox *box, ofaFileFormatPiece *self );
-static void     init_encoding( ofaFileFormatPiece *self );
-static void     on_encoding_changed( GtkComboBox *box, ofaFileFormatPiece *self );
-static void     init_date_format( ofaFileFormatPiece *self );
-static void     on_date_changed( myDateCombo *combo, myDateFormat format, ofaFileFormatPiece *self );
-static void     init_decimal_dot( ofaFileFormatPiece *self );
-static void     on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatPiece *self );
-static void     init_field_separator( ofaFileFormatPiece *self );
-static void     on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatPiece *self );
-static void     init_headers( ofaFileFormatPiece *self );
-static void     on_headers_toggled( GtkToggleButton *button, ofaFileFormatPiece *self );
-static gboolean is_validable( ofaFileFormatPiece *self );
-static gint     get_file_format( ofaFileFormatPiece *self );
-static gchar   *get_charmap( ofaFileFormatPiece *self );
-static gboolean do_apply( ofaFileFormatPiece *self );
+static void     setup_bin( ofaFileFormatBin *bin );
+static void     init_file_format( ofaFileFormatBin *self );
+static void     on_ffmt_changed( GtkComboBox *box, ofaFileFormatBin *self );
+static void     init_encoding( ofaFileFormatBin *self );
+static void     on_encoding_changed( GtkComboBox *box, ofaFileFormatBin *self );
+static void     init_date_format( ofaFileFormatBin *self );
+static void     on_date_changed( myDateCombo *combo, myDateFormat format, ofaFileFormatBin *self );
+static void     init_decimal_dot( ofaFileFormatBin *self );
+static void     on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatBin *self );
+static void     init_field_separator( ofaFileFormatBin *self );
+static void     on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatBin *self );
+static void     init_headers( ofaFileFormatBin *self );
+static void     on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self );
+static gboolean is_validable( ofaFileFormatBin *self );
+static gint     get_file_format( ofaFileFormatBin *self );
+static gchar   *get_charmap( ofaFileFormatBin *self );
+static gboolean do_apply( ofaFileFormatBin *self );
 static GList   *get_available_charmaps( void );
 
 static void
-file_format_piece_finalize( GObject *instance )
+file_format_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_file_format_piece_finalize";
+	static const gchar *thisfn = "ofa_file_format_bin_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_FILE_FORMAT_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_FILE_FORMAT_BIN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_file_format_piece_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_file_format_bin_parent_class )->finalize( instance );
 }
 
 static void
-file_format_piece_dispose( GObject *instance )
+file_format_bin_dispose( GObject *instance )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_FILE_FORMAT_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_FILE_FORMAT_BIN( instance ));
 
-	priv = OFA_FILE_FORMAT_PIECE( instance )->priv;
+	priv = OFA_FILE_FORMAT_BIN( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->container ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 
 		g_clear_object( &priv->settings );
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_file_format_piece_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_file_format_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_file_format_piece_init( ofaFileFormatPiece *self )
+ofa_file_format_bin_init( ofaFileFormatBin *self )
 {
-	static const gchar *thisfn = "ofa_file_format_piece_init";
+	static const gchar *thisfn = "ofa_file_format_bin_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_FILE_FORMAT_PIECE( self ));
+	g_return_if_fail( self && OFA_IS_FILE_FORMAT_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_FILE_FORMAT_PIECE, ofaFileFormatPiecePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_FILE_FORMAT_BIN, ofaFileFormatBinPrivate );
 
 	self->priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_file_format_piece_class_init( ofaFileFormatPieceClass *klass )
+ofa_file_format_bin_class_init( ofaFileFormatBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_file_format_piece_class_init";
+	static const gchar *thisfn = "ofa_file_format_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = file_format_piece_dispose;
-	G_OBJECT_CLASS( klass )->finalize = file_format_piece_finalize;
+	G_OBJECT_CLASS( klass )->dispose = file_format_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = file_format_bin_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaFileFormatPiecePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaFileFormatBinPrivate ));
 
 	/**
-	 * ofaFileFormatPiece::changed:
+	 * ofaFileFormatBin::changed:
 	 *
 	 * This signal is sent when one of the data is changed.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaFileFormatPiece *piece,
+	 * void ( *handler )( ofaFileFormatBin *bin,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"changed",
-				OFA_TYPE_FILE_FORMAT_PIECE,
+				OFA_TYPE_FILE_FORMAT_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -213,14 +202,14 @@ ofa_file_format_piece_class_init( ofaFileFormatPieceClass *klass )
 }
 
 /**
- * ofa_file_format_piece_new:
+ * ofa_file_format_bin_new:
  */
-ofaFileFormatPiece *
-ofa_file_format_piece_new( ofaFileFormat *settings )
+ofaFileFormatBin *
+ofa_file_format_bin_new( ofaFileFormat *settings )
 {
-	ofaFileFormatPiece *self;
+	ofaFileFormatBin *self;
 
-	self = g_object_new( OFA_TYPE_FILE_FORMAT_PIECE, NULL );
+	self = g_object_new( OFA_TYPE_FILE_FORMAT_BIN, NULL );
 
 	self->priv->settings = g_object_ref( settings );
 
@@ -228,21 +217,21 @@ ofa_file_format_piece_new( ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_piece_attach_to:
+ * ofa_file_format_bin_attach_to:
  *
  * This attach the widgets to the designed parent.
  * This must be called only once, at initialization time.
  */
 void
-ofa_file_format_piece_attach_to( ofaFileFormatPiece *piece, GtkContainer *new_parent )
+ofa_file_format_bin_attach_to( ofaFileFormatBin *bin, GtkContainer *new_parent )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	GtkWidget *window, *widget;
 
-	g_return_if_fail( piece && OFA_IS_FILE_FORMAT_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ));
 	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
 
-	priv = piece->priv;
+	priv = bin->priv;
 	g_return_if_fail( priv->settings && OFA_IS_FILE_FORMAT( priv->settings ));
 
 	if( !priv->dispose_has_run ){
@@ -250,71 +239,45 @@ ofa_file_format_piece_attach_to( ofaFileFormatPiece *piece, GtkContainer *new_pa
 		window = my_utils_builder_load_from_path( st_window_xml, st_window_id );
 		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
-		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p5-top-grid" );
+		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "parent-top" );
 		g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-		gtk_widget_reparent( widget, GTK_WIDGET( new_parent ));
-		priv->parent = new_parent;
-		priv->container = GTK_CONTAINER( widget );
+		gtk_widget_reparent( widget, GTK_WIDGET( bin ));
+		gtk_container_add( new_parent, GTK_WIDGET( bin ));
 
-		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_widget_finalized, piece );
-
-		setup_piece( piece );
+		setup_bin( bin );
 
 		gtk_widget_show_all( GTK_WIDGET( new_parent ));
 	}
 }
 
 static void
-on_widget_finalized( ofaFileFormatPiece *self, GObject *finalized_widget )
+setup_bin( ofaFileFormatBin *bin )
 {
-	static const gchar *thisfn = "ofa_file_format_piece_on_widget_finalized";
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 
-	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
+	g_return_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ));
 
-	g_return_if_fail( self && OFA_IS_FILE_FORMAT_PIECE( self ));
+	priv = bin->priv;
 
-	priv = self->priv;
-	priv->from_widget_finalized = TRUE;
+	priv->settings_frame = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "settings-frame" );
+	priv->dispo_frame = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dispo-frame" );
 
-	g_object_unref( self );
+	init_encoding( bin );
+	init_date_format( bin );
+	init_decimal_dot( bin );
+	init_field_separator( bin );
+	init_headers( bin );
+
+	/* export format at the end so that it is able to rely on
+	   precomputed widgets */
+	init_file_format( bin );
 }
 
 static void
-setup_piece( ofaFileFormatPiece *piece )
+init_file_format( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
-
-	g_return_if_fail( piece && OFA_IS_FILE_FORMAT_PIECE( piece ));
-
-	priv = piece->priv;
-
-	g_return_if_fail( priv->parent && GTK_IS_CONTAINER( priv->parent ));
-	g_return_if_fail( priv->container && GTK_IS_CONTAINER( priv->container ));
-
-	if( !priv->dispose_has_run ){
-
-		priv->settings_frame = my_utils_container_get_child_by_name( priv->container, "settings-frame" );
-		priv->dispo_frame = my_utils_container_get_child_by_name( priv->container, "dispo-frame" );
-
-		init_encoding( piece );
-		init_date_format( piece );
-		init_decimal_dot( piece );
-		init_field_separator( piece );
-		init_headers( piece );
-
-		/* export format at the end so that it is able to rely on
-		   precomputed widgets */
-		init_file_format( piece );
-	}
-}
-
-static void
-init_file_format( ofaFileFormatPiece *self )
-{
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
@@ -325,7 +288,7 @@ init_file_format( ofaFileFormatPiece *self )
 	priv = self->priv;
 
 	priv->format_combo =
-			my_utils_container_get_child_by_name( priv->container, "p1-export-format" );
+			my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-export-format" );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			EXP_N_COLUMNS,
@@ -371,9 +334,9 @@ init_file_format( ofaFileFormatPiece *self )
 }
 
 static void
-on_ffmt_changed( GtkComboBox *box, ofaFileFormatPiece *self )
+on_ffmt_changed( GtkComboBox *box, ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
@@ -395,9 +358,9 @@ on_ffmt_changed( GtkComboBox *box, ofaFileFormatPiece *self )
 }
 
 static void
-init_encoding( ofaFileFormatPiece *self )
+init_encoding( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
@@ -408,7 +371,7 @@ init_encoding( ofaFileFormatPiece *self )
 	priv = self->priv;
 
 	priv->encoding_combo =
-			my_utils_container_get_child_by_name( priv->container, "p5-encoding" );
+			my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-encoding" );
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			ENC_N_COLUMNS,
@@ -450,22 +413,22 @@ init_encoding( ofaFileFormatPiece *self )
 }
 
 static void
-on_encoding_changed( GtkComboBox *box, ofaFileFormatPiece *self )
+on_encoding_changed( GtkComboBox *box, ofaFileFormatBin *self )
 {
 	g_signal_emit_by_name( self, "changed" );
 }
 
 static void
-init_date_format( ofaFileFormatPiece *self )
+init_date_format( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	GtkWidget *widget;
 
 	priv = self->priv;
 
 	priv->date_combo = my_date_combo_new();
 
-	widget = my_utils_container_get_child_by_name( priv->container, "p5-parent-date" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-parent-date" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
 	my_date_combo_attach_to( priv->date_combo, GTK_CONTAINER( widget ));
@@ -475,22 +438,22 @@ init_date_format( ofaFileFormatPiece *self )
 }
 
 static void
-on_date_changed( myDateCombo *combo, myDateFormat format, ofaFileFormatPiece *self )
+on_date_changed( myDateCombo *combo, myDateFormat format, ofaFileFormatBin *self )
 {
 	g_signal_emit_by_name( self, "changed" );
 }
 
 static void
-init_decimal_dot( ofaFileFormatPiece *self )
+init_decimal_dot( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	GtkWidget *parent;
 	gchar *sep;
 
 	priv = self->priv;
 	priv->decimal_combo = my_decimal_combo_new();
 
-	parent = my_utils_container_get_child_by_name( priv->container, "p5-decimal-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-decimal-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	my_decimal_combo_attach_to( priv->decimal_combo, GTK_CONTAINER( parent ));
@@ -503,22 +466,22 @@ init_decimal_dot( ofaFileFormatPiece *self )
 }
 
 static void
-on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatPiece *self )
+on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatBin *self )
 {
 	g_signal_emit_by_name( self, "changed" );
 }
 
 static void
-init_field_separator( ofaFileFormatPiece *self )
+init_field_separator( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	gchar *sep;
 
 	priv = self->priv;
 
 	priv->field_combo = my_field_combo_new();
-	priv->field_label = my_utils_container_get_child_by_name( priv->container, "p5-field-label" );
-	priv->field_parent = my_utils_container_get_child_by_name( priv->container, "p5-field-parent" );
+	priv->field_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-label" );
+	priv->field_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-parent" );
 	g_return_if_fail( priv->field_parent && GTK_IS_CONTAINER( priv->field_parent ));
 	my_field_combo_attach_to( priv->field_combo, GTK_CONTAINER( priv->field_parent ));
 
@@ -531,21 +494,21 @@ init_field_separator( ofaFileFormatPiece *self )
 }
 
 static void
-on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatPiece *self )
+on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatBin *self )
 {
 	g_signal_emit_by_name( self, "changed" );
 }
 
 static void
-init_headers( ofaFileFormatPiece *self )
+init_headers( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	gboolean bvalue;
 
 	priv = self->priv;
 
 	priv->headers_btn =
-			my_utils_container_get_child_by_name( priv->container, "p5-headers" );
+			my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-headers" );
 
 	bvalue = ofa_file_format_has_headers( priv->settings );
 
@@ -556,22 +519,22 @@ init_headers( ofaFileFormatPiece *self )
 }
 
 static void
-on_headers_toggled( GtkToggleButton *button, ofaFileFormatPiece *self )
+on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self )
 {
 	g_signal_emit_by_name( self, "changed" );
 }
 
 /**
- * ofa_file_format_piece_is_validable:
+ * ofa_file_format_bin_is_validable:
  *
  * Returns: %TRUE if selection is ok
  */
 gboolean
-ofa_file_format_piece_is_validable( ofaFileFormatPiece *settings )
+ofa_file_format_bin_is_validable( ofaFileFormatBin *settings )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT_PIECE( settings ), FALSE );
+	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT_BIN( settings ), FALSE );
 
 	priv = settings->priv;
 
@@ -585,9 +548,9 @@ ofa_file_format_piece_is_validable( ofaFileFormatPiece *settings )
 }
 
 static gboolean
-is_validable( ofaFileFormatPiece *self )
+is_validable( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	gchar *charmap, *decimal_sep, *field_sep;
 	gint iexport, ivalue;
 
@@ -633,9 +596,9 @@ is_validable( ofaFileFormatPiece *self )
 }
 
 static gint
-get_file_format( ofaFileFormatPiece *self )
+get_file_format( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	ofaFFmt format;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -653,9 +616,9 @@ get_file_format( ofaFileFormatPiece *self )
 }
 
 static gchar *
-get_charmap( ofaFileFormatPiece *self )
+get_charmap( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *charmap;
@@ -673,7 +636,7 @@ get_charmap( ofaFileFormatPiece *self )
 }
 
 /**
- * ofa_file_format_piece_apply:
+ * ofa_file_format_bin_apply:
  *
  * This take the current selection out of the dialog box, setting the
  * user preferences.
@@ -681,16 +644,13 @@ get_charmap( ofaFileFormatPiece *self )
  * Returns: %TRUE if selection is ok
  */
 gboolean
-ofa_file_format_piece_apply( ofaFileFormatPiece *settings )
+ofa_file_format_bin_apply( ofaFileFormatBin *settings )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT_PIECE( settings ), FALSE );
+	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT_BIN( settings ), FALSE );
 
 	priv = settings->priv;
-
-	g_return_val_if_fail( priv->parent && GTK_IS_CONTAINER( priv->parent ), FALSE );
-	g_return_val_if_fail( priv->container && GTK_IS_CONTAINER( priv->container ), FALSE );
 
 	if( !priv->dispose_has_run ){
 
@@ -706,9 +666,9 @@ ofa_file_format_piece_apply( ofaFileFormatPiece *settings )
 }
 
 static gboolean
-do_apply( ofaFileFormatPiece *self )
+do_apply( ofaFileFormatBin *self )
 {
-	ofaFileFormatPiecePrivate *priv;
+	ofaFileFormatBinPrivate *priv;
 	gchar *charmap, *decimal_sep, *field_sep;
 	gint iexport, ivalue;
 	gboolean bvalue;
@@ -740,7 +700,7 @@ do_apply( ofaFileFormatPiece *self )
 static GList *
 get_available_charmaps( void )
 {
-	static const gchar *thisfn = "ofa_file_format_piece_get_available_charmaps";
+	static const gchar *thisfn = "ofa_file_format_bin_get_available_charmaps";
 	gchar *stdout, *stderr;
 	gint exit_status;
 	GError *error;

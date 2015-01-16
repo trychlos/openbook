@@ -99,6 +99,8 @@ openbook_SOURCES = \
 	ofa-class-properties.h								\
 	ofa-classes-page.c									\
 	ofa-classes-page.h									\
+	ofa-closing-parms-bin.c								\
+	ofa-closing-parms-bin.h								\
 	ofa-currencies-page.c								\
 	ofa-currencies-page.h								\
 	ofa-currency-combo.c								\
@@ -117,10 +119,10 @@ openbook_SOURCES = \
 	ofa-dossier-manager.h								\
 	ofa-dossier-new.c									\
 	ofa-dossier-new.h									\
+	ofa-dossier-new-bin.c								\
+	ofa-dossier-new-bin.h								\
 	ofa-dossier-new-mini.c								\
 	ofa-dossier-new-mini.h								\
-	ofa-dossier-new-piece.c								\
-	ofa-dossier-new-piece.h								\
 	ofa-dossier-open.c									\
 	ofa-dossier-open.h									\
 	ofa-dossier-properties.c							\
@@ -129,8 +131,6 @@ openbook_SOURCES = \
 	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
-	ofa-exe-forward-piece.c								\
-	ofa-exe-forward-piece.h								\
 	ofa-exercice-combo.c								\
 	ofa-exercice-combo.h								\
 	ofa-exercice-close-assistant.c						\
@@ -141,14 +141,14 @@ openbook_SOURCES = \
 	ofa-exercice-treeview.h								\
 	ofa-export-assistant.c								\
 	ofa-export-assistant.h								\
-	ofa-file-format-piece.c								\
-	ofa-file-format-piece.h								\
+	ofa-file-format-bin.c								\
+	ofa-file-format-bin.h								\
 	ofa-guided-ex.c										\
 	ofa-guided-ex.h										\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
-	ofa-guided-input-piece.c							\
-	ofa-guided-input-piece.h							\
+	ofa-guided-input-bin.c								\
+	ofa-guided-input-bin.h								\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
 	ofa-ipreferences.c									\
@@ -242,23 +242,22 @@ ui_files = \
 	ofa-bat-properties.ui								\
 	ofa-bat-select.ui									\
 	ofa-class-properties.ui								\
+	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-delete.ui								\
 	ofa-dossier-delete-prefs.piece.ui					\
 	ofa-dossier-login.ui								\
 	ofa-dossier-new.ui									\
+	ofa-dossier-new-bin.ui								\
 	ofa-dossier-new-mini.ui								\
-	ofa-dossier-new-piece.ui							\
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
-	ofa-dossier-treeview.piece.ui						\
-	ofa-exe-forward-piece.ui							\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
-	ofa-file-format-piece.ui							\
+	ofa-file-format-bin.ui								\
 	ofa-guided-input.ui									\
-	ofa-guided-input-piece.ui							\
+	ofa-guided-input-bin.ui								\
 	ofa-import-assistant.ui								\
 	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
@@ -272,8 +271,8 @@ ui_files = \
 	ofa-print-reconcil.ui								\
 	ofa-restore-assistant.ui							\
 	ofa-rate-properties.ui								\
-	ofa-settlement.piece.ui								\
-	ofa-view-entries.piece.ui							\
+	ofa-settlement.ui									\
+	ofa-view-entries.ui									\
 	$(NULL)
 
 images_files = \

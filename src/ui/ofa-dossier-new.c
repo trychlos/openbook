@@ -38,10 +38,10 @@
 #include "api/ofo-dossier.h"
 
 #include "core/my-window-prot.h"
-#include "core/ofa-admin-credentials-piece.h"
+#include "core/ofa-admin-credentials-bin.h"
 
 #include "ui/ofa-dossier-new.h"
-#include "ui/ofa-dossier-new-piece.h"
+#include "ui/ofa-dossier-new-bin.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -50,24 +50,24 @@ struct _ofaDossierNewPrivate {
 
 	/* UI
 	 */
-	ofaDossierNewPiece       *new_piece;
-	ofaAdminCredentialsPiece *adm_piece;
-	GtkWidget                *properties_toggle;
-	GtkWidget                *ok_btn;
-	GtkWidget                *msg_label;
+	ofaDossierNewBin       *new_bin;
+	ofaAdminCredentialsBin *admin_credentials;
+	GtkWidget              *properties_toggle;
+	GtkWidget              *ok_btn;
+	GtkWidget              *msg_label;
 
 	/* runtime data
 	 */
-	gchar                    *dname;
-	gchar                    *database;
-	gchar                    *root_account;
-	gchar                    *root_password;
-	gchar                    *adm_account;
-	gchar                    *adm_password;
-	gboolean                  b_open;
-	gboolean                  b_properties;
+	gchar                  *dname;
+	gchar                  *database;
+	gchar                  *root_account;
+	gchar                  *root_password;
+	gchar                  *adm_account;
+	gchar                  *adm_password;
+	gboolean                b_open;
+	gboolean                b_properties;
 
-	gchar                    *prov_name;
+	gchar                  *prov_name;
 
 	/* result
 	 */
@@ -80,8 +80,8 @@ static const gchar *st_ui_id            = "DossierNewDlg";
 G_DEFINE_TYPE( ofaDossierNew, ofa_dossier_new, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_new_piece_changed( ofaDossierNewPiece *piece, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNew *self );
-static void      on_adm_piece_changed( ofaAdminCredentialsPiece *piece, const gchar *account, const gchar *password, ofaDossierNew *self );
+static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNew *self );
+static void      on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
 static void      on_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
 static void      on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
 static void      get_settings( ofaDossierNew *self );
@@ -239,22 +239,22 @@ v_init_dialog( myDialog *dialog )
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->new_piece = ofa_dossier_new_piece_new();
-	ofa_dossier_new_piece_attach_to( priv->new_piece, GTK_CONTAINER( parent ), group );
+	priv->new_bin = ofa_dossier_new_bin_new();
+	ofa_dossier_new_bin_attach_to( priv->new_bin, GTK_CONTAINER( parent ), group );
 	g_object_unref( group );
-	ofa_dossier_new_piece_set_frame( priv->new_piece, TRUE );
+	ofa_dossier_new_bin_set_frame( priv->new_bin, TRUE );
 	if( priv->prov_name && g_utf8_strlen( priv->prov_name, -1 )){
-		ofa_dossier_new_piece_set_provider( priv->new_piece, priv->prov_name );
+		ofa_dossier_new_bin_set_provider( priv->new_bin, priv->prov_name );
 	}
 
-	g_signal_connect( priv->new_piece, "changed", G_CALLBACK( on_new_piece_changed ), dialog );
+	g_signal_connect( priv->new_bin, "changed", G_CALLBACK( on_new_bin_changed ), dialog );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "admin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->adm_piece = ofa_admin_credentials_piece_new();
-	ofa_admin_credentials_piece_attach_to( priv->adm_piece, GTK_CONTAINER( parent ));
+	priv->admin_credentials = ofa_admin_credentials_bin_new();
+	ofa_admin_credentials_bin_attach_to( priv->admin_credentials, GTK_CONTAINER( parent ));
 
-	g_signal_connect( priv->adm_piece, "changed", G_CALLBACK( on_adm_piece_changed ), dialog );
+	g_signal_connect( priv->admin_credentials, "changed", G_CALLBACK( on_admin_credentials_changed ), dialog );
 
 	/* set properties_toggle before setting open value */
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dn-properties" );
@@ -275,7 +275,7 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_new_piece_changed( ofaDossierNewPiece *piece, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNew *self )
+on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 
@@ -294,7 +294,7 @@ on_new_piece_changed( ofaDossierNewPiece *piece, const gchar *dname, void *infos
 }
 
 static void
-on_adm_piece_changed( ofaAdminCredentialsPiece *piece, const gchar *account, const gchar *password, ofaDossierNew *self )
+on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 
@@ -353,8 +353,8 @@ check_for_enable_dlg( ofaDossierNew *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	oka = ofa_dossier_new_piece_is_valid( priv->new_piece );
-	okb = ofa_admin_credentials_piece_is_valid( priv->adm_piece );
+	oka = ofa_dossier_new_bin_is_valid( priv->new_bin );
+	okb = ofa_admin_credentials_bin_is_valid( priv->admin_credentials );
 
 	enabled = oka && okb;
 
@@ -374,7 +374,7 @@ v_quit_on_ok( myDialog *dialog )
 
 	/* get the database name */
 	g_free( priv->database );
-	ofa_dossier_new_piece_get_database( priv->new_piece, &priv->database );
+	ofa_dossier_new_bin_get_database( priv->new_bin, &priv->database );
 	g_return_val_if_fail( priv->database && g_utf8_strlen( priv->database, -1 ), FALSE );
 
 	/* ask for user confirmation */
@@ -383,7 +383,7 @@ v_quit_on_ok( myDialog *dialog )
 	}
 
 	/* define the new dossier in user settings */
-	ok = ofa_dossier_new_piece_apply( priv->new_piece );
+	ok = ofa_dossier_new_bin_apply( priv->new_bin );
 
 	if( ok ){
 		/* get the provider name (from user settings) */

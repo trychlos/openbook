@@ -407,9 +407,12 @@
 
  568 2015- 1- 9 would be a GtkFrame-derived class suitable for any 
                 piece of dialog ?
-
- 569 2015- 1-10 intermediate ledger closing: refuse to close at the 
-                date of the end of the exercice
+     2015- 1-16 ofaDBMSRootPiece: ok as ofaDBMSRootBin
+                ofaAdminCredentialsPiece: ok as ofaAdminCredentialsBin
+                cannot do anything for MySQL pieces of UI
+                ofaDossierNewPiece: ok as ofaDossierNewBin
+                ofaExeForwardPiece: ok as ofaClosingParmsBin
+                ofaGuidedInputPiece: ok as ofaGuidedInputBin
 
  572 2015- 1-10 refactor: get rid of amounts, replacing them with
                 integers ?
@@ -433,7 +436,11 @@
 
  592 2015- 1-14 should MySQLDatabase be an Openbook key ?
 
- 596
+ 596 2015- 1-16 AccountsChart: when creating the first account, is not
+                displayed - but is refreshed when we double-clic on the
+                AccountsChart page
+
+ 597
 
 -----------------------------------------------------------------------
  DONE
@@ -2490,6 +2497,10 @@
  566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
                 of only Reconcil.
      2015- 1- 9 done - svn #4428
+
+ 569 2015- 1-10 intermediate ledger closing: refuse to close at the 
+                date of the end of the exercice
+     2015- 1-16 done - svn #4461
 
  570 2015- 1-10 refactor int-closing to "provisional closure" and
                 ledger-closure

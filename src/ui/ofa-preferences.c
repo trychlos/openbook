@@ -42,7 +42,7 @@
 #include "ui/my-date-combo.h"
 #include "ui/my-decimal-combo.h"
 #include "ui/ofa-dossier-delete-prefs.h"
-#include "ui/ofa-file-format-piece.h"
+#include "ui/ofa-file-format-bin.h"
 #include "ui/ofa-main-window.h"
 #include "core/ofa-preferences.h"
 
@@ -50,47 +50,47 @@
  */
 struct _ofaPreferencesPrivate {
 
-	GtkWidget              *book;			/* main notebook of the dialog */
+	GtkWidget             *book;			/* main notebook of the dialog */
 
 	/* whether the dialog has been validated
 	 */
-	gboolean                updated;
+	gboolean               updated;
 
 	/* when opening the preferences from the plugin manager
 	 */
-	ofaPlugin              *plugin;
-	GtkWidget              *object_page;
+	ofaPlugin             *plugin;
+	GtkWidget             *object_page;
 
 	/* UI - Quitting
 	 */
-	GtkCheckButton         *confirm_on_escape_btn;
+	GtkCheckButton        *confirm_on_escape_btn;
 
 	/* UI - Dossier delete page
 	 */
-	ofaDossierDeletePrefs  *dd_prefs;
+	ofaDossierDeletePrefs *dd_prefs;
 
 	/* UI - Account delete page
 	 */
 
 	/* UI - Locales
 	 */
-	myDateCombo        *p3_display_combo;
-	myDateCombo        *p3_check_combo;
-	myDecimalCombo     *p3_decimal_sep;
-	GtkWidget          *p3_thousand_sep;
+	myDateCombo           *p3_display_combo;
+	myDateCombo           *p3_check_combo;
+	myDecimalCombo        *p3_decimal_sep;
+	GtkWidget             *p3_thousand_sep;
 
 	/* Export settings
 	 */
-	ofaFileFormatPiece *export_settings;
-	GtkFileChooser     *p5_chooser;
+	ofaFileFormatBin      *export_settings;
+	GtkFileChooser        *p5_chooser;
 
 	/* Import settings
 	 */
-	ofaFileFormatPiece *import_settings;
+	ofaFileFormatBin      *import_settings;
 
 	/* UI - Plugin pages
 	 */
-	GList              *plugs;
+	GList                 *plugs;
 };
 
 #define SETTINGS_AMOUNT                 "UserAmount"
@@ -476,9 +476,9 @@ init_export_page( ofaPreferences *self )
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
 	settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
-	priv->export_settings = ofa_file_format_piece_new( settings );
+	priv->export_settings = ofa_file_format_bin_new( settings );
 	g_object_unref( settings );
-	ofa_file_format_piece_attach_to( priv->export_settings, GTK_CONTAINER( target ));
+	ofa_file_format_bin_attach_to( priv->export_settings, GTK_CONTAINER( target ));
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( container, "p52-folder" ));
 	str = ofa_settings_get_string( SETTINGS_EXPORT_FOLDER );
@@ -525,9 +525,9 @@ init_import_page( ofaPreferences *self )
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
 	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
-	priv->import_settings = ofa_file_format_piece_new( settings );
+	priv->import_settings = ofa_file_format_bin_new( settings );
 	g_object_unref( settings );
-	ofa_file_format_piece_attach_to( priv->import_settings, GTK_CONTAINER( target ));
+	ofa_file_format_bin_attach_to( priv->import_settings, GTK_CONTAINER( target ));
 }
 
 static void
@@ -894,7 +894,7 @@ do_update_export_page( ofaPreferences *self )
 
 	priv = self->priv;
 
-	ofa_file_format_piece_apply( priv->export_settings );
+	ofa_file_format_bin_apply( priv->export_settings );
 
 	text = gtk_file_chooser_get_current_folder( priv->p5_chooser );
 	if( text && g_utf8_strlen( text, -1 )){
@@ -910,7 +910,7 @@ do_update_import_page( ofaPreferences *self )
 
 	priv = self->priv;
 
-	ofa_file_format_piece_apply( priv->import_settings );
+	ofa_file_format_bin_apply( priv->import_settings );
 }
 
 static void

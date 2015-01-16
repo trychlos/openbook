@@ -37,20 +37,18 @@
 #include "api/ofo-ope-template.h"
 
 #include "ui/ofa-account-select.h"
+#include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-currency-combo.h"
-#include "ui/ofa-exe-forward-piece.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-select.h"
 
 /* private instance data
  */
-struct _ofaExeForwardPiecePrivate {
+struct _ofaClosingParmsBinPrivate {
 	gboolean        dispose_has_run;
-	gboolean        from_widget_finalized;
 
 	/* runtime data
 	 */
-	GtkContainer   *parent;
 	GtkWidget      *forward;
 	ofaMainWindow  *main_window;
 	ofoDossier     *dossier;
@@ -91,113 +89,108 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-exe-forward-piece.ui";
-static const gchar *st_ui_id            = "ExeForwardPiece";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-closing-parms-bin.ui";
+static const gchar *st_ui_id            = "ClosingParmsBin";
 
 static const gchar *st_def_sld_ope      = N_( "CLOSLD" );
 static const gchar *st_def_for_ope      = N_( "CLORAN" );
 
-G_DEFINE_TYPE( ofaExeForwardPiece, ofa_exe_forward_piece, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN )
 
-static void     on_widget_finalized( ofaExeForwardPiece *self, gpointer finalized_parent );
-static void     setup_dialog( ofaExeForwardPiece *self );
-static void     setup_closing_opes( ofaExeForwardPiece *piece );
-static void     setup_currency_accounts( ofaExeForwardPiece *piece );
-static void     on_ope_changed( GtkEditable *editable, ofaExeForwardPiece *self );
-static void     on_sld_ope_select( GtkButton *button, ofaExeForwardPiece *piece );
-static void     on_for_ope_select( GtkButton *button, ofaExeForwardPiece *piece );
-static void     add_empty_row( ofaExeForwardPiece *self );
-static void     add_button( ofaExeForwardPiece *self, const gchar *stock_id, gint column, gint row );
-static void     on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaExeForwardPiece *self );
-static void     on_account_changed( GtkEntry *entry, ofaExeForwardPiece *self );
-static void     on_account_select( ofaExeForwardPiece *self, gint row );
-static void     on_button_clicked( GtkButton *button, ofaExeForwardPiece *self );
-static void     remove_row( ofaExeForwardPiece *self, gint row );
-static void     set_currency( ofaExeForwardPiece *self, gint row, const gchar *code );
-static void     set_account( ofaExeForwardPiece *self, const gchar *currency, const gchar *account );
-static gint     find_currency_row( ofaExeForwardPiece *self, const gchar *currency );
-static GObject *get_currency_combo_at( ofaExeForwardPiece *self, gint row );
-static void     check_piece( ofaExeForwardPiece *piece );
-static gboolean check_for_ope( ofaExeForwardPiece *self, GtkWidget *entry, gchar **msg );
-static gboolean check_for_accounts( ofaExeForwardPiece *self, gchar **msg );
+static void     setup_dialog( ofaClosingParmsBin *self );
+static void     setup_closing_opes( ofaClosingParmsBin *bin );
+static void     setup_currency_accounts( ofaClosingParmsBin *bin );
+static void     on_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
+static void     on_sld_ope_select( GtkButton *button, ofaClosingParmsBin *bin );
+static void     on_for_ope_select( GtkButton *button, ofaClosingParmsBin *bin );
+static void     add_empty_row( ofaClosingParmsBin *self );
+static void     add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint row );
+static void     on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self );
+static void     on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self );
+static void     on_account_select( ofaClosingParmsBin *self, gint row );
+static void     on_button_clicked( GtkButton *button, ofaClosingParmsBin *self );
+static void     remove_row( ofaClosingParmsBin *self, gint row );
+static void     set_currency( ofaClosingParmsBin *self, gint row, const gchar *code );
+static void     set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *account );
+static gint     find_currency_row( ofaClosingParmsBin *self, const gchar *currency );
+static GObject *get_currency_combo_at( ofaClosingParmsBin *self, gint row );
+static void     check_bin( ofaClosingParmsBin *bin );
+static gboolean check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg );
+static gboolean check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
 
 static void
-exe_forward_piece_finalize( GObject *instance )
+closing_parms_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_exe_forward_piece_finalize";
+	static const gchar *thisfn = "ofa_closing_parms_bin_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_EXE_FORWARD_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_CLOSING_PARMS_BIN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_exe_forward_piece_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_closing_parms_bin_parent_class )->finalize( instance );
 }
 
 static void
-exe_forward_piece_dispose( GObject *instance )
+closing_parms_bin_dispose( GObject *instance )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_EXE_FORWARD_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_CLOSING_PARMS_BIN( instance ));
 
-	priv = OFA_EXE_FORWARD_PIECE( instance )->priv;
+	priv = OFA_CLOSING_PARMS_BIN( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->forward ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_exe_forward_piece_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_closing_parms_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_exe_forward_piece_init( ofaExeForwardPiece *self )
+ofa_closing_parms_bin_init( ofaClosingParmsBin *self )
 {
-	static const gchar *thisfn = "ofa_exe_forward_piece_init";
+	static const gchar *thisfn = "ofa_closing_parms_bin_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_EXE_FORWARD_PIECE( self ));
+	g_return_if_fail( self && OFA_IS_CLOSING_PARMS_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_EXE_FORWARD_PIECE, ofaExeForwardPiecePrivate );
+	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_CLOSING_PARMS_BIN, ofaClosingParmsBinPrivate );
 }
 
 static void
-ofa_exe_forward_piece_class_init( ofaExeForwardPieceClass *klass )
+ofa_closing_parms_bin_class_init( ofaClosingParmsBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_exe_forward_piece_class_init";
+	static const gchar *thisfn = "ofa_closing_parms_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = exe_forward_piece_dispose;
-	G_OBJECT_CLASS( klass )->finalize = exe_forward_piece_finalize;
+	G_OBJECT_CLASS( klass )->dispose = closing_parms_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = closing_parms_bin_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaExeForwardPiecePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaClosingParmsBinPrivate ));
 
 	/**
-	 * ofaExeForwardPiece::changed:
+	 * ofaClosingParmsBin::changed:
 	 *
 	 * This signal is sent when one of the field is changed.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaExeForwardPiece *piece,
+	 * void ( *handler )( ofaClosingParmsBin *bin,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"changed",
-				OFA_TYPE_EXE_FORWARD_PIECE,
+				OFA_TYPE_CLOSING_PARMS_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -208,116 +201,101 @@ ofa_exe_forward_piece_class_init( ofaExeForwardPieceClass *klass )
 }
 
 /**
- * ofa_exe_forward_piece_new:
+ * ofa_closing_parms_bin_new:
  */
-ofaExeForwardPiece *
-ofa_exe_forward_piece_new( void )
+ofaClosingParmsBin *
+ofa_closing_parms_bin_new( void )
 {
-	ofaExeForwardPiece *self;
+	ofaClosingParmsBin *self;
 
-	self = g_object_new( OFA_TYPE_EXE_FORWARD_PIECE, NULL );
+	self = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
 
 	return( self );
 }
 
 /**
- * ofa_exe_forward_piece_attach_to:
+ * ofa_closing_parms_bin_attach_to:
  */
 void
-ofa_exe_forward_piece_attach_to( ofaExeForwardPiece *piece, GtkContainer *new_parent )
+ofa_closing_parms_bin_attach_to( ofaClosingParmsBin *bin, GtkContainer *new_parent )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	GtkWidget *window;
+	GtkWidget *top_widget;
 
-	g_return_if_fail( piece && OFA_IS_EXE_FORWARD_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_CLOSING_PARMS_BIN( bin ));
 	g_return_if_fail( new_parent && GTK_IS_CONTAINER( new_parent ));
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
 		window = my_utils_builder_load_from_path( st_ui_xml, st_ui_id );
 		g_return_if_fail( window && GTK_IS_WINDOW( window ));
 
-		priv->forward = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "p-exe-forward" );
-		g_return_if_fail( priv->forward && GTK_IS_CONTAINER( priv->forward ));
+		top_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "closing-top" );
+		g_return_if_fail( top_widget && GTK_IS_CONTAINER( top_widget ));
 
-		gtk_widget_reparent( priv->forward, GTK_WIDGET( new_parent ));
-		priv->parent = new_parent;
-		g_object_weak_ref( G_OBJECT( priv->forward ), ( GWeakNotify ) on_widget_finalized, piece );
+		gtk_widget_reparent( top_widget, GTK_WIDGET( bin ));
+		gtk_container_add( new_parent, GTK_WIDGET( bin ));
 
-		setup_dialog( piece );
+		setup_dialog( bin );
+
+		gtk_widget_show_all( GTK_WIDGET( new_parent ));
 	}
 }
 
-static void
-on_widget_finalized( ofaExeForwardPiece *self, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "ofa_exe_forward_piece_on_widget_finalized";
-	ofaExeForwardPiecePrivate *priv;
-
-	g_debug( "%s: self=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) self, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
-
-	g_return_if_fail( self && OFA_IS_EXE_FORWARD_PIECE( self ));
-
-	priv = self->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( self );
-}
-
 /**
- * ofa_exe_forward_piece_set_main_window:
+ * ofa_closing_parms_bin_set_main_window:
  */
 void
-ofa_exe_forward_piece_set_main_window( ofaExeForwardPiece *piece, ofaMainWindow *main_window )
+ofa_closing_parms_bin_set_main_window( ofaClosingParmsBin *bin, ofaMainWindow *main_window )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 
-	g_return_if_fail( piece && OFA_IS_EXE_FORWARD_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_CLOSING_PARMS_BIN( bin ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
 		priv->main_window = main_window;
 		priv->dossier = ofa_main_window_get_dossier( main_window );
 
-		setup_dialog( piece );
+		setup_dialog( bin );
 	}
 }
 
 static void
-setup_dialog( ofaExeForwardPiece *piece )
+setup_dialog( ofaClosingParmsBin *bin )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
-	if( priv->dossier && priv->parent ){
+	if( priv->dossier ){
 
-		setup_closing_opes( piece );
-		setup_currency_accounts( piece );
+		setup_closing_opes( bin );
+		setup_currency_accounts( bin );
 	}
 }
 
 static void
-setup_closing_opes( ofaExeForwardPiece *piece )
+setup_closing_opes( ofaClosingParmsBin *bin )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	const gchar *cstr;
 	GtkWidget *widget, *image;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	/* operation mnemo for closing entries
 	 * - have a default value */
-	priv->sld_ope = my_utils_container_get_child_by_name( priv->parent, "p2-bope-entry" );
+	priv->sld_ope = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-entry" );
 	g_return_if_fail( priv->sld_ope && GTK_IS_ENTRY( priv->sld_ope ));
 	g_signal_connect(
-			G_OBJECT( priv->sld_ope ), "changed", G_CALLBACK( on_ope_changed ), piece );
+			G_OBJECT( priv->sld_ope ), "changed", G_CALLBACK( on_ope_changed ), bin );
 
 	cstr = ofo_dossier_get_sld_ope( priv->dossier );
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
@@ -325,18 +303,18 @@ setup_closing_opes( ofaExeForwardPiece *piece )
 	}
 	gtk_entry_set_text( GTK_ENTRY( priv->sld_ope ), cstr );
 
-	widget = my_utils_container_get_child_by_name( priv->parent, "p2-bope-select" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
 	gtk_button_set_image( GTK_BUTTON( widget ), image );
 	g_signal_connect(
-			G_OBJECT( widget ), "clicked", G_CALLBACK( on_sld_ope_select ), piece );
+			G_OBJECT( widget ), "clicked", G_CALLBACK( on_sld_ope_select ), bin );
 
 	/* forward ope template */
-	priv->for_ope = my_utils_container_get_child_by_name( priv->parent, "p2-fope-entry" );
+	priv->for_ope = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-entry" );
 	g_return_if_fail( priv->for_ope && GTK_IS_ENTRY( priv->for_ope ));
 	g_signal_connect(
-			G_OBJECT( priv->for_ope ), "changed", G_CALLBACK( on_ope_changed ), piece );
+			G_OBJECT( priv->for_ope ), "changed", G_CALLBACK( on_ope_changed ), bin );
 
 	cstr = ofo_dossier_get_forward_ope( priv->dossier );
 	if( !cstr || !g_utf8_strlen( cstr, -1 )){
@@ -344,33 +322,33 @@ setup_closing_opes( ofaExeForwardPiece *piece )
 	}
 	gtk_entry_set_text( GTK_ENTRY( priv->for_ope ), cstr );
 
-	widget = my_utils_container_get_child_by_name( priv->parent, "p2-fope-select" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-select" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
 	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
 	gtk_button_set_image( GTK_BUTTON( widget ), image );
-	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_for_ope_select ), piece );
+	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_for_ope_select ), bin );
 }
 
 static void
-setup_currency_accounts( ofaExeForwardPiece *piece )
+setup_currency_accounts( ofaClosingParmsBin *bin )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	gint i;
 	GSList *currencies, *it;
 	const gchar *currency, *account;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
-	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( priv->parent, "p2-grid" ));
+	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-grid" ));
 	priv->count = 1;
-	add_button( piece, "gtk-add", COL_ADD, priv->count );
+	add_button( bin, "gtk-add", COL_ADD, priv->count );
 
 	/* display all used currencies (from entries)
 	 * then display the corresponding account number (if set) */
 	priv->currencies = ofo_entry_get_currencies( priv->dossier );
 	for( i=1, it=priv->currencies ; it ; ++i, it=it->next ){
-		add_empty_row( piece );
-		set_currency( piece, i, ( const gchar * ) it->data );
+		add_empty_row( bin );
+		set_currency( bin, i, ( const gchar * ) it->data );
 	}
 
 	/* for currencies already recorded in dossier_cur,
@@ -379,23 +357,23 @@ setup_currency_accounts( ofaExeForwardPiece *piece )
 	for( it=currencies ; it ; it=it->next ){
 		currency = ( const gchar * ) it->data;
 		account = ofo_dossier_get_sld_account( priv->dossier, currency );
-		set_account( piece, currency, account );
+		set_account( bin, currency, account );
 	}
 }
 
 static void
-on_ope_changed( GtkEditable *editable, ofaExeForwardPiece *self )
+on_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self )
 {
-	check_piece( self );
+	check_bin( self );
 }
 
 static void
-on_sld_ope_select( GtkButton *button, ofaExeForwardPiece *piece )
+on_sld_ope_select( GtkButton *button, ofaClosingParmsBin *bin )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	gchar *mnemo;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	mnemo = ofa_ope_template_select_run(
 							priv->main_window,
@@ -407,16 +385,16 @@ on_sld_ope_select( GtkButton *button, ofaExeForwardPiece *piece )
 
 	/* re-check even if the content has not changed
 	 * which may happen after having created a operation template */
-	check_piece( piece );
+	check_bin( bin );
 }
 
 static void
-on_for_ope_select( GtkButton *button, ofaExeForwardPiece *piece )
+on_for_ope_select( GtkButton *button, ofaClosingParmsBin *bin )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	gchar *mnemo;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	mnemo = ofa_ope_template_select_run(
 							priv->main_window,
@@ -428,7 +406,7 @@ on_for_ope_select( GtkButton *button, ofaExeForwardPiece *piece )
 
 	/* re-check even if the content has not changed
 	 * which may happen after having created a operation template */
-	check_piece( piece );
+	check_bin( bin );
 }
 
 /*
@@ -437,9 +415,9 @@ on_for_ope_select( GtkButton *button, ofaExeForwardPiece *piece )
  * headers, but not counting the last row with just an 'Add' button.
  */
 static void
-add_empty_row( ofaExeForwardPiece *self )
+add_empty_row( ofaClosingParmsBin *self )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	GtkWidget *widget;
 	ofaCurrencyCombo *combo;
 	gint row;
@@ -482,7 +460,7 @@ add_empty_row( ofaExeForwardPiece *self )
  * add an 'Add' button to the row (counted from zero)
  */
 static void
-add_button( ofaExeForwardPiece *self, const gchar *stock_id, gint column, gint row )
+add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint row )
 {
 	GtkWidget *image;
 	GtkButton *button;
@@ -497,21 +475,21 @@ add_button( ofaExeForwardPiece *self, const gchar *stock_id, gint column, gint r
 }
 
 static void
-on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaExeForwardPiece *self )
+on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self )
 {
-	check_piece( self );
+	check_bin( self );
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaExeForwardPiece *self )
+on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self )
 {
-	check_piece( self );
+	check_bin( self );
 }
 
 static void
-on_account_select( ofaExeForwardPiece *self, gint row )
+on_account_select( ofaClosingParmsBin *self, gint row )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	GtkWidget *entry;
 	gchar *acc_number;
 
@@ -531,7 +509,7 @@ on_account_select( ofaExeForwardPiece *self, gint row )
 }
 
 static void
-on_button_clicked( GtkButton *button, ofaExeForwardPiece *self )
+on_button_clicked( GtkButton *button, ofaClosingParmsBin *self )
 {
 	gint column, row;
 
@@ -557,9 +535,9 @@ on_button_clicked( GtkButton *button, ofaExeForwardPiece *self )
  * headers, but not counting the last row with just an 'Add' button.
  */
 static void
-remove_row( ofaExeForwardPiece *self, gint row )
+remove_row( ofaClosingParmsBin *self, gint row )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	gint i, line;
 	GtkWidget *widget;
 
@@ -597,7 +575,7 @@ remove_row( ofaExeForwardPiece *self, gint row )
  * at initialization time, select the given currency at the given row
  */
 static void
-set_currency( ofaExeForwardPiece *self, gint row, const gchar *code )
+set_currency( ofaClosingParmsBin *self, gint row, const gchar *code )
 {
 	GObject *combo;
 
@@ -612,9 +590,9 @@ set_currency( ofaExeForwardPiece *self, gint row, const gchar *code )
  * at initialization time, set the given account for the given currency
  */
 static void
-set_account( ofaExeForwardPiece *self, const gchar *currency, const gchar *account )
+set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *account )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	gint row;
 	GtkWidget *entry;
 
@@ -635,9 +613,9 @@ set_account( ofaExeForwardPiece *self, const gchar *currency, const gchar *accou
 }
 
 static gint
-find_currency_row( ofaExeForwardPiece *self, const gchar *currency )
+find_currency_row( ofaClosingParmsBin *self, const gchar *currency )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	GObject *combo;
 	gint row, cmp;
 	gchar *selected;
@@ -664,9 +642,9 @@ find_currency_row( ofaExeForwardPiece *self, const gchar *currency )
 }
 
 static GObject *
-get_currency_combo_at( ofaExeForwardPiece *self, gint row )
+get_currency_combo_at( ofaClosingParmsBin *self, gint row )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	GtkWidget *align;
 	GObject *combo;
 
@@ -685,23 +663,23 @@ get_currency_combo_at( ofaExeForwardPiece *self, gint row )
 }
 
 static void
-check_piece( ofaExeForwardPiece *self )
+check_bin( ofaClosingParmsBin *self )
 {
 	g_signal_emit_by_name( self, "changed" );
 }
 
 /**
- * ofa_exe_forward_piece_is_valid:
+ * ofa_closing_parms_bin_is_valid:
  */
 gboolean
-ofa_exe_forward_piece_is_valid( ofaExeForwardPiece *piece, gchar **msg )
+ofa_closing_parms_bin_is_valid( ofaClosingParmsBin *bin, gchar **msg )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	gboolean ok;
 
-	g_return_val_if_fail( piece && OFA_IS_EXE_FORWARD_PIECE( piece ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_CLOSING_PARMS_BIN( bin ), FALSE );
 
-	priv = piece->priv;
+	priv = bin->priv;
 	ok = FALSE;
 
 	if( !priv->dispose_has_run ){
@@ -710,9 +688,9 @@ ofa_exe_forward_piece_is_valid( ofaExeForwardPiece *piece, gchar **msg )
 		if( msg ){
 			*msg = NULL;
 		}
-		if( ok ) ok &= check_for_ope( piece, priv->sld_ope, msg );
-		if( ok ) ok &= check_for_ope( piece, priv->for_ope, msg );
-		if( ok ) ok &= check_for_accounts( piece, msg );
+		if( ok ) ok &= check_for_ope( bin, priv->sld_ope, msg );
+		if( ok ) ok &= check_for_ope( bin, priv->for_ope, msg );
+		if( ok ) ok &= check_for_accounts( bin, msg );
 	}
 
 	return( ok );
@@ -722,9 +700,9 @@ ofa_exe_forward_piece_is_valid( ofaExeForwardPiece *piece, gchar **msg )
  * operation template must exist
  */
 static gboolean
-check_for_ope( ofaExeForwardPiece *self, GtkWidget *entry, gchar **msg )
+check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	const gchar *cstr;
 	ofoOpeTemplate *ope;
 
@@ -750,9 +728,9 @@ check_for_ope( ofaExeForwardPiece *self, GtkWidget *entry, gchar **msg )
 }
 
 static gboolean
-check_for_accounts( ofaExeForwardPiece *self, gchar **msg )
+check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	GSList *it;
 	gint row;
 	const gchar *acc_number, *acc_currency, *cstr;
@@ -852,21 +830,21 @@ check_for_accounts( ofaExeForwardPiece *self, gchar **msg )
 }
 
 /**
- * ofa_exe_forward_piece_apply:
+ * ofa_closing_parms_bin_apply:
  */
 void
-ofa_exe_forward_piece_apply( ofaExeForwardPiece *piece )
+ofa_closing_parms_bin_apply( ofaClosingParmsBin *bin )
 {
-	ofaExeForwardPiecePrivate *priv;
+	ofaClosingParmsBinPrivate *priv;
 	gint row;
 	GtkWidget *entry;
 	GObject *combo;
 	gchar *code;
 	const gchar *acc_number;
 
-	g_return_if_fail( piece && OFA_IS_EXE_FORWARD_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_CLOSING_PARMS_BIN( bin ));
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -879,7 +857,7 @@ ofa_exe_forward_piece_apply( ofaExeForwardPiece *piece )
 		ofo_dossier_reset_currencies( priv->dossier );
 
 		for( row=1 ; row<priv->count ; ++row ){
-			combo = get_currency_combo_at( piece, row );
+			combo = get_currency_combo_at( bin, row );
 			g_return_if_fail( OFA_IS_CURRENCY_COMBO( combo ));
 
 			code = ofa_currency_combo_get_selected( OFA_CURRENCY_COMBO( combo ));

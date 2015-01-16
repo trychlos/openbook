@@ -39,8 +39,8 @@
 
 #include "core/my-window-prot.h"
 
+#include "ui/ofa-dossier-new-bin.h"
 #include "ui/ofa-dossier-new-mini.h"
-#include "ui/ofa-dossier-new-piece.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -49,15 +49,15 @@ struct _ofaDossierNewMiniPrivate {
 
 	/* UI
 	 */
-	ofaDossierNewPiece *new_piece;
-	GtkWidget          *ok_btn;
+	ofaDossierNewBin *new_bin;
+	GtkWidget        *ok_btn;
 
 	/* result
 	 */
-	gboolean            dossier_defined;
-	gchar              *dname;
-	gchar              *account;
-	gchar              *password;
+	gboolean          dossier_defined;
+	gchar            *dname;
+	gchar            *account;
+	gchar            *password;
 };
 
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-new-mini.ui";
@@ -66,7 +66,7 @@ static const gchar *st_ui_id            = "DossierNewMiniDialog";
 G_DEFINE_TYPE( ofaDossierNewMini, ofa_dossier_new_mini, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_new_piece_changed( ofaDossierNewPiece *piece, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNewMini *self );
+static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNewMini *self );
 static void      check_for_enable_dlg( ofaDossierNewMini *self );
 static gboolean  is_validable( ofaDossierNewMini *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
@@ -198,13 +198,13 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
 
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-piece-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->new_piece = ofa_dossier_new_piece_new();
-	ofa_dossier_new_piece_attach_to( priv->new_piece, GTK_CONTAINER( parent ), group );
+	priv->new_bin = ofa_dossier_new_bin_new();
+	ofa_dossier_new_bin_attach_to( priv->new_bin, GTK_CONTAINER( parent ), group );
 	g_object_unref( group );
 
-	g_signal_connect( priv->new_piece, "changed", G_CALLBACK( on_new_piece_changed ), dialog );
+	g_signal_connect( priv->new_bin, "changed", G_CALLBACK( on_new_bin_changed ), dialog );
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
@@ -213,11 +213,11 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_new_piece_changed( ofaDossierNewPiece *piece, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNewMini *self )
+on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, void *infos, const gchar *account, const gchar *password, ofaDossierNewMini *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_mini_on_new_piece_changed";
+	static const gchar *thisfn = "ofa_dossier_new_mini_on_new_bin_changed";
 
-	g_debug( "%s: piece=%p, infos=%p", thisfn, ( void * ) piece, ( void * ) infos );
+	g_debug( "%s: bin=%p, infos=%p", thisfn, ( void * ) bin, ( void * ) infos );
 
 	check_for_enable_dlg( self );
 }
@@ -241,7 +241,7 @@ is_validable( ofaDossierNewMini *self )
 	gboolean ok;
 
 	priv = self->priv;
-	ok = ofa_dossier_new_piece_is_valid( priv->new_piece );
+	ok = ofa_dossier_new_bin_is_valid( priv->new_bin );
 
 	return( ok );
 }
@@ -253,10 +253,10 @@ v_quit_on_ok( myDialog *dialog )
 
 	priv = OFA_DOSSIER_NEW_MINI( dialog )->priv;
 
-	if( ofa_dossier_new_piece_apply( priv->new_piece )){
+	if( ofa_dossier_new_bin_apply( priv->new_bin )){
 		priv->dossier_defined = TRUE;
-		ofa_dossier_new_piece_get_dname( priv->new_piece, &priv->dname );
-		ofa_dossier_new_piece_get_credentials( priv->new_piece, &priv->account, &priv->password );
+		ofa_dossier_new_bin_get_dname( priv->new_bin, &priv->dname );
+		ofa_dossier_new_bin_get_credentials( priv->new_bin, &priv->account, &priv->password );
 	}
 
 	return( TRUE );

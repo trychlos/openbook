@@ -213,7 +213,7 @@ enum {
 #define RGBA_FUTURE                     "#ffe8a8"		/* pale orange background */
 #define RGBA_BALANCE                    PAGE_RGBA_FOOTER
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-view-entries.piece.ui";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-view-entries.ui";
 static const gchar *st_ui_id            = "ViewEntriesWindow";
 
 static const gchar *st_pref_selection   = "ViewEntriesSelection";

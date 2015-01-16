@@ -36,8 +36,8 @@
 #include "api/ofo-dossier.h"
 
 #include "core/my-window-prot.h"
-#include "core/ofa-admin-credentials-piece.h"
-#include "core/ofa-dbms-root-piece.h"
+#include "core/ofa-admin-credentials-bin.h"
+#include "core/ofa-dbms-root-bin.h"
 
 #include "ui/my-progress-bar.h"
 #include "ui/ofa-dossier-new-mini.h"
@@ -76,38 +76,38 @@ struct _ofaRestoreAssistantPrivate {
 
 	/* p1: select file to be imported
 	 */
-	GtkFileChooser           *p2_chooser;
-	gchar                    *p2_folder;
-	gchar                    *p2_fname;		/* the utf-8 to be restored filename */
+	GtkFileChooser         *p2_chooser;
+	gchar                  *p2_folder;
+	gchar                  *p2_fname;		/* the utf-8 to be restored filename */
 
 	/* p2: select the dossier target
 	 */
-	ofaDossierTreeview       *p3_dossier_treeview;
-	GtkWidget                *p3_new_dossier_btn;
-	gchar                    *p3_dossier;
-	gchar                    *p3_database;
-	ofaIDbms                 *p3_dbms;
+	ofaDossierTreeview     *p3_dossier_treeview;
+	GtkWidget              *p3_new_dossier_btn;
+	gchar                  *p3_dossier;
+	gchar                  *p3_database;
+	ofaIDbms               *p3_dbms;
 
 	/* p3: DBMS root account
 	 */
-	ofaDBMSRootPiece         *p4_piece;
-	gchar                    *p4_account;
-	gchar                    *p4_password;
+	ofaDBMSRootBin         *p4_dbms_credentials;
+	gchar                  *p4_account;
+	gchar                  *p4_password;
 
 	/* p4: dossier administrative credentials
 	 */
-	ofaAdminCredentialsPiece *p5_piece;
-	gchar                    *p5_account;
-	gchar                    *p5_password;
-	gboolean                  p5_open;
+	ofaAdminCredentialsBin *p5_admin_credentials;
+	gchar                  *p5_account;
+	gchar                  *p5_password;
+	gboolean                p5_open;
 
 	/* p5: restore the file, display the result
 	 */
-	GtkWidget                *p7_page;
+	GtkWidget              *p7_page;
 
 	/* runtime data
 	 */
-	GtkWidget                *current_page_w;
+	GtkWidget              *current_page_w;
 };
 
 /* the user preferences stored as a string list
@@ -131,12 +131,12 @@ static void            p3_on_dossier_new( GtkButton *button, ofaRestoreAssistant
 static void            p3_check_for_complete( ofaRestoreAssistant *self );
 static void            p3_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void            p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p4_on_dbms_root_changed( ofaDBMSRootPiece *piece, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
+static void            p4_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
 static void            p4_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p4_check_for_complete( ofaRestoreAssistant *self );
 static void            p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static void            p5_on_admin_credentials_changed( ofaDBMSRootPiece *piece, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
+static void            p5_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self );
 static void            p5_on_open_toggled( GtkToggleButton *button, ofaRestoreAssistant *self );
 static void            p5_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void            p5_check_for_complete( ofaRestoreAssistant *self );
@@ -530,19 +530,19 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-dra-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p4_piece = ofa_dbms_root_piece_new();
-	ofa_dbms_root_piece_attach_to( priv->p4_piece, GTK_CONTAINER( parent ), NULL );
-	ofa_dbms_root_piece_set_dossier( priv->p4_piece, priv->p3_dossier );
+	priv->p4_dbms_credentials = ofa_dbms_root_bin_new();
+	ofa_dbms_root_bin_attach_to( priv->p4_dbms_credentials, GTK_CONTAINER( parent ), NULL );
+	ofa_dbms_root_bin_set_dossier( priv->p4_dbms_credentials, priv->p3_dossier );
 
 	if( priv->p4_account && priv->p4_password ){
-		ofa_dbms_root_piece_set_credentials( priv->p4_piece, priv->p4_account, priv->p4_password );
+		ofa_dbms_root_bin_set_credentials( priv->p4_dbms_credentials, priv->p4_account, priv->p4_password );
 	}
 
-	g_signal_connect( priv->p4_piece, "changed", G_CALLBACK( p4_on_dbms_root_changed ), self );
+	g_signal_connect( priv->p4_dbms_credentials, "changed", G_CALLBACK( p4_on_dbms_root_changed ), self );
 }
 
 static void
-p4_on_dbms_root_changed( ofaDBMSRootPiece *piece, const gchar *account, const gchar *password, ofaRestoreAssistant *self )
+p4_on_dbms_root_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 
@@ -571,7 +571,7 @@ p4_check_for_complete( ofaRestoreAssistant *self )
 
 	priv = self->priv;
 
-	ok = ofa_dbms_root_piece_is_valid( priv->p4_piece );
+	ok = ofa_dbms_root_bin_is_valid( priv->p4_dbms_credentials );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
 }
@@ -612,11 +612,11 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-admin-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p5_piece = ofa_admin_credentials_piece_new();
-	ofa_admin_credentials_piece_attach_to( priv->p5_piece, GTK_CONTAINER( parent ));
+	priv->p5_admin_credentials = ofa_admin_credentials_bin_new();
+	ofa_admin_credentials_bin_attach_to( priv->p5_admin_credentials, GTK_CONTAINER( parent ));
 
 	g_signal_connect(
-			priv->p5_piece, "changed", G_CALLBACK( p5_on_admin_credentials_changed ), self );
+			priv->p5_admin_credentials, "changed", G_CALLBACK( p5_on_admin_credentials_changed ), self );
 
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-open" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
@@ -626,7 +626,7 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p5_on_admin_credentials_changed( ofaDBMSRootPiece *piece, const gchar *account, const gchar *password, ofaRestoreAssistant *self )
+p5_on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 
@@ -668,7 +668,7 @@ p5_check_for_complete( ofaRestoreAssistant *self )
 
 	priv = self->priv;
 
-	ok = ofa_admin_credentials_piece_is_valid( priv->p5_piece );
+	ok = ofa_admin_credentials_bin_is_valid( priv->p5_admin_credentials );
 
 	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_w, ok );
 }

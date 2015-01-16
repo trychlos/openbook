@@ -34,36 +34,33 @@
 #include "api/ofa-idbms.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-dbms-root-piece.h"
+#include "core/ofa-dbms-root-bin.h"
 
-#include "ui/ofa-dossier-new-piece.h"
+#include "ui/ofa-dossier-new-bin.h"
 
 /* private instance data
  */
-struct _ofaDossierNewPiecePrivate {
-	gboolean          dispose_has_run;
-	gboolean          from_widget_finalized;
+struct _ofaDossierNewBinPrivate {
+	gboolean        dispose_has_run;
 
 	/* UI
 	 */
-	GtkContainer     *parent;
-	GtkContainer     *container;
-	GtkSizeGroup     *group;
-	GtkWidget        *dbms_combo;
-	GtkWidget        *connect_infos;
-	ofaDBMSRootPiece *dbms_credentials;
-	GtkWidget        *msg_label;
-	GdkRGBA           color;
+	GtkSizeGroup   *group;
+	GtkWidget      *dbms_combo;
+	GtkWidget      *connect_infos;
+	ofaDBMSRootBin *dbms_credentials;
+	GtkWidget      *msg_label;
+	GdkRGBA         color;
 
 	/* runtime data
 	 */
-	gchar            *dname;
-	gchar            *prov_name;
-	gulong            prov_handler;
-	ofaIDbms         *prov_module;
-	void             *infos;			/* connection informations */
-	gchar            *account;
-	gchar            *password;
+	gchar          *dname;
+	gchar          *prov_name;
+	gulong          prov_handler;
+	ofaIDbms       *prov_module;
+	void           *infos;				/* connection informations */
+	gchar          *account;
+	gchar          *password;
 };
 
 /* columns in DBMS provider combo box
@@ -82,34 +79,33 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_piece_xml        = PKGUIDIR "/ofa-dossier-new-piece.ui";
-static const gchar *st_piece_id         = "DossierNewPiece";
+static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dossier-new-bin.ui";
+static const gchar *st_bin_id           = "DossierNewBin";
 
-G_DEFINE_TYPE( ofaDossierNewPiece, ofa_dossier_new_piece, G_TYPE_OBJECT )
+G_DEFINE_TYPE( ofaDossierNewBin, ofa_dossier_new_bin, GTK_TYPE_BIN )
 
-static void     on_widget_finalized( ofaDossierNewPiece *piece, GObject *finalized_parent );
-static void     setup_dbms_provider( ofaDossierNewPiece *piece );
-static void     setup_dialog( ofaDossierNewPiece *piece );
-static void     on_dname_changed( GtkEditable *editable, ofaDossierNewPiece *piece );
-static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewPiece *self );
-static void     on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDossierNewPiece *self );
-static void     on_dbms_credentials_changed( ofaDBMSRootPiece *piece, const gchar *account, const gchar *password, ofaDossierNewPiece *self );
-static void     check_for_enable_dlg( ofaDossierNewPiece *piece );
-static void     set_message( const ofaDossierNewPiece *piece, const gchar *msg );
+static void     setup_dbms_provider( ofaDossierNewBin *bin );
+static void     setup_dialog( ofaDossierNewBin *bin );
+static void     on_dname_changed( GtkEditable *editable, ofaDossierNewBin *bin );
+static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self );
+static void     on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDossierNewBin *self );
+static void     on_dbms_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNewBin *self );
+static void     check_for_enable_dlg( ofaDossierNewBin *bin );
+static void     set_message( const ofaDossierNewBin *bin, const gchar *msg );
 
 static void
-dossier_new_piece_finalize( GObject *instance )
+dossier_new_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_dossier_new_piece_finalize";
-	ofaDossierNewPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_dossier_new_bin_finalize";
+	ofaDossierNewBinPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_DOSSIER_NEW_PIECE( instance )->priv;
+	priv = OFA_DOSSIER_NEW_BIN( instance )->priv;
 
 	g_free( priv->dname );
 	g_free( priv->prov_name );
@@ -117,63 +113,59 @@ dossier_new_piece_finalize( GObject *instance )
 	g_free( priv->password );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_dossier_new_piece_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_dossier_new_bin_parent_class )->finalize( instance );
 }
 
 static void
-dossier_new_piece_dispose( GObject *instance )
+dossier_new_bin_dispose( GObject *instance )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW_PIECE( instance ));
+	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW_BIN( instance ));
 
-	priv = OFA_DOSSIER_NEW_PIECE( instance )->priv;
+	priv = OFA_DOSSIER_NEW_BIN( instance )->priv;
 
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->container ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_dossier_new_piece_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_dossier_new_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_dossier_new_piece_init( ofaDossierNewPiece *self )
+ofa_dossier_new_bin_init( ofaDossierNewBin *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_piece_instance_init";
+	static const gchar *thisfn = "ofa_dossier_new_bin_instance_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_DOSSIER_NEW_PIECE( self ));
+	g_return_if_fail( self && OFA_IS_DOSSIER_NEW_BIN( self ));
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-							self, OFA_TYPE_DOSSIER_NEW_PIECE, ofaDossierNewPiecePrivate );
+							self, OFA_TYPE_DOSSIER_NEW_BIN, ofaDossierNewBinPrivate );
 }
 
 static void
-ofa_dossier_new_piece_class_init( ofaDossierNewPieceClass *klass )
+ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_dossier_new_piece_class_init";
+	static const gchar *thisfn = "ofa_dossier_new_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = dossier_new_piece_dispose;
-	G_OBJECT_CLASS( klass )->finalize = dossier_new_piece_finalize;
+	G_OBJECT_CLASS( klass )->dispose = dossier_new_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = dossier_new_bin_finalize;
 
-	g_type_class_add_private( klass, sizeof( ofaDossierNewPiecePrivate ));
+	g_type_class_add_private( klass, sizeof( ofaDossierNewBinPrivate ));
 
 	/**
-	 * ofaDossierNewPiece::changed:
+	 * ofaDossierNewBin::changed:
 	 *
-	 * This signal is sent on the #ofaDossierNewPiece when any of the
+	 * This signal is sent on the #ofaDossierNewBin when any of the
 	 * underlying information is changed. This includes the dossier
 	 * name, the DBMS provider, the connection informations and the
 	 * DBMS root credentials
@@ -181,7 +173,7 @@ ofa_dossier_new_piece_class_init( ofaDossierNewPieceClass *klass )
 	 * Arguments is dossier name.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaDossierNewPiece *piece,
+	 * void ( *handler )( ofaDossierNewBin *bin,
 	 * 						const gchar      *dname,
 	 * 						void             *infos,
 	 * 						const gchar      *account,
@@ -190,7 +182,7 @@ ofa_dossier_new_piece_class_init( ofaDossierNewPieceClass *klass )
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"changed",
-				OFA_TYPE_DOSSIER_NEW_PIECE,
+				OFA_TYPE_DOSSIER_NEW_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -202,83 +194,66 @@ ofa_dossier_new_piece_class_init( ofaDossierNewPieceClass *klass )
 }
 
 /**
- * ofa_dossier_new_piece_new:
+ * ofa_dossier_new_bin_new:
  */
-ofaDossierNewPiece *
-ofa_dossier_new_piece_new( void )
+ofaDossierNewBin *
+ofa_dossier_new_bin_new( void )
 {
-	ofaDossierNewPiece *piece;
+	ofaDossierNewBin *bin;
 
-	piece = g_object_new( OFA_TYPE_DOSSIER_NEW_PIECE, NULL );
+	bin = g_object_new( OFA_TYPE_DOSSIER_NEW_BIN, NULL );
 
-	return( piece );
+	return( bin );
 }
 
 /**
- * ofa_dossier_new_piece_attach_to:
+ * ofa_dossier_new_bin_attach_to:
  */
 void
-ofa_dossier_new_piece_attach_to( ofaDossierNewPiece *piece, GtkContainer *parent, GtkSizeGroup *group )
+ofa_dossier_new_bin_attach_to( ofaDossierNewBin *bin, GtkContainer *parent, GtkSizeGroup *group )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 	GtkWidget *window, *widget;
 
-	g_return_if_fail( piece && OFA_IS_DOSSIER_NEW_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	g_return_if_fail( !group || GTK_IS_SIZE_GROUP( group ));
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
-		window = my_utils_builder_load_from_path( st_piece_xml, st_piece_id );
+		window = my_utils_builder_load_from_path( st_bin_xml, st_bin_id );
 		g_return_if_fail( window && GTK_IS_CONTAINER( window ));
 
 		widget = my_utils_container_get_child_by_name( GTK_CONTAINER( window ), "top-alignment" );
 		g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-		gtk_widget_reparent( widget, GTK_WIDGET( parent ));
-		priv->parent = parent;
-		priv->container = GTK_CONTAINER( widget );
+		gtk_widget_reparent( widget, GTK_WIDGET( bin ));
+		gtk_container_add( parent, GTK_WIDGET( bin ));
+
 		priv->group = group;
 
-		g_object_weak_ref( G_OBJECT( widget ), ( GWeakNotify ) on_widget_finalized, piece );
-
-		setup_dbms_provider( piece );
-		setup_dialog( piece );
+		setup_dbms_provider( bin );
+		setup_dialog( bin );
 
 		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
 }
 
 static void
-on_widget_finalized( ofaDossierNewPiece *piece, GObject *finalized_widget )
+setup_dbms_provider( ofaDossierNewBin *bin )
 {
-	static const gchar *thisfn = "ofa_dossier_new_piece_on_widget_finalized";
-	ofaDossierNewPiecePrivate *priv;
-
-	g_debug( "%s: piece=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) piece, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
-
-	priv = piece->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( piece );
-}
-
-static void
-setup_dbms_provider( ofaDossierNewPiece *piece )
-{
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 	GtkWidget *combo;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeIter iter;
 	GSList *prov_list, *ip;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
-	combo = my_utils_container_get_child_by_name( priv->container, "dn-provider" );
+	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-provider" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 	priv->dbms_combo = combo;
 
@@ -307,95 +282,93 @@ setup_dbms_provider( ofaDossierNewPiece *piece )
 
 	ofa_idbms_free_providers_list( prov_list );
 
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), piece );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), bin );
 
 	/* take a pointer on the parent container of the DBMS widget before
 	 *  selecting the default */
-	priv->connect_infos = my_utils_container_get_child_by_name( priv->container, "dn-connect-infos" );
+	priv->connect_infos = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-connect-infos" );
 	g_return_if_fail( priv->connect_infos && GTK_IS_CONTAINER( priv->connect_infos ));
 
 	gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
 }
 
 static void
-setup_dialog( ofaDossierNewPiece *piece )
+setup_dialog( ofaDossierNewBin *bin )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 	GtkWidget *label, *entry, *parent;
 
-	priv =piece->priv;
+	priv =bin->priv;
 
 	if( priv->group ){
-		label = my_utils_container_get_child_by_name( priv->container, "dn-label1" );
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label1" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		gtk_size_group_add_widget( priv->group, label );
 
-		label = my_utils_container_get_child_by_name( priv->container, "dn-label2" );
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-label2" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		gtk_size_group_add_widget( priv->group, label );
 	}
 
-	entry = my_utils_container_get_child_by_name( priv->container, "dn-dname" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-dname" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( entry, "changed", G_CALLBACK( on_dname_changed ), piece );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_dname_changed ), bin );
 
-	parent = my_utils_container_get_child_by_name( priv->container, "dn-dbms-credentials" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-dbms-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dbms_credentials = ofa_dbms_root_piece_new();
-	ofa_dbms_root_piece_attach_to( priv->dbms_credentials, GTK_CONTAINER( parent ), priv->group );
+	priv->dbms_credentials = ofa_dbms_root_bin_new();
+	ofa_dbms_root_bin_attach_to( priv->dbms_credentials, GTK_CONTAINER( parent ), priv->group );
 
 	g_signal_connect(
-			priv->dbms_credentials, "changed", G_CALLBACK( on_dbms_credentials_changed ), piece );
+			priv->dbms_credentials, "changed", G_CALLBACK( on_dbms_credentials_changed ), bin );
 
-	priv->msg_label = my_utils_container_get_child_by_name( priv->container, "dn-message" );
+	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-message" );
 	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
 	gdk_rgba_parse( &priv->color, "#ff0000" );
 }
 
 /**
- * ofa_dossier_new_piece_set_frame:
+ * ofa_dossier_new_bin_set_frame:
  *
  * This must be called after having attached the widget to its parent.
  */
 void
-ofa_dossier_new_piece_set_frame( ofaDossierNewPiece *piece, gboolean visible )
+ofa_dossier_new_bin_set_frame( ofaDossierNewBin *bin, gboolean visible )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 	GtkWidget *frame, *label;
 
-	g_return_if_fail( piece && OFA_IS_DOSSIER_NEW_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
 
-	priv = piece->priv;
-	g_return_if_fail( priv->container && GTK_IS_CONTAINER( priv->container ));
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
-		frame = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->container ), "dn-frame" );
+		frame = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-frame" );
 		g_return_if_fail( frame && GTK_IS_FRAME( frame ));
 		gtk_frame_set_shadow_type( GTK_FRAME( frame ), visible ? GTK_SHADOW_IN : GTK_SHADOW_NONE );
 
-		label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->container ), "dn-frame-label" );
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dn-frame-label" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		gtk_label_set_markup( GTK_LABEL( label ), visible ? _( "<b> Dossier properties </b>" ) : "" );
 
-		gtk_widget_show_all( GTK_WIDGET( priv->container ));
+		gtk_widget_show_all( GTK_WIDGET( bin ));
 	}
 }
 
 /**
- * ofa_dossier_new_piece_set_provider:
+ * ofa_dossier_new_bin_set_provider:
  *
  * This must be called after having attached the widget to its parent.
  */
 void
-ofa_dossier_new_piece_set_provider( ofaDossierNewPiece *piece, const gchar *provider )
+ofa_dossier_new_bin_set_provider( ofaDossierNewBin *bin, const gchar *provider )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
-	g_return_if_fail( piece && OFA_IS_DOSSIER_NEW_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
 
-	priv = piece->priv;
-	g_return_if_fail( priv->container && GTK_IS_CONTAINER( priv->container ));
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run && provider && g_utf8_strlen( provider, -1 )){
 
@@ -404,23 +377,23 @@ ofa_dossier_new_piece_set_provider( ofaDossierNewPiece *piece, const gchar *prov
 }
 
 static void
-on_dname_changed( GtkEditable *editable, ofaDossierNewPiece *piece )
+on_dname_changed( GtkEditable *editable, ofaDossierNewBin *bin )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	g_free( priv->dname );
 	priv->dname = g_strdup( gtk_entry_get_text( GTK_ENTRY( editable )));
 
-	check_for_enable_dlg( piece );
+	check_for_enable_dlg( bin );
 }
 
 static void
-on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewPiece *self )
+on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 {
-	static const gchar *thisfn = "ofa_dossier_new_piece_on_dbms_provider_changed";
-	ofaDossierNewPiecePrivate *priv;
+	static const gchar *thisfn = "ofa_dossier_new_bin_on_dbms_provider_changed";
+	ofaDossierNewBinPrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
 	GtkWidget *child;
@@ -487,11 +460,11 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewPiece *self )
  * and the DBMS root credentials
  */
 static void
-on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDossierNewPiece *self )
+on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDossierNewBin *self )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
-	g_debug( "ofa_dossier_new_piece_on_connect_infos_changed" );
+	g_debug( "ofa_dossier_new_bin_on_connect_infos_changed" );
 
 	priv = self->priv;
 	priv->infos = infos;
@@ -500,9 +473,9 @@ on_connect_infos_changed( ofaIDbms *instance, void *infos, ofaDossierNewPiece *s
 }
 
 static void
-on_dbms_credentials_changed( ofaDBMSRootPiece *piece, const gchar *account, const gchar *password, ofaDossierNewPiece *self )
+on_dbms_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNewBin *self )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
 	priv = self->priv;
 
@@ -516,34 +489,34 @@ on_dbms_credentials_changed( ofaDBMSRootPiece *piece, const gchar *account, cons
 }
 
 static void
-check_for_enable_dlg( ofaDossierNewPiece *piece )
+check_for_enable_dlg( ofaDossierNewBin *bin )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
-	g_signal_emit_by_name( piece, "changed", priv->dname, priv->infos, priv->account, priv->password );
+	g_signal_emit_by_name( bin, "changed", priv->dname, priv->infos, priv->account, priv->password );
 }
 
 /**
- * ofa_dossier_new_piece_is_valid:
+ * ofa_dossier_new_bin_is_valid:
  *
- * The piece of dialog is valid if :
+ * The bin of dialog is valid if :
  * - the dossier name is set and doesn't exist yet
  * - the connection informations and the DBMS root credentials are valid
  */
 gboolean
-ofa_dossier_new_piece_is_valid( const ofaDossierNewPiece *piece )
+ofa_dossier_new_bin_is_valid( const ofaDossierNewBin *bin )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 	gboolean ok, oka, okb, okc;
 	gchar *str;
 
-	g_return_val_if_fail( piece && OFA_IS_DOSSIER_NEW_PIECE( piece ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), FALSE );
 
-	priv = piece->priv;
+	priv = bin->priv;
 	ok = FALSE;
-	set_message( piece, "" );
+	set_message( bin, "" );
 
 	if( !priv->dispose_has_run ){
 
@@ -551,11 +524,11 @@ ofa_dossier_new_piece_is_valid( const ofaDossierNewPiece *piece )
 
 		/* check for dossier name */
 		if( !priv->dname || !g_utf8_strlen( priv->dname, -1 )){
-			set_message( piece, _( "Dossier name is not set" ));
+			set_message( bin, _( "Dossier name is not set" ));
 
 		} else if( ofa_settings_has_dossier( priv->dname )){
 			str = g_strdup_printf( _( "%s: dossier is already defined" ), priv->dname );
-			set_message( piece, str );
+			set_message( bin, str );
 			g_free( str );
 
 		} else {
@@ -567,7 +540,7 @@ ofa_dossier_new_piece_is_valid( const ofaDossierNewPiece *piece )
 
 		/* check for credentials */
 		okc = ofa_idbms_connect_ex( priv->prov_module, priv->infos, priv->account, priv->password );
-		ofa_dbms_root_piece_set_valid( priv->dbms_credentials, okc );
+		ofa_dbms_root_bin_set_valid( priv->dbms_credentials, okc );
 
 		ok = oka && okb && okc;
 	}
@@ -576,19 +549,19 @@ ofa_dossier_new_piece_is_valid( const ofaDossierNewPiece *piece )
 }
 
 /**
- * ofa_dossier_new_piece_apply:
+ * ofa_dossier_new_bin_apply:
  *
  * Define the dossier in user settings
  */
 gboolean
-ofa_dossier_new_piece_apply( const ofaDossierNewPiece *piece )
+ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 	gboolean ok;
 
-	g_return_val_if_fail( piece && OFA_IS_DOSSIER_NEW_PIECE( piece ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), FALSE );
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -601,19 +574,19 @@ ofa_dossier_new_piece_apply( const ofaDossierNewPiece *piece )
 }
 
 /**
- * ofa_dossier_new_piece_get_dname:
+ * ofa_dossier_new_bin_get_dname:
  *
  * Return the dossier name
  */
 void
-ofa_dossier_new_piece_get_dname( const ofaDossierNewPiece *piece, gchar **dname )
+ofa_dossier_new_bin_get_dname( const ofaDossierNewBin *bin, gchar **dname )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
-	g_return_if_fail( piece && OFA_IS_DOSSIER_NEW_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
 	g_return_if_fail( dname );
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -622,19 +595,19 @@ ofa_dossier_new_piece_get_dname( const ofaDossierNewPiece *piece, gchar **dname 
 }
 
 /**
- * ofa_dossier_new_piece_get_database:
+ * ofa_dossier_new_bin_get_database:
  *
  * Return the dossier name
  */
 void
-ofa_dossier_new_piece_get_database( const ofaDossierNewPiece *piece, gchar **database )
+ofa_dossier_new_bin_get_database( const ofaDossierNewBin *bin, gchar **database )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
-	g_return_if_fail( piece && OFA_IS_DOSSIER_NEW_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
 	g_return_if_fail( database );
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -644,18 +617,18 @@ ofa_dossier_new_piece_get_database( const ofaDossierNewPiece *piece, gchar **dat
 }
 
 /**
- * ofa_dossier_new_piece_get_credentials:
+ * ofa_dossier_new_bin_get_credentials:
  *
  * Return the content of DBMS root credentials
  */
 void
-ofa_dossier_new_piece_get_credentials( const ofaDossierNewPiece *piece, gchar **account, gchar **password )
+ofa_dossier_new_bin_get_credentials( const ofaDossierNewBin *bin, gchar **account, gchar **password )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
-	g_return_if_fail( piece && OFA_IS_DOSSIER_NEW_PIECE( piece ));
+	g_return_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ));
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( !priv->dispose_has_run ){
 
@@ -665,11 +638,11 @@ ofa_dossier_new_piece_get_credentials( const ofaDossierNewPiece *piece, gchar **
 }
 
 static void
-set_message( const ofaDossierNewPiece *piece, const gchar *msg )
+set_message( const ofaDossierNewBin *bin, const gchar *msg )
 {
-	ofaDossierNewPiecePrivate *priv;
+	ofaDossierNewBinPrivate *priv;
 
-	priv = piece->priv;
+	priv = bin->priv;
 
 	if( priv->msg_label ){
 

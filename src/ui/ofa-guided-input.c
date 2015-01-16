@@ -38,7 +38,7 @@
 #include "core/my-window-prot.h"
 
 #include "ui/ofa-guided-input.h"
-#include "ui/ofa-guided-input-piece.h"
+#include "ui/ofa-guided-input-bin.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -51,7 +51,7 @@ struct _ofaGuidedInputPrivate {
 
 	/* UI
 	 */
-	ofaGuidedInputPiece  *piece;
+	ofaGuidedInputBin    *input_bin;
 	GtkWidget            *ok_btn;
 };
 
@@ -61,7 +61,7 @@ static const gchar  *st_ui_id           = "GuidedInputDialog";
 G_DEFINE_TYPE( ofaGuidedInput, ofa_guided_input, MY_TYPE_DIALOG )
 
 static void      v_init_dialog( myDialog *dialog );
-static void      on_piece_changed( ofaGuidedInputPiece *piece, gboolean ok, ofaGuidedInput *self );
+static void      on_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedInput *self );
 static void      check_for_enable_dlg( ofaGuidedInput *self );
 static gboolean  v_quit_on_ok( myDialog *dialog );
 
@@ -171,12 +171,12 @@ v_init_dialog( myDialog *dialog )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->piece = ofa_guided_input_piece_new();
-	ofa_guided_input_piece_attach_to( priv->piece, GTK_CONTAINER( parent ));
-	ofa_guided_input_piece_set_main_window( priv->piece, MY_WINDOW( dialog )->prot->main_window );
-	ofa_guided_input_piece_set_ope_template( priv->piece, priv->model );
+	priv->input_bin = ofa_guided_input_bin_new();
+	ofa_guided_input_bin_attach_to( priv->input_bin, GTK_CONTAINER( parent ));
+	ofa_guided_input_bin_set_main_window( priv->input_bin, MY_WINDOW( dialog )->prot->main_window );
+	ofa_guided_input_bin_set_ope_template( priv->input_bin, priv->model );
 
-	g_signal_connect( priv->piece, "changed", G_CALLBACK( on_piece_changed ), dialog );
+	g_signal_connect( priv->input_bin, "changed", G_CALLBACK( on_piece_changed ), dialog );
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
@@ -185,7 +185,7 @@ v_init_dialog( myDialog *dialog )
 }
 
 static void
-on_piece_changed( ofaGuidedInputPiece *piece, gboolean ok, ofaGuidedInput *self )
+on_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedInput *self )
 {
 	static const gchar *thisfn = "ofa_guided_input_on_piece_changed";
 	ofaGuidedInputPrivate *priv;
@@ -207,8 +207,8 @@ check_for_enable_dlg( ofaGuidedInput *self )
 
 	priv = self->priv;
 
-	ok = ofa_guided_input_piece_is_valid( priv->piece );
-	on_piece_changed( priv->piece, ok, self );
+	ok = ofa_guided_input_bin_is_valid( priv->input_bin );
+	on_piece_changed( priv->input_bin, ok, self );
 }
 
 static gboolean
@@ -216,7 +216,7 @@ v_quit_on_ok( myDialog *dialog )
 {
 	gboolean ok;
 
-	ok = ofa_guided_input_piece_apply( OFA_GUIDED_INPUT( dialog )->priv->piece );
+	ok = ofa_guided_input_bin_apply( OFA_GUIDED_INPUT( dialog )->priv->input_bin );
 
 	return( ok );
 }

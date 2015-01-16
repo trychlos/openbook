@@ -38,11 +38,9 @@
  */
 struct _ofaDossierTreeviewPrivate {
 	gboolean          dispose_has_run;
-	gboolean          from_widget_finalized;
 
 	/* UI
 	 */
-	GtkWidget        *top_widget;
 	GtkTreeView      *tview;
 	ofaDossierStore  *store;
 
@@ -61,15 +59,14 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void       on_widget_finalized( ofaDossierTreeview *view, gpointer finalized_parent );
-static GtkWidget *get_top_widget( ofaDossierTreeview *self );
+static void       attach_top_widget( ofaDossierTreeview *self );
 static void       create_treeview_columns( ofaDossierTreeview *view );
 static void       create_treeview_store( ofaDossierTreeview *view );
 static void       on_row_selected( GtkTreeSelection *selection, ofaDossierTreeview *self );
 static void       on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self );
 static void       get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 
-G_DEFINE_TYPE( ofaDossierTreeview, ofa_dossier_treeview, G_TYPE_OBJECT );
+G_DEFINE_TYPE( ofaDossierTreeview, ofa_dossier_treeview, GTK_TYPE_BIN );
 
 static void
 dossier_treeview_finalize( GObject *instance )
@@ -101,10 +98,6 @@ dossier_treeview_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		if( !priv->from_widget_finalized ){
-			g_object_weak_unref(
-					G_OBJECT( priv->top_widget ), ( GWeakNotify ) on_widget_finalized, instance );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -199,7 +192,7 @@ ofa_dossier_treeview_new( void )
 
 	view = g_object_new( OFA_TYPE_DOSSIER_TREEVIEW, NULL );
 
-	get_top_widget( view );
+	attach_top_widget( view );
 	create_treeview_store( view );
 
 	return( view );
@@ -224,68 +217,48 @@ ofa_dossier_treeview_attach_to( ofaDossierTreeview *view, GtkContainer *parent )
 
 	if( !priv->dispose_has_run ){
 
-		gtk_container_add( parent, GTK_WIDGET( priv->top_widget ));
-		g_object_weak_ref( G_OBJECT( priv->top_widget ), ( GWeakNotify ) on_widget_finalized, view );
+		gtk_container_add( parent, GTK_WIDGET( view ));
 
 		gtk_widget_show_all( GTK_WIDGET( parent ));
 	}
-}
-
-static void
-on_widget_finalized( ofaDossierTreeview *view, gpointer finalized_widget )
-{
-	static const gchar *thisfn = "ofa_dossier_treeview_on_widget_finalized";
-	ofaDossierTreeviewPrivate *priv;
-
-	g_debug( "%s: view=%p, finalized_widget=%p (%s)",
-			thisfn, ( void * ) view, ( void * ) finalized_widget, G_OBJECT_TYPE_NAME( finalized_widget ));
-
-	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
-
-	priv = view->priv;
-	priv->from_widget_finalized = TRUE;
-
-	g_object_unref( view );
 }
 
 /*
  * call right after the object instanciation
  * if not already done, create a GtkTreeView inside of a GtkScrolledWindow
  */
-static GtkWidget *
-get_top_widget( ofaDossierTreeview *self )
+static void
+attach_top_widget( ofaDossierTreeview *self )
 {
 	ofaDossierTreeviewPrivate *priv;
+	GtkWidget *top_widget;
 	GtkTreeSelection *select;
 	GtkWidget *scrolled;
 
 	priv = self->priv;
 
-	if( !priv->top_widget ){
+	top_widget = gtk_frame_new( NULL );
+	gtk_frame_set_shadow_type( GTK_FRAME( top_widget ), GTK_SHADOW_IN );
 
-		priv->top_widget = gtk_frame_new( NULL );
-		gtk_frame_set_shadow_type( GTK_FRAME( priv->top_widget ), GTK_SHADOW_IN );
+	scrolled = gtk_scrolled_window_new( NULL, NULL );
+	gtk_scrolled_window_set_policy(
+			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
+	gtk_container_add( GTK_CONTAINER( top_widget ), scrolled );
 
-		scrolled = gtk_scrolled_window_new( NULL, NULL );
-		gtk_scrolled_window_set_policy(
-				GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-		gtk_container_add( GTK_CONTAINER( priv->top_widget ), scrolled );
+	priv->tview = GTK_TREE_VIEW( gtk_tree_view_new());
+	gtk_widget_set_hexpand( GTK_WIDGET( priv->tview ), TRUE );
+	gtk_widget_set_vexpand( GTK_WIDGET( priv->tview ), TRUE );
+	gtk_tree_view_set_headers_visible( priv->tview, FALSE );
+	gtk_container_add( GTK_CONTAINER( scrolled ), GTK_WIDGET( priv->tview ));
 
-		priv->tview = GTK_TREE_VIEW( gtk_tree_view_new());
-		gtk_widget_set_hexpand( GTK_WIDGET( priv->tview ), TRUE );
-		gtk_widget_set_vexpand( GTK_WIDGET( priv->tview ), TRUE );
-		gtk_tree_view_set_headers_visible( priv->tview, FALSE );
-		gtk_container_add( GTK_CONTAINER( scrolled ), GTK_WIDGET( priv->tview ));
+	g_signal_connect(
+			G_OBJECT( priv->tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
 
-		g_signal_connect(
-				G_OBJECT( priv->tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
+	select = gtk_tree_view_get_selection( priv->tview );
+	g_signal_connect(
+			G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
 
-		select = gtk_tree_view_get_selection( priv->tview );
-		g_signal_connect(
-				G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
-	}
-
-	return( priv->top_widget );
+	gtk_container_add( GTK_CONTAINER( self ), top_widget );
 }
 
 /**
@@ -348,7 +321,7 @@ create_treeview_columns( ofaDossierTreeview *view )
 		gtk_tree_view_append_column( priv->tview, column );
 	}
 
-	gtk_widget_show_all( GTK_WIDGET( priv->top_widget ));
+	gtk_widget_show_all( GTK_WIDGET( view ));
 }
 
 /*

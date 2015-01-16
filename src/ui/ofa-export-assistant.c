@@ -49,7 +49,7 @@
 
 #include "ui/my-progress-bar.h"
 #include "ui/ofa-export-assistant.h"
-#include "ui/ofa-file-format-piece.h"
+#include "ui/ofa-file-format-bin.h"
 #include "ui/ofa-main-window.h"
 
 /* private instance data
@@ -66,30 +66,30 @@ struct _ofaExportAssistantPrivate {
 
 	/* p2: select data type to be exported
 	 */
-	GSList             *p2_group;
-	GtkWidget          *p2_btn;
-	gint                p2_idx;
+	GSList           *p2_group;
+	GtkWidget        *p2_btn;
+	gint              p2_idx;
 
 	/* p3: select format
 	 */
-	ofaFileFormat      *p3_export_settings;
-	ofaFileFormatPiece *p3_settings_prefs;
+	ofaFileFormat    *p3_export_settings;
+	ofaFileFormatBin *p3_settings_prefs;
 
 	/* p4: output file
 	 */
-	GtkFileChooser     *p4_chooser;
-	gchar              *p4_fname;		/* the output file */
-	gchar              *p4_last_folder;
+	GtkFileChooser   *p4_chooser;
+	gchar            *p4_fname;		/* the output file */
+	gchar            *p4_last_folder;
 
 	/* p6: apply
 	 */
-	myProgressBar      *p6_bar;
-	ofaIExportable     *p6_base;
-	GtkWidget          *p6_page;
+	myProgressBar    *p6_bar;
+	ofaIExportable   *p6_base;
+	GtkWidget        *p6_page;
 
 	/* runtime data
 	 */
-	GtkWidget          *current_page_w;
+	GtkWidget        *current_page_w;
 };
 
 /* ExportAssistant Assistant
@@ -427,8 +427,8 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
 	priv->p3_export_settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
-	priv->p3_settings_prefs = ofa_file_format_piece_new( priv->p3_export_settings );
-	ofa_file_format_piece_attach_to( priv->p3_settings_prefs, GTK_CONTAINER( widget ));
+	priv->p3_settings_prefs = ofa_file_format_bin_new( priv->p3_export_settings );
+	ofa_file_format_bin_attach_to( priv->p3_settings_prefs, GTK_CONTAINER( widget ));
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-new-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -458,7 +458,7 @@ p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = self->priv;
 
-	ofa_file_format_piece_apply( priv->p3_settings_prefs );
+	ofa_file_format_bin_apply( priv->p3_settings_prefs );
 }
 
 /*

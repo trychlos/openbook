@@ -152,7 +152,7 @@ typedef struct {
 #define RGBA_NORMAL                     "#0000ff"		/* blue */
 #define RGBA_WARNING                    "#ff8000"		/* orange */
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-settlement.piece.ui";
+static const gchar *st_ui_xml           = PKGUIDIR "/ofa-settlement.ui";
 static const gchar *st_ui_id            = "SettlementWindow";
 
 static const gchar *st_pref_settlement  = "SettlementPrefs";
