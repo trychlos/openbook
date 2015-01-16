@@ -426,11 +426,6 @@
  574 2015- 1-10 Settlement: set the view sortable, defaulting to dope
                 ascending
 
- 575 2015- 1-10 Settlement: display settle balance with labels instead 
-                of insensitive entries
-                + add the currency
-                + red color if unbalanced
-
  579 2015- 1-11 ofa_list_store_on_dossier_finalized: store=0x967620 
                 (ofaCurrencyStore), ref_count=47, 
                 finalized_dossier=0x740430
@@ -2507,6 +2502,12 @@
  566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
                 of only Reconcil.
      2015- 1- 9 done - svn #4428
+
+ 575 2015- 1-10 Settlement: display settle balance with labels instead 
+                of insensitive entries
+                + add the currency
+                + red color if unbalanced
+     2015- 1-16 done - svn #4456
 
  576 2015- 1-10 Reconciliation: should use a filter instead of reloading
                 reconciliated/unreconciliated/all entries
