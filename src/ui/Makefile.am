@@ -129,12 +129,12 @@ openbook_SOURCES = \
 	ofa-dossier-store.h									\
 	ofa-dossier-treeview.c								\
 	ofa-dossier-treeview.h								\
-	ofa-exe-closing.c									\
-	ofa-exe-closing.h									\
 	ofa-exe-forward-piece.c								\
 	ofa-exe-forward-piece.h								\
 	ofa-exercice-combo.c								\
 	ofa-exercice-combo.h								\
+	ofa-exercice-close-assistant.c						\
+	ofa-exercice-close-assistant.h						\
 	ofa-exercice-store.c								\
 	ofa-exercice-store.h								\
 	ofa-exercice-treeview.c								\
@@ -253,8 +253,8 @@ ui_files = \
 	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
 	ofa-dossier-treeview.piece.ui						\
-	ofa-exe-closing.ui									\
 	ofa-exe-forward-piece.ui							\
+	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
 	ofa-file-format-piece.ui							\
 	ofa-guided-input.ui									\

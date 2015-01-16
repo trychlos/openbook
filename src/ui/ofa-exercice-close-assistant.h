@@ -24,13 +24,13 @@
  * $Id$
  */
 
-#ifndef __OFA_EXE_CLOSING_H__
-#define __OFA_EXE_CLOSING_H__
+#ifndef __OFA_EXERCICE_CLOSE_ASSISTANT_H__
+#define __OFA_EXERCICE_CLOSE_ASSISTANT_H__
 
 /**
- * SECTION: ofa_exe_closing
- * @short_description: #ofaExeClosing class definition.
- * @include: ui/ofa-exe-closing.h
+ * SECTION: ofa_exercice_close_assistant
+ * @short_description: #ofaExerciceCloseAssistant class definition.
+ * @include: ui/ofa-exercice-close-assistant.h
  *
  * Close the current exercice.
  *
@@ -87,34 +87,34 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_EXE_CLOSING                ( ofa_exe_closing_get_type())
-#define OFA_EXE_CLOSING( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_EXE_CLOSING, ofaExeClosing ))
-#define OFA_EXE_CLOSING_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_EXE_CLOSING, ofaExeClosingClass ))
-#define OFA_IS_EXE_CLOSING( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_EXE_CLOSING ))
-#define OFA_IS_EXE_CLOSING_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_EXE_CLOSING ))
-#define OFA_EXE_CLOSING_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_EXE_CLOSING, ofaExeClosingClass ))
+#define OFA_TYPE_EXERCICE_CLOSE_ASSISTANT                ( ofa_exercice_close_assistant_get_type())
+#define OFA_EXERCICE_CLOSE_ASSISTANT( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_EXERCICE_CLOSE_ASSISTANT, ofaExerciceCloseAssistant ))
+#define OFA_EXERCICE_CLOSE_ASSISTANT_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_EXERCICE_CLOSE_ASSISTANT, ofaExerciceCloseAssistantClass ))
+#define OFA_IS_EXERCICE_CLOSE_ASSISTANT( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_EXERCICE_CLOSE_ASSISTANT ))
+#define OFA_IS_EXERCICE_CLOSE_ASSISTANT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_EXERCICE_CLOSE_ASSISTANT ))
+#define OFA_EXERCICE_CLOSE_ASSISTANT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_EXERCICE_CLOSE_ASSISTANT, ofaExerciceCloseAssistantClass ))
 
-typedef struct _ofaExeClosingPrivate        ofaExeClosingPrivate;
+typedef struct _ofaExerciceCloseAssistantPrivate         ofaExerciceCloseAssistantPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myAssistant           parent;
+	myAssistant                       parent;
 
 	/*< private members >*/
-	ofaExeClosingPrivate *priv;
+	ofaExerciceCloseAssistantPrivate *priv;
 }
-	ofaExeClosing;
+	ofaExerciceCloseAssistant;
 
 typedef struct {
 	/*< public members >*/
-	myAssistantClass      parent;
+	myAssistantClass                  parent;
 }
-	ofaExeClosingClass;
+	ofaExerciceCloseAssistantClass;
 
-GType  ofa_exe_closing_get_type( void ) G_GNUC_CONST;
+GType  ofa_exercice_close_assistant_get_type( void ) G_GNUC_CONST;
 
-void   ofa_exe_closing_run     ( ofaMainWindow *parent );
+void   ofa_exercice_close_assistant_run     ( ofaMainWindow *parent );
 
 G_END_DECLS
 
-#endif /* __OFA_EXE_CLOSING_H__ */
+#endif /* __OFA_EXERCICE_CLOSE_ASSISTANT_H__ */
