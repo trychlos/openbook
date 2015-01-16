@@ -300,14 +300,15 @@ on_date_changed( GtkEditable *entry, ofaLedgerClose *self )
 		gtk_label_set_text( priv->message_label, _( "Invalid closing date" ));
 
 	} else {
-		/* the date must be less or equal that the end of exercice */
+		/* the date must be strictly less than the end of exercice */
 		exe_end = ofo_dossier_get_exe_end( MY_WINDOW( self )->prot->dossier );
-		if( !my_date_is_valid( exe_end ) || my_date_compare( &priv->closing, exe_end ) <= 0 ){
+		if( !my_date_is_valid( exe_end ) || my_date_compare( &priv->closing, exe_end ) < 0 ){
 			priv->valid = TRUE;
 			gtk_label_set_text( priv->message_label, "" );
 
 		} else {
-			gtk_label_set_text( priv->message_label, _( "Closing date is after the end of exercice" ));
+			gtk_label_set_text( priv->message_label,
+					_( "Closing date must be before the end of exercice" ));
 		}
 	}
 

@@ -411,9 +411,6 @@
  569 2015- 1-10 intermediate ledger closing: refuse to close at the 
                 date of the end of the exercice
 
- 570 2015- 1-10 refactor int-closing to "provisional closure" and
-                ledger-closure
-
  572 2015- 1-10 refactor: get rid of amounts, replacing them with
                 integers ?
 
@@ -2493,6 +2490,10 @@
  566 2015- 1- 8 ViewEntries: have a column Settled/Reconciliated instead
                 of only Reconcil.
      2015- 1- 9 done - svn #4428
+
+ 570 2015- 1-10 refactor int-closing to "provisional closure" and
+                ledger-closure
+     2015- 1-16 done - svn #4460
 
  571 2015- 1-10 refactor exe-closing to exe-closure-assistant
      2015- 1-16 done - svn #4459

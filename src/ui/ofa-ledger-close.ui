@@ -69,7 +69,7 @@
                     <property name="can_focus">False</property>
                     <property name="top_padding">4</property>
                     <property name="bottom_padding">4</property>
-                    <property name="left_padding">12</property>
+                    <property name="left_padding">4</property>
                     <property name="right_padding">4</property>
                     <child>
                       <placeholder/>
