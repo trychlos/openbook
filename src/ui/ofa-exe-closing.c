@@ -62,8 +62,7 @@
  */
 struct _ofaExeClosingPrivate {
 
-	GtkAssistant       *assistant;
-	GtkWidget          *page_w;
+	GtkWidget          *current_page_widget;
 
 	/* dossier
 	 */
@@ -127,22 +126,20 @@ static const gchar *st_ui_id            = "ExeClosingAssistant";
 
 G_DEFINE_TYPE( ofaExeClosing, ofa_exe_closing, MY_TYPE_ASSISTANT )
 
-static void             on_prepare( GtkAssistant *assistant, GtkWidget *page_widget, ofaExeClosing *self );
-static void             on_page_forward( ofaExeClosing *self, GtkWidget *page_widget, gint   page_num, void *empty );
-static void             p1_do_forward( ofaExeClosing *self, GtkWidget *page_widget );
-static void             p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
-static void             p2_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
+static void             p1_do_forward( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
+static void             p2_do_init( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
+static void             p2_display( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
 static void             p2_on_date_changed( GtkEditable *editable, ofaExeClosing *self );
 static void             p2_on_forward_changed( ofaExeForwardPiece *piece, ofaExeClosing *self );
 static void             p2_check_for_complete( ofaExeClosing *self );
-static void             p2_do_forward( ofaExeClosing *self, GtkWidget *page_widget );
-static void             p3_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
-static void             p3_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
+static void             p2_do_forward( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
+static void             p3_do_init( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
+static void             p3_display( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
 static void             p3_on_dbms_root_changed( ofaDBMSRootPiece *piece, const gchar *account, const gchar *password, ofaExeClosing *self );
 static void             p3_check_for_complete( ofaExeClosing *self );
-static void             p3_do_forward( ofaExeClosing *self, GtkWidget *page_widget );
-static void             p4_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
-static void             p4_checks( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
+static void             p3_do_forward( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
+static void             p4_do_init( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
+static void             p4_checks( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
 static gboolean         p4_check_entries_balance( ofaExeClosing *self );
 static gboolean         p4_check_ledgers_balance( ofaExeClosing *self );
 static gboolean         p4_check_accounts_balance( ofaExeClosing *self );
@@ -150,8 +147,7 @@ static myProgressBar   *get_new_bar( ofaExeClosing *self, const gchar *w_name );
 static ofaBalancesGrid *p4_get_new_balances( ofaExeClosing *self, const gchar *w_name );
 static void             p4_check_status( ofaExeClosing *self, gboolean ok, const gchar *w_name );
 static gboolean         p4_info_checks( ofaExeClosing *self );
-static void             on_apply( GtkAssistant *assistant, ofaExeClosing *self );
-static void             p6_do_close( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget );
+static void             p6_do_close( ofaExeClosing *self, gint page_num, GtkWidget *page_widget );
 static gboolean         p6_validate_entries( ofaExeClosing *self );
 static gboolean         p6_solde_accounts( ofaExeClosing *self );
 static gint             p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui );
@@ -163,6 +159,34 @@ static gboolean         p6_cleanup( ofaExeClosing *self );
 static gboolean         p6_forward( ofaExeClosing *self );
 static gboolean         p6_open( ofaExeClosing *self );
 static gboolean         p6_future( ofaExeClosing *self );
+
+static const ofsAssistant st_pages_cb [] = {
+		{ PAGE_INTRO,
+				NULL,
+				NULL,
+				( myAssistantCb ) p1_do_forward },
+		{ PAGE_PARMS,
+				( myAssistantCb ) p2_do_init,
+				( myAssistantCb ) p2_display,
+				( myAssistantCb ) p2_do_forward },
+		{ PAGE_DBMS,
+				( myAssistantCb ) p3_do_init,
+				( myAssistantCb ) p3_display,
+				( myAssistantCb ) p3_do_forward },
+		{ PAGE_CHECKS,
+				( myAssistantCb ) p4_do_init,
+				( myAssistantCb ) p4_checks,
+				NULL },
+		{ PAGE_CONFIRM,
+				NULL,
+				NULL,
+				NULL },
+		{ PAGE_CLOSE,
+				NULL,
+				( myAssistantCb ) p6_do_close,
+				NULL },
+		{ -1 }
+};
 
 static void
 exe_closing_finalize( GObject *instance )
@@ -255,110 +279,23 @@ ofa_exe_closing_run( ofaMainWindow *main_window )
 					MY_PROP_WINDOW_NAME, st_ui_id,
 					NULL );
 
-	g_signal_connect(
-			G_OBJECT( self ), MY_SIGNAL_PAGE_FORWARD, G_CALLBACK( on_page_forward ), NULL );
-
-	my_assistant_signal_connect( MY_ASSISTANT( self ), "prepare", G_CALLBACK( on_prepare ));
-	my_assistant_signal_connect( MY_ASSISTANT( self ), "apply", G_CALLBACK( on_apply ));
+	my_assistant_set_callbacks( MY_ASSISTANT( self ), st_pages_cb );
 
 	my_assistant_run( MY_ASSISTANT( self ));
-}
-
-static void
-on_prepare( GtkAssistant *assistant, GtkWidget *page_widget, ofaExeClosing *self )
-{
-	static const gchar *thisfn = "ofa_exe_closing_on_prepare";
-	gint page_num;
-
-	g_return_if_fail( assistant && GTK_IS_ASSISTANT( assistant ));
-	g_return_if_fail( page_widget && GTK_IS_WIDGET( page_widget ));
-	g_return_if_fail( self && OFA_IS_EXE_CLOSING( self ));
-
-	page_num = gtk_assistant_get_current_page( assistant );
-
-	g_debug( "%s: assistant=%p, page_widget=%p, page_num=%d, self=%p",
-			thisfn, ( void * ) assistant, ( void * ) page_widget, page_num, ( void * ) self );
-
-	switch( page_num ){
-		/* page_num=1 / p2  [Content] Enter closing parms */
-		case PAGE_PARMS:
-			if( !my_assistant_is_page_initialized( MY_ASSISTANT( self ), page_widget )){
-				p2_do_init( self, assistant, page_widget );
-				my_assistant_set_page_initialized( MY_ASSISTANT( self ), page_widget, TRUE );
-			}
-			p2_display( self, assistant, page_widget );
-			break;
-
-		/* page_num=2 / p3  [Content] Enter DBMS credentials */
-		case PAGE_DBMS:
-			if( !my_assistant_is_page_initialized( MY_ASSISTANT( self ), page_widget )){
-				p3_do_init( self, assistant, page_widget );
-				my_assistant_set_page_initialized( MY_ASSISTANT( self ), page_widget, TRUE );
-			}
-			p3_display( self, assistant, page_widget );
-			break;
-
-		/* page_num=3 / p4  [Progress] Check books */
-		case PAGE_CHECKS:
-			if( !my_assistant_is_page_initialized( MY_ASSISTANT( self ), page_widget )){
-				p4_do_init( self, assistant, page_widget );
-				my_assistant_set_page_initialized( MY_ASSISTANT( self ), page_widget, TRUE );
-			}
-			p4_checks( self, assistant, page_widget );
-			break;
-
-		/* page_num=4 / p5  [Confirm] confirm closing ope */
-		case PAGE_CONFIRM:
-			break;
-
-		/* page_num=5 / p6  [Progress] Close the exercice and print the result */
-		case PAGE_CLOSE:
-			p6_do_close( self, assistant, page_widget );
-			break;
-	}
-}
-
-static void
-on_page_forward( ofaExeClosing *self, GtkWidget *page_widget, gint page_num, void *empty )
-{
-	static const gchar *thisfn = "ofa_exe_closing_on_page_forward";
-
-	g_return_if_fail( self && OFA_IS_EXE_CLOSING( self ));
-	g_return_if_fail( page_widget && GTK_IS_WIDGET( page_widget ));
-
-	g_debug( "%s: self=%p, page_widget=%p, page_num=%d, empty=%p",
-			thisfn, ( void * ) self, ( void * ) page_widget, page_num, ( void * ) empty );
-
-	switch( page_num ){
-		/* p1 [Intro] */
-		case PAGE_INTRO:
-			p1_do_forward( self, page_widget );
-			break;
-
-		/* p2 [Content] Enter closing parms */
-		case PAGE_PARMS:
-			p2_do_forward( self, page_widget );
-			break;
-
-		/* p3 [Content] Enter DBMS credentials */
-		case PAGE_DBMS:
-			p3_do_forward( self, page_widget );
-			break;
-	}
 }
 
 /*
  * get some dossier data
  */
 static void
-p1_do_forward( ofaExeClosing *self, GtkWidget *page_widget )
+p1_do_forward( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 	static const gchar *thisfn = "ofa_exe_closing_p1_do_forward";
 	ofaExeClosingPrivate *priv;
 	ofoDossier *dossier;
 
-	g_debug( "%s: self=%p, page_widget=%p",
-			thisfn, ( void * ) self, ( void * ) page_widget );
+	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
 
 	priv = self->priv;
 	dossier = MY_WINDOW( self )->prot->dossier;
@@ -381,7 +318,7 @@ p1_do_forward( ofaExeClosing *self, GtkWidget *page_widget )
 }
 
 static void
-p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+p2_do_init( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExeClosingPrivate *priv;
 	GtkWidget *parent;
@@ -391,7 +328,6 @@ p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 	gint exe_length;
 
 	priv = self->priv;
-	priv->assistant = assistant;
 	dossier = MY_WINDOW( self )->prot->dossier;
 	exe_length = ofo_dossier_get_exe_length( dossier );
 
@@ -465,14 +401,14 @@ p2_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 			priv->p2_forward, MY_WINDOW( self )->prot->main_window );
 	g_signal_connect( G_OBJECT( priv->p2_forward ), "changed", G_CALLBACK( p2_on_forward_changed ), self );
 
-	gtk_assistant_set_page_complete( assistant, page_widget, FALSE );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
 }
 
 /*
  * check if the page is validable
  */
 static void
-p2_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+p2_display( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 	p2_check_for_complete( self );
 }
@@ -548,7 +484,7 @@ p2_check_for_complete( ofaExeClosing *self )
  * as all parameters have been checked ok, save in dossier
  */
 static void
-p2_do_forward( ofaExeClosing *self, GtkWidget *page_widget )
+p2_do_forward( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExeClosingPrivate *priv;
 	const GDate *begin_cur, *end_cur;
@@ -571,20 +507,18 @@ p2_do_forward( ofaExeClosing *self, GtkWidget *page_widget )
 }
 
 static void
-p3_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+p3_do_init( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 	static const gchar *thisfn = "ofa_exe_closing_p3_do_init";
 	ofaExeClosingPrivate *priv;
 	GtkWidget *parent;
 	const gchar *dname;
 
-	g_debug( "%s: self=%p, assistant=%p, page=%p (%s)",
-			thisfn,
-			( void * ) self,
-			( void * ) assistant,
-			( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
+	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
 
 	priv = self->priv;
+	priv->current_page_widget = page_widget;
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p3-dbms" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -600,11 +534,11 @@ p3_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget
 
 	g_signal_connect( priv->p3_dbms_piece, "changed", G_CALLBACK( p3_on_dbms_root_changed ), self );
 
-	gtk_assistant_set_page_complete( assistant, page_widget, FALSE );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
 }
 
 static void
-p3_display( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+p3_display( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 	p3_check_for_complete( self );
 }
@@ -635,42 +569,40 @@ p3_check_for_complete( ofaExeClosing *self )
 
 	ok = ofa_dbms_root_piece_is_valid( priv->p3_dbms_piece );
 
-	my_assistant_set_page_complete( MY_ASSISTANT( self ), PAGE_DBMS, ok );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, ok );
 }
 
 static void
-p3_do_forward( ofaExeClosing *self, GtkWidget *page_widget )
+p3_do_forward( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 }
 
 static void
-p4_do_init( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+p4_do_init( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExeClosingPrivate *priv;
 
 	priv = self->priv;
 
 	priv->p4_done = FALSE;
+	priv->current_page_widget = page_widget;
 }
 
 /*
  * begins the checks before exercice closing
  */
 static void
-p4_checks( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+p4_checks( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExeClosingPrivate *priv;
-	gint page_num;
 
 	priv = self->priv;
 
-	gtk_assistant_set_page_complete( assistant, page_widget, priv->p4_done );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, priv->p4_done );
 
 	if( !priv->p4_done ){
 
-		page_num = gtk_assistant_get_current_page( assistant );
-
-		priv->page_w = gtk_assistant_get_nth_page( assistant, page_num );
+		priv->current_page_widget = page_widget;
 		priv->p4_entries_ok = FALSE;
 		priv->p4_ledgers_ok = FALSE;
 		priv->p4_accounts_ok = FALSE;
@@ -693,7 +625,7 @@ p4_check_entries_balance( ofaExeClosing *self )
 
 	bar = get_new_bar( self, "p4-entry-parent" );
 	grid = p4_get_new_balances( self, "p4-entry-bals" );
-	gtk_widget_show_all( priv->page_w );
+	gtk_widget_show_all( priv->current_page_widget );
 
 	priv->p4_entries_ok = ofa_misc_chkbalent_run(
 			MY_WINDOW( self )->prot->dossier, &priv->p4_entries_list, bar, grid );
@@ -721,7 +653,7 @@ p4_check_ledgers_balance( ofaExeClosing *self )
 
 	bar = get_new_bar( self, "p4-ledger-parent" );
 	grid = p4_get_new_balances( self, "p4-ledger-bals" );
-	gtk_widget_show_all( priv->page_w );
+	gtk_widget_show_all( priv->current_page_widget );
 
 	priv->p4_ledgers_ok = ofa_misc_chkballed_run(
 			MY_WINDOW( self )->prot->dossier, &priv->p4_ledgers_list, bar, grid );
@@ -750,7 +682,7 @@ p4_check_accounts_balance( ofaExeClosing *self )
 
 	bar = get_new_bar( self, "p4-account-parent" );
 	grid = p4_get_new_balances( self, "p4-account-bals" );
-	gtk_widget_show_all( priv->page_w );
+	gtk_widget_show_all( priv->current_page_widget );
 
 	priv->p4_accounts_ok = ofa_misc_chkbalacc_run(
 			MY_WINDOW( self )->prot->dossier, &priv->p4_accounts_list, bar, grid );
@@ -760,7 +692,7 @@ p4_check_accounts_balance( ofaExeClosing *self )
 	/* next: if all checks complete and ok ?
 	 * set priv->p4_done */
 	complete = p4_info_checks( self );
-	gtk_assistant_set_page_complete( priv->assistant, priv->page_w, complete );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, complete );
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
@@ -769,13 +701,12 @@ p4_check_accounts_balance( ofaExeClosing *self )
 static myProgressBar *
 get_new_bar( ofaExeClosing *self, const gchar *w_name )
 {
-	ofaExeClosingPrivate *priv;
+	GtkAssistant *toplevel;
 	GtkWidget *parent;
 	myProgressBar *bar;
 
-	priv = self->priv;
-
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->assistant ), w_name );
+	toplevel = my_assistant_get_assistant( MY_ASSISTANT( self ));
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
 	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
 	bar = my_progress_bar_new();
 	my_progress_bar_attach_to( bar, GTK_CONTAINER( parent ));
@@ -786,13 +717,12 @@ get_new_bar( ofaExeClosing *self, const gchar *w_name )
 static ofaBalancesGrid *
 p4_get_new_balances( ofaExeClosing *self, const gchar *w_name )
 {
-	ofaExeClosingPrivate *priv;
 	GtkWidget *parent;
+	GtkAssistant *toplevel;
 	ofaBalancesGrid *grid;
 
-	priv = self->priv;
-
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->assistant ), w_name );
+	toplevel = my_assistant_get_assistant( MY_ASSISTANT( self ));
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
 	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
 	grid = ofa_balances_grid_new();
 	ofa_balances_grid_attach_to( grid, GTK_CONTAINER( parent ));
@@ -806,13 +736,12 @@ p4_get_new_balances( ofaExeClosing *self, const gchar *w_name )
 static void
 p4_check_status( ofaExeClosing *self, gboolean ok, const gchar *w_name )
 {
-	ofaExeClosingPrivate *priv;
+	GtkAssistant *toplevel;
 	GtkWidget *label;
 	GdkRGBA color;
 
-	priv = self->priv;
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->assistant ), w_name );
+	toplevel = my_assistant_get_assistant( MY_ASSISTANT( self ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	gdk_rgba_parse( &color, ok ? "#000000" : "#ff0000" );
@@ -860,7 +789,7 @@ p4_info_checks( ofaExeClosing *self )
 				priv->p4_entries_list, priv->p4_ledgers_list, priv->p4_accounts_list );
 
 		label = my_utils_container_get_child_by_name(
-						GTK_CONTAINER( priv->page_w ), "p4-label-end" );
+						GTK_CONTAINER( priv->current_page_widget ), "p4-label-end" );
 		g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 
 		if( priv->p4_result ){
@@ -889,26 +818,18 @@ p4_info_checks( ofaExeClosing *self )
 }
 
 static void
-on_apply( GtkAssistant *assistant, ofaExeClosing *self )
-{
-	static const gchar *thisfn = "ofa_exe_closing_on_apply";
-
-	g_debug( "%s: assistant=%p, self=%p", thisfn, ( void * ) assistant, ( void * ) self );
-}
-
-static void
-p6_do_close( ofaExeClosing *self, GtkAssistant *assistant, GtkWidget *page_widget )
+p6_do_close( ofaExeClosing *self, gint page_num, GtkWidget *page_widget )
 {
 	static const gchar *thisfn = "ofa_exe_closing_p6_do_close";
 	ofaExeClosingPrivate *priv;
 
-	g_debug( "%s: self=%p, assistant=%p, page_widget=%p",
-			thisfn, ( void * ) self, ( void * ) assistant, ( void * ) page_widget );
+	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
 
-	gtk_assistant_set_page_complete( assistant, page_widget, FALSE );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), page_widget, FALSE );
 
 	priv = self->priv;
-	priv->page_w = page_widget;
+	priv->current_page_widget = page_widget;
 
 	g_idle_add(( GSourceFunc ) p6_validate_entries, self );
 }
@@ -940,7 +861,7 @@ p6_validate_entries( ofaExeClosing *self )
 	my_utils_stamp_set_now( &stamp_start );
 
 	bar = get_new_bar( self, "p6-validating" );
-	gtk_widget_show_all( priv->page_w );
+	gtk_widget_show_all( priv->current_page_widget );
 
 	for( i=1, it=entries ; it ; ++i, it=it->next ){
 		ofo_entry_validate( OFO_ENTRY( it->data ), dossier );
@@ -1038,7 +959,7 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 
 	if( with_ui ){
 		bar = get_new_bar( self, "p6-balancing" );
-		gtk_widget_show_all( priv->page_w );
+		gtk_widget_show_all( priv->current_page_widget );
 	}
 
 	priv->p6_forwards = NULL;
@@ -1173,8 +1094,8 @@ p6_do_solde_accounts( ofaExeClosing *self, gboolean with_ui )
 				_( "%d errors have been found while computing accounts soldes" ), errors );
 		my_utils_dialog_error( msg );
 		g_free( msg );
-		gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
-		gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
+		my_assistant_set_page_type( MY_ASSISTANT( self ), priv->current_page_widget, GTK_ASSISTANT_PAGE_SUMMARY );
+		my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, TRUE );
 	}
 
 	return( errors );
@@ -1227,7 +1148,7 @@ p6_close_ledgers( ofaExeClosing *self )
 	ledgers = ofo_ledger_get_dataset( dossier );
 	count = g_list_length( ledgers );
 	bar = get_new_bar( self, "p6-ledgers" );
-	gtk_widget_show_all( priv->page_w );
+	gtk_widget_show_all( priv->current_page_widget );
 
 	end_cur = ofo_dossier_get_exe_end( dossier );
 
@@ -1266,7 +1187,7 @@ p6_archive_exercice( ofaExeClosing *self )
 	priv = self->priv;
 	ok = p6_do_archive_exercice( self, FALSE );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->page_w ), "p6-archived" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->current_page_widget ), "p6-archived" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
 
@@ -1309,8 +1230,8 @@ p6_do_archive_exercice( ofaExeClosing *self, gboolean with_ui )
 				priv->dbms, priv->dname, priv->p3_account, priv->p3_password,
 				priv->cur_account, begin_next, end_next )){
 		my_utils_dialog_error( _( "Unable to archive the dossier" ));
-		gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
-		gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
+		my_assistant_set_page_type( MY_ASSISTANT( self ), priv->current_page_widget, GTK_ASSISTANT_PAGE_SUMMARY );
+		my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, TRUE );
 
 	} else {
 		/* open the new exercice */
@@ -1415,7 +1336,7 @@ p6_cleanup( ofaExeClosing *self )
 		g_free( query );
 	}
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->page_w ), "p6-cleanup" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->current_page_widget ), "p6-cleanup" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
 
@@ -1423,8 +1344,8 @@ p6_cleanup( ofaExeClosing *self )
 		g_idle_add(( GSourceFunc ) p6_forward, self );
 
 	} else {
-		gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
-		gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
+		my_assistant_set_page_type( MY_ASSISTANT( self ), priv->current_page_widget, GTK_ASSISTANT_PAGE_SUMMARY );
+		my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, TRUE );
 	}
 
 	/* do not continue and remove from idle callbacks list */
@@ -1452,7 +1373,7 @@ p6_forward( ofaExeClosing *self )
 	dossier = ofa_main_window_get_dossier( MY_WINDOW( self )->prot->main_window );
 
 	bar = get_new_bar( self, "p6-forward" );
-	gtk_widget_show_all( priv->page_w );
+	gtk_widget_show_all( priv->current_page_widget );
 
 	count = g_list_length( priv->p6_forwards );
 
@@ -1505,7 +1426,7 @@ p6_open( ofaExeClosing *self )
 	count = g_list_length( accounts );
 
 	bar = get_new_bar( self, "p6-open" );
-	gtk_widget_show_all( priv->page_w );
+	gtk_widget_show_all( priv->current_page_widget );
 
 	for( i=1, it=accounts ; it ; ++i, it=it->next ){
 		account = OFO_ACCOUNT( it->data );
@@ -1553,7 +1474,7 @@ p6_future( ofaExeClosing *self )
 	count = g_list_length( entries );
 
 	bar = get_new_bar( self, "p6-future" );
-	gtk_widget_show_all( priv->page_w );
+	gtk_widget_show_all( priv->current_page_widget );
 
 	for( i=1, it=entries ; it ; ++i, it=it->next ){
 		entry = OFO_ENTRY( it->data );
@@ -1574,15 +1495,15 @@ p6_future( ofaExeClosing *self )
 		g_signal_emit_by_name( bar, "text", "0/0" );
 	}
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->page_w ), "p6-summary" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->current_page_widget ), "p6-summary" );
 	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
 
 	gtk_label_set_text( GTK_LABEL( label ),
 			_( "The previous exercice has been successfully closed.\n"
 				"The next exercice has been automatically defined and opened." ));
 
-	gtk_assistant_set_page_type( priv->assistant, priv->page_w, GTK_ASSISTANT_PAGE_SUMMARY );
-	gtk_assistant_set_page_complete( priv->assistant, priv->page_w, TRUE );
+	my_assistant_set_page_type( MY_ASSISTANT( self ), priv->current_page_widget, GTK_ASSISTANT_PAGE_SUMMARY );
+	my_assistant_set_page_complete( MY_ASSISTANT( self ), priv->current_page_widget, TRUE );
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );

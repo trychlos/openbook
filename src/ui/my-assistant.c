@@ -43,14 +43,20 @@ struct _myAssistantPrivate {
 
 	/* runtime data
 	 */
-	GtkAssistant  *assistant;
-	gint           prev_page_num;
-	gboolean       escape_key_pressed;
+	GtkAssistant       *assistant;
+	const ofsAssistant *cbs;
+
+	GtkWidget          *prev_page_widget;
+	gint                prev_page_num;
+
+	gboolean            escape_key_pressed;
 };
 
 /* signals defined here
  */
 enum {
+	PAGE_INIT,
+	PAGE_DISPLAY,
 	PAGE_FORWARD,
 	N_SIGNALS
 };
@@ -65,7 +71,7 @@ typedef struct {
 
 #define DATA_PAGE                       "ofa-assistant-data-page"
 
-static guint st_signals[N_SIGNALS] = { 0 };
+static guint st_signals[N_SIGNALS]      = { 0 };
 
 G_DEFINE_TYPE( myAssistant, my_assistant, MY_TYPE_WINDOW )
 
@@ -77,6 +83,9 @@ static gboolean    is_willing_to_quit( myAssistant *self );
 static void        on_close( GtkAssistant *assistant, myAssistant *self );
 static void        do_close( myAssistant *self );
 static void        on_page_finalized( sAssistant *sdata, gpointer finalized_page );
+static void        on_page_init( myAssistant *assistant, GtkWidget *page_w, gint page_num, void *empty );
+static void        on_page_display( myAssistant *assistant, GtkWidget *page_w, gint page_num, void *empty );
+static void        on_page_forward( myAssistant *assistant, GtkWidget *page_w, gint page_num, void *empty );
 static sAssistant *assistant_get_data( myAssistant *self, GtkWidget *page );
 
 static void
@@ -152,6 +161,57 @@ my_assistant_class_init( myAssistantClass *klass )
 	g_type_class_add_private( klass, sizeof( myAssistantPrivate ));
 
 	/**
+	 * myAssistant::ofa-signal-page-init:
+	 *
+	 * This signal is sent when first coming in a page.
+	 * it is so time to initialize it.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( myAssistant *assistant,
+	 * 						GtkWidget *page_widget,
+	 * 						gint       page_num,
+	 * 						gpointer   user_data );
+	 */
+	st_signals[ PAGE_INIT ] = g_signal_new_class_handler(
+				MY_SIGNAL_PAGE_INIT,
+				MY_TYPE_ASSISTANT,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_POINTER,
+				G_TYPE_INT );
+
+	/**
+	 * myAssistant::ofa-signal-page-display:
+	 *
+	 * This signal is sent when the page is about to be displayed,
+	 * whether it has just been initialized, of the user comes back
+	 * from another page.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( myAssistant *assistant,
+	 * 						GtkWidget *page_widget,
+	 * 						gint       page_num,
+	 * 						gpointer   user_data );
+	 */
+	st_signals[ PAGE_DISPLAY ] = g_signal_new_class_handler(
+				MY_SIGNAL_PAGE_DISPLAY,
+				MY_TYPE_ASSISTANT,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_POINTER,
+				G_TYPE_INT );
+
+	/**
 	 * myAssistant::ofa-signal-page-forward:
 	 *
 	 * This signal is sent when the user has aknowledged the page
@@ -159,7 +219,7 @@ my_assistant_class_init( myAssistantClass *klass )
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( myAssistant *assistant,
-	 * 						GtkWidget *page,
+	 * 						GtkWidget *page_widget,
 	 * 						gint       page_num,
 	 * 						gpointer   user_data );
 	 */
@@ -207,13 +267,21 @@ do_setup_assistant( myAssistant *self )
 	g_signal_connect( priv->assistant, "cancel",  G_CALLBACK( on_cancel ),  self );
 	g_signal_connect( priv->assistant, "close",   G_CALLBACK( on_close ),   self );
 
+	g_signal_connect( self, MY_SIGNAL_PAGE_INIT, G_CALLBACK( on_page_init ), NULL );
+	g_signal_connect( self, MY_SIGNAL_PAGE_DISPLAY, G_CALLBACK( on_page_display ), NULL );
+	g_signal_connect( self, MY_SIGNAL_PAGE_FORWARD, G_CALLBACK( on_page_forward ), NULL );
+
 	gtk_widget_show_all( GTK_WIDGET( priv->assistant ));
 }
 
 /*
  * Preparing a page:
- * - if this is the first time, then first send the 'create' message
+ * - if this is the first time, then first send the 'init' message
  * - only then, send the 'display' message
+ *
+ * The "prepare" signal for the first page (usually Introduction) is
+ * sent during myAssistant construction, so before the derived class
+ * has any chance to connect to it
  */
 static void
 on_prepare( GtkAssistant *assistant, GtkWidget *page, myAssistant *self )
@@ -235,8 +303,17 @@ on_prepare( GtkAssistant *assistant, GtkWidget *page, myAssistant *self )
 		g_return_if_fail( sdata );
 
 		if( priv->prev_page_num >= 0 && priv->prev_page_num < sdata->page_num ){
-			g_signal_emit_by_name( self, MY_SIGNAL_PAGE_FORWARD, page, priv->prev_page_num );
+			g_signal_emit_by_name( self, MY_SIGNAL_PAGE_FORWARD, priv->prev_page_widget, priv->prev_page_num );
 		}
+
+		if( !my_assistant_is_page_initialized( self, page )){
+			g_signal_emit_by_name( self, MY_SIGNAL_PAGE_INIT, page, sdata->page_num );
+			my_assistant_set_page_initialized( self, page, TRUE );
+		}
+
+		g_signal_emit_by_name( self, MY_SIGNAL_PAGE_DISPLAY, page, sdata->page_num );
+
+		priv->prev_page_widget = page;
 		priv->prev_page_num = sdata->page_num;
 	}
 }
@@ -383,6 +460,111 @@ my_assistant_run( myAssistant *assistant )
 }
 
 /**
+ * my_assistant_set_callbacks:
+ * @assistant: this #myAssistant instance.
+ * @cbs: an array, -1 terminated, of the init/display/forward callbacks.
+ */
+void
+my_assistant_set_callbacks( myAssistant *assistant, const ofsAssistant *cbs )
+{
+	myAssistantPrivate *priv;
+	g_return_if_fail( assistant && MY_IS_ASSISTANT( assistant ));
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		priv = assistant->priv;
+		priv->cbs = cbs;
+	}
+}
+
+static void
+on_page_init( myAssistant *assistant, GtkWidget *page_w, gint page_num, void *empty )
+{
+	static const gchar *thisfn = "my_assistant_on_page_init";
+	myAssistantPrivate *priv;
+	gint i;
+
+	g_return_if_fail( assistant && MY_IS_ASSISTANT( assistant ));
+	g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
+
+	g_debug( "%s: assistant=%p, page_w=%p, page_num=%d, empty=%p",
+			thisfn, ( void * ) assistant, ( void * ) page_w, page_num, ( void * ) empty );
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		priv = assistant->priv;
+		if( priv->cbs ){
+			for( i=0 ; priv->cbs[i].page_num >= 0 ; ++i ){
+				if( priv->cbs[i].page_num == page_num ){
+					if( priv->cbs[i].init_cb ){
+						priv->cbs[i].init_cb( assistant, page_num, page_w );
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+static void
+on_page_display( myAssistant *assistant, GtkWidget *page_w, gint page_num, void *empty )
+{
+	static const gchar *thisfn = "my_assistant_on_page_display";
+	myAssistantPrivate *priv;
+	gint i;
+
+	g_return_if_fail( assistant && MY_IS_ASSISTANT( assistant ));
+	g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
+
+	g_debug( "%s: assistant=%p, page_w=%p, page_num=%d, empty=%p",
+			thisfn, ( void * ) assistant, ( void * ) page_w, page_num, ( void * ) empty );
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		priv = assistant->priv;
+		if( priv->cbs ){
+			for( i=0 ; priv->cbs[i].page_num >= 0 ; ++i ){
+				if( priv->cbs[i].page_num == page_num ){
+					if( priv->cbs[i].display_cb ){
+						priv->cbs[i].display_cb( assistant, page_num, page_w );
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+static void
+on_page_forward( myAssistant *assistant, GtkWidget *page_w, gint page_num, void *empty )
+{
+	static const gchar *thisfn = "my_assistant_on_page_forward";
+	myAssistantPrivate *priv;
+	gint i;
+
+	g_return_if_fail( assistant && MY_IS_ASSISTANT( assistant ));
+	g_return_if_fail( page_w && GTK_IS_WIDGET( page_w ));
+
+	g_debug( "%s: assistant=%p, page_w=%p, page_num=%d, empty=%p",
+			thisfn, ( void * ) assistant, ( void * ) page_w, page_num, ( void * ) empty );
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		priv = assistant->priv;
+		if( priv->cbs ){
+			for( i=0 ; priv->cbs[i].page_num >= 0 ; ++i ){
+				if( priv->cbs[i].page_num == page_num ){
+					if( priv->cbs[i].forward_cb ){
+						priv->cbs[i].forward_cb( assistant, page_num, page_w );
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
+/**
  * my_assistant_signal_connect:
  * @assistant: this #myAssistant instance.
  * @signal: the signal.
@@ -474,21 +656,36 @@ my_assistant_get_assistant( myAssistant *assistant )
  * my_assistant_set_page_complete:
  */
 void
-my_assistant_set_page_complete( myAssistant *assistant, gint page_num, gboolean complete )
+my_assistant_set_page_complete( myAssistant *assistant, GtkWidget *page, gboolean complete )
 {
-	GtkAssistant *toplevel;
-	GtkWidget *widget;
+	myAssistantPrivate *priv;
 
 	g_return_if_fail( assistant && MY_IS_ASSISTANT( assistant ));
 
 	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
 
-		toplevel = my_assistant_get_assistant( assistant );
-		g_return_if_fail( toplevel && GTK_IS_ASSISTANT( toplevel ));
+		priv = assistant->priv;
+		g_return_if_fail( priv->assistant && GTK_IS_ASSISTANT( priv->assistant ));
 
-		widget = gtk_assistant_get_nth_page( toplevel, page_num );
-		g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
+		gtk_assistant_set_page_complete( priv->assistant, page, complete );
+	}
+}
 
-		gtk_assistant_set_page_complete( toplevel, widget, complete );
+/**
+ * my_assistant_set_page_type:
+ */
+void
+my_assistant_set_page_type( myAssistant *assistant, GtkWidget *page, GtkAssistantPageType type )
+{
+	myAssistantPrivate *priv;
+
+	g_return_if_fail( assistant && MY_IS_ASSISTANT( assistant ));
+
+	if( !MY_WINDOW( assistant )->prot->dispose_has_run ){
+
+		priv = assistant->priv;
+		g_return_if_fail( priv->assistant && GTK_IS_ASSISTANT( priv->assistant ));
+
+		gtk_assistant_set_page_type( priv->assistant, page, type );
 	}
 }

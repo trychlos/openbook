@@ -66,25 +66,60 @@ typedef struct {
 	myAssistantClass;
 
 /**
+ * myAssistantCb:
+ */
+typedef void ( *myAssistantCb )( myAssistant *, gint, GtkWidget * );
+
+/**
+ * ofsAssistant:
+ */
+typedef struct {
+	gint          page_num;
+	myAssistantCb init_cb;
+	myAssistantCb display_cb;
+	myAssistantCb forward_cb;
+}
+	ofsAssistant;
+
+/**
  * Signals defined by #myAssistant class:
+ * @ASSISTANT_SIGNAL_PAGE_INIT:    sent before displaying a page the
+ *                                 first time
+ * @ASSISTANT_SIGNAL_PAGE_DISPLAY: sent when about to display a page
  * @ASSISTANT_SIGNAL_PAGE_FORWARD: sent when the user has clicked on the
  *                                 'forward' button
  */
+#define MY_SIGNAL_PAGE_INIT             "my-assistant-signal-page-init"
+#define MY_SIGNAL_PAGE_DISPLAY          "my-assistant-signal-page-display"
 #define MY_SIGNAL_PAGE_FORWARD          "my-assistant-signal-page-forward"
 
 GType         my_assistant_get_type            ( void ) G_GNUC_CONST;
 
 void          my_assistant_run                 ( myAssistant *assistant );
 
-gulong        my_assistant_signal_connect      ( myAssistant *assistant, const gchar *signal, GCallback cb );
+void          my_assistant_set_callbacks       ( myAssistant *assistant,
+														const ofsAssistant *cbs );
 
-gboolean      my_assistant_is_page_initialized ( myAssistant *assistant, GtkWidget *page );
+gulong        my_assistant_signal_connect      ( myAssistant *assistant,
+														const gchar *signal,
+														GCallback cb );
 
-void          my_assistant_set_page_initialized( myAssistant *assistant, GtkWidget *page, gboolean initialized );
+gboolean      my_assistant_is_page_initialized ( myAssistant *assistant,
+														GtkWidget *page );
+
+void          my_assistant_set_page_initialized( myAssistant *assistant,
+														GtkWidget *page,
+														gboolean initialized );
 
 GtkAssistant *my_assistant_get_assistant       ( myAssistant *assistant );
 
-void          my_assistant_set_page_complete   ( myAssistant *assistant, gint page_num, gboolean complete );
+void          my_assistant_set_page_complete   ( myAssistant *assistant,
+														GtkWidget *page,
+														gboolean complete );
+
+void          my_assistant_set_page_type       ( myAssistant *assistant,
+														GtkWidget *page,
+														GtkAssistantPageType type );
 
 G_END_DECLS
 

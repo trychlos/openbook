@@ -20,11 +20,11 @@ Press Continue.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="p1-grid">
+      <object class="GtkGrid" id="p2-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <object class="GtkFileChooserWidget" id="p1-filechooser">
+          <object class="GtkFileChooserWidget" id="p2-filechooser">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="create_folders">False</property>
@@ -42,7 +42,7 @@ Press Continue.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="p2-grid">
+      <object class="GtkGrid" id="p3-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="row_spacing">3</property>
@@ -62,7 +62,7 @@ Press Continue.</property>
                 <property name="left_padding">12</property>
                 <property name="right_padding">4</property>
                 <child>
-                  <object class="GtkLabel" id="p2-fname">
+                  <object class="GtkLabel" id="p3-fname">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">0</property>
@@ -107,7 +107,7 @@ Press Continue.</property>
                     <property name="can_focus">False</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkAlignment" id="p2-dossier-parent">
+                      <object class="GtkAlignment" id="p3-dossier-parent">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
@@ -122,7 +122,7 @@ Press Continue.</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="p2-new-dossier">
+                      <object class="GtkButton" id="p3-new-dossier">
                         <property name="label" translatable="yes">New _dossier...</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
@@ -163,13 +163,13 @@ Press Continue.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="p3-grid">
+      <object class="GtkGrid" id="p4-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="row_spacing">3</property>
         <property name="column_spacing">4</property>
         <child>
-          <object class="GtkAlignment" id="p3-dra-parent">
+          <object class="GtkAlignment" id="p4-dra-parent">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
@@ -184,7 +184,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkAlignment" id="p3-connect-infos">
+          <object class="GtkAlignment" id="p4-connect-infos">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
@@ -220,7 +220,7 @@ Press Continue.</property>
                     <property name="row_spacing">3</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="p3-dossier">
+                      <object class="GtkLabel" id="p4-dossier">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
@@ -261,7 +261,7 @@ Press Continue.</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p3-database">
+                      <object class="GtkLabel" id="p4-database">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
@@ -299,12 +299,12 @@ Press Continue.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="p4-grid">
+      <object class="GtkGrid" id="p5-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="row_spacing">3</property>
         <child>
-          <object class="GtkAlignment" id="p4-admin-credentials">
+          <object class="GtkAlignment" id="p5-admin-credentials">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
@@ -335,7 +335,7 @@ Press Continue.</property>
                     <property name="can_focus">False</property>
                     <property name="row_spacing">3</property>
                     <child>
-                      <object class="GtkCheckButton" id="p4-open">
+                      <object class="GtkCheckButton" id="p5-open">
                         <property name="label" translatable="yes">O_pen the dossier after successful restore</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
@@ -393,7 +393,7 @@ Press Continue.</property>
                     <property name="row_spacing">3</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="p4-dossier">
+                      <object class="GtkLabel" id="p5-dossier">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
@@ -434,7 +434,7 @@ Press Continue.</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p4-database">
+                      <object class="GtkLabel" id="p5-database">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>
@@ -472,7 +472,7 @@ Press Continue.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="p5-grid">
+      <object class="GtkGrid" id="p6-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="row_spacing">3</property>
@@ -553,7 +553,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-adm-account">
+          <object class="GtkLabel" id="p6-adm-account">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -566,7 +566,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-adm-password">
+          <object class="GtkLabel" id="p6-adm-password">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -579,7 +579,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-dossier">
+          <object class="GtkLabel" id="p6-dossier">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -592,7 +592,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-fname">
+          <object class="GtkLabel" id="p6-fname">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">20</property>
@@ -621,7 +621,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-dbms-account">
+          <object class="GtkLabel" id="p6-dbms-account">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -664,7 +664,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-dbms-password">
+          <object class="GtkLabel" id="p6-dbms-password">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -707,7 +707,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-open">
+          <object class="GtkLabel" id="p6-open">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -750,7 +750,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-database">
+          <object class="GtkLabel" id="p6-database">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -785,12 +785,12 @@ Press Continue.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="p6-grid">
+      <object class="GtkGrid" id="p7-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="row_spacing">3</property>
         <child>
-          <object class="GtkLabel" id="p6-label1">
+          <object class="GtkLabel" id="p7-label1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="vexpand">True</property>
@@ -805,7 +805,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p6-label2">
+          <object class="GtkLabel" id="p7-label2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="vexpand">True</property>
