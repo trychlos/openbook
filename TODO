@@ -405,22 +405,8 @@
 
  567 2015- 1- 9 have an EntryStore ?
 
- 568 2015- 1- 9 would be a GtkFrame-derived class suitable for any 
-                piece of dialog ?
-     2015- 1-16 ofaDBMSRootPiece: ok as ofaDBMSRootBin
-                ofaAdminCredentialsPiece: ok as ofaAdminCredentialsBin
-                cannot do anything for MySQL pieces of UI
-                ofaDossierNewPiece: ok as ofaDossierNewBin
-                ofaExeForwardPiece: ok as ofaClosingParmsBin
-                ofaGuidedInputPiece: ok as ofaGuidedInputBin
-
  572 2015- 1-10 refactor: get rid of amounts, replacing them with
                 integers ?
-
- 579 2015- 1-11 ofa_list_store_on_dossier_finalized: store=0x967620 
-                (ofaCurrencyStore), ref_count=47, 
-                finalized_dossier=0x740430
-     2015- 1-13 not reproduced
 
  584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
                 settlement groups if they are set in the object
@@ -2498,6 +2484,16 @@
                 of only Reconcil.
      2015- 1- 9 done - svn #4428
 
+ 568 2015- 1- 9 would be a GtkFrame-derived class suitable for any 
+                piece of dialog ?
+     2015- 1-16 ofaDBMSRootPiece: ok as ofaDBMSRootBin
+                ofaAdminCredentialsPiece: ok as ofaAdminCredentialsBin
+                cannot do anything for MySQL pieces of UI
+                ofaDossierNewPiece: ok as ofaDossierNewBin
+                ofaExeForwardPiece: ok as ofaClosingParmsBin
+                ofaGuidedInputPiece: ok as ofaGuidedInputBin
+     2015- 1-16 done - svn #4462
+
  569 2015- 1-10 intermediate ledger closing: refuse to close at the 
                 date of the end of the exercice
      2015- 1-16 done - svn #4461
@@ -2535,6 +2531,14 @@
  578 2015- 1-11 converting from EBP entries: add settlement and 
                 reconciliation infos
      2015- 1-14 done - svn #4445
+
+ 579 2015- 1-11 ofa_list_store_on_dossier_finalized: store=0x967620 
+                (ofaCurrencyStore), ref_count=47, 
+                finalized_dossier=0x740430
+     2015- 1-13 not reproduced
+     2015- 1-16 not important at this time, the principal being that
+                the objects keep to be rightly finalized
+                cancelled
 
  580 2015- 1-11 ExeClosing: do not try to solde accounts which are used
                 for closing (reffered in OFA_T_DOSSIER_CUR)
