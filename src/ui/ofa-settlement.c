@@ -53,6 +53,7 @@ struct _ofaSettlementPrivate {
 	 */
 	ofoDossier        *dossier;			/* dossier */
 	gchar             *account_number;
+	const gchar       *account_currency;
 	ofaEntrySettlement settlement;
 
 	/* UI
@@ -69,8 +70,9 @@ struct _ofaSettlementPrivate {
 	 */
 	GtkWidget         *settle_btn;
 	GtkWidget         *unsettle_btn;
-	GtkWidget         *debit_entry;
-	GtkWidget         *credit_entry;
+	GtkWidget         *debit_balance;
+	GtkWidget         *credit_balance;
+	GtkWidget         *currency_balance;
 };
 
 /* columns in the combo box which let us select which type of entries
@@ -131,6 +133,9 @@ typedef struct {
 }
 	sEnumSelected;
 
+#define RGBA_NORMAL                     "#0000ff"		/* blue */
+#define RGBA_WARNING                    "#ff8000"		/* orange */
+
 static const gchar *st_ui_xml           = PKGUIDIR "/ofa-settlement.piece.ui";
 static const gchar *st_ui_id            = "SettlementWindow";
 
@@ -177,6 +182,7 @@ settlement_finalize( GObject *instance )
 
 	/* free data members here */
 	priv = OFA_SETTLEMENT( instance )->priv;
+
 	g_free( priv->account_number );
 
 	/* chain up to the parent class */
@@ -278,8 +284,11 @@ setup_footer( ofaSettlement *self )
 {
 	ofaSettlementPrivate *priv;
 	GtkWidget *widget;
+	GdkRGBA color;
 
 	priv = self->priv;
+
+	gdk_rgba_parse( &color, RGBA_NORMAL );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-settle" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -291,13 +300,22 @@ setup_footer( ofaSettlement *self )
 	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_unsettle_clicked ), self );
 	priv->unsettle_btn = widget;
 
+	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-settlement-selection" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	gtk_widget_override_color( widget, GTK_STATE_FLAG_NORMAL, &color );
+
 	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-debit" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	priv->debit_entry = widget;
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	priv->debit_balance = widget;
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-credit" );
-	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	priv->credit_entry = widget;
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	priv->credit_balance = widget;
+
+	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-currency" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	gtk_widget_override_color( widget, GTK_STATE_FLAG_NORMAL, &color );
+	priv->currency_balance = widget;
 }
 
 /*
@@ -563,6 +581,7 @@ on_account_changed( GtkEntry *entry, ofaSettlement *self )
 	ofoAccount *account;
 
 	priv = self->priv;
+	priv->account_currency = NULL;
 
 	g_free( priv->account_number );
 	priv->account_number = g_strdup( gtk_entry_get_text( entry ));
@@ -570,6 +589,8 @@ on_account_changed( GtkEntry *entry, ofaSettlement *self )
 	account = ofo_account_get_by_number( priv->dossier, priv->account_number );
 
 	if( account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account )){
+		priv->account_currency = ofo_account_get_currency( account );
+
 		gtk_label_set_text( GTK_LABEL( priv->account_label ), ofo_account_get_label( account ));
 		try_display_entries( self );
 
@@ -771,8 +792,12 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *
 	ofaSettlementPrivate *priv;
 	sEnumSelected ses;
 	gchar *samount;
+	GdkRGBA color_blue, color_warn;
 
 	priv = self->priv;
+
+	gdk_rgba_parse( &color_blue, RGBA_NORMAL );
+	gdk_rgba_parse( &color_warn, RGBA_WARNING );
 
 	memset( &ses, '\0', sizeof( sEnumSelected ));
 	ses.self = self;
@@ -782,12 +807,20 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *
 	gtk_widget_set_sensitive( priv->unsettle_btn, ses.settled > 0 );
 
 	samount = my_double_to_str( ses.debit );
-	gtk_entry_set_text( GTK_ENTRY( priv->debit_entry ), samount );
+	gtk_widget_override_color(
+			priv->debit_balance,
+			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
+	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
 	g_free( samount );
 
 	samount = my_double_to_str( ses.credit );
-	gtk_entry_set_text( GTK_ENTRY( priv->credit_entry ), samount );
+	gtk_widget_override_color(
+			priv->credit_balance,
+			GTK_STATE_FLAG_NORMAL, ses.debit == ses.credit ? &color_blue : &color_warn );
+	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
 	g_free( samount );
+
+	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), priv->account_currency );
 }
 
 /*

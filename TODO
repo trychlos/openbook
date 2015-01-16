@@ -431,8 +431,6 @@
                 + add the currency
                 + red color if unbalanced
 
- 577 2015- 1-11 Reconciliation: keep parameters in user settings
-
  579 2015- 1-11 ofa_list_store_on_dossier_finalized: store=0x967620 
                 (ofaCurrencyStore), ref_count=47, 
                 finalized_dossier=0x740430
@@ -2514,6 +2512,9 @@
                 reconciliated/unreconciliated/all entries
                 (settlement seems to be fine)
      2015- 1-11 done - svn #4433
+
+ 577 2015- 1-11 Reconciliation: keep parameters in user settings
+     2015- 1-15 done - svn #4455
 
  578 2015- 1-11 converting from EBP entries: add settlement and 
                 reconciliation infos
