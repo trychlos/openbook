@@ -488,7 +488,7 @@ prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 	gtk_alignment_set_padding( GTK_ALIGNMENT( alignment ), 2, 2, 0, 10 );
 	gtk_grid_attach( GTK_GRID( grid ), alignment, 1, priv->count, 1, 1 );
 	bar = my_progress_bar_new();
-	my_progress_bar_attach_to( bar, GTK_CONTAINER( alignment ));
+	gtk_container_add( GTK_CONTAINER( alignment ), GTK_WIDGET( bar ));
 
 	priv->count += 1;
 }
@@ -563,7 +563,8 @@ on_dossier_pre_valid_entry( ofoDossier *dossier, const gchar *ledger, guint coun
 
 	priv->entries_count = count;
 	if( priv->entries_count == 0 ){
-		g_signal_emit_by_name( priv->bar, "text", "0/0" );
+		g_signal_emit_by_name( priv->bar, "ofa-double", 1 );
+		g_signal_emit_by_name( priv->bar, "ofa-text", "0/0" );
 	}
 
 	priv->entries_num = 0;
@@ -580,9 +581,9 @@ on_dossier_validated_entry( ofoDossier *dossier, void *entry, ofaLedgerClose *se
 
 	priv->entries_num += 1;
 	progress = ( gdouble ) priv->entries_num / ( gdouble ) priv->entries_count;
-	g_signal_emit_by_name( priv->bar, "double", progress );
+	g_signal_emit_by_name( priv->bar, "ofa-double", progress );
 
 	text = g_strdup_printf( "%u/%u", priv->entries_num, priv->entries_count );
-	g_signal_emit_by_name( priv->bar, "text", text );
+	g_signal_emit_by_name( priv->bar, "ofa-text", text );
 	g_free( text );
 }

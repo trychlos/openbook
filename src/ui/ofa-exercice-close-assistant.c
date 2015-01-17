@@ -709,7 +709,7 @@ get_new_bar( ofaExerciceCloseAssistant *self, const gchar *w_name )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
 	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
 	bar = my_progress_bar_new();
-	my_progress_bar_attach_to( bar, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bar ));
 
 	return( bar );
 }
@@ -867,10 +867,10 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 		ofo_entry_validate( OFO_ENTRY( it->data ), dossier );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "double", progress );
+		g_signal_emit_by_name( bar, "ofa-double", progress );
 
 		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "text", text );
+		g_signal_emit_by_name( bar, "ofa-text", text );
 
 		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
 
@@ -878,7 +878,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 	}
 
 	if( !entries ){
-		g_signal_emit_by_name( bar, "text", "0/0" );
+		g_signal_emit_by_name( bar, "ofa-text", "0/0" );
 	}
 
 	ofo_entry_free_dataset( entries );
@@ -1079,8 +1079,8 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		text = g_strdup_printf( "%u/%u", i, count );
 
 		if( with_ui ){
-			g_signal_emit_by_name( bar, "double", progress );
-			g_signal_emit_by_name( bar, "text", text );
+			g_signal_emit_by_name( bar, "ofa-double", progress );
+			g_signal_emit_by_name( bar, "ofa-text", text );
 		}
 
 		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
@@ -1157,10 +1157,10 @@ p6_close_ledgers( ofaExerciceCloseAssistant *self )
 		ofo_ledger_close( ledger, dossier, end_cur );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "double", progress );
+		g_signal_emit_by_name( bar, "ofa-double", progress );
 
 		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "text", text );
+		g_signal_emit_by_name( bar, "ofa-text", text );
 
 		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
 
@@ -1386,10 +1386,10 @@ p6_forward( ofaExerciceCloseAssistant *self )
 		}
 
 		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "double", progress );
+		g_signal_emit_by_name( bar, "ofa-double", progress );
 
 		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "text", text );
+		g_signal_emit_by_name( bar, "ofa-text", text );
 
 		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
 
@@ -1434,10 +1434,10 @@ p6_open( ofaExerciceCloseAssistant *self )
 		ofo_account_archive_open_balance( account, dossier );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "double", progress );
+		g_signal_emit_by_name( bar, "ofa-double", progress );
 
 		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "text", text );
+		g_signal_emit_by_name( bar, "ofa-text", text );
 
 		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
 
@@ -1481,18 +1481,18 @@ p6_future( ofaExerciceCloseAssistant *self )
 		ofo_entry_future_to_rough( entry, dossier );
 
 		progress = ( gdouble ) i / ( gdouble ) count;
-		g_signal_emit_by_name( bar, "double", progress );
+		g_signal_emit_by_name( bar, "ofa-double", progress );
 
 		text = g_strdup_printf( "%u/%u", i, count );
-		g_signal_emit_by_name( bar, "text", text );
+		g_signal_emit_by_name( bar, "ofa-text", text );
 
 		g_debug( "%s: progress=%.5lf, text=%s", thisfn, progress, text );
 
 		g_free( text );
 	}
 	if( !count ){
-		g_signal_emit_by_name( bar, "double", 1.0 );
-		g_signal_emit_by_name( bar, "text", "0/0" );
+		g_signal_emit_by_name( bar, "ofa-double", 1.0 );
+		g_signal_emit_by_name( bar, "ofa-text", "0/0" );
 	}
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->current_page_widget ), "p6-summary" );

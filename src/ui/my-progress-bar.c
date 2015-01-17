@@ -128,7 +128,7 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ DOUBLE ] = g_signal_new_class_handler(
-				"double",
+				"ofa-double",
 				MY_TYPE_PROGRESS_BAR,
 				G_SIGNAL_ACTION,
 				NULL,
@@ -152,7 +152,7 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ TEXT ] = g_signal_new_class_handler(
-				"text",
+				"ofa-text",
 				MY_TYPE_PROGRESS_BAR,
 				G_SIGNAL_ACTION,
 				NULL,
@@ -174,29 +174,10 @@ my_progress_bar_new( void )
 
 	self = g_object_new( MY_TYPE_PROGRESS_BAR, NULL );
 
+	g_signal_connect( G_OBJECT( self ), "ofa-double", G_CALLBACK( on_double ), NULL );
+	g_signal_connect( G_OBJECT( self ), "ofa-text", G_CALLBACK( on_text ), NULL );
+
 	return( self );
-}
-
-/**
- * my_progress_bar_attach_to:
- */
-void
-my_progress_bar_attach_to( myProgressBar *bar, GtkContainer *parent )
-{
-	myProgressBarPrivate *priv;
-
-	g_return_if_fail( bar && MY_IS_PROGRESS_BAR( bar ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	priv = bar->priv;
-
-	if( !priv->dispose_has_run ){
-
-		gtk_container_add( parent, GTK_WIDGET( bar ));
-
-		g_signal_connect( G_OBJECT( bar ), "double", G_CALLBACK( on_double ), NULL );
-		g_signal_connect( G_OBJECT( bar ), "text", G_CALLBACK( on_text ), NULL );
-	}
 }
 
 static void

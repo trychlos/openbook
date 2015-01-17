@@ -74,9 +74,6 @@ GType          my_progress_bar_get_type ( void ) G_GNUC_CONST;
 
 myProgressBar *my_progress_bar_new      ( void );
 
-void           my_progress_bar_attach_to( myProgressBar *bar,
-													GtkContainer *parent );
-
 G_END_DECLS
 
 #endif /* __MY_PROGRESS_BAR_H__ */

@@ -88,9 +88,9 @@ ofa_misc_chkbalacc_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 		/* set the progression */
 		if( bar ){
 			progress = ( gdouble ) i / ( gdouble ) count;
-			g_signal_emit_by_name( bar, "double", progress );
+			g_signal_emit_by_name( bar, "ofa-double", progress );
 			text = g_strdup_printf( "%d/%d", i, count );
-			g_signal_emit_by_name( bar, "text", text );
+			g_signal_emit_by_name( bar, "ofa-text", text );
 			g_free( text );
 		}
 	}
@@ -163,9 +163,9 @@ ofa_misc_chkbalent_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 		/* set the progression */
 		if( bar ){
 			progress = ( gdouble ) i / ( gdouble ) count;
-			g_signal_emit_by_name( bar, "double", progress );
+			g_signal_emit_by_name( bar, "ofa-double", progress );
 			text = g_strdup_printf( "%d/%d", i, count );
-			g_signal_emit_by_name( bar, "text", text );
+			g_signal_emit_by_name( bar, "ofa-text", text );
 			g_free( text );
 		}
 	}
@@ -236,9 +236,9 @@ ofa_misc_chkballed_run( ofoDossier *dossier, GList **balances, myProgressBar *ba
 		/* set the progression */
 		if( bar ){
 			progress = ( gdouble ) i / ( gdouble ) count;
-			g_signal_emit_by_name( bar, "double", progress );
+			g_signal_emit_by_name( bar, "ofa-double", progress );
 			text = g_strdup_printf( "%d/%d", i, count );
-			g_signal_emit_by_name( bar, "text", text );
+			g_signal_emit_by_name( bar, "ofa-text", text );
 			g_free( text );
 		}
 	}

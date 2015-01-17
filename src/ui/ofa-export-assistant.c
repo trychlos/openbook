@@ -760,7 +760,7 @@ p6_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-bar-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p6_bar = my_progress_bar_new();
-	my_progress_bar_attach_to( priv->p6_bar, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p6_bar ));
 
 	priv->p6_page = page;
 	gtk_widget_show_all( page );
@@ -833,6 +833,6 @@ p6_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text,
 
 	priv = self->priv;
 
-	g_signal_emit_by_name( priv->p6_bar, "double", progress );
-	g_signal_emit_by_name( priv->p6_bar, "text", text );
+	g_signal_emit_by_name( priv->p6_bar, "ofa-double", progress );
+	g_signal_emit_by_name( priv->p6_bar, "ofa-text", text );
 }

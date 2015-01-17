@@ -675,12 +675,12 @@ p6_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-bar-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p6_import = my_progress_bar_new();
-	my_progress_bar_attach_to( priv->p6_import, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p6_import ));
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-insert-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->p6_insert = my_progress_bar_new();
-	my_progress_bar_attach_to( priv->p6_insert, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p6_insert ));
 
 	priv->p6_text = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-text-view" );
 	g_return_if_fail( priv->p6_text && GTK_IS_TEXT_VIEW( priv->p6_text ));
@@ -859,13 +859,13 @@ p6_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progre
 	priv = self->priv;
 
 	if( phase == IMPORTABLE_PHASE_IMPORT ){
-		g_signal_emit_by_name( priv->p6_import, "double", progress );
-		g_signal_emit_by_name( priv->p6_import, "text", text );
+		g_signal_emit_by_name( priv->p6_import, "ofa-double", progress );
+		g_signal_emit_by_name( priv->p6_import, "ofa-text", text );
 
 	} else {
 		g_return_if_fail( phase == IMPORTABLE_PHASE_INSERT );
-		g_signal_emit_by_name( priv->p6_insert, "double", progress );
-		g_signal_emit_by_name( priv->p6_insert, "text", text );
+		g_signal_emit_by_name( priv->p6_insert, "ofa-double", progress );
+		g_signal_emit_by_name( priv->p6_insert, "ofa-text", text );
 	}
 }
 

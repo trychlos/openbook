@@ -321,7 +321,7 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 			progress = ( gdouble ) sdata->progress;
 			str = g_strdup_printf( "%ld", sdata->progress );
 		}
-		g_signal_emit_by_name( exportable, "progress", progress, str );
+		g_signal_emit_by_name( exportable, "ofa-progress", progress, str );
 		g_free( str );
 	}
 
