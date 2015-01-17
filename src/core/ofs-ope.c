@@ -171,8 +171,8 @@ ofs_ope_apply_template( ofsOpe *ope, ofoDossier *dossier )
 static void
 alloc_regex( void )
 {
-	static const gchar *st_detail_ref = "%([ALRDC])([0-9]+)";
-	static const gchar *st_global_ref = "%(OPMN|OPLA|LEMN|LELA|DOPE|DOMY|DEFFECT|SOLDE|IDEM)";
+	static const gchar *st_detail_ref = "%([ALDC])([0-9]+)";
+	static const gchar *st_global_ref = "%(OPMN|OPLA|LEMN|LELA|DOPE|DOMY|DEFFECT|REF|SOLDE|IDEM)";
 	static const gchar *st_function = "%(ACLA|ACCU|EVAL|RATE|ACCL)\\(\\s*([^()]+)\\s*\\)";
 	/*static const gchar *st_function = "%(ACLA|ACCU|EVAL|RATE)\\(\\s*";*/
 
@@ -210,18 +210,17 @@ compute_simple_formulas( sHelper *helper )
 		ope->ledger = compute_formula( helper, ofo_ope_template_get_ledger( template ), -1, -1 );
 	}
 
+	if( !ope->ref_user_set ){
+		g_free( ope->ref );
+		ope->ref = compute_formula( helper, ofo_ope_template_get_ref( template ), -1, -1 );
+	}
+
 	compute_dates( helper );
 
 	count = ofo_ope_template_get_detail_count( template );
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
 		DEBUG( "%s: i=%d", thisfn, i );
-
-		if( !detail->ref_user_set ){
-			g_free( detail->ref );
-			detail->ref = compute_formula(
-					helper, ofo_ope_template_get_detail_ref( template, i ), i, OPE_COL_REF );
-		}
 
 		if( !detail->account_user_set ){
 			g_free( detail->account );
@@ -389,9 +388,6 @@ is_detail_ref( const gchar *token, sHelper *helper, gchar **str )
 		} else if( !g_utf8_collate( field, "L" )){
 			*str = g_strdup( detail->label );
 
-		} else if( !g_utf8_collate( field, "R" )){
-			*str = g_strdup( detail->ref );
-
 		} else if( !g_utf8_collate( field, "D" )){
 			*str = my_double_to_str( detail->debit );
 
@@ -450,6 +446,9 @@ is_global_ref( const gchar *token, sHelper *helper, gchar **str )
 
 		} else if( !g_utf8_collate( field, "DEFFECT" )){
 			*str = my_date_to_str( &helper->ope->deffect, MY_DATE_DMYY );
+
+		} else if( !g_utf8_collate( field, "REF" )){
+			*str = g_strdup( helper->ope->ref );
 
 		} else if( !g_utf8_collate( field, "SOLDE" )){
 			*str = my_double_to_str( compute_solde( helper ));
@@ -549,9 +548,6 @@ get_prev( sHelper *helper )
 	if( helper->comp_row > 0 ){
 		prev = ( ofsOpeDetail * ) g_list_nth_data( helper->ope->detail, helper->comp_row-1 );
 		switch( helper->comp_column ){
-			case OPE_COL_REF:
-				str = g_strdup( prev->ref );
-				break;
 			case OPE_COL_ACCOUNT:
 				str = g_strdup( prev->account );
 				break;
@@ -1069,7 +1065,7 @@ ofs_ope_generate_entries( const ofsOpe *ope, ofoDossier *dossier )
 						ofo_entry_new_with_data(
 								dossier,
 								&ope->deffect, &ope->dope, detail->label,
-								detail->ref, detail->account,
+								ope->ref, detail->account,
 								currency,
 								ope->ledger,
 								ofo_ope_template_get_mnemo( ope->ope_template ),
@@ -1094,11 +1090,13 @@ ofs_ope_dump( const ofsOpe *ope )
 	sdeffect = my_date_to_str( &ope->deffect, MY_DATE_DMYY );
 
 	g_debug( "%s: ope=%p, template=%s, ledger=%s, ledger_user_set=%s,"
-			" dope=%s, dope_user_set=%s, deffect=%s, deffect_user_set=%s",
+			" dope=%s, dope_user_set=%s, deffect=%s, deffect_user_set=%s,"
+			" ref=%s, ref_user_set=%s",
 				thisfn, ( void * ) ope, ofo_ope_template_get_mnemo( ope->ope_template ),
 				ope->ledger, ope->ledger_user_set ? "True":"False",
 				sdope, ope->dope_user_set ? "True":"False",
-				sdeffect, ope->deffect_user_set ? "True":"False" );
+				sdeffect, ope->deffect_user_set ? "True":"False",
+				ope->ref, ope->ref_user_set ? "True":"False" );
 
 	g_free( sdope );
 	g_free( sdeffect );
@@ -1111,10 +1109,9 @@ ope_dump_detail( ofsOpeDetail *detail, void *empty )
 {
 	static const gchar *thisfn = "ofs_ope_dump";
 
-	g_debug( "%s: detail=%p, ref=%s, ref_user_set=%s, account=%s, account_user_set=%s,"
+	g_debug( "%s: detail=%p, account=%s, account_user_set=%s,"
 			" label=%s, label_user_set=%s, debit=%.5lf, debit_user_set=%s, credit=%.5lf, credit_user_set=%s",
 				thisfn, ( void * ) detail,
-				detail->ref, detail->ref_user_set ? "True":"False",
 				detail->account, detail->account_user_set ? "True":"False",
 				detail->label, detail->label_user_set ? "True":"False",
 				detail->debit, detail->debit_user_set ? "True":"False",
@@ -1130,6 +1127,7 @@ ofs_ope_free( ofsOpe *ope )
 	if( ope ){
 		g_object_unref(( gpointer ) ope->ope_template );
 		g_free( ope->ledger );
+		g_free( ope->ref );
 		g_list_free_full( ope->detail, ( GDestroyNotify ) ope_free_detail );
 		g_free( ope );
 	}
@@ -1138,7 +1136,6 @@ ofs_ope_free( ofsOpe *ope )
 static void
 ope_free_detail( ofsOpeDetail *detail )
 {
-	g_free( detail->ref );
 	g_free( detail->account );
 	g_free( detail->label );
 	g_free( detail );

@@ -46,8 +46,6 @@
  * each line of the grid is :
  * - button 'Add' or line number
  * - comment
- * - ref entry
- * - ref locked
  * - account entry
  * - account btn selection
  * - account locked
@@ -65,25 +63,28 @@ struct _ofaOpeTemplatePropertiesPrivate {
 
 	/* internals
 	 */
-	ofoOpeTemplate   *ope_template;
+	ofoOpeTemplate  *ope_template;
 	ofaLedgerCombo  *ledger_combo;
 	GtkWidget       *ledger_parent;
-	GtkGrid          *grid;				/* detail grid */
-	gint              count;			/* count of added detail lines */
+	GtkWidget       *ref_entry;
+	GtkGrid         *grid;				/* detail grid */
+	gint             count;				/* count of added detail lines */
 
 	/* result
 	 */
-	gboolean          is_new;
-	gboolean          updated;
+	gboolean         is_new;
+	gboolean         updated;
 
 	/* data
 	 */
-	gchar            *mnemo;
-	gchar            *label;
-	gchar            *ledger;			/* ledger mnemo */
-	gboolean          ledger_locked;
-	gchar            *upd_user;
-	GTimeVal          upd_stamp;
+	gchar           *mnemo;
+	gchar           *label;
+	gchar           *ledger;			/* ledger mnemo */
+	gboolean         ledger_locked;
+	gchar           *ref;			/* ref mnemo */
+	gboolean         ref_locked;
+	gchar           *upd_user;
+	GTimeVal         upd_stamp;
 };
 
 /* columns in the detail treeview
@@ -91,8 +92,6 @@ struct _ofaOpeTemplatePropertiesPrivate {
 enum {
 	DET_COL_ROW = 0,
 	DET_COL_COMMENT,
-	DET_COL_REF,
-	DET_COL_REF_LOCKED,
 	DET_COL_ACCOUNT,
 	DET_COL_ACCOUNT_SELECT,
 	DET_COL_ACCOUNT_LOCKED,
@@ -131,6 +130,7 @@ static void      init_dialog_title( ofaOpeTemplateProperties *self );
 static void      init_dialog_mnemo( ofaOpeTemplateProperties *self );
 static void      init_dialog_label( ofaOpeTemplateProperties *self );
 static void      init_dialog_ledger_locked( ofaOpeTemplateProperties *self );
+static void      init_dialog_ref( ofaOpeTemplateProperties *self );
 static void      init_dialog_detail( ofaOpeTemplateProperties *self );
 static void      insert_new_row( ofaOpeTemplateProperties *self, gint row );
 static void      add_empty_row( ofaOpeTemplateProperties *self );
@@ -141,6 +141,7 @@ static void      on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *se
 static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaOpeTemplateProperties *self );
 static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
+static void      on_ref_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
 static void      on_account_selection( ofaOpeTemplateProperties *self, gint row );
 static void      on_button_clicked( GtkButton *button, ofaOpeTemplateProperties *self );
 static void      remove_row( ofaOpeTemplateProperties *self, gint row );
@@ -166,6 +167,7 @@ ope_template_properties_finalize( GObject *instance )
 	g_free( priv->mnemo );
 	g_free( priv->label );
 	g_free( priv->ledger );
+	g_free( priv->ref );
 	g_free( priv->upd_user );
 
 	/* chain up to the parent class */
@@ -295,6 +297,8 @@ v_init_dialog( myDialog *dialog )
 
 	init_dialog_ledger_locked( self );
 
+	init_dialog_ref( self );
+
 	my_utils_init_notes_ex( toplevel, ope_template );
 	my_utils_init_upd_user_stamp_ex( toplevel, ope_template );
 
@@ -378,6 +382,34 @@ init_dialog_ledger_locked( ofaOpeTemplateProperties *self )
 	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ledger_locked_toggled ), self );
 }
 
+static void
+init_dialog_ref( ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	GtkWindow *toplevel;
+	GtkWidget *btn;
+
+	priv = self->priv;
+	toplevel = my_window_get_toplevel( MY_WINDOW( self ));
+
+	priv->ref = g_strdup( ofo_ope_template_get_ref( priv->ope_template ));
+	priv->ref_locked = ofo_ope_template_get_ref_locked( priv->ope_template );
+
+	priv->ref_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-ref" );
+	g_return_if_fail( priv->ref_entry && GTK_IS_ENTRY( priv->ref_entry ));
+
+	if( priv->ref ){
+		gtk_entry_set_text( GTK_ENTRY( priv->ref_entry ), priv->ref );
+	}
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "p1-jou-locked" );
+	g_return_if_fail( btn && GTK_IS_TOGGLE_BUTTON( btn ));
+
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), priv->ref_locked );
+
+	g_signal_connect( G_OBJECT( btn ), "toggled", G_CALLBACK( on_ref_locked_toggled ), self );
+}
+
 /*
  * add one line per detail record
  */
@@ -413,13 +445,6 @@ insert_new_row( ofaOpeTemplateProperties *self, gint row )
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->grid, DET_COL_COMMENT, row ));
 	str = ofo_ope_template_get_detail_comment( self->priv->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
-
-	entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->grid, DET_COL_REF, row ));
-	str = ofo_ope_template_get_detail_ref( self->priv->ope_template, row-1 );
-	gtk_entry_set_text( entry, str ? str : "" );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->priv->grid, DET_COL_REF_LOCKED, row ));
-	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_ref_locked( self->priv->ope_template, row-1 ));
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->grid, DET_COL_ACCOUNT, row ));
 	str = ofo_ope_template_get_detail_account( self->priv->ope_template, row-1 );
@@ -485,17 +510,6 @@ add_empty_row( ofaOpeTemplateProperties *self )
 	gtk_entry_set_max_length( entry, 80 );
 	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_COMMENT, row, 1, 1 );
 	gtk_widget_grab_focus( GTK_WIDGET( entry ));
-
-	entry = GTK_ENTRY( gtk_entry_new());
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_entry_set_max_length( entry, 20 );
-	gtk_entry_set_width_chars( entry, 10 );
-	gtk_grid_attach( priv->grid, GTK_WIDGET( entry ), DET_COL_REF, row, 1, 1 );
-
-	toggle = gtk_check_button_new();
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_grid_attach( priv->grid, toggle, DET_COL_REF_LOCKED, row, 1, 1 );
 
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -652,6 +666,18 @@ on_ledger_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 	gtk_widget_set_sensitive( priv->ledger_parent, !priv->ledger_locked );
 
 	check_for_enable_dlg( self );
+}
+
+static void
+on_ref_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+
+	priv = self->priv;
+
+	priv->ref_locked = gtk_toggle_button_get_active( btn );
+
+	gtk_widget_set_sensitive( priv->ref_entry, !priv->ref_locked );
 }
 
 static void
@@ -840,6 +866,8 @@ do_update( ofaOpeTemplateProperties *self )
 	ofo_ope_template_set_label( priv->ope_template, priv->label );
 	ofo_ope_template_set_ledger( priv->ope_template, priv->ledger );
 	ofo_ope_template_set_ledger_locked( priv->ope_template, priv->ledger_locked );
+	ofo_ope_template_set_ref( priv->ope_template, gtk_entry_get_text( GTK_ENTRY( priv->ref_entry )));
+	ofo_ope_template_set_ref_locked( priv->ope_template, priv->ref_locked );
 	my_utils_getback_notes_ex( my_window_get_toplevel( MY_WINDOW( self )), ope_template );
 
 	ofo_ope_template_free_detail_all( priv->ope_template );
@@ -867,17 +895,11 @@ get_detail_list( ofaOpeTemplateProperties *self, gint row )
 {
 	GtkEntry *entry;
 	GtkToggleButton *toggle;
-	const gchar *comment, *ref, *account, *label, *debit, *credit;
-	gboolean ref_locked, account_locked, label_locked, debit_locked, credit_locked;
+	const gchar *comment, *account, *label, *debit, *credit;
+	gboolean account_locked, label_locked, debit_locked, credit_locked;
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->grid, DET_COL_COMMENT, row ));
 	comment = gtk_entry_get_text( entry );
-
-	entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->grid, DET_COL_REF, row ));
-	ref = gtk_entry_get_text( entry );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( self->priv->grid, DET_COL_REF_LOCKED, row ));
-	ref_locked = gtk_toggle_button_get_active( toggle );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( self->priv->grid, DET_COL_ACCOUNT, row ));
 	account = gtk_entry_get_text( entry );
@@ -905,7 +927,6 @@ get_detail_list( ofaOpeTemplateProperties *self, gint row )
 
 	ofo_ope_template_add_detail( self->priv->ope_template,
 				comment,
-				ref, ref_locked,
 				account, account_locked,
 				label, label_locked,
 				debit, debit_locked,

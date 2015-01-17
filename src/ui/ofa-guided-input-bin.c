@@ -139,12 +139,6 @@ typedef struct {
  * and this is ok because the column #0 is used by the number of the row
  */
 static sColumnDef st_col_defs[] = {
-		{ OPE_COL_REF,
-				TYPE_NONE,
-				NULL,
-				NULL,
-				0, FALSE, 0, FALSE, NULL
-		},
 		{ OPE_COL_ACCOUNT,
 				TYPE_ENTRY,
 				ofo_ope_template_get_detail_account,
@@ -230,7 +224,7 @@ static void              on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *bi
 static gboolean          on_deffect_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
 static gboolean          on_deffect_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *bin );
 static void              on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *bin );
-static void              on_bin_changed( GtkEditable *editable, ofaGuidedInputBin *bin );
+static void              on_piece_changed( GtkEditable *editable, ofaGuidedInputBin *bin );
 static gboolean          on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputBin *bin );
 static void              on_button_clicked( GtkButton *button, ofaGuidedInputBin *bin );
 static void              on_account_selection( ofaGuidedInputBin *bin, gint row );
@@ -509,11 +503,11 @@ setup_dialog( ofaGuidedInputBin *bin )
 	g_signal_connect(
 			G_OBJECT( priv->deffect_entry ), "changed", G_CALLBACK( on_deffect_changed ), bin );
 
-	/* as this is easier, we only have here a single 'bin ref' entry
+	/* as this is easier, we only have here a single 'piece ref' entry
 	 * which will be duplicated on each detail ref */
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-piece" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( widget, "changed", G_CALLBACK( on_bin_changed ), bin );
+	g_signal_connect( widget, "changed", G_CALLBACK( on_piece_changed ), bin );
 
 	/* setup other widgets */
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-model-label" );
@@ -895,23 +889,18 @@ on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *bin )
 }
 
 static void
-on_bin_changed( GtkEditable *editable, ofaGuidedInputBin *bin )
+on_piece_changed( GtkEditable *editable, ofaGuidedInputBin *bin )
 {
 	ofaGuidedInputBinPrivate *priv;
 	const gchar *content;
-	GList *it;
-	ofsOpeDetail *detail;
 
 	priv = bin->priv;
 
 	content = gtk_entry_get_text( GTK_ENTRY( editable ));
 
-	for( it=priv->ope->detail ; it ; it=it->next ){
-		detail = ( ofsOpeDetail * ) it->data;
-		g_free( detail->ref );
-		detail->ref = g_strdup( content );
-		detail->ref_user_set = TRUE;
-	}
+	g_free( priv->ope->ref );
+	priv->ope->ref = g_strdup( content );
+	priv->ope->ref_user_set = TRUE;
 
 	check_for_enable_dlg( bin );
 }

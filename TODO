@@ -378,10 +378,6 @@
                 settings - so DossierDelete and DossierDeletePrefs
                 become useless (see also #522)
 
- 557 2015- 1- 8 ImportAssistant: add to import file format dialog the
-                count of headers to be removed from the file (rather
-                than with_headers)
-
  558 2015- 1- 8 DossierManager: display databases used by a dossier
 
  559 2015- 1- 8 have a macro language to automate dossier creation,
@@ -2473,6 +2469,11 @@
  556 2015- 1- 6 when on a new dossier, the OpeTemplateSelect dialog
                 shows 'unclassed' ledgers
      2015- 1- 6 done - svn #4413
+
+ 557 2015- 1- 8 ImportAssistant: add to import file format dialog the
+                count of headers to be removed from the file (rather
+                than with_headers)
+     2015- 1-17 done - svn #4466
 
  565 2015- 1- 8 Issue with ofaCurrencyStore to be fixed
      2015- 1- 8 due to a bad management of weak references

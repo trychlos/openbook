@@ -58,6 +58,8 @@ typedef struct {
 	gboolean              dope_user_set;
 	GDate                 deffect;
 	gboolean              deffect_user_set;
+	gchar                *ref;
+	gboolean              ref_user_set;
 	GList                *detail;
 }
 	ofsOpe;
@@ -71,8 +73,6 @@ typedef struct {
  *  takes precedence over a possible formula originating from template
  */
 typedef struct {
-	gchar                *ref;
-	gboolean              ref_user_set;
 	gchar                *account;
 	gboolean              account_user_set;
 	gchar                *label;
@@ -90,7 +90,6 @@ typedef struct {
  */
 enum {
 	OPE_COL_RANG = 0,
-	OPE_COL_REF,
 	OPE_COL_ACCOUNT,
 	OPE_COL_ACCOUNT_SELECT,
 	OPE_COL_LABEL,
