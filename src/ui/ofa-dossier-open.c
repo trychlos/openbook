@@ -217,7 +217,7 @@ v_init_dialog( myDialog *dialog )
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	priv->dossier_tview = ofa_dossier_treeview_new();
-	ofa_dossier_treeview_attach_to( priv->dossier_tview, GTK_CONTAINER( container ));
+	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->dossier_tview ));
 	ofa_dossier_treeview_set_columns( priv->dossier_tview, DOSSIER_DISP_DNAME );
 	g_signal_connect(
 			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), dialog );

@@ -408,7 +408,7 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p3_dossier_treeview = ofa_dossier_treeview_new();
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	ofa_dossier_treeview_attach_to( priv->p3_dossier_treeview, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_dossier_treeview ));
 	ofa_dossier_treeview_set_columns( priv->p3_dossier_treeview, DOSSIER_DISP_DNAME );
 
 	g_signal_connect( priv->p3_dossier_treeview, "changed", G_CALLBACK( p3_on_dossier_changed ), self );

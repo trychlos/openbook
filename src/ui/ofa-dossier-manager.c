@@ -201,7 +201,7 @@ setup_treeview( ofaDossierManager *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->tview = ofa_dossier_treeview_new();
-	ofa_dossier_treeview_attach_to( priv->tview, GTK_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_dossier_treeview_set_columns( priv->tview, DOSSIER_DISP_DNAME | DOSSIER_DISP_DBMS );
 	ofa_dossier_treeview_set_headers( priv->tview, TRUE );
 

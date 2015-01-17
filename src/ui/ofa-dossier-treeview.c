@@ -198,31 +198,6 @@ ofa_dossier_treeview_new( void )
 	return( view );
 }
 
-/**
- * ofa_dossier_treeview_attach_to:
- */
-void
-ofa_dossier_treeview_attach_to( ofaDossierTreeview *view, GtkContainer *parent )
-{
-	ofaDossierTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	g_debug( "ofa_dossier_treeview_attach_to: view=%p, parent=%p (%s)",
-			( void * ) view,
-			( void * ) parent, G_OBJECT_TYPE_NAME( parent ));
-
-	priv = view->priv;
-
-	if( !priv->dispose_has_run ){
-
-		gtk_container_add( parent, GTK_WIDGET( view ));
-
-		gtk_widget_show_all( GTK_WIDGET( parent ));
-	}
-}
-
 /*
  * call right after the object instanciation
  * if not already done, create a GtkTreeView inside of a GtkScrolledWindow
@@ -348,6 +323,8 @@ create_treeview_store( ofaDossierTreeview *view )
 		 */
 		g_object_unref( priv->store );
 	}
+
+	gtk_widget_show_all( GTK_WIDGET( view ));
 }
 
 static void
